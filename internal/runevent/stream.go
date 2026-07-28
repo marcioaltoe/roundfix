@@ -31,8 +31,12 @@ type StreamRecord struct {
 	Cursor              int64          `json:"cursor"`
 	Batch               int            `json:"batch,omitempty"`
 	Attempt             int            `json:"attempt,omitempty"`
+	Retry               int            `json:"retry,omitempty"`
 	WorkItem            string         `json:"work_item,omitempty"`
 	Phase               string         `json:"phase,omitempty"`
+	Mode                string         `json:"mode,omitempty"`
+	Classification      string         `json:"classification,omitempty"`
+	RetryAvailable      *bool          `json:"retry_available,omitempty"`
 	Status              string         `json:"status,omitempty"`
 	Verdict             string         `json:"verdict,omitempty"`
 	Outcome             string         `json:"outcome,omitempty"`
@@ -166,6 +170,26 @@ func ProjectStreamEvent(cursor int64, event RunEvent, filter StreamCategoryFilte
 		record.Attempt, err = verificationPayloadAttempt(fields, event, record.Phase)
 		if err != nil {
 			return StreamRecord{}, false, err
+		}
+		record.Retry, err = optionalPayloadInt(fields, "retry")
+		if err != nil {
+			return StreamRecord{}, false, streamPayloadFieldError(event, "retry", err)
+		}
+		record.Mode, err = optionalPayloadString(fields, "mode")
+		if err != nil {
+			return StreamRecord{}, false, streamPayloadFieldError(event, "mode", err)
+		}
+		record.Classification, err = optionalPayloadString(fields, "classification")
+		if err != nil {
+			return StreamRecord{}, false, streamPayloadFieldError(event, "classification", err)
+		}
+		record.RetryAvailable, err = optionalPayloadBool(fields, "retry_available")
+		if err != nil {
+			return StreamRecord{}, false, streamPayloadFieldError(event, "retry_available", err)
+		}
+		record.Reason, err = optionalPayloadString(fields, "reason")
+		if err != nil {
+			return StreamRecord{}, false, streamPayloadFieldError(event, "reason", err)
 		}
 		if record.WorkItem == "" {
 			record.WorkItem, err = firstPayloadString(fields, "work_item", "task")

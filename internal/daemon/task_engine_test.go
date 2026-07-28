@@ -954,15 +954,16 @@ func eventsOfKind(sink *captureEventSink, kind runevent.Kind) []runevent.RunEven
 // taskFakeVerifier records every verification command verbatim and fails
 // the commands scripted in failOn.
 type taskFakeVerifier struct {
-	calls       *[]string
-	store       *store.Store
-	runID       string
-	failOn      map[string]error
-	script      []error
-	commands    []string
-	workDirs    []string
-	outputPaths []string
-	seenStates  []string
+	calls           *[]string
+	store           *store.Store
+	runID           string
+	failOn          map[string]error
+	script          []error
+	temporaryOnCall map[int]bool
+	commands        []string
+	workDirs        []string
+	outputPaths     []string
+	seenStates      []string
 }
 
 func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
@@ -972,6 +973,10 @@ func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) (
 	verifier.outputPaths = append(verifier.outputPaths, req.OutputPath)
 	if verifier.store != nil {
 		verifier.seenStates = append(verifier.seenStates, runStateForTest(verifier.store, verifier.runID))
+	}
+	if verifier.temporaryOnCall[len(verifier.commands)] {
+		commandErr := &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: errors.New("exit status 75")}
+		return VerifyResult{OutputPath: req.OutputPath}, &TemporaryVerificationFailureError{CommandFailure: commandErr}
 	}
 	if len(verifier.script) > 0 {
 		err := verifier.script[0]
@@ -1671,11 +1676,15 @@ func waitObservedGateEntry(t *testing.T, entered <-chan struct{}) {
 	}
 }
 
-func TestVerificationGateExclusiveWaiterBlocksLaterShared(t *testing.T) {
+func TestTaskCycleExclusiveRetryDrainsSharedAttemptsAndBlocksLaterShared(t *testing.T) {
 	gate := newVerificationGate(2)
-	releaseActive, err := gate.Acquire(context.Background(), verificationShared)
+	releaseFirst, err := gate.Acquire(context.Background(), verificationShared)
 	if err != nil {
-		t.Fatalf("acquire active shared capacity: %v", err)
+		t.Fatalf("acquire first active shared capacity: %v", err)
+	}
+	releaseSecond, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("acquire second active shared capacity: %v", err)
 	}
 
 	exclusiveEntered := make(chan struct{})
@@ -1705,7 +1714,13 @@ func TestVerificationGateExclusiveWaiterBlocksLaterShared(t *testing.T) {
 	default:
 	}
 
-	releaseActive()
+	releaseFirst()
+	select {
+	case result := <-exclusiveResults:
+		t.Fatalf("exclusive acquired before both active shared attempts drained: %+v", result)
+	default:
+	}
+	releaseSecond()
 	exclusive := waitGateAcquireResult(t, exclusiveResults)
 	if exclusive.err != nil {
 		t.Fatalf("acquire exclusive after shared drain: %v", exclusive.err)
@@ -1724,7 +1739,7 @@ func TestVerificationGateExclusiveWaiterBlocksLaterShared(t *testing.T) {
 	shared.release()
 }
 
-func TestVerificationGateCancelExclusiveWaiterRestoresFullSharedCapacity(t *testing.T) {
+func TestTaskCycleExclusiveRetryCancellationRestoresFullSharedCapacity(t *testing.T) {
 	gate := newVerificationGate(2)
 	releaseFirst, err := gate.Acquire(context.Background(), verificationShared)
 	if err != nil {
@@ -3076,6 +3091,144 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	last := taskEventsOfKind(fixture.sink, runevent.KindDaemonOutcome)
 	if kinds[len(kinds)-1] != runevent.KindDaemonOutcome || !strings.Contains(string(last[0].Payload), `"skipped":1`) {
 		t.Fatalf("expected outcome event with counts at cycle end, got %v", kinds)
+	}
+}
+
+func TestTaskCycleTemporaryVerificationPassesExclusiveRetryWithoutAgentRepair(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{calls: fixture.calls, temporaryOnCall: map[int]bool{1: true}}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected exclusive retry to complete Task, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>verify>commit" {
+		t.Fatalf("expected zero Agent repair turns around exclusive retry, got %q", got)
+	}
+	initialPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	retryPath := VerificationRetryOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1, 1)
+	if got := strings.Join(verifier.outputPaths, "|"); got != initialPath+"|"+retryPath {
+		t.Fatalf("expected distinct initial and retry diagnostics, got %q", got)
+	}
+
+	var sawTemporary, sawExclusiveWaiting, sawRetryPassed bool
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		payload := eventPayloadMap(t, event)
+		switch payload["phase"] {
+		case string(runevent.VerificationPhaseFailed):
+			if payload["classification"] == string(runevent.VerificationClassificationTemporary) &&
+				payload["retry_available"] == true &&
+				payload["diagnostic_path"] == initialPath {
+				sawTemporary = true
+			}
+		case string(runevent.VerificationPhaseWaiting):
+			if payload["retry"] == float64(1) && payload["mode"] == "exclusive" {
+				sawExclusiveWaiting = true
+			}
+		case string(runevent.VerificationPhaseVerdict):
+			if payload["retry"] == float64(1) && payload["verdict"] == string(runevent.VerificationVerdictPassed) {
+				sawRetryPassed = true
+			}
+		}
+	}
+	if !sawTemporary || !sawExclusiveWaiting || !sawRetryPassed {
+		t.Fatalf("expected temporary, exclusive-wait, and retry-pass evidence; temporary=%v waiting=%v passed=%v", sawTemporary, sawExclusiveWaiting, sawRetryPassed)
+	}
+}
+
+func TestTaskCycleDeterministicRetryUsesAgentRepairThenAttemptTwo(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:           fixture.calls,
+		temporaryOnCall: map[int]bool{1: true},
+		script:          []error{errors.New("exit status 1"), nil},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected deterministic retry failure repaired by attempt 2, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>verify>agent>verify>commit" {
+		t.Fatalf("expected one Agent repair after deterministic exclusive retry, got %q", got)
+	}
+	if runner.taskCalls["task_01"] != 2 {
+		t.Fatalf("expected initial Agent plus one Verification Feedback turn, got %d", runner.taskCalls["task_01"])
+	}
+	if len(verifier.outputPaths) != 3 ||
+		verifier.outputPaths[1] != VerificationRetryOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1, 1) ||
+		verifier.outputPaths[2] != VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 2) {
+		t.Fatalf("expected retry then numbered attempt 2 paths, got %v", verifier.outputPaths)
+	}
+}
+
+func TestTaskCycleRetryBudgetExhaustsOnRepeatedTemporaryVerification(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{calls: fixture.calls, temporaryOnCall: map[int]bool{1: true, 2: true}}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 {
+		t.Fatalf("expected repeated temporary failure to settle failed, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>verify" {
+		t.Fatalf("expected no Agent repair or second retry after exhaustion, got %q", got)
+	}
+	var sawExhaustion bool
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == string(runevent.VerificationPhaseFailed) &&
+			payload["retry"] == float64(1) &&
+			payload["classification"] == string(runevent.VerificationClassificationTemporary) &&
+			payload["retry_available"] == false &&
+			payload["reason"] == string(runevent.VerificationReasonTemporaryFailure) {
+			sawExhaustion = true
+		}
+	}
+	if !sawExhaustion {
+		t.Fatal("expected bounded temporary retry exhaustion evidence")
+	}
+}
+
+func TestTaskCycleTemporaryVerificationAfterDeterministicRetryAndRepairDoesNotRetryAgain(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:           fixture.calls,
+		temporaryOnCall: map[int]bool{1: true, 3: true},
+		script:          []error{errors.New("exit status 1")},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 {
+		t.Fatalf("expected attempt-2 temporary failure with spent retry budget to settle failed, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>verify>agent>verify" {
+		t.Fatalf("expected one retry and one Agent repair only, got %q", got)
+	}
+	if len(verifier.outputPaths) != 3 {
+		t.Fatalf("expected no second exclusive retry, got paths %v", verifier.outputPaths)
 	}
 }
 

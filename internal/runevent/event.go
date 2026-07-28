@@ -82,6 +82,20 @@ const (
 	VerificationVerdictFailed VerificationVerdict = "failed"
 )
 
+// VerificationClassification names a bounded Verification failure class.
+type VerificationClassification string
+
+const (
+	VerificationClassificationTemporary VerificationClassification = "temporary"
+)
+
+// VerificationReason names a bounded machine-readable Verification reason.
+type VerificationReason string
+
+const (
+	VerificationReasonTemporaryFailure VerificationReason = "temporary_verification_failure"
+)
+
 // IsDaemonKind reports whether the kind belongs to the known daemon
 // vocabulary. Readers render these from the bounded summary; unknown kinds
 // stay skippable.

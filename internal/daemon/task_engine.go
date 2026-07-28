@@ -679,22 +679,27 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 		return "", "", err
 	}
 	if failure == "" {
-		verification, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 1)
+		retryUsed := false
+		verification, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 1, &retryUsed)
 		if verifyErr != nil {
 			return "", "", verifyErr
 		}
 		if verification.Failure != "" {
-			failure, err = engine.repairTaskVerification(ctx, plan, &task, ordinal, verification, owner)
-			if err != nil {
-				return "", "", err
+			if verification.TemporaryFailure != nil {
+				failure = taskVerificationFailureReason(verification)
+			} else {
+				failure, err = engine.repairTaskVerification(ctx, plan, &task, ordinal, verification, owner)
+				if err != nil {
+					return "", "", err
+				}
+				if failure == "" {
+					final, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 2, &retryUsed)
+					if verifyErr != nil {
+						return "", "", verifyErr
+					}
+					failure = taskVerificationFailureReason(final)
+				}
 			}
-		}
-		if failure == "" && verification.Failure != "" {
-			final, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 2)
-			if verifyErr != nil {
-				return "", "", verifyErr
-			}
-			failure = taskVerificationFailureReason(final)
 		}
 	}
 	settled := spec.StatusCompleted
@@ -818,20 +823,24 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 // the Daemon gate runs only the Task's own Verification commands (ADR 0014).
 // Command failures return a typed outcome for the repair loop; the returned
 // error is reserved for Stop Requests and infrastructure failures.
-func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, attempt int) (verificationAttemptOutcome, error) {
+func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, attempt int, retryUsed *bool) (verificationAttemptOutcome, error) {
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
 		return verificationAttemptOutcome{}, fmt.Errorf("update run %q to state %q before Task %s verification: %w", plan.RunID, store.StateVerifying, task.ID, err)
 	}
+	if retryUsed == nil {
+		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: temporary retry state is required", plan.RunID, task.ID)
+	}
 	request := verificationAttemptRequest{
-		RunID:       plan.RunID,
-		WorkDir:     plan.WorkDir,
-		ArtifactDir: plan.ArtifactDir,
-		BatchNumber: ordinal,
-		WorkItem:    task.ID,
-		Attempt:     attempt,
-		Mode:        verificationShared,
-		Capacity:    plan.VerificationConcurrency,
-		Commands:    task.Verification,
+		RunID:                   plan.RunID,
+		WorkDir:                 plan.WorkDir,
+		ArtifactDir:             plan.ArtifactDir,
+		BatchNumber:             ordinal,
+		WorkItem:                task.ID,
+		Attempt:                 attempt,
+		Mode:                    verificationShared,
+		Capacity:                plan.VerificationConcurrency,
+		TemporaryRetryAvailable: !*retryUsed,
+		Commands:                task.Verification,
 		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
 			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
 				return fmt.Errorf("publish verification event for run %q Task %s: %w", plan.RunID, task.ID, err)
@@ -839,6 +848,19 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 			return nil
 		},
 	}
+	verification, err := engine.runTaskVerificationRequest(ctx, plan, task, request)
+	if err != nil || verification.TemporaryFailure == nil || *retryUsed {
+		return verification, err
+	}
+
+	*retryUsed = true
+	request.Retry = 1
+	request.Mode = verificationExclusive
+	request.TemporaryRetryAvailable = false
+	return engine.runTaskVerificationRequest(ctx, plan, task, request)
+}
+
+func (engine *Engine) runTaskVerificationRequest(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (verificationAttemptOutcome, error) {
 	if err := request.Publish(ctx,
 		request.summary(runevent.VerificationPhaseWaiting, ""),
 		request.payload(runevent.VerificationPhaseWaiting, ""),
@@ -850,11 +872,11 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 	}
 	release, err := plan.verificationGate.Acquire(ctx, request.Mode)
 	if err != nil {
-		return verificationAttemptOutcome{}, fmt.Errorf("acquire Verification Capacity for run %q Task %s attempt %d: %w", plan.RunID, task.ID, attempt, err)
+		return verificationAttemptOutcome{}, fmt.Errorf("acquire Verification Capacity for run %q Task %s attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, err)
 	}
-	defer release()
 
 	verification, err := engine.runVerificationAttempt(ctx, request)
+	release()
 	if err != nil {
 		if isStop(ctx, err) {
 			// A Stop Request during verification keeps the Agent's task

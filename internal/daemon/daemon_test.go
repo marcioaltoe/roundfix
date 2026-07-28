@@ -60,6 +60,109 @@ func TestExecVerifierRetainsFailedOutputAsTypedCommandError(t *testing.T) {
 	}
 }
 
+func TestExecVerifierTemporaryExit75PreservesDiagnosticChain(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "runs", "run-test", "verification", "batch-001-attempt-1.log")
+	command := `printf 'temporary stdout'; printf 'temporary stderr' >&2; exit 75`
+	_, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
+		WorkDir:    t.TempDir(),
+		Command:    command,
+		OutputPath: outputPath,
+	})
+
+	if err == nil {
+		t.Fatal("expected temporary verification failure")
+	}
+	var temporaryErr *TemporaryVerificationFailureError
+	if !errors.As(err, &temporaryErr) {
+		t.Fatalf("expected typed temporary verification failure, got %T %[1]v", err)
+	}
+	var commandErr *VerificationCommandError
+	if !errors.As(err, &commandErr) {
+		t.Fatalf("expected temporary failure to retain command failure chain, got %T %[1]v", err)
+	}
+	if temporaryErr.CommandFailure != commandErr {
+		t.Fatalf("expected one preserved command failure, got temporary=%p command=%p", temporaryErr.CommandFailure, commandErr)
+	}
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != TemporaryVerificationExitCode {
+		t.Fatalf("expected child exit %d in error chain, got %v", TemporaryVerificationExitCode, err)
+	}
+	content, readErr := os.ReadFile(outputPath)
+	if readErr != nil {
+		t.Fatalf("read temporary verification artifact: %v", readErr)
+	}
+	if string(content) != "temporary stdouttemporary stderr" {
+		t.Fatalf("expected combined temporary diagnostics, got %q", content)
+	}
+}
+
+func TestExecVerifierExit1WithTimeoutTextRemainsDeterministic(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "verification.log")
+	command := `printf 'timeout waiting for listener on database port'; exit 1`
+	_, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
+		WorkDir:    t.TempDir(),
+		Command:    command,
+		OutputPath: outputPath,
+	})
+
+	if err == nil {
+		t.Fatal("expected deterministic verification failure")
+	}
+	var temporaryErr *TemporaryVerificationFailureError
+	if errors.As(err, &temporaryErr) {
+		t.Fatalf("expected output text not to classify exit 1 as temporary, got %+v", temporaryErr)
+	}
+	var commandErr *VerificationCommandError
+	if !errors.As(err, &commandErr) {
+		t.Fatalf("expected deterministic command failure, got %T %[1]v", err)
+	}
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+		t.Fatalf("expected child exit 1 in deterministic chain, got %v", err)
+	}
+}
+
+func TestExecVerifierTemporaryRetryDiagnosticPathsRemainDistinct(t *testing.T) {
+	artifactDir := t.TempDir()
+	initialPath := VerificationOutputPath(artifactDir, "run-test", 1, 1)
+	retryPath := VerificationRetryOutputPath(artifactDir, "run-test", 1, 1, 1)
+	workDir := t.TempDir()
+
+	_, initialErr := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
+		WorkDir:    workDir,
+		Command:    `printf 'initial temporary diagnostic'; exit 75`,
+		OutputPath: initialPath,
+	})
+	_, retryErr := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
+		WorkDir:    workDir,
+		Command:    `printf 'exclusive deterministic diagnostic'; exit 1`,
+		OutputPath: retryPath,
+	})
+
+	var temporaryErr *TemporaryVerificationFailureError
+	if !errors.As(initialErr, &temporaryErr) {
+		t.Fatalf("expected initial typed temporary failure, got %v", initialErr)
+	}
+	var retryCommandErr *VerificationCommandError
+	if !errors.As(retryErr, &retryCommandErr) {
+		t.Fatalf("expected retry deterministic command failure, got %v", retryErr)
+	}
+	if retryCommandErr.OutputPath != retryPath || retryPath == initialPath {
+		t.Fatalf("expected distinct retry path %q from initial %q, got %+v", retryPath, initialPath, retryCommandErr)
+	}
+	initialDiagnostic, err := os.ReadFile(initialPath)
+	if err != nil {
+		t.Fatalf("read initial diagnostic: %v", err)
+	}
+	retryDiagnostic, err := os.ReadFile(retryPath)
+	if err != nil {
+		t.Fatalf("read retry diagnostic: %v", err)
+	}
+	if string(initialDiagnostic) != "initial temporary diagnostic" || string(retryDiagnostic) != "exclusive deterministic diagnostic" {
+		t.Fatalf("unexpected retained diagnostics: initial=%q retry=%q", initialDiagnostic, retryDiagnostic)
+	}
+}
+
 func TestExecVerifierClassifiesCancellationAsInfrastructureError(t *testing.T) {
 	outputPath := filepath.Join(t.TempDir(), "verification.log")
 	ctx, cancel := context.WithCancel(context.Background())

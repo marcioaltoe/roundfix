@@ -162,6 +162,47 @@ func TestVerificationWaitingEventProjectsAdditivePhase(t *testing.T) {
 	}
 }
 
+func TestVerificationTemporaryRetryExclusiveProjection(t *testing.T) {
+	retryAvailable := false
+	event := RunEvent{
+		RunID:       "run_123",
+		Batch:       3,
+		Source:      SourceDaemon,
+		Kind:        KindDaemonVerification,
+		ReviewIssue: "task_03",
+		Summary:     "Verification attempt 2 retry 1 for Task task_03 verdict: failed",
+		Time:        time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC),
+		Payload:     []byte(`{"attempt":2,"retry":1,"phase":"verdict","task":"task_03","mode":"exclusive","classification":"temporary","retry_available":false,"reason":"temporary_verification_failure","verdict":"failed","error":"unbounded child output must not project"}`),
+	}
+
+	record, ok, err := ProjectStreamEvent(8, event, AllStreamCategories())
+	if err != nil {
+		t.Fatalf("project exclusive retry event: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected exclusive retry event to be projected")
+	}
+	if record.Attempt != 2 || record.Retry != 1 || record.Mode != "exclusive" {
+		t.Fatalf("expected numbered attempt and retry identity, got %#v", record)
+	}
+	if record.Classification != string(VerificationClassificationTemporary) {
+		t.Fatalf("expected temporary classification, got %#v", record)
+	}
+	if record.RetryAvailable == nil || *record.RetryAvailable != retryAvailable {
+		t.Fatalf("expected explicit exhausted retry availability, got %#v", record)
+	}
+	if record.Reason != string(VerificationReasonTemporaryFailure) || record.Verdict != string(VerificationVerdictFailed) {
+		t.Fatalf("expected bounded reason and final verdict, got %#v", record)
+	}
+	raw, marshalErr := json.Marshal(record)
+	if marshalErr != nil {
+		t.Fatalf("marshal projected retry record: %v", marshalErr)
+	}
+	if strings.Contains(string(raw), "unbounded child output") {
+		t.Fatalf("expected unbounded error text omitted from projection, got %s", raw)
+	}
+}
+
 func TestIsDaemonKindCoversSpecRunKindsAndSkipsUnknown(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -31,6 +31,28 @@ type VerificationCommandError struct {
 	Err        error
 }
 
+const TemporaryVerificationExitCode = 75
+
+// TemporaryVerificationFailureError marks the sole retryable Verification
+// command outcome while preserving the command failure and child exit chain.
+type TemporaryVerificationFailureError struct {
+	CommandFailure *VerificationCommandError
+}
+
+func (err *TemporaryVerificationFailureError) Error() string {
+	if err == nil || err.CommandFailure == nil {
+		return "temporary verification failure"
+	}
+	return fmt.Sprintf("temporary verification failure: %v", err.CommandFailure)
+}
+
+func (err *TemporaryVerificationFailureError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.CommandFailure
+}
+
 func (err *VerificationCommandError) Error() string {
 	if err == nil {
 		return ""
@@ -108,7 +130,11 @@ func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult
 		return result, fmt.Errorf("retain failed verification diagnostics %q: %w", outputPath, err)
 	}
 	result.OutputPath = outputPath
-	return result, &VerificationCommandError{Command: req.Command, OutputPath: outputPath, Err: runErr}
+	commandErr := &VerificationCommandError{Command: req.Command, OutputPath: outputPath, Err: runErr}
+	if exitErr.ExitCode() == TemporaryVerificationExitCode {
+		return result, &TemporaryVerificationFailureError{CommandFailure: commandErr}
+	}
+	return result, commandErr
 }
 
 func removeIfExists(path string) error {
@@ -120,6 +146,10 @@ func removeIfExists(path string) error {
 
 func VerificationOutputPath(artifactDir string, runID string, batchNumber int, attempt int) string {
 	return filepath.Join(artifactDir, "runs", runID, "verification", fmt.Sprintf("batch-%03d-attempt-%d.log", batchNumber, attempt))
+}
+
+func VerificationRetryOutputPath(artifactDir string, runID string, batchNumber int, attempt int, retry int) string {
+	return filepath.Join(artifactDir, "runs", runID, "verification", fmt.Sprintf("batch-%03d-attempt-%d-retry-%d.log", batchNumber, attempt, retry))
 }
 
 type CommitRequest struct {
