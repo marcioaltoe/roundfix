@@ -1,0 +1,55 @@
+Focused current-build seam evidence
+Build: 6646b84845d32335f35c39df95a6c161a973c9ec
+Date: 2026-07-28
+Result: pass
+
+Command:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-03-gocache
+  GOFLAGS=-buildvcs=false go test ./internal/reviewsource/...
+  ./internal/watch ./internal/runevent -run
+  'Test.*(Evidence|Transient|Retry|WaitPhase|ReviewStatusEvent|UnchangedEvidence|Outcome.*Context|ReviewIssues)'
+  -count=1
+Exit: 0
+Results:
+  ok roundfix/internal/reviewsource 0.281s
+  ok roundfix/internal/reviewsource/coderabbit 0.529s
+  ok roundfix/internal/watch 0.813s
+  ok roundfix/internal/runevent 1.067s
+
+Command:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-03-gocache
+  GOFLAGS=-buildvcs=false go test ./internal/cli ./internal/store -run
+  'Test.*(ReviewSkipped|ReviewIssuesKnown|ReviewIssuesUnknown|TerminalContext|FetchedZero|Artifact.*Evidence|CleanupBeforeAgent|Schema.*Review|Detached.*Monitor|OutcomeNotification|NotificationReceipt|DocumentationContract|Watch.*Help)'
+  -count=1
+Exit: 0
+Results:
+  ok roundfix/internal/cli 4.722s
+  ok roundfix/internal/store 1.624s
+
+Command:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-03-gocache
+  GOFLAGS=-buildvcs=false go test -race ./internal/watch ./internal/cli
+  ./internal/notify ./internal/runevent -run
+  'Test.*(Transient|Retry|StopRequest|ReviewSkipped|TerminalContext|ReviewIssues|Notification|Detached|Artifact.*Evidence)'
+  -count=1
+Exit: 0
+Results:
+  ok roundfix/internal/watch 1.376s
+  ok roundfix/internal/cli 5.637s
+  ok roundfix/internal/notify 1.307s
+  ok roundfix/internal/runevent 1.978s
+
+Wording regression command:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-03-gocache
+  GOFLAGS=-buildvcs=false go test ./internal/cli -run
+  'TestRun(CommandHelp|WatchMissingHeadCheckEndsCleanUnverified)$' -count=1
+Exit: 0
+Result:
+  ok roundfix/internal/cli 1.876s
+
+These fresh checks cover the shared Evidence hierarchy and refusals, bounded
+retry and Stop priority, both wait phases and changed-only events,
+ReviewSkipped persistence/schema/Run Browser behavior, unknown and fetched-zero
+knowledge, winner-only terminal context, notification receipts and outcome
+independence, Detached reporting, exact artifact-only inheritance and every
+declared refusal, plus accepted-Evidence help wording.

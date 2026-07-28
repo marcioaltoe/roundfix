@@ -1,0 +1,88 @@
+Project Constraint audit
+Build: 6646b84845d32335f35c39df95a6c161a973c9ec
+Date: 2026-07-28
+
+Task status precondition
+Command:
+  rtk grep -n '^status:' docs/specs/0039-review-source-evidence-and-detached-outcomes/task_*.md
+Result:
+  task_01 through task_09 each report status: completed.
+
+Identifier strategy
+Applicability: not applicable.
+Reason: the feature reuses existing Run IDs, Git heads, and Review
+Source-native identities and creates no Internal Identifier.
+Operative source: docs/agents/domain.md.
+Active artifacts: _prd.md and _techspec.md contain the same applicability and
+source.
+
+Authentication and HTTP
+Applicability: applicable.
+Reason: GitHub and CodeRabbit access remains behind the existing authenticated
+gh and Review Source boundaries; the feature adds no credential policy,
+authentication provider, or HTTP route.
+Operative source: docs/agents/cli.md.
+Active artifacts: _prd.md and _techspec.md contain the same applicability and
+source.
+
+Active ADR obligations
+Applicability: applicable.
+Operative source: docs/agents/domain.md, with ADR lifecycle determined by
+docs/agents/docs-layout.md.
+The five named legacy ADRs have no lifecycle frontmatter and do not mark
+themselves inactive, so they remain active:
+  docs/adr/0036-review-artifacts-are-committed-in-a-separate-docs-commit.md
+  docs/adr/0042-review-runs-execute-in-the-user-checkout.md
+  docs/adr/0043-missing-review-check-ends-clean-unverified.md
+  docs/adr/0052-run-completion-is-compare-and-set.md
+  docs/adr/0054-review-source-evidence-determines-review-outcomes.md
+The PRD and TechSpec name and account for each obligation.
+
+Tooling authority
+Applicability: applicable.
+Operative sources:
+  docs/agents/agent-instructions.md
+  docs/agents/spec-routing.md
+The PRD and TechSpec both record prior express maintainer authorization for
+exactly:
+  .agents/skills/roundfix/SKILL.md
+  skills/roundfix/SKILL.md
+and the deterministic derived Skill-digest pins:
+  internal/baseline/assets/setups/typescript-bun.json
+  internal/baseline/testdata/catalog.digest
+  internal/baseline/testdata/catalog.normalized.json
+  internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json
+  internal/baseline/testdata/parity-corpus/v1/manifest.json
+
+Authorization ordering
+Command:
+  rtk git -c core.fsmonitor=false rev-parse 053ecf7f97590c24a3ba128fe83294f19f74d7b9^
+Result:
+  2e134fc2ff5885aac40ca9ddb7b58d60bece3a79
+
+Authorization commit paths
+Command:
+  rtk git -c core.fsmonitor=false diff-tree --no-commit-id --name-only -r 2e134fc2ff5885aac40ca9ddb7b58d60bece3a79
+Result:
+  docs/specs/0039-review-source-evidence-and-detached-outcomes/_prd.md
+  docs/specs/0039-review-source-evidence-and-detached-outcomes/_techspec.md
+
+Tooling Task commit paths
+Command:
+  rtk git -c core.fsmonitor=false diff-tree --no-commit-id --name-only -r 053ecf7f97590c24a3ba128fe83294f19f74d7b9
+Result:
+  .agents/skills/roundfix/SKILL.md
+  docs/specs/0039-review-source-evidence-and-detached-outcomes/task_09.md
+  internal/baseline/assets/setups/typescript-bun.json
+  internal/baseline/testdata/catalog.digest
+  internal/baseline/testdata/catalog.normalized.json
+  internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json
+  internal/baseline/testdata/parity-corpus/v1/manifest.json
+  skills/roundfix/SKILL.md
+
+The actual tooling commit changed only the exact authorized paths and its own
+Task file. The authorization commit is its direct parent. The current
+worktree delta contains only this QA rerun's report/evidence and no protected
+tooling path.
+
+Verdict: pass.

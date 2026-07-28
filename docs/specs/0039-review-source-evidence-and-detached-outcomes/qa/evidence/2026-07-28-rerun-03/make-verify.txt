@@ -1,0 +1,76 @@
+Static gate
+Build: 6646b84845d32335f35c39df95a6c161a973c9ec
+Date: 2026-07-28
+
+Initial exact command:
+  rtk make verify
+Exit: 2
+Result:
+  The gate stopped before tests because the managed sandbox could not read
+  /Users/marcio/Library/Caches/go-build.
+
+Unchanged gate with writable task-local Go cache:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-03-gocache GOFLAGS=-buildvcs=false make verify
+Exit: 2 inside the managed sandbox
+Result:
+  2,781 tests passed.
+  Five owner-process tests failed because the sandbox denied the genuine
+  process-identity path:
+    internal/store:
+      TestOwnerProcessControllerMatchingOwnerIdentityProceeds
+      TestOwnerProcessControllerProveOwnerLeavesProvenOwnerRunning
+      TestOwnerProcessIdentityIsStableForOneProcess
+      TestOwnerProcessIdentityIgnoresCallerTimezone
+    internal/cli:
+      TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion
+  No other package or test failed.
+
+Approved full-access rerun of the same command:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-03-gocache GOFLAGS=-buildvcs=false make verify
+Exit: 0
+Result:
+  Go test: 2786 passed in 24 packages
+  Skill selection test: 4 passed in 1 package
+  Shipped Skill contract:
+    Roundfix skill check passed: roundfix, write-idea, write-prd,
+    write-techspec, write-tasks, setup-context-driven, implement-task,
+    implement-spec, brainstorming, council, business-analyst, archive-spec,
+    qa-gate, evidence-gate
+  Production build:
+    bin/roundfix
+    BuildCommit=6646b84-dirty
+  The dirty suffix is expected because the required in-progress QA report and
+  evidence existed before Verification.
+
+Post-gate checks:
+
+Command:
+  rtk git -c core.fsmonitor=false diff --check
+Exit: 0
+Output: none.
+
+Command:
+  rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md
+Exit: 0
+Output: none.
+
+Initial command:
+  rtk make skills-sync-check
+Exit: 2
+Result:
+  The managed sandbox again denied the host Go build cache before tests.
+
+Rerun:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-03-gocache GOFLAGS=-buildvcs=false make skills-sync-check
+Exit: 0
+Result:
+  4 passed in 1 package.
+
+Command:
+  rtk ./bin/roundfix skills check
+Exit: 0
+Result:
+  All 14 shipped Skill contracts passed.
+
+Verdict: pass. Sandbox cache and owner-process denials were environment-caused
+and the unchanged gates passed with a writable cache and approved host access.

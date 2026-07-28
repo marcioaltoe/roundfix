@@ -1,0 +1,65 @@
+Docs, public CLI, and Non-Goal evidence
+Build: 6646b84845d32335f35c39df95a6c161a973c9ec
+Date: 2026-07-28
+Result: pass
+
+Public help
+Command:
+  rtk ./bin/roundfix watch --help
+Exit: 0
+Result:
+  The built command says Clean requires accepted Review Source Evidence on the
+  pushed head: a successful CodeRabbit check or commit status, or a CodeRabbit
+  APPROVED review, with zero unresolved CodeRabbit threads. The
+  --until-clean text carries the same contract. A one-Run selection override
+  requires all three selection flags.
+
+Canonical guidance
+Command:
+  rtk grep -n
+  'Review Source Evidence\|Review Skipped\|events .*--follow.*outcome\|Review Issues: unknown'
+  CONTEXT.md docs/user-guide/commands.md docs/user-guide/usage.md
+Exit: 0
+Result:
+  The glossary and both guides contain Review Source Evidence and Review
+  Skipped vocabulary, the stable Supervisor monitor, and the unknown-count
+  report.
+
+Documentation and Skill contracts
+  The current-build DocumentationContract and Watch help regression tests
+  passed with -count=1.
+  Canonical/generated Roundfix Skill comparison exited 0 with no output.
+  skills-sync-check passed four tests.
+  The built binary validated all 14 shipped Skill contracts.
+  git diff --check passed.
+
+Agentic CLI sweep
+  Outcome monitoring uses versioned JSONL on stdout.
+  Live commands keep requested reports on stdout and progress/diagnostics on
+  stderr.
+  Detached startup is deterministic, non-interactive, and action-oriented.
+  Event replay is explicit by Run ID and outcome filter.
+  Additive outcome fields preserve unknown-field compatibility.
+  ReviewSkipped exit 3 remains distinct from success and hard failure.
+
+Changed-path inspection
+The nine implementation Task commits changed Review Source, watch, Run Event,
+CLI, Store schema/journal, notification, docs, and the exactly authorized
+Skill/digest paths. They changed no internal/config path, host callback
+surface, service integration, webhook suppression, Force Stop implementation,
+Agent Session registry implementation, or new retry setting.
+
+Non-Goals
+  No host-conversation delivery guarantee or host-specific callback shipped.
+  No built-in Slack, email, Telegram, or other service integration shipped.
+  The Run Event Stream remains the Supervisor subscription.
+  No new retry configuration or log-text retry inference shipped.
+  Fresh Evidence tests reject generic, stale, commented, and unresolved
+  approvals.
+  Fresh real-Git tests reject user-authored, empty, mixed-path, wrong-parent,
+  out-of-root, and unresolved-thread descendants.
+  Docs explicitly avoid claiming webhook suppression.
+  Force Stop, compare-and-set, and registered Agent Session ownership remain
+  under Spec 0037/ADR-0052 boundaries.
+
+Verdict: pass.
