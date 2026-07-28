@@ -6,16 +6,16 @@ ROUNDFIX // LIVE RUN VIEW // SPEC 0005-tui-cockpit                              
 │ WORK QUEUE (3)                             ││ SESSION.TIMELINE                               Live · detail hidden │
 │                                            ││                                                                     │
 │ ┌────────────────────────────────────────┐ ││          TASK Task task_01 settled completed.                       │
-│ │> [done]                              #1│ ││ PLAN continue Task Graph execution                                  │
+│ │> [done] Completed                    #1│ ││ PLAN continue Task Graph execution                                  │
 │ │  task_01 Decompose renderers           │ ││ [TOOL] go test ./internal/tui/ * completed                          │
 │ │  docs/specs/0005-tui-cockpit/task_01.md│ ││                                                                     │
 │ └────────────────────────────────────────┘ ││                                                                     │
 │                                            ││                                                                     │
-│   [run]                                 #2 ││                                                                     │
+│   [run] Agent working                   #2 ││                                                                     │
 │   task_02 Build phase row                  ││                                                                     │
 │   docs/specs/0005-tui-cockpit/task_02.md   ││                                                                     │
 │                                            ││                                                                     │
-│   [wait]                                #3 ││                                                                     │
+│   [wait] Waiting                        #3 ││                                                                     │
 │   task_03 Upgrade work queue               ││                                                                     │
 │   docs/specs/0005-tui-cockpit/task_03.md   ││                                                                     │
 │                                            ││                                                                     │

@@ -12472,7 +12472,7 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	withAttachInteractiveInput(t, true)
 	t.Setenv("ROUNDFIX_TUI", "always")
 	var createdBehindCockpit store.Run
-	cockpitCalls := withBrowserAttachCockpit(t, func(run store.Run, concurrency int) int {
+	cockpitCalls := withBrowserAttachCockpit(t, func(run store.Run, capacities attachCapacities) int {
 		// Mutating the store while the cockpit is open proves the next
 		// browser pass re-queries instead of reusing stale listings.
 		createdBehindCockpit = seedRunsForList(t, homeDir, []runListSeed{{
@@ -12514,8 +12514,8 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	if len(cockpit) != 1 || cockpit[0].runID != activeRun.ID {
 		t.Fatalf("expected one cockpit pass for the selected Run, got %+v", cockpit)
 	}
-	if cockpit[0].concurrency != 2 {
-		t.Fatalf("expected the explicit-attach concurrency fallback, got %d", cockpit[0].concurrency)
+	if cockpit[0].capacities != (attachCapacities{task: 2, verification: 1}) {
+		t.Fatalf("expected the explicit-attach capacity fallback, got %+v", cockpit[0].capacities)
 	}
 	second := calls[1]
 	if len(second.all) != 4 || second.all[0].ID != createdBehindCockpit.ID {
@@ -12619,7 +12619,7 @@ func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	output := stdout.String()
 	for _, expected := range []string{
 		"Run Worktree: " + workDir,
-		"Concurrency: 4",
+		"Task Capacity: 4",
 		"task_01 completed — Read state",
 		"Run " + run.ID + " reached Unresolved; timeline replayed read-only.",
 	} {
@@ -12759,7 +12759,16 @@ func createTerminalAttachSpecRun(t *testing.T, homeDir string, repoDir string, w
 	return completed.Run
 }
 
+// appendAttachConcurrencyEvent appends the pre-split Task-cycle-start event:
+// one legacy concurrency alias and no capacity fields.
 func appendAttachConcurrencyEvent(t *testing.T, homeDir string, runID string, concurrency int) {
+	t.Helper()
+	appendAttachCapacityEvent(t, homeDir, runID,
+		fmt.Sprintf("Task cycle started with concurrency %d.", concurrency),
+		fmt.Sprintf(`{"concurrency":%d}`, concurrency))
+}
+
+func appendAttachCapacityEvent(t *testing.T, homeDir string, runID string, summary string, payload string) {
 	t.Helper()
 	writer, err := store.Open(context.Background(), homeDir)
 	if err != nil {
@@ -12774,11 +12783,71 @@ func appendAttachConcurrencyEvent(t *testing.T, homeDir string, runID string, co
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,
-		Summary: fmt.Sprintf("Task cycle started with concurrency %d.", concurrency),
-		Payload: []byte(fmt.Sprintf(`{"concurrency":%d}`, concurrency)),
+		Summary: summary,
+		Payload: []byte(payload),
 	})
 	if err != nil {
-		t.Fatalf("append concurrency event: %v", err)
+		t.Fatalf("append capacity event: %v", err)
+	}
+}
+
+// Suite: attach capacity replay
+// Invariant: an attached spec Run shows the capacities the Run actually ran
+// with, and a Run recorded before the capacities split degrades to its
+// legacy concurrency plus the configured Verification Capacity instead of
+// failing or inventing a number.
+// Boundary IN: the read-only attach replay path and its rendered header.
+// Boundary OUT: capacity scheduling, owned by the daemon suites.
+func TestAttachSpecRunReplaysTaskAndVerificationCapacity(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	workDir := t.TempDir()
+	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "pending"}})
+	writeImplementSpec(t, workDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+	run := createTerminalAttachSpecRun(t, homeDir, repoDir, workDir, store.StateClean)
+	appendAttachCapacityEvent(t, homeDir, run.ID,
+		"Task cycle started with Task Capacity 3 and Verification Capacity 2.",
+		`{"spec":"0001-attach-spec","tasks":1,"concurrency":3,"task_capacity":3,"verification_capacity":2}`)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	for _, expected := range []string{"Task Capacity: 3", "Verification Capacity: 2"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected attach to replay %q, got:\n%s", expected, output)
+		}
+	}
+	if strings.Contains(output, "Concurrency:") {
+		t.Fatalf("expected the generic Concurrency label replaced by the canonical labels, got:\n%s", output)
+	}
+}
+
+func TestAttachSpecRunLegacyCapacityEventFallsBackDeterministically(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	workDir := t.TempDir()
+	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+	writeImplementSpec(t, workDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+	run := createTerminalAttachSpecRun(t, homeDir, repoDir, workDir, store.StateClean)
+	appendAttachConcurrencyEvent(t, homeDir, run.ID, 4)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected a legacy Run to attach cleanly, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	// The legacy alias is the Task Capacity; the never-recorded Verification
+	// Capacity falls back to the configured value, here the built-in 1.
+	for _, expected := range []string{"Task Capacity: 4", "Verification Capacity: 1"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected the legacy fallback to render %q, got:\n%s", expected, output)
+		}
 	}
 }
 
@@ -13449,22 +13518,22 @@ func withRunBrowserSession(t *testing.T, outcomes ...roundtui.BrowserOutcome) *[
 }
 
 type browserCockpitCall struct {
-	runID       string
-	concurrency int
+	runID      string
+	capacities attachCapacities
 }
 
 // withBrowserAttachCockpit replaces the browser loop's cockpit step and
 // records each pass; a nil handler just reports success.
-func withBrowserAttachCockpit(t *testing.T, handler func(run store.Run, concurrency int) int) *[]browserCockpitCall {
+func withBrowserAttachCockpit(t *testing.T, handler func(run store.Run, capacities attachCapacities) int) *[]browserCockpitCall {
 	t.Helper()
 	calls := &[]browserCockpitCall{}
 	old := browserAttachCockpit
-	browserAttachCockpit = func(_ context.Context, _ roundconfig.Loaded, _ *store.Store, run store.Run, concurrency int, _ io.Writer, _ io.Writer) int {
-		*calls = append(*calls, browserCockpitCall{runID: run.ID, concurrency: concurrency})
+	browserAttachCockpit = func(_ context.Context, _ roundconfig.Loaded, _ *store.Store, run store.Run, capacities attachCapacities, _ io.Writer, _ io.Writer) int {
+		*calls = append(*calls, browserCockpitCall{runID: run.ID, capacities: capacities})
 		if handler == nil {
 			return exitOK
 		}
-		return handler(run, concurrency)
+		return handler(run, capacities)
 	}
 	t.Cleanup(func() {
 		browserAttachCockpit = old

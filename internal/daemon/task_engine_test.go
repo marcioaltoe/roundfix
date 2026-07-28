@@ -2077,6 +2077,58 @@ func TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback(t *testing.T
 		t.Fatalf("expected released/reacquired capacity across three attempts, got max=%d starts=%d", maxActive, starts)
 	}
 	assertVerificationWaitingBeforeStarted(t, fixture.sink.snapshot())
+	assertVerificationFeedbackJournaled(t, fixture.sink.snapshot(), "task_01", "task_02")
+}
+
+// assertVerificationFeedbackJournaled proves the Verification Feedback turn
+// is observable per Task: only the repaired Task journals it, and it lands
+// between the attempt that failed and the attempt that follows, so a
+// consumer can move that Task — and only that Task — back to Agent work.
+func assertVerificationFeedbackJournaled(t *testing.T, events []runevent.RunEvent, repaired string, untouched string) {
+	t.Helper()
+	feedbackIndex := -1
+	failedVerdict := -1
+	nextWaiting := -1
+	for index, event := range events {
+		switch event.Kind {
+		case runevent.KindDaemonTask:
+			if eventPayloadString(t, event, "phase") != "verification_feedback" {
+				continue
+			}
+			if event.ReviewIssue == untouched {
+				t.Fatalf("expected no Verification Feedback event for %s, got %+v", untouched, event)
+			}
+			if event.ReviewIssue != repaired {
+				continue
+			}
+			if feedbackIndex >= 0 {
+				t.Fatalf("expected one Verification Feedback event for %s, got a second at %d", repaired, index)
+			}
+			feedbackIndex = index
+		case runevent.KindDaemonVerification:
+			payload := eventPayloadMap(t, event)
+			taskID, _ := payload["task"].(string)
+			attempt, _ := payload["attempt"].(float64)
+			if taskID != repaired {
+				continue
+			}
+			if payload["phase"] == string(runevent.VerificationPhaseVerdict) && int(attempt) == 1 {
+				failedVerdict = index
+			}
+			if payload["phase"] == string(runevent.VerificationPhaseWaiting) && int(attempt) == 2 {
+				nextWaiting = index
+			}
+		}
+	}
+	if feedbackIndex < 0 {
+		t.Fatalf("expected a verification_feedback event for %s, got none", repaired)
+	}
+	if failedVerdict < 0 || feedbackIndex < failedVerdict {
+		t.Fatalf("expected the Verification Feedback event after the failed verdict, got verdict=%d feedback=%d", failedVerdict, feedbackIndex)
+	}
+	if nextWaiting < 0 || feedbackIndex > nextWaiting {
+		t.Fatalf("expected the Verification Feedback event before the next waiting event, got feedback=%d waiting=%d", feedbackIndex, nextWaiting)
+	}
 }
 
 func TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement(t *testing.T) {

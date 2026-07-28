@@ -904,6 +904,15 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
 		return "", fmt.Errorf("update run %q to state %q before Task %s Verification Feedback: %w", plan.RunID, store.StateResolvingWithAgent, task.ID, err)
 	}
+	// The Task leaves the Verification gate and goes back to the Agent;
+	// consumers derive per-Task truth from this event, not from the
+	// aggregate Run state, which another Task may already have moved on.
+	if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonTask,
+		fmt.Sprintf("Task %s returned to the Agent for Verification Feedback.", task.ID),
+		map[string]any{"task": task.ID, "phase": "verification_feedback", "batch": ordinal, "status": string(spec.StatusInProgress)},
+	); err != nil {
+		return "", fmt.Errorf("publish Verification Feedback event for run %q Task %s: %w", plan.RunID, task.ID, err)
+	}
 	prompt, err := agent.BuildVerificationRepairPrompt(task.ID, agent.VerificationFeedback{
 		Command:        first.CommandFailure.Command,
 		DiagnosticPath: first.CommandFailure.OutputPath,

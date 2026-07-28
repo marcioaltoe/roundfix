@@ -736,13 +736,17 @@ func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitStat
 		RunID:           runID,
 		PipelineState:   "ResolvingWithAgent",
 		Concurrency:     loaded.Config.Worktree.Concurrency,
-		BudgetState:     formatBudgetState(loaded.Config),
-		GitState:        formatGitState(gitState),
-		AutoCommit:      true,
-		AutoPush:        loaded.Config.Implement.AutoPush,
-		LastPush:        implementPushState(loaded.Config.Implement.AutoPush),
-		Console:         []string{"Agent and verification output will stream below."},
-		Width:           liveViewWidth(),
+		// Task Capacity and Verification Capacity are configured
+		// independently, so the header shows the pair the Run actually runs
+		// with (ADR 0056).
+		VerificationConcurrency: loaded.Config.Verification.Concurrency,
+		BudgetState:             formatBudgetState(loaded.Config),
+		GitState:                formatGitState(gitState),
+		AutoCommit:              true,
+		AutoPush:                loaded.Config.Implement.AutoPush,
+		LastPush:                implementPushState(loaded.Config.Implement.AutoPush),
+		Console:                 []string{"Agent and verification output will stream below."},
+		Width:                   liveViewWidth(),
 	}
 }
 

@@ -588,7 +588,7 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 		"Run:",
 		"ID: run_9",
 		"State: ResolvingWithAgent",
-		"Concurrency: 2",
+		"Task Capacity: 2",
 		"Run Worktree: /home/user/.roundfix/worktrees/repo/run_9",
 		"Git: clean, 1 unpushed commit",
 		"Auto-commit: on",
@@ -617,6 +617,63 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 	}
 	if strings.Index(view, "task_01") > strings.Index(view, "task_02") || strings.Index(view, "task_02") > strings.Index(view, "task_03") {
 		t.Fatalf("expected Tasks rendered in Task Graph order, got:\n%s", view)
+	}
+}
+
+// Suite: Live Run View capacity header
+// Invariant: a spec Run names both effective capacities with their canonical
+// labels; a review Run names neither, and an unresolved capacity is omitted
+// rather than invented.
+// Boundary IN: the plain RenderLiveRunView header for both Run Kinds.
+// Boundary OUT: journal replay (attach) and interactive cockpit rendering.
+func TestRenderLiveRunViewSpecRunShowsTaskAndVerificationCapacity(t *testing.T) {
+	specView := RenderLiveRunView(LiveRunView{
+		Command:                 "implement",
+		RunKind:                 store.KindImplement,
+		SpecSlug:                "0042-capacity",
+		RunID:                   "run_42",
+		PipelineState:           "ResolvingWithAgent",
+		Concurrency:             2,
+		VerificationConcurrency: 1,
+		Width:                   100,
+	})
+	for _, expected := range []string{"Task Capacity: 2", "Verification Capacity: 1"} {
+		if !strings.Contains(specView, expected) {
+			t.Fatalf("expected spec Run header to contain %q, got:\n%s", expected, specView)
+		}
+	}
+	if strings.Contains(specView, "Concurrency:") {
+		t.Fatalf("expected the generic Concurrency label replaced by the canonical labels, got:\n%s", specView)
+	}
+
+	reviewView := RenderLiveRunView(LiveRunView{
+		Command:                 "resolve",
+		RunKind:                 store.KindResolve,
+		PRNumber:                "123",
+		RunID:                   "run_43",
+		PipelineState:           "ResolvingWithAgent",
+		Concurrency:             2,
+		VerificationConcurrency: 1,
+		Width:                   100,
+	})
+	for _, absent := range []string{"Task Capacity", "Verification Capacity", "Concurrency"} {
+		if strings.Contains(reviewView, absent) {
+			t.Fatalf("expected review Run header to omit %q, got:\n%s", absent, reviewView)
+		}
+	}
+
+	unknownView := RenderLiveRunView(LiveRunView{
+		Command:       "attach",
+		RunKind:       store.KindImplement,
+		SpecSlug:      "0042-capacity",
+		RunID:         "run_44",
+		PipelineState: "Clean",
+		Width:         100,
+	})
+	for _, absent := range []string{"Task Capacity", "Verification Capacity"} {
+		if strings.Contains(unknownView, absent) {
+			t.Fatalf("expected an unresolved capacity to be omitted rather than invented, got:\n%s", unknownView)
+		}
 	}
 }
 
