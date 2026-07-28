@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/gittest"
 	"roundfix/internal/spec"
 	runworktree "roundfix/internal/worktree"
 )
@@ -89,7 +90,7 @@ func TestAssembleTaskContextBundleSupportsExternalSpecRoot(t *testing.T) {
 func TestPriorChangedFilesUseCurrentWorktreeHeadAndIgnoreSiblingBranch(t *testing.T) {
 	ctx := context.Background()
 	repoDir := t.TempDir()
-	runGitForTest(t, repoDir, "init", "-b", "main")
+	gittest.InitRepo(t, repoDir, "-b", "main")
 	mustWriteForTest(t, filepath.Join(repoDir, "base.go"), "package demo\n")
 	runGitForTest(t, repoDir, "add", "base.go")
 	runGitForTest(t, repoDir, "commit", "-m", "initial")
@@ -168,7 +169,8 @@ type: backend
 		t.Fatalf("prompts = %d, want 1", len(runner.prompts))
 	}
 	prompt := runner.prompts[0]
-	if got := strings.Count(prompt, taskContent); got != 1 {
+	daemonOwnedTaskContent := strings.Replace(taskContent, "status: pending", "status: in_progress", 1)
+	if got := strings.Count(prompt, daemonOwnedTaskContent); got != 1 {
 		t.Fatalf("expected one complete assigned Task, got %d", got)
 	}
 	for _, expected := range []string{

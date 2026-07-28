@@ -157,6 +157,15 @@ func TestPruneTerminalRunsDeletesOnlyEligibleJournalRows(t *testing.T) {
 			wantEventCount: 0,
 		},
 		{
+			name:           "terminal Review Skipped before cutoff",
+			branch:         "old-review-skipped",
+			terminalState:  StateReviewSkipped,
+			completedAt:    oldCompleted.Add(45 * time.Second),
+			eventCount:     1,
+			wantPruned:     true,
+			wantEventCount: 0,
+		},
+		{
 			name:           "terminal unresolved before cutoff",
 			branch:         "old-unresolved",
 			terminalState:  StateUnresolved,
@@ -284,8 +293,8 @@ WHERE id = ?`,
 	if !slices.Equal(gotRunIDs, wantPrunedRunIDs) {
 		t.Fatalf("expected pruned Run ids %v, got %v", wantPrunedRunIDs, result.RunIDs)
 	}
-	if result.Events != 4 {
-		t.Fatalf("expected 4 pruned Run Events, got %d", result.Events)
+	if result.Events != 5 {
+		t.Fatalf("expected 5 pruned Run Events, got %d", result.Events)
 	}
 	for _, tt := range tests {
 		run := runByName[tt.name]

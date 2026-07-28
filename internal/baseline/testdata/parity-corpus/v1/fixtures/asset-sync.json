@@ -326,7 +326,7 @@
             }
           },
           {
-            "contentDigest": "9c71ad3969ef4394b399421419437a9f00843b23b7fbdc524072be8e242f6119",
+            "contentDigest": "009377be9160cbd9447c8a165e1c8d97df6981c2306fbbfdc6708f5294d99ef9",
             "name": "implement-task",
             "path": "skills/05-implementation-loop/implement-task",
             "source": {
@@ -671,7 +671,7 @@
             }
           },
           {
-            "contentDigest": "9c71ad3969ef4394b399421419437a9f00843b23b7fbdc524072be8e242f6119",
+            "contentDigest": "009377be9160cbd9447c8a165e1c8d97df6981c2306fbbfdc6708f5294d99ef9",
             "name": "implement-task",
             "path": "skills/05-implementation-loop/implement-task",
             "source": {
@@ -1311,7 +1311,7 @@
             }
           },
           {
-            "contentDigest": "9c71ad3969ef4394b399421419437a9f00843b23b7fbdc524072be8e242f6119",
+            "contentDigest": "009377be9160cbd9447c8a165e1c8d97df6981c2306fbbfdc6708f5294d99ef9",
             "name": "implement-task",
             "path": "skills/05-implementation-loop/implement-task",
             "source": {
@@ -1935,7 +1935,7 @@
             "treeDigest": "cc7137c53d51fea605c0be017cf6eecdb72add7405e5c3c9f327dbc26d4572fa"
           },
           {
-            "contentDigest": "91b833ef01c723b308604e57dc4075ec8e216880c8d50cf493d7dbced7096f6d",
+            "contentDigest": "136a65201dfc3e15e2589506ed1400c123458c1f5c3ff9037fa20fc1ddc547d4",
             "name": "roundfix",
             "path": "skills/06-review-repair/roundfix",
             "source": {

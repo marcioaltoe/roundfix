@@ -155,13 +155,20 @@ type verificationAttemptRequest struct {
 	BatchNumber int
 	WorkItem    string
 	Attempt     int
-	Commands    []string
-	Publish     func(context.Context, string, map[string]any) error
+	Retry       int
+	Mode        verificationMode
+	Capacity    int
+	// TemporaryRetryAvailable records Task-lifecycle budget state at the
+	// moment this request classifies a temporary command failure.
+	TemporaryRetryAvailable bool
+	Commands                []string
+	Publish                 func(context.Context, string, map[string]any) error
 }
 
 type verificationAttemptOutcome struct {
-	Failure        string
-	CommandFailure *VerificationCommandError
+	Failure          string
+	CommandFailure   *VerificationCommandError
+	TemporaryFailure *TemporaryVerificationFailureError
 }
 
 func terminalReasonLine(reason string) string {
@@ -241,6 +248,9 @@ func (req verificationAttemptRequest) payload(phase runevent.VerificationPhase, 
 		"attempt": req.Attempt,
 		"phase":   string(phase),
 	}
+	if req.Retry > 0 {
+		payload["retry"] = req.Retry
+	}
 	if req.BatchNumber > 0 {
 		payload["batch"] = req.BatchNumber
 	}
@@ -251,6 +261,12 @@ func (req verificationAttemptRequest) payload(phase runevent.VerificationPhase, 
 	if command != "" {
 		payload["command"] = command
 	}
+	if req.Capacity > 0 {
+		payload["mode"] = req.Mode.String()
+	}
+	if req.Capacity > 0 && phase == runevent.VerificationPhaseWaiting {
+		payload["capacity"] = req.Capacity
+	}
 	return payload
 }
 
@@ -259,18 +275,28 @@ func (req verificationAttemptRequest) summary(phase runevent.VerificationPhase, 
 	if req.WorkItem != "" {
 		target = fmt.Sprintf("Task %s", req.WorkItem)
 	}
+	identity := req.identity()
 	switch phase {
+	case runevent.VerificationPhaseWaiting:
+		return fmt.Sprintf("Verification %s for %s waiting for %s capacity.", identity, target, req.Mode)
 	case runevent.VerificationPhaseStarted:
-		return fmt.Sprintf("Verification attempt %d for %s started: %s", req.Attempt, target, command)
+		return fmt.Sprintf("Verification %s for %s started: %s", identity, target, command)
 	case runevent.VerificationPhaseCommandPassed:
-		return fmt.Sprintf("Verification attempt %d for %s command passed: %s", req.Attempt, target, command)
+		return fmt.Sprintf("Verification %s for %s command passed: %s", identity, target, command)
 	case runevent.VerificationPhaseFailed:
-		return fmt.Sprintf("Verification attempt %d for %s failed: %s", req.Attempt, target, command)
+		return fmt.Sprintf("Verification %s for %s failed: %s", identity, target, command)
 	case runevent.VerificationPhaseVerdict:
-		return fmt.Sprintf("Verification attempt %d for %s verdict recorded.", req.Attempt, target)
+		return fmt.Sprintf("Verification %s for %s verdict recorded.", identity, target)
 	default:
-		return fmt.Sprintf("Verification attempt %d for %s phase %s.", req.Attempt, target, phase)
+		return fmt.Sprintf("Verification %s for %s phase %s.", identity, target, phase)
 	}
+}
+
+func (req verificationAttemptRequest) identity() string {
+	if req.Retry > 0 {
+		return fmt.Sprintf("attempt %d retry %d", req.Attempt, req.Retry)
+	}
+	return fmt.Sprintf("attempt %d", req.Attempt)
 }
 
 func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificationAttemptRequest) (verificationAttemptOutcome, error) {
@@ -285,6 +311,9 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			return verificationAttemptOutcome{}, err
 		}
 		outputPath := VerificationOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt)
+		if req.Retry > 0 {
+			outputPath = VerificationRetryOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt, req.Retry)
+		}
 		_, err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
 			WorkDir:    req.WorkDir,
 			Command:    command,
@@ -296,13 +325,16 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			}
 			var commandErr *VerificationCommandError
 			if errors.As(err, &commandErr) {
-				if err := req.publishFailedCommand(ctx, command, commandErr); err != nil {
+				var temporaryErr *TemporaryVerificationFailureError
+				temporary := errors.As(err, &temporaryErr)
+				if err := req.publishFailedCommand(ctx, command, commandErr, temporary); err != nil {
 					return verificationAttemptOutcome{}, err
 				}
-				fmt.Fprintf(engine.deps.Progress, "Verification failed (attempt %d); diagnostics: %s\n", req.Attempt, commandErr.OutputPath)
+				fmt.Fprintf(engine.deps.Progress, "Verification failed (%s); diagnostics: %s\n", req.identity(), commandErr.OutputPath)
 				return verificationAttemptOutcome{
-					Failure:        fmt.Sprintf("verification failed: %v", err),
-					CommandFailure: commandErr,
+					Failure:          fmt.Sprintf("verification failed: %v", err),
+					CommandFailure:   commandErr,
+					TemporaryFailure: temporaryErr,
 				}, nil
 			}
 			if err := req.publishInfrastructureFailure(ctx, command, err); err != nil {
@@ -314,23 +346,28 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			return verificationAttemptOutcome{}, err
 		}
 	}
-	if err := req.publishVerdict(ctx, runevent.VerificationVerdictPassed, "", ""); err != nil {
+	if err := req.publishVerdict(ctx, runevent.VerificationVerdictPassed, "", "", false); err != nil {
 		return verificationAttemptOutcome{}, err
 	}
-	fmt.Fprintf(engine.deps.Progress, "Verification passed (attempt %d).\n", req.Attempt)
+	fmt.Fprintf(engine.deps.Progress, "Verification passed (%s).\n", req.identity())
 	return verificationAttemptOutcome{}, nil
 }
 
-func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, command string, commandErr *VerificationCommandError) error {
+func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, command string, commandErr *VerificationCommandError, temporary bool) error {
 	payload := req.payload(runevent.VerificationPhaseFailed, command)
 	payload["error"] = commandErr.Error()
 	if commandErr.OutputPath != "" {
 		payload["diagnostic_path"] = commandErr.OutputPath
 	}
+	if temporary {
+		payload["classification"] = string(runevent.VerificationClassificationTemporary)
+		payload["retry_available"] = req.TemporaryRetryAvailable
+		payload["reason"] = string(runevent.VerificationReasonTemporaryFailure)
+	}
 	if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); err != nil {
 		return err
 	}
-	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, commandErr.OutputPath, "")
+	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, commandErr.OutputPath, "", temporary)
 }
 
 func (req verificationAttemptRequest) publishInfrastructureFailure(ctx context.Context, command string, err error) error {
@@ -339,10 +376,10 @@ func (req verificationAttemptRequest) publishInfrastructureFailure(ctx context.C
 	if publishErr := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); publishErr != nil {
 		return publishErr
 	}
-	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, "", "")
+	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, "", "", false)
 }
 
-func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdict runevent.VerificationVerdict, diagnosticPath string, failure string) error {
+func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdict runevent.VerificationVerdict, diagnosticPath string, failure string, temporary bool) error {
 	payload := req.payload(runevent.VerificationPhaseVerdict, "")
 	payload["verdict"] = string(verdict)
 	if diagnosticPath != "" {
@@ -351,11 +388,17 @@ func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdic
 	if failure != "" {
 		payload["error"] = failure
 	}
-	summary := fmt.Sprintf("Verification attempt %d verdict: %s", req.Attempt, verdict)
+	if temporary {
+		payload["classification"] = string(runevent.VerificationClassificationTemporary)
+		payload["retry_available"] = req.TemporaryRetryAvailable
+		payload["reason"] = string(runevent.VerificationReasonTemporaryFailure)
+	}
+	identity := req.identity()
+	summary := fmt.Sprintf("Verification %s verdict: %s", identity, verdict)
 	if req.WorkItem != "" {
-		summary = fmt.Sprintf("Verification attempt %d for Task %s verdict: %s", req.Attempt, req.WorkItem, verdict)
+		summary = fmt.Sprintf("Verification %s for Task %s verdict: %s", identity, req.WorkItem, verdict)
 	} else if req.BatchNumber > 0 {
-		summary = fmt.Sprintf("Verification attempt %d for Batch %03d verdict: %s", req.Attempt, req.BatchNumber, verdict)
+		summary = fmt.Sprintf("Verification %s for Batch %03d verdict: %s", identity, req.BatchNumber, verdict)
 	}
 	return req.Publish(ctx, summary, payload)
 }
@@ -1278,6 +1321,50 @@ func (engine *Engine) publishStop(ctx context.Context, runID string, batchNumber
 		return fmt.Errorf("publish stop event: %w", err)
 	}
 	return nil
+}
+
+// stopRequestPollInterval paces the durable Stop Request reads a blocked
+// Daemon wait makes. It is short enough that leaving a queue feels
+// immediate and long enough that a heavy Verification never churns the Run
+// Database.
+const stopRequestPollInterval = 100 * time.Millisecond
+
+// watchStopRequest derives a context from ctx that is also cancelled once a
+// public Stop Request is recorded for runID, so Daemon work that is only
+// waiting can leave promptly instead of blocking until some later boundary
+// happens to poll. The Stop Request is durable Run-store state a separate
+// process writes, which is why it is read rather than awaited. The returned
+// finish function stops the poller, must be called exactly once, and
+// reports whether a Stop Request is what ended the wait.
+func (engine *Engine) watchStopRequest(ctx context.Context, runID string) (context.Context, func() bool) {
+	watchCtx, cancel := context.WithCancel(ctx)
+	stopped := false
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(stopRequestPollInterval)
+		defer ticker.Stop()
+		for {
+			// A failed read must never invent a Stop Request; the existing
+			// Daemon boundaries still surface a real one.
+			requested, err := engine.deps.Runs.StopRequested(watchCtx, runID)
+			if err == nil && requested {
+				stopped = true
+				cancel()
+				return
+			}
+			select {
+			case <-watchCtx.Done():
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
+	return watchCtx, func() bool {
+		cancel()
+		<-done
+		return stopped
+	}
 }
 
 func (engine *Engine) stopIfRequested(ctx context.Context, runID string, batchNumber int) error {

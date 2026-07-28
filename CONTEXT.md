@@ -49,7 +49,7 @@ The external review system that produces feedback for an Open Pull Request.
 _Avoid_: Review Provider, Agent, ACP Runtime
 
 **Review Source Evidence**:
-A head-bound signal observed from the Review Source that states whether review is pending, running, completed, verified, skipped, or failed and records which provider signal supports that classification.
+A head-bound Review Source classification for one expected commit: `pending` has no usable expected-head signal, `reviewing` is still in progress, and `reviewed` is complete without proving Merge-Ready. `verified` proves the expected head with no unresolved Review Issues, `skipped` explicitly declines that head, and `failed` records an explicit Review Source failure.
 _Avoid_: Check presence, generic approval, inferred clean state
 
 **Spec**:
@@ -149,7 +149,7 @@ The next configured Agent Selection in a profile's Fallback Chain. Roundfix prov
 _Avoid_: Dynamic fallback, silent model switch, catalog probe winner
 
 **Agent Session**:
-The persistent acpx-backed session through which one Run drives its Agent across Work Items — created when the Run starts Agent work, named by the Run, and closed at the Run's terminal outcome.
+The acpx-backed session owned by one Work Item or action. Each Implement Task owns a Task Type-selected Agent Session, requested QA owns a separate `qa` Agent Session, and review work uses a review-selected Agent Session; effective selection and fallback attempts are persisted for that owner.
 _Avoid_: ACP session, chat, conversation, thread
 
 **Merge-Ready**:

@@ -1,0 +1,38 @@
+Public-flow blockers
+Build: affe4b5d333a8f3f1dd7506cf758eeb6e53afc70
+
+Read-only GitHub check:
+rtk gh pr list --head ma/review-evidence-and-verification-capacity --state open --json number,state,headRefName,headRefOid,url
+
+The sandboxed attempt could not connect to api.github.com. The approved
+read-only network rerun exited 0 and returned [].
+
+QA-10 — current-head CodeRabbit approval:
+Blocked from the complete public journey. No Open Pull Request exists, and a
+successful approval flow continues through Final Push. This QA assignment
+forbids push. Current-build focused tests pass the CodeRabbit APPROVED,
+zero-thread case and reject commented, stale, generic, and unresolved-thread
+cases, but those tests do not replace the built end-to-end journey.
+
+Unblocking action:
+Provide a disposable Open Pull Request and explicit no-change Final Push
+authority, or a supported dry-run that reaches the same terminal path.
+
+QA-11 — exact Daemon artifact-only descendant:
+Blocked from the complete public journey. It requires Roundfix to create its
+separate Daemon review-artifact commit and continue to Final Push. This QA
+assignment forbids commit and push. Current-build real-Git focused tests pass
+the exact inherited case and every declared refusal, but cannot replace the
+public command path.
+
+Unblocking action:
+Provide a disposable Open Pull Request repository plus explicit commit and
+push authority.
+
+QA-19 — existing non-skip Clean and Clean Unverified:
+The no-push known-zero Fetch regression passed through the built binary.
+Clean, Clean Unverified after Final Push, and the separate artifact-commit path
+remain blocked by the same no-commit/no-push boundary. The complete repository
+gate and focused current-build regression suites pass those branches.
+
+No row was skipped.

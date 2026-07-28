@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf8"
 
@@ -21,29 +22,200 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
+type verificationMode uint8
+
+const (
+	verificationShared verificationMode = iota
+	verificationExclusive
+)
+
+func (mode verificationMode) String() string {
+	switch mode {
+	case verificationExclusive:
+		return "exclusive"
+	default:
+		return "shared"
+	}
+}
+
+// verificationGate hands out Verification Capacity. TryAcquire never
+// blocks: it reports whether the attempt owns capacity right away, which is
+// what tells a caller that the attempt is about to queue and must start
+// honoring Stop Requests for work it has not begun (Core Feature 9).
+type verificationGate interface {
+	Acquire(context.Context, verificationMode) (release func(), err error)
+	TryAcquire(verificationMode) (release func(), acquired bool)
+}
+
+type fairVerificationGate struct {
+	mu               sync.Mutex
+	capacity         int
+	activeShared     int
+	exclusiveActive  bool
+	exclusiveWaiters int
+	changed          chan struct{}
+}
+
+func newVerificationGate(capacity int) verificationGate {
+	return &fairVerificationGate{
+		capacity: capacity,
+		changed:  make(chan struct{}),
+	}
+}
+
+func (gate *fairVerificationGate) Acquire(ctx context.Context, mode verificationMode) (func(), error) {
+	gate.mu.Lock()
+	if err := ctx.Err(); err != nil {
+		gate.mu.Unlock()
+		return nil, err
+	}
+
+	switch mode {
+	case verificationShared:
+		return gate.acquireShared(ctx)
+	case verificationExclusive:
+		gate.exclusiveWaiters++
+		return gate.acquireExclusive(ctx)
+	default:
+		gate.mu.Unlock()
+		return nil, fmt.Errorf("acquire Verification Capacity: unknown mode %d", mode)
+	}
+}
+
+// TryAcquire grants capacity only when it is free right now and no
+// exclusive retry is already queued. It never registers a waiter, so a
+// failed try leaves gate state and fairness exactly as it found them.
+func (gate *fairVerificationGate) TryAcquire(mode verificationMode) (func(), bool) {
+	gate.mu.Lock()
+	defer gate.mu.Unlock()
+	if gate.exclusiveWaiters > 0 || !gate.grantableLocked(mode) {
+		return nil, false
+	}
+	gate.grantLocked(mode)
+	return gate.release(mode), true
+}
+
+func (gate *fairVerificationGate) acquireShared(ctx context.Context) (func(), error) {
+	for {
+		if err := ctx.Err(); err != nil {
+			gate.mu.Unlock()
+			return nil, err
+		}
+		if gate.grantableLocked(verificationShared) {
+			gate.grantLocked(verificationShared)
+			gate.mu.Unlock()
+			return gate.release(verificationShared), nil
+		}
+		changed := gate.changed
+		gate.mu.Unlock()
+		select {
+		case <-ctx.Done():
+		case <-changed:
+		}
+		gate.mu.Lock()
+	}
+}
+
+func (gate *fairVerificationGate) acquireExclusive(ctx context.Context) (func(), error) {
+	for {
+		if err := ctx.Err(); err != nil {
+			gate.exclusiveWaiters--
+			gate.notifyLocked()
+			gate.mu.Unlock()
+			return nil, err
+		}
+		if gate.grantableLocked(verificationExclusive) {
+			gate.exclusiveWaiters--
+			gate.grantLocked(verificationExclusive)
+			gate.mu.Unlock()
+			return gate.release(verificationExclusive), nil
+		}
+		changed := gate.changed
+		gate.mu.Unlock()
+		select {
+		case <-ctx.Done():
+		case <-changed:
+		}
+		gate.mu.Lock()
+	}
+}
+
+// grantableLocked reports whether mode can take capacity immediately. A
+// shared attempt also waits behind any queued exclusive retry so the retry
+// cannot starve; an exclusive attempt waits until every attempt drained.
+func (gate *fairVerificationGate) grantableLocked(mode verificationMode) bool {
+	switch mode {
+	case verificationShared:
+		return !gate.exclusiveActive && gate.exclusiveWaiters == 0 && gate.activeShared < gate.capacity
+	case verificationExclusive:
+		return !gate.exclusiveActive && gate.activeShared == 0
+	default:
+		return false
+	}
+}
+
+func (gate *fairVerificationGate) grantLocked(mode verificationMode) {
+	switch mode {
+	case verificationShared:
+		gate.activeShared++
+	case verificationExclusive:
+		gate.exclusiveActive = true
+	}
+}
+
+func (gate *fairVerificationGate) release(mode verificationMode) func() {
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			gate.mu.Lock()
+			switch mode {
+			case verificationShared:
+				if gate.activeShared > 0 {
+					gate.activeShared--
+				}
+			case verificationExclusive:
+				gate.exclusiveActive = false
+			}
+			gate.notifyLocked()
+			gate.mu.Unlock()
+		})
+	}
+}
+
+func (gate *fairVerificationGate) notifyLocked() {
+	close(gate.changed)
+	gate.changed = make(chan struct{})
+}
+
 // TaskPlan is the validated input for one Task cycle over an
 // already-created implement Run: the full Task Graph in the deterministic
 // topological order spec.Load produced. WorkDir is the git root and the
-// Agent working directory.
+// Agent working directory. RunWorktree is this Run's own checkout, whose
+// Branch is the Run Branch and never the branch the Spec's work lands on;
+// TargetBranch is that branch — the Spec's target branch as recorded on
+// the Run — and stays empty for a Run that recorded none.
 type TaskPlan struct {
-	RunID           string
-	Session         agent.SessionRef
-	WorkDir         string
-	RunWorktree     runworktree.Ref
-	HeadSHA         string
-	SpecsRoot       string
-	ArtifactDir     string
-	AgentLogs       bool
-	Spec            spec.Spec
-	Tasks           []spec.Task
-	Runtime         agent.RuntimeSpec
-	AgentSelections AgentSelectionProfiles
-	RuntimeFactory  AgentRuntimeFactory
-	QA              bool
-	Concurrency     int
-	CopyList        []string
-	Bootstrap       runworktree.BootstrapSpec
-	BootstrapOutput io.Writer
+	RunID                   string
+	Session                 agent.SessionRef
+	WorkDir                 string
+	RunWorktree             runworktree.Ref
+	TargetBranch            string
+	HeadSHA                 string
+	SpecsRoot               string
+	ArtifactDir             string
+	AgentLogs               bool
+	Spec                    spec.Spec
+	Tasks                   []spec.Task
+	Runtime                 agent.RuntimeSpec
+	AgentSelections         AgentSelectionProfiles
+	RuntimeFactory          AgentRuntimeFactory
+	QA                      bool
+	Concurrency             int
+	VerificationConcurrency int
+	verificationGate        verificationGate
+	CopyList                []string
+	Bootstrap               runworktree.BootstrapSpec
+	BootstrapOutput         io.Writer
 }
 
 // TaskOutcome reports one Task's terminal cycle outcome. Reason is empty for
@@ -91,10 +263,18 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	if err := validateTaskPlan(plan); err != nil {
 		return TaskCycleResult{}, err
 	}
-	concurrency := taskConcurrency(plan)
+	taskCapacity := plan.Concurrency
+	verificationCapacity := plan.VerificationConcurrency
+	plan.verificationGate = newVerificationGate(verificationCapacity)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonStatus,
-		fmt.Sprintf("Task cycle started with concurrency %d.", concurrency),
-		map[string]any{"spec": plan.Spec.Slug, "tasks": len(plan.Tasks), "concurrency": concurrency},
+		fmt.Sprintf("Task cycle started with Task Capacity %d and Verification Capacity %d.", taskCapacity, verificationCapacity),
+		map[string]any{
+			"spec":                  plan.Spec.Slug,
+			"tasks":                 len(plan.Tasks),
+			"concurrency":           taskCapacity,
+			"task_capacity":         taskCapacity,
+			"verification_capacity": verificationCapacity,
+		},
 	); err != nil {
 		return TaskCycleResult{}, err
 	}
@@ -156,7 +336,7 @@ type taskWorkerResult struct {
 
 func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statuses map[string]taskRunStatus) (TaskCycleResult, int, error) {
 	result := TaskCycleResult{}
-	concurrency := taskConcurrency(plan)
+	concurrency := plan.Concurrency
 	useTaskWorktrees := concurrency > 1 && hasParallelTaskPotential(plan.Tasks, statuses)
 	results := make(chan taskWorkerResult)
 	running := 0
@@ -211,6 +391,16 @@ func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statu
 		running--
 		if workerResult.err != nil {
 			statuses[workerResult.task.ID] = taskRunFailed
+			// A worker that ended on a Stop Request is not an
+			// infrastructure failure: it starts nothing new, yet the Tasks
+			// already in flight still settle and integrate before the Run
+			// reaches Stopped.
+			if isStop(ctx, workerResult.err) {
+				if stopErr == nil {
+					stopErr = workerResult.err
+				}
+				continue
+			}
 			if fatalErr == nil {
 				fatalErr = workerResult.err
 			}
@@ -341,13 +531,6 @@ func initialTaskRunStatuses(tasks []spec.Task) map[string]taskRunStatus {
 		statuses[task.ID] = taskRunPending
 	}
 	return statuses
-}
-
-func taskConcurrency(plan TaskPlan) int {
-	if plan.Concurrency < 1 {
-		return 1
-	}
-	return plan.Concurrency
 }
 
 func hasParallelTaskPotential(tasks []spec.Task, statuses map[string]taskRunStatus) bool {
@@ -550,29 +733,28 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 	if err != nil {
 		return "", "", err
 	}
-	if failure == "" && task.Status == spec.StatusFailed {
-		failure = "Agent settled the Task failed"
-	}
 	if failure == "" {
-		verification, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 1)
+		retryUsed := false
+		verification, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 1, &retryUsed)
 		if verifyErr != nil {
 			return "", "", verifyErr
 		}
 		if verification.Failure != "" {
-			failure, err = engine.repairTaskVerification(ctx, plan, &task, ordinal, verification, owner)
-			if err != nil {
-				return "", "", err
+			if verification.TemporaryFailure != nil {
+				failure = taskVerificationFailureReason(verification)
+			} else {
+				failure, err = engine.repairTaskVerification(ctx, plan, &task, ordinal, verification, owner)
+				if err != nil {
+					return "", "", err
+				}
+				if failure == "" {
+					final, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 2, &retryUsed)
+					if verifyErr != nil {
+						return "", "", verifyErr
+					}
+					failure = taskVerificationFailureReason(final)
+				}
 			}
-		}
-		if failure == "" && task.Status == spec.StatusFailed {
-			failure = "Agent settled the Task failed"
-		}
-		if failure == "" && verification.Failure != "" {
-			final, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 2)
-			if verifyErr != nil {
-				return "", "", verifyErr
-			}
-			failure = taskVerificationFailureReason(final)
 		}
 	}
 	settled := spec.StatusCompleted
@@ -612,13 +794,18 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
 		return "", fmt.Errorf("update run %q to state %q before Task %s: %w", plan.RunID, store.StateResolvingWithAgent, task.ID, err)
 	}
+	taskPath := filepath.Join(plan.SpecsRoot, task.File)
+	if err := spec.SetStatus(taskPath, spec.StatusInProgress); err != nil {
+		return "", fmt.Errorf("set Task %s in_progress before the Agent for run %q: %w", task.ID, plan.RunID, err)
+	}
+	task.Status = spec.StatusInProgress
+	task.StatusNormalized = false
 	if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonTask,
 		fmt.Sprintf("Task %s started as Batch %03d: %s", task.ID, ordinal, task.Title),
-		map[string]any{"task": task.ID, "phase": "started", "batch": ordinal},
+		map[string]any{"task": task.ID, "phase": "started", "batch": ordinal, "status": string(spec.StatusInProgress)},
 	); err != nil {
 		return "", fmt.Errorf("publish start event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
-	taskPath := filepath.Join(plan.SpecsRoot, task.File)
 	content, err := os.ReadFile(taskPath)
 	if err != nil {
 		return "", fmt.Errorf("read Task %q file %q before the Agent: %w", task.ID, taskPath, err)
@@ -653,6 +840,10 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		Prompt:      prompt,
 		GitRoot:     plan.WorkDir,
 	})
+	reloadFailure, reloadErr := reloadAndNormalizeTaskAfterAgent(plan, task, "the Agent")
+	if reloadErr != nil {
+		return "", fmt.Errorf("normalize Task %s status after the Agent: %w", task.ID, reloadErr)
+	}
 	if runErr != nil {
 		if isStop(ctx, runErr) {
 			// The runner already published the stopped status event;
@@ -660,6 +851,9 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 			return "", fmt.Errorf("run Agent for run %q Task %s: %w", plan.RunID, task.ID, runErr)
 		}
 		return agentFailureReason(runErr, fmt.Sprintf("Agent failed: %v", runErr)), nil
+	}
+	if reloadFailure != "" {
+		return reloadFailure, nil
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -675,14 +869,6 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 			return "", fmt.Errorf("publish transport anomaly event for run %q Task %s: %w", plan.RunID, task.ID, err)
 		}
 	}
-	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
-		// The Agent left the task file unreadable; the Task fails and the
-		// Daemon settles the status by rewriting the frontmatter value.
-		return fmt.Sprintf("reload task file after the Agent: %v", err), nil
-	}
-	if err := canonicalizeReloadedTaskStatus(plan, task); err != nil {
-		return "", fmt.Errorf("canonicalize Task %s status after the Agent: %w", task.ID, err)
-	}
 	return "", nil
 }
 
@@ -692,25 +878,60 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 // the Daemon gate runs only the Task's own Verification commands (ADR 0014).
 // Command failures return a typed outcome for the repair loop; the returned
 // error is reserved for Stop Requests and infrastructure failures.
-func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, attempt int) (verificationAttemptOutcome, error) {
+func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, attempt int, retryUsed *bool) (verificationAttemptOutcome, error) {
+	if retryUsed == nil {
+		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: temporary retry state is required", plan.RunID, task.ID)
+	}
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
 		return verificationAttemptOutcome{}, fmt.Errorf("update run %q to state %q before Task %s verification: %w", plan.RunID, store.StateVerifying, task.ID, err)
 	}
-	verification, err := engine.runVerificationAttempt(ctx, verificationAttemptRequest{
-		RunID:       plan.RunID,
-		WorkDir:     plan.WorkDir,
-		ArtifactDir: plan.ArtifactDir,
-		BatchNumber: ordinal,
-		WorkItem:    task.ID,
-		Attempt:     attempt,
-		Commands:    task.Verification,
+	request := verificationAttemptRequest{
+		RunID:                   plan.RunID,
+		WorkDir:                 plan.WorkDir,
+		ArtifactDir:             plan.ArtifactDir,
+		BatchNumber:             ordinal,
+		WorkItem:                task.ID,
+		Attempt:                 attempt,
+		Mode:                    verificationShared,
+		Capacity:                plan.VerificationConcurrency,
+		TemporaryRetryAvailable: !*retryUsed,
+		Commands:                task.Verification,
 		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
 			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
 				return fmt.Errorf("publish verification event for run %q Task %s: %w", plan.RunID, task.ID, err)
 			}
 			return nil
 		},
-	})
+	}
+	verification, err := engine.runTaskVerificationRequest(ctx, plan, task, request)
+	if err != nil || verification.TemporaryFailure == nil || *retryUsed {
+		return verification, err
+	}
+
+	*retryUsed = true
+	request.Retry = 1
+	request.Mode = verificationExclusive
+	request.TemporaryRetryAvailable = false
+	return engine.runTaskVerificationRequest(ctx, plan, task, request)
+}
+
+func (engine *Engine) runTaskVerificationRequest(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (verificationAttemptOutcome, error) {
+	if err := request.Publish(ctx,
+		request.summary(runevent.VerificationPhaseWaiting, ""),
+		request.payload(runevent.VerificationPhaseWaiting, ""),
+	); err != nil {
+		return verificationAttemptOutcome{}, err
+	}
+	if plan.verificationGate == nil {
+		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: Verification gate is required", plan.RunID, task.ID)
+	}
+	release, err := engine.acquireVerificationCapacity(ctx, plan, task, request)
+	if err != nil {
+		return verificationAttemptOutcome{}, err
+	}
+
+	verification, err := engine.runVerificationAttempt(ctx, request)
+	release()
 	if err != nil {
 		if isStop(ctx, err) {
 			// A Stop Request during verification keeps the Agent's task
@@ -720,6 +941,43 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
 	return verification, nil
+}
+
+// acquireVerificationCapacity puts one Verification attempt through the
+// Run's capacity gate. An attempt that owns capacity immediately is
+// in-flight work and proceeds. An attempt that has to queue has started no
+// child command, so from that moment a public Stop Request ends the wait,
+// starts nothing, and leaves the Task resumable instead of settling it
+// (PRD US8, Core Feature 9). A Stop Request is durable Run-store state a
+// separate process writes, so the queue reads that state; context
+// cancellation alone never observes it.
+func (engine *Engine) acquireVerificationCapacity(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (func(), error) {
+	if release, acquired := plan.verificationGate.TryAcquire(request.Mode); acquired {
+		return release, nil
+	}
+	waitCtx, finishWait := engine.watchStopRequest(ctx, plan.RunID)
+	release, err := plan.verificationGate.Acquire(waitCtx, request.Mode)
+	stopped := finishWait()
+	if err != nil {
+		if stopped {
+			return nil, engine.stopQueuedVerification(ctx, plan, task, request)
+		}
+		return nil, fmt.Errorf("acquire Verification Capacity for run %q Task %s attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, err)
+	}
+	// Dequeue boundary: capacity can be granted in the same instant the
+	// Stop Request lands, so re-read the flag before any child starts.
+	if stopErr := engine.stopIfRequested(ctx, plan.RunID, request.BatchNumber); stopErr != nil {
+		release()
+		return nil, fmt.Errorf("stop run %q before Task %s Verification attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, stopErr)
+	}
+	return release, nil
+}
+
+func (engine *Engine) stopQueuedVerification(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) error {
+	if err := engine.publishStop(ctx, plan.RunID, request.BatchNumber); err != nil {
+		return fmt.Errorf("publish stop event for run %q while Task %s waited for Verification Capacity: %w", plan.RunID, task.ID, errors.Join(ErrStopRequested, err))
+	}
+	return fmt.Errorf("stop run %q while Task %s waited for Verification Capacity: %w", plan.RunID, task.ID, ErrStopRequested)
 }
 
 func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan, task *spec.Task, ordinal int, first verificationAttemptOutcome, owner *agentSessionOwner) (string, error) {
@@ -738,11 +996,21 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
 		return "", fmt.Errorf("update run %q to state %q before Task %s Verification Feedback: %w", plan.RunID, store.StateResolvingWithAgent, task.ID, err)
 	}
+	// The Task leaves the Verification gate and goes back to the Agent;
+	// consumers derive per-Task truth from this event, not from the
+	// aggregate Run state, which another Task may already have moved on.
+	if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonTask,
+		fmt.Sprintf("Task %s returned to the Agent for Verification Feedback.", task.ID),
+		map[string]any{"task": task.ID, "phase": "verification_feedback", "batch": ordinal, "status": string(spec.StatusInProgress)},
+	); err != nil {
+		return "", fmt.Errorf("publish Verification Feedback event for run %q Task %s: %w", plan.RunID, task.ID, err)
+	}
 	prompt, err := agent.BuildVerificationRepairPrompt(task.ID, agent.VerificationFeedback{
 		Command:        first.CommandFailure.Command,
 		DiagnosticPath: first.CommandFailure.OutputPath,
 		Failure:        first.Failure,
 		Attempt:        1,
+		TaskHandoff:    true,
 	})
 	if err != nil {
 		return "", fmt.Errorf("build Verification Feedback prompt for run %q Task %s: %w", plan.RunID, task.ID, err)
@@ -762,11 +1030,18 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 		Prompt:      prompt,
 		GitRoot:     plan.WorkDir,
 	})
+	reloadFailure, reloadErr := reloadAndNormalizeTaskAfterAgent(plan, task, "Verification Feedback")
+	if reloadErr != nil {
+		return "", fmt.Errorf("normalize Task %s status after Verification Feedback: %w", task.ID, reloadErr)
+	}
 	if runErr != nil {
 		if isStop(ctx, runErr) {
 			return "", fmt.Errorf("run Verification Feedback Agent for run %q Task %s: %w", plan.RunID, task.ID, runErr)
 		}
 		return agentFailureReason(runErr, fmt.Sprintf("Agent failed: %v", runErr)), nil
+	}
+	if reloadFailure != "" {
+		return reloadFailure, nil
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -782,29 +1057,27 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 			return "", fmt.Errorf("publish Verification Feedback transport anomaly event for run %q Task %s: %w", plan.RunID, task.ID, err)
 		}
 	}
-	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
-		return fmt.Sprintf("reload task file after Verification Feedback: %v", err), nil
-	}
-	if err := canonicalizeReloadedTaskStatus(plan, task); err != nil {
-		return "", fmt.Errorf("canonicalize Task %s status after Verification Feedback: %w", task.ID, err)
-	}
 	return "", nil
 }
 
-func canonicalizeReloadedTaskStatus(plan TaskPlan, task *spec.Task) error {
-	if !task.StatusNormalized {
-		return nil
+func reloadAndNormalizeTaskAfterAgent(plan TaskPlan, task *spec.Task, turn string) (string, error) {
+	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
+		return fmt.Sprintf("reload task file after %s: %v", turn, err), nil
+	}
+	if task.Status == spec.StatusInProgress && !task.StatusNormalized {
+		return "", nil
 	}
 	taskPath := filepath.Join(plan.SpecsRoot, task.File)
-	if err := spec.SetStatus(taskPath, task.Status); err != nil {
-		return err
+	if err := spec.SetStatus(taskPath, spec.StatusInProgress); err != nil {
+		return "", err
 	}
+	task.Status = spec.StatusInProgress
 	task.StatusNormalized = false
-	return nil
+	return "", nil
 }
 
-// settleTask writes the Daemon-owned final status when the Agent left
-// anything else and journals the settlement (ADR 0014). Callers pass
+// settleTask writes the Daemon-owned final status and journals the settlement
+// (ADR 0014, ADR 0057). Callers pass
 // completed only after every Verification command passed, so completed is
 // never settled without passing verification.
 func (engine *Engine) settleTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, status spec.Status, reason string) error {
@@ -1100,7 +1373,17 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
 		return "", "", fmt.Errorf("update run %q to state %q before the QA step: %w", plan.RunID, store.StateResolvingWithAgent, err)
 	}
-	prompt, err := agent.BuildQAPrompt(plan.Spec.Slug, plan.Spec.Dir, filepath.Join(plan.Spec.Dir, "_prd.md"))
+	// The Run Worktree checkout, its Run Branch, and the Spec's target
+	// branch ride along as facts: the gate reasons about the user's branch,
+	// which this checkout structurally cannot name on its own.
+	prompt, err := agent.BuildQAPrompt(agent.QAPromptRequest{
+		SpecSlug:     plan.Spec.Slug,
+		SpecDir:      plan.Spec.Dir,
+		PRDPath:      filepath.Join(plan.Spec.Dir, "_prd.md"),
+		RunBranch:    plan.RunWorktree.Branch,
+		TargetBranch: plan.TargetBranch,
+		UserCheckout: plan.RunWorktree.UserRoot,
+	})
 	if err != nil {
 		return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, err)
 	}
@@ -1297,6 +1580,12 @@ func (engine *Engine) publishTaskEvent(ctx context.Context, runID string, ordina
 }
 
 func validateTaskPlan(plan TaskPlan) error {
+	if plan.Concurrency < 1 {
+		return errors.New("task cycle: Task Capacity is required and must be greater than 0")
+	}
+	if plan.VerificationConcurrency < 1 {
+		return errors.New("task cycle: Verification Capacity is required and must be greater than 0")
+	}
 	required := map[string]string{
 		"Run ID":             plan.RunID,
 		"Agent Session":      plan.Session.Name,
@@ -1313,7 +1602,7 @@ func validateTaskPlan(plan TaskPlan) error {
 	if len(plan.Tasks) == 0 {
 		return errors.New("task cycle: at least one Task is required")
 	}
-	if taskConcurrency(plan) > 1 {
+	if plan.Concurrency > 1 {
 		concurrentRequired := map[string]string{
 			"Run Worktree path":   plan.RunWorktree.Path,
 			"Run Branch":          plan.RunWorktree.Branch,

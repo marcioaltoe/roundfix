@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+import json
+import os
+import pathlib
+import re
+import sys
+import time
+
+
+def value_after(arguments, flag):
+    try:
+        index = arguments.index(flag)
+    except ValueError:
+        return ""
+    if index + 1 >= len(arguments):
+        return ""
+    return arguments[index + 1]
+
+
+def command_tail(arguments):
+    for index, value in enumerate(arguments):
+        if value in {"sessions", "set", "prompt"}:
+            return arguments[index:]
+    return arguments
+
+
+def state_path(session):
+    root = pathlib.Path(os.environ["QA_COORD_DIR"]) / "sessions"
+    root.mkdir(parents=True, exist_ok=True)
+    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", session)
+    return root / safe
+
+
+def session_payload(model, reasoning="high"):
+    return {
+        "schema": "acpx.session.v1",
+        "acpx": {
+            "current_model_id": model,
+            "config_options": [
+                {
+                    "id": "model",
+                    "category": "model",
+                    "type": "select",
+                    "currentValue": model,
+                    "options": [
+                        {"value": value}
+                        for value in ["gpt-5.6-sol", "gpt-5.5", "gpt-5.4-mini"]
+                    ],
+                },
+                {
+                    "id": "reasoning_effort",
+                    "type": "select",
+                    "currentValue": reasoning,
+                    "options": [
+                        {"value": value}
+                        for value in [
+                            "low",
+                            "medium",
+                            "high",
+                            "xhigh",
+                            "max",
+                            "maximum",
+                            "ultra",
+                        ]
+                    ],
+                },
+            ],
+        },
+    }
+
+
+arguments = sys.argv[1:]
+coordination_root = os.environ.get("QA_COORD_DIR", "")
+if coordination_root:
+    with (pathlib.Path(coordination_root) / "acpx-invocations.jsonl").open(
+        "a", encoding="utf-8"
+    ) as handle:
+        handle.write(json.dumps(arguments) + "\n")
+if arguments == ["--version"]:
+    print("0.12.0")
+    raise SystemExit(0)
+
+tail = command_tail(arguments)
+session = value_after(tail, "--name") or value_after(tail, "-s")
+
+if tail[:2] == ["sessions", "ensure"]:
+    model = value_after(tail, "--model") or "gpt-5.6-sol"
+    state_path(session).write_text(model, encoding="utf-8")
+    raise SystemExit(0)
+
+if tail[:2] == ["sessions", "show"]:
+    session = tail[2] if len(tail) > 2 else session
+    path = state_path(session)
+    model = path.read_text(encoding="utf-8").strip() if path.exists() else "gpt-5.6-sol"
+    print(json.dumps(session_payload(model)))
+    raise SystemExit(0)
+
+if tail and tail[0] == "set":
+    config_id = tail[1] if len(tail) > 1 else ""
+    config_value = tail[2] if len(tail) > 2 else ""
+    path = state_path(session)
+    model = path.read_text(encoding="utf-8").strip() if path.exists() else "gpt-5.6-sol"
+    if config_id == "model":
+        model = config_value
+        path.write_text(model, encoding="utf-8")
+    payload = session_payload(
+        model,
+        config_value if config_id == "reasoning_effort" else "high",
+    )
+    print(
+        json.dumps(
+            {
+                "action": "config_set",
+                "configId": config_id,
+                "value": config_value,
+                "configOptions": payload["acpx"]["config_options"],
+            }
+        )
+    )
+    raise SystemExit(0)
+
+if tail[:2] == ["sessions", "close"]:
+    raise SystemExit(0)
+
+if tail and tail[0] == "prompt":
+    prompt = sys.stdin.read()
+    task_match = re.search(r"^Task:\s*(\S+)\s*$", prompt, re.MULTILINE)
+    task_file_match = re.search(r"^Task file:\s*(.+?)\s*$", prompt, re.MULTILINE)
+    if not task_match or not task_file_match:
+        print(json.dumps({"jsonrpc": "2.0", "id": 1, "result": {"stopReason": "end_turn"}}))
+        raise SystemExit(0)
+
+    task = task_match.group(1)
+    cwd = pathlib.Path(value_after(arguments, "--cwd") or os.getcwd())
+    task_file = pathlib.Path(task_file_match.group(1))
+    if not task_file.is_absolute():
+        task_file = cwd / task_file
+
+    coordination = pathlib.Path(os.environ["QA_COORD_DIR"])
+    (coordination / f"agent-{task}.started").touch()
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        if all((coordination / f"agent-{name}.started").exists() for name in ("task_01", "task_02")):
+            break
+        time.sleep(0.02)
+    else:
+        raise RuntimeError("Task Agents did not overlap before the deadline")
+
+    with (coordination / "agent-overlap.log").open("a", encoding="utf-8") as handle:
+        handle.write(task + "\n")
+    (cwd / f"agent-{task}.txt").write_text("implementation-ready\n", encoding="utf-8")
+
+    status = "completed" if task == "task_01" else "failed"
+    content = task_file.read_text(encoding="utf-8")
+    content = re.sub(r"(?m)^status:\s*\S+\s*$", f"status: {status}", content, count=1)
+    content += f"\n## Result\n\nFake external Agent attempted status `{status}` for `{task}`.\n"
+    task_file.write_text(content, encoding="utf-8")
+
+    print(json.dumps({"jsonrpc": "2.0", "id": 1, "result": {"stopReason": "end_turn"}}))
+    raise SystemExit(0)
+
+raise SystemExit(0)

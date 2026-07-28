@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"roundfix/internal/baseline"
+	"roundfix/internal/gittest"
 )
 
 func TestBaselinePlanPreflightJSONActionRequired(t *testing.T) {
@@ -414,6 +415,7 @@ func newBaselinePlanTestRepository(t *testing.T) string {
 	t.Helper()
 	repo := t.TempDir()
 	runBaselinePlanTestCommand(t, repo, "git", "init", "--quiet")
+	gittest.Harden(t, repo)
 	runBaselinePlanTestCommand(t, repo, "git", "config", "user.name", "Roundfix Test")
 	runBaselinePlanTestCommand(t, repo, "git", "config", "user.email", "roundfix@example.test")
 	runBaselinePlanTestCommand(t, repo, "git", "config", "commit.gpgsign", "false")

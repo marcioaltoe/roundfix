@@ -1,0 +1,48 @@
+Docs, public CLI, and Non-Goal evidence
+Build: f3649fef83f720c51da883444038b76e9def6296
+Result: PASS
+
+Public help:
+rtk ./bin/roundfix watch --help
+
+Exit: 0. The built command says Clean requires accepted Review Source Evidence:
+a successful CodeRabbit check or commit status, or a CodeRabbit APPROVED
+review, with zero unresolved CodeRabbit threads. The --until-clean description
+uses the same contract.
+
+Canonical guidance:
+rtk grep -n
+'Review Source Evidence\|Review Skipped\|events .*--follow.*outcome\|Review Issues: unknown'
+CONTEXT.md docs/user-guide/commands.md docs/user-guide/usage.md
+
+Exit: 0. The glossary and both guides contain the Evidence/Review Skipped
+vocabulary, stable Supervisor monitor, and unknown-count report.
+
+Skill contract:
+- canonical/generated Skill comparison: exit 0, byte-identical;
+- read-only skills-sync-check: exit 0, 4 tests passed;
+- shipped Skill check: exit 0, all 14 Skills passed.
+
+Agentic CLI checks on the changed surface:
+- outcome monitoring uses versioned JSONL on stdout;
+- live commands keep requested reports on stdout and diagnostics/progress on
+  stderr;
+- Detached startup is deterministic, non-interactive, and action-oriented;
+- event replay is explicit by Run ID and filter;
+- additive outcome fields preserve unknown-field compatibility;
+- exit 3 remains distinct from success and hard failure for ReviewSkipped.
+
+Non-Goals:
+- no internal/config path changed in the Spec implementation range;
+- docs and Skill state there is no retry configuration or log-text inference;
+- focused Evidence tests reject generic, stale, commented, and unresolved
+  approvals;
+- focused real-Git tests reject user-authored, empty, mixed-path, wrong-parent,
+  out-of-root, and unresolved-thread descendants;
+- changed-path inspection found no host callback, Slack, email, Telegram,
+  webhook-suppression, Force Stop, compare-and-set, or Agent Session registry
+  implementation surface;
+- the Run Event Stream remains the only Supervisor subscription.
+
+The prior QA artifact commit f3649fe contains no product implementation and was
+not credited as feature evidence.

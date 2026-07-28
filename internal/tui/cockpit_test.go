@@ -77,6 +77,33 @@ func (source *cockpitFakeSource) addTaskEvent(t *testing.T, taskID string, phase
 	})
 }
 
+// addVerificationEvent appends one daemon.verification event for a Task,
+// in the payload shape the Task cycle publishes.
+func (source *cockpitFakeSource) addVerificationEvent(t *testing.T, taskID string, phase runevent.VerificationPhase, attempt int, batch int) {
+	t.Helper()
+	payload := map[string]any{
+		"task":      taskID,
+		"work_item": taskID,
+		"phase":     string(phase),
+		"attempt":   attempt,
+	}
+	if batch > 0 {
+		payload["batch"] = batch
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal verification event: %v", err)
+	}
+	source.addEvent(runevent.RunEvent{
+		Batch:       batch,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonVerification,
+		ReviewIssue: taskID,
+		Summary:     fmt.Sprintf("Verification attempt %d for Task %s phase %s.", attempt, taskID, phase),
+		Payload:     raw,
+	})
+}
+
 func newTestCockpit(t *testing.T, source *cockpitFakeSource, view LiveRunView) *cockpitModel {
 	t.Helper()
 	view.Width = 100
@@ -2046,14 +2073,250 @@ func TestCockpitSpecRunInterleavedTaskReplayMatchesLivePolling(t *testing.T) {
 	}
 }
 
-func TestCockpitSpecRunHeaderShowsConcurrency(t *testing.T) {
-	model := newSpecPhaseCockpit(t, false, store.StateResolvingWithAgent, spec.StatusPending)
-	model.cfg.View.Concurrency = 3
+// Suite: per-Task Verification phase projection
+// Invariant: each Task's Work Queue row reads its own journal phase — Agent
+// work, the Verification queue, an acquired attempt, or settlement — while
+// other Tasks sit in different phases and the aggregate Run state moves
+// independently.
+// Boundary IN: synchronous cockpit Update/View over journal events.
+// Boundary OUT: gate scheduling and event production, owned by the daemon
+// suites; terminal emulation.
+func newPhaseProjectionCockpit(t *testing.T, source *cockpitFakeSource, colorEnabled bool) *cockpitModel {
+	t.Helper()
+	gitRoot := t.TempDir()
+	slug := "0042-capacity"
+	tasks := make([]spec.Task, 0, 3)
+	for index, title := range []string{"Build gate", "Wire queue", "Write docs"} {
+		id := fmt.Sprintf("task_%02d", index+1)
+		file := writeCockpitTaskFile(t, gitRoot, slug, id, title, spec.StatusPending)
+		tasks = append(tasks, spec.Task{ID: id, File: file, Title: title, Status: spec.StatusPending})
+	}
+	model, err := newCockpitModel(context.Background(), CockpitConfig{
+		Mode: CockpitAttach,
+		View: LiveRunView{
+			Command:                 "implement",
+			RunKind:                 store.KindImplement,
+			SpecSlug:                slug,
+			GitRoot:                 gitRoot,
+			RunID:                   "run-1",
+			PipelineState:           source.run.State,
+			Concurrency:             2,
+			VerificationConcurrency: 1,
+			Tasks:                   tasks,
+			Width:                   120,
+		},
+		RunID:        "run-1",
+		Source:       source,
+		ColorEnabled: colorEnabled,
+	})
+	if err != nil {
+		t.Fatalf("new cockpit model: %v", err)
+	}
 	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	return model
+}
+
+func TestCockpitWaitingForVerificationReplayProjectsTaskPhases(t *testing.T) {
+	// The aggregate Run state says Verifying for the whole Run; per-Task
+	// journal evidence must still place each Task in its own phase.
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateVerifying}, version: 1}
+	source.addTaskEvent(t, "task_01", "started", "", 1)
+	source.addTaskEvent(t, "task_02", "started", "", 2)
+	source.addVerificationEvent(t, "task_02", runevent.VerificationPhaseWaiting, 1, 2)
+	source.addVerificationEvent(t, "task_02", runevent.VerificationPhaseStarted, 1, 2)
+	model := newPhaseProjectionCockpit(t, source, true)
 
 	rendered := viewText(model)
-	if !strings.Contains(rendered, "Concurrency: 3") {
-		t.Fatalf("expected spec Run header to show concurrency, got:\n%s", rendered)
+	assertTaskQueueRow(t, rendered, "task_01", "[run] "+taskLabelAgentWorking)
+	assertTaskQueueRow(t, rendered, "task_02", "[verify] "+taskLabelVerifying)
+	assertTaskQueueRow(t, rendered, "task_03", "[wait] "+taskLabelWaiting)
+
+	// task_01 queues for the gate task_02 still holds: two Tasks, two
+	// different waiting-versus-verifying phases.
+	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseWaiting, 1, 1)
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	rendered = viewText(model)
+	assertTaskQueueRow(t, rendered, "task_01", "[queued] "+taskLabelWaitingForVerification)
+	assertTaskQueueRow(t, rendered, "task_02", "[verify] "+taskLabelVerifying)
+
+	// The acquired attempt keeps reporting Verifying through its command and
+	// verdict phases, then settlement is terminal.
+	source.addVerificationEvent(t, "task_02", runevent.VerificationPhaseCommandPassed, 1, 2)
+	source.addVerificationEvent(t, "task_02", runevent.VerificationPhaseVerdict, 1, 2)
+	source.version++
+	model.Update(cockpitTickMsg{})
+	assertTaskQueueRow(t, viewText(model), "task_02", "[verify] "+taskLabelVerifying)
+
+	source.addTaskEvent(t, "task_02", "settled", spec.StatusCompleted, 2)
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	rendered = viewText(model)
+	assertTaskQueueRow(t, rendered, "task_01", "[queued] "+taskLabelWaitingForVerification)
+	assertTaskQueueRow(t, rendered, "task_02", "[done] "+taskLabelCompleted)
+}
+
+func TestCockpitSpecRunTaskVerificationFeedbackReturnsOneTaskToAgentWorking(t *testing.T) {
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	source.addTaskEvent(t, "task_01", "started", "", 1)
+	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseWaiting, 1, 1)
+	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseStarted, 1, 1)
+	source.addTaskEvent(t, "task_02", "started", "", 2)
+	source.addVerificationEvent(t, "task_02", runevent.VerificationPhaseWaiting, 1, 2)
+	model := newPhaseProjectionCockpit(t, source, true)
+
+	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseFailed, 1, 1)
+	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseVerdict, 1, 1)
+	source.addTaskEvent(t, "task_01", "verification_feedback", "", 1)
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	rendered := viewText(model)
+	assertTaskQueueRow(t, rendered, "task_01", "[run] "+taskLabelAgentWorking)
+	if strings.Contains(rendered, taskLabelVerifying) {
+		t.Fatalf("expected Verification Feedback to leave no Task Verifying, got:\n%s", rendered)
+	}
+	// Only the failing Task went back to the Agent.
+	assertTaskQueueRow(t, rendered, "task_02", "[queued] "+taskLabelWaitingForVerification)
+
+	// Its second attempt queues and starts deterministically from there.
+	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseWaiting, 2, 1)
+	source.version++
+	model.Update(cockpitTickMsg{})
+	assertTaskQueueRow(t, viewText(model), "task_01", "[queued] "+taskLabelWaitingForVerification)
+
+	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseStarted, 2, 1)
+	source.version++
+	model.Update(cockpitTickMsg{})
+	assertTaskQueueRow(t, viewText(model), "task_01", "[verify] "+taskLabelVerifying)
+}
+
+func TestCockpitSpecRunTaskSettlementResistsStaleAndReplayedEvents(t *testing.T) {
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	source.addTaskEvent(t, "task_01", "started", "", 1)
+	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseWaiting, 1, 1)
+	source.addTaskEvent(t, "task_01", "settled", spec.StatusFailed, 1)
+	source.addTaskEvent(t, "task_02", "skipped", "", 0)
+	model := newPhaseProjectionCockpit(t, source, true)
+
+	rendered := viewText(model)
+	assertTaskQueueRow(t, rendered, "task_01", "[fail] "+taskLabelFailed)
+	assertTaskQueueRow(t, rendered, "task_02", "[skip] "+taskLabelSkipped)
+
+	// A late duplicate of an earlier phase must not resurrect the Task.
+	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseStarted, 1, 1)
+	source.addTaskEvent(t, "task_01", "started", "", 1)
+	source.addTaskEvent(t, "task_02", "started", "", 2)
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	rendered = viewText(model)
+	assertTaskQueueRow(t, rendered, "task_01", "[fail] "+taskLabelFailed)
+	assertTaskQueueRow(t, rendered, "task_02", "[skip] "+taskLabelSkipped)
+
+	// A conflicting terminal replay is also stale: the first terminal state
+	// remains authoritative for the Work Queue.
+	source.addTaskEvent(t, "task_01", "skipped", "", 0)
+	source.addTaskEvent(t, "task_02", "settled", spec.StatusCompleted, 2)
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	rendered = viewText(model)
+	assertTaskQueueRow(t, rendered, "task_01", "[fail] "+taskLabelFailed)
+	assertTaskQueueRow(t, rendered, "task_02", "[skip] "+taskLabelSkipped)
+}
+
+func TestCockpitSpecRunTaskPhaseLabelsReadTheSameUnderNoColor(t *testing.T) {
+	events := func(source *cockpitFakeSource) {
+		source.addTaskEvent(t, "task_01", "started", "", 1)
+		source.addTaskEvent(t, "task_02", "started", "", 2)
+		source.addVerificationEvent(t, "task_02", runevent.VerificationPhaseWaiting, 1, 2)
+		source.addVerificationEvent(t, "task_02", runevent.VerificationPhaseStarted, 1, 2)
+	}
+	styledSource := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateVerifying}, version: 1}
+	events(styledSource)
+	plainSource := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateVerifying}, version: 1}
+	events(plainSource)
+
+	styled := newPhaseProjectionCockpit(t, styledSource, true).View().Content
+	plain := newPhaseProjectionCockpit(t, plainSource, false).View().Content
+
+	if stripANSI(styled) != stripANSI(plain) {
+		t.Fatalf("expected styled and NO_COLOR renders to carry the same words\nstyled:\n%s\n\nplain:\n%s", stripANSI(styled), stripANSI(plain))
+	}
+	for _, expected := range []string{taskLabelAgentWorking, taskLabelVerifying, taskLabelWaiting} {
+		// The raw content is scanned, not the stripped one: a label split by
+		// escape sequences would mean the phase rides on color.
+		if !strings.Contains(plain, expected) {
+			t.Fatalf("expected the NO_COLOR render to name the phase %q in plain text, got:\n%s", expected, plain)
+		}
+		if !strings.Contains(styled, expected) {
+			t.Fatalf("expected the styled render to name the phase %q in plain text, got:\n%s", expected, styled)
+		}
+	}
+}
+
+func TestCockpitSpecRunTaskVerifyingLabelsKeepNarrowLayoutStable(t *testing.T) {
+	baseline := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	phased := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	phased.addTaskEvent(t, "task_01", "started", "", 1)
+	phased.addVerificationEvent(t, "task_01", runevent.VerificationPhaseWaiting, 1, 1)
+	phased.addTaskEvent(t, "task_02", "started", "", 2)
+	phased.addVerificationEvent(t, "task_02", runevent.VerificationPhaseWaiting, 1, 2)
+	phased.addVerificationEvent(t, "task_02", runevent.VerificationPhaseStarted, 1, 2)
+
+	for _, width := range []int{88, 100, 120} {
+		baselineModel := newPhaseProjectionCockpit(t, baseline, false)
+		phasedModel := newPhaseProjectionCockpit(t, phased, false)
+		baselineModel.Update(tea.WindowSizeMsg{Width: width, Height: 32})
+		phasedModel.Update(tea.WindowSizeMsg{Width: width, Height: 32})
+
+		wantLines := strings.Split(baselineModel.View().Content, "\n")
+		gotLines := strings.Split(phasedModel.View().Content, "\n")
+		if len(wantLines) != len(gotLines) {
+			t.Fatalf("width %d: expected the longer phase labels not to add lines, got %d want %d", width, len(gotLines), len(wantLines))
+		}
+		for index, line := range gotLines {
+			if displayWidth(line) > width {
+				t.Fatalf("width %d: line %d overflows the terminal: %q", width, index+1, line)
+			}
+			if displayWidth(line) != displayWidth(wantLines[index]) {
+				t.Fatalf("width %d: line %d changed width; panel boundaries moved\nwant: %q\ngot:  %q", width, index+1, wantLines[index], line)
+			}
+		}
+	}
+}
+
+func TestCockpitSpecRunHeaderShowsTaskAndVerificationCapacity(t *testing.T) {
+	model := newSpecPhaseCockpit(t, false, store.StateResolvingWithAgent, spec.StatusPending)
+	model.cfg.View.Concurrency = 2
+	model.cfg.View.VerificationConcurrency = 1
+	model.Update(tea.WindowSizeMsg{Width: 160, Height: 40})
+
+	rendered := viewText(model)
+	for _, expected := range []string{"Task Capacity: 2", "Verification Capacity: 1"} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected spec Run header to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	if strings.Contains(rendered, "// Concurrency:") {
+		t.Fatalf("expected the generic Concurrency label replaced by the canonical labels, got:\n%s", rendered)
+	}
+}
+
+func TestCockpitReviewRunHeaderShowsNoCapacity(t *testing.T) {
+	model := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
+	model.cfg.View.Concurrency = 2
+	model.cfg.View.VerificationConcurrency = 1
+	model.Update(tea.WindowSizeMsg{Width: 160, Height: 40})
+
+	rendered := viewText(model)
+	for _, absent := range []string{"Task Capacity", "Verification Capacity", "Concurrency"} {
+		if strings.Contains(rendered, absent) {
+			t.Fatalf("expected review Run header to omit %q, got:\n%s", absent, rendered)
+		}
 	}
 }
 

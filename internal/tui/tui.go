@@ -100,9 +100,15 @@ type LiveRunView struct {
 	WorkDir   string
 	// Tasks lists the spec Run's Tasks in Task Graph order.
 	Tasks []spec.Task
-	// Concurrency is the effective worktree.concurrency value for spec Runs.
-	// Zero means the caller did not provide a resolved value.
+	// Concurrency is the effective Task Capacity (worktree.concurrency) for
+	// spec Runs. Zero means the caller did not provide a resolved value.
 	Concurrency int
+	// VerificationConcurrency is the effective Verification Capacity
+	// (verification.concurrency) for spec Runs. It is configured
+	// independently from Task Capacity (ADR 0056). Zero means the caller did
+	// not provide a resolved value, so the view names no capacity it does
+	// not know.
+	VerificationConcurrency int
 	// BatchSizes lists the planned Review Issue count per Batch, in Batch
 	// order, when the caller knows the plan. The cockpit derives Batch
 	// separators and Executing/Waiting states from it.
@@ -125,6 +131,12 @@ type WorkItem struct {
 	Title    string
 	Status   string // artifact status verbatim (pending, resolved, completed, ...)
 	Severity string // Review Issue severity when artifacts provide one; empty for Tasks or unknown severity.
+	// Phase is the Task's journal-derived execution phase word — one of the
+	// exact labels in the Live Run View's phase vocabulary. It occupies the
+	// row slot Review Issues give to Severity, so a Task says what it is
+	// doing in text rather than in color alone. Empty for Review Issues and
+	// for callers that derive no phase.
+	Phase    string
 	Ordinal  int
 	Location string
 }
@@ -504,8 +516,14 @@ func RenderLiveRunView(view LiveRunView) string {
 	builder.WriteString("\nRun:\n")
 	builder.WriteString(fmt.Sprintf("  ID: %s\n", emptyDash(view.RunID)))
 	builder.WriteString(fmt.Sprintf("  State: %s\n", emptyDash(view.PipelineState)))
+	// Spec Runs schedule ready Tasks and Verification attempts against two
+	// independently configured capacities, so the header names both instead
+	// of one generic Concurrency number. Review Runs have neither.
 	if specRunView(view) && view.Concurrency > 0 {
-		builder.WriteString(fmt.Sprintf("  Concurrency: %d\n", view.Concurrency))
+		builder.WriteString(fmt.Sprintf("  Task Capacity: %d\n", view.Concurrency))
+	}
+	if specRunView(view) && view.VerificationConcurrency > 0 {
+		builder.WriteString(fmt.Sprintf("  Verification Capacity: %d\n", view.VerificationConcurrency))
 	}
 	if strings.TrimSpace(view.WorkDir) != "" {
 		builder.WriteString(fmt.Sprintf("  %s: %s\n", workDirDisplayLabel(view), view.WorkDir))

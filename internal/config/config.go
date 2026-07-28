@@ -34,6 +34,7 @@ const (
 	defaultJournalRetention         = 336 * time.Hour
 	defaultWorktreeLocation         = "~/.roundfix/worktrees"
 	defaultWorktreeConcurrency      = 2
+	defaultVerificationConcurrency  = 1
 	defaultWorktreeBootstrapTimeout = 10 * time.Minute
 	defaultSpecsRoot                = "docs/specs"
 )
@@ -52,6 +53,7 @@ type Config struct {
 	Implement    Implement
 	Notify       Notify
 	Worktree     Worktree
+	Verification Verification
 	Budget       Budget
 	Resolve      Resolve
 	Logs         Logs
@@ -124,6 +126,10 @@ type Worktree struct {
 	Copy             []string
 	Bootstrap        string
 	BootstrapTimeout time.Duration
+}
+
+type Verification struct {
+	Concurrency int
 }
 
 type Budget struct {
@@ -209,6 +215,7 @@ type configOverlay struct {
 	Implement    *implementOverlay    `yaml:"implement"`
 	Notify       *notifyOverlay       `yaml:"notify"`
 	Worktree     *worktreeOverlay     `yaml:"worktree"`
+	Verification *verificationOverlay `yaml:"verification"`
 	Budget       *budgetOverlay       `yaml:"budget"`
 	Resolve      *resolveOverlay      `yaml:"resolve"`
 	Logs         *logsOverlay         `yaml:"logs"`
@@ -303,6 +310,47 @@ type worktreeOverlay struct {
 	Copy             *[]string      `yaml:"copy"`
 	Bootstrap        *string        `yaml:"bootstrap"`
 	BootstrapTimeout *durationValue `yaml:"bootstrap_timeout"`
+}
+
+type verificationOverlay struct {
+	Concurrency *verificationConcurrencyValue `yaml:"concurrency"`
+}
+
+type verificationConcurrencyValue struct {
+	value int
+}
+
+func (value *verificationConcurrencyValue) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.ScalarNode || node.Tag != "!!int" {
+		return errors.New("verification.concurrency must be an integer")
+	}
+	var raw int
+	if err := node.Decode(&raw); err != nil {
+		return fmt.Errorf("verification.concurrency must be an integer: %w", err)
+	}
+	value.value = raw
+	return nil
+}
+
+func (overlay *verificationOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.MappingNode {
+		return errors.New("verification must be a mapping")
+	}
+	for index := 0; index < len(node.Content); index += 2 {
+		key := node.Content[index].Value
+		switch key {
+		case "concurrency":
+		default:
+			return fmt.Errorf("verification.%s is not a supported config key", key)
+		}
+	}
+	type rawVerificationOverlay verificationOverlay
+	var raw rawVerificationOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = verificationOverlay(raw)
+	return nil
 }
 
 type budgetOverlay struct {
@@ -528,6 +576,9 @@ func Builtin() Config {
 			Location:         defaultWorktreeLocation,
 			BootstrapTimeout: defaultWorktreeBootstrapTimeout,
 		},
+		Verification: Verification{
+			Concurrency: defaultVerificationConcurrency,
+		},
 		Budget: Budget{
 			Enabled:        true,
 			MaxRunDuration: defaultRunDuration,
@@ -723,6 +774,10 @@ worktree:
   # Maximum time allowed for each worktree bootstrap command.
   bootstrap_timeout: %s
 
+verification:
+  # Maximum concurrent Task Verification attempts per spec Run; independent from worktree.concurrency.
+  concurrency: %d
+
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
   journal_retention: %s
@@ -769,6 +824,7 @@ resolve:
 		config.Worktree.Location,
 		config.Worktree.Concurrency,
 		formatConfigDuration(config.Worktree.BootstrapTimeout),
+		config.Verification.Concurrency,
 		formatConfigDuration(config.Store.JournalRetention),
 		config.ReviewSource.Name,
 		config.ReviewSource.IncludeNitpicks,
@@ -830,6 +886,9 @@ func Validate(config Config) error {
 	}
 	if config.Worktree.Concurrency < 1 {
 		return errors.New("worktree.concurrency must be greater than 0")
+	}
+	if config.Verification.Concurrency < 1 {
+		return errors.New("verification.concurrency must be greater than 0")
 	}
 	if strings.TrimSpace(config.Worktree.Location) == "" {
 		return errors.New("worktree.location must not be empty")
@@ -1271,6 +1330,11 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		}
 		if overlay.Worktree.BootstrapTimeout != nil {
 			config.Worktree.BootstrapTimeout = overlay.Worktree.BootstrapTimeout.value
+		}
+	}
+	if overlay.Verification != nil {
+		if overlay.Verification.Concurrency != nil {
+			config.Verification.Concurrency = overlay.Verification.Concurrency.value
 		}
 	}
 	if overlay.Budget != nil {

@@ -1,0 +1,58 @@
+Public-flow blockers
+Build: 6646b84845d32335f35c39df95a6c161a973c9ec
+Date: 2026-07-28
+
+Read-only GitHub command:
+  rtk gh pr list --head ma/review-evidence-and-verification-capacity
+  --state open --json number,state,headRefName,headRefOid,url
+Exit: 0 with approved network access.
+Result:
+  Open Pull Request #40 exists, but its head is
+  f9005dd3727003772de0795e8152843cfc790ddb, not this QA build.
+
+Read-only local comparison:
+  rtk git -c core.fsmonitor=false rev-list --left-right --count
+  origin/ma/review-evidence-and-verification-capacity...ma/review-evidence-and-verification-capacity
+Exit: 0
+Result:
+  0 17
+The local target branch is 17 commits ahead of the published Pull Request
+head. This assignment forbids pushing it.
+
+QA-10 — current-head CodeRabbit approval
+Status: blocked.
+The complete public journey must run against an Open Pull Request at this
+exact build. Pull Request #40 exposes an older head, and publishing the current
+head is forbidden. A successful watch can also create the separate Daemon
+review-artifact commit and execute Final Push, both explicitly forbidden.
+Fresh focused tests pass the CodeRabbit APPROVED, zero-thread case and reject
+commented, stale, generic, and unresolved-thread approvals; those tests do not
+replace the built end-to-end journey.
+Unblocking action:
+  Provide a disposable Open Pull Request at the exact build plus explicit
+  commit and Final Push authority, or a supported read-only/dry-run path that
+  reaches the same terminal outcome.
+
+QA-11 — exact Daemon artifact-only descendant
+Status: blocked.
+The complete public journey requires Roundfix to create its separate Daemon
+review-artifact commit and continue to Final Push. Both operations are
+explicitly forbidden. Fresh current-build real-Git tests pass the exact
+inherited case and every declared refusal, but cannot replace the public
+command path.
+Unblocking action:
+  Provide a disposable Open Pull Request checkout at the exact build plus
+  explicit commit and push authority.
+
+QA-19 — existing non-skip Clean and Clean Unverified
+Status: blocked for the assembled mutation-dependent branches.
+The no-push known-zero Fetch regression passed through the built binary.
+Clean, CleanUnverified after Final Push, and the separate artifact-commit path
+remain blocked by the same no-commit/no-push boundary and published-head
+mismatch. The complete repository gate and fresh focused regression suites
+pass those branches.
+Unblocking action:
+  Provide an exact-build disposable Open Pull Request and explicit commit/Final
+  Push authority.
+
+No row was skipped.

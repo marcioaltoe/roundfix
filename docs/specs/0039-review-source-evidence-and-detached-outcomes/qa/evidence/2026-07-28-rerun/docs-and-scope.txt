@@ -1,0 +1,43 @@
+Docs, public CLI, and Non-Goal evidence
+Build: affe4b5d333a8f3f1dd7506cf758eeb6e53afc70
+Result: PASS
+
+Public help:
+rtk ./bin/roundfix watch --help
+
+Exit: 0. The built command now says Clean requires accepted Review Source
+Evidence: a successful CodeRabbit check or commit status, or a CodeRabbit
+APPROVED review, with zero unresolved CodeRabbit threads. The --until-clean
+description uses the same accepted-Evidence contract.
+
+Repair regression:
+rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-gocache GOFLAGS=-buildvcs=false go test ./internal/cli -run 'TestRun(CommandHelp|WatchMissingHeadCheckEndsCleanUnverified)$' -count=1
+
+Exit: 0.
+
+Canonical guidance:
+rtk grep -n 'Review Source Evidence\|Review Skipped\|events .*--follow.*outcome\|Review Issues: unknown' CONTEXT.md docs/user-guide/commands.md docs/user-guide/usage.md
+
+Exit: 0. The glossary and both guides contain the Evidence/Review Skipped
+vocabulary, stable Supervisor monitor, and unknown-count report.
+
+Skill contract:
+- rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md: exit 0;
+- rtk make skills-sync-check: 4 passed in 1 package;
+- make verify's shipped Skill check passed all fourteen Skills.
+
+Non-Goals:
+- no config file or internal/config path changed from main to this build;
+- the guide and Skill explicitly state there is no retry configuration or
+  log-text inference;
+- focused Evidence tests reject generic, stale, commented, and unresolved
+  approvals;
+- focused real-Git tests reject user-authored, empty, mixed-path, wrong-parent,
+  out-of-root, and unresolved-thread descendants;
+- changed-path inspection found no host callback, Slack, email, Telegram,
+  webhook-suppression, Force Stop, compare-and-set, or Agent Session registry
+  implementation surface;
+- the documented Run Event Stream remains the only Supervisor subscription.
+
+The unrelated post-Spec Claude adapter finding commit is outside Spec 0039 and
+was not credited as feature evidence.

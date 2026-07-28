@@ -1,0 +1,130 @@
+Built-binary live CLI evidence
+Binary: bin/roundfix from 6646b84845d32335f35c39df95a6c161a973c9ec
+Date: 2026-07-28
+Result: pass for every exercised journey
+
+Parity deviations and preflight
+
+Deterministic local gh and osascript executables replaced live
+GitHub/CodeRabbit and desktop delivery. The production binary, clean scratch
+Git repositories, authenticated gh boundary shape, user-scoped Run Database,
+reports, notification boundary, and Run Event Stream were unchanged.
+
+The effective project review profile could not pass preflight because
+/Users/marcio/.local/bin/codex has an invalid macOS code signature. A
+documented complete one-Run override was used instead:
+  --agent claude --model claude-fable-5 --reasoning-effort xhigh
+Roundfix exact-proved that advertised selection before each watch Run. No user
+or repository configuration changed. The initial rejected Codex selection and
+one non-advertised Claude model probe both exited through Preflight Validation
+before Run creation, Review Source access, Agent start, commit, or push.
+
+Foreground Review Skipped
+
+Run:
+  run_20260728T173021Z_2d5ab1c3eb21e8eb
+Exit:
+  3
+Observed:
+  WaitingForReview first projected pending and then skipped Evidence.
+  Both lines carried expected head
+  6646b84845d32335f35c39df95a6c161a973c9ec, start, deadline,
+  evidence kind, and retry state.
+  The report named the Review Source reason and the reduce/split/request-review
+  next action.
+  It printed no numeric Review Issue counts.
+  The artifact directory remained empty, and the gh log shows status discovery
+  only: no fetch, commit, push, thread resolution, or Agent.
+Independent confirmation:
+  rtk bin/roundfix events run_20260728T173021Z_2d5ab1c3eb21e8eb
+    --follow --filter outcome
+  returned one roundfix-events/v1 ReviewSkipped record with the reason,
+  next_action, review_issues_known=false, attach command, check_run Evidence,
+  and the exact expected head.
+  A fresh
+  roundfix runs list --state terminal --limit 10
+  process listed the same Run as ReviewSkipped.
+  The public read-only Live Run View replayed the wait transitions, terminal
+  outcome, and "Outcome notification sent via native."
+
+Permanent failure and unknown issue knowledge
+
+Run:
+  run_20260728T173131Z_a10e886a918aa77a
+Exit:
+  1
+Observed:
+  One HTTP 401 check-runs access ran and performed zero retry sleeps.
+  Stdout contained only
+  Review Issues: unknown — fetch did not complete.
+  for issue knowledge, with no numeric status summary.
+  The artifact directory remained empty.
+Independent confirmation:
+  Outcome replay returned Failed with the bounded reason
+  "fetch CodeRabbit check runs: gh command failed with HTTP 401",
+  an actionable next action, review_issues_known=false, and Attach command.
+
+Known-zero Fetch
+
+Run:
+  run_20260728T172917Z_ffc177485973ba92
+Exit:
+  0
+Observed:
+  The built command reported Review Issues: none and created Round 001 without
+  starting an Agent, committing, pushing, or resolving a Review Source thread.
+Independent confirmation:
+  A fresh read of
+  /private/tmp/roundfix-qa0039-rerun-03-fetch-zero-artifacts/reviews/pr-123/round-001/round.md
+  recorded issue_count: 0, the exact build head, and
+  "Fetched 0 Review Issue(s)."
+
+Transient recovery
+
+Run:
+  run_20260728T173156Z_7be57182f7bdf5a4
+Exit:
+  3 at the later expected ReviewSkipped outcome.
+Observed:
+  The first check-runs access returned "connection reset by peer".
+  Output changed retry from none to retrying, reused the existing 30-second
+  poll interval, then changed to recovered.
+  The gh log contains exactly two check-runs accesses and one access for each
+  remaining Evidence surface.
+  The artifact directory remained empty.
+Independent confirmation:
+  Outcome replay persisted ReviewSkipped at cursor 6 with the accepted
+  check_run Evidence and exact expected head. Fresh focused suites cover
+  exhausted bounds, permanent failure, episode cardinality, second-phase
+  recovery, and Stop priority.
+
+Detached Review Skipped
+
+Run:
+  run_20260728T173250Z_f75c40057dacf638
+Foreground exit:
+  0
+Observed:
+  Stdout contained exactly Run ID, Console Log, Attach, Supervisor monitor,
+  and Stop lines.
+  The printed monitor was:
+    roundfix events run_20260728T173250Z_f75c40057dacf638 --follow --filter outcome
+Independent confirmation:
+  Executing that exact monitor against the built binary exited 0 and returned
+  one ReviewSkipped outcome with reason, next action, false issue knowledge,
+  Console Log, Attach command, Evidence kind, and expected head.
+  A fresh Console Log read showed the same pending-to-skipped wait and terminal
+  report with zero warnings or errors.
+
+Notification observation
+
+Each terminal Watch journey invoked the deterministic native route exactly
+once. Captured non-Clean text retained "Next: ...". The public Live Run View
+replayed "Outcome notification sent via native", and independent outcome
+replay proved delivery did not alter the stored outcome. Fresh current-build
+focused and race suites cover sent, skipped, and failed receipts, complete
+command context, one durable receipt per attempt, and outcome independence.
+
+Operational Journal Retention pruned eligible old terminal journal rows during
+startup. It removed no current Run row or current artifact byte. This is
+configured product behavior and is not credited toward a Spec criterion.

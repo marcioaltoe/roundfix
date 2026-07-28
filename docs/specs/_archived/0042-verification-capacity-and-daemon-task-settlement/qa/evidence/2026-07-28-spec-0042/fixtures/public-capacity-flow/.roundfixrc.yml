@@ -1,0 +1,5 @@
+worktree:
+  concurrency: 2
+
+verification:
+  concurrency: 1

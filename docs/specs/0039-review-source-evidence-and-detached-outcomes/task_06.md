@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0039-review-source-evidence-and-detached-outcomes
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -33,27 +33,27 @@ remain unable to change the Run outcome.
 
 ## Subtasks
 
-- [ ] Add notification receipt contracts.
-- [ ] Populate additive command environment values.
-- [ ] Journal one durable receipt event per attempt.
-- [ ] Preserve outcome on notification failure.
-- [ ] Add the five-line Detached startup report.
-- [ ] Cover sent, skipped, failed, native, and command routes.
+- [x] Add notification receipt contracts.
+- [x] Populate additive command environment values.
+- [x] Journal one durable receipt event per attempt.
+- [x] Preserve outcome on notification failure.
+- [x] Add the five-line Detached startup report.
+- [x] Cover sent, skipped, failed, native, and command routes.
 
 ## Acceptance Criteria
 
-- [ ] Sent, disabled/unavailable, and failed routes produce sent, skipped, and
+- [x] Sent, disabled/unavailable, and failed routes produce sent, skipped, and
       failed receipts respectively.
-- [ ] Every attempt appends exactly one route/status/completion-time event.
-- [ ] Existing environment variables remain byte-compatible and additive
+- [x] Every attempt appends exactly one route/status/completion-time event.
+- [x] Existing environment variables remain byte-compatible and additive
       values carry terminal context.
-- [ ] Notification failure changes neither stored outcome nor top-level exit
+- [x] Notification failure changes neither stored outcome nor top-level exit
       code.
-- [ ] Detached startup contains all five documented lines with runnable
+- [x] Detached startup contains all five documented lines with runnable
       commands.
-- [ ] Supervisor monitoring uses the stable outcome filter and no Console Log
+- [x] Supervisor monitoring uses the stable outcome filter and no Console Log
       parsing.
-- [ ] Native text stays bounded and contains the next action when non-Clean.
+- [x] Native text stays bounded and contains the next action when non-Clean.
 
 ## Context
 
@@ -87,3 +87,64 @@ remain unable to change the Run outcome.
   report, stream, and notification; Build Order 6.
 - `CONTEXT.md` → Run Outcome Notification, Console Log, Attach, and Run Event
   Stream.
+
+## Result
+
+Notification delivery now returns a typed receipt for every command, native,
+disabled, or unavailable attempt. Each receipt carries its route, a
+`sent`/`skipped`/`failed` status, and a UTC completion time. The terminal
+completion boundary passes the normalized terminal reason, Console Log, Attach
+command, Review Issue knowledge, and next action into notifications, then
+appends exactly one typed receipt event without changing the completed Run.
+
+The four existing `notify.command` variables retain their names, values, and
+order. Five additive variables expose the documented terminal context. Native
+notification text is bounded to 256 runes and reserves space for `Next: ...`
+on non-Clean outcomes.
+
+Detached startup now prints exactly five lines: Run ID, Console Log, Attach,
+the runnable
+`roundfix events <run-id> --follow --filter outcome` Supervisor monitor, and
+Stop.
+
+### Verification
+
+- `GOCACHE=/tmp/roundfix-task06-gocache rtk go test ./internal/notify -run 'Test.*(Receipt|Environment|Native|Command)' -count=1`
+  — passed, 13 tests.
+- `GOCACHE=/tmp/roundfix-task06-gocache rtk go test ./internal/cli ./internal/runevent -run 'Test.*(Detached.*Monitor|OutcomeNotification|NotificationReceipt)' -count=1`
+  — passed, 14 tests.
+- `GOCACHE=/tmp/roundfix-task06-gocache rtk go test -race ./internal/notify ./internal/cli -run 'Test.*(Notification|Detached)' -count=1`
+  — passed, 24 tests.
+- `GOCACHE=/tmp/roundfix-task06-gocache rtk go test ./internal/cli -run 'TestRunImplementDetach(PrintsReportAndCompletesRun|SurvivesCallerProcessGroupKill)$' -count=1`
+  — passed, 2 Detached process tests.
+- `GOCACHE=/tmp/roundfix-task06-gocache rtk go test ./internal/notify ./internal/cli ./internal/runevent -skip 'TestBranchIntegrityPreflightMigratesOutdatedRunDatabase|TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion' -count=1`
+  — passed, 860 tests.
+- `rtk git -c core.fsmonitor=false diff --check` — passed.
+
+### Acceptance evidence
+
+- Command success, native success, disabled configuration, unavailable native
+  tooling, command failure, native failure, and timeout cases return the
+  required receipt status with a non-zero UTC completion time.
+- CLI integration coverage decodes receipt payloads and proves exactly one
+  route/status/completion-time event follows each sent, skipped, or failed
+  attempt.
+- Environment coverage compares the complete ordered environment, preserving
+  the four existing entries and adding reason, Console Log, Attach command,
+  Review Issue knowledge, and next action.
+- A forced notifier failure preserves the Clean stored outcome, stdout report,
+  and exit code while emitting one warning and one failed receipt.
+- Detached unit and process coverage assert all five lines and the exact stable
+  outcome-filter command; no Console Log parsing is used for Supervisor state.
+- Native text coverage uses an oversized target, proves the 256-rune bound, and
+  retains the non-Clean next action.
+
+### Follow-ups
+
+- The additional broad run confirmed the existing
+  `TestBranchIntegrityPreflightMigratesOutdatedRunDatabase` schema-version
+  expectation still needs reconciliation with database version 11.
+- The managed sandbox still blocks
+  `TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion`
+  from reading the genuine owner-process identity through `/bin/ps`.
+  Both findings are outside Task 06 and were left unchanged.

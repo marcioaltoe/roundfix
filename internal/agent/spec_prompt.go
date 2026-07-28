@@ -29,16 +29,16 @@ type SpecContextBundle struct {
 	OmittedPriorFiles int
 }
 
-// taskExecutionInvariants states the execution contract the Agent must
-// follow for one Spec Task, mirroring the implement-task skill. Every
-// invariant lives in this one constant so the templating pass (work-plan
-// item 5) replaces the contract in a single place.
+// taskExecutionInvariants states the ADR-0057 handoff contract the Agent must
+// follow for one Spec Task. Every invariant lives in this one constant; the
+// dedicated authorial-Skill Task aligns the protected implement-task skill.
 const taskExecutionInvariants = `Execution invariants:
 - Implement only this Task's slice; work that belongs to another Task is a follow-up note, not part of this diff.
-- Set status: in_progress in the task file frontmatter when you start.
-- Run focused checks while working when useful; the Daemon runs the task file's ## Verification section after your turn.
-- Append a ## Result section to the task file with evidence for each acceptance criterion.
-- Settle the task file frontmatter to status: completed or status: failed before you finish.
+- The Daemon owns Task status during Implement; do not edit the task file's status field.
+- Do not run commands from the task file's ## Verification section; the Daemon runs them after your turn.
+- Run focused implementation checks while working when useful.
+- Append or update a ## Result section in the task file with implementation and focused-check evidence for each acceptance criterion.
+- Hand back implementation-ready work without claiming the Task is completed or failed.
 - Never commit, push, or open a pull request.
 - Never edit the Task Graph manifest (_tasks.md) or any other task file.
 - If the task file arrives with status: in_progress, a prior Run died mid-task; start the Task fresh. The work-target lock guarantees no live owner.
@@ -130,23 +130,59 @@ func writePathList(builder *strings.Builder, label string, paths []string) {
 	}
 }
 
-// BuildQAPrompt builds the prompt for one Spec QA gate: the Spec identity
-// and the QA contract mirroring qa-gate.
-func BuildQAPrompt(specSlug, specDir, prdPath string) (string, error) {
-	if strings.TrimSpace(specSlug) == "" {
+// QAPromptRequest carries the plain-string inputs for one Spec QA gate
+// prompt. SpecSlug, SpecDir, and PRDPath name the Spec and are required.
+// RunBranch, TargetBranch, and UserCheckout state where the gate runs and
+// where the Spec's work lands; each is optional, so a Run that recorded no
+// target branch still produces a usable prompt. Inputs stay plain strings
+// so the builders never depend on the Spec parser or any store/daemon
+// package.
+type QAPromptRequest struct {
+	SpecSlug     string
+	SpecDir      string
+	PRDPath      string
+	RunBranch    string
+	TargetBranch string
+	UserCheckout string
+}
+
+// BuildQAPrompt builds the prompt for one Spec QA gate: the Spec identity,
+// the checkout facts, and the QA contract mirroring qa-gate.
+func BuildQAPrompt(req QAPromptRequest) (string, error) {
+	if strings.TrimSpace(req.SpecSlug) == "" {
 		return "", errors.New("Spec slug is required")
 	}
-	if strings.TrimSpace(specDir) == "" {
+	if strings.TrimSpace(req.SpecDir) == "" {
 		return "", errors.New("Spec directory is required")
 	}
-	if strings.TrimSpace(prdPath) == "" {
+	if strings.TrimSpace(req.PRDPath) == "" {
 		return "", errors.New("PRD path is required")
 	}
 	var builder strings.Builder
 	builder.WriteString("You are the Roundfix child Agent for one Spec QA gate.\n\n")
-	builder.WriteString(fmt.Sprintf("Spec: %s\n", specSlug))
-	builder.WriteString(fmt.Sprintf("Spec directory: %s\n", specDir))
-	builder.WriteString(fmt.Sprintf("PRD: %s\n\n", prdPath))
+	builder.WriteString(fmt.Sprintf("Spec: %s\n", req.SpecSlug))
+	builder.WriteString(fmt.Sprintf("Spec directory: %s\n", req.SpecDir))
+	builder.WriteString(fmt.Sprintf("PRD: %s\n", req.PRDPath))
+	writeQACheckoutFacts(&builder, req)
+	builder.WriteString("\n")
 	builder.WriteString(qaGateContract)
 	return builder.String(), nil
+}
+
+// writeQACheckoutFacts states where the QA gate runs and where the Spec's
+// work lands. The Run Worktree sits on a per-Run branch that is never
+// pushed, so anything keyed by this checkout's branch — a Pull Request
+// among them — resolves nothing; naming the Spec target branch is what
+// makes the difference visible instead of reading as an absent Pull
+// Request. Each fact is omitted when the Run recorded no value for it.
+func writeQACheckoutFacts(builder *strings.Builder, req QAPromptRequest) {
+	if branch := strings.TrimSpace(req.RunBranch); branch != "" {
+		builder.WriteString(fmt.Sprintf("Run Worktree branch: %s (this checkout only — a per-Run branch that is never pushed and has no Pull Request of its own)\n", branch))
+	}
+	if branch := strings.TrimSpace(req.TargetBranch); branch != "" {
+		builder.WriteString(fmt.Sprintf("Spec target branch: %s (the user branch this Spec's commits land on; any Pull Request for this Spec is open on this branch, never on the Run Worktree branch)\n", branch))
+	}
+	if root := strings.TrimSpace(req.UserCheckout); root != "" {
+		builder.WriteString(fmt.Sprintf("User checkout: %s (the user's repository root this Run Worktree was created from)\n", root))
+	}
 }

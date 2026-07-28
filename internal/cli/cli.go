@@ -150,8 +150,7 @@ var newOutcomeNotifier = roundnotify.New
 // collaborators; orchestration itself lives in the daemon Run engine and
 // receives them through an explicit dependencies struct.
 var newEngineCollaborators = defaultEngineCollaborators
-var watchReviewStatus = defaultWatchReviewStatus
-var watchHeadCheck = defaultWatchHeadCheck
+var watchReviewEvidence = defaultWatchReviewEvidence
 var watchHeadSHA = defaultWatchHeadSHA
 var listPendingRunWork = runworktree.ListPendingRunWork
 var integratePendingRunWork = runworktree.IntegratePendingRunWork
@@ -2132,7 +2131,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			}
 			fmt.Fprintf(stderr, "%s Run %s reached %s.\n", commandDisplayName(req.name), run.ID, store.StateStopped)
 			printStopSummary(req, preflightResult, stderr)
-			printReviewIssueReport(stdout, store.StateStopped, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
+			printReviewIssueReport(stdout, store.StateStopped, 1, true, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 			return exitOK
 		}
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
@@ -2164,7 +2163,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		fmt.Fprintf(stderr, "%d Unresolved Review Issue(s) remain; failed issues are retried by the next fetched Round.\n", cycleResult.Remaining)
 		printAgentCheckoutChangesNotice(stderr)
 	}
-	printReviewIssueReport(stdout, completed.State, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
+	printReviewIssueReport(stdout, completed.State, 1, true, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 	if completed.State == store.StateUnresolved {
 		return exitRunFailed
 	}
@@ -2199,9 +2198,31 @@ type reviewIssueReport struct {
 	cumulativeUnavailable bool
 }
 
+func printReviewSkippedReport(stdout io.Writer, reason string, nextAction string) {
+	fmt.Fprintf(stdout, "Review Source: skipped — reason: %s\n", reason)
+	fmt.Fprintf(stdout, "Next action: %s\n", nextAction)
+}
+
+func formatReviewWaitProgress(progress watch.WaitProgress) string {
+	return fmt.Sprintf(
+		"Review Source status: %s; phase=%s; expected_head=%s; started_at=%s; deadline=%s; evidence_kind=%s; retry=%s",
+		progress.Evidence.State,
+		progress.Phase,
+		progress.ExpectedHeadSHA,
+		progress.StartedAt.Format(time.RFC3339),
+		progress.Deadline.Format(time.RFC3339),
+		progress.Evidence.Kind,
+		progress.RetryStatus,
+	)
+}
+
 // printReviewIssueReport prints the deterministic stdout contract for review
 // Runs after the terminal outcome is known.
-func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted int, report reviewIssueReport) {
+func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted int, reviewIssuesKnown bool, report reviewIssueReport) {
+	if !reviewIssuesKnown {
+		fmt.Fprintln(stdout, "Review Issues: unknown — fetch did not complete.")
+		return
+	}
 	runCounts := reviewIssueReportCounts{}
 	for index, current := range report.runIssues {
 		status := reviewIssueDisplayStatus(current.Status)
@@ -2383,17 +2404,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	fmt.Fprintf(ui.progress, "Agent Model: %s\n", resolvePlan.runtime.Model)
 	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(resolvePlan.runtime.ReasoningEffort))
 
-	engine, err := daemon.NewEngine(daemon.Dependencies{
-		Runner:    collaborators.runner,
-		Verifier:  collaborators.verifier,
-		Committer: collaborators.committer,
-		Pusher:    collaborators.pusher,
-		Source:    collaborators.source,
-		Runs:      runStore,
-		Worktree:  collaborators.worktree,
-		Sink:      ui.sink,
-		Progress:  ui.progress,
-	})
+	engine, err := newResolveEngine(collaborators, runStore, ui)
 	if err != nil {
 		return resolveBatchResult{}, err
 	}
@@ -2415,14 +2426,31 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 		publishPushDecision(ctx, ui.sink, runID, "blocked", fmt.Sprintf("Final Push blocked: %d Unresolved Review Issue(s) remain.", result.Remaining), result.Remaining)
 		return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
 	}
-	reviewCommitCreated, err := maybeCommitReviewArtifacts(ctx, req, loaded, preflightResult, collaborators.committer, ui.sink, runID, resolvePlan.roundNumber, ui.progress)
-	if err != nil {
-		return resolveBatchResult{}, err
+	reviewCommit := reviewsource.ArtifactCommit{}
+	if req.name != "watch" || !req.untilClean {
+		reviewCommit, err = maybeCommitReviewArtifacts(ctx, req, loaded, preflightResult, collaborators.committer, ui.sink, runID, resolvePlan.roundNumber, ui.progress)
+		if err != nil {
+			return resolveBatchResult{}, err
+		}
 	}
-	if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, preflightResult.Git.Root, commitCreated || reviewCommitCreated, ui.progress); err != nil {
+	if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, preflightResult.Git.Root, commitCreated || reviewCommit.CommitSHA != "", ui.progress); err != nil {
 		return resolveBatchResult{}, err
 	}
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
+}
+
+func newResolveEngine(collaborators engineCollaborators, runStore *store.Store, ui *runUI) (*daemon.Engine, error) {
+	return daemon.NewEngine(daemon.Dependencies{
+		Runner:    collaborators.runner,
+		Verifier:  collaborators.verifier,
+		Committer: collaborators.committer,
+		Pusher:    collaborators.pusher,
+		Source:    collaborators.source,
+		Runs:      runStore,
+		Worktree:  collaborators.worktree,
+		Sink:      ui.sink,
+		Progress:  ui.progress,
+	})
 }
 
 // publishPushDecision journals daemon-owned Final Push gating decisions.
@@ -2553,7 +2581,6 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	defer ui.Close()
 
 	watchReportIssues := []rounds.Issue{}
-	lastReviewStatusLine := ""
 	result, err := watch.Run(ctx, watch.Request{
 		RunID:            run.ID,
 		PRNumber:         preflightResult.PullRequest.Number,
@@ -2568,23 +2595,57 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		MaxRunDuration:   loaded.Config.Budget.MaxRunDuration,
 	}, watch.Dependencies{
 		StopRequests: runStore,
-		StatusSource: watch.StatusFunc(func(ctx context.Context, statusReq watch.StatusRequest) (watch.Status, error) {
-			status, err := watchReviewStatus(ctx, reviewsource.WatchStatusRequest{
+		ReviewEvidence: watch.ReviewEvidenceFunc(func(ctx context.Context, evidenceReq watch.ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+			return watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
+				Source:          req.source,
+				PRNumber:        evidenceReq.PRNumber,
+				BaseRepository:  preflightResult.PullRequest.BaseRepository,
+				HeadRepository:  preflightResult.PullRequest.HeadRepository,
+				HeadBranch:      preflightResult.PullRequest.HeadBranch,
+				ExpectedHeadSHA: evidenceReq.ExpectedHeadSHA,
+			})
+		}),
+		Artifacts: watch.ArtifactPublishFunc(func(ctx context.Context, artifactReq watch.ArtifactPublishRequest) (watch.ArtifactPublication, error) {
+			commit, err := maybeCommitReviewArtifacts(
+				ctx,
+				req,
+				loaded,
+				preflightResult,
+				collaborators.committer,
+				ui.sink,
+				run.ID,
+				artifactReq.Round,
+				ui.progress,
+			)
+			if err != nil || commit.CommitSHA == "" {
+				return watch.ArtifactPublication{Commit: commit}, err
+			}
+			engine, err := newResolveEngine(collaborators, runStore, ui)
+			if err != nil {
+				return watch.ArtifactPublication{}, err
+			}
+			if err := maybeRunFinalPush(ctx, engine, ui.sink, run.ID, loaded, preflightResult, preflightResult.Git.Root, true, ui.progress); err != nil {
+				return watch.ArtifactPublication{}, err
+			}
+			evidence, inherited, err := inheritReviewArtifactEvidence(ctx, reviewArtifactEvidenceRequest{
 				Source:         req.source,
-				PRNumber:       statusReq.PRNumber,
+				PRNumber:       preflightResult.PullRequest.Number,
 				BaseRepository: preflightResult.PullRequest.BaseRepository,
 				HeadRepository: preflightResult.PullRequest.HeadRepository,
 				HeadBranch:     preflightResult.PullRequest.HeadBranch,
-				HeadSHA:        statusReq.HeadSHA,
+				GitRoot:        preflightResult.Git.Root,
+				Commit:         commit,
+				ParentEvidence: artifactReq.ParentEvidence,
+				ParentHeadSHA:  artifactReq.ParentHeadSHA,
 			})
-			if err == nil {
-				line := fmt.Sprintf("Review Source status: %s", status.State)
-				if line != lastReviewStatusLine {
-					fmt.Fprintln(ui.progress, line)
-					lastReviewStatusLine = line
-				}
+			if err != nil {
+				fmt.Fprintf(ui.progress, "Review artifact Evidence inheritance unavailable; falling back to head polling: %v\n", err)
+				inherited = false
 			}
-			return status, err
+			if !inherited {
+				evidence = reviewsource.Evidence{}
+			}
+			return watch.ArtifactPublication{Commit: commit, Evidence: evidence}, nil
 		}),
 		Fetcher: watch.FetchFunc(func(ctx context.Context, _ int) (watch.FetchResult, error) {
 			fetchResult, issues, err := fetchWatchRound(ctx, req, loaded, preflightResult, ui.progress)
@@ -2596,16 +2657,12 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
 			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, agentSelections, runtimeFactory, run.ID, session, collaborators, runStore, ui)
 		}),
-		CheckSource: watch.CheckFunc(func(ctx context.Context, headSHA string) (watch.HeadCheckState, error) {
-			return watchHeadCheck(ctx, reviewsource.HeadCheckRequest{
-				Source:         req.source,
-				BaseRepository: preflightResult.PullRequest.BaseRepository,
-				HeadSHA:        headSHA,
-			})
-		}),
 		Clock:   watchClock,
 		Sleeper: watchSleeper,
 		Sink:    store.JournalSink{Store: runStore},
+		Progress: func(progress watch.WaitProgress) {
+			fmt.Fprintln(ui.progress, formatReviewWaitProgress(progress))
+		},
 	})
 	stopped := isStopRequest(ctx, err)
 	if stopped {
@@ -2631,13 +2688,32 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printRunFailure(req.name, completeErr, stderr)
 		return exitRunFailed
 	}
-	closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
-	publishTerminalCompletion(completeCtx, runStore, notifier, stderr, completed, result.Remaining)
+	terminalContext := watchTerminalCompletionContext(req, completed.Run, result)
+	var cleanupWarnings []cleanupWarning
+	if result.Outcome == store.StateReviewSkipped {
+		publishTerminalCompletionWithContext(
+			completeCtx,
+			runStore,
+			notifier,
+			stderr,
+			completed,
+			terminalContext,
+		)
+		cleanupWarnings = bestEffortForceStopAgentSessions(completeCtx, runStore, completed.Run)
+	} else {
+		closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
+		publishTerminalCompletionWithContext(completeCtx, runStore, notifier, stderr, completed, terminalContext)
+	}
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
 
 	fmt.Fprintf(stderr, "Watch Run %s reached %s after %d Round(s).\n", completed.ID, completed.State, result.Rounds)
+	if result.Outcome == store.StateReviewSkipped {
+		fmt.Fprintf(stderr, "Review Skipped: %s\n", result.TerminalReason)
+		fmt.Fprintf(stderr, "Next: %s\n", result.NextAction)
+	}
+	reportSecondaryCleanupWarnings(completeCtx, runStore, completed.ID, cleanupWarnings, stderr)
 	if result.Outcome == store.StateMaxRoundsReached && result.Remaining > 0 {
 		fmt.Fprintf(stderr, "MaxRoundsReached with %d Unresolved Review Issue(s) remaining.\n", result.Remaining)
 		printAgentCheckoutChangesNotice(stderr)
@@ -2650,9 +2726,13 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		fmt.Fprintf(stderr, "Review Source timed out. To request another CodeRabbit review manually, comment: %s\n", result.ManualReviewCommand)
 	}
 	if result.Outcome == store.StateCleanUnverified {
-		fmt.Fprintln(stderr, "CleanUnverified: Merge-Ready was not confirmed because the Review Source check never appeared within the grace period. Next: confirm the pull request's Review Source check before merging.")
+		fmt.Fprintln(stderr, "CleanUnverified: Merge-Ready was not confirmed because no accepted Review Source Evidence appeared within the grace period. Next: confirm the pull request's Review Source Evidence before merging.")
 	}
-	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues, stderr))
+	if result.Outcome == store.StateReviewSkipped {
+		printReviewSkippedReport(stdout, result.TerminalReason, result.NextAction)
+	} else {
+		printReviewIssueReport(stdout, completed.State, result.Rounds, result.ReviewIssuesKnown, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues, stderr))
+	}
 	if stopped {
 		printStopSummary(req, preflightResult, stderr)
 		return exitOK
@@ -2928,6 +3008,8 @@ func exitForWatchOutcome(outcome string) int {
 		return exitOK
 	case store.StateCleanUnverified:
 		return exitUnverified
+	case store.StateReviewSkipped:
+		return exitUnverified
 	case store.StateBudgetExceeded, store.StateTimedOut, store.StateFailed, store.StateUnresolved:
 		return exitRunFailed
 	default:
@@ -3185,7 +3267,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 		fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
-		fs.BoolVar(&req.untilClean, "until-clean", req.untilClean, "Repeat until no Unresolved Review Issues remain and Review Source check succeeds")
+		fs.BoolVar(&req.untilClean, "until-clean", req.untilClean, "Repeat until no Unresolved Review Issues remain and accepted Review Source Evidence confirms the pushed head")
 		fs.IntVar(&req.maxRounds, "max-rounds", req.maxRounds, "Maximum Review Source rounds")
 	default:
 		return req, validationError{message: fmt.Sprintf("unknown command %q", name)}
@@ -3592,18 +3674,11 @@ func (defaultReviewSourceResolver) ReplyToIssue(ctx context.Context, req reviews
 	return coderabbit.Client{}.ReplyToIssue(ctx, req)
 }
 
-func defaultWatchReviewStatus(ctx context.Context, req reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
+func defaultWatchReviewEvidence(ctx context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
 	if req.Source != reviewsource.SourceCodeRabbit {
-		return reviewsource.WatchStatus{}, fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
+		return reviewsource.Evidence{}, fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
 	}
-	return coderabbit.Client{}.WatchStatus(ctx, req)
-}
-
-func defaultWatchHeadCheck(ctx context.Context, req reviewsource.HeadCheckRequest) (watch.HeadCheckState, error) {
-	if req.Source != reviewsource.SourceCodeRabbit {
-		return "", fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
-	}
-	return coderabbit.Client{}.HeadCheck(ctx, req)
+	return coderabbit.Client{}.Evidence(ctx, req)
 }
 
 func defaultWatchHeadSHA(ctx context.Context, gitRoot string) (string, error) {
@@ -3661,35 +3736,43 @@ func countBatchIssues(batches []rounds.Batch) int {
 // Roots outside the repository — an explicit external Artifact Directory, an
 // external Spec Root, or a root reached through a symbolic link — are never
 // staged; the Run proceeds without the commit.
-func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, committer daemon.Committer, sink runevent.Sink, runID string, roundNumber int, stderr io.Writer) (bool, error) {
+func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, committer daemon.Committer, sink runevent.Sink, runID string, roundNumber int, stderr io.Writer) (reviewsource.ArtifactCommit, error) {
 	if !loaded.Config.Defaults.AutoCommit {
-		return false, nil
+		return reviewsource.ArtifactCommit{}, nil
 	}
 	specsRoot := reviewArtifactSpecsRoot(loaded, preflightResult.Git.Root)
 	if !reviewArtifactUsesDefaultSpecsRoot(loaded.Config.Specs.Root) {
 		resolved, err := roundconfig.ResolveSpecsRoot(loaded, preflightResult.Git.Root)
 		if err != nil {
-			return false, err
+			return reviewsource.ArtifactCommit{}, err
 		}
 		specsRoot = resolved
 	}
 	reviewRoot, err := resolveReviewArtifactRoot(ctx, req, preflightResult, specsRoot)
 	if err != nil {
-		return false, err
+		return reviewsource.ArtifactCommit{}, err
 	}
 	relative, stageable := stageableReviewRoot(preflightResult.Git.Root, reviewRoot)
 	if !stageable {
 		message := fmt.Sprintf("Review artifacts kept outside the repository (%s); no review artifact commit created.", reviewRoot)
 		fmt.Fprintln(stderr, message)
 		publishReviewArtifactCommitDecision(ctx, sink, runID, "skipped", message)
-		return false, nil
+		return reviewsource.ArtifactCommit{}, nil
 	}
 	output, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "status", "--porcelain", "--", relative)
 	if err != nil {
-		return false, fmt.Errorf("inspect review artifact changes under %q: %w", relative, err)
+		return reviewsource.ArtifactCommit{}, fmt.Errorf("inspect review artifact changes under %q: %w", relative, err)
 	}
 	if strings.TrimSpace(output) == "" {
-		return false, nil
+		return reviewsource.ArtifactCommit{}, nil
+	}
+	parentSHA, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
+	if err != nil {
+		return reviewsource.ArtifactCommit{}, fmt.Errorf("read review artifact commit parent: %w", err)
+	}
+	parentSHA = strings.TrimSpace(parentSHA)
+	if parentSHA == "" {
+		return reviewsource.ArtifactCommit{}, errors.New("read review artifact commit parent: git returned an empty SHA")
 	}
 	message := daemon.ReviewArtifactsCommitMessage(roundNumber, req.pr)
 	if err := committer.Commit(ctx, daemon.CommitRequest{
@@ -3697,11 +3780,151 @@ func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded 
 		Message: message,
 		Paths:   []string{relative},
 	}); err != nil {
-		return false, fmt.Errorf("create review artifact commit: %w", err)
+		return reviewsource.ArtifactCommit{}, fmt.Errorf("create review artifact commit: %w", err)
+	}
+	commitSHA, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
+	if err != nil {
+		return reviewsource.ArtifactCommit{}, fmt.Errorf("read created review artifact commit: %w", err)
+	}
+	commitSHA = strings.TrimSpace(commitSHA)
+	if commitSHA == "" || commitSHA == parentSHA {
+		return reviewsource.ArtifactCommit{}, errors.New("create review artifact commit: HEAD did not advance")
 	}
 	fmt.Fprintf(stderr, "Review artifacts commit created: %s\n", message)
 	publishReviewArtifactCommitDecision(ctx, sink, runID, "created", fmt.Sprintf("Review artifacts commit created: %s", message))
-	return true, nil
+	return reviewsource.ArtifactCommit{
+		CommitSHA:  commitSHA,
+		ParentSHA:  parentSHA,
+		ReviewRoot: reviewRoot,
+		Message:    message,
+	}, nil
+}
+
+type reviewArtifactEvidenceRequest struct {
+	Source         string
+	PRNumber       string
+	BaseRepository string
+	HeadRepository string
+	HeadBranch     string
+	GitRoot        string
+	Commit         reviewsource.ArtifactCommit
+	ParentEvidence reviewsource.Evidence
+	ParentHeadSHA  string
+}
+
+func inheritReviewArtifactEvidence(ctx context.Context, req reviewArtifactEvidenceRequest) (reviewsource.Evidence, bool, error) {
+	commit := req.Commit
+	if !validReviewArtifactEvidenceRequest(req) {
+		return reviewsource.Evidence{}, false, nil
+	}
+
+	currentHead, err := reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "rev-parse", "HEAD")
+	if err != nil {
+		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact current head: %w", err)
+	}
+	if strings.TrimSpace(currentHead) != commit.CommitSHA {
+		return reviewsource.Evidence{}, false, nil
+	}
+
+	parentLine, err := reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "rev-list", "--parents", "-n", "1", commit.CommitSHA)
+	if err != nil {
+		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact parent: %w", err)
+	}
+	parents := strings.Fields(parentLine)
+	if len(parents) != 2 || parents[0] != commit.CommitSHA || parents[1] != commit.ParentSHA {
+		return reviewsource.Evidence{}, false, nil
+	}
+
+	subject, err := reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "show", "-s", "--format=%s", commit.CommitSHA)
+	if err != nil {
+		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact commit message: %w", err)
+	}
+	if strings.TrimSpace(subject) != commit.Message {
+		return reviewsource.Evidence{}, false, nil
+	}
+
+	relativeRoot, stageable := stageableReviewRoot(req.GitRoot, commit.ReviewRoot)
+	if !stageable {
+		return reviewsource.Evidence{}, false, nil
+	}
+	diffOutput, err := reviewSpecGitRunner.RunGit(
+		ctx,
+		req.GitRoot,
+		"diff",
+		"--name-only",
+		"--no-renames",
+		"-z",
+		commit.ParentSHA,
+		commit.CommitSHA,
+		"--",
+	)
+	if err != nil {
+		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact diff: %w", err)
+	}
+	paths := nulSeparatedPaths(diffOutput)
+	if len(paths) == 0 {
+		return reviewsource.Evidence{}, false, nil
+	}
+	if !reviewArtifactPathsWithinRoot(paths, relativeRoot) {
+		return reviewsource.Evidence{}, false, nil
+	}
+
+	refreshed, err := watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
+		Source:          req.Source,
+		PRNumber:        req.PRNumber,
+		BaseRepository:  req.BaseRepository,
+		HeadRepository:  req.HeadRepository,
+		HeadBranch:      req.HeadBranch,
+		ExpectedHeadSHA: commit.ParentSHA,
+	})
+	if err != nil || !exactVerifiedEvidence(refreshed, commit.ParentSHA) {
+		return reviewsource.Evidence{}, false, nil
+	}
+	return reviewsource.Evidence{
+		State:           reviewsource.EvidenceVerified,
+		Kind:            reviewsource.EvidenceKindArtifactOnlyDescendant,
+		Identity:        "daemon_review_artifact:" + commit.CommitSHA,
+		ExpectedHeadSHA: commit.CommitSHA,
+		ObservedHeadSHA: commit.CommitSHA,
+		ParentHeadSHA:   commit.ParentSHA,
+		Conclusion:      "inherited",
+		Detail:          reviewsource.BoundEvidenceDetail("Inherited verified parent Evidence for the exact Daemon review-artifact commit."),
+	}, true, nil
+}
+
+func validReviewArtifactEvidenceRequest(req reviewArtifactEvidenceRequest) bool {
+	commit := req.Commit
+	return commit.CommitSHA != "" &&
+		commit.ParentSHA != "" &&
+		commit.ReviewRoot != "" &&
+		commit.Message != "" &&
+		req.ParentHeadSHA == commit.ParentSHA &&
+		exactVerifiedEvidence(req.ParentEvidence, commit.ParentSHA)
+}
+
+func reviewArtifactPathsWithinRoot(paths []string, relativeRoot string) bool {
+	rootPrefix := relativeRoot + "/"
+	for _, path := range paths {
+		clean := filepath.ToSlash(filepath.Clean(path))
+		if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") || !strings.HasPrefix(clean, rootPrefix) {
+			return false
+		}
+	}
+	return true
+}
+
+func exactVerifiedEvidence(evidence reviewsource.Evidence, headSHA string) bool {
+	return evidence.State == reviewsource.EvidenceVerified &&
+		evidence.ExpectedHeadSHA == headSHA &&
+		evidence.ObservedHeadSHA == headSHA
+}
+
+func nulSeparatedPaths(output string) []string {
+	output = strings.TrimSuffix(output, "\x00")
+	if output == "" {
+		return nil
+	}
+	return strings.Split(output, "\x00")
 }
 
 // stageableReviewRoot reports the repo-relative review root when it can be
@@ -3828,8 +4051,104 @@ func publishAgentSessionStatus(ctx context.Context, sink runevent.Sink, runID st
 
 // publishRunOutcome appends the terminal outcome event after CompleteRun so
 // terminal states are provable from the journal alone.
-func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string, state string, remaining int, stderr io.Writer) {
-	payload, err := json.Marshal(map[string]any{"state": state, "remaining": remaining})
+func watchTerminalCompletionContext(req commandRequest, run store.Run, result watch.Result) terminalCompletionContext {
+	reviewIssuesKnown := result.ReviewIssuesKnown
+	terminal := terminalCompletionContext{
+		Remaining:         result.Remaining,
+		Reason:            result.TerminalReason,
+		NextAction:        result.NextAction,
+		ReviewIssuesKnown: &reviewIssuesKnown,
+		Evidence:          result.Evidence,
+		VerifiedHeadSHA:   result.VerifiedHeadSHA,
+	}
+	if run.ID != "" {
+		terminal.AttachCommand = "roundfix attach " + run.ID
+	}
+	if req.detachChild != nil && req.artifactDir != "" && run.ID != "" {
+		terminal.ConsoleLog = detachedConsoleLogPath(req.artifactDir, run.ID)
+	}
+	return terminal
+}
+
+type terminalCompletionContext struct {
+	Remaining         int
+	Reason            string
+	NextAction        string
+	ReviewIssuesKnown *bool
+	ConsoleLog        string
+	AttachCommand     string
+	Evidence          reviewsource.Evidence
+	VerifiedHeadSHA   string
+}
+
+func normalizedTerminalCompletionContext(state string, terminal terminalCompletionContext) terminalCompletionContext {
+	terminal.Reason = boundTerminalContextText(terminal.Reason)
+	terminal.NextAction = boundTerminalContextText(terminal.NextAction)
+	if state == store.StateClean {
+		return terminal
+	}
+	defaultReason, defaultAction := terminalCompletionDefaults(state)
+	if terminal.Reason == "" {
+		terminal.Reason = defaultReason
+	}
+	if terminal.NextAction == "" {
+		terminal.NextAction = defaultAction
+	}
+	return terminal
+}
+
+func terminalCompletionDefaults(state string) (string, string) {
+	switch state {
+	case store.StateFetched:
+		return "The fetch Run completed without resolving Review Issues.", "Run resolve or watch when the Review Issues are ready for Agent work."
+	case store.StateStopped:
+		return "A Stop Request ended the Run.", "Inspect the preserved work before starting another Run."
+	case store.StateCleanUnverified:
+		return "Merge-Ready was not confirmed for the completed Run.", "Confirm the pull request's Review Source Evidence before merging."
+	case store.StateReviewSkipped:
+		return "The Review Source explicitly skipped the review.", "Reduce or split the pull request, then request another Review Source review."
+	case store.StateMaxRoundsReached:
+		return "The configured maximum number of Rounds was reached.", "Review the remaining Review Issues before deciding whether to start another Run."
+	case store.StateBudgetExceeded:
+		return "The Run Budget was exhausted.", "Inspect the Run Event Stream before starting another Run with an appropriate budget."
+	case store.StateTimedOut:
+		return "The Run timed out before reaching Clean.", "Inspect the Run Event Stream, restore the missing prerequisite, and start another Run."
+	case store.StateFailed:
+		return "The Run failed before it could complete.", "Inspect the diagnostics, correct the failure, and start another Run."
+	case store.StateIntegrationPending:
+		return "Completed work could not be integrated into the target branch.", "Inspect the retained Run Worktree and follow the reported integration command."
+	case store.StateUnresolved:
+		return "The Run completed with Unresolved Review Issues.", "Review the remaining Review Issues before starting another Run."
+	default:
+		return "The Run reached a non-Clean outcome.", "Inspect the Run Event Stream before deciding the next recovery step."
+	}
+}
+
+func boundTerminalContextText(text string) string {
+	return reviewsource.BoundEvidenceDetail(strings.Join(strings.Fields(text), " "))
+}
+
+func terminalEvidenceHead(evidence reviewsource.Evidence) string {
+	if evidence.ObservedHeadSHA != "" {
+		return evidence.ObservedHeadSHA
+	}
+	return evidence.ExpectedHeadSHA
+}
+
+func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string, state string, terminal terminalCompletionContext, stderr io.Writer) {
+	terminal = normalizedTerminalCompletionContext(state, terminal)
+	payload, err := json.Marshal(runevent.OutcomePayload{
+		State:             state,
+		Remaining:         terminal.Remaining,
+		Reason:            terminal.Reason,
+		NextAction:        terminal.NextAction,
+		ReviewIssuesKnown: terminal.ReviewIssuesKnown,
+		ConsoleLog:        terminal.ConsoleLog,
+		AttachCommand:     terminal.AttachCommand,
+		EvidenceKind:      string(terminal.Evidence.Kind),
+		EvidenceHeadSHA:   terminalEvidenceHead(terminal.Evidence),
+		VerifiedHeadSHA:   terminal.VerifiedHeadSHA,
+	})
 	if err != nil {
 		return
 	}
@@ -3853,11 +4172,23 @@ func publishTerminalCompletion(
 	completed store.CompleteRunResult,
 	remaining int,
 ) {
+	publishTerminalCompletionWithContext(ctx, runStore, notifier, stderr, completed, terminalCompletionContext{Remaining: remaining})
+}
+
+func publishTerminalCompletionWithContext(
+	ctx context.Context,
+	runStore *store.Store,
+	notifier roundnotify.Notifier,
+	stderr io.Writer,
+	completed store.CompleteRunResult,
+	terminal terminalCompletionContext,
+) {
 	if !completed.Transitioned {
 		return
 	}
-	publishRunOutcome(ctx, runStore, completed.ID, completed.State, remaining, stderr)
-	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run)
+	terminal = normalizedTerminalCompletionContext(completed.State, terminal)
+	publishRunOutcome(ctx, runStore, completed.ID, completed.State, terminal, stderr)
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run, terminal)
 }
 
 func journalStopPrimaryFailure(ctx context.Context, runStore *store.Store, runID string, primary error) {
@@ -3942,7 +4273,7 @@ func warnCleanRunWorktreeCleanupFailed(ctx context.Context, runStore *store.Stor
 }
 
 func outcomeNotifierFromConfig(config roundconfig.Config) roundnotify.Notifier {
-	if !config.Notify.Enabled || newOutcomeNotifier == nil {
+	if newOutcomeNotifier == nil {
 		return nil
 	}
 	return newOutcomeNotifier(config)
@@ -3950,23 +4281,49 @@ func outcomeNotifierFromConfig(config roundconfig.Config) roundnotify.Notifier {
 
 const outcomeNotificationTimeout = 30 * time.Second
 
-func notifyTerminalOutcome(ctx context.Context, runStore *store.Store, notifier roundnotify.Notifier, stderr io.Writer, run store.Run) {
+func notifyTerminalOutcome(
+	ctx context.Context,
+	runStore *store.Store,
+	notifier roundnotify.Notifier,
+	stderr io.Writer,
+	run store.Run,
+	terminal terminalCompletionContext,
+) {
 	if notifier == nil {
 		return
 	}
 	notifyCtx, cancel := context.WithTimeout(withoutCancelOrBackground(ctx), outcomeNotificationTimeout)
 	defer cancel()
-	if err := notifier.Notify(notifyCtx, outcomeFromRun(run)); err != nil {
-		reportOutcomeNotificationFailure(notifyCtx, runStore, run.ID, err, stderr)
+	receipt, err := notifier.Notify(notifyCtx, outcomeFromRun(run, terminal))
+	if err != nil {
+		receipt.Status = roundnotify.StatusFailed
+	}
+	if receipt.Status == "" {
+		receipt.Status = roundnotify.StatusSkipped
+	}
+	if receipt.Route == "" {
+		receipt.Route = roundnotify.RouteDisabled
+	}
+	if receipt.CompletedAt.IsZero() {
+		receipt.CompletedAt = time.Now().UTC()
+	}
+	journalOutcomeNotificationReceipt(notifyCtx, runStore, run.ID, receipt, err, stderr)
+	if err != nil {
+		reportOutcomeNotificationFailure(err, stderr)
 	}
 }
 
-func outcomeFromRun(run store.Run) roundnotify.Outcome {
+func outcomeFromRun(run store.Run, terminal terminalCompletionContext) roundnotify.Outcome {
 	return roundnotify.Outcome{
-		RunID:  run.ID,
-		State:  run.State,
-		Kind:   run.Kind,
-		Target: outcomeTarget(run),
+		RunID:             run.ID,
+		State:             run.State,
+		Kind:              run.Kind,
+		Target:            outcomeTarget(run),
+		Reason:            terminal.Reason,
+		ConsoleLog:        terminal.ConsoleLog,
+		AttachCommand:     terminal.AttachCommand,
+		ReviewIssuesKnown: terminal.ReviewIssuesKnown,
+		NextAction:        terminal.NextAction,
 	}
 }
 
@@ -3980,7 +4337,7 @@ func outcomeTarget(run store.Run) string {
 	return ""
 }
 
-func reportOutcomeNotificationFailure(ctx context.Context, runStore *store.Store, runID string, err error, stderr io.Writer) {
+func reportOutcomeNotificationFailure(err error, stderr io.Writer) {
 	reason := strings.TrimSpace(err.Error())
 	if reason == "" {
 		reason = "unknown error"
@@ -3989,24 +4346,45 @@ func reportOutcomeNotificationFailure(ctx context.Context, runStore *store.Store
 	if stderr != nil {
 		fmt.Fprintln(stderr, warning)
 	}
+}
+
+func journalOutcomeNotificationReceipt(
+	ctx context.Context,
+	runStore *store.Store,
+	runID string,
+	receipt roundnotify.NotificationReceipt,
+	notifyErr error,
+	stderr io.Writer,
+) {
 	if runStore == nil {
 		return
 	}
-	payload, marshalErr := json.Marshal(map[string]string{
-		"event":  "outcome_notification_failed",
-		"reason": reason,
+	reason := ""
+	if notifyErr != nil {
+		reason = boundTerminalContextText(notifyErr.Error())
+	}
+	eventName := "outcome_notification_" + string(receipt.Status)
+	payload, err := json.Marshal(runevent.NotificationReceiptPayload{
+		Event:       eventName,
+		Route:       string(receipt.Route),
+		Status:      string(receipt.Status),
+		CompletedAt: receipt.CompletedAt,
+		Reason:      reason,
 	})
-	if marshalErr != nil {
+	if err != nil {
 		return
 	}
-	_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+	summary := fmt.Sprintf("Outcome notification %s via %s.", receipt.Status, receipt.Route)
+	if err := (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,
-		Summary: runevent.BoundSummary(warning),
-		Time:    time.Now().UTC(),
+		Summary: runevent.BoundSummary(summary),
+		Time:    receipt.CompletedAt,
 		Payload: payload,
-	})
+	}); err != nil && stderr != nil {
+		fmt.Fprintf(stderr, "Warning: notification receipt event not journaled: %v\n", err)
+	}
 }
 
 func withoutCancelOrBackground(ctx context.Context) context.Context {
@@ -4187,9 +4565,11 @@ Options:
 Behavior:
   Runs Branch Integrity Preflight and clean tracked checkout validation before
   Agent work. Watch executes in the user's checkout and creates no Run
-  Worktree. With --until-clean, Clean requires the Review Source check to
-  succeed on the pushed head; if the check never appears within the grace
-  period, watch ends CleanUnverified and exits 3. Omit all Agent Selection flags
+  Worktree. With --until-clean, Clean requires accepted Review Source Evidence
+  on the pushed head — a successful CodeRabbit check or commit status, or a
+  CodeRabbit APPROVED review — with zero unresolved CodeRabbit threads; if no
+  such Evidence appears within the grace period, watch ends CleanUnverified and
+  exits 3. Omit all Agent Selection flags
   to use the review profile. A one-Run override requires --agent, --model, and --reasoning-effort together.
 
 Options:
@@ -4203,7 +4583,7 @@ Options:
   --agent-full-access Opt into Agent runtime full-access mode
   --no-agent-console Hide Agent-source console events from non-TTY stderr
   --detach       Start a Detached Run and print attach/stop commands
-  --until-clean  Repeat until no Unresolved Review Issues remain and Review Source check succeeds
+  --until-clean  Repeat until no Unresolved Review Issues remain and accepted Review Source Evidence confirms the pushed head
   --max-rounds   Maximum Review Source rounds
   --artifact-dir Artifact Directory
   --base-repo    Explicit base repository, owner/name

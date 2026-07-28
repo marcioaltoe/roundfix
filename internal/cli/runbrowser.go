@@ -52,8 +52,8 @@ func runRunBrowserLoop(ctx context.Context, loaded roundconfig.Loaded, reader *s
 			// the refreshed browser shows current data.
 			continue
 		}
-		concurrency := attachRunConcurrency(ctx, reader, run, loaded.Config.Worktree.Concurrency)
-		if code := browserAttachCockpit(ctx, loaded, reader, run, concurrency, stdout, stderr); code != exitOK {
+		capacities := attachRunCapacities(ctx, reader, run, configuredAttachCapacities(loaded))
+		if code := browserAttachCockpit(ctx, loaded, reader, run, capacities, stdout, stderr); code != exitOK {
 			return code, nil
 		}
 	}

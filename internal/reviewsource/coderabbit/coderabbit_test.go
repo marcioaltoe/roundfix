@@ -2,8 +2,11 @@ package coderabbit
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -606,6 +609,199 @@ func TestWatchStatusReportsPendingWithoutCodeRabbitSignal(t *testing.T) {
 	}
 }
 
+func TestEvidenceHierarchyPrecedence(t *testing.T) {
+	unresolvedThread := ReviewThread{
+		ID:         "thread-1",
+		IsResolved: false,
+		Comments: []ThreadComment{
+			{Author: coderabbitBotLogin},
+		},
+	}
+	tests := []struct {
+		name       string
+		checkRuns  []CheckRun
+		statuses   []CommitStatus
+		reviews    []PullRequestReview
+		threads    []ReviewThread
+		wantState  reviewsource.EvidenceState
+		wantKind   reviewsource.EvidenceKind
+		wantReason string
+	}{
+		{
+			name: "explicit skip wins over pending and success",
+			checkRuns: []CheckRun{
+				{
+					DatabaseID:    41,
+					Name:          "CodeRabbit",
+					AppName:       "CodeRabbit",
+					HeadSHA:       "abc123",
+					Status:        "completed",
+					Conclusion:    "success",
+					OutputTitle:   "Review skipped",
+					OutputSummary: "Review skipped because this pull request contains too many files.",
+				},
+				{DatabaseID: 42, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "in_progress"},
+			},
+			statuses:   []CommitStatus{{Context: "coderabbitai", State: "success"}},
+			wantState:  reviewsource.EvidenceSkipped,
+			wantKind:   reviewsource.EvidenceKindCheckRun,
+			wantReason: "Review skipped because this pull request contains too many files.",
+		},
+		{
+			name: "pending check wins over successful status",
+			checkRuns: []CheckRun{
+				{DatabaseID: 43, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "in_progress"},
+			},
+			statuses:  []CommitStatus{{Context: "coderabbitai", State: "success"}},
+			wantState: reviewsource.EvidenceReviewing,
+			wantKind:  reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "successful check verifies with no unresolved threads",
+			checkRuns: []CheckRun{
+				{DatabaseID: 44, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "completed", Conclusion: "success"},
+			},
+			wantState: reviewsource.EvidenceVerified,
+			wantKind:  reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "successful check is reviewed with unresolved thread",
+			checkRuns: []CheckRun{
+				{DatabaseID: 45, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "completed", Conclusion: "success"},
+			},
+			threads:   []ReviewThread{unresolvedThread},
+			wantState: reviewsource.EvidenceReviewed,
+			wantKind:  reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "current approval verifies with no unresolved threads",
+			reviews: []PullRequestReview{
+				{DatabaseID: 9001, Author: coderabbitBotLogin, State: "APPROVED", CommitSHA: "abc123"},
+			},
+			wantState: reviewsource.EvidenceVerified,
+			wantKind:  reviewsource.EvidenceKindReviewApproval,
+		},
+		{
+			name: "current approval is reviewed with unresolved thread",
+			reviews: []PullRequestReview{
+				{DatabaseID: 9002, Author: coderabbitBotLogin, State: "APPROVED", CommitSHA: "abc123"},
+			},
+			threads:   []ReviewThread{unresolvedThread},
+			wantState: reviewsource.EvidenceReviewed,
+			wantKind:  reviewsource.EvidenceKindReviewApproval,
+		},
+		{
+			name: "commented current review is never approval",
+			reviews: []PullRequestReview{
+				{DatabaseID: 9003, Author: coderabbitBotLogin, State: "COMMENTED", CommitSHA: "abc123"},
+			},
+			wantState: reviewsource.EvidenceReviewed,
+			wantKind:  reviewsource.EvidenceKindNone,
+		},
+		{
+			name:      "no usable signal stays pending",
+			wantState: reviewsource.EvidencePending,
+			wantKind:  reviewsource.EvidenceKindNone,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			client := Client{GitHub: &fakeGitHubClient{
+				checkRuns: testCase.checkRuns,
+				statuses:  testCase.statuses,
+				reviews:   testCase.reviews,
+				threads:   testCase.threads,
+			}}
+
+			evidence, err := client.Evidence(context.Background(), evidenceRequest())
+			if err != nil {
+				t.Fatalf("classify evidence: %v", err)
+			}
+			if evidence.State != testCase.wantState || evidence.Kind != testCase.wantKind {
+				t.Fatalf("evidence = %#v, want state %q kind %q", evidence, testCase.wantState, testCase.wantKind)
+			}
+			if evidence.ExpectedHeadSHA != "abc123" {
+				t.Fatalf("expected head = %q, want abc123", evidence.ExpectedHeadSHA)
+			}
+			if evidence.Reason != testCase.wantReason {
+				t.Fatalf("reason = %q, want %q", evidence.Reason, testCase.wantReason)
+			}
+		})
+	}
+}
+
+func TestEvidenceReviewingSkipsReviewAndThreadRequests(t *testing.T) {
+	tests := []struct {
+		name      string
+		checkRuns []CheckRun
+		statuses  []CommitStatus
+		wantKind  reviewsource.EvidenceKind
+	}{
+		{
+			name: "pending check run",
+			checkRuns: []CheckRun{
+				{DatabaseID: 43, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "in_progress"},
+			},
+			wantKind: reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "pending commit status",
+			statuses: []CommitStatus{
+				{Context: "coderabbitai", State: "pending"},
+			},
+			wantKind: reviewsource.EvidenceKindCommitStatus,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reviewCalls := 0
+			threadCalls := 0
+			client := Client{GitHub: &fakeGitHubClient{
+				checkRuns:   tt.checkRuns,
+				statuses:    tt.statuses,
+				reviewCalls: &reviewCalls,
+				threadCalls: &threadCalls,
+			}}
+
+			evidence, err := client.Evidence(context.Background(), evidenceRequest())
+			if err != nil {
+				t.Fatalf("classify reviewing Evidence: %v", err)
+			}
+			if evidence.State != reviewsource.EvidenceReviewing || evidence.Kind != tt.wantKind {
+				t.Fatalf("reviewing Evidence = %#v, want kind %q", evidence, tt.wantKind)
+			}
+			if reviewCalls != 0 || threadCalls != 0 {
+				t.Fatalf("reviewing Evidence fetched reviews=%d threads=%d, want 0 calls", reviewCalls, threadCalls)
+			}
+		})
+	}
+}
+
+func TestEvidenceExpectedHeadRejectsUnboundAndStaleSignals(t *testing.T) {
+	client := Client{GitHub: &fakeGitHubClient{
+		checkRuns: []CheckRun{
+			{DatabaseID: 51, Name: "CodeRabbit", AppName: "CodeRabbit", Status: "completed", Conclusion: "success"},
+			{DatabaseID: 52, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "oldsha", Status: "completed", Conclusion: "success"},
+		},
+		reviews: []PullRequestReview{
+			{DatabaseID: 9004, Author: coderabbitBotLogin, State: "APPROVED", CommitSHA: "oldsha"},
+		},
+	}}
+
+	evidence, err := client.Evidence(context.Background(), evidenceRequest())
+	if err != nil {
+		t.Fatalf("classify evidence: %v", err)
+	}
+	if evidence.State != reviewsource.EvidencePending || evidence.Kind != reviewsource.EvidenceKindNone {
+		t.Fatalf("stale or unbound signal verified expected head: %#v", evidence)
+	}
+	if evidence.ExpectedHeadSHA != "abc123" || evidence.ObservedHeadSHA != "oldsha" {
+		t.Fatalf("expected stale-head detail, got %#v", evidence)
+	}
+}
+
 func TestHeadCheckMapsGitHubCheckRunJSON(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -678,6 +874,7 @@ func TestHeadCheckMapsGitHubCheckRunJSON(t *testing.T) {
 			client := Client{GitHub: &fakeGitHubClient{checkRuns: checkRuns}}
 
 			got, err := client.HeadCheck(context.Background(), reviewsource.HeadCheckRequest{
+				PRNumber:       "123",
 				BaseRepository: "owner/project",
 				HeadSHA:        "abc123",
 			})
@@ -692,6 +889,173 @@ func TestHeadCheckMapsGitHubCheckRunJSON(t *testing.T) {
 	}
 }
 
+func TestCheckRunOutputJSONMapping(t *testing.T) {
+	const sensitiveText = "authorization: Bearer secret-that-must-not-escape"
+	fixture := `{
+		"total_count": 1,
+		"check_runs": [{
+			"id": 42,
+			"name": "CodeRabbit",
+			"head_sha": "abc123",
+			"status": "completed",
+			"conclusion": "success",
+			"app": {"name": "CodeRabbit", "slug": "coderabbitai"},
+			"output": {
+				"title": "Review skipped",
+				"summary": "CodeRabbit skipped this review because the change set is too large.",
+				"text": "` + sensitiveText + `"
+			}
+		}]
+	}`
+
+	checkRuns, err := parseCheckRuns([]byte(fixture))
+	if err != nil {
+		t.Fatalf("parse check runs fixture: %v", err)
+	}
+	if len(checkRuns) != 1 {
+		t.Fatalf("check run count = %d, want 1", len(checkRuns))
+	}
+	got := checkRuns[0]
+	if got.DatabaseID != 42 {
+		t.Fatalf("database ID = %d, want 42", got.DatabaseID)
+	}
+	if got.OutputTitle != "Review skipped" {
+		t.Fatalf("output title = %q", got.OutputTitle)
+	}
+	if got.OutputSummary != "CodeRabbit skipped this review because the change set is too large." {
+		t.Fatalf("output summary = %q", got.OutputSummary)
+	}
+	encoded, err := json.Marshal(got)
+	if err != nil {
+		t.Fatalf("marshal check run: %v", err)
+	}
+	if strings.Contains(string(encoded), sensitiveText) {
+		t.Fatalf("check run retained raw output text: %s", encoded)
+	}
+}
+
+func TestSkipSignalStructuredOutputRemainsAvailable(t *testing.T) {
+	fixture := `{
+		"check_runs": [{
+			"name": "CodeRabbit",
+			"head_sha": "abc123",
+			"status": "completed",
+			"conclusion": "success",
+			"output": {
+				"title": "Review skipped",
+				"summary": "Review skipped because this pull request contains too many files."
+			}
+		}]
+	}`
+	checkRuns, err := parseCheckRuns([]byte(fixture))
+	if err != nil {
+		t.Fatalf("parse check runs fixture: %v", err)
+	}
+	if checkRuns[0].OutputTitle == "" || checkRuns[0].OutputSummary == "" {
+		t.Fatalf("structured skip fields were discarded: %+v", checkRuns[0])
+	}
+}
+
+func TestSkipSignalDoesNotInferFromArbitrarySuccessfulText(t *testing.T) {
+	fixture := `{
+		"check_runs": [{
+			"name": "CodeRabbit",
+			"head_sha": "abc123",
+			"status": "completed",
+			"conclusion": "success",
+			"output": {
+				"title": "Review completed",
+				"summary": "All checks passed successfully."
+			}
+		}]
+	}`
+	checkRuns, err := parseCheckRuns([]byte(fixture))
+	if err != nil {
+		t.Fatalf("parse check runs fixture: %v", err)
+	}
+	if checkRuns[0].OutputTitle != "Review completed" || checkRuns[0].OutputSummary != "All checks passed successfully." {
+		t.Fatalf("successful output was rewritten as another signal: %+v", checkRuns[0])
+	}
+}
+
+func TestTransientClassificationMatrix(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{name: "temporary DNS", err: &net.DNSError{Err: "temporary failure", Name: "api.github.com", IsTemporary: true}},
+		{name: "connection reset", err: syscall.ECONNRESET},
+		{name: "HTTP 429", err: errors.New("HTTP 429: rate limited")},
+		{name: "GitHub HTTP 500", err: errors.New("HTTP 500: internal server error")},
+		{name: "GitHub HTTP 503", err: errors.New("HTTP 503: service unavailable")},
+		{name: "non-parent timeout", err: context.DeadlineExceeded},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			client := Client{GitHub: &fakeGitHubClient{checkRunsErr: testCase.err}}
+			_, err := client.WatchStatus(context.Background(), watchStatusRequest())
+			if err == nil {
+				t.Fatal("expected WatchStatus failure")
+			}
+			if !reviewsource.IsTransient(err) {
+				t.Fatalf("error = %T %v, want transient", err, err)
+			}
+			var transient *reviewsource.TransientError
+			if !errors.As(err, &transient) {
+				t.Fatalf("error = %T, want *reviewsource.TransientError", err)
+			}
+			if transient.Operation != "fetch CodeRabbit check runs" {
+				t.Fatalf("operation = %q", transient.Operation)
+			}
+			if !errors.Is(err, testCase.err) {
+				t.Fatalf("transient error did not wrap cause %v", testCase.err)
+			}
+		})
+	}
+}
+
+func TestTransientPermanentFailureMatrix(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{name: "authentication", err: errors.New("HTTP 401: bad credentials")},
+		{name: "authorization", err: errors.New("HTTP 403: forbidden")},
+		{name: "invalid request", err: errors.New("HTTP 422: validation failed")},
+		{name: "malformed response", err: &json.SyntaxError{Offset: 1}},
+		{name: "cancellation", err: context.Canceled},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			client := Client{GitHub: &fakeGitHubClient{checkRunsErr: testCase.err}}
+			_, err := client.WatchStatus(context.Background(), watchStatusRequest())
+			if err == nil {
+				t.Fatal("expected WatchStatus failure")
+			}
+			if reviewsource.IsTransient(err) {
+				t.Fatalf("error = %T %v, want permanent", err, err)
+			}
+		})
+	}
+}
+
+func TestTransientParentCancellationIsPermanent(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	client := Client{GitHub: &fakeGitHubClient{
+		checkRunsErr: &net.DNSError{Err: "temporary failure", Name: "api.github.com", IsTemporary: true},
+	}}
+
+	_, err := client.WatchStatus(ctx, watchStatusRequest())
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want parent cancellation", err)
+	}
+	if reviewsource.IsTransient(err) {
+		t.Fatalf("parent cancellation classified transient: %v", err)
+	}
+}
+
 func watchStatusRequest() reviewsource.WatchStatusRequest {
 	return reviewsource.WatchStatusRequest{
 		BaseRepository: "owner/project",
@@ -700,16 +1064,27 @@ func watchStatusRequest() reviewsource.WatchStatusRequest {
 	}
 }
 
+func evidenceRequest() reviewsource.EvidenceRequest {
+	return reviewsource.EvidenceRequest{
+		BaseRepository:  "owner/project",
+		PRNumber:        "123",
+		ExpectedHeadSHA: "abc123",
+	}
+}
+
 type fakeGitHubClient struct {
 	comments          []ReviewComment
 	threads           []ReviewThread
 	checkRuns         []CheckRun
+	checkRunsErr      error
 	statuses          []CommitStatus
 	reviews           []PullRequestReview
 	resolvedThreads   []string
 	replies           []reviewThreadReplyCall
 	prComments        []pullRequestCommentCall
 	commentRepository string
+	reviewCalls       *int
+	threadCalls       *int
 }
 
 func (client fakeGitHubClient) ReviewComments(context.Context, string, string) ([]ReviewComment, error) {
@@ -717,11 +1092,14 @@ func (client fakeGitHubClient) ReviewComments(context.Context, string, string) (
 }
 
 func (client fakeGitHubClient) ReviewThreads(context.Context, string, string) ([]ReviewThread, error) {
+	if client.threadCalls != nil {
+		(*client.threadCalls)++
+	}
 	return client.threads, nil
 }
 
 func (client fakeGitHubClient) CheckRuns(context.Context, string, string) ([]CheckRun, error) {
-	return client.checkRuns, nil
+	return client.checkRuns, client.checkRunsErr
 }
 
 func (client fakeGitHubClient) CommitStatuses(context.Context, string, string) ([]CommitStatus, error) {
@@ -729,6 +1107,9 @@ func (client fakeGitHubClient) CommitStatuses(context.Context, string, string) (
 }
 
 func (client fakeGitHubClient) PullRequestReviews(context.Context, string, string) ([]PullRequestReview, error) {
+	if client.reviewCalls != nil {
+		(*client.reviewCalls)++
+	}
 	return client.reviews, nil
 }
 

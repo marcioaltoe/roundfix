@@ -13,6 +13,7 @@ import (
 
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
@@ -84,9 +85,9 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
-	concurrency := attachRunConcurrency(ctx, reader, run, loaded.Config.Worktree.Concurrency)
+	capacities := attachRunCapacities(ctx, reader, run, configuredAttachCapacities(loaded))
 	if liveTUIEnabled(stdout) {
-		return runAttachCockpit(ctx, loaded, reader, run, concurrency, stdout, stderr)
+		return runAttachCockpit(ctx, loaded, reader, run, capacities, stdout, stderr)
 	}
 
 	timeline := roundtui.NewRunTimeline(attachTimelineLines)
@@ -96,7 +97,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
-	view := attachRunView(loaded, run, attachIssues(ctx, run), timeline.Lines(), concurrency)
+	view := attachRunView(loaded, run, attachIssues(ctx, run), timeline.Lines(), capacities)
 	view.Selections = timeline.Selections()
 	fmt.Fprint(stdout, roundtui.RenderLiveRunView(view))
 	if store.IsTerminalState(run.State) {
@@ -131,8 +132,8 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 // runAttachCockpit opens the interactive cockpit in the alternate screen.
 // Attach mode: q/Ctrl-C detach and never stop the Run; no stop key exists.
-func runAttachCockpit(ctx context.Context, loaded roundconfig.Loaded, reader *store.Store, run store.Run, concurrency int, stdout io.Writer, stderr io.Writer) int {
-	view := attachRunView(loaded, run, attachIssues(ctx, run), nil, concurrency)
+func runAttachCockpit(ctx context.Context, loaded roundconfig.Loaded, reader *store.Store, run store.Run, capacities attachCapacities, stdout io.Writer, stderr io.Writer) int {
+	view := attachRunView(loaded, run, attachIssues(ctx, run), nil, capacities)
 	err := roundtui.RunCockpit(ctx, stdout, roundtui.CockpitConfig{
 		Mode:         roundtui.CockpitAttach,
 		View:         view,
@@ -185,6 +186,61 @@ func replayJournalEvents(ctx context.Context, source journalEventSource, runID s
 	}
 }
 
+// attachValueFlags are the Attach flags that consume the following
+// argument as their value, so reordering keeps each value with its flag.
+var attachValueFlags = map[string]bool{"run-id": true, "run": true}
+
+// hoistAttachFlags reorders arguments so the documented
+// `roundfix attach <run-id> --no-input` order parses. The standard flag
+// package stops at the first non-flag argument, which would otherwise
+// reject the exact invocation both root help and Attach help print. Flags
+// keep their order and their values, everything after an explicit `--`
+// terminator stays positional, and unknown flags still reach flag.Parse so
+// their existing error text is unchanged.
+func hoistAttachFlags(args []string) []string {
+	flags := make([]string, 0, len(args))
+	operands := make([]string, 0, len(args))
+	terminated := false
+	for index := 0; index < len(args); index++ {
+		arg := args[index]
+		if arg == "--" {
+			terminated = true
+			operands = append(operands, args[index+1:]...)
+			break
+		}
+		name, inlineValue := attachFlagName(arg)
+		if name == "" {
+			operands = append(operands, arg)
+			continue
+		}
+		flags = append(flags, arg)
+		if !inlineValue && attachValueFlags[name] && index+1 < len(args) {
+			index++
+			flags = append(flags, args[index])
+		}
+	}
+	if terminated {
+		flags = append(flags, "--")
+	}
+	return append(flags, operands...)
+}
+
+// attachFlagName reports the flag name in arg and whether its value is
+// already inlined as `--name=value`. An empty name means arg is an operand.
+func attachFlagName(arg string) (string, bool) {
+	if len(arg) < 2 || !strings.HasPrefix(arg, "-") {
+		return "", false
+	}
+	name := strings.TrimPrefix(strings.TrimPrefix(arg, "-"), "-")
+	if name == "" {
+		return "", false
+	}
+	if index := strings.IndexByte(name, '='); index >= 0 {
+		return name[:index], true
+	}
+	return name, false
+}
+
 func parseAttachCommand(args []string) (attachRequest, error) {
 	req := attachRequest{}
 	fs := flag.NewFlagSet("attach", flag.ContinueOnError)
@@ -192,7 +248,7 @@ func parseAttachCommand(args []string) (attachRequest, error) {
 	fs.StringVar(&req.runID, "run-id", "", "Run ID to attach to")
 	fs.StringVar(&req.runID, "run", "", "Run ID to attach to")
 	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening the Run Browser")
-	if err := fs.Parse(args); err != nil {
+	if err := fs.Parse(hoistAttachFlags(args)); err != nil {
 		return req, validationError{message: err.Error()}
 	}
 	remaining := fs.Args()
@@ -235,7 +291,17 @@ func attachIssues(ctx context.Context, run store.Run) []rounds.Issue {
 	return selection.Issues
 }
 
-func attachRunView(loaded roundconfig.Loaded, run store.Run, issues []rounds.Issue, console []string, concurrency int) roundtui.LiveRunView {
+// configuredAttachCapacities is the deterministic fallback for Runs whose
+// journal never recorded a capacity: the values this repository is
+// configured with today.
+func configuredAttachCapacities(loaded roundconfig.Loaded) attachCapacities {
+	return attachCapacities{
+		task:         loaded.Config.Worktree.Concurrency,
+		verification: loaded.Config.Verification.Concurrency,
+	}
+}
+
+func attachRunView(loaded roundconfig.Loaded, run store.Run, issues []rounds.Issue, console []string, capacities attachCapacities) roundtui.LiveRunView {
 	view := roundtui.LiveRunView{
 		Command:         "attach",
 		Repository:      run.HeadRepository,
@@ -260,42 +326,85 @@ func attachRunView(loaded roundconfig.Loaded, run store.Run, issues []rounds.Iss
 		view.SpecSlug = run.SpecSlug
 		view.GitRoot = run.GitRoot
 		view.SpecsRoot = specsRoot
-		view.Concurrency = concurrency
+		view.Concurrency = capacities.task
+		view.VerificationConcurrency = capacities.verification
 		view.HeadBranch = run.LocalBranch
 		view.Tasks = attachTasks(specsRoot, run)
 	}
 	return view
 }
 
-type attachConcurrencyPayload struct {
-	Concurrency int `json:"concurrency"`
+// attachCapacities carries a spec Run's two effective capacities into the
+// Live Run View. A zero value means Attach could not resolve that capacity
+// and the view names none, rather than inventing one.
+type attachCapacities struct {
+	task         int
+	verification int
 }
 
-func attachRunConcurrency(ctx context.Context, reader *store.Store, run store.Run, fallback int) int {
+// attachCapacityPayload is the Task-cycle-start payload Attach replays.
+// Runs recorded before the capacities split carry only the legacy
+// concurrency alias.
+type attachCapacityPayload struct {
+	Concurrency          int `json:"concurrency"`
+	TaskCapacity         int `json:"task_capacity"`
+	VerificationCapacity int `json:"verification_capacity"`
+}
+
+func (payload attachCapacityPayload) recorded() bool {
+	return payload.Concurrency > 0 || payload.TaskCapacity > 0 || payload.VerificationCapacity > 0
+}
+
+// attachRunCapacities replays the effective capacities a spec Run actually
+// ran with from its Task-cycle-start event. A legacy event without the
+// split fields degrades deterministically: its recorded concurrency is the
+// Task Capacity and the currently configured value stands in for the
+// Verification Capacity it never recorded.
+func attachRunCapacities(ctx context.Context, reader *store.Store, run store.Run, fallback attachCapacities) attachCapacities {
 	if run.Kind != store.KindImplement {
-		return 0
+		return attachCapacities{}
 	}
+	capacities := fallback
+	if recorded, found := attachRecordedCapacities(ctx, reader, run.ID); found {
+		if recorded.TaskCapacity > 0 {
+			capacities.task = recorded.TaskCapacity
+		} else if recorded.Concurrency > 0 {
+			capacities.task = recorded.Concurrency
+		}
+		if recorded.VerificationCapacity > 0 {
+			capacities.verification = recorded.VerificationCapacity
+		}
+	}
+	if capacities.task < 0 {
+		capacities.task = 0
+	}
+	if capacities.verification < 0 {
+		capacities.verification = 0
+	}
+	return capacities
+}
+
+func attachRecordedCapacities(ctx context.Context, reader *store.Store, runID string) (attachCapacityPayload, bool) {
 	cursor := int64(0)
 	for {
-		page, err := reader.RunEventsAfter(ctx, run.ID, cursor, attachReplayPageSize)
+		page, err := reader.RunEventsAfter(ctx, runID, cursor, attachReplayPageSize)
 		if err != nil {
-			break
+			return attachCapacityPayload{}, false
 		}
 		for _, entry := range page {
 			cursor = entry.Cursor
-			var payload attachConcurrencyPayload
-			if len(entry.Event.Payload) > 0 && json.Unmarshal(entry.Event.Payload, &payload) == nil && payload.Concurrency > 0 {
-				return payload.Concurrency
+			if entry.Event.Kind != runevent.KindDaemonStatus || len(entry.Event.Payload) == 0 {
+				continue
+			}
+			var payload attachCapacityPayload
+			if json.Unmarshal(entry.Event.Payload, &payload) == nil && payload.recorded() {
+				return payload, true
 			}
 		}
 		if len(page) < attachReplayPageSize {
-			break
+			return attachCapacityPayload{}, false
 		}
 	}
-	if fallback > 0 {
-		return fallback
-	}
-	return 0
 }
 
 // attachTasks loads the spec Run's Task Graph for the work-item pane, in

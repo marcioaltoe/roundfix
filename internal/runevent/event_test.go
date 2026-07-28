@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -18,7 +19,117 @@ func TestSpecRunKindsUseDaemonNamespace(t *testing.T) {
 	}
 }
 
+func TestReviewStatusEventPayloadUsesStableEvidenceFields(t *testing.T) {
+	startedAt := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
+	payload := ReviewStatusPayload{
+		Phase:           "WaitingForReview",
+		StartedAt:       startedAt,
+		Deadline:        startedAt.Add(5 * time.Minute),
+		EvidenceState:   "verified",
+		EvidenceKind:    "review_approval",
+		RetryStatus:     "recovered",
+		State:           "verified",
+		Kind:            "review_approval",
+		Identity:        "review:9001",
+		ExpectedHeadSHA: "expected",
+		ObservedHeadSHA: "observed",
+		Conclusion:      "approved",
+		Detail:          "CodeRabbit approved the expected head",
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal ReviewStatusPayload: %v", err)
+	}
+	for _, field := range []string{
+		`"phase":"WaitingForReview"`,
+		`"started_at":"2026-07-27T12:00:00Z"`,
+		`"deadline":"2026-07-27T12:05:00Z"`,
+		`"evidence_state":"verified"`,
+		`"evidence_kind":"review_approval"`,
+		`"retry_status":"recovered"`,
+		`"state":"verified"`,
+		`"kind":"review_approval"`,
+		`"identity":"review:9001"`,
+		`"expected_head_sha":"expected"`,
+		`"observed_head_sha":"observed"`,
+		`"conclusion":"approved"`,
+		`"detail":"CodeRabbit approved the expected head"`,
+	} {
+		if !strings.Contains(string(raw), field) {
+			t.Fatalf("review status payload missing %s: %s", field, raw)
+		}
+	}
+}
+
+func TestReviewStatusEventPayloadOmitsZeroWaitTimestamps(t *testing.T) {
+	raw, err := json.Marshal(ReviewStatusPayload{
+		State:           "pending",
+		Kind:            "none",
+		Identity:        "none",
+		ExpectedHeadSHA: "expected",
+	})
+	if err != nil {
+		t.Fatalf("marshal ReviewStatusPayload: %v", err)
+	}
+	for _, field := range []string{"started_at", "deadline"} {
+		if strings.Contains(string(raw), `"`+field+`"`) {
+			t.Fatalf("zero Review Status timestamp %q was not omitted: %s", field, raw)
+		}
+	}
+}
+
+func TestReviewRetryPayloadUsesBoundedEpisodeFields(t *testing.T) {
+	payload := RetryPayload{
+		Phase:     "started",
+		Operation: "discover Review Source evidence",
+		Reason:    "discover Review Source evidence: temporary Review Source failure",
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal RetryPayload: %v", err)
+	}
+	for _, field := range []string{
+		`"phase":"started"`,
+		`"operation":"discover Review Source evidence"`,
+		`"reason":"discover Review Source evidence: temporary Review Source failure"`,
+	} {
+		if !strings.Contains(string(raw), field) {
+			t.Fatalf("retry payload missing %s: %s", field, raw)
+		}
+	}
+}
+
+func TestNotificationReceiptPayloadUsesRouteStatusAndCompletionTime(t *testing.T) {
+	completedAt := time.Date(2026, 7, 27, 12, 34, 56, 0, time.UTC)
+	payload := NotificationReceiptPayload{
+		Event:       "outcome_notification_failed",
+		Route:       "command",
+		Status:      "failed",
+		CompletedAt: completedAt,
+		Reason:      "command exited 1",
+	}
+
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal NotificationReceiptPayload: %v", err)
+	}
+	for _, field := range []string{
+		`"event":"outcome_notification_failed"`,
+		`"route":"command"`,
+		`"status":"failed"`,
+		`"completed_at":"2026-07-27T12:34:56Z"`,
+		`"reason":"command exited 1"`,
+	} {
+		if !strings.Contains(string(raw), field) {
+			t.Fatalf("notification receipt payload missing %s: %s", field, raw)
+		}
+	}
+}
+
 func TestVerificationEventVocabulary(t *testing.T) {
+	if VerificationPhaseWaiting != "waiting" {
+		t.Fatalf("expected waiting phase, got %q", VerificationPhaseWaiting)
+	}
 	if VerificationPhaseStarted != "started" {
 		t.Fatalf("expected started phase, got %q", VerificationPhaseStarted)
 	}
@@ -36,6 +147,77 @@ func TestVerificationEventVocabulary(t *testing.T) {
 	}
 	if VerificationVerdictFailed != "failed" {
 		t.Fatalf("expected failed verdict, got %q", VerificationVerdictFailed)
+	}
+}
+
+func TestWaitingForVerificationReplayProjectsAdditivePhase(t *testing.T) {
+	event := RunEvent{
+		RunID:       "run_123",
+		Batch:       3,
+		Source:      SourceDaemon,
+		Kind:        KindDaemonVerification,
+		ReviewIssue: "task_03",
+		Summary:     "Verification attempt 1 for Task task_03 waiting for shared capacity.",
+		Time:        time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC),
+		Payload:     []byte(`{"attempt":1,"phase":"waiting","task":"task_03","mode":"shared","capacity":1}`),
+	}
+
+	record, ok, err := ProjectStreamEvent(7, event, AllStreamCategories())
+	if err != nil {
+		t.Fatalf("project waiting event: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected waiting event to be projected")
+	}
+	if record.Schema != StreamSchema || record.Category != StreamCategoryVerification {
+		t.Fatalf("unexpected waiting projection envelope: %#v", record)
+	}
+	if record.WorkItem != "task_03" || record.Batch != 3 || record.Attempt != 1 || record.Phase != "waiting" {
+		t.Fatalf("unexpected waiting projection fields: %#v", record)
+	}
+	if record.Summary != "Verification attempt 1 phase waiting." {
+		t.Fatalf("unexpected waiting projection summary %q", record.Summary)
+	}
+}
+
+func TestVerificationTemporaryRetryExclusiveProjection(t *testing.T) {
+	retryAvailable := false
+	event := RunEvent{
+		RunID:       "run_123",
+		Batch:       3,
+		Source:      SourceDaemon,
+		Kind:        KindDaemonVerification,
+		ReviewIssue: "task_03",
+		Summary:     "Verification attempt 2 retry 1 for Task task_03 verdict: failed",
+		Time:        time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC),
+		Payload:     []byte(`{"attempt":2,"retry":1,"phase":"verdict","task":"task_03","mode":"exclusive","classification":"temporary","retry_available":false,"reason":"temporary_verification_failure","verdict":"failed","error":"unbounded child output must not project"}`),
+	}
+
+	record, ok, err := ProjectStreamEvent(8, event, AllStreamCategories())
+	if err != nil {
+		t.Fatalf("project exclusive retry event: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected exclusive retry event to be projected")
+	}
+	if record.Attempt != 2 || record.Retry != 1 || record.Mode != "exclusive" {
+		t.Fatalf("expected numbered attempt and retry identity, got %#v", record)
+	}
+	if record.Classification != string(VerificationClassificationTemporary) {
+		t.Fatalf("expected temporary classification, got %#v", record)
+	}
+	if record.RetryAvailable == nil || *record.RetryAvailable != retryAvailable {
+		t.Fatalf("expected explicit exhausted retry availability, got %#v", record)
+	}
+	if record.Reason != string(VerificationReasonTemporaryFailure) || record.Verdict != string(VerificationVerdictFailed) {
+		t.Fatalf("expected bounded reason and final verdict, got %#v", record)
+	}
+	raw, marshalErr := json.Marshal(record)
+	if marshalErr != nil {
+		t.Fatalf("marshal projected retry record: %v", marshalErr)
+	}
+	if strings.Contains(string(raw), "unbounded child output") {
+		t.Fatalf("expected unbounded error text omitted from projection, got %s", raw)
 	}
 }
 
@@ -189,6 +371,113 @@ func TestProjectStreamEventCoversStableCategoriesAndRedactsPayload(t *testing.T)
 	}
 }
 
+func TestProjectStreamEventReviewSkippedOutcome(t *testing.T) {
+	event := RunEvent{
+		RunID:   "run_review_skipped",
+		Source:  SourceDaemon,
+		Kind:    KindDaemonOutcome,
+		Summary: "Run reached ReviewSkipped.",
+		Time:    time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{"state":"ReviewSkipped","remaining":0,"reason":"pull request is too large","next_action":"split the pull request"}`),
+	}
+
+	record, ok, err := ProjectStreamEvent(7, event, StreamCategoryFilter{StreamCategoryOutcome: {}})
+	if err != nil {
+		t.Fatalf("project Review Skipped outcome: %v", err)
+	}
+	if !ok || record.Category != StreamCategoryOutcome || record.Outcome != "ReviewSkipped" {
+		t.Fatalf("Review Skipped stream record = %#v, ok=%v", record, ok)
+	}
+}
+
+func TestProjectStreamEventOutcomeContextProjectsReviewIssuesEvidenceAndRecovery(t *testing.T) {
+	event := RunEvent{
+		RunID:   "run_context",
+		Source:  SourceDaemon,
+		Kind:    KindDaemonOutcome,
+		Summary: "Run reached CleanUnverified.",
+		Time:    time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{
+			"state":"CleanUnverified",
+			"remaining":0,
+			"reason":"Merge-Ready was not confirmed",
+			"next_action":"confirm Review Source Evidence",
+			"review_issues_known":true,
+			"console_log":"/tmp/run_context/console.log",
+			"attach_command":"roundfix attach run_context",
+			"evidence_kind":"review_approval",
+			"evidence_head_sha":"abc123",
+			"verified_head_sha":"abc123",
+			"future_additive_field":"ignored"
+		}`),
+	}
+
+	record, ok, err := ProjectStreamEvent(9, event, StreamCategoryFilter{StreamCategoryOutcome: {}})
+	if err != nil {
+		t.Fatalf("project terminal outcome context: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected terminal outcome context to project")
+	}
+	if record.ReviewIssuesKnown == nil || !*record.ReviewIssuesKnown ||
+		record.Reason == "" ||
+		record.NextAction == "" ||
+		record.ConsoleLog != "/tmp/run_context/console.log" ||
+		record.AttachCommand != "roundfix attach run_context" ||
+		record.EvidenceKind != "review_approval" ||
+		record.EvidenceHeadSHA != "abc123" ||
+		record.VerifiedHeadSHA != "abc123" {
+		t.Fatalf("projected terminal context = %#v", record)
+	}
+
+	raw, err := json.Marshal(record)
+	if err != nil {
+		t.Fatalf("marshal projected terminal context: %v", err)
+	}
+	var legacy struct {
+		Schema   string `json:"schema"`
+		RunID    string `json:"run_id"`
+		Category string `json:"category"`
+		Outcome  string `json:"outcome"`
+	}
+	if err := json.Unmarshal(raw, &legacy); err != nil {
+		t.Fatalf("legacy consumer ignored additive fields: %v", err)
+	}
+	if legacy.Schema != StreamSchema || legacy.RunID != event.RunID || legacy.Category != "outcome" || legacy.Outcome != "CleanUnverified" {
+		t.Fatalf("legacy projection = %#v", legacy)
+	}
+}
+
+func TestProjectStreamEventReviewIssuesUnknownPreservesFalse(t *testing.T) {
+	record, ok, err := ProjectStreamEvent(10, RunEvent{
+		RunID:   "run_unknown",
+		Source:  SourceDaemon,
+		Kind:    KindDaemonOutcome,
+		Summary: "Run reached Failed.",
+		Time:    time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{
+			"state":"Failed",
+			"remaining":0,
+			"reason":"fetch failed",
+			"next_action":"retry after correcting the failure",
+			"review_issues_known":false
+		}`),
+	}, StreamCategoryFilter{StreamCategoryOutcome: {}})
+	if err != nil {
+		t.Fatalf("project unknown Review Issues: %v", err)
+	}
+	if !ok || record.ReviewIssuesKnown == nil || *record.ReviewIssuesKnown {
+		t.Fatalf("unknown Review Issue projection = %#v, ok=%v", record, ok)
+	}
+	raw, err := json.Marshal(record)
+	if err != nil {
+		t.Fatalf("marshal unknown Review Issues: %v", err)
+	}
+	if !strings.Contains(string(raw), `"review_issues_known":false`) {
+		t.Fatalf("unknown Review Issue knowledge omitted from %s", raw)
+	}
+}
+
 func TestProjectStreamEventNormalizesLegacyVerificationEvents(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -267,6 +556,47 @@ func TestProjectStreamEventRejectsMalformedRelevantDaemonPayload(t *testing.T) {
 	}, AllStreamCategories())
 	if err == nil {
 		t.Fatal("expected missing phase in relevant daemon payload to fail")
+	}
+}
+
+func TestProjectStreamEventPreservesContextForMalformedOptionalFields(t *testing.T) {
+	tests := []struct {
+		name    string
+		kind    Kind
+		payload string
+		key     string
+	}{
+		{
+			name:    "verification",
+			kind:    KindDaemonVerification,
+			payload: `{"attempt":1,"phase":"started","mode":1}`,
+			key:     "mode",
+		},
+		{
+			name:    "outcome",
+			kind:    KindDaemonOutcome,
+			payload: `{"state":"Failed","next_action":true}`,
+			key:     "next_action",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := ProjectStreamEvent(1, RunEvent{
+				RunID:   "run_bad_optional",
+				Source:  SourceDaemon,
+				Kind:    tt.kind,
+				Summary: "malformed optional field",
+				Time:    time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC),
+				Payload: []byte(tt.payload),
+			}, AllStreamCategories())
+			if err == nil {
+				t.Fatalf("expected malformed %q field to fail", tt.key)
+			}
+			want := fmt.Sprintf("project %s event for Run %q: read payload field %q", tt.kind, "run_bad_optional", tt.key)
+			if !strings.Contains(err.Error(), want) {
+				t.Fatalf("ProjectStreamEvent() error = %q, want context %q", err, want)
+			}
+		})
 	}
 }
 

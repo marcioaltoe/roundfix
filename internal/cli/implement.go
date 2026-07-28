@@ -279,7 +279,12 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	defer ui.Close()
 
-	cycleResult, err := executeImplementCycle(ctx, gitState, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, req.qa, loadedConfig.Config.Worktree.Concurrency, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
+	// The Spec's target branch comes off the Run record, not from git in the
+	// Run Worktree: the Run Worktree is checked out on the Run Branch.
+	cycleResult, err := executeImplementCycle(ctx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, req.qa, implementCapacities{
+		task:         loadedConfig.Config.Worktree.Concurrency,
+		verification: loadedConfig.Config.Verification.Concurrency,
+	}, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
@@ -615,7 +620,12 @@ func printSkippedSpecDiagnostics(stderr io.Writer, skipped []spec.SkippedSpec) {
 
 // executeImplementCycle wires the Run engine exactly like the resolve path
 // and runs one Task cycle over the full graph.
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, qa bool, concurrency int, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+type implementCapacities struct {
+	task         int
+	verification int
+}
+
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, qa bool, capacities implementCapacities, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -647,24 +657,26 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 		return daemon.TaskCycleResult{}, err
 	}
 	return engine.TaskCycle(ctx, daemon.TaskPlan{
-		RunID:           runID,
-		Session:         session,
-		WorkDir:         runRef.Path,
-		RunWorktree:     runRef,
-		HeadSHA:         gitState.HEAD,
-		SpecsRoot:       specsRoot,
-		ArtifactDir:     artifactDir,
-		AgentLogs:       agentLogs,
-		Spec:            graph.Spec,
-		Tasks:           graph.Tasks,
-		Runtime:         runtime,
-		AgentSelections: agentSelections,
-		RuntimeFactory:  runtimeFactory,
-		QA:              qa,
-		Concurrency:     concurrency,
-		CopyList:        copyList,
-		Bootstrap:       bootstrap,
-		BootstrapOutput: bootstrapOutput,
+		RunID:                   runID,
+		Session:                 session,
+		WorkDir:                 runRef.Path,
+		RunWorktree:             runRef,
+		TargetBranch:            targetBranch,
+		HeadSHA:                 gitState.HEAD,
+		SpecsRoot:               specsRoot,
+		ArtifactDir:             artifactDir,
+		AgentLogs:               agentLogs,
+		Spec:                    graph.Spec,
+		Tasks:                   graph.Tasks,
+		Runtime:                 runtime,
+		AgentSelections:         agentSelections,
+		RuntimeFactory:          runtimeFactory,
+		QA:                      qa,
+		Concurrency:             capacities.task,
+		VerificationConcurrency: capacities.verification,
+		CopyList:                copyList,
+		Bootstrap:               bootstrap,
+		BootstrapOutput:         bootstrapOutput,
 	})
 }
 
@@ -735,13 +747,17 @@ func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitStat
 		RunID:           runID,
 		PipelineState:   "ResolvingWithAgent",
 		Concurrency:     loaded.Config.Worktree.Concurrency,
-		BudgetState:     formatBudgetState(loaded.Config),
-		GitState:        formatGitState(gitState),
-		AutoCommit:      true,
-		AutoPush:        loaded.Config.Implement.AutoPush,
-		LastPush:        implementPushState(loaded.Config.Implement.AutoPush),
-		Console:         []string{"Agent and verification output will stream below."},
-		Width:           liveViewWidth(),
+		// Task Capacity and Verification Capacity are configured
+		// independently, so the header shows the pair the Run actually runs
+		// with (ADR 0056).
+		VerificationConcurrency: loaded.Config.Verification.Concurrency,
+		BudgetState:             formatBudgetState(loaded.Config),
+		GitState:                formatGitState(gitState),
+		AutoCommit:              true,
+		AutoPush:                loaded.Config.Implement.AutoPush,
+		LastPush:                implementPushState(loaded.Config.Implement.AutoPush),
+		Console:                 []string{"Agent and verification output will stream below."},
+		Width:                   liveViewWidth(),
 	}
 }
 
@@ -781,6 +797,7 @@ func renderImplementTaskLines(specsRoot string, graph *spec.Graph, cycleFinished
 func renderImplementTaskLinesWithOutcomes(specsRoot string, graph *spec.Graph, cycleFinished bool, outcomes []daemon.TaskOutcome) (string, implementTaskCounts) {
 	counts := implementTaskCounts{}
 	var report bytes.Buffer
+	outcomeStatuses := taskOutcomeStatuses(outcomes)
 	reasons := taskOutcomeReasons(outcomes)
 	for _, task := range graph.Tasks {
 		current := task
@@ -790,6 +807,9 @@ func renderImplementTaskLinesWithOutcomes(specsRoot string, graph *spec.Graph, c
 			current = task
 		}
 		status := implementDisplayStatus(current.Status, cycleFinished)
+		if outcomeStatus := outcomeStatuses[task.ID]; outcomeStatus != "" {
+			status = outcomeStatus
+		}
 		switch status {
 		case "completed":
 			counts.completed++
@@ -810,6 +830,17 @@ func renderImplementTaskLinesWithOutcomes(specsRoot string, graph *spec.Graph, c
 		}
 	}
 	return report.String(), counts
+}
+
+func taskOutcomeStatuses(outcomes []daemon.TaskOutcome) map[string]string {
+	statuses := make(map[string]string, len(outcomes))
+	for _, outcome := range outcomes {
+		switch status := strings.TrimSpace(outcome.Status); status {
+		case "completed", "failed", "skipped":
+			statuses[outcome.Task] = status
+		}
+	}
+	return statuses
 }
 
 func taskOutcomeReasons(outcomes []daemon.TaskOutcome) map[string]string {

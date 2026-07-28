@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -16,6 +17,7 @@ import (
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/gittest"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
@@ -170,16 +172,19 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 
 func (fixture *taskCycleFixture) plan() TaskPlan {
 	return TaskPlan{
-		RunID:       fixture.run.ID,
-		Session:     agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
-		WorkDir:     fixture.gitRoot,
-		RunWorktree: runworktree.Ref{RunID: fixture.run.ID, Path: fixture.gitRoot, Branch: runworktree.BranchName(fixture.run.ID), UserRoot: fixture.gitRoot},
-		Spec:        fixture.graph.Spec,
-		SpecsRoot:   fixture.specsRoot,
-		Tasks:       fixture.graph.Tasks,
-		Runtime:     agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
-		ArtifactDir: fixture.artifactDir,
-		AgentLogs:   true,
+		RunID:                   fixture.run.ID,
+		Session:                 agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
+		WorkDir:                 fixture.gitRoot,
+		RunWorktree:             runworktree.Ref{RunID: fixture.run.ID, Path: fixture.gitRoot, Branch: runworktree.BranchName(fixture.run.ID), UserRoot: fixture.gitRoot},
+		TargetBranch:            fixture.run.LocalBranch,
+		Spec:                    fixture.graph.Spec,
+		SpecsRoot:               fixture.specsRoot,
+		Tasks:                   fixture.graph.Tasks,
+		Runtime:                 agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
+		ArtifactDir:             fixture.artifactDir,
+		AgentLogs:               true,
+		Concurrency:             1,
+		VerificationConcurrency: 1,
 	}
 }
 
@@ -315,26 +320,29 @@ func taskStatusInSpecRootOnDisk(t *testing.T, specsRoot string, id string) strin
 }
 
 // taskFakeRunner scripts per-Task Agent behavior keyed by the Task id it
-// parses from the prompt, mirroring how a real Agent learns its assignment
-// from the prompt contract. A QA prompt writes qaReport as the Spec's QA
-// Report, the way the qa-gate Agent does; an empty qaReport writes none.
+// parses from the prompt, including attempted Agent status edits that the
+// Daemon must normalize. A QA prompt writes qaReport as the Spec's QA Report,
+// the way the qa-gate Agent does; an empty qaReport writes none.
 type taskFakeRunner struct {
-	calls           *[]string
-	gitRoot         string
-	store           *store.Store
-	statusByTask    map[string]spec.Status
-	errByTask       map[string]error
-	errByTaskCall   map[string][]error
-	taskCalls       map[string]int
-	writeByTask     map[string]string
-	rawStatusByTask map[string]string
-	anomalyByTask   map[string]string
-	qaReport        string
-	qaPrompts       []string
-	seenStates      []string
-	prompts         []string
-	requests        []agent.ExecuteRequest
-	writeLogs       bool
+	calls            *[]string
+	gitRoot          string
+	store            *store.Store
+	statusByTask     map[string]spec.Status
+	statusByTaskCall map[string][]spec.Status
+	errByTask        map[string]error
+	errByTaskCall    map[string][]error
+	taskCalls        map[string]int
+	writeByTask      map[string]string
+	resultByTask     map[string]string
+	rawStatusByTask  map[string]string
+	anomalyByTask    map[string]string
+	afterTask        func(string)
+	qaReport         string
+	qaPrompts        []string
+	seenStates       []string
+	prompts          []string
+	requests         []agent.ExecuteRequest
+	writeLogs        bool
 }
 
 func (runner *taskFakeRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
@@ -428,6 +436,28 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 		if err := spec.SetStatus(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID), status); err != nil {
 			return agent.ExecuteResult{}, err
 		}
+	}
+	if statuses := runner.statusByTaskCall[taskID]; taskCall < len(statuses) {
+		if err := spec.SetStatus(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID), statuses[taskCall]); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
+	if result := runner.resultByTask[taskID]; result != "" {
+		path := taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID)
+		file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+		if err != nil {
+			return agent.ExecuteResult{}, err
+		}
+		if _, err := file.WriteString(result); err != nil {
+			_ = file.Close()
+			return agent.ExecuteResult{}, err
+		}
+		if err := file.Close(); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
+	if runner.afterTask != nil {
+		runner.afterTask(taskID)
 	}
 	return agent.ExecuteResult{LogPath: req.LogPath, TransportAnomaly: runner.anomalyByTask[taskID]}, nil
 }
@@ -926,15 +956,16 @@ func eventsOfKind(sink *captureEventSink, kind runevent.Kind) []runevent.RunEven
 // taskFakeVerifier records every verification command verbatim and fails
 // the commands scripted in failOn.
 type taskFakeVerifier struct {
-	calls       *[]string
-	store       *store.Store
-	runID       string
-	failOn      map[string]error
-	script      []error
-	commands    []string
-	workDirs    []string
-	outputPaths []string
-	seenStates  []string
+	calls           *[]string
+	store           *store.Store
+	runID           string
+	failOn          map[string]error
+	script          []error
+	temporaryOnCall map[int]bool
+	commands        []string
+	workDirs        []string
+	outputPaths     []string
+	seenStates      []string
 }
 
 func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
@@ -944,6 +975,10 @@ func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) (
 	verifier.outputPaths = append(verifier.outputPaths, req.OutputPath)
 	if verifier.store != nil {
 		verifier.seenStates = append(verifier.seenStates, runStateForTest(verifier.store, verifier.runID))
+	}
+	if verifier.temporaryOnCall[len(verifier.commands)] {
+		commandErr := &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: errors.New("exit status 75")}
+		return VerifyResult{OutputPath: req.OutputPath}, &TemporaryVerificationFailureError{CommandFailure: commandErr}
 	}
 	if len(verifier.script) > 0 {
 		err := verifier.script[0]
@@ -1079,6 +1114,20 @@ func (runner *taskSchedulerRunner) startedTasks() []string {
 	return append([]string(nil), runner.starts...)
 }
 
+// qaPrompts reports the QA gate prompts the Agent received, which is empty
+// whenever the QA step never started.
+func (runner *taskSchedulerRunner) qaPrompts() []string {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	var prompts []string
+	for _, req := range runner.requests {
+		if strings.Contains(req.Prompt, "Spec QA gate") {
+			prompts = append(prompts, req.Prompt)
+		}
+	}
+	return prompts
+}
+
 func waitSchedulerStarts(t *testing.T, runner *taskSchedulerRunner, count int) []string {
 	t.Helper()
 	started := make([]string, 0, count)
@@ -1129,6 +1178,125 @@ func (verifier *taskSchedulerVerifier) Verify(_ context.Context, req VerifyReque
 	return VerifyResult{OutputPath: req.OutputPath}, nil
 }
 
+type taskVerificationStart struct {
+	taskID  string
+	attempt int
+}
+
+type taskCapacityVerifier struct {
+	mu          sync.Mutex
+	started     chan taskVerificationStart
+	release     map[string]chan struct{}
+	fail        map[string]error
+	calls       map[string]int
+	active      int
+	maxActive   int
+	totalStarts int
+}
+
+func newTaskCapacityVerifier(taskIDs ...string) *taskCapacityVerifier {
+	verifier := &taskCapacityVerifier{
+		started: make(chan taskVerificationStart, len(taskIDs)*2),
+		release: make(map[string]chan struct{}, len(taskIDs)*2),
+		fail:    map[string]error{},
+		calls:   map[string]int{},
+	}
+	for _, taskID := range taskIDs {
+		verifier.release[taskVerificationKey(taskID, 1)] = make(chan struct{})
+	}
+	return verifier
+}
+
+func (verifier *taskCapacityVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult, error) {
+	taskID := strings.TrimPrefix(req.Command, "verify-")
+	verifier.mu.Lock()
+	verifier.calls[taskID]++
+	attempt := verifier.calls[taskID]
+	key := taskVerificationKey(taskID, attempt)
+	verifier.active++
+	verifier.totalStarts++
+	if verifier.active > verifier.maxActive {
+		verifier.maxActive = verifier.active
+	}
+	release := verifier.release[key]
+	fail := verifier.fail[key]
+	verifier.mu.Unlock()
+
+	verifier.started <- taskVerificationStart{taskID: taskID, attempt: attempt}
+	defer func() {
+		verifier.mu.Lock()
+		verifier.active--
+		verifier.mu.Unlock()
+	}()
+
+	if fail != nil {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{
+			Command:    req.Command,
+			OutputPath: req.OutputPath,
+			Err:        fail,
+		}
+	}
+	if release != nil {
+		select {
+		case <-release:
+		case <-ctx.Done():
+			return VerifyResult{OutputPath: req.OutputPath}, ctx.Err()
+		}
+	}
+	return VerifyResult{OutputPath: req.OutputPath}, nil
+}
+
+func (verifier *taskCapacityVerifier) addAttempt(taskID string, attempt int) {
+	verifier.mu.Lock()
+	defer verifier.mu.Unlock()
+	verifier.release[taskVerificationKey(taskID, attempt)] = make(chan struct{})
+}
+
+func (verifier *taskCapacityVerifier) failAttempt(taskID string, attempt int, err error) {
+	verifier.mu.Lock()
+	defer verifier.mu.Unlock()
+	verifier.fail[taskVerificationKey(taskID, attempt)] = err
+}
+
+func (verifier *taskCapacityVerifier) releaseAttempt(taskID string, attempt int) {
+	verifier.mu.Lock()
+	release := verifier.release[taskVerificationKey(taskID, attempt)]
+	verifier.mu.Unlock()
+	if release != nil {
+		close(release)
+	}
+}
+
+func (verifier *taskCapacityVerifier) waitStart(t *testing.T) taskVerificationStart {
+	t.Helper()
+	select {
+	case started := <-verifier.started:
+		return started
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for Verification start")
+		return taskVerificationStart{}
+	}
+}
+
+func (verifier *taskCapacityVerifier) assertNoStart(t *testing.T) {
+	t.Helper()
+	select {
+	case started := <-verifier.started:
+		t.Fatalf("expected no Verification start, got %+v", started)
+	default:
+	}
+}
+
+func (verifier *taskCapacityVerifier) observed() (maxActive int, totalStarts int) {
+	verifier.mu.Lock()
+	defer verifier.mu.Unlock()
+	return verifier.maxActive, verifier.totalStarts
+}
+
+func taskVerificationKey(taskID string, attempt int) string {
+	return fmt.Sprintf("%s:%d", taskID, attempt)
+}
+
 type taskSchedulerCommitter struct {
 	mu       sync.Mutex
 	messages []string
@@ -1147,6 +1315,12 @@ func (committer *taskSchedulerCommitter) commitCount() int {
 	committer.mu.Lock()
 	defer committer.mu.Unlock()
 	return len(committer.messages)
+}
+
+func (committer *taskSchedulerCommitter) commitMessages() []string {
+	committer.mu.Lock()
+	defer committer.mu.Unlock()
+	return append([]string(nil), committer.messages...)
 }
 
 type fakeTaskWorktrees struct {
@@ -1486,6 +1660,197 @@ func assertTaskAnomalyBeforeVerification(t *testing.T, events []runevent.RunEven
 	}
 }
 
+type observedGateContext struct {
+	context.Context
+	entered chan struct{}
+	once    sync.Once
+}
+
+func (ctx *observedGateContext) Err() error {
+	ctx.once.Do(func() {
+		close(ctx.entered)
+	})
+	return ctx.Context.Err()
+}
+
+type gateAcquireResult struct {
+	release func()
+	err     error
+}
+
+func waitGateAcquireResult(t *testing.T, results <-chan gateAcquireResult) gateAcquireResult {
+	t.Helper()
+	select {
+	case result := <-results:
+		return result
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for Verification gate acquisition")
+		return gateAcquireResult{}
+	}
+}
+
+func waitObservedGateEntry(t *testing.T, entered <-chan struct{}) {
+	t.Helper()
+	select {
+	case <-entered:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for Verification gate entry")
+	}
+}
+
+func TestTaskCycleExclusiveRetryDrainsSharedAttemptsAndBlocksLaterShared(t *testing.T) {
+	gate := newVerificationGate(2)
+	releaseFirst, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("acquire first active shared capacity: %v", err)
+	}
+	releaseSecond, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("acquire second active shared capacity: %v", err)
+	}
+
+	exclusiveEntered := make(chan struct{})
+	exclusiveResults := make(chan gateAcquireResult, 1)
+	go func() {
+		release, err := gate.Acquire(&observedGateContext{Context: context.Background(), entered: exclusiveEntered}, verificationExclusive)
+		exclusiveResults <- gateAcquireResult{release: release, err: err}
+	}()
+	waitObservedGateEntry(t, exclusiveEntered)
+
+	sharedEntered := make(chan struct{})
+	sharedResults := make(chan gateAcquireResult, 1)
+	go func() {
+		release, err := gate.Acquire(&observedGateContext{Context: context.Background(), entered: sharedEntered}, verificationShared)
+		sharedResults <- gateAcquireResult{release: release, err: err}
+	}()
+	waitObservedGateEntry(t, sharedEntered)
+
+	select {
+	case result := <-exclusiveResults:
+		t.Fatalf("exclusive acquired before active shared drained: %+v", result)
+	default:
+	}
+	select {
+	case result := <-sharedResults:
+		t.Fatalf("later shared bypassed queued exclusive: %+v", result)
+	default:
+	}
+
+	releaseFirst()
+	select {
+	case result := <-exclusiveResults:
+		t.Fatalf("exclusive acquired before both active shared attempts drained: %+v", result)
+	default:
+	}
+	releaseSecond()
+	exclusive := waitGateAcquireResult(t, exclusiveResults)
+	if exclusive.err != nil {
+		t.Fatalf("acquire exclusive after shared drain: %v", exclusive.err)
+	}
+	select {
+	case result := <-sharedResults:
+		t.Fatalf("later shared overlapped active exclusive: %+v", result)
+	default:
+	}
+
+	exclusive.release()
+	shared := waitGateAcquireResult(t, sharedResults)
+	if shared.err != nil {
+		t.Fatalf("acquire shared after exclusive release: %v", shared.err)
+	}
+	shared.release()
+}
+
+func TestTaskCycleExclusiveRetryCancellationRestoresFullSharedCapacity(t *testing.T) {
+	gate := newVerificationGate(2)
+	releaseFirst, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("acquire first shared capacity: %v", err)
+	}
+	releaseSecond, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("acquire second shared capacity: %v", err)
+	}
+
+	exclusiveCtx, cancelExclusive := context.WithCancel(context.Background())
+	exclusiveEntered := make(chan struct{})
+	exclusiveResults := make(chan gateAcquireResult, 1)
+	go func() {
+		release, err := gate.Acquire(&observedGateContext{Context: exclusiveCtx, entered: exclusiveEntered}, verificationExclusive)
+		exclusiveResults <- gateAcquireResult{release: release, err: err}
+	}()
+	waitObservedGateEntry(t, exclusiveEntered)
+	cancelExclusive()
+
+	canceled := waitGateAcquireResult(t, exclusiveResults)
+	if !errors.Is(canceled.err, context.Canceled) {
+		t.Fatalf("expected queued exclusive cancellation, got %v", canceled.err)
+	}
+	if canceled.release != nil {
+		t.Fatal("expected canceled acquisition not to return a release function")
+	}
+
+	releaseFirst()
+	releaseFirst()
+	releaseSecond()
+	releaseSecond()
+	releaseAfterCancelFirst, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("reacquire first shared capacity after cancellation: %v", err)
+	}
+	releaseAfterCancelSecond, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("reacquire second shared capacity after cancellation: %v", err)
+	}
+	releaseAfterCancelFirst()
+	releaseAfterCancelSecond()
+}
+
+// TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts pins
+// the fact the cancellation contract depends on: whether an attempt owns
+// capacity right away, or is queued and must start honoring Stop Requests.
+func TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts(t *testing.T) {
+	gate := newVerificationGate(1)
+	release, acquired := gate.TryAcquire(verificationShared)
+	if !acquired {
+		t.Fatal("expected free capacity granted without waiting")
+	}
+	if _, queued := gate.TryAcquire(verificationShared); queued {
+		t.Fatal("expected a full gate to report the next attempt as queued")
+	}
+	release()
+	regained, acquired := gate.TryAcquire(verificationShared)
+	if !acquired {
+		t.Fatal("expected a released permit to be reusable")
+	}
+
+	exclusiveEntered := make(chan struct{})
+	exclusiveResults := make(chan gateAcquireResult, 1)
+	go func() {
+		release, err := gate.Acquire(&observedGateContext{Context: context.Background(), entered: exclusiveEntered}, verificationExclusive)
+		exclusiveResults <- gateAcquireResult{release: release, err: err}
+	}()
+	waitObservedGateEntry(t, exclusiveEntered)
+	if _, acquired := gate.TryAcquire(verificationShared); acquired {
+		t.Fatal("expected a queued exclusive retry to keep later shared attempts queued")
+	}
+	if _, acquired := gate.TryAcquire(verificationExclusive); acquired {
+		t.Fatal("expected a queued exclusive retry not to be bypassed")
+	}
+
+	regained()
+	exclusive := waitGateAcquireResult(t, exclusiveResults)
+	if exclusive.err != nil {
+		t.Fatalf("acquire exclusive after shared drain: %v", exclusive.err)
+	}
+	exclusive.release()
+	final, acquired := gate.TryAcquire(verificationShared)
+	if !acquired {
+		t.Fatal("expected full shared capacity back after the exclusive retry released")
+	}
+	final()
+}
+
 func TestTaskCycleValidatesPlan(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
@@ -1497,6 +1862,530 @@ func TestTaskCycleValidatesPlan(t *testing.T) {
 	}
 	if len(*fixture.calls) != 0 {
 		t.Fatalf("expected no daemon actions for invalid plan, got %v", *fixture.calls)
+	}
+}
+
+func TestTaskCyclePublishesCapacities(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.Concurrency = 1
+	plan.VerificationConcurrency = 3
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("expected Task to complete, got %+v", result)
+	}
+
+	statusEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonStatus)
+	if len(statusEvents) == 0 {
+		t.Fatal("expected Task-cycle-start event")
+	}
+	payload := eventPayloadMap(t, statusEvents[0])
+	if payload["concurrency"] != float64(1) || payload["task_capacity"] != float64(1) || payload["verification_capacity"] != float64(3) {
+		t.Fatalf("unexpected Task-cycle capacities: %+v", payload)
+	}
+}
+
+func TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects(t *testing.T) {
+	tests := []struct {
+		name                 string
+		taskCapacity         int
+		verificationCapacity int
+		want                 string
+	}{
+		{name: "missing Task Capacity", taskCapacity: 0, verificationCapacity: 1, want: "Task Capacity"},
+		{name: "negative Task Capacity", taskCapacity: -1, verificationCapacity: 1, want: "Task Capacity"},
+		{name: "missing Verification Capacity", taskCapacity: 1, verificationCapacity: 0, want: "Verification Capacity"},
+		{name: "negative Verification Capacity", taskCapacity: 1, verificationCapacity: -1, want: "Verification Capacity"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+			engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+			plan := fixture.plan()
+			plan.Concurrency = tt.taskCapacity
+			plan.VerificationConcurrency = tt.verificationCapacity
+			stateBefore := runStateForTest(fixture.store, fixture.run.ID)
+
+			_, err := engine.TaskCycle(context.Background(), plan)
+
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("expected %s validation error, got %v", tt.want, err)
+			}
+			if len(*fixture.calls) != 0 {
+				t.Fatalf("expected no Agent, Verification, or settlement action, got %v", *fixture.calls)
+			}
+			if events := fixture.sink.snapshot(); len(events) != 0 {
+				t.Fatalf("expected no Run Event before capacity validation, got %+v", events)
+			}
+			if fixture.progress.Len() != 0 {
+				t.Fatalf("expected no progress output before capacity validation, got %q", fixture.progress.String())
+			}
+			if got := runStateForTest(fixture.store, fixture.run.ID); got != stateBefore {
+				t.Fatalf("Run state changed from %q to %q", stateBefore, got)
+			}
+		})
+	}
+}
+
+func TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{"verify-task_01"}},
+		{id: "task_02", verification: []string{"verify-task_02"}},
+	})
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	verifier := newTaskCapacityVerifier("task_01", "task_02")
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, &taskSchedulerCommitter{}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.VerificationConcurrency = 1
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	if got := runner.maxObservedActive(); got != 2 {
+		t.Fatalf("expected two overlapping Agent turns, got max active %d", got)
+	}
+	runner.releaseTask("task_01")
+	runner.releaseTask("task_02")
+
+	first := verifier.waitStart(t)
+	verifier.assertNoStart(t)
+	verifier.releaseAttempt(first.taskID, first.attempt)
+	second := verifier.waitStart(t)
+	if second.taskID == first.taskID {
+		t.Fatalf("expected the other Task to acquire after release, got %+v then %+v", first, second)
+	}
+	verifier.releaseAttempt(second.taskID, second.attempt)
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if outcome.err != nil {
+		t.Fatalf("task cycle: %v", outcome.err)
+	}
+	if outcome.result.Completed != 2 {
+		t.Fatalf("expected both Tasks completed, got %+v", outcome.result)
+	}
+	if maxActive, starts := verifier.observed(); maxActive != 1 || starts != 2 {
+		t.Fatalf("expected two Verification starts bounded to one active, got max=%d starts=%d", maxActive, starts)
+	}
+}
+
+func TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{"verify-task_01"}},
+		{id: "task_02", verification: []string{"verify-task_02"}},
+	})
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	verifier := newTaskCapacityVerifier("task_01", "task_02")
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, &taskSchedulerCommitter{}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.VerificationConcurrency = 2
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	runner.releaseTask("task_02")
+	first := verifier.waitStart(t)
+	second := verifier.waitStart(t)
+	if first.taskID == second.taskID {
+		t.Fatalf("expected distinct ready Tasks to overlap, got %+v and %+v", first, second)
+	}
+	if maxActive, _ := verifier.observed(); maxActive != 2 {
+		t.Fatalf("expected two active Verification attempts, got %d", maxActive)
+	}
+	verifier.releaseAttempt(first.taskID, first.attempt)
+	verifier.releaseAttempt(second.taskID, second.attempt)
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if outcome.err != nil {
+		t.Fatalf("task cycle: %v", outcome.err)
+	}
+	if outcome.result.Completed != 2 {
+		t.Fatalf("expected both Tasks completed without permit loss, got %+v", outcome.result)
+	}
+	if maxActive, starts := verifier.observed(); maxActive != 2 || starts != 2 {
+		t.Fatalf("expected exactly two overlapping Verification starts, got max=%d starts=%d", maxActive, starts)
+	}
+}
+
+func TestTaskCycleWaitingForVerificationPrecedesStartedWhenImmediatelyAvailable(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify-task_01"}}})
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("expected Task completed, got %+v", result)
+	}
+
+	events := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+	waitingIndex := -1
+	startedIndex := -1
+	for index, event := range events {
+		payload := eventPayloadMap(t, event)
+		switch payload["phase"] {
+		case string(runevent.VerificationPhaseWaiting):
+			waitingIndex = index
+			if payload["mode"] != "shared" || payload["capacity"] != float64(1) {
+				t.Fatalf("unexpected waiting payload: %+v", payload)
+			}
+		case string(runevent.VerificationPhaseStarted):
+			startedIndex = index
+		}
+	}
+	if waitingIndex < 0 || startedIndex < 0 || waitingIndex >= startedIndex {
+		t.Fatalf("expected waiting before started for immediately available capacity, got %+v", events)
+	}
+}
+
+func TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{"verify-task_01"}},
+		{id: "task_02", verification: []string{"verify-task_02"}},
+	})
+	fixture.sink.published = make(chan runevent.RunEvent, 128)
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	repairRelease := make(chan struct{})
+	var runnerCallsMu sync.Mutex
+	runnerCalls := map[string]int{}
+	runner.onStart = func(taskID string, _ agent.ExecuteRequest) error {
+		runnerCallsMu.Lock()
+		runnerCalls[taskID]++
+		call := runnerCalls[taskID]
+		runnerCallsMu.Unlock()
+		if taskID == "task_01" && call == 2 {
+			<-repairRelease
+		}
+		return nil
+	}
+	verifier := newTaskCapacityVerifier("task_01", "task_02")
+	verifier.failAttempt("task_01", 1, errors.New("deterministic failure"))
+	verifier.addAttempt("task_01", 2)
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, &taskSchedulerCommitter{}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.VerificationConcurrency = 1
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	if started := verifier.waitStart(t); started != (taskVerificationStart{taskID: "task_01", attempt: 1}) {
+		t.Fatalf("expected task_01 attempt 1 first, got %+v", started)
+	}
+	if started := waitSchedulerStarts(t, runner, 1); len(started) != 1 || started[0] != "task_01" {
+		t.Fatalf("expected task_01 Verification Feedback Agent, got %v", started)
+	}
+
+	runner.releaseTask("task_02")
+	if started := verifier.waitStart(t); started != (taskVerificationStart{taskID: "task_02", attempt: 1}) {
+		t.Fatalf("expected task_02 to verify while task_01 repair held no capacity, got %+v", started)
+	}
+	close(repairRelease)
+	waitPublishedVerificationPhase(t, fixture.sink.published, "task_01", 2, runevent.VerificationPhaseWaiting)
+	verifier.assertNoStart(t)
+
+	verifier.releaseAttempt("task_02", 1)
+	if started := verifier.waitStart(t); started != (taskVerificationStart{taskID: "task_01", attempt: 2}) {
+		t.Fatalf("expected task_01 attempt 2 to reacquire after task_02, got %+v", started)
+	}
+	verifier.releaseAttempt("task_01", 2)
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if outcome.err != nil {
+		t.Fatalf("task cycle: %v", outcome.err)
+	}
+	if outcome.result.Completed != 2 {
+		t.Fatalf("expected both Tasks completed, got %+v", outcome.result)
+	}
+	if maxActive, starts := verifier.observed(); maxActive != 1 || starts != 3 {
+		t.Fatalf("expected released/reacquired capacity across three attempts, got max=%d starts=%d", maxActive, starts)
+	}
+	assertVerificationWaitingBeforeStarted(t, fixture.sink.snapshot())
+	assertVerificationFeedbackJournaled(t, fixture.sink.snapshot(), "task_01", "task_02")
+}
+
+// assertVerificationFeedbackJournaled proves the Verification Feedback turn
+// is observable per Task: only the repaired Task journals it, and it lands
+// between the attempt that failed and the attempt that follows, so a
+// consumer can move that Task — and only that Task — back to Agent work.
+func assertVerificationFeedbackJournaled(t *testing.T, events []runevent.RunEvent, repaired string, untouched string) {
+	t.Helper()
+	feedbackIndex := -1
+	failedVerdict := -1
+	nextWaiting := -1
+	for index, event := range events {
+		switch event.Kind {
+		case runevent.KindDaemonTask:
+			if eventPayloadString(t, event, "phase") != "verification_feedback" {
+				continue
+			}
+			if event.ReviewIssue == untouched {
+				t.Fatalf("expected no Verification Feedback event for %s, got %+v", untouched, event)
+			}
+			if event.ReviewIssue != repaired {
+				continue
+			}
+			if feedbackIndex >= 0 {
+				t.Fatalf("expected one Verification Feedback event for %s, got a second at %d", repaired, index)
+			}
+			feedbackIndex = index
+		case runevent.KindDaemonVerification:
+			payload := eventPayloadMap(t, event)
+			taskID, _ := payload["task"].(string)
+			attempt, _ := payload["attempt"].(float64)
+			if taskID != repaired {
+				continue
+			}
+			if payload["phase"] == string(runevent.VerificationPhaseVerdict) && int(attempt) == 1 {
+				failedVerdict = index
+			}
+			if payload["phase"] == string(runevent.VerificationPhaseWaiting) && int(attempt) == 2 {
+				nextWaiting = index
+			}
+		}
+	}
+	if feedbackIndex < 0 {
+		t.Fatalf("expected a verification_feedback event for %s, got none", repaired)
+	}
+	if failedVerdict < 0 || feedbackIndex < failedVerdict {
+		t.Fatalf("expected the Verification Feedback event after the failed verdict, got verdict=%d feedback=%d", failedVerdict, feedbackIndex)
+	}
+	if nextWaiting < 0 || feedbackIndex > nextWaiting {
+		t.Fatalf("expected the Verification Feedback event before the next waiting event, got feedback=%d waiting=%d", feedbackIndex, nextWaiting)
+	}
+}
+
+func TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{"verify-task_01"}},
+		{id: "task_02", verification: []string{"verify-task_02"}},
+	})
+	fixture.sink.published = make(chan runevent.RunEvent, 128)
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	verifier := newTaskCapacityVerifier("task_01", "task_02")
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, &taskSchedulerCommitter{}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.VerificationConcurrency = 1
+	ctx, cancel := context.WithCancel(context.Background())
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(ctx, plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	runner.releaseTask("task_02")
+	active := verifier.waitStart(t)
+	queuedTask := "task_01"
+	if active.taskID == queuedTask {
+		queuedTask = "task_02"
+	}
+	waitPublishedVerificationPhase(t, fixture.sink.published, queuedTask, 1, runevent.VerificationPhaseWaiting)
+	verifier.assertNoStart(t)
+	cancel()
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if outcome.err == nil || !errors.Is(outcome.err, context.Canceled) {
+		t.Fatalf("expected queued cancellation, got result=%+v err=%v", outcome.result, outcome.err)
+	}
+	if _, starts := verifier.observed(); starts != 1 {
+		t.Fatalf("expected zero Verification commands for queued Task, total starts=%d", starts)
+	}
+	for _, status := range []spec.Status{spec.StatusCompleted, spec.StatusFailed} {
+		if hasTaskSettlementEvent(t, fixture.sink.snapshot(), queuedTask, status) {
+			t.Fatalf("expected no false terminal settlement for queued Task %s", queuedTask)
+		}
+	}
+	taskRef := taskWorktrees.taskRef(queuedTask)
+	if got := taskStatusInSpecRootOnDisk(t, filepath.Join(taskRef.Path, "docs", "specs"), queuedTask); got != string(spec.StatusInProgress) {
+		t.Fatalf("expected queued Task left resumable in_progress, got %q", got)
+	}
+}
+
+// TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable
+// covers the public Stop path the direct-cancellation case cannot reach: a
+// Stop Request is durable Run-store state, so the queued attempt has to
+// read it rather than wait for a context that is never cancelled.
+func TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{"verify-task_01"}},
+		{id: "task_02", verification: []string{"verify-task_02"}},
+	})
+	fixture.sink.published = make(chan runevent.RunEvent, 128)
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	verifier := newTaskCapacityVerifier("task_01", "task_02")
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, &taskSchedulerCommitter{}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.VerificationConcurrency = 1
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	runner.releaseTask("task_02")
+	active := verifier.waitStart(t)
+	queuedTask := "task_01"
+	if active.taskID == queuedTask {
+		queuedTask = "task_02"
+	}
+	waitPublishedVerificationPhase(t, fixture.sink.published, queuedTask, 1, runevent.VerificationPhaseWaiting)
+	verifier.assertNoStart(t)
+
+	if err := fixture.store.RequestStop(context.Background(), fixture.run.ID); err != nil {
+		t.Fatalf("record public Stop Request: %v", err)
+	}
+	// The queued Task leaves the queue on the Stop Request alone, while the
+	// active attempt still holds the only Verification permit.
+	waitPublishedStopEvent(t, fixture.sink.published)
+	verifier.assertNoStart(t)
+	verifier.releaseAttempt(active.taskID, 1)
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if !errors.Is(outcome.err, ErrStopRequested) {
+		t.Fatalf("expected the queued Task to end the Run stopped, got result=%+v err=%v", outcome.result, outcome.err)
+	}
+	if _, starts := verifier.observed(); starts != 1 {
+		t.Fatalf("expected zero Verification commands for the queued Task, total starts=%d", starts)
+	}
+	for _, status := range []spec.Status{spec.StatusCompleted, spec.StatusFailed} {
+		if hasTaskSettlementEvent(t, fixture.sink.snapshot(), queuedTask, status) {
+			t.Fatalf("expected no false terminal settlement for queued Task %s", queuedTask)
+		}
+	}
+	queuedRoot := filepath.Join(taskWorktrees.taskRef(queuedTask).Path, "docs", "specs")
+	if got := taskStatusInSpecRootOnDisk(t, queuedRoot, queuedTask); got != string(spec.StatusInProgress) {
+		t.Fatalf("expected queued Task left resumable in_progress, got %q", got)
+	}
+	// The already-running attempt still settles and integrates before the
+	// Run stops, so its status reaches the Run Worktree.
+	if got := taskStatusOnDisk(t, fixture.gitRoot, active.taskID); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected the in-flight Task settled completed, got %q", got)
+	}
+	if !taskWorktrees.integratedTask(active.taskID) {
+		t.Fatalf("expected the in-flight Task integrated before the Run stopped, got %v", taskWorktrees.integratedTasks())
+	}
+	if outcome.result.Completed != 1 || outcome.result.Failed != 0 || outcome.result.Skipped != 0 {
+		t.Fatalf("expected only the in-flight Task counted, got %+v", outcome.result)
+	}
+}
+
+func waitPublishedStopEvent(t *testing.T, published <-chan runevent.RunEvent) {
+	t.Helper()
+	for {
+		select {
+		case event := <-published:
+			if event.Kind == runevent.KindDaemonStatus && strings.Contains(event.Summary, "Stop Request") {
+				return
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatal("timed out waiting for the Stop Request to reach the Run Event Stream")
+		}
+	}
+}
+
+func waitPublishedVerificationPhase(t *testing.T, published <-chan runevent.RunEvent, taskID string, attempt int, phase runevent.VerificationPhase) {
+	t.Helper()
+	for {
+		select {
+		case event := <-published:
+			if event.Kind != runevent.KindDaemonVerification || event.ReviewIssue != taskID {
+				continue
+			}
+			payload := eventPayloadMap(t, event)
+			if payload["attempt"] == float64(attempt) && payload["phase"] == string(phase) {
+				return
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatalf("timed out waiting for Task %s Verification attempt %d phase %s", taskID, attempt, phase)
+		}
+	}
+}
+
+func assertVerificationWaitingBeforeStarted(t *testing.T, events []runevent.RunEvent) {
+	t.Helper()
+	waiting := map[string]int{}
+	for index, event := range events {
+		if event.Kind != runevent.KindDaemonVerification {
+			continue
+		}
+		payload := eventPayloadMap(t, event)
+		taskID, _ := payload["task"].(string)
+		attempt, _ := payload["attempt"].(float64)
+		key := taskVerificationKey(taskID, int(attempt))
+		switch payload["phase"] {
+		case string(runevent.VerificationPhaseWaiting):
+			waiting[key] = index
+		case string(runevent.VerificationPhaseStarted):
+			waitingIndex, ok := waiting[key]
+			if !ok || waitingIndex >= index {
+				t.Fatalf("Verification %s started without an earlier waiting event", key)
+			}
+		}
 	}
 }
 
@@ -1954,6 +2843,27 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	}
 }
 
+func TestVerifyTaskRejectsMissingRetryStateWithoutMutatingRun(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	engine := fixture.engine(
+		t,
+		&taskFakeRunner{calls: fixture.calls},
+		&taskFakeVerifier{calls: fixture.calls},
+		&engineFakeCommitter{calls: fixture.calls},
+		fixture.worktree,
+	)
+	before := runStateForTest(fixture.store, fixture.run.ID)
+
+	_, err := engine.verifyTask(context.Background(), fixture.plan(), fixture.graph.Tasks[0], 1, 1, nil)
+
+	if err == nil || !strings.Contains(err.Error(), "temporary retry state is required") {
+		t.Fatalf("verifyTask() error = %v, want missing temporary retry state", err)
+	}
+	if after := runStateForTest(fixture.store, fixture.run.ID); after != before {
+		t.Fatalf("verifyTask() changed Run state from %q to %q for invalid input", before, after)
+	}
+}
+
 func TestTaskCycleRewritesNormalizedStatusAfterAgentReload(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Normalize the task status"}})
 	runner := &taskFakeRunner{
@@ -1981,6 +2891,126 @@ func TestTaskCycleRewritesNormalizedStatusAfterAgentReload(t *testing.T) {
 	}
 	if len(committer.paths) != 1 || strings.Join(committer.paths[0], "|") != taskFileRel(taskCycleSlug, "task_01") {
 		t.Fatalf("expected only the canonicalized task file committed, got %v", committer.paths)
+	}
+}
+
+func TestTaskCycleDaemonStatusInProgressBeforeAgentAndStartEvent(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("expected Task to complete, got %+v", result)
+	}
+	if len(runner.prompts) != 1 || !strings.Contains(runner.prompts[0], "\nstatus: in_progress\n") {
+		t.Fatalf("expected first Agent prompt to embed the Daemon-owned in_progress Task, got %q", runner.prompts)
+	}
+	taskEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonTask)
+	if len(taskEvents) < 1 {
+		t.Fatal("expected Task start event")
+	}
+	payload := eventPayloadMap(t, taskEvents[0])
+	if payload["phase"] != "started" || payload["status"] != string(spec.StatusInProgress) {
+		t.Fatalf("expected Task start event to agree with in_progress on disk, got %+v", payload)
+	}
+}
+
+func TestTaskCycleAgentStatusVariantsReachDaemonVerification(t *testing.T) {
+	statuses := []spec.Status{
+		spec.StatusPending,
+		spec.StatusInProgress,
+		spec.StatusCompleted,
+		spec.StatusFailed,
+	}
+	for _, status := range statuses {
+		t.Run(string(status), func(t *testing.T) {
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+			runner := &taskFakeRunner{
+				calls:        fixture.calls,
+				gitRoot:      fixture.gitRoot,
+				statusByTask: map[string]spec.Status{"task_01": status},
+			}
+			verifier := &taskFakeVerifier{calls: fixture.calls}
+			engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+			result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+			if err != nil {
+				t.Fatalf("task cycle: %v", err)
+			}
+			if result.Completed != 1 || result.Failed != 0 {
+				t.Fatalf("expected status %q to be normalized before passing settlement, got %+v", status, result)
+			}
+			if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit" {
+				t.Fatalf("expected status %q to reach Daemon Verification, got %q", status, got)
+			}
+			if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+				t.Fatalf("expected Daemon-settled completed status after %q handoff, got %q", status, got)
+			}
+		})
+	}
+}
+
+func TestTaskCycleAgentStatusNormalizationPreservesResultThroughVerification(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	const resultEvidence = "\n## Result\n\n- Focused check passed and implementation is ready.\n"
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+		resultByTask: map[string]string{"task_01": resultEvidence},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("expected passing Verification to settle completed, got %+v", result)
+	}
+	content, err := os.ReadFile(taskPathFor(fixture.gitRoot, taskCycleSlug, "task_01"))
+	if err != nil {
+		t.Fatalf("read Task after settlement: %v", err)
+	}
+	if !strings.Contains(string(content), resultEvidence) {
+		t.Fatalf("expected Agent-authored Result prose to survive status normalization, got:\n%s", content)
+	}
+	if len(committer.paths) != 1 || !slices.Contains(committer.paths[0], taskFileRel(taskCycleSlug, "task_01")) {
+		t.Fatalf("expected passing Task and Result evidence committed together, got %v", committer.paths)
+	}
+}
+
+func TestTaskCycleAgentStatusRepairHandoffReachesFinalVerification(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	runner := &taskFakeRunner{
+		calls:            fixture.calls,
+		gitRoot:          fixture.gitRoot,
+		statusByTaskCall: map[string][]spec.Status{"task_01": {spec.StatusCompleted, spec.StatusFailed}},
+	}
+	verifier := &taskFakeVerifier{calls: fixture.calls, script: []error{errors.New("gate broke"), nil}}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected repair handoff status to be normalized before final Verification, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>commit" {
+		t.Fatalf("expected one same-Session repair and final Verification, got %q", got)
+	}
+	if len(runner.requests) != 2 || runner.requests[0].Session != runner.requests[1].Session {
+		t.Fatalf("expected Verification Feedback to reuse the Agent Session, got %+v", runner.requests)
 	}
 }
 
@@ -2146,10 +3176,10 @@ func TestTaskCycleRepairAgentErrorFailsTaskWithoutFinalVerification(t *testing.T
 	}
 }
 
-func TestTaskCycleAgentAuthoredFailedTaskBlocksDependentsAndContinuesIndependent(t *testing.T) {
+func TestTaskCycleAgentStatusFailedReachesDaemonVerificationAndUnblocksDependent(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
-		{id: "task_01", title: "Needs unavailable credential"},
-		{id: "task_02", title: "Depends on credential", needs: []string{"task_01"}},
+		{id: "task_01", title: "Agent writes failed"},
+		{id: "task_02", title: "Depends on authoritative settlement", needs: []string{"task_01"}},
 		{id: "task_03", title: "Independent cleanup", taskType: "chore"},
 	})
 	runner := &taskFakeRunner{
@@ -2169,20 +3199,20 @@ func TestTaskCycleAgentAuthoredFailedTaskBlocksDependentsAndContinuesIndependent
 	if err != nil {
 		t.Fatalf("task cycle: %v", err)
 	}
-	if result.Completed != 1 || result.Failed != 1 || result.Skipped != 1 {
-		t.Fatalf("expected failed credential Task, skipped dependent, and completed independent, got %+v", result)
+	if result.Completed != 3 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected Agent-authored failed status to be ignored after passing Verification, got %+v", result)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent>agent>verify>commit" {
-		t.Fatalf("expected no Verification repair for Agent-authored failed Task and independent continuation, got %q", got)
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit>agent>verify>commit>agent>verify>commit" {
+		t.Fatalf("expected every Task, including the Agent-authored failed Task, to verify and commit, got %q", got)
 	}
-	if got := strings.Join(verifier.commands, "|"); got != "true" {
-		t.Fatalf("expected only the independent Task to verify, got %q", got)
+	if got := strings.Join(verifier.commands, "|"); got != "true|true|true" {
+		t.Fatalf("expected all Tasks to reach Daemon Verification, got %q", got)
 	}
-	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
-		t.Fatalf("expected task_01 failed, got %q", got)
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected task_01 Daemon-settled completed, got %q", got)
 	}
-	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_02"); got != string(spec.StatusPending) {
-		t.Fatalf("expected dependent task_02 left pending, got %q", got)
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_02"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected dependent task_02 to run after authoritative settlement, got %q", got)
 	}
 	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_03"); got != string(spec.StatusCompleted) {
 		t.Fatalf("expected independent task_03 completed, got %q", got)
@@ -2297,6 +3327,144 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	}
 }
 
+func TestTaskCycleTemporaryVerificationFlowPassesExclusiveRetryWithoutAgentRepair(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{calls: fixture.calls, temporaryOnCall: map[int]bool{1: true}}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected exclusive retry to complete Task, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>verify>commit" {
+		t.Fatalf("expected zero Agent repair turns around exclusive retry, got %q", got)
+	}
+	initialPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	retryPath := VerificationRetryOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1, 1)
+	if got := strings.Join(verifier.outputPaths, "|"); got != initialPath+"|"+retryPath {
+		t.Fatalf("expected distinct initial and retry diagnostics, got %q", got)
+	}
+
+	var sawTemporary, sawExclusiveWaiting, sawRetryPassed bool
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		payload := eventPayloadMap(t, event)
+		switch payload["phase"] {
+		case string(runevent.VerificationPhaseFailed):
+			if payload["classification"] == string(runevent.VerificationClassificationTemporary) &&
+				payload["retry_available"] == true &&
+				payload["diagnostic_path"] == initialPath {
+				sawTemporary = true
+			}
+		case string(runevent.VerificationPhaseWaiting):
+			if payload["retry"] == float64(1) && payload["mode"] == "exclusive" {
+				sawExclusiveWaiting = true
+			}
+		case string(runevent.VerificationPhaseVerdict):
+			if payload["retry"] == float64(1) && payload["verdict"] == string(runevent.VerificationVerdictPassed) {
+				sawRetryPassed = true
+			}
+		}
+	}
+	if !sawTemporary || !sawExclusiveWaiting || !sawRetryPassed {
+		t.Fatalf("expected temporary, exclusive-wait, and retry-pass evidence; temporary=%v waiting=%v passed=%v", sawTemporary, sawExclusiveWaiting, sawRetryPassed)
+	}
+}
+
+func TestTaskCycleDeterministicRetryUsesAgentRepairThenAttemptTwo(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:           fixture.calls,
+		temporaryOnCall: map[int]bool{1: true},
+		script:          []error{errors.New("exit status 1"), nil},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected deterministic retry failure repaired by attempt 2, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>verify>agent>verify>commit" {
+		t.Fatalf("expected one Agent repair after deterministic exclusive retry, got %q", got)
+	}
+	if runner.taskCalls["task_01"] != 2 {
+		t.Fatalf("expected initial Agent plus one Verification Feedback turn, got %d", runner.taskCalls["task_01"])
+	}
+	if len(verifier.outputPaths) != 3 ||
+		verifier.outputPaths[1] != VerificationRetryOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1, 1) ||
+		verifier.outputPaths[2] != VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 2) {
+		t.Fatalf("expected retry then numbered attempt 2 paths, got %v", verifier.outputPaths)
+	}
+}
+
+func TestTaskCycleRetryBudgetExhaustsOnRepeatedTemporaryVerification(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{calls: fixture.calls, temporaryOnCall: map[int]bool{1: true, 2: true}}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 {
+		t.Fatalf("expected repeated temporary failure to settle failed, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>verify" {
+		t.Fatalf("expected no Agent repair or second retry after exhaustion, got %q", got)
+	}
+	var sawExhaustion bool
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == string(runevent.VerificationPhaseFailed) &&
+			payload["retry"] == float64(1) &&
+			payload["classification"] == string(runevent.VerificationClassificationTemporary) &&
+			payload["retry_available"] == false &&
+			payload["reason"] == string(runevent.VerificationReasonTemporaryFailure) {
+			sawExhaustion = true
+		}
+	}
+	if !sawExhaustion {
+		t.Fatal("expected bounded temporary retry exhaustion evidence")
+	}
+}
+
+func TestTaskCycleTemporaryVerificationAfterDeterministicRetryAndRepairDoesNotRetryAgain(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:           fixture.calls,
+		temporaryOnCall: map[int]bool{1: true, 3: true},
+		script:          []error{errors.New("exit status 1")},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 {
+		t.Fatalf("expected attempt-2 temporary failure with spent retry budget to settle failed, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>verify>agent>verify" {
+		t.Fatalf("expected one retry and one Agent repair only, got %q", got)
+	}
+	if len(verifier.outputPaths) != 3 {
+		t.Fatalf("expected no second exclusive retry, got paths %v", verifier.outputPaths)
+	}
+}
+
 func TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"echo first", "echo second", "echo third"}}})
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
@@ -2351,7 +3519,7 @@ func TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttemp
 			}
 		}
 	}
-	if got := strings.Join(phases, "|"); got != "started|command-passed|started|failed|verdict|started|command-passed|started|failed|verdict" {
+	if got := strings.Join(phases, "|"); got != "waiting|started|command-passed|started|failed|verdict|waiting|started|command-passed|started|failed|verdict" {
 		t.Fatalf("expected command phases and one aggregate verdict per attempt, got %s", got)
 	}
 	if verdicts != 2 {
@@ -2359,7 +3527,7 @@ func TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttemp
 	}
 }
 
-func TestTaskCycleVerificationInfrastructureErrorHaltsWithoutTaskSettlement(t *testing.T) {
+func TestTaskCycleDaemonStatusRemainsInProgressOnVerificationInfrastructureError(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	infraErr := errors.New("diagnostic artifact write failed")
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}
@@ -2376,8 +3544,8 @@ func TestTaskCycleVerificationInfrastructureErrorHaltsWithoutTaskSettlement(t *t
 	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify" {
 		t.Fatalf("expected Task cycle to halt after verification infrastructure error, got %q", got)
 	}
-	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
-		t.Fatalf("expected Daemon not to rewrite Agent-authored status on infrastructure error, got %q", got)
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusInProgress) {
+		t.Fatalf("expected Daemon-owned in_progress status preserved on infrastructure error, got %q", got)
 	}
 	verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
 	verdicts := 0
@@ -2392,6 +3560,34 @@ func TestTaskCycleVerificationInfrastructureErrorHaltsWithoutTaskSettlement(t *t
 	}
 	if verdicts != 1 {
 		t.Fatalf("expected one aggregate verdict before halting, got %d", verdicts)
+	}
+}
+
+func TestTaskCycleDaemonStatusUnreadableAgentArtifactSettlesFailedWithoutVerification(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	runner := &taskFakeRunner{
+		calls:           fixture.calls,
+		gitRoot:         fixture.gitRoot,
+		rawStatusByTask: map[string]string{"task_01": "not-a-status"},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("expected unreadable Agent artifact to fail only the Task, got %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("expected one Daemon-settled failed Task, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent" {
+		t.Fatalf("expected unreadable Task artifact to start no Verification, got %q", got)
+	}
+	if len(result.Outcomes) != 1 || !strings.Contains(result.Outcomes[0].Reason, "reload task file after the Agent") {
+		t.Fatalf("expected unreadable artifact reason distinct from Agent and Verification failures, got %+v", result.Outcomes)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("expected only the Daemon to settle the unreadable Task failed, got %q", got)
 	}
 }
 
@@ -2449,7 +3645,7 @@ func TestTaskCycleSettlesForgottenAgentStatus(t *testing.T) {
 	})
 }
 
-func TestTaskCycleAgentErrorSettlesTaskFailedAndContinues(t *testing.T) {
+func TestTaskCycleAgentFailureStartsNoVerificationAndSettlesFailed(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02"},
@@ -2700,7 +3896,7 @@ func TestTaskCycleStopRequestBeforeQAStepSkipsQA(t *testing.T) {
 	}
 }
 
-func TestTaskCycleStopDuringAgentPreservesTaskAndHalts(t *testing.T) {
+func TestTaskCycleStopDuringAgentPreservesDaemonStatusAndHalts(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02"},
@@ -2720,9 +3916,9 @@ func TestTaskCycleStopDuringAgentPreservesTaskAndHalts(t *testing.T) {
 	if got := strings.Join(*fixture.calls, ">"); got != "agent" {
 		t.Fatalf("expected no further Tasks or daemon actions after stop, got %q", got)
 	}
-	// Worktree preserved: the stopped Task keeps the status the Agent left.
-	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusPending) {
-		t.Fatalf("expected stopped Task left unsettled, got %q", got)
+	// Worktree preserved: the stopped Task keeps the Daemon's resumable status.
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusInProgress) {
+		t.Fatalf("expected stopped Task left resumable in_progress, got %q", got)
 	}
 	kinds := fixture.sink.kinds()
 	if len(kinds) == 0 || kinds[len(kinds)-1] != runevent.KindAgentStatus {
@@ -2732,6 +3928,42 @@ func TestTaskCycleStopDuringAgentPreservesTaskAndHalts(t *testing.T) {
 		if kind == runevent.KindDaemonVerification || kind == runevent.KindDaemonCommit || kind == runevent.KindDaemonOutcome {
 			t.Fatalf("expected no unsafe daemon events after stop, got %v", kinds)
 		}
+	}
+}
+
+func TestTaskCycleStopAfterAgentStatusAuthorshipPreservesResultInProgress(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	ctx, cancel := context.WithCancel(context.Background())
+	const resultEvidence = "\n## Result\n\n- Agent work is implementation-ready.\n"
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		resultByTask: map[string]string{"task_01": resultEvidence},
+		afterTask:    func(string) { cancel() },
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(ctx, fixture.plan())
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected Stop Request after Agent work, got %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected no invented terminal Task settlement, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent" {
+		t.Fatalf("expected Stop Request to start no Verification or commit, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusInProgress) {
+		t.Fatalf("expected resumable Daemon-owned in_progress status, got %q", got)
+	}
+	content, readErr := os.ReadFile(taskPathFor(fixture.gitRoot, taskCycleSlug, "task_01"))
+	if readErr != nil {
+		t.Fatalf("read stopped Task: %v", readErr)
+	}
+	if !strings.Contains(string(content), resultEvidence) {
+		t.Fatalf("expected Stop Request to preserve Agent Result evidence, got:\n%s", content)
 	}
 }
 
@@ -2784,7 +4016,7 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 		{id: "task_02", title: "Add the backend behavior", needs: []string{"task_01"}, verification: []string{"true"}},
 	})
 	repoDir := fixture.gitRoot
-	runGitForTest(t, repoDir, "init", "-q", "-b", "main")
+	gittest.InitRepo(t, repoDir, "-b", "main")
 	runGitForTest(t, repoDir, "config", "user.name", "Roundfix Test")
 	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
 	runGitForTest(t, repoDir, "config", "commit.gpgsign", "false")
@@ -3071,11 +4303,12 @@ func TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted(t *testing.T) {
 	runner := &taskFakeRunner{
 		calls:        fixture.calls,
 		gitRoot:      fixture.gitRoot,
-		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
 		qaReport:     qaReportForTest(spec.VerdictPass),
 	}
 	committer := &engineFakeCommitter{calls: fixture.calls}
-	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+	verifier := &taskFakeVerifier{calls: fixture.calls, failOn: map[string]error{"true": errors.New("gate broke")}}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
 
 	result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
 
@@ -3141,6 +4374,322 @@ func TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted(t *testing.T) {
 	}
 	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "docs: qa report for "+taskCycleSlug+" (pass)") {
 		t.Fatalf("expected the QA Report commit, got %v", committer.messages)
+	}
+}
+
+// The QA gate reasons about the user's Pull Request from a Run Worktree
+// that is structurally never on the user's branch, so the prompt carries
+// both branch names and the user checkout as facts.
+func TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{
+		calls:    fixture.calls,
+		gitRoot:  fixture.gitRoot,
+		qaReport: qaReportForTest(spec.VerdictPass),
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictPass {
+		t.Fatalf("expected the pass verdict, got %+v", result)
+	}
+	if len(runner.qaPrompts) != 1 {
+		t.Fatalf("expected one QA prompt, got %d", len(runner.qaPrompts))
+	}
+	prompt := runner.qaPrompts[0]
+	for _, expected := range []string{
+		"Run Worktree branch: " + runworktree.BranchName(fixture.run.ID) + " (this checkout only — a per-Run branch that is never pushed and has no Pull Request of its own)\n",
+		"Spec target branch: ma/spec-work (the user branch this Spec's commits land on; any Pull Request for this Spec is open on this branch, never on the Run Worktree branch)\n",
+		"User checkout: " + fixture.gitRoot + " (the user's repository root this Run Worktree was created from)\n",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected the QA prompt to state %q, got:\n%s", expected, prompt)
+		}
+	}
+}
+
+func TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{
+		calls:    fixture.calls,
+		gitRoot:  fixture.gitRoot,
+		qaReport: qaReportForTest(spec.VerdictPass),
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.qaPlan()
+	plan.TargetBranch = ""
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictPass {
+		t.Fatalf("expected a Run with no recorded target branch to still reach a verdict, got %+v", result)
+	}
+	if len(runner.qaPrompts) != 1 {
+		t.Fatalf("expected one QA prompt, got %d", len(runner.qaPrompts))
+	}
+	prompt := runner.qaPrompts[0]
+	if strings.Contains(prompt, "Spec target branch:") {
+		t.Fatalf("expected no Spec target branch line for a Run that recorded none, got:\n%s", prompt)
+	}
+	if !strings.Contains(prompt, "Spec: "+taskCycleSlug) || !strings.Contains(prompt, "Run the qa-gate process for this Spec") {
+		t.Fatalf("expected the Spec identity and the QA contract to survive, got:\n%s", prompt)
+	}
+}
+
+// The QA gate runs only when every Task in the Task Graph ended completed
+// (ADR 0015). Each case leaves exactly one Task non-completed by a
+// different route and asserts the gate never started: no QA prompt, no
+// daemon.qa event, and no QA Report commit.
+func TestTaskCycleQAStepRequiresEveryGraphTaskCompleted(t *testing.T) {
+	tests := []struct {
+		name          string
+		seeds         []taskSpecSeed
+		wantCompleted int
+		wantFailed    int
+		wantSkipped   int
+	}{
+		{
+			name:       "failed Task",
+			seeds:      []taskSpecSeed{{id: "task_01", verification: []string{"broken"}}},
+			wantFailed: 1,
+		},
+		{
+			name: "skipped Task behind an unmet dependency",
+			seeds: []taskSpecSeed{
+				{id: "task_01", verification: []string{"broken"}},
+				{id: "task_02", needs: []string{"task_01"}},
+			},
+			wantFailed:  1,
+			wantSkipped: 1,
+		},
+		{
+			name: "earlier Run completed one Task while another chain does not finish",
+			seeds: []taskSpecSeed{
+				{id: "task_01", status: string(spec.StatusCompleted)},
+				{id: "task_02", verification: []string{"broken"}},
+				{id: "task_03", needs: []string{"task_02"}},
+			},
+			wantFailed:  1,
+			wantSkipped: 1,
+		},
+		{
+			name: "earlier Run completed every Task but one still has to run and fails",
+			seeds: []taskSpecSeed{
+				{id: "task_01", status: string(spec.StatusCompleted)},
+				{id: "task_02", status: string(spec.StatusCompleted)},
+				{id: "task_03", verification: []string{"broken"}},
+			},
+			wantFailed: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newTaskCycleFixture(t, tt.seeds)
+			runner := &taskFakeRunner{
+				calls:    fixture.calls,
+				gitRoot:  fixture.gitRoot,
+				qaReport: qaReportForTest(spec.VerdictPass),
+			}
+			committer := &engineFakeCommitter{calls: fixture.calls}
+			verifier := &taskFakeVerifier{calls: fixture.calls, failOn: map[string]error{"broken": errors.New("gate broke")}}
+			engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+
+			result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+			if err != nil {
+				t.Fatalf("task cycle: %v", err)
+			}
+			if result.Completed != tt.wantCompleted || result.Failed != tt.wantFailed || result.Skipped != tt.wantSkipped {
+				t.Fatalf("expected %d completed, %d failed, %d skipped, got %+v", tt.wantCompleted, tt.wantFailed, tt.wantSkipped, result)
+			}
+			assertNoQAStep(t, fixture, runner.qaPrompts, committer.messages, result)
+		})
+	}
+}
+
+// A Task the scheduler can never start — spec.Load rejects a need outside
+// the Task Graph, so only a hand-built plan reaches here — settles skipped
+// through the scheduler's defensive pass. The gate stays shut instead of
+// crediting the Tasks that did run.
+func TestTaskCycleQAStepSkippedWhenATaskNeverBecomesReady(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		qaReport:     qaReportForTest(spec.VerdictPass),
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+	plan := fixture.qaPlan()
+	plan.Tasks = append(append([]spec.Task(nil), plan.Tasks...), spec.Task{ID: "task_99", Needs: []string{"task_absent"}})
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 1 {
+		t.Fatalf("expected the ready Task completed and the unreachable Task skipped, got %+v", result)
+	}
+	assertNoQAStep(t, fixture, runner.qaPrompts, committer.messages, result)
+}
+
+// Every Task completing is still not enough: a Stop Request that lands
+// mid-wave ends the Run before the gate, so the QA step never starts even
+// though the Task Graph finished completed.
+func TestTaskCycleStopRequestMidWaveSkipsQAWithEveryTaskCompleted(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Start first"},
+		{id: "task_02", title: "Start second"},
+	})
+	taskWorktrees := newFakeTaskWorktrees()
+	taskWorktrees.onIntegrate = func(taskID string) {
+		if taskID == "task_01" {
+			_ = fixture.store.RequestStop(context.Background(), fixture.run.ID)
+		}
+	}
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	committer := &taskSchedulerCommitter{}
+	engine := fixture.engineWithTaskWorktrees(t, runner, &taskSchedulerVerifier{}, committer, fixture.worktree, taskWorktrees)
+	plan := fixture.qaPlan()
+	plan.Concurrency = 2
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	if got := waitIntegratedTask(t, taskWorktrees); got != "task_01" {
+		t.Fatalf("expected task_01 to integrate first, got %s", got)
+	}
+	runner.releaseTask("task_02")
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if !errors.Is(outcome.err, ErrStopRequested) {
+		t.Fatalf("expected ErrStopRequested, got %v", outcome.err)
+	}
+	if outcome.result.Completed != 2 || outcome.result.Failed != 0 || outcome.result.Skipped != 0 {
+		t.Fatalf("expected every Task completed before the stop, got %+v", outcome.result)
+	}
+	// Only a completed Task integrates, so both integrations confirm the
+	// Task Graph itself finished completed.
+	assertTaskSet(t, taskWorktrees.integratedTasks(), "task_01", "task_02")
+	assertNoQAStep(t, fixture, runner.qaPrompts(), committer.commitMessages(), outcome.result)
+}
+
+// assertNoQAStep asserts the observable evidence a QA step leaves behind is
+// absent: the Agent got no QA prompt, no daemon.qa Run Event exists, no QA
+// Report commit was created, and the cycle settled no verdict.
+func assertNoQAStep(t *testing.T, fixture *taskCycleFixture, qaPrompts []string, commitMessages []string, result TaskCycleResult) {
+	t.Helper()
+	if len(qaPrompts) != 0 {
+		t.Fatalf("expected no QA prompt, got %v", qaPrompts)
+	}
+	if events := taskEventsOfKind(fixture.sink, runevent.KindDaemonQA); len(events) != 0 {
+		t.Fatalf("expected no daemon.qa event, got %+v", events)
+	}
+	for _, message := range commitMessages {
+		if strings.HasPrefix(message, "docs: qa report for ") {
+			t.Fatalf("expected no QA Report commit, got %v", commitMessages)
+		}
+	}
+	if result.QAVerdict != "" || result.QAReportPath != "" {
+		t.Fatalf("expected no settled QA verdict, got %+v", result)
+	}
+	reportDir := filepath.Join(fixture.specsRoot, taskCycleSlug, "qa")
+	if _, err := os.Stat(reportDir); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected no QA Report directory, got err=%v", err)
+	}
+}
+
+// allTasksRunCompleted is the whole guarantee behind the QA step, so it
+// answers for every Task in the Task Graph — never for the subset this Run
+// happened to execute.
+func TestAllTasksRunCompletedCoversEveryGraphTask(t *testing.T) {
+	tasks := []spec.Task{{ID: "task_01"}, {ID: "task_02"}, {ID: "task_03"}}
+	tests := []struct {
+		name     string
+		statuses map[string]taskRunStatus
+		want     bool
+	}{
+		{
+			name:     "every graph Task completed",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunCompleted, "task_03": taskRunCompleted},
+			want:     true,
+		},
+		{
+			name:     "one Task still pending",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunPending, "task_03": taskRunCompleted},
+		},
+		{
+			name:     "one Task still running",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunRunning, "task_03": taskRunCompleted},
+		},
+		{
+			name:     "one Task failed",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunFailed, "task_03": taskRunCompleted},
+		},
+		{
+			name:     "one Task skipped",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunSkipped, "task_03": taskRunCompleted},
+		},
+		{
+			name:     "one graph Task missing from the status map",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunCompleted},
+		},
+		{
+			name:     "a completed status outside the graph never stands in for a graph Task",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunCompleted, "task_04": taskRunCompleted},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := allTasksRunCompleted(tasks, tt.statuses); got != tt.want {
+				t.Fatalf("allTasksRunCompleted = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// initialTaskRunStatuses seeds Tasks an earlier Run completed, so the QA
+// gate can credit them, and re-runs every other status.
+func TestInitialTaskRunStatusesSeedsEarlierRunCompletions(t *testing.T) {
+	statuses := initialTaskRunStatuses([]spec.Task{
+		{ID: "task_01", Status: spec.StatusCompleted},
+		{ID: "task_02", Status: spec.StatusPending},
+		{ID: "task_03", Status: spec.StatusInProgress},
+		{ID: "task_04", Status: spec.StatusFailed},
+	})
+	want := map[string]taskRunStatus{
+		"task_01": taskRunCompleted,
+		"task_02": taskRunPending,
+		"task_03": taskRunPending,
+		"task_04": taskRunPending,
+	}
+	if len(statuses) != len(want) {
+		t.Fatalf("expected one status per graph Task, got %v", statuses)
+	}
+	for id, expected := range want {
+		if statuses[id] != expected {
+			t.Fatalf("expected %s seeded %q, got %q", id, expected, statuses[id])
+		}
 	}
 }
 

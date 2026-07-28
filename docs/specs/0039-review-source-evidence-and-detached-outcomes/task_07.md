@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0039-review-source-evidence-and-detached-outcomes
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -31,23 +31,23 @@ empty diffs, unresolved threads, and unrecognized artifact roots.
 
 ## Subtasks
 
-- [ ] Return exact commit identity from artifact publication.
-- [ ] Prove parent, current head, and review root.
-- [ ] Validate non-empty artifact-only diffs.
-- [ ] Require verified parent Evidence and no unresolved threads.
-- [ ] Publish inherited Evidence with both heads.
-- [ ] Add real Git positive and refusal fixtures.
+- [x] Return exact commit identity from artifact publication.
+- [x] Prove parent, current head, and review root.
+- [x] Validate non-empty artifact-only diffs.
+- [x] Require verified parent Evidence and no unresolved threads.
+- [x] Publish inherited Evidence with both heads.
+- [x] Add real Git positive and refusal fixtures.
 
 ## Acceptance Criteria
 
-- [ ] An exact Daemon artifact-only descendant inherits verified parent
+- [x] An exact Daemon artifact-only descendant inherits verified parent
       Evidence without another Roundfix request or wait.
-- [ ] Mixed-path, user-authored, wrong-parent, and empty commits do not inherit.
-- [ ] A path outside the resolved review root refuses inheritance.
-- [ ] Unresolved CodeRabbit threads refuse inheritance.
-- [ ] Inherited Evidence names `artifact_only_descendant` and both heads.
-- [ ] Every refusal falls back to normal current-head polling.
-- [ ] Existing separate review-artifact commit policy remains intact.
+- [x] Mixed-path, user-authored, wrong-parent, and empty commits do not inherit.
+- [x] A path outside the resolved review root refuses inheritance.
+- [x] Unresolved CodeRabbit threads refuse inheritance.
+- [x] Inherited Evidence names `artifact_only_descendant` and both heads.
+- [x] Every refusal falls back to normal current-head polling.
+- [x] Existing separate review-artifact commit policy remains intact.
 
 ## Context
 
@@ -82,3 +82,58 @@ empty diffs, unresolved threads, and unrecognized artifact roots.
   artifact commit.
 - `../../adr/0054-review-source-evidence-determines-review-outcomes.md` →
   narrowly inherited Evidence.
+
+## Result
+
+Watch now verifies the code head before creating its separate review-artifact
+commit. Artifact publication returns the created commit SHA, its exact parent,
+and the resolved review root. Inheritance then proves the current head, single
+parent, Daemon commit subject, non-empty diff, and review-root-only paths
+against real Git state.
+
+The parent Evidence must be verified and bound to the exact parent before
+publication. A fresh parent observation must remain verified, which confirms
+that zero unresolved CodeRabbit threads remain. Successful inheritance emits
+`artifact_only_descendant` Evidence with the artifact and parent heads. Any
+refusal enters the existing current-head Evidence polling path, and the
+artifact publisher runs at most once.
+
+### Verification
+
+- `rtk env GOCACHE=/tmp/roundfix-task07-gocache go test ./internal/cli -run 'Test.*Artifact.*Evidence.*(Inherited|Mixed|Parent|Empty|User|Thread|Root)' -count=1`
+  — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task07-gocache go test ./internal/config ./internal/daemon -run 'Test.*(ReviewRoot|ReviewArtifactsCommit)' -count=1`
+  — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task07-gocache go test -race ./internal/cli -run 'Test.*Artifact.*Evidence' -count=1`
+  — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task07-gocache go test ./internal/watch ./internal/cli ./internal/reviewsource ./internal/runevent ./internal/config ./internal/daemon -count=1`
+  — passed.
+- `rtk git -c core.fsmonitor=false diff --check` — passed.
+
+The initial compile-only probe used the host Go cache and was blocked by the
+managed sandbox. Re-running with the task-local cache above exercised the same
+packages successfully. The Daemon remains authoritative for the task's
+declared Verification after this turn.
+
+### Acceptance evidence
+
+- `TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling` creates a
+  real Daemon review-artifact commit only after the exact parent is verified,
+  refreshes the parent once for unresolved-thread proof, and records no
+  current-artifact-head poll or wait.
+- `TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused` uses real Git
+  repositories to reject mixed paths, a wrong recorded parent, an empty diff,
+  a user-authored commit subject, and a path outside the resolved review root.
+- `TestRunWatchArtifactEvidenceThreadRefusesAndFallsBack` makes the fresh
+  parent observation non-verified, refuses inheritance, and records the
+  subsequent current-head Evidence poll.
+- `TestWatchArtifactEvidenceMixedFallsBackToCurrentHeadPolling` proves every
+  non-inherited artifact publication shares one normal current-head polling
+  branch and does not invoke artifact publication again.
+- The inherited `daemon.review_status` payload contains
+  `artifact_only_descendant`, the artifact SHA as expected and observed head,
+  and the verified parent SHA; the terminal outcome carries the artifact and
+  verified parent heads separately.
+- The review-root and Daemon commit-message contract tests pass, and the
+  affected package suites preserve the separate ADR-0036 artifact commit
+  policy.

@@ -1,0 +1,54 @@
+Docs, public CLI, compatibility, and Non-Goal evidence
+Build: 234037002497f7d1424a256318db69bf7ccd098e
+Date: 2026-07-28
+Result: pass
+
+Public help
+
+bin/roundfix watch --help exited 0. It states that Clean requires accepted
+Review Source Evidence on the pushed head: a successful CodeRabbit check or
+commit status, or a CodeRabbit APPROVED review, with zero unresolved
+CodeRabbit threads. A one-Run selection override requires all three selection
+flags.
+
+Canonical guidance
+
+Command:
+  rtk grep -n
+  'Review Source Evidence\|Review Skipped\|events .*--follow.*outcome\|Review Issues: unknown'
+  CONTEXT.md docs/user-guide/commands.md docs/user-guide/usage.md
+Exit: 0.
+Result:
+  The glossary and both guides contain Review Source Evidence, Review Skipped,
+  the stable Supervisor monitor, and the unknown-count report.
+
+Documentation and Skill contracts
+
+- The fresh DocumentationContract and Watch help regression test passed.
+- Canonical/generated Roundfix Skill comparison exited 0.
+- Writable-cache skills-sync-check passed four tests.
+- The built binary validated all 14 shipped Skill contracts.
+- git diff --check passed.
+
+CLI and compatibility sweep
+
+- Outcome monitoring remains versioned JSONL on stdout.
+- Requested reports remain on stdout and diagnostics/progress on stderr.
+- Detached startup remains deterministic, non-interactive, and action-oriented.
+- Event replay remains explicit by Run ID and stable outcome filter.
+- Additive outcome fields preserve unknown-field compatibility.
+- ReviewSkipped exit 3 remains distinct from success and hard failure.
+
+Non-Goals
+
+- No host-conversation delivery guarantee or host-specific callback shipped.
+- No built-in Slack, email, Telegram, or other service integration shipped.
+- The Run Event Stream remains the Supervisor subscription.
+- No new retry configuration or log-text retry inference shipped.
+- Fresh Evidence tests reject generic, stale, commented, and unresolved
+  approvals.
+- Fresh real-Git tests reject user-authored, empty, mixed-path, wrong-parent,
+  out-of-root, and unresolved-thread descendants.
+- Docs do not claim webhook suppression.
+- Force Stop, compare-and-set, and registered Agent Session ownership remain
+  under Spec 0037 and ADR-0052.

@@ -1,0 +1,45 @@
+Focused current-build seam evidence
+Build: affe4b5d333a8f3f1dd7506cf758eeb6e53afc70
+Result: PASS
+
+Command:
+rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-gocache GOFLAGS=-buildvcs=false go test ./internal/reviewsource/... ./internal/watch ./internal/runevent -run 'Test.*(Evidence|Transient|Retry|WaitPhase|ReviewStatusEvent|UnchangedEvidence|Outcome.*Context|ReviewIssues)' -count=1
+
+Exit: 0
+Results:
+ok roundfix/internal/reviewsource 0.150s
+ok roundfix/internal/reviewsource/coderabbit 0.463s
+ok roundfix/internal/watch 0.199s
+ok roundfix/internal/runevent 0.343s
+
+Command:
+rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-gocache GOFLAGS=-buildvcs=false go test ./internal/cli ./internal/store -run 'Test.*(ReviewSkipped|ReviewIssuesKnown|ReviewIssuesUnknown|TerminalContext|FetchedZero|Artifact.*Evidence|CleanupBeforeAgent|Schema.*Review|Detached.*Monitor|OutcomeNotification|NotificationReceipt|DocumentationContract|Watch.*Help)' -count=1
+
+Exit: 0
+Results:
+ok roundfix/internal/cli 2.530s
+ok roundfix/internal/store 0.210s
+
+Command:
+rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-gocache GOFLAGS=-buildvcs=false go test -race ./internal/watch ./internal/cli ./internal/notify ./internal/runevent -run 'Test.*(Transient|Retry|StopRequest|ReviewSkipped|TerminalContext|ReviewIssues|Notification|Detached|Artifact.*Evidence)' -count=1
+
+Exit: 0
+Results:
+ok roundfix/internal/watch 1.374s
+ok roundfix/internal/cli 5.735s
+ok roundfix/internal/notify 1.316s
+ok roundfix/internal/runevent 1.594s
+
+QA repair command:
+rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-gocache GOFLAGS=-buildvcs=false go test ./internal/cli -run 'TestRun(CommandHelp|WatchMissingHeadCheckEndsCleanUnverified)$' -count=1
+
+Exit: 0
+Result:
+ok roundfix/internal/cli 0.527s
+
+These checks cover the shared Evidence hierarchy and refusals, bounded retry
+and Stop priority, both wait phases and changed-only events, ReviewSkipped
+persistence/schema/Run Browser behavior, unknown and fetched-zero knowledge,
+winner-only terminal context, notification receipts and outcome independence,
+Detached reporting, artifact-only inheritance and all declared refusal cases,
+and the repaired accepted-Evidence wording.

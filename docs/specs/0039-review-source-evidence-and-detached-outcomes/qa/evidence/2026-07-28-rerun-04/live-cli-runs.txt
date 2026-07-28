@@ -1,0 +1,61 @@
+Built-binary and source-matched public-path evidence
+Build: 234037002497f7d1424a256318db69bf7ccd098e
+Date: 2026-07-28
+Result: pass for the exercised read-only journey
+
+Current exact-build authenticated Fetch
+
+Entry point:
+  bin/roundfix fetch --source coderabbit --pr 40
+  --artifact-dir <temporary QA artifact directory> --no-input
+
+Environment:
+  Clean scratch Git checkout on
+  ma/review-evidence-and-verification-capacity at
+  234037002497f7d1424a256318db69bf7ccd098e, tracking the exact Open Pull
+  Request #40 head. The existing authenticated gh session was used.
+
+Observed:
+  Run run_20260728T175710Z_b193db981424d421 reached Fetched.
+  Round 001 contains 23 Review Issues.
+  Roundfix reported no Agent start, commit, push, or Review Source thread
+  resolution.
+
+Independent confirmation:
+  A fresh public Run Browser command,
+  roundfix runs list --state all --limit 10, listed the same Run as Fetched.
+  A fresh read of
+  <temporary-artifacts>/reviews/pr-40/round-001/round.md recorded:
+    head_sha: 234037002497f7d1424a256318db69bf7ccd098e
+    issue_count: 23
+    Fetched 23 Review Issue(s).
+
+Source-matched Watch and Detached journey evidence
+
+Command:
+  rtk git -c core.fsmonitor=false diff --name-only
+  6646b84845d32335f35c39df95a6c161a973c9ec..
+  234037002497f7d1424a256318db69bf7ccd098e
+Exit: 0.
+Result:
+  The only intervening paths are qa-report-2026-07-28-03.md and its
+  qa/evidence/2026-07-28-rerun-03 files. No product, test, configuration,
+  Skill, or user-guide byte changed.
+
+Therefore the completed built Watch and Detached journeys captured in
+qa/evidence/2026-07-28-rerun-03/live-cli-runs.txt are source-matched to the
+current product bytes. Those journeys exercised:
+
+- foreground Review Skipped with exit 3, reason/action, no issue counts or
+  artifacts, outcome replay, and Run Browser persistence;
+- permanent pre-fetch failure with unknown issue knowledge and no retry;
+- known-zero Fetch;
+- typed transient recovery and retry episode projection;
+- five-line Detached Review Skipped startup and exact Supervisor monitor;
+- native notification observation and durable receipt replay.
+
+This rerun does not describe those Watch/Detached journeys as newly executed.
+It credits the preserved public-path evidence only because current Git proves
+the product source is unchanged, and combines it with fresh current-build
+Verification, focused/race suites, documentation checks, and the exact-build
+authenticated Fetch above.

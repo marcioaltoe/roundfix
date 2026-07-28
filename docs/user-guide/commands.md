@@ -320,14 +320,59 @@ repository, or reached through a symbolic link, are reported and never staged.
 roundfix watch --source coderabbit --pr <number> --until-clean [--max-rounds N]
 ```
 
-Waits for CodeRabbit status on the current PR HEAD, observes the configured
-quiet period, fetches, resolves Batches, and repeats. After the Final Push it
-polls for the Review Source check on the pushed HEAD through
-`watch.check_grace_period` (default `5m`): a successful check with no new
-Review Issues ends `Clean`; new Review Issues start the next Round; a check
-that never appears ends `CleanUnverified` with exit code `3` and a report
-naming the next action. Other terminal outcomes are `MaxRoundsReached`,
-`BudgetExceeded`, `TimedOut`, `Failed`, and `Stopped`.
+Waits for Review Source Evidence on the current PR HEAD, observes the
+configured quiet period, fetches, resolves Batches, and repeats. Evidence is
+always bound to the expected head:
+
+- `pending` means no usable expected-head signal exists. A stale check or
+  review remains visible as detail but cannot verify the expected head.
+- `reviewing` means a current-head CodeRabbit check or status is pending or in
+  progress.
+- `reviewed` means CodeRabbit produced a current-head result that does not
+  prove Merge-Ready. A successful check, status, or approval stays `reviewed`
+  while an unresolved CodeRabbit thread exists; a non-approved review is also
+  only `reviewed`.
+- `verified` accepts a successful current-head CodeRabbit check or commit
+  status, or a current-head CodeRabbit `APPROVED` review, only with zero
+  unresolved CodeRabbit threads.
+- `skipped` requires an explicit structured CodeRabbit skip for the expected
+  head. It ends Review Skipped with exit `3`, prints the Review Source reason
+  and next action, fetches no Review Issues, and cannot mean Clean, Clean
+  Unverified, or a zero-issue Round.
+- `failed` records an explicit current-head Review Source failure.
+
+`WaitingForReview` is the pre-fetch phase.
+`WaitingForReviewCheck` is the Merge-Ready phase after Final Push. Each wait
+records its expected head, start time, deadline, Evidence state and kind, and
+retry status. Non-TTY progress prints on phase entry and when Evidence or retry
+state changes; the Live Run View derives remaining time from the deadline.
+
+Roundfix retries only a typed transient Review Source failure: a context
+deadline not caused by Run cancellation, a temporary DNS failure, a connection
+reset, HTTP `429`, or a GitHub `5xx` response. One episode records `started`,
+then `recovered` or `exhausted`. Retry sleeps use the existing poll interval
+and remain bounded by the existing Review Source timeout and Run Budget; there
+is no new retry setting. The watch loop does not infer retryability from its
+Console Log, progress lines, or Run Event summaries.
+
+After Final Push, a proven Daemon-created review-artifact commit can inherit
+its parent's verified Evidence. Roundfix requires the recorded commit to be
+the current head, to have exactly the recorded verified parent, and to retain
+the exact Daemon-generated artifact-commit subject. Its stageable review root
+must be inside the repository without a symbolic-link crossing, its diff must
+be non-empty, and every changed path must be below that root. Roundfix then
+refreshes the parent's Evidence, which must still be verified with no
+unresolved CodeRabbit threads. Missing or changed identity, a wrong or multiple
+parent, a non-current head, a changed subject, an external or symbolic-link
+root, an empty diff, any mixed or out-of-root path, stale parent Evidence, or
+an unresolved thread refuses inheritance and returns to ordinary current-head
+Evidence polling. User-authored documentation commits and all other
+non-Daemon descendants never inherit.
+
+If accepted Evidence never appears within `watch.check_grace_period` (default
+`5m`), watch ends Clean Unverified with exit `3` and names the next action.
+Other terminal outcomes are `MaxRoundsReached`, `BudgetExceeded`, `TimedOut`,
+`Failed`, and `Stopped`.
 
 ### Review report shape
 
@@ -342,6 +387,16 @@ This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed
 Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
 ```
 
+Before a Review Source fetch completes, counts are not known. The report omits
+all zero-valued status summaries and prints only:
+
+```text
+Review Issues: unknown — fetch did not complete.
+```
+
+Review Skipped uses its own two-line source reason and next-action report; it
+does not use either count shape.
+
 ## Spec loop: implement, settle, archive
 
 ### implement
@@ -353,12 +408,44 @@ roundfix implement --spec <slug> [--qa] [--detach]
 Executes a Spec's Task Graph in a Run Worktree as one Run — spec Runs keep
 worktree isolation. The scheduler executes the current Wave up to
 `worktree.concurrency` at a time (default `2`; `1` keeps sequential behavior),
-with concurrently running Tasks in Task Worktrees and one commit per completed
-Task on the Run Branch. It resolves `specs.root` once from the user's checkout.
+while `verification.concurrency` independently limits concurrent Task
+Verification attempts (default `1`). Concurrently running Tasks use Task
+Worktrees, and each completed Task creates one commit on the Run Branch. Both
+capacities apply only within this Implement Run; they do not coordinate other
+Runs, CI, or external processes. It resolves `specs.root` once from the user's
+checkout.
 `--qa` ends the Run with the qa-gate step; only a `pass` verdict lets the Run
 end Clean. `implement.auto_push: true` makes a Clean Run push its branch
 upstream. Integration Pending, Unresolved, Failed, Stopped, and failing-QA
 Runs never push.
+
+The profile-led default is:
+
+```bash
+roundfix implement --spec <slug> --detach
+```
+
+Each Task owns a Task Type-selected Agent Session. During an Implement Run the
+Daemon is the only Task-status writer: it writes `in_progress`, receives
+implementation-ready work from the Agent, runs the Task's complete
+`## Verification` sequence verbatim, and writes the terminal status. The Agent
+may run focused checks and record their evidence, but it does not run the
+declared Task Verification, edit status, or settle the verdict.
+
+A deterministic Verification failure releases Verification Capacity before
+the Daemon sends diagnostics to the same Agent Session. The Agent receives one
+Verification Feedback repair turn, then the repaired Task queues and acquires
+Verification Capacity again for its final Daemon attempt. Any formatter, test,
+Skill synchronization, or build failure in the declared gate blocks
+settlement.
+
+Exit `75` from a project-authored Verification wrapper is the sole Temporary
+Verification Failure signal. Roundfix retains its diagnostics and grants that
+Task one exclusive retry, which waits for all other Verification attempts in
+the Run to drain and then consumes the entire Verification Capacity. The retry
+does not consume the Agent repair. A second exit `75` exhausts the retry and
+fails the Task; Roundfix never classifies a failure from log text, timing,
+ports, package names, or framework messages.
 
 stdout is one line per Task in Task Graph order — failed and skipped Tasks are
 followed by one indented `  reason: <one line>` naming the failed step (for
@@ -494,7 +581,8 @@ or treats a missing path as proof.
 
 The contract uses the [Roundfix glossary](../../CONTEXT.md#language) and follows
 [ADR-0053](../adr/0053-terminal-run-worktree-reconciliation-is-proof-based.md)
-and [Spec 0038](../specs/0038-terminal-run-worktree-reconciliation/_prd.md).
+and
+[Spec 0038](../specs/_archived/0038-terminal-run-worktree-reconciliation/_prd.md).
 Adjacent terminal-cleanup diagnostics remain traced through the
 [Stop Command](#stop) to the
 [detached-watch finding](../findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
@@ -547,7 +635,11 @@ stopping, or resolving threads. Without a Run ID at an interactive terminal it
 opens the Run Browser; in non-interactive mode it exits `2` naming
 `roundfix runs list`. The Live Run View shows a `WORK QUEUE` pane next to a
 `SESSION.TIMELINE` pane grouping Run Events by Batch; raw payloads never
-render inline and full content stays in the Detail Modal.
+render inline and full content stays in the Detail Modal. For spec Runs its
+header reports `Task Capacity` and `Verification Capacity`, and each Task row
+uses `Agent working`, `Waiting for Verification`, or `Verifying` before the
+Daemon settles it. Verification Feedback returns that Task to `Agent working`;
+meaning never depends on color.
 
 ### events
 
@@ -563,6 +655,35 @@ unknown Run IDs and invalid filters exit `2`; stream/store errors exit `1`;
 interrupting `--follow` exits `130`. A terminal Run replays and exits `0`. Use
 `events` for automation, `attach` for the human view, and the Detached Run
 Console Log as a compact text record — not a state API.
+
+For a Detached Run's stable terminal subscription, use:
+
+```bash
+roundfix events <run-id> --follow --filter outcome
+```
+
+To inspect Task and Verification capacity flow, use the profile-led Run ID from
+`implement --detach`:
+
+```bash
+roundfix events <run-id> --follow \
+  --filter task-status,verification,outcome > run-events.jsonl \
+  2> run-events.diagnostics
+```
+
+The Task-status records identify Agent work and Daemon settlement.
+`daemon.verification` payloads use the canonical phases `waiting`, `started`,
+`command-passed`, `failed`, and `verdict`. They carry the Task, numbered
+attempt, shared or exclusive mode, retry identity, and capacity where
+applicable. A Temporary Verification Failure adds classification `temporary`,
+reason `temporary_verification_failure`, retained `diagnostic_path`, and
+whether the exclusive retry remains available. Requested JSONL remains on
+stdout; follow progress and operational diagnostics remain on stderr.
+
+The outcome record carries the terminal state plus bounded reason and next
+action when non-Clean. When available, it also carries Review Issue knowledge,
+Console Log, Attach command, accepted Evidence kind and head, and the verified
+parent head used by artifact-only inheritance.
 
 ## stop
 
@@ -626,12 +747,13 @@ The terminology and behavior trace to the
 ## Detached Runs
 
 `--detach` is available on `resolve`, `watch`, and `implement`. The foreground
-command prints exactly four stdout lines and exits `0`:
+command prints exactly five stdout lines and exits `0`:
 
 ```text
-Run detached: <run-id>
-Console log: <path>
-Follow: roundfix attach <run-id>
+Run ID: <run-id>
+Console Log: <path>
+Attach: roundfix attach <run-id>
+Supervisor monitor: roundfix events <run-id> --follow --filter outcome
 Stop: roundfix stop <run-id>
 ```
 
@@ -647,10 +769,27 @@ roundfix: Detached Run child produced no liveness signal within 10s; killed (exi
 ```
 
 — followed by the child's console output when any exists. The detached child
-owns the terminal outcome and fires the outcome notification; monitor it with
-`roundfix events <run-id> --follow` or `roundfix attach <run-id>`. Detach
+owns the terminal outcome. Supervisors use the printed outcome command;
+humans use `roundfix attach <run-id>` for the read-only Live Run View. Detach
 implies non-interactive mode: `--interactive` is rejected and `--no-input` is
 implied.
+
+Run Outcome Notification delivery is best-effort and never changes the Run
+outcome or exit code. Each attempt appends a separate durable Run Event with
+route, completion time, and receipt status `sent`, `skipped`, or `failed`;
+receipt success means the local route accepted the request, not that a person
+saw it. The original `notify.command` variables remain available:
+`ROUNDFIX_RUN_ID`, `ROUNDFIX_OUTCOME`, `ROUNDFIX_KIND`, and
+`ROUNDFIX_TARGET`. Terminal context adds `ROUNDFIX_REASON`,
+`ROUNDFIX_CONSOLE_LOG`, `ROUNDFIX_ATTACH_COMMAND`,
+`ROUNDFIX_REVIEW_ISSUES_KNOWN`, and `ROUNDFIX_NEXT_ACTION`.
+
+The review Evidence, artifact inheritance, Detached outcome, and notification
+contracts trace to the [Roundfix glossary](../../CONTEXT.md#language),
+[ADR-0054](../adr/0054-review-source-evidence-determines-review-outcomes.md),
+[Spec 0039](../specs/0039-review-source-evidence-and-detached-outcomes/_prd.md),
+and the
+[detached-watch finding](../findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
 
 ## Agent boundaries
 

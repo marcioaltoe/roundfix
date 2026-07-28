@@ -66,6 +66,7 @@ const (
 type VerificationPhase string
 
 const (
+	VerificationPhaseWaiting       VerificationPhase = "waiting"
 	VerificationPhaseStarted       VerificationPhase = "started"
 	VerificationPhaseCommandPassed VerificationPhase = "command-passed"
 	VerificationPhaseFailed        VerificationPhase = "failed"
@@ -79,6 +80,20 @@ type VerificationVerdict string
 const (
 	VerificationVerdictPassed VerificationVerdict = "passed"
 	VerificationVerdictFailed VerificationVerdict = "failed"
+)
+
+// VerificationClassification names a bounded Verification failure class.
+type VerificationClassification string
+
+const (
+	VerificationClassificationTemporary VerificationClassification = "temporary"
+)
+
+// VerificationReason names a bounded machine-readable Verification reason.
+type VerificationReason string
+
+const (
+	VerificationReasonTemporaryFailure VerificationReason = "temporary_verification_failure"
 )
 
 // IsDaemonKind reports whether the kind belongs to the known daemon
@@ -115,6 +130,61 @@ type RunEvent struct {
 	Summary     string
 	Time        time.Time
 	Payload     json.RawMessage
+}
+
+// ReviewStatusPayload is the stable daemon.review_status payload. It carries
+// the bounded Review Source Evidence observation without provider response
+// bodies.
+type ReviewStatusPayload struct {
+	Phase           string    `json:"phase,omitempty"`
+	StartedAt       time.Time `json:"started_at,omitzero"`
+	Deadline        time.Time `json:"deadline,omitzero"`
+	EvidenceState   string    `json:"evidence_state,omitempty"`
+	EvidenceKind    string    `json:"evidence_kind,omitempty"`
+	RetryStatus     string    `json:"retry_status,omitempty"`
+	State           string    `json:"state"`
+	Kind            string    `json:"kind"`
+	Identity        string    `json:"identity"`
+	ExpectedHeadSHA string    `json:"expected_head_sha"`
+	ObservedHeadSHA string    `json:"observed_head_sha,omitempty"`
+	ParentHeadSHA   string    `json:"parent_head_sha,omitempty"`
+	Conclusion      string    `json:"conclusion,omitempty"`
+	Detail          string    `json:"detail,omitempty"`
+	Reason          string    `json:"reason,omitempty"`
+}
+
+// RetryPayload is the stable daemon.retry payload for one bounded Review
+// Source retry episode.
+type RetryPayload struct {
+	Phase     string `json:"phase"`
+	Operation string `json:"operation"`
+	Reason    string `json:"reason"`
+}
+
+// NotificationReceiptPayload is the stable daemon.status payload for one
+// completed best-effort terminal notification attempt.
+type NotificationReceiptPayload struct {
+	Event       string    `json:"event"`
+	Route       string    `json:"route"`
+	Status      string    `json:"status"`
+	CompletedAt time.Time `json:"completed_at"`
+	Reason      string    `json:"reason,omitempty"`
+}
+
+// OutcomePayload is the stable daemon.outcome payload. Optional evidence and
+// recovery fields let non-Clean terminal outcomes remain actionable without
+// changing the event kind or stream schema.
+type OutcomePayload struct {
+	State             string `json:"state"`
+	Remaining         int    `json:"remaining"`
+	Reason            string `json:"reason,omitempty"`
+	NextAction        string `json:"next_action,omitempty"`
+	ReviewIssuesKnown *bool  `json:"review_issues_known,omitempty"`
+	ConsoleLog        string `json:"console_log,omitempty"`
+	AttachCommand     string `json:"attach_command,omitempty"`
+	EvidenceKind      string `json:"evidence_kind,omitempty"`
+	EvidenceHeadSHA   string `json:"evidence_head_sha,omitempty"`
+	VerifiedHeadSHA   string `json:"verified_head_sha,omitempty"`
 }
 
 // Sink consumes published Run Events. Context comes first because durable

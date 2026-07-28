@@ -1,8 +1,9 @@
 # Autonomous work: Supervisor and implementation runtimes
 
-One Supervisor session orchestrates autonomous work. Implementation is
-delegated to an ACP Runtime through a Roundfix Run. This split binds interactive
-and unattended sessions.
+One Supervisor session orchestrates autonomous work. Each Task owns a Task
+Type-selected Agent Session inside its Roundfix Run, and a requested QA phase
+owns a separate `qa` Agent Session. This split binds interactive and unattended
+sessions without forcing a mixed Task Graph through one Run-wide Agent.
 
 ## Roles
 
@@ -20,7 +21,8 @@ The Supervisor:
 - authors planning artifacts;
 - launches detached Runs and monitors them to a terminal outcome;
 - integrates results, runs `qa-gate`, and archives passing Specs;
-- selects the implementation runtime for each Run;
+- maintains the Agent Selection Profiles that select each Task and QA Agent
+  Session;
 - limits its direct edits to Spec and documentation fixes, Run recovery, and
   boundary commits.
 
@@ -46,13 +48,15 @@ The Supervisor authors Specs using `write-idea`, `write-prd`,
   `- instruction: <path>` and `- interface: <path>`.
 - Maintain one dependency-and-risk-ordered queue of approved Specs.
 
-## Non-frontend implementer: Codex Sol/high
+## Profile-led Task routing
 
 ```bash
 roundfix implement --spec <slug> --qa --detach
 ```
 
-Review Runs use the same profile-led selection.
+The Implement Command resolves a profile for each Task Type. Review Runs use
+the same profile-led selection for their review Agent Session, and `--qa`
+resolves the separate `qa` profile after every Task settles completed.
 
 1. `.roundfixrc.yml` pins `profiles.general`, `profiles.backend`,
    `profiles.qa`, and `profiles.review` to the Sol/high Preferred Selection.
@@ -64,9 +68,10 @@ Review Runs use the same profile-led selection.
 For a one-Run exception, provide `--agent`, `--model`, and
 `--reasoning-effort` together. A partial override is rejected.
 
-## Frontend implementer: Claude Opus 5 xhigh
+## Frontend Tasks: Claude Opus 5 xhigh
 
-Route a Run to Claude when its Tasks are dominated by:
+Keep frontend Tasks in the same Task Graph and give them `type: frontend` when
+they are dominated by:
 
 - visual or interaction design;
 - UI, UX, navigation, information hierarchy, feedback states, or user-facing
@@ -74,28 +79,39 @@ Route a Run to Claude when its Tasks are dominated by:
 - the Bubble Tea/Lip Gloss TUI;
 - a future web frontend.
 
-```bash
-roundfix implement --spec <slug> --agent claude --model claude-opus-5 \
-  --reasoning-effort xhigh --qa --detach
-```
-
-The `claude` runtime launches through `claude-agent-acp`.
+The built-in `frontend` profile selects `claude / claude-opus-5 / xhigh`, and
+the `claude` runtime launches through `claude-agent-acp`. The current
+configuration defaults remain authoritative; model recommendations do not
+change routing.
 
 ## Routing rules
 
-- One Run drives one Agent.
-- A Spec mixing frontend and non-frontend work must be sliced during
-  `write-tasks` so the frontend work can run in a separate Spec through Claude.
-- Codex handles work that is not frontend-dominated.
-- Claude handles frontend/design work where interaction and visual quality are
-  part of the outcome.
+- Every Task owns one Agent Session selected from its Task Type profile.
+- A mixed Task Graph keeps frontend and non-frontend Tasks together; Task Type
+  selects the applicable profile without changing dependency order or Waves.
+- `general` handles work without a more specific Task Type profile. Optional
+  `data`, `infra`, `docs`, `test`, and `chore` profiles inherit `general` when
+  absent.
+- `backend` selects backend work, and `frontend` selects frontend/design work
+  where interaction and visual quality are part of the outcome.
+- Requested QA runs in its own `qa` Agent Session after all Tasks complete.
+- Review work uses a review-selected Agent Session.
 - One-off delegation outside a Run follows the same routing.
 
 ## Verification
 
 Runtime selection does not change completion requirements:
 
-- Every Task passes its `## Verification` commands.
+- The Implement Agent hands back implementation-ready work after focused
+  checks and does not run the Task's declared `## Verification` commands,
+  edit Task status, or claim a terminal verdict.
+- The Daemon alone writes Implement Task status and runs every Task's
+  `## Verification` commands verbatim before settlement.
+- A deterministic failure releases Verification Capacity before the same
+  Agent Session receives one Verification Feedback repair turn; the final
+  Daemon attempt queues for capacity again.
+- Exit `75` is a project-authored Temporary Verification Failure signal for
+  one exclusive retry. Roundfix never infers it from logs.
 - `make verify` gates every completion claim.
 - `qa-gate` runs after the final Task regardless of runtime.
 - Agent instructions and Spec conventions bind both runtimes.
@@ -106,12 +122,15 @@ Supervisors use the Run Event Stream:
 
 ```bash
 roundfix events <run-id> --follow
-roundfix events <run-id> --filter verification,outcome
+roundfix events <run-id> --follow --filter task-status,verification,outcome
 ```
 
 Each stdout line is a `roundfix-events/v1` JSON object. Diagnostics go to
-stderr. Use `roundfix attach <run-id>` only when a human needs the Live Run
-View; the Console Log is not a state API.
+stderr. Verification records expose `waiting`, `started`, command, verdict,
+retry, and capacity evidence. Use `roundfix attach <run-id>` only when a human
+needs the Live Run View, whose spec rows show `Agent working`,
+`Waiting for Verification`, and `Verifying`; the Console Log is not a state
+API.
 
 <!-- setup-context-driven:begin id=guide.autonomous-work version=0.0.1 -->
 
@@ -124,6 +143,8 @@ surface.
 - **mandatory**: The Supervisor authors Specs, starts and monitors Runs, and orchestrates outcomes. Delegate implementation to the selected ACP Runtime through a Roundfix Run.
 
 - **prohibited**: The Supervisor must not write feature code or tests.
+
+- **mandatory**: Each Task owns a Task Type-selected Agent Session; mixed frontend and non-frontend Tasks remain in one Task Graph, and requested QA owns a separate `qa` Agent Session.
 
 - **mandatory**: The Daemon runs each Task's declared Verification verbatim. A Task can settle `completed` only after that Verification passes; failed diagnostics return to the same Agent Session for the bounded retry policy.
 
@@ -140,11 +161,11 @@ surface.
 <!-- roundfix:repository-rule:begin id=rule.6b28f6bdd57f8a34a73143025f571d9c12bd6d571192ec9a27ac12cc21e74bce -->
 ### Autonomous work
 
-Supervisor orchestrates and authors Specs; implementation is delegated to an
-ACP Runtime. Codex (`gpt-5.5` with `xhigh`) handles CLI, backend,
-infrastructure, documentation, and other non-frontend Tasks. Claude
-(`claude-opus-5`/Opus 5 with `xhigh`) handles design, UI, UX, TUI, and web
-frontend Tasks. Binding for every autonomous session. See
+Supervisor orchestrates and authors Specs; each Task is delegated to its
+Task Type-selected Agent Session. The current Agent Selection Profiles define
+the effective runtime, model, reasoning effort, and fallback order for backend,
+frontend, QA, review, and other categories. Mixed frontend and non-frontend
+Tasks remain in one Task Graph. Binding for every autonomous session. See
 `docs/agents/autonomous-work.md`.
 
 

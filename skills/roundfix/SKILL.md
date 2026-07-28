@@ -482,8 +482,10 @@ the native tool is missing. A non-empty `notify.command` replaces the native
 path and runs through the shell with a 30s timeout. The command receives the
 completed Run context in `ROUNDFIX_RUN_ID`, `ROUNDFIX_OUTCOME`,
 `ROUNDFIX_KIND`, and `ROUNDFIX_TARGET`; targets are `pr:<number>` for review
-Runs and `spec:<slug>` for Spec Runs. Set `notify.enabled: false` to disable
-outcome notifications entirely.
+Runs and `spec:<slug>` for Spec Runs. Terminal context adds
+`ROUNDFIX_REASON`, `ROUNDFIX_CONSOLE_LOG`, `ROUNDFIX_ATTACH_COMMAND`,
+`ROUNDFIX_REVIEW_ISSUES_KNOWN`, and `ROUNDFIX_NEXT_ACTION`. Set
+`notify.enabled: false` to disable outcome notifications entirely.
 
 ## Run storage retention
 
@@ -637,28 +639,30 @@ non-roundfix sessions are ignored.
 
 Use `--detach` on `resolve`, `watch`, or `implement` when the caller must not
 own the Run lifetime, such as scripts and CI jobs. The foreground command
-starts a Detached Run, prints exactly this four-line stdout report, and exits
+starts a Detached Run, prints exactly this five-line stdout report, and exits
 `0`:
 
 ```text
-Run detached: <run-id>
-Console log: <path>
-Follow: roundfix attach <run-id>
+Run ID: <run-id>
+Console Log: <path>
+Attach: roundfix attach <run-id>
+Supervisor monitor: roundfix events <run-id> --follow --filter outcome
 Stop: roundfix stop <run-id>
 ```
 
 The console log path is under the Artifact Directory at
 `<artifact_dir>/runs/<run-id>/console.log`; it receives the detached child's
-stderr, Agent output, and terminal outcome messages. `Follow` is the Attach
-surface; `Stop` is the Stop Command surface. Detached Runs behave as normal
-non-TTY Runs after startup: Run Events, Worktrees, integration, outcomes, and
-locks keep their normal contracts. The detached child that wins terminal
-completion sends the configured outcome notification; use that notification as
-the unattended-Run signal. A competing completion observes the stored outcome
-and does not send another notification. Supervisors and scripts follow
-`roundfix events <run-id> --follow` for JSONL state changes, use the human Live
-Run View with `roundfix attach <run-id>`, and treat the console log as a compact
-text record rather than a state API.
+stderr, Agent output, and terminal outcome messages. `Attach` is the human
+Live Run View; `Supervisor monitor` is the stable terminal outcome
+subscription; `Stop` is the Stop Command surface. Detached Runs behave as
+normal non-TTY Runs after startup: Run Events, Worktrees, integration,
+outcomes, and locks keep their normal contracts. The detached child that wins
+terminal completion sends the configured outcome notification. A competing
+completion observes the stored outcome and does not send another notification.
+Supervisors and scripts use the printed
+`roundfix events <run-id> --follow --filter outcome` command, humans use the
+Live Run View with `roundfix attach <run-id>`, and neither treats the console
+log as a state API.
 
 Detach implies non-interactive mode. `--interactive` is rejected before Run
 creation, and `--no-input` is implied. Startup uses a two-phase handshake: the
@@ -685,6 +689,9 @@ completion replay and conflicting completion do not republish it. `fetch`,
 Notification failures write one stderr warning shaped as
 `roundfix: outcome notification failed: <reason>` and one Daemon-source Run
 Event; they never change the Run report, terminal outcome, or exit code.
+Every notification attempt appends exactly one durable receipt Run Event with
+its route, completion time, and status `sent`, `skipped`, or `failed`. A sent
+receipt means the local route accepted the request, not that a person saw it.
 
 ## Run discovery and Attach
 
@@ -779,7 +786,7 @@ Stable fields:
 | `task-status` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `work_item`, `phase`, `status`, `summary` |
 | `batch` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `phase`, `summary` |
 | `verification` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `work_item`, `attempt`, `phase`, `verdict`, `summary` |
-| `outcome` | `schema`, `run_id`, `category`, `time`, `cursor`, `outcome`, `summary` |
+| `outcome` | `schema`, `run_id`, `category`, `time`, `cursor`, `outcome`, `summary`; optional terminal `reason`, `next_action`, `review_issues_known`, `console_log`, `attach_command`, `evidence_kind`, `evidence_head_sha`, and `verified_head_sha` |
 
 Copy-paste examples:
 
@@ -885,7 +892,24 @@ comment, code change, commit, or push for `fetch`, `resolve`, and `watch`.
 Review Runs have no Integration Pending outcome. They either mutate the user's
 checkout directly, stop before side effects through Preflight Validation, or
 end with a review outcome such as Clean, CleanUnverified, MaxRoundsReached,
-TimedOut, Failed, Stopped, or Unresolved.
+TimedOut, Failed, Stopped, ReviewSkipped, or Unresolved.
+
+Review Source Evidence is bound to the expected head. `pending` means no usable
+expected-head signal exists; `reviewing` means a current-head CodeRabbit check
+or status is still in progress; `reviewed` means CodeRabbit produced a
+current-head result that does not prove Merge-Ready; and `verified` requires a
+successful current-head CodeRabbit check or commit status, or a current-head
+CodeRabbit `APPROVED` review, with zero unresolved CodeRabbit threads. A stale
+signal never verifies the expected head. `skipped` requires an explicit
+structured current-head skip, and `failed` records an explicit current-head
+Review Source failure.
+
+Roundfix retries only typed transient Review Source failures: a context
+deadline not caused by Run cancellation, temporary DNS failure, connection
+reset, HTTP `429`, or GitHub `5xx` response. One retry episode records
+`started`, then `recovered` or `exhausted`. Retry sleeps reuse the existing poll
+interval and remain bounded by the Review Source timeout and Run Budget; there
+is no retry configuration or log-text inference.
 
 Spec Runs (`implement`) keep worktree isolation because Task concurrency needs
 it:
@@ -971,14 +995,24 @@ Review Run output and completion contract:
   `failed`, `duplicated`, or `unresolved`. Failed, invalid, and unresolved
   lines include — `reason: <terminal_reason>` when the issue artifact carries
   one. `resolve` uses the same report shape with `1 Round(s)`.
-- A terminal Run with no fetched Review Issues still prints the two count
-  lines; for example:
+- Before a Review Source fetch completes, Review Issue knowledge is unknown.
+  The report omits every zero-valued status summary and prints only:
 
   ```text
-  This Run (TimedOut after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
-  Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
+  Review Issues: unknown — fetch did not complete.
   ```
 
+  A completed fetch that returns zero Review Issues is known-zero and keeps the
+  two count lines. An explicit structured skip instead ends Review Skipped with
+  exit `3`, fetches no Review Issues, and prints:
+
+  ```text
+  Review Source: skipped — reason: <Review Source reason>
+  Next action: Reduce or split the pull request, then request another Review Source review.
+  ```
+
+  Review Skipped is not Clean, Clean Unverified, or a successful zero-issue
+  Round.
 - Roundfix publishes Outcome Comments on Review Source threads for
   non-resolved outcomes. Invalid and duplicated issues get the comment before
   the thread resolves. Failed issues stay open with the failed-step comment.
@@ -1019,6 +1053,16 @@ explicit external Artifact Directory, an external Spec Root, or a path
 crossing a symbolic link — are never staged; the Run reports them kept
 outside the repository and proceeds. Agents never create this commit by hand;
 the Daemon owns it.
+
+After Final Push, an exact Daemon-created artifact-only descendant can inherit
+its verified parent Evidence without another Roundfix review request or wait.
+Roundfix requires the recorded artifact commit to be the current head with
+exactly the recorded verified parent and the Daemon-generated subject. Its
+non-empty diff must stay entirely below the resolved in-repository review root
+without a symbolic-link crossing, and refreshed parent Evidence must still be
+verified with zero unresolved CodeRabbit threads. A user-authored, empty,
+mixed-path, out-of-root, wrong-parent, stale, or unresolved descendant returns
+to normal current-head Evidence polling.
 
 ## Live Run View
 
@@ -1127,8 +1171,8 @@ outcome and never opens pull requests (ADR-0021).
    - `--agent-full-access` — opt into Agent runtime full-access mode.
    - `--no-agent-console` — hide Agent-source console events from non-TTY
      stderr; the Run Event Journal is not filtered.
-   - `--detach` — start a Detached Run and print the four-line attach/stop
-     report.
+   - `--detach` — start a Detached Run and print the five-line report with
+     Console Log, Attach, Supervisor monitor, and Stop actions.
    - `--interactive` — open Interactive Input before starting.
    - `--no-input` — fail instead of opening Interactive Input.
 
@@ -1155,10 +1199,11 @@ outcome and never opens pull requests (ADR-0021).
    When the resolved Spec Root is not the default `<repo>/docs/specs`, Run
    startup prints `Spec Root: <path>` on stderr.
 
-   The spec Run header names the effective concurrency with this shape:
+   The spec Run header names both effective capacities with this shape:
 
    ```text
-   Concurrency: N
+   Task Capacity: N
+   Verification Capacity: M
    ```
 
 4. Exit codes: `0` Clean, Stopped, or the all-completed no-op, `1` Unresolved,
@@ -1221,15 +1266,45 @@ outcome and never opens pull requests (ADR-0021).
    Failed, Stopped, and failing-QA Runs do not invoke the pusher. Push failure
    ends the Run Failed.
 
-9. `worktree.concurrency` is an int in config, default `2`; `1` keeps
-   sequential behavior. `worktree.location` is the parent directory, default
-   `~/.roundfix/worktrees`; Project Config overrides User Config, and Roundfix
-   always appends `<repo-slug>/<run-id>` or `<repo-slug>/<run-id>.<task_id>`.
-   Concurrent Tasks can run Verification commands at the same time, so heavy
-   commands such as `make verify` can consume matching local CPU and cache
-   resources. `worktree.copy` copies repository-relative, gitignored files into
-   each new worktree. `worktree.bootstrap` runs in each new worktree after copy
-   and before Agent work; `worktree.bootstrap_timeout` defaults to `10m`.
+9. Task Capacity and Verification Capacity are independent config-only limits
+   for one Implement Run. `worktree.concurrency` is Task Capacity, defaults to
+   `2`, and limits concurrent Task Worktree lifecycles.
+   `verification.concurrency` is Verification Capacity, defaults to `1`, and
+   limits concurrent Task Verification attempts. Both must be positive
+   integers; Project Config overrides User Config, which overrides built-ins.
+   Neither setting coordinates other Runs, CI, or external processes.
+
+   The recommended split overlaps implementation while serializing the
+   complete repository gate:
+
+   ```yaml
+   worktree:
+     concurrency: 2
+
+   verification:
+     concurrency: 1
+   ```
+
+   Every normal attempt journals `waiting` before it acquires shared capacity,
+   then `started`, command results, and `verdict`. A deterministic failure
+   releases capacity before one Verification Feedback repair turn and
+   reacquires capacity for the final Daemon attempt.
+
+   Exit `75` from a project-authored Verification wrapper is the sole Temporary
+   Verification Failure signal. Roundfix retains the diagnostics and grants
+   the Task one exclusive retry across its Verification lifecycle. The retry
+   waits for other Verification attempts in that Run to drain, consumes the
+   entire Verification Capacity, and does not consume the Agent repair. A
+   repeated exit `75` exhausts the retry and fails the Task. Roundfix never
+   classifies a failure from logs, timing, ports, package names, or framework
+   text.
+
+   `worktree.location` is the parent directory, default
+   `~/.roundfix/worktrees`; Roundfix always appends `<repo-slug>/<run-id>` or
+   `<repo-slug>/<run-id>.<task_id>`. `worktree.copy` copies
+   repository-relative, gitignored files into each new worktree.
+   `worktree.bootstrap` runs in each new worktree after copy and before Agent
+   work; `worktree.bootstrap_timeout` defaults to `10m`.
 
    ```yaml
    worktree:
@@ -1277,20 +1352,19 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
    roundfix implement --spec <slug> --detach
    ```
 
-   Capture `<run-id>` from the four-line report. Detach implies non-interactive
+   Capture `<run-id>` from the five-line report. Detach implies non-interactive
    mode. If startup fails before the handshake, the foreground command relays
    the child's stderr and exit code with no stdout report — fix the reported
    Preflight Validation failure and start again.
 
-3. **Monitor without owning.** If you captured the id, follow progress through
-   the console log at `<artifact-dir>/runs/<run-id>/console.log`, or open the
-   read-only Live Run View with `roundfix attach <run-id>`. From a fresh
+3. **Monitor without owning.** Use the printed
+   `roundfix events <run-id> --follow --filter outcome` command for the stable
+   terminal subscription. Open the read-only Live Run View with
+   `roundfix attach <run-id>` when a human needs progress detail. From a fresh
    terminal, discover the Run with the bounded `roundfix runs list` or open
    the Run Browser with `roundfix attach`. Attach replays the Run Event
    Journal and follows new events; `q` or `Ctrl-C` detaches and never stops
-   the Run. The detached child sends the configured outcome notification only
-   when it wins terminal completion; that notification is the unattended-Run
-   signal.
+   the Run. The Console Log is a compact text record, not a state API.
 
 4. **Detect the terminal outcome.** The Run ends with exactly one stdout outcome
    line in the console log:
@@ -1483,45 +1557,36 @@ status updates.
 
 ## Assigned Task Batches
 
-Inside a Roundfix-assigned spec Run, each Task is one Batch of one. A Task's
-status is `pending`, `in_progress`, `completed`, or `failed`, and its task
-file is the sole owner of that status. The Daemon normalizes only the
-documented synonyms on reload — `done` becomes `completed`, and hyphen or space
-variants of canonical statuses such as `in-progress` and `in progress` become
-`in_progress` — then rewrites the frontmatter to the canonical value. Agents
-must still write canonical statuses; anything outside the canonical and synonym
-sets fails validation. Concurrent spec Runs assign each Task to its Task
-Worktree; sequential Runs (`worktree.concurrency: 1`) use the Run Worktree. The
-assigned working tree is never the user's checkout.
+Inside an Implement Run, each Task owns a Task Type-selected Agent Session and
+the Daemon is the sole writer of `in_progress`, `completed`, and `failed`.
+Agent-authored status is never a verdict. Frontend and non-frontend Tasks stay
+in the same mixed Task Graph; their Task Types select the applicable Agent
+Selection Profiles.
 
-The Agent owns the assigned task file and the working tree:
+The Agent:
 
-1. Read the assigned task file completely before editing code.
-2. Set `status: in_progress` in the task file when work starts.
-3. Make the code edits the Task requires.
-4. Run focused checks while working when useful. Do not run the full configured
-   Verification solely to satisfy the Daemon gate; the Daemon runs it after the
-   Agent turn and sends one Verification Feedback prompt only on an attempt-1
-   command failure.
-5. Append a `## Result` section to the task file.
-6. Settle the task status to `completed` or `failed`.
+1. Reads the assigned Task and bounded context completely.
+2. Implements only that Task's slice.
+3. Runs focused checks while working when useful, but never runs commands from
+   the Task's `## Verification` section.
+4. Appends or updates `## Result` with implementation and focused-check
+   evidence for every acceptance criterion.
+5. Hands back implementation-ready work without editing Task status, claiming
+   a terminal verdict, committing, pushing, opening a pull request, editing
+   `_tasks.md`, or editing another Task file.
 
-The Daemon owns verification, settling, and commits:
+The Daemon writes `in_progress` before Agent work, normalizes any Agent-authored
+status after handoff, runs the complete Task Verification verbatim, and alone
+settles status and creates the Task commit. A deterministic first failure
+releases Verification Capacity before one Verification Feedback repair turn
+in the same Agent Session. Exit `75` uses the one exclusive retry protocol and
+does not create Agent feedback. Any declared formatter, test, Skill
+synchronization, or build failure blocks settlement.
 
-- It re-runs the Task's Verification commands verbatim and settles the final
-  status; `completed` stands only when verification passes.
-- When ADR-0020 classifies a Batch as delivered despite a later nonzero acpx
-  exit, the Daemon journals the anomaly and still runs verification. The
-  anomaly never settles or commits a Task by itself.
-- It creates one commit per verified Task, titled `<type>: <lowercase-title>`
-  — the first rune of the Task title lowercased only in the subject; a `docs`,
-  `test`, or `chore` Task type passes through, every other type becomes `feat`
-  — with `Roundfix-Spec` and `Roundfix-Task` trailers.
-- With `--qa`, it commits the QA Report as
-  `docs: qa report for <slug> (<verdict>)` with a `Roundfix-Spec` trailer.
-
-The Agent never commits, never pushes, never opens pull requests, and never
-edits the Task Graph manifest (`_tasks.md`) or any unassigned task file.
+For reload compatibility, the Daemon normalizes documented synonyms:
+`done` becomes `completed`, while hyphen or space variants such as
+`in-progress` and `in progress` become `in_progress`. This normalization does
+not grant status authorship to the Agent.
 
 ## Forbidden Actions
 
@@ -1550,10 +1615,14 @@ For assigned Review Issue Batches, report:
 - Files changed in the working tree.
 - Any issue left `failed` and the reason.
 
-For assigned Task Batches, report:
+For an assigned Task Batch, report:
 
-- The assigned Task id and its settled status.
-- Each Verification command and its outcome.
-- Files changed in the working tree.
-- The `## Result` summary recorded in the task file.
-- A `failed` status and the reason, when the Task could not be completed.
+- The assigned Task id.
+- The implementation-ready behavior handed back.
+- Focused checks run and their outcomes.
+- Files changed in the assigned working tree.
+- The `## Result` evidence recorded in the Task file.
+- Any blocker that prevented an implementation-ready handoff.
+
+Do not report a terminal Task status, declared Verification result, commit, or
+delivery claim; those are Daemon-owned and occur after the Agent turn.

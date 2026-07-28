@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"roundfix/internal/baseline"
+	"roundfix/internal/gittest"
 )
 
 func TestGuidanceCompositionJourney(t *testing.T) {
@@ -455,6 +456,7 @@ func TestBaselineMacroJourneysPublicCLI(t *testing.T) {
 		parent := t.TempDir()
 		clone := filepath.Join(parent, "matching")
 		runBaselinePlanTestCommand(t, parent, "git", "clone", "--quiet", source, clone)
+		gittest.Harden(t, clone)
 		result := baselineReleaseApply(t, binary, clone, plan, planPath)
 		if result.State != "verified" {
 			t.Fatalf("cross-clone apply result = %+v", result)

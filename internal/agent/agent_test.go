@@ -208,6 +208,7 @@ func TestBuildVerificationRepairPromptIncludesPathFailureAndNoOutputBody(t *test
 		DiagnosticPath: "/repo/.roundfix/runs/run_123/verification/batch-001-attempt-1.log",
 		Failure:        "verification failed: exit status 1",
 		Attempt:        1,
+		TaskHandoff:    true,
 	})
 	if err != nil {
 		t.Fatalf("BuildVerificationRepairPrompt returned error: %v", err)
@@ -220,6 +221,11 @@ func TestBuildVerificationRepairPromptIncludesPathFailureAndNoOutputBody(t *test
 		"Diagnostic artifact: /repo/.roundfix/runs/run_123/verification/batch-001-attempt-1.log",
 		"Failure: verification failed: exit status 1",
 		"Do not paste or embed the diagnostic log body",
+		"The Daemon owns Task status; do not edit the task file's status field",
+		"Do not rerun commands from the Task's declared ## Verification section",
+		"You may run focused implementation checks",
+		"Update the Task's ## Result evidence",
+		"without claiming the Task is completed or failed",
 		"Daemon will rerun the full configured Verification sequence once",
 	} {
 		if !strings.Contains(prompt, expected) {
@@ -228,6 +234,9 @@ func TestBuildVerificationRepairPromptIncludesPathFailureAndNoOutputBody(t *test
 	}
 	if strings.Contains(prompt, "PACKAGE PASS") || strings.Contains(prompt, "raw output bytes") {
 		t.Fatalf("expected repair prompt to omit command output body, got:\n%s", prompt)
+	}
+	if strings.Contains(prompt, "update the assigned status file when needed") {
+		t.Fatalf("expected Task repair prompt to forbid status authorship, got:\n%s", prompt)
 	}
 }
 

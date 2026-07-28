@@ -31,7 +31,9 @@ profiles:
   frontend:
     preferred:
       runtime: claude
-      model: claude-opus-5
+      # "opus" is the canonical id; the adapter advertises it as "opus[1m]",
+      # which Roundfix rejects verbatim. See the 2026-07-27 adapter finding.
+      model: opus
       reasoning_effort: xhigh
     fallbacks:
       - runtime: codex

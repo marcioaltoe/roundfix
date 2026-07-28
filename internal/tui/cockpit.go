@@ -104,12 +104,12 @@ type cockpitModel struct {
 	issueTop int
 	detail   *issueDetailView
 
-	issueStatuses       []string
-	taskStatuses        []string
-	taskJournalStatuses []string
-	currentBatch        int
-	batchTimes          map[int]batchTimeSpan
-	batchTimeCursor     int64
+	issueStatuses     []string
+	taskStatuses      []string
+	taskJournalStates []taskJournalState
+	currentBatch      int
+	batchTimes        map[int]batchTimeSpan
+	batchTimeCursor   int64
 
 	runState    string
 	terminal    bool
@@ -242,13 +242,14 @@ func (model *cockpitModel) refreshWorkItems() {
 }
 
 // refreshTasks keeps Task rows truthful under parallel execution. Task files
-// remain the fallback/post-integration status source, while daemon.task events
-// are the execution source for started, settled, and skipped states.
+// remain the fallback/post-integration status source, while daemon.task and
+// daemon.verification events are the execution source for Agent work, the
+// Verification queue, active Verification, and settlement.
 func (model *cockpitModel) refreshTasks() {
 	tasks := model.cfg.View.Tasks
 	if len(model.taskStatuses) != len(tasks) {
 		model.taskStatuses = make([]string, len(tasks))
-		model.taskJournalStatuses = make([]string, len(tasks))
+		model.taskJournalStates = make([]taskJournalState, len(tasks))
 		for index, task := range tasks {
 			model.taskStatuses[index] = string(task.Status)
 		}
@@ -270,8 +271,8 @@ func (model *cockpitModel) refreshTaskFiles() {
 }
 
 func (model *cockpitModel) refreshTaskJournalEvents() {
-	for index := range model.taskJournalStatuses {
-		model.taskJournalStatuses[index] = ""
+	for index := range model.taskJournalStates {
+		model.taskJournalStates[index] = taskJournalState{}
 	}
 	runID := model.cfg.RunID
 	if strings.TrimSpace(runID) == "" {
@@ -304,10 +305,62 @@ type taskJournalEvent struct {
 	Status string `json:"status"`
 }
 
+// daemon.task payload phases the Live Run View folds. Unlisted phases —
+// including transport anomalies and future producers — leave the Task's
+// phase untouched rather than guess a new meaning.
+const (
+	taskEventPhaseStarted              = "started"
+	taskEventPhaseVerificationFeedback = "verification_feedback"
+	taskEventPhaseSettled              = "settled"
+	taskEventPhaseSkipped              = "skipped"
+)
+
+// taskStatusSkipped is the skipped Work Item status; it is a scheduler
+// outcome, not a spec.Status a task file can carry.
+const taskStatusSkipped = "skipped"
+
+// taskPhase is one Task's execution phase folded from the Run Event
+// Journal. Per-Task events are authoritative: with several Tasks in flight
+// each one carries its own phase, and the aggregate Run state never
+// overwrites it.
+type taskPhase int
+
+const (
+	taskPhaseUnknown taskPhase = iota
+	taskPhaseAgentWorking
+	taskPhaseWaitingForVerification
+	taskPhaseVerifying
+	taskPhaseSkipped
+	taskPhaseSettled
+)
+
+// terminal reports whether the Daemon already settled the Task. Terminal
+// phases are sticky: a stale, duplicated, or replayed event that arrives
+// after settlement is evidence of the past, never a regression.
+func (phase taskPhase) terminal() bool {
+	return phase == taskPhaseSettled || phase == taskPhaseSkipped
+}
+
+// taskJournalState is one Task's journal truth: its phase plus the
+// Daemon-authored terminal status once it settles.
+type taskJournalState struct {
+	phase  taskPhase
+	status string
+}
+
 func (model *cockpitModel) applyTaskJournalEvent(event runevent.RunEvent) {
-	if event.Kind != runevent.KindDaemonTask {
-		return
+	switch event.Kind {
+	case runevent.KindDaemonTask:
+		model.applyDaemonTaskEvent(event)
+	case runevent.KindDaemonVerification:
+		model.applyDaemonVerificationEvent(event)
 	}
+}
+
+// applyDaemonTaskEvent folds the Task's own lifecycle: the initial start and
+// a Verification Feedback turn are both Agent work, and settlement is
+// terminal.
+func (model *cockpitModel) applyDaemonTaskEvent(event runevent.RunEvent) {
 	taskEvent := parseTaskJournalEvent(event)
 	if taskEvent.Task == "" {
 		return
@@ -317,35 +370,92 @@ func (model *cockpitModel) applyTaskJournalEvent(event runevent.RunEvent) {
 		return
 	}
 	switch taskEvent.Phase {
-	case "started":
-		model.taskJournalStatuses[index] = string(spec.StatusInProgress)
-	case "settled":
+	case taskEventPhaseStarted, taskEventPhaseVerificationFeedback:
+		model.advanceTaskPhase(index, taskJournalState{phase: taskPhaseAgentWorking})
+	case taskEventPhaseSettled:
 		switch spec.Status(taskEvent.Status) {
 		case spec.StatusCompleted, spec.StatusFailed:
-			model.taskJournalStatuses[index] = taskEvent.Status
+			model.advanceTaskPhase(index, taskJournalState{phase: taskPhaseSettled, status: taskEvent.Status})
 		}
-	case "skipped":
-		model.taskJournalStatuses[index] = "skipped"
+	case taskEventPhaseSkipped:
+		model.advanceTaskPhase(index, taskJournalState{phase: taskPhaseSkipped, status: taskStatusSkipped})
 	}
 }
 
+// applyDaemonVerificationEvent folds one Task's Verification attempt:
+// waiting is the queue in front of the Verification gate, and every phase
+// of an acquired attempt is active Verification.
+func (model *cockpitModel) applyDaemonVerificationEvent(event runevent.RunEvent) {
+	verification := parseVerificationJournalEvent(event)
+	if verification.Task == "" {
+		return
+	}
+	index := model.taskIndex(verification.Task)
+	if index < 0 {
+		return
+	}
+	switch runevent.VerificationPhase(verification.Phase) {
+	case runevent.VerificationPhaseWaiting:
+		model.advanceTaskPhase(index, taskJournalState{phase: taskPhaseWaitingForVerification})
+	case runevent.VerificationPhaseStarted, runevent.VerificationPhaseCommandPassed,
+		runevent.VerificationPhaseFailed, runevent.VerificationPhaseVerdict:
+		model.advanceTaskPhase(index, taskJournalState{phase: taskPhaseVerifying})
+	}
+}
+
+func (model *cockpitModel) advanceTaskPhase(index int, next taskJournalState) {
+	if index < 0 || index >= len(model.taskJournalStates) {
+		return
+	}
+	if model.taskJournalStates[index].phase.terminal() {
+		return
+	}
+	model.taskJournalStates[index] = next
+}
+
 func (model *cockpitModel) applyTaskJournalStatuses() {
-	for index, journalStatus := range model.taskJournalStatuses {
-		switch spec.Status(journalStatus) {
-		case spec.StatusCompleted, spec.StatusFailed:
-			model.taskStatuses[index] = journalStatus
-		case spec.StatusInProgress:
+	for index, state := range model.taskJournalStates {
+		switch state.phase {
+		case taskPhaseSettled:
+			model.taskStatuses[index] = state.status
+		case taskPhaseSkipped:
+			model.taskStatuses[index] = taskStatusSkipped
+		case taskPhaseAgentWorking, taskPhaseWaitingForVerification, taskPhaseVerifying:
 			switch spec.Status(model.taskStatuses[index]) {
 			case spec.StatusCompleted, spec.StatusFailed:
 			default:
-				model.taskStatuses[index] = journalStatus
-			}
-		default:
-			if journalStatus == "skipped" {
-				model.taskStatuses[index] = journalStatus
+				model.taskStatuses[index] = string(spec.StatusInProgress)
 			}
 		}
 	}
+}
+
+// verificationJournalEvent is the per-Task slice of a daemon.verification
+// payload. Review Batch verification carries no Task, so it folds into no
+// Task row.
+type verificationJournalEvent struct {
+	Task     string `json:"task"`
+	WorkItem string `json:"work_item"`
+	Phase    string `json:"phase"`
+}
+
+func parseVerificationJournalEvent(event runevent.RunEvent) verificationJournalEvent {
+	parsed := verificationJournalEvent{Task: strings.TrimSpace(event.ReviewIssue)}
+	if len(event.Payload) == 0 {
+		return parsed
+	}
+	var payload verificationJournalEvent
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		return parsed
+	}
+	for _, candidate := range []string{payload.Task, payload.WorkItem} {
+		if strings.TrimSpace(candidate) != "" {
+			parsed.Task = strings.TrimSpace(candidate)
+			break
+		}
+	}
+	parsed.Phase = strings.TrimSpace(payload.Phase)
+	return parsed
 }
 
 func parseTaskJournalEvent(event runevent.RunEvent) taskJournalEvent {
@@ -501,29 +611,65 @@ func (model *cockpitModel) issueStatusLabel(index int) string {
 	return "Waiting"
 }
 
-// taskStatusLabel mirrors the Review Issue labels: terminal task statuses
-// verbatim, Executing for the Task the cycle is on, Waiting ahead of it,
-// Paused once the Run itself has ended.
+// The Task phase vocabulary of the Live Run View. These are the exact words
+// the Work Queue renders; they carry the distinction in text, so the styled
+// and NO_COLOR renders say the same thing.
+const (
+	taskLabelAgentWorking           = "Agent working"
+	taskLabelWaitingForVerification = "Waiting for Verification"
+	taskLabelVerifying              = "Verifying"
+	taskLabelCompleted              = "Completed"
+	taskLabelFailed                 = "Failed"
+	taskLabelSkipped                = "Skipped"
+	taskLabelPaused                 = "Paused"
+	taskLabelWaiting                = "Waiting"
+)
+
+// taskStatusLabel names what one Task is doing right now: its settled status
+// when the Daemon settled it, otherwise the phase folded from its own
+// journal events. A Run whose aggregate state says Verifying can still hold
+// a Task whose Agent is working, so the label never reads the Run state
+// except to pause an unsettled Task after the Run itself ended.
 func (model *cockpitModel) taskStatusLabel(index int) string {
-	status := spec.Status(model.taskStatuses[index])
-	switch status {
+	status := model.taskStatuses[index]
+	switch spec.Status(status) {
 	case spec.StatusCompleted:
-		return "Completed"
+		return taskLabelCompleted
 	case spec.StatusFailed:
-		return "Failed"
-	case spec.StatusInProgress:
-		if model.terminal || store.IsTerminalState(model.runState) {
-			return "Paused"
-		}
-		return "Executing"
+		return taskLabelFailed
 	}
-	if model.taskStatuses[index] == "skipped" {
-		return "Skipped"
+	if status == taskStatusSkipped {
+		return taskLabelSkipped
 	}
 	if model.terminal || store.IsTerminalState(model.runState) {
-		return "Paused"
+		return taskLabelPaused
 	}
-	return "Waiting"
+	if label, ok := model.taskPhaseLabel(index); ok {
+		return label
+	}
+	if spec.Status(status) == spec.StatusInProgress {
+		// The Daemon writes in_progress before Agent work (ADR 0057), so a
+		// task file alone still names the phase for a Run whose events are
+		// unavailable.
+		return taskLabelAgentWorking
+	}
+	return taskLabelWaiting
+}
+
+func (model *cockpitModel) taskPhaseLabel(index int) (string, bool) {
+	if index < 0 || index >= len(model.taskJournalStates) {
+		return "", false
+	}
+	switch model.taskJournalStates[index].phase {
+	case taskPhaseAgentWorking:
+		return taskLabelAgentWorking, true
+	case taskPhaseWaitingForVerification:
+		return taskLabelWaitingForVerification, true
+	case taskPhaseVerifying:
+		return taskLabelVerifying, true
+	default:
+		return "", false
+	}
 }
 
 // workItemCount sizes selection over the pane's Work Items, keyed on the
@@ -926,8 +1072,13 @@ func cockpitTargetLabel(view LiveRunView) string {
 		} else {
 			target = "SPEC"
 		}
+		// Two independently configured capacities schedule a spec Run, so
+		// the header names both instead of one generic Concurrency number.
 		if view.Concurrency > 0 {
-			target += fmt.Sprintf(" // Concurrency: %d", view.Concurrency)
+			target += fmt.Sprintf(" // Task Capacity: %d", view.Concurrency)
+		}
+		if view.VerificationConcurrency > 0 {
+			target += fmt.Sprintf(" // Verification Capacity: %d", view.VerificationConcurrency)
 		}
 	} else if strings.TrimSpace(view.PRNumber) != "" {
 		target = "PR #" + strings.TrimSpace(view.PRNumber)
@@ -974,6 +1125,11 @@ const (
 	phaseRun    = "run"
 	phaseWait   = "wait"
 	phaseLocked = "locked"
+	// Task rows split the running marker into the Verification gate's queue
+	// and an acquired attempt, so two Tasks in different phases stay
+	// distinguishable by marker alone.
+	phaseQueued = "queued"
+	phaseVerify = "verify"
 )
 
 func runPhases(model *cockpitModel) []cockpitPhase {
@@ -1635,12 +1791,13 @@ func (model *cockpitModel) workItemStatusLabel(index int) string {
 }
 
 // taskWorkItems maps the spec Run's Tasks into Work Items carrying the
-// statuses of the latest refresh instead of the load-time ones.
+// statuses and phases of the latest refresh instead of the load-time ones.
 func (model *cockpitModel) taskWorkItems() []WorkItem {
 	items := TaskWorkItems(model.cfg.View.Tasks)
 	for index := range items {
 		if index < len(model.taskStatuses) {
 			items[index].Status = model.taskStatuses[index]
+			items[index].Phase = model.taskStatusLabel(index)
 		}
 	}
 	return items
@@ -1727,6 +1884,11 @@ func (model *cockpitModel) workItemHeaderLine(item WorkItem, label string, selec
 	if severity := strings.TrimSpace(item.Severity); severity != "" {
 		left += " " + strings.ToUpper(severity)
 	}
+	// Tasks spend that slot on the phase word: Review Issues qualify a row
+	// by severity, Tasks by what the Task is doing.
+	if phase := strings.TrimSpace(item.Phase); phase != "" {
+		left += " " + phase
+	}
 	style := model.statusStyle(label)
 	right := workItemOrdinal(item)
 	if right == "" {
@@ -1793,19 +1955,23 @@ func (model *cockpitModel) selectionRecords() []runevent.SelectionLifecycleRecor
 
 func workItemStatusMarker(label string) string {
 	switch label {
-	case "Executing":
+	case "Executing", taskLabelAgentWorking:
 		return phaseRun
-	case "Resolved", "Completed":
+	case taskLabelWaitingForVerification:
+		return phaseQueued
+	case taskLabelVerifying:
+		return phaseVerify
+	case "Resolved", taskLabelCompleted:
 		return phaseDone
-	case "Paused":
+	case taskLabelPaused:
 		return phaseLocked
 	case "Invalid":
 		return "invalid"
 	case "Duplicated":
 		return "dup"
-	case "Failed":
+	case taskLabelFailed:
 		return "fail"
-	case "Skipped":
+	case taskLabelSkipped:
 		return "skip"
 	default:
 		return phaseWait
@@ -1872,15 +2038,15 @@ func (model *cockpitModel) workQueueTotalsLine() string {
 // same color family the item's text marker belongs to.
 func (model *cockpitModel) statusStyle(label string) lipgloss.Style {
 	switch label {
-	case "Executing":
+	case "Executing", taskLabelAgentWorking, taskLabelVerifying:
 		return model.tokens.Running
-	case "Resolved", "Completed":
+	case "Resolved", taskLabelCompleted:
 		return model.tokens.Done
-	case "Failed":
+	case taskLabelFailed:
 		return model.tokens.Failed
-	case "Paused":
+	case taskLabelPaused:
 		return model.tokens.Locked
-	case "Invalid", "Duplicated", "Skipped":
+	case "Invalid", "Duplicated", taskLabelSkipped:
 		return model.tokens.Muted
 	default:
 		return model.tokens.Waiting

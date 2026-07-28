@@ -3,5 +3,5 @@
 package notify
 
 func platformNativeNotifier(deps dependencies) Notifier {
-	return noopNotifier{}
+	return noopNotifier{route: RouteNative}
 }

@@ -1,0 +1,47 @@
+Fresh current-build seam evidence
+Build: 234037002497f7d1424a256318db69bf7ccd098e
+Date: 2026-07-28
+Result: pass
+
+Command:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-04-gocache
+  GOFLAGS=-buildvcs=false go test ./internal/reviewsource/...
+  ./internal/watch ./internal/runevent -run
+  'Test.*(Evidence|Transient|Retry|WaitPhase|ReviewStatusEvent|UnchangedEvidence|Outcome.*Context|ReviewIssues)'
+  -count=1
+Exit: 0.
+Results:
+  ok roundfix/internal/reviewsource
+  ok roundfix/internal/reviewsource/coderabbit
+  ok roundfix/internal/watch
+  ok roundfix/internal/runevent
+
+Command:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-04-gocache
+  GOFLAGS=-buildvcs=false go test ./internal/cli ./internal/store -run
+  'Test.*(ReviewSkipped|ReviewIssuesKnown|ReviewIssuesUnknown|TerminalContext|FetchedZero|Artifact.*Evidence|CleanupBeforeAgent|Schema.*Review|Detached.*Monitor|OutcomeNotification|NotificationReceipt|DocumentationContract|Watch.*Help)'
+  -count=1
+Exit: 0.
+Results:
+  ok roundfix/internal/cli
+  ok roundfix/internal/store
+
+Command:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-04-gocache
+  GOFLAGS=-buildvcs=false go test -race ./internal/watch ./internal/cli
+  ./internal/notify ./internal/runevent -run
+  'Test.*(Transient|Retry|StopRequest|ReviewSkipped|TerminalContext|ReviewIssues|Notification|Detached|Artifact.*Evidence)'
+  -count=1
+Exit: 0.
+Results:
+  ok roundfix/internal/watch
+  ok roundfix/internal/cli
+  ok roundfix/internal/notify
+  ok roundfix/internal/runevent
+
+These checks freshly cover the shared Evidence hierarchy and refusal cases,
+bounded retry and Stop priority, both wait phases and changed-only events,
+ReviewSkipped storage/schema/Run Browser behavior, unknown and fetched-zero
+knowledge, winner-only terminal context, notification receipts and outcome
+independence, Detached reporting, exact artifact-only inheritance and every
+declared refusal.

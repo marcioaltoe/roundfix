@@ -23,6 +23,7 @@ import (
 	"roundfix/internal/codex"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
+	"roundfix/internal/gittest"
 	roundnotify "roundfix/internal/notify"
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
@@ -43,8 +44,12 @@ func init() {
 
 type testNoopOutcomeNotifier struct{}
 
-func (testNoopOutcomeNotifier) Notify(context.Context, roundnotify.Outcome) error {
-	return nil
+func (testNoopOutcomeNotifier) Notify(context.Context, roundnotify.Outcome) (roundnotify.NotificationReceipt, error) {
+	return roundnotify.NotificationReceipt{
+		Route:       roundnotify.RouteNative,
+		Status:      roundnotify.StatusSent,
+		CompletedAt: time.Now().UTC(),
+	}, nil
 }
 
 func TestRunHelp(t *testing.T) {
@@ -254,7 +259,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "Review Source check", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "accepted Review Source Evidence", "CodeRabbit APPROVED review", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
@@ -2440,7 +2445,7 @@ func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing
 	currentRun, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
 
 	otherRepo := t.TempDir()
-	gitImplement(t, otherRepo, "init", "--initial-branch=main")
+	gittest.InitRepo(t, otherRepo, "--initial-branch=main")
 	gitImplement(t, otherRepo, "config", "user.name", "Roundfix Test")
 	gitImplement(t, otherRepo, "config", "user.email", "roundfix-test@example.com")
 	gitImplement(t, otherRepo, "config", "commit.gpgsign", "false")
@@ -3937,7 +3942,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
 				assertNoAgentLogs(t, repoDir)
 			} else if tt.name == "watch" {
-				if !strings.Contains(stderr.String(), "Review Source status: settled") {
+				if !strings.Contains(stderr.String(), "Review Source status: verified") {
 					t.Fatalf("expected fake Review Source status output, got %q", stderr.String())
 				}
 				if !strings.Contains(stderr.String(), "Fetched Round 001 with 1 Review Issue") {
@@ -4125,6 +4130,21 @@ type fakeReviewSpecGitRunner struct {
 func (runner *fakeReviewSpecGitRunner) RunGit(_ context.Context, _ string, _ ...string) (string, error) {
 	runner.calls++
 	return runner.message, nil
+}
+
+type failingReviewArtifactProofGitRunner struct {
+	delegate preflight.GitRunner
+	command  string
+	err      error
+	failures int
+}
+
+func (runner *failingReviewArtifactProofGitRunner) RunGit(ctx context.Context, workDir string, args ...string) (string, error) {
+	if len(args) > 0 && args[0] == runner.command {
+		runner.failures++
+		return "", runner.err
+	}
+	return runner.delegate.RunGit(ctx, workDir, args...)
 }
 
 func TestRunFetchWarnsAndIgnoresDeprecatedUserConfig(t *testing.T) {
@@ -4361,6 +4381,34 @@ func TestReviewProfilePreflightFetchCreatesNoAgentSession(t *testing.T) {
 	}
 }
 
+func TestWaitingForReviewProgressLineExposesBoundedEvidenceAndRetryState(t *testing.T) {
+	startedAt := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
+	line := formatReviewWaitProgress(watch.WaitProgress{
+		Phase:           watch.WaitPhaseReviewCheck,
+		ExpectedHeadSHA: "abc123",
+		StartedAt:       startedAt,
+		Deadline:        startedAt.Add(5 * time.Minute),
+		Evidence: reviewsource.Evidence{
+			State: reviewsource.EvidenceVerified,
+			Kind:  reviewsource.EvidenceKindReviewApproval,
+		},
+		RetryStatus: watch.RetryStatusRecovered,
+	})
+	for _, want := range []string{
+		"Review Source status: verified",
+		"phase=WaitingForReviewCheck",
+		"expected_head=abc123",
+		"started_at=2026-07-27T12:00:00Z",
+		"deadline=2026-07-27T12:05:00Z",
+		"evidence_kind=review_approval",
+		"retry=recovered",
+	} {
+		if !strings.Contains(line, want) {
+			t.Fatalf("wait progress line missing %q: %q", want, line)
+		}
+	}
+}
+
 func TestPrintReviewIssueReportSplitsRunAndCumulativeCountsAndReasons(t *testing.T) {
 	report := reviewIssueReport{
 		runIssues: []rounds.Issue{
@@ -4377,7 +4425,7 @@ func TestPrintReviewIssueReportSplitsRunAndCumulativeCountsAndReasons(t *testing
 	}
 	var stdout bytes.Buffer
 
-	printReviewIssueReport(&stdout, store.StateCleanUnverified, 2, report)
+	printReviewIssueReport(&stdout, store.StateCleanUnverified, 2, true, report)
 
 	wantStdout := "" +
 		"issue 001 invalid — major: generated file — reason: invalid: generated file\n" +
@@ -4410,7 +4458,7 @@ func TestReviewIssueReportDataMarksCumulativeUnavailableOnLoadFailure(t *testing
 		t.Fatalf("expected cumulative data unavailable, got %+v", report)
 	}
 	var stdout bytes.Buffer
-	printReviewIssueReport(&stdout, store.StateClean, 1, report)
+	printReviewIssueReport(&stdout, store.StateClean, 1, true, report)
 	wantStdout := "" +
 		"issue 001 resolved — major: handled issue\n" +
 		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
@@ -4627,17 +4675,23 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 				t.Fatalf("expected exit code %d, got %d stderr=%q stdout=%q", tt.wantExitCode, code, stderr.String(), stdout.String())
 			}
 			runID := tt.runID(t, stderr.String())
-			assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
+			want := roundnotify.Outcome{
 				RunID:  runID,
 				State:  tt.wantState,
 				Kind:   tt.wantKind,
 				Target: tt.wantTarget,
-			}})
+			}
+			if tt.name == "watch" {
+				known := true
+				want.AttachCommand = "roundfix attach " + runID
+				want.ReviewIssuesKnown = &known
+			}
+			assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{want})
 		})
 	}
 }
 
-func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome(t *testing.T) {
+func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -4716,16 +4770,25 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome(t *test
 	for _, entry := range events {
 		if entry.Event.Kind == runevent.KindDaemonOutcome {
 			outcomes++
+			var payload runevent.OutcomePayload
+			if err := json.Unmarshal(entry.Event.Payload, &payload); err != nil {
+				t.Fatalf("decode winning terminal context: %v", err)
+			}
+			if payload.Reason == "" || payload.NextAction == "" {
+				t.Fatalf("winning non-Clean terminal context is not actionable: %#v", payload)
+			}
 		}
 	}
 	if outcomes != 1 {
 		t.Fatalf("terminal outcome events = %d, want 1; events=%+v", outcomes, events)
 	}
 	assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
-		RunID:  active.ID,
-		State:  store.StateStopped,
-		Kind:   store.KindResolve,
-		Target: "pr:123",
+		RunID:      active.ID,
+		State:      store.StateStopped,
+		Kind:       store.KindResolve,
+		Target:     "pr:123",
+		Reason:     "A Stop Request ended the Run.",
+		NextAction: "Inspect the preserved work before starting another Run.",
 	}})
 
 	stopStdout.Reset()
@@ -4744,10 +4807,12 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome(t *test
 		t.Fatalf("identical replay published another terminal outcome: events=%+v", events)
 	}
 	assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
-		RunID:  active.ID,
-		State:  store.StateStopped,
-		Kind:   store.KindResolve,
-		Target: "pr:123",
+		RunID:      active.ID,
+		State:      store.StateStopped,
+		Kind:       store.KindResolve,
+		Target:     "pr:123",
+		Reason:     "A Stop Request ended the Run.",
+		NextAction: "Inspect the preserved work before starting another Run.",
 	}})
 }
 
@@ -4767,20 +4832,28 @@ func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
 	assertRecordedOutcomes(t, notifier, nil)
 }
 
-func TestNotifyTerminalOutcomeDetachesCanceledParentWithBoundedDeadline(t *testing.T) {
+func TestOutcomeNotificationCarriesTerminalContextWithBoundedDeadline(t *testing.T) {
 	parent, cancel := context.WithCancel(context.Background())
 	cancel()
 	notifier := &deadlineRecordingOutcomeNotifier{}
+	known := false
 	run := store.Run{
 		ID:       "run-123",
 		Kind:     store.KindResolve,
-		State:    store.StateClean,
+		State:    store.StateFailed,
 		PRNumber: "123",
+	}
+	terminal := terminalCompletionContext{
+		Reason:            "verification failed",
+		NextAction:        "inspect the Console Log",
+		ReviewIssuesKnown: &known,
+		ConsoleLog:        "/tmp/run-123/console.log",
+		AttachCommand:     "roundfix attach run-123",
 	}
 	var stderr bytes.Buffer
 	start := time.Now()
 
-	notifyTerminalOutcome(parent, nil, notifier, &stderr, run)
+	notifyTerminalOutcome(parent, nil, notifier, &stderr, run, terminal)
 
 	if notifier.wasCanceled {
 		t.Fatal("expected terminal outcome notification context to ignore parent cancellation")
@@ -4792,10 +4865,15 @@ func TestNotifyTerminalOutcomeDetachesCanceledParentWithBoundedDeadline(t *testi
 		t.Fatalf("expected deadline within notification timeout, got %s from start %s", notifier.deadline, start)
 	}
 	want := roundnotify.Outcome{
-		RunID:  "run-123",
-		State:  store.StateClean,
-		Kind:   store.KindResolve,
-		Target: "pr:123",
+		RunID:             "run-123",
+		State:             store.StateFailed,
+		Kind:              store.KindResolve,
+		Target:            "pr:123",
+		Reason:            terminal.Reason,
+		ConsoleLog:        terminal.ConsoleLog,
+		AttachCommand:     terminal.AttachCommand,
+		ReviewIssuesKnown: terminal.ReviewIssuesKnown,
+		NextAction:        terminal.NextAction,
 	}
 	if !reflect.DeepEqual(notifier.outcome, want) {
 		t.Fatalf("notification outcome mismatch\nwant: %#v\ngot:  %#v", want, notifier.outcome)
@@ -4820,16 +4898,125 @@ func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExi
 		t.Fatalf("expected one notification warning %q, got stderr=%q", warning, gotStderr)
 	}
 	runID, events := journaledRunEvents(t, homeDir, gotStderr)
+	receipts := 0
 	for _, entry := range events {
 		event := entry.Event
-		if event.Source == runevent.SourceDaemon &&
-			event.Kind == runevent.KindDaemonStatus &&
-			strings.Contains(event.Summary, "outcome notification failed") &&
-			strings.Contains(string(event.Payload), "forced notifier failure") {
-			return
+		if event.Source != runevent.SourceDaemon || event.Kind != runevent.KindDaemonStatus {
+			continue
+		}
+		var payload runevent.NotificationReceiptPayload
+		if err := json.Unmarshal(event.Payload, &payload); err != nil ||
+			payload.Event != "outcome_notification_failed" {
+			continue
+		}
+		receipts++
+		if payload.Route != string(roundnotify.RouteCommand) ||
+			payload.Status != string(roundnotify.StatusFailed) ||
+			payload.CompletedAt.IsZero() ||
+			payload.Reason != "forced notifier failure" {
+			t.Fatalf("failed notification receipt = %#v", payload)
 		}
 	}
-	t.Fatalf("expected Daemon-source notification failure event for Run %s, got %+v", runID, events)
+	if receipts != 1 {
+		t.Fatalf("failed notification receipt events for Run %s = %d, want 1; events=%+v", runID, receipts, events)
+	}
+}
+
+func TestNotificationReceiptJournalsExactlyOnePerOutcomeAttempt(t *testing.T) {
+	tests := []struct {
+		name   string
+		route  roundnotify.Route
+		status roundnotify.Status
+		err    error
+	}{
+		{name: "sent command", route: roundnotify.RouteCommand, status: roundnotify.StatusSent},
+		{name: "skipped disabled", route: roundnotify.RouteDisabled, status: roundnotify.StatusSkipped},
+		{name: "failed native", route: roundnotify.RouteNative, status: roundnotify.StatusFailed, err: errors.New("native delivery failed")},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			notifier := &recordingOutcomeNotifier{
+				route:  tt.route,
+				status: tt.status,
+				err:    tt.err,
+			}
+			_, stderr, code, homeDir := runCleanResolveWithOutcomeNotifier(t, notifier)
+
+			if code != exitOK {
+				t.Fatalf("notification receipt changed exit = %d, want %d", code, exitOK)
+			}
+			runID, events := journaledRunEvents(t, homeDir, stderr)
+			assertRunState(t, homeDir, runID, store.StateClean)
+			receipts := 0
+			for _, entry := range events {
+				if entry.Event.Kind != runevent.KindDaemonStatus {
+					continue
+				}
+				var payload runevent.NotificationReceiptPayload
+				if err := json.Unmarshal(entry.Event.Payload, &payload); err != nil ||
+					!strings.HasPrefix(payload.Event, "outcome_notification_") {
+					continue
+				}
+				receipts++
+				if payload.Event != "outcome_notification_"+string(tt.status) ||
+					payload.Route != string(tt.route) ||
+					payload.Status != string(tt.status) ||
+					payload.CompletedAt.IsZero() ||
+					!entry.Event.Time.Equal(payload.CompletedAt) {
+					t.Fatalf("notification receipt payload/event mismatch: payload=%#v event=%#v", payload, entry.Event)
+				}
+			}
+			if receipts != 1 {
+				t.Fatalf("notification receipt events = %d, want 1; events=%+v", receipts, events)
+			}
+		})
+	}
+}
+
+func TestNotificationReceiptDefaultsZeroValueFieldsBeforeJournaling(t *testing.T) {
+	tests := []struct {
+		name       string
+		notifyErr  error
+		wantStatus roundnotify.Status
+	}{
+		{name: "skipped without error", wantStatus: roundnotify.StatusSkipped},
+		{name: "failed with error", notifyErr: errors.New("zero receipt failure"), wantStatus: roundnotify.StatusFailed},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			notifier := &recordingOutcomeNotifier{
+				err:                 tt.notifyErr,
+				preserveZeroReceipt: true,
+			}
+			_, stderr, code, homeDir := runCleanResolveWithOutcomeNotifier(t, notifier)
+
+			if code != exitOK {
+				t.Fatalf("zero receipt changed exit = %d, want %d", code, exitOK)
+			}
+			_, events := journaledRunEvents(t, homeDir, stderr)
+			var receipts []runevent.NotificationReceiptPayload
+			for _, entry := range events {
+				if entry.Event.Kind != runevent.KindDaemonStatus {
+					continue
+				}
+				var payload runevent.NotificationReceiptPayload
+				if json.Unmarshal(entry.Event.Payload, &payload) == nil &&
+					strings.HasPrefix(payload.Event, "outcome_notification_") {
+					receipts = append(receipts, payload)
+				}
+			}
+			if len(receipts) != 1 {
+				t.Fatalf("zero-value notification receipts = %d, want 1; events=%+v", len(receipts), events)
+			}
+			if receipts[0].Route != string(roundnotify.RouteDisabled) ||
+				receipts[0].Status != string(tt.wantStatus) ||
+				receipts[0].Event != "outcome_notification_"+string(tt.wantStatus) {
+				t.Fatalf("normalized zero-value receipt = %#v", receipts[0])
+			}
+		})
+	}
 }
 
 func assertCleanCleanupWarningEvent(t *testing.T, homeDir string, stderr string, keptPath string, reason string) {
@@ -4855,14 +5042,16 @@ func assertCleanCleanupWarningEvent(t *testing.T, homeDir string, stderr string,
 	t.Fatalf("expected Daemon-source cleanup failure event for Run %s, got %+v", runID, events)
 }
 
-func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
-	_, repoDir := withCLIWorkspace(t)
+func TestRunOutcomeNotificationsDisabledJournalsSkippedReceipt(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "notify:\n  enabled: false\n")
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
-	withOutcomeNotifierFactory(t, func(roundconfig.Config) roundnotify.Notifier {
-		t.Fatal("disabled notifications must not construct a notifier")
-		return nil
+	withOutcomeNotifierFactory(t, func(config roundconfig.Config) roundnotify.Notifier {
+		if config.Notify.Enabled {
+			t.Fatal("expected disabled notification config")
+		}
+		return roundnotify.New(config)
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -4881,6 +5070,25 @@ func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
 	}
 	if strings.Contains(stderr.String(), "outcome notification failed") {
 		t.Fatalf("disabled notifications must be silent, got stderr=%q", stderr.String())
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	receipts := 0
+	for _, entry := range events {
+		var payload runevent.NotificationReceiptPayload
+		if entry.Event.Kind != runevent.KindDaemonStatus ||
+			json.Unmarshal(entry.Event.Payload, &payload) != nil ||
+			payload.Event != "outcome_notification_skipped" {
+			continue
+		}
+		receipts++
+		if payload.Route != string(roundnotify.RouteDisabled) ||
+			payload.Status != string(roundnotify.StatusSkipped) ||
+			payload.CompletedAt.IsZero() {
+			t.Fatalf("disabled notification receipt = %#v", payload)
+		}
+	}
+	if receipts != 1 {
+		t.Fatalf("disabled notification receipt events = %d, want 1; events=%+v", receipts, events)
 	}
 }
 
@@ -5058,12 +5266,12 @@ func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
 func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	withRealReviewPreflight(t, repoDir, true)
-	withWatchStatus(t, (&fakeWatchStatus{
-		statuses: []reviewsource.WatchStatus{
-			{State: watch.StatusSettled},
-			{State: watch.StatusSettled},
-		},
-	}).Status)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		reviewedEvidence("abc123"),
+		reviewedEvidence("abc123"),
+		reviewedEvidence("abc123"),
+		verifiedEvidence("abc123"),
+	}}).Evidence)
 	fetchCalls := 0
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
 		fetchCalls++
@@ -5082,8 +5290,6 @@ func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 			},
 		}, nil
 	})
-	headCheck := &fakeWatchHeadCheck{states: []watch.HeadCheckState{watch.CheckFailure, watch.CheckSuccess}}
-	withWatchHeadCheck(t, headCheck.Check)
 	source := &fakeSourceResolver{}
 	withSourceResolver(t, source)
 	pusher := &checkingPusher{}
@@ -5138,12 +5344,10 @@ func TestRunWatchPrintsBudgetExceededStdoutReport(t *testing.T) {
 	withSuccessfulPreflight(t, repoDir)
 	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	withWatchTiming(t, clock, &fakeWatchSleeper{clock: clock})
-	withWatchStatus(t, (&fakeWatchStatus{
-		statuses: []reviewsource.WatchStatus{
-			{State: watch.StatusPending},
-			{State: watch.StatusSettled},
-		},
-	}).Status)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		pendingEvidence("abc123"),
+		reviewedEvidence("abc123"),
+	}}).Evidence)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
 watch:
   poll_interval: 1s
@@ -5161,9 +5365,7 @@ budget:
 	if code != exitRunFailed {
 		t.Fatalf("expected BudgetExceeded exit %d, got %d stderr=%q", exitRunFailed, code, stderr.String())
 	}
-	wantStdout := "" +
-		"This Run (BudgetExceeded after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
+	wantStdout := "Review Issues: unknown — fetch did not complete.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected BudgetExceeded stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -5338,13 +5540,11 @@ func TestRunWatchTimeoutOffersManualReviewWithoutFetching(t *testing.T) {
 		t.Fatal("watch timeout must not fetch Review Source issues")
 		return nil, nil
 	})
-	withWatchStatus(t, (&fakeWatchStatus{
-		statuses: []reviewsource.WatchStatus{
-			{State: watch.StatusPending},
-			{State: watch.StatusPending},
-			{State: watch.StatusPending},
-		},
-	}).Status)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		pendingEvidence("abc123"),
+		pendingEvidence("abc123"),
+		pendingEvidence("abc123"),
+	}}).Evidence)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
 watch:
   poll_interval: 1s
@@ -5359,16 +5559,14 @@ watch:
 	if code != 1 {
 		t.Fatalf("expected watch timeout exit 1, got %d", code)
 	}
-	wantStdout := "" +
-		"This Run (TimedOut after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
+	wantStdout := "Review Issues: unknown — fetch did not complete.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected timeout stdout report %q, got %q", wantStdout, stdout.String())
 	}
 	if !strings.Contains(stderr.String(), "Review Source status: pending") {
 		t.Fatalf("expected pending Review Source status output, got %q", stderr.String())
 	}
-	if count := strings.Count(stderr.String(), "Review Source status: pending\n"); count != 1 {
+	if count := strings.Count(stderr.String(), "Review Source status: pending;"); count != 1 {
 		t.Fatalf("expected one unchanged status-poll line, got %d in %q", count, stderr.String())
 	}
 	if !strings.Contains(stderr.String(), "reached TimedOut") {
@@ -5392,9 +5590,10 @@ watch:
   poll_interval: 1ns
   check_grace_period: 1ns
 `)
-	withWatchHeadCheck(t, (&fakeWatchHeadCheck{
-		states: []watch.HeadCheckState{watch.CheckMissing},
-	}).Check)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		reviewedEvidence("abc123"),
+		pendingEvidence("abc123"),
+	}}).Evidence)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -5406,7 +5605,7 @@ watch:
 	if !strings.Contains(stderr.String(), "reached CleanUnverified") {
 		t.Fatalf("expected CleanUnverified terminal outcome, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "Next: confirm the pull request's Review Source check before merging.") {
+	if !strings.Contains(stderr.String(), "Next: confirm the pull request's Review Source Evidence before merging.") {
 		t.Fatalf("expected CleanUnverified next action, got %q", stderr.String())
 	}
 	wantStdout := "" +
@@ -5418,6 +5617,670 @@ watch:
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
+func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	reason := "Pull request is too large to review"
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		return reviewsource.Evidence{
+			State:           reviewsource.EvidenceSkipped,
+			Kind:            reviewsource.EvidenceKindCheckRun,
+			Identity:        "check_run:42",
+			ExpectedHeadSHA: req.ExpectedHeadSHA,
+			ObservedHeadSHA: req.ExpectedHeadSHA,
+			Conclusion:      "success",
+			Detail:          "CodeRabbit skipped the review",
+			Reason:          reason,
+		}, nil
+	})
+	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+		t.Fatal("Review Skipped must not fetch Review Source issues")
+		return nil, nil
+	})
+	committer := &fakeCommitter{}
+	withCommitter(t, committer)
+	cleanupCalls := 0
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		cleanupCalls++
+		return nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		cleanupCalls++
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != exitUnverified {
+		t.Fatalf("Review Skipped exit = %d, want %d; stderr=%q", code, exitUnverified, stderr.String())
+	}
+	wantStdout := "Review Source: skipped — reason: " + reason + "\n" +
+		"Next action: Reduce or split the pull request, then request another Review Source review.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("Review Skipped stdout = %q, want %q", stdout.String(), wantStdout)
+	}
+	for _, forbidden := range []string{"0 resolved", "Pull Request cumulative:", "Fetched Round"} {
+		if strings.Contains(stdout.String()+stderr.String(), forbidden) {
+			t.Fatalf("Review Skipped report contains %q: stdout=%q stderr=%q", forbidden, stdout.String(), stderr.String())
+		}
+	}
+	if !strings.Contains(stderr.String(), "reached ReviewSkipped") ||
+		!strings.Contains(stderr.String(), "Review Skipped: "+reason) ||
+		!strings.Contains(stderr.String(), "Next: Reduce or split the pull request") {
+		t.Fatalf("Review Skipped diagnostics missing reason or action: %q", stderr.String())
+	}
+	if cleanupCalls != 0 {
+		t.Fatalf("pre-Agent Review Skipped cleanup calls = %d, want 0", cleanupCalls)
+	}
+	if committer.calls != 0 {
+		t.Fatalf("Review Skipped review-artifact commits = %d, want 0", committer.calls)
+	}
+	if _, err := os.Stat(defaultReviewRootForRepo(repoDir, "123")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("Review Skipped artifact root exists or is unreadable: %v", err)
+	}
+
+	runID, events := journaledRunEvents(t, homeDir, stderr.String())
+	var outcome runevent.OutcomePayload
+	foundOutcome := false
+	for _, journaled := range events {
+		if journaled.Event.Kind != runevent.KindDaemonOutcome {
+			continue
+		}
+		if err := json.Unmarshal(journaled.Event.Payload, &outcome); err != nil {
+			t.Fatalf("decode Review Skipped outcome: %v", err)
+		}
+		foundOutcome = true
+	}
+	if !foundOutcome || outcome.State != store.StateReviewSkipped || outcome.Reason != reason ||
+		outcome.NextAction == "" ||
+		outcome.ReviewIssuesKnown == nil ||
+		*outcome.ReviewIssuesKnown ||
+		outcome.EvidenceKind != string(reviewsource.EvidenceKindCheckRun) {
+		t.Fatalf("Review Skipped outcome payload = %#v", outcome)
+	}
+
+	reader, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database for Run Browser projection: %v", err)
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			t.Fatalf("close Run Database after Run Browser projection: %v", err)
+		}
+	}()
+	active, all, err := browserRunListings(context.Background(), reader)
+	if err != nil {
+		t.Fatalf("list Run Browser Review Skipped state: %v", err)
+	}
+	if len(active) != 0 || len(all) != 1 || all[0].ID != runID || all[0].State != store.StateReviewSkipped {
+		t.Fatalf("Run Browser listings active=%#v all=%#v", active, all)
+	}
+}
+
+func TestRunWatchCleanupBeforeAgentWarningFollowsReviewSkippedReason(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	reason := "Review Source size limit was exceeded"
+	withWatchEvidence(t, func(ctx context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		runStore, err := store.Open(ctx, homeDir)
+		if err != nil {
+			t.Fatalf("open Run Database to seed registered Agent Session: %v", err)
+		}
+		defer func() {
+			if err := runStore.Close(); err != nil {
+				t.Fatalf("close Run Database after seeding registered Agent Session: %v", err)
+			}
+		}()
+		active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
+		if err != nil || !found {
+			t.Fatalf("read active watch Run: found=%v err=%v", found, err)
+		}
+		if _, err := runStore.AppendAgentSelectionAttempt(ctx, store.AgentSelectionAttemptRequest{
+			RunID:         active.ID,
+			ScopeKind:     store.AgentSelectionScopeReview,
+			ScopeID:       "batch-001",
+			Category:      "review",
+			ProfileSource: "profiles.review",
+			Attempt:       1,
+			SelectionRole: store.AgentSelectionRolePreferred,
+			Runtime:       "codex",
+			Model:         "gpt-5.6-sol",
+			Status:        store.AgentSelectionStatusActive,
+		}); err != nil {
+			t.Fatalf("seed active Agent Selection lifecycle: %v", err)
+		}
+		return reviewsource.Evidence{
+			State:           reviewsource.EvidenceSkipped,
+			Kind:            reviewsource.EvidenceKindCheckRun,
+			ExpectedHeadSHA: req.ExpectedHeadSHA,
+			ObservedHeadSHA: req.ExpectedHeadSHA,
+			Reason:          reason,
+		}, nil
+	})
+	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+		t.Fatal("Review Skipped must not fetch Review Source issues")
+		return nil, nil
+	})
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return errors.New("cancel denied")
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != exitUnverified {
+		t.Fatalf("Review Skipped exit = %d, want %d; stderr=%q", code, exitUnverified, stderr.String())
+	}
+	reasonIndex := strings.Index(stderr.String(), "Review Skipped: "+reason)
+	warningIndex := strings.Index(stderr.String(), "Secondary cleanup warning:")
+	if reasonIndex < 0 || warningIndex < 0 || warningIndex < reasonIndex {
+		t.Fatalf("primary Review Source reason must precede cleanup warning: %q", stderr.String())
+	}
+}
+
+func TestRunWatchReviewIssuesUnknownWhenFetchFailsKeepsArtifactsUnpublished(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		return reviewsource.Evidence{
+			State:           reviewsource.EvidenceReviewed,
+			Kind:            reviewsource.EvidenceKindCheckRun,
+			ExpectedHeadSHA: req.ExpectedHeadSHA,
+			ObservedHeadSHA: req.ExpectedHeadSHA,
+		}, nil
+	})
+	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+		return nil, errors.New("Review Source fetch failed")
+	})
+	committer := &fakeCommitter{}
+	withCommitter(t, committer)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("failed fetch exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if stdout.String() != "Review Issues: unknown — fetch did not complete.\n" {
+		t.Fatalf("failed pre-fetch stdout = %q", stdout.String())
+	}
+	for _, forbidden := range []string{"0 resolved", "0 invalid", "0 duplicated", "0 failed", "0 unresolved"} {
+		if strings.Contains(stdout.String(), forbidden) {
+			t.Fatalf("failed pre-fetch report contains misleading count %q: %q", forbidden, stdout.String())
+		}
+	}
+	if committer.calls != 0 {
+		t.Fatalf("failed pre-fetch review-artifact commits = %d, want 0", committer.calls)
+	}
+	if _, err := os.Stat(defaultReviewRootForRepo(repoDir, "123")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("failed pre-fetch artifact root exists or is unreadable: %v", err)
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
+func TestRunWatchReviewIssuesKnownAfterFetchedZero(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withFetchReviewItems(t, nil)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		reviewedEvidence("abc123"),
+		{
+			State:           reviewsource.EvidenceVerified,
+			Kind:            reviewsource.EvidenceKindReviewApproval,
+			ExpectedHeadSHA: "abc123",
+			ObservedHeadSHA: "abc123",
+			Conclusion:      "approved",
+		},
+	}}).Evidence)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("fetched-zero exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	wantStdout := "" +
+		"This Run (Clean after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("fetched-zero stdout = %q, want %q", stdout.String(), wantStdout)
+	}
+
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	var outcome runevent.OutcomePayload
+	found := false
+	for _, journaled := range events {
+		if journaled.Event.Kind != runevent.KindDaemonOutcome {
+			continue
+		}
+		if err := json.Unmarshal(journaled.Event.Payload, &outcome); err != nil {
+			t.Fatalf("decode fetched-zero outcome: %v", err)
+		}
+		found = true
+	}
+	if !found ||
+		outcome.ReviewIssuesKnown == nil ||
+		!*outcome.ReviewIssuesKnown ||
+		outcome.EvidenceKind != string(reviewsource.EvidenceKindReviewApproval) ||
+		outcome.EvidenceHeadSHA != "abc123" ||
+		outcome.VerifiedHeadSHA != "abc123" {
+		t.Fatalf("fetched-zero outcome = %#v", outcome)
+	}
+}
+
+func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T) {
+	homeDir, repoDir := withReviewGitWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withRealReviewPreflight(t, repoDir, true)
+	withReviewSpecGitRunner(t, preflight.ExecGitRunner{})
+	withCommitter(t, daemon.GitCommitter{})
+	withFetchReviewItems(t, nil)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+
+	parentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	var evidenceHeads []string
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		evidenceHeads = append(evidenceHeads, req.ExpectedHeadSHA)
+		if req.ExpectedHeadSHA != parentHead {
+			t.Fatalf("inherited artifact head %s must not be polled", req.ExpectedHeadSHA)
+		}
+		if len(evidenceHeads) == 1 {
+			return reviewedEvidence(parentHead), nil
+		}
+		return verifiedEvidence(parentHead), nil
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"watch", "--source", "coderabbit", "--pr", "123",
+		"--until-clean", "--max-rounds", "1", "--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("artifact Evidence inheritance exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if len(evidenceHeads) != 3 {
+		t.Fatalf("artifact Evidence calls = %v, want initial, parent verification, and zero-thread parent refresh", evidenceHeads)
+	}
+	if pusher.calls != 1 {
+		t.Fatalf("artifact-only descendant Final Push calls = %d, want 1", pusher.calls)
+	}
+	currentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	if currentHead == parentHead {
+		t.Fatal("expected Daemon review-artifact commit to advance HEAD")
+	}
+	if got := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD^")); got != parentHead {
+		t.Fatalf("artifact commit parent = %s, want verified head %s", got, parentHead)
+	}
+	if got := strings.TrimSpace(gitImplementOutput(t, repoDir, "show", "-s", "--format=%s", "HEAD")); got != daemon.ReviewArtifactsCommitMessage(1, "123") {
+		t.Fatalf("artifact commit subject = %q", got)
+	}
+
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	var outcome runevent.OutcomePayload
+	var inherited runevent.ReviewStatusPayload
+	for _, journaled := range events {
+		switch journaled.Event.Kind {
+		case runevent.KindDaemonOutcome:
+			if err := json.Unmarshal(journaled.Event.Payload, &outcome); err != nil {
+				t.Fatalf("decode inherited outcome: %v", err)
+			}
+		case runevent.KindDaemonReviewStatus:
+			var payload runevent.ReviewStatusPayload
+			if err := json.Unmarshal(journaled.Event.Payload, &payload); err != nil {
+				t.Fatalf("decode inherited Review Source Evidence: %v", err)
+			}
+			if payload.Kind == string(reviewsource.EvidenceKindArtifactOnlyDescendant) {
+				inherited = payload
+			}
+		}
+	}
+	if outcome.EvidenceKind != string(reviewsource.EvidenceKindArtifactOnlyDescendant) ||
+		outcome.EvidenceHeadSHA != currentHead ||
+		outcome.VerifiedHeadSHA != parentHead {
+		t.Fatalf("inherited outcome = %#v", outcome)
+	}
+	if inherited.ExpectedHeadSHA != currentHead ||
+		inherited.ObservedHeadSHA != currentHead ||
+		inherited.ParentHeadSHA != parentHead {
+		t.Fatalf("inherited Evidence payload = %#v", inherited)
+	}
+}
+
+func TestRunWatchArtifactEvidenceProofFailureFallsBackAfterPush(t *testing.T) {
+	_, repoDir := withReviewGitWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withRealReviewPreflight(t, repoDir, true)
+	proofRunner := &failingReviewArtifactProofGitRunner{
+		delegate: preflight.ExecGitRunner{},
+		command:  "rev-list",
+		err:      errors.New("forced proof failure"),
+	}
+	withReviewSpecGitRunner(t, proofRunner)
+	withCommitter(t, daemon.GitCommitter{})
+	withFetchReviewItems(t, nil)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+
+	parentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	var evidenceHeads []string
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		evidenceHeads = append(evidenceHeads, req.ExpectedHeadSHA)
+		if len(evidenceHeads) == 1 {
+			return reviewedEvidence(parentHead), nil
+		}
+		return verifiedEvidence(req.ExpectedHeadSHA), nil
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"watch", "--source", "coderabbit", "--pr", "123",
+		"--until-clean", "--max-rounds", "1", "--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("artifact proof fallback exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if proofRunner.failures != 1 {
+		t.Fatalf("artifact proof failures = %d, want 1", proofRunner.failures)
+	}
+	if pusher.calls != 1 {
+		t.Fatalf("artifact proof fallback Final Push calls = %d, want 1", pusher.calls)
+	}
+	currentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	wantHeads := []string{parentHead, parentHead, currentHead}
+	if !reflect.DeepEqual(evidenceHeads, wantHeads) {
+		t.Fatalf("artifact proof fallback Evidence heads = %v, want %v", evidenceHeads, wantHeads)
+	}
+	if !strings.Contains(stderr.String(), "Review artifact Evidence inheritance unavailable; falling back to head polling: prove review artifact parent: forced proof failure") {
+		t.Fatalf("artifact proof fallback warning missing from stderr: %q", stderr.String())
+	}
+}
+
+func TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit
+	}{
+		{
+			name: "Mixed",
+			setup: func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit {
+				parent := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+				mustMkdir(t, filepath.Join(reviewRoot, "round-001"))
+				mustWrite(t, filepath.Join(reviewRoot, "round-001", "issue_001.md"), "artifact\n")
+				mustWrite(t, filepath.Join(repoDir, "README.md"), "mixed code path\n")
+				gitImplement(t, repoDir, "add", "-A")
+				gitImplement(t, repoDir, "commit", "-m", message)
+				return reviewsource.ArtifactCommit{CommitSHA: strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")), ParentSHA: parent, ReviewRoot: reviewRoot, Message: message}
+			},
+		},
+		{
+			name: "Parent",
+			setup: func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit {
+				mustMkdir(t, filepath.Join(reviewRoot, "round-001"))
+				mustWrite(t, filepath.Join(reviewRoot, "round-001", "issue_001.md"), "artifact\n")
+				gitImplement(t, repoDir, "add", "-A")
+				gitImplement(t, repoDir, "commit", "-m", message)
+				return reviewsource.ArtifactCommit{CommitSHA: strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")), ParentSHA: strings.Repeat("0", 40), ReviewRoot: reviewRoot, Message: message}
+			},
+		},
+		{
+			name: "Empty",
+			setup: func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit {
+				parent := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+				gitImplement(t, repoDir, "commit", "--allow-empty", "-m", message)
+				return reviewsource.ArtifactCommit{CommitSHA: strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")), ParentSHA: parent, ReviewRoot: reviewRoot, Message: message}
+			},
+		},
+		{
+			name: "User",
+			setup: func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit {
+				parent := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+				mustMkdir(t, filepath.Join(reviewRoot, "round-001"))
+				mustWrite(t, filepath.Join(reviewRoot, "round-001", "issue_001.md"), "artifact\n")
+				gitImplement(t, repoDir, "add", "-A")
+				gitImplement(t, repoDir, "commit", "-m", "docs: user-authored review notes")
+				return reviewsource.ArtifactCommit{CommitSHA: strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")), ParentSHA: parent, ReviewRoot: reviewRoot, Message: message}
+			},
+		},
+		{
+			name: "Root",
+			setup: func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit {
+				parent := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+				mustMkdir(t, filepath.Join(reviewRoot, "round-001"))
+				mustWrite(t, filepath.Join(reviewRoot, "round-001", "issue_001.md"), "artifact\n")
+				gitImplement(t, repoDir, "add", "-A")
+				gitImplement(t, repoDir, "commit", "-m", message)
+				return reviewsource.ArtifactCommit{
+					CommitSHA:  strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")),
+					ParentSHA:  parent,
+					ReviewRoot: filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-other"),
+					Message:    message,
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, repoDir := withReviewGitWorkspace(t)
+			withReviewSpecGitRunner(t, preflight.ExecGitRunner{})
+			reviewRoot := defaultReviewRootForRepo(repoDir, "123")
+			message := daemon.ReviewArtifactsCommitMessage(1, "123")
+			commit := tt.setup(t, repoDir, reviewRoot, message)
+			withWatchEvidence(t, func(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+				t.Fatal("structural artifact refusal must happen before the zero-thread Evidence refresh")
+				return reviewsource.Evidence{}, nil
+			})
+
+			evidence, inherited, err := inheritReviewArtifactEvidence(context.Background(), reviewArtifactEvidenceRequest{
+				Source:         reviewsource.SourceCodeRabbit,
+				PRNumber:       "123",
+				BaseRepository: "owner/project",
+				HeadRepository: "owner/project",
+				HeadBranch:     "feature/review",
+				GitRoot:        repoDir,
+				Commit:         commit,
+				ParentHeadSHA:  commit.ParentSHA,
+				ParentEvidence: verifiedEvidence(commit.ParentSHA),
+			})
+			if err != nil {
+				t.Fatalf("refusal proof error: %v", err)
+			}
+			if inherited || evidence.State != "" {
+				t.Fatalf("refusal inherited=%v Evidence=%#v", inherited, evidence)
+			}
+		})
+	}
+}
+
+func TestWatchArtifactEvidenceMixedFallsBackToCurrentHeadPolling(t *testing.T) {
+	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	sleeper := &fakeWatchSleeper{clock: clock}
+	var evidenceHeads []string
+	published := 0
+	result, err := watch.Run(context.Background(), watch.Request{
+		PRNumber:         "123",
+		HeadSHA:          "parent",
+		UntilClean:       true,
+		MaxRounds:        1,
+		PollInterval:     time.Second,
+		QuietPeriod:      0,
+		ReviewTimeout:    5 * time.Second,
+		CheckGracePeriod: time.Second,
+	}, watch.Dependencies{
+		ReviewEvidence: watch.ReviewEvidenceFunc(func(_ context.Context, req watch.ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+			evidenceHeads = append(evidenceHeads, req.ExpectedHeadSHA)
+			if len(evidenceHeads) == 1 {
+				return reviewedEvidence(req.ExpectedHeadSHA), nil
+			}
+			return verifiedEvidence(req.ExpectedHeadSHA), nil
+		}),
+		Artifacts: watch.ArtifactPublishFunc(func(context.Context, watch.ArtifactPublishRequest) (watch.ArtifactPublication, error) {
+			published++
+			return watch.ArtifactPublication{
+				Commit: reviewsource.ArtifactCommit{
+					CommitSHA:  "artifact",
+					ParentSHA:  "parent",
+					ReviewRoot: "/repo/docs/specs/_reviews/pr-123",
+					Message:    daemon.ReviewArtifactsCommitMessage(1, "123"),
+				},
+			}, nil
+		}),
+		Fetcher:  watch.FetchFunc(func(context.Context, int) (watch.FetchResult, error) { return watch.FetchResult{Round: 1}, nil }),
+		Resolver: watch.ResolveFunc(func(context.Context) (watch.ResolveResult, error) { return watch.ResolveResult{}, nil }),
+		Clock:    clock,
+		Sleeper:  sleeper,
+	})
+	if err != nil {
+		t.Fatalf("watch fallback error: %v", err)
+	}
+	if result.Outcome != store.StateClean ||
+		result.Evidence.Kind != reviewsource.EvidenceKindCheckRun ||
+		result.VerifiedHeadSHA != "artifact" {
+		t.Fatalf("watch fallback result = %#v", result)
+	}
+	if published != 1 {
+		t.Fatalf("artifact publisher calls = %d, want 1", published)
+	}
+	wantHeads := []string{"parent", "parent", "artifact"}
+	if !reflect.DeepEqual(evidenceHeads, wantHeads) {
+		t.Fatalf("Evidence polling heads = %v, want %v", evidenceHeads, wantHeads)
+	}
+}
+
+func TestRunWatchArtifactEvidenceThreadRefusesAndFallsBack(t *testing.T) {
+	homeDir, repoDir := withReviewGitWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withRealReviewPreflight(t, repoDir, true)
+	withReviewSpecGitRunner(t, preflight.ExecGitRunner{})
+	withCommitter(t, daemon.GitCommitter{})
+	withFetchReviewItems(t, nil)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+
+	parentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	var evidenceHeads []string
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		evidenceHeads = append(evidenceHeads, req.ExpectedHeadSHA)
+		switch len(evidenceHeads) {
+		case 1:
+			return reviewedEvidence(req.ExpectedHeadSHA), nil
+		case 2:
+			return verifiedEvidence(req.ExpectedHeadSHA), nil
+		case 3:
+			if req.ExpectedHeadSHA != parentHead {
+				t.Fatalf("zero-thread refresh head = %s, want parent %s", req.ExpectedHeadSHA, parentHead)
+			}
+			return reviewedEvidence(req.ExpectedHeadSHA), nil
+		default:
+			return verifiedEvidence(req.ExpectedHeadSHA), nil
+		}
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"watch", "--source", "coderabbit", "--pr", "123",
+		"--until-clean", "--max-rounds", "1", "--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("unresolved-thread fallback exit = %d; stderr=%q", code, stderr.String())
+	}
+	currentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	wantHeads := []string{parentHead, parentHead, parentHead, currentHead}
+	if !reflect.DeepEqual(evidenceHeads, wantHeads) {
+		t.Fatalf("unresolved-thread Evidence heads = %v, want %v", evidenceHeads, wantHeads)
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	var outcome runevent.OutcomePayload
+	for _, journaled := range events {
+		if journaled.Event.Kind == runevent.KindDaemonOutcome {
+			if err := json.Unmarshal(journaled.Event.Payload, &outcome); err != nil {
+				t.Fatalf("decode unresolved-thread fallback outcome: %v", err)
+			}
+		}
+	}
+	if outcome.EvidenceKind == string(reviewsource.EvidenceKindArtifactOnlyDescendant) ||
+		outcome.EvidenceHeadSHA != currentHead ||
+		outcome.VerifiedHeadSHA != currentHead {
+		t.Fatalf("unresolved-thread fallback outcome = %#v", outcome)
+	}
+}
+
+func TestWatchTerminalContextCarriesDetachedConsoleAttachEvidenceAndVerifiedHead(t *testing.T) {
+	known := true
+	req := commandRequest{
+		artifactDir: "/tmp/roundfix-artifacts",
+		detachChild: &detachChild{},
+	}
+	run := store.Run{ID: "run_123"}
+	evidence := reviewsource.Evidence{
+		State:           reviewsource.EvidenceVerified,
+		Kind:            reviewsource.EvidenceKindReviewApproval,
+		ExpectedHeadSHA: "abc123",
+		ObservedHeadSHA: "abc123",
+	}
+
+	terminal := watchTerminalCompletionContext(req, run, watch.Result{
+		Outcome:           store.StateCleanUnverified,
+		TerminalReason:    "review was not confirmed",
+		NextAction:        "confirm Review Source Evidence",
+		ReviewIssuesKnown: known,
+		Evidence:          evidence,
+		VerifiedHeadSHA:   "abc123",
+	})
+
+	if terminal.ReviewIssuesKnown == nil || !*terminal.ReviewIssuesKnown {
+		t.Fatalf("terminal Review Issue knowledge = %#v", terminal.ReviewIssuesKnown)
+	}
+	if terminal.ConsoleLog != detachedConsoleLogPath(req.artifactDir, run.ID) ||
+		terminal.AttachCommand != "roundfix attach "+run.ID ||
+		terminal.Evidence != evidence ||
+		terminal.VerifiedHeadSHA != "abc123" ||
+		terminal.Reason == "" ||
+		terminal.NextAction == "" {
+		t.Fatalf("detached terminal context = %#v", terminal)
+	}
+}
+
+func TestTerminalContextAddsReasonAndNextActionForEveryNonCleanOutcome(t *testing.T) {
+	states := []string{
+		store.StateFetched,
+		store.StateStopped,
+		store.StateCleanUnverified,
+		store.StateReviewSkipped,
+		store.StateMaxRoundsReached,
+		store.StateBudgetExceeded,
+		store.StateTimedOut,
+		store.StateFailed,
+		store.StateIntegrationPending,
+		store.StateUnresolved,
+	}
+
+	for _, state := range states {
+		t.Run(state, func(t *testing.T) {
+			terminal := normalizedTerminalCompletionContext(state, terminalCompletionContext{})
+			if terminal.Reason == "" || terminal.NextAction == "" {
+				t.Fatalf("%s terminal context = %#v", state, terminal)
+			}
+		})
+	}
 }
 
 func TestRunWatchReusesOneAgentSessionAcrossRoundsAndCloses(t *testing.T) {
@@ -5479,12 +6342,11 @@ resolve:
 			}, nil
 		}
 	})
-	withWatchStatus(t, (&fakeWatchStatus{
-		statuses: []reviewsource.WatchStatus{
-			{State: watch.StatusSettled},
-			{State: watch.StatusSettled},
-		},
-	}).Status)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		reviewedEvidence("abc123"),
+		reviewedEvidence("abc123"),
+		verifiedEvidence("abc123"),
+	}}).Evidence)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -5509,7 +6371,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	statusCalls := 0
-	withWatchStatus(t, func(ctx context.Context, _ reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
+	withWatchEvidence(t, func(ctx context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
 		statusCalls++
 		if statusCalls > 1 {
 			t.Fatalf("Stop Request must prevent another Review Source status call")
@@ -5533,7 +6395,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 		if err := runStore.RequestStop(ctx, active.ID); err != nil {
 			t.Fatalf("request Stop for watch Run: %v", err)
 		}
-		return reviewsource.WatchStatus{State: watch.StatusPending}, nil
+		return pendingEvidence(req.ExpectedHeadSHA), nil
 	})
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
 		t.Fatal("Stop Request before Agent must not fetch Review Source issues")
@@ -5548,9 +6410,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
 	}
-	wantStdout := "" +
-		"This Run (Stopped after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
+	wantStdout := "Review Issues: unknown — fetch did not complete.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected stopped stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -5661,6 +6521,7 @@ func TestExitForWatchOutcome(t *testing.T) {
 	}{
 		{outcome: store.StateClean, code: exitOK},
 		{outcome: store.StateCleanUnverified, code: exitUnverified},
+		{outcome: store.StateReviewSkipped, code: exitUnverified},
 		{outcome: store.StateMaxRoundsReached, code: exitOK},
 		{outcome: store.StateStopped, code: exitOK},
 		{outcome: store.StateBudgetExceeded, code: exitRunFailed},
@@ -7382,12 +8243,19 @@ func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *te
 
 // seedOutdatedV9RunDatabase downgrades a freshly created Run Database to
 // schema v9 by reversing the v9→v10 migration, matching what a historical
-// binary left behind.
-func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) {
+// binary left behind. It returns the schema version this binary migrates to,
+// read from the freshly created Run Database before the downgrade, so callers
+// assert against the currently supported version instead of a literal that
+// every future migration would invalidate.
+func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) int {
 	t.Helper()
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
 		t.Fatalf("create Run Database: %v", err)
+	}
+	supportedVersion, err := runStore.MigrationVersion(context.Background())
+	if err != nil {
+		t.Fatalf("read supported schema version: %v", err)
 	}
 	if err := runStore.Close(); err != nil {
 		t.Fatalf("close Run Database: %v", err)
@@ -7409,13 +8277,14 @@ func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) {
 			t.Fatalf("downgrade Run Database to v9: %v", err)
 		}
 	}
+	return supportedVersion
 }
 
 func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withBranchIntegrity(t, nil, nil)
-	seedOutdatedV9RunDatabase(t, homeDir)
+	supportedVersion := seedOutdatedV9RunDatabase(t, homeDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -7440,8 +8309,8 @@ func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migrated schema version: %v", err)
 	}
-	if version != 10 {
-		t.Fatalf("expected schema version 10 after preflight migration, got %d", version)
+	if version != supportedVersion {
+		t.Fatalf("expected schema version %d after preflight migration, got %d", supportedVersion, version)
 	}
 }
 
@@ -8966,19 +9835,44 @@ func assertSetupLineOrder(t *testing.T, output string, lines []string) {
 }
 
 type recordingOutcomeNotifier struct {
-	mu       sync.Mutex
-	err      error
-	outcomes []roundnotify.Outcome
+	mu                  sync.Mutex
+	route               roundnotify.Route
+	status              roundnotify.Status
+	err                 error
+	preserveZeroReceipt bool
+	outcomes            []roundnotify.Outcome
 }
 
-func (notifier *recordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) error {
+func (notifier *recordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) (roundnotify.NotificationReceipt, error) {
 	if ctx == nil {
-		return errors.New("notification context is required")
+		return roundnotify.NotificationReceipt{
+			Route:       roundnotify.RouteCommand,
+			Status:      roundnotify.StatusFailed,
+			CompletedAt: time.Now().UTC(),
+		}, errors.New("notification context is required")
 	}
 	notifier.mu.Lock()
 	defer notifier.mu.Unlock()
 	notifier.outcomes = append(notifier.outcomes, outcome)
-	return notifier.err
+	if notifier.preserveZeroReceipt {
+		return roundnotify.NotificationReceipt{}, notifier.err
+	}
+	route := notifier.route
+	if route == "" {
+		route = roundnotify.RouteCommand
+	}
+	status := notifier.status
+	if status == "" {
+		status = roundnotify.StatusSent
+	}
+	if notifier.err != nil {
+		status = roundnotify.StatusFailed
+	}
+	return roundnotify.NotificationReceipt{
+		Route:       route,
+		Status:      status,
+		CompletedAt: time.Now().UTC(),
+	}, notifier.err
 }
 
 func (notifier *recordingOutcomeNotifier) recorded() []roundnotify.Outcome {
@@ -8994,7 +9888,7 @@ type deadlineRecordingOutcomeNotifier struct {
 	outcome     roundnotify.Outcome
 }
 
-func (notifier *deadlineRecordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) error {
+func (notifier *deadlineRecordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) (roundnotify.NotificationReceipt, error) {
 	deadline, ok := ctx.Deadline()
 	notifier.hadDeadline = ok
 	notifier.deadline = deadline
@@ -9004,7 +9898,11 @@ func (notifier *deadlineRecordingOutcomeNotifier) Notify(ctx context.Context, ou
 	default:
 	}
 	notifier.outcome = outcome
-	return nil
+	return roundnotify.NotificationReceipt{
+		Route:       roundnotify.RouteCommand,
+		Status:      roundnotify.StatusSent,
+		CompletedAt: time.Now().UTC(),
+	}, nil
 }
 
 func withOutcomeNotifier(t *testing.T, notifier roundnotify.Notifier) {
@@ -9026,17 +9924,26 @@ func withOutcomeNotifierFactory(t *testing.T, factory func(roundconfig.Config) r
 func assertRecordedOutcomes(t *testing.T, notifier *recordingOutcomeNotifier, want []roundnotify.Outcome) {
 	t.Helper()
 	got := notifier.recorded()
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("recorded notification outcomes mismatch\nwant: %#v\ngot:  %#v", want, got)
+	if len(got) != len(want) {
+		t.Fatalf("recorded notification outcome count mismatch\nwant: %#v\ngot:  %#v", want, got)
+	}
+	for index := range want {
+		if !reflect.DeepEqual(got[index], want[index]) {
+			t.Fatalf("recorded notification outcome %d mismatch\nwant: %#v\ngot:  %#v", index, want[index], got[index])
+		}
 	}
 }
 
 func runCleanResolveForOutcomeNotification(t *testing.T, notifyErr error) (string, string, int, string) {
 	t.Helper()
+	return runCleanResolveWithOutcomeNotifier(t, &recordingOutcomeNotifier{err: notifyErr})
+}
+
+func runCleanResolveWithOutcomeNotifier(t *testing.T, notifier *recordingOutcomeNotifier) (string, string, int, string) {
+	t.Helper()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
-	notifier := &recordingOutcomeNotifier{err: notifyErr}
 	withOutcomeNotifier(t, notifier)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -9360,7 +10267,7 @@ func withReviewGitWorkspace(t *testing.T) (string, string) {
 	homeDir := t.TempDir()
 	t.Setenv("HOME", homeDir)
 	repoDir := t.TempDir()
-	gitImplement(t, repoDir, "init", "--initial-branch=main")
+	gittest.InitRepo(t, repoDir, "--initial-branch=main")
 	gitImplement(t, repoDir, "config", "user.name", "Roundfix Test")
 	gitImplement(t, repoDir, "config", "user.email", "roundfix-test@example.com")
 	gitImplement(t, repoDir, "config", "commit.gpgsign", "false")
@@ -9442,12 +10349,9 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	withBranchIntegrity(t, nil, nil)
 	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	withWatchTiming(t, clock, &fakeWatchSleeper{clock: clock})
-	withWatchStatus(t, (&fakeWatchStatus{
-		statuses: []reviewsource.WatchStatus{{State: watch.StatusSettled}},
-	}).Status)
-	withWatchHeadCheck(t, (&fakeWatchHeadCheck{
-		states: []watch.HeadCheckState{watch.CheckSuccess},
-	}).Check)
+	withWatchEvidence(t, (&fakeWatchEvidence{
+		evidence: []reviewsource.Evidence{verifiedEvidence("abc123")},
+	}).Evidence)
 	withWatchHeadSHA(t, func(context.Context, string) (string, error) {
 		return "abc123", nil
 	})
@@ -9855,21 +10759,12 @@ func withFakeWorktree(t *testing.T) {
 	})
 }
 
-func withWatchStatus(t *testing.T, fn func(context.Context, reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error)) {
+func withWatchEvidence(t *testing.T, fn func(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error)) {
 	t.Helper()
-	old := watchReviewStatus
-	watchReviewStatus = fn
+	old := watchReviewEvidence
+	watchReviewEvidence = fn
 	t.Cleanup(func() {
-		watchReviewStatus = old
-	})
-}
-
-func withWatchHeadCheck(t *testing.T, fn func(context.Context, reviewsource.HeadCheckRequest) (watch.HeadCheckState, error)) {
-	t.Helper()
-	old := watchHeadCheck
-	watchHeadCheck = fn
-	t.Cleanup(func() {
-		watchHeadCheck = old
+		watchReviewEvidence = old
 	})
 }
 
@@ -10311,9 +11206,10 @@ func builtinArtifactDirForRepo(t *testing.T, repoDir string) string {
 }
 
 type fakeVerifier struct {
-	err      error
-	calls    int
-	commands []string
+	err          error
+	errByCommand map[string]error
+	calls        int
+	commands     []string
 }
 
 func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest) (daemon.VerifyResult, error) {
@@ -10329,6 +11225,9 @@ func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest
 	}
 	if verifier.err != nil {
 		return daemon.VerifyResult{OutputPath: req.OutputPath}, &daemon.VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: verifier.err}
+	}
+	if err := verifier.errByCommand[req.Command]; err != nil {
+		return daemon.VerifyResult{OutputPath: req.OutputPath}, &daemon.VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: err}
 	}
 	if req.OutputPath != "" {
 		_ = os.Remove(req.OutputPath)
@@ -10423,48 +11322,55 @@ func (pusher *checkingPusher) Push(_ context.Context, req daemon.PushRequest) er
 	return nil
 }
 
-type fakeWatchStatus struct {
+type fakeWatchEvidence struct {
 	err      error
 	calls    int
-	statuses []reviewsource.WatchStatus
+	evidence []reviewsource.Evidence
 }
 
-func (source *fakeWatchStatus) Status(context.Context, reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
+func (source *fakeWatchEvidence) Evidence(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
 	source.calls++
 	if source.err != nil {
-		return reviewsource.WatchStatus{}, source.err
+		return reviewsource.Evidence{}, source.err
 	}
-	if len(source.statuses) == 0 {
-		return reviewsource.WatchStatus{State: watch.StatusSettled}, nil
+	if len(source.evidence) == 0 {
+		return verifiedEvidence("abc123"), nil
 	}
-	status := source.statuses[0]
-	if len(source.statuses) > 1 {
-		source.statuses = source.statuses[1:]
+	evidence := source.evidence[0]
+	if len(source.evidence) > 1 {
+		source.evidence = source.evidence[1:]
 	}
-	return status, nil
+	return evidence, nil
 }
 
-type fakeWatchHeadCheck struct {
-	err      error
-	calls    int
-	states   []watch.HeadCheckState
-	headSHAs []string
+func pendingEvidence(headSHA string) reviewsource.Evidence {
+	return reviewsource.Evidence{
+		State:           reviewsource.EvidencePending,
+		Kind:            reviewsource.EvidenceKindNone,
+		ExpectedHeadSHA: headSHA,
+	}
 }
 
-func (source *fakeWatchHeadCheck) Check(_ context.Context, req reviewsource.HeadCheckRequest) (watch.HeadCheckState, error) {
-	source.calls++
-	source.headSHAs = append(source.headSHAs, req.HeadSHA)
-	if source.err != nil {
-		return "", source.err
+func reviewedEvidence(headSHA string) reviewsource.Evidence {
+	return reviewsource.Evidence{
+		State:           reviewsource.EvidenceReviewed,
+		Kind:            reviewsource.EvidenceKindCheckRun,
+		Identity:        "check_run:42",
+		ExpectedHeadSHA: headSHA,
+		ObservedHeadSHA: headSHA,
+		Conclusion:      "failure",
 	}
-	if len(source.states) == 0 {
-		return watch.CheckSuccess, nil
+}
+
+func verifiedEvidence(headSHA string) reviewsource.Evidence {
+	return reviewsource.Evidence{
+		State:           reviewsource.EvidenceVerified,
+		Kind:            reviewsource.EvidenceKindCheckRun,
+		Identity:        "check_run:42",
+		ExpectedHeadSHA: headSHA,
+		ObservedHeadSHA: headSHA,
+		Conclusion:      "success",
 	}
-	state := source.states[0]
-	if len(source.states) > 1 {
-		source.states = source.states[1:]
-	}
-	return state, nil
 }
 
 type fakeWatchClock struct {
@@ -11230,7 +12136,7 @@ func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Watch Run:",
-		"Review Source status: settled",
+		"Review Source status: verified",
 		"Fetched Round 001 with 1 Review Issue",
 		"Batch: 001/001 (1 Review Issue(s))",
 		"Verification passed (attempt 1).",
@@ -11680,7 +12586,7 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	withAttachInteractiveInput(t, true)
 	t.Setenv("ROUNDFIX_TUI", "always")
 	var createdBehindCockpit store.Run
-	cockpitCalls := withBrowserAttachCockpit(t, func(run store.Run, concurrency int) int {
+	cockpitCalls := withBrowserAttachCockpit(t, func(run store.Run, capacities attachCapacities) int {
 		// Mutating the store while the cockpit is open proves the next
 		// browser pass re-queries instead of reusing stale listings.
 		createdBehindCockpit = seedRunsForList(t, homeDir, []runListSeed{{
@@ -11722,8 +12628,8 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	if len(cockpit) != 1 || cockpit[0].runID != activeRun.ID {
 		t.Fatalf("expected one cockpit pass for the selected Run, got %+v", cockpit)
 	}
-	if cockpit[0].concurrency != 2 {
-		t.Fatalf("expected the explicit-attach concurrency fallback, got %d", cockpit[0].concurrency)
+	if cockpit[0].capacities != (attachCapacities{task: 2, verification: 1}) {
+		t.Fatalf("expected the explicit-attach capacity fallback, got %+v", cockpit[0].capacities)
 	}
 	second := calls[1]
 	if len(second.all) != 4 || second.all[0].ID != createdBehindCockpit.ID {
@@ -11809,6 +12715,79 @@ func TestAttachWithoutRunIDNonInteractiveNamesAllRunsList(t *testing.T) {
 	}
 }
 
+// TestAttachAcceptsDocumentedFlagOrders replays the exact invocation root
+// help and Attach help print: the Run ID first, then the flag.
+func TestAttachAcceptsDocumentedFlagOrders(t *testing.T) {
+	orders := map[string]func(runID string) []string{
+		"run id then flag": func(runID string) []string { return []string{"attach", runID, "--no-input"} },
+		"flag then run id": func(runID string) []string { return []string{"attach", "--no-input", runID} },
+		"run id only":      func(runID string) []string { return []string{"attach", runID} },
+	}
+	for name, argsFor := range orders {
+		t.Run(name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			workDir := t.TempDir()
+			writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+			writeImplementSpec(t, workDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+			run := createTerminalAttachSpecRun(t, homeDir, repoDir, workDir, store.StateClean)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), argsFor(run.ID), &stdout, &stderr)
+
+			if code != 0 {
+				t.Fatalf("expected the documented order to replay the Run, got %d stderr=%q", code, stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no failure output, got %q", stderr.String())
+			}
+			want := "Run " + run.ID + " reached Clean; timeline replayed read-only."
+			if !strings.Contains(stdout.String(), want) {
+				t.Fatalf("expected attach output to contain %q, got:\n%s", want, stdout.String())
+			}
+		})
+	}
+}
+
+func TestParseAttachCommandAcceptsFlagsInAnyPosition(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        []string
+		wantRunID   string
+		wantNoInput bool
+		wantErr     string
+	}{
+		{name: "documented trailing flag", args: []string{"run_alpha", "--no-input"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "leading flag", args: []string{"--no-input", "run_alpha"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "trailing run id flag", args: []string{"--no-input", "--run-id", "run_alpha"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "single dash trailing flag", args: []string{"run_alpha", "-no-input"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "inline flag value after operand", args: []string{"run_alpha", "--no-input=true"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "terminator keeps operand", args: []string{"--no-input", "--", "run_alpha"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "run id both ways", args: []string{"run_alpha", "--run-id", "run_beta"}, wantErr: "pass Run ID either as an argument or with --run-id, not both"},
+		{name: "second operand after flag", args: []string{"run_alpha", "--no-input", "extra"}, wantErr: `unexpected argument "extra"`},
+		{name: "unknown trailing flag", args: []string{"run_alpha", "--bogus"}, wantErr: "flag provided but not defined"},
+		{name: "missing flag value", args: []string{"--run-id"}, wantErr: "flag needs an argument"},
+		{name: "dangling run id flag takes the operand", args: []string{"run_alpha", "--run-id"}, wantRunID: "run_alpha"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := parseAttachCommand(tt.args)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("expected error containing %q, got %v", tt.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("parse attach %v: %v", tt.args, err)
+			}
+			if req.runID != tt.wantRunID || req.noInput != tt.wantNoInput {
+				t.Fatalf("expected runID=%q noInput=%v, got runID=%q noInput=%v", tt.wantRunID, tt.wantNoInput, req.runID, req.noInput)
+			}
+		})
+	}
+}
+
 func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	workDir := t.TempDir()
@@ -11827,7 +12806,7 @@ func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	output := stdout.String()
 	for _, expected := range []string{
 		"Run Worktree: " + workDir,
-		"Concurrency: 4",
+		"Task Capacity: 4",
 		"task_01 completed — Read state",
 		"Run " + run.ID + " reached Unresolved; timeline replayed read-only.",
 	} {
@@ -11967,7 +12946,16 @@ func createTerminalAttachSpecRun(t *testing.T, homeDir string, repoDir string, w
 	return completed.Run
 }
 
+// appendAttachConcurrencyEvent appends the pre-split Task-cycle-start event:
+// one legacy concurrency alias and no capacity fields.
 func appendAttachConcurrencyEvent(t *testing.T, homeDir string, runID string, concurrency int) {
+	t.Helper()
+	appendAttachCapacityEvent(t, homeDir, runID,
+		fmt.Sprintf("Task cycle started with concurrency %d.", concurrency),
+		fmt.Sprintf(`{"concurrency":%d}`, concurrency))
+}
+
+func appendAttachCapacityEvent(t *testing.T, homeDir string, runID string, summary string, payload string) {
 	t.Helper()
 	writer, err := store.Open(context.Background(), homeDir)
 	if err != nil {
@@ -11982,11 +12970,71 @@ func appendAttachConcurrencyEvent(t *testing.T, homeDir string, runID string, co
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,
-		Summary: fmt.Sprintf("Task cycle started with concurrency %d.", concurrency),
-		Payload: []byte(fmt.Sprintf(`{"concurrency":%d}`, concurrency)),
+		Summary: summary,
+		Payload: []byte(payload),
 	})
 	if err != nil {
-		t.Fatalf("append concurrency event: %v", err)
+		t.Fatalf("append capacity event: %v", err)
+	}
+}
+
+// Suite: attach capacity replay
+// Invariant: an attached spec Run shows the capacities the Run actually ran
+// with, and a Run recorded before the capacities split degrades to its
+// legacy concurrency plus the configured Verification Capacity instead of
+// failing or inventing a number.
+// Boundary IN: the read-only attach replay path and its rendered header.
+// Boundary OUT: capacity scheduling, owned by the daemon suites.
+func TestAttachSpecRunReplaysTaskAndVerificationCapacity(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	workDir := t.TempDir()
+	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "pending"}})
+	writeImplementSpec(t, workDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+	run := createTerminalAttachSpecRun(t, homeDir, repoDir, workDir, store.StateClean)
+	appendAttachCapacityEvent(t, homeDir, run.ID,
+		"Task cycle started with Task Capacity 3 and Verification Capacity 2.",
+		`{"spec":"0001-attach-spec","tasks":1,"concurrency":3,"task_capacity":3,"verification_capacity":2}`)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	for _, expected := range []string{"Task Capacity: 3", "Verification Capacity: 2"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected attach to replay %q, got:\n%s", expected, output)
+		}
+	}
+	if strings.Contains(output, "Concurrency:") {
+		t.Fatalf("expected the generic Concurrency label replaced by the canonical labels, got:\n%s", output)
+	}
+}
+
+func TestAttachSpecRunLegacyCapacityEventFallsBackDeterministically(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	workDir := t.TempDir()
+	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+	writeImplementSpec(t, workDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+	run := createTerminalAttachSpecRun(t, homeDir, repoDir, workDir, store.StateClean)
+	appendAttachConcurrencyEvent(t, homeDir, run.ID, 4)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected a legacy Run to attach cleanly, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	// The legacy alias is the Task Capacity; the never-recorded Verification
+	// Capacity falls back to the configured value, here the built-in 1.
+	for _, expected := range []string{"Task Capacity: 4", "Verification Capacity: 1"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected the legacy fallback to render %q, got:\n%s", expected, output)
+		}
 	}
 }
 
@@ -12657,22 +13705,22 @@ func withRunBrowserSession(t *testing.T, outcomes ...roundtui.BrowserOutcome) *[
 }
 
 type browserCockpitCall struct {
-	runID       string
-	concurrency int
+	runID      string
+	capacities attachCapacities
 }
 
 // withBrowserAttachCockpit replaces the browser loop's cockpit step and
 // records each pass; a nil handler just reports success.
-func withBrowserAttachCockpit(t *testing.T, handler func(run store.Run, concurrency int) int) *[]browserCockpitCall {
+func withBrowserAttachCockpit(t *testing.T, handler func(run store.Run, capacities attachCapacities) int) *[]browserCockpitCall {
 	t.Helper()
 	calls := &[]browserCockpitCall{}
 	old := browserAttachCockpit
-	browserAttachCockpit = func(_ context.Context, _ roundconfig.Loaded, _ *store.Store, run store.Run, concurrency int, _ io.Writer, _ io.Writer) int {
-		*calls = append(*calls, browserCockpitCall{runID: run.ID, concurrency: concurrency})
+	browserAttachCockpit = func(_ context.Context, _ roundconfig.Loaded, _ *store.Store, run store.Run, capacities attachCapacities, _ io.Writer, _ io.Writer) int {
+		*calls = append(*calls, browserCockpitCall{runID: run.ID, capacities: capacities})
 		if handler == nil {
 			return exitOK
 		}
-		return handler(run, concurrency)
+		return handler(run, capacities)
 	}
 	t.Cleanup(func() {
 		browserAttachCockpit = old
@@ -12751,10 +13799,7 @@ func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
 	if pushed != 1 {
 		t.Fatalf("expected exactly one pushed decision on the clean Round, got %d", pushed)
 	}
-	last := events[len(events)-1].Event
-	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Clean"`) {
-		t.Fatalf("expected Clean outcome event last, got %+v", last)
-	}
+	assertOutcomeFollowedByNotificationReceipt(t, events, store.StateClean)
 }
 
 func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
@@ -12787,10 +13832,7 @@ func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
 			t.Fatalf("expected no unsafe daemon events after stop, got %+v", entry.Event)
 		}
 	}
-	last := events[len(events)-1].Event
-	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Stopped"`) {
-		t.Fatalf("expected Stopped outcome event last, got %+v", last)
-	}
+	assertOutcomeFollowedByNotificationReceipt(t, events, store.StateStopped)
 }
 
 func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
@@ -12822,9 +13864,24 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 	if !failed {
 		t.Fatalf("expected verification failure event journaled, got %+v", events)
 	}
-	last := events[len(events)-1].Event
-	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Unresolved"`) {
-		t.Fatalf("expected Unresolved outcome event last, got %+v", last)
+	assertOutcomeFollowedByNotificationReceipt(t, events, store.StateUnresolved)
+}
+
+func assertOutcomeFollowedByNotificationReceipt(t *testing.T, events []store.JournalEvent, state string) {
+	t.Helper()
+	if len(events) < 2 {
+		t.Fatalf("expected outcome and notification receipt events, got %+v", events)
+	}
+	outcome := events[len(events)-2].Event
+	if outcome.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(outcome.Payload), `"`+state+`"`) {
+		t.Fatalf("expected %s outcome immediately before notification receipt, got %+v", state, outcome)
+	}
+	receipt := events[len(events)-1].Event
+	var payload runevent.NotificationReceiptPayload
+	if receipt.Kind != runevent.KindDaemonStatus ||
+		json.Unmarshal(receipt.Payload, &payload) != nil ||
+		!strings.HasPrefix(payload.Event, "outcome_notification_") {
+		t.Fatalf("expected notification receipt after %s outcome, got %+v", state, receipt)
 	}
 }
 
@@ -12890,7 +13947,7 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", attachCode, stderr.String())
 	}
 	for _, expected := range []string{
-		"Review Source status: settled",
+		"Review Source Evidence: verified (check_run)",
 		"Verification attempt 1 for Batch 001 verdict: passed",
 		"Batch commit created:",
 		"Final Push completed:",

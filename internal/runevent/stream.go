@@ -31,8 +31,12 @@ type StreamRecord struct {
 	Cursor              int64          `json:"cursor"`
 	Batch               int            `json:"batch,omitempty"`
 	Attempt             int            `json:"attempt,omitempty"`
+	Retry               int            `json:"retry,omitempty"`
 	WorkItem            string         `json:"work_item,omitempty"`
 	Phase               string         `json:"phase,omitempty"`
+	Mode                string         `json:"mode,omitempty"`
+	Classification      string         `json:"classification,omitempty"`
+	RetryAvailable      *bool          `json:"retry_available,omitempty"`
 	Status              string         `json:"status,omitempty"`
 	Verdict             string         `json:"verdict,omitempty"`
 	Outcome             string         `json:"outcome,omitempty"`
@@ -52,6 +56,13 @@ type StreamRecord struct {
 	NextReasoningEffort string         `json:"next_reasoning_effort,omitempty"`
 	ReasonCode          string         `json:"reason_code,omitempty"`
 	Reason              string         `json:"reason,omitempty"`
+	NextAction          string         `json:"next_action,omitempty"`
+	ReviewIssuesKnown   *bool          `json:"review_issues_known,omitempty"`
+	ConsoleLog          string         `json:"console_log,omitempty"`
+	AttachCommand       string         `json:"attach_command,omitempty"`
+	EvidenceKind        string         `json:"evidence_kind,omitempty"`
+	EvidenceHeadSHA     string         `json:"evidence_head_sha,omitempty"`
+	VerifiedHeadSHA     string         `json:"verified_head_sha,omitempty"`
 }
 
 // StreamCategoryFilter selects public Run Event Stream categories.
@@ -152,44 +163,13 @@ func ProjectStreamEvent(cursor int64, event RunEvent, filter StreamCategoryFilte
 		}
 		record.Summary = batchStreamSummary(record.Batch, record.Phase)
 	case StreamCategoryVerification:
-		record.Phase, err = requiredPayloadString(fields, event, "phase")
-		if err != nil {
+		if err := projectVerificationRecord(&record, fields, event); err != nil {
 			return StreamRecord{}, false, err
 		}
-		record.Attempt, err = verificationPayloadAttempt(fields, event, record.Phase)
-		if err != nil {
-			return StreamRecord{}, false, err
-		}
-		if record.WorkItem == "" {
-			record.WorkItem, err = firstPayloadString(fields, "work_item", "task")
-			if err != nil {
-				return StreamRecord{}, false, err
-			}
-		}
-		if record.Batch == 0 {
-			record.Batch, err = optionalPayloadInt(fields, "batch")
-			if err != nil {
-				return StreamRecord{}, false, err
-			}
-		}
-		if record.Phase == string(VerificationPhaseVerdict) {
-			record.Verdict, err = requiredPayloadString(fields, event, "verdict")
-			if err != nil {
-				return StreamRecord{}, false, err
-			}
-		} else {
-			record.Verdict, err = optionalPayloadString(fields, "verdict")
-			if err != nil {
-				return StreamRecord{}, false, err
-			}
-		}
-		record.Summary = verificationStreamSummary(record.Attempt, record.Phase, record.Verdict)
 	case StreamCategoryOutcome:
-		record.Outcome, err = firstPayloadString(fields, "outcome", "state")
-		if err != nil {
+		if err := projectOutcomeRecord(&record, fields, event); err != nil {
 			return StreamRecord{}, false, err
 		}
-		record.Summary = outcomeStreamSummary(record.Outcome)
 	case StreamCategorySelection:
 		selection, ok, err := ProjectSelectionLifecycle(event)
 		if err != nil {
@@ -218,6 +198,102 @@ func ProjectStreamEvent(cursor int64, event RunEvent, filter StreamCategoryFilte
 		record.Summary = SelectionLifecycleLine(selection)
 	}
 	return record, true, nil
+}
+
+func projectVerificationRecord(record *StreamRecord, fields map[string]json.RawMessage, event RunEvent) error {
+	var err error
+	record.Phase, err = requiredPayloadString(fields, event, "phase")
+	if err != nil {
+		return err
+	}
+	record.Attempt, err = verificationPayloadAttempt(fields, event, record.Phase)
+	if err != nil {
+		return err
+	}
+	record.Retry, err = optionalPayloadInt(fields, "retry")
+	if err != nil {
+		return streamPayloadFieldError(event, "retry", err)
+	}
+	record.Mode, err = readOptionalString(fields, event, "mode")
+	if err != nil {
+		return err
+	}
+	record.Classification, err = readOptionalString(fields, event, "classification")
+	if err != nil {
+		return err
+	}
+	record.RetryAvailable, err = optionalPayloadBool(fields, "retry_available")
+	if err != nil {
+		return streamPayloadFieldError(event, "retry_available", err)
+	}
+	record.Reason, err = readOptionalString(fields, event, "reason")
+	if err != nil {
+		return err
+	}
+	if record.WorkItem == "" {
+		record.WorkItem, err = firstPayloadString(fields, "work_item", "task")
+		if err != nil {
+			return err
+		}
+	}
+	if record.Batch == 0 {
+		record.Batch, err = optionalPayloadInt(fields, "batch")
+		if err != nil {
+			return err
+		}
+	}
+	if record.Phase == string(VerificationPhaseVerdict) {
+		record.Verdict, err = requiredPayloadString(fields, event, "verdict")
+	} else {
+		record.Verdict, err = optionalPayloadString(fields, "verdict")
+	}
+	if err != nil {
+		return err
+	}
+	record.Summary = verificationStreamSummary(record.Attempt, record.Phase, record.Verdict)
+	return nil
+}
+
+func projectOutcomeRecord(record *StreamRecord, fields map[string]json.RawMessage, event RunEvent) error {
+	var err error
+	record.Outcome, err = firstPayloadString(fields, "outcome", "state")
+	if err != nil {
+		return err
+	}
+	record.Reason, err = readOptionalString(fields, event, "reason")
+	if err != nil {
+		return err
+	}
+	record.NextAction, err = readOptionalString(fields, event, "next_action")
+	if err != nil {
+		return err
+	}
+	record.ReviewIssuesKnown, err = optionalPayloadBool(fields, "review_issues_known")
+	if err != nil {
+		return streamPayloadFieldError(event, "review_issues_known", err)
+	}
+	record.ConsoleLog, err = readOptionalString(fields, event, "console_log")
+	if err != nil {
+		return err
+	}
+	record.AttachCommand, err = readOptionalString(fields, event, "attach_command")
+	if err != nil {
+		return err
+	}
+	record.EvidenceKind, err = readOptionalString(fields, event, "evidence_kind")
+	if err != nil {
+		return err
+	}
+	record.EvidenceHeadSHA, err = readOptionalString(fields, event, "evidence_head_sha")
+	if err != nil {
+		return err
+	}
+	record.VerifiedHeadSHA, err = readOptionalString(fields, event, "verified_head_sha")
+	if err != nil {
+		return err
+	}
+	record.Summary = outcomeStreamSummary(record.Outcome)
+	return nil
 }
 
 func isStreamCategory(category StreamCategory) bool {
@@ -286,6 +362,26 @@ func optionalPayloadString(fields map[string]json.RawMessage, key string) (strin
 		return "", err
 	}
 	return value, nil
+}
+
+func readOptionalString(fields map[string]json.RawMessage, event RunEvent, key string) (string, error) {
+	value, err := optionalPayloadString(fields, key)
+	if err != nil {
+		return "", streamPayloadFieldError(event, key, err)
+	}
+	return value, nil
+}
+
+func optionalPayloadBool(fields map[string]json.RawMessage, key string) (*bool, error) {
+	raw, ok := fields[key]
+	if !ok {
+		return nil, nil
+	}
+	var value bool
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil, err
+	}
+	return &value, nil
 }
 
 func firstPayloadString(fields map[string]json.RawMessage, keys ...string) (string, error) {
@@ -368,6 +464,10 @@ func optionalPayloadInt(fields map[string]json.RawMessage, key string) (int, err
 
 func streamMissingField(event RunEvent, key string) error {
 	return fmt.Errorf("project %s event for Run %q: missing payload field %q", event.Kind, event.RunID, key)
+}
+
+func streamPayloadFieldError(event RunEvent, key string, err error) error {
+	return fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, key, err)
 }
 
 func streamTime(value time.Time) string {
