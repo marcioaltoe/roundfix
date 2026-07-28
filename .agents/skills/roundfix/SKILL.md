@@ -1199,10 +1199,11 @@ outcome and never opens pull requests (ADR-0021).
    When the resolved Spec Root is not the default `<repo>/docs/specs`, Run
    startup prints `Spec Root: <path>` on stderr.
 
-   The spec Run header names the effective concurrency with this shape:
+   The spec Run header names both effective capacities with this shape:
 
    ```text
-   Concurrency: N
+   Task Capacity: N
+   Verification Capacity: M
    ```
 
 4. Exit codes: `0` Clean, Stopped, or the all-completed no-op, `1` Unresolved,
@@ -1265,15 +1266,45 @@ outcome and never opens pull requests (ADR-0021).
    Failed, Stopped, and failing-QA Runs do not invoke the pusher. Push failure
    ends the Run Failed.
 
-9. `worktree.concurrency` is an int in config, default `2`; `1` keeps
-   sequential behavior. `worktree.location` is the parent directory, default
-   `~/.roundfix/worktrees`; Project Config overrides User Config, and Roundfix
-   always appends `<repo-slug>/<run-id>` or `<repo-slug>/<run-id>.<task_id>`.
-   Concurrent Tasks can run Verification commands at the same time, so heavy
-   commands such as `make verify` can consume matching local CPU and cache
-   resources. `worktree.copy` copies repository-relative, gitignored files into
-   each new worktree. `worktree.bootstrap` runs in each new worktree after copy
-   and before Agent work; `worktree.bootstrap_timeout` defaults to `10m`.
+9. Task Capacity and Verification Capacity are independent config-only limits
+   for one Implement Run. `worktree.concurrency` is Task Capacity, defaults to
+   `2`, and limits concurrent Task Worktree lifecycles.
+   `verification.concurrency` is Verification Capacity, defaults to `1`, and
+   limits concurrent Task Verification attempts. Both must be positive
+   integers; Project Config overrides User Config, which overrides built-ins.
+   Neither setting coordinates other Runs, CI, or external processes.
+
+   The recommended split overlaps implementation while serializing the
+   complete repository gate:
+
+   ```yaml
+   worktree:
+     concurrency: 2
+
+   verification:
+     concurrency: 1
+   ```
+
+   Every normal attempt journals `waiting` before it acquires shared capacity,
+   then `started`, command results, and `verdict`. A deterministic failure
+   releases capacity before one Verification Feedback repair turn and
+   reacquires capacity for the final Daemon attempt.
+
+   Exit `75` from a project-authored Verification wrapper is the sole Temporary
+   Verification Failure signal. Roundfix retains the diagnostics and grants
+   the Task one exclusive retry across its Verification lifecycle. The retry
+   waits for other Verification attempts in that Run to drain, consumes the
+   entire Verification Capacity, and does not consume the Agent repair. A
+   repeated exit `75` exhausts the retry and fails the Task. Roundfix never
+   classifies a failure from logs, timing, ports, package names, or framework
+   text.
+
+   `worktree.location` is the parent directory, default
+   `~/.roundfix/worktrees`; Roundfix always appends `<repo-slug>/<run-id>` or
+   `<repo-slug>/<run-id>.<task_id>`. `worktree.copy` copies
+   repository-relative, gitignored files into each new worktree.
+   `worktree.bootstrap` runs in each new worktree after copy and before Agent
+   work; `worktree.bootstrap_timeout` defaults to `10m`.
 
    ```yaml
    worktree:
@@ -1526,45 +1557,36 @@ status updates.
 
 ## Assigned Task Batches
 
-Inside a Roundfix-assigned spec Run, each Task is one Batch of one. A Task's
-status is `pending`, `in_progress`, `completed`, or `failed`, and its task
-file is the sole owner of that status. The Daemon normalizes only the
-documented synonyms on reload — `done` becomes `completed`, and hyphen or space
-variants of canonical statuses such as `in-progress` and `in progress` become
-`in_progress` — then rewrites the frontmatter to the canonical value. Agents
-must still write canonical statuses; anything outside the canonical and synonym
-sets fails validation. Concurrent spec Runs assign each Task to its Task
-Worktree; sequential Runs (`worktree.concurrency: 1`) use the Run Worktree. The
-assigned working tree is never the user's checkout.
+Inside an Implement Run, each Task owns a Task Type-selected Agent Session and
+the Daemon is the sole writer of `in_progress`, `completed`, and `failed`.
+Agent-authored status is never a verdict. Frontend and non-frontend Tasks stay
+in the same mixed Task Graph; their Task Types select the applicable Agent
+Selection Profiles.
 
-The Agent owns the assigned task file and the working tree:
+The Agent:
 
-1. Read the assigned task file completely before editing code.
-2. Set `status: in_progress` in the task file when work starts.
-3. Make the code edits the Task requires.
-4. Run focused checks while working when useful. Do not run the full configured
-   Verification solely to satisfy the Daemon gate; the Daemon runs it after the
-   Agent turn and sends one Verification Feedback prompt only on an attempt-1
-   command failure.
-5. Append a `## Result` section to the task file.
-6. Settle the task status to `completed` or `failed`.
+1. Reads the assigned Task and bounded context completely.
+2. Implements only that Task's slice.
+3. Runs focused checks while working when useful, but never runs commands from
+   the Task's `## Verification` section.
+4. Appends or updates `## Result` with implementation and focused-check
+   evidence for every acceptance criterion.
+5. Hands back implementation-ready work without editing Task status, claiming
+   a terminal verdict, committing, pushing, opening a pull request, editing
+   `_tasks.md`, or editing another Task file.
 
-The Daemon owns verification, settling, and commits:
+The Daemon writes `in_progress` before Agent work, normalizes any Agent-authored
+status after handoff, runs the complete Task Verification verbatim, and alone
+settles status and creates the Task commit. A deterministic first failure
+releases Verification Capacity before one Verification Feedback repair turn
+in the same Agent Session. Exit `75` uses the one exclusive retry protocol and
+does not create Agent feedback. Any declared formatter, test, Skill
+synchronization, or build failure blocks settlement.
 
-- It re-runs the Task's Verification commands verbatim and settles the final
-  status; `completed` stands only when verification passes.
-- When ADR-0020 classifies a Batch as delivered despite a later nonzero acpx
-  exit, the Daemon journals the anomaly and still runs verification. The
-  anomaly never settles or commits a Task by itself.
-- It creates one commit per verified Task, titled `<type>: <lowercase-title>`
-  — the first rune of the Task title lowercased only in the subject; a `docs`,
-  `test`, or `chore` Task type passes through, every other type becomes `feat`
-  — with `Roundfix-Spec` and `Roundfix-Task` trailers.
-- With `--qa`, it commits the QA Report as
-  `docs: qa report for <slug> (<verdict>)` with a `Roundfix-Spec` trailer.
-
-The Agent never commits, never pushes, never opens pull requests, and never
-edits the Task Graph manifest (`_tasks.md`) or any unassigned task file.
+For reload compatibility, the Daemon normalizes documented synonyms:
+`done` becomes `completed`, while hyphen or space variants such as
+`in-progress` and `in progress` become `in_progress`. This normalization does
+not grant status authorship to the Agent.
 
 ## Forbidden Actions
 
@@ -1593,10 +1615,14 @@ For assigned Review Issue Batches, report:
 - Files changed in the working tree.
 - Any issue left `failed` and the reason.
 
-For assigned Task Batches, report:
+For an assigned Task Batch, report:
 
-- The assigned Task id and its settled status.
-- Each Verification command and its outcome.
-- Files changed in the working tree.
-- The `## Result` summary recorded in the task file.
-- A `failed` status and the reason, when the Task could not be completed.
+- The assigned Task id.
+- The implementation-ready behavior handed back.
+- Focused checks run and their outcomes.
+- Files changed in the assigned working tree.
+- The `## Result` evidence recorded in the Task file.
+- Any blocker that prevented an implementation-ready handoff.
+
+Do not report a terminal Task status, declared Verification result, commit, or
+delivery claim; those are Daemon-owned and occur after the Agent turn.
