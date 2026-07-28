@@ -11092,9 +11092,10 @@ func builtinArtifactDirForRepo(t *testing.T, repoDir string) string {
 }
 
 type fakeVerifier struct {
-	err      error
-	calls    int
-	commands []string
+	err          error
+	errByCommand map[string]error
+	calls        int
+	commands     []string
 }
 
 func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest) (daemon.VerifyResult, error) {
@@ -11110,6 +11111,9 @@ func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest
 	}
 	if verifier.err != nil {
 		return daemon.VerifyResult{OutputPath: req.OutputPath}, &daemon.VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: verifier.err}
+	}
+	if err := verifier.errByCommand[req.Command]; err != nil {
+		return daemon.VerifyResult{OutputPath: req.OutputPath}, &daemon.VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: err}
 	}
 	if req.OutputPath != "" {
 		_ = os.Remove(req.OutputPath)

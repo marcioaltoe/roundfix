@@ -38,10 +38,11 @@ func TestBuildTaskPromptStatesExecutionInvariants(t *testing.T) {
 		"Task: task_02",
 		"Task file: /repo/docs/specs/0001-implement-command/task_02.md",
 		"Implement only this Task's slice",
-		"Set status: in_progress in the task file frontmatter when you start.",
-		"Run focused checks while working when useful; the Daemon runs the task file's ## Verification section after your turn.",
-		"Append a ## Result section to the task file with evidence",
-		"Settle the task file frontmatter to status: completed or status: failed",
+		"The Daemon owns Task status during Implement; do not edit the task file's status field.",
+		"Do not run commands from the task file's ## Verification section",
+		"Run focused implementation checks while working when useful",
+		"Append or update a ## Result section in the task file with implementation and focused-check evidence",
+		"Hand back implementation-ready work without claiming the Task is completed or failed",
 		"Never commit, push, or open a pull request.",
 		"Never edit the Task Graph manifest (_tasks.md) or any other task file.",
 		"a prior Run died mid-task; start the Task fresh.",
@@ -53,6 +54,14 @@ func TestBuildTaskPromptStatesExecutionInvariants(t *testing.T) {
 	}
 	if strings.Contains(prompt, "Run the commands in the task file's ## Verification section while working; all must pass.") {
 		t.Fatalf("expected task prompt to remove authoritative Verification requirement, got:\n%s", prompt)
+	}
+	for _, forbidden := range []string{
+		"Set status: in_progress in the task file frontmatter when you start.",
+		"Settle the task file frontmatter to status: completed or status: failed",
+	} {
+		if strings.Contains(prompt, forbidden) {
+			t.Fatalf("expected task prompt to forbid Agent status authorship instead of containing %q, got:\n%s", forbidden, prompt)
+		}
 	}
 }
 

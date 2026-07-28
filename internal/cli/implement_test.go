@@ -600,10 +600,9 @@ func implementTaskPathInRoot(specsRoot string, slug string, taskID string) strin
 }
 
 // implementFakeRunner scripts per-Task Agent behavior keyed by the Task id
-// parsed from the prompt, writing task statuses through spec.SetStatus the
-// way a real Agent edits the task file. A QA prompt writes qaReport as the
-// Spec's QA Report, the way the qa-gate Agent does; an empty qaReport
-// writes none.
+// parsed from the prompt, including attempted status edits that Implement
+// must normalize. A QA prompt writes qaReport as the Spec's QA Report, the
+// way the qa-gate Agent does; an empty qaReport writes none.
 type implementFakeRunner struct {
 	mu            sync.Mutex
 	gitRoot       string
@@ -2046,15 +2045,16 @@ func TestRenderImplementTaskLinesNormalizesMultilineReasons(t *testing.T) {
 
 func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 	tests := []struct {
-		name           string
-		enableAutoPush bool
-		configUpstream bool
-		args           []string
-		runner         func(string) *implementFakeRunner
-		wantCode       int
-		wantState      string
-		wantPushes     int
-		wantStdout     []string
+		name            string
+		enableAutoPush  bool
+		configUpstream  bool
+		args            []string
+		runner          func(string) *implementFakeRunner
+		wantCode        int
+		wantState       string
+		wantPushes      int
+		wantStdout      []string
+		verificationErr error
 	}{
 		{
 			name:           "clean qa pass with key pushes",
@@ -2100,13 +2100,14 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			runner: func(repoDir string) *implementFakeRunner {
 				return &implementFakeRunner{
 					gitRoot:      repoDir,
-					statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+					statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
 				}
 			},
-			wantCode:   1,
-			wantState:  store.StateUnresolved,
-			wantPushes: 0,
-			wantStdout: []string{"Unresolved: 0 completed, 1 failed, 0 skipped, 0 pending.\n"},
+			wantCode:        1,
+			wantState:       store.StateUnresolved,
+			wantPushes:      0,
+			wantStdout:      []string{"Unresolved: 0 completed, 1 failed, 0 skipped, 0 pending.\n"},
+			verificationErr: errors.New("exit status 7"),
 		},
 		{
 			name:           "stopped does not push",
@@ -2153,7 +2154,8 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			if tt.configUpstream {
 				configureImplementUpstream(t, repoDir, "origin", "ma/widget-flow")
 			}
-			_, _, pusher, _ := withImplementCollaborators(t, tt.runner(repoDir))
+			_, verifier, pusher, _ := withImplementCollaborators(t, tt.runner(repoDir))
+			verifier.err = tt.verificationErr
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
@@ -2505,7 +2507,7 @@ func TestRunImplementClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 		{
 			name: "unresolved",
 			inner: &implementFakeRunner{
-				statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+				errByTask: map[string]error{"task_01": errors.New("agent failed")},
 			},
 			wantCode:  1,
 			wantState: store.StateUnresolved,
@@ -2891,10 +2893,12 @@ func TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath(t *testing.T) {
 		title: "Leave unresolved work",
 	}})
 	runner := &implementFakeRunner{
-		gitRoot:      repoDir,
-		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+		gitRoot: repoDir,
 		onTask: func(req agent.ExecuteRequest, _ string) error {
-			return os.WriteFile(filepath.Join(req.GitRoot, "attempt.txt"), []byte("needs user\n"), 0o644)
+			if err := os.WriteFile(filepath.Join(req.GitRoot, "attempt.txt"), []byte("needs user\n"), 0o644); err != nil {
+				return err
+			}
+			return errors.New("agent failed after writing recoverable work")
 		},
 	}
 	withAgentRunner(t, runner)
@@ -3595,20 +3599,21 @@ func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
-func TestRunImplementFailedTaskEndsUnresolvedAndKeepsWorktree(t *testing.T) {
+func TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
-		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
+		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}, verification: []string{"fail-task-02"}},
 		{id: "task_03", title: "Document the widget", taskType: "docs", needs: []string{"task_02"}},
 	})
 	firstRunner := &implementFakeRunner{
 		gitRoot: repoDir,
 		statusByTask: map[string]spec.Status{
 			"task_01": spec.StatusCompleted,
-			"task_02": spec.StatusFailed,
+			"task_02": spec.StatusCompleted,
 		},
 	}
-	committer, _, _, _ := withImplementCollaborators(t, firstRunner)
+	committer, verifier, _, _ := withImplementCollaborators(t, firstRunner)
+	verifier.errByCommand = map[string]error{"fail-task-02": errors.New("exit status 7")}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -3617,14 +3622,17 @@ func TestRunImplementFailedTaskEndsUnresolvedAndKeepsWorktree(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
 	}
-	expected := "task_01 completed — Build the widget core\n" +
-		"task_02 failed — Wire the widget API\n" +
-		"  reason: Agent settled the Task failed\n" +
-		"task_03 skipped — Document the widget\n" +
-		"  reason: needs not completed: task_02\n" +
-		"Unresolved: 1 completed, 1 failed, 1 skipped, 0 pending.\n"
-	if stdout.String() != expected {
-		t.Fatalf("expected Unresolved report:\n%q\ngot:\n%q", expected, stdout.String())
+	for _, expected := range []string{
+		"task_01 completed — Build the widget core\n",
+		"task_02 failed — Wire the widget API\n",
+		"  reason: Verification failed: command \"fail-task-02\" exited with exit status 7; diagnostics: ",
+		"task_03 skipped — Document the widget\n",
+		"  reason: needs not completed: task_02\n",
+		"Unresolved: 1 completed, 1 failed, 1 skipped, 0 pending.\n",
+	} {
+		if !strings.Contains(stdout.String(), expected) {
+			t.Fatalf("expected Unresolved report to contain %q, got:\n%s", expected, stdout.String())
+		}
 	}
 	if committer.calls != 1 {
 		t.Fatalf("expected one commit for the completed Task only, got %d", committer.calls)
@@ -3883,15 +3891,16 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 
 func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
-		{id: "task_01", title: "Build the widget core"},
+		{id: "task_01", title: "Build the widget core", verification: []string{"fail-task-01"}},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
 	})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
-		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
 		qaReport:     implementQAReport("pass"),
 	}
-	committer, _, _, _ := withImplementCollaborators(t, runner)
+	committer, verifier, _, _ := withImplementCollaborators(t, runner)
+	verifier.errByCommand = map[string]error{"fail-task-01": errors.New("exit status 7")}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -3900,13 +3909,16 @@ func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
 	}
-	expected := "task_01 failed — Build the widget core\n" +
-		"  reason: Agent settled the Task failed\n" +
-		"task_02 skipped — Wire the widget API\n" +
-		"  reason: needs not completed: task_01\n" +
-		"Unresolved: 0 completed, 1 failed, 1 skipped, 0 pending.\n"
-	if stdout.String() != expected {
-		t.Fatalf("expected no QA verdict line with a failed Task:\n%q\ngot:\n%q", expected, stdout.String())
+	for _, expected := range []string{
+		"task_01 failed — Build the widget core\n",
+		"  reason: Verification failed: command \"fail-task-01\" exited with exit status 7; diagnostics: ",
+		"task_02 skipped — Wire the widget API\n",
+		"  reason: needs not completed: task_01\n",
+		"Unresolved: 0 completed, 1 failed, 1 skipped, 0 pending.\n",
+	} {
+		if !strings.Contains(stdout.String(), expected) {
+			t.Fatalf("expected no-QA report to contain %q, got:\n%s", expected, stdout.String())
+		}
 	}
 	if runner.qaCalls != 0 {
 		t.Fatalf("expected the QA step never invoked with a failed Task, got %d QA call(s)", runner.qaCalls)

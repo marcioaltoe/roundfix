@@ -160,6 +160,7 @@ type VerificationFeedback struct {
 	DiagnosticPath string
 	Failure        string
 	Attempt        int
+	TaskHandoff    bool
 }
 
 func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
@@ -277,10 +278,18 @@ func BuildVerificationRepairPrompt(workItem string, feedback VerificationFeedbac
 	builder.WriteString(fmt.Sprintf("Failure: %s\n\n", failure))
 	builder.WriteString("Required actions:\n")
 	builder.WriteString("1. Inspect the diagnostic artifact path and the related code or tests.\n")
-	builder.WriteString("2. Repair only this Work Item's slice and update the assigned status file when needed.\n")
-	builder.WriteString("3. Do not paste or embed the diagnostic log body in your response or status files.\n")
-	builder.WriteString("4. Do not create commits, push, or open a pull request.\n")
-	builder.WriteString("5. When the repair is ready, stop; the Daemon will rerun the full configured Verification sequence once.\n")
+	if feedback.TaskHandoff {
+		builder.WriteString("2. Repair only this Task's slice. The Daemon owns Task status; do not edit the task file's status field.\n")
+		builder.WriteString("3. Do not rerun commands from the Task's declared ## Verification section. You may run focused implementation checks when useful.\n")
+		builder.WriteString("4. Update the Task's ## Result evidence. Do not paste or embed the diagnostic log body in your response or the Task file.\n")
+		builder.WriteString("5. Do not create commits, push, or open a pull request.\n")
+		builder.WriteString("6. When the implementation is ready, stop without claiming the Task is completed or failed; the Daemon will rerun the full configured Verification sequence once.\n")
+	} else {
+		builder.WriteString("2. Repair only this Work Item's slice and update the assigned status file when needed.\n")
+		builder.WriteString("3. Do not paste or embed the diagnostic log body in your response or status files.\n")
+		builder.WriteString("4. Do not create commits, push, or open a pull request.\n")
+		builder.WriteString("5. When the repair is ready, stop; the Daemon will rerun the full configured Verification sequence once.\n")
+	}
 	return builder.String(), nil
 }
 

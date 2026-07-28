@@ -168,7 +168,7 @@ func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
-func TestRunSettleRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing.T) {
+func TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -178,10 +178,12 @@ func TestRunSettleRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing
 		},
 	})
 	runner := &implementFakeRunner{
-		gitRoot:      repoDir,
-		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+		gitRoot: repoDir,
 		onTask: func(req agent.ExecuteRequest, _ string) error {
-			return os.WriteFile(filepath.Join(req.GitRoot, "done.txt"), []byte("preserved work\n"), 0o644)
+			if err := os.WriteFile(filepath.Join(req.GitRoot, "done.txt"), []byte("preserved work\n"), 0o644); err != nil {
+				return err
+			}
+			return errors.New("agent failed after writing recoverable work")
 		},
 	}
 	withAgentRunner(t, runner)

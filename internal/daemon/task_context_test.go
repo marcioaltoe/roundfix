@@ -168,7 +168,8 @@ type: backend
 		t.Fatalf("prompts = %d, want 1", len(runner.prompts))
 	}
 	prompt := runner.prompts[0]
-	if got := strings.Count(prompt, taskContent); got != 1 {
+	daemonOwnedTaskContent := strings.Replace(taskContent, "status: pending", "status: in_progress", 1)
+	if got := strings.Count(prompt, daemonOwnedTaskContent); got != 1 {
 		t.Fatalf("expected one complete assigned Task, got %d", got)
 	}
 	for _, expected := range []string{

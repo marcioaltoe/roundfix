@@ -29,16 +29,16 @@ type SpecContextBundle struct {
 	OmittedPriorFiles int
 }
 
-// taskExecutionInvariants states the execution contract the Agent must
-// follow for one Spec Task, mirroring the implement-task skill. Every
-// invariant lives in this one constant so the templating pass (work-plan
-// item 5) replaces the contract in a single place.
+// taskExecutionInvariants states the ADR-0057 handoff contract the Agent must
+// follow for one Spec Task. Every invariant lives in this one constant; the
+// dedicated authorial-Skill Task aligns the protected implement-task skill.
 const taskExecutionInvariants = `Execution invariants:
 - Implement only this Task's slice; work that belongs to another Task is a follow-up note, not part of this diff.
-- Set status: in_progress in the task file frontmatter when you start.
-- Run focused checks while working when useful; the Daemon runs the task file's ## Verification section after your turn.
-- Append a ## Result section to the task file with evidence for each acceptance criterion.
-- Settle the task file frontmatter to status: completed or status: failed before you finish.
+- The Daemon owns Task status during Implement; do not edit the task file's status field.
+- Do not run commands from the task file's ## Verification section; the Daemon runs them after your turn.
+- Run focused implementation checks while working when useful.
+- Append or update a ## Result section in the task file with implementation and focused-check evidence for each acceptance criterion.
+- Hand back implementation-ready work without claiming the Task is completed or failed.
 - Never commit, push, or open a pull request.
 - Never edit the Task Graph manifest (_tasks.md) or any other task file.
 - If the task file arrives with status: in_progress, a prior Run died mid-task; start the Task fresh. The work-target lock guarantees no live owner.

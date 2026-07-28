@@ -551,9 +551,6 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 	if err != nil {
 		return "", "", err
 	}
-	if failure == "" && task.Status == spec.StatusFailed {
-		failure = "Agent settled the Task failed"
-	}
 	if failure == "" {
 		verification, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 1)
 		if verifyErr != nil {
@@ -564,9 +561,6 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 			if err != nil {
 				return "", "", err
 			}
-		}
-		if failure == "" && task.Status == spec.StatusFailed {
-			failure = "Agent settled the Task failed"
 		}
 		if failure == "" && verification.Failure != "" {
 			final, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 2)
@@ -613,13 +607,18 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
 		return "", fmt.Errorf("update run %q to state %q before Task %s: %w", plan.RunID, store.StateResolvingWithAgent, task.ID, err)
 	}
+	taskPath := filepath.Join(plan.SpecsRoot, task.File)
+	if err := spec.SetStatus(taskPath, spec.StatusInProgress); err != nil {
+		return "", fmt.Errorf("set Task %s in_progress before the Agent for run %q: %w", task.ID, plan.RunID, err)
+	}
+	task.Status = spec.StatusInProgress
+	task.StatusNormalized = false
 	if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonTask,
 		fmt.Sprintf("Task %s started as Batch %03d: %s", task.ID, ordinal, task.Title),
-		map[string]any{"task": task.ID, "phase": "started", "batch": ordinal},
+		map[string]any{"task": task.ID, "phase": "started", "batch": ordinal, "status": string(spec.StatusInProgress)},
 	); err != nil {
 		return "", fmt.Errorf("publish start event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
-	taskPath := filepath.Join(plan.SpecsRoot, task.File)
 	content, err := os.ReadFile(taskPath)
 	if err != nil {
 		return "", fmt.Errorf("read Task %q file %q before the Agent: %w", task.ID, taskPath, err)
@@ -654,6 +653,10 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		Prompt:      prompt,
 		GitRoot:     plan.WorkDir,
 	})
+	reloadFailure, reloadErr := reloadAndNormalizeTaskAfterAgent(plan, task, "the Agent")
+	if reloadErr != nil {
+		return "", fmt.Errorf("normalize Task %s status after the Agent: %w", task.ID, reloadErr)
+	}
 	if runErr != nil {
 		if isStop(ctx, runErr) {
 			// The runner already published the stopped status event;
@@ -661,6 +664,9 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 			return "", fmt.Errorf("run Agent for run %q Task %s: %w", plan.RunID, task.ID, runErr)
 		}
 		return agentFailureReason(runErr, fmt.Sprintf("Agent failed: %v", runErr)), nil
+	}
+	if reloadFailure != "" {
+		return reloadFailure, nil
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -675,14 +681,6 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		); err != nil {
 			return "", fmt.Errorf("publish transport anomaly event for run %q Task %s: %w", plan.RunID, task.ID, err)
 		}
-	}
-	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
-		// The Agent left the task file unreadable; the Task fails and the
-		// Daemon settles the status by rewriting the frontmatter value.
-		return fmt.Sprintf("reload task file after the Agent: %v", err), nil
-	}
-	if err := canonicalizeReloadedTaskStatus(plan, task); err != nil {
-		return "", fmt.Errorf("canonicalize Task %s status after the Agent: %w", task.ID, err)
 	}
 	return "", nil
 }
@@ -744,6 +742,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 		DiagnosticPath: first.CommandFailure.OutputPath,
 		Failure:        first.Failure,
 		Attempt:        1,
+		TaskHandoff:    true,
 	})
 	if err != nil {
 		return "", fmt.Errorf("build Verification Feedback prompt for run %q Task %s: %w", plan.RunID, task.ID, err)
@@ -763,11 +762,18 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 		Prompt:      prompt,
 		GitRoot:     plan.WorkDir,
 	})
+	reloadFailure, reloadErr := reloadAndNormalizeTaskAfterAgent(plan, task, "Verification Feedback")
+	if reloadErr != nil {
+		return "", fmt.Errorf("normalize Task %s status after Verification Feedback: %w", task.ID, reloadErr)
+	}
 	if runErr != nil {
 		if isStop(ctx, runErr) {
 			return "", fmt.Errorf("run Verification Feedback Agent for run %q Task %s: %w", plan.RunID, task.ID, runErr)
 		}
 		return agentFailureReason(runErr, fmt.Sprintf("Agent failed: %v", runErr)), nil
+	}
+	if reloadFailure != "" {
+		return reloadFailure, nil
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -783,29 +789,27 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 			return "", fmt.Errorf("publish Verification Feedback transport anomaly event for run %q Task %s: %w", plan.RunID, task.ID, err)
 		}
 	}
-	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
-		return fmt.Sprintf("reload task file after Verification Feedback: %v", err), nil
-	}
-	if err := canonicalizeReloadedTaskStatus(plan, task); err != nil {
-		return "", fmt.Errorf("canonicalize Task %s status after Verification Feedback: %w", task.ID, err)
-	}
 	return "", nil
 }
 
-func canonicalizeReloadedTaskStatus(plan TaskPlan, task *spec.Task) error {
-	if !task.StatusNormalized {
-		return nil
+func reloadAndNormalizeTaskAfterAgent(plan TaskPlan, task *spec.Task, turn string) (string, error) {
+	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
+		return fmt.Sprintf("reload task file after %s: %v", turn, err), nil
+	}
+	if task.Status == spec.StatusInProgress && !task.StatusNormalized {
+		return "", nil
 	}
 	taskPath := filepath.Join(plan.SpecsRoot, task.File)
-	if err := spec.SetStatus(taskPath, task.Status); err != nil {
-		return err
+	if err := spec.SetStatus(taskPath, spec.StatusInProgress); err != nil {
+		return "", err
 	}
+	task.Status = spec.StatusInProgress
 	task.StatusNormalized = false
-	return nil
+	return "", nil
 }
 
-// settleTask writes the Daemon-owned final status when the Agent left
-// anything else and journals the settlement (ADR 0014). Callers pass
+// settleTask writes the Daemon-owned final status and journals the settlement
+// (ADR 0014, ADR 0057). Callers pass
 // completed only after every Verification command passed, so completed is
 // never settled without passing verification.
 func (engine *Engine) settleTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, status spec.Status, reason string) error {
