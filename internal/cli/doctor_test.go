@@ -95,7 +95,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			if len(runner.exactRequests) != 3 {
 				t.Fatalf("expected three distinct profile proofs, got %#v", runner.exactRequests)
 			}
-			wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-opus-5"}
+			wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "opus"}
 			for index, wantModel := range wantModels {
 				if request := runner.exactRequests[index]; request.WorkDir != "/repo/project" || request.Runtime.Model != wantModel {
 					t.Fatalf("profile proof %d = %#v, want model %q in repository", index, request, wantModel)

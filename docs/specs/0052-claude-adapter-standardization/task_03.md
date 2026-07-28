@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0052-claude-adapter-standardization
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -58,3 +58,55 @@ and every other built-in profile are untouched.
 
 `_prd.md` → User Story 5, Core Feature 6; `_techspec.md` → Build Order 3,
 Data Models; ADR-0049.
+
+## Result
+
+### Implementation
+
+- Changed only the built-in `frontend` Preferred Selection model from
+  `claude-opus-5` to `opus`; runtime `claude`, reasoning effort `xhigh`, and
+  the existing Codex fallback remain unchanged.
+- Changed the rendered default Project Config to emit the same
+  `claude / opus / xhigh` Preferred Selection.
+- Updated the config and CLI expectations that derive from the built-in
+  frontend default. Catalog and documentation-contract expectations for the
+  separate `claude-opus-5` catalog identifier remain unchanged.
+
+### Focused checks
+
+- Red signal before the production edit:
+  `rtk env GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run
+  'Test(AgentSelectionProfileBuiltinsResolveRequiredCategories|InitCreatesUserConfig|ProfileGeneratedConfigUsesCompleteProfilesSchema|InitForceOverwritesExistingConfig)$'
+  ./internal/config` failed because the resolver and rendered config still
+  returned `claude-opus-5`; the matching focused CLI tests failed for the same
+  old default.
+- `rtk env GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run
+  'Test(AgentSelectionProfileBuiltinsResolveRequiredCategories|InitCreatesUserConfig|ProfileGeneratedConfigUsesCompleteProfilesSchema|InitForceOverwritesExistingConfig)$'
+  ./internal/config` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run
+  'Test(RunDoctorProfileReadiness|RunInitForceOverwritesExistingConfig|ProfilesValidateDeduplicatesProofsAndReportsEveryReference|InvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles|RunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence)'
+  ./internal/cli` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 -run
+  '^TestModelCatalogsExposeOrderedPickerData$' ./internal/agent` — passed.
+- `rtk git -c core.fsmonitor=false diff --exit-code --
+  internal/agent/catalog.go` — passed with no diff.
+- The first focused test attempt used Go's default cache and could not start
+  because the sandbox denied writes under `~/Library/Caches/go-build`; the
+  Task-local `GOCACHE` reruns above reached the tests.
+- The Task's declared `## Verification` commands were not run; the Daemon
+  owns that gate.
+
+### Acceptance criteria evidence
+
+- The built-in resolver test passes against the complete `frontend` profile:
+  preferred `claude / opus / xhigh` and fallback
+  `codex / gpt-5.6-sol / high`.
+- The generated-config test passes against the exact frontend YAML block,
+  including `model: opus` and the unchanged fallback; the CLI init path also
+  passes with the new rendered value.
+- The Claude Model Catalog behavior test passes, and
+  `internal/agent/catalog.go` has no diff.
+
+### Follow-ups
+
+None discovered within this Task's slice.

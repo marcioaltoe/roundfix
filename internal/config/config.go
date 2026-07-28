@@ -732,7 +732,7 @@ profiles:
   frontend:
     preferred:
       runtime: claude
-      model: claude-opus-5
+      model: opus
       reasoning_effort: xhigh
     fallbacks:
       - runtime: codex
