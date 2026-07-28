@@ -109,6 +109,9 @@ func TestNotificationReceiptPayloadUsesRouteStatusAndCompletionTime(t *testing.T
 }
 
 func TestVerificationEventVocabulary(t *testing.T) {
+	if VerificationPhaseWaiting != "waiting" {
+		t.Fatalf("expected waiting phase, got %q", VerificationPhaseWaiting)
+	}
 	if VerificationPhaseStarted != "started" {
 		t.Fatalf("expected started phase, got %q", VerificationPhaseStarted)
 	}
@@ -126,6 +129,36 @@ func TestVerificationEventVocabulary(t *testing.T) {
 	}
 	if VerificationVerdictFailed != "failed" {
 		t.Fatalf("expected failed verdict, got %q", VerificationVerdictFailed)
+	}
+}
+
+func TestVerificationWaitingEventProjectsAdditivePhase(t *testing.T) {
+	event := RunEvent{
+		RunID:       "run_123",
+		Batch:       3,
+		Source:      SourceDaemon,
+		Kind:        KindDaemonVerification,
+		ReviewIssue: "task_03",
+		Summary:     "Verification attempt 1 for Task task_03 waiting for shared capacity.",
+		Time:        time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC),
+		Payload:     []byte(`{"attempt":1,"phase":"waiting","task":"task_03","mode":"shared","capacity":1}`),
+	}
+
+	record, ok, err := ProjectStreamEvent(7, event, AllStreamCategories())
+	if err != nil {
+		t.Fatalf("project waiting event: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected waiting event to be projected")
+	}
+	if record.Schema != StreamSchema || record.Category != StreamCategoryVerification {
+		t.Fatalf("unexpected waiting projection envelope: %#v", record)
+	}
+	if record.WorkItem != "task_03" || record.Batch != 3 || record.Attempt != 1 || record.Phase != "waiting" {
+		t.Fatalf("unexpected waiting projection fields: %#v", record)
+	}
+	if record.Summary != "Verification attempt 1 phase waiting." {
+		t.Fatalf("unexpected waiting projection summary %q", record.Summary)
 	}
 }
 

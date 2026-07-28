@@ -155,6 +155,8 @@ type verificationAttemptRequest struct {
 	BatchNumber int
 	WorkItem    string
 	Attempt     int
+	Mode        verificationMode
+	Capacity    int
 	Commands    []string
 	Publish     func(context.Context, string, map[string]any) error
 }
@@ -251,6 +253,12 @@ func (req verificationAttemptRequest) payload(phase runevent.VerificationPhase, 
 	if command != "" {
 		payload["command"] = command
 	}
+	if req.Capacity > 0 && (phase == runevent.VerificationPhaseWaiting || phase == runevent.VerificationPhaseStarted) {
+		payload["mode"] = req.Mode.String()
+	}
+	if req.Capacity > 0 && phase == runevent.VerificationPhaseWaiting {
+		payload["capacity"] = req.Capacity
+	}
 	return payload
 }
 
@@ -260,6 +268,8 @@ func (req verificationAttemptRequest) summary(phase runevent.VerificationPhase, 
 		target = fmt.Sprintf("Task %s", req.WorkItem)
 	}
 	switch phase {
+	case runevent.VerificationPhaseWaiting:
+		return fmt.Sprintf("Verification attempt %d for %s waiting for %s capacity.", req.Attempt, target, req.Mode)
 	case runevent.VerificationPhaseStarted:
 		return fmt.Sprintf("Verification attempt %d for %s started: %s", req.Attempt, target, command)
 	case runevent.VerificationPhaseCommandPassed:

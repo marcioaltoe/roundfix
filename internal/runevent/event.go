@@ -66,6 +66,7 @@ const (
 type VerificationPhase string
 
 const (
+	VerificationPhaseWaiting       VerificationPhase = "waiting"
 	VerificationPhaseStarted       VerificationPhase = "started"
 	VerificationPhaseCommandPassed VerificationPhase = "command-passed"
 	VerificationPhaseFailed        VerificationPhase = "failed"

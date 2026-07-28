@@ -56,14 +56,19 @@ func (worktree *engineFakeWorktree) Snapshot(context.Context, string) ([]string,
 }
 
 type captureEventSink struct {
-	mu     sync.Mutex
-	events []runevent.RunEvent
+	mu        sync.Mutex
+	events    []runevent.RunEvent
+	published chan runevent.RunEvent
 }
 
 func (sink *captureEventSink) Publish(_ context.Context, event runevent.RunEvent) error {
 	sink.mu.Lock()
-	defer sink.mu.Unlock()
 	sink.events = append(sink.events, event)
+	published := sink.published
+	sink.mu.Unlock()
+	if published != nil {
+		published <- event
+	}
 	return nil
 }
 

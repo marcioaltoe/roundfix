@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0042-verification-capacity-and-daemon-task-settlement
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -35,28 +35,28 @@ then started ordering and Verification Feedback runs without holding capacity.
 
 ## Subtasks
 
-- [ ] Add the Task-cycle-owned fair shared/exclusive gate.
-- [ ] Thread one gate through every Task Worktree plan copy.
-- [ ] Journal waiting and acquired attempt evidence in stable order.
-- [ ] Bound shared Verification at the configured capacity.
-- [ ] Release before repair and reacquire for the final attempt.
-- [ ] Add channel-coordinated overlap, fairness, cancellation, and race tests.
+- [x] Add the Task-cycle-owned fair shared/exclusive gate.
+- [x] Thread one gate through every Task Worktree plan copy.
+- [x] Journal waiting and acquired attempt evidence in stable order.
+- [x] Bound shared Verification at the configured capacity.
+- [x] Release before repair and reacquire for the final attempt.
+- [x] Add channel-coordinated overlap, fairness, cancellation, and race tests.
 
 ## Acceptance Criteria
 
-- [ ] With Task Capacity `2` and Verification Capacity `1`, two Agent turns can
+- [x] With Task Capacity `2` and Verification Capacity `1`, two Agent turns can
       overlap while the observed maximum active Verification count is `1`.
-- [ ] With Verification Capacity `2`, two ready shared attempts overlap and
+- [x] With Verification Capacity `2`, two ready shared attempts overlap and
       both complete without permit loss.
-- [ ] Every attempt records `waiting` before `started`, including an immediately
+- [x] Every attempt records `waiting` before `started`, including an immediately
       available gate.
-- [ ] A first deterministic failure releases capacity before its Agent repair,
+- [x] A first deterministic failure releases capacity before its Agent repair,
       and attempt `2` queues and acquires again.
-- [ ] An exclusive waiter begins only after active shared attempts drain and
+- [x] An exclusive waiter begins only after active shared attempts drain and
       later shared waiters cannot bypass it.
-- [ ] Cancellation while queued starts zero Verification commands, leaves no
+- [x] Cancellation while queued starts zero Verification commands, leaves no
       goroutine blocked, and lets a later independent test acquire full capacity.
-- [ ] Tests coordinate on observable channels and counters rather than sleeps,
+- [x] Tests coordinate on observable channels and counters rather than sleeps,
       private method calls, or production-only hooks.
 
 ## Context
@@ -86,3 +86,34 @@ then started ordering and Verification Feedback runs without holding capacity.
 - `_techspec.md` → Implementation Design: Interfaces and Data Models; Testing Approach; Build Order 3.
 - `../../adr/0056-spec-runs-separate-task-and-verification-capacity.md` → per-cycle capacity, event ordering, and fairness decision.
 - `../../adr/0038-daemon-allows-one-verification-repair.md` → release around the preserved Agent repair.
+
+## Result
+
+Implemented one fair, cancellation-aware Verification gate per Task cycle.
+Every Task Worktree plan copy shares that gate. Shared attempts hold one unit
+across their full command sequence, publish `waiting` before acquisition and
+`started` after acquisition, and release capacity before Verification Feedback
+or any final numbered attempt.
+
+Verification evidence:
+
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk go test ./internal/daemon -run 'TestTaskCycle.*(VerificationCapacit|WaitingForVerification|RepairReacquires)' -count=1` — passed: 5 tests.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk go test ./internal/daemon -run 'TestVerificationGate.*(Exclusive|Fair|Cancel|Release)' -count=20` — passed: 40 repeated tests.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk go test ./internal/runevent -run 'Test.*Verification.*Waiting' -count=1` — passed: 1 test.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk go test -race ./internal/daemon ./internal/runevent -run 'Test(TaskCycle.*(VerificationCapacit|WaitingForVerification|RepairReacquires)|VerificationGate.*(Exclusive|Fair|Cancel|Release)|.*Verification.*Waiting)' -count=1` — passed: 8 tests.
+- `GOCACHE=/private/tmp/roundfix-task03-gocache rtk go test -race ./internal/daemon ./internal/runevent -count=1` — passed: 164 tests.
+- `rtk make verify` — passed outside the sandbox: 2,704 repository tests, 4 Skill tests, the Roundfix Skill check, and the build. The first sandboxed run reached 2,699 passes but its five `/bin/ps`-dependent owner-process tests were denied by the environment; the exact unsandboxed rerun passed.
+
+Acceptance evidence:
+
+- `TestTaskCycleVerificationCapacityOneBoundsConcurrentTaskWorktrees` observed two overlapping Agent turns and a maximum of one active Verification attempt.
+- `TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss` observed two concurrent shared attempts and two completed Tasks.
+- `TestTaskCycleWaitingForVerificationPrecedesStartedWhenImmediatelyAvailable`, `TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback`, and `TestVerificationWaitingEventProjectsAdditivePhase` proved stable `waiting` then `started` ordering and the additive `roundfix-events/v1` projection.
+- `TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback` proved the failed first attempt released capacity before Verification Feedback, another Task verified during repair, and attempt 2 queued and reacquired.
+- `TestVerificationGateExclusiveWaiterBlocksLaterShared` proved active shared attempts drain before exclusive acquisition and later shared arrivals cannot bypass the exclusive waiter.
+- `TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement` and `TestVerificationGateCancelExclusiveWaiterRestoresFullSharedCapacity` proved queued cancellation starts no command, assigns no false terminal Task status, returns the worker, and restores full capacity.
+- The concurrency tests use channels, mutex-protected counters, and observable Run Events. They contain no sleeps, gate-state inspection, or production-only test hooks.
+
+Follow-up: Task 04 owns Temporary Verification Failure classification and the
+production path that selects exclusive acquisition. This task supplies and
+proves the exclusive gate contract without implementing that later slice.

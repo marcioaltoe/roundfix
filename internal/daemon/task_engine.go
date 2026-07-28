@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf8"
 
@@ -20,6 +21,130 @@ import (
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
+
+type verificationMode uint8
+
+const (
+	verificationShared verificationMode = iota
+	verificationExclusive
+)
+
+func (mode verificationMode) String() string {
+	switch mode {
+	case verificationExclusive:
+		return "exclusive"
+	default:
+		return "shared"
+	}
+}
+
+type verificationGate interface {
+	Acquire(context.Context, verificationMode) (release func(), err error)
+}
+
+type fairVerificationGate struct {
+	mu               sync.Mutex
+	capacity         int
+	activeShared     int
+	exclusiveActive  bool
+	exclusiveWaiters int
+	changed          chan struct{}
+}
+
+func newVerificationGate(capacity int) verificationGate {
+	return &fairVerificationGate{
+		capacity: capacity,
+		changed:  make(chan struct{}),
+	}
+}
+
+func (gate *fairVerificationGate) Acquire(ctx context.Context, mode verificationMode) (func(), error) {
+	gate.mu.Lock()
+	if err := ctx.Err(); err != nil {
+		gate.mu.Unlock()
+		return nil, err
+	}
+
+	switch mode {
+	case verificationShared:
+		return gate.acquireShared(ctx)
+	case verificationExclusive:
+		gate.exclusiveWaiters++
+		return gate.acquireExclusive(ctx)
+	default:
+		gate.mu.Unlock()
+		return nil, fmt.Errorf("acquire Verification Capacity: unknown mode %d", mode)
+	}
+}
+
+func (gate *fairVerificationGate) acquireShared(ctx context.Context) (func(), error) {
+	for {
+		if err := ctx.Err(); err != nil {
+			gate.mu.Unlock()
+			return nil, err
+		}
+		if !gate.exclusiveActive && gate.exclusiveWaiters == 0 && gate.activeShared < gate.capacity {
+			gate.activeShared++
+			gate.mu.Unlock()
+			return gate.release(verificationShared), nil
+		}
+		changed := gate.changed
+		gate.mu.Unlock()
+		select {
+		case <-ctx.Done():
+		case <-changed:
+		}
+		gate.mu.Lock()
+	}
+}
+
+func (gate *fairVerificationGate) acquireExclusive(ctx context.Context) (func(), error) {
+	for {
+		if err := ctx.Err(); err != nil {
+			gate.exclusiveWaiters--
+			gate.notifyLocked()
+			gate.mu.Unlock()
+			return nil, err
+		}
+		if !gate.exclusiveActive && gate.activeShared == 0 {
+			gate.exclusiveWaiters--
+			gate.exclusiveActive = true
+			gate.mu.Unlock()
+			return gate.release(verificationExclusive), nil
+		}
+		changed := gate.changed
+		gate.mu.Unlock()
+		select {
+		case <-ctx.Done():
+		case <-changed:
+		}
+		gate.mu.Lock()
+	}
+}
+
+func (gate *fairVerificationGate) release(mode verificationMode) func() {
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			gate.mu.Lock()
+			switch mode {
+			case verificationShared:
+				if gate.activeShared > 0 {
+					gate.activeShared--
+				}
+			case verificationExclusive:
+				gate.exclusiveActive = false
+			}
+			gate.notifyLocked()
+			gate.mu.Unlock()
+		})
+	}
+}
+
+func (gate *fairVerificationGate) notifyLocked() {
+	close(gate.changed)
+	gate.changed = make(chan struct{})
+}
 
 // TaskPlan is the validated input for one Task cycle over an
 // already-created implement Run: the full Task Graph in the deterministic
@@ -42,6 +167,7 @@ type TaskPlan struct {
 	QA                      bool
 	Concurrency             int
 	VerificationConcurrency int
+	verificationGate        verificationGate
 	CopyList                []string
 	Bootstrap               runworktree.BootstrapSpec
 	BootstrapOutput         io.Writer
@@ -94,6 +220,7 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	}
 	taskCapacity := plan.Concurrency
 	verificationCapacity := plan.VerificationConcurrency
+	plan.verificationGate = newVerificationGate(verificationCapacity)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonStatus,
 		fmt.Sprintf("Task cycle started with Task Capacity %d and Verification Capacity %d.", taskCapacity, verificationCapacity),
 		map[string]any{
@@ -695,13 +822,15 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
 		return verificationAttemptOutcome{}, fmt.Errorf("update run %q to state %q before Task %s verification: %w", plan.RunID, store.StateVerifying, task.ID, err)
 	}
-	verification, err := engine.runVerificationAttempt(ctx, verificationAttemptRequest{
+	request := verificationAttemptRequest{
 		RunID:       plan.RunID,
 		WorkDir:     plan.WorkDir,
 		ArtifactDir: plan.ArtifactDir,
 		BatchNumber: ordinal,
 		WorkItem:    task.ID,
 		Attempt:     attempt,
+		Mode:        verificationShared,
+		Capacity:    plan.VerificationConcurrency,
 		Commands:    task.Verification,
 		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
 			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
@@ -709,7 +838,23 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 			}
 			return nil
 		},
-	})
+	}
+	if err := request.Publish(ctx,
+		request.summary(runevent.VerificationPhaseWaiting, ""),
+		request.payload(runevent.VerificationPhaseWaiting, ""),
+	); err != nil {
+		return verificationAttemptOutcome{}, err
+	}
+	if plan.verificationGate == nil {
+		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: Verification gate is required", plan.RunID, task.ID)
+	}
+	release, err := plan.verificationGate.Acquire(ctx, request.Mode)
+	if err != nil {
+		return verificationAttemptOutcome{}, fmt.Errorf("acquire Verification Capacity for run %q Task %s attempt %d: %w", plan.RunID, task.ID, attempt, err)
+	}
+	defer release()
+
+	verification, err := engine.runVerificationAttempt(ctx, request)
 	if err != nil {
 		if isStop(ctx, err) {
 			// A Stop Request during verification keeps the Agent's task

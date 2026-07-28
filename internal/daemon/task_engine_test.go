@@ -1157,6 +1157,125 @@ func (verifier *taskSchedulerVerifier) Verify(_ context.Context, req VerifyReque
 	return VerifyResult{OutputPath: req.OutputPath}, nil
 }
 
+type taskVerificationStart struct {
+	taskID  string
+	attempt int
+}
+
+type taskCapacityVerifier struct {
+	mu          sync.Mutex
+	started     chan taskVerificationStart
+	release     map[string]chan struct{}
+	fail        map[string]error
+	calls       map[string]int
+	active      int
+	maxActive   int
+	totalStarts int
+}
+
+func newTaskCapacityVerifier(taskIDs ...string) *taskCapacityVerifier {
+	verifier := &taskCapacityVerifier{
+		started: make(chan taskVerificationStart, len(taskIDs)*2),
+		release: make(map[string]chan struct{}, len(taskIDs)*2),
+		fail:    map[string]error{},
+		calls:   map[string]int{},
+	}
+	for _, taskID := range taskIDs {
+		verifier.release[taskVerificationKey(taskID, 1)] = make(chan struct{})
+	}
+	return verifier
+}
+
+func (verifier *taskCapacityVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult, error) {
+	taskID := strings.TrimPrefix(req.Command, "verify-")
+	verifier.mu.Lock()
+	verifier.calls[taskID]++
+	attempt := verifier.calls[taskID]
+	key := taskVerificationKey(taskID, attempt)
+	verifier.active++
+	verifier.totalStarts++
+	if verifier.active > verifier.maxActive {
+		verifier.maxActive = verifier.active
+	}
+	release := verifier.release[key]
+	fail := verifier.fail[key]
+	verifier.mu.Unlock()
+
+	verifier.started <- taskVerificationStart{taskID: taskID, attempt: attempt}
+	defer func() {
+		verifier.mu.Lock()
+		verifier.active--
+		verifier.mu.Unlock()
+	}()
+
+	if fail != nil {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{
+			Command:    req.Command,
+			OutputPath: req.OutputPath,
+			Err:        fail,
+		}
+	}
+	if release != nil {
+		select {
+		case <-release:
+		case <-ctx.Done():
+			return VerifyResult{OutputPath: req.OutputPath}, ctx.Err()
+		}
+	}
+	return VerifyResult{OutputPath: req.OutputPath}, nil
+}
+
+func (verifier *taskCapacityVerifier) addAttempt(taskID string, attempt int) {
+	verifier.mu.Lock()
+	defer verifier.mu.Unlock()
+	verifier.release[taskVerificationKey(taskID, attempt)] = make(chan struct{})
+}
+
+func (verifier *taskCapacityVerifier) failAttempt(taskID string, attempt int, err error) {
+	verifier.mu.Lock()
+	defer verifier.mu.Unlock()
+	verifier.fail[taskVerificationKey(taskID, attempt)] = err
+}
+
+func (verifier *taskCapacityVerifier) releaseAttempt(taskID string, attempt int) {
+	verifier.mu.Lock()
+	release := verifier.release[taskVerificationKey(taskID, attempt)]
+	verifier.mu.Unlock()
+	if release != nil {
+		close(release)
+	}
+}
+
+func (verifier *taskCapacityVerifier) waitStart(t *testing.T) taskVerificationStart {
+	t.Helper()
+	select {
+	case started := <-verifier.started:
+		return started
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for Verification start")
+		return taskVerificationStart{}
+	}
+}
+
+func (verifier *taskCapacityVerifier) assertNoStart(t *testing.T) {
+	t.Helper()
+	select {
+	case started := <-verifier.started:
+		t.Fatalf("expected no Verification start, got %+v", started)
+	default:
+	}
+}
+
+func (verifier *taskCapacityVerifier) observed() (maxActive int, totalStarts int) {
+	verifier.mu.Lock()
+	defer verifier.mu.Unlock()
+	return verifier.maxActive, verifier.totalStarts
+}
+
+func taskVerificationKey(taskID string, attempt int) string {
+	return fmt.Sprintf("%s:%d", taskID, attempt)
+}
+
 type taskSchedulerCommitter struct {
 	mu       sync.Mutex
 	messages []string
@@ -1514,6 +1633,142 @@ func assertTaskAnomalyBeforeVerification(t *testing.T, events []runevent.RunEven
 	}
 }
 
+type observedGateContext struct {
+	context.Context
+	entered chan struct{}
+	once    sync.Once
+}
+
+func (ctx *observedGateContext) Err() error {
+	ctx.once.Do(func() {
+		close(ctx.entered)
+	})
+	return ctx.Context.Err()
+}
+
+type gateAcquireResult struct {
+	release func()
+	err     error
+}
+
+func waitGateAcquireResult(t *testing.T, results <-chan gateAcquireResult) gateAcquireResult {
+	t.Helper()
+	select {
+	case result := <-results:
+		return result
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for Verification gate acquisition")
+		return gateAcquireResult{}
+	}
+}
+
+func waitObservedGateEntry(t *testing.T, entered <-chan struct{}) {
+	t.Helper()
+	select {
+	case <-entered:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for Verification gate entry")
+	}
+}
+
+func TestVerificationGateExclusiveWaiterBlocksLaterShared(t *testing.T) {
+	gate := newVerificationGate(2)
+	releaseActive, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("acquire active shared capacity: %v", err)
+	}
+
+	exclusiveEntered := make(chan struct{})
+	exclusiveResults := make(chan gateAcquireResult, 1)
+	go func() {
+		release, err := gate.Acquire(&observedGateContext{Context: context.Background(), entered: exclusiveEntered}, verificationExclusive)
+		exclusiveResults <- gateAcquireResult{release: release, err: err}
+	}()
+	waitObservedGateEntry(t, exclusiveEntered)
+
+	sharedEntered := make(chan struct{})
+	sharedResults := make(chan gateAcquireResult, 1)
+	go func() {
+		release, err := gate.Acquire(&observedGateContext{Context: context.Background(), entered: sharedEntered}, verificationShared)
+		sharedResults <- gateAcquireResult{release: release, err: err}
+	}()
+	waitObservedGateEntry(t, sharedEntered)
+
+	select {
+	case result := <-exclusiveResults:
+		t.Fatalf("exclusive acquired before active shared drained: %+v", result)
+	default:
+	}
+	select {
+	case result := <-sharedResults:
+		t.Fatalf("later shared bypassed queued exclusive: %+v", result)
+	default:
+	}
+
+	releaseActive()
+	exclusive := waitGateAcquireResult(t, exclusiveResults)
+	if exclusive.err != nil {
+		t.Fatalf("acquire exclusive after shared drain: %v", exclusive.err)
+	}
+	select {
+	case result := <-sharedResults:
+		t.Fatalf("later shared overlapped active exclusive: %+v", result)
+	default:
+	}
+
+	exclusive.release()
+	shared := waitGateAcquireResult(t, sharedResults)
+	if shared.err != nil {
+		t.Fatalf("acquire shared after exclusive release: %v", shared.err)
+	}
+	shared.release()
+}
+
+func TestVerificationGateCancelExclusiveWaiterRestoresFullSharedCapacity(t *testing.T) {
+	gate := newVerificationGate(2)
+	releaseFirst, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("acquire first shared capacity: %v", err)
+	}
+	releaseSecond, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("acquire second shared capacity: %v", err)
+	}
+
+	exclusiveCtx, cancelExclusive := context.WithCancel(context.Background())
+	exclusiveEntered := make(chan struct{})
+	exclusiveResults := make(chan gateAcquireResult, 1)
+	go func() {
+		release, err := gate.Acquire(&observedGateContext{Context: exclusiveCtx, entered: exclusiveEntered}, verificationExclusive)
+		exclusiveResults <- gateAcquireResult{release: release, err: err}
+	}()
+	waitObservedGateEntry(t, exclusiveEntered)
+	cancelExclusive()
+
+	canceled := waitGateAcquireResult(t, exclusiveResults)
+	if !errors.Is(canceled.err, context.Canceled) {
+		t.Fatalf("expected queued exclusive cancellation, got %v", canceled.err)
+	}
+	if canceled.release != nil {
+		t.Fatal("expected canceled acquisition not to return a release function")
+	}
+
+	releaseFirst()
+	releaseFirst()
+	releaseSecond()
+	releaseSecond()
+	releaseAfterCancelFirst, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("reacquire first shared capacity after cancellation: %v", err)
+	}
+	releaseAfterCancelSecond, err := gate.Acquire(context.Background(), verificationShared)
+	if err != nil {
+		t.Fatalf("reacquire second shared capacity after cancellation: %v", err)
+	}
+	releaseAfterCancelFirst()
+	releaseAfterCancelSecond()
+}
+
 func TestTaskCycleValidatesPlan(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
@@ -1593,6 +1848,317 @@ func TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects(t *testing.T) {
 				t.Fatalf("Run state changed from %q to %q", stateBefore, got)
 			}
 		})
+	}
+}
+
+func TestTaskCycleVerificationCapacityOneBoundsConcurrentTaskWorktrees(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{"verify-task_01"}},
+		{id: "task_02", verification: []string{"verify-task_02"}},
+	})
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	verifier := newTaskCapacityVerifier("task_01", "task_02")
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, &taskSchedulerCommitter{}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.VerificationConcurrency = 1
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	if got := runner.maxObservedActive(); got != 2 {
+		t.Fatalf("expected two overlapping Agent turns, got max active %d", got)
+	}
+	runner.releaseTask("task_01")
+	runner.releaseTask("task_02")
+
+	first := verifier.waitStart(t)
+	verifier.assertNoStart(t)
+	verifier.releaseAttempt(first.taskID, first.attempt)
+	second := verifier.waitStart(t)
+	if second.taskID == first.taskID {
+		t.Fatalf("expected the other Task to acquire after release, got %+v then %+v", first, second)
+	}
+	verifier.releaseAttempt(second.taskID, second.attempt)
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if outcome.err != nil {
+		t.Fatalf("task cycle: %v", outcome.err)
+	}
+	if outcome.result.Completed != 2 {
+		t.Fatalf("expected both Tasks completed, got %+v", outcome.result)
+	}
+	if maxActive, starts := verifier.observed(); maxActive != 1 || starts != 2 {
+		t.Fatalf("expected two Verification starts bounded to one active, got max=%d starts=%d", maxActive, starts)
+	}
+}
+
+func TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{"verify-task_01"}},
+		{id: "task_02", verification: []string{"verify-task_02"}},
+	})
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	verifier := newTaskCapacityVerifier("task_01", "task_02")
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, &taskSchedulerCommitter{}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.VerificationConcurrency = 2
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	runner.releaseTask("task_02")
+	first := verifier.waitStart(t)
+	second := verifier.waitStart(t)
+	if first.taskID == second.taskID {
+		t.Fatalf("expected distinct ready Tasks to overlap, got %+v and %+v", first, second)
+	}
+	if maxActive, _ := verifier.observed(); maxActive != 2 {
+		t.Fatalf("expected two active Verification attempts, got %d", maxActive)
+	}
+	verifier.releaseAttempt(first.taskID, first.attempt)
+	verifier.releaseAttempt(second.taskID, second.attempt)
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if outcome.err != nil {
+		t.Fatalf("task cycle: %v", outcome.err)
+	}
+	if outcome.result.Completed != 2 {
+		t.Fatalf("expected both Tasks completed without permit loss, got %+v", outcome.result)
+	}
+	if maxActive, starts := verifier.observed(); maxActive != 2 || starts != 2 {
+		t.Fatalf("expected exactly two overlapping Verification starts, got max=%d starts=%d", maxActive, starts)
+	}
+}
+
+func TestTaskCycleWaitingForVerificationPrecedesStartedWhenImmediatelyAvailable(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify-task_01"}}})
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("expected Task completed, got %+v", result)
+	}
+
+	events := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+	waitingIndex := -1
+	startedIndex := -1
+	for index, event := range events {
+		payload := eventPayloadMap(t, event)
+		switch payload["phase"] {
+		case string(runevent.VerificationPhaseWaiting):
+			waitingIndex = index
+			if payload["mode"] != "shared" || payload["capacity"] != float64(1) {
+				t.Fatalf("unexpected waiting payload: %+v", payload)
+			}
+		case string(runevent.VerificationPhaseStarted):
+			startedIndex = index
+		}
+	}
+	if waitingIndex < 0 || startedIndex < 0 || waitingIndex >= startedIndex {
+		t.Fatalf("expected waiting before started for immediately available capacity, got %+v", events)
+	}
+}
+
+func TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{"verify-task_01"}},
+		{id: "task_02", verification: []string{"verify-task_02"}},
+	})
+	fixture.sink.published = make(chan runevent.RunEvent, 128)
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	repairRelease := make(chan struct{})
+	var runnerCallsMu sync.Mutex
+	runnerCalls := map[string]int{}
+	runner.onStart = func(taskID string, _ agent.ExecuteRequest) error {
+		runnerCallsMu.Lock()
+		runnerCalls[taskID]++
+		call := runnerCalls[taskID]
+		runnerCallsMu.Unlock()
+		if taskID == "task_01" && call == 2 {
+			<-repairRelease
+		}
+		return nil
+	}
+	verifier := newTaskCapacityVerifier("task_01", "task_02")
+	verifier.failAttempt("task_01", 1, errors.New("deterministic failure"))
+	verifier.addAttempt("task_01", 2)
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, &taskSchedulerCommitter{}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.VerificationConcurrency = 1
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	if started := verifier.waitStart(t); started != (taskVerificationStart{taskID: "task_01", attempt: 1}) {
+		t.Fatalf("expected task_01 attempt 1 first, got %+v", started)
+	}
+	if started := waitSchedulerStarts(t, runner, 1); len(started) != 1 || started[0] != "task_01" {
+		t.Fatalf("expected task_01 Verification Feedback Agent, got %v", started)
+	}
+
+	runner.releaseTask("task_02")
+	if started := verifier.waitStart(t); started != (taskVerificationStart{taskID: "task_02", attempt: 1}) {
+		t.Fatalf("expected task_02 to verify while task_01 repair held no capacity, got %+v", started)
+	}
+	close(repairRelease)
+	waitPublishedVerificationPhase(t, fixture.sink.published, "task_01", 2, runevent.VerificationPhaseWaiting)
+	verifier.assertNoStart(t)
+
+	verifier.releaseAttempt("task_02", 1)
+	if started := verifier.waitStart(t); started != (taskVerificationStart{taskID: "task_01", attempt: 2}) {
+		t.Fatalf("expected task_01 attempt 2 to reacquire after task_02, got %+v", started)
+	}
+	verifier.releaseAttempt("task_01", 2)
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if outcome.err != nil {
+		t.Fatalf("task cycle: %v", outcome.err)
+	}
+	if outcome.result.Completed != 2 {
+		t.Fatalf("expected both Tasks completed, got %+v", outcome.result)
+	}
+	if maxActive, starts := verifier.observed(); maxActive != 1 || starts != 3 {
+		t.Fatalf("expected released/reacquired capacity across three attempts, got max=%d starts=%d", maxActive, starts)
+	}
+	assertVerificationWaitingBeforeStarted(t, fixture.sink.snapshot())
+}
+
+func TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{"verify-task_01"}},
+		{id: "task_02", verification: []string{"verify-task_02"}},
+	})
+	fixture.sink.published = make(chan runevent.RunEvent, 128)
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	verifier := newTaskCapacityVerifier("task_01", "task_02")
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, &taskSchedulerCommitter{}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.VerificationConcurrency = 1
+	ctx, cancel := context.WithCancel(context.Background())
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(ctx, plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	runner.releaseTask("task_02")
+	active := verifier.waitStart(t)
+	queuedTask := "task_01"
+	if active.taskID == queuedTask {
+		queuedTask = "task_02"
+	}
+	waitPublishedVerificationPhase(t, fixture.sink.published, queuedTask, 1, runevent.VerificationPhaseWaiting)
+	verifier.assertNoStart(t)
+	cancel()
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if outcome.err == nil || !errors.Is(outcome.err, context.Canceled) {
+		t.Fatalf("expected queued cancellation, got result=%+v err=%v", outcome.result, outcome.err)
+	}
+	if _, starts := verifier.observed(); starts != 1 {
+		t.Fatalf("expected zero Verification commands for queued Task, total starts=%d", starts)
+	}
+	for _, status := range []spec.Status{spec.StatusCompleted, spec.StatusFailed} {
+		if hasTaskSettlementEvent(t, fixture.sink.snapshot(), queuedTask, status) {
+			t.Fatalf("expected no false terminal settlement for queued Task %s", queuedTask)
+		}
+	}
+	taskRef := taskWorktrees.taskRef(queuedTask)
+	if got := taskStatusInSpecRootOnDisk(t, filepath.Join(taskRef.Path, "docs", "specs"), queuedTask); got != string(spec.StatusInProgress) {
+		t.Fatalf("expected queued Task left resumable in_progress, got %q", got)
+	}
+}
+
+func waitPublishedVerificationPhase(t *testing.T, published <-chan runevent.RunEvent, taskID string, attempt int, phase runevent.VerificationPhase) {
+	t.Helper()
+	for {
+		select {
+		case event := <-published:
+			if event.Kind != runevent.KindDaemonVerification || event.ReviewIssue != taskID {
+				continue
+			}
+			payload := eventPayloadMap(t, event)
+			if payload["attempt"] == float64(attempt) && payload["phase"] == string(phase) {
+				return
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatalf("timed out waiting for Task %s Verification attempt %d phase %s", taskID, attempt, phase)
+		}
+	}
+}
+
+func assertVerificationWaitingBeforeStarted(t *testing.T, events []runevent.RunEvent) {
+	t.Helper()
+	waiting := map[string]int{}
+	for index, event := range events {
+		if event.Kind != runevent.KindDaemonVerification {
+			continue
+		}
+		payload := eventPayloadMap(t, event)
+		taskID, _ := payload["task"].(string)
+		attempt, _ := payload["attempt"].(float64)
+		key := taskVerificationKey(taskID, int(attempt))
+		switch payload["phase"] {
+		case string(runevent.VerificationPhaseWaiting):
+			waiting[key] = index
+		case string(runevent.VerificationPhaseStarted):
+			waitingIndex, ok := waiting[key]
+			if !ok || waitingIndex >= index {
+				t.Fatalf("Verification %s started without an earlier waiting event", key)
+			}
+		}
 	}
 }
 
@@ -2567,7 +3133,7 @@ func TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttemp
 			}
 		}
 	}
-	if got := strings.Join(phases, "|"); got != "started|command-passed|started|failed|verdict|started|command-passed|started|failed|verdict" {
+	if got := strings.Join(phases, "|"); got != "waiting|started|command-passed|started|failed|verdict|waiting|started|command-passed|started|failed|verdict" {
 		t.Fatalf("expected command phases and one aggregate verdict per attempt, got %s", got)
 	}
 	if verdicts != 2 {
