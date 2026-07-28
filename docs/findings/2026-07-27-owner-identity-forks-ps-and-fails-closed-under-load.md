@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-27
-updated_at: 2026-07-27
+updated_at: 2026-07-28
 ---
 
 # Force Stop — owner identity forks `/usr/bin/ps`, so the escape hatch fails exactly when the host is loaded (2026-07-27)
@@ -107,3 +107,10 @@ PR #38 to keep the rendered text stable across locale changes.
   outcome.
 - Recording absence as its own proof (the owner exiting between the liveness
   check and the identity read) is right and already handled.
+
+## Addendum — 2026-07-28 — Routed to Spec 0055
+
+All four suggested resolutions are owned by
+[Spec 0055 — Owner identity without fork](../specs/0055-owner-identity-without-fork/_prd.md),
+which also scopes the `roundfix stop <run-id> --force` trailing-flag parsing
+defect observed during the Spec 0042 QA recovery.

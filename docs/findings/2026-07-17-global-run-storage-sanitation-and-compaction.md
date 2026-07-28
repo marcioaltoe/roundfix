@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-17
-updated_at: 2026-07-17
+updated_at: 2026-07-28
 ---
 
 # Run storage — sanitation is repository-scoped and does not compact SQLite (2026-07-17)
@@ -86,3 +86,10 @@ No active Spec owns the remaining database-compaction and global Artifact sanita
 [Spec 0038 — Terminal Run Worktree reconciliation](../specs/_archived/0038-terminal-run-worktree-reconciliation/_prd.md).
 This finding should remain `pending` until the storage sanitation work is routed to a dedicated
 Spec.
+
+## Addendum — 2026-07-28 — Routed to Spec 0059
+
+Spec 0038 shipped and archived, closing the worktree half. The database
+compaction, global Artifact sanitation, table-by-table retention policy, and
+read-only storage report are owned by
+[Spec 0059 — Run storage compaction and global sanitation](../specs/0059-run-storage-compaction-and-global-sanitation/_prd.md).
