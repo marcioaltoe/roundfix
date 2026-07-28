@@ -49,11 +49,11 @@ func TestRunReviewEvidenceSharedByPreFetchAndMergeReady(t *testing.T) {
 	}
 
 	reviewEvents := sink.eventsOfKind(runevent.KindDaemonReviewStatus)
-	if len(reviewEvents) != 1 {
-		t.Fatalf("changed evidence events = %d, want one event and no unchanged duplicate", len(reviewEvents))
+	if len(reviewEvents) != 3 {
+		t.Fatalf("wait phase events = %d, want one event per phase and no unchanged duplicate", len(reviewEvents))
 	}
 	var payload runevent.ReviewStatusPayload
-	if err := json.Unmarshal(reviewEvents[0].Payload, &payload); err != nil {
+	if err := json.Unmarshal(reviewEvents[2].Payload, &payload); err != nil {
 		t.Fatalf("decode review status event: %v", err)
 	}
 	if payload.State != string(evidence.State) ||
@@ -64,6 +64,372 @@ func TestRunReviewEvidenceSharedByPreFetchAndMergeReady(t *testing.T) {
 		payload.Conclusion != evidence.Conclusion ||
 		payload.Detail != evidence.Detail {
 		t.Fatalf("review status payload = %#v, want evidence %#v", payload, evidence)
+	}
+}
+
+func TestRunTransientReviewEvidenceRecoversWithinExistingBounds(t *testing.T) {
+	req := validRequest()
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	source := &fakeReviewEvidenceSource{
+		results: []reviewEvidenceResult{
+			{err: transientReviewError("discover Review Source evidence")},
+			{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+			{evidence: evidenceForHead(reviewsource.EvidenceVerified, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+		},
+	}
+	sleeper := &fakeSleeper{clock: clock}
+	sink := &recordingEventSink{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        sleeper,
+		Sink:           sink,
+	})
+	if err != nil {
+		t.Fatalf("watch transient recovery: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("transient recovery outcome = %q, want Clean", result.Outcome)
+	}
+	if len(source.requests) != 3 {
+		t.Fatalf("Review Source calls = %d, want transient, recovered, and Merge-Ready calls", len(source.requests))
+	}
+	assertSleeps(t, sleeper.sleeps, req.PollInterval, req.QuietPeriod)
+	assertRetryPhases(t, sink.eventsOfKind(runevent.KindDaemonRetry), "started", "recovered")
+}
+
+func TestRunTransientReviewEvidenceRecoversDuringMergeReadyWait(t *testing.T) {
+	req := validRequest()
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	source := &fakeReviewEvidenceSource{
+		results: []reviewEvidenceResult{
+			{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+			{err: transientReviewError("confirm Merge-Ready Evidence")},
+			{evidence: evidenceForHead(reviewsource.EvidenceVerified, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+		},
+	}
+	sleeper := &fakeSleeper{clock: clock}
+	sink := &recordingEventSink{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        sleeper,
+		Sink:           sink,
+	})
+	if err != nil {
+		t.Fatalf("Merge-Ready transient recovery: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("Merge-Ready transient recovery outcome = %q, want Clean", result.Outcome)
+	}
+	if len(source.requests) != 3 {
+		t.Fatalf("Review Source calls = %d, want pre-fetch, transient, and recovered calls", len(source.requests))
+	}
+	assertSleeps(t, sleeper.sleeps, req.PollInterval)
+	assertRetryPhases(t, sink.eventsOfKind(runevent.KindDaemonRetry), "started", "recovered")
+}
+
+func TestRunTransientReviewEvidenceExhaustsReviewTimeout(t *testing.T) {
+	req := validRequest()
+	req.ReviewTimeout = 2 * time.Second
+	req.PollInterval = time.Second
+	req.BudgetEnabled = false
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	source := &fakeReviewEvidenceSource{
+		results: []reviewEvidenceResult{{err: transientReviewError("discover Review Source evidence")}},
+	}
+	sleeper := &fakeSleeper{clock: clock}
+	sink := &recordingEventSink{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        sleeper,
+		Sink:           sink,
+	})
+	if err != nil {
+		t.Fatalf("transient timeout must settle as a bounded outcome: %v", err)
+	}
+	if result.Outcome != store.StateTimedOut {
+		t.Fatalf("transient timeout outcome = %q, want TimedOut", result.Outcome)
+	}
+	if len(source.requests) != 2 {
+		t.Fatalf("Review Source calls = %d, want no call at the timeout boundary", len(source.requests))
+	}
+	assertSleeps(t, sleeper.sleeps, time.Second, time.Second)
+	assertRetryPhases(t, sink.eventsOfKind(runevent.KindDaemonRetry), "started", "exhausted")
+}
+
+func TestRunTransientReviewEvidenceExhaustsMergeReadyTimeout(t *testing.T) {
+	req := validRequest()
+	req.ReviewTimeout = 2 * time.Second
+	req.PollInterval = time.Second
+	req.BudgetEnabled = false
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	source := &fakeReviewEvidenceSource{
+		results: []reviewEvidenceResult{
+			{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+			{err: transientReviewError("confirm Merge-Ready Evidence")},
+		},
+	}
+	sleeper := &fakeSleeper{clock: clock}
+	sink := &recordingEventSink{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        sleeper,
+		Sink:           sink,
+	})
+	if err != nil {
+		t.Fatalf("Merge-Ready transient timeout must settle as a bounded outcome: %v", err)
+	}
+	if result.Outcome != store.StateTimedOut {
+		t.Fatalf("Merge-Ready transient timeout outcome = %q, want TimedOut", result.Outcome)
+	}
+	if len(source.requests) != 3 {
+		t.Fatalf("Review Source calls = %d, want one pre-fetch and two retry episode calls", len(source.requests))
+	}
+	assertSleeps(t, sleeper.sleeps, time.Second, time.Second)
+	assertRetryPhases(t, sink.eventsOfKind(runevent.KindDaemonRetry), "started", "exhausted")
+}
+
+func TestRunTransientReviewEvidenceAfterMissingCheckExhaustsReviewTimeout(t *testing.T) {
+	req := validRequest()
+	req.ReviewTimeout = 2 * time.Second
+	req.CheckGracePeriod = 10 * time.Second
+	req.PollInterval = time.Second
+	req.BudgetEnabled = false
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	source := &fakeReviewEvidenceSource{
+		results: []reviewEvidenceResult{
+			{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+			{evidence: evidenceForHead(reviewsource.EvidencePending, reviewsource.EvidenceKindNone, req.HeadSHA)},
+			{err: transientReviewError("confirm Merge-Ready Evidence")},
+		},
+	}
+	sleeper := &fakeSleeper{clock: clock}
+	sink := &recordingEventSink{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        sleeper,
+		Sink:           sink,
+	})
+	if err != nil {
+		t.Fatalf("transient failure after a missing check must settle as a bounded outcome: %v", err)
+	}
+	if result.Outcome != store.StateTimedOut {
+		t.Fatalf("transient failure after missing check outcome = %q, want TimedOut", result.Outcome)
+	}
+	if len(source.requests) != 3 {
+		t.Fatalf("Review Source calls = %d, want pre-fetch, missing, and one transient call", len(source.requests))
+	}
+	assertSleeps(t, sleeper.sleeps, time.Second, time.Second)
+	assertRetryPhases(t, sink.eventsOfKind(runevent.KindDaemonRetry), "started", "exhausted")
+}
+
+func TestRunTransientReviewEvidenceExhaustsRunBudgetBeforeTimeout(t *testing.T) {
+	req := validRequest()
+	req.ReviewTimeout = 5 * time.Second
+	req.PollInterval = time.Second
+	req.MaxRunDuration = time.Second
+	startedAt := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
+	clock := &fakeClock{now: startedAt}
+	source := &fakeReviewEvidenceSource{
+		results: []reviewEvidenceResult{{err: transientReviewError("discover Review Source evidence")}},
+	}
+	sleeper := &fakeSleeper{clock: clock}
+	sink := &recordingEventSink{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        sleeper,
+		Sink:           sink,
+	})
+	if err != nil {
+		t.Fatalf("transient Run Budget exhaustion must settle as a bounded outcome: %v", err)
+	}
+	if result.Outcome != store.StateBudgetExceeded {
+		t.Fatalf("transient budget outcome = %q, want BudgetExceeded", result.Outcome)
+	}
+	if len(source.requests) != 1 {
+		t.Fatalf("Review Source calls = %d, want no call at the Run Budget boundary", len(source.requests))
+	}
+	assertSleeps(t, sleeper.sleeps, time.Second)
+	assertRetryPhases(t, sink.eventsOfKind(runevent.KindDaemonRetry), "started", "exhausted")
+	reviewEvents := sink.eventsOfKind(runevent.KindDaemonReviewStatus)
+	if len(reviewEvents) == 0 {
+		t.Fatal("Run Budget retry emitted no wait projection")
+	}
+	var payload runevent.ReviewStatusPayload
+	if err := json.Unmarshal(reviewEvents[0].Payload, &payload); err != nil {
+		t.Fatalf("decode Run Budget wait event: %v", err)
+	}
+	wantDeadline := startedAt.Add(req.MaxRunDuration)
+	if !payload.Deadline.Equal(wantDeadline) {
+		t.Fatalf("wait deadline = %s, want Run Budget deadline %s", payload.Deadline, wantDeadline)
+	}
+}
+
+func TestRunPermanentReviewEvidenceFailureDoesNotRetry(t *testing.T) {
+	req := validRequest()
+	permanent := errors.New("authentication failed: temporary Review Source failure")
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	source := &fakeReviewEvidenceSource{
+		results: []reviewEvidenceResult{{err: permanent}},
+	}
+	sleeper := &fakeSleeper{clock: clock}
+	sink := &recordingEventSink{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        sleeper,
+		Sink:           sink,
+	})
+	if !errors.Is(err, permanent) {
+		t.Fatalf("permanent failure error = %v, want %v", err, permanent)
+	}
+	if result.Outcome != store.StateFailed {
+		t.Fatalf("permanent failure outcome = %q, want Failed", result.Outcome)
+	}
+	if len(source.requests) != 1 {
+		t.Fatalf("permanent failure calls = %d, want one", len(source.requests))
+	}
+	assertSleeps(t, sleeper.sleeps)
+	assertRetryPhases(t, sink.eventsOfKind(runevent.KindDaemonRetry))
+}
+
+func TestRunPermanentMergeReadyEvidenceFailureDoesNotRetry(t *testing.T) {
+	req := validRequest()
+	permanent := errors.New("validation failed")
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	source := &fakeReviewEvidenceSource{
+		results: []reviewEvidenceResult{
+			{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+			{err: permanent},
+		},
+	}
+	sleeper := &fakeSleeper{clock: clock}
+	sink := &recordingEventSink{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        sleeper,
+		Sink:           sink,
+	})
+	if !errors.Is(err, permanent) {
+		t.Fatalf("permanent Merge-Ready error = %v, want %v", err, permanent)
+	}
+	if result.Outcome != store.StateFailed {
+		t.Fatalf("permanent Merge-Ready outcome = %q, want Failed", result.Outcome)
+	}
+	if len(source.requests) != 2 {
+		t.Fatalf("permanent Merge-Ready calls = %d, want pre-fetch and one confirmation", len(source.requests))
+	}
+	assertSleeps(t, sleeper.sleeps)
+	assertRetryPhases(t, sink.eventsOfKind(runevent.KindDaemonRetry))
+}
+
+func TestRunWaitPhaseProjectionDeduplicatesUnchangedEvidence(t *testing.T) {
+	req := validRequest()
+	req.QuietPeriod = 0
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	pending := evidenceForHead(reviewsource.EvidencePending, reviewsource.EvidenceKindNone, req.HeadSHA)
+	reviewed := evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)
+	verified := evidenceForHead(reviewsource.EvidenceVerified, reviewsource.EvidenceKindCheckRun, req.HeadSHA)
+	source := &fakeReviewEvidenceSource{
+		results: []reviewEvidenceResult{
+			{evidence: pending},
+			{evidence: pending},
+			{evidence: reviewed},
+			{evidence: pending},
+			{evidence: pending},
+			{evidence: verified},
+		},
+	}
+	sink := &recordingEventSink{}
+	var progress []WaitProgress
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        &fakeSleeper{clock: clock},
+		Sink:           sink,
+		Progress: func(update WaitProgress) {
+			progress = append(progress, update)
+		},
+	})
+	if err != nil {
+		t.Fatalf("watch wait projection: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("wait projection outcome = %q, want Clean", result.Outcome)
+	}
+
+	events := sink.eventsOfKind(runevent.KindDaemonReviewStatus)
+	if len(events) != 6 {
+		t.Fatalf("review wait events = %d, want phase entry plus changed Evidence only", len(events))
+	}
+	if len(progress) != len(events) {
+		t.Fatalf("direct progress updates = %d, want one per persisted wait event (%d)", len(progress), len(events))
+	}
+	wantPhases := []string{
+		"WaitingForReview",
+		"WaitingForReview",
+		"WaitingForReview",
+		"WaitingForReviewCheck",
+		"WaitingForReviewCheck",
+		"WaitingForReviewCheck",
+	}
+	for index, event := range events {
+		var payload runevent.ReviewStatusPayload
+		if err := json.Unmarshal(event.Payload, &payload); err != nil {
+			t.Fatalf("decode wait event %d: %v", index, err)
+		}
+		if payload.Phase != wantPhases[index] {
+			t.Fatalf("wait event %d phase = %q, want %q", index, payload.Phase, wantPhases[index])
+		}
+		if payload.ExpectedHeadSHA != req.HeadSHA {
+			t.Fatalf("wait event %d expected head = %q, want %q", index, payload.ExpectedHeadSHA, req.HeadSHA)
+		}
+		if payload.StartedAt.IsZero() || payload.Deadline.IsZero() || !payload.Deadline.After(payload.StartedAt) {
+			t.Fatalf("wait event %d has invalid bounds: start=%s deadline=%s", index, payload.StartedAt, payload.Deadline)
+		}
+		if payload.EvidenceState == "" || payload.EvidenceKind == "" || payload.RetryStatus == "" {
+			t.Fatalf("wait event %d missing Evidence or retry projection: %#v", index, payload)
+		}
+		if progress[index].Phase != payload.Phase ||
+			progress[index].ExpectedHeadSHA != payload.ExpectedHeadSHA ||
+			string(progress[index].Evidence.State) != payload.EvidenceState ||
+			string(progress[index].Evidence.Kind) != payload.EvidenceKind ||
+			progress[index].RetryStatus != payload.RetryStatus {
+			t.Fatalf("direct progress %d diverged from persisted payload: progress=%#v payload=%#v", index, progress[index], payload)
+		}
 	}
 }
 
@@ -372,19 +738,22 @@ func TestRunStopRequestDuringTransientRetryStopsBeforeNextCheck(t *testing.T) {
 			stops.requested = true
 		},
 	}
-	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+	source := &fakeReviewEvidenceSource{
+		results: []reviewEvidenceResult{
+			{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+			{err: transientReviewError("check Merge-Ready Evidence")},
+		},
+	}
 	fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}}
-	check := &fakeCheckSource{err: errors.New("temporary Review Source failure")}
 	resolver := &fakeResolver{}
 
 	result, err := Run(context.Background(), req, Dependencies{
-		StopRequests: stops,
-		StatusSource: status,
-		Fetcher:      fetcher,
-		Resolver:     resolver,
-		CheckSource:  check,
-		Clock:        clock,
-		Sleeper:      sleeper,
+		StopRequests:   stops,
+		ReviewEvidence: source,
+		Fetcher:        fetcher,
+		Resolver:       resolver,
+		Clock:          clock,
+		Sleeper:        sleeper,
 	})
 
 	if !errors.Is(err, ErrStopRequested) {
@@ -393,8 +762,8 @@ func TestRunStopRequestDuringTransientRetryStopsBeforeNextCheck(t *testing.T) {
 	if result.Outcome != store.StateStopped || result.Rounds != 1 {
 		t.Fatalf("expected Stopped after one fetched Round, got %#v", result)
 	}
-	if stops.calls != 5 || check.calls != 1 {
-		t.Fatalf("expected Stop Request after one retry sleep, got stop=%d check=%d", stops.calls, check.calls)
+	if stops.calls != 5 || len(source.requests) != 2 {
+		t.Fatalf("expected Stop Request after one retry sleep, got stop=%d evidence=%d", stops.calls, len(source.requests))
 	}
 	if fetcher.calls != 1 || resolver.calls != 0 {
 		t.Fatalf("retry Stop Request must block later work, got fetch=%d resolve=%d", fetcher.calls, resolver.calls)
@@ -657,7 +1026,7 @@ func TestRunConfirmsMergeReadyThroughGraceWindow(t *testing.T) {
 			reviewTimeout:    time.Second,
 			checkGracePeriod: 2 * time.Second,
 			wantOutcome:      store.StateCleanUnverified,
-			wantCheckCalls:   3,
+			wantCheckCalls:   2,
 			wantSleeps:       []time.Duration{time.Second, time.Second},
 		},
 		{
@@ -667,7 +1036,7 @@ func TestRunConfirmsMergeReadyThroughGraceWindow(t *testing.T) {
 			checkGracePeriod: 5 * time.Second,
 			wantOutcome:      store.StateTimedOut,
 			wantManualReview: true,
-			wantCheckCalls:   3,
+			wantCheckCalls:   2,
 			wantSleeps:       []time.Duration{time.Second, time.Second},
 		},
 	}
@@ -883,8 +1252,8 @@ func TestRunTimesOutWhileHeadCheckStaysPending(t *testing.T) {
 	if result.ManualReviewCommand != "@coderabbitai review" {
 		t.Fatalf("expected manual review trigger guidance, got %q", result.ManualReviewCommand)
 	}
-	if check.calls != 3 {
-		t.Fatalf("expected three check calls before timeout, got %d", check.calls)
+	if check.calls != 2 {
+		t.Fatalf("expected no check call at the timeout boundary, got %d", check.calls)
 	}
 	assertSleeps(t, sleeper.sleeps, req.PollInterval, req.PollInterval)
 }
@@ -1011,12 +1380,41 @@ func (source *fakeStatusSource) Status(context.Context, StatusRequest) (Status, 
 type fakeReviewEvidenceSource struct {
 	evidence reviewsource.Evidence
 	err      error
+	results  []reviewEvidenceResult
 	requests []ReviewEvidenceRequest
 }
 
 func (source *fakeReviewEvidenceSource) Evidence(_ context.Context, req ReviewEvidenceRequest) (reviewsource.Evidence, error) {
 	source.requests = append(source.requests, req)
+	if len(source.results) > 0 {
+		result := source.results[0]
+		if len(source.results) > 1 {
+			source.results = source.results[1:]
+		}
+		return result.evidence, result.err
+	}
 	return source.evidence, source.err
+}
+
+type reviewEvidenceResult struct {
+	evidence reviewsource.Evidence
+	err      error
+}
+
+func evidenceForHead(state reviewsource.EvidenceState, kind reviewsource.EvidenceKind, headSHA string) reviewsource.Evidence {
+	return reviewsource.Evidence{
+		State:           state,
+		Kind:            kind,
+		ExpectedHeadSHA: headSHA,
+		ObservedHeadSHA: headSHA,
+	}
+}
+
+func transientReviewError(operation string) error {
+	return &reviewsource.TransientError{
+		Operation: operation,
+		Err:       errors.New("temporary network failure"),
+	}
 }
 
 type recordingEventSink struct {
@@ -1036,6 +1434,25 @@ func (sink *recordingEventSink) eventsOfKind(kind runevent.Kind) []runevent.RunE
 		}
 	}
 	return events
+}
+
+func assertRetryPhases(t *testing.T, events []runevent.RunEvent, want ...string) {
+	t.Helper()
+	if len(events) != len(want) {
+		t.Fatalf("retry events = %d, want %d phases %v", len(events), len(want), want)
+	}
+	for index, event := range events {
+		var payload runevent.RetryPayload
+		if err := json.Unmarshal(event.Payload, &payload); err != nil {
+			t.Fatalf("decode retry event %d: %v", index, err)
+		}
+		if payload.Phase != want[index] {
+			t.Fatalf("retry event %d phase = %q, want %q", index, payload.Phase, want[index])
+		}
+		if payload.Operation == "" || payload.Reason == "" {
+			t.Fatalf("retry event %d missing bounded context: %#v", index, payload)
+		}
+	}
 }
 
 type fakeStopRequestSource struct {

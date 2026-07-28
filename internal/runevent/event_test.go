@@ -19,7 +19,14 @@ func TestSpecRunKindsUseDaemonNamespace(t *testing.T) {
 }
 
 func TestReviewStatusEventPayloadUsesStableEvidenceFields(t *testing.T) {
+	startedAt := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
 	payload := ReviewStatusPayload{
+		Phase:           "WaitingForReview",
+		StartedAt:       startedAt,
+		Deadline:        startedAt.Add(5 * time.Minute),
+		EvidenceState:   "verified",
+		EvidenceKind:    "review_approval",
+		RetryStatus:     "recovered",
 		State:           "verified",
 		Kind:            "review_approval",
 		Identity:        "review:9001",
@@ -33,6 +40,12 @@ func TestReviewStatusEventPayloadUsesStableEvidenceFields(t *testing.T) {
 		t.Fatalf("marshal ReviewStatusPayload: %v", err)
 	}
 	for _, field := range []string{
+		`"phase":"WaitingForReview"`,
+		`"started_at":"2026-07-27T12:00:00Z"`,
+		`"deadline":"2026-07-27T12:05:00Z"`,
+		`"evidence_state":"verified"`,
+		`"evidence_kind":"review_approval"`,
+		`"retry_status":"recovered"`,
 		`"state":"verified"`,
 		`"kind":"review_approval"`,
 		`"identity":"review:9001"`,
@@ -43,6 +56,27 @@ func TestReviewStatusEventPayloadUsesStableEvidenceFields(t *testing.T) {
 	} {
 		if !strings.Contains(string(raw), field) {
 			t.Fatalf("review status payload missing %s: %s", field, raw)
+		}
+	}
+}
+
+func TestReviewRetryPayloadUsesBoundedEpisodeFields(t *testing.T) {
+	payload := RetryPayload{
+		Phase:     "started",
+		Operation: "discover Review Source evidence",
+		Reason:    "discover Review Source evidence: temporary Review Source failure",
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal RetryPayload: %v", err)
+	}
+	for _, field := range []string{
+		`"phase":"started"`,
+		`"operation":"discover Review Source evidence"`,
+		`"reason":"discover Review Source evidence: temporary Review Source failure"`,
+	} {
+		if !strings.Contains(string(raw), field) {
+			t.Fatalf("retry payload missing %s: %s", field, raw)
 		}
 	}
 }

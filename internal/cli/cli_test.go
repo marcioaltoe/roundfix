@@ -4361,6 +4361,34 @@ func TestReviewProfilePreflightFetchCreatesNoAgentSession(t *testing.T) {
 	}
 }
 
+func TestWaitingForReviewProgressLineExposesBoundedEvidenceAndRetryState(t *testing.T) {
+	startedAt := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
+	line := formatReviewWaitProgress(watch.WaitProgress{
+		Phase:           watch.WaitPhaseReviewCheck,
+		ExpectedHeadSHA: "abc123",
+		StartedAt:       startedAt,
+		Deadline:        startedAt.Add(5 * time.Minute),
+		Evidence: reviewsource.Evidence{
+			State: reviewsource.EvidenceVerified,
+			Kind:  reviewsource.EvidenceKindReviewApproval,
+		},
+		RetryStatus: watch.RetryStatusRecovered,
+	})
+	for _, want := range []string{
+		"Review Source status: verified",
+		"phase=WaitingForReviewCheck",
+		"expected_head=abc123",
+		"started_at=2026-07-27T12:00:00Z",
+		"deadline=2026-07-27T12:05:00Z",
+		"evidence_kind=review_approval",
+		"retry=recovered",
+	} {
+		if !strings.Contains(line, want) {
+			t.Fatalf("wait progress line missing %q: %q", want, line)
+		}
+	}
+}
+
 func TestPrintReviewIssueReportSplitsRunAndCumulativeCountsAndReasons(t *testing.T) {
 	report := reviewIssueReport{
 		runIssues: []rounds.Issue{
@@ -5362,7 +5390,7 @@ watch:
 	if !strings.Contains(stderr.String(), "Review Source status: pending") {
 		t.Fatalf("expected pending Review Source status output, got %q", stderr.String())
 	}
-	if count := strings.Count(stderr.String(), "Review Source status: pending\n"); count != 1 {
+	if count := strings.Count(stderr.String(), "Review Source status: pending;"); count != 1 {
 		t.Fatalf("expected one unchanged status-poll line, got %d in %q", count, stderr.String())
 	}
 	if !strings.Contains(stderr.String(), "reached TimedOut") {

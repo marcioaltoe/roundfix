@@ -121,14 +121,28 @@ type RunEvent struct {
 // the bounded Review Source Evidence observation without provider response
 // bodies.
 type ReviewStatusPayload struct {
-	State           string `json:"state"`
-	Kind            string `json:"kind"`
-	Identity        string `json:"identity"`
-	ExpectedHeadSHA string `json:"expected_head_sha"`
-	ObservedHeadSHA string `json:"observed_head_sha,omitempty"`
-	Conclusion      string `json:"conclusion,omitempty"`
-	Detail          string `json:"detail,omitempty"`
-	Reason          string `json:"reason,omitempty"`
+	Phase           string    `json:"phase,omitempty"`
+	StartedAt       time.Time `json:"started_at,omitempty"`
+	Deadline        time.Time `json:"deadline,omitempty"`
+	EvidenceState   string    `json:"evidence_state,omitempty"`
+	EvidenceKind    string    `json:"evidence_kind,omitempty"`
+	RetryStatus     string    `json:"retry_status,omitempty"`
+	State           string    `json:"state"`
+	Kind            string    `json:"kind"`
+	Identity        string    `json:"identity"`
+	ExpectedHeadSHA string    `json:"expected_head_sha"`
+	ObservedHeadSHA string    `json:"observed_head_sha,omitempty"`
+	Conclusion      string    `json:"conclusion,omitempty"`
+	Detail          string    `json:"detail,omitempty"`
+	Reason          string    `json:"reason,omitempty"`
+}
+
+// RetryPayload is the stable daemon.retry payload for one bounded Review
+// Source retry episode.
+type RetryPayload struct {
+	Phase     string `json:"phase"`
+	Operation string `json:"operation"`
+	Reason    string `json:"reason"`
 }
 
 // OutcomePayload is the stable daemon.outcome payload. Optional evidence and

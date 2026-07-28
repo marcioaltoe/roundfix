@@ -2203,6 +2203,19 @@ func printReviewSkippedReport(stdout io.Writer, reason string, nextAction string
 	fmt.Fprintf(stdout, "Next action: %s\n", nextAction)
 }
 
+func formatReviewWaitProgress(progress watch.WaitProgress) string {
+	return fmt.Sprintf(
+		"Review Source status: %s; phase=%s; expected_head=%s; started_at=%s; deadline=%s; evidence_kind=%s; retry=%s",
+		progress.Evidence.State,
+		progress.Phase,
+		progress.ExpectedHeadSHA,
+		progress.StartedAt.Format(time.RFC3339),
+		progress.Deadline.Format(time.RFC3339),
+		progress.Evidence.Kind,
+		progress.RetryStatus,
+	)
+}
+
 // printReviewIssueReport prints the deterministic stdout contract for review
 // Runs after the terminal outcome is known.
 func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted int, report reviewIssueReport) {
@@ -2557,7 +2570,6 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	defer ui.Close()
 
 	watchReportIssues := []rounds.Issue{}
-	lastReviewStatusLine := ""
 	result, err := watch.Run(ctx, watch.Request{
 		RunID:            run.ID,
 		PRNumber:         preflightResult.PullRequest.Number,
@@ -2573,7 +2585,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}, watch.Dependencies{
 		StopRequests: runStore,
 		ReviewEvidence: watch.ReviewEvidenceFunc(func(ctx context.Context, evidenceReq watch.ReviewEvidenceRequest) (reviewsource.Evidence, error) {
-			evidence, err := watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
+			return watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
 				Source:          req.source,
 				PRNumber:        evidenceReq.PRNumber,
 				BaseRepository:  preflightResult.PullRequest.BaseRepository,
@@ -2581,14 +2593,6 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 				HeadBranch:      preflightResult.PullRequest.HeadBranch,
 				ExpectedHeadSHA: evidenceReq.ExpectedHeadSHA,
 			})
-			if err == nil {
-				line := fmt.Sprintf("Review Source status: %s", evidence.State)
-				if line != lastReviewStatusLine {
-					fmt.Fprintln(ui.progress, line)
-					lastReviewStatusLine = line
-				}
-			}
-			return evidence, err
 		}),
 		Fetcher: watch.FetchFunc(func(ctx context.Context, _ int) (watch.FetchResult, error) {
 			fetchResult, issues, err := fetchWatchRound(ctx, req, loaded, preflightResult, ui.progress)
@@ -2603,6 +2607,9 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		Clock:   watchClock,
 		Sleeper: watchSleeper,
 		Sink:    store.JournalSink{Store: runStore},
+		Progress: func(progress watch.WaitProgress) {
+			fmt.Fprintln(ui.progress, formatReviewWaitProgress(progress))
+		},
 	})
 	stopped := isStopRequest(ctx, err)
 	if stopped {
