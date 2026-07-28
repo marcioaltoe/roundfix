@@ -29,8 +29,8 @@ func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected migration version, got %v", err)
 	}
-	if version != 11 {
-		t.Fatalf("expected migration version 11, got %d", version)
+	if version != schemaVersion {
+		t.Fatalf("expected migration version %d, got %d", schemaVersion, version)
 	}
 }
 
@@ -1809,8 +1809,8 @@ func TestOpenMigratesV3RunDatabasePreservingRunsAndRekeyingLocks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 11 {
-		t.Fatalf("expected user_version 11 after migration, got %d", version)
+	if version != schemaVersion {
+		t.Fatalf("expected user_version %d after migration, got %d", schemaVersion, version)
 	}
 
 	count, err := store.RunCount(ctx)
@@ -1964,8 +1964,8 @@ func TestOpenMigratesV4RunDatabasePreservingRunsLocksAndAddingStopRequests(t *te
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 11 {
-		t.Fatalf("expected user_version 11 after migration, got %d", version)
+	if version != schemaVersion {
+		t.Fatalf("expected user_version %d after migration, got %d", schemaVersion, version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -2117,8 +2117,8 @@ func TestOpenMigratesV5RunDatabasePreservingRunsLocksAndAddingWorkDir(t *testing
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 11 {
-		t.Fatalf("expected user_version 11 after migration, got %d", version)
+	if version != schemaVersion {
+		t.Fatalf("expected user_version %d after migration, got %d", schemaVersion, version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -2273,8 +2273,8 @@ func TestOpenMigratesV6RunDatabaseAddingSelectionDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 11 {
-		t.Fatalf("expected user_version 11 after migration, got %d", version)
+	if version != schemaVersion {
+		t.Fatalf("expected user_version %d after migration, got %d", schemaVersion, version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -2405,8 +2405,8 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 11 {
-		t.Fatalf("expected user_version 11 after migration, got %d", version)
+	if version != schemaVersion {
+		t.Fatalf("expected user_version %d after migration, got %d", schemaVersion, version)
 	}
 
 	active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
@@ -2547,7 +2547,8 @@ func TestSchemaReviewSkippedReaderRejectsNewerDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open Review Skipped schema fixture: %v", err)
 	}
-	if _, err := db.Exec(`PRAGMA user_version = 12`); err != nil {
+	newerVersion := schemaVersion + 1
+	if _, err := db.Exec(fmt.Sprintf(`PRAGMA user_version = %d`, newerVersion)); err != nil {
 		_ = db.Close()
 		t.Fatalf("advance fixture beyond supported schema: %v", err)
 	}
@@ -2561,7 +2562,7 @@ func TestSchemaReviewSkippedReaderRejectsNewerDatabase(t *testing.T) {
 	if !errors.As(err, &versionErr) {
 		t.Fatalf("expected SchemaVersionError for newer Run Database, got %T %v", err, err)
 	}
-	if versionErr.Found != 12 || versionErr.Supported != schemaVersion {
+	if versionErr.Found != newerVersion || versionErr.Supported != schemaVersion {
 		t.Fatalf("newer schema version diagnostic = %#v", versionErr)
 	}
 }

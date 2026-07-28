@@ -8121,12 +8121,19 @@ func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *te
 
 // seedOutdatedV9RunDatabase downgrades a freshly created Run Database to
 // schema v9 by reversing the v9→v10 migration, matching what a historical
-// binary left behind.
-func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) {
+// binary left behind. It returns the schema version this binary migrates to,
+// read from the freshly created Run Database before the downgrade, so callers
+// assert against the currently supported version instead of a literal that
+// every future migration would invalidate.
+func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) int {
 	t.Helper()
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
 		t.Fatalf("create Run Database: %v", err)
+	}
+	supportedVersion, err := runStore.MigrationVersion(context.Background())
+	if err != nil {
+		t.Fatalf("read supported schema version: %v", err)
 	}
 	if err := runStore.Close(); err != nil {
 		t.Fatalf("close Run Database: %v", err)
@@ -8148,13 +8155,14 @@ func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) {
 			t.Fatalf("downgrade Run Database to v9: %v", err)
 		}
 	}
+	return supportedVersion
 }
 
 func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withBranchIntegrity(t, nil, nil)
-	seedOutdatedV9RunDatabase(t, homeDir)
+	supportedVersion := seedOutdatedV9RunDatabase(t, homeDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -8179,8 +8187,8 @@ func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migrated schema version: %v", err)
 	}
-	if version != 10 {
-		t.Fatalf("expected schema version 10 after preflight migration, got %d", version)
+	if version != supportedVersion {
+		t.Fatalf("expected schema version %d after preflight migration, got %d", supportedVersion, version)
 	}
 }
 
