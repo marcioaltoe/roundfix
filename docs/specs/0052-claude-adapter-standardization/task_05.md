@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0052-claude-adapter-standardization
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -75,3 +75,58 @@ already has. Decline, no-input, and failure paths preserve every byte.
 
 `_prd.md` → User Story 2, Core Features 1–3, 7; `_techspec.md` → Build
 Order 5, API Contracts; ADR-0055.
+
+## Result
+
+Setup now evaluates Adapter Readiness for every distinct ACP Runtime referenced
+by the required Agent Selection Profiles. A typed lineage or version failure
+for an explicit Codex or Claude acpx override becomes a per-runtime migration:
+Setup builds the official pinned override, proves that exact command before
+offering it, and records one runtime-named confirmation per migration. Any
+decline aborts the acpx write, preserving the existing confirmation
+choreography and every target byte.
+
+Fresh-machine Claude seeding now writes the official pinned
+`@agentclientprotocol/claude-agent-acp@0.63.0` `npx` form. The migration merge
+continues to replace only the selected `agents` members, so unrelated root
+properties, unrelated agents, and their formatting survive. The existing
+default-runtime validation gate remains ahead of the new multi-runtime
+evaluation.
+
+Focused checks used a disposable cache outside the worktree:
+
+- Pre-change signal:
+  `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260728T230436Z_3c8ceccb79af5226/.tmp/gocache go test ./internal/cli -run '^(TestRunSetupFreshMachineAcceptsOffers|TestRunSetupClaudeAdapterMigrationAcceptAndDecline|TestRunSetupMigratesBothStaleAdapterOverrides)$' -count=1`
+  failed because Setup emitted no Claude migration prompt, proposed only the
+  Codex migration, and did not seed the pinned Claude override.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli -run '^(TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets|TestRunSetupClaudeAdapterMigrationAcceptAndDecline|TestRunSetupMigratesBothStaleAdapterOverrides)$' -count=1`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli -run '^(TestRunSetup(AdapterMigration.*|ClaudeAdapterMigration.*|MigratesBoth.*|FreshMachine.*|MergesACPX.*|ProfileProofs.*|ProfileProofFailure.*|ProfileCleanup.*|ProfileWriteFailure.*|NoInputProfile.*|ReportsAdapterFailures.*))$' -count=1`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli -run '^(TestRunSetup(HealthyMachineIsIdempotent|NewerACPXIsReadyWithoutInstall|ProfilePersistenceMatchesSubsequentValidation|ProfileProofUsesProposedProfilesAndWorkDir|AcceptsConfiguredEmptyReasoningEffort|RejectsMissingConfiguredAgentSelection|MismatchedACPXUpgradeOffer|DeclinedOffersReportNoWrites|NoInputSkipsOffers|ExitCodes)|TestSetupCommandCompatibility)$' -count=1`
+  — passed.
+- `rtk git -c core.fsmonitor=false diff --check` — passed.
+- `rtk proxy rg -n '"claude-agent-acp"' internal/cli/setup.go` — exited `1`
+  with no matches.
+
+Acceptance evidence:
+
+1. `TestRunSetupClaudeAdapterMigrationAcceptAndDecline` covers a legacy Claude
+   override, a prompt naming `claude`, official-proposal re-proof, accepted
+   persistence, and byte-identical decline.
+2. `TestRunSetupFreshMachineAcceptsOffers` asserts the persisted Claude
+   command is `npx` with the official package and `0.63.0` pin.
+3. `TestRunSetupMigratesBothStaleAdapterOverrides` starts with stale Claude
+   and Codex entries, observes one prompt for each runtime, and verifies both
+   official pinned forms in one write.
+4. `TestRunSetupAdapterMigrationPersistsSupportedCommand` continues to assert
+   the official Codex package at the raised `1.1.5` pin and confirms the
+   proposal was re-proved.
+5. The Claude accept/decline table, the both-runtime case,
+   `TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes`, and
+   `TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets` cover
+   unrelated-byte preservation across accept, decline, `--no-input`,
+   proposal-proof failure, and write failure.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.

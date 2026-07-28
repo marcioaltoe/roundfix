@@ -68,18 +68,24 @@ type setupFileProposal struct {
 }
 
 type setupProposal struct {
-	acpx             setupFileProposal
-	user             setupFileProposal
-	project          *setupFileProposal
-	config           roundconfig.Config
-	commandOverrides map[string]string
-	adapterMigration bool
+	acpx                     setupFileProposal
+	user                     setupFileProposal
+	project                  *setupFileProposal
+	config                   roundconfig.Config
+	commandOverrides         map[string]string
+	adapterMigrations        []setupAdapterMigration
+	localACPXOverrideChanged bool
 }
 
 type acpxAgentOverride struct {
 	Agent   string
 	Command string
 	Args    []string
+}
+
+type setupAdapterMigration struct {
+	RuntimeID string
+	Override  acpxAgentOverride
 }
 
 func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -131,46 +137,66 @@ func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Write
 }
 
 func (runner *setupRunner) buildProposal(ctx context.Context) (setupProposal, bool) {
-	runtime, err := runtimeForConfiguredAgent(runner.loaded.Config)
+	if _, err := runtimeForConfiguredAgent(runner.loaded.Config); err != nil {
+		runner.report("adapter", "failed", err.Error())
+		return setupProposal{}, false
+	}
+	runtimes, err := doctorAdapterRuntimes(runner.loaded.Config)
 	if err != nil {
 		runner.report("adapter", "failed", err.Error())
 		return setupProposal{}, false
 	}
+	if len(runtimes) == 0 {
+		runner.report("adapter", "failed", "effective required Agent Selection Profiles reference no ACP Runtime")
+		return setupProposal{}, false
+	}
 	proposal := setupProposal{commandOverrides: map[string]string{}}
-	evidence, adapterErr := runner.deps.checkAdapter(ctx, runtime)
-	if adapterErr != nil {
-		if strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom") != "codex" || !staleCodexAdapter(adapterErr) {
+	adapterDetails := make([]string, 0, len(runtimes))
+	for _, runtime := range runtimes {
+		evidence, adapterErr := runner.deps.checkAdapter(ctx, runtime)
+		if adapterErr == nil {
+			adapterDetails = append(adapterDetails, runtime.ID+": "+adapterEvidenceDetail(evidence))
+			continue
+		}
+
+		runtimeID := strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom")
+		override, official := officialACPXOverride(runtimeID)
+		if !official || !staleAdapter(adapterErr) {
 			runner.reportHealthResult(setupAdapterFailureResult(adapterErr))
 			return setupProposal{}, false
 		}
-		acpxProposal, ok := runner.readFileProposal("acpx agents override", filepath.Join(runner.loaded.HomeDir, ".acpx", "config.json"), []byte("{}\n"))
-		if !ok {
-			return setupProposal{}, false
+		if proposal.acpx.path == "" {
+			acpxProposal, ok := runner.readFileProposal("acpx agents override", filepath.Join(runner.loaded.HomeDir, ".acpx", "config.json"), []byte("{}\n"))
+			if !ok {
+				return setupProposal{}, false
+			}
+			proposal.acpx = acpxProposal
 		}
-		hasCodex, err := acpxConfigHasAgent(acpxProposal.after, "codex")
+		hasOverride, err := acpxConfigHasAgent(proposal.acpx.after, runtimeID)
 		if err != nil {
-			runner.report("acpx agents override", "failed", fmt.Sprintf("parse %s: %v", acpxProposal.path, err))
+			runner.report("acpx agents override", "failed", fmt.Sprintf("parse %s: %v", proposal.acpx.path, err))
 			return setupProposal{}, false
 		}
-		if !hasCodex {
+		if !hasOverride {
 			runner.reportHealthResult(setupAdapterFailureResult(adapterErr))
 			return setupProposal{}, false
 		}
 
-		proposal.adapterMigration = true
-		proposal.commandOverrides["codex"] = agent.CodexAdapterCommand()
+		proposedCommand := acpxOverrideCommand(override)
 		proposedRuntime := runtime
 		proposedRuntime.Protocol = agent.ProtocolStdio
-		proposedRuntime.Command = agent.CodexAdapterCommand()
+		proposedRuntime.Command = proposedCommand
 		evidence, adapterErr = runner.deps.checkAdapter(ctx, proposedRuntime)
 		if adapterErr != nil {
 			runner.reportHealthResult(setupAdapterFailureResult(adapterErr))
 			return setupProposal{}, false
 		}
-		proposal.acpx = acpxProposal
-		runner.report("adapter", "migration proposed", adapterEvidenceDetail(evidence))
-	} else {
-		runner.reportHealthResult(CheckResult{Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: adapterEvidenceDetail(evidence)})
+		proposal.adapterMigrations = append(proposal.adapterMigrations, setupAdapterMigration{
+			RuntimeID: runtimeID,
+			Override:  override,
+		})
+		proposal.commandOverrides[runtimeID] = proposedCommand
+		adapterDetails = append(adapterDetails, runtime.ID+": "+adapterEvidenceDetail(evidence))
 	}
 
 	if proposal.acpx.path == "" {
@@ -180,22 +206,34 @@ func (runner *setupRunner) buildProposal(ctx context.Context) (setupProposal, bo
 			return setupProposal{}, false
 		}
 	}
-	overrides := runner.localACPXAgentOverrides()
-	if proposal.adapterMigration {
-		overrides = append(overrides, officialCodexACPXOverride())
+	migrationOverrides := make([]acpxAgentOverride, 0, len(proposal.adapterMigrations))
+	for _, migration := range proposal.adapterMigrations {
+		migrationOverrides = append(migrationOverrides, migration.Override)
 	}
-	updated, changed, err := mergeACPXAgentOverrides(proposal.acpx.after, overrides)
+	updated, _, err := mergeACPXAgentOverrides(proposal.acpx.after, migrationOverrides)
+	if err != nil {
+		runner.report("acpx agents override", "failed", fmt.Sprintf("merge %s: %v", proposal.acpx.path, err))
+		return setupProposal{}, false
+	}
+	localOverrides := runner.localACPXAgentOverrides()
+	updated, localChanged, err := mergeACPXAgentOverrides(updated, localOverrides)
 	if err != nil {
 		runner.report("acpx agents override", "failed", fmt.Sprintf("merge %s: %v", proposal.acpx.path, err))
 		return setupProposal{}, false
 	}
 	proposal.acpx.after = updated
-	proposal.acpx.changed = changed
-	for _, override := range overrides {
-		if changed {
+	proposal.acpx.changed = !bytes.Equal(proposal.acpx.before, proposal.acpx.after)
+	proposal.localACPXOverrideChanged = localChanged
+	for _, override := range localOverrides {
+		if localChanged {
 			proposal.commandOverrides[override.Agent] = acpxOverrideCommand(override)
 		}
 	}
+	adapterStatus := string(CheckStatusOK)
+	if len(proposal.adapterMigrations) > 0 {
+		adapterStatus = "migration proposed"
+	}
+	runner.report("adapter", adapterStatus, strings.Join(adapterDetails, " | "))
 
 	var ok bool
 	proposal.user, ok = runner.readFileProposal("User Config", runner.loaded.UserConfigPath, []byte(roundconfig.DefaultConfigYAML()))
@@ -327,10 +365,31 @@ func (runner *setupRunner) authorizeProposal(ctx context.Context, proposal setup
 		}
 		prompt := "Create " + file.label + " at " + file.path + "?"
 		if file.label == "acpx agents override" {
-			prompt = "Write acpx local adapter overrides to " + file.path + "?"
-			if proposal.adapterMigration {
-				prompt = "Migrate stale Codex adapter override in " + file.path + " to " + agent.CodexAdapterCommand() + "?"
+			if len(proposal.adapterMigrations) > 0 {
+				migrationsAccepted := true
+				for _, migration := range proposal.adapterMigrations {
+					accepted, err := runner.deps.confirm(
+						ctx,
+						runner.stderr,
+						"Migrate stale "+migration.RuntimeID+" adapter override in "+file.path+" to "+acpxOverrideCommand(migration.Override)+"?",
+					)
+					if err != nil {
+						runner.report(file.label, "failed", err.Error())
+						return false
+					}
+					if !accepted {
+						migrationsAccepted = false
+					}
+				}
+				if !migrationsAccepted {
+					runner.report(file.label, "offered: declined", "would update "+file.path)
+					return false
+				}
+				if !proposal.localACPXOverrideChanged {
+					continue
+				}
 			}
+			prompt = "Write acpx local adapter overrides to " + file.path + "?"
 		}
 		accepted, err := runner.deps.confirm(ctx, runner.stderr, prompt)
 		if err != nil {
@@ -361,6 +420,25 @@ func officialCodexACPXOverride() acpxAgentOverride {
 	}
 }
 
+func officialClaudeACPXOverride() acpxAgentOverride {
+	return acpxAgentOverride{
+		Agent:   "claude",
+		Command: "npx",
+		Args:    []string{"-y", agent.ClaudeAdapterPackage + "@" + agent.PinnedClaudeAdapterVersion},
+	}
+}
+
+func officialACPXOverride(runtimeID string) (acpxAgentOverride, bool) {
+	switch strings.TrimSuffix(strings.TrimSpace(runtimeID), "-custom") {
+	case "codex":
+		return officialCodexACPXOverride(), true
+	case "claude":
+		return officialClaudeACPXOverride(), true
+	default:
+		return acpxAgentOverride{}, false
+	}
+}
+
 func acpxOverrideCommand(override acpxAgentOverride) string {
 	parts := append([]string{override.Command}, override.Args...)
 	return strings.Join(parts, " ")
@@ -377,7 +455,7 @@ func acpxConfigHasAgent(content []byte, name string) (bool, error) {
 	return ok, nil
 }
 
-func staleCodexAdapter(err error) bool {
+func staleAdapter(err error) bool {
 	var lineage *agent.AdapterLineageError
 	if errors.As(err, &lineage) {
 		return true
@@ -455,7 +533,7 @@ func (runner *setupRunner) checkACPX(ctx context.Context) {
 
 func (runner *setupRunner) localACPXAgentOverrides() []acpxAgentOverride {
 	candidates := []acpxAgentOverride{
-		{Agent: "claude", Command: "claude-agent-acp"},
+		officialClaudeACPXOverride(),
 		{Agent: "opencode", Command: "opencode", Args: []string{"acp"}},
 	}
 	overrides := make([]acpxAgentOverride, 0, len(candidates))

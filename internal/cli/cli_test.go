@@ -2920,7 +2920,7 @@ func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
 func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
-	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
+	fake.paths["npx"] = "/bin/npx"
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2949,7 +2949,15 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 		t.Fatalf("expected in-memory ACPX proposal without config init side effects, got %d init calls", fake.acpxInitCalls)
 	}
 	acpxConfig := fake.files[fake.acpxConfigPath]
-	if strings.Contains(acpxConfig, `"codex"`) || !strings.Contains(acpxConfig, `"command": "claude-agent-acp"`) {
+	for _, want := range []string{
+		`"command": "npx"`,
+		`"args": ["-y","` + agent.ClaudeAdapterPackage + `@` + agent.PinnedClaudeAdapterVersion + `"]`,
+	} {
+		if !strings.Contains(acpxConfig, want) {
+			t.Fatalf("expected official pinned Claude override containing %q, got %s", want, acpxConfig)
+		}
+	}
+	if strings.Contains(acpxConfig, `"codex"`) || strings.Contains(acpxConfig, `"command": "claude-agent-acp"`) {
 		t.Fatalf("expected only the non-Codex local adapter override, got %s", acpxConfig)
 	}
 	for _, want := range []string{"acpx agents override diff:", "--- ", "+++ ", "+  \"agents\""} {
@@ -3336,8 +3344,237 @@ func TestRunSetupAdapterMigrationPersistsSupportedCommand(t *testing.T) {
 	if strings.Contains(content, `"command": "codex-acp"`) {
 		t.Fatalf("migrated ACPX config retained bare PATH override:\n%s", content)
 	}
-	if len(fake.adapterRequests) != 2 || fake.adapterRequests[1].Command != agent.CodexAdapterCommand() {
-		t.Fatalf("adapter proof requests = %#v, want current then deterministic proposal", fake.adapterRequests)
+	foundProposalProof := false
+	for _, request := range fake.adapterRequests {
+		if strings.TrimSuffix(request.ID, "-custom") == "codex" && request.Command == agent.CodexAdapterCommand() {
+			foundProposalProof = true
+		}
+	}
+	if !foundProposalProof {
+		t.Fatalf("adapter proof requests = %#v, want deterministic Codex proposal proof", fake.adapterRequests)
+	}
+}
+
+func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
+	tests := []struct {
+		name   string
+		accept bool
+	}{
+		{name: "accept", accept: true},
+		{name: "decline", accept: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake := newSetupFakeDeps()
+			const unrelated = "  \"theme\": \"sentinel\",\n"
+			fake.files[fake.acpxConfigPath] = "{\n" + unrelated + "  \"agents\": {\n    \"claude\": {\n      \"command\": \"claude-code-acp\"\n    }\n  }\n}\n"
+			fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
+			fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
+			fake.adapterErrors = map[string]error{
+				"claude": &agent.AdapterLineageError{
+					Runtime:         "claude",
+					Command:         "claude-code-acp",
+					Package:         "@zed-industries/claude-code-acp",
+					Version:         "0.18.0",
+					RequiredPackage: agent.ClaudeAdapterPackage,
+					RequiredVersion: agent.PinnedClaudeAdapterVersion,
+					Install:         agent.ClaudeAdapterInstallCommand(),
+					Legacy:          true,
+				},
+			}
+			fake.confirm = func(context.Context, io.Writer, string) (bool, error) {
+				return tt.accept, nil
+			}
+			before := cloneSetupFiles(fake.files)
+			withSetupFakeDeps(t, fake)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"setup"}, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+			}
+			if len(fake.prompts) != 1 || !strings.Contains(strings.ToLower(fake.prompts[0]), "claude") {
+				t.Fatalf("migration prompts = %v, want one prompt naming claude", fake.prompts)
+			}
+			if !tt.accept {
+				if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 {
+					t.Fatalf("declined Claude migration mutated targets: before=%v after=%v writes=%v", before, fake.files, fake.writeCalls)
+				}
+				return
+			}
+			content := fake.files[fake.acpxConfigPath]
+			for _, want := range []string{
+				unrelated,
+				`"command": "npx"`,
+				`"args": ["-y","` + agent.ClaudeAdapterPackage + `@` + agent.PinnedClaudeAdapterVersion + `"]`,
+			} {
+				if !strings.Contains(content, want) {
+					t.Fatalf("migrated Claude config missing %q:\n%s", want, content)
+				}
+			}
+			if strings.Contains(content, `"command": "claude-code-acp"`) {
+				t.Fatalf("migrated Claude config retained legacy override:\n%s", content)
+			}
+			foundProof := false
+			for _, request := range fake.adapterRequests {
+				if strings.TrimSuffix(request.ID, "-custom") == "claude" && request.Command == agent.ClaudeAdapterCommand() {
+					foundProof = true
+				}
+			}
+			if !foundProof {
+				t.Fatalf("adapter proof requests = %#v, want official Claude proposal proof", fake.adapterRequests)
+			}
+		})
+	}
+}
+
+func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing.T) {
+	newFake := func() *setupFakeDeps {
+		fake := newSetupFakeDeps()
+		fake.files[fake.acpxConfigPath] = "{\n  \"theme\": \"sentinel\",\n  \"agents\": {\n    \"claude\": {\n      \"command\": \"claude-code-acp\"\n    }\n  }\n}\n"
+		fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
+		fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
+		fake.adapterErrors = map[string]error{
+			"claude": &agent.AdapterLineageError{
+				Runtime:         "claude",
+				Command:         "claude-code-acp",
+				Package:         "@zed-industries/claude-code-acp",
+				Version:         "0.18.0",
+				RequiredPackage: agent.ClaudeAdapterPackage,
+				RequiredVersion: agent.PinnedClaudeAdapterVersion,
+				Install:         agent.ClaudeAdapterInstallCommand(),
+				Legacy:          true,
+			},
+		}
+		return fake
+	}
+
+	t.Run("no input", func(t *testing.T) {
+		fake := newFake()
+		before := cloneSetupFiles(fake.files)
+		withSetupFakeDeps(t, fake)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+		}
+		if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
+			t.Fatalf("--no-input mutated targets: before=%v after=%v writes=%v prompts=%v", before, fake.files, fake.writeCalls, fake.prompts)
+		}
+	})
+
+	t.Run("proposal proof failure", func(t *testing.T) {
+		fake := newFake()
+		fake.adapterCommandErrors = map[string]error{
+			agent.ClaudeAdapterCommand(): errors.New("proposal proof denied"),
+		}
+		before := cloneSetupFiles(fake.files)
+		withSetupFakeDeps(t, fake)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+		}
+		if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 {
+			t.Fatalf("proposal proof failure mutated targets: before=%v after=%v writes=%v", before, fake.files, fake.writeCalls)
+		}
+	})
+
+	t.Run("write failure", func(t *testing.T) {
+		fake := newFake()
+		fake.writeErrors = map[string]error{
+			fake.acpxConfigPath: errors.New("disk full"),
+		}
+		before := cloneSetupFiles(fake.files)
+		withSetupFakeDeps(t, fake)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+		}
+		if !reflect.DeepEqual(fake.files, before) || !reflect.DeepEqual(fake.writeCalls, []string{fake.acpxConfigPath}) {
+			t.Fatalf("write failure mutated targets: before=%v after=%v writes=%v", before, fake.files, fake.writeCalls)
+		}
+	})
+}
+
+func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
+	fake := newSetupFakeDeps()
+	const unrelated = "  \"theme\": {\"color\": \"blue\"},\n"
+	const customAgent = "    \"custom\": {\n      \"command\": \"existing-custom\"\n    },\n"
+	fake.files[fake.acpxConfigPath] = "{\n" + unrelated + "  \"agents\": {\n" + customAgent +
+		"    \"claude\": {\n      \"command\": \"claude-code-acp\"\n    },\n" +
+		"    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
+	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
+	fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
+	fake.adapterErrors = map[string]error{
+		"claude": &agent.AdapterLineageError{
+			Runtime:         "claude",
+			Command:         "claude-code-acp",
+			Package:         "@zed-industries/claude-code-acp",
+			Version:         "0.18.0",
+			RequiredPackage: agent.ClaudeAdapterPackage,
+			RequiredVersion: agent.PinnedClaudeAdapterVersion,
+			Install:         agent.ClaudeAdapterInstallCommand(),
+			Legacy:          true,
+		},
+		"codex": &agent.AdapterVersionError{
+			Runtime:         "codex",
+			Command:         "codex-acp",
+			Package:         agent.CodexAdapterPackage,
+			FoundVersion:    "1.1.4",
+			RequiredPackage: agent.CodexAdapterPackage,
+			RequiredVersion: agent.PinnedCodexAdapterVersion,
+			Install:         agent.CodexAdapterInstallCommand(),
+		},
+	}
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if len(fake.prompts) != 2 {
+		t.Fatalf("migration prompts = %v, want one per runtime", fake.prompts)
+	}
+	for _, runtimeID := range []string{"claude", "codex"} {
+		found := false
+		for _, prompt := range fake.prompts {
+			if strings.Contains(strings.ToLower(prompt), runtimeID) {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("migration prompts = %v, want prompt naming %s", fake.prompts, runtimeID)
+		}
+	}
+	content := fake.files[fake.acpxConfigPath]
+	for _, want := range []string{
+		unrelated,
+		customAgent,
+		`"` + agent.ClaudeAdapterPackage + `@` + agent.PinnedClaudeAdapterVersion + `"`,
+		`"` + agent.CodexAdapterPackage + `@` + agent.PinnedCodexAdapterVersion + `"`,
+	} {
+		if !strings.Contains(content, want) {
+			t.Fatalf("migrated config missing %q:\n%s", want, content)
+		}
+	}
+	if strings.Contains(content, `"command": "claude-code-acp"`) || strings.Contains(content, `"command": "codex-acp"`) {
+		t.Fatalf("migrated config retained stale overrides:\n%s", content)
 	}
 }
 
@@ -3436,7 +3673,7 @@ func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 
 func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) {
 	fake := newSetupFakeDeps()
-	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
+	fake.paths["npx"] = "/bin/npx"
 	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
 	fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
 	unrelated := "  \"theme\": {\n    \"color\": \"blue\",\n    \"nested\": [1, 2, 3]\n  }"
@@ -3452,7 +3689,13 @@ func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) 
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
 	}
 	acpxConfig := fake.files[fake.acpxConfigPath]
-	for _, want := range []string{unrelated, existingAgent, `"claude"`, `"command": "claude-agent-acp"`} {
+	for _, want := range []string{
+		unrelated,
+		existingAgent,
+		`"claude"`,
+		`"command": "npx"`,
+		`"args": ["-y","` + agent.ClaudeAdapterPackage + `@` + agent.PinnedClaudeAdapterVersion + `"]`,
+	} {
 		if !strings.Contains(acpxConfig, want) {
 			t.Fatalf("expected merged config to preserve/include %q, got %s", want, acpxConfig)
 		}
@@ -9679,30 +9922,32 @@ func TestRunOperationalCommandRejectsInvalidConfigAndArtifactDirectory(t *testin
 }
 
 type setupFakeDeps struct {
-	homeDir           string
-	gitRoot           string
-	config            roundconfig.Config
-	userConfigPath    string
-	projectConfigPath string
-	acpxConfigPath    string
-	nodeVersion       string
-	nodeErr           error
-	acpxVersion       string
-	acpxErr           error
-	adapterEvidence   agent.AdapterEvidence
-	adapterErr        error
-	probeErr          error
-	paths             map[string]string
-	files             map[string]string
-	installCalls      []string
-	initScopes        []string
-	acpxInitCalls     int
-	writeCalls        []string
-	writeErrors       map[string]error
-	adapterRequests   []agent.RuntimeSpec
-	probeRequests     []agent.ProbeRequest
-	prompts           []string
-	confirm           func(context.Context, io.Writer, string) (bool, error)
+	homeDir              string
+	gitRoot              string
+	config               roundconfig.Config
+	userConfigPath       string
+	projectConfigPath    string
+	acpxConfigPath       string
+	nodeVersion          string
+	nodeErr              error
+	acpxVersion          string
+	acpxErr              error
+	adapterEvidence      agent.AdapterEvidence
+	adapterErr           error
+	adapterErrors        map[string]error
+	adapterCommandErrors map[string]error
+	probeErr             error
+	paths                map[string]string
+	files                map[string]string
+	installCalls         []string
+	initScopes           []string
+	acpxInitCalls        int
+	writeCalls           []string
+	writeErrors          map[string]error
+	adapterRequests      []agent.RuntimeSpec
+	probeRequests        []agent.ProbeRequest
+	prompts              []string
+	confirm              func(context.Context, io.Writer, string) (bool, error)
 }
 
 func newSetupFakeDeps() *setupFakeDeps {
@@ -9776,7 +10021,14 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 		},
 		checkAdapter: func(_ context.Context, runtime agent.RuntimeSpec) (agent.AdapterEvidence, error) {
 			fake.adapterRequests = append(fake.adapterRequests, runtime)
-			if fake.adapterErr != nil && strings.TrimSpace(runtime.Command) == "" {
+			runtimeID := strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom")
+			if err := fake.adapterCommandErrors[strings.TrimSpace(runtime.Command)]; err != nil {
+				return agent.AdapterEvidence{}, err
+			}
+			if err := fake.adapterErrors[runtimeID]; err != nil && strings.TrimSpace(runtime.Command) == "" {
+				return agent.AdapterEvidence{}, err
+			}
+			if fake.adapterErr != nil && runtimeID == "codex" && strings.TrimSpace(runtime.Command) == "" {
 				return agent.AdapterEvidence{}, fake.adapterErr
 			}
 			evidence := fake.adapterEvidence
