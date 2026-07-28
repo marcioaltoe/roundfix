@@ -5808,6 +5808,299 @@ func TestRunWatchReviewIssuesKnownAfterFetchedZero(t *testing.T) {
 	}
 }
 
+func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T) {
+	homeDir, repoDir := withReviewGitWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withRealReviewPreflight(t, repoDir, true)
+	withReviewSpecGitRunner(t, preflight.ExecGitRunner{})
+	withCommitter(t, daemon.GitCommitter{})
+	withFetchReviewItems(t, nil)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+
+	parentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	var evidenceHeads []string
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		evidenceHeads = append(evidenceHeads, req.ExpectedHeadSHA)
+		if req.ExpectedHeadSHA != parentHead {
+			t.Fatalf("inherited artifact head %s must not be polled", req.ExpectedHeadSHA)
+		}
+		if len(evidenceHeads) == 1 {
+			return reviewedEvidence(parentHead), nil
+		}
+		return verifiedEvidence(parentHead), nil
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"watch", "--source", "coderabbit", "--pr", "123",
+		"--until-clean", "--max-rounds", "1", "--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("artifact Evidence inheritance exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if len(evidenceHeads) != 3 {
+		t.Fatalf("artifact Evidence calls = %v, want initial, parent verification, and zero-thread parent refresh", evidenceHeads)
+	}
+	if pusher.calls != 1 {
+		t.Fatalf("artifact-only descendant Final Push calls = %d, want 1", pusher.calls)
+	}
+	currentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	if currentHead == parentHead {
+		t.Fatal("expected Daemon review-artifact commit to advance HEAD")
+	}
+	if got := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD^")); got != parentHead {
+		t.Fatalf("artifact commit parent = %s, want verified head %s", got, parentHead)
+	}
+	if got := strings.TrimSpace(gitImplementOutput(t, repoDir, "show", "-s", "--format=%s", "HEAD")); got != daemon.ReviewArtifactsCommitMessage(1, "123") {
+		t.Fatalf("artifact commit subject = %q", got)
+	}
+
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	var outcome runevent.OutcomePayload
+	var inherited runevent.ReviewStatusPayload
+	for _, journaled := range events {
+		switch journaled.Event.Kind {
+		case runevent.KindDaemonOutcome:
+			if err := json.Unmarshal(journaled.Event.Payload, &outcome); err != nil {
+				t.Fatalf("decode inherited outcome: %v", err)
+			}
+		case runevent.KindDaemonReviewStatus:
+			var payload runevent.ReviewStatusPayload
+			if err := json.Unmarshal(journaled.Event.Payload, &payload); err != nil {
+				t.Fatalf("decode inherited Review Source Evidence: %v", err)
+			}
+			if payload.Kind == string(reviewsource.EvidenceKindArtifactOnlyDescendant) {
+				inherited = payload
+			}
+		}
+	}
+	if outcome.EvidenceKind != string(reviewsource.EvidenceKindArtifactOnlyDescendant) ||
+		outcome.EvidenceHeadSHA != currentHead ||
+		outcome.VerifiedHeadSHA != parentHead {
+		t.Fatalf("inherited outcome = %#v", outcome)
+	}
+	if inherited.ExpectedHeadSHA != currentHead ||
+		inherited.ObservedHeadSHA != currentHead ||
+		inherited.ParentHeadSHA != parentHead {
+		t.Fatalf("inherited Evidence payload = %#v", inherited)
+	}
+}
+
+func TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit
+	}{
+		{
+			name: "Mixed",
+			setup: func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit {
+				parent := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+				mustMkdir(t, filepath.Join(reviewRoot, "round-001"))
+				mustWrite(t, filepath.Join(reviewRoot, "round-001", "issue_001.md"), "artifact\n")
+				mustWrite(t, filepath.Join(repoDir, "README.md"), "mixed code path\n")
+				gitImplement(t, repoDir, "add", "-A")
+				gitImplement(t, repoDir, "commit", "-m", message)
+				return reviewsource.ArtifactCommit{CommitSHA: strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")), ParentSHA: parent, ReviewRoot: reviewRoot, Message: message}
+			},
+		},
+		{
+			name: "Parent",
+			setup: func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit {
+				mustMkdir(t, filepath.Join(reviewRoot, "round-001"))
+				mustWrite(t, filepath.Join(reviewRoot, "round-001", "issue_001.md"), "artifact\n")
+				gitImplement(t, repoDir, "add", "-A")
+				gitImplement(t, repoDir, "commit", "-m", message)
+				return reviewsource.ArtifactCommit{CommitSHA: strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")), ParentSHA: strings.Repeat("0", 40), ReviewRoot: reviewRoot, Message: message}
+			},
+		},
+		{
+			name: "Empty",
+			setup: func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit {
+				parent := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+				gitImplement(t, repoDir, "commit", "--allow-empty", "-m", message)
+				return reviewsource.ArtifactCommit{CommitSHA: strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")), ParentSHA: parent, ReviewRoot: reviewRoot, Message: message}
+			},
+		},
+		{
+			name: "User",
+			setup: func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit {
+				parent := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+				mustMkdir(t, filepath.Join(reviewRoot, "round-001"))
+				mustWrite(t, filepath.Join(reviewRoot, "round-001", "issue_001.md"), "artifact\n")
+				gitImplement(t, repoDir, "add", "-A")
+				gitImplement(t, repoDir, "commit", "-m", "docs: user-authored review notes")
+				return reviewsource.ArtifactCommit{CommitSHA: strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")), ParentSHA: parent, ReviewRoot: reviewRoot, Message: message}
+			},
+		},
+		{
+			name: "Root",
+			setup: func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit {
+				parent := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+				mustMkdir(t, filepath.Join(reviewRoot, "round-001"))
+				mustWrite(t, filepath.Join(reviewRoot, "round-001", "issue_001.md"), "artifact\n")
+				gitImplement(t, repoDir, "add", "-A")
+				gitImplement(t, repoDir, "commit", "-m", message)
+				return reviewsource.ArtifactCommit{
+					CommitSHA:  strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")),
+					ParentSHA:  parent,
+					ReviewRoot: filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-other"),
+					Message:    message,
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, repoDir := withReviewGitWorkspace(t)
+			withReviewSpecGitRunner(t, preflight.ExecGitRunner{})
+			reviewRoot := defaultReviewRootForRepo(repoDir, "123")
+			message := daemon.ReviewArtifactsCommitMessage(1, "123")
+			commit := tt.setup(t, repoDir, reviewRoot, message)
+			withWatchEvidence(t, func(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+				t.Fatal("structural artifact refusal must happen before the zero-thread Evidence refresh")
+				return reviewsource.Evidence{}, nil
+			})
+
+			evidence, inherited, err := inheritReviewArtifactEvidence(context.Background(), reviewArtifactEvidenceRequest{
+				Source:         reviewsource.SourceCodeRabbit,
+				PRNumber:       "123",
+				BaseRepository: "owner/project",
+				HeadRepository: "owner/project",
+				HeadBranch:     "feature/review",
+				GitRoot:        repoDir,
+				Commit:         commit,
+				ParentHeadSHA:  commit.ParentSHA,
+				ParentEvidence: verifiedEvidence(commit.ParentSHA),
+			})
+			if err != nil {
+				t.Fatalf("refusal proof error: %v", err)
+			}
+			if inherited || evidence.State != "" {
+				t.Fatalf("refusal inherited=%v Evidence=%#v", inherited, evidence)
+			}
+		})
+	}
+}
+
+func TestWatchArtifactEvidenceMixedFallsBackToCurrentHeadPolling(t *testing.T) {
+	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	sleeper := &fakeWatchSleeper{clock: clock}
+	var evidenceHeads []string
+	published := 0
+	result, err := watch.Run(context.Background(), watch.Request{
+		PRNumber:         "123",
+		HeadSHA:          "parent",
+		UntilClean:       true,
+		MaxRounds:        1,
+		PollInterval:     time.Second,
+		QuietPeriod:      0,
+		ReviewTimeout:    5 * time.Second,
+		CheckGracePeriod: time.Second,
+	}, watch.Dependencies{
+		ReviewEvidence: watch.ReviewEvidenceFunc(func(_ context.Context, req watch.ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+			evidenceHeads = append(evidenceHeads, req.ExpectedHeadSHA)
+			if len(evidenceHeads) == 1 {
+				return reviewedEvidence(req.ExpectedHeadSHA), nil
+			}
+			return verifiedEvidence(req.ExpectedHeadSHA), nil
+		}),
+		Artifacts: watch.ArtifactPublishFunc(func(context.Context, watch.ArtifactPublishRequest) (watch.ArtifactPublication, error) {
+			published++
+			return watch.ArtifactPublication{
+				Commit: reviewsource.ArtifactCommit{
+					CommitSHA:  "artifact",
+					ParentSHA:  "parent",
+					ReviewRoot: "/repo/docs/specs/_reviews/pr-123",
+					Message:    daemon.ReviewArtifactsCommitMessage(1, "123"),
+				},
+			}, nil
+		}),
+		Fetcher:  watch.FetchFunc(func(context.Context, int) (watch.FetchResult, error) { return watch.FetchResult{Round: 1}, nil }),
+		Resolver: watch.ResolveFunc(func(context.Context) (watch.ResolveResult, error) { return watch.ResolveResult{}, nil }),
+		Clock:    clock,
+		Sleeper:  sleeper,
+	})
+	if err != nil {
+		t.Fatalf("watch fallback error: %v", err)
+	}
+	if result.Outcome != store.StateClean ||
+		result.Evidence.Kind != reviewsource.EvidenceKindCheckRun ||
+		result.VerifiedHeadSHA != "artifact" {
+		t.Fatalf("watch fallback result = %#v", result)
+	}
+	if published != 1 {
+		t.Fatalf("artifact publisher calls = %d, want 1", published)
+	}
+	wantHeads := []string{"parent", "parent", "artifact"}
+	if !reflect.DeepEqual(evidenceHeads, wantHeads) {
+		t.Fatalf("Evidence polling heads = %v, want %v", evidenceHeads, wantHeads)
+	}
+}
+
+func TestRunWatchArtifactEvidenceThreadRefusesAndFallsBack(t *testing.T) {
+	homeDir, repoDir := withReviewGitWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withRealReviewPreflight(t, repoDir, true)
+	withReviewSpecGitRunner(t, preflight.ExecGitRunner{})
+	withCommitter(t, daemon.GitCommitter{})
+	withFetchReviewItems(t, nil)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+
+	parentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	var evidenceHeads []string
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		evidenceHeads = append(evidenceHeads, req.ExpectedHeadSHA)
+		switch len(evidenceHeads) {
+		case 1:
+			return reviewedEvidence(req.ExpectedHeadSHA), nil
+		case 2:
+			return verifiedEvidence(req.ExpectedHeadSHA), nil
+		case 3:
+			if req.ExpectedHeadSHA != parentHead {
+				t.Fatalf("zero-thread refresh head = %s, want parent %s", req.ExpectedHeadSHA, parentHead)
+			}
+			return reviewedEvidence(req.ExpectedHeadSHA), nil
+		default:
+			return verifiedEvidence(req.ExpectedHeadSHA), nil
+		}
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"watch", "--source", "coderabbit", "--pr", "123",
+		"--until-clean", "--max-rounds", "1", "--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("unresolved-thread fallback exit = %d; stderr=%q", code, stderr.String())
+	}
+	currentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	wantHeads := []string{parentHead, parentHead, parentHead, currentHead}
+	if !reflect.DeepEqual(evidenceHeads, wantHeads) {
+		t.Fatalf("unresolved-thread Evidence heads = %v, want %v", evidenceHeads, wantHeads)
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	var outcome runevent.OutcomePayload
+	for _, journaled := range events {
+		if journaled.Event.Kind == runevent.KindDaemonOutcome {
+			if err := json.Unmarshal(journaled.Event.Payload, &outcome); err != nil {
+				t.Fatalf("decode unresolved-thread fallback outcome: %v", err)
+			}
+		}
+	}
+	if outcome.EvidenceKind == string(reviewsource.EvidenceKindArtifactOnlyDescendant) ||
+		outcome.EvidenceHeadSHA != currentHead ||
+		outcome.VerifiedHeadSHA != currentHead {
+		t.Fatalf("unresolved-thread fallback outcome = %#v", outcome)
+	}
+}
+
 func TestWatchTerminalContextCarriesDetachedConsoleAttachEvidenceAndVerifiedHead(t *testing.T) {
 	known := true
 	req := commandRequest{

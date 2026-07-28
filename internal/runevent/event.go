@@ -132,6 +132,7 @@ type ReviewStatusPayload struct {
 	Identity        string    `json:"identity"`
 	ExpectedHeadSHA string    `json:"expected_head_sha"`
 	ObservedHeadSHA string    `json:"observed_head_sha,omitempty"`
+	ParentHeadSHA   string    `json:"parent_head_sha,omitempty"`
 	Conclusion      string    `json:"conclusion,omitempty"`
 	Detail          string    `json:"detail,omitempty"`
 	Reason          string    `json:"reason,omitempty"`

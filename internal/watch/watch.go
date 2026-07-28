@@ -78,6 +78,27 @@ type ResolveResult struct {
 	Outcome   string
 }
 
+type ArtifactPublishRequest struct {
+	Round          int
+	ParentHeadSHA  string
+	ParentEvidence reviewsource.Evidence
+}
+
+type ArtifactPublication struct {
+	Commit   reviewsource.ArtifactCommit
+	Evidence reviewsource.Evidence
+}
+
+type ArtifactPublisher interface {
+	PublishArtifacts(context.Context, ArtifactPublishRequest) (ArtifactPublication, error)
+}
+
+type ArtifactPublishFunc func(context.Context, ArtifactPublishRequest) (ArtifactPublication, error)
+
+func (fn ArtifactPublishFunc) PublishArtifacts(ctx context.Context, req ArtifactPublishRequest) (ArtifactPublication, error) {
+	return fn(ctx, req)
+}
+
 type Result struct {
 	Outcome             string
 	Rounds              int
@@ -193,6 +214,7 @@ func (realSleeper) Sleep(ctx context.Context, duration time.Duration) error {
 type Dependencies struct {
 	StopRequests   StopRequestSource
 	ReviewEvidence ReviewEvidenceSource
+	Artifacts      ArtifactPublisher
 	StatusSource   StatusSource
 	Fetcher        Fetcher
 	Resolver       Resolver
@@ -304,7 +326,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (result Result, re
 			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
 		if fetched.Issues == 0 {
-			confirm, err := confirmMergeReady(ctx, req, runDeadline, deps.StopRequests, deps.ReviewEvidence, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
+			confirm, confirmedHeadSHA, err := confirmMergeReadyWithArtifacts(ctx, req, fetched.Round, runDeadline, deps, currentHeadSHA, clock, sleeper, publisher)
 			if err != nil {
 				return resultForError(round, err), err
 			}
@@ -318,7 +340,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (result Result, re
 				return resultForReviewSkipped(round, confirm.evidence), nil
 			}
 			if confirm.ready {
-				verifiedHeadSHA = verifiedHeadFromEvidence(confirm.evidence, currentHeadSHA)
+				verifiedHeadSHA = confirmedHeadSHA
 				return Result{Outcome: store.StateClean, Rounds: round}, nil
 			}
 			if confirm.unverified {
@@ -348,7 +370,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (result Result, re
 			currentHeadSHA = resolved.HeadSHA
 		}
 		if resolved.Remaining == 0 {
-			confirm, err := confirmMergeReady(ctx, req, runDeadline, deps.StopRequests, deps.ReviewEvidence, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
+			confirm, confirmedHeadSHA, err := confirmMergeReadyWithArtifacts(ctx, req, fetched.Round, runDeadline, deps, currentHeadSHA, clock, sleeper, publisher)
 			if err != nil {
 				return resultForError(round, err), err
 			}
@@ -362,7 +384,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (result Result, re
 				return resultForReviewSkipped(round, confirm.evidence), nil
 			}
 			if confirm.ready {
-				verifiedHeadSHA = verifiedHeadFromEvidence(confirm.evidence, currentHeadSHA)
+				verifiedHeadSHA = confirmedHeadSHA
 				return Result{Outcome: store.StateClean, Rounds: round}, nil
 			}
 			if confirm.unverified {
@@ -525,6 +547,84 @@ type confirmResult struct {
 	budgetExceeded bool
 	skipped        bool
 	evidence       reviewsource.Evidence
+}
+
+func confirmMergeReadyWithArtifacts(
+	ctx context.Context,
+	req Request,
+	round int,
+	runDeadline time.Time,
+	deps Dependencies,
+	headSHA string,
+	clock Clock,
+	sleeper Sleeper,
+	publisher *watchEventPublisher,
+) (confirmResult, string, error) {
+	artifactPublished := false
+	for {
+		confirm, err := confirmMergeReady(
+			ctx,
+			req,
+			runDeadline,
+			deps.StopRequests,
+			deps.ReviewEvidence,
+			deps.CheckSource,
+			headSHA,
+			clock,
+			sleeper,
+			publisher,
+		)
+		if err != nil || !confirm.ready {
+			return confirm, "", err
+		}
+		verifiedHeadSHA := verifiedHeadFromEvidence(confirm.evidence, headSHA)
+		if artifactPublished ||
+			deps.Artifacts == nil ||
+			!acceptedVerifiedEvidenceForHead(confirm.evidence, headSHA) {
+			return confirm, verifiedHeadSHA, nil
+		}
+
+		publication, err := deps.Artifacts.PublishArtifacts(ctx, ArtifactPublishRequest{
+			Round:          round,
+			ParentHeadSHA:  headSHA,
+			ParentEvidence: confirm.evidence,
+		})
+		if err != nil {
+			return confirmResult{}, "", err
+		}
+		if publication.Commit.CommitSHA == "" {
+			return confirm, verifiedHeadSHA, nil
+		}
+		artifactPublished = true
+		if acceptedArtifactEvidence(publication) {
+			if err := publisher.publishAcceptedEvidence(ctx, publication.Evidence); err != nil {
+				return confirmResult{}, "", err
+			}
+			return confirmResult{ready: true, evidence: publication.Evidence}, verifiedHeadSHA, nil
+		}
+
+		// A created commit that cannot inherit falls through to the ordinary
+		// current-head Evidence poll. The publisher is not called again.
+		headSHA = publication.Commit.CommitSHA
+	}
+}
+
+func acceptedVerifiedEvidenceForHead(evidence reviewsource.Evidence, headSHA string) bool {
+	return evidence.State == reviewsource.EvidenceVerified &&
+		evidence.ExpectedHeadSHA == headSHA &&
+		evidence.ObservedHeadSHA == headSHA
+}
+
+func acceptedArtifactEvidence(publication ArtifactPublication) bool {
+	commit := publication.Commit
+	evidence := publication.Evidence
+	return commit.CommitSHA != "" &&
+		commit.ParentSHA != "" &&
+		evidence.State == reviewsource.EvidenceVerified &&
+		evidence.Kind == reviewsource.EvidenceKindArtifactOnlyDescendant &&
+		evidence.ExpectedHeadSHA == commit.CommitSHA &&
+		evidence.ObservedHeadSHA == commit.CommitSHA &&
+		evidence.ParentHeadSHA == commit.ParentSHA
 }
 
 func confirmMergeReady(ctx context.Context, req Request, runDeadline time.Time, stops StopRequestSource, evidenceSource ReviewEvidenceSource, checkSource CheckSource, headSHA string, clock Clock, sleeper Sleeper, publisher *watchEventPublisher) (confirmResult, error) {
@@ -919,6 +1019,7 @@ func (publisher *watchEventPublisher) publishWait(ctx context.Context, progress 
 		Identity:        progress.Evidence.Identity,
 		ExpectedHeadSHA: progress.ExpectedHeadSHA,
 		ObservedHeadSHA: progress.Evidence.ObservedHeadSHA,
+		ParentHeadSHA:   progress.Evidence.ParentHeadSHA,
 		Conclusion:      progress.Evidence.Conclusion,
 		Detail:          progress.Evidence.Detail,
 		Reason:          progress.Evidence.Reason,
@@ -942,6 +1043,32 @@ func (publisher *watchEventPublisher) publishWait(ctx context.Context, progress 
 	if publisher.progress != nil {
 		publisher.progress(progress)
 	}
+	return nil
+}
+
+func (publisher *watchEventPublisher) publishAcceptedEvidence(ctx context.Context, evidence reviewsource.Evidence) error {
+	payload := runevent.ReviewStatusPayload{
+		EvidenceState:   string(evidence.State),
+		EvidenceKind:    string(evidence.Kind),
+		State:           string(evidence.State),
+		Kind:            string(evidence.Kind),
+		Identity:        evidence.Identity,
+		ExpectedHeadSHA: evidence.ExpectedHeadSHA,
+		ObservedHeadSHA: evidence.ObservedHeadSHA,
+		ParentHeadSHA:   evidence.ParentHeadSHA,
+		Conclusion:      evidence.Conclusion,
+		Detail:          evidence.Detail,
+		Reason:          evidence.Reason,
+	}
+	if err := publisher.publish(
+		ctx,
+		runevent.KindDaemonReviewStatus,
+		fmt.Sprintf("Review Source Evidence: %s (%s).", evidence.State, evidence.Kind),
+		payload,
+	); err != nil {
+		return err
+	}
+	publisher.latestEvidence = evidence
 	return nil
 }
 

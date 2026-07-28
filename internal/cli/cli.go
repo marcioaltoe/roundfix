@@ -2436,11 +2436,14 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 		publishPushDecision(ctx, ui.sink, runID, "blocked", fmt.Sprintf("Final Push blocked: %d Unresolved Review Issue(s) remain.", result.Remaining), result.Remaining)
 		return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
 	}
-	reviewCommitCreated, err := maybeCommitReviewArtifacts(ctx, req, loaded, preflightResult, collaborators.committer, ui.sink, runID, resolvePlan.roundNumber, ui.progress)
-	if err != nil {
-		return resolveBatchResult{}, err
+	reviewCommit := reviewsource.ArtifactCommit{}
+	if req.name != "watch" || !req.untilClean {
+		reviewCommit, err = maybeCommitReviewArtifacts(ctx, req, loaded, preflightResult, collaborators.committer, ui.sink, runID, resolvePlan.roundNumber, ui.progress)
+		if err != nil {
+			return resolveBatchResult{}, err
+		}
 	}
-	if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, preflightResult.Git.Root, commitCreated || reviewCommitCreated, ui.progress); err != nil {
+	if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, preflightResult.Git.Root, commitCreated || reviewCommit.CommitSHA != "", ui.progress); err != nil {
 		return resolveBatchResult{}, err
 	}
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
@@ -2597,6 +2600,57 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 				HeadBranch:      preflightResult.PullRequest.HeadBranch,
 				ExpectedHeadSHA: evidenceReq.ExpectedHeadSHA,
 			})
+		}),
+		Artifacts: watch.ArtifactPublishFunc(func(ctx context.Context, artifactReq watch.ArtifactPublishRequest) (watch.ArtifactPublication, error) {
+			commit, err := maybeCommitReviewArtifacts(
+				ctx,
+				req,
+				loaded,
+				preflightResult,
+				collaborators.committer,
+				ui.sink,
+				run.ID,
+				artifactReq.Round,
+				ui.progress,
+			)
+			if err != nil || commit.CommitSHA == "" {
+				return watch.ArtifactPublication{Commit: commit}, err
+			}
+			engine, err := daemon.NewEngine(daemon.Dependencies{
+				Runner:    collaborators.runner,
+				Verifier:  collaborators.verifier,
+				Committer: collaborators.committer,
+				Pusher:    collaborators.pusher,
+				Source:    collaborators.source,
+				Runs:      runStore,
+				Worktree:  collaborators.worktree,
+				Sink:      ui.sink,
+				Progress:  ui.progress,
+			})
+			if err != nil {
+				return watch.ArtifactPublication{}, err
+			}
+			if err := maybeRunFinalPush(ctx, engine, ui.sink, run.ID, loaded, preflightResult, preflightResult.Git.Root, true, ui.progress); err != nil {
+				return watch.ArtifactPublication{}, err
+			}
+			evidence, inherited, err := inheritReviewArtifactEvidence(ctx, reviewArtifactEvidenceRequest{
+				Source:         req.source,
+				PRNumber:       preflightResult.PullRequest.Number,
+				BaseRepository: preflightResult.PullRequest.BaseRepository,
+				HeadRepository: preflightResult.PullRequest.HeadRepository,
+				HeadBranch:     preflightResult.PullRequest.HeadBranch,
+				GitRoot:        preflightResult.Git.Root,
+				Commit:         commit,
+				ParentEvidence: artifactReq.ParentEvidence,
+				ParentHeadSHA:  artifactReq.ParentHeadSHA,
+			})
+			if err != nil {
+				return watch.ArtifactPublication{}, err
+			}
+			if !inherited {
+				evidence = reviewsource.Evidence{}
+			}
+			return watch.ArtifactPublication{Commit: commit, Evidence: evidence}, nil
 		}),
 		Fetcher: watch.FetchFunc(func(ctx context.Context, _ int) (watch.FetchResult, error) {
 			fetchResult, issues, err := fetchWatchRound(ctx, req, loaded, preflightResult, ui.progress)
@@ -3687,35 +3741,43 @@ func countBatchIssues(batches []rounds.Batch) int {
 // Roots outside the repository — an explicit external Artifact Directory, an
 // external Spec Root, or a root reached through a symbolic link — are never
 // staged; the Run proceeds without the commit.
-func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, committer daemon.Committer, sink runevent.Sink, runID string, roundNumber int, stderr io.Writer) (bool, error) {
+func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, committer daemon.Committer, sink runevent.Sink, runID string, roundNumber int, stderr io.Writer) (reviewsource.ArtifactCommit, error) {
 	if !loaded.Config.Defaults.AutoCommit {
-		return false, nil
+		return reviewsource.ArtifactCommit{}, nil
 	}
 	specsRoot := reviewArtifactSpecsRoot(loaded, preflightResult.Git.Root)
 	if !reviewArtifactUsesDefaultSpecsRoot(loaded.Config.Specs.Root) {
 		resolved, err := roundconfig.ResolveSpecsRoot(loaded, preflightResult.Git.Root)
 		if err != nil {
-			return false, err
+			return reviewsource.ArtifactCommit{}, err
 		}
 		specsRoot = resolved
 	}
 	reviewRoot, err := resolveReviewArtifactRoot(ctx, req, preflightResult, specsRoot)
 	if err != nil {
-		return false, err
+		return reviewsource.ArtifactCommit{}, err
 	}
 	relative, stageable := stageableReviewRoot(preflightResult.Git.Root, reviewRoot)
 	if !stageable {
 		message := fmt.Sprintf("Review artifacts kept outside the repository (%s); no review artifact commit created.", reviewRoot)
 		fmt.Fprintln(stderr, message)
 		publishReviewArtifactCommitDecision(ctx, sink, runID, "skipped", message)
-		return false, nil
+		return reviewsource.ArtifactCommit{}, nil
 	}
 	output, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "status", "--porcelain", "--", relative)
 	if err != nil {
-		return false, fmt.Errorf("inspect review artifact changes under %q: %w", relative, err)
+		return reviewsource.ArtifactCommit{}, fmt.Errorf("inspect review artifact changes under %q: %w", relative, err)
 	}
 	if strings.TrimSpace(output) == "" {
-		return false, nil
+		return reviewsource.ArtifactCommit{}, nil
+	}
+	parentSHA, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
+	if err != nil {
+		return reviewsource.ArtifactCommit{}, fmt.Errorf("read review artifact commit parent: %w", err)
+	}
+	parentSHA = strings.TrimSpace(parentSHA)
+	if parentSHA == "" {
+		return reviewsource.ArtifactCommit{}, errors.New("read review artifact commit parent: git returned an empty SHA")
 	}
 	message := daemon.ReviewArtifactsCommitMessage(roundNumber, req.pr)
 	if err := committer.Commit(ctx, daemon.CommitRequest{
@@ -3723,11 +3785,139 @@ func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded 
 		Message: message,
 		Paths:   []string{relative},
 	}); err != nil {
-		return false, fmt.Errorf("create review artifact commit: %w", err)
+		return reviewsource.ArtifactCommit{}, fmt.Errorf("create review artifact commit: %w", err)
+	}
+	commitSHA, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
+	if err != nil {
+		return reviewsource.ArtifactCommit{}, fmt.Errorf("read created review artifact commit: %w", err)
+	}
+	commitSHA = strings.TrimSpace(commitSHA)
+	if commitSHA == "" || commitSHA == parentSHA {
+		return reviewsource.ArtifactCommit{}, errors.New("create review artifact commit: HEAD did not advance")
 	}
 	fmt.Fprintf(stderr, "Review artifacts commit created: %s\n", message)
 	publishReviewArtifactCommitDecision(ctx, sink, runID, "created", fmt.Sprintf("Review artifacts commit created: %s", message))
-	return true, nil
+	return reviewsource.ArtifactCommit{
+		CommitSHA:  commitSHA,
+		ParentSHA:  parentSHA,
+		ReviewRoot: reviewRoot,
+		Message:    message,
+	}, nil
+}
+
+type reviewArtifactEvidenceRequest struct {
+	Source         string
+	PRNumber       string
+	BaseRepository string
+	HeadRepository string
+	HeadBranch     string
+	GitRoot        string
+	Commit         reviewsource.ArtifactCommit
+	ParentEvidence reviewsource.Evidence
+	ParentHeadSHA  string
+}
+
+func inheritReviewArtifactEvidence(ctx context.Context, req reviewArtifactEvidenceRequest) (reviewsource.Evidence, bool, error) {
+	commit := req.Commit
+	if commit.CommitSHA == "" ||
+		commit.ParentSHA == "" ||
+		commit.ReviewRoot == "" ||
+		commit.Message == "" ||
+		req.ParentHeadSHA != commit.ParentSHA ||
+		!exactVerifiedEvidence(req.ParentEvidence, commit.ParentSHA) {
+		return reviewsource.Evidence{}, false, nil
+	}
+
+	currentHead, err := reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "rev-parse", "HEAD")
+	if err != nil {
+		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact current head: %w", err)
+	}
+	if strings.TrimSpace(currentHead) != commit.CommitSHA {
+		return reviewsource.Evidence{}, false, nil
+	}
+
+	parentLine, err := reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "rev-list", "--parents", "-n", "1", commit.CommitSHA)
+	if err != nil {
+		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact parent: %w", err)
+	}
+	parents := strings.Fields(parentLine)
+	if len(parents) != 2 || parents[0] != commit.CommitSHA || parents[1] != commit.ParentSHA {
+		return reviewsource.Evidence{}, false, nil
+	}
+
+	subject, err := reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "show", "-s", "--format=%s", commit.CommitSHA)
+	if err != nil {
+		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact commit message: %w", err)
+	}
+	if strings.TrimSpace(subject) != commit.Message {
+		return reviewsource.Evidence{}, false, nil
+	}
+
+	relativeRoot, stageable := stageableReviewRoot(req.GitRoot, commit.ReviewRoot)
+	if !stageable {
+		return reviewsource.Evidence{}, false, nil
+	}
+	diffOutput, err := reviewSpecGitRunner.RunGit(
+		ctx,
+		req.GitRoot,
+		"diff",
+		"--name-only",
+		"--no-renames",
+		"-z",
+		commit.ParentSHA,
+		commit.CommitSHA,
+		"--",
+	)
+	if err != nil {
+		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact diff: %w", err)
+	}
+	paths := nulSeparatedPaths(diffOutput)
+	if len(paths) == 0 {
+		return reviewsource.Evidence{}, false, nil
+	}
+	rootPrefix := relativeRoot + "/"
+	for _, path := range paths {
+		clean := filepath.ToSlash(filepath.Clean(path))
+		if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") || !strings.HasPrefix(clean, rootPrefix) {
+			return reviewsource.Evidence{}, false, nil
+		}
+	}
+
+	refreshed, err := watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
+		Source:          req.Source,
+		PRNumber:        req.PRNumber,
+		BaseRepository:  req.BaseRepository,
+		HeadRepository:  req.HeadRepository,
+		HeadBranch:      req.HeadBranch,
+		ExpectedHeadSHA: commit.ParentSHA,
+	})
+	if err != nil || !exactVerifiedEvidence(refreshed, commit.ParentSHA) {
+		return reviewsource.Evidence{}, false, nil
+	}
+	return reviewsource.Evidence{
+		State:           reviewsource.EvidenceVerified,
+		Kind:            reviewsource.EvidenceKindArtifactOnlyDescendant,
+		Identity:        "daemon_review_artifact:" + commit.CommitSHA,
+		ExpectedHeadSHA: commit.CommitSHA,
+		ObservedHeadSHA: commit.CommitSHA,
+		ParentHeadSHA:   commit.ParentSHA,
+		Conclusion:      "inherited",
+		Detail:          reviewsource.BoundEvidenceDetail("Inherited verified parent Evidence for the exact Daemon review-artifact commit."),
+	}, true, nil
+}
+
+func exactVerifiedEvidence(evidence reviewsource.Evidence, headSHA string) bool {
+	return evidence.State == reviewsource.EvidenceVerified &&
+		evidence.ExpectedHeadSHA == headSHA &&
+		evidence.ObservedHeadSHA == headSHA
+}
+
+func nulSeparatedPaths(output string) []string {
+	output = strings.TrimSuffix(output, "\x00")
+	if output == "" {
+		return nil
+	}
+	return strings.Split(output, "\x00")
 }
 
 // stageableReviewRoot reports the repo-relative review root when it can be
