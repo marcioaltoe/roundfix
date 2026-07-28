@@ -1,7 +1,7 @@
 ---
 status: done
 created_at: 2026-07-16
-updated_at: 2026-07-27
+updated_at: 2026-07-28
 ---
 
 # Detached watch — terminal failure notification lacked actionable context (2026-07-16)
@@ -184,3 +184,15 @@ receipt, and artifact-inheritance behavior now lives in the
 [command reference](../user-guide/commands.md#watch) and
 [operational guide](../user-guide/usage.md#one-shot-watch-until-clean); Spec
 Task and QA artifacts remain the implementation authority.
+
+## Addendum — 2026-07-28 — Spec 0039 implementation merged
+
+Spec 0039's Task Graph completed and merged to `main` through Pull Request #40
+(squash commit `ed4abec`). Findings 1–3 and 5–7 are implemented: typed Review
+Source Evidence, Review Skipped, bounded transient retry, unknown Review Issue
+counts, current-head approval evidence, artifact-only inheritance, notification
+receipts, and the Supervisor monitor command in the Detached startup report.
+Finding 4 shipped earlier with archived Spec 0037. Spec 0039 itself remains
+unarchived only because its QA matrix contains Pull Request journeys the gate
+cannot reach from a Run Worktree — see
+[2026-07-28 — QA gate cannot reach Pull Request journeys](2026-07-28-qa-gate-cannot-reach-pull-request-journeys.md).

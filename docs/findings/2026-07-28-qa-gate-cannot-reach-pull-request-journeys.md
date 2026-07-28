@@ -88,3 +88,16 @@ the real cause is an environment the Agent cannot have. A reader comparing two
 - The gate refused to credit unexecuted journeys from Task evidence or Result
   prose. Capping the verdict was the honest response to rows it could not run;
   the defect is that it can never run them, not that it declined to guess.
+
+## Addendum — 2026-07-28 — Suggestion 1 implemented; 2 and 3 remain
+
+Suggestion 1 merged to `main` through Pull Request #40 (squash commit
+`ed4abec`): `BuildQAPrompt` now renders the Run Worktree branch, the Spec
+target branch, and the user checkout as labeled facts, and the rerun gate
+resolved Pull Request #40 against the target branch and verified the build
+match. Suggestion 4 was also exercised for real: the `watch` Run on Pull
+Request #40 performed the approval journey, created the separate Daemon
+review-artifact commit (`d240e99`), and reached Final Push. Suggestions 2 and
+3 — read-only Pull Request journeys and the blocked-by-environment verdict
+distinction — remain unimplemented, so Spec 0039 stays capped at `partial`
+until one of them lands or a supervisor records the equivalent evidence.

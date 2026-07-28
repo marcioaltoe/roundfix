@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-28
 updated_at: 2026-07-28
 ---
@@ -81,3 +81,14 @@ left for an authorized change.
 - Writing a suffixed sibling instead of overwriting the day's report is the right
   behavior; it preserved both verdicts and made the defect diagnosable at all.
   The bug was entirely in how they were ordered afterwards.
+
+## Addendum — 2026-07-28 — Fixed directly on `main`
+
+The recency-ordering fix and its regression tests merged to `main` through
+Pull Request #40 (squash commit `ed4abec`). Spec
+`0042-verification-capacity-and-daemon-task-settlement` archived through the
+corrected selector the same day, satisfying the first acceptance check. The
+selector needed no implementation Spec; this status records the direct fix.
+The related report-naming disagreement between the Daemon prompt and the
+qa-gate Skill remains open and travels with the QA-gate reachability work in
+[2026-07-28 — QA gate cannot reach Pull Request journeys](2026-07-28-qa-gate-cannot-reach-pull-request-journeys.md).
