@@ -49,7 +49,7 @@ The external review system that produces feedback for an Open Pull Request.
 _Avoid_: Review Provider, Agent, ACP Runtime
 
 **Review Source Evidence**:
-A head-bound signal observed from the Review Source that states whether review is pending, running, completed, verified, skipped, or failed and records which provider signal supports that classification.
+A head-bound Review Source classification for one expected commit: `pending` has no usable expected-head signal, `reviewing` is still in progress, and `reviewed` is complete without proving Merge-Ready. `verified` proves the expected head with no unresolved Review Issues, `skipped` explicitly declines that head, and `failed` records an explicit Review Source failure.
 _Avoid_: Check presence, generic approval, inferred clean state
 
 **Spec**:

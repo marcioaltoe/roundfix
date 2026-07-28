@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-16
-updated_at: 2026-07-17
+updated_at: 2026-07-27
 ---
 
 # Detached watch — terminal failure notification lacked actionable context (2026-07-16)
@@ -170,3 +170,17 @@ All seven items remain pending until the corresponding Spec Tasks and QA
 pass. The existing Run Event Stream partially addresses Supervisor
 subscription, but successful notification receipts and actionable terminal
 context are not implemented yet.
+
+## Addendum — 2026-07-27 — Routed behavior and user guidance
+
+Finding 4 is routed through
+[Spec 0037](../specs/_archived/0037-terminal-outcome-integrity/_prd.md);
+findings 1–3 and 5–7 are routed through
+[Spec 0039](../specs/0039-review-source-evidence-and-detached-outcomes/_prd.md)
+and [ADR-0054](../adr/0054-review-source-evidence-determines-review-outcomes.md).
+The `done` finding status records that routing, not a QA, archive, or release
+verdict. Supported monitoring, Evidence, retry, unknown-count, notification
+receipt, and artifact-inheritance behavior now lives in the
+[command reference](../user-guide/commands.md#watch) and
+[operational guide](../user-guide/usage.md#one-shot-watch-until-clean); Spec
+Task and QA artifacts remain the implementation authority.

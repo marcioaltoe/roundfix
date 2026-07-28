@@ -96,14 +96,14 @@ For scripts, CI, or agents, detach the Run and monitor it without owning it:
 
 ```bash
 roundfix implement --spec <slug> --detach
-roundfix events <run-id> --follow      # JSONL for automation
-roundfix attach <run-id>               # read-only Live Run View for humans
+roundfix events <run-id> --follow --filter outcome  # terminal outcome for Supervisors
+roundfix attach <run-id>                             # read-only Live Run View for humans
 ```
 
 Both loops keep one contract: stdout carries only the deterministic report,
 diagnostics go to stderr, and exit codes are stable (`0` clean, `1`
-unresolved/failed, `2` preflight, `3` clean-unverified watch, `130` Ctrl-C) —
-which is what lets an agent drive Roundfix reliably.
+unresolved/failed, `2` preflight, `3` Clean Unverified or Review Skipped watch,
+`130` Ctrl-C) — which is what lets an agent drive Roundfix reliably.
 
 ## Documentation
 
