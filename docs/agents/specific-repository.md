@@ -25,6 +25,14 @@ unresolved remains. Stdlib `flag` dispatch and a Bubble Tea v2 TUI.
   conclusive patch plan; minor, major, version-zero breaking, and manual
   classification outcomes require the decisions in
   `docs/user-guide/release-runbook.md`.
+- **HARD RULE — durable knowledge flows upstream only**: Specs are downstream
+  results of the CONTEXT-driven workflow, never sources it depends on — an
+  archived Spec may be deleted at any time, so durable knowledge a Spec
+  produced moves to its semantic owner (`CONTEXT.md`, an accepted ADR, an
+  agent guide, or `docs/references/`) before or at archive. `CONTEXT.md` and
+  the agent guides reference accepted ADRs and **NEVER** reference
+  `docs/specs/` or `docs/findings/` content; findings are dated reports that
+  become Specs, not reference material.
 - Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   `internal/...` (`internal/cli/` owns parsing, output, and exit behavior;
   `internal/app/` holds app metadata)

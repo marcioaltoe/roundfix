@@ -529,8 +529,19 @@
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
       "start": 4209,
-      "end": 4618,
-      "digest": "2919b5450b40f27cbaffa5c55c639d678eecae7ce15b8269e9c3c13cc8923d23"
+      "end": 4658,
+      "digest": "2279f06e04e34bfd5647d19c743a6e389f9236eb87677e66b80c6375768afc1d"
+    },
+    {
+      "id": "clause.context.docs-upstream-flow",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 4800,
+      "end": 5130,
+      "digest": "c94f140ee25de110d14a19b1ad7e80ff2e663517259b84e8a33261d7ce7b1a0f"
     },
     {
       "id": "clause.context.findings-01-frontmatter",
@@ -539,8 +550,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 4765,
-      "end": 5693,
+      "start": 5269,
+      "end": 6197,
       "digest": "e110a213ed674d69e7fca8ec9079cd6cf2da833f68f9fd6e6ac227beb23d2f77"
     },
     {
@@ -550,8 +561,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 5833,
-      "end": 5903,
+      "start": 6337,
+      "end": 6407,
       "digest": "0d99156813f494d0b8a2d6395403eaad5385c00c19294ad845030c49f395a39b"
     },
     {
@@ -561,8 +572,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 6039,
-      "end": 6208,
+      "start": 6543,
+      "end": 6712,
       "digest": "4103cbc86cc981f2b06a452fd108041df2495ea5a155561617666e0dfd627f90"
     },
     {
@@ -572,8 +583,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 6345,
-      "end": 6439,
+      "start": 6849,
+      "end": 6943,
       "digest": "113d93416da3b170dd3933085ebbc206d7b224b0e8eabf58b8f652d7ad3ab25f"
     },
     {
@@ -583,8 +594,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 6573,
-      "end": 6687,
+      "start": 7077,
+      "end": 7191,
       "digest": "7e5c26885c289a99db7fc1b57993412aa0efca85b858394835423110d8b737ac"
     },
     {
@@ -594,8 +605,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 6828,
-      "end": 6964,
+      "start": 7332,
+      "end": 7468,
       "digest": "fe598da7ea176f88cc991791977de07d1494f0da10b2e0d3584ff7456ecc767c"
     },
     {
@@ -605,8 +616,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 7117,
-      "end": 7247,
+      "start": 7621,
+      "end": 7751,
       "digest": "becee1d41ae620ddf8856f8231d04d728b2869f784529d4851744a86f35c142b"
     },
     {
@@ -616,9 +627,20 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 7399,
-      "end": 7596,
+      "start": 7903,
+      "end": 8100,
       "digest": "6a6bbd20fad23dc9162a49bdc1b36f36950e55a01456d2d3f4132ac5b10a7ab5"
+    },
+    {
+      "id": "clause.spec.specs-are-downstream-artifacts",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 8251,
+      "end": 8634,
+      "digest": "437de61f4c3b444f6509517f1d8994432bb99adaf8edaf17394e611ec04e0dbc"
     },
     {
       "id": "clause.context.read-domain-contract",
