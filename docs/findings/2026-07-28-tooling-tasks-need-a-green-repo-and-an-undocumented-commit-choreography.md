@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-28
 updated_at: 2026-07-28
 ---
@@ -100,3 +100,11 @@ rules for.
 - The QA gate audits the supervisor with the same rigor as the Agents, and it
   found a real ordering violation that a human reviewer would almost certainly
   have waved through. That non-deference is the property to protect.
+
+## Addendum — 2026-07-28 — Routed to Spec 0054
+
+The green-on-entry precondition, the documented commit choreography, and the
+ADR-0081 standing policy are owned by
+[Spec 0054 — Tooling task and verification hygiene](../specs/0054-tooling-task-and-verification-hygiene/_prd.md);
+the one-pass authorization-audit reporting rides Spec 0053's authorized
+qa-gate Skill edit.

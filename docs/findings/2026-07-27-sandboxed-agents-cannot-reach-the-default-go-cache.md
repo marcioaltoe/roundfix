@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-27
-updated_at: 2026-07-27
+updated_at: 2026-07-28
 ---
 
 # Verification — sandboxed Agents cannot reach the default Go build cache, and nothing tells them so (2026-07-27)
@@ -66,3 +66,9 @@ full recovery cycle, and both look exactly like product defects in the report.
 - Passing an explicit portable `GOCACHE` is a reliable workaround today and
   should stay documented even after the default is fixed, for anyone running the
   gate in an unusual sandbox.
+
+## Addendum — 2026-07-28 — Routed to Spec 0054
+
+The repository-local `GOCACHE` default in the Makefile (maintainer-authorized)
+is owned by
+[Spec 0054 — Tooling task and verification hygiene](../specs/0054-tooling-task-and-verification-hygiene/_prd.md).

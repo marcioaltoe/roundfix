@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-27
-updated_at: 2026-07-27
+updated_at: 2026-07-28
 ---
 
 # Skill edits — derived digest pins have no regeneration path and block their own Task three times per day (2026-07-27)
@@ -109,3 +109,13 @@ Three occurrences, one root cause, three separate manual recoveries.
 - `TestAuthorialSkillSync` reports the exact canonical digest it wants, which
   makes the manual repair possible at all. Keep that precision when the
   regeneration target lands.
+
+## Addendum — 2026-07-28 — Routed to Spec 0054
+
+The `make baseline-digests` regeneration command and the standing
+authorization policy are owned by
+[Spec 0054 — Tooling task and verification hygiene](../specs/0054-tooling-task-and-verification-hygiene/_prd.md)
+and
+[ADR-0081](../adr/0081-sanctioned-digest-regeneration-is-fallout-of-the-authorized-edit.md).
+Correction from that Spec's exploration: a non-roundfix Skill edit cascades
+into all three catalog setups, so the chain is up to seven files, not five.
