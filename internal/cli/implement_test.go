@@ -24,6 +24,7 @@ import (
 	"roundfix/internal/codex"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
+	"roundfix/internal/gittest"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
@@ -388,23 +389,11 @@ func runEventsForRun(t *testing.T, homeDir string, runID string) []store.Journal
 }
 
 func gitConfigArgsForTest() []string {
-	return []string{
-		"-c", "user.name=Roundfix Test",
-		"-c", "user.email=test@example.com",
-		"-c", "commit.gpgsign=false",
-	}
+	return gittest.ConfigArgs()
 }
 
 func isolatedGitEnvForTest() []string {
-	env := make([]string, 0, len(os.Environ())+2)
-	for _, entry := range os.Environ() {
-		key, _, _ := strings.Cut(entry, "=")
-		if strings.HasPrefix(key, "GIT_CONFIG_") {
-			continue
-		}
-		env = append(env, entry)
-	}
-	return append(env, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+	return gittest.IsolatedEnv()
 }
 
 // newImplementWorkspace builds a real git repository containing a committed
@@ -416,7 +405,7 @@ func newImplementWorkspace(t *testing.T, seeds []implementSeed) (string, string)
 	homeDir := t.TempDir()
 	t.Setenv("HOME", homeDir)
 	repoDir := t.TempDir()
-	gitImplement(t, repoDir, "init", "--initial-branch=main")
+	gittest.InitRepo(t, repoDir, "--initial-branch=main")
 	gitImplement(t, repoDir, "config", "user.name", "Roundfix Test")
 	gitImplement(t, repoDir, "config", "user.email", "roundfix-test@example.com")
 	gitImplement(t, repoDir, "config", "commit.gpgsign", "false")
@@ -515,7 +504,7 @@ func configureExternalSpecsRoot(t *testing.T, repoDir string, specsRoot string) 
 func newExternalSpecsRoot(t *testing.T, slug string, seeds []implementSeed) (string, string) {
 	t.Helper()
 	externalRepo := t.TempDir()
-	gitImplement(t, externalRepo, "init", "--initial-branch=main")
+	gittest.InitRepo(t, externalRepo, "--initial-branch=main")
 	specsRoot := filepath.Join(externalRepo, "docs", "specs")
 	writeImplementSpecAtRoot(t, specsRoot, slug, seeds)
 	gitImplement(t, externalRepo, "add", "-A")
@@ -534,7 +523,7 @@ func configureImplementUpstream(t *testing.T, repoDir string, remote string, bra
 	t.Helper()
 	remoteDir := filepath.Join(t.TempDir(), remote+".git")
 	mustMkdir(t, remoteDir)
-	gitImplement(t, remoteDir, "init", "--bare")
+	gittest.InitRepo(t, remoteDir, "--bare")
 	gitImplement(t, repoDir, "remote", "add", remote, remoteDir)
 	gitImplement(t, repoDir, "push", "-u", remote, "HEAD:"+branch)
 }
@@ -830,7 +819,7 @@ func withFakeRunWorktrees(t *testing.T) {
 		if err := copyDir(filepath.Join(userRoot, "docs"), filepath.Join(path, "docs")); err != nil {
 			return runworktree.Ref{}, err
 		}
-		gitImplement(t, path, "init", "--initial-branch=main")
+		gittest.InitRepo(t, path, "--initial-branch=main")
 		gitImplement(t, path, "add", "-A")
 		gitImplement(t, path, "commit", "-m", "seed fake run worktree")
 		gitImplement(t, path, "branch", "-m", runworktree.BranchName(runID))

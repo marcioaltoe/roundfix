@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/gittest"
 	"roundfix/internal/preflight"
 	"roundfix/internal/releaseplan"
 )
@@ -509,7 +510,7 @@ func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly
 	gitReleasePlan(t, repoDir, "tag", "v0.2.0")
 
 	remoteDir := t.TempDir()
-	gitReleasePlan(t, repoDir, "init", "--bare", remoteDir)
+	gittest.InitRepo(t, remoteDir, "--bare")
 	gitReleasePlan(t, repoDir, "remote", "add", "origin", remoteDir)
 	gitReleasePlan(t, repoDir, "push", "origin", "main", "v0.1.0", "v0.2.0")
 	gitReleasePlan(t, repoDir, "tag", "v0.3.0")

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestExecVerifierRemovesSuccessfulOutputArtifact(t *testing.T) {
@@ -243,7 +245,7 @@ func TestGitCommitterValidatesRequest(t *testing.T) {
 
 func TestGitCommitterExcludesProjectConfigFromBatchCommit(t *testing.T) {
 	repoDir := t.TempDir()
-	runGitForTest(t, repoDir, "init", "-q")
+	gittest.InitRepo(t, repoDir)
 	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
 	runGitForTest(t, repoDir, "config", "user.name", "Test")
 	runGitForTest(t, repoDir, "config", "commit.gpgsign", "false")
@@ -286,7 +288,7 @@ func TestGitCommitterStagesSelectedTrackedPathMatchedByGlobalIgnore(t *testing.T
 	}
 	mustWriteForTest(t, globalIgnore, "dist/\n")
 	t.Setenv("XDG_CONFIG_HOME", globalConfigDir)
-	runGitForTest(t, repoDir, "init", "-q")
+	gittest.InitRepo(t, repoDir)
 	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
 	runGitForTest(t, repoDir, "config", "user.name", "Test")
 	runGitForTest(t, repoDir, "config", "commit.gpgsign", "false")
@@ -348,23 +350,11 @@ func runGitForTest(t *testing.T, workDir string, args ...string) string {
 }
 
 func gitConfigArgsForTest() []string {
-	return []string{
-		"-c", "user.name=Roundfix Test",
-		"-c", "user.email=test@example.com",
-		"-c", "commit.gpgsign=false",
-	}
+	return gittest.ConfigArgs()
 }
 
 func isolatedGitEnvForTest() []string {
-	env := make([]string, 0, len(os.Environ())+2)
-	for _, entry := range os.Environ() {
-		key, _, _ := strings.Cut(entry, "=")
-		if strings.HasPrefix(key, "GIT_CONFIG_") {
-			continue
-		}
-		env = append(env, entry)
-	}
-	return append(env, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+	return gittest.IsolatedEnv()
 }
 
 func mustWriteForTest(t *testing.T, path string, content string) {
@@ -377,7 +367,7 @@ func mustWriteForTest(t *testing.T, path string, content string) {
 func TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo(t *testing.T) {
 	ctx := context.Background()
 	repoDir := t.TempDir()
-	runGitForTest(t, repoDir, "init", "-b", "main")
+	gittest.InitRepo(t, repoDir, "-b", "main")
 	runGitForTest(t, repoDir, "config", "user.name", "Roundfix Test")
 	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
 	runGitForTest(t, repoDir, "config", "commit.gpgsign", "false")
@@ -440,7 +430,7 @@ func TestRunGitForTestIgnoresForcedSigningConfig(t *testing.T) {
 	}
 
 	repoDir := t.TempDir()
-	runGitForTest(t, repoDir, "init", "-q")
+	gittest.InitRepo(t, repoDir)
 	if got := runGitForTest(t, repoDir, "config", "--get", "commit.gpgsign"); strings.TrimSpace(got) != "false" {
 		t.Fatalf("expected isolated helper to override forced signing, got %q", got)
 	}

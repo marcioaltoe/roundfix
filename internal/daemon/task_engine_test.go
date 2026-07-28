@@ -17,6 +17,7 @@ import (
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/gittest"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
@@ -3973,7 +3974,7 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 		{id: "task_02", title: "Add the backend behavior", needs: []string{"task_01"}, verification: []string{"true"}},
 	})
 	repoDir := fixture.gitRoot
-	runGitForTest(t, repoDir, "init", "-q", "-b", "main")
+	gittest.InitRepo(t, repoDir, "-b", "main")
 	runGitForTest(t, repoDir, "config", "user.name", "Roundfix Test")
 	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
 	runGitForTest(t, repoDir, "config", "commit.gpgsign", "false")

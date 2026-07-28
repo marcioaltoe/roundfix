@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"roundfix/internal/gittest"
 	"roundfix/internal/store"
 )
 
@@ -1791,7 +1792,7 @@ func gitCommitMessage(t *testing.T, workDir string, sha string) string {
 func initWorktreeRepo(t *testing.T) string {
 	t.Helper()
 	repoDir := t.TempDir()
-	gitWorktreeTest(t, repoDir, "init", "-b", "main")
+	gittest.InitRepo(t, repoDir, "-b", "main")
 	gitWorktreeTest(t, repoDir, "config", "user.name", "Roundfix Test")
 	gitWorktreeTest(t, repoDir, "config", "user.email", "test@example.com")
 	gitWorktreeTest(t, repoDir, "config", "commit.gpgsign", "false")
@@ -1813,23 +1814,11 @@ func gitWorktreeTest(t *testing.T, workDir string, args ...string) string {
 }
 
 func gitConfigArgsForWorktreeTest() []string {
-	return []string{
-		"-c", "user.name=Roundfix Test",
-		"-c", "user.email=test@example.com",
-		"-c", "commit.gpgsign=false",
-	}
+	return gittest.ConfigArgs()
 }
 
 func isolatedGitEnvForWorktreeTest() []string {
-	env := make([]string, 0, len(os.Environ())+2)
-	for _, entry := range os.Environ() {
-		key, _, _ := strings.Cut(entry, "=")
-		if strings.HasPrefix(key, "GIT_CONFIG_") {
-			continue
-		}
-		env = append(env, entry)
-	}
-	return append(env, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+	return gittest.IsolatedEnv()
 }
 
 func gitStatus(t *testing.T, workDir string) string {

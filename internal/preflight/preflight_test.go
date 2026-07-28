@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"roundfix/internal/gittest"
 )
 
 func TestInspectGitDetectsRepositoryState(t *testing.T) {
@@ -354,7 +356,7 @@ func TestExecGitRunnerStatusDetectionSurvivesFSMonitorNoise(t *testing.T) {
 func initGitRepoForTest(t *testing.T) string {
 	t.Helper()
 	repo := t.TempDir()
-	runGitForSetup(t, repo, "init", "-b", "main")
+	gittest.InitRepo(t, repo, "-b", "main")
 	runGitForSetup(t, repo, "config", "user.name", "Roundfix Test")
 	runGitForSetup(t, repo, "config", "user.email", "test@example.com")
 	runGitForSetup(t, repo, "config", "commit.gpgsign", "false")
@@ -378,21 +380,9 @@ func runGitForSetup(t *testing.T, workDir string, args ...string) {
 }
 
 func gitConfigArgsForTest() []string {
-	return []string{
-		"-c", "user.name=Roundfix Test",
-		"-c", "user.email=test@example.com",
-		"-c", "commit.gpgsign=false",
-	}
+	return gittest.ConfigArgs()
 }
 
 func isolatedGitEnvForTest() []string {
-	env := make([]string, 0, len(os.Environ())+2)
-	for _, entry := range os.Environ() {
-		key, _, _ := strings.Cut(entry, "=")
-		if strings.HasPrefix(key, "GIT_CONFIG_") {
-			continue
-		}
-		env = append(env, entry)
-	}
-	return append(env, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+	return gittest.IsolatedEnv()
 }

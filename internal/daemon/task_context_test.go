@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/gittest"
 	"roundfix/internal/spec"
 	runworktree "roundfix/internal/worktree"
 )
@@ -89,7 +90,7 @@ func TestAssembleTaskContextBundleSupportsExternalSpecRoot(t *testing.T) {
 func TestPriorChangedFilesUseCurrentWorktreeHeadAndIgnoreSiblingBranch(t *testing.T) {
 	ctx := context.Background()
 	repoDir := t.TempDir()
-	runGitForTest(t, repoDir, "init", "-b", "main")
+	gittest.InitRepo(t, repoDir, "-b", "main")
 	mustWriteForTest(t, filepath.Join(repoDir, "base.go"), "package demo\n")
 	runGitForTest(t, repoDir, "add", "base.go")
 	runGitForTest(t, repoDir, "commit", "-m", "initial")

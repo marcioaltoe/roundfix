@@ -23,6 +23,7 @@ import (
 	"roundfix/internal/codex"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
+	"roundfix/internal/gittest"
 	roundnotify "roundfix/internal/notify"
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
@@ -2444,7 +2445,7 @@ func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing
 	currentRun, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
 
 	otherRepo := t.TempDir()
-	gitImplement(t, otherRepo, "init", "--initial-branch=main")
+	gittest.InitRepo(t, otherRepo, "--initial-branch=main")
 	gitImplement(t, otherRepo, "config", "user.name", "Roundfix Test")
 	gitImplement(t, otherRepo, "config", "user.email", "roundfix-test@example.com")
 	gitImplement(t, otherRepo, "config", "commit.gpgsign", "false")
@@ -10153,7 +10154,7 @@ func withReviewGitWorkspace(t *testing.T) (string, string) {
 	homeDir := t.TempDir()
 	t.Setenv("HOME", homeDir)
 	repoDir := t.TempDir()
-	gitImplement(t, repoDir, "init", "--initial-branch=main")
+	gittest.InitRepo(t, repoDir, "--initial-branch=main")
 	gitImplement(t, repoDir, "config", "user.name", "Roundfix Test")
 	gitImplement(t, repoDir, "config", "user.email", "roundfix-test@example.com")
 	gitImplement(t, repoDir, "config", "commit.gpgsign", "false")

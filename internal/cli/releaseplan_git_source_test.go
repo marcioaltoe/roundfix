@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/gittest"
 	"roundfix/internal/preflight"
 	"roundfix/internal/releaseplan"
 )
@@ -285,7 +286,7 @@ func newReleasePlanGitSourceRepo(t *testing.T) releasePlanGitRepo {
 func newEmptyReleasePlanGitRepo(t *testing.T) string {
 	t.Helper()
 	repoDir := t.TempDir()
-	gitReleasePlan(t, repoDir, "init", "--initial-branch=main")
+	gittest.InitRepo(t, repoDir, "--initial-branch=main")
 	gitReleasePlan(t, repoDir, "config", "user.name", "Roundfix Test")
 	gitReleasePlan(t, repoDir, "config", "user.email", "roundfix-test@example.com")
 	gitReleasePlan(t, repoDir, "config", "commit.gpgsign", "false")
