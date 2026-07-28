@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0052-claude-adapter-standardization
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -73,3 +73,64 @@ with the official install action — from `roundfix doctor` alone.
 
 `_prd.md` → User Story 1, Core Feature 2, User Experience; `_techspec.md` →
 Build Order 4, API Contracts; ADR-0055.
+
+## Result
+
+### Implementation
+
+- Doctor now derives its Adapter Readiness runtime set from the effective
+  required Agent Selection Profiles, including every Preferred Selection and
+  Fallback Chain entry. It deduplicates by runtime ID and checks the sorted
+  runtime list.
+- The command keeps one `adapter:` line and joins each runtime's health
+  evidence in runtime-ID order. It continues checking later runtimes after a
+  failure, carries typed adapter classifications into the failing runtime's
+  detail, and prints the first failing runtime's install action through the
+  existing `next:` field.
+- Adapter health failures now retain their typed error in `CheckResult`, which
+  lets Doctor classify generalized Claude or Codex lineage/version errors
+  without changing the existing profile-proof reporting path.
+- Doctor tests cover official Claude and Codex evidence, legacy Claude
+  lineage failure with retained Codex evidence, a runtime referenced only by
+  a Fallback Chain, deduplication, sorted runtime order, and the unchanged six
+  report-line sequence.
+
+### Focused checks
+
+- The first test attempt used Go's default cache and could not start because
+  the sandbox denied writes under `~/Library/Caches/go-build`.
+- Pre-change signal:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task04-gocache go test ./internal/cli -run '^TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes$' -count=1`
+  exited 1. Doctor checked only Codex, omitted Claude evidence, and returned
+  exit 0 for the legacy-Claude case.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task04-gocache go test ./internal/cli -run '^(TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes|TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime)$' -count=1`
+  — passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task04-gocache go test ./internal/cli -run '^(TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts|TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile|TestRunDoctorProfileReadinessMatchesProfilesValidateFailureEvidence|TestRunDoctorContinuesChecksAfterProfileReadinessFailure|TestRunDoctorRepositorySkillReadiness|TestRunDoctorMissingRepositoryRoot|TestRunDoctorRealRepositoryCheckDoesNotMutateState)$' -count=1`
+  — passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task04-gocache go test ./internal/cli -run '^TestHealthCheckerReportsFailedPrerequisitesWithNextActions$' -count=1`
+  — passed.
+- `rtk git diff --check` — passed.
+- The Task's declared `## Verification` commands were not run; the Daemon
+  owns that gate.
+
+### Acceptance-criterion evidence
+
+1. `TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes` observes one
+   `adapter:` line containing `claude` then `codex`, and records exactly those
+   runtime calls in sorted order. The fallback-only companion adds OpenCode
+   only through `general.fallbacks` and observes `claude`, `codex`,
+   `opencode` once each.
+2. The legacy-Claude case observes `adapter: failed`, classification
+   `adapter_lineage_unknown`, the official
+   `ClaudeAdapterInstallCommand()`, and the successful Codex package/version
+   evidence on the same line.
+3. The official-adapters case observes `adapter: ok` with command, official
+   package, and pinned version evidence for both Claude and Codex.
+4. The same table asserts the six output line names remain `node`, `acpx`,
+   `adapter`, `profiles`, `skills`, `codex`; the adjacent Doctor checks also
+   pass with two internal adapter probes and the existing profile-proof
+   failure evidence.
+
+### Follow-ups
+
+None discovered within this Task's slice.

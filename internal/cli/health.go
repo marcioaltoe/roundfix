@@ -128,6 +128,7 @@ func (checker runtimeHealthChecker) Adapter(ctx context.Context, runtime agent.R
 		Name:   HealthCheckAdapter,
 		Status: CheckStatusFailed,
 		Detail: err.Error(),
+		Err:    err,
 	}
 	var installErr interface {
 		error

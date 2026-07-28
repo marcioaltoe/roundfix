@@ -18,6 +18,8 @@ import (
 	"roundfix/skills"
 )
 
+const doctorReadyAdapterLine = "adapter: ok (claude: claude-agent-acp | codex: codex-acp)\n"
+
 func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -35,7 +37,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			wantCode: exitOK,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
-				"adapter: ok (codex-acp)\n" +
+				doctorReadyAdapterLine +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
@@ -50,7 +52,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			wantCode: exitRunFailed,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
-				"adapter: ok (codex-acp)\n" +
+				doctorReadyAdapterLine +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
@@ -65,7 +67,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			wantCode: exitOK,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
-				"adapter: ok (codex-acp)\n" +
+				doctorReadyAdapterLine +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"codex: skipped (not-applicable on linux)\n",
@@ -111,6 +113,160 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 	}
 }
 
+func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
+	tests := []struct {
+		name           string
+		adapterResults map[string]CheckResult
+		wantCode       int
+		wantLine       string
+	}{
+		{
+			name: "official adapters report package and version evidence",
+			adapterResults: map[string]CheckResult{
+				"claude": {
+					Name:   HealthCheckAdapter,
+					Status: CheckStatusOK,
+					Detail: "command=\"npx -y " + agent.ClaudeAdapterPackage + "@" + agent.PinnedClaudeAdapterVersion + "\"; package=" + agent.ClaudeAdapterPackage + "; version=" + agent.PinnedClaudeAdapterVersion,
+				},
+				"codex": {
+					Name:   HealthCheckAdapter,
+					Status: CheckStatusOK,
+					Detail: "command=\"npx -y " + agent.CodexAdapterPackage + "@" + agent.PinnedCodexAdapterVersion + "\"; package=" + agent.CodexAdapterPackage + "; version=" + agent.PinnedCodexAdapterVersion,
+				},
+			},
+			wantCode: exitOK,
+			wantLine: "adapter: ok (claude: command=\"npx -y " + agent.ClaudeAdapterPackage + "@" + agent.PinnedClaudeAdapterVersion + "\"; package=" + agent.ClaudeAdapterPackage + "; version=" + agent.PinnedClaudeAdapterVersion +
+				" | codex: command=\"npx -y " + agent.CodexAdapterPackage + "@" + agent.PinnedCodexAdapterVersion + "\"; package=" + agent.CodexAdapterPackage + "; version=" + agent.PinnedCodexAdapterVersion + ")",
+		},
+		{
+			name: "legacy claude fails without suppressing codex evidence",
+			adapterResults: map[string]CheckResult{
+				"claude": {
+					Name:       HealthCheckAdapter,
+					Status:     CheckStatusFailed,
+					Detail:     "effective Claude Code adapter command \"claude-agent-acp\" reported legacy package @zed-industries/claude-agent-acp version 0.15.0",
+					NextAction: agent.ClaudeAdapterInstallCommand(),
+					Err: &agent.AdapterLineageError{
+						Runtime:         "claude",
+						Command:         "claude-agent-acp",
+						Package:         "@zed-industries/claude-agent-acp",
+						Version:         "0.15.0",
+						RequiredPackage: agent.ClaudeAdapterPackage,
+						RequiredVersion: agent.PinnedClaudeAdapterVersion,
+						Install:         agent.ClaudeAdapterInstallCommand(),
+						Legacy:          true,
+					},
+				},
+				"codex": {
+					Name:   HealthCheckAdapter,
+					Status: CheckStatusOK,
+					Detail: "command=\"codex-acp\"; package=" + agent.CodexAdapterPackage + "; version=" + agent.PinnedCodexAdapterVersion,
+				},
+			},
+			wantCode: exitRunFailed,
+			wantLine: "adapter: failed (claude: effective Claude Code adapter command \"claude-agent-acp\" reported legacy package @zed-industries/claude-agent-acp version 0.15.0; classification: " + agent.AdapterLineageUnknown +
+				" | codex: command=\"codex-acp\"; package=" + agent.CodexAdapterPackage + "; version=" + agent.PinnedCodexAdapterVersion +
+				"; next: " + agent.ClaudeAdapterInstallCommand() + ")",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			checker := newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+			)
+			checker.adapterResults = test.adapterResults
+			withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+				Config:  roundconfig.Builtin(),
+				GitRoot: "/repo/project",
+			}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+				return profileProofResult{}
+			})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"doctor"}, &stdout, &stderr)
+
+			if code != test.wantCode {
+				t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
+			}
+			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
+			if len(lines) != 6 || lines[2] != test.wantLine {
+				t.Fatalf("unexpected Doctor output lines:\n%q\nwant adapter line %q at index 2", lines, test.wantLine)
+			}
+			wantLineNames := []string{"node", "acpx", "adapter", "profiles", "skills", "codex"}
+			for index, name := range wantLineNames {
+				if !strings.HasPrefix(lines[index], name+": ") {
+					t.Fatalf("Doctor line %d = %q, want %q check", index, lines[index], name)
+				}
+			}
+			wantRuntimeIDs := []string{"claude", "codex"}
+			gotRuntimeIDs := make([]string, 0, len(checker.adapterRuntimes))
+			for _, runtime := range checker.adapterRuntimes {
+				gotRuntimeIDs = append(gotRuntimeIDs, runtime.ID)
+			}
+			if !reflect.DeepEqual(gotRuntimeIDs, wantRuntimeIDs) {
+				t.Fatalf("adapter runtime order = %v, want %v", gotRuntimeIDs, wantRuntimeIDs)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime(t *testing.T) {
+	config := roundconfig.Builtin()
+	general := config.Profiles[roundconfig.CategoryGeneral]
+	general.Profile.Fallbacks = append(general.Profile.Fallbacks, roundconfig.AgentSelection{
+		Runtime:         "opencode",
+		Model:           "fallback-only",
+		ReasoningEffort: "high",
+	})
+	config.Profiles[roundconfig.CategoryGeneral] = general
+
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+	)
+	checker.adapterResults = map[string]CheckResult{
+		"claude":   {Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: "claude-agent-acp"},
+		"codex":    {Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: "codex-acp"},
+		"opencode": {Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: "opencode acp"},
+	}
+	withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+		Config:  config,
+		GitRoot: "/repo/project",
+	}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+		return profileProofResult{}
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "adapter: ok (claude: claude-agent-acp | codex: codex-acp | opencode: opencode acp)") {
+		t.Fatalf("Doctor output missing fallback-only runtime evidence: %q", stdout.String())
+	}
+	wantRuntimeIDs := []string{"claude", "codex", "opencode"}
+	gotRuntimeIDs := make([]string, 0, len(checker.adapterRuntimes))
+	for _, runtime := range checker.adapterRuntimes {
+		gotRuntimeIDs = append(gotRuntimeIDs, runtime.ID)
+	}
+	if !reflect.DeepEqual(gotRuntimeIDs, wantRuntimeIDs) {
+		t.Fatalf("adapter runtime order = %v, want %v", gotRuntimeIDs, wantRuntimeIDs)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
 func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t *testing.T) {
 	config := roundconfig.Builtin()
 	config.Defaults.Agent = "codex"
@@ -137,10 +293,17 @@ func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t 
 		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion},
 		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
 	)
-	checker.adapter = CheckResult{
-		Name:   HealthCheckAdapter,
-		Status: CheckStatusOK,
-		Detail: "command=\"codex-acp\"; package=@zed-industries/codex-acp; version=0.16.0",
+	checker.adapterResults = map[string]CheckResult{
+		"claude": {
+			Name:   HealthCheckAdapter,
+			Status: CheckStatusOK,
+			Detail: "claude-agent-acp",
+		},
+		"codex": {
+			Name:   HealthCheckAdapter,
+			Status: CheckStatusOK,
+			Detail: "command=\"codex-acp\"; package=@zed-industries/codex-acp; version=0.16.0",
+		},
 	}
 	withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
 		Config:  config,
@@ -158,7 +321,7 @@ func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t 
 		t.Fatalf("expected doctor adapter failure exit %d, got %d", exitRunFailed, code)
 	}
 	for _, want := range []string{
-		"adapter: ok (command=\"codex-acp\"; package=@zed-industries/codex-acp; version=0.16.0)",
+		"adapter: ok (claude: claude-agent-acp | codex: command=\"codex-acp\"; package=@zed-industries/codex-acp; version=0.16.0)",
 		"profiles: failed",
 		`runtime="codex", model="gpt-5.6-sol", reasoning_effort="high"`,
 		"affected categories: general preferred source=built-in, backend preferred source=built-in, frontend fallback[1] source=built-in, qa preferred source=built-in, review preferred source=built-in",
@@ -173,8 +336,10 @@ func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t 
 	if strings.Contains(stdout.String(), "legacy-model-default") || strings.Contains(stdout.String(), "model:") || strings.Contains(stdout.String(), "agent:") {
 		t.Fatalf("Doctor reported legacy configured-runtime readiness: %q", stdout.String())
 	}
-	if len(checker.adapterRuntimes) != 1 || checker.adapterRuntimes[0].Model != "gpt-5.6-sol" || checker.adapterRuntimes[0].ReasoningEffort != "high" {
-		t.Fatalf("adapter check did not use the effective general profile: %#v", checker.adapterRuntimes)
+	if len(checker.adapterRuntimes) != 2 ||
+		checker.adapterRuntimes[0].ID != "claude" || checker.adapterRuntimes[0].Model != "opus" || checker.adapterRuntimes[0].ReasoningEffort != "xhigh" ||
+		checker.adapterRuntimes[1].ID != "codex" || checker.adapterRuntimes[1].Model != "gpt-5.6-sol" || checker.adapterRuntimes[1].ReasoningEffort != "high" {
+		t.Fatalf("adapter checks did not use the effective required profiles in runtime order: %#v", checker.adapterRuntimes)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
@@ -280,7 +445,7 @@ func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("expected rejected model exit %d, got %d", exitRunFailed, code)
 	}
-	if proofCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 1 || checker.codexCalls != 1 {
+	if proofCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 {
 		t.Fatalf("independent check calls profile=%d node=%d acpx=%d adapter=%d codex=%d", proofCalls, checker.nodeCalls, checker.acpxCalls, checker.adapterCalls, checker.codexCalls)
 	}
 	output := stdout.String()
@@ -289,7 +454,7 @@ func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
 			t.Fatalf("Doctor output missing %q after profile failure: %q", want, output)
 		}
 	}
-	if strings.Index(output, "profiles:") > strings.Index(output, "codex:") {
+	if strings.Index(output, "\nprofiles:") > strings.Index(output, "\ncodex:") {
 		t.Fatalf("profile readiness must precede Codex so Repository Skill Set readiness can be inserted after it: %q", output)
 	}
 	if stderr.Len() != 0 {
@@ -416,13 +581,14 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 			if len(lines) != 6 || lines[4] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 4", lines, test.wantLine)
 			}
-			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 1 || checker.codexCalls != 1 {
+			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 {
 				t.Fatalf("independent check calls skills=%d node=%d acpx=%d adapter=%d codex=%d",
 					skillCalls, checker.nodeCalls, checker.acpxCalls, checker.adapterCalls, checker.codexCalls)
 			}
 			wantCalls := []string{
 				HealthCheckNode,
 				HealthCheckACPX,
+				HealthCheckAdapter,
 				HealthCheckAdapter,
 				HealthCheckProfiles,
 				HealthCheckSkills,
@@ -513,7 +679,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 	}
 	wantStdout := "node: ok\n" +
 		"acpx: ok\n" +
-		"adapter: ok (codex-acp)\n" +
+		doctorReadyAdapterLine +
 		"profiles: ok (0 distinct tuples; 0 category references)\n" +
 		"skills: failed (Repository Skill Set readiness requires a Git repository; next: run roundfix doctor from a Git repository)\n" +
 		"codex: ok\n"
@@ -526,6 +692,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 	wantCalls := []string{
 		HealthCheckNode,
 		HealthCheckACPX,
+		HealthCheckAdapter,
 		HealthCheckAdapter,
 		HealthCheckProfiles,
 		HealthCheckCodex,
@@ -593,7 +760,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 	}
 	wantStdout := "node: ok\n" +
 		"acpx: ok\n" +
-		"adapter: ok (codex-acp)\n" +
+		doctorReadyAdapterLine +
 		"profiles: ok (0 distinct tuples; 0 category references)\n" +
 		"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 		"codex: ok\n"
@@ -635,10 +802,9 @@ func TestRunDoctorRejectsArguments(t *testing.T) {
 
 func newDoctorFakeHealthChecker(node, acpx, codex CheckResult) *doctorFakeHealthChecker {
 	return &doctorFakeHealthChecker{
-		node:    node,
-		acpx:    acpx,
-		adapter: CheckResult{Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: "codex-acp"},
-		codex:   codex,
+		node:  node,
+		acpx:  acpx,
+		codex: codex,
 	}
 }
 
@@ -646,6 +812,7 @@ type doctorFakeHealthChecker struct {
 	node            CheckResult
 	acpx            CheckResult
 	adapter         CheckResult
+	adapterResults  map[string]CheckResult
 	agentResult     CheckResult
 	codex           CheckResult
 	agentRequests   []agent.ProbeRequest
@@ -673,6 +840,18 @@ func (checker *doctorFakeHealthChecker) Adapter(_ context.Context, runtime agent
 	checker.adapterCalls++
 	checker.adapterRuntimes = append(checker.adapterRuntimes, runtime)
 	checker.record(HealthCheckAdapter)
+	if result, ok := checker.adapterResults[runtime.ID]; ok {
+		return result
+	}
+	if checker.adapter.Name != "" {
+		return checker.adapter
+	}
+	if runtime.ID == "claude" {
+		return CheckResult{Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: "claude-agent-acp"}
+	}
+	if runtime.ID == "codex" {
+		return CheckResult{Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: "codex-acp"}
+	}
 	return checker.adapter
 }
 

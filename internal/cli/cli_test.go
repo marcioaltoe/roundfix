@@ -3626,12 +3626,25 @@ func TestHealthCheckerAcceptsNewerACPXVersion(t *testing.T) {
 func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 	ctx := context.Background()
 	probeErr := errors.New("probe denied")
+	adapterErr := &agent.AdapterLineageError{
+		Runtime:         "claude",
+		Command:         "claude-agent-acp",
+		Package:         "@zed-industries/claude-agent-acp",
+		Version:         "0.15.0",
+		RequiredPackage: agent.ClaudeAdapterPackage,
+		RequiredVersion: agent.PinnedClaudeAdapterVersion,
+		Install:         agent.ClaudeAdapterInstallCommand(),
+		Legacy:          true,
+	}
 	checker := newHealthChecker(healthCheckDependencies{
 		nodeVersion: func(context.Context) (string, error) {
 			return "v20.0.0", nil
 		},
 		acpxVersion: func(context.Context) (string, error) {
 			return "0.11.0", nil
+		},
+		checkAdapter: func(context.Context, agent.RuntimeSpec) (agent.AdapterEvidence, error) {
+			return agent.AdapterEvidence{}, adapterErr
 		},
 		probeAgent: func(context.Context, agent.ProbeRequest) error {
 			return probeErr
@@ -3649,6 +3662,13 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 		Status:     CheckStatusFailed,
 		Detail:     "found 0.11.0; acpx " + agent.MinimumACPXVersion + " or newer is required; run " + setupACPXInstallCommand(),
 		NextAction: setupACPXInstallCommand(),
+	})
+	assertCheckResult(t, checker.Adapter(ctx, agent.RuntimeSpec{ID: "claude"}), CheckResult{
+		Name:       HealthCheckAdapter,
+		Status:     CheckStatusFailed,
+		Detail:     adapterErr.Error(),
+		NextAction: agent.ClaudeAdapterInstallCommand(),
+		Err:        adapterErr,
 	})
 	assertCheckResult(t, checker.Agent(ctx, agent.ProbeRequest{Runtime: agent.RuntimeSpec{ID: "codex"}}), CheckResult{
 		Name:   HealthCheckAgent,

@@ -69,8 +69,8 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results := make([]CheckResult, 0, 6)
 	results = append(results, checker.Node(ctx))
 	results = append(results, checker.ACPX(ctx))
-	runtime, runtimeErr := doctorAdapterRuntime(loaded.Config)
-	results = append(results, doctorAdapterCheck(ctx, checker, runtime, runtimeErr))
+	runtimes, runtimeErr := doctorAdapterRuntimes(loaded.Config)
+	results = append(results, doctorAdapterCheck(ctx, checker, runtimes, runtimeErr))
 	profileReadiness := doctorDeps.profileReadiness(ctx, loaded.Config, roundconfig.RequiredWorkCategories(), profileWorkDir)
 	results = append(results, doctorProfileReadinessResult(profileReadiness))
 	if repositoryRoot == "" {
@@ -106,23 +106,95 @@ func parseDoctorCommand(args []string) error {
 	return nil
 }
 
-func doctorAdapterRuntime(config roundconfig.Config) (agent.RuntimeSpec, error) {
-	resolved, err := roundconfig.ResolveProfile(config, roundconfig.CategoryGeneral, nil)
+func doctorAdapterRuntimes(config roundconfig.Config) ([]agent.RuntimeSpec, error) {
+	proofs, err := buildProfileProofReports(config, roundconfig.RequiredWorkCategories())
 	if err != nil {
-		return agent.RuntimeSpec{}, fmt.Errorf("resolve effective general Agent Selection Profile for adapter readiness: %w", err)
+		return nil, fmt.Errorf("resolve effective required Agent Selection Profiles for adapter readiness: %w", err)
 	}
-	return runtimeForProfileSelection(resolved.Profile.Preferred)
+
+	selectionsByRuntime := make(map[string]roundconfig.AgentSelection)
+	for _, proof := range proofs {
+		runtimeID := strings.TrimSpace(proof.Selection.Runtime)
+		if _, exists := selectionsByRuntime[runtimeID]; exists {
+			continue
+		}
+		selection := proof.Selection
+		selection.Runtime = runtimeID
+		selectionsByRuntime[runtimeID] = selection
+	}
+
+	runtimeIDs := make([]string, 0, len(selectionsByRuntime))
+	for runtimeID := range selectionsByRuntime {
+		runtimeIDs = append(runtimeIDs, runtimeID)
+	}
+	sort.Strings(runtimeIDs)
+
+	runtimes := make([]agent.RuntimeSpec, 0, len(runtimeIDs))
+	for _, runtimeID := range runtimeIDs {
+		runtime, err := runtimeForProfileSelection(selectionsByRuntime[runtimeID])
+		if err != nil {
+			return nil, fmt.Errorf("resolve ACP Runtime %q for adapter readiness: %w", runtimeID, err)
+		}
+		runtimes = append(runtimes, runtime)
+	}
+	return runtimes, nil
 }
 
-func doctorAdapterCheck(ctx context.Context, checker HealthChecker, runtime agent.RuntimeSpec, runtimeErr error) CheckResult {
+func doctorAdapterCheck(ctx context.Context, checker HealthChecker, runtimes []agent.RuntimeSpec, runtimeErr error) CheckResult {
 	if runtimeErr != nil {
 		return CheckResult{
 			Name:   HealthCheckAdapter,
 			Status: CheckStatusFailed,
 			Detail: runtimeErr.Error(),
+			Err:    runtimeErr,
 		}
 	}
-	return checker.Adapter(ctx, runtime)
+	if len(runtimes) == 0 {
+		err := errors.New("effective required Agent Selection Profiles reference no ACP Runtime")
+		return CheckResult{
+			Name:   HealthCheckAdapter,
+			Status: CheckStatusFailed,
+			Detail: err.Error(),
+			Err:    err,
+		}
+	}
+
+	result := CheckResult{
+		Name:   HealthCheckAdapter,
+		Status: CheckStatusOK,
+	}
+	details := make([]string, 0, len(runtimes))
+	for _, runtime := range runtimes {
+		runtimeResult := checker.Adapter(ctx, runtime)
+		detail := strings.TrimSpace(runtimeResult.Detail)
+		if detail == "" {
+			detail = string(runtimeResult.Status)
+		}
+		if runtimeResult.Status == CheckStatusFailed {
+			result.Status = CheckStatusFailed
+			if classification := doctorAdapterFailureClassification(runtimeResult.Err); classification != "" {
+				detail += "; classification: " + classification
+			}
+			if result.NextAction == "" {
+				result.NextAction = strings.TrimSpace(runtimeResult.NextAction)
+				result.Err = runtimeResult.Err
+			}
+		}
+		details = append(details, runtime.ID+": "+detail)
+	}
+	result.Detail = strings.Join(details, " | ")
+	return result
+}
+
+func doctorAdapterFailureClassification(err error) string {
+	var classified interface {
+		error
+		Classification() string
+	}
+	if !errors.As(err, &classified) {
+		return ""
+	}
+	return strings.TrimSpace(classified.Classification())
 }
 
 func doctorProfileReadinessResult(readiness profileProofResult) CheckResult {
