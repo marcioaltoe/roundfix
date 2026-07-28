@@ -786,6 +786,7 @@ func renderImplementTaskLines(specsRoot string, graph *spec.Graph, cycleFinished
 func renderImplementTaskLinesWithOutcomes(specsRoot string, graph *spec.Graph, cycleFinished bool, outcomes []daemon.TaskOutcome) (string, implementTaskCounts) {
 	counts := implementTaskCounts{}
 	var report bytes.Buffer
+	outcomeStatuses := taskOutcomeStatuses(outcomes)
 	reasons := taskOutcomeReasons(outcomes)
 	for _, task := range graph.Tasks {
 		current := task
@@ -795,6 +796,9 @@ func renderImplementTaskLinesWithOutcomes(specsRoot string, graph *spec.Graph, c
 			current = task
 		}
 		status := implementDisplayStatus(current.Status, cycleFinished)
+		if outcomeStatus := outcomeStatuses[task.ID]; outcomeStatus != "" {
+			status = outcomeStatus
+		}
 		switch status {
 		case "completed":
 			counts.completed++
@@ -815,6 +819,17 @@ func renderImplementTaskLinesWithOutcomes(specsRoot string, graph *spec.Graph, c
 		}
 	}
 	return report.String(), counts
+}
+
+func taskOutcomeStatuses(outcomes []daemon.TaskOutcome) map[string]string {
+	statuses := make(map[string]string, len(outcomes))
+	for _, outcome := range outcomes {
+		switch status := strings.TrimSpace(outcome.Status); status {
+		case "completed", "failed", "skipped":
+			statuses[outcome.Task] = status
+		}
+	}
+	return statuses
 }
 
 func taskOutcomeReasons(outcomes []daemon.TaskOutcome) map[string]string {

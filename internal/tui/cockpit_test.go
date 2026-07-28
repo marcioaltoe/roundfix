@@ -2116,7 +2116,7 @@ func newPhaseProjectionCockpit(t *testing.T, source *cockpitFakeSource, colorEna
 	return model
 }
 
-func TestCockpitSpecRunTaskPhasesAgentWorkingWaitingForVerificationAndVerifying(t *testing.T) {
+func TestCockpitWaitingForVerificationReplayProjectsTaskPhases(t *testing.T) {
 	// The aggregate Run state says Verifying for the whole Run; per-Task
 	// journal evidence must still place each Task in its own phase.
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateVerifying}, version: 1}

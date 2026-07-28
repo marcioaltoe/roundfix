@@ -1046,6 +1046,249 @@ func runPrintedIntegrationCommand(t *testing.T, repoDir string, command string) 
 	gitImplement(t, repoDir, fields[1:]...)
 }
 
+type implementCommandResult struct {
+	stdout string
+	stderr string
+	code   int
+}
+
+func runImplementCommandAsync(ctx context.Context, args ...string) <-chan implementCommandResult {
+	resultCh := make(chan implementCommandResult, 1)
+	go func() {
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		code := RunContext(ctx, args, &stdout, &stderr)
+		resultCh <- implementCommandResult{
+			stdout: stdout.String(),
+			stderr: stderr.String(),
+			code:   code,
+		}
+	}()
+	return resultCh
+}
+
+func waitImplementCommandResult(t *testing.T, resultCh <-chan implementCommandResult) implementCommandResult {
+	t.Helper()
+	timer := time.NewTimer(20 * time.Second)
+	defer timer.Stop()
+	select {
+	case result := <-resultCh:
+		return result
+	case <-timer.C:
+		t.Fatal("timed out waiting for Implement Command")
+		return implementCommandResult{}
+	}
+}
+
+type implementAgentOverlapProbe struct {
+	mu        sync.Mutex
+	active    int
+	maxActive int
+	started   chan string
+	release   chan struct{}
+	once      sync.Once
+}
+
+func newImplementAgentOverlapProbe() *implementAgentOverlapProbe {
+	return &implementAgentOverlapProbe{
+		started: make(chan string, 2),
+		release: make(chan struct{}),
+	}
+}
+
+func (probe *implementAgentOverlapProbe) onTask(_ agent.ExecuteRequest, taskID string) error {
+	probe.mu.Lock()
+	probe.active++
+	if probe.active > probe.maxActive {
+		probe.maxActive = probe.active
+	}
+	probe.mu.Unlock()
+
+	probe.started <- taskID
+	<-probe.release
+
+	probe.mu.Lock()
+	probe.active--
+	probe.mu.Unlock()
+	return nil
+}
+
+func (probe *implementAgentOverlapProbe) releaseAgents() {
+	probe.once.Do(func() {
+		close(probe.release)
+	})
+}
+
+func (probe *implementAgentOverlapProbe) maxObservedActive() int {
+	probe.mu.Lock()
+	defer probe.mu.Unlock()
+	return probe.maxActive
+}
+
+func waitImplementAgentStarts(t *testing.T, probe *implementAgentOverlapProbe, count int) []string {
+	t.Helper()
+	started := make([]string, 0, count)
+	timer := time.NewTimer(10 * time.Second)
+	defer timer.Stop()
+	for len(started) < count {
+		select {
+		case taskID := <-probe.started:
+			started = append(started, taskID)
+		case <-timer.C:
+			t.Fatalf("timed out waiting for %d Agent starts; got %v", count, started)
+		}
+	}
+	return started
+}
+
+func assertImplementTaskSet(t *testing.T, got []string, want ...string) {
+	t.Helper()
+	sort.Strings(got)
+	sort.Strings(want)
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("expected Task set %v, got %v", want, got)
+	}
+}
+
+func configureImplementCapacities(t *testing.T, repoDir string, taskCapacity int, verificationCapacity int) {
+	t.Helper()
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf(
+		"worktree:\n  concurrency: %d\nverification:\n  concurrency: %d\n",
+		taskCapacity,
+		verificationCapacity,
+	))
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure Implement capacities")
+}
+
+func newImplementNamedPipe(t *testing.T, name string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), name)
+	if err := syscall.Mkfifo(path, 0o600); err != nil {
+		t.Fatalf("create named pipe %s: %v", path, err)
+	}
+	return path
+}
+
+func releaseImplementNamedPipe(t *testing.T, path string) {
+	t.Helper()
+	pipe, err := os.OpenFile(path, os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatalf("open named pipe %s: %v", path, err)
+	}
+	if _, err := io.WriteString(pipe, "release\n"); err != nil {
+		_ = pipe.Close()
+		t.Fatalf("release named pipe %s: %v", path, err)
+	}
+	if err := pipe.Close(); err != nil {
+		t.Fatalf("close named pipe %s: %v", path, err)
+	}
+}
+
+func shellQuoteImplement(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
+}
+
+func blockingVerificationCommand(taskID string, logPath string, startedPath string, releasePath string) string {
+	return fmt.Sprintf(
+		"printf 'start %s\\n' >> %s; printf 'started\\n' > %s; IFS= read -r _ < %s; printf 'end %s\\n' >> %s",
+		taskID,
+		shellQuoteImplement(logPath),
+		shellQuoteImplement(startedPath),
+		shellQuoteImplement(releasePath),
+		taskID,
+		shellQuoteImplement(logPath),
+	)
+}
+
+type implementVerificationEvidence struct {
+	cursor         int64
+	task           string
+	attempt        int
+	retry          int
+	phase          string
+	mode           string
+	verdict        string
+	classification string
+	diagnosticPath string
+	retryAvailable *bool
+}
+
+func implementVerificationEvidenceFromEvents(t *testing.T, events []store.JournalEvent) []implementVerificationEvidence {
+	t.Helper()
+	evidence := make([]implementVerificationEvidence, 0)
+	for _, entry := range events {
+		if entry.Event.Kind != runevent.KindDaemonVerification {
+			continue
+		}
+		var payload struct {
+			Task           string `json:"task"`
+			Attempt        int    `json:"attempt"`
+			Retry          int    `json:"retry"`
+			Phase          string `json:"phase"`
+			Mode           string `json:"mode"`
+			Verdict        string `json:"verdict"`
+			Classification string `json:"classification"`
+			DiagnosticPath string `json:"diagnostic_path"`
+			RetryAvailable *bool  `json:"retry_available"`
+		}
+		if err := json.Unmarshal(entry.Event.Payload, &payload); err != nil {
+			t.Fatalf("decode Verification event at cursor %d: %v", entry.Cursor, err)
+		}
+		evidence = append(evidence, implementVerificationEvidence{
+			cursor:         entry.Cursor,
+			task:           payload.Task,
+			attempt:        payload.Attempt,
+			retry:          payload.Retry,
+			phase:          payload.Phase,
+			mode:           payload.Mode,
+			verdict:        payload.Verdict,
+			classification: payload.Classification,
+			diagnosticPath: payload.DiagnosticPath,
+			retryAvailable: payload.RetryAvailable,
+		})
+	}
+	return evidence
+}
+
+func waitForImplementJournal(t *testing.T, homeDir string, runID string, condition func([]store.JournalEvent) bool) []store.JournalEvent {
+	t.Helper()
+	timer := time.NewTimer(10 * time.Second)
+	defer timer.Stop()
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		events := runEventsForRun(t, homeDir, runID)
+		if condition(events) {
+			return events
+		}
+		select {
+		case <-ticker.C:
+		case <-timer.C:
+			t.Fatalf("timed out waiting for Run Event Journal condition for Run %s; last events=%+v", runID, events)
+		}
+	}
+}
+
+func onlyImplementRunID(t *testing.T, homeDir string) string {
+	t.Helper()
+	return onlyRunFromStore(t, homeDir).ID
+}
+
+func taskRefForImplementRun(t *testing.T, run store.Run, repoDir string, taskID string) runworktree.TaskRef {
+	t.Helper()
+	ref, err := runworktree.TaskRefFor(runworktree.Ref{
+		RunID:    run.ID,
+		Path:     run.WorkDir,
+		Branch:   runworktree.BranchName(run.ID),
+		UserRoot: repoDir,
+	}, taskID)
+	if err != nil {
+		t.Fatalf("derive Task Worktree ref for %s: %v", taskID, err)
+	}
+	return ref
+}
+
 func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1748,6 +1991,557 @@ func TestRunImplementPassesVerificationCapacityIntoTaskCycle(t *testing.T) {
 	}
 }
 
+// Invariant: Task Capacity 2 overlaps Agent turns while Verification Capacity
+// 1 serializes real shell gates, and Agent-authored terminal status never
+// bypasses Daemon settlement.
+// Owning layer: public Implement Command integration.
+// Existing canonical suite: TestRunImplementExecutesSpecEndToEnd.
+func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testing.T) {
+	verificationDir := t.TempDir()
+	logPath := filepath.Join(verificationDir, "verification.log")
+	startedPaths := map[string]string{
+		"task_01": filepath.Join(verificationDir, "task_01.started"),
+		"task_02": filepath.Join(verificationDir, "task_02.started"),
+	}
+	releasePaths := map[string]string{
+		"task_01": newImplementNamedPipe(t, "task_01.release"),
+		"task_02": newImplementNamedPipe(t, "task_02.release"),
+	}
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Build the first capacity slice",
+			verification: []string{blockingVerificationCommand("task_01", logPath, startedPaths["task_01"], releasePaths["task_01"])},
+		},
+		{
+			id:           "task_02",
+			title:        "Build the second capacity slice",
+			verification: []string{blockingVerificationCommand("task_02", logPath, startedPaths["task_02"], releasePaths["task_02"])},
+		},
+	})
+	configureImplementCapacities(t, repoDir, 2, 1)
+	overlap := newImplementAgentOverlapProbe()
+	t.Cleanup(overlap.releaseAgents)
+	runner := &implementFakeRunner{
+		gitRoot: repoDir,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusFailed,
+		},
+		onTask: overlap.onTask,
+	}
+	withAgentRunner(t, runner)
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	resultCh := runImplementCommandAsync(ctx, "implement", "--spec", implementTestSlug, "--no-input")
+	assertImplementTaskSet(t, waitImplementAgentStarts(t, overlap, 2), "task_01", "task_02")
+	if got := overlap.maxObservedActive(); got != 2 {
+		t.Fatalf("expected two simultaneous Agent turns, got max active %d", got)
+	}
+	overlap.releaseAgents()
+
+	runID := onlyImplementRunID(t, homeDir)
+	events := waitForImplementJournal(t, homeDir, runID, func(events []store.JournalEvent) bool {
+		waiting := 0
+		started := 0
+		for _, event := range implementVerificationEvidenceFromEvents(t, events) {
+			if event.attempt != 1 || event.retry != 0 {
+				continue
+			}
+			switch event.phase {
+			case string(runevent.VerificationPhaseWaiting):
+				waiting++
+			case string(runevent.VerificationPhaseStarted):
+				started++
+			}
+		}
+		return waiting == 2 && started == 1
+	})
+	firstEvidence := implementVerificationEvidenceFromEvents(t, events)
+	firstTask := ""
+	for _, event := range firstEvidence {
+		if event.phase == string(runevent.VerificationPhaseStarted) {
+			firstTask = event.task
+			break
+		}
+	}
+	if firstTask == "" {
+		t.Fatal("expected one started Verification Task")
+	}
+	secondTask := "task_01"
+	if firstTask == secondTask {
+		secondTask = "task_02"
+	}
+	waitForFile(t, startedPaths[firstTask], 10*time.Second)
+	if _, err := os.Stat(startedPaths[secondTask]); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected %s to remain queued before capacity release, stat error %v", secondTask, err)
+	}
+	releaseImplementNamedPipe(t, releasePaths[firstTask])
+
+	events = waitForImplementJournal(t, homeDir, runID, func(events []store.JournalEvent) bool {
+		started := 0
+		for _, event := range implementVerificationEvidenceFromEvents(t, events) {
+			if event.phase == string(runevent.VerificationPhaseStarted) {
+				started++
+			}
+		}
+		return started == 2
+	})
+	waitForFile(t, startedPaths[secondTask], 10*time.Second)
+	releaseImplementNamedPipe(t, releasePaths[secondTask])
+
+	result := waitImplementCommandResult(t, resultCh)
+	if result.code != exitOK {
+		t.Fatalf("expected Clean exit %d, got %d stderr=%q stdout=%q", exitOK, result.code, result.stderr, result.stdout)
+	}
+	wantStdout := "task_01 completed — Build the first capacity slice\n" +
+		"task_02 completed — Build the second capacity slice\n" +
+		"Clean: all 2 Task(s) completed.\n"
+	if result.stdout != wantStdout {
+		t.Fatalf("normal Implement stdout changed\nwant: %q\n got: %q", wantStdout, result.stdout)
+	}
+	if !strings.Contains(result.stderr, "Implement Run: "+runID) || !strings.Contains(result.stderr, "reached Clean") {
+		t.Fatalf("expected Run identity and terminal progress on stderr, got %q", result.stderr)
+	}
+	for _, progress := range []string{"Waiting for Verification", "retry", "diagnostics"} {
+		if strings.Contains(result.stdout, progress) {
+			t.Fatalf("expected %q progress outside stdout, got %q", progress, result.stdout)
+		}
+	}
+
+	finalEvents := runEventsForRun(t, homeDir, runID)
+	verification := implementVerificationEvidenceFromEvents(t, finalEvents)
+	active := 0
+	maxActive := 0
+	waitingCursor := map[string]int64{}
+	startedCursor := map[string]int64{}
+	for _, event := range verification {
+		switch event.phase {
+		case string(runevent.VerificationPhaseWaiting):
+			waitingCursor[event.task] = event.cursor
+			if event.mode != "shared" {
+				t.Fatalf("expected shared waiting mode for %s, got %+v", event.task, event)
+			}
+		case string(runevent.VerificationPhaseStarted):
+			startedCursor[event.task] = event.cursor
+			active++
+			if active > maxActive {
+				maxActive = active
+			}
+		case string(runevent.VerificationPhaseCommandPassed), string(runevent.VerificationPhaseFailed):
+			active--
+		}
+	}
+	if active != 0 || maxActive != 1 {
+		t.Fatalf("expected real gates to drain with max active 1, got active=%d max=%d events=%+v", active, maxActive, verification)
+	}
+	for _, taskID := range []string{"task_01", "task_02"} {
+		if waitingCursor[taskID] == 0 || startedCursor[taskID] == 0 || waitingCursor[taskID] >= startedCursor[taskID] {
+			t.Fatalf("expected waiting before started for %s, waiting=%d started=%d", taskID, waitingCursor[taskID], startedCursor[taskID])
+		}
+		content := mustRead(t, implementTaskPath(repoDir, taskID))
+		if !strings.Contains(content, "status: completed") {
+			t.Fatalf("expected only Daemon settlement to leave %s completed, got:\n%s", taskID, content)
+		}
+	}
+	if got := mustRead(t, logPath); got != "start "+firstTask+"\nend "+firstTask+"\nstart "+secondTask+"\nend "+secondTask+"\n" {
+		t.Fatalf("expected serialized real-shell lifecycle, got %q", got)
+	}
+	if runner.calls != 2 {
+		t.Fatalf("expected one Agent turn per Task with no repair, got %d", runner.calls)
+	}
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateClean {
+		t.Fatalf("expected Run Clean, got %s", run.State)
+	}
+	assertRunWorktreeRemoved(t, run.WorkDir)
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+// Invariant: one project-authored exit 75 receives one exclusive retry,
+// retains the initial diagnostic identity, consumes no Agent repair, and can
+// settle Clean through the real shell boundary.
+// Owning layer: public Implement Command integration.
+// Existing canonical suite: TestRunImplementExecutesSpecEndToEnd.
+func TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair(t *testing.T) {
+	markerPath := filepath.Join(t.TempDir(), "temporary-seen")
+	command := fmt.Sprintf(
+		"if test -f %s; then printf 'exclusive retry passed\\n'; exit 0; fi; printf 'initial temporary failure\\n'; : > %s; exit 75",
+		shellQuoteImplement(markerPath),
+		shellQuoteImplement(markerPath),
+	)
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:           "task_01",
+		title:        "Recover one temporary gate",
+		verification: []string{command},
+	}})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected Clean exit %d, got %d stderr=%q stdout=%q", exitOK, code, stderr.String(), stdout.String())
+	}
+	wantStdout := "task_01 completed — Recover one temporary gate\n" +
+		"Clean: all 1 Task(s) completed.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("temporary retry changed normal stdout\nwant: %q\n got: %q", wantStdout, stdout.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	initialPath := daemon.VerificationOutputPath(builtinArtifactDirForRepo(t, repoDir), runID, 1, 1)
+	retryPath := daemon.VerificationRetryOutputPath(builtinArtifactDirForRepo(t, repoDir), runID, 1, 1, 1)
+	if got := mustRead(t, initialPath); got != "initial temporary failure\n" {
+		t.Fatalf("expected retained initial diagnostic, got %q", got)
+	}
+	if _, err := os.Stat(retryPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected successful retry diagnostics cleaned at distinct path %s, stat error %v", retryPath, err)
+	}
+	events := runEventsForRun(t, homeDir, runID)
+	verification := implementVerificationEvidenceFromEvents(t, events)
+	var temporaryFailures, exclusiveWaiting, exclusivePassed int
+	for _, event := range verification {
+		if event.classification == string(runevent.VerificationClassificationTemporary) &&
+			event.phase == string(runevent.VerificationPhaseFailed) &&
+			event.diagnosticPath == initialPath &&
+			event.retryAvailable != nil && *event.retryAvailable {
+			temporaryFailures++
+		}
+		if event.retry == 1 && event.mode == "exclusive" && event.phase == string(runevent.VerificationPhaseWaiting) {
+			exclusiveWaiting++
+		}
+		if event.retry == 1 && event.phase == string(runevent.VerificationPhaseVerdict) &&
+			event.verdict == string(runevent.VerificationVerdictPassed) {
+			exclusivePassed++
+		}
+	}
+	if temporaryFailures != 1 || exclusiveWaiting != 1 || exclusivePassed != 1 {
+		t.Fatalf("expected one temporary failure, one exclusive wait, and one passed retry; got failures=%d waiting=%d passed=%d events=%+v", temporaryFailures, exclusiveWaiting, exclusivePassed, verification)
+	}
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonTask && strings.Contains(string(entry.Event.Payload), `"phase":"verification_feedback"`) {
+			t.Fatalf("temporary retry must not invoke Agent repair, got event %+v", entry.Event)
+		}
+	}
+	if runner.calls != 1 {
+		t.Fatalf("expected initial Agent only, got %d calls", runner.calls)
+	}
+	if !strings.Contains(stderr.String(), "Verification failed (attempt 1); diagnostics: "+initialPath) {
+		t.Fatalf("expected retained failure progress on stderr, got %q", stderr.String())
+	}
+	if strings.Contains(stdout.String(), initialPath) || strings.Contains(stdout.String(), "retry") {
+		t.Fatalf("expected retry diagnostics outside stdout, got %q", stdout.String())
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: completed") {
+		t.Fatalf("expected Daemon-settled completed status, got:\n%s", content)
+	}
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateClean {
+		t.Fatalf("expected Clean Run, got %s", run.State)
+	}
+}
+
+// Invariant: a repeated exit 75 exhausts the Task-scoped retry budget, starts
+// no Agent repair or second retry, retains both diagnostic identities, and
+// preserves the failed Task Worktree.
+// Owning layer: public Implement Command integration.
+// Existing canonical suite: TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree.
+func TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree(t *testing.T) {
+	counterPath := filepath.Join(t.TempDir(), "temporary-count")
+	command := fmt.Sprintf(
+		"count=0; if test -f %s; then count=$(cat %s); fi; count=$((count + 1)); printf '%%s' \"$count\" > %s; printf 'temporary failure %%s\\n' \"$count\"; exit 75",
+		shellQuoteImplement(counterPath),
+		shellQuoteImplement(counterPath),
+		shellQuoteImplement(counterPath),
+	)
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Exhaust one temporary gate", verification: []string{command}},
+		{id: "task_02", title: "Complete an independent Task", verification: []string{"printf 'independent pass\\n'"}},
+	})
+	configureImplementCapacities(t, repoDir, 2, 1)
+	runner := &implementFakeRunner{
+		gitRoot: repoDir,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusCompleted,
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected Unresolved exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, stderr.String(), stdout.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateUnresolved {
+		t.Fatalf("expected Unresolved Run, got %s", run.State)
+	}
+	initialPath := daemon.VerificationOutputPath(builtinArtifactDirForRepo(t, repoDir), runID, 1, 1)
+	retryPath := daemon.VerificationRetryOutputPath(builtinArtifactDirForRepo(t, repoDir), runID, 1, 1, 1)
+	if got := mustRead(t, initialPath); got != "temporary failure 1\n" {
+		t.Fatalf("expected first temporary diagnostic identity, got %q", got)
+	}
+	if got := mustRead(t, retryPath); got != "temporary failure 2\n" {
+		t.Fatalf("expected exclusive retry diagnostic identity, got %q", got)
+	}
+	verification := implementVerificationEvidenceFromEvents(t, runEventsForRun(t, homeDir, runID))
+	temporaryFailures := 0
+	retryStarts := 0
+	for _, event := range verification {
+		if event.classification == string(runevent.VerificationClassificationTemporary) &&
+			event.phase == string(runevent.VerificationPhaseFailed) {
+			temporaryFailures++
+			if event.retry == 0 && (event.retryAvailable == nil || !*event.retryAvailable) {
+				t.Fatalf("expected initial temporary failure to retain its retry budget, got %+v", event)
+			}
+			if event.retry == 1 && (event.retryAvailable == nil || *event.retryAvailable) {
+				t.Fatalf("expected repeated temporary failure to exhaust retry budget, got %+v", event)
+			}
+		}
+		if event.retry == 1 && event.phase == string(runevent.VerificationPhaseStarted) {
+			retryStarts++
+		}
+		if event.retry > 1 {
+			t.Fatalf("expected no second exclusive retry, got %+v", event)
+		}
+	}
+	if temporaryFailures != 2 || retryStarts != 1 {
+		t.Fatalf("expected two temporary failures and one retry start, got failures=%d retry_starts=%d events=%+v", temporaryFailures, retryStarts, verification)
+	}
+	if runner.calls != 2 {
+		t.Fatalf("expected one initial Agent turn per Task and no repair, got %d", runner.calls)
+	}
+	if !strings.Contains(stdout.String(), "task_01 failed — Exhaust one temporary gate\n") ||
+		!strings.Contains(stdout.String(), "task_02 completed — Complete an independent Task\n") ||
+		!strings.HasSuffix(stdout.String(), "Unresolved: 1 completed, 1 failed, 0 skipped, 0 pending.\n") {
+		t.Fatalf("expected bounded Unresolved stdout, got %q", stdout.String())
+	}
+	taskRef := taskRefForImplementRun(t, run, repoDir, "task_01")
+	assertRunWorktreeExists(t, taskRef.Path)
+	assertRunBranchExists(t, repoDir, taskRef.Branch)
+	failedTaskPath := filepath.Join(taskRef.Path, "docs", "specs", implementTestSlug, "task_01.md")
+	if content := mustRead(t, failedTaskPath); !strings.Contains(content, "status: failed") {
+		t.Fatalf("expected Daemon-settled failed status in preserved Task Worktree, got:\n%s", content)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: pending") {
+		t.Fatalf("expected unresolved Run not to rewrite the user checkout, got:\n%s", content)
+	}
+	assertRunWorktreeExists(t, run.WorkDir)
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+// Invariant: a deterministic non-75 command failure still receives exactly
+// one Verification Feedback Agent turn and numbered attempt 2; the temporary
+// retry policy does not generalize.
+// Owning layer: public Implement Command integration.
+// Existing canonical suite: TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree.
+func TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair(t *testing.T) {
+	repairPath := filepath.Join(t.TempDir(), "agent-repaired")
+	command := fmt.Sprintf(
+		"if test -f %s; then printf 'deterministic repair passed\\n'; exit 0; fi; printf 'deterministic failure\\n'; exit 42",
+		shellQuoteImplement(repairPath),
+	)
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:           "task_01",
+		title:        "Repair one deterministic gate",
+		verification: []string{command},
+	}})
+	var callsMu sync.Mutex
+	taskCalls := 0
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		onTask: func(_ agent.ExecuteRequest, _ string) error {
+			callsMu.Lock()
+			taskCalls++
+			call := taskCalls
+			callsMu.Unlock()
+			if call == 2 {
+				return os.WriteFile(repairPath, []byte("repaired\n"), 0o644)
+			}
+			return nil
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected repaired Clean exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	wantStdout := "task_01 completed — Repair one deterministic gate\n" +
+		"Clean: all 1 Task(s) completed.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("deterministic repair changed normal stdout\nwant: %q\n got: %q", wantStdout, stdout.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	initialPath := daemon.VerificationOutputPath(builtinArtifactDirForRepo(t, repoDir), runID, 1, 1)
+	if got := mustRead(t, initialPath); got != "deterministic failure\n" {
+		t.Fatalf("expected retained deterministic diagnostic, got %q", got)
+	}
+	verification := implementVerificationEvidenceFromEvents(t, runEventsForRun(t, homeDir, runID))
+	waitingAttempts := []int{}
+	for _, event := range verification {
+		if event.retry != 0 {
+			t.Fatalf("deterministic failure must not consume an exclusive retry, got %+v", event)
+		}
+		if event.phase == string(runevent.VerificationPhaseWaiting) {
+			waitingAttempts = append(waitingAttempts, event.attempt)
+		}
+	}
+	if got := fmt.Sprint(waitingAttempts); got != "[1 2]" {
+		t.Fatalf("expected numbered attempts 1 and 2, got %s events=%+v", got, verification)
+	}
+	feedback := 0
+	for _, entry := range runEventsForRun(t, homeDir, runID) {
+		if entry.Event.Kind == runevent.KindDaemonTask && strings.Contains(string(entry.Event.Payload), `"phase":"verification_feedback"`) {
+			feedback++
+		}
+	}
+	if feedback != 1 || runner.calls != 2 {
+		t.Fatalf("expected one Agent repair after deterministic failure, feedback=%d Agent calls=%d", feedback, runner.calls)
+	}
+	if strings.Contains(stdout.String(), "diagnostics") || strings.Contains(stdout.String(), "Verification Feedback") {
+		t.Fatalf("expected repair progress outside stdout, got %q", stdout.String())
+	}
+}
+
+// Invariant: cancellation while a Task waits for Verification Capacity starts
+// no child for that Task, returns every worker, and preserves resumable
+// in_progress Task Worktrees without a terminal settlement.
+// Owning layer: public Implement Command integration.
+// Existing canonical suite: TestRunImplementStopRequestEndsStoppedWithInterruptMapping.
+func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *testing.T) {
+	verificationDir := t.TempDir()
+	logPath := filepath.Join(verificationDir, "verification.log")
+	startedPaths := map[string]string{
+		"task_01": filepath.Join(verificationDir, "task_01.started"),
+		"task_02": filepath.Join(verificationDir, "task_02.started"),
+	}
+	releasePaths := map[string]string{
+		"task_01": newImplementNamedPipe(t, "task_01.release"),
+		"task_02": newImplementNamedPipe(t, "task_02.release"),
+	}
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Queue the first cancellation gate",
+			verification: []string{blockingVerificationCommand("task_01", logPath, startedPaths["task_01"], releasePaths["task_01"])},
+		},
+		{
+			id:           "task_02",
+			title:        "Queue the second cancellation gate",
+			verification: []string{blockingVerificationCommand("task_02", logPath, startedPaths["task_02"], releasePaths["task_02"])},
+		},
+	})
+	configureImplementCapacities(t, repoDir, 2, 1)
+	overlap := newImplementAgentOverlapProbe()
+	t.Cleanup(overlap.releaseAgents)
+	runner := &implementFakeRunner{
+		gitRoot: repoDir,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusFailed,
+		},
+		onTask: overlap.onTask,
+	}
+	withAgentRunner(t, runner)
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	resultCh := runImplementCommandAsync(ctx, "implement", "--spec", implementTestSlug, "--no-input")
+	assertImplementTaskSet(t, waitImplementAgentStarts(t, overlap, 2), "task_01", "task_02")
+	overlap.releaseAgents()
+	runID := onlyImplementRunID(t, homeDir)
+	events := waitForImplementJournal(t, homeDir, runID, func(events []store.JournalEvent) bool {
+		waiting := 0
+		started := 0
+		for _, event := range implementVerificationEvidenceFromEvents(t, events) {
+			switch event.phase {
+			case string(runevent.VerificationPhaseWaiting):
+				waiting++
+			case string(runevent.VerificationPhaseStarted):
+				started++
+			}
+		}
+		return waiting == 2 && started == 1
+	})
+	activeTask := ""
+	for _, event := range implementVerificationEvidenceFromEvents(t, events) {
+		if event.phase == string(runevent.VerificationPhaseStarted) {
+			activeTask = event.task
+			break
+		}
+	}
+	if activeTask == "" {
+		t.Fatal("expected one active Verification before cancellation")
+	}
+	queuedTask := "task_01"
+	if activeTask == queuedTask {
+		queuedTask = "task_02"
+	}
+	waitForFile(t, startedPaths[activeTask], 10*time.Second)
+	if _, err := os.Stat(startedPaths[queuedTask]); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected queued Task %s to start no child process, stat error %v", queuedTask, err)
+	}
+
+	cancel()
+	result := waitImplementCommandResult(t, resultCh)
+	if result.code != exitOK {
+		t.Fatalf("expected Stopped command exit %d before interrupt mapping, got %d stderr=%q stdout=%q", exitOK, result.code, result.stderr, result.stdout)
+	}
+	wantStdout := "task_01 pending — Queue the first cancellation gate\n" +
+		"task_02 pending — Queue the second cancellation gate\n" +
+		"Stopped: 0 completed, 0 failed, 0 skipped, 2 pending.\n"
+	if result.stdout != wantStdout {
+		t.Fatalf("queued cancellation stdout changed\nwant: %q\n got: %q", wantStdout, result.stdout)
+	}
+	if !strings.Contains(result.stderr, "reached Stopped") || strings.Contains(result.stdout, "Waiting for Verification") {
+		t.Fatalf("expected stop progress on stderr and stable stdout, stderr=%q stdout=%q", result.stderr, result.stdout)
+	}
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateStopped {
+		t.Fatalf("expected Run Stopped, got %s", run.State)
+	}
+	for _, taskID := range []string{activeTask, queuedTask} {
+		taskRef := taskRefForImplementRun(t, run, repoDir, taskID)
+		assertRunWorktreeExists(t, taskRef.Path)
+		content := mustRead(t, filepath.Join(taskRef.Path, "docs", "specs", implementTestSlug, taskID+".md"))
+		if !strings.Contains(content, "status: in_progress") {
+			t.Fatalf("expected resumable in_progress status for %s, got:\n%s", taskID, content)
+		}
+	}
+	if _, err := os.Stat(startedPaths[queuedTask]); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("queued Task %s started a child after cancellation, stat error %v", queuedTask, err)
+	}
+	finalEvents := runEventsForRun(t, homeDir, runID)
+	for _, entry := range finalEvents {
+		if entry.Event.Kind != runevent.KindDaemonTask || entry.Event.ReviewIssue != queuedTask {
+			continue
+		}
+		if strings.Contains(string(entry.Event.Payload), `"phase":"settled"`) {
+			t.Fatalf("expected no terminal settlement for queued Task %s, got %+v", queuedTask, entry.Event)
+		}
+	}
+	if got := mustRead(t, logPath); got != "start "+activeTask+"\n" {
+		t.Fatalf("expected only the active child to start before cancellation, got %q", got)
+	}
+	assertRunWorktreeExists(t, run.WorkDir)
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
 func TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
 	wantStdout, _, wantCode, _, _ := runCleanImplementForCleanup(t, nil)
 	gotStdout, gotStderr, gotCode, homeDir, keptPath := runCleanImplementForCleanup(t, errors.New("forced cleanup failure"))
@@ -2010,6 +2804,42 @@ func TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks(t *testing.
 	}
 	if counts.completed != 1 || counts.failed != 1 || counts.skipped != 1 || counts.pending != 0 {
 		t.Fatalf("expected mixed counts, got %+v", counts)
+	}
+}
+
+// Invariant: the Daemon's terminal Task outcome remains authoritative when a
+// failed parallel Task is preserved in its Task Worktree and the Run
+// Worktree's copy is still pending.
+// Owning layer: Implement terminal report projection.
+// Existing canonical suite: TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks.
+func TestRenderImplementTaskLinesUsesDaemonOutcomeForPreservedTaskWorktree(t *testing.T) {
+	_, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:    "task_01",
+		title: "Preserve failed parallel work",
+	}})
+	specsRoot := filepath.Join(repoDir, "docs", "specs")
+	graph, err := spec.Load(specsRoot, implementTestSlug)
+	if err != nil {
+		t.Fatalf("load spec: %v", err)
+	}
+	outcomes := []daemon.TaskOutcome{{
+		Task:   "task_01",
+		Status: string(spec.StatusFailed),
+		Reason: "repeated Temporary Verification Failure",
+	}}
+
+	report, counts := renderImplementTaskLinesWithOutcomes(specsRoot, graph, true, outcomes)
+
+	want := "task_01 failed — Preserve failed parallel work\n" +
+		"  reason: repeated Temporary Verification Failure\n"
+	if report != want {
+		t.Fatalf("expected preserved Task Worktree outcome in terminal report\nwant: %q\n got: %q", want, report)
+	}
+	if counts.failed != 1 || counts.completed != 0 || counts.skipped != 0 || counts.pending != 0 {
+		t.Fatalf("expected one failed Task, got %+v", counts)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: pending") {
+		t.Fatalf("fixture must preserve stale Run Worktree status, got:\n%s", content)
 	}
 }
 

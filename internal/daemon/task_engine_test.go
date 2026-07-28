@@ -1866,7 +1866,7 @@ func TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects(t *testing.T) {
 	}
 }
 
-func TestTaskCycleVerificationCapacityOneBoundsConcurrentTaskWorktrees(t *testing.T) {
+func TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", verification: []string{"verify-task_01"}},
 		{id: "task_02", verification: []string{"verify-task_02"}},
@@ -3146,7 +3146,7 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	}
 }
 
-func TestTaskCycleTemporaryVerificationPassesExclusiveRetryWithoutAgentRepair(t *testing.T) {
+func TestTaskCycleTemporaryVerificationFlowPassesExclusiveRetryWithoutAgentRepair(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
 	verifier := &taskFakeVerifier{calls: fixture.calls, temporaryOnCall: map[int]bool{1: true}}

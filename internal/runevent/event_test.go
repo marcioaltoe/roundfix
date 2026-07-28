@@ -132,7 +132,7 @@ func TestVerificationEventVocabulary(t *testing.T) {
 	}
 }
 
-func TestVerificationWaitingEventProjectsAdditivePhase(t *testing.T) {
+func TestWaitingForVerificationReplayProjectsAdditivePhase(t *testing.T) {
 	event := RunEvent{
 		RunID:       "run_123",
 		Batch:       3,
