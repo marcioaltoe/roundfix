@@ -92,6 +92,11 @@ sweep in. Evidence:
    fixture and manifest rows (up to seven files; a non-roundfix Skill edit
    cascades into all three setup snapshots). Running it after any
    Roundfix-owned Skill edit leaves the gate green, and it is idempotent.
+   The same command covers the second derived chain, exercised manually on
+   2026-07-28: editing a Baseline module's clauses regenerates the
+   source-baseline manifest's byte-range entries with its identity and
+   index digests, the formatter golden fixtures with the profile's pinned
+   golden digest, and the catalog compatibility fixtures.
 2. A stale pin fails verification with a diagnostic naming the regeneration
    command instead of raw digest mismatches fanning out across the Baseline
    suites.

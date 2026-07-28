@@ -96,7 +96,21 @@ baseline-digests:
 	$(GO) test ./skills -run TestAuthorialSkillSync -update -count=1
 	$(GO) test ./internal/baseline -run TestCatalogCompatibility -update -count=1
 	$(GO) test ./internal/baseline -run TestBaselineCompatibilityCorpus -update -count=1
+	$(GO) test ./internal/baseline -run TestFormatterComposition -update -count=1
+	$(GO) test ./internal/baseline -run TestReadoptionCompatibilityMaintainedFixture -update -count=1
 ```
+
+The last two steps cover the module/asset chain proven manually on
+2026-07-28 (commit `66d9b63`): the formatter-composition update mode writes
+the golden fixtures from the plan's own generated postimages and re-pins the
+profile's `goldenDigest`; the maintained-fixture update mode regenerates the
+source-baseline manifest's byte-range entries marker-based — each entry's
+span is recomputed from its `source-baseline-entry` delimiters in the corpus,
+never by offset arithmetic — then rewrites the identity and index digests
+(manifest sha256, length-prefixed corpus walk). The frozen source-baseline
+corpus bytes themselves are edited only when a clause's canonical guidance
+changes, and the update mode self-validates every entry digest before
+writing.
 
 Failure messages: when run without `-update`, each validator's mismatch
 message ends with `run 'make baseline-digests'` — the hint lives in this
@@ -188,9 +202,11 @@ tests themselves rather than shelling to `make`.
 
 ## Build Order
 
-1. Regeneration modes in the three validator suites, on the unified
-   `skills.SkillFolderHash` algorithm, with stale-pin messages naming the
-   command.
+1. Regeneration modes in the validator suites for both derived chains —
+   the Skill-digest chain on the unified `skills.SkillFolderHash`
+   algorithm, and the module/asset chain (formatter goldens plus
+   marker-based source-baseline regeneration) — with stale-pin messages
+   naming the command.
 2. `Makefile`: `baseline-digests` target, `GOCACHE` default, `.PHONY`
    (depends on: 1).
 3. `.gitignore`: `/roundfix` and the repository-local cache directory
