@@ -289,6 +289,19 @@ roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill
 roundfix baseline assets sync --source-dir <canonical-setups> --check --format json
 ```
 
+Inside the Roundfix source repository, an expressly authorized edit to a
+Roundfix-owned Skill or Baseline module can change derived catalog pins.
+Regenerate those deterministic artifacts only with:
+
+```bash
+make baseline-digests
+```
+
+Every pin rewritten by that command is fallout of the authorized source edit
+and needs no separate per-Spec express authorization. A hand-edited pin value
+remains unauthorized. Run the command before repository Verification; do not
+transcribe digest values.
+
 A non-empty skill-restoration preview requires its exact current Plan Digest
 through `--confirm-plan`. Asset refresh without `--check` requires explicit
 maintainer intent. For Decision Documents, preservation, cross-clone safety,
@@ -1243,10 +1256,27 @@ outcome and never opens pull requests (ADR-0021).
    checkout no longer blocks `implement`; stderr prints a note shaped like
    `roundfix: note: working tree <path> has N uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.`
 
-   Daemon Task and QA commits stage only repository paths that do not cross a
-   symbolic link. A task file or QA Report outside the repository, or reached
-   through a symlinked path, is dropped from staging with one Run Event Journal
-   entry naming the path and reason. Progress prints warnings shaped like:
+   Before creating an Agent Session for a Task whose declared Verification
+   contains the configured repository Verification command exactly, the Daemon
+   runs that command once through shared Verification Capacity. Failure starts
+   no Agent Session, settles the Task with a `repository not green on entry`
+   reason, and publishes a Verification event classified `precondition` with
+   reason `repository_not_green_on_entry`. A passing precondition does not
+   replace post-Agent Verification, and a failing precondition does not consume
+   Verification Feedback.
+
+   Every Daemon Batch, Task, and QA commit filters stageable paths through the
+   same boundary. Repository-external paths, symlink crossings, and regular
+   files carrying any execute bit are omitted while remaining paths continue
+   to the commit. An executable refusal names its path and mode:
+
+   ```text
+   roundfix: refused executable file <path> (mode <mode>); build artifacts and deliberately executable repository files are not valid Work Item output
+   ```
+
+   A task file or QA Report outside the repository, or reached through a
+   symlinked path, is dropped from staging with one Run Event Journal entry
+   naming the path and reason. Progress prints warnings shaped like:
 
    ```text
    roundfix: task file <path> kept outside the repository; omitted from the commit

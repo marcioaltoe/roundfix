@@ -19,6 +19,17 @@ unresolved remains. Stdlib `flag` dispatch and a Bubble Tea v2 TUI.
 - **HARD RULE — skill ownership**: repo-owned authorial workflow skills may
   be adapted locally; every other skill is upstream-managed and **MUST NOT**
   be modified here. Ownership split: `docs/agents/skill-dispatch.md`.
+- **HARD RULE — protected-tooling commit choreography**: land prerequisite
+  fixes first, the express authorization record with its exact bounded paths
+  second, the authorized Task commit third, and everything else afterward.
+  Folding a prerequisite fix or the authorization record into the Task commit
+  fails the tooling-authority gate.
+- **HARD RULE — sanctioned digest regeneration**: after an expressly
+  authorized Roundfix-owned Skill or Baseline module edit, run
+  `make baseline-digests`. Every derived pin rewritten by that command is
+  deterministic fallout of the authorized source edit and needs no separate
+  express authorization. A hand-edited pin value remains an unauthorized
+  mutation.
 - **HARD RULE — release planning**: release work starts with the read-only
   `roundfix release plan` before changelog, version, tag, push, package, asset,
   or GitHub Release mutation. A generic release request authorizes only a
@@ -47,6 +58,12 @@ Skill triggers, ownership, and the Roundfix skill-sync contract live in
 The full gate is `make verify` (fmt-check + test + `roundfix skills check` +
 build) and it **MUST** pass 100% before any completion claim. For the smallest
 relevant gate while iterating:
+
+The Makefile defaults `GOCACHE` to the ignored repository-local `.gocache`
+directory only when the environment does not set it; an explicit `GOCACHE`
+always wins. After an authorized Roundfix-owned Skill or Baseline module edit,
+run `make baseline-digests` before `make verify`. The sanctioned command owns
+every derived pin update; never transcribe a digest by hand.
 
 ```bash
 rtk gofmt -w <changed-go-files>
