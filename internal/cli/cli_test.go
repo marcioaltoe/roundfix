@@ -1732,6 +1732,31 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 	assertNoRunDatabase(t, homeDir)
 }
 
+const wantProfileProofFallbackBoundary = "fallback: Fallback Chains activate only after Run creation (ADR-0050); Preflight proves every configured tuple and substitutes none"
+
+func TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields(t *testing.T) {
+	err := profileProofError{
+		Selection: roundconfig.AgentSelection{
+			Runtime:         "codex",
+			Model:           "broken-model",
+			ReasoningEffort: "unsupported",
+		},
+		References: []profileProofReference{{
+			Category: roundconfig.CategoryBackend,
+			Source:   roundconfig.ProfileSourceProject,
+			Role:     "preferred",
+		}},
+		Classification: "selection_rejected",
+		NextAction:     "repair the configured tuple",
+		Err:            errors.New("adapter rejected tuple"),
+	}
+
+	want := `profile proof failed for runtime "codex", model "broken-model", reasoning_effort "unsupported"; affected categories: backend preferred source=project; classification: selection_rejected; adapter error: adapter rejected tuple; next: repair the configured tuple; ` + wantProfileProofFallbackBoundary
+	if got := err.Error(); got != want {
+		t.Fatalf("profile proof error:\nwant: %q\n got: %q", want, got)
+	}
+}
+
 func TestProfilesValidateFailedProofNamesTupleAffectedCategoriesAndRecovery(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -1771,13 +1796,26 @@ profiles:
 		t.Fatalf("profiles validate exit = %d, want %d", code, exitPreflight)
 	}
 	response := decodeProfilesValidateResponse(t, stdout.String())
-	if response.OK || !strings.Contains(response.Error, "broken-backend") || !strings.Contains(response.Error, "backend preferred") || !strings.Contains(response.Error, "adapter rejected tuple") || !strings.Contains(response.Error, "roundfix profiles configure") {
+	if response.OK || !strings.Contains(response.Error, "broken-backend") || !strings.Contains(response.Error, "backend preferred") || !strings.Contains(response.Error, "adapter rejected tuple") || !strings.Contains(response.Error, "roundfix profiles configure") || !strings.Contains(response.Error, wantProfileProofFallbackBoundary) {
 		t.Fatalf("unexpected failed validation response: %+v", response)
+	}
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode profiles validate JSON fields: %v", err)
+	}
+	wantEnvelopeFields := []string{"schema", "ok", "proofs", "error"}
+	if len(envelope) != len(wantEnvelopeFields) {
+		t.Fatalf("profiles validate JSON fields = %v, want exactly %v", envelope, wantEnvelopeFields)
+	}
+	for _, field := range wantEnvelopeFields {
+		if _, ok := envelope[field]; !ok {
+			t.Fatalf("profiles validate JSON missing field %q in %v", field, envelope)
+		}
 	}
 	if len(response.Proofs) == 0 || response.Proofs[0].Status != "failed" || !strings.Contains(response.Proofs[0].Error, "adapter rejected tuple") {
 		t.Fatalf("expected failed proof details, got %+v", response.Proofs)
 	}
-	for _, want := range []string{"broken-backend", "backend preferred", "adapter rejected tuple", "roundfix profiles validate"} {
+	for _, want := range []string{"broken-backend", "backend preferred", "adapter rejected tuple", "roundfix profiles validate", wantProfileProofFallbackBoundary} {
 		if !strings.Contains(stderr.String(), want) {
 			t.Fatalf("stderr missing %q in %q", want, stderr.String())
 		}
@@ -7363,6 +7401,7 @@ func TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun(t *te
 				"selection rejected",
 				"roundfix profiles configure --scope user|project",
 				"roundfix profiles validate",
+				wantProfileProofFallbackBoundary,
 			} {
 				if !strings.Contains(stderr.String(), want) {
 					t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())

@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0052-claude-adapter-standardization
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -63,3 +63,46 @@ without substituting any.
 
 `_prd.md` → User Story 6, Core Feature 8; `_techspec.md` → Build Order 6,
 API Contracts; ADR-0050.
+
+## Result
+
+Implementation:
+
+- The shared profile proof error now appends
+  `fallback: Fallback Chains activate only after Run creation (ADR-0050); Preflight proves every configured tuple and substitutes none`
+  after the existing runtime, model, reasoning effort, affected categories,
+  classification, adapter error, and next-action fields. Implement, Resolve,
+  Watch, and `profiles validate` inherit the sentence from this one
+  constructor.
+- Focused assertions cover the exact complete message order, the Implement
+  preflight, the Resolve/Watch preflight table, and the failed
+  `profiles validate --json` surface. The JSON assertion requires exactly the
+  existing `schema`, `ok`, `proofs`, and `error` envelope fields.
+
+Focused checks:
+
+- Before the implementation change,
+  `GOCACHE=/private/tmp/roundfix-task06-gocache.0u2tD8 rtk go test ./internal/cli -run 'TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields|TestProfilesValidateFailedProofNamesTupleAffectedCategoriesAndRecovery|TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun|TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun'`
+  failed all seven cases because the fallback boundary sentence was absent.
+- After the implementation and Result changes,
+  `GOCACHE=/private/tmp/roundfix-task06-gocache.0u2tD8 rtk go test -count=1 ./internal/cli -run 'TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields|TestProfilesValidateFailedProofNamesTupleAffectedCategoriesAndRecovery|TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun|TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun'`
+  passed all seven cases.
+- `rtk gofmt -w internal/cli/profiles_validate.go internal/cli/cli_test.go internal/cli/implement_test.go`
+  completed without output.
+- The Task's declared `## Verification` commands were not run; the Daemon owns
+  that gate.
+
+Acceptance evidence:
+
+- Operational preflight message: the focused Implement test and the
+  Resolve/Watch table passed while requiring the exact sentence that names
+  ADR-0050.
+- Existing field text and order: the focused `profileProofError` equality test
+  passed against the complete pre-existing message followed only by the new
+  sentence.
+- JSON schema stability: the focused failed-validation test decoded
+  `roundfix/profiles-validate/v1`, required the sentence inside the existing
+  `error` prose, and passed while requiring exactly the four existing
+  top-level fields.
+
+Follow-ups: none.

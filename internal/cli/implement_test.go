@@ -4168,6 +4168,7 @@ func TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun
 		"backend preferred",
 		"adapter error: agent selection unavailable",
 		"roundfix profiles configure --scope user|project",
+		wantProfileProofFallbackBoundary,
 	} {
 		if !strings.Contains(stderr.String(), want) {
 			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
