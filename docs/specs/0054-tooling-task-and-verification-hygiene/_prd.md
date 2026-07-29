@@ -74,8 +74,8 @@ sweep in. Evidence:
    the Go build cache to default to a repository-local path, so that the
    gate compiles without my discovering an environment workaround.
 4. As a supervisor landing a protected-tooling change, I want the commit
-   choreography — prerequisite fix, then authorization, then Task, then the
-   rest — stated in the agent guidance, so that landing it takes one attempt
+   choreography — the authorization record and any prerequisite fix each in
+   their own commit before the Task commit, then the rest — stated in the agent guidance, so that landing it takes one attempt
    instead of three QA cycles.
 5. As a maintainer, I want a Task whose Verification demands a green
    repository to be refused at assignment when the repository is red for
@@ -108,8 +108,10 @@ sweep in. Evidence:
    authorization; the policy is recorded in the repository's agent guidance
    and the Skill-alignment Task template stops enumerating pin paths.
 4. The commit choreography for protected-tooling changes is documented as a
-   rule in the agent guidance: prerequisite fixes first, the authorization
-   record second, the Task commit third, everything else after — and the QA
+   rule in the agent guidance: the express authorization record and any
+   prerequisite fix are each their own commit and each lands before the
+   authorized Task commit, in either relative order, with everything else
+   after — and the QA
    gate's tooling audit reports every authorization-shape problem it finds
    in one pass rather than one per rerun.
 5. The repository gate's Go build cache defaults to a repository-local,

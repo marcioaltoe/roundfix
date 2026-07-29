@@ -66,12 +66,24 @@ test: ## Run Go tests
 test-race: ## Run Go tests with the race detector
 	$(GO) test -race $(PKGS)
 
+DERIVED_DIGEST_PATHS := internal/baseline/assets/setups internal/baseline/testdata internal/baseline/assets/source-baselines internal/baseline/assets/formatter-fixtures internal/baseline/assets/profiles
+
 baseline-digests: ## Regenerate derived Baseline digest artifacts
-	$(GO) test ./skills -run TestAuthorialSkillSync -update -count=1
-	$(GO) test ./internal/baseline -run TestCatalogCompatibility -update -count=1
-	$(GO) test ./internal/baseline -run TestBaselineCompatibilityCorpus -update -count=1
-	$(GO) test ./internal/baseline -run TestReadoptionCompatibilityMaintainedFixture -update -count=1
-	$(GO) test ./internal/baseline -run TestFormatterComposition -update -count=1
+	@snapshot=$$(mktemp -t rf-digests) && \
+	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort > "$$snapshot" && \
+	$(GO) test ./skills -run TestAuthorialSkillSync -update -count=1 && \
+	$(GO) test ./internal/baseline -run TestCatalogCompatibility -update -count=1 && \
+	$(GO) test ./internal/baseline -run TestBaselineCompatibilityCorpus -update -count=1 && \
+	$(GO) test ./internal/baseline -run TestReadoptionCompatibilityMaintainedFixture -update -count=1 && \
+	$(GO) test ./internal/baseline -run TestFormatterComposition -update -count=1 && \
+	changed=$$(find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort | comm -13 "$$snapshot" - | awk '{print $$2}') && \
+	rm -f "$$snapshot" && \
+	if [ -z "$$changed" ]; then \
+		echo "baseline-digests: no changes; derived artifacts already match their canonical sources"; \
+	else \
+		echo "baseline-digests: regenerated"; \
+		echo "$$changed" | sed 's/^/  /'; \
+	fi
 
 ##@ Build & Run
 
