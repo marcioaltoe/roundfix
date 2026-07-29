@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/typescript-bun.txt"
   },
-  "digest": "6302a9e023a22baa40c7f589890829161e6de02aebd3a230e26448fd6a26b11e",
+  "digest": "63d620c45c5f540426d8529a9c8afa9f39c42c9ac8ef88c4b44a8de61f1d51ba",
   "skills": [
     {
       "name": "find-rules",
@@ -1027,7 +1027,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "2a196c3e7e0d404f575a3a426675786ec9da6e70b79f5ffff32fef06371b7e8c"
+      "contentDigest": "a1ee4d0ee386442915f6cc2f62b6c025db706195bcb1725282f6deb1702160f7"
     },
     {
       "name": "the-fool",

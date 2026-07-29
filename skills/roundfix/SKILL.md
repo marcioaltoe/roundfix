@@ -48,16 +48,29 @@ Roundfix knows the remediation.
 
 The blocking `skills:` line runs after, and independently from, `profiles:`.
 The running binary's embedded bundle is authoritative for Roundfix-owned
-skills; each required external skill must match its `computedHash` in
-`skills-lock.json`. Outside a Git repository, Doctor does not inspect the
-Repository Skill Set and prints
+skills. The required external set comes from the repository's Setup Manifest
+at `docs/agents/setup-context.json`: Doctor unions the `requiredSkills`
+declared by its selected modules, removes Roundfix-owned names, and checks each
+remaining skill against its `computedHash` in `skills-lock.json`. The external
+count therefore follows the repository's selected modules instead of a fixed
+Roundfix development list.
+
+Outside a Git repository, Doctor does not inspect the Repository Skill Set and
+prints
 `skills: failed (Repository Skill Set readiness requires a Git repository; next: run roundfix doctor from a Git repository)`.
-Surface a failed `skills:` line and its printed `next:` remediation before work
-continues. Owned failures print
-`roundfix skills install --target project`; external failures print
-`bunx skills experimental_install && bunx skills update -p -y`; mixed failures
-print
-`roundfix skills install --target project && bunx skills experimental_install && bunx skills update -p -y`.
+When the Setup Manifest is absent or unreadable, Doctor still checks the
+running binary's owned set, requires zero external skills, fails the `skills:`
+line with `Setup Manifest is absent or unreadable`, and includes
+`roundfix baseline` as the Baseline-adoption next action.
+
+Surface a failed `skills:` line and its printed `next:` remediation before
+work continues. Owned failures print
+`roundfix skills install --target project`. Each named missing or outdated
+external skill prints its own
+`bunx skills add marcioaltoe/skills@<skill>` command. When an external failure
+does not identify specific skill names, Doctor instead prints
+`bunx skills experimental_install && bunx skills update -p -y`; a mixed named
+failure prints the owned action followed by the skill-scoped external actions.
 Doctor is diagnosis-only: it never runs these commands, accesses the network,
 installs or updates skills, or writes repository state. Apply remediation only
 after explicit workflow authorization, then rerun Doctor.
@@ -155,7 +168,7 @@ node: ok
 acpx: ok
 adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.63.0"; package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex: command="npx -y @agentclientprotocol/codex-acp@1.1.5"; package=@agentclientprotocol/codex-acp; version=1.1.5)
 profiles: ok (3 distinct tuples; 10 category references)
-skills: ok (39 required: 14 Roundfix-owned, 25 external)
+skills: ok (<total> required: <owned> Roundfix-owned, <external> external)
 codex: ok
 ```
 

@@ -90,11 +90,106 @@ func TestCheckRepositoryReportsReadyRequiredSetWithoutMutation(t *testing.T) {
 	if !got.Ready() {
 		t.Fatalf("expected repository to be ready, got %#v", got)
 	}
-	if got.OwnedRequired != 14 || got.ExternalRequired != 25 {
-		t.Fatalf("required counts = owned %d external %d, want 14 and 25", got.OwnedRequired, got.ExternalRequired)
+	wantOwned, wantExternal := len(Names()), len(Recommended())
+	if got.OwnedRequired != wantOwned || got.ExternalRequired != wantExternal {
+		t.Fatalf("required counts = owned %d external %d, want %d and %d", got.OwnedRequired, got.ExternalRequired, wantOwned, wantExternal)
 	}
 	if after := snapshotRepositoryFixture(t, root); !reflect.DeepEqual(after, before) {
 		t.Fatalf("CheckRepository mutated fixture:\nbefore=%#v\nafter=%#v", before, after)
+	}
+}
+
+func TestCheckRepositoryWithExternalUsesExplicitRequirement(t *testing.T) {
+	root := writeReadyRepositoryFixture(t)
+	for _, name := range []string{"agentic-cli-design", "autoresearch", "bubbletea", "exa-web-search"} {
+		if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", name)); err != nil {
+			t.Fatalf("remove external skill %q: %v", name, err)
+		}
+	}
+
+	got, err := CheckRepositoryWithExternal(
+		t.Context(),
+		root,
+		[]string{"autoresearch", "bubbletea", "agentic-cli-design"},
+	)
+	if err != nil {
+		t.Fatalf("check repository with explicit external requirement: %v", err)
+	}
+	if got.ExternalRequired != 3 {
+		t.Fatalf("external required = %d, want 3", got.ExternalRequired)
+	}
+	wantMissing := []string{"agentic-cli-design", "autoresearch", "bubbletea"}
+	if !reflect.DeepEqual(got.MissingExternal, wantMissing) {
+		t.Fatalf("missing external = %v, want %v", got.MissingExternal, wantMissing)
+	}
+	if got.OwnedRequired != len(Names()) || len(got.MissingOwned) != 0 || len(got.OutdatedOwned) != 0 {
+		t.Fatalf("owned readiness changed: %#v", got)
+	}
+}
+
+func TestCheckRepositoryWithExternalAcceptsEmptyRequirement(t *testing.T) {
+	root := writeReadyRepositoryFixture(t)
+	if err := os.Remove(filepath.Join(root, "skills-lock.json")); err != nil {
+		t.Fatalf("remove irrelevant skills lock: %v", err)
+	}
+	for _, name := range Recommended() {
+		if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", name)); err != nil {
+			t.Fatalf("remove external skill %q: %v", name, err)
+		}
+	}
+
+	got, err := CheckRepositoryWithExternal(t.Context(), root, []string{})
+	if err != nil {
+		t.Fatalf("check repository with empty external requirement: %v", err)
+	}
+	if !got.Ready() {
+		t.Fatalf("empty external requirement changed readiness: %#v", got)
+	}
+	if got.ExternalRequired != 0 || len(got.MissingExternal) != 0 || len(got.OutdatedExternal) != 0 {
+		t.Fatalf("external readiness = %#v, want zero requirements and no failures", got)
+	}
+	if got.OwnedRequired != len(Names()) {
+		t.Fatalf("owned required = %d, want %d", got.OwnedRequired, len(Names()))
+	}
+}
+
+func TestCheckRepositoryMatchesExternalCompatibilityEntryPoint(t *testing.T) {
+	root := writeReadyRepositoryFixture(t)
+	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", "autoresearch")); err != nil {
+		t.Fatalf("remove external skill: %v", err)
+	}
+
+	got, err := CheckRepository(t.Context(), root)
+	if err != nil {
+		t.Fatalf("check repository: %v", err)
+	}
+	want, err := CheckRepositoryWithExternal(t.Context(), root, Recommended())
+	if err != nil {
+		t.Fatalf("check repository through compatibility requirement: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("CheckRepository readiness = %#v, want %#v", got, want)
+	}
+}
+
+func TestCheckRepositoryWithExternalKeepsOwnedValidation(t *testing.T) {
+	root := writeReadyRepositoryFixture(t)
+	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", "archive-spec")); err != nil {
+		t.Fatalf("remove owned skill: %v", err)
+	}
+
+	legacy, err := CheckRepository(t.Context(), root)
+	if err != nil {
+		t.Fatalf("check repository: %v", err)
+	}
+	explicit, err := CheckRepositoryWithExternal(t.Context(), root, nil)
+	if err != nil {
+		t.Fatalf("check repository with external requirement: %v", err)
+	}
+	if legacy.OwnedRequired != explicit.OwnedRequired ||
+		!reflect.DeepEqual(legacy.MissingOwned, explicit.MissingOwned) ||
+		!reflect.DeepEqual(legacy.OutdatedOwned, explicit.OutdatedOwned) {
+		t.Fatalf("owned readiness differs: legacy=%#v explicit=%#v", legacy, explicit)
 	}
 }
 
