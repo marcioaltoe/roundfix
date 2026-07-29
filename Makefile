@@ -75,14 +75,28 @@ BASELINE_DIGEST_STEPS := \
 	./internal/baseline:TestCatalogCompatibility
 
 baseline-digests: ## Regenerate derived Baseline digest artifacts
-	@raw=""; snapshot=$$(mktemp "$${TMPDIR:-/tmp}/rf-digests.XXXXXX") || { status=$$?; printf '%s\n' '{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false}'; exit "$$status"; }; finish() { status=$$?; rm -f "$$snapshot" "$$raw"; if [ "$$status" -ne 0 ]; then printf '%s\n' '{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false}'; fi; exit "$$status"; }; trap finish EXIT; \
+	@raw=""; snapshot=""; \
+	err_code="temp_file_unavailable"; err_stage="snapshot-allocation"; err_retryable="true"; \
+	err_next="Free space in the temporary directory or point TMPDIR at a writable one, then rerun make baseline-digests."; \
+	finish() { status=$$?; rm -f "$$snapshot" "$$raw"; if [ "$$status" -ne 0 ]; then printf '{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false,"errorCode":"%s","stage":"%s","retryable":%s,"nextSteps":"%s"}\n' "$$err_code" "$$err_stage" "$$err_retryable" "$$err_next"; fi; exit "$$status"; }; \
+	trap finish EXIT; \
+	snapshot=$$(mktemp "$${TMPDIR:-/tmp}/rf-digests.XXXXXX") || exit $$?; \
 	raw=$$(mktemp "$${TMPDIR:-/tmp}/rf-digests-raw.XXXXXX") || exit $$?; \
-	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + > "$$raw" || { status=$$?; rm -f "$$raw"; exit "$$status"; }; \
-	sort "$$raw" > "$$snapshot" || { status=$$?; rm -f "$$raw"; exit "$$status"; }; \
-	for step in $(BASELINE_DIGEST_STEPS); do package=$${step%%:*}; test_name=$${step#*:}; $(GO) test "$$package" -run "$$test_name" -update -count=1 >&2 || { status=$$?; printf 'baseline-digests: regeneration failed at %s:%s\n' "$$package" "$$test_name" >&2; exit "$$status"; }; done; \
-	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + > "$$raw" || { status=$$?; rm -f "$$raw"; exit "$$status"; }; \
-	changed=$$(sort "$$raw" | comm -3 "$$snapshot" - | awk '{print $$2}' | sort -u) || { status=$$?; rm -f "$$raw"; exit "$$status"; }; \
-	rm -f "$$raw"; \
+	err_code="artifact_scan_failed"; err_stage="pre-scan"; err_retryable="false"; \
+	err_next="Verify every path in DERIVED_DIGEST_PATHS exists and is readable, then rerun make baseline-digests."; \
+	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + > "$$raw" || exit $$?; \
+	err_code="snapshot_sort_failed"; err_stage="pre-scan-sort"; \
+	err_next="Inspect the temporary directory for space or permission problems, then rerun make baseline-digests."; \
+	sort "$$raw" > "$$snapshot" || exit $$?; \
+	err_code="regeneration_failed"; err_retryable="false"; \
+	err_next="Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests."; \
+	for step in $(BASELINE_DIGEST_STEPS); do package=$${step%%:*}; test_name=$${step#*:}; err_stage="$$package:$$test_name"; $(GO) test "$$package" -run "$$test_name" -update -count=1 >&2 || { status=$$?; printf 'baseline-digests: regeneration failed at %s:%s\n' "$$package" "$$test_name" >&2; exit "$$status"; }; done; \
+	err_code="artifact_scan_failed"; err_stage="post-scan"; \
+	err_next="Verify every path in DERIVED_DIGEST_PATHS exists and is readable, then rerun make baseline-digests."; \
+	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + > "$$raw" || exit $$?; \
+	err_code="comparison_failed"; err_stage="comparison"; \
+	err_next="Rerun make baseline-digests; if the comparison keeps failing, inspect the derived artifact paths for unreadable files."; \
+	changed=$$(sort "$$raw" | comm -3 "$$snapshot" - | awk '{print $$2}' | sort -u) || exit $$?; \
 	if [ -z "$$changed" ]; then result_changed=false; printf '%s\n' "baseline-digests: no changes; derived artifacts already match their canonical sources" >&2; else result_changed=true; printf '%s\n' "baseline-digests: regenerated" >&2; printf '%s\n' "$$changed" | sed 's/^/  /' >&2; fi; printf '{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":%s}\n' "$$result_changed"
 
 ##@ Build & Run
