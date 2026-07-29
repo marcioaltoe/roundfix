@@ -3026,6 +3026,9 @@ func TestRunImplementReportPrintsVerificationFailureReason(t *testing.T) {
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
 	}
 	_, verifier, _, _ := withImplementCollaborators(t, runner)
+	// Pass the repository-green entry precondition, then fail the post-Agent
+	// Verification this regression exists to cover.
+	verifier.passingCalls = 1
 	verifier.err = errors.New("exit status 7")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
