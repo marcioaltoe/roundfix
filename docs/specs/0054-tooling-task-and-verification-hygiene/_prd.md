@@ -38,6 +38,8 @@ sweep in. Evidence:
   authorizes changes to exactly `Makefile` and `.gitignore`, to exactly
   `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md`, and to
   the deterministic Skill-digest fallout in exactly
+  `internal/baseline/assets/setups/go-cli.json`,
+  `internal/baseline/assets/setups/rust-cli.json`,
   `internal/baseline/assets/setups/typescript-bun.json`,
   `internal/baseline/testdata/catalog.digest`,
   `internal/baseline/testdata/catalog.normalized.json`,
