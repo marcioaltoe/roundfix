@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0061-repository-derived-skill-requirements
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -59,3 +59,45 @@ caller without that context.
 ## References
 
 `_prd.md` → Core Features 1–2; `_techspec.md` → Build Order 1, Interfaces.
+
+## Result
+
+Implemented an exported `CheckRepositoryWithExternal` entry point that uses
+the caller's external skill requirement while continuing to resolve owned
+skills and files from the running binary's embedded bundle. `CheckRepository`
+keeps its signature and delegates with `Recommended()`. The shared checker
+does not read `skills-lock.json` when the external requirement is empty.
+
+Focused checks:
+
+- Red signal: with a writable Run-local `GOCACHE`,
+  `rtk go test ./skills -run "TestCheckRepositoryWithExternal" -count=1`
+  failed to compile before implementation because
+  `CheckRepositoryWithExternal` was undefined.
+- `rtk gofmt -w skills/repository.go skills/repository_test.go` — passed.
+- With a writable Run-local `GOCACHE`,
+  `rtk go test ./skills -run "TestCheckRepositoryWithExternal(UsesExplicitRequirement|AcceptsEmptyRequirement|KeepsOwnedValidation)$|TestCheckRepository(MatchesExternalCompatibilityEntryPoint|ReportsReadyRequiredSetWithoutMutation|HonorsPreCanceledContext|ClassifiesMissingAndOutdatedSkills|RejectsMalformedLockAndUnsafeRequiredNames)$" -count=1`
+  — passed, 23 tests.
+- `rtk git diff --check` — passed.
+
+Acceptance evidence:
+
+- Explicit external set: `TestCheckRepositoryWithExternalUsesExplicitRequirement`
+  removes one required skill and one embedded recommendation, then reports
+  only the caller-required skill as missing.
+- Empty external set: `TestCheckRepositoryWithExternalAcceptsEmptyRequirement`
+  passes an explicit zero-length slice after removing the external lock and
+  installed external skills, then reports zero external requirements and no
+  external failure.
+- Existing entry point: the existing ready-count and classification cases
+  remain focused-green, and
+  `TestCheckRepositoryMatchesExternalCompatibilityEntryPoint` proves
+  `CheckRepository` returns the same readiness as the compatibility
+  `Recommended()` requirement.
+- Owned validation:
+  `TestCheckRepositoryWithExternalKeepsOwnedValidation` proves both entry
+  points report the same owned count and missing/outdated classifications;
+  the explicit- and empty-set cases also keep the embedded owned count.
+
+Daemon Verification was not run; the Daemon owns the commands in this Task's
+`## Verification` section and terminal settlement.

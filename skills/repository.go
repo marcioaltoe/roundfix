@@ -66,11 +66,16 @@ type localLockSkill struct {
 }
 
 func CheckRepository(ctx context.Context, root string) (RepositoryReadiness, error) {
+	return CheckRepositoryWithExternal(ctx, root, Recommended())
+}
+
+// CheckRepositoryWithExternal checks the repository against the caller's
+// external skill requirement and the running binary's embedded owned bundle.
+func CheckRepositoryWithExternal(ctx context.Context, root string, external []string) (RepositoryReadiness, error) {
 	if err := ctx.Err(); err != nil {
 		return RepositoryReadiness{}, fmt.Errorf("check repository skill set: %w", err)
 	}
 	owned := Names()
-	external := Recommended()
 	if err := validateRequiredSkillNames(owned, external); err != nil {
 		return RepositoryReadiness{
 			OwnedRequired:    len(owned),
@@ -125,15 +130,18 @@ func checkRepository(ctx context.Context, root string, owned []string, external 
 	if err != nil {
 		return readiness, err
 	}
-	const lockPath = "skills-lock.json"
-	lockDisplayPath := repositoryDisplayPath(root, lockPath)
-	lock, err := readLocalSkillsLock(ctx, repositoryRoot, lockPath, lockDisplayPath)
-	if err != nil {
-		return readiness, err
-	}
-	externalHashes, err := requiredExternalHashes(lockDisplayPath, lock, external)
-	if err != nil {
-		return readiness, err
+	var externalHashes map[string]string
+	if len(external) > 0 {
+		const lockPath = "skills-lock.json"
+		lockDisplayPath := repositoryDisplayPath(root, lockPath)
+		lock, err := readLocalSkillsLock(ctx, repositoryRoot, lockPath, lockDisplayPath)
+		if err != nil {
+			return readiness, err
+		}
+		externalHashes, err = requiredExternalHashes(lockDisplayPath, lock, external)
+		if err != nil {
+			return readiness, err
+		}
 	}
 
 	for _, sharedDirectory := range []string{".agents", ".agents/skills"} {
