@@ -1,6 +1,7 @@
 package baseline
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"embed"
 	"encoding/base64"
@@ -9,10 +10,14 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
+
+	"roundfix/skills"
 )
 
 // Suite: Baseline compatibility corpus
@@ -94,6 +99,10 @@ type baselineCompatibilityFixture struct {
 }
 
 func TestBaselineCompatibilityCorpus(t *testing.T) {
+	if *updateBaselineDigests {
+		regenerateBaselineCompatibilityCorpus(t)
+		return
+	}
 	manifest := readBaselineCompatibilityJSON[baselineCompatibilityManifest](t, "manifest.json")
 	if manifest.SchemaVersion != "setup-context-driven/parity-corpus/v1" {
 		t.Fatalf("manifest schema = %q", manifest.SchemaVersion)
@@ -201,6 +210,200 @@ func TestBaselineCompatibilityCorpus(t *testing.T) {
 	assertBaselineCompatibilityBlobs(t)
 }
 
+func regenerateBaselineCompatibilityCorpus(t *testing.T) {
+	t.Helper()
+	const fixtureRelative = "fixtures/asset-sync.json"
+	fixturePath := filepath.FromSlash(path.Join(baselineCompatibilityRoot, fixtureRelative))
+	fixtureBytes, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatalf("read compatibility fixture for regeneration: %v", err)
+	}
+	fixture := decodeBaselineCompatibilityDocument(t, fixtureRelative, fixtureBytes)
+	setupDigests := regenerateBaselineCompatibilitySetups(t, fixture)
+	updateBaselineCompatibilityLedger(t, fixture, setupDigests)
+	updatedFixture, err := json.MarshalIndent(fixture, "", "  ")
+	if err != nil {
+		t.Fatalf("encode regenerated compatibility fixture: %v", err)
+	}
+	updatedFixture = append(updatedFixture, '\n')
+	writeBaselineDerivedArtifact(t, fixturePath, updatedFixture)
+
+	manifestPath := filepath.FromSlash(path.Join(baselineCompatibilityRoot, "manifest.json"))
+	manifestBytes, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatalf("read compatibility manifest for regeneration: %v", err)
+	}
+	manifest := decodeBaselineCompatibilityDocument(t, "manifest.json", manifestBytes)
+	frozenBefore := baselineCompatibilityFrozenFields(t, manifestBytes)
+	artifacts, ok := manifest["artifacts"].([]any)
+	if !ok {
+		t.Fatal("compatibility manifest artifacts are not an array")
+	}
+	updated := false
+	sum := sha256.Sum256(updatedFixture)
+	for _, rawArtifact := range artifacts {
+		artifact, ok := rawArtifact.(map[string]any)
+		if !ok {
+			t.Fatal("compatibility manifest artifact is not an object")
+		}
+		if artifact["path"] != fixtureRelative {
+			continue
+		}
+		artifact["bytes"] = json.Number(fmt.Sprint(len(updatedFixture)))
+		artifact["sha256"] = hex.EncodeToString(sum[:])
+		updated = true
+		break
+	}
+	if !updated {
+		t.Fatalf("compatibility manifest has no artifact %q", fixtureRelative)
+	}
+	updatedManifest, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		t.Fatalf("encode regenerated compatibility manifest: %v", err)
+	}
+	updatedManifest = append(updatedManifest, '\n')
+	frozenAfter := baselineCompatibilityFrozenFields(t, updatedManifest)
+	for key, before := range frozenBefore {
+		if !bytes.Equal(before, frozenAfter[key]) {
+			t.Fatalf("compatibility manifest frozen field %q changed during regeneration", key)
+		}
+	}
+	writeBaselineDerivedArtifact(t, manifestPath, updatedManifest)
+}
+
+func regenerateBaselineCompatibilitySetups(
+	t *testing.T,
+	fixture map[string]any,
+) map[string]string {
+	t.Helper()
+	manifest, ok := fixture["manifest"].(map[string]any)
+	if !ok {
+		t.Fatal("asset-sync fixture manifest is not an object")
+	}
+	rawSetups, ok := manifest["setups"].([]any)
+	if !ok {
+		t.Fatal("asset-sync fixture setups are not an array")
+	}
+	repoRoot := filepath.Clean(filepath.Join("..", ".."))
+	digests := make(map[string]string, len(rawSetups))
+	for _, rawSetup := range rawSetups {
+		setup, ok := rawSetup.(map[string]any)
+		if !ok {
+			t.Fatal("asset-sync fixture setup is not an object")
+		}
+		setupID, ok := setup["id"].(string)
+		if !ok || setupID == "" {
+			t.Fatal("asset-sync fixture setup has no id")
+		}
+		rawSkills, ok := setup["skills"].([]any)
+		if !ok {
+			t.Fatalf("asset-sync fixture setup %q skills are not an array", setupID)
+		}
+		for _, rawSkill := range rawSkills {
+			skill, ok := rawSkill.(map[string]any)
+			if !ok {
+				t.Fatalf("asset-sync fixture setup %q skill is not an object", setupID)
+			}
+			source, ok := skill["source"].(map[string]any)
+			if !ok || source["type"] != "repo" {
+				continue
+			}
+			name, ok := skill["name"].(string)
+			if !ok || name == "" || source["name"] != "roundfix" {
+				t.Fatalf("asset-sync fixture setup %q has invalid repo skill", setupID)
+			}
+			digest, err := skills.SkillFolderHash(
+				t.Context(),
+				filepath.Join(repoRoot, ".agents", "skills", name),
+			)
+			if err != nil {
+				t.Fatalf("hash canonical skill %q: %v", name, err)
+			}
+			skill["contentDigest"] = digest
+		}
+		var digestPayload any = rawSkills
+		if bundles, exists := setup["activationBundles"]; exists {
+			digestPayload = map[string]any{
+				"activationBundles": bundles,
+				"skills":            rawSkills,
+			}
+		}
+		digest, err := canonicalSHA256(digestPayload)
+		if err != nil {
+			t.Fatalf("compute asset-sync fixture setup %q digest: %v", setupID, err)
+		}
+		setup["digest"] = digest
+		digests[setupID] = digest
+	}
+	return digests
+}
+
+func updateBaselineCompatibilityLedger(
+	t *testing.T,
+	fixture map[string]any,
+	setupDigests map[string]string,
+) {
+	t.Helper()
+	ledger, ok := fixture["managedEntryLedger"].([]any)
+	if !ok {
+		t.Fatal("asset-sync fixture managed entry ledger is not an array")
+	}
+	for _, rawEntry := range ledger {
+		entry, ok := rawEntry.(map[string]any)
+		if !ok {
+			t.Fatal("asset-sync fixture managed entry is not an object")
+		}
+		id, _ := entry["id"].(string)
+		digest, ok := setupDigests[id]
+		if !ok {
+			t.Fatalf("asset-sync fixture managed entry %q has no setup", id)
+		}
+		entry["digest"] = digest
+	}
+}
+
+func decodeBaselineCompatibilityDocument(
+	t *testing.T,
+	name string,
+	data []byte,
+) map[string]any {
+	t.Helper()
+	var document map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	if err := decoder.Decode(&document); err != nil {
+		t.Fatalf("decode compatibility document %q: %v", name, err)
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		t.Fatalf("compatibility document %q has trailing JSON", name)
+	}
+	return document
+}
+
+func baselineCompatibilityFrozenFields(t *testing.T, data []byte) map[string][]byte {
+	t.Helper()
+	var document map[string]json.RawMessage
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("decode compatibility manifest frozen fields: %v", err)
+	}
+	result := make(map[string][]byte)
+	for _, key := range []string{
+		"frozenDate",
+		"sourceSuite",
+		"profiles",
+		"adoptionStates",
+		"fixtureIds",
+		"retiredBehavior",
+	} {
+		value, ok := document[key]
+		if !ok {
+			t.Fatalf("compatibility manifest frozen field %q is missing", key)
+		}
+		result[key] = append([]byte(nil), value...)
+	}
+	return result
+}
+
 func assertBaselineCompatibilityArtifacts(t *testing.T, manifest baselineCompatibilityManifest) {
 	t.Helper()
 	declared := make(map[string]struct{}, len(manifest.Artifacts))
@@ -213,12 +416,13 @@ func assertBaselineCompatibilityArtifacts(t *testing.T, manifest baselineCompati
 		sum := sha256.Sum256(data)
 		if len(data) != artifact.Bytes || hex.EncodeToString(sum[:]) != artifact.SHA256 {
 			t.Fatalf(
-				"artifact %q identity = bytes:%d sha256:%x, want bytes:%d sha256:%s",
+				"artifact %q identity = bytes:%d sha256:%x, want bytes:%d sha256:%s; %s",
 				artifact.Path,
 				len(data),
 				sum,
 				artifact.Bytes,
 				artifact.SHA256,
+				baselineDigestRegenerationHint,
 			)
 		}
 	}

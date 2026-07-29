@@ -6,11 +6,14 @@
 package baseline
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -234,6 +237,10 @@ func TestDecisionDocumentSkeletonRejectsMalformedInput(t *testing.T) {
 }
 
 func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
+	if *updateBaselineDigests {
+		regenerateMaintainedSourceBaseline(t)
+		return
+	}
 	fixturePath := filepath.Join(
 		"testdata", "parity-corpus", "v1", "fixtures", "readoption-preservation.json",
 	)
@@ -269,11 +276,19 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
-		t.Fatalf("load embedded catalog: %v", err)
+		t.Fatalf(
+			"load embedded catalog: %v; %s to regenerate stale derived artifacts",
+			err,
+			baselineDigestRegenerationHint,
+		)
 	}
 	sourceBaseline, err := catalog.SourceBaseline("baseline.standard-typescript-monorepo-0.0.1")
 	if err != nil {
-		t.Fatalf("load maintained Source Baseline: %v", err)
+		t.Fatalf(
+			"load maintained Source Baseline: %v; %s",
+			err,
+			baselineDigestRegenerationHint,
+		)
 	}
 	if len(sourceBaseline.Entries) != 98 ||
 		sourceBaseline.Identity.EntryCount != 98 ||
@@ -294,6 +309,235 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 			len(contract.PriorClauses) != len(contract.Accounting) {
 			t.Fatalf("retention contract %s is incomplete: prior=%d accounting=%d", transitionID, len(contract.PriorClauses), len(contract.Accounting))
 		}
+	}
+}
+
+func regenerateMaintainedSourceBaseline(t *testing.T) {
+	t.Helper()
+	const baselineID = "baseline.standard-typescript-monorepo-0.0.1"
+	baselineRoot := filepath.Join("assets", "source-baselines", baselineID)
+	manifestPath := filepath.Join(baselineRoot, "manifest.json")
+	manifestData, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatalf("read maintained Source Baseline manifest: %v", err)
+	}
+	var manifest sourceBaselineManifest
+	if err := strictJSON(manifestData, &manifest); err != nil {
+		t.Fatalf("decode maintained Source Baseline manifest: %v", err)
+	}
+	if manifest.ID != baselineID {
+		t.Fatalf("maintained Source Baseline manifest id = %q", manifest.ID)
+	}
+	for index := range manifest.Entries {
+		entry := &manifest.Entries[index]
+		if !safeRelative(entry.Path) || !strings.HasPrefix(entry.Path, "corpus/") {
+			t.Fatalf("Source Baseline entry %q has unsafe path %q", entry.ID, entry.Path)
+		}
+		sourcePath := filepath.Join(baselineRoot, filepath.FromSlash(entry.Path))
+		source, err := os.ReadFile(sourcePath)
+		if err != nil {
+			t.Fatalf("read Source Baseline entry %q: %v", entry.ID, err)
+		}
+		start, end, err := sourceBaselineMarkerSpan(source, entry.ID)
+		if err != nil {
+			t.Fatalf("locate Source Baseline entry %q: %v", entry.ID, err)
+		}
+		sum := sha256.Sum256(source[start:end])
+		entry.Start = start
+		entry.End = end
+		entry.Digest = hex.EncodeToString(sum[:])
+	}
+	if err := validateMaintainedSourceBaselineEntries(baselineRoot, manifest.Entries); err != nil {
+		t.Fatalf("self-validate regenerated Source Baseline: %v", err)
+	}
+
+	updatedManifest, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		t.Fatalf("encode maintained Source Baseline manifest: %v", err)
+	}
+	updatedManifest = append(updatedManifest, '\n')
+	manifestSum := sha256.Sum256(updatedManifest)
+	manifestDigest := hex.EncodeToString(manifestSum[:])
+	corpusDigest := maintainedSourceBaselineCorpusDigest(t, filepath.Join(baselineRoot, "corpus"))
+
+	identityPath := filepath.Join(baselineRoot, "baseline.json")
+	identityData, err := os.ReadFile(identityPath)
+	if err != nil {
+		t.Fatalf("read maintained Source Baseline identity: %v", err)
+	}
+	var identity map[string]any
+	identityDecoder := json.NewDecoder(bytes.NewReader(identityData))
+	identityDecoder.UseNumber()
+	if err := identityDecoder.Decode(&identity); err != nil {
+		t.Fatalf("decode maintained Source Baseline identity: %v", err)
+	}
+	if err := identityDecoder.Decode(&struct{}{}); err != io.EOF {
+		t.Fatalf("maintained Source Baseline identity has trailing JSON")
+	}
+	identity["entryCount"] = json.Number(fmt.Sprint(len(manifest.Entries)))
+	identity["manifestDigest"] = manifestDigest
+	identity["corpusDigest"] = corpusDigest
+	updatedIdentity, err := json.MarshalIndent(identity, "", "  ")
+	if err != nil {
+		t.Fatalf("encode maintained Source Baseline identity: %v", err)
+	}
+	updatedIdentity = append(updatedIdentity, '\n')
+
+	indexPath := filepath.Join("assets", "source-baselines", "index.json")
+	indexData, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatalf("read maintained Source Baseline index: %v", err)
+	}
+	var baselineIndex sourceBaselineIndex
+	if err := strictJSON(indexData, &baselineIndex); err != nil {
+		t.Fatalf("decode maintained Source Baseline index: %v", err)
+	}
+	found := false
+	for position := range baselineIndex.Baselines {
+		record := &baselineIndex.Baselines[position]
+		if record.ID != baselineID {
+			continue
+		}
+		record.EntryIDs = make([]string, len(manifest.Entries))
+		for index, entry := range manifest.Entries {
+			record.EntryIDs[index] = entry.ID
+		}
+		record.EntryCount = len(manifest.Entries)
+		record.ManifestDigest = manifestDigest
+		record.CorpusDigest = corpusDigest
+		found = true
+		break
+	}
+	if !found {
+		t.Fatalf("maintained Source Baseline index has no record %q", baselineID)
+	}
+	updatedIndex, err := json.MarshalIndent(baselineIndex, "", "  ")
+	if err != nil {
+		t.Fatalf("encode maintained Source Baseline index: %v", err)
+	}
+	updatedIndex = append(updatedIndex, '\n')
+
+	writeBaselineDerivedArtifact(t, manifestPath, updatedManifest)
+	writeBaselineDerivedArtifact(t, identityPath, updatedIdentity)
+	writeBaselineDerivedArtifact(t, indexPath, updatedIndex)
+	regenerateCatalogCompatibilityFromAssets(t)
+}
+
+func sourceBaselineMarkerSpan(source []byte, entryID string) (int, int, error) {
+	opening := []byte(fmt.Sprintf("<!-- source-baseline-entry: %s -->", entryID))
+	closing := []byte(fmt.Sprintf("<!-- /source-baseline-entry: %s -->", entryID))
+	if count := bytes.Count(source, opening); count != 1 {
+		return 0, 0, fmt.Errorf("opening marker count = %d, want 1", count)
+	}
+	if count := bytes.Count(source, closing); count != 1 {
+		return 0, 0, fmt.Errorf("closing marker count = %d, want 1", count)
+	}
+	start := bytes.Index(source, opening) + len(opening)
+	if start >= len(source) || source[start] != '\n' {
+		return 0, 0, errors.New("opening marker is not followed by a newline")
+	}
+	start++
+	end := bytes.Index(source[start:], closing)
+	if end < 0 {
+		return 0, 0, errors.New("closing marker precedes opening marker")
+	}
+	end += start
+	if end <= start {
+		return 0, 0, errors.New("marker span is empty")
+	}
+	return start, end, nil
+}
+
+func validateMaintainedSourceBaselineEntries(
+	baselineRoot string,
+	entries []SourceBaselineEntry,
+) error {
+	for _, entry := range entries {
+		if !safeRelative(entry.Path) || !strings.HasPrefix(entry.Path, "corpus/") {
+			return fmt.Errorf("entry %q has unsafe path %q", entry.ID, entry.Path)
+		}
+		sourcePath := filepath.Join(baselineRoot, filepath.FromSlash(entry.Path))
+		source, err := os.ReadFile(sourcePath)
+		if err != nil {
+			return fmt.Errorf("read entry %q: %w", entry.ID, err)
+		}
+		start, end, err := sourceBaselineMarkerSpan(source, entry.ID)
+		if err != nil {
+			return fmt.Errorf("locate entry %q: %w", entry.ID, err)
+		}
+		if entry.Start != start || entry.End != end {
+			return fmt.Errorf(
+				"entry %q span = %d:%d, marker span = %d:%d",
+				entry.ID,
+				entry.Start,
+				entry.End,
+				start,
+				end,
+			)
+		}
+		sum := sha256.Sum256(source[start:end])
+		if got := hex.EncodeToString(sum[:]); entry.Digest != got {
+			return fmt.Errorf(
+				"entry %q digest = %q, marker span digest = %q",
+				entry.ID,
+				entry.Digest,
+				got,
+			)
+		}
+	}
+	return nil
+}
+
+func maintainedSourceBaselineCorpusDigest(t *testing.T, corpusRoot string) string {
+	t.Helper()
+	files := make(map[string][]byte)
+	if err := filepath.WalkDir(
+		corpusRoot,
+		func(filePath string, entry os.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			if !entry.Type().IsRegular() {
+				return fmt.Errorf("corpus entry %q is not a regular file", filePath)
+			}
+			relative, err := filepath.Rel(corpusRoot, filePath)
+			if err != nil {
+				return err
+			}
+			data, err := os.ReadFile(filePath)
+			if err != nil {
+				return err
+			}
+			files[filepath.ToSlash(relative)] = data
+			return nil
+		},
+	); err != nil {
+		t.Fatalf("walk maintained Source Baseline corpus: %v", err)
+	}
+	if len(files) == 0 {
+		t.Fatal("maintained Source Baseline corpus is empty")
+	}
+	return portableFileDigest(files)
+}
+
+func TestSourceBaselineRegenerationRejectsCorruptedSpan(t *testing.T) {
+	const baselineID = "baseline.standard-typescript-monorepo-0.0.1"
+	baselineRoot := filepath.Join("assets", "source-baselines", baselineID)
+	data, err := os.ReadFile(filepath.Join(baselineRoot, "manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest sourceBaselineManifest
+	if err := strictJSON(data, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	corrupted := append([]SourceBaselineEntry(nil), manifest.Entries...)
+	corrupted[0].Start++
+	if err := validateMaintainedSourceBaselineEntries(baselineRoot, corrupted); err == nil {
+		t.Fatal("corrupted Source Baseline span passed regeneration self-validation")
 	}
 }
 

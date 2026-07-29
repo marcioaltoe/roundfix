@@ -10,7 +10,9 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
+	"flag"
 	"io/fs"
+	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -20,12 +22,20 @@ import (
 //go:embed testdata
 var compatibilityFixtures embed.FS
 
+var updateBaselineDigests = flag.Bool("update", false, "regenerate derived digest artifacts")
+
+const baselineDigestRegenerationHint = "run 'make baseline-digests'"
+
 func TestEmbeddedCatalog(t *testing.T) {
 	t.Chdir(t.TempDir())
 
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
-		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+		t.Fatalf(
+			"LoadEmbeddedCatalog() error = %v; %s to regenerate stale derived artifacts",
+			err,
+			baselineDigestRegenerationHint,
+		)
 	}
 
 	wantProfiles := []string{
@@ -329,27 +339,44 @@ func TestProjectDecisionAssets(t *testing.T) {
 }
 
 func TestCatalogCompatibility(t *testing.T) {
-	t.Parallel()
+	if !*updateBaselineDigests {
+		t.Parallel()
+	}
 
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
-		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+		t.Fatalf(
+			"LoadEmbeddedCatalog() error = %v; %s to regenerate stale derived artifacts",
+			err,
+			baselineDigestRegenerationHint,
+		)
 	}
 
-	wantNormalized, err := fs.ReadFile(compatibilityFixtures, "testdata/catalog.normalized.json")
-	if err != nil {
-		t.Fatalf("read normalized compatibility fixture: %v", err)
+	wantNormalized := catalog.Normalized()
+	wantDigestBytes := []byte(catalog.Digest() + "\n")
+	if *updateBaselineDigests {
+		regenerateCatalogCompatibility(t, catalog)
+	} else {
+		wantNormalized, err = fs.ReadFile(
+			compatibilityFixtures,
+			"testdata/catalog.normalized.json",
+		)
+		if err != nil {
+			t.Fatalf("read normalized compatibility fixture: %v", err)
+		}
+		wantDigestBytes, err = fs.ReadFile(compatibilityFixtures, "testdata/catalog.digest")
+		if err != nil {
+			t.Fatalf("read digest compatibility fixture: %v", err)
+		}
 	}
 	if !bytes.Equal(catalog.Normalized(), wantNormalized) {
-		t.Fatal("embedded catalog normalized bytes differ from the compatibility fixture")
-	}
-
-	wantDigestBytes, err := fs.ReadFile(compatibilityFixtures, "testdata/catalog.digest")
-	if err != nil {
-		t.Fatalf("read digest compatibility fixture: %v", err)
+		t.Fatalf(
+			"embedded catalog normalized bytes differ from the compatibility fixture; %s",
+			baselineDigestRegenerationHint,
+		)
 	}
 	if got, want := catalog.Digest()+"\n", string(wantDigestBytes); got != want {
-		t.Fatalf("Digest() = %q, want %q", got, want)
+		t.Fatalf("Digest() = %q, want %q; %s", got, want, baselineDigestRegenerationHint)
 	}
 
 	legacyAssets, err := fs.Sub(compatibilityFixtures, "testdata/legacy-v2/assets")
@@ -363,6 +390,40 @@ func TestCatalogCompatibility(t *testing.T) {
 	if got, want := legacy.ProfileIDs(), []string{"fixture"}; !slices.Equal(got, want) {
 		t.Fatalf("legacy ProfileIDs() = %v, want %v", got, want)
 	}
+}
+
+func regenerateCatalogCompatibility(t *testing.T, catalog *Catalog) {
+	t.Helper()
+	writeBaselineDerivedArtifact(
+		t,
+		"testdata/catalog.normalized.json",
+		catalog.Normalized(),
+	)
+	writeBaselineDerivedArtifact(t, "testdata/catalog.digest", []byte(catalog.Digest()+"\n"))
+}
+
+func regenerateCatalogCompatibilityFromAssets(t *testing.T) {
+	t.Helper()
+	catalog, err := LoadCatalog(os.DirFS("assets"))
+	if err != nil {
+		t.Fatalf("load regenerated Baseline assets: %v", err)
+	}
+	regenerateCatalogCompatibility(t, catalog)
+}
+
+func writeBaselineDerivedArtifact(t *testing.T, filePath string, data []byte) {
+	t.Helper()
+	current, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("read derived artifact %s: %v", filePath, err)
+	}
+	if bytes.Equal(current, data) {
+		return
+	}
+	if err := os.WriteFile(filePath, data, 0o644); err != nil {
+		t.Fatalf("write derived artifact %s: %v", filePath, err)
+	}
+	t.Logf("regenerated %s", filePath)
 }
 
 func TestInstructionHierarchy(t *testing.T) {
