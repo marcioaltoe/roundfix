@@ -7,6 +7,9 @@ RTK := $(shell command -v rtk >/dev/null 2>&1 && echo rtk)
 GO := $(RTK) go
 GOFMT := $(RTK) gofmt
 
+GOCACHE ?= $(CURDIR)/.gocache
+export GOCACHE
+
 APP := roundfix
 CMD := ./cmd/roundfix
 BIN_DIR := bin
@@ -25,7 +28,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify fmt fmt-check test test-race build install run version clean deps skills-check skills-install skills-link skills-sync skills-sync-check
+.PHONY: help bootstrap verify fmt fmt-check test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -62,6 +65,13 @@ test: ## Run Go tests
 
 test-race: ## Run Go tests with the race detector
 	$(GO) test -race $(PKGS)
+
+baseline-digests: ## Regenerate derived Baseline digest artifacts
+	$(GO) test ./skills -run TestAuthorialSkillSync -update -count=1
+	$(GO) test ./internal/baseline -run TestCatalogCompatibility -update -count=1
+	$(GO) test ./internal/baseline -run TestBaselineCompatibilityCorpus -update -count=1
+	$(GO) test ./internal/baseline -run TestReadoptionCompatibilityMaintainedFixture -update -count=1
+	$(GO) test ./internal/baseline -run TestFormatterComposition -update -count=1
 
 ##@ Build & Run
 
