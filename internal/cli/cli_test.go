@@ -11516,6 +11516,7 @@ func builtinArtifactDirForRepo(t *testing.T, repoDir string) string {
 type fakeVerifier struct {
 	err          error
 	errByCommand map[string]error
+	passingCalls int
 	calls        int
 	commands     []string
 }
@@ -11531,7 +11532,10 @@ func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest
 			return daemon.VerifyResult{OutputPath: req.OutputPath}, err
 		}
 	}
-	if verifier.err != nil {
+	// passingCalls lets a test pass the repository-green entry precondition and
+	// still fail a later post-Agent Verification, which is the only way to reach
+	// that branch now that both run the same configured command.
+	if verifier.err != nil && verifier.calls > verifier.passingCalls {
 		return daemon.VerifyResult{OutputPath: req.OutputPath}, &daemon.VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: verifier.err}
 	}
 	if err := verifier.errByCommand[req.Command]; err != nil {

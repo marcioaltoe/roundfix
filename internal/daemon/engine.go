@@ -162,6 +162,8 @@ type verificationAttemptRequest struct {
 	// moment this request classifies a temporary command failure.
 	TemporaryRetryAvailable bool
 	Commands                []string
+	FailureClassification   runevent.VerificationClassification
+	FailureReason           runevent.VerificationReason
 	Publish                 func(context.Context, string, map[string]any) error
 }
 
@@ -359,11 +361,7 @@ func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, 
 	if commandErr.OutputPath != "" {
 		payload["diagnostic_path"] = commandErr.OutputPath
 	}
-	if temporary {
-		payload["classification"] = string(runevent.VerificationClassificationTemporary)
-		payload["retry_available"] = req.TemporaryRetryAvailable
-		payload["reason"] = string(runevent.VerificationReasonTemporaryFailure)
-	}
+	req.applyFailureMetadata(payload, temporary)
 	if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); err != nil {
 		return err
 	}
@@ -388,11 +386,7 @@ func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdic
 	if failure != "" {
 		payload["error"] = failure
 	}
-	if temporary {
-		payload["classification"] = string(runevent.VerificationClassificationTemporary)
-		payload["retry_available"] = req.TemporaryRetryAvailable
-		payload["reason"] = string(runevent.VerificationReasonTemporaryFailure)
-	}
+	req.applyFailureMetadata(payload, temporary)
 	identity := req.identity()
 	summary := fmt.Sprintf("Verification %s verdict: %s", identity, verdict)
 	if req.WorkItem != "" {
@@ -401,6 +395,29 @@ func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdic
 		summary = fmt.Sprintf("Verification %s for Batch %03d verdict: %s", identity, req.BatchNumber, verdict)
 	}
 	return req.Publish(ctx, summary, payload)
+}
+
+func (req verificationAttemptRequest) applyFailureMetadata(payload map[string]any, temporary bool) {
+	classification, reason := req.failureMetadata(temporary)
+	if classification != "" {
+		payload["classification"] = string(classification)
+	}
+	if reason != "" {
+		payload["reason"] = string(reason)
+	}
+	if temporary && req.FailureClassification == "" {
+		payload["retry_available"] = req.TemporaryRetryAvailable
+	}
+}
+
+func (req verificationAttemptRequest) failureMetadata(temporary bool) (runevent.VerificationClassification, runevent.VerificationReason) {
+	if req.FailureClassification != "" || req.FailureReason != "" {
+		return req.FailureClassification, req.FailureReason
+	}
+	if temporary {
+		return runevent.VerificationClassificationTemporary, runevent.VerificationReasonTemporaryFailure
+	}
+	return "", ""
 }
 
 // CycleResult reports per-Batch outcomes and the remaining Unresolved
@@ -919,18 +936,32 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		)
 		return false, true, err
 	}
+	stageable, dropped := FilterStageablePaths(plan.GitRoot, changed)
+	for _, drop := range dropped {
+		if err := engine.publishDroppedStagePath(ctx, plan.RunID, batch.Number, "", "Batch path", drop); err != nil {
+			return false, false, err
+		}
+	}
+	if len(stageable) == 0 {
+		fmt.Fprintf(engine.deps.Progress, "Batch commit skipped: Batch %03d made no stageable worktree changes.\n", batch.Number)
+		err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonCommit,
+			fmt.Sprintf("Batch commit skipped: Batch %03d made no stageable worktree changes.", batch.Number),
+			map[string]any{"decision": "skipped", "batch": batch.Number},
+		)
+		return false, true, err
+	}
 	message := BatchCommitMessage(batch.Number)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.GitRoot,
 		Message: message,
-		Paths:   changed,
+		Paths:   stageable,
 	}); err != nil {
 		return false, false, err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Batch commit created: %s\n", message)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonCommit,
 		fmt.Sprintf("Batch commit created: %s", message),
-		map[string]any{"decision": "created", "batch": batch.Number, "paths": len(changed)},
+		map[string]any{"decision": "created", "batch": batch.Number, "paths": len(stageable)},
 	); err != nil {
 		return false, false, err
 	}

@@ -212,6 +212,7 @@ type TaskPlan struct {
 	QA                      bool
 	Concurrency             int
 	VerificationConcurrency int
+	RepositoryVerification  string
 	verificationGate        verificationGate
 	CopyList                []string
 	Bootstrap               runworktree.BootstrapSpec
@@ -321,6 +322,7 @@ const (
 const (
 	taskNoOpShapeEmptyStageable = "empty_stageable"
 	taskNoOpShapeSpecRootOnly   = "spec_root_only"
+	taskPreconditionExcerptMax  = 1024
 )
 
 type taskWorkerResult struct {
@@ -468,6 +470,26 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: true, err: err}
 		}
 		taskPlan = taskPlanForTaskWorktree(plan, task, taskRef)
+	}
+	precondition, required, preconditionErr := engine.verifyRepositoryPrecondition(ctx, taskPlan, task, ordinal)
+	if preconditionErr != nil {
+		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: preconditionErr}
+	}
+	if required && precondition.Failure != "" {
+		reason := repositoryPreconditionFailureReason(precondition)
+		if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
+			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: settleErr}
+		}
+		fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", task.ID, reason)
+		return taskWorkerResult{
+			task:             task,
+			ordinal:          ordinal,
+			status:           spec.StatusFailed,
+			reason:           reason,
+			taskPlan:         taskPlan,
+			taskRef:          taskRef,
+			usesTaskWorktree: usesTaskWorktree,
+		}
 	}
 	owner, ownerErr := engine.taskAgentSessionOwner(taskPlan, task, ordinal)
 	if ownerErr != nil {
@@ -783,6 +805,107 @@ func taskVerificationFailureReason(outcome verificationAttemptOutcome) string {
 		return reason
 	}
 	return terminalReasonLine(outcome.Failure)
+}
+
+func (engine *Engine) verifyRepositoryPrecondition(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int) (verificationAttemptOutcome, bool, error) {
+	command, required := repositoryVerificationCommand(task, plan.RepositoryVerification)
+	if !required {
+		return verificationAttemptOutcome{}, false, nil
+	}
+	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
+		return verificationAttemptOutcome{}, true, fmt.Errorf("update run %q to state %q before Task %s repository precondition: %w", plan.RunID, store.StateVerifying, task.ID, err)
+	}
+	request := verificationAttemptRequest{
+		RunID:                 plan.RunID,
+		WorkDir:               plan.WorkDir,
+		ArtifactDir:           plan.ArtifactDir,
+		BatchNumber:           ordinal,
+		WorkItem:              task.ID,
+		Attempt:               1,
+		Mode:                  verificationShared,
+		Capacity:              plan.VerificationConcurrency,
+		Commands:              []string{command},
+		FailureClassification: runevent.VerificationClassificationPrecondition,
+		FailureReason:         runevent.VerificationReasonRepositoryNotGreenOnEntry,
+		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
+			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
+				return fmt.Errorf("publish repository precondition event for run %q Task %s: %w", plan.RunID, task.ID, err)
+			}
+			return nil
+		},
+	}
+	outcome, err := engine.runTaskVerificationRequest(ctx, plan, task, request)
+	return outcome, true, err
+}
+
+func repositoryVerificationCommand(task spec.Task, configured string) (string, bool) {
+	configured = strings.TrimSpace(configured)
+	if configured == "" {
+		return "", false
+	}
+	for _, command := range task.Verification {
+		if strings.TrimSpace(command) == configured {
+			return command, true
+		}
+	}
+	return "", false
+}
+
+func repositoryPreconditionFailureReason(outcome verificationAttemptOutcome) string {
+	commandErr := outcome.CommandFailure
+	if commandErr == nil {
+		return terminalReasonLine("repository not green on entry: " + outcome.Failure)
+	}
+	command := strings.TrimSpace(commandErr.Command)
+	if command == "" {
+		command = "<unknown>"
+	}
+	diagnostics := strings.TrimSpace(commandErr.OutputPath)
+	if diagnostics == "" {
+		diagnostics = "unavailable"
+	}
+	excerpt := verificationOutputTail(commandErr.OutputPath, taskPreconditionExcerptMax)
+	if excerpt == "" {
+		excerpt = "unavailable"
+	}
+	return terminalReasonLine(fmt.Sprintf(
+		"repository not green on entry: command %q exited with %s; output: %s; diagnostics: %s",
+		command,
+		verificationExitStatus(commandErr),
+		excerpt,
+		diagnostics,
+	))
+}
+
+func verificationOutputTail(path string, limit int) string {
+	if strings.TrimSpace(path) == "" || limit < 1 {
+		return ""
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		return ""
+	}
+	start := info.Size() - int64(limit)
+	if start < 0 {
+		start = 0
+	}
+	if _, err := file.Seek(start, io.SeekStart); err != nil {
+		return ""
+	}
+	data, err := io.ReadAll(io.LimitReader(file, int64(limit)))
+	if err != nil {
+		return ""
+	}
+	excerpt := strings.ToValidUTF8(string(data), "")
+	if start > 0 {
+		excerpt = "... " + excerpt
+	}
+	return strings.TrimSpace(excerpt)
 }
 
 // runTaskAgent runs the Agent over one Task as a Batch of one, reading the
@@ -1116,7 +1239,7 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 	changed := ensureCommitPath(diffSnapshots(before, after), artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)))
 	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
 	for _, drop := range dropped {
-		if err := engine.publishDroppedStagePath(ctx, plan, ordinal, task.ID, "task file", drop); err != nil {
+		if err := engine.publishDroppedStagePath(ctx, plan.RunID, ordinal, task.ID, "task file", drop); err != nil {
 			return err
 		}
 	}
@@ -1219,10 +1342,13 @@ func (engine *Engine) publishNoOpTaskCommitWarning(ctx context.Context, plan Tas
 type DroppedStagePath struct {
 	Path   string
 	Reason string
+	Mode   string
 }
 
-// FilterStageablePaths keeps only repository-relative paths that do not cross
-// symlinks and reports every omitted path with the reason.
+const executableStagePathReason = "executable file"
+
+// FilterStageablePaths keeps only repository-relative, non-executable paths
+// that do not cross symlinks and reports every omitted path with the reason.
 func FilterStageablePaths(workDir string, paths []string) ([]string, []DroppedStagePath) {
 	kept := make([]string, 0, len(paths))
 	seen := make(map[string]bool, len(paths))
@@ -1235,6 +1361,10 @@ func FilterStageablePaths(workDir string, paths []string) ([]string, []DroppedSt
 		}
 		if pathCrossesSymlink(workDir, stagePath) {
 			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: "crosses a symbolic link"})
+			continue
+		}
+		if mode, executable := executableRegularFileMode(workDir, stagePath); executable {
+			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: executableStagePathReason, Mode: mode})
 			continue
 		}
 		if !seen[stagePath] {
@@ -1279,23 +1409,38 @@ func pathCrossesSymlink(workDir string, relative string) bool {
 	return false
 }
 
-func (engine *Engine) publishDroppedStagePath(ctx context.Context, plan TaskPlan, ordinal int, taskID string, artifactLabel string, drop DroppedStagePath) error {
-	fmt.Fprintf(engine.deps.Progress, "roundfix: %s %s kept outside the repository; omitted from the commit\n", artifactLabel, drop.Path)
+func executableRegularFileMode(workDir string, relative string) (string, bool) {
+	info, err := os.Lstat(filepath.Join(workDir, relative))
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0o111 == 0 {
+		return "", false
+	}
+	return fmt.Sprintf("%#o", info.Mode().Perm()), true
+}
+
+func (engine *Engine) publishDroppedStagePath(ctx context.Context, runID string, ordinal int, taskID string, artifactLabel string, drop DroppedStagePath) error {
 	payload := map[string]any{
 		"decision": "dropped",
 		"path":     drop.Path,
 		"reason":   drop.Reason,
 	}
-	summary := fmt.Sprintf("%s %s kept outside the repository: %s.", artifactLabel, drop.Path, drop.Reason)
+	summary := ""
+	if drop.Reason == executableStagePathReason {
+		payload["mode"] = drop.Mode
+		fmt.Fprintf(engine.deps.Progress, "roundfix: refused executable file %s (mode %s); build artifacts and deliberately executable repository files are not valid Work Item output\n", drop.Path, drop.Mode)
+		summary = fmt.Sprintf("Executable file %s refused with mode %s; build artifacts and deliberately executable repository files are not valid Work Item output.", drop.Path, drop.Mode)
+	} else {
+		fmt.Fprintf(engine.deps.Progress, "roundfix: %s %s kept outside the repository; omitted from the commit\n", artifactLabel, drop.Path)
+		summary = fmt.Sprintf("%s %s kept outside the repository: %s.", artifactLabel, drop.Path, drop.Reason)
+	}
 	if taskID != "" {
 		payload["task"] = taskID
-		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, taskID, runevent.KindDaemonCommit, summary, payload); err != nil {
-			return fmt.Errorf("publish dropped artifact event for run %q Task %s: %w", plan.RunID, taskID, err)
+		if err := engine.publishTaskEvent(ctx, runID, ordinal, taskID, runevent.KindDaemonCommit, summary, payload); err != nil {
+			return fmt.Errorf("publish dropped artifact event for run %q Task %s: %w", runID, taskID, err)
 		}
 		return nil
 	}
-	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonCommit, summary, payload); err != nil {
-		return fmt.Errorf("publish dropped artifact event for run %q: %w", plan.RunID, err)
+	if err := engine.publishDaemonEvent(ctx, runID, ordinal, runevent.KindDaemonCommit, summary, payload); err != nil {
+		return fmt.Errorf("publish dropped artifact event for run %q: %w", runID, err)
 	}
 	return nil
 }
@@ -1480,7 +1625,7 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	changed := ensureCommitPath(diffSnapshots(before, after), reportPath)
 	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
 	for _, drop := range dropped {
-		if err := engine.publishDroppedStagePath(ctx, plan, ordinal, "", "QA Report", drop); err != nil {
+		if err := engine.publishDroppedStagePath(ctx, plan.RunID, ordinal, "", "QA Report", drop); err != nil {
 			return err
 		}
 	}

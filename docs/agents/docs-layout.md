@@ -18,6 +18,7 @@ when its job changes (inbox → findings → spec is the normal flow).
 | `docs/references/` | Pointers to external resources, each with a one-line explanation of why it matters here. | Prune links that stop mattering. |
 | `docs/specs/` | The spec workflow tree: `NNNN-<slug>/` feature folders, `_archived/` for shipped specs, `_reviews/` for review-run artifacts. | Owned by the pipeline skills; status lives only in task files. |
 | `docs/user-guide/` | Human-facing product documentation and runbooks. | Updated with the behavior it documents in the same PR. |
+| `docs/workflow/` | Working instructions for operating this repository's own delivery loop — supervisor discipline that needs no product change. A staging area, not a contract. | Adjusted as the loop teaches; parts that stabilize get promoted into a skill or command and removed from here. |
 
 ## Findings template
 

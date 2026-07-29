@@ -5,14 +5,26 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"io/fs"
+	"flag"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
 	"testing"
 )
+
+var updateDerivedDigests = flag.Bool("update", false, "regenerate derived digest artifacts")
+
+const baselineDigestRegenerationHint = "run 'make baseline-digests'"
+
+type baselineDigestTargetResult struct {
+	SchemaVersion *int    `json:"schemaVersion"`
+	Type          *string `json:"type"`
+	OK            *bool   `json:"ok"`
+	Changed       *bool   `json:"changed"`
+}
 
 // Suite: Baseline skill distribution contract
 // Invariant: canonical and shipped Baseline guidance is identical and invokes only the public CLI.
@@ -140,6 +152,53 @@ func TestNoPythonBaselineRuntime(t *testing.T) {
 	}
 }
 
+func TestBaselineDigestTargetReportsMachineReadableOutcomes(t *testing.T) {
+	t.Run("reports regenerated artifacts", func(t *testing.T) {
+		derivedRoot := t.TempDir()
+		writeBaselineDigestTargetFile(t, filepath.Join(derivedRoot, "before"), nil, 0o644)
+		regenerator := filepath.Join(t.TempDir(), "regenerate")
+		writeBaselineDigestTargetFile(t, regenerator, []byte("#!/bin/sh\nset -eu\ntouch \"$DERIVED_DIGEST_PROBE/after\"\n"), 0o700)
+
+		result, stderr, exitCode := runBaselineDigestTarget(t, derivedRoot, regenerator)
+		if exitCode != 0 {
+			t.Fatalf("baseline-digests exit code = %d, want 0; stderr:\n%s", exitCode, stderr)
+		}
+		assertBaselineDigestTargetResult(t, result, true, true)
+		if !strings.Contains(stderr, "baseline-digests: regenerated") ||
+			!strings.Contains(stderr, filepath.Join(derivedRoot, "after")) {
+			t.Fatalf("baseline-digests stderr does not report regenerated artifact:\n%s", stderr)
+		}
+	})
+
+	t.Run("reports unchanged artifacts", func(t *testing.T) {
+		derivedRoot := t.TempDir()
+		writeBaselineDigestTargetFile(t, filepath.Join(derivedRoot, "before"), nil, 0o644)
+
+		result, stderr, exitCode := runBaselineDigestTarget(t, derivedRoot, "true")
+		if exitCode != 0 {
+			t.Fatalf("baseline-digests exit code = %d, want 0; stderr:\n%s", exitCode, stderr)
+		}
+		assertBaselineDigestTargetResult(t, result, true, false)
+		if !strings.Contains(stderr, "baseline-digests: no changes") {
+			t.Fatalf("baseline-digests stderr does not report unchanged artifacts:\n%s", stderr)
+		}
+	})
+
+	t.Run("reports regeneration errors", func(t *testing.T) {
+		derivedRoot := t.TempDir()
+		writeBaselineDigestTargetFile(t, filepath.Join(derivedRoot, "before"), nil, 0o644)
+
+		result, stderr, exitCode := runBaselineDigestTarget(t, derivedRoot, "false")
+		if exitCode == 0 {
+			t.Fatalf("baseline-digests exit code = 0, want non-zero; stderr:\n%s", stderr)
+		}
+		assertBaselineDigestTargetResult(t, result, false, false)
+		if !strings.Contains(stderr, "baseline-digests: regeneration failed at probe:Probe") {
+			t.Fatalf("baseline-digests stderr does not identify the failed step:\n%s", stderr)
+		}
+	})
+}
+
 func TestThinSetupSkill(t *testing.T) {
 	files, err := Files()
 	if err != nil {
@@ -196,6 +255,65 @@ func TestThinSetupSkill(t *testing.T) {
 		if strings.Contains(setup, forbidden) {
 			t.Errorf("thin setup skill claims independent behavior %q", forbidden)
 		}
+	}
+}
+
+func runBaselineDigestTarget(t *testing.T, derivedRoot, goCommand string) (baselineDigestTargetResult, string, int) {
+	t.Helper()
+	command := exec.Command(
+		"make",
+		"-s",
+		"baseline-digests",
+		"DERIVED_DIGEST_PATHS="+derivedRoot,
+		"BASELINE_DIGEST_STEPS=probe:Probe",
+		"GO="+goCommand,
+	)
+	command.Dir = filepath.Clean(filepath.Join(".."))
+	command.Env = append(os.Environ(), "DERIVED_DIGEST_PROBE="+derivedRoot)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+
+	exitCode := 0
+	if err := command.Run(); err != nil {
+		exitError, ok := err.(*exec.ExitError)
+		if !ok {
+			t.Fatalf("run baseline-digests: %v", err)
+		}
+		exitCode = exitError.ExitCode()
+	}
+
+	var result baselineDigestTargetResult
+	if err := json.Unmarshal(bytes.TrimSpace(stdout.Bytes()), &result); err != nil {
+		t.Fatalf("decode baseline-digests stdout %q: %v", stdout.String(), err)
+	}
+	if result.SchemaVersion == nil || result.Type == nil || result.OK == nil || result.Changed == nil {
+		t.Fatalf("baseline-digests result is missing stable fields: %s", stdout.String())
+	}
+	return result, stderr.String(), exitCode
+}
+
+func writeBaselineDigestTargetFile(t *testing.T, path string, data []byte, mode os.FileMode) {
+	t.Helper()
+	if err := os.WriteFile(path, data, mode); err != nil {
+		t.Fatalf("write baseline-digests fixture %s: %v", path, err)
+	}
+}
+
+func assertBaselineDigestTargetResult(t *testing.T, result baselineDigestTargetResult, wantOK, wantChanged bool) {
+	t.Helper()
+	if *result.SchemaVersion != 1 {
+		t.Errorf("baseline-digests schemaVersion = %d, want 1", *result.SchemaVersion)
+	}
+	if *result.Type != "baseline-digests" {
+		t.Errorf("baseline-digests type = %q, want %q", *result.Type, "baseline-digests")
+	}
+	if *result.OK != wantOK {
+		t.Errorf("baseline-digests ok = %t, want %t", *result.OK, wantOK)
+	}
+	if *result.Changed != wantChanged {
+		t.Errorf("baseline-digests changed = %t, want %t", *result.Changed, wantChanged)
 	}
 }
 
@@ -287,17 +405,11 @@ func TestAuthorialSkillSync(t *testing.T) {
 		knownOwned[skillName] = struct{}{}
 	}
 	for _, setupPath := range setupPaths {
+		if *updateDerivedDigests {
+			regenerateBaselineSetupSnapshot(t, repoRoot, setupPath, knownOwned)
+		}
 		t.Run(filepath.Base(setupPath), func(t *testing.T) {
-			var setup struct {
-				Skills []struct {
-					Name          string `json:"name"`
-					ContentDigest string `json:"contentDigest"`
-					Source        struct {
-						Type string `json:"type"`
-						Name string `json:"name"`
-					} `json:"source"`
-				} `json:"skills"`
-			}
+			var setup baselineSetupSnapshot
 			if err := json.Unmarshal(readBaselineSkillContractFile(t, setupPath), &setup); err != nil {
 				t.Fatalf("decode setup snapshot: %v", err)
 			}
@@ -313,16 +425,20 @@ func TestAuthorialSkillSync(t *testing.T) {
 					t.Errorf("%s is repository-sourced but not owned by Roundfix", skill.Name)
 					continue
 				}
-				want := baselineSnapshotSkillDigest(
-					t,
+				want, err := SkillFolderHash(
+					t.Context(),
 					filepath.Join(repoRoot, ".agents", "skills", skill.Name),
 				)
+				if err != nil {
+					t.Fatalf("hash canonical skill %s: %v", skill.Name, err)
+				}
 				if skill.ContentDigest != want {
 					t.Errorf(
-						"%s contentDigest = %q, want canonical %q",
+						"%s contentDigest = %q, want canonical %q; %s",
 						skill.Name,
 						skill.ContentDigest,
 						want,
+						baselineDigestRegenerationHint,
 					)
 				}
 			}
@@ -339,6 +455,70 @@ func TestAuthorialSkillSync(t *testing.T) {
 	const wantUpstreamDigest = "d61310f840938a57edeae639ad44e5b0140b2bada06bac460ae59216e1a790e7"
 	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != wantUpstreamDigest {
 		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
+	}
+}
+
+func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
+	repoRoot := t.TempDir()
+	skillRoot := filepath.Join(repoRoot, ".agents", "skills", "roundfix")
+	if err := os.MkdirAll(skillRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	skillPath := filepath.Join(skillRoot, "SKILL.md")
+	if err := os.WriteFile(skillPath, []byte("before\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	setupPath := filepath.Join(repoRoot, "setup.json")
+	setup := baselineSetupSnapshot{
+		SchemaVersion: "setup-context-driven/setup-snapshot/0.0.1",
+		ID:            "fixture",
+		Version:       "0.0.1",
+		Source: baselineSetupSource{
+			Type:       "github",
+			Repository: "example/skills",
+			Ref:        strings.Repeat("a", 40),
+			Path:       "setups/fixture.txt",
+		},
+		Digest: "stale",
+		Skills: []baselineSetupSkill{{
+			Name: "roundfix",
+			Path: "skills/roundfix",
+			Source: baselineSetupSource{
+				Type: "repo",
+				Name: "roundfix",
+			},
+			ContentDigest: "stale",
+		}},
+	}
+	writeBaselineSetupFixture(t, setupPath, setup)
+	knownOwned := map[string]struct{}{"roundfix": {}}
+
+	regenerateBaselineSetupSnapshot(t, repoRoot, setupPath, knownOwned)
+	before := readBaselineSetupFixture(t, setupPath)
+	beforeSkillDigest, err := SkillFolderHash(t.Context(), skillRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.Skills[0].ContentDigest != beforeSkillDigest ||
+		before.Digest != baselineSetupDigest(t, before.Skills, before.ActivationBundles) {
+		t.Fatalf("first regenerated setup has stale derived digests: %+v", before)
+	}
+
+	if err := os.WriteFile(skillPath, []byte("after\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	regenerateBaselineSetupSnapshot(t, repoRoot, setupPath, knownOwned)
+	after := readBaselineSetupFixture(t, setupPath)
+	afterSkillDigest, err := SkillFolderHash(t.Context(), skillRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.Skills[0].ContentDigest != afterSkillDigest ||
+		after.Digest != baselineSetupDigest(t, after.Skills, after.ActivationBundles) {
+		t.Fatalf("second regenerated setup has stale derived digests: %+v", after)
+	}
+	if after.Skills[0].ContentDigest == before.Skills[0].ContentDigest {
+		t.Fatal("canonical Skill edit did not change the regenerated content digest")
 	}
 }
 
@@ -906,42 +1086,143 @@ func upstreamManagedSkillDigest(
 	return hex.EncodeToString(digest.Sum(nil))
 }
 
-func baselineSnapshotSkillDigest(t *testing.T, root string) string {
+type baselineSetupSnapshot struct {
+	SchemaVersion     string                `json:"schemaVersion"`
+	ID                string                `json:"id"`
+	Version           string                `json:"version"`
+	Source            baselineSetupSource   `json:"source"`
+	Digest            string                `json:"digest"`
+	Skills            []baselineSetupSkill  `json:"skills"`
+	ActivationBundles []baselineSetupBundle `json:"activationBundles,omitempty"`
+}
+
+type baselineSetupSource struct {
+	Type       string `json:"type"`
+	Repository string `json:"repository,omitempty"`
+	Ref        string `json:"ref,omitempty"`
+	Path       string `json:"path,omitempty"`
+	Name       string `json:"name,omitempty"`
+}
+
+type baselineSetupSkill struct {
+	Name          string              `json:"name"`
+	Path          string              `json:"path"`
+	Source        baselineSetupSource `json:"source"`
+	TreeDigest    string              `json:"treeDigest,omitempty"`
+	ContentDigest string              `json:"contentDigest,omitempty"`
+}
+
+type baselineSetupBundle struct {
+	ID     string   `json:"id"`
+	Skills []string `json:"skills"`
+}
+
+func regenerateBaselineSetupSnapshot(
+	t *testing.T,
+	repoRoot string,
+	setupPath string,
+	knownOwned map[string]struct{},
+) {
 	t.Helper()
-	type digestFile struct {
-		path string
-		data []byte
+	original := readBaselineSkillContractFile(t, setupPath)
+	var setup baselineSetupSnapshot
+	if err := json.Unmarshal(original, &setup); err != nil {
+		t.Fatalf("decode setup snapshot for regeneration: %v", err)
 	}
-	var files []digestFile
-	if err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
+	for index := range setup.Skills {
+		skill := &setup.Skills[index]
+		if skill.Source.Type != "repo" {
+			continue
 		}
-		if entry.IsDir() {
-			return nil
+		if skill.Source.Name != "roundfix" {
+			t.Fatalf(
+				"%s repository source = %q, want roundfix",
+				skill.Name,
+				skill.Source.Name,
+			)
 		}
-		data, err := os.ReadFile(path)
+		if _, ok := knownOwned[skill.Name]; !ok {
+			t.Fatalf("%s is repository-sourced but not owned by Roundfix", skill.Name)
+		}
+		digest, err := SkillFolderHash(
+			t.Context(),
+			filepath.Join(repoRoot, ".agents", "skills", skill.Name),
+		)
 		if err != nil {
-			return err
+			t.Fatalf("hash canonical skill %s: %v", skill.Name, err)
 		}
-		relative, err := filepath.Rel(root, path)
+		skill.ContentDigest = digest
+	}
+	setup.Digest = baselineSetupDigest(t, setup.Skills, setup.ActivationBundles)
+	updated, err := json.MarshalIndent(setup, "", "  ")
+	if err != nil {
+		t.Fatalf("encode regenerated setup snapshot: %v", err)
+	}
+	updated = append(updated, '\n')
+	if bytes.Equal(original, updated) {
+		return
+	}
+	if err := os.WriteFile(setupPath, updated, 0o644); err != nil {
+		t.Fatalf("write regenerated setup snapshot: %v", err)
+	}
+	t.Logf("regenerated %s", filepath.ToSlash(setupPath))
+}
+
+func writeBaselineSetupFixture(t *testing.T, setupPath string, setup baselineSetupSnapshot) {
+	t.Helper()
+	data, err := json.MarshalIndent(setup, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(setupPath, append(data, '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func readBaselineSetupFixture(t *testing.T, setupPath string) baselineSetupSnapshot {
+	t.Helper()
+	var setup baselineSetupSnapshot
+	if err := json.Unmarshal(readBaselineSkillContractFile(t, setupPath), &setup); err != nil {
+		t.Fatal(err)
+	}
+	return setup
+}
+
+func baselineSetupDigest(
+	t *testing.T,
+	skills []baselineSetupSkill,
+	bundles []baselineSetupBundle,
+) string {
+	t.Helper()
+	var normalizedSkills []map[string]any
+	encodedSkills, err := json.Marshal(skills)
+	if err != nil {
+		t.Fatalf("encode setup skills for digest: %v", err)
+	}
+	if err := json.Unmarshal(encodedSkills, &normalizedSkills); err != nil {
+		t.Fatalf("normalize setup skills for digest: %v", err)
+	}
+	var payload any = normalizedSkills
+	if bundles != nil {
+		var normalizedBundles []map[string]any
+		encodedBundles, err := json.Marshal(bundles)
 		if err != nil {
-			return err
+			t.Fatalf("encode setup bundles for digest: %v", err)
 		}
-		files = append(files, digestFile{path: filepath.ToSlash(relative), data: data})
-		return nil
-	}); err != nil {
-		t.Fatalf("hash Baseline snapshot skill %q: %v", root, err)
+		if err := json.Unmarshal(encodedBundles, &normalizedBundles); err != nil {
+			t.Fatalf("normalize setup bundles for digest: %v", err)
+		}
+		payload = map[string]any{
+			"activationBundles": normalizedBundles,
+			"skills":            normalizedSkills,
+		}
 	}
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].path < files[j].path
-	})
-	digest := sha256.New()
-	for _, file := range files {
-		_, _ = digest.Write([]byte(file.path))
-		_, _ = digest.Write(file.data)
+	data, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("serialize canonical setup digest input: %v", err)
 	}
-	return hex.EncodeToString(digest.Sum(nil))
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
 }
 
 func readBaselineSkillContractFile(t *testing.T, path string) []byte {

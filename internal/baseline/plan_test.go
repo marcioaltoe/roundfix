@@ -178,7 +178,11 @@ func TestFormatterComposition(t *testing.T) {
 		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
 	})
 	if err != nil {
-		t.Fatalf("BuildPlan() formatter composition error = %v", err)
+		t.Fatalf(
+			"BuildPlan() formatter composition error = %v; %s",
+			err,
+			baselineDigestRegenerationHint,
+		)
 	}
 	if outcome.Plan == nil {
 		t.Fatalf("BuildPlan() formatter composition result = %+v", outcome.Result)
@@ -193,6 +197,7 @@ func TestFormatterComposition(t *testing.T) {
 	var contract struct {
 		Formatter struct {
 			FixturePaths []string `json:"fixturePaths"`
+			GoldenDigest string   `json:"goldenDigest"`
 		} `json:"formatter"`
 	}
 	if err := json.Unmarshal(profile.Data, &contract); err != nil {
@@ -205,6 +210,8 @@ func TestFormatterComposition(t *testing.T) {
 		}
 	}
 	const goldenSeparator = "/golden/"
+	generatedFixtures := make(map[string][]byte, len(contract.Formatter.FixturePaths))
+	generatedAssets := make(map[string][]byte, len(contract.Formatter.FixturePaths))
 	for _, fixturePath := range contract.Formatter.FixturePaths {
 		position := strings.Index(fixturePath, goldenSeparator)
 		if position < 0 {
@@ -216,14 +223,45 @@ func TestFormatterComposition(t *testing.T) {
 			t.Errorf("Plan has no generated postimage for formatter fixture %q", generatedPath)
 			continue
 		}
+		generatedFixtures[generatedPath] = generated
+		generatedAssets[fixturePath] = generated
+		if *updateBaselineDigests {
+			continue
+		}
 		fixture, ok := catalog.Asset(fixturePath)
 		if !ok {
 			t.Errorf("formatter fixture %q is missing", fixturePath)
 			continue
 		}
 		if !bytes.Equal(generated, fixture.Data) {
-			t.Errorf("generated output %q differs from its formatter fixture", generatedPath)
+			t.Errorf(
+				"generated output %q differs from its formatter fixture; %s",
+				generatedPath,
+				baselineDigestRegenerationHint,
+			)
 		}
+	}
+	if *updateBaselineDigests {
+		if len(generatedAssets) != len(contract.Formatter.FixturePaths) {
+			t.Fatalf(
+				"Plan generated %d formatter fixtures, want %d",
+				len(generatedAssets),
+				len(contract.Formatter.FixturePaths),
+			)
+		}
+		for _, fixturePath := range contract.Formatter.FixturePaths {
+			writeBaselineDerivedArtifact(
+				t,
+				filepath.Join("assets", filepath.FromSlash(fixturePath)),
+				generatedAssets[fixturePath],
+			)
+		}
+		updateBaselineFormatterGoldenDigest(
+			t,
+			contract.Formatter.GoldenDigest,
+			portableFileDigest(generatedFixtures),
+		)
+		regenerateCatalogCompatibilityFromAssets(t)
 	}
 	if _, ok := postimages[specificRepositoryPath]; ok {
 		t.Fatalf("greenfield formatter composition created %q", specificRepositoryPath)
@@ -239,6 +277,33 @@ func TestFormatterComposition(t *testing.T) {
 	if result.State != "verified" || !strings.Contains(result.Message, "already applied") {
 		t.Fatalf("empty formatter reapply result = %+v", result)
 	}
+}
+
+func updateBaselineFormatterGoldenDigest(t *testing.T, oldDigest, newDigest string) {
+	t.Helper()
+	profilePath := filepath.Join(
+		"assets",
+		"profiles",
+		"standard-typescript-monorepo.json",
+	)
+	profile, err := os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatalf("read formatter Profile: %v", err)
+	}
+	oldPin := []byte(`"goldenDigest": "` + oldDigest + `"`)
+	if occurrences := bytes.Count(profile, oldPin); occurrences != 1 {
+		t.Fatalf(
+			"formatter Profile golden digest occurrences = %d, want 1",
+			occurrences,
+		)
+	}
+	updated := bytes.Replace(
+		profile,
+		oldPin,
+		[]byte(`"goldenDigest": "`+newDigest+`"`),
+		1,
+	)
+	writeBaselineDerivedArtifact(t, profilePath, updated)
 }
 
 func TestInstructionHierarchyRendersActivePointersOnce(t *testing.T) {
@@ -2408,7 +2473,11 @@ func mustEmbeddedCatalog(t *testing.T) *Catalog {
 	t.Helper()
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
-		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+		t.Fatalf(
+			"LoadEmbeddedCatalog() error = %v; %s to regenerate stale derived artifacts",
+			err,
+			baselineDigestRegenerationHint,
+		)
 	}
 	return catalog
 }

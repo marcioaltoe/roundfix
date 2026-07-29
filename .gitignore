@@ -1,2 +1,8 @@
 # Build artifacts
 /bin/
+
+# Repository-local Go build cache from the Makefile GOCACHE default
+/.gocache/
+
+# Bare `go build ./cmd/roundfix` output
+/roundfix

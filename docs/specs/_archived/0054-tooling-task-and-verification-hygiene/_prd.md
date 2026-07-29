@@ -1,11 +1,24 @@
 ---
 spec: 0054-tooling-task-and-verification-hygiene
-status: active
+status: archived
 created: 2026-07-28
+archived: 2026-07-29
+qa_override: true
 surfaces: [backend, infra, docs]
 ---
 
 # Tooling task and verification environment hygiene
+
+> **Archived with QA `partial`, by maintainer decision on 2026-07-29.** The
+> newest gate reproduced **no product finding** on build `75161e9`; the verdict
+> is capped only by three rows the Daemon-assigned QA session cannot execute —
+> the sandbox denies `/bin/ps`, and the session may not write the user-scoped
+> Roundfix Home the public Implement journey persists to. Those three rows were
+> executed by the maintainer outside the sandbox, with the Run Event Stream read
+> back as independent confirmation, in
+> [`qa/evidence/2026-07-29-supervisor-blocked-rows.md`](qa/evidence/2026-07-29-supervisor-blocked-rows.md).
+> Spec 0053 makes this verdict reachable without an override, and Spec 0055
+> removes the `/bin/ps` dependency.
 
 Four recurring, process-only failure modes cost the dogfood loop roughly three
 blocked Runs per day on 2026-07-27/28, and none of them was a defect in the
@@ -38,6 +51,8 @@ sweep in. Evidence:
   authorizes changes to exactly `Makefile` and `.gitignore`, to exactly
   `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md`, and to
   the deterministic Skill-digest fallout in exactly
+  `internal/baseline/assets/setups/go-cli.json`,
+  `internal/baseline/assets/setups/rust-cli.json`,
   `internal/baseline/assets/setups/typescript-bun.json`,
   `internal/baseline/testdata/catalog.digest`,
   `internal/baseline/testdata/catalog.normalized.json`,
@@ -72,8 +87,9 @@ sweep in. Evidence:
    the Go build cache to default to a repository-local path, so that the
    gate compiles without my discovering an environment workaround.
 4. As a supervisor landing a protected-tooling change, I want the commit
-   choreography — prerequisite fix, then authorization, then Task, then the
-   rest — stated in the agent guidance, so that landing it takes one attempt
+   choreography — the authorization record and any prerequisite fix each in
+   their own commit before the Task commit, a consequent fix in its own commit
+   after it, then the rest — stated in the agent guidance, so that landing it takes one attempt
    instead of three QA cycles.
 5. As a maintainer, I want a Task whose Verification demands a green
    repository to be refused at assignment when the repository is red for
@@ -106,8 +122,11 @@ sweep in. Evidence:
    authorization; the policy is recorded in the repository's agent guidance
    and the Skill-alignment Task template stops enumerating pin paths.
 4. The commit choreography for protected-tooling changes is documented as a
-   rule in the agent guidance: prerequisite fixes first, the authorization
-   record second, the Task commit third, everything else after — and the QA
+   rule in the agent guidance: the express authorization record and any
+   prerequisite fix are each their own commit landing before the authorized
+   Task commit, in either relative order; a consequent fix, made necessary by
+   the authorized change itself, is its own commit landing after it, since it
+   cannot precede its cause — and the QA
    gate's tooling audit reports every authorization-shape problem it finds
    in one pass rather than one per rerun.
 5. The repository gate's Go build cache defaults to a repository-local,

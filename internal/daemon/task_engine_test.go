@@ -961,6 +961,7 @@ type taskFakeVerifier struct {
 	runID           string
 	failOn          map[string]error
 	script          []error
+	outputByCall    map[int]string
 	temporaryOnCall map[int]bool
 	commands        []string
 	workDirs        []string
@@ -973,6 +974,14 @@ func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) (
 	verifier.commands = append(verifier.commands, req.Command)
 	verifier.workDirs = append(verifier.workDirs, req.WorkDir)
 	verifier.outputPaths = append(verifier.outputPaths, req.OutputPath)
+	if output := verifier.outputByCall[len(verifier.commands)]; output != "" {
+		if err := os.MkdirAll(filepath.Dir(req.OutputPath), 0o755); err != nil {
+			return VerifyResult{OutputPath: req.OutputPath}, err
+		}
+		if err := os.WriteFile(req.OutputPath, []byte(output), 0o644); err != nil {
+			return VerifyResult{OutputPath: req.OutputPath}, err
+		}
+	}
 	if verifier.store != nil {
 		verifier.seenStates = append(verifier.seenStates, runStateForTest(verifier.store, verifier.runID))
 	}
@@ -2843,6 +2852,190 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	}
 }
 
+func TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession(t *testing.T) {
+	const repositoryVerification = "make verify"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		taskType:     string(spec.TaskTypeBackend),
+		verification: []string{"focused check", repositoryVerification},
+	}})
+	runner := &selectionLifecycleRunner{gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:  fixture.calls,
+		script: []error{errors.New("exit status 1")},
+		outputByCall: map[int]string{
+			1: "discarded-oldest-marker\n" + strings.Repeat("filler ", 200) + "failing package: internal/example\nrepository-gate-tail-marker\n",
+		},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.RepositoryVerification = "  " + repositoryVerification + "  "
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(
+			selectionForTest("codex", "backend-model", "high"),
+			selectionForTest("codex", "backend-fallback", "high"),
+		),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Failed != 1 || len(result.Outcomes) != 1 {
+		t.Fatalf("expected one failed Task outcome, got %+v", result)
+	}
+	reason := result.Outcomes[0].Reason
+	for _, want := range []string{
+		"repository not green on entry",
+		`command "make verify"`,
+		"failing package: internal/example",
+		"repository-gate-tail-marker",
+	} {
+		if !strings.Contains(reason, want) {
+			t.Fatalf("expected precondition reason to contain %q, got %q", want, reason)
+		}
+	}
+	if strings.Contains(reason, "discarded-oldest-marker") {
+		t.Fatalf("expected bounded output tail without old prefix, got %q", reason)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != repositoryVerification {
+		t.Fatalf("expected only the repository gate precondition, got %q", got)
+	}
+	if len(runner.prepareRequests()) != 0 || len(runner.runRequests()) != 0 {
+		t.Fatalf("expected no Agent Session preparation or work, got prepare=%v run=%v", runner.prepareRequests(), runner.runRequests())
+	}
+	if events := eventsOfKind(fixture.sink, runevent.KindDaemonAgentSelectionAttempt); len(events) != 0 {
+		t.Fatalf("expected no Agent Selection attempt event, got %+v", events)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("expected precondition failure settled on disk, got %q", got)
+	}
+
+	var projectedFailure runevent.StreamRecord
+	for index, event := range eventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		record, ok, projectErr := runevent.ProjectStreamEvent(int64(index+1), event, nil)
+		if projectErr != nil {
+			t.Fatalf("project Verification event: %v", projectErr)
+		}
+		if ok && record.Phase == string(runevent.VerificationPhaseFailed) {
+			projectedFailure = record
+			break
+		}
+	}
+	if projectedFailure.Classification != string(runevent.VerificationClassificationPrecondition) ||
+		projectedFailure.Reason != string(runevent.VerificationReasonRepositoryNotGreenOnEntry) {
+		t.Fatalf("expected distinct precondition failure in Run Event Stream, got %+v", projectedFailure)
+	}
+}
+
+func TestTaskCycleRepositoryGatePreconditionPassesBeforeAgentAndPostVerification(t *testing.T) {
+	const repositoryVerification = "make verify"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		verification: []string{"focused check", repositoryVerification},
+	}})
+	fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	verifier := &taskFakeVerifier{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.RepositoryVerification = repositoryVerification
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 {
+		t.Fatalf("expected the green Task to complete, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "verify>agent>verify>verify>commit" {
+		t.Fatalf("expected precondition before Agent and unchanged post-Agent Verification, got %q", got)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "make verify|focused check|make verify" {
+		t.Fatalf("expected one entry gate and the full post-Agent Verification, got %q", got)
+	}
+}
+
+func TestTaskCycleWithoutRepositoryGateSkipsPrecondition(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		verification: []string{"focused check"},
+	}})
+	fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	verifier := &taskFakeVerifier{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.RepositoryVerification = "make verify"
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("expected Task without the repository gate to complete, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit" {
+		t.Fatalf("expected no repository precondition run, got %q", got)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "focused check" {
+		t.Fatalf("expected only declared post-Agent Verification, got %q", got)
+	}
+}
+
+func TestTaskCycleRepositoryGatePreconditionDoesNotConsumeVerificationRepair(t *testing.T) {
+	const repositoryVerification = "make verify"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		verification: []string{"focused check", repositoryVerification},
+	}})
+	fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}}
+	runner := &taskFakeRunner{
+		calls:            fixture.calls,
+		gitRoot:          fixture.gitRoot,
+		statusByTaskCall: map[string][]spec.Status{"task_01": {spec.StatusCompleted, spec.StatusCompleted}},
+	}
+	verifier := &taskFakeVerifier{
+		calls: fixture.calls,
+		script: []error{
+			nil,
+			errors.New("exit status 1"),
+			nil,
+			nil,
+		},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.RepositoryVerification = repositoryVerification
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Completed != 1 || runner.taskCalls["task_01"] != 2 {
+		t.Fatalf("expected one Verification Feedback repair after Agent work, got result=%+v calls=%d", result, runner.taskCalls["task_01"])
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "verify>agent>verify>agent>verify>verify>commit" {
+		t.Fatalf("expected precondition plus one post-Agent repair, got %q", got)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "make verify|focused check|focused check|make verify" {
+		t.Fatalf("expected repair to rerun full post-Agent Verification, got %q", got)
+	}
+}
+
 func TestVerifyTaskRejectsMissingRetryStateWithoutMutatingRun(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	engine := fixture.engine(
@@ -4071,6 +4264,92 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 	}
 }
 
+func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing.T) {
+	tests := []struct {
+		name string
+		mode os.FileMode
+	}{
+		{name: "owner execute", mode: 0o744},
+		{name: "group execute", mode: 0o654},
+		{name: "other execute", mode: 0o645},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			workDir := t.TempDir()
+			path := filepath.Join(workDir, "artifact")
+			if err := os.WriteFile(path, []byte("artifact\n"), tt.mode); err != nil {
+				t.Fatalf("write executable fixture: %v", err)
+			}
+			if err := os.Chmod(path, tt.mode); err != nil {
+				t.Fatalf("set executable fixture mode: %v", err)
+			}
+
+			kept, dropped := FilterStageablePaths(workDir, []string{"artifact"})
+
+			if len(kept) != 0 {
+				t.Fatalf("expected executable file omitted, got kept paths %v", kept)
+			}
+			if len(dropped) != 1 {
+				t.Fatalf("expected one executable-file drop, got %+v", dropped)
+			}
+			if dropped[0].Path != "artifact" || dropped[0].Reason != "executable file" {
+				t.Fatalf("expected executable-file drop for artifact, got %+v", dropped[0])
+			}
+			if want := fmt.Sprintf("%#o", tt.mode.Perm()); dropped[0].Mode != want {
+				t.Fatalf("expected reported mode %s, got %q", want, dropped[0].Mode)
+			}
+		})
+	}
+}
+
+func TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+	executablePath := "bin/roundfix"
+	regularPath := "src/agent-change.go"
+	for _, path := range []string{executablePath, regularPath} {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(fixture.gitRoot, path)), 0o755); err != nil {
+			t.Fatalf("create fixture directory for %s: %v", path, err)
+		}
+		mustWriteForTest(t, filepath.Join(fixture.gitRoot, path), path+"\n")
+	}
+	if err := os.Chmod(filepath.Join(fixture.gitRoot, executablePath), 0o755); err != nil {
+		t.Fatalf("mark build artifact executable: %v", err)
+	}
+	fixture.worktree.snapshots = [][]string{{executablePath, regularPath}}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	err := engine.commitTask(context.Background(), fixture.plan(), fixture.graph.Tasks[0], 1, nil)
+
+	if err != nil {
+		t.Fatalf("commitTask: %v", err)
+	}
+	if len(committer.paths) != 1 {
+		t.Fatalf("expected one Task commit, got %d", len(committer.paths))
+	}
+	wantPaths := taskFileRel(taskCycleSlug, "task_01") + "|" + regularPath
+	if got := strings.Join(committer.paths[0], "|"); got != wantPaths {
+		t.Fatalf("expected Task file and regular change staged, got %q", got)
+	}
+	dropped := droppedStageEvents(t, fixture.sink)
+	if len(dropped) != 1 {
+		t.Fatalf("expected one dropped executable event, got %+v", dropped)
+	}
+	if got := eventPayloadString(t, dropped[0], "path"); got != executablePath {
+		t.Fatalf("expected dropped executable path %q, got %q", executablePath, got)
+	}
+	if got := eventPayloadString(t, dropped[0], "reason"); got != "executable file" {
+		t.Fatalf("expected executable-file reason, got %q", got)
+	}
+	if got := eventPayloadString(t, dropped[0], "mode"); got != "0755" {
+		t.Fatalf("expected executable mode 0755, got %q", got)
+	}
+	wantWarning := "roundfix: refused executable file " + executablePath + " (mode 0755); build artifacts and deliberately executable repository files are not valid Work Item output\n"
+	if !strings.Contains(fixture.progress.String(), wantWarning) {
+		t.Fatalf("expected executable refusal %q, got %q", wantWarning, fixture.progress.String())
+	}
+}
+
 func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
 	externalRoot := filepath.Join(t.TempDir(), "knowledge-specs")
@@ -4157,6 +4436,50 @@ func TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged(t
 		t.Fatalf("expected dropped external path %q, got %q", wantPath, got)
 	}
 	assertNoOpTaskCommitWarning(t, fixture, "task_01", taskNoOpShapeEmptyStageable)
+}
+
+func TestQACommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	executablePath := "bin/qa-helper"
+	regularPath := "qa/evidence/observed.txt"
+	reportPath := qaReportRelPathForTest()
+	for _, path := range []string{executablePath, regularPath, reportPath} {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(fixture.gitRoot, path)), 0o755); err != nil {
+			t.Fatalf("create fixture directory for %s: %v", path, err)
+		}
+		mustWriteForTest(t, filepath.Join(fixture.gitRoot, path), path+"\n")
+	}
+	if err := os.Chmod(filepath.Join(fixture.gitRoot, executablePath), 0o755); err != nil {
+		t.Fatalf("mark QA artifact executable: %v", err)
+	}
+	fixture.worktree.snapshots = [][]string{{executablePath, regularPath, reportPath}}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	err := engine.commitQAReport(context.Background(), fixture.plan(), 2, nil, spec.VerdictPass, reportPath)
+
+	if err != nil {
+		t.Fatalf("commitQAReport: %v", err)
+	}
+	if len(committer.paths) != 1 {
+		t.Fatalf("expected one QA commit, got %d", len(committer.paths))
+	}
+	if got := strings.Join(committer.paths[0], "|"); got != reportPath+"|"+regularPath {
+		t.Fatalf("expected QA Report and regular evidence staged, got %q", got)
+	}
+	dropped := droppedStageEvents(t, fixture.sink)
+	if len(dropped) != 1 {
+		t.Fatalf("expected one dropped executable event, got %+v", dropped)
+	}
+	if got := eventPayloadString(t, dropped[0], "path"); got != executablePath {
+		t.Fatalf("expected dropped executable path %q, got %q", executablePath, got)
+	}
+	if got := eventPayloadString(t, dropped[0], "reason"); got != "executable file" {
+		t.Fatalf("expected executable-file reason, got %q", got)
+	}
+	if got := eventPayloadString(t, dropped[0], "mode"); got != "0755" {
+		t.Fatalf("expected executable mode 0755, got %q", got)
+	}
 }
 
 func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
