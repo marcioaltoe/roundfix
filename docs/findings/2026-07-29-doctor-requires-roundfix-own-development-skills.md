@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-29
 updated_at: 2026-07-29
 ---
@@ -129,3 +129,12 @@ outcome for them and the reason this finding exists.
 - `roundfix skills install --target project` installed the fourteen owned
   skills from the running binary cleanly in every repository, which is the half
   of the contract that behaved exactly as designed.
+
+## Addendum — 2026-07-29 — Routed to Spec 0061
+
+Findings 1 and 2 are owned by
+[Spec 0061 — Repository-derived skill requirements](../specs/0061-repository-derived-skill-requirements/_prd.md):
+the required external set derives from the repository Setup Manifest and its
+selected modules, and a missing skill is remediated per skill rather than by a
+package-wide install. Finding 3, consumer lock drift against upstream removals,
+is deliberately out of that Spec and remains unrouted.
