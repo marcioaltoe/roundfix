@@ -47,11 +47,25 @@ problema do vortex."
   `fluxus` reaches `skills: ok` only because it already carries the eight Go
   and TUI skills. The three TypeScript repositories carry none, and each fails.
 
-- **Root cause**: unknown in detail, but bounded. The Baseline catalog declares
-  `requiredSkills` per module, so a repository that never selected the Go or
-  TUI modules should never require their skills. Something between the
-  repository's Setup Manifest and the readiness check is resolving the required
-  set from a source other than the repository's own selected modules.
+- **Root cause**: proven, and the machinery to do it correctly already exists.
+  `skills/repository.go:73` resolves the required external set with
+  `external := Recommended()`, and `Recommended()` reads `recommended.txt`, a
+  fixed twenty-five-line file embedded in the binary. It never consults the
+  repository's Setup Manifest or its selected modules.
+
+  Meanwhile the Baseline catalog's modules declare `requiredSkills`
+  themselves — 110 across all modules, external ones included
+  (`agentic-cli-design`, `bubbletea`, `context7`, `domain-modeling`, and the
+  rest). A repository that never selects the TUI module would never require
+  `bubbletea` if the check derived its set from the modules the repository
+  actually selected. The readiness check bypasses that declaration entirely.
+
+  Two entries in `recommended.txt` are declared by **no** module at all:
+  `autoresearch` and `exa-web-search`. Both exist only as Roundfix's own
+  repository-authored dispatch extensions — `docs/agents/skill-dispatch.md`
+  scopes `autoresearch` to "improve a repo-owned skill through its evaluation
+  loop", which is meaningless in a repository that owns none of Roundfix's
+  skills. They are required of every consumer repository regardless.
 
 - **Action / suggestion**: resolve the required external skill set from the
   repository's Setup Manifest — its selected Profile and modules — rather than
