@@ -705,7 +705,10 @@ func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
 
 func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 	ownedCommand := "roundfix skills install --target project"
-	externalCommand := "bunx skills experimental_install && bunx skills update -p -y"
+	genericExternalCommand := "bunx skills experimental_install && bunx skills update -p -y"
+	installAgenticCLIDesign := "bunx skills add marcioaltoe/skills@agentic-cli-design"
+	installGolangTesting := "bunx skills add marcioaltoe/skills@golang-testing"
+	installTestingBoss := "bunx skills add marcioaltoe/skills@testing-boss"
 	tests := []struct {
 		name      string
 		readiness skills.RepositoryReadiness
@@ -734,15 +737,24 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				ownedCommand + ")",
 		},
 		{
-			name: "external failure",
+			name: "single external gap uses skill-scoped remediation",
 			readiness: skills.RepositoryReadiness{
 				ExternalRequired: 25,
 				MissingExternal:  []string{"testing-boss"},
-				OutdatedExternal: []string{"agentic-cli-design"},
 			},
 			wantCode: exitRunFailed,
-			wantLine: "skills: failed (missing: testing-boss; outdated: agentic-cli-design; next: " +
-				externalCommand + ")",
+			wantLine: "skills: failed (missing: testing-boss; next: " +
+				installTestingBoss + ")",
+		},
+		{
+			name: "several external gaps each use skill-scoped remediation",
+			readiness: skills.RepositoryReadiness{
+				ExternalRequired: 25,
+				MissingExternal:  []string{"testing-boss", "agentic-cli-design", "golang-testing"},
+			},
+			wantCode: exitRunFailed,
+			wantLine: "skills: failed (missing: agentic-cli-design, golang-testing, testing-boss; next: " +
+				installAgenticCLIDesign + " && " + installGolangTesting + " && " + installTestingBoss + ")",
 		},
 		{
 			name: "mixed failure is sorted with ordered remediation",
@@ -756,7 +768,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 			},
 			wantCode: exitRunFailed,
 			wantLine: "skills: failed (missing: agentic-cli-design, write-prd; outdated: roundfix, testing-boss; next: " +
-				ownedCommand + " && " + externalCommand + ")",
+				ownedCommand + " && " + installAgenticCLIDesign + " && " + installTestingBoss + ")",
 		},
 		{
 			name: "symlinked lock keeps external remediation",
@@ -768,14 +780,14 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 			},
 			wantCode: exitRunFailed,
 			wantLine: "skills: failed (inspect skills lock \"/repo/project/skills-lock.json\": path must be a regular file; next: " +
-				externalCommand + ")",
+				genericExternalCommand + ")",
 		},
 		{
 			name:     "unclassified checker error",
 			err:      errors.New("repository skill check failed"),
 			wantCode: exitRunFailed,
 			wantLine: "skills: failed (repository skill check failed; next: " +
-				ownedCommand + " && " + externalCommand + ")",
+				ownedCommand + " && " + genericExternalCommand + ")",
 		},
 	}
 

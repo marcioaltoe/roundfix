@@ -427,10 +427,31 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
 		next = append(next, ownedSkillsNextAction)
 	}
 	if externalFailure {
-		next = append(next, externalSkillsNextAction)
+		externalActions := doctorExternalSkillNextActions(readiness)
+		if len(externalActions) == 0 {
+			externalActions = append(externalActions, externalSkillsNextAction)
+		}
+		next = append(next, externalActions...)
 	}
 	result.NextAction = strings.Join(next, " && ")
 	return result
+}
+
+func doctorExternalSkillNextActions(readiness skills.RepositoryReadiness) []string {
+	names := append([]string{}, readiness.MissingExternal...)
+	names = append(names, readiness.OutdatedExternal...)
+	sort.Strings(names)
+
+	actions := make([]string, 0, len(names))
+	previous := ""
+	for _, name := range names {
+		if name == previous {
+			continue
+		}
+		actions = append(actions, "bunx skills add marcioaltoe/skills@"+name)
+		previous = name
+	}
+	return actions
 }
 
 func profileProofReferenceCount(proofs []profileProofReport) int {

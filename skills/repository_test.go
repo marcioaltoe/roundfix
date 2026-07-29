@@ -100,21 +100,26 @@ func TestCheckRepositoryReportsReadyRequiredSetWithoutMutation(t *testing.T) {
 
 func TestCheckRepositoryWithExternalUsesExplicitRequirement(t *testing.T) {
 	root := writeReadyRepositoryFixture(t)
-	for _, name := range []string{"agentic-cli-design", "autoresearch"} {
+	for _, name := range []string{"agentic-cli-design", "autoresearch", "bubbletea", "exa-web-search"} {
 		if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", name)); err != nil {
 			t.Fatalf("remove external skill %q: %v", name, err)
 		}
 	}
 
-	got, err := CheckRepositoryWithExternal(t.Context(), root, []string{"agentic-cli-design"})
+	got, err := CheckRepositoryWithExternal(
+		t.Context(),
+		root,
+		[]string{"autoresearch", "bubbletea", "agentic-cli-design"},
+	)
 	if err != nil {
 		t.Fatalf("check repository with explicit external requirement: %v", err)
 	}
-	if got.ExternalRequired != 1 {
-		t.Fatalf("external required = %d, want 1", got.ExternalRequired)
+	if got.ExternalRequired != 3 {
+		t.Fatalf("external required = %d, want 3", got.ExternalRequired)
 	}
-	if !reflect.DeepEqual(got.MissingExternal, []string{"agentic-cli-design"}) {
-		t.Fatalf("missing external = %v, want [agentic-cli-design]", got.MissingExternal)
+	wantMissing := []string{"agentic-cli-design", "autoresearch", "bubbletea"}
+	if !reflect.DeepEqual(got.MissingExternal, wantMissing) {
+		t.Fatalf("missing external = %v, want %v", got.MissingExternal, wantMissing)
 	}
 	if got.OwnedRequired != len(Names()) || len(got.MissingOwned) != 0 || len(got.OutdatedOwned) != 0 {
 		t.Fatalf("owned readiness changed: %#v", got)
