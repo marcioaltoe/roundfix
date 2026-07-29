@@ -1468,9 +1468,15 @@ Implement Command preflight sweep close terminal sessions and Worktrees.
 
 Use this when the user asks to implement one Spec — or a queue of Specs —
 autonomously. It wraps the loop above with the delivery half and the rules that
-decide when to keep going and when to stop. Invocation is the authorization:
-carry each Spec to a merged Pull Request without pausing between Specs, and
-report at milestones rather than per Agent event.
+decide when to keep going and when to stop. Invocation is the authorization for
+the Supervisor to carry each Spec to a merged Pull Request without pausing
+between Specs, reporting at milestones rather than per Agent event.
+
+**The delivery half is Supervisor authority and nothing else grants it.** An
+Agent resolving an assigned Batch or Task never pushes, opens a Pull Request, or
+merges, whatever this section says: the Daemon owns Task commits and any
+configured push, and the Agent's own instructions prohibit publication. If you
+are executing an assigned Work Item, stop at a verified handoff and report.
 
 Per Spec, in order:
 
@@ -1510,12 +1516,17 @@ Per Spec, in order:
    branch, push, and open the Pull Request.
 
 6. **Resolve review.** `roundfix watch --source <review-source> --pr <n>
-   --until-clean`. Treat a terminal Clean or the configured round cap as the
-   signal to merge.
+   --until-clean`. Only a terminal Clean with no unresolved Review Issues
+   clears the Pull Request for merge. Reaching the configured round cap is not
+   that signal: the cap can be exhausted while findings remain, so treat it as
+   a stop and escalate with what is still open.
 
-7. **Merge and continue.** Squash merge, delete the branch, sync the default
-   branch, `roundfix reconcile`, rebuild any local binary, then start the next
-   Spec.
+7. **Merge and continue.** Before merging, confirm the exact commit that will
+   land: required checks pass on the current head, and the clean review result
+   covers that same commit rather than an earlier one. Review fixes move the
+   head, so a result from before them proves nothing about what merges. Then
+   squash merge, delete the branch, sync the default branch,
+   `roundfix reconcile`, rebuild any local binary, and start the next Spec.
 
 ### When to stop and ask
 
@@ -1531,7 +1542,9 @@ radius:
 - one step carries irreversible blast radius — a data migration, a destructive
   deletion, a release, a credential rotation;
 - a QA verdict cannot be reached without a supervised judgement, such as rows
-  blocked by an environment the gate cannot provision.
+  blocked by an environment the gate cannot provision;
+- a review round cap is exhausted with findings still unresolved, or the
+  current head lacks a passing check or a review result covering it.
 
 Escalate with the blocking fact and a proposed resolution, never with an open
 "is this ok?". Everything else — granularity, ordering, recovery from a failed
