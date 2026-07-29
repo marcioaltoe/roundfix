@@ -63,7 +63,7 @@ one, it must be complete. Built-ins use official model identifiers:
 - `general`, `backend`, `qa`, and `review`: preferred
   `codex / gpt-5.6-sol / high`, fallback
   `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / claude-opus-5 / xhigh`, fallback
+- `frontend`: preferred `claude / opus / xhigh`, fallback
   `codex / gpt-5.6-sol / high`.
 
 Use this complete Project Config or User Config shape when you want explicit
@@ -92,7 +92,7 @@ profiles:
   frontend:
     preferred:
       runtime: claude
-      model: claude-opus-5
+      model: opus
       reasoning_effort: xhigh
     fallbacks:
       - runtime: codex
@@ -125,14 +125,32 @@ recommendation rank are not readiness claims. Roundfix proves operational
 availability in the effective environment through exact proof of the complete
 runtime/model/reasoning tuple. Custom model values remain forward-compatible:
 Roundfix sends them verbatim for the same proof instead of treating the catalog
-as an allowlist.
+as an allowlist. The dated Claude catalog still includes advisory labels such
+as `claude-opus-5` and `claude-fable-5`; these are not the working built-in
+frontend selection, which uses the adapter-advertised `opus` identifier.
 
-Codex Adapter Readiness requires the effective command to prove the official
-`@agentclientprotocol/codex-acp` lineage at version `1.1.4` or newer. A bare
-`codex-acp` override can resolve to legacy `@zed-industries/codex-acp`; use
-Setup to diagnose it and, after authorization, migrate to
-`npx -y @agentclientprotocol/codex-acp@1.1.4`. The deterministic install action
-is `npm install -g @agentclientprotocol/codex-acp@1.1.4`.
+When an adapter advertises an independent reasoning control, Roundfix treats
+every advertised Agent Model identifier as opaque. Copy bracketed identifiers
+such as `opus[1m]` exactly as printed, or use the advertised canonical prefix
+`opus`, and select reasoning separately. The `[1m]` suffix is a context-window
+annotation, not a reasoning effort; `reasoning_effort: 1m` is rejected. See
+[ADR-0079](../adr/0079-independent-reasoning-controls-make-model-identifiers-opaque.md).
+
+Adapter Readiness requires the effective Codex command to prove official
+`@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and the
+effective Claude command to prove official
+`@agentclientprotocol/claude-agent-acp` lineage at version `0.63.0` or newer.
+The deterministic install actions are
+`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
+
+A bare `codex-acp` override can resolve to legacy
+`@zed-industries/codex-acp`; Setup diagnoses it and, after authorization,
+migrates it to `npx -y @agentclientprotocol/codex-acp@1.1.5`. Setup also
+migrates earlier explicit pins such as `1.1.4`. For Claude, Setup recognizes
+both legacy lineages — the former `claude-code-acp` package and wrong-scope
+`@zed-industries/claude-agent-acp` — and proposes
+`npx -y @agentclientprotocol/claude-agent-acp@0.63.0`.
 
 ### Inspect profiles
 
@@ -176,8 +194,8 @@ backend:
     reasoning_effort: high
   fallbacks:
     - runtime: claude
-      model: claude-fable-5
-      reasoning_effort: high
+      model: opus
+      reasoning_effort: xhigh
 ```
 
 `--dry-run` runs the same exact proof, reports `changed: false`, and leaves
@@ -236,11 +254,11 @@ roundfix profiles configure --scope project --file profiles.yml
 roundfix profiles validate --json
 ```
 
-Setup diagnoses a stale Codex adapter override before this profile migration.
-It proposes the official pinned command and asks before rewriting the ACPX
-config; `--yes` authorizes the offer, while decline or `--no-input` writes
-nothing. Setup also proves all generated profile tuples before any User Config
-or Project Config write, so failed Sol/high proof never degrades to
+Setup diagnoses stale Codex and Claude adapter overrides before this profile
+migration. It proposes each official pinned command and asks before rewriting
+the ACPX config; `--yes` authorizes the offers, while decline or `--no-input`
+writes nothing. Setup also proves all generated profile tuples before any User
+Config or Project Config write, so failed Sol/high proof never degrades to
 model-managed reasoning and never leaves partial configuration.
 
 ## Release planning before publication

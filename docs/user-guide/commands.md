@@ -28,12 +28,23 @@ installing, substitute `go run ./cmd/roundfix`.
 roundfix setup [--yes] [--no-input]
 ```
 
-Verifies Node.js, the minimum supported acpx version, the effective adapter, generated
-Agent Selection Profiles, acpx local adapter overrides, User Config, and
-Project Config. Codex Adapter Readiness requires official
-`@agentclientprotocol/codex-acp` lineage at version `1.1.4` or newer. A stale
-bare override that resolves to legacy `@zed-industries/codex-acp` produces one
-migration offer to `npx -y @agentclientprotocol/codex-acp@1.1.4`.
+Verifies Node.js, the minimum supported acpx version, the effective adapters,
+generated Agent Selection Profiles, acpx local adapter overrides, User Config,
+and Project Config. Adapter Readiness requires official
+`@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and
+official `@agentclientprotocol/claude-agent-acp` lineage at version `0.63.0`
+or newer. The deterministic install actions are
+`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
+
+A stale bare Codex override that resolves to legacy
+`@zed-industries/codex-acp` produces one migration offer to
+`npx -y @agentclientprotocol/codex-acp@1.1.5`. A stale or bare Claude override
+from either legacy lineage — the former `claude-code-acp` package or
+wrong-scope `@zed-industries/claude-agent-acp` — produces one migration offer
+to `npx -y @agentclientprotocol/claude-agent-acp@0.63.0`. Setup diagnoses and
+proves each proposal before asking; declining preserves the acpx configuration
+bytes.
 
 Setup builds every proposed file in memory and runs exact Agent Selection proof
 before writing. It never changes explicit Sol/high to model-managed reasoning
@@ -58,9 +69,11 @@ lines include `next: <action>` when a remediation is known. The checks:
 - `node:` — Node.js meets the minimum version.
 - `acpx:` — the installed acpx version is at least the minimum supported
   version. Newer versions are accepted and are not downgraded.
-- `adapter:` — the effective adapter command proves the required package
-  lineage and supported version; legacy, unknown, old, and missing adapters
-  fail with the official install action.
+- `adapter:` — every distinct runtime referenced by the effective required
+  profiles proves its adapter package lineage and supported version. The
+  runtime entries are deduplicated and sorted; legacy, unknown, old, and
+  missing adapters fail the aggregate line with that runtime's official
+  install action.
 - `profiles:` — the required Agent Selection Profiles pass exact proof through
   disposable ACP Sessions. Success names distinct tuples and category
   references. Failure names the exact tuple, affected categories,
@@ -92,7 +105,7 @@ run-from-Git next action.
 ```text
 node: ok
 acpx: ok
-adapter: ok (...)
+adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.63.0"; package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex: command="npx -y @agentclientprotocol/codex-acp@1.1.5"; package=@agentclientprotocol/codex-acp; version=1.1.5)
 profiles: ok (3 distinct tuples; 10 category references)
 skills: ok (39 required: 14 Roundfix-owned, 25 external)
 codex: ok
