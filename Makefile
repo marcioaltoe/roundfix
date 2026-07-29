@@ -67,23 +67,19 @@ test-race: ## Run Go tests with the race detector
 	$(GO) test -race $(PKGS)
 
 DERIVED_DIGEST_PATHS := internal/baseline/assets/setups internal/baseline/testdata internal/baseline/assets/source-baselines internal/baseline/assets/formatter-fixtures internal/baseline/assets/profiles
+BASELINE_DIGEST_STEPS := \
+	./internal/baseline:TestReadoptionCompatibilityMaintainedFixture \
+	./skills:TestAuthorialSkillSync \
+	./internal/baseline:TestFormatterComposition \
+	./internal/baseline:TestBaselineCompatibilityCorpus \
+	./internal/baseline:TestCatalogCompatibility
 
 baseline-digests: ## Regenerate derived Baseline digest artifacts
-	@snapshot=$$(mktemp -t rf-digests) && \
-	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort > "$$snapshot" && \
-	$(GO) test ./internal/baseline -run TestReadoptionCompatibilityMaintainedFixture -update -count=1 && \
-	$(GO) test ./skills -run TestAuthorialSkillSync -update -count=1 && \
-	$(GO) test ./internal/baseline -run TestFormatterComposition -update -count=1 && \
-	$(GO) test ./internal/baseline -run TestBaselineCompatibilityCorpus -update -count=1 && \
-	$(GO) test ./internal/baseline -run TestCatalogCompatibility -update -count=1 && \
-	changed=$$(find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort | comm -13 "$$snapshot" - | awk '{print $$2}') && \
-	rm -f "$$snapshot" && \
-	if [ -z "$$changed" ]; then \
-		echo "baseline-digests: no changes; derived artifacts already match their canonical sources"; \
-	else \
-		echo "baseline-digests: regenerated"; \
-		echo "$$changed" | sed 's/^/  /'; \
-	fi
+	@snapshot=$$(mktemp -t rf-digests) || exit $$?; trap 'rm -f "$$snapshot"' EXIT; \
+	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort > "$$snapshot" || exit $$?; \
+	for step in $(BASELINE_DIGEST_STEPS); do package=$${step%%:*}; test_name=$${step#*:}; $(GO) test "$$package" -run "$$test_name" -update -count=1 || exit $$?; done; \
+	changed=$$(find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort | comm -13 "$$snapshot" - | awk '{print $$2}') || exit $$?; \
+	if [ -z "$$changed" ]; then echo "baseline-digests: no changes; derived artifacts already match their canonical sources"; else echo "baseline-digests: regenerated"; echo "$$changed" | sed 's/^/  /'; fi
 
 ##@ Build & Run
 

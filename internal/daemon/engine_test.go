@@ -1672,11 +1672,18 @@ func TestResolveCycleFailsRunWhenCriticalJournalSinkFails(t *testing.T) {
 func TestResolveCycleStagesOnlyAgentTouchedPaths(t *testing.T) {
 	fixture := newEngineFixture(t)
 	issuePath := fixture.issuePaths[0]
+	issueStagePath, err := filepath.Rel(fixture.gitRoot, issuePath)
+	if err != nil {
+		t.Fatalf("resolve Review Issue stage path: %v", err)
+	}
+	absoluteFixedPath := filepath.Join(fixture.gitRoot, "src", "fixed.go")
 	// user-wip.txt is dirty before the Batch starts — pre-existing work or
-	// a mid-Run user edit — and must never reach the Batch commit.
+	// a mid-Run user edit — and must never reach the Batch commit. The
+	// worktree snapshot may report an absolute path, but the commit must use
+	// the repository-relative path approved by FilterStageablePaths.
 	fixture.worktree.snapshots = [][]string{
 		{"user-wip.txt"},
-		{"user-wip.txt", "src/fixed.go", issuePath},
+		{"user-wip.txt", absoluteFixedPath, issuePath},
 	}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
@@ -1690,7 +1697,7 @@ func TestResolveCycleStagesOnlyAgentTouchedPaths(t *testing.T) {
 		t.Fatalf("expected one commit, got %v", committer.paths)
 	}
 	staged := strings.Join(committer.paths[0], "|")
-	if staged != issuePath+"|src/fixed.go" {
+	if staged != issueStagePath+"|src/fixed.go" {
 		t.Fatalf("expected only Agent-touched paths staged (issue file + code), got %q", staged)
 	}
 	if strings.Contains(staged, "user-wip.txt") {

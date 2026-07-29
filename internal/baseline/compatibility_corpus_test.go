@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -374,7 +375,7 @@ func decodeBaselineCompatibilityDocument(
 	if err := decoder.Decode(&document); err != nil {
 		t.Fatalf("decode compatibility document %q: %v", name, err)
 	}
-	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		t.Fatalf("compatibility document %q has trailing JSON", name)
 	}
 	return document

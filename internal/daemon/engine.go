@@ -361,16 +361,7 @@ func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, 
 	if commandErr.OutputPath != "" {
 		payload["diagnostic_path"] = commandErr.OutputPath
 	}
-	classification, reason := req.failureMetadata(temporary)
-	if classification != "" {
-		payload["classification"] = string(classification)
-	}
-	if reason != "" {
-		payload["reason"] = string(reason)
-	}
-	if temporary && req.FailureClassification == "" {
-		payload["retry_available"] = req.TemporaryRetryAvailable
-	}
+	req.applyFailureMetadata(payload, temporary)
 	if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); err != nil {
 		return err
 	}
@@ -395,6 +386,18 @@ func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdic
 	if failure != "" {
 		payload["error"] = failure
 	}
+	req.applyFailureMetadata(payload, temporary)
+	identity := req.identity()
+	summary := fmt.Sprintf("Verification %s verdict: %s", identity, verdict)
+	if req.WorkItem != "" {
+		summary = fmt.Sprintf("Verification %s for Task %s verdict: %s", identity, req.WorkItem, verdict)
+	} else if req.BatchNumber > 0 {
+		summary = fmt.Sprintf("Verification %s for Batch %03d verdict: %s", identity, req.BatchNumber, verdict)
+	}
+	return req.Publish(ctx, summary, payload)
+}
+
+func (req verificationAttemptRequest) applyFailureMetadata(payload map[string]any, temporary bool) {
 	classification, reason := req.failureMetadata(temporary)
 	if classification != "" {
 		payload["classification"] = string(classification)
@@ -405,14 +408,6 @@ func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdic
 	if temporary && req.FailureClassification == "" {
 		payload["retry_available"] = req.TemporaryRetryAvailable
 	}
-	identity := req.identity()
-	summary := fmt.Sprintf("Verification %s verdict: %s", identity, verdict)
-	if req.WorkItem != "" {
-		summary = fmt.Sprintf("Verification %s for Task %s verdict: %s", identity, req.WorkItem, verdict)
-	} else if req.BatchNumber > 0 {
-		summary = fmt.Sprintf("Verification %s for Batch %03d verdict: %s", identity, req.BatchNumber, verdict)
-	}
-	return req.Publish(ctx, summary, payload)
 }
 
 func (req verificationAttemptRequest) failureMetadata(temporary bool) (runevent.VerificationClassification, runevent.VerificationReason) {
@@ -941,15 +936,7 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		)
 		return false, true, err
 	}
-	stageable := make([]string, 0, len(changed))
-	var dropped []DroppedStagePath
-	for _, path := range changed {
-		kept, pathDrops := FilterStageablePaths(plan.GitRoot, []string{path})
-		if len(kept) > 0 {
-			stageable = append(stageable, path)
-		}
-		dropped = append(dropped, pathDrops...)
-	}
+	stageable, dropped := FilterStageablePaths(plan.GitRoot, changed)
 	for _, drop := range dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan.RunID, batch.Number, "", "Batch path", drop); err != nil {
 			return false, false, err

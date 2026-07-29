@@ -371,7 +371,7 @@ func regenerateMaintainedSourceBaseline(t *testing.T) {
 	if err := identityDecoder.Decode(&identity); err != nil {
 		t.Fatalf("decode maintained Source Baseline identity: %v", err)
 	}
-	if err := identityDecoder.Decode(&struct{}{}); err != io.EOF {
+	if err := identityDecoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		t.Fatalf("maintained Source Baseline identity has trailing JSON")
 	}
 	identity["entryCount"] = json.Number(fmt.Sprint(len(manifest.Entries)))
