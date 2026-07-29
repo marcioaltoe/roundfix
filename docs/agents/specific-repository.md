@@ -19,11 +19,14 @@ unresolved remains. Stdlib `flag` dispatch and a Bubble Tea v2 TUI.
 - **HARD RULE — skill ownership**: repo-owned authorial workflow skills may
   be adapted locally; every other skill is upstream-managed and **MUST NOT**
   be modified here. Ownership split: `docs/agents/skill-dispatch.md`.
-- **HARD RULE — protected-tooling commit choreography**: land prerequisite
-  fixes first, the express authorization record with its exact bounded paths
-  second, the authorized Task commit third, and everything else afterward.
-  Folding a prerequisite fix or the authorization record into the Task commit
-  fails the tooling-authority gate.
+- **HARD RULE — protected-tooling commit choreography**: the express
+  authorization record with its exact bounded paths, and any prerequisite fix
+  needed to make the gate green, are each their own commit and each lands
+  **before** the authorized Task commit; everything else lands afterward.
+  Their order relative to each other does not matter — an authorization
+  written into the Spec artifacts normally predates every implementation
+  commit, which is the healthy case. Folding a prerequisite fix or the
+  authorization record into the Task commit fails the tooling-authority gate.
 - **HARD RULE — sanctioned digest regeneration**: after an expressly
   authorized Roundfix-owned Skill or Baseline module edit, run
   `make baseline-digests`. Every derived pin rewritten by that command is
