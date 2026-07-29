@@ -75,10 +75,10 @@ BASELINE_DIGEST_STEPS := \
 	./internal/baseline:TestCatalogCompatibility
 
 baseline-digests: ## Regenerate derived Baseline digest artifacts
-	@snapshot=$$(mktemp -t rf-digests) || exit $$?; trap 'rm -f "$$snapshot"' EXIT; \
+	@snapshot=$$(mktemp "$${TMPDIR:-/tmp}/rf-digests.XXXXXX") || exit $$?; trap 'rm -f "$$snapshot"' EXIT; \
 	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort > "$$snapshot" || exit $$?; \
 	for step in $(BASELINE_DIGEST_STEPS); do package=$${step%%:*}; test_name=$${step#*:}; $(GO) test "$$package" -run "$$test_name" -update -count=1 || exit $$?; done; \
-	changed=$$(find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort | comm -13 "$$snapshot" - | awk '{print $$2}') || exit $$?; \
+	changed=$$(find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort | comm -3 "$$snapshot" - | awk '{print $$2}' | sort -u) || exit $$?; \
 	if [ -z "$$changed" ]; then echo "baseline-digests: no changes; derived artifacts already match their canonical sources"; else echo "baseline-digests: regenerated"; echo "$$changed" | sed 's/^/  /'; fi
 
 ##@ Build & Run
