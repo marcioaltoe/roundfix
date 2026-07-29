@@ -42,6 +42,20 @@ unresolved remains. Stdlib `flag` dispatch and a Bubble Tea v2 TUI.
   conclusive patch plan; minor, major, version-zero breaking, and manual
   classification outcomes require the decisions in
   `docs/user-guide/release-runbook.md`.
+- **HARD RULE — never let a pipe hide a gate's exit status**: a pipeline exits
+  with its last command's status, so `make verify | tail` reports the pager's
+  success and `&&` proceeds over a red gate. Run the gate on its own, capture
+  `$?`, or redirect to a file and read it — this is how a commit landed on a
+  failing gate on 2026-07-29, and it is the same defect the Makefile carried
+  in `find … | sort`.
+- **HARD RULE — an assertion reads the constant it means**: a test that copies
+  a pinned version, digest, or identifier as a literal stops testing the day a
+  legitimate change moves it, sometimes silently — a fixture that mutates
+  `version: 0.0.1` mutates nothing once the value is `0.0.2`, and the test
+  still passes. Reference the exported or package constant. When a value must
+  be duplicated, change every occurrence in the same commit: `grep` for it
+  first, because fixing one of three is the most repeated defect in this
+  repository's history.
 - **HARD RULE — durable knowledge flows upstream only**: Specs are downstream
   results of the CONTEXT-driven workflow, never sources it depends on — an
   archived Spec may be deleted at any time, so durable knowledge a Spec
@@ -82,6 +96,13 @@ If concurrency changed, also run:
 ```bash
 rtk go test -race ./...
 ```
+
+The `0.0.x` series is patch-only here: every release on it bumps the patch
+component regardless of the conventional-commit mix. `roundfix release plan`
+maps `feat` commits to a minor minimum and refuses a manual patch
+classification below it, so a `0.0.x` release is a recorded maintainer
+decision rather than a plan proposal until the tool learns this policy or the
+project moves to `0.1.0`.
 
 - Use `conventional-commits` for commits and PR titles (check `cog.toml`).
 - Commit and PR titles are unscoped Conventional Commits subjects here

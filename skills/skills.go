@@ -30,7 +30,7 @@ var skillNames = []string{
 	"archive-spec", "qa-gate", "evidence-gate",
 }
 
-const ownedSkillVersion = "0.0.1"
+const ownedSkillVersion = "0.0.2"
 
 var ownedSkillContract = map[string]string{
 	"roundfix":             ownedSkillVersion,

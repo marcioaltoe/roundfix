@@ -4,7 +4,7 @@ description: "Turns exploration into decision-ready analysis: scores feature ide
 metadata:
   category: discovery
   tags: [product, research, requirements]
-  version: 0.0.1
+  version: 0.0.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---

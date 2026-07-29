@@ -5,7 +5,7 @@ argument-hint: "<spec slug> [--release <tag or PR URL>]"
 metadata:
   category: delivery
   tags: [workflow, documentation, process]
-  version: 0.0.1
+  version: 0.0.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---

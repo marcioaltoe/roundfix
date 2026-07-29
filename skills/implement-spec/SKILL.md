@@ -6,7 +6,7 @@ argument-hint: "<spec slug or path under docs/specs/> [--from task_NN]"
 metadata:
   category: implementation
   tags: [workflow, agents, coding, issues]
-  version: 0.0.1
+  version: 0.0.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
