@@ -90,8 +90,9 @@ func TestCheckRepositoryReportsReadyRequiredSetWithoutMutation(t *testing.T) {
 	if !got.Ready() {
 		t.Fatalf("expected repository to be ready, got %#v", got)
 	}
-	if got.OwnedRequired != 14 || got.ExternalRequired != 25 {
-		t.Fatalf("required counts = owned %d external %d, want 14 and 25", got.OwnedRequired, got.ExternalRequired)
+	wantOwned, wantExternal := len(Names()), len(Recommended())
+	if got.OwnedRequired != wantOwned || got.ExternalRequired != wantExternal {
+		t.Fatalf("required counts = owned %d external %d, want %d and %d", got.OwnedRequired, got.ExternalRequired, wantOwned, wantExternal)
 	}
 	if after := snapshotRepositoryFixture(t, root); !reflect.DeepEqual(after, before) {
 		t.Fatalf("CheckRepository mutated fixture:\nbefore=%#v\nafter=%#v", before, after)

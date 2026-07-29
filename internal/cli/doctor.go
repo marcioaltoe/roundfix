@@ -427,7 +427,11 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
 		next = append(next, ownedSkillsNextAction)
 	}
 	if externalFailure {
-		externalActions := doctorExternalSkillNextActions(readiness)
+		fromError := []string(nil)
+		if readinessErr != nil {
+			fromError = readinessErr.MissingExternal
+		}
+		externalActions := doctorExternalSkillNextActions(readiness, fromError)
 		if len(externalActions) == 0 {
 			externalActions = append(externalActions, externalSkillsNextAction)
 		}
@@ -437,9 +441,13 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
 	return result
 }
 
-func doctorExternalSkillNextActions(readiness skills.RepositoryReadiness) []string {
+// doctorExternalSkillNextActions renders one install command per external
+// skill. A lock-entry failure reports its gap through the readiness error
+// rather than the readiness struct, so both sources feed the same remediation.
+func doctorExternalSkillNextActions(readiness skills.RepositoryReadiness, fromError []string) []string {
 	names := append([]string{}, readiness.MissingExternal...)
 	names = append(names, readiness.OutdatedExternal...)
+	names = append(names, fromError...)
 	sort.Strings(names)
 
 	actions := make([]string, 0, len(names))
