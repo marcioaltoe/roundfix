@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/go-cli.txt"
   },
-  "digest": "e5c8e3781c8cf475e89ef3d850a6ff58429a3b5a9380422af4596f7b5c052310",
+  "digest": "597a324aa7b828e97b33cf165b4953af8478b4a30771bc9207e12f8b24afbc53",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -66,7 +66,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "5163a850925247beeec16475311d1214e7c89258d8d5924ff4a771fb9a6ec079"
+      "contentDigest": "051d4becb723360d6762fc77f01194e03d9e25eb3656abf1f94df8ab7d11b14f"
     },
     {
       "name": "exa-web-search",
@@ -119,7 +119,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "53cecb5e74554c98868877e3c589d37bb576349d6b79daf3a7ca637e7120789c"
+      "contentDigest": "b6a0a5161e32623b471c6f482cd430819cd796506d8a58a9372782a7ef8c0b5b"
     },
     {
       "name": "write-prd",
@@ -128,7 +128,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "9ac0fa48da997b96e0794a589328a1f9022a1ad3432fe6117d0a1ec6543f0a59"
+      "contentDigest": "cc9e77e666f3e5c6829503b66fa6ccd528b18e3594fe2b27765663d50ece9057"
     },
     {
       "name": "agentic-cli-design",
@@ -170,7 +170,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "7327b62e0605fc9b4e2315fec121bc44110d6e243eb36898ae419129eedee3eb"
+      "contentDigest": "d4634a0709828784c61ff536231d4e02e694f18d4a2a1b6e468bbc2f9c4a254a"
     },
     {
       "name": "write-tasks",
@@ -179,7 +179,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "3196227537f1475f957647330529c7eefb4027630807f98e9e9710cc297b51e9"
+      "contentDigest": "dccc4933dd61abd12b1c4d5eddb9ffbb2ed91087819d0de0ce724a3b264ace5e"
     },
     {
       "name": "bubbletea",
