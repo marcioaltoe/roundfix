@@ -1,11 +1,24 @@
 ---
 spec: 0054-tooling-task-and-verification-hygiene
-status: active
+status: archived
 created: 2026-07-28
+archived: 2026-07-29
+qa_override: true
 surfaces: [backend, infra, docs]
 ---
 
 # Tooling task and verification environment hygiene
+
+> **Archived with QA `partial`, by maintainer decision on 2026-07-29.** The
+> newest gate reproduced **no product finding** on build `75161e9`; the verdict
+> is capped only by three rows the Daemon-assigned QA session cannot execute —
+> the sandbox denies `/bin/ps`, and the session may not write the user-scoped
+> Roundfix Home the public Implement journey persists to. Those three rows were
+> executed by the maintainer outside the sandbox, with the Run Event Stream read
+> back as independent confirmation, in
+> [`qa/evidence/2026-07-29-supervisor-blocked-rows.md`](qa/evidence/2026-07-29-supervisor-blocked-rows.md).
+> Spec 0053 makes this verdict reachable without an override, and Spec 0055
+> removes the `/bin/ps` dependency.
 
 Four recurring, process-only failure modes cost the dogfood loop roughly three
 blocked Runs per day on 2026-07-27/28, and none of them was a defect in the
