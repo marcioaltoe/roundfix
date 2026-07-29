@@ -1,0 +1,42 @@
+Build: aa12daaeb731242dcdbebdf861d35b8996d50859
+Date: 2026-07-28
+
+PRD: docs/specs/0052-claude-adapter-standardization/_prd.md
+TechSpec: docs/specs/0052-claude-adapter-standardization/_techspec.md
+
+Identifier strategy
+- PRD: not applicable; no project-owned Internal Identifier.
+- TechSpec: same applicability and reason.
+- Operative source: docs/agents/domain.md (exists and requires canonical
+  repository vocabulary and accepted-ADR alignment).
+
+Authentication and HTTP
+- PRD: not applicable; the scope is local adapter probing, selection,
+  configuration, CLI reporting, and documentation.
+- TechSpec: same applicability and reason.
+- Operative source: docs/agents/cli.md (exists and governs the local CLI
+  public contract; the Spec adds no authentication provider or HTTP route).
+
+Active ADR obligations
+- PRD and TechSpec: applicable.
+- Operative source: docs/agents/domain.md.
+- Read and reconciled:
+  docs/adr/0037-roundfix-owns-agent-model-and-reasoning-selection.md
+  docs/adr/0039-model-availability-preflight-uses-a-disposable-agent-session.md
+  docs/adr/0040-reasoning-effort-is-assigned-only-when-configured.md
+  docs/adr/0049-agent-selection-profiles-are-atomic.md
+  docs/adr/0050-configured-fallbacks-activate-after-notification.md
+  docs/adr/0055-agent-selection-encoding-follows-advertised-acp-capabilities.md
+  docs/adr/0079-independent-reasoning-controls-make-model-identifiers-opaque.md
+- ADR-0079 supersedes only ADR-0040's obsolete Claude capability premise and
+  preserves explicit-empty semantics. No conflict found.
+
+Tooling authority
+- PRD and TechSpec: applicable.
+- Both artifacts record express maintainer authorization dated 2026-07-28
+  for the same exact seven protected paths.
+- Operative source: docs/agents/agent-instructions.md.
+
+Result: PASS. All four mandatory Project Constraint categories are accounted
+for in both active Spec artifacts with applicability, reasons, and operative
+repository sources.

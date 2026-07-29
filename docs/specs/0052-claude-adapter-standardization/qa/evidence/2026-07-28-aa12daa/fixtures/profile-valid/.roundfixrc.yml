@@ -1,0 +1,10 @@
+profiles:
+  frontend:
+    preferred:
+      runtime: claude
+      model: opus
+      reasoning_effort: xhigh
+    fallbacks:
+      - runtime: claude
+        model: opus[1m]
+        reasoning_effort: xhigh

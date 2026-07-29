@@ -1,0 +1,151 @@
+Build: aa12daaeb731242dcdbebdf861d35b8996d50859
+Binary: bin/roundfix
+Binary version: roundfix 0.0.1 (aa12daa-dirty)
+Date: 2026-07-28
+
+1. Installed-adapter Doctor
+
+Command:
+./bin/roundfix doctor
+
+Relevant output:
+adapter: ok (claude: command="claude-agent-acp";
+package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex:
+command="codex-acp"; package=@agentclientprotocol/codex-acp; version=1.1.7)
+
+The line was third in the unchanged sequence:
+node, acpx, adapter, profiles, skills, codex.
+
+The process exited 1 because the separate profiles/codex checks found an
+invalid or missing code signature on /Users/marcio/.local/bin/codex. The
+adapter check itself passed and retained both runtime evidence records.
+
+2. Wrong-scope legacy Claude lineage
+
+The program preserved as `fixtures/legacy-agent-acp.sh` was staged in a
+disposable PATH that resolves claude-agent-acp through:
+node_modules/@zed-industries/claude-agent-acp/
+
+Command:
+PATH=<legacy fixture>:$PATH ./bin/roundfix doctor
+
+Relevant output:
+adapter: failed (claude: effective Claude adapter command
+"claude-agent-acp" reported legacy package
+@zed-industries/claude-agent-acp version 0.15.0; required
+@agentclientprotocol/claude-agent-acp 0.63.0 or newer; update with:
+npm install -g @agentclientprotocol/claude-agent-acp@0.63.0;
+classification: adapter_lineage_unknown | codex: command="codex-acp";
+package=@agentclientprotocol/codex-acp; version=1.1.7; next:
+npm install -g @agentclientprotocol/claude-agent-acp@0.63.0)
+
+Exit: 1, as required for failed readiness.
+
+3. Former Claude Code legacy lineage
+
+The program preserved as `fixtures/legacy-code-acp.sh` was staged in a
+disposable PATH that resolves claude-agent-acp through:
+node_modules/@zed-industries/claude-code-acp/
+
+Relevant Doctor output:
+adapter: failed (claude: effective Claude adapter command
+"claude-agent-acp" reported legacy package
+@zed-industries/claude-code-acp; required
+@agentclientprotocol/claude-agent-acp 0.63.0 or newer; update with:
+npm install -g @agentclientprotocol/claude-agent-acp@0.63.0;
+classification: adapter_lineage_unknown | codex: command="codex-acp";
+package=@agentclientprotocol/codex-acp; version=1.1.7; next:
+npm install -g @agentclientprotocol/claude-agent-acp@0.63.0)
+
+Exit: 1.
+
+4. Real Claude profile proof
+
+Disposable Project Config:
+fixtures/profile-valid/.roundfixrc.yml
+
+Command:
+roundfix profiles validate --category frontend --json
+
+Result: exit 0 and schema roundfix/profiles-validate/v1 with ok=true.
+- claude / opus / xhigh: passed, encoding=independent,
+  adapter_command=claude-agent-acp, adapter_version=0.63.0.
+- claude / opus[1m] / xhigh: passed, encoding=independent,
+  adapter_command=claude-agent-acp, adapter_version=0.63.0.
+
+The sandboxed attempt failed only because acpx could not write its disposable
+Session index under ~/.acpx. The full-access rerun created and closed the
+disposable Sessions and produced the result above.
+
+5. Context-window annotation rejected as reasoning
+
+Disposable Project Config:
+fixtures/profile-invalid/.roundfixrc.yml
+
+Command:
+roundfix profiles validate --category frontend --json
+
+Result: exit 2 and schema roundfix/profiles-validate/v1 with ok=false.
+- claude / opus / 1m: failed.
+- classification: reasoning_control_not_advertised.
+- advertised reasoning: default, low, medium, high, xhigh, max.
+- advertised models include both selectable forms:
+  opus (advertised opus[1m]).
+- error ends with:
+  fallback: Fallback Chains activate only after Run creation (ADR-0050);
+  Preflight proves every configured tuple and substitutes none
+- the configured Fallback Selection remained pending; none was substituted.
+
+6. Fresh default profile
+
+Commands in a new disposable Git root:
+roundfix init --scope project
+roundfix profiles show --category frontend --json
+roundfix setup --no-input
+
+Observed:
+- Init created .roundfixrc.yml without a pre-existing Project Config.
+- A separate Show process read frontend preferred claude / opus / xhigh and
+  unchanged fallback codex / gpt-5.6-sol / high.
+- Setup reported both official adapter lineages, then:
+  profile readiness: passed (3 distinct Agent Selections)
+- No manual edit occurred between Init, Show, and Setup.
+
+7. Setup stale-Claude migration safety
+
+The real acpx config SHA-256 before both checks:
+770cb114e586be18f5e9f6b60e994fffa572582c5a426ecd63a70b43f2a36d19
+
+With the wrong-scope legacy PATH fixture:
+
+roundfix setup --no-input
+
+Observed:
+adapter: migration proposed (claude: command="npx -y
+@agentclientprotocol/claude-agent-acp@0.63.0";
+package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex:
+command="codex-acp"; package=@agentclientprotocol/codex-acp; version=1.1.7)
+profile readiness: passed (3 distinct Agent Selections)
+acpx agents override: skipped (would update /Users/marcio/.acpx/config.json)
+
+Interactive `roundfix setup` printed one prompt naming claude and the exact
+pinned command. Answering `n` produced:
+acpx agents override: offered: declined
+
+Both commands exited 0. The acpx config SHA-256 after each run remained:
+770cb114e586be18f5e9f6b60e994fffa572582c5a426ecd63a70b43f2a36d19
+
+8. CLI sweep
+
+- `roundfix --help`: exit 0 on stdout; lists setup, doctor, profiles,
+  implement, and their supported forms.
+- `roundfix doctor --help`: exit 0; says Doctor is offline, read-only, and
+  mutates nothing.
+- `roundfix setup --help`: exit 0; names official Codex and Claude adapters
+  and authorization-gated legacy migration.
+- `roundfix profiles validate --help`: exit 0; documents deterministic JSON
+  and disposable Session cleanup.
+- `roundfix implement --help`: exit 0; documents the complete one-Run
+  selection override and qa-gate behavior.
+- `roundfix doctor --bogus`: exit 2; diagnostic on stderr and one concrete
+  `roundfix doctor --help` recovery action.
