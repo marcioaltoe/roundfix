@@ -1701,6 +1701,49 @@ func TestResolveCycleStagesOnlyAgentTouchedPaths(t *testing.T) {
 	}
 }
 
+func TestResolveCycleDropsExecutableFileAndCommitsRemainingBatchPaths(t *testing.T) {
+	fixture := newEngineFixture(t)
+	executablePath := "bin/roundfix"
+	regularPath := "src/fixed.go"
+	for _, path := range []string{executablePath, regularPath} {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(fixture.gitRoot, path)), 0o755); err != nil {
+			t.Fatalf("create fixture directory for %s: %v", path, err)
+		}
+		mustWriteForTest(t, filepath.Join(fixture.gitRoot, path), path+"\n")
+	}
+	if err := os.Chmod(filepath.Join(fixture.gitRoot, executablePath), 0o755); err != nil {
+		t.Fatalf("mark Batch artifact executable: %v", err)
+	}
+	fixture.worktree.snapshots = [][]string{nil, {executablePath, regularPath}}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("resolve cycle: %v", err)
+	}
+	if len(committer.paths) != 1 || strings.Join(committer.paths[0], "|") != regularPath {
+		t.Fatalf("expected only regular Batch path committed, got %v", committer.paths)
+	}
+	if !result.Batches[0].Committed || result.Batches[0].CommitSkipped {
+		t.Fatalf("expected Batch committed with remaining path, got %+v", result.Batches[0])
+	}
+	dropped := droppedStageEvents(t, fixture.sink)
+	if len(dropped) != 1 {
+		t.Fatalf("expected one dropped executable event, got %+v", dropped)
+	}
+	if got := eventPayloadString(t, dropped[0], "path"); got != executablePath {
+		t.Fatalf("expected dropped executable path %q, got %q", executablePath, got)
+	}
+	if got := eventPayloadString(t, dropped[0], "reason"); got != "executable file" {
+		t.Fatalf("expected executable-file reason, got %q", got)
+	}
+	if got := eventPayloadString(t, dropped[0], "mode"); got != "0755" {
+		t.Fatalf("expected executable mode 0755, got %q", got)
+	}
+}
+
 func TestResolveCycleSkipsCommitForTriageOnlyBatch(t *testing.T) {
 	fixture := newEngineFixture(t)
 	// Identical snapshots: the Agent triaged without changing the worktree.

@@ -919,18 +919,40 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		)
 		return false, true, err
 	}
+	stageable := make([]string, 0, len(changed))
+	var dropped []DroppedStagePath
+	for _, path := range changed {
+		kept, pathDrops := FilterStageablePaths(plan.GitRoot, []string{path})
+		if len(kept) > 0 {
+			stageable = append(stageable, path)
+		}
+		dropped = append(dropped, pathDrops...)
+	}
+	for _, drop := range dropped {
+		if err := engine.publishDroppedStagePath(ctx, plan.RunID, batch.Number, "", "Batch path", drop); err != nil {
+			return false, false, err
+		}
+	}
+	if len(stageable) == 0 {
+		fmt.Fprintf(engine.deps.Progress, "Batch commit skipped: Batch %03d made no stageable worktree changes.\n", batch.Number)
+		err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonCommit,
+			fmt.Sprintf("Batch commit skipped: Batch %03d made no stageable worktree changes.", batch.Number),
+			map[string]any{"decision": "skipped", "batch": batch.Number},
+		)
+		return false, true, err
+	}
 	message := BatchCommitMessage(batch.Number)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.GitRoot,
 		Message: message,
-		Paths:   changed,
+		Paths:   stageable,
 	}); err != nil {
 		return false, false, err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Batch commit created: %s\n", message)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonCommit,
 		fmt.Sprintf("Batch commit created: %s", message),
-		map[string]any{"decision": "created", "batch": batch.Number, "paths": len(changed)},
+		map[string]any{"decision": "created", "batch": batch.Number, "paths": len(stageable)},
 	); err != nil {
 		return false, false, err
 	}

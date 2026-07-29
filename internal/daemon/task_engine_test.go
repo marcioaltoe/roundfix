@@ -4071,6 +4071,92 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 	}
 }
 
+func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing.T) {
+	tests := []struct {
+		name string
+		mode os.FileMode
+	}{
+		{name: "owner execute", mode: 0o744},
+		{name: "group execute", mode: 0o654},
+		{name: "other execute", mode: 0o645},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			workDir := t.TempDir()
+			path := filepath.Join(workDir, "artifact")
+			if err := os.WriteFile(path, []byte("artifact\n"), tt.mode); err != nil {
+				t.Fatalf("write executable fixture: %v", err)
+			}
+			if err := os.Chmod(path, tt.mode); err != nil {
+				t.Fatalf("set executable fixture mode: %v", err)
+			}
+
+			kept, dropped := FilterStageablePaths(workDir, []string{"artifact"})
+
+			if len(kept) != 0 {
+				t.Fatalf("expected executable file omitted, got kept paths %v", kept)
+			}
+			if len(dropped) != 1 {
+				t.Fatalf("expected one executable-file drop, got %+v", dropped)
+			}
+			if dropped[0].Path != "artifact" || dropped[0].Reason != "executable file" {
+				t.Fatalf("expected executable-file drop for artifact, got %+v", dropped[0])
+			}
+			if want := fmt.Sprintf("%#o", tt.mode.Perm()); dropped[0].Mode != want {
+				t.Fatalf("expected reported mode %s, got %q", want, dropped[0].Mode)
+			}
+		})
+	}
+}
+
+func TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+	executablePath := "bin/roundfix"
+	regularPath := "src/agent-change.go"
+	for _, path := range []string{executablePath, regularPath} {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(fixture.gitRoot, path)), 0o755); err != nil {
+			t.Fatalf("create fixture directory for %s: %v", path, err)
+		}
+		mustWriteForTest(t, filepath.Join(fixture.gitRoot, path), path+"\n")
+	}
+	if err := os.Chmod(filepath.Join(fixture.gitRoot, executablePath), 0o755); err != nil {
+		t.Fatalf("mark build artifact executable: %v", err)
+	}
+	fixture.worktree.snapshots = [][]string{{executablePath, regularPath}}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	err := engine.commitTask(context.Background(), fixture.plan(), fixture.graph.Tasks[0], 1, nil)
+
+	if err != nil {
+		t.Fatalf("commitTask: %v", err)
+	}
+	if len(committer.paths) != 1 {
+		t.Fatalf("expected one Task commit, got %d", len(committer.paths))
+	}
+	wantPaths := taskFileRel(taskCycleSlug, "task_01") + "|" + regularPath
+	if got := strings.Join(committer.paths[0], "|"); got != wantPaths {
+		t.Fatalf("expected Task file and regular change staged, got %q", got)
+	}
+	dropped := droppedStageEvents(t, fixture.sink)
+	if len(dropped) != 1 {
+		t.Fatalf("expected one dropped executable event, got %+v", dropped)
+	}
+	if got := eventPayloadString(t, dropped[0], "path"); got != executablePath {
+		t.Fatalf("expected dropped executable path %q, got %q", executablePath, got)
+	}
+	if got := eventPayloadString(t, dropped[0], "reason"); got != "executable file" {
+		t.Fatalf("expected executable-file reason, got %q", got)
+	}
+	if got := eventPayloadString(t, dropped[0], "mode"); got != "0755" {
+		t.Fatalf("expected executable mode 0755, got %q", got)
+	}
+	wantWarning := "roundfix: refused executable file " + executablePath + " (mode 0755); build artifacts and deliberately executable repository files are not valid Work Item output\n"
+	if !strings.Contains(fixture.progress.String(), wantWarning) {
+		t.Fatalf("expected executable refusal %q, got %q", wantWarning, fixture.progress.String())
+	}
+}
+
 func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
 	externalRoot := filepath.Join(t.TempDir(), "knowledge-specs")
@@ -4157,6 +4243,50 @@ func TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged(t
 		t.Fatalf("expected dropped external path %q, got %q", wantPath, got)
 	}
 	assertNoOpTaskCommitWarning(t, fixture, "task_01", taskNoOpShapeEmptyStageable)
+}
+
+func TestQACommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	executablePath := "bin/qa-helper"
+	regularPath := "qa/evidence/observed.txt"
+	reportPath := qaReportRelPathForTest()
+	for _, path := range []string{executablePath, regularPath, reportPath} {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(fixture.gitRoot, path)), 0o755); err != nil {
+			t.Fatalf("create fixture directory for %s: %v", path, err)
+		}
+		mustWriteForTest(t, filepath.Join(fixture.gitRoot, path), path+"\n")
+	}
+	if err := os.Chmod(filepath.Join(fixture.gitRoot, executablePath), 0o755); err != nil {
+		t.Fatalf("mark QA artifact executable: %v", err)
+	}
+	fixture.worktree.snapshots = [][]string{{executablePath, regularPath, reportPath}}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	err := engine.commitQAReport(context.Background(), fixture.plan(), 2, nil, spec.VerdictPass, reportPath)
+
+	if err != nil {
+		t.Fatalf("commitQAReport: %v", err)
+	}
+	if len(committer.paths) != 1 {
+		t.Fatalf("expected one QA commit, got %d", len(committer.paths))
+	}
+	if got := strings.Join(committer.paths[0], "|"); got != reportPath+"|"+regularPath {
+		t.Fatalf("expected QA Report and regular evidence staged, got %q", got)
+	}
+	dropped := droppedStageEvents(t, fixture.sink)
+	if len(dropped) != 1 {
+		t.Fatalf("expected one dropped executable event, got %+v", dropped)
+	}
+	if got := eventPayloadString(t, dropped[0], "path"); got != executablePath {
+		t.Fatalf("expected dropped executable path %q, got %q", executablePath, got)
+	}
+	if got := eventPayloadString(t, dropped[0], "reason"); got != "executable file" {
+		t.Fatalf("expected executable-file reason, got %q", got)
+	}
+	if got := eventPayloadString(t, dropped[0], "mode"); got != "0755" {
+		t.Fatalf("expected executable mode 0755, got %q", got)
+	}
 }
 
 func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
