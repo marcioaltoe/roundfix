@@ -67,8 +67,10 @@ Surface a failed `skills:` line and its printed `next:` remediation before
 work continues. Owned failures print
 `roundfix skills install --target project`. Each named missing or outdated
 external skill prints its own
-`bunx skills add marcioaltoe/skills@<skill>` command; a mixed named failure
-prints the owned action followed by the skill-scoped external actions.
+`bunx skills add marcioaltoe/skills@<skill>` command. When an external failure
+does not identify specific skill names, Doctor instead prints
+`bunx skills experimental_install && bunx skills update -p -y`; a mixed named
+failure prints the owned action followed by the skill-scoped external actions.
 Doctor is diagnosis-only: it never runs these commands, accesses the network,
 installs or updates skills, or writes repository state. Apply remediation only
 after explicit workflow authorization, then rerun Doctor.

@@ -55,6 +55,7 @@ func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T)
 		modules          []string
 		writeManifest    bool
 		validateExternal func(*testing.T, []string)
+		skillErr         error
 		wantCode         int
 		wantOutput       []string
 		wantSkillCalls   int
@@ -125,6 +126,25 @@ func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T)
 			wantSkillCalls: 1,
 		},
 		{
+			name:          "checker error text cannot mask the zero external requirement",
+			writeManifest: false,
+			validateExternal: func(t *testing.T, external []string) {
+				t.Helper()
+				if len(external) != 0 {
+					t.Fatalf("Doctor absent-manifest external requirement = %v, want empty", external)
+				}
+			},
+			skillErr: errors.New("repository 0 external inspection failed"),
+			wantCode: exitRunFailed,
+			wantOutput: []string{
+				"repository 0 external inspection failed",
+				"Setup Manifest is absent or unreadable",
+				"0 external required",
+				"next: roundfix skills install --target project && roundfix baseline",
+			},
+			wantSkillCalls: 1,
+		},
+		{
 			name:           "unknown module fails before repository readiness",
 			modules:        []string{"unknown-module"},
 			writeManifest:  true,
@@ -164,7 +184,7 @@ func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T)
 				return skills.RepositoryReadiness{
 					OwnedRequired:    len(skills.Names()),
 					ExternalRequired: len(external),
-				}, nil
+				}, test.skillErr
 			}
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer

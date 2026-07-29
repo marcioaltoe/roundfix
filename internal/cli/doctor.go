@@ -346,7 +346,7 @@ func doctorMissingSetupManifestResult(readiness skills.RepositoryReadiness, chec
 	} else {
 		result.Detail += "; " + missingSetupManifestDetail
 	}
-	if !strings.Contains(result.Detail, "0 external") {
+	if !(checkErr == nil && readiness.Ready()) {
 		result.Detail += "; 0 external required"
 	}
 
