@@ -1,11 +1,23 @@
 ---
 spec: 0061-repository-derived-skill-requirements
-status: active
+status: archived
 created: 2026-07-29
+archived: 2026-07-29
+qa_override: true
 surfaces: [backend, cli, docs]
 ---
 
 # Repository-derived skill requirements
+
+> **Archived with QA `partial`, by maintainer decision on 2026-07-29.** The
+> gate recorded **no Spec behavior finding**; the verdict is capped by one row
+> the managed sandbox cannot execute, because it denies `fork/exec /bin/ps` and
+> five process-identity tests live inside the repository gate. That row was
+> executed outside the sandbox and the derivation was exercised against five
+> real checkouts, in
+> [`qa/evidence/2026-07-29-supervisor-full-access-gate.md`](qa/evidence/2026-07-29-supervisor-full-access-gate.md).
+> Spec 0055 removes the `/bin/ps` dependency and Spec 0053 makes this verdict
+> reachable without an override.
 
 Repository Skill Set readiness requires a fixed list embedded in the Roundfix
 binary instead of the skills the repository's own Setup Manifest selects, so
