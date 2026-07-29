@@ -75,7 +75,7 @@ BASELINE_DIGEST_STEPS := \
 	./internal/baseline:TestCatalogCompatibility
 
 baseline-digests: ## Regenerate derived Baseline digest artifacts
-	@snapshot=$$(mktemp "$${TMPDIR:-/tmp}/rf-digests.XXXXXX") || { status=$$?; printf '%s\n' '{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false}'; exit "$$status"; }; finish() { status=$$?; rm -f "$$snapshot"; if [ "$$status" -ne 0 ]; then printf '%s\n' '{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false}'; fi; exit "$$status"; }; trap finish EXIT; \
+	@raw=""; snapshot=$$(mktemp "$${TMPDIR:-/tmp}/rf-digests.XXXXXX") || { status=$$?; printf '%s\n' '{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false}'; exit "$$status"; }; finish() { status=$$?; rm -f "$$snapshot" "$$raw"; if [ "$$status" -ne 0 ]; then printf '%s\n' '{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false}'; fi; exit "$$status"; }; trap finish EXIT; \
 	raw=$$(mktemp "$${TMPDIR:-/tmp}/rf-digests-raw.XXXXXX") || exit $$?; \
 	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + > "$$raw" || { status=$$?; rm -f "$$raw"; exit "$$status"; }; \
 	sort "$$raw" > "$$snapshot" || { status=$$?; rm -f "$$raw"; exit "$$status"; }; \
