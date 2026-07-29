@@ -1,6 +1,6 @@
 ---
 name: write-tasks
-description: Decompose a spec's PRD/TechSpec into a dependency-ordered task graph — vertical-slice task files plus a machine-parseable _tasks.md DAG manifest under docs/specs/<slug>/, gated by user approval of the breakdown before any file is written.
+description: Decompose a spec's PRD/TechSpec into a dependency-ordered task graph — vertical-slice task files plus a machine-parseable _tasks.md DAG manifest under docs/specs/<slug>/, decided autonomously from the Spec and escalated only when authority, architecture, or blast radius is at stake.
 argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
@@ -90,8 +90,8 @@ implement it, the tool used, or configuration choices:
 
 When a vertical slice crosses types, use the type of its primary user-visible or
 operational outcome. If two outcomes are independently valuable or the dominant
-outcome remains ambiguous, split the Task or resolve the type during the approval
-gate; do not encode multiple values.
+outcome remains ambiguous, split the Task so each slice has one dominant outcome;
+do not encode multiple values and do not defer the classification.
 
 ## Process
 
@@ -99,13 +99,23 @@ gate; do not encode multiple values.
 
 Start from the TechSpec's Build Order (its dependency statements become graph edges). Map every PRD user story and core feature onto at least one task; an uncovered story is a hole to fix now.
 
-### 2. Approval gate — the one mandatory human check
+### 2. Escalation check — decide autonomously, escalate by exception
 
-Present the breakdown as a table (`id | title | type | complexity | needs`) plus a one-line rationale for the slicing, and iterate until the user explicitly approves. Every `type` cell must already contain one allowed Task Type; a blank, placeholder, or combined value blocks approval. Granularity, dependency correctness, and dominant outcome classification are where human judgment pays most — **write no files before approval.**
+Derive the breakdown and write it. The Spec is the authorization: a PRD and TechSpec that passed their own gates already carry the product and architecture decisions, so granularity, dependency order, and Task Type classification are derivations from those artifacts — not decisions to confirm. Report the finished breakdown so a change to any slice can be requested afterwards; do not block on approval.
+
+**Stop and ask only when the next decision would change authority, architecture, or blast radius:**
+
+- **Missing authority.** A slice would create, edit, rename, move, or delete protected tooling that the PRD and present TechSpec do not authorize with exact bounded files. Name the paths and why they are needed; never widen the boundary yourself.
+- **Unverifiable without a human.** A Task's acceptance genuinely needs a person or a credential the repository cannot hold — a live external account, a physical device, a subjective judgement. Verification must stay hermetic, so a Task that cannot be is a Spec problem, not a graph problem.
+- **The Spec is wrong, not just thin.** The decomposition only works by contradicting or extending the TechSpec's Build Order, architecture, or contracts. Route back to `write-techspec` rather than silently redesigning.
+- **Irreversible blast radius inside one slice.** A Task would run a data migration, a destructive deletion, a release or publication, or a credential rotation. Confirm the boundary before that Task exists.
+- **Irreducible complexity.** A slice cannot be sized to one fresh session and cannot be split without breaking the vertical-slice rule. That signals an under-specified Spec; say which slice and why.
+
+Escalate with the specific blocking fact and a proposed resolution, never with an open "is this ok?". Anything outside those five is a derivation: granularity preference, naming, ordering the Build Order already implies, and dominant-outcome classification are decided here. Every `type` cell must carry exactly one allowed Task Type before writing — a blank, placeholder, or combined value is a defect to resolve, not a question to ask.
 
 ### 3. Write the files
 
-From the templates in [references/task-template.md](references/task-template.md), write `_tasks.md` and every `task_NN.md` (numbered from `01` in topological order). Copy the approved Task Type into each task's `type` frontmatter and the `_tasks.md` projection table. Acceptance criteria must be independently verifiable — a criterion nobody can check is a wish, not a criterion. Include a `## Verification` section with exact, hermetic, portable commands that prove the task's effect in a fresh worktree; the Daemon runs them verbatim after Agent work. Add `## Context` only for task-specific instruction or interface paths that the standard Spec Context Bundle would not make obvious.
+From the templates in [references/task-template.md](references/task-template.md), write `_tasks.md` and every `task_NN.md` (numbered from `01` in topological order). Copy the derived Task Type into each task's `type` frontmatter and the `_tasks.md` projection table. Acceptance criteria must be independently verifiable — a criterion nobody can check is a wish, not a criterion. Include a `## Verification` section with exact, hermetic, portable commands that prove the task's effect in a fresh worktree; the Daemon runs them verbatim after Agent work. Add `## Context` only for task-specific instruction or interface paths that the standard Spec Context Bundle would not make obvious.
 
 Durability applies here too: describe behavior and interfaces, not repo file paths (relative references within the spec folder are fine — the folder moves as a unit).
 
@@ -124,7 +134,7 @@ Print the wave plan (wave 1 = no needs; wave N = needs met by earlier waves) as 
 
 ### 5. Report
 
-Reply with the file list and the wave plan.
+Reply with the breakdown table (`id | title | type | complexity | needs`), a one-line rationale for the slicing, the file list, and the wave plan — and say that a change to any slice can be requested now. Name any escalation trigger you hit and how it was resolved.
 
 ## Anti-patterns
 
@@ -135,8 +145,9 @@ Reply with the file list and the wave plan.
 - Non-portable Verification such as `wc` pipeline shape checks, `rg` dependency checks where `grep` works, or Go build commands missing the repository's `-buildvcs=false` flag.
 - Verification that only exercises broad suites without proving the Task's specific effect.
 - Commit, push, PR, or branch-publishing acceptance criteria — those are Daemon and delivery responsibilities, not task success criteria.
-- Editing the graph and the task files out of sync — regenerate both from the approved breakdown.
-- Writing files before the user approves the breakdown.
+- Editing the graph and the task files out of sync — regenerate both from the same breakdown.
+- Blocking on approval for a breakdown the Spec already authorizes — invocation is the authorization, and granularity is a derivation, not a decision.
+- Proceeding past a real escalation trigger because the loop is running — a missing tooling authorization or a Task that cannot be verified hermetically is a stop, not a judgement call.
 - Missing, placeholder, combined, or invented Task Types — classification is a
   required routing contract, not descriptive free text.
 
