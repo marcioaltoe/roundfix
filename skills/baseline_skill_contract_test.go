@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -17,6 +18,13 @@ import (
 var updateDerivedDigests = flag.Bool("update", false, "regenerate derived digest artifacts")
 
 const baselineDigestRegenerationHint = "run 'make baseline-digests'"
+
+type baselineDigestTargetResult struct {
+	SchemaVersion *int    `json:"schemaVersion"`
+	Type          *string `json:"type"`
+	OK            *bool   `json:"ok"`
+	Changed       *bool   `json:"changed"`
+}
 
 // Suite: Baseline skill distribution contract
 // Invariant: canonical and shipped Baseline guidance is identical and invokes only the public CLI.
@@ -144,6 +152,53 @@ func TestNoPythonBaselineRuntime(t *testing.T) {
 	}
 }
 
+func TestBaselineDigestTargetReportsMachineReadableOutcomes(t *testing.T) {
+	t.Run("reports regenerated artifacts", func(t *testing.T) {
+		derivedRoot := t.TempDir()
+		writeBaselineDigestTargetFile(t, filepath.Join(derivedRoot, "before"), nil, 0o644)
+		regenerator := filepath.Join(t.TempDir(), "regenerate")
+		writeBaselineDigestTargetFile(t, regenerator, []byte("#!/bin/sh\nset -eu\ntouch \"$DERIVED_DIGEST_PROBE/after\"\n"), 0o700)
+
+		result, stderr, exitCode := runBaselineDigestTarget(t, derivedRoot, regenerator)
+		if exitCode != 0 {
+			t.Fatalf("baseline-digests exit code = %d, want 0; stderr:\n%s", exitCode, stderr)
+		}
+		assertBaselineDigestTargetResult(t, result, true, true)
+		if !strings.Contains(stderr, "baseline-digests: regenerated") ||
+			!strings.Contains(stderr, filepath.Join(derivedRoot, "after")) {
+			t.Fatalf("baseline-digests stderr does not report regenerated artifact:\n%s", stderr)
+		}
+	})
+
+	t.Run("reports unchanged artifacts", func(t *testing.T) {
+		derivedRoot := t.TempDir()
+		writeBaselineDigestTargetFile(t, filepath.Join(derivedRoot, "before"), nil, 0o644)
+
+		result, stderr, exitCode := runBaselineDigestTarget(t, derivedRoot, "true")
+		if exitCode != 0 {
+			t.Fatalf("baseline-digests exit code = %d, want 0; stderr:\n%s", exitCode, stderr)
+		}
+		assertBaselineDigestTargetResult(t, result, true, false)
+		if !strings.Contains(stderr, "baseline-digests: no changes") {
+			t.Fatalf("baseline-digests stderr does not report unchanged artifacts:\n%s", stderr)
+		}
+	})
+
+	t.Run("reports regeneration errors", func(t *testing.T) {
+		derivedRoot := t.TempDir()
+		writeBaselineDigestTargetFile(t, filepath.Join(derivedRoot, "before"), nil, 0o644)
+
+		result, stderr, exitCode := runBaselineDigestTarget(t, derivedRoot, "false")
+		if exitCode == 0 {
+			t.Fatalf("baseline-digests exit code = 0, want non-zero; stderr:\n%s", stderr)
+		}
+		assertBaselineDigestTargetResult(t, result, false, false)
+		if !strings.Contains(stderr, "baseline-digests: regeneration failed at probe:Probe") {
+			t.Fatalf("baseline-digests stderr does not identify the failed step:\n%s", stderr)
+		}
+	})
+}
+
 func TestThinSetupSkill(t *testing.T) {
 	files, err := Files()
 	if err != nil {
@@ -200,6 +255,65 @@ func TestThinSetupSkill(t *testing.T) {
 		if strings.Contains(setup, forbidden) {
 			t.Errorf("thin setup skill claims independent behavior %q", forbidden)
 		}
+	}
+}
+
+func runBaselineDigestTarget(t *testing.T, derivedRoot, goCommand string) (baselineDigestTargetResult, string, int) {
+	t.Helper()
+	command := exec.Command(
+		"make",
+		"-s",
+		"baseline-digests",
+		"DERIVED_DIGEST_PATHS="+derivedRoot,
+		"BASELINE_DIGEST_STEPS=probe:Probe",
+		"GO="+goCommand,
+	)
+	command.Dir = filepath.Clean(filepath.Join(".."))
+	command.Env = append(os.Environ(), "DERIVED_DIGEST_PROBE="+derivedRoot)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+
+	exitCode := 0
+	if err := command.Run(); err != nil {
+		exitError, ok := err.(*exec.ExitError)
+		if !ok {
+			t.Fatalf("run baseline-digests: %v", err)
+		}
+		exitCode = exitError.ExitCode()
+	}
+
+	var result baselineDigestTargetResult
+	if err := json.Unmarshal(bytes.TrimSpace(stdout.Bytes()), &result); err != nil {
+		t.Fatalf("decode baseline-digests stdout %q: %v", stdout.String(), err)
+	}
+	if result.SchemaVersion == nil || result.Type == nil || result.OK == nil || result.Changed == nil {
+		t.Fatalf("baseline-digests result is missing stable fields: %s", stdout.String())
+	}
+	return result, stderr.String(), exitCode
+}
+
+func writeBaselineDigestTargetFile(t *testing.T, path string, data []byte, mode os.FileMode) {
+	t.Helper()
+	if err := os.WriteFile(path, data, mode); err != nil {
+		t.Fatalf("write baseline-digests fixture %s: %v", path, err)
+	}
+}
+
+func assertBaselineDigestTargetResult(t *testing.T, result baselineDigestTargetResult, wantOK, wantChanged bool) {
+	t.Helper()
+	if *result.SchemaVersion != 1 {
+		t.Errorf("baseline-digests schemaVersion = %d, want 1", *result.SchemaVersion)
+	}
+	if *result.Type != "baseline-digests" {
+		t.Errorf("baseline-digests type = %q, want %q", *result.Type, "baseline-digests")
+	}
+	if *result.OK != wantOK {
+		t.Errorf("baseline-digests ok = %t, want %t", *result.OK, wantOK)
+	}
+	if *result.Changed != wantChanged {
+		t.Errorf("baseline-digests changed = %t, want %t", *result.Changed, wantChanged)
 	}
 }
 
