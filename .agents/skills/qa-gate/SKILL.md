@@ -4,7 +4,7 @@ description: Run the self-contained final QA gate for a completed spec — deriv
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
-  version: 0.0.1
+  version: 0.0.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---

@@ -4,7 +4,7 @@ description: "You MUST use this before any creative work - creating features, bu
 metadata:
   category: discovery
   tags: [product, requirements, research, workflow]
-  version: 0.0.1
+  version: 0.0.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---

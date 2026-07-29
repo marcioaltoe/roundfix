@@ -310,7 +310,7 @@ func TestOwnedSkillContractRejectsSetAndVersionDisagreement(t *testing.T) {
 					if mutated[index].Path == "roundfix/SKILL.md" {
 						mutated[index].Data = bytes.Replace(
 							mutated[index].Data,
-							[]byte("version: 0.0.1"),
+							[]byte("version: "+ownedSkillVersion),
 							[]byte("version: 9.9.9"),
 							1,
 						)

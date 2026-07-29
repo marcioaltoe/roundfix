@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/typescript-bun.txt"
   },
-  "digest": "ffe969b301b3b5422c94d59420b99800fa31b5f9079c7617358ea8b966340199",
+  "digest": "6302a9e023a22baa40c7f589890829161e6de02aebd3a230e26448fd6a26b11e",
   "skills": [
     {
       "name": "find-rules",
@@ -50,7 +50,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "a7848c6912f4fce43f5531e1cf2c153e6da2ad8f8310686a2c8b32caae2c96b9"
+      "contentDigest": "4c2cd33e5e7dd5197ee798ff19ef05ec1dd8c141307b13810f518b8fe133897d"
     },
     {
       "name": "turborepo",
@@ -103,7 +103,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "cc9e77e666f3e5c6829503b66fa6ccd528b18e3594fe2b27765663d50ece9057"
+      "contentDigest": "1d50377456c529b545ed7ad5f7c899134a1091afbda8bf5b3ca7fa10f2ec1231"
     },
     {
       "name": "architectural-analysis",
@@ -255,7 +255,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "d4634a0709828784c61ff536231d4e02e694f18d4a2a1b6e468bbc2f9c4a254a"
+      "contentDigest": "046dbd1a9ac3bcfe937fc0e76ec4cc9361f8dd908d6168d95ed1d4a472b576e3"
     },
     {
       "name": "write-tasks",
@@ -264,7 +264,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "dccc4933dd61abd12b1c4d5eddb9ffbb2ed91087819d0de0ce724a3b264ace5e"
+      "contentDigest": "a221f991061de07dd10ee811a3f7e2ee5c1d698e584fc633a0a0b443797a8ece"
     },
     {
       "name": "ai-sdk",
@@ -394,7 +394,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "394f07312e2a33db6a76036ac419363098509b159ee66f5c3743598d42a79f6c"
+      "contentDigest": "1abd69c6a800980bfd68f263a5a8b7c0da95873c3208e10b917a2f2bd4789e0d"
     },
     {
       "name": "implement-task",
@@ -403,7 +403,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "009377be9160cbd9447c8a165e1c8d97df6981c2306fbbfdc6708f5294d99ef9"
+      "contentDigest": "74aea380d42cdb99c67b6bfc9ebb7cb9a836b34bdf04954dcaaa25fa0d105e8f"
     },
     {
       "name": "inngest",
@@ -786,7 +786,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "1eb212e4573b11f89e7297419e8deaa3eac03348fda64e60b610319e677296a4"
+      "contentDigest": "be51231c89cd3960c5f109e440007d99cd8b5e68c33c8c20c305774e92cef6db"
     },
     {
       "name": "review",
@@ -817,7 +817,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "5a57aa5c4d10d9968ef0687e778c8618e299763b4013a65a0390776819187bcf"
+      "contentDigest": "607d63fbc30affef712791a5ccd78bcadfac2f61752e32ef239d0e5afa95acf6"
     },
     {
       "name": "wcag-audit-patterns",
@@ -848,7 +848,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "c035b3f536c1d6b8d08f271259ef4b7b5a6317263894684b217cafeacf36cc09"
+      "contentDigest": "5d53d9b4a8ef69eac2d4892a739a6734ca6fb2d7c43eba093c01df75fe482277"
     },
     {
       "name": "conventional-commits",
@@ -923,7 +923,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "e6f0b20bb296d4dc824611af98e865fbe92802af8cb9b821a635f660c57435b3"
+      "contentDigest": "5591d0e294612a5363f88aec4bb90837f671eca040939229dfe5ed85e528e159"
     },
     {
       "name": "business-storyteller",
@@ -943,7 +943,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "dadaced729c4a9ef770a10cc41c394c0ec15c013e1fb4fc3f3bf78f1945e1658"
+      "contentDigest": "41c29cecf63ec48a7e68a67f145f3ce4a05427c5975a63ff0d888d03fee98c02"
     },
     {
       "name": "council",
@@ -952,7 +952,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "051d4becb723360d6762fc77f01194e03d9e25eb3656abf1f94df8ab7d11b14f"
+      "contentDigest": "826b2b23ee67d658e4184a6beb891aeb3686514b9dc309971e63828d47486c9f"
     },
     {
       "name": "exa-web-search",
@@ -1047,7 +1047,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "b6a0a5161e32623b471c6f482cd430819cd796506d8a58a9372782a7ef8c0b5b"
+      "contentDigest": "8f5c77383b34e22a9b4469cf5d4143d67ac220fc75c84fc314f132e2dd4c69a1"
     },
     {
       "name": "triage",

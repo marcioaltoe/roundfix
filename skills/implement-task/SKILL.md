@@ -4,7 +4,7 @@ description: Execute one task file from docs/specs/<slug>/ end-to-end — ground
 metadata:
   category: implementation
   tags: [workflow, coding, agents, testing]
-  version: 0.0.1
+  version: 0.0.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---

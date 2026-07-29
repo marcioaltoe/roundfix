@@ -4,7 +4,7 @@ description: Orchestrates multi-advisor council debates on high-impact architect
 metadata:
   category: discovery
   tags: [architecture, product, research, agents]
-  version: 0.0.1
+  version: 0.0.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
