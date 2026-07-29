@@ -76,9 +76,13 @@ BASELINE_DIGEST_STEPS := \
 
 baseline-digests: ## Regenerate derived Baseline digest artifacts
 	@snapshot=$$(mktemp "$${TMPDIR:-/tmp}/rf-digests.XXXXXX") || { status=$$?; printf '%s\n' '{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false}'; exit "$$status"; }; finish() { status=$$?; rm -f "$$snapshot"; if [ "$$status" -ne 0 ]; then printf '%s\n' '{"schemaVersion":1,"type":"baseline-digests","ok":false,"changed":false}'; fi; exit "$$status"; }; trap finish EXIT; \
-	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort > "$$snapshot" || exit $$?; \
+	raw=$$(mktemp "$${TMPDIR:-/tmp}/rf-digests-raw.XXXXXX") || exit $$?; \
+	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + > "$$raw" || { status=$$?; rm -f "$$raw"; exit "$$status"; }; \
+	sort "$$raw" > "$$snapshot" || { status=$$?; rm -f "$$raw"; exit "$$status"; }; \
 	for step in $(BASELINE_DIGEST_STEPS); do package=$${step%%:*}; test_name=$${step#*:}; $(GO) test "$$package" -run "$$test_name" -update -count=1 >&2 || { status=$$?; printf 'baseline-digests: regeneration failed at %s:%s\n' "$$package" "$$test_name" >&2; exit "$$status"; }; done; \
-	changed=$$(find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + | sort | comm -3 "$$snapshot" - | awk '{print $$2}' | sort -u) || exit $$?; \
+	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + > "$$raw" || { status=$$?; rm -f "$$raw"; exit "$$status"; }; \
+	changed=$$(sort "$$raw" | comm -3 "$$snapshot" - | awk '{print $$2}' | sort -u) || { status=$$?; rm -f "$$raw"; exit "$$status"; }; \
+	rm -f "$$raw"; \
 	if [ -z "$$changed" ]; then result_changed=false; printf '%s\n' "baseline-digests: no changes; derived artifacts already match their canonical sources" >&2; else result_changed=true; printf '%s\n' "baseline-digests: regenerated" >&2; printf '%s\n' "$$changed" | sed 's/^/  /' >&2; fi; printf '{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":%s}\n' "$$result_changed"
 
 ##@ Build & Run
