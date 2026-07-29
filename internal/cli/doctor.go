@@ -2,16 +2,19 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"roundfix/internal/agent"
 	"roundfix/internal/app"
+	"roundfix/internal/baseline"
 	roundconfig "roundfix/internal/config"
 	"roundfix/skills"
 )
@@ -22,7 +25,8 @@ type doctorDependencies struct {
 	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
 	healthChecker    func(roundconfig.Loaded) HealthChecker
 	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
-	checkSkills      func(context.Context, string) (skills.RepositoryReadiness, error)
+	resolveExternal  func(string) ([]string, bool, error)
+	checkSkills      func(context.Context, string, []string) (skills.RepositoryReadiness, error)
 }
 
 func defaultDoctorDependencies() doctorDependencies {
@@ -34,7 +38,8 @@ func defaultDoctorDependencies() doctorDependencies {
 		profileReadiness: func(ctx context.Context, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string) profileProofResult {
 			return proveProfileSelections(ctx, config, categories, workDir, newEngineCollaborators().runner)
 		},
-		checkSkills: skills.CheckRepository,
+		resolveExternal: resolveExternalSkillRequirement,
+		checkSkills:     skills.CheckRepositoryWithExternal,
 	}
 }
 
@@ -76,8 +81,17 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if repositoryRoot == "" {
 		results = append(results, doctorMissingRepositoryRootResult())
 	} else {
-		skillReadiness, skillErr := doctorDeps.checkSkills(ctx, repositoryRoot)
-		results = append(results, doctorSkillReadinessResult(skillReadiness, skillErr))
+		external, manifestOK, requirementErr := doctorDeps.resolveExternal(repositoryRoot)
+		if requirementErr != nil {
+			results = append(results, doctorSkillRequirementResult(requirementErr))
+		} else {
+			skillReadiness, skillErr := doctorDeps.checkSkills(ctx, repositoryRoot, external)
+			if manifestOK {
+				results = append(results, doctorSkillReadinessResult(skillReadiness, skillErr))
+			} else {
+				results = append(results, doctorMissingSetupManifestResult(skillReadiness, skillErr))
+			}
+		}
 	}
 	results = append(results, checker.Codex(ctx))
 
@@ -92,6 +106,72 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+const doctorSetupManifestPath = "docs/agents/setup-context.json"
+
+func resolveExternalSkillRequirement(root string) ([]string, bool, error) {
+	root = strings.TrimSpace(root)
+	if root == "" {
+		return nil, false, nil
+	}
+	manifestPath := filepath.Join(root, filepath.FromSlash(doctorSetupManifestPath))
+	info, err := os.Lstat(manifestPath)
+	if err != nil || !info.Mode().IsRegular() {
+		return nil, false, nil
+	}
+	manifestBytes, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return nil, false, nil
+	}
+	var manifest struct {
+		Modules []string `json:"modules"`
+	}
+	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+		return nil, false, nil
+	}
+
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		return nil, false, fmt.Errorf("resolve external skill requirement: %w", err)
+	}
+	ownedNames := skills.Names()
+	owned := make(map[string]struct{}, len(ownedNames))
+	for _, name := range ownedNames {
+		owned[name] = struct{}{}
+	}
+	required := make(map[string]struct{})
+	for _, moduleID := range manifest.Modules {
+		module, ok := catalog.Module(moduleID)
+		if !ok {
+			return nil, false, fmt.Errorf(
+				"resolve external skill requirement: Setup Manifest names unknown module %q",
+				moduleID,
+			)
+		}
+		var declaration struct {
+			RequiredSkills []string `json:"requiredSkills"`
+		}
+		if err := json.Unmarshal(module.Data, &declaration); err != nil {
+			return nil, false, fmt.Errorf(
+				"resolve external skill requirement for module %q: %w",
+				moduleID,
+				err,
+			)
+		}
+		for _, name := range declaration.RequiredSkills {
+			if _, isOwned := owned[name]; !isOwned {
+				required[name] = struct{}{}
+			}
+		}
+	}
+
+	external := make([]string, 0, len(required))
+	for name := range required {
+		external = append(external, name)
+	}
+	sort.Strings(external)
+	return external, true, nil
 }
 
 func parseDoctorCommand(args []string) error {
@@ -233,9 +313,11 @@ func doctorProfileReadinessResult(readiness profileProofResult) CheckResult {
 }
 
 const (
-	ownedSkillsNextAction    = "roundfix skills install --target project"
-	externalSkillsNextAction = "bunx skills experimental_install && bunx skills update -p -y"
-	missingGitRootNextAction = "run roundfix doctor from a Git repository"
+	ownedSkillsNextAction      = "roundfix skills install --target project"
+	externalSkillsNextAction   = "bunx skills experimental_install && bunx skills update -p -y"
+	baselineAdoptionNextAction = "roundfix baseline"
+	missingGitRootNextAction   = "run roundfix doctor from a Git repository"
+	missingSetupManifestDetail = "Setup Manifest is absent or unreadable"
 )
 
 func doctorMissingRepositoryRootResult() CheckResult {
@@ -245,6 +327,50 @@ func doctorMissingRepositoryRootResult() CheckResult {
 		Detail:     "Repository Skill Set readiness requires a Git repository",
 		NextAction: missingGitRootNextAction,
 	}
+}
+
+func doctorSkillRequirementResult(err error) CheckResult {
+	return CheckResult{
+		Name:   HealthCheckSkills,
+		Status: CheckStatusFailed,
+		Detail: err.Error(),
+		Err:    err,
+	}
+}
+
+func doctorMissingSetupManifestResult(readiness skills.RepositoryReadiness, checkErr error) CheckResult {
+	result := doctorSkillReadinessResult(readiness, checkErr)
+	result.Status = CheckStatusFailed
+	if result.Detail == "" {
+		result.Detail = missingSetupManifestDetail
+	} else {
+		result.Detail += "; " + missingSetupManifestDetail
+	}
+	if !strings.Contains(result.Detail, "0 external") {
+		result.Detail += "; 0 external required"
+	}
+
+	next := make([]string, 0, 2)
+	if doctorOwnedSkillRequirementFailed(readiness, checkErr) {
+		next = append(next, ownedSkillsNextAction)
+	}
+	next = append(next, baselineAdoptionNextAction)
+	result.NextAction = strings.Join(next, " && ")
+	return result
+}
+
+func doctorOwnedSkillRequirementFailed(readiness skills.RepositoryReadiness, checkErr error) bool {
+	if len(readiness.MissingOwned) > 0 || len(readiness.OutdatedOwned) > 0 {
+		return true
+	}
+	if checkErr == nil {
+		return false
+	}
+	var readinessErr *skills.RepositoryReadinessError
+	if !errors.As(checkErr, &readinessErr) {
+		return true
+	}
+	return readinessErr.Ownership == "" || readinessErr.Ownership == skills.RepositoryOwnershipOwned
 }
 
 func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr error) CheckResult {

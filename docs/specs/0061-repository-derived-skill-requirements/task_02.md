@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0061-repository-derived-skill-requirements
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -68,3 +68,57 @@ that resolution so a TypeScript repository stops being told it needs Go skills.
 
 `_prd.md` → User Stories 1, 3, 4, Core Features 1, 3, 5; `_techspec.md` →
 Build Order 2, Interfaces: resolveExternalSkillRequirement.
+
+## Result
+
+### Implementation
+
+- Doctor now resolves external skill requirements from
+  `docs/agents/setup-context.json` and the embedded Baseline catalog, removes
+  names owned by the Roundfix bundle, deduplicates them, and sorts the result
+  before repository readiness checks.
+- An absent, non-regular, unreadable, or malformed Setup Manifest produces an
+  empty external requirement. Doctor reports `0 external`, fails readiness
+  with the Setup Manifest diagnosis, and names `roundfix baseline` as the next
+  action.
+- An unknown catalog module stops requirement resolution and appears by name
+  in the `skills:` failure. The existing external remediation behavior remains
+  unchanged for Task 03.
+
+### Focused checks
+
+- Pre-change signal:
+  `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run "^TestResolveExternalSkillRequirement$"`
+  reached compilation and failed because
+  `resolveExternalSkillRequirement` did not exist.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run "^Test(ResolveExternalSkillRequirementUnreadableManifest|RunDoctorDerivesExternalSkillRequirementFromSetupManifest|RunDoctorRealRepositoryCheckDoesNotMutateState|RunDoctorRepositorySkillReadiness|RunDoctorPassesCommandContextToRepositorySkillReadiness|RunDoctorMissingRepositoryRoot)$"`:
+  passed, 16 tests.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run "^TestRunDoctor(ProfileReadinessProvesEffectiveCategoriesAndReportsCounts|ProfileReadinessMatchesProfilesValidateFailureEvidence)$"`:
+  passed, 5 tests.
+- `rtk rg -n 'roundfix/internal/baseline' skills --glob '*.go'`: no matches
+  (expected exit 1).
+- `rtk git diff --check`: passed.
+- The Task's declared Verification commands were not run; Daemon Verification
+  owns them.
+
+### Acceptance criteria evidence
+
+- TypeScript selection: the
+  `TypeScript_modules_exclude_Go_and_TUI_skills` Doctor subtest passed and
+  also proved sorted, deduplicated output with the owned `evidence-gate` name
+  removed.
+- Go/TUI selection: the
+  `Go_CLI_and_TUI_modules_retain_their_skills` Doctor subtest passed with the
+  exact nine-skill external set.
+- No Setup Manifest: the
+  `absent_manifest_requires_Baseline_adoption_but_no_external_skills` Doctor
+  subtest passed with `0 external` and `next: roundfix baseline`; the focused
+  resolver test also covered malformed manifest input.
+- Unknown module: the
+  `unknown_module_fails_before_repository_readiness` Doctor subtest passed and
+  asserted that `unknown-module` appears before the repository checker runs.
+- Bundle leaf: the focused import search found no Baseline import under
+  `skills/*.go`; the new dependency remains in `internal/cli`.
+- Diagnosis-only: `TestRunDoctorRealRepositoryCheckDoesNotMutateState` passed
+  after exercising the real resolver and
+  `skills.CheckRepositoryWithExternal`.

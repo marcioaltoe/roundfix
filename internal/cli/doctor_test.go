@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -19,6 +20,174 @@ import (
 )
 
 const doctorReadyAdapterLine = "adapter: ok (claude: claude-agent-acp | codex: codex-acp)\n"
+
+func TestResolveExternalSkillRequirementUnreadableManifest(t *testing.T) {
+	repoDir := t.TempDir()
+	manifestPath := filepath.Join(repoDir, "docs", "agents", "setup-context.json")
+	mustMkdir(t, filepath.Dir(manifestPath))
+	mustWrite(t, manifestPath, "{")
+
+	external, ok, err := resolveExternalSkillRequirement(repoDir)
+
+	if err != nil {
+		t.Fatalf("resolve external skill requirement: %v", err)
+	}
+	if ok || len(external) != 0 {
+		t.Fatalf("unreadable Setup Manifest resolved external=%v ok=%t, want empty and false", external, ok)
+	}
+}
+
+func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T) {
+	ownedCount := len(skills.Names())
+	goTUISkills := []string{
+		"agentic-cli-design",
+		"bubbletea",
+		"golang-cli",
+		"golang-concurrency",
+		"golang-context",
+		"golang-error-handling",
+		"golang-lint",
+		"golang-testing",
+		"tui-design",
+	}
+	tests := []struct {
+		name             string
+		modules          []string
+		writeManifest    bool
+		validateExternal func(*testing.T, []string)
+		wantCode         int
+		wantOutput       []string
+		wantSkillCalls   int
+	}{
+		{
+			name:          "TypeScript modules exclude Go and TUI skills",
+			modules:       []string{"core", "typescript", "typescript"},
+			writeManifest: true,
+			validateExternal: func(t *testing.T, external []string) {
+				t.Helper()
+				if !sort.StringsAreSorted(external) {
+					t.Fatalf("external skill requirement is not sorted: %v", external)
+				}
+				seen := make(map[string]struct{}, len(external))
+				for _, name := range external {
+					if _, duplicate := seen[name]; duplicate {
+						t.Fatalf("external skill requirement contains duplicate %q: %v", name, external)
+					}
+					seen[name] = struct{}{}
+					if strings.HasPrefix(name, "golang-") || name == "bubbletea" || name == "tui-design" {
+						t.Fatalf("TypeScript Doctor requires Go or TUI skill %q: %v", name, external)
+					}
+				}
+				if _, owned := seen["evidence-gate"]; owned {
+					t.Fatalf("Doctor retained Roundfix-owned skill evidence-gate as external: %v", external)
+				}
+			},
+			wantCode:       exitOK,
+			wantOutput:     []string{"skills: ok", "Roundfix-owned", "external"},
+			wantSkillCalls: 1,
+		},
+		{
+			name:          "Go CLI and TUI modules retain their skills",
+			modules:       []string{"go", "cli-surface", "tui-surface"},
+			writeManifest: true,
+			validateExternal: func(t *testing.T, external []string) {
+				t.Helper()
+				if !reflect.DeepEqual(external, goTUISkills) {
+					t.Fatalf("Doctor external skill requirement = %v, want %v", external, goTUISkills)
+				}
+			},
+			wantCode: exitOK,
+			wantOutput: []string{fmt.Sprintf(
+				"skills: ok (%d required: %d Roundfix-owned, 9 external)",
+				ownedCount+len(goTUISkills),
+				ownedCount,
+			)},
+			wantSkillCalls: 1,
+		},
+		{
+			name:          "absent manifest requires Baseline adoption but no external skills",
+			writeManifest: false,
+			validateExternal: func(t *testing.T, external []string) {
+				t.Helper()
+				if len(external) != 0 {
+					t.Fatalf("Doctor absent-manifest external requirement = %v, want empty", external)
+				}
+			},
+			wantCode: exitRunFailed,
+			wantOutput: []string{fmt.Sprintf(
+				"skills: failed (%d required: %d Roundfix-owned, 0 external",
+				ownedCount,
+				ownedCount,
+			),
+				"Setup Manifest is absent or unreadable",
+				"next: roundfix baseline",
+			},
+			wantSkillCalls: 1,
+		},
+		{
+			name:           "unknown module fails before repository readiness",
+			modules:        []string{"unknown-module"},
+			writeManifest:  true,
+			wantCode:       exitRunFailed,
+			wantOutput:     []string{"skills: failed", "unknown-module"},
+			wantSkillCalls: 0,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repoDir := t.TempDir()
+			if test.writeManifest {
+				writeDoctorSetupManifest(t, repoDir, test.modules)
+			}
+			checker := newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+			)
+			withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+				Config:  roundconfig.Builtin(),
+				GitRoot: repoDir,
+			}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+				return profileProofResult{}
+			})
+			doctorDeps.resolveExternal = resolveExternalSkillRequirement
+			skillCalls := 0
+			doctorDeps.checkSkills = func(_ context.Context, root string, external []string) (skills.RepositoryReadiness, error) {
+				skillCalls++
+				if root != repoDir {
+					t.Fatalf("Doctor repository root = %q, want %q", root, repoDir)
+				}
+				if test.validateExternal != nil {
+					test.validateExternal(t, external)
+				}
+				return skills.RepositoryReadiness{
+					OwnedRequired:    len(skills.Names()),
+					ExternalRequired: len(external),
+				}, nil
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"doctor"}, &stdout, &stderr)
+
+			if code != test.wantCode {
+				t.Fatalf("Doctor exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
+			}
+			for _, want := range test.wantOutput {
+				if !strings.Contains(stdout.String(), want) {
+					t.Fatalf("Doctor output missing %q: %q", want, stdout.String())
+				}
+			}
+			if skillCalls != test.wantSkillCalls {
+				t.Fatalf("repository readiness calls = %d, want %d", skillCalls, test.wantSkillCalls)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("Doctor stderr = %q, want empty", stderr.String())
+			}
+		})
+	}
+}
 
 func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *testing.T) {
 	tests := []struct {
@@ -633,7 +802,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				return profileProofResult{}
 			})
 			skillCalls := 0
-			doctorDeps.checkSkills = func(_ context.Context, root string) (skills.RepositoryReadiness, error) {
+			doctorDeps.checkSkills = func(_ context.Context, root string, _ []string) (skills.RepositoryReadiness, error) {
 				skillCalls++
 				recordCall(HealthCheckSkills)
 				if root != "/repo/project" {
@@ -691,7 +860,7 @@ func TestRunDoctorPassesCommandContextToRepositorySkillReadiness(t *testing.T) {
 	}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
 		return profileProofResult{}
 	})
-	doctorDeps.checkSkills = func(ctx context.Context, root string) (skills.RepositoryReadiness, error) {
+	doctorDeps.checkSkills = func(ctx context.Context, root string, _ []string) (skills.RepositoryReadiness, error) {
 		if got := ctx.Value(contextKey{}); got != marker {
 			t.Fatalf("repository checker context marker = %v, want %q", got, marker)
 		}
@@ -737,7 +906,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		return profileProofResult{}
 	})
 	skillCalls := 0
-	doctorDeps.checkSkills = func(_ context.Context, root string) (skills.RepositoryReadiness, error) {
+	doctorDeps.checkSkills = func(_ context.Context, root string, _ []string) (skills.RepositoryReadiness, error) {
 		skillCalls++
 		return skills.RepositoryReadiness{}, fmt.Errorf("unexpected repository check for %q", root)
 	}
@@ -784,6 +953,13 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 	t.Chdir(repoDir)
 	mustMkdir(t, filepath.Join(repoDir, ".git"))
 	writeDoctorReadyRepositoryFixture(t, repoDir)
+	external, manifestOK, err := resolveExternalSkillRequirement(repoDir)
+	if err != nil {
+		t.Fatalf("resolve Doctor external skill requirement: %v", err)
+	}
+	if !manifestOK {
+		t.Fatal("resolve Doctor external skill requirement reported unreadable Setup Manifest")
+	}
 
 	userConfigPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 	mustMkdir(t, filepath.Dir(userConfigPath))
@@ -821,7 +997,8 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 	}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
 		return profileProofResult{}
 	})
-	doctorDeps.checkSkills = skills.CheckRepository
+	doctorDeps.resolveExternal = resolveExternalSkillRequirement
+	doctorDeps.checkSkills = skills.CheckRepositoryWithExternal
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -834,7 +1011,12 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 		"acpx: ok\n" +
 		doctorReadyAdapterLine +
 		"profiles: ok (0 distinct tuples; 0 category references)\n" +
-		"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
+		fmt.Sprintf(
+			"skills: ok (%d required: %d Roundfix-owned, %d external)\n",
+			len(skills.Names())+len(external),
+			len(skills.Names()),
+			len(external),
+		) +
 		"codex: ok\n"
 	if got := stdout.String(); got != wantStdout {
 		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)
@@ -953,8 +1135,29 @@ type doctorRepositoryLockSkillFixture struct {
 	ComputedHash string `json:"computedHash"`
 }
 
+func writeDoctorSetupManifest(t *testing.T, root string, modules []string) {
+	t.Helper()
+	data, err := json.Marshal(struct {
+		Modules []string `json:"modules"`
+	}{Modules: modules})
+	if err != nil {
+		t.Fatalf("encode Doctor Setup Manifest fixture: %v", err)
+	}
+	manifestPath := filepath.Join(root, "docs", "agents", "setup-context.json")
+	mustMkdir(t, filepath.Dir(manifestPath))
+	mustWrite(t, manifestPath, string(append(data, '\n')))
+}
+
 func writeDoctorReadyRepositoryFixture(t *testing.T, root string) {
 	t.Helper()
+	writeDoctorSetupManifest(t, root, []string{"core", "go", "cli-surface", "tui-surface"})
+	external, ok, err := resolveExternalSkillRequirement(root)
+	if err != nil {
+		t.Fatalf("resolve Doctor external skill fixture: %v", err)
+	}
+	if !ok {
+		t.Fatal("resolve Doctor external skill fixture reported unreadable Setup Manifest")
+	}
 	skillsRoot := filepath.Join(root, ".agents", "skills")
 	files, err := skills.Files()
 	if err != nil {
@@ -970,9 +1173,9 @@ func writeDoctorReadyRepositoryFixture(t *testing.T, root string) {
 
 	lock := doctorRepositoryLockFixture{
 		Version: 1,
-		Skills:  make(map[string]doctorRepositoryLockSkillFixture, len(skills.Recommended())),
+		Skills:  make(map[string]doctorRepositoryLockSkillFixture, len(external)),
 	}
-	for _, name := range skills.Recommended() {
+	for _, name := range external {
 		skillRoot := filepath.Join(skillsRoot, name)
 		mustMkdir(t, skillRoot)
 		mustWrite(t, filepath.Join(skillRoot, "SKILL.md"), name+"\n")
@@ -1061,7 +1264,10 @@ func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loade
 			return checker
 		},
 		profileReadiness: readiness,
-		checkSkills: func(context.Context, string) (skills.RepositoryReadiness, error) {
+		resolveExternal: func(string) ([]string, bool, error) {
+			return skills.Recommended(), true, nil
+		},
+		checkSkills: func(context.Context, string, []string) (skills.RepositoryReadiness, error) {
 			return skills.RepositoryReadiness{
 				OwnedRequired:    14,
 				ExternalRequired: 25,
@@ -1078,7 +1284,10 @@ func withDoctorLiveDeps(t *testing.T, checker HealthChecker) {
 	old := doctorDeps
 	doctorDeps = defaultDoctorDependencies()
 	doctorDeps.healthChecker = func(roundconfig.Loaded) HealthChecker { return checker }
-	doctorDeps.checkSkills = func(context.Context, string) (skills.RepositoryReadiness, error) {
+	doctorDeps.resolveExternal = func(string) ([]string, bool, error) {
+		return skills.Recommended(), true, nil
+	}
+	doctorDeps.checkSkills = func(context.Context, string, []string) (skills.RepositoryReadiness, error) {
 		return skills.RepositoryReadiness{
 			OwnedRequired:    14,
 			ExternalRequired: 25,
