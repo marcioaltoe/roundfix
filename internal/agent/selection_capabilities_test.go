@@ -161,6 +161,19 @@ func TestSelectionCapabilitiesIndependentAndVariantOptions(t *testing.T) {
 			},
 			wantReasoning: true,
 		},
+		{
+			name:    "echoed alias group is not an ambiguous variant",
+			fixture: echoedOpaqueModelCapabilityFixture(),
+			wantModels: []ModelCapability{
+				{AdapterValue: "default", CanonicalModel: "default", ModelManaged: true},
+				{AdapterValue: "opus[1m]", CanonicalModel: "opus", ModelManaged: true},
+				{AdapterValue: "claude-fable-5[1m]", CanonicalModel: "claude-fable-5", ModelManaged: true},
+				{AdapterValue: "sonnet", CanonicalModel: "sonnet", ModelManaged: true},
+				{AdapterValue: "haiku", CanonicalModel: "haiku", ModelManaged: true},
+				{AdapterValue: "opus", CanonicalModel: "opus", ModelManaged: true},
+			},
+			wantReasoning: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -199,6 +212,10 @@ func TestPlanSelectionAssignment(t *testing.T) {
 	opaque, err := ParseSessionConfigOptions([]byte(opaqueModelIdentifierCapabilityFixture()), AdapterEvidence{Command: "opaque-adapter"})
 	if err != nil {
 		t.Fatalf("parse opaque capabilities: %v", err)
+	}
+	echoed, err := ParseSessionConfigOptions([]byte(echoedOpaqueModelCapabilityFixture()), AdapterEvidence{Command: "echoing-adapter"})
+	if err != nil {
+		t.Fatalf("parse echoed opaque capabilities: %v", err)
 	}
 
 	tests := []struct {
@@ -291,6 +308,34 @@ func TestPlanSelectionAssignment(t *testing.T) {
 			},
 		},
 		{
+			name:         "echoed alias binds the exact advertised value",
+			runtime:      RuntimeSpec{ID: "claude", Model: "opus", ReasoningEffort: "xhigh"},
+			capabilities: echoed,
+			want: SelectionAssignment{
+				Runtime:         "claude",
+				Model:           "opus",
+				ReasoningEffort: "xhigh",
+				AdapterModel:    "opus",
+				ReasoningKey:    "effort",
+				ReasoningValue:  "xhigh",
+				Encoding:        SelectionEncodingIndependent,
+			},
+		},
+		{
+			name:         "echoed annotated identifier stays selectable",
+			runtime:      RuntimeSpec{ID: "claude", Model: "opus[1m]", ReasoningEffort: "xhigh"},
+			capabilities: echoed,
+			want: SelectionAssignment{
+				Runtime:         "claude",
+				Model:           "opus[1m]",
+				ReasoningEffort: "xhigh",
+				AdapterModel:    "opus[1m]",
+				ReasoningKey:    "effort",
+				ReasoningValue:  "xhigh",
+				Encoding:        SelectionEncodingIndependent,
+			},
+		},
+		{
 			name:           "missing model is unsupported",
 			runtime:        RuntimeSpec{ID: "codex", Model: "gpt-missing", ReasoningEffort: "high"},
 			capabilities:   official,
@@ -362,6 +407,39 @@ func TestPlanSelectionAssignment(t *testing.T) {
 	}
 }
 
+func TestSelectionProofAcceptsEchoedAliasGroup(t *testing.T) {
+	t.Parallel()
+
+	echoed, err := ParseSessionConfigOptions([]byte(echoedOpaqueModelCapabilityFixture()), AdapterEvidence{Command: "echoing-adapter"})
+	if err != nil {
+		t.Fatalf("parse echoed opaque capabilities: %v", err)
+	}
+
+	for _, model := range []string{"opus", "opus[1m]"} {
+		model := model
+		t.Run(model, func(t *testing.T) {
+			t.Parallel()
+			assignment, err := PlanSelectionAssignment(RuntimeSpec{ID: "claude", Model: model, ReasoningEffort: "xhigh"}, echoed)
+			if err != nil {
+				t.Fatalf("plan selection: %v", err)
+			}
+			if assignment.AdapterModel != model {
+				t.Fatalf("adapter model = %q, want the exact advertised %q", assignment.AdapterModel, model)
+			}
+			proven := echoed
+			proven.CurrentModel = assignment.AdapterModel
+			if !selectionStateMatches(assignment, proven) {
+				t.Fatalf("effective state does not prove assignment %#v", assignment)
+			}
+			mismatched := echoed
+			mismatched.CurrentModel = "sonnet"
+			if selectionStateMatches(assignment, mismatched) {
+				t.Fatalf("a different advertised model proved assignment %#v", assignment)
+			}
+		})
+	}
+}
+
 func TestParseSessionConfigOptionsRejectsInvalidEvidence(t *testing.T) {
 	t.Parallel()
 
@@ -377,7 +455,6 @@ func TestParseSessionConfigOptionsRejectsInvalidEvidence(t *testing.T) {
 		{name: "invalid current value", fixture: invalidCurrentValueCapabilityFixture(), issue: CapabilityIssueInvalidCurrentValue},
 		{name: "contradictory set response", fixture: contradictoryCapabilityFixture(), issue: CapabilityIssueContradictoryResponse},
 		{name: "ambiguous variants", fixture: ambiguousModelVariantCapabilityFixture(), issue: CapabilityIssueAmbiguousModelVariant},
-		{name: "ambiguous opaque aliases", fixture: ambiguousOpaqueModelCapabilityFixture(), issue: CapabilityIssueAmbiguousModelVariant},
 		{name: "malformed nested variant", fixture: malformedModelVariantCapabilityFixture(), issue: CapabilityIssueMalformedModelValue},
 		{name: "missing model state", fixture: missingModelCapabilityFixture(), issue: CapabilityIssueMissingModel},
 	}
@@ -553,8 +630,11 @@ func ambiguousModelVariantCapabilityFixture() string {
 	return `{"action":"config_set","configId":"model","value":"gpt-5.5[xhigh]","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"gpt-5.5[xhigh]","options":[{"value":"gpt-5.5[xhigh]"},{"value":"gpt-5.5[xhigh ]"}]}]}`
 }
 
-func ambiguousOpaqueModelCapabilityFixture() string {
-	return `{"action":"config_set","configId":"model","value":"opus","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"opus","options":[{"value":"opus"},{"value":"opus[1m]"}]},{"id":"effort","type":"select","currentValue":"xhigh","options":[{"value":"xhigh"}]}]}`
+// echoedOpaqueModelCapabilityFixture mirrors the official Claude adapter,
+// which echoes the requested model back into its advertised list, so `opus`
+// and `opus[1m]` are advertised together as one alias group.
+func echoedOpaqueModelCapabilityFixture() string {
+	return `{"action":"config_set","configId":"model","value":"opus","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"opus","options":[{"value":"default"},{"value":"opus[1m]"},{"value":"claude-fable-5[1m]"},{"value":"sonnet"},{"value":"haiku"},{"value":"opus"}]},{"id":"effort","type":"select","currentValue":"xhigh","options":[{"value":"high"},{"value":"xhigh"}]}]}`
 }
 
 func malformedModelVariantCapabilityFixture() string {

@@ -865,7 +865,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 		name     string
 		snippets []string
 	}{
-		{name: "setup", snippets: []string{"official Codex adapter", "profile readiness", "before writing"}},
+		{name: "setup", snippets: []string{"official Codex and Claude adapters", "profile readiness", "Claude override migration requires authorization", "before writing"}},
 		{name: "doctor", snippets: []string{"Agent Selection Profiles", "profiles:", "Repository Skill Set", "skills:", "read-only", "mutates nothing"}},
 		{name: "profiles configure", snippets: []string{"exact Agent Selection", "before confirmation", "without writing"}},
 		{name: "profiles validate", snippets: []string{"exact", "Read-only", "disposable ACP Runtime session"}},
@@ -3405,14 +3405,14 @@ func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fake := newSetupFakeDeps()
 			const unrelated = "  \"theme\": \"sentinel\",\n"
-			fake.files[fake.acpxConfigPath] = "{\n" + unrelated + "  \"agents\": {\n    \"claude\": {\n      \"command\": \"claude-code-acp\"\n    }\n  }\n}\n"
+			fake.files[fake.acpxConfigPath] = "{\n" + unrelated + "  \"agents\": {\n    \"claude\": {\n      \"command\": \"claude-agent-acp\"\n    }\n  }\n}\n"
 			fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
 			fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
 			fake.adapterErrors = map[string]error{
 				"claude": &agent.AdapterLineageError{
 					Runtime:         "claude",
-					Command:         "claude-code-acp",
-					Package:         "@zed-industries/claude-code-acp",
+					Command:         "claude-agent-acp",
+					Package:         "@zed-industries/claude-agent-acp",
 					Version:         "0.18.0",
 					RequiredPackage: agent.ClaudeAdapterPackage,
 					RequiredVersion: agent.PinnedClaudeAdapterVersion,
@@ -3452,7 +3452,7 @@ func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
 					t.Fatalf("migrated Claude config missing %q:\n%s", want, content)
 				}
 			}
-			if strings.Contains(content, `"command": "claude-code-acp"`) {
+			if strings.Contains(content, `"command": "claude-agent-acp"`) {
 				t.Fatalf("migrated Claude config retained legacy override:\n%s", content)
 			}
 			foundProof := false
@@ -3471,14 +3471,14 @@ func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
 func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing.T) {
 	newFake := func() *setupFakeDeps {
 		fake := newSetupFakeDeps()
-		fake.files[fake.acpxConfigPath] = "{\n  \"theme\": \"sentinel\",\n  \"agents\": {\n    \"claude\": {\n      \"command\": \"claude-code-acp\"\n    }\n  }\n}\n"
+		fake.files[fake.acpxConfigPath] = "{\n  \"theme\": \"sentinel\",\n  \"agents\": {\n    \"claude\": {\n      \"command\": \"claude-agent-acp\"\n    }\n  }\n}\n"
 		fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
 		fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
 		fake.adapterErrors = map[string]error{
 			"claude": &agent.AdapterLineageError{
 				Runtime:         "claude",
-				Command:         "claude-code-acp",
-				Package:         "@zed-industries/claude-code-acp",
+				Command:         "claude-agent-acp",
+				Package:         "@zed-industries/claude-agent-acp",
 				Version:         "0.18.0",
 				RequiredPackage: agent.ClaudeAdapterPackage,
 				RequiredVersion: agent.PinnedClaudeAdapterVersion,
@@ -3552,15 +3552,15 @@ func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
 	const unrelated = "  \"theme\": {\"color\": \"blue\"},\n"
 	const customAgent = "    \"custom\": {\n      \"command\": \"existing-custom\"\n    },\n"
 	fake.files[fake.acpxConfigPath] = "{\n" + unrelated + "  \"agents\": {\n" + customAgent +
-		"    \"claude\": {\n      \"command\": \"claude-code-acp\"\n    },\n" +
+		"    \"claude\": {\n      \"command\": \"claude-agent-acp\"\n    },\n" +
 		"    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
 	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
 	fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
 	fake.adapterErrors = map[string]error{
 		"claude": &agent.AdapterLineageError{
 			Runtime:         "claude",
-			Command:         "claude-code-acp",
-			Package:         "@zed-industries/claude-code-acp",
+			Command:         "claude-agent-acp",
+			Package:         "@zed-industries/claude-agent-acp",
 			Version:         "0.18.0",
 			RequiredPackage: agent.ClaudeAdapterPackage,
 			RequiredVersion: agent.PinnedClaudeAdapterVersion,
@@ -3611,7 +3611,7 @@ func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
 			t.Fatalf("migrated config missing %q:\n%s", want, content)
 		}
 	}
-	if strings.Contains(content, `"command": "claude-code-acp"`) || strings.Contains(content, `"command": "codex-acp"`) {
+	if strings.Contains(content, `"command": "claude-agent-acp"`) || strings.Contains(content, `"command": "codex-acp"`) {
 		t.Fatalf("migrated config retained stale overrides:\n%s", content)
 	}
 }

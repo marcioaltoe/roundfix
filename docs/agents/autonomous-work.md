@@ -11,7 +11,7 @@ sessions without forcing a mixed Task Graph through one Run-wide Agent.
 | --- | --- | --- |
 | Supervisor | Supervising Claude Code session | Author Specs, launch and monitor Runs, integrate outcomes, run `qa-gate`, archive, make boundary commits, and route work |
 | Non-frontend implementer | Codex `gpt-5.6-sol` with `high` Default Reasoning Effort; `gpt-5.5`/`xhigh` fallback | CLI, backend, infrastructure, documentation, and other non-frontend Tasks and Review Issue Batches |
-| Frontend implementer | Claude `claude-opus-5` (Opus 5) with `xhigh` Default Reasoning Effort | Design, UI, UX, Bubble Tea/Lip Gloss TUI, and web frontend Tasks |
+| Frontend implementer | Claude `opus` (Opus 5, 1M context) with `xhigh` Default Reasoning Effort | Design, UI, UX, Bubble Tea/Lip Gloss TUI, and web frontend Tasks |
 
 ## The Supervisor does not implement
 
@@ -79,10 +79,10 @@ they are dominated by:
 - the Bubble Tea/Lip Gloss TUI;
 - a future web frontend.
 
-The built-in `frontend` profile selects `claude / claude-opus-5 / xhigh`, and
-the `claude` runtime launches through `claude-agent-acp`. The current
-configuration defaults remain authoritative; model recommendations do not
-change routing.
+The built-in `frontend` profile selects `claude / opus / xhigh`, and the
+`claude` runtime launches through the official
+`@agentclientprotocol/claude-agent-acp` adapter. The current configuration
+defaults remain authoritative; model recommendations do not change routing.
 
 ## Routing rules
 

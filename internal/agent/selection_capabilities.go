@@ -234,15 +234,25 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence) (Selecti
 	}
 
 	modelOption := selectOptions[selectCapabilityIndex(selectOptions, modelOptionIDs[0])]
+	opaqueModels := reasoning != nil
 	models := make([]ModelCapability, 0, len(modelOption.Values))
 	seenModels := make(map[string]struct{}, len(modelOption.Values))
 	for _, value := range modelOption.Values {
-		model, ok := parseModelCapability(value, reasoning != nil)
+		model, ok := parseModelCapability(value, opaqueModels)
 		if !ok {
 			issues.add(CapabilityIssueMalformedModelValue)
 			continue
 		}
-		key := model.CanonicalModel + "\x00" + model.ReasoningEffort
+		// Under opaque parsing an advertised identifier is a whole model
+		// identity, so two entries that share a canonical prefix are an alias
+		// group for one model, not an ambiguous variant encoding. Advertised
+		// values are already unique here, so keying on the advertised value
+		// keeps the dedup honest without inventing an ambiguity. The variant
+		// encoding keeps its fail-closed canonical/effort ambiguity check.
+		key := model.AdapterValue
+		if !opaqueModels {
+			key = model.CanonicalModel + "\x00" + model.ReasoningEffort
+		}
 		if _, exists := seenModels[key]; exists {
 			issues.add(CapabilityIssueAmbiguousModelVariant)
 			continue
