@@ -136,4 +136,5 @@ All notable changes to Roundfix are documented in this file.
 Earlier release sections are intentionally omitted from the restarted
 changelog. Git history remains the source for prior implementation history.
 
+[0.0.2]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.0.2
 [0.0.1]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.0.1
