@@ -3109,7 +3109,7 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 			fake.files[fake.userConfigPath] = "user config sentinel\n"
 			fake.files[fake.projectConfigPath] = "project config sentinel\n"
 			fake.files[fake.acpxConfigPath] = "{}\n"
-			fake.adapterErr = tt.adapterErr
+			fake.adapterErrors["codex"] = tt.adapterErr
 			before := make(map[string]string, len(fake.files))
 			for path, content := range fake.files {
 				before[path] = content
@@ -3332,7 +3332,7 @@ func TestRunSetupAdapterMigrationDeclinePreservesAllTargets(t *testing.T) {
 	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
 	fake.files[fake.userConfigPath] = "# user config sentinel\n{}\n"
 	fake.files[fake.projectConfigPath] = "# project config sentinel\n{}\n"
-	fake.adapterErr = &agent.AdapterLineageError{
+	fake.adapterErrors["codex"] = &agent.AdapterLineageError{
 		Command: "codex-acp",
 		Package: "@zed-industries/codex-acp",
 		Version: "0.16.0",
@@ -3359,7 +3359,7 @@ func TestRunSetupAdapterMigrationDeclinePreservesAllTargets(t *testing.T) {
 func TestRunSetupAdapterMigrationPersistsSupportedCommand(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
-	fake.adapterErr = &agent.AdapterLineageError{
+	fake.adapterErrors["codex"] = &agent.AdapterLineageError{
 		Command: "codex-acp",
 		Package: "@zed-industries/codex-acp",
 		Version: "0.16.0",
@@ -9972,7 +9972,6 @@ type setupFakeDeps struct {
 	acpxVersion          string
 	acpxErr              error
 	adapterEvidence      agent.AdapterEvidence
-	adapterErr           error
 	adapterErrors        map[string]error
 	adapterCommandErrors map[string]error
 	probeErr             error
@@ -10006,8 +10005,9 @@ func newSetupFakeDeps() *setupFakeDeps {
 			Package: agent.CodexAdapterPackage,
 			Version: agent.PinnedCodexAdapterVersion,
 		},
-		paths: map[string]string{},
-		files: map[string]string{},
+		adapterErrors: map[string]error{},
+		paths:         map[string]string{},
+		files:         map[string]string{},
 	}
 }
 
@@ -10066,9 +10066,6 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			}
 			if err := fake.adapterErrors[runtimeID]; err != nil && strings.TrimSpace(runtime.Command) == "" {
 				return agent.AdapterEvidence{}, err
-			}
-			if fake.adapterErr != nil && runtimeID == "codex" && strings.TrimSpace(runtime.Command) == "" {
-				return agent.AdapterEvidence{}, fake.adapterErr
 			}
 			evidence := fake.adapterEvidence
 			if strings.TrimSpace(runtime.Command) != "" {

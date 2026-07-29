@@ -164,6 +164,7 @@ func doctorAdapterCheck(ctx context.Context, checker HealthChecker, runtimes []a
 		Status: CheckStatusOK,
 	}
 	details := make([]string, 0, len(runtimes))
+	nextActions := make([]string, 0, len(runtimes))
 	for _, runtime := range runtimes {
 		runtimeResult := checker.Adapter(ctx, runtime)
 		detail := strings.TrimSpace(runtimeResult.Detail)
@@ -175,14 +176,21 @@ func doctorAdapterCheck(ctx context.Context, checker HealthChecker, runtimes []a
 			if classification := doctorAdapterFailureClassification(runtimeResult.Err); classification != "" {
 				detail += "; classification: " + classification
 			}
-			if result.NextAction == "" {
-				result.NextAction = strings.TrimSpace(runtimeResult.NextAction)
-				result.Err = runtimeResult.Err
+			if nextAction := strings.TrimSpace(runtimeResult.NextAction); nextAction != "" {
+				nextActions = append(nextActions, nextAction)
+			}
+			if runtimeResult.Err != nil {
+				if result.Err == nil {
+					result.Err = runtimeResult.Err
+				} else {
+					result.Err = errors.Join(result.Err, runtimeResult.Err)
+				}
 			}
 		}
 		details = append(details, runtime.ID+": "+detail)
 	}
 	result.Detail = strings.Join(details, " | ")
+	result.NextAction = strings.Join(nextActions, " && ")
 	return result
 }
 

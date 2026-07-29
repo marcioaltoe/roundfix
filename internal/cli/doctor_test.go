@@ -168,6 +168,45 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 				" | codex: command=\"codex-acp\"; package=" + agent.CodexAdapterPackage + "; version=" + agent.PinnedCodexAdapterVersion +
 				"; next: " + agent.ClaudeAdapterInstallCommand() + ")",
 		},
+		{
+			name: "multiple failures report every remediation",
+			adapterResults: map[string]CheckResult{
+				"claude": {
+					Name:       HealthCheckAdapter,
+					Status:     CheckStatusFailed,
+					Detail:     "effective Claude Code adapter is stale",
+					NextAction: agent.ClaudeAdapterInstallCommand(),
+					Err: &agent.AdapterVersionError{
+						Runtime:         "claude",
+						Command:         "claude-agent-acp",
+						Package:         agent.ClaudeAdapterPackage,
+						FoundVersion:    "0.62.0",
+						RequiredPackage: agent.ClaudeAdapterPackage,
+						RequiredVersion: agent.PinnedClaudeAdapterVersion,
+						Install:         agent.ClaudeAdapterInstallCommand(),
+					},
+				},
+				"codex": {
+					Name:       HealthCheckAdapter,
+					Status:     CheckStatusFailed,
+					Detail:     "effective Codex adapter is stale",
+					NextAction: agent.CodexAdapterInstallCommand(),
+					Err: &agent.AdapterVersionError{
+						Runtime:         "codex",
+						Command:         "codex-acp",
+						Package:         agent.CodexAdapterPackage,
+						FoundVersion:    "1.1.4",
+						RequiredPackage: agent.CodexAdapterPackage,
+						RequiredVersion: agent.PinnedCodexAdapterVersion,
+						Install:         agent.CodexAdapterInstallCommand(),
+					},
+				},
+			},
+			wantCode: exitRunFailed,
+			wantLine: "adapter: failed (claude: effective Claude Code adapter is stale; classification: " + agent.AdapterVersionUnsupported +
+				" | codex: effective Codex adapter is stale; classification: " + agent.AdapterVersionUnsupported +
+				"; next: " + agent.ClaudeAdapterInstallCommand() + " && " + agent.CodexAdapterInstallCommand() + ")",
+		},
 	}
 
 	for _, test := range tests {
@@ -214,6 +253,39 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
 		})
+	}
+}
+
+func TestDoctorAdapterCheckAggregatesEveryFailure(t *testing.T) {
+	claudeFailure := errors.New("claude adapter failed")
+	codexFailure := errors.New("codex adapter failed")
+	checker := newDoctorFakeHealthChecker(CheckResult{}, CheckResult{}, CheckResult{})
+	checker.adapterResults = map[string]CheckResult{
+		"claude": {
+			Name:       HealthCheckAdapter,
+			Status:     CheckStatusFailed,
+			NextAction: agent.ClaudeAdapterInstallCommand(),
+			Err:        claudeFailure,
+		},
+		"codex": {
+			Name:       HealthCheckAdapter,
+			Status:     CheckStatusFailed,
+			NextAction: agent.CodexAdapterInstallCommand(),
+			Err:        codexFailure,
+		},
+	}
+
+	result := doctorAdapterCheck(context.Background(), checker, []agent.RuntimeSpec{{ID: "claude"}, {ID: "codex"}}, nil)
+
+	if result.Status != CheckStatusFailed {
+		t.Fatalf("status = %q, want %q", result.Status, CheckStatusFailed)
+	}
+	wantAction := agent.ClaudeAdapterInstallCommand() + " && " + agent.CodexAdapterInstallCommand()
+	if result.NextAction != wantAction {
+		t.Fatalf("next action = %q, want %q", result.NextAction, wantAction)
+	}
+	if !errors.Is(result.Err, claudeFailure) || !errors.Is(result.Err, codexFailure) {
+		t.Fatalf("aggregate error = %v, want both runtime failures", result.Err)
 	}
 }
 
