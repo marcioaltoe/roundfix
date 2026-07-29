@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0052-claude-adapter-standardization
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -96,3 +96,62 @@ seams — no Doctor, Setup, or capability change is required yet.
 
 `_prd.md` → User Story 1, Core Features 1–3, 7; `_techspec.md` → Build Order 1,
 Interfaces: adapterLineageContract; ADR-0055.
+
+## Result
+
+The adapter readiness seam now uses a runtime lineage contract for Codex and
+Claude, including `-custom` runtimes. Claude accepts the official two-field
+probe or a bare-semver probe backed by the effective package command or the
+symlink-resolved `node_modules` path. Empty, malformed, legacy, unproven, and
+below-pin evidence fail through contract-backed typed errors. OpenCode keeps
+the existing command-only evidence path.
+
+The default Claude command and both legacy executable install hints now point
+to `@agentclientprotocol/claude-agent-acp@0.63.0`. The Codex minimum is
+`1.1.5`. Shared Agent and CLI fake adapters emit the probe shape for the
+package selected through `npx`.
+
+Focused checks used a task-local `GOCACHE` because the sandbox cannot write
+the default macOS Go build cache:
+
+- Pre-change signal:
+  `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260728T230436Z_3c8ceccb79af5226/.tmp/gocache go test ./internal/agent -run '^TestCheckAdapter(ProvesOfficialClaudePackageAndVersion|ClassifiesUnreadyClaudeAdapters)$' -count=1`
+  failed to compile because the Claude contract, helpers, and error data did
+  not exist.
+- `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260728T230436Z_3c8ceccb79af5226/.tmp/gocache go test ./internal/agent -run '^(TestResolveAdapterCommandUsesConfigFallbacksAndOverrides|TestCheckAdapter.*)$' -count=1`
+  — passed.
+- `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260728T230436Z_3c8ceccb79af5226/.tmp/gocache go test ./internal/cli -run '^TestRunSetupReportsAdapterFailuresWithoutWrites$' -count=1`
+  — passed.
+- `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260728T230436Z_3c8ceccb79af5226/.tmp/gocache go test ./internal/cli -run '^TestAgentSelectionProfilesMacro$/^mixed_profiles_configure_validate_fallback_persist_and_stream$' -count=1`
+  — passed.
+- `rtk grep -rn 'zed-industries/claude-code-acp' internal` — exited `1`
+  with no matches.
+- `rtk grep -n '"claude"' internal/agent/acpx_runner.go` — the default map
+  names `defaultClaudeAdapterCommand`; no default line names
+  `claude-code-acp`.
+
+Acceptance evidence:
+
+1. `TestCheckAdapterClassifiesUnreadyClaudeAdapters` covers both recognized
+   legacy packages, including an empty probe resolved through a legacy
+   symlink path. Both return `adapter_lineage_unknown` and carry the official
+   package, `0.63.0` pin, and install action.
+2. `TestCheckAdapterProvesOfficialClaudePackageAndVersion` covers the pin, a
+   newer version, the version-only command proof, resolved-path proof, and the
+   two-field probe. The unready table covers `0.62.9` as
+   `adapter_version_unsupported` with the official install action.
+3. The Claude tables distinguish a same-named unproven executable from a
+   symlink whose target contains the official `node_modules` package segment.
+4. The Codex tables keep two-field lineage behavior, preserve malformed
+   official-version classification, and prove that `1.1.4` is now below the
+   `1.1.5` pin.
+5. `TestCheckAdapterPreservesOpenCodeResolutionWithoutVersionExecution`
+   proves OpenCode returns command-only evidence without executing its
+   version output.
+6. `TestResolveAdapterCommandUsesConfigFallbacksAndOverrides`, the focused
+   grep inspections, and the updated fake-adapter fixtures prove the official
+   Claude default and removal of the deprecated scoped package text under
+   `internal/`.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn. Follow-ups: none for this Task slice.

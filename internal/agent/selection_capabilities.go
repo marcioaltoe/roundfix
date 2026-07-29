@@ -226,16 +226,33 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence) (Selecti
 		return SelectionCapabilities{}, err
 	}
 
+	var reasoning *SelectCapability
+	if len(reasoningOptionIDs) == 1 {
+		copyOption := selectOptions[selectCapabilityIndex(selectOptions, reasoningOptionIDs[0])]
+		copyOption.Values = append([]string(nil), copyOption.Values...)
+		reasoning = &copyOption
+	}
+
 	modelOption := selectOptions[selectCapabilityIndex(selectOptions, modelOptionIDs[0])]
+	opaqueModels := reasoning != nil
 	models := make([]ModelCapability, 0, len(modelOption.Values))
 	seenModels := make(map[string]struct{}, len(modelOption.Values))
 	for _, value := range modelOption.Values {
-		model, ok := parseModelCapability(value)
+		model, ok := parseModelCapability(value, opaqueModels)
 		if !ok {
 			issues.add(CapabilityIssueMalformedModelValue)
 			continue
 		}
-		key := model.CanonicalModel + "\x00" + model.ReasoningEffort
+		// Under opaque parsing an advertised identifier is a whole model
+		// identity, so two entries that share a canonical prefix are an alias
+		// group for one model, not an ambiguous variant encoding. Advertised
+		// values are already unique here, so keying on the advertised value
+		// keeps the dedup honest without inventing an ambiguity. The variant
+		// encoding keeps its fail-closed canonical/effort ambiguity check.
+		key := model.AdapterValue
+		if !opaqueModels {
+			key = model.CanonicalModel + "\x00" + model.ReasoningEffort
+		}
 		if _, exists := seenModels[key]; exists {
 			issues.add(CapabilityIssueAmbiguousModelVariant)
 			continue
@@ -245,16 +262,6 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence) (Selecti
 	}
 	if err := issues.err(); err != nil {
 		return SelectionCapabilities{}, err
-	}
-
-	var reasoning *SelectCapability
-	for index := range selectOptions {
-		if selectOptions[index].ID == acpxCodexReasoningEffortKey || selectOptions[index].ID == acpxGenericReasoningEffortKey {
-			copyOption := selectOptions[index]
-			copyOption.Values = append([]string(nil), copyOption.Values...)
-			reasoning = &copyOption
-			break
-		}
 	}
 
 	return SelectionCapabilities{
@@ -466,7 +473,7 @@ func projectSelectCapability(raw acpSelectOptionPayload, issues *capabilityIssue
 	return SelectCapability{ID: raw.ID, CurrentValue: currentValue, Values: values}, true
 }
 
-func parseModelCapability(adapterValue string) (ModelCapability, bool) {
+func parseModelCapability(adapterValue string, opaque bool) (ModelCapability, bool) {
 	adapterValue = strings.TrimSpace(adapterValue)
 	if !boundedCapabilityValue(adapterValue) {
 		return ModelCapability{}, false
@@ -485,6 +492,9 @@ func parseModelCapability(adapterValue string) (ModelCapability, bool) {
 	effort := strings.TrimSpace(adapterValue[open+1 : len(adapterValue)-1])
 	if canonical == "" || effort == "" || strings.ContainsAny(canonical, "[]") || strings.ContainsAny(effort, "[]") {
 		return ModelCapability{}, false
+	}
+	if opaque {
+		return ModelCapability{AdapterValue: adapterValue, CanonicalModel: canonical, ModelManaged: true}, true
 	}
 	return ModelCapability{AdapterValue: adapterValue, CanonicalModel: canonical, ReasoningEffort: effort}, true
 }

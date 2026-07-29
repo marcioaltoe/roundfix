@@ -1,0 +1,44 @@
+Build: aa12daaeb731242dcdbebdf861d35b8996d50859
+Date: 2026-07-28
+All commands used a writable Run-local GOCACHE where applicable.
+
+Agent lineage and selection group:
+go test -count=1 ./internal/agent -run \
+  'TestCheckAdapter|TestACPXProbe|TestResolveAdapterCommand|\
+TestSelectionCapabilities|TestPlanSelectionAssignment|TestParseSession'
+Result: PASS (roundfix/internal/agent, 5.993s).
+
+CLI Doctor, Setup, validation, and Preflight group:
+go test -count=1 ./internal/cli -run \
+  'TestRunDoctor|TestRunSetup|TestSetupCommand|TestProfilesValidate|\
+TestImplement|TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun'
+Result: PASS (roundfix/internal/cli, 2.290s).
+
+Configuration group:
+go test -count=1 ./internal/config
+Result: PASS (roundfix/internal/config, 0.687s).
+
+Protected Skill and Baseline:
+- make skills-sync-check with Run-local GOCACHE: PASS, 4 tests.
+- go test -count=1 ./skills -run
+  'TestBaselineSkillContract|TestAuthorialSkillSync': PASS.
+- go test -count=1 ./internal/baseline: PASS (78.850s).
+
+Non-Goal regression groups:
+- Fallback notification ordering, no dynamic Preflight fallback, stable
+  proof-error fields: PASS (roundfix/internal/cli, 0.540s).
+- Built-in profiles, generated config, custom model strings, unchanged Codex
+  catalog: PASS (roundfix/internal/config, 0.199s).
+- Model Catalogs, OpenCode command-only readiness, and Codex lineage/pin
+  behavior: PASS (roundfix/internal/agent, 1.053s).
+
+Documentation/help evidence quality:
+- Task 07's declared filter
+  `go test -count=1 ./internal/cli -run 'TestDocumentation|TestHelp'`
+  exited 0 but reported `[no tests to run]`; it received no QA credit.
+- The corrected exact-name filter ran TestRunHelp, TestRunCommandHelp,
+  TestProfilesDocumentationContractMatchesPublicGuidance,
+  TestRunImplementHelpListsExactlyImplementedFlags, and
+  TestRunHelpListsImplementCommand. Result: PASS.
+
+The required full static gate is recorded separately in static-gate.txt.

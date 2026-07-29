@@ -1,0 +1,41 @@
+Build: aa12daaeb731242dcdbebdf861d35b8996d50859
+Date: 2026-07-28
+
+Tooling Task: task_08
+Daemon-owned Task commit:
+5512c70a8ad894f722fbf6a64a741d5bb113b910
+
+Command:
+git -c core.fsmonitor=false diff-tree --no-commit-id --name-only -r 5512c70
+
+Observed paths:
+.agents/skills/roundfix/SKILL.md
+docs/specs/0052-claude-adapter-standardization/task_08.md
+internal/baseline/assets/setups/typescript-bun.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json
+internal/baseline/testdata/parity-corpus/v1/manifest.json
+skills/roundfix/SKILL.md
+
+The seven non-Task paths exactly match the bounded allowlist in both the PRD
+and TechSpec. The remaining path is task_08's assigned Task file.
+
+Post-Task history check:
+- e0a02502a0b7ef35b346cffe7137157ececc2c07 temporarily changed the
+  unauthorized repository Verification configuration .roundfixrc.yml.
+- aa12daaeb731242dcdbebdf861d35b8996d50859 explicitly reverted that file
+  because it was outside the bounded allowlist.
+- git -c core.fsmonitor=false diff --exit-code 397227f..HEAD --
+  .roundfixrc.yml returns zero: the current build has no net mutation there.
+
+Current worktree delta before QA artifacts:
+git -c core.fsmonitor=false diff --name-only
+returned no paths.
+
+Current QA delta is limited to the required report and evidence under:
+docs/specs/0052-claude-adapter-standardization/qa/
+
+Result: PASS for the current build. The Task commit is traceable and exactly
+bounded, the previously refused out-of-scope configuration mutation is
+reverted, and no unauthorized protected-tooling delta remains.

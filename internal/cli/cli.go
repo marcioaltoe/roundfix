@@ -4436,12 +4436,13 @@ Options:
 		return `Usage:
   roundfix setup [--yes] [--no-input]
 
-Checks Node.js and the minimum supported acpx version, proves the effective official Codex adapter
-and generated Agent Selection profile readiness, then offers acpx local adapter
-overrides, User Config, and Project Config. Proposed profiles are exact-proved
-before writing. Legacy Codex override migration requires authorization. Each
-check prints one deterministic report line with ok, installed, skipped,
-offered: declined, or failed.
+Checks Node.js and the minimum supported acpx version, proves the effective
+official Codex and Claude adapters and generated Agent Selection
+profile readiness, then offers acpx local adapter overrides, User Config, and
+Project Config. Proposed profiles are exact-proved before writing. Legacy
+Codex and Claude override migration requires authorization. Each check prints
+one deterministic report line with ok, installed, skipped, offered: declined,
+or failed.
 
 Options:
   --yes       Accept every offered install or file change

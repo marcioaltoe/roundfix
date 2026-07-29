@@ -1,0 +1,51 @@
+Build: aa12daaeb731242dcdbebdf861d35b8996d50859
+Date: 2026-07-28
+
+Supported-path deprecated-lineage exclusion:
+rg -n '@zed-industries/claude-code-acp' \
+  internal cmd docs/user-guide .agents/skills/roundfix skills/roundfix
+Result: exit 1, no matches.
+
+Stale working-selection/pin exclusion:
+rg -n 'claude / claude-opus-5|model: claude-opus-5|\
+model: claude-fable-5|@agentclientprotocol/codex-acp@1\.1\.4' \
+  docs/user-guide .agents/skills/roundfix/SKILL.md \
+  skills/roundfix/SKILL.md
+Result: exit 1, no matches.
+
+Official contract inspection:
+- commands.md, configuration.md, and usage.md each name
+  @agentclientprotocol/claude-agent-acp, 0.63.0, and
+  npm install -g @agentclientprotocol/claude-agent-acp@0.63.0.
+- commands.md shows one sorted Claude-plus-Codex Doctor adapter line.
+- configuration.md and usage.md state that opus[1m] is selectable as printed,
+  opus remains a canonical selectable prefix, and 1m is not a reasoning
+  effort. Both link ADR-0079.
+
+Skill identity:
+cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md
+Result: exit 0.
+
+ADR link:
+test -f \
+  docs/adr/0079-independent-reasoning-controls-make-model-identifiers-opaque.md
+Result: exit 0.
+
+Model Catalog:
+git diff --exit-code 397227f..HEAD -- internal/agent/catalog.go
+Result: exit 0, no change.
+
+Fallback implementation scope:
+No changed production path introduces a new Fallback Chain activation
+mechanism. Fresh focused tests pass for notification-before-activation,
+no dynamic substitution in Implement/Resolve/Watch Preflight, and the
+shared diagnostic sentence.
+
+Project Config comment outside Spec scope:
+.roundfixrc.yml still contains an older comment claiming the raw opus[1m]
+form is rejected. Commit e0a0250 attempted to update it, but commit aa12daa
+correctly restored the file because the active Spec's exact Tooling Authority
+does not authorize that Verification configuration path. The stale comment
+is not in the PRD's operator-documentation or Roundfix Skill scope, and the
+public CLI plus authorized user guide/Skill surfaces all state the shipped
+behavior correctly. It requires a separately authorized documentation change.

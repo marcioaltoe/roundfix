@@ -127,7 +127,7 @@ profiles:
   frontend:
     preferred:
       runtime: claude
-      model: claude-opus-5
+      model: opus
       reasoning_effort: xhigh
     fallbacks:
       - runtime: codex
@@ -286,7 +286,7 @@ Built-in required profiles use these official identifiers:
 
 - `general`, `backend`, `qa`, `review`: preferred `codex / gpt-5.6-sol / high`;
   fallback `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / claude-opus-5 / xhigh`; fallback
+- `frontend`: preferred `claude / opus / xhigh`; fallback
   `codex / gpt-5.6-sol / high`.
 
 The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
@@ -300,14 +300,28 @@ for forward-compatible proof and are never added to an allowlist. A dated
 recommendation can differ from the current built-in Preferred Selection and
 never controls routing.
 
+When an adapter advertises an independent reasoning control, Roundfix treats
+every advertised Agent Model identifier as opaque. A bracketed identifier such
+as `opus[1m]` is selectable exactly as printed, and its canonical prefix
+`opus` remains selectable with a separate reasoning effort. The `[1m]` suffix
+is a context-window annotation, not a reasoning effort. See
+[ADR-0079](../adr/0079-independent-reasoning-controls-make-model-identifiers-opaque.md).
+
 For Codex, Adapter Readiness requires the official
-`@agentclientprotocol/codex-acp` package at version `1.1.4` or newer. Setup
-writes the deterministic pinned command
-`npx -y @agentclientprotocol/codex-acp@1.1.4` when an explicit override is
-needed. A bare `codex-acp` override can resolve to the legacy
-`@zed-industries/codex-acp` package; Setup and Doctor diagnose its effective
-lineage and direct the user to
-`npm install -g @agentclientprotocol/codex-acp@1.1.4`.
+`@agentclientprotocol/codex-acp` package at version `1.1.5` or newer. For
+Claude, it requires official `@agentclientprotocol/claude-agent-acp` at
+version `0.63.0` or newer. The deterministic install actions are
+`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
+
+Setup writes `npx -y @agentclientprotocol/codex-acp@1.1.5` or
+`npx -y @agentclientprotocol/claude-agent-acp@0.63.0` when an explicit
+override needs migration. For Codex, that includes a bare override resolving
+to legacy `@zed-industries/codex-acp` and earlier explicit pins such as
+`1.1.4`. For Claude, it includes both legacy lineages — the former
+`claude-code-acp` package and wrong-scope
+`@zed-industries/claude-agent-acp`. Setup and Doctor diagnose the effective
+lineage and direct the user to the applicable official install action.
 
 An explicit empty `reasoning_effort: ""` means model-managed reasoning;
 omitted `reasoning_effort` is invalid because the runtime would not receive a
@@ -359,11 +373,12 @@ Do not edit runtime-owned settings or credentials for migration; write complete
 profiles with `roundfix profiles configure --scope user|project`.
 
 Setup treats configuration as one fail-before-mutation proposal. It resolves
-the effective adapter, proposes migration of a stale Codex override, builds
-User Config and Project Config bytes in memory, and proves every generated
-selection before asking to write. `--yes` authorizes offered changes;
-`--no-input` reports diagnosis and writes nothing. Declining the adapter
-migration or any later write leaves every unauthorized target unchanged.
+the effective adapters, proposes migration of stale Codex or Claude overrides,
+builds User Config and Project Config bytes in memory, and proves every
+generated selection before asking to write. `--yes` authorizes offered
+changes; `--no-input` reports diagnosis and writes nothing. Declining an
+adapter migration or any later write leaves every unauthorized target
+unchanged.
 
 The durable contract is [ADR-0055](../adr/0055-agent-selection-encoding-follows-advertised-acp-capabilities.md).
 Its environment evidence is preserved in the

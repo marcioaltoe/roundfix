@@ -84,6 +84,7 @@ func (err profileProofError) Error() string {
 	if err.NextAction != "" {
 		fmt.Fprintf(&builder, "; next: %s", err.NextAction)
 	}
+	fmt.Fprint(&builder, "; fallback: Fallback Chains activate only after Run creation (ADR-0050); Preflight proves every configured tuple and substitutes none")
 	return builder.String()
 }
 

@@ -24,7 +24,7 @@ Roundfix drives ACP Runtimes through acpx `0.12.0` or newer. Node.js 22.13 or
 newer with npm/npx is a prerequisite. Prefer the Setup Command after
 installing Roundfix; it verifies Node, installs the minimum tested acpx only
 when acpx is missing or older, accepts newer versions without downgrading,
-proves the effective adapter identity, proves the
+proves the effective adapter identities, proves the
 generated Agent Selection Profiles, offers authorized local adapter migration,
 and offers User Config and Project Config creation. Review work uses owned review Agent Sessions, Spec
 Tasks use per-Task Agent Sessions named `roundfix-<run-id>-<task_id>` in their
@@ -32,11 +32,13 @@ Task Worktrees, and QA uses its own Agent Session after Tasks settle.
 
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
-shared Node.js, minimum-supported acpx, effective adapter, required Agent Selection
-Profiles, Repository Skill Set, and codex runtime hygiene checks and prints one
-line per check with status `ok`, `failed`, or `skipped`. Adapter Readiness
-requires the effective Codex command to prove official
-`@agentclientprotocol/codex-acp` lineage at version `1.1.4` or newer;
+shared Node.js, minimum-supported acpx, effective adapters, required Agent
+Selection Profiles, Repository Skill Set, and codex runtime hygiene checks and
+prints one line per check with status `ok`, `failed`, or `skipped`. Adapter
+Readiness requires the effective Codex command to prove official
+`@agentclientprotocol/codex-acp` lineage at version `1.1.5` or newer and the
+effective Claude command to prove official
+`@agentclientprotocol/claude-agent-acp` lineage at version `0.63.0` or newer;
 executable presence and a matching name are not proof. The `profiles:` line is
 the selection authority: it exact-proves every distinct Preferred Selection
 and fallback through disposable ACP Sessions and reports affected category
@@ -95,17 +97,18 @@ and committing.
 ## Setup, doctor, and upgrade
 
 Use `roundfix setup [--yes] [--no-input]` to take a machine from fresh to
-Run-ready. It checks Node.js and minimum-supported acpx, proves Adapter Readiness, builds
-the generated Agent Selection Profiles in memory, exact-proves every distinct
-tuple, and only then offers acpx local adapter overrides, User Config, and
-Project Config writes. Each check prints one
+Run-ready. It checks Node.js and minimum-supported acpx, proves Adapter
+Readiness for every distinct runtime referenced by the effective required
+profiles, builds the generated Agent Selection Profiles in memory, exact-proves
+every distinct tuple, and only then offers acpx local adapter overrides, User
+Config, and Project Config writes. Each check prints one
 deterministic report line with status `ok`, `installed`, `skipped`,
 `offered: declined`, or `failed`. Tested report lines include:
 
 ```text
 node: ok
 acpx: installed
-adapter: ok
+adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.63.0"; package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex: command="npx -y @agentclientprotocol/codex-acp@1.1.5"; package=@agentclientprotocol/codex-acp; version=1.1.5)
 profile readiness: passed
 acpx agents override: installed
 User Config: installed
@@ -117,21 +120,29 @@ offers instead of prompting and writes nothing. When acpx is missing or older
 than `0.12.0`, setup offers `npm install -g acpx@0.12.0`. Version `0.12.0` and
 newer versions are accepted; Setup never downgrades a newer installation.
 
-The supported Codex adapter is official
-`@agentclientprotocol/codex-acp` version `1.1.4` or newer. When Setup needs an
-explicit command, it proposes
-`npx -y @agentclientprotocol/codex-acp@1.1.4`. A bare `codex-acp` override can
-resolve to legacy `@zed-industries/codex-acp`; Setup diagnoses that lineage,
-proves the replacement, and asks before migration. The official install action
-is `npm install -g @agentclientprotocol/codex-acp@1.1.4`. Decline,
+The supported adapters are official `@agentclientprotocol/codex-acp` version
+`1.1.5` or newer and official
+`@agentclientprotocol/claude-agent-acp` version `0.63.0` or newer. When Setup
+needs explicit commands, it proposes
+`npx -y @agentclientprotocol/codex-acp@1.1.5` and
+`npx -y @agentclientprotocol/claude-agent-acp@0.63.0`. A bare `codex-acp`
+override can resolve to legacy `@zed-industries/codex-acp`. A stale or bare
+Claude override can resolve to the former `claude-code-acp` lineage or the
+wrong-scope `@zed-industries/claude-agent-acp` lineage. Setup diagnoses each
+legacy lineage, proves the replacement, and asks before migration. The
+official install actions are
+`npm install -g @agentclientprotocol/codex-acp@1.1.5` and
+`npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`. Decline,
 `--no-input`, failed exact proof, or a later write failure preserves every
 unauthorized target. A rejected Sol/high proof never becomes an offer to use
 model-managed reasoning.
 
 Use `roundfix doctor` when you only need a read-only readiness report. It runs
-the Node.js, minimum-supported acpx, effective adapter, required Agent Selection
-Profiles, Repository Skill Set, and codex runtime hygiene checks and exits
-nonzero if any check fails. Adapter failures name the effective command,
+the Node.js, minimum-supported acpx, effective adapter check for every distinct
+runtime referenced by the effective required profiles, required Agent
+Selection Profiles, Repository Skill Set, and codex runtime hygiene checks and
+exits nonzero if any check fails. Runtime entries on the aggregate `adapter:`
+line are deduplicated and sorted. Adapter failures name the effective command,
 package classification, and official install action. Profile failure names the
 exact runtime/model/reasoning tuple, every affected category, bounded adapter
 evidence, and the next `roundfix profiles configure` or
@@ -142,7 +153,7 @@ nothing.
 ```text
 node: ok
 acpx: ok
-adapter: ok (npx -y @agentclientprotocol/codex-acp@1.1.4; package=@agentclientprotocol/codex-acp; version=1.1.4)
+adapter: ok (claude: command="npx -y @agentclientprotocol/claude-agent-acp@0.63.0"; package=@agentclientprotocol/claude-agent-acp; version=0.63.0 | codex: command="npx -y @agentclientprotocol/codex-acp@1.1.5"; package=@agentclientprotocol/codex-acp; version=1.1.5)
 profiles: ok (3 distinct tuples; 10 category references)
 skills: ok (39 required: 14 Roundfix-owned, 25 external)
 codex: ok
@@ -316,18 +327,28 @@ Required built-ins:
 - `general`, `backend`, `qa`, and `review`: preferred
   `codex / gpt-5.6-sol / high`, fallback
   `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / claude-opus-5 / xhigh`, fallback
+- `frontend`: preferred `claude / opus / xhigh`, fallback
   `codex / gpt-5.6-sol / high`.
 
 Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. If configured, they must
 be complete. The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official Codex identifiers, plus `claude-opus-5`,
-`claude-fable-5`, and `claude-opus-4-8` as Claude identifiers. That validity is
-distinct from advisory recommendation rank and from operational availability:
-exact proof in the effective environment is the only readiness authority.
-Explicit custom model strings, including adapter aliases, are sent to the ACP
-Runtime verbatim for the same proof and do not enter an allowlist.
+`gpt-5.6-luna` as official Codex identifiers, plus advisory Claude labels
+`claude-opus-5`, `claude-fable-5`, and `claude-opus-4-8`. Those labels do not
+replace the working built-in `opus` identifier. Catalog validity is distinct
+from advisory recommendation rank and from operational availability: exact
+proof in the effective environment is the only readiness authority. Explicit
+custom model strings, including adapter aliases, are sent to the ACP Runtime
+verbatim for the same proof and do not enter an allowlist.
+
+When an adapter advertises an independent reasoning control, Roundfix treats
+every advertised Agent Model identifier as opaque. A bracketed identifier such
+as `opus[1m]` is selectable exactly as printed, and its canonical prefix
+`opus` remains selectable with a separate reasoning effort. The `[1m]` suffix
+is a context-window annotation, not a reasoning effort; an explicit
+`reasoning_effort: 1m` is rejected against the adapter's advertised efforts.
+Adapters without an independent reasoning control keep the existing
+`canonical[effort]` variant encoding.
 
 Project Config and User Config use the profile structure:
 
@@ -345,7 +366,7 @@ profiles:
   frontend:
     preferred:
       runtime: claude
-      model: claude-opus-5
+      model: opus
       reasoning_effort: xhigh
     fallbacks:
       - runtime: codex
@@ -389,7 +410,7 @@ or provide a complete one-Run Preferred Selection override:
 ```bash
 roundfix watch --source coderabbit --pr 123 --until-clean
 roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort high --no-input
-roundfix implement --spec example-spec --agent claude --model claude-opus-5 --reasoning-effort xhigh --qa --detach
+roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort xhigh --qa --detach
 ```
 
 `--agent`, `--model`, and `--reasoning-effort` are all-or-none. A partial subset
@@ -424,10 +445,13 @@ removing `defaults.agent` and `runtimes`, writing complete profiles with
 `roundfix profiles validate`.
 
 Legacy profile migration is separate from adapter migration. If the effective
-Codex command resolves to `@zed-industries/codex-acp`, use `roundfix setup` to
-diagnose it and authorize the official pinned override. Setup and Doctor use
-the same Adapter Readiness contract; neither treats a same-name executable as
-proof.
+Codex command resolves to `@zed-industries/codex-acp`, or the effective Claude
+command resolves to the former `claude-code-acp` lineage or wrong-scope
+`@zed-industries/claude-agent-acp`, use `roundfix setup` to diagnose it and
+authorize the applicable official pinned override. Setup and Doctor use the
+same Adapter Readiness contract; legacy, unknown, or below-pin lineages fail
+with the applicable official install action, and neither command treats a
+same-name executable as proof.
 
 Initial progress and the Live Run View show the concrete stored selection:
 

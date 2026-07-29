@@ -25,9 +25,14 @@ const (
 	defaultACPXCommand              = "acpx"
 	MinimumACPXVersion              = "0.12.0"
 	CodexAdapterPackage             = "@agentclientprotocol/codex-acp"
-	PinnedCodexAdapterVersion       = "1.1.4"
+	PinnedCodexAdapterVersion       = "1.1.5"
 	legacyCodexAdapterPackage       = "@zed-industries/codex-acp"
+	ClaudeAdapterPackage            = "@agentclientprotocol/claude-agent-acp"
+	PinnedClaudeAdapterVersion      = "0.63.0"
+	legacyClaudeCodeAdapterPackage  = "@zed-industries/" + "claude-code-acp"
+	legacyClaudeAgentAdapterPackage = "@zed-industries/" + "claude-agent-acp"
 	defaultCodexAdapterCommand      = "npx -y " + CodexAdapterPackage
+	defaultClaudeAdapterCommand     = "npx -y " + ClaudeAdapterPackage + "@" + PinnedClaudeAdapterVersion
 	adapterProbeOutputLimit         = 512
 	acpxPermissionDeniedStatus      = "permissions_denied"
 	acpxExitReasonAgentProtocol     = "agent/protocol error"
@@ -51,14 +56,38 @@ const (
 
 var defaultAdapterCommands = map[string]string{
 	"codex":    defaultCodexAdapterCommand,
-	"claude":   "claude-code-acp",
+	"claude":   defaultClaudeAdapterCommand,
 	"opencode": "opencode",
 }
 
 var adapterInstallCommands = map[string]string{
-	"claude-code-acp":  "npm install -g @zed-industries/claude-code-acp",
-	"claude-agent-acp": "npm install -g @zed-industries/claude-agent-acp",
+	"claude-code-acp":  ClaudeAdapterInstallCommand(),
+	"claude-agent-acp": ClaudeAdapterInstallCommand(),
 	"opencode":         "npm install -g opencode-ai",
+}
+
+type adapterLineageContract struct {
+	RuntimeID      string
+	Package        string
+	PinnedVersion  string
+	LegacyPackages []string
+	VersionOnly    bool
+}
+
+var adapterLineageContracts = map[string]adapterLineageContract{
+	"codex": {
+		RuntimeID:      "codex",
+		Package:        CodexAdapterPackage,
+		PinnedVersion:  PinnedCodexAdapterVersion,
+		LegacyPackages: []string{legacyCodexAdapterPackage},
+	},
+	"claude": {
+		RuntimeID:      "claude",
+		Package:        ClaudeAdapterPackage,
+		PinnedVersion:  PinnedClaudeAdapterVersion,
+		LegacyPackages: []string{legacyClaudeCodeAdapterPackage, legacyClaudeAgentAdapterPackage},
+		VersionOnly:    true,
+	},
 }
 
 const (
@@ -82,6 +111,17 @@ func CodexAdapterInstallCommand() string {
 // Setup persists when migrating an ACPX override.
 func CodexAdapterCommand() string {
 	return "npx -y " + CodexAdapterPackage + "@" + PinnedCodexAdapterVersion
+}
+
+// ClaudeAdapterInstallCommand returns the deterministic official adapter action.
+func ClaudeAdapterInstallCommand() string {
+	return "npm install -g " + ClaudeAdapterPackage + "@" + PinnedClaudeAdapterVersion
+}
+
+// ClaudeAdapterCommand returns the deterministic official adapter command that
+// Setup persists when migrating an ACPX override.
+func ClaudeAdapterCommand() string {
+	return defaultClaudeAdapterCommand
 }
 
 // ACPXRunner is the acpx-backed invocation core. Later migration tasks wire
@@ -325,29 +365,37 @@ func (err AdapterProbeError) Unwrap() error {
 	return err.Err
 }
 
-// AdapterLineageError reports a Codex adapter that cannot prove the official
+// AdapterLineageError reports an adapter that cannot prove the official
 // package lineage. Raw adapter output is intentionally excluded.
 type AdapterLineageError struct {
-	Command string
-	Package string
-	Version string
-	Err     error
+	Runtime         string
+	Command         string
+	Package         string
+	Version         string
+	RequiredPackage string
+	RequiredVersion string
+	Install         string
+	Legacy          bool
+	Err             error
 }
 
 func (err *AdapterLineageError) Error() string {
 	if err == nil {
 		return ""
 	}
-	message := fmt.Sprintf("effective Codex adapter command %q did not prove required package lineage %s", strings.TrimSpace(err.Command), CodexAdapterPackage)
-	if err.Package == legacyCodexAdapterPackage {
-		message = fmt.Sprintf("effective Codex adapter command %q reported legacy package %s", strings.TrimSpace(err.Command), err.Package)
-	} else if strings.TrimSpace(err.Package) != "" {
-		message = fmt.Sprintf("effective Codex adapter command %q reported unknown package %s", strings.TrimSpace(err.Command), err.Package)
+	runtimeID := adapterErrorRuntime(err.Runtime)
+	requiredPackage := adapterErrorRequiredPackage(err.RequiredPackage)
+	requiredVersion := adapterErrorRequiredVersion(err.RequiredVersion)
+	message := fmt.Sprintf("effective %s adapter command %q did not prove required package lineage %s", runtimeDisplayName(runtimeID), strings.TrimSpace(err.Command), requiredPackage)
+	if err.Legacy || isLegacyAdapterPackage(err.Package) {
+		message = fmt.Sprintf("effective %s adapter command %q reported legacy package %s", runtimeDisplayName(runtimeID), strings.TrimSpace(err.Command), err.Package)
+	} else if packageName := strings.TrimSpace(err.Package); packageName != "" && packageName != requiredPackage {
+		message = fmt.Sprintf("effective %s adapter command %q reported unknown package %s", runtimeDisplayName(runtimeID), strings.TrimSpace(err.Command), packageName)
 	}
 	if strings.TrimSpace(err.Version) != "" {
 		message += " version " + strings.TrimSpace(err.Version)
 	}
-	return fmt.Sprintf("%s; required %s %s or newer; update with: %s", message, CodexAdapterPackage, PinnedCodexAdapterVersion, CodexAdapterInstallCommand())
+	return fmt.Sprintf("%s; required %s %s or newer; update with: %s", message, requiredPackage, requiredVersion, err.InstallCommand())
 }
 
 func (err *AdapterLineageError) Classification() string {
@@ -355,6 +403,14 @@ func (err *AdapterLineageError) Classification() string {
 }
 
 func (err *AdapterLineageError) InstallCommand() string {
+	if err != nil {
+		if install := strings.TrimSpace(err.Install); install != "" {
+			return install
+		}
+		if strings.TrimSpace(err.RequiredPackage) != "" && strings.TrimSpace(err.RequiredVersion) != "" {
+			return adapterPackageInstallCommand(err.RequiredPackage, err.RequiredVersion)
+		}
+	}
 	return CodexAdapterInstallCommand()
 }
 
@@ -365,20 +421,23 @@ func (err *AdapterLineageError) Unwrap() error {
 	return err.Err
 }
 
-// AdapterVersionError reports an official Codex adapter below the supported
+// AdapterVersionError reports an official adapter below the supported
 // compatibility floor.
 type AdapterVersionError struct {
+	Runtime         string
 	Command         string
 	Package         string
 	FoundVersion    string
+	RequiredPackage string
 	RequiredVersion string
+	Install         string
 }
 
 func (err *AdapterVersionError) Error() string {
 	if err == nil {
 		return ""
 	}
-	return fmt.Sprintf("effective Codex adapter command %q reported package %s version %s; required version %s or newer; update with: %s", strings.TrimSpace(err.Command), strings.TrimSpace(err.Package), strings.TrimSpace(err.FoundVersion), strings.TrimSpace(err.RequiredVersion), CodexAdapterInstallCommand())
+	return fmt.Sprintf("effective %s adapter command %q reported package %s version %s; required version %s or newer; update with: %s", runtimeDisplayName(adapterErrorRuntime(err.Runtime)), strings.TrimSpace(err.Command), strings.TrimSpace(err.Package), strings.TrimSpace(err.FoundVersion), adapterErrorRequiredVersion(err.RequiredVersion), err.InstallCommand())
 }
 
 func (err *AdapterVersionError) Classification() string {
@@ -386,6 +445,14 @@ func (err *AdapterVersionError) Classification() string {
 }
 
 func (err *AdapterVersionError) InstallCommand() string {
+	if err != nil {
+		if install := strings.TrimSpace(err.Install); install != "" {
+			return install
+		}
+		if strings.TrimSpace(err.RequiredPackage) != "" && strings.TrimSpace(err.RequiredVersion) != "" {
+			return adapterPackageInstallCommand(err.RequiredPackage, err.RequiredVersion)
+		}
+	}
 	return CodexAdapterInstallCommand()
 }
 
@@ -492,10 +559,11 @@ func CheckAdapter(ctx context.Context, runtime RuntimeSpec) (AdapterEvidence, er
 		return AdapterEvidence{}, err
 	}
 	runtimeID := strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom")
+	contract, hasLineageContract := adapterLineageContracts[runtimeID]
 	if _, err := exec.LookPath(invocation.executable()); err != nil {
 		install := ""
-		if runtimeID == "codex" {
-			install = CodexAdapterInstallCommand()
+		if hasLineageContract {
+			install = contract.installCommand()
 		}
 		return AdapterEvidence{}, AdapterProbeError{
 			Command:    invocation.display(),
@@ -505,10 +573,10 @@ func CheckAdapter(ctx context.Context, runtime RuntimeSpec) (AdapterEvidence, er
 		}
 	}
 	evidence := AdapterEvidence{Command: invocation.display()}
-	if runtimeID != "codex" {
+	if !hasLineageContract {
 		return evidence, nil
 	}
-	return inspectCodexAdapter(ctx, invocation)
+	return inspectAdapter(ctx, invocation, contract)
 }
 
 // resolveAdapterCommand returns the adapter command acpx will spawn for the
@@ -607,8 +675,17 @@ func newAdapterInvocation(command string, args []string) adapterInvocation {
 
 func adapterInstallCommand(command string) string {
 	command = strings.TrimSpace(command)
-	if adapterBinary(command) == "codex-acp" || strings.Contains(command, CodexAdapterPackage) {
+	invocation := newAdapterInvocation(command, nil)
+	if adapterBinary(command) == "codex-acp" || invocationNamesPackage(invocation, CodexAdapterPackage) {
 		return CodexAdapterInstallCommand()
+	}
+	if binary := adapterBinary(command); binary == "claude-code-acp" || binary == "claude-agent-acp" {
+		return ClaudeAdapterInstallCommand()
+	}
+	for _, packageName := range append([]string{ClaudeAdapterPackage}, adapterLineageContracts["claude"].LegacyPackages...) {
+		if invocationNamesPackage(invocation, packageName) {
+			return ClaudeAdapterInstallCommand()
+		}
 	}
 	if install, ok := adapterInstallCommands[adapterBinary(command)]; ok {
 		return install
@@ -619,8 +696,9 @@ func adapterInstallCommand(command string) string {
 	return "install " + command + " and ensure it is on PATH"
 }
 
-func inspectCodexAdapter(ctx context.Context, invocation adapterInvocation) (AdapterEvidence, error) {
+func inspectAdapter(ctx context.Context, invocation adapterInvocation, contract adapterLineageContract) (AdapterEvidence, error) {
 	evidence := AdapterEvidence{Command: invocation.display()}
+	resolvedPackage := resolveAdapterPackage(invocation, contract)
 	args := append([]string(nil), invocation.argv[1:]...)
 	args = append(args, "--version")
 	cmd := exec.CommandContext(ctx, invocation.executable(), args...)
@@ -631,33 +709,158 @@ func inspectCodexAdapter(ctx context.Context, invocation adapterInvocation) (Ada
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return AdapterEvidence{}, ctxErr
 		}
-		return AdapterEvidence{}, &AdapterLineageError{Command: evidence.Command, Err: err}
+		return AdapterEvidence{}, newAdapterLineageError(contract, evidence.Command, resolvedPackage, "", err)
 	}
 	if stdout.truncated {
-		return AdapterEvidence{}, &AdapterLineageError{Command: evidence.Command}
+		return AdapterEvidence{}, newAdapterLineageError(contract, evidence.Command, resolvedPackage, "", nil)
 	}
 	fields := strings.Fields(stdout.String())
-	if len(fields) != 2 {
-		return AdapterEvidence{}, &AdapterLineageError{Command: evidence.Command}
+	switch {
+	case len(fields) == 2:
+		evidence.Package = fields[0]
+		evidence.Version = fields[1]
+	case len(fields) == 1 && contract.VersionOnly:
+		evidence.Package = resolvedPackage
+		evidence.Version = fields[0]
+	default:
+		return AdapterEvidence{}, newAdapterLineageError(contract, evidence.Command, resolvedPackage, "", nil)
 	}
-	evidence.Package = fields[0]
-	evidence.Version = fields[1]
-	if evidence.Package != CodexAdapterPackage {
-		return AdapterEvidence{}, &AdapterLineageError{
-			Command: evidence.Command,
-			Package: evidence.Package,
-			Version: evidence.Version,
+	_, validVersion := parseAdapterVersion(evidence.Version)
+	if evidence.Package != contract.Package {
+		version := evidence.Version
+		if !validVersion {
+			version = ""
 		}
+		return AdapterEvidence{}, newAdapterLineageError(contract, evidence.Command, evidence.Package, version, nil)
 	}
-	if compareAdapterVersions(evidence.Version, PinnedCodexAdapterVersion) < 0 {
-		return AdapterEvidence{}, &AdapterVersionError{
-			Command:         evidence.Command,
-			Package:         evidence.Package,
-			FoundVersion:    evidence.Version,
-			RequiredVersion: PinnedCodexAdapterVersion,
-		}
+	if !validVersion && contract.VersionOnly {
+		return AdapterEvidence{}, newAdapterLineageError(contract, evidence.Command, evidence.Package, "", nil)
+	}
+	if !validVersion || compareAdapterVersions(evidence.Version, contract.PinnedVersion) < 0 {
+		return AdapterEvidence{}, newAdapterVersionError(contract, evidence)
 	}
 	return evidence, nil
+}
+
+func newAdapterLineageError(contract adapterLineageContract, command string, packageName string, version string, err error) *AdapterLineageError {
+	return &AdapterLineageError{
+		Runtime:         contract.RuntimeID,
+		Command:         command,
+		Package:         packageName,
+		Version:         version,
+		RequiredPackage: contract.Package,
+		RequiredVersion: contract.PinnedVersion,
+		Install:         contract.installCommand(),
+		Legacy:          contract.isLegacy(packageName),
+		Err:             err,
+	}
+}
+
+func newAdapterVersionError(contract adapterLineageContract, evidence AdapterEvidence) *AdapterVersionError {
+	return &AdapterVersionError{
+		Runtime:         contract.RuntimeID,
+		Command:         evidence.Command,
+		Package:         evidence.Package,
+		FoundVersion:    evidence.Version,
+		RequiredPackage: contract.Package,
+		RequiredVersion: contract.PinnedVersion,
+		Install:         contract.installCommand(),
+	}
+}
+
+func (contract adapterLineageContract) installCommand() string {
+	return adapterPackageInstallCommand(contract.Package, contract.PinnedVersion)
+}
+
+func (contract adapterLineageContract) isLegacy(packageName string) bool {
+	for _, legacyPackage := range contract.LegacyPackages {
+		if packageName == legacyPackage {
+			return true
+		}
+	}
+	return false
+}
+
+func adapterPackageInstallCommand(packageName string, version string) string {
+	return "npm install -g " + strings.TrimSpace(packageName) + "@" + strings.TrimSpace(version)
+}
+
+func resolveAdapterPackage(invocation adapterInvocation, contract adapterLineageContract) string {
+	for _, packageName := range append([]string{contract.Package}, contract.LegacyPackages...) {
+		if invocationNamesPackage(invocation, packageName) {
+			return packageName
+		}
+	}
+	executablePath, err := exec.LookPath(invocation.executable())
+	if err != nil {
+		return ""
+	}
+	resolvedPath, err := filepath.EvalSymlinks(executablePath)
+	if err != nil {
+		return ""
+	}
+	for _, packageName := range append([]string{contract.Package}, contract.LegacyPackages...) {
+		if resolvedPathNamesPackage(resolvedPath, packageName) {
+			return packageName
+		}
+	}
+	return ""
+}
+
+func invocationNamesPackage(invocation adapterInvocation, packageName string) bool {
+	for _, arg := range invocation.argv {
+		if arg == packageName {
+			return true
+		}
+		if strings.HasPrefix(arg, packageName+"@") && len(arg) > len(packageName)+1 {
+			return true
+		}
+	}
+	return false
+}
+
+func resolvedPathNamesPackage(path string, packageName string) bool {
+	path = "/" + strings.Trim(filepath.ToSlash(filepath.Clean(path)), "/") + "/"
+	packageSegment := "/node_modules/" + strings.Trim(packageName, "/") + "/"
+	return strings.Contains(path, packageSegment)
+}
+
+func adapterErrorRuntime(runtimeID string) string {
+	runtimeID = strings.TrimSpace(runtimeID)
+	if runtimeID == "" {
+		return "codex"
+	}
+	return runtimeID
+}
+
+func adapterErrorRequiredPackage(packageName string) string {
+	if packageName = strings.TrimSpace(packageName); packageName != "" {
+		return packageName
+	}
+	return CodexAdapterPackage
+}
+
+func adapterErrorRequiredVersion(version string) string {
+	if version = strings.TrimSpace(version); version != "" {
+		return version
+	}
+	return PinnedCodexAdapterVersion
+}
+
+func runtimeDisplayName(runtimeID string) string {
+	if runtimeID == "" {
+		return "Adapter"
+	}
+	return strings.ToUpper(runtimeID[:1]) + runtimeID[1:]
+}
+
+func isLegacyAdapterPackage(packageName string) bool {
+	for _, contract := range adapterLineageContracts {
+		if contract.isLegacy(packageName) {
+			return true
+		}
+	}
+	return false
 }
 
 type boundedAdapterOutput struct {

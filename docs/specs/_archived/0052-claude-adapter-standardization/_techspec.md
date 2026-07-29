@@ -254,10 +254,17 @@ All coverage attaches to existing seams; no new test infrastructure:
   layouts without a `node_modules` segment (for example a source checkout);
   those fail closed with the pinned-override next action, which is the
   documented remedy.
-- **Dedup collision.** If an adapter ever advertises both `opus` and
-  `opus[1m]` under an independent reasoning control, the existing dedup keyed
-  by canonical model reports `CapabilityIssueAmbiguousModelVariant` and fails
-  closed — acceptable and test-covered.
+- **Dedup collision — observed, not hypothetical.** The QA gate proved on
+  2026-07-28 that the official adapter **echoes the requested model back into
+  the advertised list**: probing with `--model opus` returns
+  `default, opus[1m], claude-fable-5[1m], sonnet, haiku, opus`. Under opaque
+  parsing both `opus[1m]` and `opus` yield canonical `opus` with empty effort,
+  so the canonical-keyed dedup raised `ambiguous_model_variant` and failed the
+  built-in frontend tuple on every real Run. The resolution is recorded in
+  Decisions below: under opaque parsing the advertised values are already
+  unique, so entries sharing a canonical alias are an alias group rather than
+  an ambiguity, and the fail-closed variant check stays exactly as-is for
+  adapters that use the variant encoding.
 - **Doctor line-shape change.** The `adapter:` detail becomes per-runtime;
   the deterministic-order test and the Skill/docs examples change in the same
   Spec, so no drift window.
@@ -276,5 +283,13 @@ All coverage attaches to existing seams; no new test infrastructure:
 - Advertised identifiers under an independent reasoning control parse to a
   model-managed base with a canonical alias, keeping both `opus` and
   `opus[1m]` selectable with explicit effort. See ADR-0079.
+- Alias groups are not ambiguity. Under opaque parsing the dedup keys on
+  `AdapterValue` — already unique by construction — and never raises the
+  variant-ambiguity issue; the `(CanonicalModel, ReasoningEffort)` check keeps
+  failing closed for adapters that genuinely use the variant encoding.
+  `modelsForCanonical` orders an exact `AdapterValue` match ahead of a
+  canonical-alias match, so a requested `opus` binds to the echoed `opus` when
+  the adapter returns one and to `opus[1m]` when it does not — deterministic
+  either way.
 - The `-custom` runtime suffix keeps its existing semantics: `claude-custom`
   now inspects lineage exactly like `codex-custom` does.

@@ -172,7 +172,7 @@ func TestResolveAdapterCommandUsesConfigFallbacksAndOverrides(t *testing.T) {
 			name:    "malformed config falls back to default",
 			runtime: RuntimeSpec{ID: "claude", Protocol: ProtocolACP},
 			config:  `{not json`,
-			want:    "claude-code-acp",
+			want:    ClaudeAdapterCommand(),
 		},
 		{
 			name:    "stdio command override",
@@ -203,7 +203,7 @@ func TestResolveAdapterCommandUsesConfigFallbacksAndOverrides(t *testing.T) {
 }
 
 func TestCheckAdapterProvesOfficialCodexPackageAndVersion(t *testing.T) {
-	command := installFakeVersionAdapter(t, "@agentclientprotocol/codex-acp 1.1.4")
+	command := installFakeVersionAdapter(t, CodexAdapterPackage+" "+PinnedCodexAdapterVersion)
 	writeACPXConfigForTest(t, fmt.Sprintf(`{"agents":{"codex":{"command":%q}}}`, command))
 
 	evidence, err := CheckAdapter(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP})
@@ -217,7 +217,7 @@ func TestCheckAdapterProvesOfficialCodexPackageAndVersion(t *testing.T) {
 }
 
 func TestCheckAdapterProvesCustomCodexCommandIdentity(t *testing.T) {
-	command := installFakeVersionAdapter(t, "@agentclientprotocol/codex-acp 1.1.4")
+	command := installFakeVersionAdapter(t, CodexAdapterPackage+" "+PinnedCodexAdapterVersion)
 	runtime := RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: command}
 
 	evidence, err := CheckAdapter(context.Background(), runtime)
@@ -248,16 +248,23 @@ func TestCheckAdapterClassifiesUnreadyCodexAdapters(t *testing.T) {
 		},
 		{
 			name:           "unknown same-named executable",
-			output:         "codex-acp 1.1.4 SECRET_TOKEN=must-not-leak",
+			output:         "codex-acp 1.1.5 SECRET_TOKEN=must-not-leak",
 			wantPackage:    "",
 			wantVersion:    "",
 			wantLineageErr: true,
 		},
 		{
 			name:           "unsupported official version",
-			output:         "@agentclientprotocol/codex-acp 1.1.3",
+			output:         "@agentclientprotocol/codex-acp 1.1.4",
 			wantPackage:    CodexAdapterPackage,
-			wantVersion:    "1.1.3",
+			wantVersion:    "1.1.4",
+			wantVersionErr: true,
+		},
+		{
+			name:           "malformed official version keeps version classification",
+			output:         "@agentclientprotocol/codex-acp invalid",
+			wantPackage:    CodexAdapterPackage,
+			wantVersion:    "invalid",
 			wantVersionErr: true,
 		},
 	}
@@ -302,17 +309,218 @@ func TestCheckAdapterClassifiesUnreadyCodexAdapters(t *testing.T) {
 	}
 }
 
-func TestCheckAdapterPreservesNonCodexResolutionWithoutVersionExecution(t *testing.T) {
+func TestCheckAdapterProvesOfficialClaudePackageAndVersion(t *testing.T) {
+	tests := []struct {
+		name        string
+		runtime     func(*testing.T) RuntimeSpec
+		wantVersion string
+	}{
+		{
+			name: "version only with command package identity",
+			runtime: func(t *testing.T) RuntimeSpec {
+				t.Helper()
+				command := installFakeNamedVersionAdapter(t, "npx", PinnedClaudeAdapterVersion)
+				return RuntimeSpec{
+					ID:       "claude-custom",
+					Protocol: ProtocolStdio,
+					Command:  command + " -y " + ClaudeAdapterPackage + "@" + PinnedClaudeAdapterVersion,
+				}
+			},
+			wantVersion: PinnedClaudeAdapterVersion,
+		},
+		{
+			name: "newer version",
+			runtime: func(t *testing.T) RuntimeSpec {
+				t.Helper()
+				const newerVersion = "0.64.0"
+				command := installFakeNamedVersionAdapter(t, "npx", newerVersion)
+				return RuntimeSpec{
+					ID:       "claude-custom",
+					Protocol: ProtocolStdio,
+					Command:  command + " -y " + ClaudeAdapterPackage + "@" + newerVersion,
+				}
+			},
+			wantVersion: "0.64.0",
+		},
+		{
+			name: "version only with resolved path package identity",
+			runtime: func(t *testing.T) RuntimeSpec {
+				t.Helper()
+				command := installSymlinkedPackageAdapter(t, ClaudeAdapterPackage, "claude-agent-acp", PinnedClaudeAdapterVersion)
+				return RuntimeSpec{ID: "claude-custom", Protocol: ProtocolStdio, Command: command}
+			},
+			wantVersion: PinnedClaudeAdapterVersion,
+		},
+		{
+			name: "two field probe",
+			runtime: func(t *testing.T) RuntimeSpec {
+				t.Helper()
+				command := installFakeNamedVersionAdapter(t, "claude-agent-acp", ClaudeAdapterPackage+" "+PinnedClaudeAdapterVersion)
+				return RuntimeSpec{ID: "claude-custom", Protocol: ProtocolStdio, Command: command}
+			},
+			wantVersion: PinnedClaudeAdapterVersion,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runtime := tt.runtime(t)
+
+			evidence, err := CheckAdapter(context.Background(), runtime)
+
+			if err != nil {
+				t.Fatalf("check official Claude adapter: %v", err)
+			}
+			if evidence.Command != runtime.Command || evidence.Package != ClaudeAdapterPackage || evidence.Version != tt.wantVersion {
+				t.Fatalf("unexpected Claude adapter evidence: %#v", evidence)
+			}
+		})
+	}
+}
+
+func TestCheckAdapterClassifiesUnreadyClaudeAdapters(t *testing.T) {
+	tests := []struct {
+		name            string
+		runtime         func(*testing.T) RuntimeSpec
+		wantPackage     string
+		wantVersion     string
+		wantLineageErr  bool
+		wantVersionErr  bool
+		wantMessagePart string
+	}{
+		{
+			name: "legacy claude code lineage with empty probe",
+			runtime: func(t *testing.T) RuntimeSpec {
+				t.Helper()
+				command := installSymlinkedPackageAdapter(t, legacyClaudeCodeAdapterPackage, "claude-code-acp", "")
+				return RuntimeSpec{ID: "claude-custom", Protocol: ProtocolStdio, Command: command}
+			},
+			wantPackage:     legacyClaudeCodeAdapterPackage,
+			wantLineageErr:  true,
+			wantMessagePart: "legacy package",
+		},
+		{
+			name: "legacy claude agent lineage",
+			runtime: func(t *testing.T) RuntimeSpec {
+				t.Helper()
+				command := installSymlinkedPackageAdapter(t, legacyClaudeAgentAdapterPackage, "claude-agent-acp", PinnedClaudeAdapterVersion)
+				return RuntimeSpec{ID: "claude-custom", Protocol: ProtocolStdio, Command: command}
+			},
+			wantPackage:     legacyClaudeAgentAdapterPackage,
+			wantVersion:     PinnedClaudeAdapterVersion,
+			wantLineageErr:  true,
+			wantMessagePart: "legacy package",
+		},
+		{
+			name: "unproven bare executable",
+			runtime: func(t *testing.T) RuntimeSpec {
+				t.Helper()
+				command := installFakeNamedVersionAdapter(t, "claude-agent-acp", PinnedClaudeAdapterVersion)
+				return RuntimeSpec{ID: "claude-custom", Protocol: ProtocolStdio, Command: command}
+			},
+			wantVersion:     PinnedClaudeAdapterVersion,
+			wantLineageErr:  true,
+			wantMessagePart: "did not prove",
+		},
+		{
+			name: "unsupported official version",
+			runtime: func(t *testing.T) RuntimeSpec {
+				t.Helper()
+				command := installFakeNamedVersionAdapter(t, "npx", "0.62.9")
+				return RuntimeSpec{
+					ID:       "claude-custom",
+					Protocol: ProtocolStdio,
+					Command:  command + " -y " + ClaudeAdapterPackage + "@0.62.9",
+				}
+			},
+			wantPackage:    ClaudeAdapterPackage,
+			wantVersion:    "0.62.9",
+			wantVersionErr: true,
+		},
+		{
+			name: "malformed version probe",
+			runtime: func(t *testing.T) RuntimeSpec {
+				t.Helper()
+				command := installFakeNamedVersionAdapter(t, "npx", "not-a-version")
+				return RuntimeSpec{
+					ID:       "claude-custom",
+					Protocol: ProtocolStdio,
+					Command:  command + " -y " + ClaudeAdapterPackage + "@" + PinnedClaudeAdapterVersion,
+				}
+			},
+			wantPackage:     ClaudeAdapterPackage,
+			wantLineageErr:  true,
+			wantMessagePart: "did not prove",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runtime := tt.runtime(t)
+
+			_, err := CheckAdapter(context.Background(), runtime)
+
+			if err == nil {
+				t.Fatal("expected Claude adapter readiness failure")
+			}
+			var lineageErr *AdapterLineageError
+			if got := errors.As(err, &lineageErr); got != tt.wantLineageErr {
+				t.Fatalf("lineage error = %t, want %t: %v", got, tt.wantLineageErr, err)
+			}
+			if lineageErr != nil {
+				if lineageErr.Classification() != AdapterLineageUnknown {
+					t.Fatalf("unexpected lineage classification %q", lineageErr.Classification())
+				}
+				if lineageErr.RequiredPackage != ClaudeAdapterPackage ||
+					lineageErr.RequiredVersion != PinnedClaudeAdapterVersion ||
+					lineageErr.Install != ClaudeAdapterInstallCommand() {
+					t.Fatalf("unexpected Claude lineage contract data: %#v", lineageErr)
+				}
+			}
+			var versionErr *AdapterVersionError
+			if got := errors.As(err, &versionErr); got != tt.wantVersionErr {
+				t.Fatalf("version error = %t, want %t: %v", got, tt.wantVersionErr, err)
+			}
+			if versionErr != nil {
+				if versionErr.Classification() != AdapterVersionUnsupported {
+					t.Fatalf("unexpected version classification %q", versionErr.Classification())
+				}
+				if versionErr.RequiredPackage != ClaudeAdapterPackage ||
+					versionErr.RequiredVersion != PinnedClaudeAdapterVersion ||
+					versionErr.Install != ClaudeAdapterInstallCommand() {
+					t.Fatalf("unexpected Claude version contract data: %#v", versionErr)
+				}
+			}
+			for _, want := range []string{runtime.Command, ClaudeAdapterInstallCommand(), tt.wantPackage, tt.wantVersion, tt.wantMessagePart} {
+				if want != "" && !strings.Contains(err.Error(), want) {
+					t.Fatalf("expected error to contain %q, got %q", want, err)
+				}
+			}
+		})
+	}
+}
+
+func TestCheckAdapterUsesOfficialClaudeInstallHints(t *testing.T) {
+	for _, command := range []string{"claude-code-acp", "claude-agent-acp"} {
+		t.Run(command, func(t *testing.T) {
+			if got := adapterInstallCommand(command); got != ClaudeAdapterInstallCommand() {
+				t.Fatalf("install command for %q = %q, want %q", command, got, ClaudeAdapterInstallCommand())
+			}
+		})
+	}
+}
+
+func TestCheckAdapterPreservesOpenCodeResolutionWithoutVersionExecution(t *testing.T) {
 	command := installFakeVersionAdapter(t, "must not be inspected")
-	runtime := RuntimeSpec{ID: "claude-custom", Protocol: ProtocolStdio, Command: command + " --stdio"}
+	runtime := RuntimeSpec{ID: "opencode-custom", Protocol: ProtocolStdio, Command: command + " --stdio"}
 
 	evidence, err := CheckAdapter(context.Background(), runtime)
 
 	if err != nil {
-		t.Fatalf("check non-Codex adapter: %v", err)
+		t.Fatalf("check OpenCode adapter: %v", err)
 	}
 	if evidence.Command != runtime.Command || evidence.Package != "" || evidence.Version != "" {
-		t.Fatalf("unexpected non-Codex evidence: %#v", evidence)
+		t.Fatalf("unexpected OpenCode evidence: %#v", evidence)
 	}
 }
 
@@ -2690,7 +2898,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 	if err := os.MkdirAll(adapterDir, 0o755); err != nil {
 		t.Fatalf("create fake adapter dir: %v", err)
 	}
-	for _, command := range []string{"codex-acp", "claude-code-acp", "custom-acp", "opencode", "npx"} {
+	for _, command := range []string{"codex-acp", "claude-agent-acp", "custom-acp", "opencode", "npx"} {
 		installFakeAdapter(t, adapterDir, command)
 	}
 	t.Setenv("HOME", homeDir)
@@ -2715,8 +2923,14 @@ func installFakeAdapter(t *testing.T, dir string, command string) {
 	t.Helper()
 	path := filepath.Join(dir, command)
 	content := "#!/bin/sh\nexit 0\n"
-	if command == "codex-acp" || command == "npx" {
-		content = "#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp 1.1.4'\n"
+	if command == "codex-acp" {
+		content = "#!/bin/sh\nprintf '%s\\n' '" + CodexAdapterPackage + " " + PinnedCodexAdapterVersion + "'\n"
+	}
+	if command == "claude-agent-acp" {
+		content = "#!/bin/sh\nprintf '%s\\n' '" + PinnedClaudeAdapterVersion + "'\n"
+	}
+	if command == "npx" {
+		content = "#!/bin/sh\ncase \"$*\" in\n  *claude-agent-acp*) printf '%s\\n' '" + PinnedClaudeAdapterVersion + "' ;;\n  *) printf '%s\\n' '" + CodexAdapterPackage + " " + PinnedCodexAdapterVersion + "' ;;\nesac\n"
 	}
 	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
 		t.Fatalf("write fake adapter %s: %v", command, err)
@@ -2725,13 +2939,41 @@ func installFakeAdapter(t *testing.T, dir string, command string) {
 
 func installFakeVersionAdapter(t *testing.T, output string) string {
 	t.Helper()
+	return installFakeNamedVersionAdapter(t, "codex-acp", output)
+}
+
+func installFakeNamedVersionAdapter(t *testing.T, name string, output string) string {
+	t.Helper()
 	dir := t.TempDir()
-	path := filepath.Join(dir, "codex-acp")
+	path := filepath.Join(dir, name)
 	content := "#!/bin/sh\nprintf '%s\\n' '" + output + "'\n"
 	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
 		t.Fatalf("write fake version adapter: %v", err)
 	}
 	return path
+}
+
+func installSymlinkedPackageAdapter(t *testing.T, packageName string, executableName string, output string) string {
+	t.Helper()
+	root := t.TempDir()
+	packageDir := filepath.Join(root, "node_modules", filepath.FromSlash(packageName), "bin")
+	if err := os.MkdirAll(packageDir, 0o755); err != nil {
+		t.Fatalf("create fake package adapter directory: %v", err)
+	}
+	target := filepath.Join(packageDir, "adapter")
+	content := "#!/bin/sh\nprintf '%s\\n' '" + output + "'\n"
+	if err := os.WriteFile(target, []byte(content), 0o755); err != nil {
+		t.Fatalf("write fake package adapter: %v", err)
+	}
+	binDir := filepath.Join(root, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("create fake adapter bin directory: %v", err)
+	}
+	command := filepath.Join(binDir, executableName)
+	if err := os.Symlink(target, command); err != nil {
+		t.Fatalf("symlink fake package adapter: %v", err)
+	}
+	return command
 }
 
 func writeACPXConfigForTest(t *testing.T, content string) {

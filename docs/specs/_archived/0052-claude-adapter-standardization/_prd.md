@@ -1,7 +1,8 @@
 ---
 spec: 0052-claude-adapter-standardization
-status: active
+status: archived
 created: 2026-07-28
+archived: 2026-07-28
 surfaces: [backend, cli, docs]
 ---
 

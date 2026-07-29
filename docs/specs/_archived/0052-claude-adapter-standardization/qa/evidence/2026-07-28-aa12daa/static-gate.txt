@@ -1,0 +1,38 @@
+Build: aa12daaeb731242dcdbebdf861d35b8996d50859
+Date: 2026-07-28
+
+Required command:
+rtk make verify
+
+Sandbox result: exit 2 before a valid product verdict. Go could not write
+/Users/marcio/Library/Caches/go-build.
+
+Same gate with a writable Run-local Go cache:
+rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260729T015103Z_a46dd05744d49f88/.tmp/qa-gocache make verify
+
+Sandbox result after cache correction:
+- 2,833 passed, 5 failed, 2 skipped.
+- All five failures called processStartIdentity and failed to fork /bin/ps.
+
+Minimal reproduction:
+rtk proxy env GOCACHE=... go test -count=1 -v ./internal/store \
+  -run '^TestOwnerProcessIdentityIsStableForOneProcess$'
+
+Observed:
+read start time for process 48888: fork/exec /bin/ps: operation not permitted
+
+Independent environment confirmation:
+rtk proxy /bin/ps -p $$ -o lstart=
+
+Observed:
+rtk: Failed to execute command: /bin/ps: Operation not permitted (os error 1)
+
+Full-access rerun of the unchanged cache-adjusted gate: exit 0.
+- go test ./...: 2,838 passed in 24 packages.
+- focused skills tests: 4 passed in 1 package.
+- go run -buildvcs=false ./cmd/roundfix skills check: passed for all listed
+  repository skills.
+- go build -buildvcs=false ... -o bin/roundfix ./cmd/roundfix: passed.
+
+Result: PASS. The five sandbox failures were environment-caused and disappear
+when the real OS process-inspection boundary is available.

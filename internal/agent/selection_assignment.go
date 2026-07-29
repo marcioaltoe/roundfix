@@ -382,10 +382,28 @@ func (runner ACPXRunner) applySelectionOption(ctx context.Context, request Sessi
 	return SelectionCapabilities{}, &SelectionRejectedError{Assignment: assignment, Operation: "set " + key, Err: err}
 }
 
+// modelRepresents reports whether one advertised entry represents the exact
+// requested model, by advertised value or by canonical alias. It is the same
+// binding rule modelsForCanonical applies, so proof accepts exactly what
+// planning selected and nothing else.
+func modelRepresents(model ModelCapability, requested string) bool {
+	return model.AdapterValue == requested || model.CanonicalModel == requested
+}
+
+// modelsForCanonical returns every advertised entry the requested model can
+// bind to, exact advertised values first. An adapter that echoes the requested
+// identifier back into its advertised list can advertise both an alias and its
+// annotated form; binding the exact advertised value first keeps the choice
+// deterministic in both directions.
 func modelsForCanonical(models []ModelCapability, canonical string) []ModelCapability {
 	matched := make([]ModelCapability, 0, len(models))
 	for _, model := range models {
-		if model.CanonicalModel == canonical {
+		if model.AdapterValue == canonical {
+			matched = append(matched, model)
+		}
+	}
+	for _, model := range models {
+		if model.AdapterValue != canonical && model.CanonicalModel == canonical {
 			matched = append(matched, model)
 		}
 	}
@@ -431,7 +449,11 @@ func containsCapabilityValue(values []string, want string) bool {
 func unsupportedSelection(kind string, assignment SelectionAssignment, capabilities SelectionCapabilities) *SelectionUnsupportedError {
 	models := make([]string, 0, len(capabilities.Models))
 	for _, model := range capabilities.Models {
-		models = append(models, model.AdapterValue)
+		advertised := model.CanonicalModel
+		if model.AdapterValue != model.CanonicalModel {
+			advertised += " (advertised " + model.AdapterValue + ")"
+		}
+		models = append(models, advertised)
 	}
 	reasoning := []string(nil)
 	if capabilities.ReasoningOption != nil {
@@ -452,7 +474,7 @@ func selectionStateMatches(assignment SelectionAssignment, state SelectionCapabi
 		return false
 	}
 	model, ok := modelByAdapterValue(state.Models, state.CurrentModel)
-	if !ok || model.CanonicalModel != assignment.Model {
+	if !ok || !modelRepresents(model, assignment.Model) {
 		return false
 	}
 	switch assignment.Encoding {
