@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0054-tooling-task-and-verification-hygiene
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -72,3 +72,55 @@ Agent Session is created and fail with the real cause instead.
 
 `_prd.md` → User Story 5, Core Feature 7; `_techspec.md` → Build Order 5,
 Interfaces: green-on-entry precondition; ADR-0038, ADR-0057.
+
+## Result
+
+Implemented the repository-green precondition in the Task worker before Agent
+Session ownership. The Implement Command now passes the configured repository
+Verification command into the Task cycle; Tasks that declare that exact
+command run it once through the existing Verification Capacity, command
+runner, diagnostics, and Run Event path. A command failure settles the Task
+without Agent preparation or Verification Feedback, with a
+`repository not green on entry` reason that names the command, exit status,
+diagnostic path, and a maximum 1,024-byte output tail.
+
+Run Events classify this failure as `precondition` with reason
+`repository_not_green_on_entry`. Existing temporary-failure metadata remains
+unchanged for post-Agent Verification.
+
+Acceptance evidence:
+
+- Red repository / no Agent Session: focused test
+  `TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession` proves
+  one gate invocation, failed Task settlement, no Agent preparation or work,
+  the bounded output tail, and the distinct Task outcome reason.
+- Green repository / unchanged post-Agent gate:
+  `TestTaskCycleRepositoryGatePreconditionPassesBeforeAgentAndPostVerification`
+  proves the order `precondition → Agent → full declared Verification →
+  commit`, including the repository gate after Agent work.
+- Non-gate Task:
+  `TestTaskCycleWithoutRepositoryGateSkipsPrecondition` proves the only
+  Verification invocation occurs after Agent work.
+- Distinct Run Event Stream outcome: the red-entry test projects the emitted
+  Verification event through `ProjectStreamEvent` and asserts classification
+  `precondition` plus reason `repository_not_green_on_entry`; the Task outcome
+  asserts the separate `repository not green on entry` reason.
+- Repair remains available:
+  `TestTaskCycleRepositoryGatePreconditionDoesNotConsumeVerificationRepair`
+  proves a passing precondition followed by deterministic post-Agent failure
+  still returns once to the same Agent flow and reruns the full declared
+  Verification.
+
+Focused checks:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test -run 'TestTaskCycle(RepositoryGatePrecondition|WithoutRepositoryGate|VerificationFailureRepairsSameSessionAndRerunsFullSequence|TemporaryVerificationFlowPassesExclusiveRetryWithoutAgentRepair)' ./internal/daemon`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-runevent-gocache go test -run 'TestProjectStreamEvent.*Verification|TestProjectStreamEvent' ./internal/runevent`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-cli-gocache go test -run '^$' ./internal/cli`
+  — package compiled; no tests selected.
+- The first focused invocation without a cache override did not reach
+  compilation because the sandbox denied the host Go cache. The exact focused
+  check was rerun with the writable temporary cache above.
+
+The Daemon-owned commands in `## Verification` were not run.

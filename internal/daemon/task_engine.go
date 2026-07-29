@@ -212,6 +212,7 @@ type TaskPlan struct {
 	QA                      bool
 	Concurrency             int
 	VerificationConcurrency int
+	RepositoryVerification  string
 	verificationGate        verificationGate
 	CopyList                []string
 	Bootstrap               runworktree.BootstrapSpec
@@ -321,6 +322,7 @@ const (
 const (
 	taskNoOpShapeEmptyStageable = "empty_stageable"
 	taskNoOpShapeSpecRootOnly   = "spec_root_only"
+	taskPreconditionExcerptMax  = 1024
 )
 
 type taskWorkerResult struct {
@@ -468,6 +470,26 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: true, err: err}
 		}
 		taskPlan = taskPlanForTaskWorktree(plan, task, taskRef)
+	}
+	precondition, required, preconditionErr := engine.verifyRepositoryPrecondition(ctx, taskPlan, task, ordinal)
+	if preconditionErr != nil {
+		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: preconditionErr}
+	}
+	if required && precondition.Failure != "" {
+		reason := repositoryPreconditionFailureReason(precondition)
+		if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
+			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: settleErr}
+		}
+		fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", task.ID, reason)
+		return taskWorkerResult{
+			task:             task,
+			ordinal:          ordinal,
+			status:           spec.StatusFailed,
+			reason:           reason,
+			taskPlan:         taskPlan,
+			taskRef:          taskRef,
+			usesTaskWorktree: usesTaskWorktree,
+		}
 	}
 	owner, ownerErr := engine.taskAgentSessionOwner(taskPlan, task, ordinal)
 	if ownerErr != nil {
@@ -783,6 +805,107 @@ func taskVerificationFailureReason(outcome verificationAttemptOutcome) string {
 		return reason
 	}
 	return terminalReasonLine(outcome.Failure)
+}
+
+func (engine *Engine) verifyRepositoryPrecondition(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int) (verificationAttemptOutcome, bool, error) {
+	command, required := repositoryVerificationCommand(task, plan.RepositoryVerification)
+	if !required {
+		return verificationAttemptOutcome{}, false, nil
+	}
+	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
+		return verificationAttemptOutcome{}, true, fmt.Errorf("update run %q to state %q before Task %s repository precondition: %w", plan.RunID, store.StateVerifying, task.ID, err)
+	}
+	request := verificationAttemptRequest{
+		RunID:                 plan.RunID,
+		WorkDir:               plan.WorkDir,
+		ArtifactDir:           plan.ArtifactDir,
+		BatchNumber:           ordinal,
+		WorkItem:              task.ID,
+		Attempt:               1,
+		Mode:                  verificationShared,
+		Capacity:              plan.VerificationConcurrency,
+		Commands:              []string{command},
+		FailureClassification: runevent.VerificationClassificationPrecondition,
+		FailureReason:         runevent.VerificationReasonRepositoryNotGreenOnEntry,
+		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
+			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
+				return fmt.Errorf("publish repository precondition event for run %q Task %s: %w", plan.RunID, task.ID, err)
+			}
+			return nil
+		},
+	}
+	outcome, err := engine.runTaskVerificationRequest(ctx, plan, task, request)
+	return outcome, true, err
+}
+
+func repositoryVerificationCommand(task spec.Task, configured string) (string, bool) {
+	configured = strings.TrimSpace(configured)
+	if configured == "" {
+		return "", false
+	}
+	for _, command := range task.Verification {
+		if strings.TrimSpace(command) == configured {
+			return command, true
+		}
+	}
+	return "", false
+}
+
+func repositoryPreconditionFailureReason(outcome verificationAttemptOutcome) string {
+	commandErr := outcome.CommandFailure
+	if commandErr == nil {
+		return terminalReasonLine("repository not green on entry: " + outcome.Failure)
+	}
+	command := strings.TrimSpace(commandErr.Command)
+	if command == "" {
+		command = "<unknown>"
+	}
+	diagnostics := strings.TrimSpace(commandErr.OutputPath)
+	if diagnostics == "" {
+		diagnostics = "unavailable"
+	}
+	excerpt := verificationOutputTail(commandErr.OutputPath, taskPreconditionExcerptMax)
+	if excerpt == "" {
+		excerpt = "unavailable"
+	}
+	return terminalReasonLine(fmt.Sprintf(
+		"repository not green on entry: command %q exited with %s; output: %s; diagnostics: %s",
+		command,
+		verificationExitStatus(commandErr),
+		excerpt,
+		diagnostics,
+	))
+}
+
+func verificationOutputTail(path string, limit int) string {
+	if strings.TrimSpace(path) == "" || limit < 1 {
+		return ""
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		return ""
+	}
+	start := info.Size() - int64(limit)
+	if start < 0 {
+		start = 0
+	}
+	if _, err := file.Seek(start, io.SeekStart); err != nil {
+		return ""
+	}
+	data, err := io.ReadAll(io.LimitReader(file, int64(limit)))
+	if err != nil {
+		return ""
+	}
+	excerpt := strings.ToValidUTF8(string(data), "")
+	if start > 0 {
+		excerpt = "... " + excerpt
+	}
+	return strings.TrimSpace(excerpt)
 }
 
 // runTaskAgent runs the Agent over one Task as a Batch of one, reading the

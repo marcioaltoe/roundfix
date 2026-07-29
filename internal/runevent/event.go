@@ -86,14 +86,16 @@ const (
 type VerificationClassification string
 
 const (
-	VerificationClassificationTemporary VerificationClassification = "temporary"
+	VerificationClassificationTemporary    VerificationClassification = "temporary"
+	VerificationClassificationPrecondition VerificationClassification = "precondition"
 )
 
 // VerificationReason names a bounded machine-readable Verification reason.
 type VerificationReason string
 
 const (
-	VerificationReasonTemporaryFailure VerificationReason = "temporary_verification_failure"
+	VerificationReasonTemporaryFailure          VerificationReason = "temporary_verification_failure"
+	VerificationReasonRepositoryNotGreenOnEntry VerificationReason = "repository_not_green_on_entry"
 )
 
 // IsDaemonKind reports whether the kind belongs to the known daemon

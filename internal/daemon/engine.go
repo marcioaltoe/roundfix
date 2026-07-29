@@ -162,6 +162,8 @@ type verificationAttemptRequest struct {
 	// moment this request classifies a temporary command failure.
 	TemporaryRetryAvailable bool
 	Commands                []string
+	FailureClassification   runevent.VerificationClassification
+	FailureReason           runevent.VerificationReason
 	Publish                 func(context.Context, string, map[string]any) error
 }
 
@@ -359,10 +361,15 @@ func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, 
 	if commandErr.OutputPath != "" {
 		payload["diagnostic_path"] = commandErr.OutputPath
 	}
-	if temporary {
-		payload["classification"] = string(runevent.VerificationClassificationTemporary)
+	classification, reason := req.failureMetadata(temporary)
+	if classification != "" {
+		payload["classification"] = string(classification)
+	}
+	if reason != "" {
+		payload["reason"] = string(reason)
+	}
+	if temporary && req.FailureClassification == "" {
 		payload["retry_available"] = req.TemporaryRetryAvailable
-		payload["reason"] = string(runevent.VerificationReasonTemporaryFailure)
 	}
 	if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); err != nil {
 		return err
@@ -388,10 +395,15 @@ func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdic
 	if failure != "" {
 		payload["error"] = failure
 	}
-	if temporary {
-		payload["classification"] = string(runevent.VerificationClassificationTemporary)
+	classification, reason := req.failureMetadata(temporary)
+	if classification != "" {
+		payload["classification"] = string(classification)
+	}
+	if reason != "" {
+		payload["reason"] = string(reason)
+	}
+	if temporary && req.FailureClassification == "" {
 		payload["retry_available"] = req.TemporaryRetryAvailable
-		payload["reason"] = string(runevent.VerificationReasonTemporaryFailure)
 	}
 	identity := req.identity()
 	summary := fmt.Sprintf("Verification %s verdict: %s", identity, verdict)
@@ -401,6 +413,16 @@ func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdic
 		summary = fmt.Sprintf("Verification %s for Batch %03d verdict: %s", identity, req.BatchNumber, verdict)
 	}
 	return req.Publish(ctx, summary, payload)
+}
+
+func (req verificationAttemptRequest) failureMetadata(temporary bool) (runevent.VerificationClassification, runevent.VerificationReason) {
+	if req.FailureClassification != "" || req.FailureReason != "" {
+		return req.FailureClassification, req.FailureReason
+	}
+	if temporary {
+		return runevent.VerificationClassificationTemporary, runevent.VerificationReasonTemporaryFailure
+	}
+	return "", ""
 }
 
 // CycleResult reports per-Batch outcomes and the remaining Unresolved
