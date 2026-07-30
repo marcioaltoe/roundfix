@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/typescript-bun.txt"
   },
-  "digest": "8f03dec54f5424258eefcdabb58c2b24d41b96485222f08ad9f04452da69dd6b",
+  "digest": "c1472d0b2853a6dc9f368367c79226e7a2da76fd0aac5fbb7c5e603d3fea1eed",
   "skills": [
     {
       "name": "find-rules",
@@ -786,7 +786,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "7feb1630c6fde31cc17588ac2fb7df048f662573c4ec68e1fbd4bfa0862f04f8"
+      "contentDigest": "ddff158c403b8565fec292b0f8f9b7faf6cc263a1b06cec7b6f180173d284dbf"
     },
     {
       "name": "review",

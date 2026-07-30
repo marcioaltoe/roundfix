@@ -104,7 +104,7 @@ The plan is complete when every story and criterion has coverage, every chosen p
 
 ## 3. Run static gates first
 
-Run the repository's full verification pipeline, `make verify`, and record the exact command and result. Do not substitute build, lint, typecheck, or test equivalents. If `make verify` cannot run, or if any formatting, test, or build check fails, record the verification gate as blocked.
+Run the repository's full verification pipeline, `make verify`, and record the exact command and result. Do not substitute build, lint, typecheck, or test equivalents. If `make verify` cannot run at all, record the verification gate as blocked. A formatting, test, or build check that runs and fails is a `fail`, not a block — classify it with the code-caused and environment-caused distinction below before recording anything.
 
 When a command fails, diagnose its source before continuing:
 

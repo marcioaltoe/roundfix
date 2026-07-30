@@ -1861,6 +1861,22 @@ func branchIntegrityBypassAuditBody(runID string, preflightResult preflight.Resu
 			)
 		}
 	}
+	// Superseded entries were moved out of Pending before this audit runs, so
+	// rendering only Pending would let a bypass silently omit a whole class of
+	// ignored branch work. An audit that hides a class is worse than no audit.
+	builder.WriteString("\nIgnored superseded QA-report Run Branch work:\n")
+	if len(report.SupersededQAReports) == 0 {
+		builder.WriteString("- none\n")
+	} else {
+		for _, superseded := range report.SupersededQAReports {
+			fmt.Fprintf(&builder, "- branch=%s worktree=%s ahead_commits=%d release_command=%q\n",
+				superseded.Branch,
+				branchIntegrityWorktreePath(superseded.WorktreePath),
+				superseded.AheadCommits,
+				"roundfix reconcile --apply",
+			)
+		}
+	}
 	builder.WriteString("\nIgnored Active Runs:\n")
 	if report.ActiveRun == nil {
 		builder.WriteString("- none\n")
