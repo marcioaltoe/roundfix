@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0053-qa-gate-reachability-and-verdict-semantics
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -84,3 +84,76 @@ let the sanctioned command own the derived digest fallout.
 
 `_prd.md` → Goal 1 Stories 1–2, Goal 2 Story 5, Goal 4 Story 6;
 `_techspec.md` → Build Order 5, Decisions, Tooling authority; ADR-0080.
+
+## Result
+
+### Implementation
+
+- The qa-gate Skill pair now uses typed blocked causes throughout planning,
+  execution, coverage, frontmatter, and verdict settlement. It permits `pass`
+  with environment-blocked rows only when each carries its cause and equivalent
+  observed or supervised evidence, while any finding-blocked row prevents
+  `pass`.
+- The qa-gate Skill now treats the prompt's Pull Request fact as the
+  reachability decision. A named Open Pull Request enables read-only approval,
+  status, unresolved-thread, Merge-Ready, and review-artifact ancestry
+  observation; an absent Pull Request marks those journeys
+  environment-blocked without consulting the unpushed Run Worktree branch.
+- QA Report creation now allows only the unsuffixed daily filename and numeric
+  `-NN` same-day siblings. The report template and coverage contract carry
+  `rows_blocked_environment` and `rows_blocked_finding`.
+- The protected-tooling audit now traverses every Task and related chronology
+  once, then reports all missing, late, folded, misordered, untraceable,
+  unsanctioned-derived, and out-of-scope authorization-shape problems together
+  before flow QA.
+- The Roundfix Skill pair now documents all six reconciliation states,
+  including proof-based `superseded`, and limits `--apply` mutation to freshly
+  revalidated `safe` or `superseded` work. Branch Integrity Preflight excludes
+  QA-report-only branches from automatic integration and directs the operator
+  to `roundfix reconcile --apply`.
+- The user guide carries the same reachability, verdict, naming,
+  reconciliation, and integration-exclusion contracts. Only the `QA Report`,
+  `Run Worktree Reconciliation`, `Branch Integrity Preflight`, and `Reconcile
+  Command` glossary definitions changed.
+
+### Focused checks
+
+- `rtk proxy env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260730T131049Z_a02854137f3dd85c/.gocache go test ./skills -run 'TestAuthorialSkillSync/(qa-gate|roundfix)$|TestProjectConstraintQAGate' -count=1`
+  — passed, 5 tests. This proves both edited Skill pairs are byte-identical and
+  the qa-gate Project Constraint contract retains its required audit anchors.
+- `rtk cmp -s .agents/skills/qa-gate/SKILL.md skills/qa-gate/SKILL.md` and
+  `rtk cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` —
+  passed.
+- `rtk proxy git -c core.fsmonitor=false diff --unified=0 -- CONTEXT.md` —
+  showed exactly four changed glossary definitions: `QA Report`, `Run
+  Worktree Reconciliation`, `Branch Integrity Preflight`, and `Reconcile
+  Command`.
+- `rtk proxy env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260730T131049Z_a02854137f3dd85c/.gocache go test ./skills -run 'TestAuthorialSkillSync|TestProjectConstraintQAGate' -count=1`
+  — the Project Constraint and edited-pair checks passed, while the generated
+  setup snapshot subtests failed with the expected stale qa-gate and Roundfix
+  `contentDigest` diagnostics naming `make baseline-digests`.
+- `rtk git diff --check` — passed after the final implementation and Result
+  edits.
+- The four commands in `## Verification` were not run. In particular,
+  `make baseline-digests` remains Daemon-owned because it is a declared
+  Verification command; no derived pin was edited by hand.
+
+### Acceptance evidence
+
+- Blocked causes and verdict: the canonical qa-gate Skill names both row
+  renderings and count keys, requires equivalent evidence for an
+  environment-blocked `pass`, and states that a nonzero
+  `rows_blocked_finding` prevents `pass`.
+- Report template: both typed count keys are present in frontmatter and in the
+  Coverage instructions, including the zero-count case.
+- Naming: the Skill permits only `qa-report-YYYY-MM-DD.md` and numeric
+  `qa-report-YYYY-MM-DD-NN.md` siblings, and rejects scope or build suffixes.
+- Reconciliation: the Roundfix Skill defines `superseded`, its fresh
+  `--apply` revalidation, and the QA-report-only automatic-integration
+  exclusion with reconcile guidance.
+- Glossary: the zero-context diff identifies exactly the four Task-authorized
+  definitions and shows each shipped behavior in its semantic owner.
+- Derived pins and full Skill check: pending Daemon Verification. The focused
+  authorial test proves the canonical Skill hashes changed and identifies the
+  sanctioned regeneration command; the worktree contains no hand-edited
+  derived pin.
