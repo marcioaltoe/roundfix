@@ -80,7 +80,7 @@ Commands:
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
-  reconcile  Inspect or release proven-safe terminal spec Run worktrees
+  reconcile  Inspect or release proven terminal spec Run worktrees
   release    Plan the next release version without mutating repository or release state
   baseline   Plan, apply, and validate a Context-Driven Baseline
   profiles   Show Agent Selection Profiles and advisory recommendations
@@ -153,6 +153,7 @@ var newEngineCollaborators = defaultEngineCollaborators
 var watchReviewEvidence = defaultWatchReviewEvidence
 var watchHeadSHA = defaultWatchHeadSHA
 var listPendingRunWork = runworktree.ListPendingRunWork
+var supersedingQAReport = runworktree.SupersedingQAReport
 var integratePendingRunWork = runworktree.IntegratePendingRunWork
 var refreshBranchIntegrityHead = defaultRefreshBranchIntegrityHead
 var commentOnPullRequest = defaultCommentOnPullRequest
@@ -1461,14 +1462,16 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 }
 
 type branchIntegrityReport struct {
-	Pending    []runworktree.PendingRunWork
-	Integrated []runworktree.PendingRunWork
-	ActiveRun  *store.Run
+	Pending             []runworktree.PendingRunWork
+	SupersededQAReports []runworktree.PendingRunWork
+	Integrated          []runworktree.PendingRunWork
+	ActiveRun           *store.Run
 }
 
 type branchIntegrityPendingError struct {
-	HeadBranch string
-	Pending    []runworktree.PendingRunWork
+	HeadBranch          string
+	Pending             []runworktree.PendingRunWork
+	SupersededQAReports []runworktree.PendingRunWork
 }
 
 func (err branchIntegrityPendingError) Error() string {
@@ -1478,11 +1481,25 @@ func (err branchIntegrityPendingError) Error() string {
 		headBranch = "<unknown>"
 	}
 	fmt.Fprintf(&builder, "Branch Integrity Preflight refused pending Run Branch work for PR Head Branch %q.", headBranch)
+	if len(err.Pending) > 0 && len(err.SupersededQAReports) > 0 {
+		builder.WriteString("\nPending task work:")
+	}
 	for _, pending := range err.Pending {
 		fmt.Fprintf(&builder, "\n- branch=%s worktree=%s ahead_commits=%d integration_command=%q",
 			pending.Branch, branchIntegrityWorktreePath(pending.WorktreePath), pending.AheadCommits, branchIntegrityIntegrationCommand(pending.Branch))
 	}
-	builder.WriteString("\nNext action: inspect each pending Run Worktree, then run the listed integration command from the repository root when it is safe.")
+	if len(err.Pending) > 0 {
+		builder.WriteString("\nNext action: inspect each pending Run Worktree, then run the listed integration command from the repository root when it is safe.")
+	}
+	if len(err.SupersededQAReports) > 0 {
+		if len(err.Pending) > 0 {
+			builder.WriteString("\nSuperseded QA reports:")
+		}
+		for _, pending := range err.SupersededQAReports {
+			fmt.Fprintf(&builder, "\n- branch=%s worktree=%s ahead_commits=%d superseded QA report — release with: roundfix reconcile --apply",
+				pending.Branch, branchIntegrityWorktreePath(pending.WorktreePath), pending.AheadCommits)
+		}
+	}
 	return builder.String()
 }
 
@@ -1571,7 +1588,7 @@ func runBranchIntegrityPreflight(ctx context.Context, req commandRequest, loaded
 			return report, preflightResult, closeErr
 		}
 	}
-	if len(report.Pending) == 0 {
+	if len(report.Pending) == 0 && len(report.SupersededQAReports) == 0 {
 		return report, preflightResult, nil
 	}
 	var blocked []runworktree.PendingRunWork
@@ -1580,10 +1597,11 @@ func runBranchIntegrityPreflight(ctx context.Context, req commandRequest, loaded
 			blocked = append(blocked, pending)
 		}
 	}
-	if len(blocked) > 0 {
+	if len(blocked) > 0 || len(report.SupersededQAReports) > 0 {
 		return report, preflightResult, branchIntegrityPendingError{
-			HeadBranch: preflightResult.PullRequest.HeadBranch,
-			Pending:    blocked,
+			HeadBranch:          preflightResult.PullRequest.HeadBranch,
+			Pending:             blocked,
+			SupersededQAReports: report.SupersededQAReports,
 		}
 	}
 	integrationPlan, err := branchIntegrityIntegrationPlan(ctx, preflightResult.Git.Root, preflightResult.PullRequest.HeadBranch, report.Pending)
@@ -1692,7 +1710,14 @@ func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult
 	defer func() {
 		_ = runStore.Close()
 	}()
-	report.Pending, err = filterPendingRunWorkByTarget(ctx, runStore, pending, preflightResult.PullRequest.HeadBranch)
+	report.Pending, report.SupersededQAReports, err = filterPendingRunWorkByTarget(
+		ctx,
+		runStore,
+		pending,
+		preflightResult.Git.Root,
+		preflightResult.Git.HEAD,
+		preflightResult.PullRequest.HeadBranch,
+	)
 	if err != nil {
 		return report, err
 	}
@@ -1713,9 +1738,17 @@ func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult
 // to a different branch: git topology alone cannot tell a Run Branch based on
 // the PR Head Branch from one based on another feature branch. Branches with
 // no Run row are kept conservatively.
-func filterPendingRunWorkByTarget(ctx context.Context, runStore *store.Store, pending []runworktree.PendingRunWork, headBranch string) ([]runworktree.PendingRunWork, error) {
+func filterPendingRunWorkByTarget(
+	ctx context.Context,
+	runStore *store.Store,
+	pending []runworktree.PendingRunWork,
+	gitRoot string,
+	targetHead string,
+	headBranch string,
+) ([]runworktree.PendingRunWork, []runworktree.PendingRunWork, error) {
 	headBranch = strings.TrimSpace(headBranch)
 	filtered := make([]runworktree.PendingRunWork, 0, len(pending))
+	supersededQAReports := make([]runworktree.PendingRunWork, 0, len(pending))
 	for _, work := range pending {
 		runID := strings.TrimPrefix(work.Branch, "roundfix/run-")
 		if runID == work.Branch || strings.TrimSpace(runID) == "" {
@@ -1724,17 +1757,26 @@ func filterPendingRunWorkByTarget(ctx context.Context, runStore *store.Store, pe
 		}
 		row, found, err := runStore.Run(ctx, runID)
 		if err != nil {
-			return nil, fmt.Errorf("attribute pending Run Branch %s: %w", work.Branch, err)
+			return nil, nil, fmt.Errorf("attribute pending Run Branch %s: %w", work.Branch, err)
 		}
 		if found && strings.TrimSpace(row.LocalBranch) != headBranch && strings.TrimSpace(row.HeadBranch) != headBranch {
 			continue
 		}
+		if found && row.Kind == store.KindImplement {
+			// Unprovable supersession keeps the existing task-work behavior
+			// instead of excluding the branch from integration. The full proof
+			// is required, not just the QA-report-only probe: without a newer
+			// target-side report this branch is unintegrated, and offering
+			// `roundfix reconcile --apply` would name a release that the
+			// classifier refuses.
+			if _, proven := supersedingQAReport(ctx, gitRoot, targetHead, work.Branch, row.SpecSlug); proven {
+				supersededQAReports = append(supersededQAReports, work)
+				continue
+			}
+		}
 		filtered = append(filtered, work)
 	}
-	if len(filtered) == 0 {
-		return nil, nil
-	}
-	return filtered, nil
+	return filtered, supersededQAReports, nil
 }
 
 func defaultRefreshBranchIntegrityHead(ctx context.Context, preflightResult preflight.Result) (preflight.Result, error) {
@@ -1816,6 +1858,22 @@ func branchIntegrityBypassAuditBody(runID string, preflightResult preflight.Resu
 				pending.AheadCommits,
 				yesNo(pending.FastForward),
 				branchIntegrityIntegrationCommand(pending.Branch),
+			)
+		}
+	}
+	// Superseded entries were moved out of Pending before this audit runs, so
+	// rendering only Pending would let a bypass silently omit a whole class of
+	// ignored branch work. An audit that hides a class is worse than no audit.
+	builder.WriteString("\nIgnored superseded QA-report Run Branch work:\n")
+	if len(report.SupersededQAReports) == 0 {
+		builder.WriteString("- none\n")
+	} else {
+		for _, superseded := range report.SupersededQAReports {
+			fmt.Fprintf(&builder, "- branch=%s worktree=%s ahead_commits=%d release_command=%q\n",
+				superseded.Branch,
+				branchIntegrityWorktreePath(superseded.WorktreePath),
+				superseded.AheadCommits,
+				"roundfix reconcile --apply",
 			)
 		}
 	}
@@ -4606,11 +4664,11 @@ Options:
 Inspects one terminal spec Run in the current repository, or every terminal
 spec Run in the current repository when no Run ID is supplied. The default is
 a read-only report. --apply releases only entries classified and revalidated
-safe during the current invocation; dirty, unintegrated, unknown, and already
-released entries remain successful preserved results.
+safe or superseded during the current invocation; dirty, unintegrated, unknown,
+and already released entries remain successful preserved results.
 
 Options:
-  --apply   Release freshly revalidated safe Run Worktrees and Run Branches
+  --apply   Release freshly revalidated safe and superseded Run Worktrees and Run Branches
   --format  Output format: text (default) or json
 `
 	case "release":

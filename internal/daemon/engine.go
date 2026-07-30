@@ -39,6 +39,11 @@ type RunStateStore interface {
 	StopRequested(ctx context.Context, runID string) (bool, error)
 }
 
+// GHRunner executes GitHub CLI commands.
+type GHRunner interface {
+	RunGH(ctx context.Context, workDir string, args ...string) (string, error)
+}
+
 var ErrStopRequested = errors.New("stop requested")
 
 // Dependencies are the engine's explicit collaborators, replacing the CLI
@@ -53,6 +58,7 @@ type Dependencies struct {
 	Worktree      WorktreeSnapshotter
 	TaskWorktrees TaskWorktreeManager
 	PriorChanges  PriorChangedResolver
+	GH            GHRunner
 	Sink          runevent.Sink
 	Now           func() time.Time
 	Progress      io.Writer

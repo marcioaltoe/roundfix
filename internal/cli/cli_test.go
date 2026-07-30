@@ -441,6 +441,95 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 	}
 }
 
+func TestRunReconcileSupersededJSONAndApply(t *testing.T) {
+	const slug = "reconcile-spec"
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	run, ref := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateUnresolved)
+	runReport := filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa", "qa-report-2026-07-28.md"))
+	mustMkdir(t, filepath.Dir(filepath.Join(ref.Path, filepath.FromSlash(runReport))))
+	mustWrite(t, filepath.Join(ref.Path, filepath.FromSlash(runReport)), "failed report\n")
+	gitImplement(t, ref.Path, "add", runReport)
+	gitImplement(
+		t,
+		ref.Path,
+		"commit",
+		"-m",
+		fmt.Sprintf("docs: qa report for %s (fail)\n\nRoundfix-Spec: %s", slug, slug),
+	)
+	supersedingReport := filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa", "qa-report-2026-07-29.md"))
+	mustMkdir(t, filepath.Dir(filepath.Join(repoDir, filepath.FromSlash(supersedingReport))))
+	mustWrite(t, filepath.Join(repoDir, filepath.FromSlash(supersedingReport)), "passing report\n")
+	gitImplement(t, repoDir, "add", supersedingReport)
+	gitImplement(t, repoDir, "commit", "-m", "docs: newer QA report")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(
+		context.Background(),
+		[]string{"reconcile", run.ID, "--apply", "--format=json"},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("superseded apply exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("superseded apply stderr = %q, want empty", stderr.String())
+	}
+	var report reconcileReport
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatalf("decode superseded reconciliation JSON: %v\n%s", err, stdout.String())
+	}
+	if report.SchemaVersion != "roundfix-reconcile/v1" {
+		t.Fatalf("schema version = %q, want unchanged roundfix-reconcile/v1", report.SchemaVersion)
+	}
+	if len(report.Results) != 1 {
+		t.Fatalf("JSON results = %d, want 1: %+v", len(report.Results), report.Results)
+	}
+	result := report.Results[0]
+	if result.Classification != string(runworktree.ReconciliationSuperseded) ||
+		result.SupersedingReport != supersedingReport ||
+		!strings.Contains(result.Evidence, supersedingReport) ||
+		result.Action != "released" {
+		t.Fatalf("superseded JSON result = %+v, want report %q and released action", result, supersedingReport)
+	}
+	if report.Summary.Total != 1 ||
+		report.Summary.Superseded != 1 ||
+		report.Summary.Applied != 1 ||
+		report.Summary.Preserved != 0 ||
+		report.Summary.OperationalFailures != 0 {
+		t.Fatalf("superseded JSON summary = %+v", report.Summary)
+	}
+	assertReconcilePathState(t, ref.Path, false)
+	assertReconcileBranchState(t, repoDir, ref.Branch, false)
+
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open reconciliation store: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close reconciliation store: %v", err)
+		}
+	}()
+	events, err := runStore.RunEventsAfter(context.Background(), run.ID, 0, 10)
+	if err != nil {
+		t.Fatalf("read superseded reconciliation event: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("reconciliation events = %d, want 1", len(events))
+	}
+	var payload map[string]string
+	if err := json.Unmarshal(events[0].Event.Payload, &payload); err != nil {
+		t.Fatalf("decode superseded reconciliation event: %v", err)
+	}
+	if payload["classification"] != string(runworktree.ReconciliationSuperseded) ||
+		!strings.Contains(payload["reason"], supersedingReport) {
+		t.Fatalf("superseded reconciliation payload = %#v, want report %q", payload, supersedingReport)
+	}
+}
+
 func TestRunReconcileRepositoryScopeNewestFirst(t *testing.T) {
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	older, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
@@ -611,7 +700,7 @@ func TestRunReconcileApplyMixedResults(t *testing.T) {
 		"Run: " + safeRun.ID,
 		"classification: safe",
 		"action: released",
-		"Summary: total=5 safe=1 unintegrated=1 dirty=1 unknown=1 released=1 applied=1 preserved=3 operational-failures=0",
+		"Summary: total=5 safe=1 superseded=0 unintegrated=1 dirty=1 unknown=1 released=1 applied=1 preserved=3 operational-failures=0",
 	} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("mixed apply output missing %q:\n%s", want, stdout.String())
@@ -8543,6 +8632,134 @@ func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *te
 	}
 }
 
+func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
+	tests := []struct {
+		name             string
+		probeResult      bool
+		probeErr         error
+		wantCode         int
+		wantIntegrations int
+		wantGuidance     bool
+	}{
+		{
+			name:         "superseded QA report",
+			probeResult:  true,
+			wantCode:     exitPreflight,
+			wantGuidance: true,
+		},
+		{
+			name:             "task work",
+			wantCode:         exitOK,
+			wantIntegrations: 1,
+		},
+		{
+			// QA-report-only is not supersession: without a newer
+			// target-side report the classifier calls this branch
+			// unintegrated, so preflight must not offer a release
+			// reconcile would refuse.
+			name:             "QA report only without a newer target report",
+			wantCode:         exitOK,
+			wantIntegrations: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			run := createBranchIntegrityImplementRun(t, homeDir, repoDir, "0053-qa-gate")
+			branch := runworktree.BranchName(run.ID)
+			recorder := withBranchIntegrity(t, []runworktree.PendingRunWork{{
+				Branch:       branch,
+				WorktreePath: filepath.Join(repoDir, "..", run.ID),
+				AheadCommits: 1,
+				FastForward:  true,
+			}}, nil)
+			withSupersedingQAReport(t, func(_ context.Context, gitRoot string, targetHead string, runHead string, slug string) (string, bool) {
+				if gitRoot != repoDir || targetHead != "abc123" || runHead != branch || slug != "0053-qa-gate" {
+					t.Fatalf("unexpected supersession proof arguments: root=%q target=%q run=%q slug=%q",
+						gitRoot, targetHead, runHead, slug)
+				}
+				if !test.probeResult {
+					return "", false
+				}
+				return "docs/specs/0053-qa-gate/qa/qa-report-2026-07-30-01.md", true
+			})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+			if code != test.wantCode {
+				t.Fatalf("expected exit code %d, got %d stderr=%q", test.wantCode, code, stderr.String())
+			}
+			if len(recorder.integrations) != test.wantIntegrations {
+				t.Fatalf("expected %d integrations, got %#v", test.wantIntegrations, recorder.integrations)
+			}
+			guidance := "superseded QA report — release with: roundfix reconcile --apply"
+			if strings.Contains(stderr.String(), guidance) != test.wantGuidance {
+				t.Fatalf("expected guidance present=%t, got stderr=%q", test.wantGuidance, stderr.String())
+			}
+			if test.wantGuidance && strings.Contains(stderr.String(), branchIntegrityIntegrationCommand(branch)) {
+				t.Fatalf("QA-report-only branch must not receive an integration command, got stderr=%q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	taskRun := createBranchIntegrityImplementRun(t, homeDir, repoDir, "0053-task-work")
+	qaRun := createBranchIntegrityImplementRun(t, homeDir, repoDir, "0053-qa-report")
+	taskBranch := runworktree.BranchName(taskRun.ID)
+	qaBranch := runworktree.BranchName(qaRun.ID)
+	recorder := withBranchIntegrity(t, []runworktree.PendingRunWork{
+		{
+			Branch:       taskBranch,
+			WorktreePath: filepath.Join(repoDir, "..", taskRun.ID),
+			AheadCommits: 2,
+			FastForward:  false,
+		},
+		{
+			Branch:       qaBranch,
+			WorktreePath: filepath.Join(repoDir, "..", qaRun.ID),
+			AheadCommits: 1,
+			FastForward:  true,
+		},
+	}, nil)
+	withSupersedingQAReport(t, func(_ context.Context, _ string, _ string, runHead string, _ string) (string, bool) {
+		if runHead != qaBranch {
+			return "", false
+		}
+		return "docs/specs/0053-qa-gate/qa/qa-report-2026-07-30-01.md", true
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected Branch Integrity Preflight refusal, got %d stderr=%q", code, stderr.String())
+	}
+	if len(recorder.integrations) != 0 {
+		t.Fatalf("expected no integration attempts on refusal, got %#v", recorder.integrations)
+	}
+	taskListing := fmt.Sprintf("branch=%s worktree=%s ahead_commits=2 integration_command=%q",
+		taskBranch, filepath.Join(repoDir, "..", taskRun.ID), branchIntegrityIntegrationCommand(taskBranch))
+	if !strings.Contains(stderr.String(), taskListing) {
+		t.Fatalf("expected task-work listing %q, got stderr=%q", taskListing, stderr.String())
+	}
+	qaListing := fmt.Sprintf("branch=%s worktree=%s ahead_commits=1 superseded QA report — release with: roundfix reconcile --apply",
+		qaBranch, filepath.Join(repoDir, "..", qaRun.ID))
+	if !strings.Contains(stderr.String(), qaListing) {
+		t.Fatalf("expected superseded QA-report listing %q, got stderr=%q", qaListing, stderr.String())
+	}
+	if strings.Contains(stderr.String(), branchIntegrityIntegrationCommand(qaBranch)) {
+		t.Fatalf("QA-report-only branch must not receive an integration command, got stderr=%q", stderr.String())
+	}
+}
+
 // seedOutdatedV9RunDatabase downgrades a freshly created Run Database to
 // schema v9 by reversing the v9→v10 migration, matching what a historical
 // binary left behind. It returns the schema version this binary migrates to,
@@ -10787,6 +11004,47 @@ func withBranchIntegrity(t *testing.T, pending []runworktree.PendingRunWork, int
 		refreshBranchIntegrityHead = oldRefresh
 	})
 	return recorder
+}
+
+func withSupersedingQAReport(
+	t *testing.T,
+	fn func(context.Context, string, string, string, string) (string, bool),
+) {
+	t.Helper()
+	old := supersedingQAReport
+	supersedingQAReport = fn
+	t.Cleanup(func() {
+		supersedingQAReport = old
+	})
+}
+
+func createBranchIntegrityImplementRun(t *testing.T, homeDir string, repoDir string, specSlug string) store.Run {
+	t.Helper()
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Branch Integrity Run Database: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close Branch Integrity Run Database: %v", err)
+		}
+	}()
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: "feature/review",
+		HeadSHA:     "abc123",
+		SpecSlug:    specSlug,
+	})
+	if err != nil {
+		t.Fatalf("create Branch Integrity Implement Run: %v", err)
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, store.StateUnresolved)
+	if err != nil {
+		t.Fatalf("complete Branch Integrity Implement Run: %v", err)
+	}
+	return completed.Run
 }
 
 type pullRequestCommentRecorder struct {

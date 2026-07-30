@@ -19,6 +19,7 @@ Validate the assembled feature against the promises in its spec by exercising th
 2. **Proof beyond optimistic state.** A pass requires the expected observable, an independent confirmation through a fresh load or another public read path, persistence across refresh/restart when relevant, and captured evidence.
 3. **Resumable evidence.** Create the dated report with every row `pending` before the first check. Update it after each row so an interrupted run resumes from disk instead of repeating completed work.
 4. **One honest verdict.** Every planned row ends as `pass`, `fail`, `blocked`, or `skipped`; the report closes with zero `pending` rows.
+5. **Typed blocked causes.** Record an unreachable row as `blocked (environment: <cause>)` and count it in `rows_blocked_environment`; record a row stopped by a finding as `blocked (finding: <id>)` and count it in `rows_blocked_finding`. Environment-blocked rows do not by themselves prevent `pass`; finding-blocked rows do.
 
 ## 1. Resolve scope and preconditions
 
@@ -38,13 +39,21 @@ Resolve `docs/specs/<slug>/`, then read `_prd.md`, every `task_NN.md`, and prior
   declarations, or version pins. Require express maintainer authorization and
   exact bounded files in both active Spec artifacts; Task assignment, setup
   approval, or generic implementation approval does not qualify.
-- Resolve the actual changed paths for each tooling Task from its Daemon-owned
-  Task commit and any current worktree delta. Use
-  `git diff-tree --no-commit-id --name-only -r <commit>` for the committed
-  change rather than trusting a reported file list. Permit only the exact
-  bounded paths and the assigned Task file. Any missing authorization,
-  untraceable scope, or out-of-scope tooling changes is a failed audit row and
-  blocks flow QA.
+- Audit every tooling Task and repair in one pass before flow QA. Resolve the
+  actual changed paths from the Daemon-owned Task commit and any current
+  worktree delta, then resolve the authorization, prerequisite-fix, and
+  consequent-fix commits in chronological ancestry.
+  Use `git diff-tree --no-commit-id --name-only -r <commit>` for every
+  committed change rather than trusting a reported file list.
+- Report every authorization-shape problem together in the same failed audit
+  row: missing authorization; late or untraceable authorization;
+  authorization or a prerequisite fix folded into the Task commit; a
+  consequent fix folded into or ordered before the change that caused it; a
+  claimed derived pin without reproducible evidence from the sanctioned
+  regeneration command; and all out-of-scope tooling changes. Do not stop at
+  the first problem and defer the rest to another QA rerun.
+- Permit only the exact bounded paths and the assigned Task file. Any audit
+  problem blocks flow QA after the complete audit has been reported.
 - QA writes only its report and evidence. It never changes Task status or Task
   Graph dependencies.
 - Require every task status to be `completed`. If any task remains incomplete, stop and list it. Run a partial gate only when the user explicitly requests one; mark its scope and final verdict `partial`.
@@ -56,7 +65,31 @@ The scope is complete when every promise and explicit exclusion in the spec maps
 
 ## 2. Build the QA matrix and open the report
 
-Create a collision-safe report path before execution: `docs/specs/<slug>/qa/qa-report-YYYY-MM-DD-<scope-or-build>.md`, or `qa-report-YYYY-MM-DD-NN.md` when no stable scope or build slug exists. If today's report exists with `status: in-progress` for the same build and scope, resume it; otherwise create a new report and preserve older reports as history.
+Create a collision-safe report path before execution:
+`docs/specs/<slug>/qa/qa-report-YYYY-MM-DD.md` for the day's first report, then
+`qa-report-YYYY-MM-DD-NN.md` with the next unused numeric `-NN` suffix for
+same-day reruns. Numeric same-day suffixes are the only allowed suffixes; never
+use a scope or build slug. Resume an existing `status: in-progress` report only
+when it is for the same build; otherwise create the next numeric sibling and
+preserve older reports as history.
+
+Read the Pull Request fact in the Roundfix QA prompt before planning Pull
+Request journeys:
+
+- When the fact names an Open Pull Request, those journeys are runnable.
+  Observe that Pull Request read-only through the existing `gh` and Review
+  Source boundaries. Check approval, checks and status evidence, unresolved
+  review threads, Merge-Ready acceptance, and the Daemon's separate
+  review-artifact commit ancestry where the Spec requires them. Never mutate
+  the Pull Request, resolve threads, commit, or push.
+- When the fact says no Pull Request is open, record every Pull Request journey
+  as `blocked (environment: no open Pull Request)` and count it in
+  `rows_blocked_environment`. When the fact says the Pull Request could not be
+  resolved, the absence is unproven: record the cause as
+  `blocked (environment: Pull Request unresolved)` and never write it up as a
+  confirmed absence. Do not try to resolve a Pull Request from the Run
+  Worktree branch: that per-Run branch is never pushed and has no Pull Request
+  of its own.
 
 Add a row for:
 
@@ -71,12 +104,12 @@ The plan is complete when every story and criterion has coverage, every chosen p
 
 ## 3. Run static gates first
 
-Run the repository's full verification pipeline, `make verify`, and record the exact command and result. Do not substitute build, lint, typecheck, or test equivalents. If `make verify` cannot run, or if any formatting, test, or build check fails, record the verification gate as blocked.
+Run the repository's full verification pipeline, `make verify`, and record the exact command and result. Do not substitute build, lint, typecheck, or test equivalents. If `make verify` cannot run at all, record the verification gate as blocked. A formatting, test, or build check that runs and fails is a `fail`, not a block — classify it with the code-caused and environment-caused distinction below before recording anything.
 
 When a command fails, diagnose its source before continuing:
 
 - **Code-caused:** record the failure and stop. Flow QA on a broken build hides the first blocker.
-- **Environment-caused:** prove the constraint with the error or an unchanged-base reproduction, mark affected rows `blocked`, continue checks that remain valid, and cap the verdict at `partial`.
+- **Environment-caused:** prove the constraint with the error or an unchanged-base reproduction, record affected rows as `blocked (environment: <cause>)`, continue checks that remain valid, and apply the typed blocked-cause verdict rule in section 6.
 
 The static gate is complete when it passes or every environment-caused block has concrete proof and an explicit unblocking requirement.
 
@@ -120,7 +153,11 @@ Assign each row exactly one terminal status:
 
 - `pass`: the expected observable, independent confirmation, persistence check, and evidence all exist;
 - `fail`: observed product behavior contradicts the spec or a Non-Goal shipped;
-- `blocked`: an external prerequisite or human-only leg prevents a valid check; include the proof and exact unblocking action;
+- `blocked (environment: <cause>)`: the gate environment makes the journey
+  unreachable; include the proof, exact unblocking action, and equivalent
+  observed or supervised evidence when available;
+- `blocked (finding: <id>)`: a finding prevents the journey from reaching the
+  expected observable; link the finding and affected evidence;
 - `skipped`: allowed only for an explicitly partial gate or a risk-based cut; state why and what remains unverified.
 
 Classify each finding by user impact:
@@ -146,6 +183,8 @@ date: YYYY-MM-DD
 build: <commit-or-artifact>
 status: in-progress # in-progress | closed
 verdict: pending # pending | pass | fail | partial
+rows_blocked_environment: 0
+rows_blocked_finding: 0
 surfaces: [frontend, backend]
 ---
 
@@ -168,7 +207,7 @@ surfaces: [frontend, backend]
 <!-- Proof, unblocking action, and uncovered scope. Omit only when empty. -->
 
 ## Coverage
-<!-- Stories and criteria passed/total; probes and frontend sweeps attempted; Non-Goals checked. -->
+<!-- Stories and criteria passed/total; rows_blocked_environment and rows_blocked_finding; probes and frontend sweeps attempted; Non-Goals checked. -->
 
 ## Final verdict
 <!-- Written last: one actionable sentence, plus counts by status and impact tier. -->
@@ -177,15 +216,26 @@ surfaces: [frontend, backend]
 Close with `status: closed` and apply the verdict mechanically:
 
 - `fail` when any row failed;
-- `partial` when none failed but any row is blocked/skipped, or the user requested a partial run;
-- `pass` only when every row passed and all evidence paths resolve.
+- `partial` when none failed but any row is finding-blocked or skipped, the
+  user requested a partial run, or an environment-blocked row lacks equivalent
+  observed or supervised evidence;
+- `pass` when every runnable row passed, every environment-blocked row records
+  its cause and equivalent observed or supervised evidence, no row is
+  finding-blocked or skipped, and all evidence paths resolve. A nonzero
+  `rows_blocked_environment` count does not by itself prevent `pass`; a nonzero
+  `rows_blocked_finding` count does.
 
-The gate permits PR preparation only on `pass`. On `fail` or `partial`, state what must change or be verified before rerunning. In a daemon-assigned Roundfix QA step, write the report but never commit or push; the daemon owns the QA report commit. Daemon-assigned steps may also run sandboxed: when an operation outside the workspace fails with a permission error (writes to `$HOME`, network, nested tool state), classify it immediately as environment-caused, mark the affected row `blocked` with the error text, and move on — never retry-loop a sandbox denial — noting in the environment record which checks need a full-access session.
+Set `rows_blocked_environment` and `rows_blocked_finding` to the exact number
+of rows with each blocked cause. Keep both keys in every closed report,
+including when either count is zero.
+
+The gate permits PR preparation only on `pass`. On `fail` or `partial`, state what must change or be verified before rerunning. In a daemon-assigned Roundfix QA step, write the report but never commit or push; the daemon owns the QA report commit. Daemon-assigned steps may also run sandboxed: when an operation outside the workspace fails with a permission error (writes to `$HOME`, network, nested tool state), classify it immediately as environment-caused, mark the affected row `blocked (environment: <error>)`, and move on — never retry-loop a sandbox denial — noting in the environment record which checks need a full-access session.
 
 ## Decision examples
 
 - A UI says "Saved", but the record disappears after refresh: `fail`, `Data-Loss`; the optimistic message is not proof.
-- The full suite passes, but real OAuth needs a human-controlled account: affected rows `blocked`, overall `partial`, with exact human verification steps.
+- The full suite passes, but real OAuth needs a human-controlled account and no equivalent supervised evidence exists: affected rows `blocked (environment: human-controlled account)`, overall `partial`, with exact human verification steps.
+- The prompt names an Open Pull Request and read-only observation proves approval, Merge-Ready acceptance, and review-artifact ancestry: pass those Pull Request journeys without commit, push, or Pull Request mutation authority.
 - A task Result names a passing unit test, while the assembled browser journey also persists after refresh with screenshots: credit the task criterion and pass the user-story row from live evidence.
 
 ## Anti-patterns
@@ -194,6 +244,6 @@ The gate permits PR preparation only on `pass`. On `fail` or `partial`, state wh
 - Writing the report only after the run, losing resumability and uncovered rows.
 - Skipping failure states, behavior probes, or responsive checks because the happy path passed.
 - Capturing hundreds of screenshots instead of goal states and divergences.
-- Treating an environment denial as a code failure, or letting it silently become a pass.
+- Treating an environment denial as a code failure, or crediting it without a recorded cause and equivalent evidence.
 - Softening a failure into a note, leaving rows pending, or claiming coverage without a matrix row.
 - Fixing during the sweep and continuing as though every row ran against one build.

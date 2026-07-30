@@ -130,6 +130,7 @@ type IntegrationReconciliation struct {
 	TargetBranch    string
 	TargetHead      string
 	Worktree        string
+	Reason          string
 	Action          string
 	Time            time.Time
 }
@@ -495,6 +496,7 @@ func (store *Store) ReconcileIntegration(ctx context.Context, req IntegrationRec
 	req.TargetBranch = strings.TrimSpace(req.TargetBranch)
 	req.TargetHead = strings.TrimSpace(req.TargetHead)
 	req.Worktree = strings.TrimSpace(req.Worktree)
+	req.Reason = strings.TrimSpace(req.Reason)
 	req.Action = strings.TrimSpace(req.Action)
 
 	tx, err := store.db.BeginTx(ctx, nil)
@@ -558,6 +560,7 @@ func (store *Store) ReconcileIntegration(ctx context.Context, req IntegrationRec
 		"target_branch":    req.TargetBranch,
 		"target_head":      req.TargetHead,
 		"worktree":         req.Worktree,
+		"reason":           req.Reason,
 		"action":           req.Action,
 	})
 	if err != nil {
@@ -662,8 +665,9 @@ func validateIntegrationReconciliation(req IntegrationReconciliation) error {
 	if !IsTerminalState(strings.TrimSpace(req.PreviousOutcome)) {
 		return fmt.Errorf("reconcile terminal Run %q: previous outcome %q is not terminal", runID, req.PreviousOutcome)
 	}
-	if strings.TrimSpace(req.Classification) != "safe" {
-		return fmt.Errorf("reconcile terminal Run %q: classification must be safe", runID)
+	classification := strings.TrimSpace(req.Classification)
+	if classification != "safe" && classification != "superseded" {
+		return fmt.Errorf("reconcile terminal Run %q: classification must be safe or superseded", runID)
 	}
 	if strings.TrimSpace(req.RunBranch) == "" {
 		return fmt.Errorf("reconcile terminal Run %q: Run Branch is required", runID)

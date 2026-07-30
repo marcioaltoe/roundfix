@@ -16,7 +16,9 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 )
 
@@ -123,6 +125,7 @@ type ReconciliationState string
 
 const (
 	ReconciliationSafe         ReconciliationState = "safe"
+	ReconciliationSuperseded   ReconciliationState = "superseded"
 	ReconciliationUnintegrated ReconciliationState = "unintegrated"
 	ReconciliationDirty        ReconciliationState = "dirty"
 	ReconciliationUnknown      ReconciliationState = "unknown"
@@ -130,6 +133,7 @@ const (
 )
 
 const (
+	reconciliationReasonMaxBytes             = 160
 	reconciliationReasonSafe                 = "Run Branch is integrated and Run Worktree is clean"
 	reconciliationReasonUnintegrated         = "Run Branch is not integrated into the target branch"
 	reconciliationReasonDirty                = "Run Worktree has tracked or untracked changes"
@@ -142,18 +146,22 @@ const (
 	reconciliationReasonTargetMetadata       = "recorded target branch is missing or invalid"
 	reconciliationReasonTargetBranch         = "target branch could not be resolved unambiguously"
 	reconciliationReasonAncestry             = "Run Branch ancestry could not be inspected"
+	reconciliationReasonSupersededPrefix     = "Run QA report is superseded by "
 )
 
+const qaReportOnlyLogFormat = "%x00%x00%B%x00%x00"
+
 type RunWorktreeReconciliation struct {
-	RunID        string
-	Outcome      string
-	Path         string
-	Branch       string
-	TargetBranch string
-	RunHead      string
-	TargetHead   string
-	Reason       string
-	State        ReconciliationState
+	RunID             string
+	Outcome           string
+	Path              string
+	Branch            string
+	TargetBranch      string
+	RunHead           string
+	TargetHead        string
+	SupersedingReport string
+	Reason            string
+	State             ReconciliationState
 
 	evidence *terminalRunReconciliationEvidence
 }
@@ -268,6 +276,152 @@ func listRunBranches(ctx context.Context, runner gitRunner, gitRoot string) (map
 	return branches, nil
 }
 
+// QAReportOnlyBranch reports whether targetHead..runHead contains at least one
+// commit and every commit matches the Daemon QA-commit contract for slug while
+// changing only paths under that Spec's active or archived qa/ directory.
+func QAReportOnlyBranch(
+	ctx context.Context,
+	gitRoot string,
+	targetHead string,
+	runHead string,
+	slug string,
+) (bool, error) {
+	return qaReportOnlyBranch(ctx, execGitRunner{}, gitRoot, targetHead, runHead, slug)
+}
+
+func qaReportOnlyBranch(
+	ctx context.Context,
+	runner gitRunner,
+	gitRoot string,
+	targetHead string,
+	runHead string,
+	slug string,
+) (bool, error) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return false, nil
+	}
+	cleanSlug, err := cleanPathSegment(slug)
+	if err != nil || cleanSlug != slug {
+		return false, nil
+	}
+	targetHead = strings.TrimSpace(targetHead)
+	runHead = strings.TrimSpace(runHead)
+	if targetHead == "" || runHead == "" {
+		return false, nil
+	}
+
+	output, err := runner.Run(
+		ctx,
+		gitRoot,
+		"log",
+		"--reverse",
+		"--root",
+		"--no-renames",
+		"--format="+qaReportOnlyLogFormat,
+		"--name-only",
+		"-z",
+		targetHead+".."+runHead,
+	)
+	if err != nil {
+		return false, fmt.Errorf("read Run commits for QA-report-only proof: %w", err)
+	}
+	commits, parsed := parseQAReportOnlyLog(output)
+	if !parsed || len(commits) == 0 {
+		return false, nil
+	}
+	qaDirs := qaReportDirectories(slug)
+	for _, commit := range commits {
+		if !matchesQAReportCommitMessage(commit.message, slug) {
+			return false, nil
+		}
+		if len(commit.paths) == 0 {
+			return false, nil
+		}
+		for _, path := range commit.paths {
+			if !pathUnderAnyGitDirectory(path, qaDirs) {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
+}
+
+type qaReportOnlyCommit struct {
+	message string
+	paths   []string
+}
+
+func parseQAReportOnlyLog(output string) ([]qaReportOnlyCommit, bool) {
+	if output == "" {
+		return nil, true
+	}
+	parts := strings.Split(output, "\x00\x00\x00")
+	if len(parts)%2 != 0 || len(parts) == 0 || !strings.HasPrefix(parts[0], "\x00\x00") {
+		return nil, false
+	}
+	parts[0] = strings.TrimPrefix(parts[0], "\x00\x00")
+
+	commits := make([]qaReportOnlyCommit, 0, len(parts)/2)
+	for index := 0; index < len(parts); index += 2 {
+		pathOutput := parts[index+1]
+		if !strings.HasPrefix(pathOutput, "\n") {
+			return nil, false
+		}
+		pathOutput = strings.TrimPrefix(pathOutput, "\n")
+		commits = append(commits, qaReportOnlyCommit{
+			message: parts[index],
+			paths:   nonEmptyNULTerms(pathOutput),
+		})
+	}
+	return commits, true
+}
+
+func matchesQAReportCommitMessage(message string, slug string) bool {
+	message = strings.TrimRight(message, "\r\n")
+	for _, verdict := range []string{spec.VerdictPass, spec.VerdictFail, spec.VerdictPartial} {
+		want := fmt.Sprintf(
+			"docs: qa report for %s (%s)\n\nRoundfix-Spec: %s",
+			slug,
+			verdict,
+			slug,
+		)
+		if message == want {
+			return true
+		}
+	}
+	return false
+}
+
+func qaReportDirectories(slug string) []string {
+	return []string{
+		filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa")),
+		filepath.ToSlash(filepath.Join("docs", "specs", "_archived", slug, "qa")),
+	}
+}
+
+func pathUnderAnyGitDirectory(path string, directories []string) bool {
+	if strings.TrimSpace(path) != path || path == "" {
+		return false
+	}
+	for _, directory := range directories {
+		if strings.HasPrefix(path, directory+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+func nonEmptyNULTerms(output string) []string {
+	terms := make([]string, 0)
+	for _, term := range strings.Split(output, "\x00") {
+		if term != "" {
+			terms = append(terms, term)
+		}
+	}
+	return terms
+}
+
 type terminalRunReconciliationEvidence struct {
 	run              store.Run
 	gitRoot          string
@@ -277,15 +431,16 @@ type terminalRunReconciliationEvidence struct {
 }
 
 type terminalRunReconciliationSnapshot struct {
-	runID        string
-	outcome      string
-	path         string
-	branch       string
-	targetBranch string
-	runHead      string
-	targetHead   string
-	reason       string
-	state        ReconciliationState
+	runID             string
+	outcome           string
+	path              string
+	branch            string
+	targetBranch      string
+	runHead           string
+	targetHead        string
+	supersedingReport string
+	reason            string
+	state             ReconciliationState
 }
 
 func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (RunWorktreeReconciliation, error) {
@@ -389,6 +544,26 @@ func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (R
 	}
 	if _, err := runner.Run(ctx, gitRoot, "merge-base", "--is-ancestor", result.RunHead, result.TargetHead); err != nil {
 		if isAncestryMiss(err) {
+			if report, proven := supersedingQAReport(
+				ctx,
+				runner,
+				gitRoot,
+				result.TargetHead,
+				result.RunHead,
+				run.SpecSlug,
+			); proven {
+				result.State = ReconciliationSuperseded
+				result.SupersedingReport = report
+				result.Reason = supersededReconciliationReason(report)
+				result.evidence = newTerminalRunReconciliationEvidence(
+					run,
+					gitRoot,
+					result,
+					worktreePresent,
+					runBranchPresent,
+				)
+				return result, nil
+			}
 			result.State = ReconciliationUnintegrated
 			result.Reason = reconciliationReasonUnintegrated
 			return result, nil
@@ -402,6 +577,30 @@ func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (R
 	return result, nil
 }
 
+func supersededReconciliationReason(report string) string {
+	reason := reconciliationReasonSupersededPrefix + strings.Map(func(char rune) rune {
+		if char == '\r' || char == '\n' {
+			return ' '
+		}
+		return char
+	}, report)
+	if len(reason) <= reconciliationReasonMaxBytes {
+		return reason
+	}
+
+	const ellipsis = "..."
+	budget := reconciliationReasonMaxBytes - len(ellipsis)
+	cut := 0
+	for index, char := range reason {
+		next := index + utf8.RuneLen(char)
+		if next > budget {
+			break
+		}
+		cut = next
+	}
+	return reason[:cut] + ellipsis
+}
+
 func newTerminalRunReconciliationEvidence(run store.Run, gitRoot string, result RunWorktreeReconciliation, worktreePresent, runBranchPresent bool) *terminalRunReconciliationEvidence {
 	return &terminalRunReconciliationEvidence{
 		run:              run,
@@ -412,17 +611,88 @@ func newTerminalRunReconciliationEvidence(run store.Run, gitRoot string, result 
 	}
 }
 
+// SupersedingQAReport reports the target-side QA Report that supersedes
+// targetHead..runHead, and whether supersession is proven. Both halves are
+// required: QAReportOnlyBranch proves the branch holds nothing but QA reports,
+// which is not proof that a newer report exists to supersede it. Callers that
+// act on supersession — the reconcile classifier and Branch Integrity
+// Preflight — must agree, or one offers a release the other refuses.
+func SupersedingQAReport(
+	ctx context.Context,
+	gitRoot string,
+	targetHead string,
+	runHead string,
+	slug string,
+) (string, bool) {
+	return supersedingQAReport(ctx, execGitRunner{}, gitRoot, targetHead, runHead, slug)
+}
+
+func supersedingQAReport(
+	ctx context.Context,
+	runner gitRunner,
+	gitRoot string,
+	targetHead string,
+	runHead string,
+	slug string,
+) (string, bool) {
+	qaOnly, err := qaReportOnlyBranch(ctx, runner, gitRoot, targetHead, runHead, slug)
+	if err != nil || !qaOnly {
+		return "", false
+	}
+	runReport, err := newestQAReportAtHead(ctx, runner, gitRoot, runHead, slug)
+	if err != nil {
+		return "", false
+	}
+	targetReport, err := newestQAReportAtHead(ctx, runner, gitRoot, targetHead, slug)
+	if err != nil || targetReport == runReport {
+		return "", false
+	}
+	newest, err := spec.NewestQAReportFromPaths([]string{runReport, targetReport})
+	if err != nil || newest != targetReport {
+		return "", false
+	}
+	return targetReport, true
+}
+
+func newestQAReportAtHead(
+	ctx context.Context,
+	runner gitRunner,
+	gitRoot string,
+	head string,
+	slug string,
+) (string, error) {
+	directories := qaReportDirectories(slug)
+	args := []string{"ls-tree", "-r", "--name-only", "-z", head, "--"}
+	args = append(args, directories...)
+	output, err := runner.Run(ctx, gitRoot, args...)
+	if err != nil {
+		return "", fmt.Errorf("list QA Reports at Git head %q: %w", head, err)
+	}
+	var reports []string
+	for _, path := range nonEmptyNULTerms(output) {
+		if !pathUnderAnyGitDirectory(path, directories) {
+			continue
+		}
+		name := filepath.Base(filepath.FromSlash(path))
+		if strings.HasPrefix(name, "qa-report-") && strings.HasSuffix(name, ".md") {
+			reports = append(reports, path)
+		}
+	}
+	return spec.NewestQAReportFromPaths(reports)
+}
+
 func terminalRunSnapshot(result RunWorktreeReconciliation) terminalRunReconciliationSnapshot {
 	return terminalRunReconciliationSnapshot{
-		runID:        result.RunID,
-		outcome:      result.Outcome,
-		path:         result.Path,
-		branch:       result.Branch,
-		targetBranch: result.TargetBranch,
-		runHead:      result.RunHead,
-		targetHead:   result.TargetHead,
-		reason:       result.Reason,
-		state:        result.State,
+		runID:             result.RunID,
+		outcome:           result.Outcome,
+		path:              result.Path,
+		branch:            result.Branch,
+		targetBranch:      result.TargetBranch,
+		runHead:           result.RunHead,
+		targetHead:        result.TargetHead,
+		supersedingReport: result.SupersedingReport,
+		reason:            result.Reason,
+		state:             result.State,
 	}
 }
 
@@ -489,6 +759,7 @@ func applyTerminalRunWithStore(
 		TargetBranch:    fresh.TargetBranch,
 		TargetHead:      fresh.TargetHead,
 		Worktree:        fresh.Path,
+		Reason:          fresh.Reason,
 		Action:          "cleanup",
 		Time:            time.Now().UTC(),
 	}); err != nil {
@@ -514,7 +785,9 @@ func revalidateTerminalRunApply(
 	if evidence == nil || terminalRunSnapshot(result) != evidence.snapshot {
 		return RunWorktreeReconciliation{}, false, errors.New("apply terminal Run reconciliation: result was not produced by inspection or recorded metadata changed")
 	}
-	if result.State != ReconciliationSafe && result.State != ReconciliationReleased {
+	if result.State != ReconciliationSafe &&
+		result.State != ReconciliationSuperseded &&
+		result.State != ReconciliationReleased {
 		return RunWorktreeReconciliation{}, false, fmt.Errorf("apply terminal Run reconciliation: classification %q is not safe", result.State)
 	}
 
@@ -525,8 +798,7 @@ func revalidateTerminalRunApply(
 	if fresh.State == ReconciliationReleased {
 		return fresh, true, nil
 	}
-	if result.State != ReconciliationSafe ||
-		fresh.State != ReconciliationSafe ||
+	if fresh.State != result.State ||
 		fresh.RunHead != result.RunHead ||
 		fresh.TargetHead != result.TargetHead {
 		return RunWorktreeReconciliation{}, false, fmt.Errorf(

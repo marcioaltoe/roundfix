@@ -54,6 +54,28 @@ entirely. The routing rules live in
 `write-tasks`, so implementation always executes from a Task Graph rather than an
 ad-hoc plan.
 
+### QA report reachability and verdicts
+
+Roundfix gives the QA Agent an explicit Pull Request fact resolved from the
+Spec's target branch. When that fact names an Open Pull Request, the gate can
+observe approval, checks and statuses, unresolved threads, Merge-Ready
+acceptance, and review-artifact ancestry through read-only `gh` and Review
+Source calls. The gate never looks for a Pull Request on the Run Worktree
+branch and never commits, pushes, resolves threads, or otherwise mutates the
+Pull Request. When no Pull Request is open, those journeys are
+environment-blocked.
+
+Every blocked row records its cause. A row the environment makes unreachable
+counts in `rows_blocked_environment`; it does not by itself prevent `pass` when
+the report contains equivalent observed or supervised evidence. A row stopped
+by a finding counts in `rows_blocked_finding` and does prevent `pass`. Both
+counts live in QA Report frontmatter and appear in the coverage summary.
+
+The first QA Report on a date is
+`docs/specs/<slug>/qa/qa-report-YYYY-MM-DD.md`. Same-day reruns use numeric
+siblings such as `qa-report-YYYY-MM-DD-NN.md`; scope and build suffixes are not
+part of the contract.
+
 ## Adopt or update the Context-Driven Baseline
 
 The Baseline Command is the sole public authority for adopting, updating, and
@@ -725,6 +747,13 @@ closes the loop after `qa-gate` passes. The operational flow is documented in th
 [usage guide](usage.md); the autonomous role split (an orchestrator authors
 Specs, an ACP Runtime implements them) is in
 [`docs/agents/autonomous-work.md`](agents/autonomous-work.md).
+
+Failed QA attempts can retain QA-report-only Run Branches. Branch Integrity
+Preflight excludes those branches from automatic fast-forward integration and
+directs the operator to the Reconcile Command. Reconciliation classifies a
+branch as `superseded` only when Git evidence proves that the target branch
+already has a newer QA Report for the same Spec; `roundfix reconcile --apply`
+revalidates that proof before releasing the retained branch and worktree.
 
 The result is that planning and execution share one artifact contract: the same
 `docs/specs/<slug>/` files a human reads are what the agent implements from and

@@ -25,17 +25,18 @@ type reconcileOptions struct {
 }
 
 type reconcileResult struct {
-	RunID          string `json:"runId"`
-	Outcome        string `json:"outcome"`
-	Classification string `json:"classification"`
-	RunBranch      string `json:"runBranch"`
-	RunHead        string `json:"runHead"`
-	TargetBranch   string `json:"targetBranch"`
-	TargetHead     string `json:"targetHead"`
-	Worktree       string `json:"worktree"`
-	Evidence       string `json:"evidence"`
-	Action         string `json:"action"`
-	RefusalReason  string `json:"refusalReason"`
+	RunID             string `json:"runId"`
+	Outcome           string `json:"outcome"`
+	Classification    string `json:"classification"`
+	RunBranch         string `json:"runBranch"`
+	RunHead           string `json:"runHead"`
+	TargetBranch      string `json:"targetBranch"`
+	TargetHead        string `json:"targetHead"`
+	Worktree          string `json:"worktree"`
+	SupersedingReport string `json:"supersedingReport"`
+	Evidence          string `json:"evidence"`
+	Action            string `json:"action"`
+	RefusalReason     string `json:"refusalReason"`
 
 	inspected runworktree.RunWorktreeReconciliation
 }
@@ -43,6 +44,7 @@ type reconcileResult struct {
 type reconcileSummary struct {
 	Total               int `json:"total"`
 	Safe                int `json:"safe"`
+	Superseded          int `json:"superseded"`
 	Unintegrated        int `json:"unintegrated"`
 	Dirty               int `json:"dirty"`
 	Unknown             int `json:"unknown"`
@@ -107,7 +109,7 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 
 	report := inspectReconcileRuns(ctx, repository, opts, runs)
-	if opts.apply && report.Summary.Safe > 0 {
+	if opts.apply && report.Summary.Safe+report.Summary.Superseded > 0 {
 		applyReconcileReport(ctx, loaded.HomeDir, opts, &report)
 	}
 	if err := printReconcileReport(stdout, opts.format, report); err != nil {
@@ -264,19 +266,20 @@ func newReconcileResult(
 	apply bool,
 ) reconcileResult {
 	result := reconcileResult{
-		RunID:          inspected.RunID,
-		Outcome:        inspected.Outcome,
-		Classification: string(inspected.State),
-		RunBranch:      inspected.Branch,
-		RunHead:        inspected.RunHead,
-		TargetBranch:   inspected.TargetBranch,
-		TargetHead:     inspected.TargetHead,
-		Worktree:       inspected.Path,
-		Evidence:       inspected.Reason,
-		inspected:      inspected,
+		RunID:             inspected.RunID,
+		Outcome:           inspected.Outcome,
+		Classification:    string(inspected.State),
+		RunBranch:         inspected.Branch,
+		RunHead:           inspected.RunHead,
+		TargetBranch:      inspected.TargetBranch,
+		TargetHead:        inspected.TargetHead,
+		Worktree:          inspected.Path,
+		SupersedingReport: inspected.SupersedingReport,
+		Evidence:          inspected.Reason,
+		inspected:         inspected,
 	}
 	switch inspected.State {
-	case runworktree.ReconciliationSafe:
+	case runworktree.ReconciliationSafe, runworktree.ReconciliationSuperseded:
 		if apply {
 			result.Action = "release after fresh safety proof"
 		} else {
@@ -300,7 +303,7 @@ func applyReconcileReport(
 	runStore, err := store.Open(ctx, homeDir)
 	if err != nil {
 		for index := range report.Results {
-			if report.Results[index].Classification != string(runworktree.ReconciliationSafe) {
+			if !reconcileClassificationReleasable(report.Results[index].Classification) {
 				continue
 			}
 			report.Results[index].Action = "preserved; repair the Run Database and rerun: " +
@@ -316,7 +319,7 @@ func applyReconcileReport(
 
 	for index := range report.Results {
 		result := &report.Results[index]
-		if result.Classification != string(runworktree.ReconciliationSafe) {
+		if !reconcileClassificationReleasable(result.Classification) {
 			continue
 		}
 		if err := runworktree.ApplyTerminalRun(ctx, runStore, result.inspected); err != nil {
@@ -332,10 +335,21 @@ func applyReconcileReport(
 	}
 }
 
+func reconcileClassificationReleasable(classification string) bool {
+	switch runworktree.ReconciliationState(classification) {
+	case runworktree.ReconciliationSafe, runworktree.ReconciliationSuperseded:
+		return true
+	default:
+		return false
+	}
+}
+
 func countReconcileClassification(summary *reconcileSummary, classification string) {
 	switch runworktree.ReconciliationState(classification) {
 	case runworktree.ReconciliationSafe:
 		summary.Safe++
+	case runworktree.ReconciliationSuperseded:
+		summary.Superseded++
 	case runworktree.ReconciliationUnintegrated:
 		summary.Unintegrated++
 		summary.Preserved++
@@ -373,6 +387,7 @@ func reconcileText(report reconcileReport) string {
 		fmt.Fprintf(&output, "  target-branch: %s\n", textReconcileValue(result.TargetBranch))
 		fmt.Fprintf(&output, "  target-head: %s\n", textReconcileValue(result.TargetHead))
 		fmt.Fprintf(&output, "  worktree: %s\n", textReconcileValue(result.Worktree))
+		fmt.Fprintf(&output, "  superseding-report: %s\n", textReconcileValue(result.SupersedingReport))
 		fmt.Fprintf(&output, "  evidence: %s\n", textReconcileValue(result.Evidence))
 		fmt.Fprintf(&output, "  action: %s\n", textReconcileValue(result.Action))
 		fmt.Fprintf(&output, "  refusal-reason: %s\n", textReconcileValue(result.RefusalReason))
@@ -380,9 +395,10 @@ func reconcileText(report reconcileReport) string {
 	summary := report.Summary
 	fmt.Fprintf(
 		&output,
-		"Summary: total=%d safe=%d unintegrated=%d dirty=%d unknown=%d released=%d applied=%d preserved=%d operational-failures=%d\n",
+		"Summary: total=%d safe=%d superseded=%d unintegrated=%d dirty=%d unknown=%d released=%d applied=%d preserved=%d operational-failures=%d\n",
 		summary.Total,
 		summary.Safe,
+		summary.Superseded,
 		summary.Unintegrated,
 		summary.Dirty,
 		summary.Unknown,

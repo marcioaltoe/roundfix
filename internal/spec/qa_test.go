@@ -8,16 +8,21 @@ import (
 	"testing"
 )
 
-func qaReportFixture(verdict string) string {
+func qaReportFixture(verdict string, extraFrontmatter ...string) string {
+	extra := ""
+	if len(extraFrontmatter) > 0 {
+		extra = strings.Join(extraFrontmatter, "\n") + "\n"
+	}
 	return fmt.Sprintf(`---
 spec: demo
 date: 2026-07-04
 verdict: %s
+%s
 surfaces: [cli]
 ---
 
 # QA Report — Demo
-`, verdict)
+`, verdict, extra)
 }
 
 func TestQAVerdictReadsSupportedVerdicts(t *testing.T) {
@@ -32,6 +37,97 @@ func TestQAVerdictReadsSupportedVerdicts(t *testing.T) {
 			}
 			if got != verdict {
 				t.Errorf("QAVerdict = %q, want %q", got, verdict)
+			}
+		})
+	}
+}
+
+func TestQAVerdictValidatesBlockedCounts(t *testing.T) {
+	tests := []struct {
+		name             string
+		verdict          string
+		extraFrontmatter []string
+		wantVerdict      string
+		wantError        string
+	}{
+		{
+			name:        "absent counts default to zero",
+			verdict:     VerdictPass,
+			wantVerdict: VerdictPass,
+		},
+		{
+			name:             "environment-blocked pass is readable",
+			verdict:          VerdictPass,
+			extraFrontmatter: []string{"rows_blocked_environment: 3"},
+			wantVerdict:      VerdictPass,
+		},
+		{
+			name:             "finding-blocked pass is unreadable",
+			verdict:          VerdictPass,
+			extraFrontmatter: []string{"rows_blocked_finding: 1"},
+			wantError:        "rows_blocked_finding must be zero when verdict is \"pass\"",
+		},
+		{
+			name:             "finding-blocked partial remains readable",
+			verdict:          VerdictPartial,
+			extraFrontmatter: []string{"rows_blocked_finding: 1"},
+			wantVerdict:      VerdictPartial,
+		},
+		{
+			name:             "finding-blocked fail remains readable",
+			verdict:          VerdictFail,
+			extraFrontmatter: []string{"rows_blocked_finding: 1"},
+			wantVerdict:      VerdictFail,
+		},
+		{
+			name:             "negative environment count is unreadable",
+			verdict:          VerdictFail,
+			extraFrontmatter: []string{"rows_blocked_environment: -1"},
+			wantError:        "rows_blocked_environment must be a non-negative integer",
+		},
+		{
+			name:             "non-integer environment count is unreadable",
+			verdict:          VerdictFail,
+			extraFrontmatter: []string{"rows_blocked_environment: many"},
+			wantError:        "cannot unmarshal",
+		},
+		{
+			name:             "negative finding count is unreadable",
+			verdict:          VerdictFail,
+			extraFrontmatter: []string{"rows_blocked_finding: -1"},
+			wantError:        "rows_blocked_finding must be a non-negative integer",
+		},
+		{
+			name:             "non-integer finding count is unreadable",
+			verdict:          VerdictFail,
+			extraFrontmatter: []string{"rows_blocked_finding: some"},
+			wantError:        "cannot unmarshal",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			specDir := t.TempDir()
+			reportPath := filepath.Join(specDir, "qa", "qa-report-2026-07-04.md")
+			writeFile(t, reportPath, qaReportFixture(tt.verdict, tt.extraFrontmatter...))
+
+			got, err := QAVerdict(specDir)
+			if tt.wantError == "" {
+				if err != nil {
+					t.Fatalf("QAVerdict: %v", err)
+				}
+				if got != tt.wantVerdict {
+					t.Errorf("QAVerdict = %q, want %q", got, tt.wantVerdict)
+				}
+				return
+			}
+
+			var reportErr QAReportError
+			if !errors.As(err, &reportErr) {
+				t.Fatalf("error = %v, want QAReportError", err)
+			}
+			if !strings.Contains(err.Error(), tt.wantError) {
+				t.Errorf("error %q does not contain %q", err, tt.wantError)
 			}
 		})
 	}
@@ -67,6 +163,25 @@ func TestNewestQAReportOrdersByDateThenRunSequence(t *testing.T) {
 			name:    "same-date rerun beats the first run of the date",
 			reports: []string{"qa-report-2026-07-28.md", "qa-report-2026-07-28-02.md"},
 			want:    "qa-report-2026-07-28-02.md",
+		},
+		{
+			// The first suffix the naming contract produces. It once parsed to
+			// the same sequence as the unsuffixed report, so a path-order
+			// tie-break returned the stale one and a Spec could archive on a
+			// superseded verdict.
+			name:    "the first numeric rerun beats the unsuffixed report",
+			reports: []string{"qa-report-2026-07-28.md", "qa-report-2026-07-28-01.md"},
+			want:    "qa-report-2026-07-28-01.md",
+		},
+		{
+			name:    "the first numeric rerun wins regardless of input order",
+			reports: []string{"qa-report-2026-07-28-01.md", "qa-report-2026-07-28.md"},
+			want:    "qa-report-2026-07-28-01.md",
+		},
+		{
+			name:    "a zero suffix still outranks the unsuffixed report",
+			reports: []string{"qa-report-2026-07-28.md", "qa-report-2026-07-28-00.md"},
+			want:    "qa-report-2026-07-28-00.md",
 		},
 		{
 			name:    "run sequence compares as a number",

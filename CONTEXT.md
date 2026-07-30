@@ -85,7 +85,7 @@ The universal Normative Clause that forbids changes to linter, formatter, and to
 _Avoid_: Tool preference, implicit permission, cleanup authorization
 
 **QA Report**:
-The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict in its frontmatter.
+The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict plus `rows_blocked_environment` and `rows_blocked_finding` counts in its frontmatter.
 _Avoid_: Test report, QA log
 
 **ACP Runtime**:
@@ -185,7 +185,7 @@ The named branch (`roundfix/run-<id>`) that carries a spec Run's commits inside 
 _Avoid_: Temp branch, detached HEAD, feature branch
 
 **Run Worktree Reconciliation**:
-The proof-based classification of a terminal spec Run's retained Git surfaces: `safe` when the Run Branch and recorded target resolve, any present Run Worktree is registered and clean, and the Run Branch tip is an ancestor of the target tip; `unintegrated` when the same evidence resolves but ancestry is false; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only `safe` work can be cleaned up, after the proof is rechecked.
+The proof-based classification of a terminal spec Run's retained Git surfaces: `safe` when the Run Branch and recorded target resolve, any present Run Worktree is registered and clean, and the Run Branch tip is an ancestor of the target tip; `superseded` when a QA-report-only Run Branch is older than the target branch's QA Report for the same Spec; `unintegrated` when the same evidence resolves but ancestry is false; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only freshly revalidated `safe` or `superseded` work can be cleaned up.
 _Avoid_: GC, force cleanup, manual branch deletion
 
 **Integration Pending**:
@@ -225,7 +225,7 @@ The early checks Roundfix runs before starting a Run or work that would make the
 _Avoid_: Best-effort validation, late failure
 
 **Branch Integrity Preflight**:
-The deterministic Preflight Validation for review Runs that blocks fetch, resolve, and watch while unintegrated Run Branch commits or another Run remain bound to the PR Head Branch, integrating fast-forwardable work automatically and otherwise naming each pending worktree, run id, and recovery command. Skippable only through an explicit bypass that publishes an audit comment on the pull request.
+The deterministic Preflight Validation for review Runs that blocks fetch, resolve, and watch while unintegrated Run Branch commits or another Run remain bound to the PR Head Branch, integrating fast-forwardable work automatically except QA-report-only branches and otherwise naming each pending worktree, run id, and recovery command. Skippable only through an explicit bypass that publishes an audit comment on the pull request.
 _Avoid_: Advisory check, best-effort warning, soft gate
 
 **Verification**:
@@ -339,7 +339,7 @@ The local recovery command that re-runs one failed Task's Verification commands 
 _Avoid_: Retry command, auto-settle, task fix command
 
 **Reconcile Command**:
-The support command that inspects terminal spec Run Worktrees and Run Branches and reports their Run Worktree Reconciliation state. It is read-only by default; `--apply` is its only mutation switch, removes only freshly revalidated `safe` work, and has no force bypass.
+The support command that inspects terminal spec Run Worktrees and Run Branches and reports their Run Worktree Reconciliation state. It is read-only by default; `--apply` is its only mutation switch, removes only freshly revalidated `safe` or `superseded` work, and has no force bypass.
 _Avoid_: GC Command, Settle Command, automatic integration
 
 **Reprocess Command**:

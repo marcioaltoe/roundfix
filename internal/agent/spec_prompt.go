@@ -50,8 +50,8 @@ const taskExecutionInvariants = `Execution invariants:
 // single place.
 const qaGateContract = `QA contract:
 - Run the qa-gate process for this Spec: validate every user story and acceptance criterion from the PRD and the task files against the real application.
-- Write the QA Report to the Spec's qa/ directory as qa-report-YYYY-MM-DD.md, using today's date.
-- The QA Report frontmatter must carry the verdict: pass, fail, or partial. Use verdict: pass only when every criterion passes.
+- Write the QA Report to the Spec's qa/ directory as qa-report-YYYY-MM-DD.md for the day's first report and qa-report-YYYY-MM-DD-NN.md with a numeric -NN suffix for same-day reruns.
+- The QA Report frontmatter must carry the verdict: pass, fail, or partial, plus rows_blocked_environment and rows_blocked_finding. Use verdict: pass when every runnable criterion passes, every environment-blocked row records its cause and equivalent observed or supervised evidence, and no row is finding-blocked or skipped. A nonzero rows_blocked_environment does not by itself prevent pass; a nonzero rows_blocked_finding does.
 - Never commit, push, or open a pull request.
 `
 
@@ -134,16 +134,21 @@ func writePathList(builder *strings.Builder, label string, paths []string) {
 // prompt. SpecSlug, SpecDir, and PRDPath name the Spec and are required.
 // RunBranch, TargetBranch, and UserCheckout state where the gate runs and
 // where the Spec's work lands; each is optional, so a Run that recorded no
-// target branch still produces a usable prompt. Inputs stay plain strings
-// so the builders never depend on the Spec parser or any store/daemon
-// package.
+// target branch still produces a usable prompt. PullRequest is the resolved
+// Open Pull Request fact and is empty when the lookup completed and found
+// none. PullRequestResolved reports whether the lookup ran at all: a failed or
+// unreadable lookup leaves PullRequest empty too, and only this flag separates
+// a proven absence from an unknown one. Inputs stay plain strings so the
+// builders never depend on the Spec parser or any store/daemon package.
 type QAPromptRequest struct {
-	SpecSlug     string
-	SpecDir      string
-	PRDPath      string
-	RunBranch    string
-	TargetBranch string
-	UserCheckout string
+	SpecSlug            string
+	SpecDir             string
+	PRDPath             string
+	RunBranch           string
+	TargetBranch        string
+	UserCheckout        string
+	PullRequest         string
+	PullRequestResolved bool
 }
 
 // BuildQAPrompt builds the prompt for one Spec QA gate: the Spec identity,
@@ -174,7 +179,9 @@ func BuildQAPrompt(req QAPromptRequest) (string, error) {
 // pushed, so anything keyed by this checkout's branch — a Pull Request
 // among them — resolves nothing; naming the Spec target branch is what
 // makes the difference visible instead of reading as an absent Pull
-// Request. Each fact is omitted when the Run recorded no value for it.
+// Request. Checkout facts are omitted when the Run recorded no value for
+// them; the Pull Request fact is always explicit so the Agent knows whether
+// those journeys are reachable.
 func writeQACheckoutFacts(builder *strings.Builder, req QAPromptRequest) {
 	if branch := strings.TrimSpace(req.RunBranch); branch != "" {
 		builder.WriteString(fmt.Sprintf("Run Worktree branch: %s (this checkout only — a per-Run branch that is never pushed and has no Pull Request of its own)\n", branch))
@@ -185,4 +192,13 @@ func writeQACheckoutFacts(builder *strings.Builder, req QAPromptRequest) {
 	if root := strings.TrimSpace(req.UserCheckout); root != "" {
 		builder.WriteString(fmt.Sprintf("User checkout: %s (the user's repository root this Run Worktree was created from)\n", root))
 	}
+	if pullRequest := strings.TrimSpace(req.PullRequest); pullRequest != "" {
+		builder.WriteString(fmt.Sprintf("Pull Request: %s\n", pullRequest))
+		return
+	}
+	if !req.PullRequestResolved {
+		builder.WriteString("Pull Request: could not be resolved; Pull Request journeys are environment-blocked and their absence is unproven — do not record a confirmed absence.\n")
+		return
+	}
+	builder.WriteString("Pull Request: none open; Pull Request journeys are environment-blocked.\n")
 }
