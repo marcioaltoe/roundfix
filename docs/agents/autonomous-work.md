@@ -124,11 +124,12 @@ and is clean. While any Task is still pending or a corrective Task is
 planned, run `roundfix implement` **without** `--qa`.
 
 The order is: implement the graph, open the Pull Request, `roundfix watch`
-until Clean, request QA once, merge. A gate whose matrix observes the Pull
-Request cannot pass before the Pull Request exists, and cannot accept one
-whose review is unprocessed — both cost a full cycle to learn. Rebuild any
-binary the gate exercises before requesting it, or the gate reports defects
-the running artifact does not contain.
+until Clean, and request QA once. Wait for the terminal QA verdict and merge
+only when it is `pass`; stop the workflow on any non-`pass` verdict. A gate
+whose matrix observes the Pull Request cannot pass before the Pull Request
+exists, and cannot accept one whose review is unprocessed — both cost a full
+cycle to learn. Rebuild any binary the gate exercises before requesting it,
+or the gate reports defects the running artifact does not contain.
 
 The Daemon already gates QA on every graph Task reaching `completed`, so
 `--qa` on an incomplete graph costs nothing — but re-requesting it after each
