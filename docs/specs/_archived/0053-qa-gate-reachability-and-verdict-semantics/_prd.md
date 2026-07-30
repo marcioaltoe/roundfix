@@ -1,9 +1,12 @@
 ---
 spec: 0053-qa-gate-reachability-and-verdict-semantics
-status: active
+status: archived
 created: 2026-07-28
 surfaces: [backend, cli, docs]
+archived: "2026-07-30"
+source_slug: 0053-qa-gate-reachability-and-verdict-semantics
 ---
+
 
 # QA gate reachability and verdict semantics
 
