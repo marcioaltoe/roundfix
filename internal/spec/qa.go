@@ -103,7 +103,12 @@ func parseQAReportName(path string) qaReportName {
 
 	switch suffix := rest[len(qaReportDateLayout):]; {
 	case suffix == "":
-		parsed.sequenced, parsed.sequence = true, 1
+		// The day's first report sorts below every numeric sibling. It used to
+		// be sequence 1, which `-01` also parses to, and the path-order
+		// tie-break then picked the unsuffixed report over a newer one. -1
+		// keeps that impossible for any suffix the contract can produce,
+		// including `-00`.
+		parsed.sequenced, parsed.sequence = true, -1
 	case strings.HasPrefix(suffix, "-") && isDigits(suffix[1:]):
 		sequence, err := strconv.Atoi(suffix[1:])
 		if err != nil {

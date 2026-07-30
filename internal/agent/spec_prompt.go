@@ -51,7 +51,7 @@ const taskExecutionInvariants = `Execution invariants:
 const qaGateContract = `QA contract:
 - Run the qa-gate process for this Spec: validate every user story and acceptance criterion from the PRD and the task files against the real application.
 - Write the QA Report to the Spec's qa/ directory as qa-report-YYYY-MM-DD.md for the day's first report and qa-report-YYYY-MM-DD-NN.md with a numeric -NN suffix for same-day reruns.
-- The QA Report frontmatter must carry the verdict: pass, fail, or partial. Use verdict: pass only when every criterion passes.
+- The QA Report frontmatter must carry the verdict: pass, fail, or partial, plus rows_blocked_environment and rows_blocked_finding. Use verdict: pass when every runnable criterion passes, every environment-blocked row records its cause and equivalent observed or supervised evidence, and no row is finding-blocked or skipped. A nonzero rows_blocked_environment does not by itself prevent pass; a nonzero rows_blocked_finding does.
 - Never commit, push, or open a pull request.
 `
 

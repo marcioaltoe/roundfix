@@ -571,6 +571,22 @@ func newTerminalRunReconciliationEvidence(run store.Run, gitRoot string, result 
 	}
 }
 
+// SupersedingQAReport reports the target-side QA Report that supersedes
+// targetHead..runHead, and whether supersession is proven. Both halves are
+// required: QAReportOnlyBranch proves the branch holds nothing but QA reports,
+// which is not proof that a newer report exists to supersede it. Callers that
+// act on supersession — the reconcile classifier and Branch Integrity
+// Preflight — must agree, or one offers a release the other refuses.
+func SupersedingQAReport(
+	ctx context.Context,
+	gitRoot string,
+	targetHead string,
+	runHead string,
+	slug string,
+) (string, bool) {
+	return supersedingQAReport(ctx, execGitRunner{}, gitRoot, targetHead, runHead, slug)
+}
+
 func supersedingQAReport(
 	ctx context.Context,
 	runner gitRunner,

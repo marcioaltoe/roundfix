@@ -8642,7 +8642,7 @@ func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
 		wantGuidance     bool
 	}{
 		{
-			name:         "QA report only",
+			name:         "superseded QA report",
 			probeResult:  true,
 			wantCode:     exitPreflight,
 			wantGuidance: true,
@@ -8653,8 +8653,11 @@ func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
 			wantIntegrations: 1,
 		},
 		{
-			name:             "unprovable probe",
-			probeErr:         errors.New("unreadable Run Branch"),
+			// QA-report-only is not supersession: without a newer
+			// target-side report the classifier calls this branch
+			// unintegrated, so preflight must not offer a release
+			// reconcile would refuse.
+			name:             "QA report only without a newer target report",
 			wantCode:         exitOK,
 			wantIntegrations: 1,
 		},
@@ -8672,12 +8675,15 @@ func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
 				AheadCommits: 1,
 				FastForward:  true,
 			}}, nil)
-			withQAReportOnlyBranch(t, func(_ context.Context, gitRoot string, targetHead string, runHead string, slug string) (bool, error) {
+			withSupersedingQAReport(t, func(_ context.Context, gitRoot string, targetHead string, runHead string, slug string) (string, bool) {
 				if gitRoot != repoDir || targetHead != "abc123" || runHead != branch || slug != "0053-qa-gate" {
-					t.Fatalf("unexpected QA-report-only probe arguments: root=%q target=%q run=%q slug=%q",
+					t.Fatalf("unexpected supersession proof arguments: root=%q target=%q run=%q slug=%q",
 						gitRoot, targetHead, runHead, slug)
 				}
-				return test.probeResult, test.probeErr
+				if !test.probeResult {
+					return "", false
+				}
+				return "docs/specs/0053-qa-gate/qa/qa-report-2026-07-30-01.md", true
 			})
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
@@ -8722,8 +8728,11 @@ func TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately(t 
 			FastForward:  true,
 		},
 	}, nil)
-	withQAReportOnlyBranch(t, func(_ context.Context, _ string, _ string, runHead string, _ string) (bool, error) {
-		return runHead == qaBranch, nil
+	withSupersedingQAReport(t, func(_ context.Context, _ string, _ string, runHead string, _ string) (string, bool) {
+		if runHead != qaBranch {
+			return "", false
+		}
+		return "docs/specs/0053-qa-gate/qa/qa-report-2026-07-30-01.md", true
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -10997,15 +11006,15 @@ func withBranchIntegrity(t *testing.T, pending []runworktree.PendingRunWork, int
 	return recorder
 }
 
-func withQAReportOnlyBranch(
+func withSupersedingQAReport(
 	t *testing.T,
-	fn func(context.Context, string, string, string, string) (bool, error),
+	fn func(context.Context, string, string, string, string) (string, bool),
 ) {
 	t.Helper()
-	old := qaReportOnlyBranch
-	qaReportOnlyBranch = fn
+	old := supersedingQAReport
+	supersedingQAReport = fn
 	t.Cleanup(func() {
-		qaReportOnlyBranch = old
+		supersedingQAReport = old
 	})
 }
 

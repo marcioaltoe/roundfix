@@ -165,6 +165,25 @@ func TestNewestQAReportOrdersByDateThenRunSequence(t *testing.T) {
 			want:    "qa-report-2026-07-28-02.md",
 		},
 		{
+			// The first suffix the naming contract produces. It once parsed to
+			// the same sequence as the unsuffixed report, so a path-order
+			// tie-break returned the stale one and a Spec could archive on a
+			// superseded verdict.
+			name:    "the first numeric rerun beats the unsuffixed report",
+			reports: []string{"qa-report-2026-07-28.md", "qa-report-2026-07-28-01.md"},
+			want:    "qa-report-2026-07-28-01.md",
+		},
+		{
+			name:    "the first numeric rerun wins regardless of input order",
+			reports: []string{"qa-report-2026-07-28-01.md", "qa-report-2026-07-28.md"},
+			want:    "qa-report-2026-07-28-01.md",
+		},
+		{
+			name:    "a zero suffix still outranks the unsuffixed report",
+			reports: []string{"qa-report-2026-07-28.md", "qa-report-2026-07-28-00.md"},
+			want:    "qa-report-2026-07-28-00.md",
+		},
+		{
 			name:    "run sequence compares as a number",
 			reports: []string{"qa-report-2026-07-28.md", "qa-report-2026-07-28-02.md", "qa-report-2026-07-28-10.md"},
 			want:    "qa-report-2026-07-28-10.md",

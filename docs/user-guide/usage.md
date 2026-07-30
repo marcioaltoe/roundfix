@@ -471,7 +471,7 @@ roundfix reconcile --apply
 
 `--apply` is the only mutation switch; there is no force bypass. Roundfix
 revalidates cleanliness and both heads, then releases only entries that remain
-`safe`. A safe Integration Pending Run becomes Clean with its evidence
+`safe` or `superseded`. A safe Integration Pending Run becomes Clean with its evidence
 recorded before cleanup. Other terminal outcomes remain unchanged, and a
 second run reports `released` without another mutation.
 
@@ -704,7 +704,7 @@ For the full failure and replay contract, see the
 | `watch` | Fetch and resolve in a watched loop |
 | `runs` | Browse Runs in the read-only Run Browser (interactive terminal) |
 | `runs list` | List Runs from the Run Database, bounded and plain-text |
-| `reconcile` | Classify retained terminal Run work and explicitly release proven-safe entries |
+| `reconcile` | Classify retained terminal Run work and explicitly release proven safe or superseded entries |
 | `attach` | Browse or replay a Run's timeline, read-only |
 | `stop` | Request or force-stop an Active Run |
 | `gc` | Prune old terminal Run journals and artifacts |

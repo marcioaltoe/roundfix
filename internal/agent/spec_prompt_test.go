@@ -199,12 +199,15 @@ func TestBuildQAPromptStatesQAGateContract(t *testing.T) {
 		"qa-report-YYYY-MM-DD.md for the day's first report",
 		"qa-report-YYYY-MM-DD-NN.md with a numeric -NN suffix for same-day reruns",
 		"frontmatter must carry the verdict: pass, fail, or partial",
-		"Use verdict: pass only when every criterion passes.",
+		"A nonzero rows_blocked_environment does not by itself prevent pass; a nonzero rows_blocked_finding does.",
 		"Never commit, push, or open a pull request.",
 	} {
 		if !strings.Contains(prompt, expected) {
 			t.Fatalf("expected QA prompt to contain %q, got:\n%s", expected, prompt)
 		}
+	}
+	if strings.Contains(prompt, "pass only when every criterion passes") {
+		t.Fatalf("the QA contract still imposes the permanent partial ceiling ADR-0080 removes, got:\n%s", prompt)
 	}
 	if strings.Contains(prompt, "-<scope-or-build>") {
 		t.Fatalf("expected the QA prompt to allow only numeric same-day suffixes, got:\n%s", prompt)

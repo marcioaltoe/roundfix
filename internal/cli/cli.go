@@ -153,7 +153,7 @@ var newEngineCollaborators = defaultEngineCollaborators
 var watchReviewEvidence = defaultWatchReviewEvidence
 var watchHeadSHA = defaultWatchHeadSHA
 var listPendingRunWork = runworktree.ListPendingRunWork
-var qaReportOnlyBranch = runworktree.QAReportOnlyBranch
+var supersedingQAReport = runworktree.SupersedingQAReport
 var integratePendingRunWork = runworktree.IntegratePendingRunWork
 var refreshBranchIntegrityHead = defaultRefreshBranchIntegrityHead
 var commentOnPullRequest = defaultCommentOnPullRequest
@@ -1763,14 +1763,13 @@ func filterPendingRunWorkByTarget(
 			continue
 		}
 		if found && row.Kind == store.KindImplement {
-			// A failed probe is unprovable, so the branch retains the existing
-			// task-work behavior instead of being excluded from integration.
-			qaReportOnly, probeErr := qaReportOnlyBranch(ctx, gitRoot, targetHead, work.Branch, row.SpecSlug)
-			if probeErr != nil {
-				filtered = append(filtered, work)
-				continue
-			}
-			if qaReportOnly {
+			// Unprovable supersession keeps the existing task-work behavior
+			// instead of excluding the branch from integration. The full proof
+			// is required, not just the QA-report-only probe: without a newer
+			// target-side report this branch is unintegrated, and offering
+			// `roundfix reconcile --apply` would name a release that the
+			// classifier refuses.
+			if _, proven := supersedingQAReport(ctx, gitRoot, targetHead, work.Branch, row.SpecSlug); proven {
 				supersededQAReports = append(supersededQAReports, work)
 				continue
 			}
@@ -4649,8 +4648,8 @@ Options:
 Inspects one terminal spec Run in the current repository, or every terminal
 spec Run in the current repository when no Run ID is supplied. The default is
 a read-only report. --apply releases only entries classified and revalidated
-safe during the current invocation; dirty, unintegrated, unknown, and already
-released entries remain successful preserved results.
+safe or superseded during the current invocation; dirty, unintegrated, unknown,
+and already released entries remain successful preserved results.
 
 Options:
   --apply   Release freshly revalidated safe and superseded Run Worktrees and Run Branches
