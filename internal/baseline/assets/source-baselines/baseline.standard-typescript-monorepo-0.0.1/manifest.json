@@ -386,8 +386,8 @@
       "carrier": "docs/agents/autonomous-work.md",
       "structure": null,
       "start": 1615,
-      "end": 2119,
-      "digest": "728c589130936c6fd0ae358657ddfd0450358df41568aa7d8a81d6f2a03b7ed7"
+      "end": 2595,
+      "digest": "e2afe9980eba436329eca5690410ab9b0a9145237b8d43be6491f5b81580c246"
     },
     {
       "id": "clause.autonomous.loop-02-autonomous-decomposition",
@@ -396,8 +396,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/autonomous-work.md",
       "structure": null,
-      "start": 2270,
-      "end": 2814,
+      "start": 2746,
+      "end": 3290,
       "digest": "3d40d90bda16867360b4fd6b741f1887d16ca23e5669e0478fdeb3ea0221d508"
     },
     {
@@ -407,8 +407,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/autonomous-work.md",
       "structure": null,
-      "start": 2976,
-      "end": 3271,
+      "start": 3452,
+      "end": 3747,
       "digest": "8a160c5ba2761f64f7fef246686d2a4b7cd7384f929439648873f42c1a51e3c3"
     },
     {
@@ -418,8 +418,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/autonomous-work.md",
       "structure": null,
-      "start": 3425,
-      "end": 3709,
+      "start": 3901,
+      "end": 4185,
       "digest": "123d1a7b3ca29e4a2c6c4af33218f7948afb3c890c1f271659dae03ab1cf3c6b"
     },
     {
@@ -429,8 +429,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/autonomous-work.md",
       "structure": null,
-      "start": 3866,
-      "end": 4054,
+      "start": 4342,
+      "end": 4530,
       "digest": "bfde2646d3d97e336d2f7b3382d7148d321efc1666592d5229dd77f9466ba5bb"
     },
     {
@@ -440,8 +440,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/autonomous-work.md",
       "structure": null,
-      "start": 4209,
-      "end": 4529,
+      "start": 4685,
+      "end": 5005,
       "digest": "fff202017e275236d837a495382e387b75f6ea62674a6cd883fb99170417a158"
     },
     {
