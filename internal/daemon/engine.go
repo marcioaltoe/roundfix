@@ -39,6 +39,7 @@ type RunStateStore interface {
 	StopRequested(ctx context.Context, runID string) (bool, error)
 }
 
+// GHRunner executes GitHub CLI commands.
 type GHRunner interface {
 	RunGH(ctx context.Context, workDir string, args ...string) (string, error)
 }

@@ -969,6 +969,14 @@ func TestQAReportOnlyBranch(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "multiple QA report commits",
+			setup: func(t *testing.T, fixture terminalRunFixture) {
+				commitQAReport(t, fixture.ref.Path, slug, "qa-report-2026-07-28.md", false, "fail")
+				commitQAReport(t, fixture.ref.Path, slug, "qa-report-2026-07-29.md", false, "partial")
+			},
+			want: true,
+		},
+		{
 			name: "non QA commit message",
 			setup: func(t *testing.T, fixture terminalRunFixture) {
 				path := qaReportTestPath(slug, "qa-report-2026-07-28.md", false)
@@ -1000,10 +1008,11 @@ func TestQAReportOnlyBranch(t *testing.T) {
 			targetHead := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main"))
 			tt.setup(t, fixture)
 			runHead := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", fixture.ref.Branch))
+			runner := &recordingGitRunner{delegate: execGitRunner{}}
 
 			got, err := qaReportOnlyBranch(
 				context.Background(),
-				execGitRunner{},
+				runner,
 				fixture.repoDir,
 				targetHead,
 				runHead,
@@ -1015,7 +1024,51 @@ func TestQAReportOnlyBranch(t *testing.T) {
 			if got != tt.want {
 				t.Fatalf("qaReportOnlyBranch = %v, want %v", got, tt.want)
 			}
+			wantArgs := []string{
+				"log",
+				"--reverse",
+				"--root",
+				"--no-renames",
+				"--format=%x00%x00%B%x00%x00",
+				"--name-only",
+				"-z",
+				targetHead + ".." + runHead,
+			}
+			if len(runner.calls) != 1 || !slices.Equal(runner.calls[0], wantArgs) {
+				t.Fatalf("expected one combined Git log call %v, got %v", wantArgs, runner.calls)
+			}
 		})
+	}
+}
+
+func TestInspectTerminalRunBoundsSupersededReason(t *testing.T) {
+	slug := "0053-" + strings.Repeat("long-spec-slug-", 8)
+	fixture := newTerminalRunFixture(t, "superseded-bounded-reason")
+	fixture.run.SpecSlug = slug
+	commitQAReport(t, fixture.ref.Path, slug, "qa-report-2026-07-28.md", true, "fail")
+	supersedingReport := qaReportTestPath(slug, "qa-report-2026-07-29.md", true)
+	commitWorktreeFile(t, fixture.repoDir, supersedingReport, "passing report\n", "docs: target QA report")
+
+	result, err := InspectTerminalRun(context.Background(), fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+
+	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationSuperseded)
+	if result.SupersedingReport != supersedingReport {
+		t.Fatalf("superseding report = %q, want complete path %q", result.SupersedingReport, supersedingReport)
+	}
+	if !strings.HasPrefix(result.Reason, reconciliationReasonSupersededPrefix) ||
+		!strings.HasSuffix(result.Reason, "...") {
+		t.Fatalf("bounded superseded reason = %q, want identifying prefix and truncation marker", result.Reason)
+	}
+
+	runStore := &recordingTerminalRunStore{}
+	if err := ApplyTerminalRun(context.Background(), runStore, result); err != nil {
+		t.Fatalf("apply superseded terminal Run: %v", err)
+	}
+	if len(runStore.requests) != 1 || runStore.requests[0].Reason != result.Reason {
+		t.Fatalf("persisted reconciliation reason = %#v, want %q", runStore.requests, result.Reason)
 	}
 }
 
@@ -1776,6 +1829,7 @@ type storedTerminalRunFixture struct {
 type recordingGitRunner struct {
 	delegate  gitRunner
 	fail      func(workDir string, args []string) error
+	calls     [][]string
 	mutations [][]string
 }
 
@@ -1806,6 +1860,7 @@ func (runStore *recordingTerminalRunStore) ReconcileIntegration(
 }
 
 func (runner *recordingGitRunner) Run(ctx context.Context, workDir string, args ...string) (string, error) {
+	runner.calls = append(runner.calls, append([]string(nil), args...))
 	if len(args) >= 2 && ((args[0] == "worktree" && args[1] == "remove") || (args[0] == "branch" && args[1] == "-D")) {
 		runner.mutations = append(runner.mutations, append([]string(nil), args...))
 	}
@@ -1913,7 +1968,7 @@ func assertTerminalRunReconciliation(t *testing.T, result RunWorktreeReconciliat
 	if result.TargetBranch != run.LocalBranch {
 		t.Fatalf("expected recorded target branch %q, got %#v", run.LocalBranch, result)
 	}
-	if result.Reason == "" || len(result.Reason) > 160 || strings.ContainsAny(result.Reason, "\r\n") {
+	if result.Reason == "" || len(result.Reason) > reconciliationReasonMaxBytes || strings.ContainsAny(result.Reason, "\r\n") {
 		t.Fatalf("expected one bounded deterministic reason, got %q", result.Reason)
 	}
 	switch result.State {
