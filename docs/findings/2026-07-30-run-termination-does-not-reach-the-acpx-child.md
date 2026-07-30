@@ -92,9 +92,23 @@ worktrees they pointed at were gone, and nothing had ever told them to stop.
 
 ## Resolution taken
 
-The four processes were terminated with `SIGTERM` (all four exited; no
-`SIGKILL` needed) and the 54 fixture directories were removed, reclaiming
-7.1 GB. Two Run Worktrees from other repositories remain and were left
-untouched pending their owners' decision:
-`~/.roundfix/worktrees/gss-ffb67011` (836 MB, 2026-07-28) and
-`~/.roundfix/worktrees/rf-red-gate-72ea9b8f` (20 KB, 2026-07-29).
+The four processes were terminated with `SIGTERM` — all four exited, so no
+`SIGKILL` was needed — and the 54 fixture directories were removed, reclaiming
+7.1 GB.
+
+Two Run Worktrees from other repositories were also removed, reclaiming a
+further 836 MB. Both turned out to be **orphaned**: their parent repositories
+no longer exist, so neither worktree was usable.
+
+| worktree | parent gitdir | state |
+| --- | --- | --- |
+| `gss-ffb67011` (836 MB) | `~/dev/archive/gss/.git/worktrees/…` | parent gone |
+| `rf-red-gate-72ea9b8f` (20 KB) | `/private/tmp/rf-red-gate/.git/worktrees/…` | parent gone |
+
+Neither carried uncommitted work. This is a third instance of the same shape as
+finding 1: a Run Worktree outlives the thing that owned it. Removing a
+repository, or letting a `/tmp` test repository be reclaimed, leaves its Run
+Worktrees behind under `~/.roundfix/worktrees/` with nothing able to classify
+them — `roundfix reconcile` reads the Run Database, and a Run whose repository
+is gone has no repository to reconcile against. The GC Command could detect an
+unresolvable parent gitdir and offer the removal.
