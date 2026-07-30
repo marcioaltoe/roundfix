@@ -8632,6 +8632,125 @@ func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *te
 	}
 }
 
+func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
+	tests := []struct {
+		name             string
+		probeResult      bool
+		probeErr         error
+		wantCode         int
+		wantIntegrations int
+		wantGuidance     bool
+	}{
+		{
+			name:         "QA report only",
+			probeResult:  true,
+			wantCode:     exitPreflight,
+			wantGuidance: true,
+		},
+		{
+			name:             "task work",
+			wantCode:         exitOK,
+			wantIntegrations: 1,
+		},
+		{
+			name:             "unprovable probe",
+			probeErr:         errors.New("unreadable Run Branch"),
+			wantCode:         exitOK,
+			wantIntegrations: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			run := createBranchIntegrityImplementRun(t, homeDir, repoDir, "0053-qa-gate")
+			branch := runworktree.BranchName(run.ID)
+			recorder := withBranchIntegrity(t, []runworktree.PendingRunWork{{
+				Branch:       branch,
+				WorktreePath: filepath.Join(repoDir, "..", run.ID),
+				AheadCommits: 1,
+				FastForward:  true,
+			}}, nil)
+			withQAReportOnlyBranch(t, func(_ context.Context, gitRoot string, targetHead string, runHead string, slug string) (bool, error) {
+				if gitRoot != repoDir || targetHead != "abc123" || runHead != branch || slug != "0053-qa-gate" {
+					t.Fatalf("unexpected QA-report-only probe arguments: root=%q target=%q run=%q slug=%q",
+						gitRoot, targetHead, runHead, slug)
+				}
+				return test.probeResult, test.probeErr
+			})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+			if code != test.wantCode {
+				t.Fatalf("expected exit code %d, got %d stderr=%q", test.wantCode, code, stderr.String())
+			}
+			if len(recorder.integrations) != test.wantIntegrations {
+				t.Fatalf("expected %d integrations, got %#v", test.wantIntegrations, recorder.integrations)
+			}
+			guidance := "superseded QA report — release with: roundfix reconcile --apply"
+			if strings.Contains(stderr.String(), guidance) != test.wantGuidance {
+				t.Fatalf("expected guidance present=%t, got stderr=%q", test.wantGuidance, stderr.String())
+			}
+			if test.wantGuidance && strings.Contains(stderr.String(), branchIntegrityIntegrationCommand(branch)) {
+				t.Fatalf("QA-report-only branch must not receive an integration command, got stderr=%q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	taskRun := createBranchIntegrityImplementRun(t, homeDir, repoDir, "0053-task-work")
+	qaRun := createBranchIntegrityImplementRun(t, homeDir, repoDir, "0053-qa-report")
+	taskBranch := runworktree.BranchName(taskRun.ID)
+	qaBranch := runworktree.BranchName(qaRun.ID)
+	recorder := withBranchIntegrity(t, []runworktree.PendingRunWork{
+		{
+			Branch:       taskBranch,
+			WorktreePath: filepath.Join(repoDir, "..", taskRun.ID),
+			AheadCommits: 2,
+			FastForward:  false,
+		},
+		{
+			Branch:       qaBranch,
+			WorktreePath: filepath.Join(repoDir, "..", qaRun.ID),
+			AheadCommits: 1,
+			FastForward:  true,
+		},
+	}, nil)
+	withQAReportOnlyBranch(t, func(_ context.Context, _ string, _ string, runHead string, _ string) (bool, error) {
+		return runHead == qaBranch, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected Branch Integrity Preflight refusal, got %d stderr=%q", code, stderr.String())
+	}
+	if len(recorder.integrations) != 0 {
+		t.Fatalf("expected no integration attempts on refusal, got %#v", recorder.integrations)
+	}
+	taskListing := fmt.Sprintf("branch=%s worktree=%s ahead_commits=2 integration_command=%q",
+		taskBranch, filepath.Join(repoDir, "..", taskRun.ID), branchIntegrityIntegrationCommand(taskBranch))
+	if !strings.Contains(stderr.String(), taskListing) {
+		t.Fatalf("expected task-work listing %q, got stderr=%q", taskListing, stderr.String())
+	}
+	qaListing := fmt.Sprintf("branch=%s worktree=%s ahead_commits=1 superseded QA report — release with: roundfix reconcile --apply",
+		qaBranch, filepath.Join(repoDir, "..", qaRun.ID))
+	if !strings.Contains(stderr.String(), qaListing) {
+		t.Fatalf("expected superseded QA-report listing %q, got stderr=%q", qaListing, stderr.String())
+	}
+	if strings.Contains(stderr.String(), branchIntegrityIntegrationCommand(qaBranch)) {
+		t.Fatalf("QA-report-only branch must not receive an integration command, got stderr=%q", stderr.String())
+	}
+}
+
 // seedOutdatedV9RunDatabase downgrades a freshly created Run Database to
 // schema v9 by reversing the v9→v10 migration, matching what a historical
 // binary left behind. It returns the schema version this binary migrates to,
@@ -10876,6 +10995,47 @@ func withBranchIntegrity(t *testing.T, pending []runworktree.PendingRunWork, int
 		refreshBranchIntegrityHead = oldRefresh
 	})
 	return recorder
+}
+
+func withQAReportOnlyBranch(
+	t *testing.T,
+	fn func(context.Context, string, string, string, string) (bool, error),
+) {
+	t.Helper()
+	old := qaReportOnlyBranch
+	qaReportOnlyBranch = fn
+	t.Cleanup(func() {
+		qaReportOnlyBranch = old
+	})
+}
+
+func createBranchIntegrityImplementRun(t *testing.T, homeDir string, repoDir string, specSlug string) store.Run {
+	t.Helper()
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Branch Integrity Run Database: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close Branch Integrity Run Database: %v", err)
+		}
+	}()
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: "feature/review",
+		HeadSHA:     "abc123",
+		SpecSlug:    specSlug,
+	})
+	if err != nil {
+		t.Fatalf("create Branch Integrity Implement Run: %v", err)
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, store.StateUnresolved)
+	if err != nil {
+		t.Fatalf("complete Branch Integrity Implement Run: %v", err)
+	}
+	return completed.Run
 }
 
 type pullRequestCommentRecorder struct {

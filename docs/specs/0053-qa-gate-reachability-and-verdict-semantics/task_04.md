@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0053-qa-gate-reachability-and-verdict-semantics
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -58,3 +58,51 @@ automatic integration and point the user at the explicit release instead.
 `_prd.md` → Goal 3 Story 4, Feature 7; `_techspec.md` → Build Order 4, API
 Contracts (Branch Integrity Preflight), Risks (auto-integration behavior
 change).
+
+## Result
+
+### Implementation
+
+- Branch Integrity Preflight now attributes pending Run Branches to their
+  recorded Implement Runs and calls task_03's shared
+  `worktree.QAReportOnlyBranch` probe with the current target head, Run Branch,
+  and Spec slug.
+- A proven QA-report-only branch is excluded from the automatic integration
+  plan and causes a refusal whose branch entry directs the operator to
+  `roundfix reconcile --apply`. Task-work branches retain the existing
+  fast-forward integration and `git merge --ff-only` refusal guidance.
+- A false or errored probe remains task work. The preflight does not convert
+  missing or unreadable proof into supersession evidence.
+
+### Focused checks
+
+- Red signal before the production change:
+  `rtk proxy env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260730T131049Z_a02854137f3dd85c/.gocache go test ./internal/cli -run '^TestBranchIntegrityPreflight(ClassifiesPendingRunBranches|ListsTaskWorkAndSupersededQAReportSeparately)$'`
+  — failed because the QA-report-only branch was integrated and the mixed
+  refusal omitted its reconcile guidance.
+- After implementation:
+  `rtk proxy env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260730T131049Z_a02854137f3dd85c/.gocache go test ./internal/cli -run '^(TestBranchIntegrityPreflight|TestBranchIntegrityIntegrationPlan)'`
+  — passed, covering the new classification table, mixed refusal, and the
+  existing refusal, automatic integration, migration, and Active Run cases.
+- An initial focused-check invocation with relative `GOCACHE=.gocache` did not
+  start the tests because Go requires an absolute cache path; the commands
+  above use the writable absolute repository cache.
+- `rtk git diff --check` — passed after the final implementation and Result
+  edits.
+- The commands in `## Verification` were not run; Daemon Verification owns
+  them.
+
+### Acceptance evidence
+
+- QA-report-only branch: `TestBranchIntegrityPreflightClassifiesPendingRunBranches/QA_report_only`
+  proves the CLI returns the preflight refusal, performs no integration, emits
+  the reconcile guidance, and omits a merge command for that branch.
+- Task work: the same table's `task_work` case proves a false probe preserves
+  the existing successful automatic fast-forward integration path.
+- Unprovable probe: the table's `unprovable_probe` case proves a probe error
+  also preserves the task-work integration path.
+- Mixed classes:
+  `TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately`
+  proves task work retains its `git merge --ff-only` entry while the
+  QA-report-only branch receives only the superseded-report reconcile
+  guidance, with no integration attempt during the refusal.
