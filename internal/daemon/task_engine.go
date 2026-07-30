@@ -1526,7 +1526,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 	// The Run Worktree checkout, its Run Branch, and the Spec's target
 	// branch ride along as facts: the gate reasons about the user's branch,
 	// which this checkout structurally cannot name on its own.
-	pullRequest := engine.resolveQAPullRequest(ctx, plan.WorkDir, plan.TargetBranch)
+	pullRequest, pullRequestResolved := engine.resolveQAPullRequest(ctx, plan.WorkDir, plan.TargetBranch)
 	prompt, err := agent.BuildQAPrompt(agent.QAPromptRequest{
 		SpecSlug:     plan.Spec.Slug,
 		SpecDir:      plan.Spec.Dir,
@@ -1534,7 +1534,9 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 		RunBranch:    plan.RunWorktree.Branch,
 		TargetBranch: plan.TargetBranch,
 		UserCheckout: plan.RunWorktree.UserRoot,
-		PullRequest:  pullRequest,
+
+		PullRequest:         pullRequest,
+		PullRequestResolved: pullRequestResolved,
 	})
 	if err != nil {
 		return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, err)
@@ -1589,10 +1591,14 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 	return verdict, reportPath, nil
 }
 
-func (engine *Engine) resolveQAPullRequest(ctx context.Context, workDir string, targetBranch string) string {
+// resolveQAPullRequest reports the Open Pull Request fact and whether the
+// lookup ran. The second return is the whole point: an empty fact means "none
+// is open" only when resolution succeeded, and a failed lookup must never
+// reach the gate as a proven absence. Resolution never fails the QA plan.
+func (engine *Engine) resolveQAPullRequest(ctx context.Context, workDir string, targetBranch string) (string, bool) {
 	targetBranch = strings.TrimSpace(targetBranch)
 	if targetBranch == "" {
-		return ""
+		return "", false
 	}
 	runner := engine.deps.GH
 	if runner == nil {
@@ -1610,25 +1616,31 @@ func (engine *Engine) resolveQAPullRequest(ctx context.Context, workDir string, 
 		"--json", "number,url",
 	)
 	if err != nil {
-		return ""
+		return "", false
 	}
 	return qaPullRequestFact(output)
 }
 
-func qaPullRequestFact(output string) string {
+// qaPullRequestFact parses one `gh pr list` payload. It reports resolution
+// success separately from the fact, so unreadable output is an unknown rather
+// than a confirmed empty list.
+func qaPullRequestFact(output string) (string, bool) {
 	var pullRequests []struct {
 		Number int    `json:"number"`
 		URL    string `json:"url"`
 	}
-	if err := json.Unmarshal([]byte(output), &pullRequests); err != nil || len(pullRequests) == 0 {
-		return ""
+	if err := json.Unmarshal([]byte(output), &pullRequests); err != nil {
+		return "", false
+	}
+	if len(pullRequests) == 0 {
+		return "", true
 	}
 	pullRequest := pullRequests[0]
 	repository := pullRequestRepository(pullRequest.URL)
 	if pullRequest.Number <= 0 || repository == "" {
-		return ""
+		return "", false
 	}
-	return fmt.Sprintf("#%d (%s)", pullRequest.Number, repository)
+	return fmt.Sprintf("#%d (%s)", pullRequest.Number, repository), true
 }
 
 func pullRequestRepository(rawURL string) string {

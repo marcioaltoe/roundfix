@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/rust-cli.txt"
   },
-  "digest": "89a55d7cec4654203a5e8b7c317da272411764bb78138dc21720239c2557c1a4",
+  "digest": "428a8457dcdccbe7199ead6dfb0384d8a1252a01f7e46d195c0f0fc6689a0437",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -270,7 +270,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "ead8c55547b7b82cbfca438b6e7f9aa41973f1eb7fa0fc059500be76e8c56c81"
+      "contentDigest": "7feb1630c6fde31cc17588ac2fb7df048f662573c4ec68e1fbd4bfa0862f04f8"
     },
     {
       "name": "review",

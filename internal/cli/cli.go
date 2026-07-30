@@ -80,7 +80,7 @@ Commands:
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
-  reconcile  Inspect or release proven-safe terminal spec Run worktrees
+  reconcile  Inspect or release proven terminal spec Run worktrees
   release    Plan the next release version without mutating repository or release state
   baseline   Plan, apply, and validate a Context-Driven Baseline
   profiles   Show Agent Selection Profiles and advisory recommendations
@@ -4653,7 +4653,7 @@ safe during the current invocation; dirty, unintegrated, unknown, and already
 released entries remain successful preserved results.
 
 Options:
-  --apply   Release freshly revalidated safe Run Worktrees and Run Branches
+  --apply   Release freshly revalidated safe and superseded Run Worktrees and Run Branches
   --format  Output format: text (default) or json
 `
 	case "release":

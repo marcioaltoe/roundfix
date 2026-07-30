@@ -4793,9 +4793,14 @@ func TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure(t *testing.T) {
 			if len(runner.qaPrompts) != 1 {
 				t.Fatalf("expected one complete QA prompt, got %d", len(runner.qaPrompts))
 			}
-			const expected = "Pull Request: none open; Pull Request journeys are environment-blocked.\n"
+			// A failed lookup proves nothing about whether a Pull
+			// Request exists, so the gate must not be told none is open.
+			const expected = "Pull Request: could not be resolved; Pull Request journeys are environment-blocked and their absence is unproven — do not record a confirmed absence.\n"
 			if !strings.Contains(runner.qaPrompts[0], expected) {
-				t.Fatalf("expected the fallback Pull Request fact %q, got:\n%s", expected, runner.qaPrompts[0])
+				t.Fatalf("expected the unresolved Pull Request fact %q, got:\n%s", expected, runner.qaPrompts[0])
+			}
+			if strings.Contains(runner.qaPrompts[0], "none open") {
+				t.Fatalf("a failed lookup reported a confirmed absence, got:\n%s", runner.qaPrompts[0])
 			}
 			if len(fixture.github.calls) != 1 {
 				t.Fatalf("expected one best-effort Pull Request lookup, got %d", len(fixture.github.calls))
@@ -4830,8 +4835,13 @@ func TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch(t *testing.T) {
 	if strings.Contains(prompt, "Spec target branch:") {
 		t.Fatalf("expected no Spec target branch line for a Run that recorded none, got:\n%s", prompt)
 	}
-	if !strings.Contains(prompt, "Pull Request: none open; Pull Request journeys are environment-blocked.\n") {
+	// Without a target branch there is nothing to look up, so the absence is
+	// unknown rather than proven.
+	if !strings.Contains(prompt, "Pull Request: could not be resolved; Pull Request journeys are environment-blocked and their absence is unproven — do not record a confirmed absence.\n") {
 		t.Fatalf("expected Pull Request journeys to be environment-blocked without a target branch, got:\n%s", prompt)
+	}
+	if strings.Contains(prompt, "none open") {
+		t.Fatalf("an absent target branch reported a confirmed absence, got:\n%s", prompt)
 	}
 	if len(fixture.github.calls) != 0 {
 		t.Fatalf("expected no Pull Request lookup without a target branch, got %d", len(fixture.github.calls))

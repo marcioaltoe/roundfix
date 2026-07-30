@@ -135,17 +135,20 @@ func writePathList(builder *strings.Builder, label string, paths []string) {
 // RunBranch, TargetBranch, and UserCheckout state where the gate runs and
 // where the Spec's work lands; each is optional, so a Run that recorded no
 // target branch still produces a usable prompt. PullRequest is the resolved
-// Open Pull Request fact and stays empty when none is open or resolution
-// failed. Inputs stay plain strings so the builders never depend on the Spec
-// parser or any store/daemon package.
+// Open Pull Request fact and is empty when the lookup completed and found
+// none. PullRequestResolved reports whether the lookup ran at all: a failed or
+// unreadable lookup leaves PullRequest empty too, and only this flag separates
+// a proven absence from an unknown one. Inputs stay plain strings so the
+// builders never depend on the Spec parser or any store/daemon package.
 type QAPromptRequest struct {
-	SpecSlug     string
-	SpecDir      string
-	PRDPath      string
-	RunBranch    string
-	TargetBranch string
-	UserCheckout string
-	PullRequest  string
+	SpecSlug            string
+	SpecDir             string
+	PRDPath             string
+	RunBranch           string
+	TargetBranch        string
+	UserCheckout        string
+	PullRequest         string
+	PullRequestResolved bool
 }
 
 // BuildQAPrompt builds the prompt for one Spec QA gate: the Spec identity,
@@ -191,6 +194,10 @@ func writeQACheckoutFacts(builder *strings.Builder, req QAPromptRequest) {
 	}
 	if pullRequest := strings.TrimSpace(req.PullRequest); pullRequest != "" {
 		builder.WriteString(fmt.Sprintf("Pull Request: %s\n", pullRequest))
+		return
+	}
+	if !req.PullRequestResolved {
+		builder.WriteString("Pull Request: could not be resolved; Pull Request journeys are environment-blocked and their absence is unproven — do not record a confirmed absence.\n")
 		return
 	}
 	builder.WriteString("Pull Request: none open; Pull Request journeys are environment-blocked.\n")

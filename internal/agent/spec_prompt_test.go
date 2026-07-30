@@ -246,6 +246,7 @@ func TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget(t *testin
 func TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOpen(t *testing.T) {
 	req := sampleQAPromptRequest()
 	req.PullRequest = ""
+	req.PullRequestResolved = true
 
 	prompt, err := BuildQAPrompt(req)
 	if err != nil {
@@ -255,6 +256,39 @@ func TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOp
 	const expected = "Pull Request: none open; Pull Request journeys are environment-blocked.\n"
 	if !strings.Contains(prompt, expected) {
 		t.Fatalf("expected the QA prompt to contain %q, got:\n%s", expected, prompt)
+	}
+}
+
+// A proven absence and an unknown one are both environment-blocked, but only
+// the first may be reported as an absence. Collapsing them lets a gh failure
+// reach the gate as evidence that no Pull Request exists.
+func TestBuildQAPromptSeparatesUnresolvedPullRequestFromProvenAbsence(t *testing.T) {
+	resolved := sampleQAPromptRequest()
+	resolved.PullRequest = ""
+	resolved.PullRequestResolved = true
+
+	unresolved := sampleQAPromptRequest()
+	unresolved.PullRequest = ""
+	unresolved.PullRequestResolved = false
+
+	resolvedPrompt, err := BuildQAPrompt(resolved)
+	if err != nil {
+		t.Fatalf("BuildQAPrompt(resolved) returned error: %v", err)
+	}
+	unresolvedPrompt, err := BuildQAPrompt(unresolved)
+	if err != nil {
+		t.Fatalf("BuildQAPrompt(unresolved) returned error: %v", err)
+	}
+
+	if resolvedPrompt == unresolvedPrompt {
+		t.Fatal("a proven absent Pull Request and an unresolvable one produced the same prompt")
+	}
+	if strings.Contains(unresolvedPrompt, "none open") {
+		t.Fatalf("an unresolvable lookup reported a confirmed absence, got:\n%s", unresolvedPrompt)
+	}
+	const expected = "Pull Request: could not be resolved; Pull Request journeys are environment-blocked and their absence is unproven — do not record a confirmed absence.\n"
+	if !strings.Contains(unresolvedPrompt, expected) {
+		t.Fatalf("expected the QA prompt to contain %q, got:\n%s", expected, unresolvedPrompt)
 	}
 }
 

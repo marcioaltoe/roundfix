@@ -84,7 +84,10 @@ Request journeys:
   the Pull Request, resolve threads, commit, or push.
 - When the fact says no Pull Request is open, record every Pull Request journey
   as `blocked (environment: no open Pull Request)` and count it in
-  `rows_blocked_environment`. Do not try to resolve a Pull Request from the Run
+  `rows_blocked_environment`. When the fact says the Pull Request could not be
+  resolved, the absence is unproven: record the cause as
+  `blocked (environment: Pull Request unresolved)` and never write it up as a
+  confirmed absence. Do not try to resolve a Pull Request from the Run
   Worktree branch: that per-Run branch is never pushed and has no Pull Request
   of its own.
 
