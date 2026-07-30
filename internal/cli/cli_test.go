@@ -441,6 +441,95 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 	}
 }
 
+func TestRunReconcileSupersededJSONAndApply(t *testing.T) {
+	const slug = "reconcile-spec"
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	run, ref := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateUnresolved)
+	runReport := filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa", "qa-report-2026-07-28.md"))
+	mustMkdir(t, filepath.Dir(filepath.Join(ref.Path, filepath.FromSlash(runReport))))
+	mustWrite(t, filepath.Join(ref.Path, filepath.FromSlash(runReport)), "failed report\n")
+	gitImplement(t, ref.Path, "add", runReport)
+	gitImplement(
+		t,
+		ref.Path,
+		"commit",
+		"-m",
+		fmt.Sprintf("docs: qa report for %s (fail)\n\nRoundfix-Spec: %s", slug, slug),
+	)
+	supersedingReport := filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa", "qa-report-2026-07-29.md"))
+	mustMkdir(t, filepath.Dir(filepath.Join(repoDir, filepath.FromSlash(supersedingReport))))
+	mustWrite(t, filepath.Join(repoDir, filepath.FromSlash(supersedingReport)), "passing report\n")
+	gitImplement(t, repoDir, "add", supersedingReport)
+	gitImplement(t, repoDir, "commit", "-m", "docs: newer QA report")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(
+		context.Background(),
+		[]string{"reconcile", run.ID, "--apply", "--format=json"},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("superseded apply exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("superseded apply stderr = %q, want empty", stderr.String())
+	}
+	var report reconcileReport
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatalf("decode superseded reconciliation JSON: %v\n%s", err, stdout.String())
+	}
+	if report.SchemaVersion != "roundfix-reconcile/v1" {
+		t.Fatalf("schema version = %q, want unchanged roundfix-reconcile/v1", report.SchemaVersion)
+	}
+	if len(report.Results) != 1 {
+		t.Fatalf("JSON results = %d, want 1: %+v", len(report.Results), report.Results)
+	}
+	result := report.Results[0]
+	if result.Classification != string(runworktree.ReconciliationSuperseded) ||
+		result.SupersedingReport != supersedingReport ||
+		!strings.Contains(result.Evidence, supersedingReport) ||
+		result.Action != "released" {
+		t.Fatalf("superseded JSON result = %+v, want report %q and released action", result, supersedingReport)
+	}
+	if report.Summary.Total != 1 ||
+		report.Summary.Superseded != 1 ||
+		report.Summary.Applied != 1 ||
+		report.Summary.Preserved != 0 ||
+		report.Summary.OperationalFailures != 0 {
+		t.Fatalf("superseded JSON summary = %+v", report.Summary)
+	}
+	assertReconcilePathState(t, ref.Path, false)
+	assertReconcileBranchState(t, repoDir, ref.Branch, false)
+
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open reconciliation store: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close reconciliation store: %v", err)
+		}
+	}()
+	events, err := runStore.RunEventsAfter(context.Background(), run.ID, 0, 10)
+	if err != nil {
+		t.Fatalf("read superseded reconciliation event: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("reconciliation events = %d, want 1", len(events))
+	}
+	var payload map[string]string
+	if err := json.Unmarshal(events[0].Event.Payload, &payload); err != nil {
+		t.Fatalf("decode superseded reconciliation event: %v", err)
+	}
+	if payload["classification"] != string(runworktree.ReconciliationSuperseded) ||
+		!strings.Contains(payload["reason"], supersedingReport) {
+		t.Fatalf("superseded reconciliation payload = %#v, want report %q", payload, supersedingReport)
+	}
+}
+
 func TestRunReconcileRepositoryScopeNewestFirst(t *testing.T) {
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	older, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
@@ -611,7 +700,7 @@ func TestRunReconcileApplyMixedResults(t *testing.T) {
 		"Run: " + safeRun.ID,
 		"classification: safe",
 		"action: released",
-		"Summary: total=5 safe=1 unintegrated=1 dirty=1 unknown=1 released=1 applied=1 preserved=3 operational-failures=0",
+		"Summary: total=5 safe=1 superseded=0 unintegrated=1 dirty=1 unknown=1 released=1 applied=1 preserved=3 operational-failures=0",
 	} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("mixed apply output missing %q:\n%s", want, stdout.String())

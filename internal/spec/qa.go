@@ -43,6 +43,17 @@ func NewestQAReport(specDir string) (string, error) {
 	if len(reports) == 0 {
 		return "", fmt.Errorf("%w for Spec directory %q; run the qa-gate workflow to produce one", ErrNoQAReport, specDir)
 	}
+	return NewestQAReportFromPaths(reports)
+}
+
+// NewestQAReportFromPaths returns the newest path from a non-empty set of QA
+// Report paths using the same filename recency contract as NewestQAReport.
+// Callers that obtain paths from a Git tree use this helper so filesystem and
+// historical-tree selection cannot drift.
+func NewestQAReportFromPaths(reports []string) (string, error) {
+	if len(reports) == 0 {
+		return "", ErrNoQAReport
+	}
 	newest := parseQAReportName(reports[0])
 	for _, report := range reports[1:] {
 		if candidate := parseQAReportName(report); newest.olderThan(candidate) {

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0053-qa-gate-reachability-and-verdict-semantics
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -77,3 +77,56 @@ comparator — and let `--apply` release those branches.
 
 `_prd.md` → Goal 3, Stories 3–4, Features 4–6; `_techspec.md` → Build Order 3,
 API Contracts; ADR-0053.
+
+## Result
+
+### Implementation
+
+- Added a shared `internal/worktree` Git probe that requires a non-empty
+  `target..run` range, the exact Daemon QA commit subject/trailer contract on
+  every commit, and NUL-delimited changed paths confined to the active or
+  archived Spec `qa/` directory.
+- Added proof-based `superseded` classification at the ancestry miss. Both
+  heads' report paths are read with `git ls-tree` and ranked through the
+  existing `internal/spec` report recency comparator; any missing, malformed,
+  or non-newer evidence remains `unintegrated` with preserve behavior.
+- Extended apply revalidation, the terminal snapshot, cleanup journaling, text
+  and JSON output, and the additive summary counter. The superseding report
+  path is carried as explicit evidence and persisted as the release reason.
+  No Run Database table, migration, or stored Run field changed.
+
+### Focused checks
+
+- `GOCACHE=.gocache go test ./internal/worktree -run 'Test(QAReportOnlyBranch|InspectTerminalRun|ApplyTerminalRun)'`
+  — passed; covers active and archived QA-only branches, newer-report
+  classification, non-QA/missing/older/equal fallbacks, successful release,
+  forged snapshot refusal, and fresh-proof failure preservation.
+- `GOCACHE=.gocache go test -count=1 ./internal/cli -run '^TestRunReconcile'`
+  — passed; covers existing reconcile behavior plus superseded JSON,
+  unchanged `roundfix-reconcile/v1`, summary count, apply cleanup, and
+  journaled superseding-report reason.
+- `GOCACHE=.gocache go test -count=1 ./internal/store -run '^TestReconcileIntegration'`
+  — passed; covers reconciliation validation and event persistence without a
+  schema change.
+- `GOCACHE=.gocache go test -count=1 ./internal/spec -run 'Test(NewestQAReport|QAVerdictPrefersTheSameDateRerun)'`
+  — passed; confirms the extracted path-list entry point preserves the
+  established date/sequence ordering.
+- `git diff --check` — passed.
+
+The direct focused Go checks initially could not write the host Go cache; the
+final checks above used the repository's ignored `.gocache`. The commands in
+`## Verification` were not run because Daemon Verification owns them.
+
+### Acceptance evidence
+
+- QA-only branch plus newer target report: the classification table proves
+  `superseded` for both active and archived Spec paths.
+- Non-QA commit: the same table proves `unintegrated`; apply is not offered.
+- Missing, older, or equal target report: each remains `unintegrated` with
+  preserve behavior.
+- Apply: a freshly re-proven superseded Run releases its Worktree and branch
+  and journals the superseding report path; mutated proof or snapshot metadata
+  preserves both Git surfaces.
+- CLI contract: JSON exposes `classification: superseded`, the explicit
+  report path, and `summary.superseded` while retaining schema version
+  `roundfix-reconcile/v1`.

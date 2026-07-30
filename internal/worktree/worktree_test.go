@@ -947,6 +947,217 @@ func TestInspectTerminalRunUnintegrated(t *testing.T) {
 	}
 }
 
+func TestQAReportOnlyBranch(t *testing.T) {
+	const slug = "0053-qa-gate-reachability-and-verdict-semantics"
+	tests := []struct {
+		name  string
+		setup func(t *testing.T, fixture terminalRunFixture)
+		want  bool
+	}{
+		{
+			name: "active Spec QA report commit",
+			setup: func(t *testing.T, fixture terminalRunFixture) {
+				commitQAReport(t, fixture.ref.Path, slug, "qa-report-2026-07-28.md", false, "fail")
+			},
+			want: true,
+		},
+		{
+			name: "archived Spec QA report commit",
+			setup: func(t *testing.T, fixture terminalRunFixture) {
+				commitQAReport(t, fixture.ref.Path, slug, "qa-report-2026-07-28.md", true, "partial")
+			},
+			want: true,
+		},
+		{
+			name: "non QA commit message",
+			setup: func(t *testing.T, fixture terminalRunFixture) {
+				path := qaReportTestPath(slug, "qa-report-2026-07-28.md", false)
+				commitWorktreeFile(t, fixture.ref.Path, path, "report\n", "docs: unrelated report")
+			},
+		},
+		{
+			name: "QA commit changes a non QA path",
+			setup: func(t *testing.T, fixture terminalRunFixture) {
+				commitQAReport(t, fixture.ref.Path, slug, "qa-report-2026-07-28.md", false, "fail")
+				commitWorktreeFile(
+					t,
+					fixture.ref.Path,
+					"outside.txt",
+					"not a report\n",
+					qaReportCommitMessage(slug, "fail"),
+				)
+			},
+		},
+		{
+			name:  "empty commit range",
+			setup: func(t *testing.T, fixture terminalRunFixture) {},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newTerminalRunFixture(t, "qa-report-only-"+strings.ReplaceAll(tt.name, " ", "-"))
+			targetHead := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main"))
+			tt.setup(t, fixture)
+			runHead := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", fixture.ref.Branch))
+
+			got, err := qaReportOnlyBranch(
+				context.Background(),
+				execGitRunner{},
+				fixture.repoDir,
+				targetHead,
+				runHead,
+				slug,
+			)
+			if err != nil {
+				t.Fatalf("probe QA-report-only branch: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("qaReportOnlyBranch = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInspectTerminalRunClassifiesSupersededQAReport(t *testing.T) {
+	const slug = "0053-qa-gate-reachability-and-verdict-semantics"
+	tests := []struct {
+		name         string
+		targetReport string
+		archived     bool
+		nonQACommit  bool
+		want         ReconciliationState
+	}{
+		{
+			name:         "newer target report supersedes QA-only branch",
+			targetReport: "qa-report-2026-07-29.md",
+			want:         ReconciliationSuperseded,
+		},
+		{
+			name:         "newer archived target report supersedes archived QA-only branch",
+			targetReport: "qa-report-2026-07-29.md",
+			archived:     true,
+			want:         ReconciliationSuperseded,
+		},
+		{
+			name:         "non QA commit preserves branch",
+			targetReport: "qa-report-2026-07-29.md",
+			nonQACommit:  true,
+			want:         ReconciliationUnintegrated,
+		},
+		{
+			name: "missing target report preserves branch",
+			want: ReconciliationUnintegrated,
+		},
+		{
+			name:         "older target report preserves branch",
+			targetReport: "qa-report-2026-07-27.md",
+			want:         ReconciliationUnintegrated,
+		},
+		{
+			name:         "same target report preserves branch",
+			targetReport: "qa-report-2026-07-28.md",
+			want:         ReconciliationUnintegrated,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newTerminalRunFixture(t, "superseded-"+strings.ReplaceAll(tt.name, " ", "-"))
+			fixture.run.SpecSlug = slug
+			commitQAReport(t, fixture.ref.Path, slug, "qa-report-2026-07-28.md", tt.archived, "fail")
+			if tt.nonQACommit {
+				commitWorktreeFile(t, fixture.ref.Path, "valuable.txt", "preserve\n", "feat: valuable work")
+			}
+			if tt.targetReport != "" {
+				commitWorktreeFile(
+					t,
+					fixture.repoDir,
+					qaReportTestPath(slug, tt.targetReport, tt.archived),
+					"target report\n",
+					"docs: target QA report",
+				)
+			}
+
+			result, err := InspectTerminalRun(context.Background(), fixture.run)
+			if err != nil {
+				t.Fatalf("inspect terminal Run: %v", err)
+			}
+
+			assertTerminalRunReconciliation(t, result, fixture.run, tt.want)
+			if tt.want == ReconciliationSuperseded {
+				wantReport := qaReportTestPath(slug, tt.targetReport, tt.archived)
+				if result.SupersedingReport != wantReport || !strings.Contains(result.Reason, wantReport) {
+					t.Fatalf("superseding report evidence = %#v, want %q", result, wantReport)
+				}
+			}
+		})
+	}
+}
+
+func TestApplyTerminalRunSuperseded(t *testing.T) {
+	const slug = "0053-qa-gate-reachability-and-verdict-semantics"
+	fixture := newTerminalRunFixture(t, "apply-superseded")
+	fixture.run.SpecSlug = slug
+	commitQAReport(t, fixture.ref.Path, slug, "qa-report-2026-07-28.md", false, "fail")
+	supersedingReport := qaReportTestPath(slug, "qa-report-2026-07-29.md", false)
+	commitWorktreeFile(t, fixture.repoDir, supersedingReport, "passing report\n", "docs: target QA report")
+	result, err := InspectTerminalRun(context.Background(), fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationSuperseded)
+	runStore := &recordingTerminalRunStore{}
+
+	if err := ApplyTerminalRun(context.Background(), runStore, result); err != nil {
+		t.Fatalf("apply superseded terminal Run: %v", err)
+	}
+
+	if len(runStore.requests) != 1 {
+		t.Fatalf("reconciliation persistence requests = %d, want 1", len(runStore.requests))
+	}
+	request := runStore.requests[0]
+	if request.Classification != string(ReconciliationSuperseded) ||
+		request.Reason != result.Reason ||
+		!strings.Contains(request.Reason, supersedingReport) {
+		t.Fatalf("superseded release evidence = %#v, want report %q", request, supersedingReport)
+	}
+	assertPathRemoved(t, fixture.ref.Path)
+	assertBranchRemoved(t, fixture.repoDir, fixture.ref.Branch)
+}
+
+func TestApplyTerminalRunSupersededPreservesWhenFreshProofFails(t *testing.T) {
+	const slug = "0053-qa-gate-reachability-and-verdict-semantics"
+	fixture := newTerminalRunFixture(t, "apply-superseded-stale")
+	fixture.run.SpecSlug = slug
+	commitQAReport(t, fixture.ref.Path, slug, "qa-report-2026-07-28.md", false, "fail")
+	commitWorktreeFile(
+		t,
+		fixture.repoDir,
+		qaReportTestPath(slug, "qa-report-2026-07-29.md", false),
+		"passing report\n",
+		"docs: target QA report",
+	)
+	result, err := InspectTerminalRun(context.Background(), fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationSuperseded)
+	forged := result
+	forged.SupersedingReport = qaReportTestPath(slug, "qa-report-forged.md", false)
+	if err := ApplyTerminalRun(context.Background(), &recordingTerminalRunStore{}, forged); err == nil {
+		t.Fatal("expected changed superseding-report metadata to refuse apply")
+	}
+	commitWorktreeFile(t, fixture.ref.Path, "valuable.txt", "preserve\n", "feat: valuable work")
+
+	if err := ApplyTerminalRun(context.Background(), &recordingTerminalRunStore{}, result); err == nil {
+		t.Fatal("expected superseded apply to refuse stale proof")
+	}
+
+	assertPathExists(t, fixture.ref.Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.ref.Branch)
+}
+
 func TestInspectTerminalRunDirty(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -1706,7 +1917,7 @@ func assertTerminalRunReconciliation(t *testing.T, result RunWorktreeReconciliat
 		t.Fatalf("expected one bounded deterministic reason, got %q", result.Reason)
 	}
 	switch result.State {
-	case ReconciliationSafe, ReconciliationUnintegrated, ReconciliationDirty, ReconciliationUnknown, ReconciliationReleased:
+	case ReconciliationSafe, ReconciliationSuperseded, ReconciliationUnintegrated, ReconciliationDirty, ReconciliationUnknown, ReconciliationReleased:
 	default:
 		t.Fatalf("unexpected reconciliation state %q", result.State)
 	}
@@ -1763,6 +1974,28 @@ func commitWorktreeFile(t *testing.T, workDir string, path string, content strin
 	gitWorktreeTest(t, workDir, "add", path)
 	gitWorktreeTest(t, workDir, "commit", "-m", message)
 	return strings.TrimSpace(gitWorktreeTest(t, workDir, "rev-parse", "HEAD"))
+}
+
+func commitQAReport(t *testing.T, workDir, slug, reportName string, archived bool, verdict string) string {
+	t.Helper()
+	return commitWorktreeFile(
+		t,
+		workDir,
+		qaReportTestPath(slug, reportName, archived),
+		"QA report\n",
+		qaReportCommitMessage(slug, verdict),
+	)
+}
+
+func qaReportTestPath(slug, reportName string, archived bool) string {
+	if archived {
+		return filepath.ToSlash(filepath.Join("docs", "specs", "_archived", slug, "qa", reportName))
+	}
+	return filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa", reportName))
+}
+
+func qaReportCommitMessage(slug, verdict string) string {
+	return fmt.Sprintf("docs: qa report for %s (%s)\n\nRoundfix-Spec: %s", slug, verdict, slug)
 }
 
 func gitCommitMessages(t *testing.T, workDir string, base string, branch string) []string {
