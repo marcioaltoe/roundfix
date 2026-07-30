@@ -290,8 +290,8 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 			baselineDigestRegenerationHint,
 		)
 	}
-	if len(sourceBaseline.Entries) != 98 ||
-		sourceBaseline.Identity.EntryCount != 98 ||
+	if len(sourceBaseline.Entries) != 104 ||
+		sourceBaseline.Identity.EntryCount != 104 ||
 		len(sourceBaseline.Accounting) != 51 {
 		t.Fatalf(
 			"maintained Source Baseline counts = identity %d entries %d accounting %d",

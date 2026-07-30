@@ -41,6 +41,12 @@
         "clause.autonomous.delegate-through-roundfix",
         "clause.autonomous.supervisor-prohibition",
         "clause.autonomous.daemon-verifies-task",
+        "clause.autonomous.loop-01-qa-once",
+        "clause.autonomous.loop-02-autonomous-decomposition",
+        "clause.autonomous.loop-03-specify-the-hazard",
+        "clause.autonomous.loop-04-verify-the-class",
+        "clause.autonomous.loop-05-clean-is-not-evidence",
+        "clause.autonomous.loop-06-branch-hygiene",
         "clause.backend.boundary-contracts",
         "clause.backend.layered-architecture",
         "clause.backend.thin-http-handlers",
@@ -106,9 +112,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 98,
-      "corpusDigest": "2e51ddb4d198d5d67ba96f6d10bd632108dea9b82f5cfe02d109e02d299f9d91",
-      "manifestDigest": "fd84c23318a1c5f01848dc64c2d0f9dc8f8f253ffa076794a9da007484607deb"
+      "entryCount": 104,
+      "corpusDigest": "ea7d644707b0bc48138f91ea77a56435d502af0ea6cdca21bef1223396a0d1ca",
+      "manifestDigest": "0d662473f0b7ae4a2ba723acc8b93279339ad4743fb044e047a7dcc00be50707"
     }
   ]
 }

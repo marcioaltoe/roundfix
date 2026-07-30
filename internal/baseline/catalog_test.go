@@ -814,14 +814,7 @@ func TestToolingAuthorityCannotBeDisabled(t *testing.T) {
 			code: "catalog.tooling-authority.profile.rule.missing",
 			edit: func(t *testing.T, assets fstest.MapFS) {
 				t.Helper()
-				asset := assets["profiles/rust-cli.json"]
-				asset.Data = []byte(strings.Replace(
-					string(asset.Data),
-					`, "rule.core.tooling-authority"`,
-					``,
-					1,
-				))
-				assets["profiles/rust-cli.json"] = asset
+				removeProfileRule(t, assets, "profiles/rust-cli.json", "rule.core.tooling-authority")
 			},
 		},
 		{
@@ -973,6 +966,40 @@ func cloneEmbeddedAssets(t *testing.T) fstest.MapFS {
 		t.Fatalf("clone embedded assets: %v", err)
 	}
 	return assets
+}
+
+// removeProfileRule drops one rule from a profile's requiredRules by identity.
+// A textual edit here would depend on how the asset happens to wrap its rule
+// list, and a reformat would turn the mutation into a silent no-op whose only
+// symptom is the catalog loading successfully.
+func removeProfileRule(t *testing.T, assets fstest.MapFS, path, rule string) {
+	t.Helper()
+
+	asset, ok := assets[path]
+	if !ok {
+		t.Fatalf("asset %q missing", path)
+	}
+	var profile map[string]any
+	if err := json.Unmarshal(asset.Data, &profile); err != nil {
+		t.Fatalf("decode profile %q: %v", path, err)
+	}
+	rules, ok := profile["requiredRules"].([]any)
+	if !ok {
+		t.Fatalf("profile %q has no requiredRules array", path)
+	}
+	kept := slices.DeleteFunc(slices.Clone(rules), func(entry any) bool {
+		return entry == rule
+	})
+	if len(kept) != len(rules)-1 {
+		t.Fatalf("profile %q requiredRules removed %d entries for %q, want 1", path, len(rules)-len(kept), rule)
+	}
+	profile["requiredRules"] = kept
+	mutated, err := json.Marshal(profile)
+	if err != nil {
+		t.Fatalf("encode profile %q: %v", path, err)
+	}
+	asset.Data = mutated
+	assets[path] = asset
 }
 
 func replaceAsset(t *testing.T, assets fstest.MapFS, path, old, replacement string) {
