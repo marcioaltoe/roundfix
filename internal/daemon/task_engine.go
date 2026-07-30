@@ -6,15 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/preflight"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
@@ -250,6 +253,8 @@ const (
 	qaVerdictMissing    = "missing"
 	qaVerdictUnreadable = "unreadable"
 )
+
+const qaPullRequestLookupTimeout = 10 * time.Second
 
 // TaskCycle executes the Task Graph for one Spec as a sibling of
 // ResolveCycle: each non-completed Task, in topological order, runs
@@ -1521,6 +1526,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 	// The Run Worktree checkout, its Run Branch, and the Spec's target
 	// branch ride along as facts: the gate reasons about the user's branch,
 	// which this checkout structurally cannot name on its own.
+	pullRequest := engine.resolveQAPullRequest(ctx, plan.WorkDir, plan.TargetBranch)
 	prompt, err := agent.BuildQAPrompt(agent.QAPromptRequest{
 		SpecSlug:     plan.Spec.Slug,
 		SpecDir:      plan.Spec.Dir,
@@ -1528,6 +1534,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 		RunBranch:    plan.RunWorktree.Branch,
 		TargetBranch: plan.TargetBranch,
 		UserCheckout: plan.RunWorktree.UserRoot,
+		PullRequest:  pullRequest,
 	})
 	if err != nil {
 		return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, err)
@@ -1580,6 +1587,60 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 		return "", "", err
 	}
 	return verdict, reportPath, nil
+}
+
+func (engine *Engine) resolveQAPullRequest(ctx context.Context, workDir string, targetBranch string) string {
+	targetBranch = strings.TrimSpace(targetBranch)
+	if targetBranch == "" {
+		return ""
+	}
+	runner := engine.deps.GH
+	if runner == nil {
+		runner = preflight.ExecGHRunner{}
+	}
+	lookupCtx, cancel := context.WithTimeout(ctx, qaPullRequestLookupTimeout)
+	defer cancel()
+	output, err := runner.RunGH(
+		lookupCtx,
+		workDir,
+		"pr", "list",
+		"--head", targetBranch,
+		"--state", "open",
+		"--limit", "1",
+		"--json", "number,url",
+	)
+	if err != nil {
+		return ""
+	}
+	return qaPullRequestFact(output)
+}
+
+func qaPullRequestFact(output string) string {
+	var pullRequests []struct {
+		Number int    `json:"number"`
+		URL    string `json:"url"`
+	}
+	if err := json.Unmarshal([]byte(output), &pullRequests); err != nil || len(pullRequests) == 0 {
+		return ""
+	}
+	pullRequest := pullRequests[0]
+	repository := pullRequestRepository(pullRequest.URL)
+	if pullRequest.Number <= 0 || repository == "" {
+		return ""
+	}
+	return fmt.Sprintf("#%d (%s)", pullRequest.Number, repository)
+}
+
+func pullRequestRepository(rawURL string) string {
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return ""
+	}
+	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+	if len(parts) < 4 || parts[2] != "pull" {
+		return ""
+	}
+	return strings.Join(parts[:2], "/")
 }
 
 // settleQAVerdict settles the QA verdict from the newest QA Report: the

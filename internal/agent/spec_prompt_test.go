@@ -180,6 +180,7 @@ func sampleQAPromptRequest() QAPromptRequest {
 		RunBranch:    "roundfix/run-run_20260728T041231Z_48d72c1b142ea37b",
 		TargetBranch: "ma/widget-flow",
 		UserCheckout: "/repo",
+		PullRequest:  "#40 (owner/repo)",
 	}
 }
 
@@ -193,8 +194,10 @@ func TestBuildQAPromptStatesQAGateContract(t *testing.T) {
 		"Spec: 0001-implement-command",
 		"Spec directory: /repo/docs/specs/0001-implement-command",
 		"PRD: /repo/docs/specs/0001-implement-command/_prd.md",
+		"Pull Request: #40 (owner/repo)",
 		"Run the qa-gate process for this Spec",
-		"Write the QA Report to the Spec's qa/ directory as qa-report-YYYY-MM-DD.md",
+		"qa-report-YYYY-MM-DD.md for the day's first report",
+		"qa-report-YYYY-MM-DD-NN.md with a numeric -NN suffix for same-day reruns",
 		"frontmatter must carry the verdict: pass, fail, or partial",
 		"Use verdict: pass only when every criterion passes.",
 		"Never commit, push, or open a pull request.",
@@ -202,6 +205,9 @@ func TestBuildQAPromptStatesQAGateContract(t *testing.T) {
 		if !strings.Contains(prompt, expected) {
 			t.Fatalf("expected QA prompt to contain %q, got:\n%s", expected, prompt)
 		}
+	}
+	if strings.Contains(prompt, "-<scope-or-build>") {
+		t.Fatalf("expected the QA prompt to allow only numeric same-day suffixes, got:\n%s", prompt)
 	}
 }
 
@@ -217,6 +223,7 @@ func TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget(t *testin
 		"Run Worktree branch: roundfix/run-run_20260728T041231Z_48d72c1b142ea37b (this checkout only — a per-Run branch that is never pushed and has no Pull Request of its own)\n",
 		"Spec target branch: ma/widget-flow (the user branch this Spec's commits land on; any Pull Request for this Spec is open on this branch, never on the Run Worktree branch)\n",
 		"User checkout: /repo (the user's repository root this Run Worktree was created from)\n",
+		"Pull Request: #40 (owner/repo)\n",
 	} {
 		if !strings.Contains(prompt, expected) {
 			t.Fatalf("expected QA prompt to contain %q, got:\n%s", expected, prompt)
@@ -231,8 +238,23 @@ func TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget(t *testin
 	if factsEnd < 0 {
 		t.Fatalf("expected the QA contract in the prompt, got:\n%s", prompt)
 	}
-	if !strings.HasSuffix(prompt[:factsEnd], "created from)\n\n") {
+	if !strings.HasSuffix(prompt[:factsEnd], "Pull Request: #40 (owner/repo)\n\n") {
 		t.Fatalf("expected the checkout facts to end the fact block before the QA contract, got:\n%s", prompt)
+	}
+}
+
+func TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOpen(t *testing.T) {
+	req := sampleQAPromptRequest()
+	req.PullRequest = ""
+
+	prompt, err := BuildQAPrompt(req)
+	if err != nil {
+		t.Fatalf("BuildQAPrompt returned error: %v", err)
+	}
+
+	const expected = "Pull Request: none open; Pull Request journeys are environment-blocked.\n"
+	if !strings.Contains(prompt, expected) {
+		t.Fatalf("expected the QA prompt to contain %q, got:\n%s", expected, prompt)
 	}
 }
 
@@ -251,7 +273,7 @@ func TestBuildQAPromptOmitsUnrecordedCheckoutFacts(t *testing.T) {
 			t.Fatalf("expected no %q line for an unrecorded fact, got:\n%s", forbidden, prompt)
 		}
 	}
-	if !strings.Contains(prompt, "PRD: /repo/docs/specs/0001-implement-command/_prd.md\n\n"+qaGateContract) {
+	if !strings.Contains(prompt, "PRD: /repo/docs/specs/0001-implement-command/_prd.md\nPull Request: #40 (owner/repo)\n\n"+qaGateContract) {
 		t.Fatalf("expected a usable prompt with the Spec identity and the QA contract, got:\n%s", prompt)
 	}
 }

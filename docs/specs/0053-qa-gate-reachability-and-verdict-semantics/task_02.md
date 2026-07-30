@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0053-qa-gate-reachability-and-verdict-semantics
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -64,3 +64,49 @@ filename instruction to the one scheme the recency comparator ranks correctly.
 
 `_prd.md` → Goal 1 Story 1, Goal 4 Story 6; `_techspec.md` → Build Order 2,
 Interfaces, Risks (prompt contract tests).
+
+## Result
+
+Added the resolved Open Pull Request to the QA prompt as a labeled fact. The
+Daemon now queries the existing read-only `gh` boundary for the recorded
+target branch before prompt construction, with an operation-specific timeout;
+lookup, timeout, and response-parse failures leave the fact empty without
+failing the QA plan. An empty fact states that no Pull Request is open and
+that Pull Request journeys are environment-blocked.
+
+The QA report contract now names `qa-report-YYYY-MM-DD.md` for the day's first
+report and only `qa-report-YYYY-MM-DD-NN.md` numeric suffixes for same-day
+reruns. The report recency comparator was not changed.
+
+Focused implementation evidence:
+
+- Before implementation, the new prompt tests failed to compile because
+  `QAPromptRequest.PullRequest` did not exist, and the new Daemon tests failed
+  to compile because the engine had no injectable `GH` boundary.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test -count=1 -run '^TestBuildQAPrompt' ./internal/agent`
+  passed 14 tests after the final implementation edit.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test -count=1 -run '^TestTaskCycleQA' ./internal/daemon`
+  passed 20 tests after the final implementation edit.
+- `rtk git diff --check` passed after the final implementation edit.
+- The Task's two declared Daemon Verification commands were not run.
+
+Acceptance evidence:
+
+- Open Pull Request fact:
+  `TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget` and
+  `TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch` passed with
+  `Pull Request: #40 (owner/repo)` in the prompt. The Daemon case also asserts
+  the read-only lookup uses `pr list --head ma/spec-work --state open`.
+- No open Pull Request:
+  `TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOpen`
+  passed with the explicit `none open` and `environment-blocked` fact.
+  `TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch` passed with
+  the same fact and no attempted lookup.
+- Best-effort failure behavior:
+  `TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure` passed for both
+  a `gh` error and `context.DeadlineExceeded`; each case still ran the QA
+  Agent with a complete prompt and settled its report verdict.
+- Numeric suffix contract:
+  `TestBuildQAPromptStatesQAGateContract` passed with the first-report name,
+  the full numeric `-NN` rerun name, and an assertion excluding the removed
+  `-<scope-or-build>` alternative.

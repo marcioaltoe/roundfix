@@ -121,6 +121,20 @@ type taskCycleFixture struct {
 	worktree    *engineFakeWorktree
 	pusher      *engineFakePusher
 	source      *engineFakeSource
+	github      *taskFakeGHRunner
+}
+
+type taskFakeGHRunner struct {
+	output  string
+	err     error
+	calls   [][]string
+	workDir []string
+}
+
+func (runner *taskFakeGHRunner) RunGH(_ context.Context, workDir string, args ...string) (string, error) {
+	runner.workDir = append(runner.workDir, workDir)
+	runner.calls = append(runner.calls, append([]string(nil), args...))
+	return runner.output, runner.err
 }
 
 func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
@@ -167,6 +181,7 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 		worktree:    &engineFakeWorktree{},
 		pusher:      &engineFakePusher{calls: &calls},
 		source:      &engineFakeSource{calls: &calls},
+		github:      &taskFakeGHRunner{output: "[]"},
 	}
 }
 
@@ -228,6 +243,7 @@ func (fixture *taskCycleFixture) engineWithTaskWorktreesAndPriorChanges(t *testi
 		Worktree:      worktree,
 		TaskWorktrees: taskWorktrees,
 		PriorChanges:  priorChanges,
+		GH:            fixture.github,
 		Sink:          fixture.sink,
 		Progress:      fixture.progress,
 	})
@@ -4705,6 +4721,7 @@ func TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted(t *testing.T) {
 // both branch names and the user checkout as facts.
 func TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	fixture.github.output = `[{"number":40,"url":"https://github.com/owner/repo/pull/40"}]`
 	runner := &taskFakeRunner{
 		calls:    fixture.calls,
 		gitRoot:  fixture.gitRoot,
@@ -4728,10 +4745,62 @@ func TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch(t *testing.T) {
 		"Run Worktree branch: " + runworktree.BranchName(fixture.run.ID) + " (this checkout only — a per-Run branch that is never pushed and has no Pull Request of its own)\n",
 		"Spec target branch: ma/spec-work (the user branch this Spec's commits land on; any Pull Request for this Spec is open on this branch, never on the Run Worktree branch)\n",
 		"User checkout: " + fixture.gitRoot + " (the user's repository root this Run Worktree was created from)\n",
+		"Pull Request: #40 (owner/repo)\n",
 	} {
 		if !strings.Contains(prompt, expected) {
 			t.Fatalf("expected the QA prompt to state %q, got:\n%s", expected, prompt)
 		}
+	}
+	if len(fixture.github.calls) != 1 {
+		t.Fatalf("expected one Pull Request lookup, got %d", len(fixture.github.calls))
+	}
+	wantArgs := []string{"pr", "list", "--head", "ma/spec-work", "--state", "open", "--limit", "1", "--json", "number,url"}
+	if !slices.Equal(fixture.github.calls[0], wantArgs) {
+		t.Fatalf("Pull Request lookup args = %v, want %v", fixture.github.calls[0], wantArgs)
+	}
+	if fixture.github.workDir[0] != fixture.gitRoot {
+		t.Fatalf("Pull Request lookup workdir = %q, want %q", fixture.github.workDir[0], fixture.gitRoot)
+	}
+}
+
+func TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{name: "gh failure", err: errors.New("gh unavailable")},
+		{name: "gh timeout", err: context.DeadlineExceeded},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+			fixture.github.err = tt.err
+			runner := &taskFakeRunner{
+				calls:    fixture.calls,
+				gitRoot:  fixture.gitRoot,
+				qaReport: qaReportForTest(spec.VerdictPass),
+			}
+			engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+			result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+			if err != nil {
+				t.Fatalf("task cycle: %v", err)
+			}
+			if result.QAVerdict != spec.VerdictPass {
+				t.Fatalf("expected the QA plan to continue after %v, got %+v", tt.err, result)
+			}
+			if len(runner.qaPrompts) != 1 {
+				t.Fatalf("expected one complete QA prompt, got %d", len(runner.qaPrompts))
+			}
+			const expected = "Pull Request: none open; Pull Request journeys are environment-blocked.\n"
+			if !strings.Contains(runner.qaPrompts[0], expected) {
+				t.Fatalf("expected the fallback Pull Request fact %q, got:\n%s", expected, runner.qaPrompts[0])
+			}
+			if len(fixture.github.calls) != 1 {
+				t.Fatalf("expected one best-effort Pull Request lookup, got %d", len(fixture.github.calls))
+			}
+		})
 	}
 }
 
@@ -4760,6 +4829,12 @@ func TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch(t *testing.T) {
 	prompt := runner.qaPrompts[0]
 	if strings.Contains(prompt, "Spec target branch:") {
 		t.Fatalf("expected no Spec target branch line for a Run that recorded none, got:\n%s", prompt)
+	}
+	if !strings.Contains(prompt, "Pull Request: none open; Pull Request journeys are environment-blocked.\n") {
+		t.Fatalf("expected Pull Request journeys to be environment-blocked without a target branch, got:\n%s", prompt)
+	}
+	if len(fixture.github.calls) != 0 {
+		t.Fatalf("expected no Pull Request lookup without a target branch, got %d", len(fixture.github.calls))
 	}
 	if !strings.Contains(prompt, "Spec: "+taskCycleSlug) || !strings.Contains(prompt, "Run the qa-gate process for this Spec") {
 		t.Fatalf("expected the Spec identity and the QA contract to survive, got:\n%s", prompt)
