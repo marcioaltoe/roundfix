@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0053-qa-gate-reachability-and-verdict-semantics
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -69,3 +69,45 @@ environment-blocked `pass` is readable and a finding-blocked `pass` is refused.
 
 `_prd.md` → Goal 1, Stories 1–2, 5; `_techspec.md` → Build Order 1,
 Interfaces; ADR-0080.
+
+## Result
+
+Implemented typed `rows_blocked_environment` and `rows_blocked_finding`
+frontmatter parsing in the QA verdict reader. Absent counts resolve to zero;
+present counts must be non-negative YAML integer scalars. The reader returns
+the existing `QAReportError` for malformed counts and for a `pass` report with
+finding-blocked rows. Environment-blocked `pass` reports remain readable.
+Unknown frontmatter keys remain tolerated.
+
+Focused implementation evidence:
+
+- Before the implementation, the new focused contract checks produced the
+  expected red signal: the Spec matrix had 4 passing and 6 failing subtests,
+  and the archive matrix had 4 passing and 2 failing subtests.
+- `GOCACHE=$PWD/.gocache rtk go test -count=1 -run 'Test(QAVerdict|NewestQAReport)' ./internal/spec`
+  passed 33 subtests after the final edit.
+- `GOCACHE=$PWD/.gocache rtk go test -count=1 -run 'TestRunArchive' ./internal/cli`
+  passed 9 subtests after the final edit.
+- `rtk git diff --check` passed after the final edit.
+- The Task's two declared Daemon Verification commands were not run.
+
+Acceptance evidence:
+
+- Finding-blocked `pass` refusal: the focused run passed
+  `TestQAVerdictValidatesBlockedCounts/finding-blocked_pass_is_unreadable`,
+  which asserts `QAReportError`, and
+  `TestRunArchiveRefusesMissingOrNonPassingQA/finding-blocked_pass_QA_Report`,
+  which asserts archive exit 2 and the unreadable-report diagnostic.
+- Environment-blocked `pass`: the focused run passed
+  `TestQAVerdictValidatesBlockedCounts/environment-blocked_pass_is_readable`;
+  `TestRunArchiveMovesCompletedSpecAndStampsMetadata` now archives a report
+  carrying `rows_blocked_environment: 3`.
+- Backward compatibility: the focused run passed
+  `TestQAVerdictValidatesBlockedCounts/absent_counts_default_to_zero` and the
+  existing supported-verdict cases. The fixture's existing unknown `surfaces`
+  key remained accepted.
+- Malformed counts: the focused run passed negative and non-integer cases for
+  both blocked-count fields, each requiring `QAReportError`.
+- Unchanged verdict and archive semantics: focused cases keep finding-blocked
+  `partial` and `fail` readable, while the archive matrix now exercises
+  archivable `pass`, refused `partial`, and refused `fail`.

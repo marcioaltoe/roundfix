@@ -17,7 +17,7 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 		{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
 		{id: "task_02", title: "Wire the widget API", status: string(spec.StatusCompleted), needs: []string{"task_01"}},
 	})
-	writeArchiveQAReport(t, repoDir, spec.VerdictPass)
+	writeArchiveQAReport(t, repoDir, spec.VerdictPass, "rows_blocked_environment: 3")
 	withNoEngineCollaborators(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -120,11 +120,12 @@ func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
-func TestRunArchiveRefusesMissingOrFailingQA(t *testing.T) {
+func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
 	tests := []struct {
-		name       string
-		verdict    string
-		wantStderr []string
+		name             string
+		verdict          string
+		extraFrontmatter []string
+		wantStderr       []string
 	}{
 		{
 			name:    "missing QA Report",
@@ -143,6 +144,26 @@ func TestRunArchiveRefusesMissingOrFailingQA(t *testing.T) {
 				"expected \"pass\"",
 			},
 		},
+		{
+			name:    "partial QA Report",
+			verdict: spec.VerdictPartial,
+			wantStderr: []string{
+				"no passing QA verdict",
+				"newest QA Report verdict is \"partial\"",
+				"expected \"pass\"",
+			},
+		},
+		{
+			name:             "finding-blocked pass QA Report",
+			verdict:          spec.VerdictPass,
+			extraFrontmatter: []string{"rows_blocked_finding: 1"},
+			wantStderr: []string{
+				"no passing QA verdict",
+				"QA Report",
+				"is unreadable",
+				"rows_blocked_finding must be zero when verdict is \"pass\"",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -151,7 +172,7 @@ func TestRunArchiveRefusesMissingOrFailingQA(t *testing.T) {
 				{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
 			})
 			if tt.verdict != "" {
-				writeArchiveQAReport(t, repoDir, tt.verdict)
+				writeArchiveQAReport(t, repoDir, tt.verdict, tt.extraFrontmatter...)
 			}
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
@@ -200,11 +221,13 @@ func TestRunArchiveHelp(t *testing.T) {
 	}
 }
 
-func writeArchiveQAReport(t *testing.T, repoDir string, verdict string) {
+func writeArchiveQAReport(t *testing.T, repoDir string, verdict string, extraFrontmatter ...string) {
 	t.Helper()
 	reportPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "qa", "qa-report-2026-07-06.md")
 	mustMkdir(t, filepath.Dir(reportPath))
-	mustWrite(t, reportPath, implementQAReport(verdict))
+	fields := append([]string{"verdict: " + verdict}, extraFrontmatter...)
+	report := "---\n" + strings.Join(fields, "\n") + "\n---\n\n# QA Report\n"
+	mustWrite(t, reportPath, report)
 }
 
 func assertPathExists(t *testing.T, path string) {

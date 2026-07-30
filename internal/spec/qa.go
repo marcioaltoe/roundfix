@@ -133,9 +133,10 @@ func isDigits(value string) bool {
 	return true
 }
 
-// QAVerdict reads the verdict from the newest qa/qa-report-*.md frontmatter
-// in the Spec directory. Missing reports surface as ErrNoQAReport; reports
-// whose verdict cannot be read surface as QAReportError.
+// QAVerdict reads and validates the verdict metadata from the newest
+// qa/qa-report-*.md frontmatter in the Spec directory. Missing reports surface
+// as ErrNoQAReport; unreadable or inconsistent metadata surfaces as
+// QAReportError.
 func QAVerdict(specDir string) (string, error) {
 	newest, err := NewestQAReport(specDir)
 	if err != nil {
@@ -151,17 +152,53 @@ func QAVerdict(specDir string) (string, error) {
 		return "", QAReportError{Path: newest, Err: err}
 	}
 	var report struct {
-		Verdict string `yaml:"verdict"`
+		Verdict                string    `yaml:"verdict"`
+		RowsBlockedEnvironment yaml.Node `yaml:"rows_blocked_environment"`
+		RowsBlockedFinding     yaml.Node `yaml:"rows_blocked_finding"`
 	}
 	if err := yaml.Unmarshal(frontmatterBytes, &report); err != nil {
 		return "", QAReportError{Path: newest, Err: err}
 	}
+	if _, err := qaBlockedCount(report.RowsBlockedEnvironment, "rows_blocked_environment"); err != nil {
+		return "", QAReportError{Path: newest, Err: err}
+	}
+	rowsBlockedFinding, err := qaBlockedCount(report.RowsBlockedFinding, "rows_blocked_finding")
+	if err != nil {
+		return "", QAReportError{Path: newest, Err: err}
+	}
 	switch report.Verdict {
-	case VerdictPass, VerdictFail, VerdictPartial:
+	case VerdictPass:
+		if rowsBlockedFinding > 0 {
+			return "", QAReportError{
+				Path: newest,
+				Err:  fmt.Errorf("rows_blocked_finding must be zero when verdict is %q", VerdictPass),
+			}
+		}
+		return report.Verdict, nil
+	case VerdictFail, VerdictPartial:
 		return report.Verdict, nil
 	case "":
 		return "", QAReportError{Path: newest, Err: errors.New("frontmatter has no verdict field")}
 	default:
 		return "", QAReportError{Path: newest, Err: fmt.Errorf("unsupported verdict %q", report.Verdict)}
 	}
+}
+
+// qaBlockedCount reads one optional typed blocked-cause count. An absent field
+// is zero; a present field must be a non-negative YAML integer scalar.
+func qaBlockedCount(node yaml.Node, field string) (int, error) {
+	if node.Kind == 0 {
+		return 0, nil
+	}
+	if node.Kind != yaml.ScalarNode || node.Tag != "!!int" {
+		return 0, fmt.Errorf("cannot unmarshal %s as a non-negative integer", field)
+	}
+	var count int
+	if err := node.Decode(&count); err != nil {
+		return 0, fmt.Errorf("cannot unmarshal %s as a non-negative integer: %w", field, err)
+	}
+	if count < 0 {
+		return 0, fmt.Errorf("%s must be a non-negative integer", field)
+	}
+	return count, nil
 }
