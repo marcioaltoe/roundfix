@@ -638,6 +638,39 @@ validates the recorded owner PID, terminates the recorded owner process, and
 proves that process exited. Until owner exit is proven, registered Agent
 Sessions and their Agent Selection lifecycles remain active.
 
+Owner identity comes from a direct kernel read: procfs on Linux and sysctl on
+macOS. Roundfix spawns no subprocess for capture or comparison, so the proof
+still works when the host cannot fork. A Run whose identity capture fails at
+creation still starts, prints this warning once, and carries a durable marker:
+
+```text
+roundfix: warning: Run <run-id> started with PID-only reuse protection because owner identity capture failed at creation.
+```
+
+`roundfix runs list` appends `owner_identity_unproven=true` to that Run.
+
+Owner identity proof has two distinct refusal conditions:
+
+- A proven mismatch means the live process has a different comparable start
+  identity from the recorded owner. Leave the Run Active and its lock retained,
+  investigate PID reuse, and do not signal that process. The
+  `--owner-identity-unreadable` flag never overrides this refusal.
+- An unreadable identity means the host could not read or compare the identity.
+  For a kernel-read failure, the diagnostic includes the host error and tells
+  the operator to resolve the host resource failure, then retry the normal
+  Force Stop.
+
+Only when the normal Force Stop specifically reports an unreadable owner
+identity may an operator use this last-resort command:
+
+```bash
+roundfix stop --force --owner-identity-unreadable <run-id>
+```
+
+The flag authorizes PID-only termination for that one condition. It exits `2`
+and signals nothing when identity is readable or proves a mismatch; no
+configuration, environment variable, default, or timeout can activate it.
+
 After owner exit proof, Force Stop cancels and closes only registered Agent
 Sessions whose latest Agent Selection lifecycle is active. No active lifecycle
 record means no session action, and an already-absent registered session is an

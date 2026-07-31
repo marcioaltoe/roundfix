@@ -25,7 +25,7 @@ A user's explicit request to end an Active Run before it reaches another termina
 _Avoid_: Pause, retry, failure
 
 **Force Stop**:
-The Stop Command mode that cancels registered Agent Sessions, terminates the recorded owning process, and completes the Run as Stopped only after owner exit is proven.
+The Stop Command mode that proves owner identity, cancels registered Agent Sessions, terminates the recorded owning process, and completes the Run as Stopped only after owner exit is proven. A proven identity mismatch always refuses; only the explicit `--owner-identity-unreadable` last-resort flag permits PID-only termination after the host reports the identity unreadable.
 _Avoid_: Lock release, best-effort stop, orphan reclamation
 
 **PR Head Branch**:

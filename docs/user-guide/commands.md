@@ -703,6 +703,7 @@ parent head used by artifact-only inheritance.
 ```bash
 roundfix stop <run-id>
 roundfix stop --force <run-id>
+roundfix stop --force --owner-identity-unreadable <run-id>
 ```
 
 Selectors: positional `<run-id>`, `--run-id`, `--pr`, `--spec`, or
@@ -724,6 +725,29 @@ Stopped, release the Active Run lock, and reap kept terminal Worktrees whose
 branch has no commits beyond its base. An already-absent registered Agent
 Session is an idempotent cleanup result.
 
+Roundfix captures and compares owner identity through a direct kernel read:
+procfs on Linux and sysctl on macOS. It spawns no subprocess, so Force Stop can
+prove ownership on a host that cannot fork. If capture fails when a Run starts,
+Roundfix prints one startup warning that the Run has PID-only reuse protection.
+`roundfix runs list` keeps that condition visible by appending
+`owner_identity_unproven=true` to the Run.
+
+Owner identity proof can refuse Force Stop for two different reasons:
+
+- A proven mismatch means the live process has a different comparable start
+  identity from the recorded owner. Investigate PID reuse and do not signal
+  that process. The Run remains Active, its lock stays retained, and
+  `--owner-identity-unreadable` never applies.
+- An unreadable identity means the host could not read or compare the identity.
+  A kernel-read diagnostic includes the host error and directs you to resolve
+  the host resource failure, then retry the normal Force Stop.
+
+Use `--owner-identity-unreadable` only as an operator action of last resort,
+after the normal Force Stop specifically reports an unreadable identity. It
+authorizes PID-only termination for that condition. If identity is readable or
+proves a mismatch, Roundfix exits `2` without signaling the process. The flag
+cannot be enabled by configuration, environment, a default, or a timeout.
+
 If owner exit cannot be proven, Force Stop fails with no stdout success report.
 The diagnostic names the Run ID, owner PID, and failed process-control step;
 the Run remains Active and its Active Run lock stays retained. Inspect the Run
@@ -736,8 +760,9 @@ is still alive.
 Exit codes: `0` for a recorded Stop Request, a completed Force Stop, and the
 idempotent already-Stopped report; `1` when Force Stop fails operationally
 because owner exit cannot be proven; `2` for Preflight Validation failures
-such as an invalid selector, no matching Active Run, or stopping a Run that
-already holds a different terminal outcome.
+such as an invalid selector, no matching Active Run, an invalid
+`--owner-identity-unreadable` precondition, or stopping a Run that already
+holds a different terminal outcome.
 
 Terminal results are stable. Repeating Force Stop for an already Stopped Run
 reports the existing outcome without repeating process or Agent Session
