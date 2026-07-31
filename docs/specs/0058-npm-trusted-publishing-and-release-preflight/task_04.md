@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0058-npm-trusted-publishing-and-release-preflight
-status: pending
+status: completed
 type: infra
 complexity: high
 ---
@@ -96,3 +96,58 @@ retry is recorded so the window has an evidence-based exit condition.
 - `_techspec.md` → Implementation Design: Interfaces; Project Constraints:
   Authentication and HTTP; Build Order 5.
 - ADR-0031, ADR-0082, ADR-0084.
+
+## Result
+
+Implemented the publish-stage identity migration within the authorized
+workflow path. Each coordinate now attempts an uncredentialed OIDC publish
+first. A repository variable gates one token-backed retry, and the workflow
+records successful fallback use by coordinate in the run summary. The existing
+platform loop remains before the launcher publish, with GitHub Release still
+the final stage.
+
+### Focused checks
+
+- `rtk git diff --check` — exited 0 after the workflow edit.
+- A Ruby structural assertion over the publish step — exited 0 and confirmed
+  one fallback-scoped `NODE_AUTH_TOKEN` assignment, the external `vars.`
+  switch, the named closed-window `identity:` failure, platform-before-launcher
+  ordering, and both used-fallback and empty-fallback summary outcomes.
+- A Ruby YAML load of `.github/workflows/release.yml` — exited 0. The first
+  attempt used a newer Psych keyword unsupported by the system Ruby 2.6 and
+  exited 1; the compatible loader rerun parsed the workflow.
+- A Ruby extraction of the `Publish to npm` script followed by `bash -n` —
+  exited 0 after masking the GitHub secret expression. The first loader attempt
+  hit the same Ruby 2.6 keyword incompatibility; the compatible rerun parsed the
+  script.
+- `rtk command -v actionlint` — exited 1 because `actionlint` is not installed;
+  the YAML and extracted-shell checks above provide the focused syntax evidence
+  available in this worktree.
+
+### Acceptance evidence
+
+1. The publish step no longer has a step-wide npm credential. Its only
+   `NODE_AUTH_TOKEN` occurrence is the assignment on the token retry command
+   inside `publish_coordinate`.
+2. `publish_coordinate` attempts `npm publish` without a token, retries once
+   with the secret only when `FALLBACK_WINDOW=1`, appends the coordinate after
+   a successful retry, and then returns to the release-set loop.
+3. When the fallback variable is not `1`, the helper emits
+   `::error::identity: <coordinate> failed OIDC publish and the fallback window
+   is closed` and returns non-zero under `set -e`.
+4. `FALLBACK_WINDOW` reads
+   `vars.NPM_TRUSTED_PUBLISHING_FALLBACK`, so closing the window is a GitHub
+   repository-variable change rather than a workflow edit.
+5. The summary prints coordinate-only list items when the fallback log is
+   non-empty and `No coordinates required the bounded token fallback.` when it
+   is empty.
+6. The secret expression appears only in the retry assignment. No output
+   command references the secret or its environment variable, and the
+   fallback log contains coordinate names only.
+7. The five platform coordinates still pass through the release-set loop
+   before the explicit `roundfix` launcher call. The unchanged GitHub Release
+   step follows the publish step.
+8. The changed-path postflight is recorded after the final documentation edit;
+   Daemon-owned Verification remains pending.
+
+The commands under `## Verification` were not run; the Daemon owns that gate.
