@@ -539,6 +539,9 @@ func TestCreateRunPersistsOwnerIdentityAcrossRunQueries(t *testing.T) {
 	if created.OwnerIdentity != wantIdentity {
 		t.Fatalf("expected created Run owner identity %q, got %q", wantIdentity, created.OwnerIdentity)
 	}
+	if created.OwnerIdentityUnproven {
+		t.Fatal("expected captured owner identity to leave the unproven marker unset")
+	}
 
 	found, ok, err := runStore.Run(ctx, created.ID)
 	if err != nil || !ok {
@@ -563,19 +566,31 @@ func TestCreateRunPersistsOwnerIdentityAcrossRunQueries(t *testing.T) {
 	if rawOwnerIdentity != wantIdentity {
 		t.Fatalf("expected raw owner_identity %q, got %q", wantIdentity, rawOwnerIdentity)
 	}
+	var rawOwnerIdentityUnproven int
+	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_identity_unproven FROM runs WHERE id = ?`, created.ID).Scan(&rawOwnerIdentityUnproven); err != nil {
+		t.Fatalf("read owner_identity_unproven: %v", err)
+	}
+	if rawOwnerIdentityUnproven != 0 {
+		t.Fatalf("expected owner_identity_unproven 0 with a recorded token, got %d", rawOwnerIdentityUnproven)
+	}
 }
 
-func TestCreateRunWithoutOwnerIdentityStoresNull(t *testing.T) {
+func TestCreateRunWithoutOwnerIdentityMarksCaptureFailure(t *testing.T) {
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
 
-	created, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	req := sampleCreateRunRequest()
+	req.OwnerPID = os.Getpid()
+	created, err := runStore.CreateRun(ctx, req)
 	if err != nil {
 		t.Fatalf("expected Run creation, got %v", err)
 	}
 	if created.OwnerIdentity != "" {
 		t.Fatalf("expected empty owner identity, got %q", created.OwnerIdentity)
+	}
+	if !created.OwnerIdentityUnproven {
+		t.Fatal("expected missing owner identity for a recorded owner PID to set the unproven marker")
 	}
 
 	var rawOwnerIdentity any
@@ -584,6 +599,13 @@ func TestCreateRunWithoutOwnerIdentityStoresNull(t *testing.T) {
 	}
 	if rawOwnerIdentity != nil {
 		t.Fatalf("expected owner_identity NULL without a recorded token, got %#v", rawOwnerIdentity)
+	}
+	var rawOwnerIdentityUnproven int
+	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_identity_unproven FROM runs WHERE id = ?`, created.ID).Scan(&rawOwnerIdentityUnproven); err != nil {
+		t.Fatalf("read owner_identity_unproven: %v", err)
+	}
+	if rawOwnerIdentityUnproven != 1 {
+		t.Fatalf("expected owner_identity_unproven 1 after capture failure, got %d", rawOwnerIdentityUnproven)
 	}
 }
 
@@ -2422,6 +2444,9 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	if active.OwnerIdentity != "" {
 		t.Fatalf("expected migrated v7 Run to have no owner identity, got %q", active.OwnerIdentity)
 	}
+	if active.OwnerIdentityUnproven {
+		t.Fatal("expected migrated legacy Run to leave the unproven marker unset")
+	}
 
 	var rawOwnerPID any
 	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_pid FROM runs WHERE id = 'run_v7_active'`).Scan(&rawOwnerPID); err != nil {
@@ -2436,6 +2461,53 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	}
 	if rawOwnerIdentity != nil {
 		t.Fatalf("expected migrated owner_identity NULL for legacy row, got %#v", rawOwnerIdentity)
+	}
+	var rawOwnerIdentityUnproven int
+	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_identity_unproven FROM runs WHERE id = 'run_v7_active'`).Scan(&rawOwnerIdentityUnproven); err != nil {
+		t.Fatalf("read migrated owner_identity_unproven column: %v", err)
+	}
+	if rawOwnerIdentityUnproven != 0 {
+		t.Fatalf("expected migrated owner_identity_unproven 0 for legacy row, got %d", rawOwnerIdentityUnproven)
+	}
+}
+
+func TestOpenMigratesV11RunDatabaseAddingOwnerIdentityUnproven(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	req := sampleCreateRunRequest()
+	req.OwnerPID = os.Getpid()
+	created, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create pre-marker Run: %v", err)
+	}
+	closeStore(t, runStore)
+
+	db, err := sql.Open("sqlite", writerDSN(DatabasePath(homeDir)))
+	if err != nil {
+		t.Fatalf("open v11 fixture: %v", err)
+	}
+	for _, statement := range []string{
+		`ALTER TABLE runs DROP COLUMN owner_identity_unproven`,
+		`PRAGMA user_version = 11`,
+	} {
+		if _, err := db.Exec(statement); err != nil {
+			_ = db.Close()
+			t.Fatalf("build v11 fixture: %v", err)
+		}
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close v11 fixture: %v", err)
+	}
+
+	migrated := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, migrated)
+	run, found, err := migrated.Run(ctx, created.ID)
+	if err != nil || !found {
+		t.Fatalf("read migrated v11 Run: found=%v err=%v", found, err)
+	}
+	if run.OwnerIdentity != "" || run.OwnerIdentityUnproven {
+		t.Fatalf("expected v11 NULL identity to migrate with marker unset, got %#v", run)
 	}
 }
 
@@ -2480,7 +2552,7 @@ func TestOpenReaderRejectsMismatchedSchemaVersion(t *testing.T) {
 	}
 	for _, want := range []string{
 		"schema version 9",
-		"supports schema version 11",
+		fmt.Sprintf("supports schema version %d", schemaVersion),
 		"resolve, watch, or implement",
 	} {
 		if !strings.Contains(err.Error(), want) {

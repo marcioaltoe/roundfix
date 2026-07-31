@@ -1,0 +1,59 @@
+Build: 62c4ff10c4f22f4d29de5146b4ddf3f688bf20e4
+Audit date: 2026-07-31
+
+Spec state
+- task_01 through task_05 each have status: completed.
+- The PRD and TechSpec are active and both contain Project Constraints.
+
+Applicability and operative sources
+- Identifier strategy: not applicable because the token stays opaque and no
+  project-owned Internal Identifier is created. Source:
+  docs/agents/domain.md.
+- Authentication and HTTP: not applicable because the change is local process
+  inspection and CLI parsing only. Source: docs/agents/cli.md.
+- Active ADR obligations: applicable. ADR-0044 requires proven owner death;
+  ADR-0052 requires compare-and-set completion. Source:
+  docs/agents/domain.md and the accepted ADR files.
+- Tooling authority: applicable. Source:
+  docs/agents/agent-instructions.md.
+
+Authorization ancestry
+- 397227ff8a1ecbc1f1fa5d180bea282a33429bee introduced the PRD's exact
+  tooling authorization on 2026-07-28.
+- f6b284f295f4f802e89d3586d4a24109b4c9ca85 introduced the TechSpec's
+  matching authorization on 2026-07-30.
+- Both commits precede all Task commits. The authorization was not folded into
+  Task 05.
+
+Task commit path audit
+Commands: git diff-tree --no-commit-id --name-only -r <commit>
+- task_01 5fc2bc3d62438d587be0572a326e6e9dafd8e027: task_01.md and
+  internal/store/process_{darwin,linux,linux_test,unix,unix_other,unix_test}.go.
+- task_02 e11f7ce0e1cc91b799332b686254d32a49df6ea9: task_02.md,
+  internal/store/process.go, internal/store/process_unix_test.go, and
+  internal/cli/orphan_unix_test.go.
+- task_03 7703375b92095180a044fa96c4816b2773c787aa: task_03.md,
+  internal/store/store.go, internal/store/store_test.go, and the bounded CLI
+  implementation/tests for startup and Run listing.
+- task_04 501dda2f90f1bf6db8474176acb9b0f3f0f2786b: task_04.md and
+  internal/cli/{attach.go,cli.go,cli_test.go}.
+- task_05 62c4ff10c4f22f4d29de5146b4ddf3f688bf20e4: task_05.md,
+  the authorized Skill pair, CONTEXT.md, both user-guide pages, and exactly
+  the five authorized derived digest paths.
+
+Task 05 protected paths
+- .agents/skills/roundfix/SKILL.md
+- skills/roundfix/SKILL.md
+- internal/baseline/assets/setups/typescript-bun.json
+- internal/baseline/testdata/catalog.digest
+- internal/baseline/testdata/catalog.normalized.json
+- internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json
+- internal/baseline/testdata/parity-corpus/v1/manifest.json
+
+No protected path outside the authorization changed. No prerequisite tooling
+fix or consequent tooling fix exists in the Task ancestry. The Skill source
+and deterministic fallout are together in the authorized Task commit, which
+is the sanctioned same-Task regeneration shape. Fresh `make baseline-digests`
+reported changed:false.
+
+The only current worktree paths are under this Spec's qa/ directory.

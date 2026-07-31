@@ -1,0 +1,21 @@
+Status: blocked (environment: no safe public mechanism to force Darwin kernel
+owner-identity capture failure at Run creation)
+
+The healthy Darwin host returned direct-kernel identities for every controlled
+process. Producing a genuine creation-time sysctl failure would require a host
+resource fault or a production-only injection seam; neither is safe or present
+in this gate environment.
+
+Equivalent current-build evidence:
+- `TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture` ran in the fresh
+  24-case CLI selection and passed. It observes successful Run creation, exactly
+  one startup warning, two Run reads without another warning, and the durable
+  marker through the public CLI runner.
+- The fresh store selection passed the marker set/unset and migration cases.
+- A controlled public `roundfix runs list` read rendered
+  `owner_identity_unproven=true` while the Run was Active and after it was
+  Stopped, including under `ROUNDFIX_COLOR=never`.
+
+Unblocking action: repeat the public Implement startup journey on a supervised
+host where the kernel identity read can be made genuinely unreadable without
+risk to unrelated processes. No product finding was observed.

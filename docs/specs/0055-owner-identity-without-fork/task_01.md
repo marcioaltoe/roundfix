@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0055-owner-identity-without-fork
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -71,8 +71,43 @@ escape. Replace it with a direct kernel read per platform: procfs on Linux,
   — expected: both compile.
 - `go test -count=1 ./internal/store/` — expected: pass, including the
   no-subprocess and comm-parsing cases.
+- `make verify` — expected: exit 0.
 
 ## References
 
 `_prd.md` → Goal 1, Story 1, Feature 1; `_techspec.md` → Build Order 1,
 Interfaces, Risks (procfs field parsing).
+
+## Result
+
+Implemented direct, platform-tagged owner start-identity reads. Linux now reads
+field 22 from `/proc/<pid>/stat` after locating the comm field's last `)`,
+macOS reads `kern.proc.pid` through `golang.org/x/sys/unix`, and unsupported
+Unix targets return an unreadable/unsupported identity error. Tokens are
+prefixed with `linux:` or `darwin:`. The common Unix process absence and signal
+functions, Windows implementation, and non-Unix implementation are unchanged.
+
+Focused checks and acceptance evidence:
+
+- No subprocess: before the implementation,
+  `GOCACHE=<repo>/.gocache rtk go test ./internal/store -run '^TestOwnerProcessIdentityDoesNotSpawnPS$'`
+  failed because the PATH-shadowed `ps` exited 99. After the implementation,
+  the same case passed within the 15-case focused owner-process run. A static
+  absence check over the four Unix production files also found no `os/exec`,
+  `exec.Command`, or `import "C"`.
+- Stable token: `TestOwnerProcessIdentityIsStableForOneProcess` passed twice in
+  focused runs and also asserted the current `darwin:` platform prefix.
+- Process gone: `TestOwnerProcessIdentityFailsForAbsentProcess` passed on the
+  Darwin host and matched `ESRCH`; the Linux read wraps `os.ReadFile` errors
+  with `%w`, preserving `ENOENT` for `/proc/<pid>/stat`.
+- Proc stat parsing: the Linux-tagged synthetic payload includes spaces and a
+  `)` inside comm; `GOCACHE=<repo>/.gocache rtk go test -count=1
+  ./internal/store/process_linux.go ./internal/store/process_linux_test.go`
+  passed both the field-22 and malformed-payload cases.
+- Target compilation: cgo-disabled focused compilation/execution passed on
+  Darwin (`15` owner-process cases), and cgo-disabled `go test -c` succeeded
+  for Linux, Windows, and unsupported-Unix FreeBSD package test binaries.
+- `rtk git diff --check` exited 0.
+
+The commands under `## Verification` were not run; Daemon Verification owns
+those commands and the Task verdict.

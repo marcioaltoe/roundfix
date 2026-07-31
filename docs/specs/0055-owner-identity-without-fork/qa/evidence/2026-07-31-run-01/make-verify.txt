@@ -1,0 +1,19 @@
+Command: rtk make verify
+Recorded run: 2026-07-31 after the QA evidence set was reduced to
+non-executable text artifacts
+Exit: 0
+
+rtk go test ./...
+Go test: 2935 passed in 24 packages
+rtk go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+Go test: 4 passed in 1 packages
+rtk go run -buildvcs=false ./cmd/roundfix skills check
+Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, implement-spec, brainstorming, council, business-analyst, archive-spec, qa-gate, evidence-gate
+rtk go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=62c4ff1-dirty' -X 'roundfix/internal/app.BuildTime=2026-07-31 08:54:26 -0300'" -o bin/roundfix ./cmd/roundfix
+
+`dirty` identifies the uncommitted QA report/evidence in this Daemon-owned Run
+Worktree; `git status --short` lists only the Spec's qa/ directory.
+
+Close verification: the same unchanged command ran again after the report was
+closed. It exited 0 with the same test/Skill/build results; the only dynamic
+build field changed to `BuildTime=2026-07-31 08:57:34 -0300`.

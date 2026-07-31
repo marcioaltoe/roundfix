@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -134,7 +135,7 @@ func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
 		SpecSlug:      "0001-widget-flow",
 		Agent:         "codex",
 		OwnerPID:      pid,
-		OwnerIdentity: "identity-token-of-exited-owner-process",
+		OwnerIdentity: runtime.GOOS + ":identity-token-of-exited-owner-process",
 	}
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {

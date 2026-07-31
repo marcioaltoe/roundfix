@@ -1,0 +1,11 @@
+Post-execution checks
+
+- `git status --short`: only
+  `?? docs/specs/0055-owner-identity-without-fork/qa/`.
+- `git diff --check`: exit 0.
+- `find docs/specs/0055-owner-identity-without-fork/qa -type f -perm +111`:
+  exit 0 with no paths. QA adds no executable staging artifact.
+- The recurring fsmonitor diagnostic was
+  `fsmonitor_ipc__send_query: unspecified error` for the Run Worktree IPC
+  socket. Git commands still returned their requested results and exit 0; it
+  did not affect the QA paths or repository gate.

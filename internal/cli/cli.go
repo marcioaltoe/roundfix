@@ -366,12 +366,13 @@ func runSkillsList(stdout io.Writer) int {
 }
 
 type stopRequest struct {
-	runID      string
-	pr         string
-	spec       string
-	headRepo   string
-	headBranch string
-	force      bool
+	runID                   string
+	pr                      string
+	spec                    string
+	headRepo                string
+	headBranch              string
+	force                   bool
+	ownerIdentityUnreadable bool
 }
 
 type stopResult struct {
@@ -497,7 +498,8 @@ func parseStopCommand(args []string) (stopRequest, error) {
 	fs.StringVar(&req.headRepo, "head-repo", "", "Head Repository, owner/name")
 	fs.StringVar(&req.headBranch, "head-branch", "", "PR Head Branch")
 	fs.BoolVar(&req.force, "force", false, "Immediately stop the target Run and release its lock")
-	if err := fs.Parse(args); err != nil {
+	fs.BoolVar(&req.ownerIdentityUnreadable, "owner-identity-unreadable", false, "Permit Force Stop only when the owner identity is unreadable")
+	if err := fs.Parse(hoistCommandFlags(args, stopValueFlags)); err != nil {
 		return req, validationError{message: err.Error()}
 	}
 	remaining := fs.Args()
@@ -515,6 +517,9 @@ func parseStopCommand(args []string) (stopRequest, error) {
 	req.spec = strings.TrimSpace(req.spec)
 	req.headRepo = strings.TrimSpace(req.headRepo)
 	req.headBranch = strings.TrimSpace(req.headBranch)
+	if req.ownerIdentityUnreadable && !req.force {
+		return req, validationError{message: "--owner-identity-unreadable requires --force"}
+	}
 	headSelector := req.headRepo != "" || req.headBranch != ""
 	if req.runID != "" && (req.pr != "" || req.spec != "" || headSelector) {
 		return req, validationError{message: "--run-id cannot be combined with --pr, --spec, --head-repo, or --head-branch"}
@@ -536,6 +541,15 @@ func parseStopCommand(args []string) (stopRequest, error) {
 	return req, nil
 }
 
+var stopValueFlags = map[string]bool{
+	"run-id":      true,
+	"run":         true,
+	"pr":          true,
+	"spec":        true,
+	"head-repo":   true,
+	"head-branch": true,
+}
+
 func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Loaded, runStore *store.Store, stderr io.Writer) (stopResult, error) {
 	if req.runID != "" {
 		current, found, err := runStore.Run(ctx, req.runID)
@@ -545,7 +559,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 			return stopResult{}, validationError{message: fmt.Sprintf("Run %q does not exist", req.runID)}
 		}
 		if req.force {
-			return forceStopRun(ctx, runStore, current, loaded.Config.Worktree.Location)
+			return forceStopRun(ctx, runStore, current, loaded.Config.Worktree.Location, req.ownerIdentityUnreadable)
 		}
 		if reclaimed, ok, err := reclaimOrphanedActiveRun(ctx, runStore, current, stderr); err != nil {
 			return stopResult{}, err
@@ -572,7 +586,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 			return stopResult{}, validationError{message: fmt.Sprintf("no Active Run exists for repository %q and Spec %q", gitRoot, specSlug)}
 		}
 		if req.force {
-			return forceStopRun(ctx, runStore, active, loaded.Config.Worktree.Location)
+			return forceStopRun(ctx, runStore, active, loaded.Config.Worktree.Location, req.ownerIdentityUnreadable)
 		}
 		if reclaimed, ok, err := reclaimOrphanedActiveRun(ctx, runStore, active, stderr); err != nil {
 			return stopResult{}, err
@@ -612,7 +626,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 		return stopResult{}, validationError{message: fmt.Sprintf("no Active Run exists for Head Repository %q and PR Head Branch %q", headRepo, headBranch)}
 	}
 	if req.force {
-		return forceStopRun(ctx, runStore, active, loaded.Config.Worktree.Location)
+		return forceStopRun(ctx, runStore, active, loaded.Config.Worktree.Location, req.ownerIdentityUnreadable)
 	}
 	if reclaimed, ok, err := reclaimOrphanedActiveRun(ctx, runStore, active, stderr); err != nil {
 		return stopResult{}, err
@@ -625,8 +639,11 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 	return stopResult{Run: active, Requested: true}, nil
 }
 
-func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, worktreeLocation string) (stopResult, error) {
+func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, worktreeLocation string, ownerIdentityUnreadable bool) (stopResult, error) {
 	if store.IsTerminalState(active.State) {
+		if ownerIdentityUnreadable {
+			return stopResult{Run: active}, validationError{message: "--owner-identity-unreadable requires an Active Run whose owner identity proof is unreadable"}
+		}
 		if active.State == store.StateStopped {
 			return stopResult{Run: active, Forced: true}, nil
 		}
@@ -651,16 +668,29 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 	// Sessions intact. Once the owner is proven, PRD Core Feature 3 orders the
 	// destructive steps: cancel registered Agent Sessions, then terminate the
 	// owner and wait for its exit.
+	terminationIdentity := active.OwnerIdentity
 	if err := ownerProcesses.ProveOwner(ctx, pid, active.OwnerIdentity); err != nil {
-		return stopResult{Run: active}, forceStopOwnerError{
-			RunID: active.ID,
-			PID:   pid,
-			Step:  forceStopOwnerStep(err, "prove owner process identity"),
-			Err:   err,
+		switch {
+		case ownerIdentityUnreadable && errors.Is(err, store.ErrOwnerIdentityUnreadable):
+			// The explicit supervised flag authorizes the existing PID-only
+			// termination proof after the identity read failed. No config,
+			// environment, default, or timeout reaches this branch.
+			terminationIdentity = ""
+		case ownerIdentityUnreadable && errors.Is(err, store.ErrOwnerProcessIdentityUnproven):
+			return stopResult{Run: active}, validationError{message: fmt.Sprintf("--owner-identity-unreadable cannot override a proven owner identity mismatch: %v", err)}
+		default:
+			return stopResult{Run: active}, forceStopOwnerError{
+				RunID: active.ID,
+				PID:   pid,
+				Step:  forceStopOwnerStep(err, "prove owner process identity"),
+				Err:   err,
+			}
 		}
+	} else if ownerIdentityUnreadable {
+		return stopResult{Run: active}, validationError{message: "--owner-identity-unreadable may be used only when the owner identity is unreadable"}
 	}
 	warnings := bestEffortForceStopAgentSessions(ctx, runStore, active)
-	if err := ownerProcesses.TerminateAndWait(ctx, pid, active.OwnerIdentity); err != nil {
+	if err := ownerProcesses.TerminateAndWait(ctx, pid, terminationIdentity); err != nil {
 		return stopResult{Run: active, Warnings: warnings}, forceStopOwnerError{
 			RunID: active.ID,
 			PID:   pid,
@@ -4983,6 +5013,8 @@ Options:
   --head-repo   Explicit Head Repository, owner/name
   --head-branch Explicit PR Head Branch
   --force       Force Stop a dead, stuck, or runaway Run after proving owner exit
+  --owner-identity-unreadable
+                Permit Force Stop only after owner identity proof fails as unreadable
 
 Default stop is graceful: it records a Stop Request and the Run stops after
 the current Work Item settles. During a Review Source wait, the owner observes

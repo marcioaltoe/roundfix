@@ -27,7 +27,7 @@ graph:
 | task_01 | Read owner start identity from the kernel, never a fork    | backend | high       | —                                |
 | task_02 | Separate an unreadable identity from a proven mismatch     | backend | medium     | task_01                          |
 | task_03 | Mark and warn about a Run created without reuse protection | backend | medium     | —                                |
-| task_04 | Fix Stop argument order and add the supervised exit        | cli     | medium     | task_02                          |
+| task_04 | Fix Stop argument order and add the supervised exit        | backend | medium     | task_02                          |
 | task_05 | Document the diagnostics, the marker, and the exit         | docs    | low        | task_01, task_02, task_03, task_04 |
 
 Waves: 1 → task_01, task_03 · 2 → task_02 · 3 → task_04 · 4 → task_05

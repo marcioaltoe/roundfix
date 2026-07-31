@@ -2442,6 +2442,41 @@ func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
 	}
 }
 
+func TestRunRunsListRendersOwnerIdentityUnprovenMarker(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	createdAt := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
+	runs := seedRunsForList(t, homeDir, []runListSeed{
+		{
+			kind:      store.KindImplement,
+			state:     store.StateActive,
+			gitRoot:   repoDir,
+			branch:    "ma/spec-run",
+			specSlug:  "0055-owner-identity-without-fork",
+			ownerPID:  os.Getpid(),
+			createdAt: createdAt,
+		},
+	})
+	withRunsListNow(t, createdAt.Add(3*time.Minute))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+	}
+	want := fmt.Sprintf(
+		"%s  Active  implement  spec:0055-owner-identity-without-fork  codex  2026-07-06T12:00:00Z  running 3m  ma/spec-run  owner_identity_unproven=true\n",
+		runs[0].ID,
+	)
+	if stdout.String() != want {
+		t.Fatalf("Run inspection marker output:\n got: %q\nwant: %q", stdout.String(), want)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("Run inspection emitted diagnostics: %q", stderr.String())
+	}
+}
+
 func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
@@ -2547,7 +2582,7 @@ func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testi
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
 	}
 	wantStdout := fmt.Sprintf(
-		"%s  Active  implement  spec:active-spec  codex  2026-07-27T12:00:00Z  running 10m  ma/widget-flow\n",
+		"%s  Active  implement  spec:active-spec  codex  2026-07-27T12:00:00Z  running 10m  ma/widget-flow  owner_identity_unproven=true\n",
 		active.ID,
 	)
 	if stdout.String() != wantStdout {
@@ -8789,6 +8824,7 @@ func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) int {
 		}
 	}()
 	for _, statement := range []string{
+		`ALTER TABLE runs DROP COLUMN owner_identity_unproven`,
 		`ALTER TABLE runs DROP COLUMN owner_identity`,
 		`PRAGMA user_version = 9`,
 	} {
@@ -9253,6 +9289,127 @@ func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
 		t.Fatalf("expected force stop success report, got %q", stdout.String())
 	}
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+func TestRunForceStopAcceptsFlagsInAnyPosition(t *testing.T) {
+	orders := map[string]func(runID string) []string{
+		"run id then flag": func(runID string) []string { return []string{"stop", runID, "--force"} },
+		"flag then run id": func(runID string) []string { return []string{"stop", "--force", runID} },
+	}
+	for name, argsFor := range orders {
+		t.Run(name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), argsFor(active.ID), &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("Force Stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+			}
+			if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+				t.Fatalf("expected Force Stop success report, got %q", stdout.String())
+			}
+			assertRunState(t, homeDir, active.ID, store.StateStopped)
+		})
+	}
+}
+
+func TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof(t *testing.T) {
+	tests := []struct {
+		name              string
+		proofErr          error
+		withForce         bool
+		withFlag          bool
+		wantCode          int
+		wantTerminate     bool
+		wantDiagnostic    string
+		wantTerminalState string
+	}{
+		{
+			name:              "unreadable identity permits supervised stop",
+			proofErr:          fmt.Errorf("host pressure: %w", store.ErrOwnerIdentityUnreadable),
+			withForce:         true,
+			withFlag:          true,
+			wantCode:          exitOK,
+			wantTerminate:     true,
+			wantTerminalState: store.StateStopped,
+		},
+		{
+			name:              "readable matching identity refuses supervised flag",
+			withForce:         true,
+			withFlag:          true,
+			wantCode:          exitPreflight,
+			wantDiagnostic:    "only when the owner identity is unreadable",
+			wantTerminalState: store.StateActive,
+		},
+		{
+			name:              "proven mismatch refuses supervised flag",
+			proofErr:          fmt.Errorf("identity mismatch: %w", store.ErrOwnerProcessIdentityUnproven),
+			withForce:         true,
+			withFlag:          true,
+			wantCode:          exitPreflight,
+			wantDiagnostic:    "cannot override a proven owner identity mismatch",
+			wantTerminalState: store.StateActive,
+		},
+		{
+			name:              "unreadable identity without flag fails closed",
+			proofErr:          fmt.Errorf("host pressure: %w", store.ErrOwnerIdentityUnreadable),
+			withForce:         true,
+			wantCode:          exitRunFailed,
+			wantDiagnostic:    store.ErrOwnerIdentityUnreadable.Error(),
+			wantTerminalState: store.StateActive,
+		},
+		{
+			name:              "supervised flag requires Force Stop",
+			withFlag:          true,
+			wantCode:          exitPreflight,
+			wantDiagnostic:    "--owner-identity-unreadable requires --force",
+			wantTerminalState: store.StateActive,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+			terminateCalls := 0
+			withOwnerProcessController(t, ownerProcessControllerStub{
+				prove: func(context.Context, int, string) error {
+					return tt.proofErr
+				},
+				terminate: func(_ context.Context, _ int, recordedIdentity string) error {
+					terminateCalls++
+					if recordedIdentity != "" {
+						t.Fatalf("supervised termination identity = %q, want empty PID-only proof", recordedIdentity)
+					}
+					return nil
+				},
+			})
+			args := []string{"stop", active.ID}
+			if tt.withForce {
+				args = append(args, "--force")
+			}
+			if tt.withFlag {
+				args = append(args, "--owner-identity-unreadable")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), args, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("Force Stop exit = %d, want %d; stdout=%q stderr=%q", code, tt.wantCode, stdout.String(), stderr.String())
+			}
+			if (terminateCalls == 1) != tt.wantTerminate {
+				t.Fatalf("owner termination calls = %d, want termination=%v", terminateCalls, tt.wantTerminate)
+			}
+			if tt.wantDiagnostic != "" && !strings.Contains(stderr.String(), tt.wantDiagnostic) {
+				t.Fatalf("Force Stop diagnostic missing %q: %q", tt.wantDiagnostic, stderr.String())
+			}
+			assertRunState(t, homeDir, active.ID, tt.wantTerminalState)
+		})
+	}
 }
 
 func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testing.T) {
@@ -10014,6 +10171,7 @@ func TestRunStopHelpExplainsProofBeforeCompletion(t *testing.T) {
 		"roundfix stop --spec <slug>",
 		"--spec",
 		"--force",
+		"--owner-identity-unreadable",
 		"graceful",
 		"owner exit is proven",
 		"Run remains Active",
@@ -10625,14 +10783,16 @@ func assertReconcileBranchState(t *testing.T, repoDir string, branch string, wan
 }
 
 type runListSeed struct {
-	kind        string
-	state       string
-	gitRoot     string
-	branch      string
-	prNumber    string
-	specSlug    string
-	createdAt   time.Time
-	completedAt time.Time
+	kind          string
+	state         string
+	gitRoot       string
+	branch        string
+	prNumber      string
+	specSlug      string
+	ownerPID      int
+	ownerIdentity string
+	createdAt     time.Time
+	completedAt   time.Time
 }
 
 func seedRunsForList(t *testing.T, homeDir string, seeds []runListSeed) []store.Run {
@@ -10694,6 +10854,8 @@ func createRunRequestForList(seed runListSeed) store.CreateRunRequest {
 		Agent:           "codex",
 		Model:           "gpt-5.5",
 		ReasoningEffort: "xhigh",
+		OwnerPID:        seed.ownerPID,
+		OwnerIdentity:   seed.ownerIdentity,
 	}
 	if req.Kind == store.KindImplement {
 		req.SpecSlug = seed.specSlug

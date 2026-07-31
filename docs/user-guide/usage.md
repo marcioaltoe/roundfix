@@ -654,6 +654,7 @@ assigned statuses, and never marks an issue `duplicated`.
 roundfix stop --spec <slug>              # graceful: stops after the current Work Item settles
 roundfix stop --pr <number>              # graceful, by PR
 roundfix stop --force <run-id>           # dead, stuck, or runaway Runs only
+roundfix stop --force --owner-identity-unreadable <run-id> # unreadable identity only; last resort
 ```
 
 Graceful stop records a Stop Request and lets the in-flight Work Item finish its
@@ -668,6 +669,21 @@ Stopped only after owner exit is proven. Roundfix releases the Active Run lock
 only after that proof. Registered sessions that are already absent need no
 recovery; other cleanup failures appear as secondary warnings after the
 primary failure.
+
+Roundfix reads owner identity directly from the kernel and spawns no
+subprocess, so the proof remains available when the host cannot fork. If
+identity capture fails when a Run starts, one warning names its PID-only reuse
+protection. The durable `owner_identity_unproven=true` marker appears in
+`roundfix runs list`.
+
+Force Stop refuses a proven identity mismatch: investigate PID reuse and do not
+signal the process now using that PID. It also fails closed when owner identity
+is unreadable; resolve the reported host resource failure and retry. Only when
+that normal Force Stop specifically reports an unreadable identity may an
+operator use `--owner-identity-unreadable` as a last resort. The flag authorizes
+PID-only termination for that condition and never applies to a proven mismatch.
+If identity is readable or proves a mismatch, Roundfix exits `2` without
+signaling the process.
 
 If Force Stop cannot prove owner exit, it fails closed: the Run remains Active
 and the Active Run lock stays retained. Read the reported owner PID and failed

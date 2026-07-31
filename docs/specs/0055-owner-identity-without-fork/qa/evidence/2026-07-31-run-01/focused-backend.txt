@@ -1,0 +1,35 @@
+Fresh focused evidence on build 62c4ff10c4f22f4d29de5146b4ddf3f688bf20e4
+
+Command:
+rtk go test -count=1 ./internal/store -run '^(TestProcessAlive|TestOwnerProcessController|TestOwnerProcessIdentity)'
+Result: exit 0, 26 passed.
+
+This selection covers live/absent process checks, stable tokens, the ps-shadow
+no-subprocess case, matching and mismatched identity, unreadable legacy and
+foreign tokens, read failure with host error, exited-between-checks recovery,
+current-process refusal, graceful termination, and force-kill fallback.
+
+Command:
+rtk go test -count=1 ./internal/store -run '^(TestCreateRun(PersistsOwnerIdentityAcrossRunQueries|WithoutOwnerIdentityMarksCaptureFailure)|TestOpenMigrates(V3RunDatabasePreservingRunsAndRekeyingLocks|V7RunDatabaseAddingOwnerPID|V11RunDatabaseAddingOwnerIdentityUnproven)|TestCompleteRun(WinnerAndIdenticalReplay|ConcurrentTerminalOutcomesHaveOneWinner)|TestTerminalOutcome)'
+Result: exit 0, 21 passed.
+
+Command:
+rtk go test -count=1 ./internal/cli -run '^(TestRunForceStop|TestRunStopByRunIDRecordsStopRequest|TestRunStopGracefulThenForceCompletesImmediately|TestRunRunsListRendersOwnerIdentityUnprovenMarker|TestRunImplement(ExecutesSpecEndToEnd|WarnsOnceAndMarksFailedOwnerIdentityCapture))'
+Result: exit 0, 24 passed.
+
+This selection covers both Stop argument orders, the three supervised-flag
+proof states, unreadable default refusal, warning cardinality, persistent Run
+marker, successful-capture silence, Stop Request semantics, signaling order,
+legacy NULL behavior, and the CLI's real Run() surface.
+
+Command:
+rtk go test -count=1 ./internal/store/process_linux.go ./internal/store/process_linux_test.go
+Result: exit 0, 2 passed. The synthetic comm contains spaces and `)` and still
+selects field 22; malformed input is rejected.
+
+Cross-target compile probes, all exit 0:
+- CGO_ENABLED=0 GOOS=linux go test -c ./internal/store
+- CGO_ENABLED=0 GOOS=windows go test -c ./internal/store
+- CGO_ENABLED=0 GOOS=freebsd go test -c ./internal/store
+
+The current Darwin build also passed the full repository gate.

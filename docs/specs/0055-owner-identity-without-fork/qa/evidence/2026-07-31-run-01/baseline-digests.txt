@@ -1,0 +1,10 @@
+Command: rtk make baseline-digests
+Exit: 0
+
+Go test: 1 passed in 1 packages
+Go test: 19 passed in 1 packages
+Go test: 1 passed in 1 packages
+Go test: 1 passed in 1 packages
+Go test: 1 passed in 1 packages
+baseline-digests: no changes; derived artifacts already match their canonical sources
+{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}

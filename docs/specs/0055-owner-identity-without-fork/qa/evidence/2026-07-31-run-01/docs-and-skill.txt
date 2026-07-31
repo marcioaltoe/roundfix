@@ -1,0 +1,13 @@
+Build: 62c4ff10c4f22f4d29de5146b4ddf3f688bf20e4
+
+- `./bin/roundfix stop --help` exited 0 and documented both positional and
+  selector forms, `--force`, and `--owner-identity-unreadable` with its sole
+  unreadable-proof precondition.
+- `cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` exited 0.
+- `go run -buildvcs=false ./cmd/roundfix skills check` exited 0 and reported
+  the Roundfix skill set passed.
+- `make skills-sync-check` exited 0: 4 focused Skill tests passed.
+- Searches across the Skill pair, commands guide, usage guide, and CONTEXT.md
+  found the direct kernel/no-subprocess rule, startup marker, both refusal
+  conditions, proven-mismatch prohibition, and last-resort flag.
+- `make baseline-digests` exited 0 with `ok:true, changed:false`.

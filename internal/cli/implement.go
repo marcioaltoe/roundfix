@@ -52,6 +52,8 @@ Options:
   --no-input           Fail instead of opening Interactive Input
 `
 
+var implementOwnerIdentity = currentOwnerIdentity
+
 var createRunWorktree = runworktree.Create
 var integrateRunWorktree = runworktree.Integrate
 var cleanupCleanRunWorktree = runworktree.CleanupClean
@@ -208,7 +210,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			Model:           runtime.Model,
 			ReasoningEffort: runtime.ReasoningEffort,
 			OwnerPID:        os.Getpid(),
-			OwnerIdentity:   currentOwnerIdentity(ctx),
+			OwnerIdentity:   implementOwnerIdentity(ctx),
 		})
 	})
 	if err != nil {
@@ -217,6 +219,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	printRunOwnerIdentityWarning(stderr, run)
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailure(err, stderr)
@@ -379,6 +382,13 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+func printRunOwnerIdentityWarning(stderr io.Writer, run store.Run) {
+	if !run.OwnerIdentityUnproven {
+		return
+	}
+	fmt.Fprintf(stderr, "%s: warning: Run %s started with PID-only reuse protection because owner identity capture failed at creation.\n", app.Name, run.ID)
 }
 
 func defaultLoadCommittedSpecGraph(ctx context.Context, gitRoot string, resolvedSpecsRoot roundconfig.SpecsRoot, revision string, slug string) (*spec.Graph, string, error) {
