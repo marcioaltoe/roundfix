@@ -358,6 +358,14 @@ _Avoid_: Manual bootstrap checklist, environment wizard
 The support command that checks or installs the latest released Roundfix binary for the current platform.
 _Avoid_: Package manager update, version check only
 
+**Release Set**:
+The launcher package and five platform package coordinates that form one indivisible Roundfix publication unit. Every coordinate must be eligible before any one is published.
+_Avoid_: Package list, publish targets, artifact set
+
+**Publication Preflight**:
+A read-only eligibility check of the entire Release Set against registry truth for an exact target version. It stops publication unless every coordinate is proven eligible.
+_Avoid_: Publish dry run, identity check, release plan
+
 **Release Plan**:
 A read-only classification of committed changes between a base release and a target revision that identifies the required semantic-version increment, proposes the next version, cites its evidence, and states whether explicit human approval or manual impact classification is required.
 _Avoid_: Release execution, automatic release, version guess
