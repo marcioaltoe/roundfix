@@ -1,6 +1,6 @@
 ---
 name: archive-spec
-description: Archive a completed spec — verify every task completed and QA passed, then stamp the archive metadata and move docs/specs/<slug>/ to docs/specs/_archived/<slug>/. Runs automatically at the end of the implement-spec loop after a QA pass, or whenever the user asks to archive a spec.
+description: Archive a completed spec — verify every task completed, QA passed, and indexed references are self-contained, then stamp the archive metadata and move docs/specs/<slug>/ to docs/specs/_archived/<slug>/. Runs automatically at the end of the implement-spec loop after a QA pass, or whenever the user asks to archive a spec.
 argument-hint: "<spec slug> [--release <tag or PR URL>]"
 metadata:
   category: delivery
@@ -12,20 +12,71 @@ metadata:
 
 # Archive Spec
 
-Move a completed spec out of the active set: `docs/specs/<slug>/` → `docs/specs/_archived/<slug>/`, with the completion stamped in its frontmatter. Archived means _implemented and verified_ — every task done and QA passed — after this, one `ls docs/specs/` separates live work from history, and the archive stays greppable as the record of what was built and why.
+Move a completed spec out of the active set: `docs/specs/<slug>/` → `docs/specs/_archived/<slug>/`, with the completion stamped in its frontmatter. Archived means _implemented, verified, and self-contained_ — every task done, QA passed, and every indexed reference owned by the Spec — after this, one `ls docs/specs/` separates live work from history, and the archive stays greppable as the record of what was built and why.
 
 The trigger is spec completion, not publication: run this automatically at the end of the `implement-spec` loop once the QA gate passes, or whenever the user asks. Merge and release are separate, user-driven steps — the archive commit simply travels with the branch and ships inside the feature's own PR.
 
 ## Preconditions — verify, don't trust
 
-Check both with fresh evidence before touching anything:
+Check all three with fresh command evidence before touching anything:
 
-1. **Every task completed** — read each `task_NN.md` listed in `_tasks.md`; every `status` is `completed`.
-2. **QA passed** — the newest report in `qa/` has `verdict: pass`. A missing `qa/` directory or a failing latest report blocks the archive; proceed only if the user explicitly says "archive anyway", and record that override in the stamped frontmatter (`qa_override: true`).
+1. **Every task completed.** Read each `task_NN.md` listed in `_tasks.md`; every
+   `status` must be `completed`.
+
+   **Command:** run `grep -n '^status:' <each-task-file-listed-in-_tasks.md>` and
+   retain its output. Any value other than `status: completed` blocks the
+   archive and names the Task file.
+
+2. **QA passed.** The newest report in `qa/` must have `verdict: pass`.
+
+   **Commands:** run `ls -1t docs/specs/<slug>/qa/qa-report-*.md` to identify
+   the newest report, then
+   `grep -n '^verdict: pass$' docs/specs/<slug>/qa/<newest-report>` and retain
+   both outputs. A missing `qa/` directory or a failing latest report blocks
+   the archive; proceed only if the user explicitly says "archive anyway", and
+   record that override in the stamped frontmatter (`qa_override: true`).
+
+3. **The Spec is self-contained.** Apply this precondition only when
+   `docs/specs/<slug>/references/_index.md` exists. A Spec without the index
+   predates this contract and passes this check without retrofitting historical
+   artifacts. For an indexed Spec, every indexed `path` must exist relative to
+   `_index.md`, every never-updated `source` path must be absent, and no
+   Markdown link destination inside the Spec may point into `docs/_inbox/` or
+   `docs/findings/`.
+
+   **Commands:** first run this link-destination check; its syntax deliberately
+   matches inline or reference-style Markdown links, not prose that merely
+   names either tree:
+
+   ```bash
+   spec_dir=docs/specs/<slug>
+   link_hits=$(grep --include='*.md' -RInE '(\]\([^)]*(docs/)?(_inbox|findings)/[^)]*\)|^[[:space:]]*\[[^]]+\]:[[:space:]]*<?[^[:space:]>]*(docs/)?(_inbox|findings)/)' "$spec_dir")
+   link_status=$?
+   if test "$link_status" -eq 0; then
+     printf '%s\n' "$link_hits"
+     echo "self-containment failed: rewrite each listed link at adoption step 7"
+     exit 1
+   fi
+   test "$link_status" -eq 1 || exit "$link_status"
+   ```
+
+   Then inspect every data row in the index and run
+   `test -f docs/specs/<slug>/references/<path>` and `test ! -e <source>`.
+   On failure, print the row's offending `path` or `source`: a missing current
+   path requires adoption step 5 (move), and a surviving source requires the
+   one-move contract in step 5. Retain the commands and outputs as fresh
+   archive evidence.
+
+`qa_override: true` overrides only failed or missing QA evidence in precondition
+2. It never overrides self-containment: verification can be overridden by the
+maintainer, but self-containment is a property of the artifact and must be
+repaired by finishing adoption.
 
 A merged PR or release tag is **not** a precondition. If the user passes `--release`, or a merged PR/tag is already known, stamp it as metadata — but never block the archive waiting for one.
 
-If any check fails, stop and report exactly which — the spec stays active.
+If any check fails, stop and report the offending Task, report, source, or link
+and the adoption step that fixes a self-containment failure — the Spec stays
+active.
 
 ## Steps
 

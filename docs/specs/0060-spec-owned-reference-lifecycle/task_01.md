@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0060-spec-owned-reference-lifecycle
-status: pending
+status: completed
 type: docs
 complexity: high
 ---
@@ -111,3 +111,69 @@ cherry-pick integration conflict on files neither Task authored.
 `_prd.md` → Goals 1–3, Stories 1–4, Features 1–7; `_techspec.md` → Build Order
 1–3, The adoption transition, The reference index, The archive precondition;
 ADR-0083.
+
+## Result
+
+### Implementation
+
+- `write-prd` now owns an eight-step adoption transition between recording
+  decisions and writing the Spec: inventory, classification, ownership claim,
+  finding status/link update, one history-preserving move, index entry,
+  repository-wide link rewrite, and the authoring gate.
+- `archive-spec` now verifies three preconditions with fresh named command
+  evidence. Its indexed-Spec-only self-containment check validates current
+  paths, rejects surviving source paths, and matches Markdown links into the
+  inbox or findings trees without matching prose that only names those trees.
+- `write-idea`, `write-techspec`, and `write-tasks` now link adopted sources at
+  the primary owner's post-adoption path and prohibit secondary adoption.
+- `rtk make skills-sync` propagated the five canonical edits to their five
+  embedded counterparts. No other canonical or embedded Skill changed.
+
+### Focused checks
+
+- `rtk make skills-sync` — exit 0.
+- `rtk cmp -s .agents/skills/<name>/SKILL.md skills/<name>/SKILL.md` for
+  `write-prd`, `archive-spec`, `write-idea`, `write-techspec`, and
+  `write-tasks` — all five exited 0.
+- `rtk git diff --check` — exit 0.
+- Focused `rtk rg -n` contract inspections — exit 0 for the ordered PRD
+  transition, the three archive preconditions and override boundary, and all
+  three downstream reference rules.
+- Archive link-pattern probes — prose naming `docs/_inbox/` and
+  `docs/findings/` produced the expected no-match exit 1; an inline findings
+  link and a reference-style inbox link each matched with exit 0.
+- `rtk git diff --name-only` after synchronization — only the ten authorized
+  Skill files and this Task file differ. The Task file's `pending` to
+  `in_progress` frontmatter change pre-existed this Agent turn and remains
+  Daemon-owned.
+
+### Acceptance evidence
+
+1. `write-prd` contains exactly eight numbered adoption steps in order;
+   `Flip then link` is step 4 and `Move` is step 5.
+2. Its fixed Markdown index columns are `source`, `type`, `owner`,
+   `adopted date`, and `path`; the prose makes `source` never-updated
+   provenance and `path` relative to `_index.md`.
+3. Adoption step 8 says to fail and not report completion while a source
+   remains at its original path or a rewritten link is unresolved.
+4. `archive-spec` lists exactly three preconditions and gives fresh command
+   evidence for Task status, the newest QA verdict, and indexed-reference
+   self-containment.
+5. The archive contract says `qa_override: true` reaches only QA evidence,
+   never self-containment, and applies the new check only when
+   `references/_index.md` exists.
+6. Each of `write-idea`, `write-techspec`, and `write-tasks` states the
+   post-adoption-path rule and the single-primary-owner rule.
+7. Canonical/embedded byte equality is proven by the five focused `cmp`
+   checks. `make skills-sync-check` and `roundfix skills check` were not run;
+   they are reserved for Daemon Verification.
+8. No derived pin has been edited or hand-transcribed. `make baseline-digests`
+   was not run because it is a declared Daemon Verification command; that
+   Verification step must generate the seven authorized deterministic
+   artifacts before the final changed-path check.
+
+### Daemon-owned verification
+
+No command from `## Verification` was run in this Agent turn. The Daemon owns
+all five commands, the derived digest regeneration, Task status, and terminal
+settlement.

@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/rust-cli.txt"
   },
-  "digest": "25ab9a4e65f3c1c46f344df76c71bcff4385eebe2a8fee7e4a6d1b5cae3e9ebc",
+  "digest": "c71e900b0746cd4e5ba0f04b38559e5733d3d65a20773dc073a635526a13e99a",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -119,7 +119,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "8f5c77383b34e22a9b4469cf5d4143d67ac220fc75c84fc314f132e2dd4c69a1"
+      "contentDigest": "5a3c4ce38e797a041a237d01d81e1dfe64717b03c147356663f79605536353fa"
     },
     {
       "name": "write-prd",
@@ -128,7 +128,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "1d50377456c529b545ed7ad5f7c899134a1091afbda8bf5b3ca7fa10f2ec1231"
+      "contentDigest": "7f831fdbc1ab48950fd19c04cc84d950a1c35fe9d66733f5eb091741aebfe4e6"
     },
     {
       "name": "agentic-cli-design",
@@ -159,7 +159,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "046dbd1a9ac3bcfe937fc0e76ec4cc9361f8dd908d6168d95ed1d4a472b576e3"
+      "contentDigest": "00babd219ccea12b18dd7040c45cea0641b24fda215d33f897f7452089d0a34d"
     },
     {
       "name": "write-tasks",
@@ -168,7 +168,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "a221f991061de07dd10ee811a3f7e2ee5c1d698e584fc633a0a0b443797a8ece"
+      "contentDigest": "63c079319876235bac1f92d2e3eaa33d31c7e5e22ed3a26ebcd0b49b32243e18"
     },
     {
       "name": "clap-rust",
@@ -301,7 +301,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "5d53d9b4a8ef69eac2d4892a739a6734ca6fb2d7c43eba093c01df75fe482277"
+      "contentDigest": "2a2eef7e973c6a1e6fde0f3e7782380c067acb2b4dd097450e28e5a4426c5912"
     },
     {
       "name": "conventional-commits",
