@@ -1,0 +1,15 @@
+CLI behavior probes on the built binary
+
+- Out-of-order input: both `stop --force <run-id>` and
+  `stop <run-id> --force` exited 0, rendered the same result structure, and
+  persisted Stopped.
+- Invalid supervised flag: omitting `--force` exited 2 before process control
+  and preserved the Active Run.
+- Wrong proof state: matching and mismatched identities both exited 2 and left
+  their controlled helper processes live.
+- Repeat: a second Force Stop against an already Stopped Run exited 0 and
+  returned the stored outcome without another helper process to signal.
+- Deep read: `runs list --state all --limit 0` confirmed every terminal state.
+- Color independence: `ROUNDFIX_COLOR=never` retained the textual
+  `owner_identity_unproven=true` marker.
+- Help: `stop --help` exited 0 and named the supervised precondition.

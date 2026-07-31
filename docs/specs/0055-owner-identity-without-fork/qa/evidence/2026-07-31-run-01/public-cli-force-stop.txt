@@ -1,0 +1,64 @@
+Build: ./bin/roundfix from 62c4ff10c4f22f4d29de5146b4ddf3f688bf20e4
+Roundfix Home: /private/tmp/roundfix-qa-0055-20260731/home
+Platform: darwin
+
+Parity note
+- The first managed-sandbox owner proof against controlled PID 54665 failed
+  before identity comparison with `operation not permitted` and left the Run
+  Active. The same command was rerun with approved process-control authority;
+  every result below is from that full-access public CLI run.
+
+Unreadable identity and no-subprocess proof
+- Controlled Run: run_20260731T114527Z_1c99b49a2b538078, PID 54665,
+  recorded identity `legacy-ps-token`.
+- Command: ./bin/roundfix stop <run-id> --force
+- Exit: 1.
+- Diagnostic: `owner process identity is unreadable: recorded owner identity
+  is not comparable on darwin; Run remains Active; Active Run lock retained`.
+- Independent confirmation: `runs list --state all --limit 0` rendered the Run
+  Active and the sleeper session remained open.
+- PATH shadowed ps with an executable that would create
+  `/private/tmp/roundfix-qa-0055-20260731/ps-invoked` and exit 99.
+  `/bin/test ! -e` on that marker exited 0 after the owner proof.
+- Command: ./bin/roundfix stop --force --owner-identity-unreadable <run-id>
+- Exit: 0. The public report title was `Roundfix Run force-stopped`, state was
+  `Stopped`, and the sleeper session then exited 0.
+
+Proven mismatch refusal
+- Controlled Run: run_20260731T114659Z_95b5dd57a52a1be1, PID 57880,
+  recorded identity `darwin:0.0`.
+- Command: ./bin/roundfix stop --force --owner-identity-unreadable <run-id>
+- Exit: 2.
+- Diagnostic: `--owner-identity-unreadable cannot override a proven owner
+  identity mismatch` followed by the live-token mismatch detail.
+- Independent confirmation: the sleeper session remained open and the Run
+  remained Active. QA then terminated only the disposable helper directly;
+  normal Force Stop proved absence and settled the controlled Run Stopped.
+
+Readable matching refusal and prefix flag order
+- Controlled Run: run_20260731T114757Z_52401913cd3023ba, PID 59241,
+  recorded identity `darwin:1785498470.723111`.
+- Supervised-flag command exited 2 with
+  `--owner-identity-unreadable may be used only when the owner identity is
+  unreadable`; the sleeper remained live.
+- Command: ./bin/roundfix stop --force <run-id>
+- Exit: 0; Run Stopped; sleeper exited 0.
+
+Trailing flag order
+- Controlled Run: run_20260731T114915Z_73f581e016a98da9, PID 60457,
+  recorded identity `darwin:1785498523.377520`.
+- Command: ./bin/roundfix stop <run-id> --force
+- Exit: 0; report shape matched the prefix-order case; Run Stopped; sleeper
+  exited 0.
+
+Durable marker, invalid input, legacy path, and repeat
+- Controlled Run: run_20260731T115007Z_bca8ebe2a4d3e47e, PID 62162,
+  empty recorded identity, owner_identity_unproven=true.
+- `ROUNDFIX_COLOR=never ./bin/roundfix runs list --state all --limit 0`
+  rendered `owner_identity_unproven=true` as plain text while Active.
+- `stop <run-id> --owner-identity-unreadable` exited 2 with
+  `--owner-identity-unreadable requires --force`; the sleeper stayed live.
+- `stop <run-id> --force` exited 0, stopped the Run, and ended the sleeper.
+- Repeating `stop --force <run-id>` exited 0 with the stored Stopped result.
+- A fresh color-disabled list still rendered the marker on the Stopped Run and
+  showed all five controlled Runs Stopped.
