@@ -1,0 +1,37 @@
+---
+schema: spec-tasks/v1
+spec: 0058-npm-trusted-publishing-and-release-preflight
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: [task_01]
+    - id: task_03
+      file: task_03.md
+      needs: [task_02]
+    - id: task_04
+      file: task_04.md
+      needs: [task_03]
+    - id: task_05
+      file: task_05.md
+      needs: [task_04]
+---
+
+# Tasks — npm Trusted Publishing and release preflight
+
+| id      | title                                          | type  | complexity | needs   |
+| ------- | ---------------------------------------------- | ----- | ---------- | ------- |
+| task_01 | Raise the publishing runtime and grant OIDC     | infra | low        | —       |
+| task_02 | Preflight the release set against the registry  | infra | high       | task_01 |
+| task_03 | Expose a publish-free preflight rehearsal       | infra | medium     | task_02 |
+| task_04 | Publish through OIDC with a bounded fallback    | infra | high       | task_03 |
+| task_05 | Document the migration, window, and vocabulary  | docs  | medium     | task_04 |
+
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+
+The graph is a chain rather than a fan-out because tasks 01–04 all mutate the
+single authorized file `.github/workflows/release.yml`. Parallel waves would
+put two Agent Sessions in the same file.

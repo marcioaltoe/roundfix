@@ -23,10 +23,14 @@ launcher. Evidence:
 - Identifier strategy: not applicable — package names, tags, and versions
   keep their existing identities; no project-owned Internal Identifier is
   created. Source: `docs/agents/domain.md`.
-- Authentication and HTTP: applicable — publication authentication moves
-  from a long-lived npm token to GitHub Actions OIDC Trusted Publishing;
-  no Roundfix-runtime authentication or HTTP surface changes, and registry
-  access stays inside the release workflow. Source: `docs/agents/cli.md`.
+- Authentication and HTTP: applicable — the governing clause prohibits
+  reading, printing, committing, or generating secrets and keeps credentials
+  inside the repository's existing secure configuration boundary, which binds
+  how the retained npm token is referenced. Publication authentication moves
+  from a long-lived npm token to GitHub Actions OIDC Trusted Publishing; no
+  Roundfix-runtime authentication or HTTP surface changes, and registry
+  access stays inside the release workflow. Source:
+  `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0031 keeps Roundfix shipping
   through npm platform packages with the existing layout; ADR-0048 keeps
   release planning read-only and confirmation-gated (the Release Plan
