@@ -9,6 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -190,6 +193,9 @@ func TestOwnerProcessControllerProveOwnerRejectsCurrentProcess(t *testing.T) {
 }
 
 func TestOwnerProcessIdentityIsStableForOneProcess(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("owner process identity is unsupported on this Unix platform")
+	}
 	first, err := OwnerProcessIdentity(t.Context(), os.Getpid())
 	if err != nil {
 		t.Fatalf("read current process identity: %v", err)
@@ -201,9 +207,31 @@ func TestOwnerProcessIdentityIsStableForOneProcess(t *testing.T) {
 	if first != second {
 		t.Fatalf("identity token changed for one process: %q then %q", first, second)
 	}
+	if prefix := runtime.GOOS + ":"; !strings.HasPrefix(first, prefix) {
+		t.Fatalf("identity token = %q, want prefix %q", first, prefix)
+	}
+}
+
+func TestOwnerProcessIdentityDoesNotSpawnPS(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("owner process identity is unsupported on this Unix platform")
+	}
+	binDir := t.TempDir()
+	psPath := filepath.Join(binDir, "ps")
+	if err := os.WriteFile(psPath, []byte("#!/bin/sh\nexit 99\n"), 0o755); err != nil {
+		t.Fatalf("write failing ps executable: %v", err)
+	}
+	t.Setenv("PATH", binDir)
+
+	if _, err := OwnerProcessIdentity(t.Context(), os.Getpid()); err != nil {
+		t.Fatalf("read current process identity without ps: %v", err)
+	}
 }
 
 func TestOwnerProcessIdentityIgnoresCallerTimezone(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("owner process identity is unsupported on this Unix platform")
+	}
 	t.Setenv("TZ", "Pacific/Honolulu")
 	first, err := OwnerProcessIdentity(t.Context(), os.Getpid())
 	if err != nil {
@@ -220,6 +248,9 @@ func TestOwnerProcessIdentityIgnoresCallerTimezone(t *testing.T) {
 }
 
 func TestOwnerProcessIdentityFailsForAbsentProcess(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.Skip("owner process identity is unsupported on this Unix platform")
+	}
 	cmd := exec.Command("/bin/sh", "-c", "exit 0")
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start child process: %v", err)
@@ -229,8 +260,16 @@ func TestOwnerProcessIdentityFailsForAbsentProcess(t *testing.T) {
 		t.Fatalf("wait for child process: %v", err)
 	}
 
-	if identity, err := OwnerProcessIdentity(t.Context(), pid); err == nil {
+	identity, err := OwnerProcessIdentity(t.Context(), pid)
+	if err == nil {
 		t.Fatalf("expected identity read failure for reaped pid %d, got %q", pid, identity)
+	}
+	want := error(syscall.ENOENT)
+	if runtime.GOOS == "darwin" {
+		want = syscall.ESRCH
+	}
+	if !errors.Is(err, want) {
+		t.Fatalf("identity read error for reaped pid %d = %v, want %v", pid, err, want)
 	}
 }
 
