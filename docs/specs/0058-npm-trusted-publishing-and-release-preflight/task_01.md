@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0058-npm-trusted-publishing-and-release-preflight
-status: pending
+status: completed
 type: infra
 complexity: low
 ---
@@ -82,3 +82,40 @@ version below the floor.
 - `_prd.md` → Core Features 1; Non-Goals (release contract preserved).
 - `_techspec.md` → System Architecture: Runtime; Build Order 1.
 - ADR-0084.
+
+## Result
+
+Implemented the authorized runtime and permission slice in the release
+workflow: `setup-node` now requests Node 24, the workflow can mint an OIDC
+token while retaining GitHub Release access, and a post-setup guard reports
+the resolved npm version as a `runtime:` error when it is below 11.5.1.
+
+Focused checks:
+
+- `rtk ruby -e 'require "yaml"; YAML.load_file(ARGV.fetch(0)); puts "release workflow YAML parsed"' .github/workflows/release.yml`
+  parsed the changed workflow successfully.
+- A focused Bash boundary probe using the workflow's version comparison
+  rejected npm 11.5.0 and accepted npm 11.5.1 and 12.0.0.
+- `rtk git diff --check` reported no whitespace errors.
+- `rtk git diff --unified=3 -- .github/workflows/release.yml` showed changes
+  only in the permissions block, the `setup-node` version, and the new runtime
+  guard.
+
+Acceptance evidence:
+
+1. The focused workflow diff shows `node-version: "24"` and the unchanged npm
+   registry URL.
+2. The permissions diff adds `id-token: write` beside the unchanged
+   `contents: write` grant.
+3. The guard assigns `npm --version` to `npm_version`; the focused boundary
+   probe proves its comparison rejects 11.5.0, and the failure branch emits a
+   GitHub Actions error whose message begins `runtime:` and names 11.5.1.
+4. The focused workflow diff has no hunk in `Validate tag`, `Verify gate`,
+   `Cross-compile and stage`, or `GitHub Release`; those stages remain
+   byte-identical.
+5. The changed-path postflight lists only `.github/workflows/release.yml` and
+   this task file. The task file's `status: in_progress` change existed before
+   implementation and remains Daemon-owned.
+
+The commands under `## Verification` were not run; the Daemon owns that gate
+and Task settlement.

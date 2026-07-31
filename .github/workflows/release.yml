@@ -6,6 +6,7 @@ on:
       - "v*"
 
 permissions:
+  id-token: write # mint the npm Trusted Publishing OIDC token
   contents: write # create the GitHub Release and upload binary assets
 
 jobs:
@@ -21,8 +22,18 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
+
+      - name: Guard Trusted Publishing runtime
+        run: |
+          set -euo pipefail
+          npm_version="$(npm --version)"
+          if [ "$(printf '%s\n' "11.5.1" "$npm_version" | sort -V | head -n 1)" != "11.5.1" ]; then
+            echo "::error::runtime: npm $npm_version is below the Trusted Publishing floor 11.5.1"
+            exit 1
+          fi
+          echo "npm $npm_version satisfies the Trusted Publishing floor 11.5.1"
 
       # The pushed tag is the single source of truth for the release version:
       # it is injected into the binary (ldflags) and set on every npm package
