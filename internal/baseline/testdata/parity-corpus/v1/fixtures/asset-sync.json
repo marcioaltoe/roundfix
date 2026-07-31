@@ -22,15 +22,15 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "d8a8cf819705082540eb1dba83707c22ca0accae6a3b0f96c11ec73f8a9b115d",
+      "digest": "1bfd86820642f3b4d5d8b3aa771f1e8542576c3c20b2eb4afa8ab3bc299ac3a2",
       "id": "go-cli"
     },
     {
-      "digest": "058e4332c7eb3057ac71075d4a631262e08df7db1774dcb844d16e6c20c65ecc",
+      "digest": "cb579eefded2b10ef1cee4440ad18e9b66093236a301028e3d011014e3cfa438",
       "id": "rust-cli"
     },
     {
-      "digest": "45aff41fa18781f55a68f63a49e76ddcfc22ecf30c31d6237240398df714671d",
+      "digest": "b90c2b77b2c92e74233bab98641e94fe92807e560542c98f3627bbca0ff56008",
       "id": "typescript-bun"
     }
   ],
@@ -53,7 +53,7 @@
             ]
           }
         ],
-        "digest": "d8a8cf819705082540eb1dba83707c22ca0accae6a3b0f96c11ec73f8a9b115d",
+        "digest": "1bfd86820642f3b4d5d8b3aa771f1e8542576c3c20b2eb4afa8ab3bc299ac3a2",
         "id": "go-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -169,7 +169,7 @@
             }
           },
           {
-            "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780",
+            "contentDigest": "d2c5e049ae763128257c4e551a3a975dec25b2d168d373c2b29f74d698917fe7",
             "name": "write-prd",
             "path": "skills/02-planning/write-prd",
             "source": {
@@ -475,7 +475,7 @@
             ]
           }
         ],
-        "digest": "058e4332c7eb3057ac71075d4a631262e08df7db1774dcb844d16e6c20c65ecc",
+        "digest": "cb579eefded2b10ef1cee4440ad18e9b66093236a301028e3d011014e3cfa438",
         "id": "rust-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -591,7 +591,7 @@
             }
           },
           {
-            "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780",
+            "contentDigest": "d2c5e049ae763128257c4e551a3a975dec25b2d168d373c2b29f74d698917fe7",
             "name": "write-prd",
             "path": "skills/02-planning/write-prd",
             "source": {
@@ -920,7 +920,7 @@
             ]
           }
         ],
-        "digest": "45aff41fa18781f55a68f63a49e76ddcfc22ecf30c31d6237240398df714671d",
+        "digest": "b90c2b77b2c92e74233bab98641e94fe92807e560542c98f3627bbca0ff56008",
         "id": "typescript-bun",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -1011,7 +1011,7 @@
             "treeDigest": "58116986bd1354f902ab3f9862030c43f9f8a5dbe9814aca1ff24c1243299cca"
           },
           {
-            "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780",
+            "contentDigest": "d2c5e049ae763128257c4e551a3a975dec25b2d168d373c2b29f74d698917fe7",
             "name": "write-prd",
             "path": "skills/02-planning/write-prd",
             "source": {

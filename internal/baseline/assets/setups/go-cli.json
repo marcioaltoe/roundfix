@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/go-cli.txt"
   },
-  "digest": "2c71da0a0572ae916c14519511534a5e0e589a514a07a433420afae49572a241",
+  "digest": "d81ebc9abd542380909e0f56f03b3b39a4530cdaa89f3788f86758467424ff22",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -128,7 +128,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780"
+      "contentDigest": "d2c5e049ae763128257c4e551a3a975dec25b2d168d373c2b29f74d698917fe7"
     },
     {
       "name": "agentic-cli-design",

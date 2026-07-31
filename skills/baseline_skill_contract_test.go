@@ -565,9 +565,12 @@ func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 			required: []string{
 				"mkdir -p docs/specs/<slug>/references",
 				"duplicate source basenames",
+				"`_index.md` is a reserved basename",
 				"destination path already exists",
 				"before changing any finding status",
 				"complete `_index.md`",
+				"Exclude `docs/specs/_archived/` from automatic link rewrites",
+				"Report links from archived Specs separately",
 				"only Markdown link destinations",
 			},
 			ordered: []string{

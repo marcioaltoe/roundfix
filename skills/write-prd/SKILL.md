@@ -94,9 +94,10 @@ in order after recording decisions and before writing the PRD:
    the owner's post-adoption copy and adopts nothing.
 4. **Preflight.** Resolve every adopted source's basename and destination under
    `docs/specs/<slug>/references/` before changing any finding status, writing
-   the index, or moving a source. Reject duplicate source basenames and abort if
-   any destination path already exists, including a symbolic link. Complete
-   this check for the whole inventory before changing adoption state.
+   the index, or moving a source. `_index.md` is a reserved basename; reject any
+   adopted source with that basename. Reject duplicate source basenames and
+   abort if any destination path already exists, including a symbolic link.
+   Complete this check for the whole inventory before changing adoption state.
 5. **Index.** Write the complete `_index.md` before the first status update or
    source move. Add one row per adopted source using this fixed Markdown table:
 
@@ -128,14 +129,16 @@ in order after recording decisions and before writing the PRD:
    preserves the basename and every byte. Step 8 may then change only Markdown
    link destinations inside the moved source; never rewrite its observations or
    other source content.
-8. **Rewrite and gate.** Search the whole repository for links to each old
-   path, rewrite every destination to the post-adoption path relative to its
-   linking file, and resolve every rewritten Markdown link target. This includes
-   link destinations inside an adopted source; only Markdown link destinations
-   may change after the byte-preserving move. Fail and do not report completion
-   while an adopted source still exists at its `source` path or any rewritten
-   link is unresolved. Name the offending source or link and repeat the skipped
-   adoption step.
+8. **Rewrite and gate.** Search the repository for links to each old path.
+   Exclude `docs/specs/_archived/` from automatic link rewrites; archived Specs
+   are immutable historical artifacts. Report links from archived Specs
+   separately for explicit policy review. For every other linking file, rewrite
+   the destination to the post-adoption path relative to that file and resolve
+   every rewritten Markdown link target. This includes link destinations inside
+   an adopted source; only Markdown link destinations may change after the
+   byte-preserving move. Fail and do not report completion while an adopted
+   source still exists at its `source` path or any rewritten link is unresolved.
+   Name the offending source or link and repeat the skipped adoption step.
 
 ### 5. Write
 

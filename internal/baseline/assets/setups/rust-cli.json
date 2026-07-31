@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/rust-cli.txt"
   },
-  "digest": "e18c99b07ce454eb02980806725c95394bf6ced6ab09e948ad64ef56a342d909",
+  "digest": "f03942f2641a3722a5e568755473bb7c03050cdd81b7cad539839c7e591f5b78",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -128,7 +128,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780"
+      "contentDigest": "d2c5e049ae763128257c4e551a3a975dec25b2d168d373c2b29f74d698917fe7"
     },
     {
       "name": "agentic-cli-design",

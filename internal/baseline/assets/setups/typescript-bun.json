@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/typescript-bun.txt"
   },
-  "digest": "1b52fd32f049463c8a306dd47ccc9a0165ad8ff9330fe95a9a42191193c2f297",
+  "digest": "2a2bc46f0c78df66571ab0b5bfa69f44ac6089790d34a9f3b7c51d63495af8f2",
   "skills": [
     {
       "name": "find-rules",
@@ -103,7 +103,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780"
+      "contentDigest": "d2c5e049ae763128257c4e551a3a975dec25b2d168d373c2b29f74d698917fe7"
     },
     {
       "name": "architectural-analysis",
