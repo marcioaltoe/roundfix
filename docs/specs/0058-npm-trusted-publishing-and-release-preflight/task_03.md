@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0058-npm-trusted-publishing-and-release-preflight
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -81,3 +81,51 @@ target version, and every mutating stage is guarded against it.
 - `_techspec.md` → API Contracts: Workflow trigger; Testing Approach;
   Build Order 4.
 
+## Result
+
+Implemented a manual Publication Preflight rehearsal in the authorized release
+workflow. `workflow_dispatch` now requires a `version` input, while the release
+job resolves `TARGET_VERSION` from that input for dispatch runs and from
+`github.ref_name` for tag runs. `Validate tag` and `Publication preflight`
+consume the resolved target, and cross-compilation, npm publication, and GitHub
+Release creation are each restricted to `push` events. Dispatch validation
+reports `preflighting`; the existing tag path still reports `releasing` and the
+mutating scripts retain `GITHUB_REF_NAME` as their version authority.
+
+Focused checks:
+
+- `rtk ruby -e '<YAML parse>' .github/workflows/release.yml` parsed the edited
+  workflow successfully.
+- `rtk ruby -ropen3 -rjson -ryaml -e '<validation path probe>'
+  .github/workflows/release.yml` executed the actual YAML-embedded validation
+  script. A tag event using the checked-in version exited 0 and reported
+  `releasing`; a dispatch using the same version exited 0 and reported
+  `preflighting`; an invalid dispatch version exited non-zero with the input
+  named in the semver diagnostic.
+- `rtk ruby -e '<dispatch structure audit>'
+  .github/workflows/release.yml` observed the retained `v*` tag trigger, the
+  required dispatch input, trigger-based target resolution, shared validation
+  and preflight target use, and a `push`-only condition on all three mutating
+  stages.
+- `rtk git diff --check` exited 0.
+
+Acceptance evidence:
+
+1. The structural audit observes both `push` with the existing `v*` tag filter
+   and `workflow_dispatch` in the workflow trigger.
+2. The dispatch trigger exposes a `version` input with `required: true` and
+   `type: string`.
+3. The structural audit resolves each of `Cross-compile and stage`, `Publish to
+   npm`, and `GitHub Release` and proves its condition permits only
+   `github.event_name == 'push'`.
+4. The target-resolution expression selects `inputs.version` only for a
+   dispatch and otherwise selects `github.ref_name`. The validation-path probe
+   exercises both sources through the same semver and checked-in-version
+   checks, while the structural audit proves Publication Preflight consumes the
+   same target. Tag-only mutating scripts remain based on `GITHUB_REF_NAME`.
+5. `rtk git -c core.fsmonitor=false status --short` lists only
+   `.github/workflows/release.yml` and this task file. The task file's
+   pre-existing `status: in_progress` change remains Daemon-owned.
+
+The commands under `## Verification` were not run; the Daemon owns that gate
+and Task settlement.

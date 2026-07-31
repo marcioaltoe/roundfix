@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to evaluate (vMAJOR.MINOR.PATCH)"
+        required: true
+        type: string
 
 permissions:
   id-token: write # mint the npm Trusted Publishing OIDC token
@@ -12,6 +18,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      TARGET_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -35,23 +43,32 @@ jobs:
           fi
           echo "npm $npm_version satisfies the Trusted Publishing floor 11.5.1"
 
-      # The pushed tag is the single source of truth for the release version:
-      # it is injected into the binary (ldflags) and set on every npm package
-      # below, so nothing can disagree. Validate the tag is a semver version.
+      # A pushed tag remains the single source of truth for a release. A manual
+      # dispatch supplies only the version evaluated by the publish-free
+      # preflight. Validate either source as a semver version.
       - name: Validate tag
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${TARGET_VERSION#v}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            VERSION_SOURCE="input"
+          else
+            VERSION_SOURCE="tag"
+          fi
           if ! printf '%s' "$TAG" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
-            echo "::error::tag $GITHUB_REF_NAME is not a semver version (expected vMAJOR.MINOR.PATCH)"
+            echo "::error::$VERSION_SOURCE $TARGET_VERSION is not a semver version (expected vMAJOR.MINOR.PATCH)"
             exit 1
           fi
           OWNED_VERSION="$(jq -r .version dist/npm/roundfix/package.json)"
           if [ "$TAG" != "$OWNED_VERSION" ]; then
-            echo "::error::tag $GITHUB_REF_NAME does not match the checked-in Roundfix version $OWNED_VERSION"
+            echo "::error::$VERSION_SOURCE $TARGET_VERSION does not match the checked-in Roundfix version $OWNED_VERSION"
             exit 1
           fi
-          echo "releasing $TAG"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "preflighting $TAG"
+          else
+            echo "releasing $TAG"
+          fi
 
       # The full local gate must pass before any build or publish.
       - name: Verify gate
@@ -60,7 +77,7 @@ jobs:
       - name: Publication preflight
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${TARGET_VERSION#v}"
           CLASSIFY_JQ='if type != "object" or ((.versions? | type) != "object") or ((.time? | type) != "object") then error("invalid packument") elif (.versions | has($tag)) or (.time | has($tag)) then "used" elif (.time | has("unpublished")) then "cooldown" else "eligible" end'
           RELEASE_SET="$RUNNER_TEMP/roundfix-release-set"
           body="$(mktemp)"
@@ -173,6 +190,7 @@ jobs:
       # tag, and collect release assets named with GOOS+GOARCH tokens so the
       # Upgrade Command's platform selection resolves them.
       - name: Cross-compile and stage
+        if: ${{ github.event_name == 'push' }}
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME#v}"
@@ -202,6 +220,7 @@ jobs:
       # Publish the per-platform packages first so the launcher's
       # optionalDependencies resolve the moment it goes live.
       - name: Publish to npm
+        if: ${{ github.event_name == 'push' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -218,6 +237,7 @@ jobs:
       # Upload the same binaries as GitHub Release assets to feed the Upgrade
       # Command's release channel.
       - name: GitHub Release
+        if: ${{ github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
