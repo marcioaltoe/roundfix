@@ -22,15 +22,15 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "04d6f253e93e62a7bfdb8418cd8a78845caa3b740824041046b0cc76d0f195f1",
+      "digest": "722d25b8c57e2873a9c3487c0c1f74aca053fed61e7a57676fe0201df667deeb",
       "id": "go-cli"
     },
     {
-      "digest": "0eba509f9df4151e7820bcc1d94280f97e0480ea795c112edfcfa78fba6d234d",
+      "digest": "fd0a35fea3270fdc4cf764ebdd3c3a0fa7a44244bcbf195c9d6b09f2941ecfec",
       "id": "rust-cli"
     },
     {
-      "digest": "97592fd85fe27ba092145d5d26e6fab1b957346ed1710fd67607d9bf8ef47a23",
+      "digest": "a08f29703854982bbe5316e73268ca1a24512dfe01f9c494fb5add03a6058521",
       "id": "typescript-bun"
     }
   ],
@@ -53,7 +53,7 @@
             ]
           }
         ],
-        "digest": "04d6f253e93e62a7bfdb8418cd8a78845caa3b740824041046b0cc76d0f195f1",
+        "digest": "722d25b8c57e2873a9c3487c0c1f74aca053fed61e7a57676fe0201df667deeb",
         "id": "go-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -160,7 +160,7 @@
             "treeDigest": "53fba8dad40988c3c79bd57c56feead8ffdf059a9871402b8a638d9c4b4f7609"
           },
           {
-            "contentDigest": "5a3c4ce38e797a041a237d01d81e1dfe64717b03c147356663f79605536353fa",
+            "contentDigest": "e6348bfd0193570e4361e94fd59e159f515f36ee1d8ae4e487327dd43f358880",
             "name": "write-idea",
             "path": "skills/01-discovery/write-idea",
             "source": {
@@ -169,7 +169,7 @@
             }
           },
           {
-            "contentDigest": "7f831fdbc1ab48950fd19c04cc84d950a1c35fe9d66733f5eb091741aebfe4e6",
+            "contentDigest": "f739d1115b60a26cf7773d4e5f2bd9fef38728b5269c53bf5fbb68f29e08a708",
             "name": "write-prd",
             "path": "skills/02-planning/write-prd",
             "source": {
@@ -211,7 +211,7 @@
             "treeDigest": "7dc84bcf2d1fd6a08b6de9eae8ab74e3a934b505cadef54bd62dcaf714b9eefc"
           },
           {
-            "contentDigest": "00babd219ccea12b18dd7040c45cea0641b24fda215d33f897f7452089d0a34d",
+            "contentDigest": "d3025451086d0fbcb3911ea0a01da30bfce67110f65cb8356c0fea8bdf32f2b4",
             "name": "write-techspec",
             "path": "skills/03-engineering-design/write-techspec",
             "source": {
@@ -220,7 +220,7 @@
             }
           },
           {
-            "contentDigest": "63c079319876235bac1f92d2e3eaa33d31c7e5e22ed3a26ebcd0b49b32243e18",
+            "contentDigest": "8de45174fd3f5d42d78d1910627a36f0470951a22aeacfd612538668a56cfb16",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -397,7 +397,7 @@
             "treeDigest": "e2e46f2af6860be4e09df1deae4b322f4f3a77d1a0db406b60c7893a654bc3c6"
           },
           {
-            "contentDigest": "2a2eef7e973c6a1e6fde0f3e7782380c067acb2b4dd097450e28e5a4426c5912",
+            "contentDigest": "3782de7d5074d8968937731595f406149caf2bafc3e5733757e4373a3dc10437",
             "name": "archive-spec",
             "path": "skills/07-evidence-delivery/archive-spec",
             "source": {
@@ -475,7 +475,7 @@
             ]
           }
         ],
-        "digest": "0eba509f9df4151e7820bcc1d94280f97e0480ea795c112edfcfa78fba6d234d",
+        "digest": "fd0a35fea3270fdc4cf764ebdd3c3a0fa7a44244bcbf195c9d6b09f2941ecfec",
         "id": "rust-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -582,7 +582,7 @@
             "treeDigest": "53fba8dad40988c3c79bd57c56feead8ffdf059a9871402b8a638d9c4b4f7609"
           },
           {
-            "contentDigest": "5a3c4ce38e797a041a237d01d81e1dfe64717b03c147356663f79605536353fa",
+            "contentDigest": "e6348bfd0193570e4361e94fd59e159f515f36ee1d8ae4e487327dd43f358880",
             "name": "write-idea",
             "path": "skills/01-discovery/write-idea",
             "source": {
@@ -591,7 +591,7 @@
             }
           },
           {
-            "contentDigest": "7f831fdbc1ab48950fd19c04cc84d950a1c35fe9d66733f5eb091741aebfe4e6",
+            "contentDigest": "f739d1115b60a26cf7773d4e5f2bd9fef38728b5269c53bf5fbb68f29e08a708",
             "name": "write-prd",
             "path": "skills/02-planning/write-prd",
             "source": {
@@ -622,7 +622,7 @@
             "treeDigest": "59c40b93c4b52cf5cc13beeca2038100f4cbc4aa9e2c7482385c4d1b6a0ffa8e"
           },
           {
-            "contentDigest": "00babd219ccea12b18dd7040c45cea0641b24fda215d33f897f7452089d0a34d",
+            "contentDigest": "d3025451086d0fbcb3911ea0a01da30bfce67110f65cb8356c0fea8bdf32f2b4",
             "name": "write-techspec",
             "path": "skills/03-engineering-design/write-techspec",
             "source": {
@@ -631,7 +631,7 @@
             }
           },
           {
-            "contentDigest": "63c079319876235bac1f92d2e3eaa33d31c7e5e22ed3a26ebcd0b49b32243e18",
+            "contentDigest": "8de45174fd3f5d42d78d1910627a36f0470951a22aeacfd612538668a56cfb16",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -764,7 +764,7 @@
             "treeDigest": "e2e46f2af6860be4e09df1deae4b322f4f3a77d1a0db406b60c7893a654bc3c6"
           },
           {
-            "contentDigest": "2a2eef7e973c6a1e6fde0f3e7782380c067acb2b4dd097450e28e5a4426c5912",
+            "contentDigest": "3782de7d5074d8968937731595f406149caf2bafc3e5733757e4373a3dc10437",
             "name": "archive-spec",
             "path": "skills/07-evidence-delivery/archive-spec",
             "source": {
@@ -920,7 +920,7 @@
             ]
           }
         ],
-        "digest": "97592fd85fe27ba092145d5d26e6fab1b957346ed1710fd67607d9bf8ef47a23",
+        "digest": "a08f29703854982bbe5316e73268ca1a24512dfe01f9c494fb5add03a6058521",
         "id": "typescript-bun",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -1011,7 +1011,7 @@
             "treeDigest": "58116986bd1354f902ab3f9862030c43f9f8a5dbe9814aca1ff24c1243299cca"
           },
           {
-            "contentDigest": "7f831fdbc1ab48950fd19c04cc84d950a1c35fe9d66733f5eb091741aebfe4e6",
+            "contentDigest": "f739d1115b60a26cf7773d4e5f2bd9fef38728b5269c53bf5fbb68f29e08a708",
             "name": "write-prd",
             "path": "skills/02-planning/write-prd",
             "source": {
@@ -1163,7 +1163,7 @@
             "treeDigest": "e7133d07eeb9e54ff00e6d1ab543c7d38a7948b3d1f92d6174ae74484442b431"
           },
           {
-            "contentDigest": "00babd219ccea12b18dd7040c45cea0641b24fda215d33f897f7452089d0a34d",
+            "contentDigest": "d3025451086d0fbcb3911ea0a01da30bfce67110f65cb8356c0fea8bdf32f2b4",
             "name": "write-techspec",
             "path": "skills/03-engineering-design/write-techspec",
             "source": {
@@ -1172,7 +1172,7 @@
             }
           },
           {
-            "contentDigest": "63c079319876235bac1f92d2e3eaa33d31c7e5e22ed3a26ebcd0b49b32243e18",
+            "contentDigest": "8de45174fd3f5d42d78d1910627a36f0470951a22aeacfd612538668a56cfb16",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -1756,7 +1756,7 @@
             "treeDigest": "b7176c4a52069f9f30acea9c509fe9e235b6af88d048f866684006e0986bf0f8"
           },
           {
-            "contentDigest": "2a2eef7e973c6a1e6fde0f3e7782380c067acb2b4dd097450e28e5a4426c5912",
+            "contentDigest": "3782de7d5074d8968937731595f406149caf2bafc3e5733757e4373a3dc10437",
             "name": "archive-spec",
             "path": "skills/07-evidence-delivery/archive-spec",
             "source": {
@@ -1955,7 +1955,7 @@
             "treeDigest": "53fba8dad40988c3c79bd57c56feead8ffdf059a9871402b8a638d9c4b4f7609"
           },
           {
-            "contentDigest": "5a3c4ce38e797a041a237d01d81e1dfe64717b03c147356663f79605536353fa",
+            "contentDigest": "e6348bfd0193570e4361e94fd59e159f515f36ee1d8ae4e487327dd43f358880",
             "name": "write-idea",
             "path": "skills/01-discovery/write-idea",
             "source": {

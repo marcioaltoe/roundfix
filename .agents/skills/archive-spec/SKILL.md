@@ -27,13 +27,16 @@ Check all three with fresh command evidence before touching anything:
    retain its output. Any value other than `status: completed` blocks the
    archive and names the Task file.
 
-2. **QA passed.** The newest report in `qa/` must have `verdict: pass`.
-
-   **Commands:** run `ls -1t docs/specs/<slug>/qa/qa-report-*.md` to identify
-   the newest report, then
-   `grep -n '^verdict: pass$' docs/specs/<slug>/qa/<newest-report>` and retain
-   both outputs. A missing `qa/` directory or a failing latest report blocks
-   the archive; proceed only if the user explicitly says "archive anyway", and
+2. **QA passed.** The newest report in `qa/` must pass the repository's QA
+   verifier. Do not substitute a line grep for structured validation. In
+   Roundfix, use the same `internal/spec.QAVerdict` contract as the Archive
+   Command: select the newest report by the `qa-report-YYYY-MM-DD[-NN].md`
+   filename contract, parse its YAML frontmatter, require a supported
+   `verdict`, require both blocked-row fields to be non-negative integers when
+   present, and reject `verdict: pass` when `rows_blocked_finding` is nonzero.
+   Retain the verifier's report path and result as evidence. A missing `qa/`
+   directory, malformed newest report, or non-passing verdict blocks the
+   archive; proceed only if the user explicitly says "archive anyway", and
    record that override in the stamped frontmatter (`qa_override: true`).
 
 3. **The Spec is self-contained.** Apply this precondition only when
@@ -60,12 +63,120 @@ Check all three with fresh command evidence before touching anything:
    test "$link_status" -eq 1 || exit "$link_status"
    ```
 
-   Then inspect every data row in the index and run
-   `test -f docs/specs/<slug>/references/<path>` and `test ! -e <source>`.
-   On failure, print the row's offending `path` or `source`: a missing current
-   path requires adoption step 5 (move), and a surviving source requires the
-   one-move contract in step 5. Retain the commands and outputs as fresh
-   archive evidence.
+   Then parse and validate every data row. The index belongs to the current
+   Spec: `owner` must equal its four-digit prefix, `type` must be `inbox` or
+   `finding`, and each `source` and `path` must appear only once. A `path` must
+   be one basename relative to `_index.md`; reject absolute paths, `.`, `..`,
+   path separators, and symbolic links instead of allowing traversal or a link
+   outside `references/`. Run the following from the repository root and
+   retain the normalized rows plus any diagnostic as evidence:
+
+   ```bash
+   slug=<slug>
+   index="docs/specs/$slug/references/_index.md"
+   expected_owner=${slug%%-*}
+   parsed_index=$(mktemp) || exit 1
+   trap 'rm -f "$parsed_index"' EXIT HUP INT TERM
+
+   if test -L "$(dirname "$index")"; then
+     printf 'self-containment failed: references/ must not be a symbolic link\n' >&2
+     exit 1
+   fi
+
+   awk -F '|' -v expected_owner="$expected_owner" '
+   function trim(value) {
+     gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+     return value
+   }
+   function reject(message) {
+     print "self-containment failed: " message > "/dev/stderr"
+     invalid = 1
+   }
+   function separator(value) {
+     value = trim(value)
+     return value ~ /^:?-{3,}:?$/
+   }
+   /^[[:space:]]*$/ || /^[[:space:]]*#/ { next }
+   !header {
+     if (NF != 7 || trim($2) != "source" || trim($3) != "type" ||
+         trim($4) != "owner" || trim($5) != "adopted date" ||
+         trim($6) != "path") {
+       reject("_index.md must use the fixed source | type | owner | adopted date | path header")
+     } else {
+       header = 1
+     }
+     next
+   }
+   !divider {
+     if (NF != 7 || !separator($2) || !separator($3) || !separator($4) ||
+         !separator($5) || !separator($6)) {
+       reject("_index.md has an invalid table separator")
+     } else {
+       divider = 1
+     }
+     next
+   }
+   {
+     source = trim($2)
+     type = trim($3)
+     owner = trim($4)
+     adopted = trim($5)
+     path = trim($6)
+     if (NF != 7 || source == "" || type == "" || owner == "" ||
+         adopted == "" || path == "") {
+       reject("invalid index row at line " NR ": " $0)
+       next
+     }
+     if (type != "inbox" && type != "finding") {
+       reject("type must be `inbox` or `finding` at line " NR ": " type)
+     }
+     if (owner != expected_owner) {
+       reject("owner must be " expected_owner " at line " NR ": " owner)
+     }
+     if (seen_source[source]++) {
+       reject("duplicate source at line " NR ": " source)
+     }
+     if (seen_path[path]++) {
+       reject("duplicate path at line " NR ": " path)
+     }
+     if (adopted !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) {
+       reject("adopted date must be YYYY-MM-DD at line " NR ": " adopted)
+     }
+     if ((type == "inbox" && source !~ /^docs\/_inbox\/[^\/]+\.md$/) ||
+         (type == "finding" && source !~ /^docs\/findings\/[^\/]+\.md$/)) {
+       reject("source does not match type at line " NR ": " source)
+     }
+     print source "|" type "|" owner "|" adopted "|" path
+   }
+   END {
+     if (!header || !divider) {
+       reject("_index.md is missing its fixed table header")
+     }
+     if (invalid) {
+       exit 1
+     }
+   }
+   ' "$index" > "$parsed_index" || exit $?
+
+   while IFS='|' read -r source type owner adopted path; do
+     case "$path" in
+       ""|.|..|/*|*/*|*\\*)
+         printf 'self-containment failed: path must be one basename relative to `_index.md`: %s\n' "$path" >&2
+         exit 1
+         ;;
+     esac
+     current="$(dirname "$index")/$path"
+     if test -L "$current" || test ! -f "$current"; then
+       printf 'self-containment failed: invalid or missing path %s; finish adoption step 5\n' "$path" >&2
+       exit 1
+     fi
+     if test -e "$source" || test -L "$source"; then
+       printf 'self-containment failed: source still exists at %s; finish adoption step 5\n' "$source" >&2
+       exit 1
+     fi
+   done < "$parsed_index"
+   cat "$parsed_index"
+   ```
 
 `qa_override: true` overrides only failed or missing QA evidence in precondition
 2. It never overrides self-containment: verification can be overridden by the

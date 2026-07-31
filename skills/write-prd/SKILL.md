@@ -76,11 +76,12 @@ Always state a suggested default and the one-line reason. Cover, in order of imp
 
 A product decision that is hard to reverse, surprising without context, and the result of a real trade-off becomes an ADR at `docs/adr/NNNN-slug.md`, continuing the repository's numbering. Keep it to 1–3 sentences: context, decision, why. Decisions that fail that three-part gate just live in the PRD body.
 
-### 4. Adopt relied-upon sources
+### 4. Prepare the Spec folder and adopt relied-upon sources
 
 Adoption transfers a source document into the Spec that commits to implementing
-it. Run these steps in order after recording decisions and before writing the
-Spec folder:
+it. Resolve the numbered slug with the rule in step 5, then run
+`mkdir -p docs/specs/<slug>/references` before the first move. Run these steps
+in order after recording decisions and before writing the PRD:
 
 1. **Inventory.** List every inbox note and finding whose content the PRD relies
    on. A document cited only as background is not adopted.
@@ -97,8 +98,9 @@ Spec folder:
    path in Git history.
 5. **Move.** Run
    `git mv <source> docs/specs/<slug>/references/<basename>`. Perform one move,
-   never a copy and never a stub. Preserve the basename and every byte; never
-   rewrite the observations inside the source.
+   never a copy and never a stub. The move preserves the basename and every
+   byte. Step 7 may then change only Markdown link destinations inside the
+   moved source; never rewrite its observations or other source content.
 6. **Index.** Add one row per adopted source to
    `docs/specs/<slug>/references/_index.md` using this fixed Markdown table:
 
@@ -117,7 +119,9 @@ Spec folder:
    valid when the Spec archives.
 7. **Rewrite links.** Search the whole repository for links to each old path,
    rewrite every destination to the post-adoption path relative to its linking
-   file, and resolve every rewritten Markdown link target.
+   file, and resolve every rewritten Markdown link target. This includes link
+   destinations inside an adopted source; only Markdown link destinations may
+   change after the byte-preserving move.
 8. **Gate.** Fail and do not report completion while an adopted source still
    exists at its `source` path or any rewritten link is unresolved. Name the
    offending source or link and repeat the skipped adoption step.
@@ -126,7 +130,7 @@ Spec folder:
 
 **HARD RULE — spec folders are numbered `docs/specs/NNNN-<kebab-slug>/`** (zero-padded 4 digits, e.g. `0001-implement-command`). Determine `NNNN` by scanning **both** `docs/specs/` and `docs/specs/_archived/` for the highest existing prefix and adding 1; use `0001` when no specs exist anywhere. Numbers are never reused and travel with the spec when archived. Never create an unnumbered spec folder. When an `_idea.md` fed this PRD, its folder already carries the number — reuse it, don't mint a new one.
 
-Create `docs/specs/NNNN-<kebab-slug>/` and write `_prd.md` from the template in [references/prd-template.md](references/prd-template.md). If an `_idea.md` fed this PRD, flip its frontmatter `status` to `promoted`. Set the PRD frontmatter carefully — downstream skills parse it:
+Write `_prd.md` in the Spec folder prepared in step 4, using the template in [references/prd-template.md](references/prd-template.md). If an `_idea.md` fed this PRD, flip its frontmatter `status` to `promoted`. Set the PRD frontmatter carefully — downstream skills parse it:
 
 - `spec` — the folder slug.
 - `status: active` — flipped to `archived` by `archive-spec` once the spec completes (every task done, QA passed).

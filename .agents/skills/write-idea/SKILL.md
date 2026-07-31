@@ -26,8 +26,9 @@ Use it for product-level ideas: greenfield features, ideas with real market/comp
 - **Research before writing.** Never draft an idea unbacked by codebase findings and (for user-facing ideas) market data.
 - **Reference adopted sources at their owned path.** When a source already
   belongs to an active or archived Spec, link its post-adoption path in the
-  owning Spec, never the pre-adoption path retained as provenance. A secondary
-  Spec links that owner's copy and adopts nothing.
+  owning Spec with a destination relative to `_idea.md`, never the pre-adoption
+  path retained as provenance. A secondary Spec links that owner's copy and
+  adopts nothing.
 - **Do not write the file until the user approves the draft** — unlike `write-prd`, this stage is inherently interactive: its whole product is shared judgment.
 
 ## Process

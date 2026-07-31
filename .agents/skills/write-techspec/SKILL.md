@@ -28,9 +28,9 @@ Produce `docs/specs/<slug>/_techspec.md` — the technical answer to the spec's 
 - **YAGNI.** Do not propose new packages, layers, or directories when the feature fits as an addition to an existing module. Every new structural element must earn its place against a stated alternative.
 - **Reference, don't duplicate.** Point at PRD sections by name ("covers User Stories 3–5"); repeating business context here creates two copies that drift.
 - **Use the owned source path.** Link every adopted source at its
-  post-adoption path in the owning Spec, never at the pre-adoption path kept in
-  the reference index. A secondary Spec links the primary owner's copy and
-  adopts nothing.
+  post-adoption path in the owning Spec with a destination relative to `_techspec.md`,
+  never at the pre-adoption path kept in the reference index. A secondary Spec
+  links the primary owner's copy and adopts nothing.
 
 ## Process
 

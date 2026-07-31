@@ -60,8 +60,9 @@ by each Task file. The preflight never moves either responsibility.
 - **Content references, never duplicates.** Task files point at PRD/TechSpec
   sections by name; a task that restates the spec goes stale the first time the
   spec is amended. Link an adopted source at its post-adoption path in the
-  owning Spec, never at its pre-adoption provenance path. A secondary Spec
-  links the primary owner's copy and adopts nothing.
+  owning Spec with a destination relative to that Task file, never at its
+  pre-adoption provenance path. A secondary Spec links the primary owner's
+  copy and adopts nothing.
 - **Context entries are labeled paths.** Add `## Context` only when the Task
   needs specific instruction or interface paths beyond the standard Spec
   bundle. Use bullets shaped as `- instruction: <path>` or

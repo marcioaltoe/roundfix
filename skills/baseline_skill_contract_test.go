@@ -530,6 +530,68 @@ func TestWriteTechSpecProjectConstraints(t *testing.T) {
 	testAuthoringProjectConstraints(t, "write-techspec", "techspec-template.md")
 }
 
+func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	tests := []struct {
+		name     string
+		path     string
+		required []string
+	}{
+		{
+			name: "archive validation",
+			path: filepath.Join(repoRoot, ".agents", "skills", "archive-spec", "SKILL.md"),
+			required: []string{
+				"`internal/spec.QAVerdict`",
+				"expected_owner",
+				"duplicate source",
+				"type must be `inbox` or `finding`",
+				"path must be one basename relative to `_index.md`",
+				"test -L \"$current\"",
+			},
+		},
+		{
+			name: "PRD adoption",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-prd", "SKILL.md"),
+			required: []string{
+				"mkdir -p docs/specs/<slug>/references",
+				"only Markdown link destinations",
+			},
+		},
+		{
+			name: "idea links",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-idea", "SKILL.md"),
+			required: []string{
+				"relative to `_idea.md`",
+			},
+		},
+		{
+			name: "TechSpec links",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-techspec", "SKILL.md"),
+			required: []string{
+				"relative to `_techspec.md`",
+			},
+		},
+		{
+			name: "Task links",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-tasks", "SKILL.md"),
+			required: []string{
+				"relative to that Task file",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := strings.Join(strings.Fields(string(readBaselineSkillContractFile(t, tt.path))), " ")
+			for _, required := range tt.required {
+				if !strings.Contains(content, strings.Join(strings.Fields(required), " ")) {
+					t.Errorf("%s missing reference-lifecycle contract %q", tt.path, required)
+				}
+			}
+		})
+	}
+}
+
 func TestProjectConstraintTaskGate(t *testing.T) {
 	testWorkflowProjectConstraintContract(t, "write-tasks", []string{
 		"Project Constraint preflight",

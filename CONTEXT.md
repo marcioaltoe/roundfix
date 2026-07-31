@@ -53,7 +53,7 @@ A head-bound Review Source classification for one expected commit: `pending` has
 _Avoid_: Check presence, generic approval, inferred clean state
 
 **Spec**:
-One feature's planning artifact set produced by the spec workflow: PRD, Task Graph, Task files, QA evidence, and adopted sources under `references/` with provenance recorded in `references/_index.md`.
+One Spec's planning artifact set produced by the spec workflow: PRD, Task Graph, Task files, QA evidence, and adopted sources under `references/` with provenance recorded in `references/_index.md`.
 _Avoid_: Feature folder, epic, project
 
 **Spec Root**:
