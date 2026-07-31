@@ -22,15 +22,15 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "722d25b8c57e2873a9c3487c0c1f74aca053fed61e7a57676fe0201df667deeb",
+      "digest": "d8a8cf819705082540eb1dba83707c22ca0accae6a3b0f96c11ec73f8a9b115d",
       "id": "go-cli"
     },
     {
-      "digest": "fd0a35fea3270fdc4cf764ebdd3c3a0fa7a44244bcbf195c9d6b09f2941ecfec",
+      "digest": "058e4332c7eb3057ac71075d4a631262e08df7db1774dcb844d16e6c20c65ecc",
       "id": "rust-cli"
     },
     {
-      "digest": "a08f29703854982bbe5316e73268ca1a24512dfe01f9c494fb5add03a6058521",
+      "digest": "45aff41fa18781f55a68f63a49e76ddcfc22ecf30c31d6237240398df714671d",
       "id": "typescript-bun"
     }
   ],
@@ -53,7 +53,7 @@
             ]
           }
         ],
-        "digest": "722d25b8c57e2873a9c3487c0c1f74aca053fed61e7a57676fe0201df667deeb",
+        "digest": "d8a8cf819705082540eb1dba83707c22ca0accae6a3b0f96c11ec73f8a9b115d",
         "id": "go-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -169,7 +169,7 @@
             }
           },
           {
-            "contentDigest": "f739d1115b60a26cf7773d4e5f2bd9fef38728b5269c53bf5fbb68f29e08a708",
+            "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780",
             "name": "write-prd",
             "path": "skills/02-planning/write-prd",
             "source": {
@@ -397,7 +397,7 @@
             "treeDigest": "e2e46f2af6860be4e09df1deae4b322f4f3a77d1a0db406b60c7893a654bc3c6"
           },
           {
-            "contentDigest": "3782de7d5074d8968937731595f406149caf2bafc3e5733757e4373a3dc10437",
+            "contentDigest": "46a380abc591e109b64abefc392a1e86522c620410d3dace3a297433294e3266",
             "name": "archive-spec",
             "path": "skills/07-evidence-delivery/archive-spec",
             "source": {
@@ -475,7 +475,7 @@
             ]
           }
         ],
-        "digest": "fd0a35fea3270fdc4cf764ebdd3c3a0fa7a44244bcbf195c9d6b09f2941ecfec",
+        "digest": "058e4332c7eb3057ac71075d4a631262e08df7db1774dcb844d16e6c20c65ecc",
         "id": "rust-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -591,7 +591,7 @@
             }
           },
           {
-            "contentDigest": "f739d1115b60a26cf7773d4e5f2bd9fef38728b5269c53bf5fbb68f29e08a708",
+            "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780",
             "name": "write-prd",
             "path": "skills/02-planning/write-prd",
             "source": {
@@ -764,7 +764,7 @@
             "treeDigest": "e2e46f2af6860be4e09df1deae4b322f4f3a77d1a0db406b60c7893a654bc3c6"
           },
           {
-            "contentDigest": "3782de7d5074d8968937731595f406149caf2bafc3e5733757e4373a3dc10437",
+            "contentDigest": "46a380abc591e109b64abefc392a1e86522c620410d3dace3a297433294e3266",
             "name": "archive-spec",
             "path": "skills/07-evidence-delivery/archive-spec",
             "source": {
@@ -920,7 +920,7 @@
             ]
           }
         ],
-        "digest": "a08f29703854982bbe5316e73268ca1a24512dfe01f9c494fb5add03a6058521",
+        "digest": "45aff41fa18781f55a68f63a49e76ddcfc22ecf30c31d6237240398df714671d",
         "id": "typescript-bun",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -1011,7 +1011,7 @@
             "treeDigest": "58116986bd1354f902ab3f9862030c43f9f8a5dbe9814aca1ff24c1243299cca"
           },
           {
-            "contentDigest": "f739d1115b60a26cf7773d4e5f2bd9fef38728b5269c53bf5fbb68f29e08a708",
+            "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780",
             "name": "write-prd",
             "path": "skills/02-planning/write-prd",
             "source": {
@@ -1756,7 +1756,7 @@
             "treeDigest": "b7176c4a52069f9f30acea9c509fe9e235b6af88d048f866684006e0986bf0f8"
           },
           {
-            "contentDigest": "3782de7d5074d8968937731595f406149caf2bafc3e5733757e4373a3dc10437",
+            "contentDigest": "46a380abc591e109b64abefc392a1e86522c620410d3dace3a297433294e3266",
             "name": "archive-spec",
             "path": "skills/07-evidence-delivery/archive-spec",
             "source": {

@@ -92,17 +92,13 @@ in order after recording decisions and before writing the PRD:
    `docs/specs/_archived/` for an existing owner. Exactly one Spec owns a shared
    source: the first Spec that commits to implementation. A secondary Spec links
    the owner's post-adoption copy and adopts nothing.
-4. **Flip then link.** Before moving a finding, set its frontmatter
-   `status: done`, update `updated_at`, and record the owning Spec link in the
-   same change. This ordering leaves the status and route visible at the old
-   path in Git history.
-5. **Move.** Run
-   `git mv <source> docs/specs/<slug>/references/<basename>`. Perform one move,
-   never a copy and never a stub. The move preserves the basename and every
-   byte. Step 7 may then change only Markdown link destinations inside the
-   moved source; never rewrite its observations or other source content.
-6. **Index.** Add one row per adopted source to
-   `docs/specs/<slug>/references/_index.md` using this fixed Markdown table:
+4. **Preflight.** Resolve every adopted source's basename and destination under
+   `docs/specs/<slug>/references/` before changing any finding status, writing
+   the index, or moving a source. Reject duplicate source basenames and abort if
+   any destination path already exists, including a symbolic link. Complete
+   this check for the whole inventory before changing adoption state.
+5. **Index.** Write the complete `_index.md` before the first status update or
+   source move. Add one row per adopted source using this fixed Markdown table:
 
    ```markdown
    # Adopted sources
@@ -116,15 +112,30 @@ in order after recording decisions and before writing the PRD:
    provenance record. `type` identifies the source as `inbox` or `finding`.
    `owner` is the owning four-digit Spec number. `adopted date` is the adoption
    date, and `path` is the current path relative to `_index.md`, so it remains
-   valid when the Spec archives.
-7. **Rewrite links.** Search the whole repository for links to each old path,
-   rewrite every destination to the post-adoption path relative to its linking
-   file, and resolve every rewritten Markdown link target. This includes link
-   destinations inside an adopted source; only Markdown link destinations may
-   change after the byte-preserving move.
-8. **Gate.** Fail and do not report completion while an adopted source still
-   exists at its `source` path or any rewritten link is unresolved. Name the
-   offending source or link and repeat the skipped adoption step.
+   valid when the Spec archives. Before continuing, validate the complete index:
+   require the fixed header, one complete row per inventoried source, unique
+   `source` and `path` values, valid type, owner, and date values, and each
+   `path` equal to its `source` basename. Creating this validated index first
+   makes an interrupted adoption visible to `archive-spec`, which must reject
+   the indexed but incomplete Spec instead of treating it as legacy.
+6. **Flip then link.** Before moving a finding, set its frontmatter
+   `status: done`, update `updated_at`, and record the owning Spec link in the
+   same change. This ordering leaves the status and route visible at the old
+   path in Git history.
+7. **Move.** Run
+   `git mv <source> docs/specs/<slug>/references/<basename>` once for each
+   indexed source. Perform one move, never a copy and never a stub. The move
+   preserves the basename and every byte. Step 8 may then change only Markdown
+   link destinations inside the moved source; never rewrite its observations or
+   other source content.
+8. **Rewrite and gate.** Search the whole repository for links to each old
+   path, rewrite every destination to the post-adoption path relative to its
+   linking file, and resolve every rewritten Markdown link target. This includes
+   link destinations inside an adopted source; only Markdown link destinations
+   may change after the byte-preserving move. Fail and do not report completion
+   while an adopted source still exists at its `source` path or any rewritten
+   link is unresolved. Name the offending source or link and repeat the skipped
+   adoption step.
 
 ### 5. Write
 

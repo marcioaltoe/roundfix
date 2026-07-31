@@ -536,6 +536,7 @@ func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 		name     string
 		path     string
 		required []string
+		ordered  []string
 	}{
 		{
 			name: "archive validation",
@@ -545,8 +546,17 @@ func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 				"expected_owner",
 				"duplicate source",
 				"type must be `inbox` or `finding`",
+				"exists or is a symbolic link",
 				"path must be one basename relative to `_index.md`",
+				"test -L \"$index\" || test ! -f \"$index\"",
+				"path must equal source basename",
 				"test -L \"$current\"",
+			},
+			ordered: []string{
+				"test -L \"$index\" || test ! -f \"$index\"",
+				"awk -F '|'",
+				"source_basename=${source##*/}",
+				"current=\"$(dirname \"$index\")/$path\"",
 			},
 		},
 		{
@@ -554,7 +564,18 @@ func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 			path: filepath.Join(repoRoot, ".agents", "skills", "write-prd", "SKILL.md"),
 			required: []string{
 				"mkdir -p docs/specs/<slug>/references",
+				"duplicate source basenames",
+				"destination path already exists",
+				"before changing any finding status",
+				"complete `_index.md`",
 				"only Markdown link destinations",
+			},
+			ordered: []string{
+				"4. **Preflight.**",
+				"5. **Index.**",
+				"6. **Flip then link.**",
+				"7. **Move.**",
+				"8. **Rewrite and gate.**",
 			},
 		},
 		{
@@ -587,6 +608,19 @@ func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 				if !strings.Contains(content, strings.Join(strings.Fields(required), " ")) {
 					t.Errorf("%s missing reference-lifecycle contract %q", tt.path, required)
 				}
+			}
+			previous := -1
+			for _, required := range tt.ordered {
+				normalized := strings.Join(strings.Fields(required), " ")
+				position := strings.Index(content, normalized)
+				if position == -1 {
+					t.Errorf("%s missing ordered reference-lifecycle contract %q", tt.path, required)
+					continue
+				}
+				if position <= previous {
+					t.Errorf("%s reference-lifecycle contract %q is out of order", tt.path, required)
+				}
+				previous = position
 			}
 		})
 	}

@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/typescript-bun.txt"
   },
-  "digest": "94f02f6878e402dd66ca168377c19b1593af8d88d5fa94c3071df470af23380e",
+  "digest": "1b52fd32f049463c8a306dd47ccc9a0165ad8ff9330fe95a9a42191193c2f297",
   "skills": [
     {
       "name": "find-rules",
@@ -103,7 +103,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "f739d1115b60a26cf7773d4e5f2bd9fef38728b5269c53bf5fbb68f29e08a708"
+      "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780"
     },
     {
       "name": "architectural-analysis",
@@ -848,7 +848,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "3782de7d5074d8968937731595f406149caf2bafc3e5733757e4373a3dc10437"
+      "contentDigest": "46a380abc591e109b64abefc392a1e86522c620410d3dace3a297433294e3266"
     },
     {
       "name": "conventional-commits",

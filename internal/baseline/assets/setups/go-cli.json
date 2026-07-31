@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/go-cli.txt"
   },
-  "digest": "3027df85e4fdd7d008b3695a6d8610782198bac332cd977a55a891005cd5f2b7",
+  "digest": "2c71da0a0572ae916c14519511534a5e0e589a514a07a433420afae49572a241",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -128,7 +128,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "f739d1115b60a26cf7773d4e5f2bd9fef38728b5269c53bf5fbb68f29e08a708"
+      "contentDigest": "c2a5a00e44416bdbd29e66d2f18915e5c240c18e026cf3b333edb08fee98e780"
     },
     {
       "name": "agentic-cli-design",
@@ -356,7 +356,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "3782de7d5074d8968937731595f406149caf2bafc3e5733757e4373a3dc10437"
+      "contentDigest": "46a380abc591e109b64abefc392a1e86522c620410d3dace3a297433294e3266"
     },
     {
       "name": "conventional-commits",

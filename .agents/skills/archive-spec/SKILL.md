@@ -39,9 +39,11 @@ Check all three with fresh command evidence before touching anything:
    archive; proceed only if the user explicitly says "archive anyway", and
    record that override in the stamped frontmatter (`qa_override: true`).
 
-3. **The Spec is self-contained.** Apply this precondition only when
-   `docs/specs/<slug>/references/_index.md` exists. A Spec without the index
-   predates this contract and passes this check without retrofitting historical
+3. **The Spec is self-contained.** Apply this precondition when
+   `docs/specs/<slug>/references/_index.md` exists or is a symbolic link; a
+   symbolic link, including a broken one, is invalid index state rather than a
+   legacy Spec. Only a Spec where that path neither exists nor is a symbolic
+   link predates this contract and passes without retrofitting historical
    artifacts. For an indexed Spec, every indexed `path` must exist relative to
    `_index.md`, every never-updated `source` path must be absent, and no
    Markdown link destination inside the Spec may point into `docs/_inbox/` or
@@ -57,7 +59,7 @@ Check all three with fresh command evidence before touching anything:
    link_status=$?
    if test "$link_status" -eq 0; then
      printf '%s\n' "$link_hits"
-     echo "self-containment failed: rewrite each listed link at adoption step 7"
+     echo "self-containment failed: rewrite each listed link at adoption step 8"
      exit 1
    fi
    test "$link_status" -eq 1 || exit "$link_status"
@@ -80,6 +82,11 @@ Check all three with fresh command evidence before touching anything:
 
    if test -L "$(dirname "$index")"; then
      printf 'self-containment failed: references/ must not be a symbolic link\n' >&2
+     exit 1
+   fi
+
+   if test -L "$index" || test ! -f "$index"; then
+     printf 'self-containment failed: references/_index.md must be a regular, non-symbolic-link file\n' >&2
      exit 1
    fi
 
@@ -165,13 +172,18 @@ Check all three with fresh command evidence before touching anything:
          exit 1
          ;;
      esac
+     source_basename=${source##*/}
+     if test "$path" != "$source_basename"; then
+       printf 'self-containment failed: path must equal source basename for %s: %s != %s\n' "$source" "$path" "$source_basename" >&2
+       exit 1
+     fi
      current="$(dirname "$index")/$path"
      if test -L "$current" || test ! -f "$current"; then
-       printf 'self-containment failed: invalid or missing path %s; finish adoption step 5\n' "$path" >&2
+       printf 'self-containment failed: invalid or missing path %s; finish adoption step 7\n' "$path" >&2
        exit 1
      fi
      if test -e "$source" || test -L "$source"; then
-       printf 'self-containment failed: source still exists at %s; finish adoption step 5\n' "$source" >&2
+       printf 'self-containment failed: source still exists at %s; finish adoption step 7\n' "$source" >&2
        exit 1
      fi
    done < "$parsed_index"
