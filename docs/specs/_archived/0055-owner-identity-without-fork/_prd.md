@@ -1,9 +1,12 @@
 ---
 spec: 0055-owner-identity-without-fork
-status: active
+status: archived
 created: 2026-07-28
 surfaces: [backend, cli]
+archived: "2026-07-31"
+source_slug: 0055-owner-identity-without-fork
 ---
+
 
 # Owner identity without fork
 
