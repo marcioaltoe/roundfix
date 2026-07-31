@@ -9291,6 +9291,127 @@ func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
 }
 
+func TestRunForceStopAcceptsFlagsInAnyPosition(t *testing.T) {
+	orders := map[string]func(runID string) []string{
+		"run id then flag": func(runID string) []string { return []string{"stop", runID, "--force"} },
+		"flag then run id": func(runID string) []string { return []string{"stop", "--force", runID} },
+	}
+	for name, argsFor := range orders {
+		t.Run(name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), argsFor(active.ID), &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("Force Stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+			}
+			if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+				t.Fatalf("expected Force Stop success report, got %q", stdout.String())
+			}
+			assertRunState(t, homeDir, active.ID, store.StateStopped)
+		})
+	}
+}
+
+func TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof(t *testing.T) {
+	tests := []struct {
+		name              string
+		proofErr          error
+		withForce         bool
+		withFlag          bool
+		wantCode          int
+		wantTerminate     bool
+		wantDiagnostic    string
+		wantTerminalState string
+	}{
+		{
+			name:              "unreadable identity permits supervised stop",
+			proofErr:          fmt.Errorf("host pressure: %w", store.ErrOwnerIdentityUnreadable),
+			withForce:         true,
+			withFlag:          true,
+			wantCode:          exitOK,
+			wantTerminate:     true,
+			wantTerminalState: store.StateStopped,
+		},
+		{
+			name:              "readable matching identity refuses supervised flag",
+			withForce:         true,
+			withFlag:          true,
+			wantCode:          exitPreflight,
+			wantDiagnostic:    "only when the owner identity is unreadable",
+			wantTerminalState: store.StateActive,
+		},
+		{
+			name:              "proven mismatch refuses supervised flag",
+			proofErr:          fmt.Errorf("identity mismatch: %w", store.ErrOwnerProcessIdentityUnproven),
+			withForce:         true,
+			withFlag:          true,
+			wantCode:          exitPreflight,
+			wantDiagnostic:    "cannot override a proven owner identity mismatch",
+			wantTerminalState: store.StateActive,
+		},
+		{
+			name:              "unreadable identity without flag fails closed",
+			proofErr:          fmt.Errorf("host pressure: %w", store.ErrOwnerIdentityUnreadable),
+			withForce:         true,
+			wantCode:          exitRunFailed,
+			wantDiagnostic:    store.ErrOwnerIdentityUnreadable.Error(),
+			wantTerminalState: store.StateActive,
+		},
+		{
+			name:              "supervised flag requires Force Stop",
+			withFlag:          true,
+			wantCode:          exitPreflight,
+			wantDiagnostic:    "--owner-identity-unreadable requires --force",
+			wantTerminalState: store.StateActive,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+			terminateCalls := 0
+			withOwnerProcessController(t, ownerProcessControllerStub{
+				prove: func(context.Context, int, string) error {
+					return tt.proofErr
+				},
+				terminate: func(_ context.Context, _ int, recordedIdentity string) error {
+					terminateCalls++
+					if recordedIdentity != "" {
+						t.Fatalf("supervised termination identity = %q, want empty PID-only proof", recordedIdentity)
+					}
+					return nil
+				},
+			})
+			args := []string{"stop", active.ID}
+			if tt.withForce {
+				args = append(args, "--force")
+			}
+			if tt.withFlag {
+				args = append(args, "--owner-identity-unreadable")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), args, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("Force Stop exit = %d, want %d; stdout=%q stderr=%q", code, tt.wantCode, stdout.String(), stderr.String())
+			}
+			if (terminateCalls == 1) != tt.wantTerminate {
+				t.Fatalf("owner termination calls = %d, want termination=%v", terminateCalls, tt.wantTerminate)
+			}
+			if tt.wantDiagnostic != "" && !strings.Contains(stderr.String(), tt.wantDiagnostic) {
+				t.Fatalf("Force Stop diagnostic missing %q: %q", tt.wantDiagnostic, stderr.String())
+			}
+			assertRunState(t, homeDir, active.ID, tt.wantTerminalState)
+		})
+	}
+}
+
 func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testing.T) {
 	tests := []struct {
 		name string
@@ -10050,6 +10171,7 @@ func TestRunStopHelpExplainsProofBeforeCompletion(t *testing.T) {
 		"roundfix stop --spec <slug>",
 		"--spec",
 		"--force",
+		"--owner-identity-unreadable",
 		"graceful",
 		"owner exit is proven",
 		"Run remains Active",
