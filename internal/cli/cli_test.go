@@ -2442,6 +2442,41 @@ func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
 	}
 }
 
+func TestRunRunsListRendersOwnerIdentityUnprovenMarker(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	createdAt := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
+	runs := seedRunsForList(t, homeDir, []runListSeed{
+		{
+			kind:      store.KindImplement,
+			state:     store.StateActive,
+			gitRoot:   repoDir,
+			branch:    "ma/spec-run",
+			specSlug:  "0055-owner-identity-without-fork",
+			ownerPID:  os.Getpid(),
+			createdAt: createdAt,
+		},
+	})
+	withRunsListNow(t, createdAt.Add(3*time.Minute))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+	}
+	want := fmt.Sprintf(
+		"%s  Active  implement  spec:0055-owner-identity-without-fork  codex  2026-07-06T12:00:00Z  running 3m  ma/spec-run  owner_identity_unproven=true\n",
+		runs[0].ID,
+	)
+	if stdout.String() != want {
+		t.Fatalf("Run inspection marker output:\n got: %q\nwant: %q", stdout.String(), want)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("Run inspection emitted diagnostics: %q", stderr.String())
+	}
+}
+
 func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
@@ -2547,7 +2582,7 @@ func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testi
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
 	}
 	wantStdout := fmt.Sprintf(
-		"%s  Active  implement  spec:active-spec  codex  2026-07-27T12:00:00Z  running 10m  ma/widget-flow\n",
+		"%s  Active  implement  spec:active-spec  codex  2026-07-27T12:00:00Z  running 10m  ma/widget-flow  owner_identity_unproven=true\n",
 		active.ID,
 	)
 	if stdout.String() != wantStdout {
@@ -8789,6 +8824,7 @@ func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) int {
 		}
 	}()
 	for _, statement := range []string{
+		`ALTER TABLE runs DROP COLUMN owner_identity_unproven`,
 		`ALTER TABLE runs DROP COLUMN owner_identity`,
 		`PRAGMA user_version = 9`,
 	} {
@@ -10625,14 +10661,16 @@ func assertReconcileBranchState(t *testing.T, repoDir string, branch string, wan
 }
 
 type runListSeed struct {
-	kind        string
-	state       string
-	gitRoot     string
-	branch      string
-	prNumber    string
-	specSlug    string
-	createdAt   time.Time
-	completedAt time.Time
+	kind          string
+	state         string
+	gitRoot       string
+	branch        string
+	prNumber      string
+	specSlug      string
+	ownerPID      int
+	ownerIdentity string
+	createdAt     time.Time
+	completedAt   time.Time
 }
 
 func seedRunsForList(t *testing.T, homeDir string, seeds []runListSeed) []store.Run {
@@ -10694,6 +10732,8 @@ func createRunRequestForList(seed runListSeed) store.CreateRunRequest {
 		Agent:           "codex",
 		Model:           "gpt-5.5",
 		ReasoningEffort: "xhigh",
+		OwnerPID:        seed.ownerPID,
+		OwnerIdentity:   seed.ownerIdentity,
 	}
 	if req.Kind == store.KindImplement {
 		req.SpecSlug = seed.specSlug

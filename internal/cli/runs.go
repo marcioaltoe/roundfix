@@ -224,6 +224,9 @@ func printRunsList(stdout io.Writer, runs []store.Run, opts runsListOptions, now
 	}
 	for _, run := range runs {
 		fields := roundtui.FormatRunRow(run, now, false, opts.all)
+		if run.OwnerIdentityUnproven {
+			fields = append(fields, "owner_identity_unproven=true")
+		}
 		fmt.Fprintln(stdout, strings.Join(fields, "  "))
 	}
 }
