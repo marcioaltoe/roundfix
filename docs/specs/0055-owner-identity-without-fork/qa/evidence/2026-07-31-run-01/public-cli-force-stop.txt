@@ -20,6 +20,11 @@ Unreadable identity and no-subprocess proof
 - PATH shadowed ps with an executable that would create
   `/private/tmp/roundfix-qa-0055-20260731/ps-invoked` and exit 99.
   `/bin/test ! -e` on that marker exited 0 after the owner proof.
+- A production-source scan of non-test `*.go` files under `internal/store`
+  found no direct references to `os/exec`, `exec.Command`,
+  `exec.CommandContext`, `os.StartProcess`, `syscall.ForkExec`, or
+  `syscall.StartProcess`. This result is limited to that production package
+  scope; it does not claim repository-wide subprocess absence.
 - Command: ./bin/roundfix stop --force --owner-identity-unreadable <run-id>
 - Exit: 0. The public report title was `Roundfix Run force-stopped`, state was
   `Stopped`, and the sleeper session then exited 0.
