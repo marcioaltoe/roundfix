@@ -9,14 +9,15 @@ when its job changes (inbox → findings → spec is the normal flow).
 
 | Folder | Job | Lifecycle |
 | --- | --- | --- |
-| `docs/_inbox/` | Raw incoming notes: pasted reports, half-formed ideas, unprocessed field notes. Nothing here is triaged or trustworthy yet. | Triage each item: promote to `findings/`, `references/`, or a spec; then remove it from the inbox. An empty inbox is the healthy state. |
+| `docs/_inbox/` | Raw incoming notes: pasted reports, half-formed ideas, unprocessed field notes. Nothing here is triaged or trustworthy yet. | Triage each item: promote field evidence to `findings/`; when a Spec adopts source material, move it to `docs/specs/<slug>/references/`, so it leaves the inbox. Git history at the old path remains the discovery trail. An empty inbox is the healthy state. |
 | `docs/adr/` | Accepted decision records — `NNNN-kebab-slug.md`, 1–3 sentences each (context, decision, why). One numbering sequence for the repo's life. | Append-only. Numbers are never reused; superseding decisions name what they supersede. |
 | `docs/agents/` | Agent-facing usage guides: the files seeded by `setup-context-driven` plus repo-authored guides. `AGENTS.md`/`CLAUDE.md` hold only short pointers here, never rule bodies. | Seeded files are owned by the skill and regenerated on re-run; repo-authored guides are owned by the repo. |
 | `docs/design/` | Design artifacts: mockups, visual and interaction decisions, UI/TUI explorations, design-review notes. | Kept while the design is live; superseded explorations may be pruned or archived into the spec that consumed them. |
-| `docs/findings/` | Dated field reports: dogfood incidents, retrospectives, root-cause investigations. The raw material the spec pipeline consumes. Follow the template below. | Immutable history with addenda: append root causes and spec pointers as they land; never rewrite what was observed. Finding status tracks routing, not Spec implementation progress. |
+| `docs/findings/` | Dated field reports: dogfood incidents, retrospectives, root-cause investigations. The raw material the spec pipeline consumes. Follow the template below. | Observations stay immutable: append root causes and Spec pointers; never rewrite what was observed. Before a Spec adopts a finding, record its `done` status and Spec link, then move it to `docs/specs/<slug>/references/`, so it leaves the findings tree. Git history at the old path remains the discovery trail. |
 | `docs/handoffs/` | Session handoff documents: the state snapshot one working session leaves for the next. | Superseded by the next handoff; keep the recent few, prune the rest. |
 | `docs/references/` | Pointers to external resources, each with a one-line explanation of why it matters here. | Prune links that stop mattering. |
 | `docs/specs/` | The spec workflow tree: `NNNN-<slug>/` feature folders, `_archived/` for shipped specs, `_reviews/` for review-run artifacts. | Owned by the pipeline skills; status lives only in task files. |
+| `docs/specs/<slug>/references/` | Source documents adopted by the owning Spec. `_index.md` records each source's pre-adoption path, type, owner, adopted date, and current relative path. | Moves with the Spec through archive. One Spec owns each source; secondary Specs link the owner's copy. |
 | `docs/user-guide/` | Human-facing product documentation and runbooks. | Updated with the behavior it documents in the same PR. |
 | `docs/workflow/` | Working instructions for operating this repository's own delivery loop — supervisor discipline that needs no product change. A staging area, not a contract. | Adjusted as the loop teaches; parts that stabilize get promoted into a skill or command and removed from here. |
 
@@ -160,9 +161,10 @@ updated_at: YYYY-MM-DD
 ### Spec artifacts
 
 Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`,
-`_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`). Dependencies live only in
-`_tasks.md`; task status lives only in each task file's frontmatter. Completed
-specs are archived to `docs/specs/_archived/`.
+`_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`, and adopted sources under
+`references/` with provenance recorded in `references/_index.md`). Dependencies
+live only in `_tasks.md`; task status lives only in each task file's
+frontmatter. Completed specs are archived to `docs/specs/_archived/`.
 
 
 <!-- roundfix:repository-rule:end id=rule.4d357b3e1dea4134655b4cb84ada6c82d7b66000aa4e98bfd4b49bf2c608f0ab -->

@@ -13,6 +13,11 @@ implement-spec / implement-task → qa-gate → archive-spec
 Every stage reads and writes `docs/specs/<slug>/`. A fresh session must be able
 to continue from the files without relying on prior conversation.
 
+When a Spec commits to implementation, ownership of each adopted source
+transfers to that Spec. The first Spec to commit is the primary owner: its PRD
+adoption step moves the source into `docs/specs/<slug>/references/`; a later
+Spec links the owner's copy and adopts nothing.
+
 ## Entry points
 
 | Change | Route |
