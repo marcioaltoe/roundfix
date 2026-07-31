@@ -57,6 +57,117 @@ jobs:
       - name: Verify gate
         run: make verify
 
+      - name: Publication preflight
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          CLASSIFY_JQ='if type != "object" or ((.versions? | type) != "object") or ((.time? | type) != "object") then error("invalid packument") elif (.versions | has($tag)) or (.time | has($tag)) then "used" elif (.time | has("unpublished")) then "cooldown" else "eligible" end'
+          RELEASE_SET="$RUNNER_TEMP/roundfix-release-set"
+          body="$(mktemp)"
+          trap 'rm -f "$body"' EXIT
+          blocked=0
+
+          if ! jq -nr \
+            --slurpfile platforms dist/npm/platforms.json \
+            --slurpfile launcher dist/npm/roundfix/package.json '
+              ($platforms[0] | map(.package)) as $platform_coordinates
+              | ($launcher[0].name) as $launcher_coordinate
+              | if (($platform_coordinates | length) == 5)
+                  and (all($platform_coordinates[]; type == "string" and startswith("@roundfix/cli-")))
+                  and (($platform_coordinates | unique | length) == 5)
+                  and ($launcher_coordinate == "roundfix")
+                then $platform_coordinates[], $launcher_coordinate
+                else error("invalid release set")
+                end
+            ' > "$RELEASE_SET"; then
+            echo "::error::undetermined: the release set could not be derived"
+            exit 1
+          fi
+
+          printf '%-36s %-12s %s\n' "PACKAGE" "VERSION" "STATE"
+          {
+            printf '### Publication preflight\n\n'
+            printf '| Package | Version | State |\n'
+            printf '| --- | --- | --- |\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          while IFS= read -r coordinate; do
+            state=""
+            reason=""
+            encoded_coordinate="$(jq -nr --arg coordinate "$coordinate" '$coordinate | @uri')"
+
+            if http_status="$(curl --silent --show-error --location \
+              --connect-timeout 10 --max-time 30 \
+              --output "$body" --write-out '%{http_code}' \
+              "https://registry.npmjs.org/$encoded_coordinate")"; then
+              case "$http_status" in
+                200)
+                  if ! state="$(jq -er --arg tag "$TAG" "$CLASSIFY_JQ" "$body" 2>/dev/null)"; then
+                    state="undetermined"
+                    reason="the registry body could not be parsed"
+                  fi
+                  ;;
+                404)
+                  state="absent"
+                  ;;
+                *)
+                  state="undetermined"
+                  reason="the registry returned HTTP $http_status"
+                  ;;
+              esac
+            else
+              state="undetermined"
+              reason="the registry transport failed"
+            fi
+
+            cooldown_until=""
+            if [ "$state" = "cooldown" ]; then
+              if ! cooldown_until="$(jq -er '
+                .time.unpublished
+                | if type == "object" then .time else . end
+                | select(type == "string" and length > 0)
+                | sub("\\.[0-9]+Z$"; "Z")
+                | fromdateiso8601 + 86400
+                | todateiso8601
+              ' "$body" 2>/dev/null)"; then
+                state="undetermined"
+                reason="the cooldown expiry could not be resolved"
+              fi
+            fi
+
+            printf '%-36s %-12s %s\n' "$coordinate" "$TAG" "$state"
+            printf '| `%s` | `%s` | `%s` |\n' "$coordinate" "$TAG" "$state" >> "$GITHUB_STEP_SUMMARY"
+
+            case "$state" in
+              eligible)
+                ;;
+              used)
+                echo "::error::registry: $coordinate@$TAG is already used"
+                blocked=1
+                ;;
+              cooldown)
+                echo "::error::registry: $coordinate@$TAG is in cooldown until $cooldown_until"
+                blocked=1
+                ;;
+              absent)
+                echo "::error::registry: $coordinate@$TAG is absent"
+                blocked=1
+                ;;
+              undetermined)
+                echo "::error::undetermined: $coordinate@$TAG: $reason"
+                blocked=1
+                ;;
+              *)
+                echo "::error::undetermined: $coordinate@$TAG: classifier returned '$state'"
+                blocked=1
+                ;;
+            esac
+          done < "$RELEASE_SET"
+
+          if [ "$blocked" -ne 0 ]; then
+            exit 1
+          fi
+
       # Cross-compile every target from one runner (Go needs no per-OS runner),
       # stage each binary into its per-platform npm package, pin versions to the
       # tag, and collect release assets named with GOOS+GOARCH tokens so the
@@ -95,9 +206,13 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
-          for pkgdir in dist/npm/packages/cli-*; do
+          while IFS= read -r coordinate; do
+            if [ "$coordinate" = "roundfix" ]; then
+              continue
+            fi
+            pkgdir="dist/npm/packages/cli-${coordinate#@roundfix/cli-}"
             ( cd "$pkgdir" && npm publish --access public )
-          done
+          done < "$RUNNER_TEMP/roundfix-release-set"
           ( cd dist/npm/roundfix && npm publish --access public )
 
       # Upload the same binaries as GitHub Release assets to feed the Upgrade
