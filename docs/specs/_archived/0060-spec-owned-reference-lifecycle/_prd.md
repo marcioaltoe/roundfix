@@ -1,9 +1,12 @@
 ---
 spec: 0060-spec-owned-reference-lifecycle
-status: active
+status: archived
 created: 2026-07-28
 surfaces: [docs]
+archived: "2026-07-31"
+source_slug: 0060-spec-owned-reference-lifecycle
 ---
+
 
 # Spec-owned reference lifecycle
 
