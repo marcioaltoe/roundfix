@@ -25,6 +25,8 @@ Unreadable identity and no-subprocess proof
   `exec.CommandContext`, `os.StartProcess`, `syscall.ForkExec`, or
   `syscall.StartProcess`. This result is limited to that production package
   scope; it does not claim repository-wide subprocess absence.
+- Command: rtk rg -n -g '*.go' -g '!**/*_test.go' '(^|["`])os/exec|exec\.(Command|CommandContext)|os\.StartProcess|syscall\.(ForkExec|StartProcess)' internal/store
+- Exit: 1 with no matches.
 - Command: ./bin/roundfix stop --force --owner-identity-unreadable <run-id>
 - Exit: 0. The public report title was `Roundfix Run force-stopped`, state was
   `Stopped`, and the sleeper session then exited 0.
@@ -43,6 +45,7 @@ Proven mismatch refusal
 Readable matching refusal and prefix flag order
 - Controlled Run: run_20260731T114757Z_52401913cd3023ba, PID 59241,
   recorded identity `darwin:1785498470.723111`.
+- Command: ./bin/roundfix stop --force --owner-identity-unreadable <run-id>
 - Supervised-flag command exited 2 with
   `--owner-identity-unreadable may be used only when the owner identity is
   unreadable`; the sleeper remained live.
