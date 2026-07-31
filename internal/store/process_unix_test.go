@@ -4,6 +4,7 @@ package store
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -96,7 +97,7 @@ func TestOwnerProcessControllerRefusesMismatchedOwnerIdentity(t *testing.T) {
 	pid, _ := startOwnerProcessHelper(t, "graceful")
 	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
 
-	err := controller.TerminateAndWait(t.Context(), pid, "identity-token-of-exited-owner-process")
+	err := controller.TerminateAndWait(t.Context(), pid, runtime.GOOS+":identity-token-of-exited-owner-process")
 
 	if !errors.Is(err, ErrOwnerProcessIdentityUnproven) {
 		t.Fatalf("mismatched identity error = %v, want ErrOwnerProcessIdentityUnproven", err)
@@ -149,7 +150,7 @@ func TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity(t *testing.T)
 	pid, _ := startOwnerProcessHelper(t, "graceful")
 	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
 
-	err := controller.ProveOwner(t.Context(), pid, "identity-token-of-exited-owner-process")
+	err := controller.ProveOwner(t.Context(), pid, runtime.GOOS+":identity-token-of-exited-owner-process")
 
 	if !errors.Is(err, ErrOwnerProcessIdentityUnproven) {
 		t.Fatalf("mismatched identity proof error = %v, want ErrOwnerProcessIdentityUnproven", err)
@@ -163,6 +164,169 @@ func TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity(t *testing.T)
 	}
 	if !ProcessAlive(pid) {
 		t.Fatalf("refused proof must not signal process %d holding the reused PID", pid)
+	}
+}
+
+func TestOwnerProcessControllerProveOwnerDoesNotReportLegacyIdentityAsReusedPID(t *testing.T) {
+	pid, _ := startOwnerProcessHelper(t, "graceful")
+	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+
+	err := controller.ProveOwner(t.Context(), pid, "identity-token-from-legacy-ps-reader")
+
+	if !errors.Is(err, ErrOwnerIdentityUnreadable) {
+		t.Fatalf("legacy identity error = %v, want ErrOwnerIdentityUnreadable", err)
+	}
+	if errors.Is(err, ErrOwnerProcessIdentityUnproven) {
+		t.Fatalf("legacy identity error = %v, must not report a reused PID", err)
+	}
+	if !strings.Contains(err.Error(), "not comparable on "+runtime.GOOS) {
+		t.Fatalf("legacy identity error = %v, want platform comparison diagnostic", err)
+	}
+}
+
+func TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence(t *testing.T) {
+	type absenceResult struct {
+		absent bool
+		err    error
+	}
+
+	hostErr := errors.New("resource temporarily unavailable")
+	nativePrefix := runtime.GOOS + ":"
+	foreignPrefix := "linux:"
+	if runtime.GOOS == "linux" {
+		foreignPrefix = "darwin:"
+	}
+	tests := []struct {
+		name              string
+		recordedIdentity  string
+		liveIdentity      string
+		identityErr       error
+		absenceResults    []absenceResult
+		wantAbsent        bool
+		wantErr           error
+		wantNotErr        error
+		wantWrappedErr    error
+		wantMessage       []string
+		wantIdentityReads int
+	}{
+		{
+			name:             "live identity read failure is unreadable",
+			recordedIdentity: nativePrefix + "recorded",
+			identityErr:      hostErr,
+			absenceResults:   []absenceResult{{}, {}},
+			wantErr:          ErrOwnerIdentityUnreadable,
+			wantNotErr:       ErrOwnerProcessIdentityUnproven,
+			wantWrappedErr:   hostErr,
+			wantMessage: []string{
+				"read live owner identity",
+				"resource temporarily unavailable",
+				"resolve the host resource failure, then retry",
+			},
+			wantIdentityReads: 1,
+		},
+		{
+			name:              "owner exit after identity read failure is proven absent",
+			recordedIdentity:  nativePrefix + "recorded",
+			identityErr:       hostErr,
+			absenceResults:    []absenceResult{{}, {absent: true}},
+			wantAbsent:        true,
+			wantIdentityReads: 1,
+		},
+		{
+			name:              "legacy token without prefix is unreadable",
+			recordedIdentity:  "legacy-ps-token",
+			liveIdentity:      nativePrefix + "live",
+			absenceResults:    []absenceResult{{}},
+			wantErr:           ErrOwnerIdentityUnreadable,
+			wantNotErr:        ErrOwnerProcessIdentityUnproven,
+			wantMessage:       []string{"recorded owner identity is not comparable on " + runtime.GOOS},
+			wantIdentityReads: 1,
+		},
+		{
+			name:              "token from another platform is unreadable",
+			recordedIdentity:  foreignPrefix + "recorded",
+			liveIdentity:      nativePrefix + "live",
+			absenceResults:    []absenceResult{{}},
+			wantErr:           ErrOwnerIdentityUnreadable,
+			wantNotErr:        ErrOwnerProcessIdentityUnproven,
+			wantMessage:       []string{"recorded owner identity is not comparable on " + runtime.GOOS},
+			wantIdentityReads: 1,
+		},
+		{
+			name:              "comparable mismatch remains unproven",
+			recordedIdentity:  nativePrefix + "recorded",
+			liveIdentity:      nativePrefix + "live",
+			absenceResults:    []absenceResult{{}},
+			wantErr:           ErrOwnerProcessIdentityUnproven,
+			wantNotErr:        ErrOwnerIdentityUnreadable,
+			wantMessage:       []string{"does not match the recorded owner identity"},
+			wantIdentityReads: 1,
+		},
+		{
+			name:              "matching identity remains proven",
+			recordedIdentity:  nativePrefix + "same",
+			liveIdentity:      nativePrefix + "same",
+			absenceResults:    []absenceResult{{}},
+			wantIdentityReads: 1,
+		},
+		{
+			name:             "initial absence remains proof",
+			recordedIdentity: nativePrefix + "recorded",
+			absenceResults:   []absenceResult{{absent: true}},
+			wantAbsent:       true,
+		},
+		{
+			name:             "empty recorded identity keeps PID-only proof",
+			recordedIdentity: "  ",
+			absenceResults:   []absenceResult{{}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+			absenceReads := 0
+			controller.processAbsent = func(int) (bool, error) {
+				if absenceReads >= len(tt.absenceResults) {
+					t.Fatalf("unexpected process absence read %d", absenceReads+1)
+				}
+				result := tt.absenceResults[absenceReads]
+				absenceReads++
+				return result.absent, result.err
+			}
+			identityReads := 0
+			controller.processStartIdentity = func(context.Context, int) (string, error) {
+				identityReads++
+				return tt.liveIdentity, tt.identityErr
+			}
+
+			absent, err := controller.proveOwner(t.Context(), os.Getpid()+1, tt.recordedIdentity)
+
+			if absent != tt.wantAbsent {
+				t.Fatalf("proven absent = %v, want %v", absent, tt.wantAbsent)
+			}
+			if tt.wantErr == nil {
+				if err != nil {
+					t.Fatalf("proof error = %v, want nil", err)
+				}
+			} else if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("proof error = %v, want %v", err, tt.wantErr)
+			}
+			if tt.wantNotErr != nil && errors.Is(err, tt.wantNotErr) {
+				t.Fatalf("proof error = %v, must not match %v", err, tt.wantNotErr)
+			}
+			if tt.wantWrappedErr != nil && !errors.Is(err, tt.wantWrappedErr) {
+				t.Fatalf("proof error = %v, want wrapped %v", err, tt.wantWrappedErr)
+			}
+			for _, want := range tt.wantMessage {
+				if !strings.Contains(err.Error(), want) {
+					t.Fatalf("proof error = %v, want diagnostic containing %q", err, want)
+				}
+			}
+			if identityReads != tt.wantIdentityReads {
+				t.Fatalf("identity reads = %d, want %d", identityReads, tt.wantIdentityReads)
+			}
+		})
 	}
 }
 

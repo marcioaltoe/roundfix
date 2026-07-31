@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -17,6 +18,7 @@ const (
 
 var (
 	ErrOwnerProcessUnsupported      = errors.New("owner process control is unsupported")
+	ErrOwnerIdentityUnreadable      = errors.New("owner process identity is unreadable")
 	ErrOwnerProcessIdentityUnproven = errors.New("owner process identity cannot be proven")
 	errOwnerProcessAlreadyAbsent    = errors.New("owner process is already absent")
 	errGracefulSignalUnsupported    = errors.New("graceful owner process termination is unsupported")
@@ -37,9 +39,11 @@ func (err OwnerProcessControlError) Unwrap() error {
 }
 
 type OwnerProcessControl struct {
-	gracePeriod  time.Duration
-	stopWindow   time.Duration
-	pollInterval time.Duration
+	gracePeriod          time.Duration
+	stopWindow           time.Duration
+	pollInterval         time.Duration
+	processAbsent        func(int) (bool, error)
+	processStartIdentity func(context.Context, int) (string, error)
 }
 
 func NewOwnerProcessController() *OwnerProcessControl {
@@ -52,9 +56,11 @@ func NewOwnerProcessController() *OwnerProcessControl {
 
 func newOwnerProcessController(gracePeriod, stopWindow, pollInterval time.Duration) *OwnerProcessControl {
 	return &OwnerProcessControl{
-		gracePeriod:  gracePeriod,
-		stopWindow:   stopWindow,
-		pollInterval: pollInterval,
+		gracePeriod:          gracePeriod,
+		stopWindow:           stopWindow,
+		pollInterval:         pollInterval,
+		processAbsent:        processAbsent,
+		processStartIdentity: processStartIdentity,
 	}
 }
 
@@ -71,17 +77,18 @@ func (controller *OwnerProcessControl) ProveOwner(ctx context.Context, pid int, 
 // proveOwner is the single implementation of the ownership rule. It reports
 // whether the owner is already absent, which every caller treats as success.
 //
-// When the Run recorded a start-time identity token, the live process must
-// present the same token, otherwise a reused PID would let Force Stop
-// terminate an unrelated process. An empty recorded token comes from a Run
-// created before identity recording existed and keeps the legacy PID-only
-// proof, mirroring the ADR-0044 precedent that PID-less legacy Runs degrade
-// gracefully.
+// When the Run recorded a start-time identity token produced by the current
+// platform, the live process must present the same token, otherwise a reused
+// PID would let Force Stop terminate an unrelated process. A token from an
+// older or foreign identity source is unreadable rather than proof of reuse.
+// An empty recorded token comes from a Run created before identity recording
+// existed and keeps the legacy PID-only proof, mirroring the ADR-0044
+// precedent that PID-less legacy Runs degrade gracefully.
 func (controller *OwnerProcessControl) proveOwner(ctx context.Context, pid int, recordedIdentity string) (bool, error) {
 	if pid <= 0 || pid == os.Getpid() {
 		return false, ownerProcessControlError(pid, "prove owner process identity", ErrOwnerProcessIdentityUnproven)
 	}
-	absent, err := processAbsent(pid)
+	absent, err := controller.processAbsent(pid)
 	if err != nil {
 		return false, ownerProcessControlError(pid, "prove owner process identity", err)
 	}
@@ -89,15 +96,19 @@ func (controller *OwnerProcessControl) proveOwner(ctx context.Context, pid int, 
 		return true, nil
 	}
 	if recorded := strings.TrimSpace(recordedIdentity); recorded != "" {
-		liveIdentity, identityErr := processStartIdentity(ctx, pid)
+		liveIdentity, identityErr := controller.processStartIdentity(ctx, pid)
 		if identityErr != nil {
 			// The owner may have exited between the liveness check and the
 			// identity read; proven absence is the proof Force Stop needs.
-			if absent, absentErr := processAbsent(pid); absentErr == nil && absent {
+			if absent, absentErr := controller.processAbsent(pid); absentErr == nil && absent {
 				return true, nil
 			}
 			return false, ownerProcessControlError(pid, "prove owner process identity",
-				fmt.Errorf("%w: read live owner identity: %v", ErrOwnerProcessIdentityUnproven, identityErr))
+				fmt.Errorf("%w: read live owner identity: %w; resolve the host resource failure, then retry", ErrOwnerIdentityUnreadable, identityErr))
+		}
+		if !strings.HasPrefix(recorded, runtime.GOOS+":") {
+			return false, ownerProcessControlError(pid, "prove owner process identity",
+				fmt.Errorf("%w: recorded owner identity is not comparable on %s", ErrOwnerIdentityUnreadable, runtime.GOOS))
 		}
 		if liveIdentity != recorded {
 			return false, ownerProcessControlError(pid, "prove owner process identity",
@@ -173,7 +184,7 @@ func (controller *OwnerProcessControl) waitForAbsence(ctx context.Context, pid i
 	}
 
 	for {
-		absent, err := processAbsent(pid)
+		absent, err := controller.processAbsent(pid)
 		if err != nil {
 			return false, err
 		}
