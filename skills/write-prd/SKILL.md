@@ -76,11 +76,75 @@ Always state a suggested default and the one-line reason. Cover, in order of imp
 
 A product decision that is hard to reverse, surprising without context, and the result of a real trade-off becomes an ADR at `docs/adr/NNNN-slug.md`, continuing the repository's numbering. Keep it to 1–3 sentences: context, decision, why. Decisions that fail that three-part gate just live in the PRD body.
 
-### 4. Write
+### 4. Prepare the Spec folder and adopt relied-upon sources
+
+Adoption transfers a source document into the Spec that commits to implementing
+it. Resolve the numbered slug with the rule in step 5, then run
+`mkdir -p docs/specs/<slug>/references` before the first move. Run these steps
+in order after recording decisions and before writing the PRD:
+
+1. **Inventory.** List every inbox note and finding whose content the PRD relies
+   on. A document cited only as background is not adopted.
+2. **Classify.** A raw inbox note that is source material can move directly. A
+   note that records observed behavior is field evidence: promote it to a
+   finding first, then adopt the finding.
+3. **Claim ownership.** Search both `docs/specs/` and
+   `docs/specs/_archived/` for an existing owner. Exactly one Spec owns a shared
+   source: the first Spec that commits to implementation. A secondary Spec links
+   the owner's post-adoption copy and adopts nothing.
+4. **Preflight.** Resolve every adopted source's basename and destination under
+   `docs/specs/<slug>/references/` before changing any finding status, writing
+   the index, or moving a source. `_index.md` is a reserved basename; reject any
+   adopted source with that basename. Reject duplicate source basenames and
+   abort if any destination path already exists, including a symbolic link.
+   Complete this check for the whole inventory before changing adoption state.
+5. **Index.** Write the complete `_index.md` before the first status update or
+   source move. Add one row per adopted source using this fixed Markdown table:
+
+   ```markdown
+   # Adopted sources
+
+   | source | type | owner | adopted date | path |
+   | --- | --- | --- | --- | --- |
+   | docs/findings/2026-07-25-example.md | finding | 0060 | 2026-07-30 | 2026-07-25-example.md |
+   ```
+
+   `source` is the pre-adoption repository path and is never updated; it is the
+   provenance record. `type` identifies the source as `inbox` or `finding`.
+   `owner` is the owning four-digit Spec number. `adopted date` is the adoption
+   date, and `path` is the current path relative to `_index.md`, so it remains
+   valid when the Spec archives. Before continuing, validate the complete index:
+   require the fixed header, one complete row per inventoried source, unique
+   `source` and `path` values, valid type, owner, and date values, and each
+   `path` equal to its `source` basename. Creating this validated index first
+   makes an interrupted adoption visible to `archive-spec`, which must reject
+   the indexed but incomplete Spec instead of treating it as legacy.
+6. **Flip then link.** Before moving a finding, set its frontmatter
+   `status: done`, update `updated_at`, and record the owning Spec link in the
+   same change. This ordering leaves the status and route visible at the old
+   path in Git history.
+7. **Move.** Run
+   `git mv <source> docs/specs/<slug>/references/<basename>` once for each
+   indexed source. Perform one move, never a copy and never a stub. The move
+   preserves the basename and every byte. Step 8 may then change only Markdown
+   link destinations inside the moved source; never rewrite its observations or
+   other source content.
+8. **Rewrite and gate.** Search the repository for links to each old path.
+   Exclude `docs/specs/_archived/` from automatic link rewrites; archived Specs
+   are immutable historical artifacts. Report links from archived Specs
+   separately for explicit policy review. For every other linking file, rewrite
+   the destination to the post-adoption path relative to that file and resolve
+   every rewritten Markdown link target. This includes link destinations inside
+   an adopted source; only Markdown link destinations may change after the
+   byte-preserving move. Fail and do not report completion while an adopted
+   source still exists at its `source` path or any rewritten link is unresolved.
+   Name the offending source or link and repeat the skipped adoption step.
+
+### 5. Write
 
 **HARD RULE — spec folders are numbered `docs/specs/NNNN-<kebab-slug>/`** (zero-padded 4 digits, e.g. `0001-implement-command`). Determine `NNNN` by scanning **both** `docs/specs/` and `docs/specs/_archived/` for the highest existing prefix and adding 1; use `0001` when no specs exist anywhere. Numbers are never reused and travel with the spec when archived. Never create an unnumbered spec folder. When an `_idea.md` fed this PRD, its folder already carries the number — reuse it, don't mint a new one.
 
-Create `docs/specs/NNNN-<kebab-slug>/` and write `_prd.md` from the template in [references/prd-template.md](references/prd-template.md). If an `_idea.md` fed this PRD, flip its frontmatter `status` to `promoted`. Set the PRD frontmatter carefully — downstream skills parse it:
+Write `_prd.md` in the Spec folder prepared in step 4, using the template in [references/prd-template.md](references/prd-template.md). If an `_idea.md` fed this PRD, flip its frontmatter `status` to `promoted`. Set the PRD frontmatter carefully — downstream skills parse it:
 
 - `spec` — the folder slug.
 - `status: active` — flipped to `archived` by `archive-spec` once the spec completes (every task done, QA passed).
@@ -94,7 +158,7 @@ approval and the exact bounded files in the Tooling authority row. A generic
 implementation request, setup completion, silence, or authorization without
 bounded files does not authorize the mutation.
 
-### 5. Report
+### 6. Report
 
 Before reporting, re-read the finished artifact. You MUST NOT report completion
 or recommend the next pipeline step unless `Project Constraints` is present;

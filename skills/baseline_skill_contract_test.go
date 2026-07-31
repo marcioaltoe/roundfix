@@ -530,6 +530,105 @@ func TestWriteTechSpecProjectConstraints(t *testing.T) {
 	testAuthoringProjectConstraints(t, "write-techspec", "techspec-template.md")
 }
 
+func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	tests := []struct {
+		name     string
+		path     string
+		required []string
+		ordered  []string
+	}{
+		{
+			name: "archive validation",
+			path: filepath.Join(repoRoot, ".agents", "skills", "archive-spec", "SKILL.md"),
+			required: []string{
+				"`internal/spec.QAVerdict`",
+				"expected_owner",
+				"duplicate source",
+				"type must be `inbox` or `finding`",
+				"exists or is a symbolic link",
+				"path must be one basename relative to `_index.md`",
+				"test -L \"$index\" || test ! -f \"$index\"",
+				"path must equal source basename",
+				"test -L \"$current\"",
+			},
+			ordered: []string{
+				"test -L \"$index\" || test ! -f \"$index\"",
+				"awk -F '|'",
+				"source_basename=${source##*/}",
+				"current=\"$(dirname \"$index\")/$path\"",
+			},
+		},
+		{
+			name: "PRD adoption",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-prd", "SKILL.md"),
+			required: []string{
+				"mkdir -p docs/specs/<slug>/references",
+				"duplicate source basenames",
+				"`_index.md` is a reserved basename",
+				"destination path already exists",
+				"before changing any finding status",
+				"complete `_index.md`",
+				"Exclude `docs/specs/_archived/` from automatic link rewrites",
+				"Report links from archived Specs separately",
+				"only Markdown link destinations",
+			},
+			ordered: []string{
+				"4. **Preflight.**",
+				"5. **Index.**",
+				"6. **Flip then link.**",
+				"7. **Move.**",
+				"8. **Rewrite and gate.**",
+			},
+		},
+		{
+			name: "idea links",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-idea", "SKILL.md"),
+			required: []string{
+				"relative to `_idea.md`",
+			},
+		},
+		{
+			name: "TechSpec links",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-techspec", "SKILL.md"),
+			required: []string{
+				"relative to `_techspec.md`",
+			},
+		},
+		{
+			name: "Task links",
+			path: filepath.Join(repoRoot, ".agents", "skills", "write-tasks", "SKILL.md"),
+			required: []string{
+				"relative to that Task file",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := strings.Join(strings.Fields(string(readBaselineSkillContractFile(t, tt.path))), " ")
+			for _, required := range tt.required {
+				if !strings.Contains(content, strings.Join(strings.Fields(required), " ")) {
+					t.Errorf("%s missing reference-lifecycle contract %q", tt.path, required)
+				}
+			}
+			previous := -1
+			for _, required := range tt.ordered {
+				normalized := strings.Join(strings.Fields(required), " ")
+				position := strings.Index(content, normalized)
+				if position == -1 {
+					t.Errorf("%s missing ordered reference-lifecycle contract %q", tt.path, required)
+					continue
+				}
+				if position <= previous {
+					t.Errorf("%s reference-lifecycle contract %q is out of order", tt.path, required)
+				}
+				previous = position
+			}
+		})
+	}
+}
+
 func TestProjectConstraintTaskGate(t *testing.T) {
 	testWorkflowProjectConstraintContract(t, "write-tasks", []string{
 		"Project Constraint preflight",

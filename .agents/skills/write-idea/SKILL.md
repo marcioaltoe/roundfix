@@ -24,6 +24,11 @@ Use it for product-level ideas: greenfield features, ideas with real market/comp
 - **One question per message**, multiple-choice with a suggested default whenever options are enumerable (`D) Other — describe` as the escape). 3–6 questions total; stop early if answers show the idea is already well-defined.
 - **WHAT, WHY, WHO only.** Databases, APIs, frameworks, and architecture are forbidden topics here — they belong to `write-techspec`.
 - **Research before writing.** Never draft an idea unbacked by codebase findings and (for user-facing ideas) market data.
+- **Reference adopted sources at their owned path.** When a source already
+  belongs to an active or archived Spec, link its post-adoption path in the
+  owning Spec with a destination relative to `_idea.md`, never the pre-adoption
+  path retained as provenance. A secondary Spec links that owner's copy and
+  adopts nothing.
 - **Do not write the file until the user approves the draft** — unlike `write-prd`, this stage is inherently interactive: its whole product is shared judgment.
 
 ## Process

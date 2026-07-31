@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/typescript-bun.txt"
   },
-  "digest": "64adaa5c789d0e50cfb441986235ab52b152313da3afa2b3ef0859046b8343f9",
+  "digest": "2a2bc46f0c78df66571ab0b5bfa69f44ac6089790d34a9f3b7c51d63495af8f2",
   "skills": [
     {
       "name": "find-rules",
@@ -103,7 +103,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "1d50377456c529b545ed7ad5f7c899134a1091afbda8bf5b3ca7fa10f2ec1231"
+      "contentDigest": "d2c5e049ae763128257c4e551a3a975dec25b2d168d373c2b29f74d698917fe7"
     },
     {
       "name": "architectural-analysis",
@@ -255,7 +255,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "046dbd1a9ac3bcfe937fc0e76ec4cc9361f8dd908d6168d95ed1d4a472b576e3"
+      "contentDigest": "d3025451086d0fbcb3911ea0a01da30bfce67110f65cb8356c0fea8bdf32f2b4"
     },
     {
       "name": "write-tasks",
@@ -264,7 +264,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "a221f991061de07dd10ee811a3f7e2ee5c1d698e584fc633a0a0b443797a8ece"
+      "contentDigest": "8de45174fd3f5d42d78d1910627a36f0470951a22aeacfd612538668a56cfb16"
     },
     {
       "name": "ai-sdk",
@@ -848,7 +848,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "5d53d9b4a8ef69eac2d4892a739a6734ca6fb2d7c43eba093c01df75fe482277"
+      "contentDigest": "46a380abc591e109b64abefc392a1e86522c620410d3dace3a297433294e3266"
     },
     {
       "name": "conventional-commits",
@@ -1047,7 +1047,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "8f5c77383b34e22a9b4469cf5d4143d67ac220fc75c84fc314f132e2dd4c69a1"
+      "contentDigest": "e6348bfd0193570e4361e94fd59e159f515f36ee1d8ae4e487327dd43f358880"
     },
     {
       "name": "triage",
