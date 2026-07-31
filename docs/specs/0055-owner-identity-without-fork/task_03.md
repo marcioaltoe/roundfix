@@ -60,6 +60,7 @@ survives only for legacy rows that predate the identity column.
 - `go build -buildvcs=false ./...` — expected: clean build.
 - `go test -count=1 ./internal/store/ ./internal/cli/` — expected: pass,
   including the legacy-row case.
+- `make verify` — expected: exit 0.
 
 ## References
 

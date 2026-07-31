@@ -2,7 +2,7 @@
 task: task_04
 spec: 0055-owner-identity-without-fork
 status: pending
-type: cli
+type: backend
 complexity: medium
 ---
 
@@ -55,6 +55,7 @@ ignorance has an explicit, operator-driven exit.
 - `go build -buildvcs=false ./...` — expected: clean build.
 - `go test -count=1 ./internal/cli/` — expected: pass, including both refusals.
 - `go run ./cmd/roundfix stop --help` — expected: the flag is documented.
+- `make verify` — expected: exit 0.
 
 ## References
 

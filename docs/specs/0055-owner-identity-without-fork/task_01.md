@@ -71,6 +71,7 @@ escape. Replace it with a direct kernel read per platform: procfs on Linux,
   — expected: both compile.
 - `go test -count=1 ./internal/store/` — expected: pass, including the
   no-subprocess and comm-parsing cases.
+- `make verify` — expected: exit 0.
 
 ## References
 

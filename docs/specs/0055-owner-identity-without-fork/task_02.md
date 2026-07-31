@@ -64,6 +64,7 @@ proven-mismatch refusal exactly as it behaves today.
 - `go build -buildvcs=false ./...` — expected: clean build.
 - `go test -count=1 ./internal/store/ ./internal/cli/` — expected: pass,
   including ADR-0044 reclaim behavior.
+- `make verify` — expected: exit 0.
 
 ## References
 
