@@ -24,9 +24,12 @@ refusal as success. Evidence:
 - Identifier strategy: not applicable — no project-owned Internal Identifier
   is created; profile categories and Agent Selection tuples keep their
   existing identities. Source: `docs/agents/domain.md`.
-- Authentication and HTTP: not applicable — all behavior is local
-  configuration reading, merging, confirmation, and writing; no
-  authentication or HTTP surface. Source: `docs/agents/cli.md`.
+- Authentication and HTTP: not applicable — the governing clause prohibits
+  reading, printing, committing, or generating secrets and forbids inventing
+  authentication, authorization, transport, or deployment policy; this Spec
+  handles no credential and opens no transport, since all behavior is local
+  configuration reading, merging, confirmation, and writing. Source:
+  `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0049 keeps each present profile
   atomic (a named category still replaces that category as one object; the
   merge is at map level, never field level); ADR-0037/0039 selection-proof

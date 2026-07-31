@@ -28,9 +28,12 @@ this report's items were covered there.
 - Identifier strategy: not applicable — no project-owned Internal Identifier
   is created; Profile identifiers, digests, and diagnostic codes keep their
   existing contracts. Source: `docs/agents/domain.md`.
-- Authentication and HTTP: not applicable — Baseline planning stays local,
-  offline, and read-only until digest-confirmed apply; no authentication or
-  HTTP surface. Source: `docs/agents/cli.md`.
+- Authentication and HTTP: not applicable — the governing clause prohibits
+  reading, printing, committing, or generating secrets and forbids inventing
+  authentication, authorization, transport, or deployment policy; this Spec
+  handles no credential and opens no transport, since Baseline planning stays
+  local, offline, and read-only until digest-confirmed apply. Source:
+  `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0058 requires upgrades to fail
   closed on unaccounted managed-rule removal, which the same-identity drift
   path currently bypasses and this Spec enforces; ADR-0068 keeps one
