@@ -90,6 +90,10 @@ this report's items were covered there.
 7. As a maintainer reading the final result, I want transaction, retention,
    alignment, Verification, and idempotence reported as separate states, so
    that "verified postimages" is never read as "update complete".
+8. As a maintainer whose repository is already correctly aligned, I want
+   the new retention gate to leave my plan exactly as ready as it is
+   today, so that fixing silent clause loss never blocks a repository that
+   had nothing wrong with it.
 
 ## Core Features
 
@@ -134,6 +138,15 @@ this report's items were covered there.
     retention, profile alignment, repository Verification, idempotence —
     and completion language is used only when retention is verified and
     the idempotence check passed.
+11. The retention gate fails closed on evidence, not on uncertainty: it
+    stops planning only where a previous managed clause is provably
+    unaccounted. A plan that is legitimately ready today stays ready, and
+    the gate is exercised against a characterization corpus of real
+    consumer-repository plans captured before the change.
+12. Carrier classification and portable Verification mapping narrow
+    behavior only on positive evidence: an unclassifiable carrier keeps
+    its current warning, and an unmapped role keeps its current
+    divergence.
 
 ## User Experience
 
@@ -155,6 +168,8 @@ this report's items were covered there.
 - Re-litigating Preservation idempotency or Doctor readiness (Specs
   0049–0051).
 - Profile catalog content changes beyond what probe rendering requires.
+- Turning today's working Baseline plans into blocked ones: the gate adds
+  stops only where a clause is provably unaccounted.
 
 ## Success Metrics
 
@@ -173,6 +188,13 @@ this report's items were covered there.
   journal from a decline.
 - A mapped repository gate satisfies its portable Verification role and the
   divergence disappears.
+- Every plan in the pre-change characterization corpus that is ready today
+  is still ready after the change; every new action-required outcome names
+  a provably unaccounted clause.
+- No warning that fires today disappears without a positive classification
+  proving its artifact is managed and current.
+- No portable Verification role reports satisfied without its declared
+  repository command present.
 
 ## Decisions
 
@@ -182,6 +204,12 @@ this report's items were covered there.
 - Probe evidence is rendered from the catalog's own probe definitions —
   the diagnostic and the evaluation share one source.
 - The remediation loop is read-only by construction; only apply writes.
+- A Spec evolves Roundfix and never regresses it. Silent clause loss is the
+  defect being fixed; blocking an already-correct repository would be a new
+  defect of equal weight, so the gate closes on evidence and never on
+  doubt.
+- Warning suppression and role satisfaction require positive evidence;
+  absent it, current behavior stands.
 
 ## Open Questions
 

@@ -69,6 +69,9 @@ refusal as success. Evidence:
    silent no-op as success.
 5. As a user who genuinely wants to remove a category, I want removal to
    require naming it explicitly, so that deletion is always intentional.
+6. As a maintainer running the command against my existing config, I want
+   every path that works today to keep working, so that fixing the merge
+   never costs me a working one.
 
 ## Core Features
 
@@ -87,6 +90,10 @@ refusal as success. Evidence:
    contract; the `roundfix/profiles-configure/v1` schema evolves additively.
 6. The proof-before-write behavior is unchanged: every distinct tuple in
    the resulting effective map is exact-proven before confirmation.
+7. A characterization corpus captured from the current implementation
+   before any behavior change bounds the new writer: every config the
+   current writer handles round-trips through the new one with only the
+   intended values differing, and none fails to parse afterward.
 
 ## User Experience
 
@@ -115,6 +122,11 @@ refusal as success. Evidence:
 - A single-value change produces a diff touching only that value's lines.
 - A declined non-interactive invocation exits non-zero; automation
   distinguishes it from an applied one by exit code alone.
+- Every config in the characterization corpus round-trips through the new
+  writer with only the intended change, and none fails to parse after a
+  write.
+- The only observable behavior changes are the two breaks declared below;
+  any other change to output, exit code, or file content is a defect.
 
 ## Decisions
 
@@ -124,6 +136,14 @@ refusal as success. Evidence:
   effect.
 - The write path becomes format-preserving rather than re-serializing the
   whole document.
+- A Spec evolves Roundfix and never regresses it. Behavior that works
+  today is preserved unless this PRD names the break. Exactly two breaks
+  are declared: a fragment no longer removes categories by omission —
+  removal must be declared — and a declined non-interactive write exits
+  non-zero instead of zero.
+- The current writer's behavior is captured as a characterization corpus
+  before the format-preserving writer replaces it; that corpus is the
+  regression gate, not a test written after the fact.
 
 ## Open Questions
 
