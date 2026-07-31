@@ -51,13 +51,14 @@ derived digest fallout.
 
 - interface: `.agents/skills/roundfix/SKILL.md`
 - interface: `skills/roundfix/SKILL.md`
-- interface: `docs/user-guide/`
+- interface: `docs/user-guide/commands.md`
+- interface: `docs/user-guide/usage.md`
 - interface: `CONTEXT.md`
 
 ## Verification
 
 - `make skills-sync-check` — expected: no drift.
-- `roundfix skills check` — expected: pass.
+- `go run -buildvcs=false ./cmd/roundfix skills check` — expected: pass.
 - `make baseline-digests` — expected: `ok: true`, only authorized paths changed.
 - `make verify` — expected: exit 0.
 

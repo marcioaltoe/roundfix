@@ -91,7 +91,11 @@ cherry-pick integration conflict on files neither Task authored.
 - interface: `.agents/skills/write-idea/SKILL.md`
 - interface: `.agents/skills/write-techspec/SKILL.md`
 - interface: `.agents/skills/write-tasks/SKILL.md`
-- interface: `skills/` (the five embedded counterparts, via `make skills-sync`)
+- interface: `skills/write-prd/SKILL.md`
+- interface: `skills/archive-spec/SKILL.md`
+- interface: `skills/write-idea/SKILL.md`
+- interface: `skills/write-techspec/SKILL.md`
+- interface: `skills/write-tasks/SKILL.md`
 
 ## Verification
 
