@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0056-profiles-configure-merge-semantics
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -76,3 +76,47 @@ with no write path attached yet, so it is verifiable entirely on its own.
 - `_prd.md` → Core Features 2; User Story 5.
 - `_techspec.md` → Implementation Design: Interfaces; Build Order 2.
 - ADR-0086.
+
+## Result
+
+### Implementation
+
+- Added `ChangeKind`, `CategoryChange`, and the category-ordered
+  `EffectiveChangeSet` value described by the TechSpec.
+- Added `DeriveEffectiveChangeSet`, which classifies normalized fragment
+  categories against existing profiles, accepts repeatable removals, reports
+  absent removals, rejects fragment/removal conflicts, deduplicates repeated
+  removals, and emits changes in canonical Agent Work Category order.
+- Kept the value detached from the CLI, proof, confirmation, and writer paths;
+  Tasks 03 and 04 own those integrations.
+
+### Focused checks
+
+- Red signal: `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go
+  test ./internal/config -run
+  '^TestEffectiveChangeSet$/classifies_configured_and_absent_fragment_categories$'
+  -count=1` failed to compile because the change-set types and derivation
+  function did not exist.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test
+  ./internal/config -run '^TestEffectiveChangeSet$/' -count=1` exited `0`; all
+  five behavioral subtests passed.
+- `rtk git diff --exit-code -- internal/cli
+  internal/config/testdata/profiles_config_writer` exited `0`; CLI behavior and
+  every characterization input/golden remain byte-identical.
+- `rtk git diff --check` exited `0`.
+- `rtk git status --porcelain` exited `0` and listed only this task file,
+  `internal/config/config_test.go`, and `internal/config/profile_config.go`.
+
+### Acceptance evidence
+
+- Existing `backend` plus absent `frontend` derived `replaced` then `added`.
+- Configured `qa` removal derived `removed`.
+- Absent `review` removal also derived and reported `removed` without error.
+- A `backend` fragment/removal conflict returned a validation error containing
+  `backend`.
+- Twenty-five derivations from mixed map insertion and repeatable-removal
+  inputs returned the same canonical category order; duplicate `review`
+  removals produced one change.
+- The existing writer function, confirmation/output code, CLI files, and the
+  task-01 characterization corpus were not edited.
+- The declared `## Verification` commands were not run; the Daemon owns them.

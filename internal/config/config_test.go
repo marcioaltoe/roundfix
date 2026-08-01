@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -666,6 +667,100 @@ func TestProfilesConfigWriterCharacterization(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEffectiveChangeSet(t *testing.T) {
+	backendProfile := profileForTest(selectionForTest("codex", "backend-model", "high"))
+	frontendProfile := profileForTest(selectionForTest("claude", "frontend-model", "xhigh"))
+	generalProfile := profileForTest(selectionForTest("codex", "general-model", "high"))
+	choreProfile := profileForTest(selectionForTest("codex", "chore-model", "medium"))
+	qaProfile := profileForTest(selectionForTest("codex", "qa-model", "high"))
+
+	t.Run("classifies configured and absent fragment categories", func(t *testing.T) {
+		existing := Profiles{CategoryBackend: {Profile: backendProfile}}
+		fragment := Profiles{
+			CategoryBackend:  {Profile: backendProfile},
+			CategoryFrontend: {Profile: frontendProfile},
+		}
+
+		got, err := DeriveEffectiveChangeSet(existing, fragment, nil)
+		if err != nil {
+			t.Fatalf("derive Effective Change Set: %v", err)
+		}
+		want := EffectiveChangeSet{Changes: []CategoryChange{
+			{Category: CategoryBackend, Kind: ChangeReplaced, Profile: backendProfile},
+			{Category: CategoryFrontend, Kind: ChangeAdded, Profile: frontendProfile},
+		}}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("Effective Change Set mismatch\nwant: %#v\n got: %#v", want, got)
+		}
+	})
+
+	t.Run("classifies configured removal", func(t *testing.T) {
+		got, err := DeriveEffectiveChangeSet(
+			Profiles{CategoryQA: {Profile: qaProfile}},
+			nil,
+			[]WorkCategory{CategoryQA},
+		)
+		if err != nil {
+			t.Fatalf("derive Effective Change Set: %v", err)
+		}
+		want := EffectiveChangeSet{Changes: []CategoryChange{{Category: CategoryQA, Kind: ChangeRemoved}}}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("Effective Change Set mismatch\nwant: %#v\n got: %#v", want, got)
+		}
+	})
+
+	t.Run("reports absent removal", func(t *testing.T) {
+		got, err := DeriveEffectiveChangeSet(nil, nil, []WorkCategory{CategoryReview})
+		if err != nil {
+			t.Fatalf("derive Effective Change Set: %v", err)
+		}
+		want := EffectiveChangeSet{Changes: []CategoryChange{{Category: CategoryReview, Kind: ChangeRemoved}}}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("Effective Change Set mismatch\nwant: %#v\n got: %#v", want, got)
+		}
+	})
+
+	t.Run("rejects fragment and removal conflict", func(t *testing.T) {
+		_, err := DeriveEffectiveChangeSet(
+			nil,
+			Profiles{CategoryBackend: {Profile: backendProfile}},
+			[]WorkCategory{CategoryBackend},
+		)
+		if err == nil {
+			t.Fatal("expected conflicting category to fail validation")
+		}
+		if !strings.Contains(err.Error(), string(CategoryBackend)) {
+			t.Fatalf("expected validation error to name %q, got %q", CategoryBackend, err)
+		}
+	})
+
+	t.Run("orders repeated derivations by category", func(t *testing.T) {
+		fragment := Profiles{
+			CategoryQA:      {Profile: qaProfile},
+			CategoryGeneral: {Profile: generalProfile},
+			CategoryChore:   {Profile: choreProfile},
+		}
+		removals := []WorkCategory{CategoryReview, CategoryData, CategoryReview}
+		want := EffectiveChangeSet{Changes: []CategoryChange{
+			{Category: CategoryGeneral, Kind: ChangeAdded, Profile: generalProfile},
+			{Category: CategoryData, Kind: ChangeRemoved},
+			{Category: CategoryChore, Kind: ChangeAdded, Profile: choreProfile},
+			{Category: CategoryQA, Kind: ChangeAdded, Profile: qaProfile},
+			{Category: CategoryReview, Kind: ChangeRemoved},
+		}}
+
+		for attempt := 0; attempt < 25; attempt++ {
+			got, err := DeriveEffectiveChangeSet(nil, fragment, removals)
+			if err != nil {
+				t.Fatalf("derive Effective Change Set on attempt %d: %v", attempt, err)
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("Effective Change Set mismatch on attempt %d\nwant: %#v\n got: %#v", attempt, want, got)
+			}
+		}
+	})
 }
 
 func profilesConfigGoldenDiff(golden []byte, actual []byte) string {

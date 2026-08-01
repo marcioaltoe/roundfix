@@ -15,6 +15,24 @@ import (
 
 const profileConfigTempPattern = ".roundfix-profiles-*"
 
+type ChangeKind string
+
+const (
+	ChangeAdded    ChangeKind = "added"
+	ChangeReplaced ChangeKind = "replaced"
+	ChangeRemoved  ChangeKind = "removed"
+)
+
+type CategoryChange struct {
+	Category WorkCategory
+	Kind     ChangeKind
+	Profile  AgentSelectionProfile
+}
+
+type EffectiveChangeSet struct {
+	Changes []CategoryChange
+}
+
 type ProfileConfigOptions struct {
 	Scope    string
 	HomeDir  string
@@ -93,6 +111,41 @@ func NormalizeProfilesFragment(profiles Profiles) (Profiles, error) {
 		}
 	}
 	return normalized, nil
+}
+
+func DeriveEffectiveChangeSet(existing Profiles, fragment Profiles, removals []WorkCategory) (EffectiveChangeSet, error) {
+	removedCategories := make(map[WorkCategory]struct{}, len(removals))
+	for _, removal := range removals {
+		category, ok := ParseWorkCategory(string(removal))
+		if !ok {
+			return EffectiveChangeSet{}, fmt.Errorf("remove category %q is not a supported Agent Work Category; supported values: %s", removal, supportedWorkCategoryList())
+		}
+		if _, conflict := fragment[category]; conflict {
+			return EffectiveChangeSet{}, fmt.Errorf("profiles.%s cannot be both configured and removed", category)
+		}
+		removedCategories[category] = struct{}{}
+	}
+
+	changes := make([]CategoryChange, 0, len(fragment)+len(removedCategories))
+	for _, category := range allWorkCategories {
+		if entry, ok := fragment[category]; ok {
+			kind := ChangeAdded
+			if _, configured := existing[category]; configured {
+				kind = ChangeReplaced
+			}
+			changes = append(changes, CategoryChange{
+				Category: category,
+				Kind:     kind,
+				Profile:  cloneProfile(entry.Profile),
+			})
+			continue
+		}
+		if _, removed := removedCategories[category]; removed {
+			changes = append(changes, CategoryChange{Category: category, Kind: ChangeRemoved})
+		}
+	}
+
+	return EffectiveChangeSet{Changes: changes}, nil
 }
 
 func WriteProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (ProfileConfigResult, error) {
