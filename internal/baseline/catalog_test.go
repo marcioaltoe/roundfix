@@ -150,6 +150,29 @@ func TestCatalogRegenerationMode(t *testing.T) {
 	})
 }
 
+func TestRegenerationBreaksGoldenDigestCycle(t *testing.T) {
+	t.Parallel()
+
+	assets := newGoldenDigestCycleFixture(t)
+
+	t.Run("strict load rejects the changed generated guide", func(t *testing.T) {
+		t.Parallel()
+		_, err := LoadCatalog(assets)
+		requireCatalogDiagnostic(t, err, "catalog.profile.formatter.goldenDigest.mismatch")
+	})
+
+	t.Run("regeneration load accepts the changed generated guide", func(t *testing.T) {
+		t.Parallel()
+		catalog, err := loadCatalogForRegeneration(assets)
+		if err != nil {
+			t.Fatalf("load cycle fixture for regeneration: %v", err)
+		}
+		if _, ok := catalog.Profile("standard-typescript-monorepo"); !ok {
+			t.Fatal("regeneration catalog has no standard TypeScript Profile")
+		}
+	})
+}
+
 func TestSourceMachinePathRecognizesMarkdownAndFileURLs(t *testing.T) {
 	t.Parallel()
 
@@ -402,7 +425,13 @@ func TestCatalogCompatibility(t *testing.T) {
 		t.Parallel()
 	}
 
-	catalog, err := LoadEmbeddedCatalog()
+	var catalog *Catalog
+	var err error
+	if *updateBaselineDigests {
+		catalog, err = loadEmbeddedCatalogForRegeneration()
+	} else {
+		catalog, err = LoadEmbeddedCatalog()
+	}
 	if err != nil {
 		t.Fatalf(
 			"LoadEmbeddedCatalog() error = %v; %s to regenerate stale derived artifacts",
@@ -463,7 +492,7 @@ func regenerateCatalogCompatibility(t *testing.T, catalog *Catalog) {
 
 func regenerateCatalogCompatibilityFromAssets(t *testing.T) {
 	t.Helper()
-	catalog, err := LoadCatalog(os.DirFS("assets"))
+	catalog, err := loadCatalogForRegeneration(os.DirFS("assets"))
 	if err != nil {
 		t.Fatalf("load regenerated Baseline assets: %v", err)
 	}
@@ -1395,6 +1424,24 @@ func addFormatterGoldenDrift(t *testing.T, assets fstest.MapFS) {
 	asset := assets[fixturePath]
 	asset.Data = append(append([]byte(nil), asset.Data...), []byte("\ndrift\n")...)
 	assets[fixturePath] = asset
+}
+
+func newGoldenDigestCycleFixture(t *testing.T) fstest.MapFS {
+	t.Helper()
+
+	assets := cloneEmbeddedAssets(t)
+	addFormatterGoldenDrift(t, assets)
+	return assets
+}
+
+func mustEmbeddedCatalogForRegeneration(t *testing.T) *Catalog {
+	t.Helper()
+
+	catalog, err := loadEmbeddedCatalogForRegeneration()
+	if err != nil {
+		t.Fatalf("load embedded Baseline catalog for regeneration: %v", err)
+	}
+	return catalog
 }
 
 func requireCatalogDiagnostic(t *testing.T, err error, code string) {

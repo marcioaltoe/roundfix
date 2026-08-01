@@ -157,7 +157,7 @@ func TestFormatterComposition(t *testing.T) {
 	runPlanGit(t, repository, "add", ".")
 	runPlanGit(t, repository, "commit", "-qm", "seed formatter fixture")
 
-	outcome, err := BuildPlan(context.Background(), PlanRequest{
+	request := PlanRequest{
 		Repository: repository,
 		ProfileID:  "standard-typescript-monorepo",
 		Decisions: []DecisionValue{
@@ -176,7 +176,18 @@ func TestFormatterComposition(t *testing.T) {
 			{ID: "repository.extension.enabled", Value: false},
 		},
 		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
-	})
+	}
+	var (
+		catalog *Catalog
+		outcome PlanOutcome
+		err     error
+	)
+	if *updateBaselineDigests {
+		catalog = mustEmbeddedCatalogForRegeneration(t)
+		outcome, err = buildPlanWithCatalog(context.Background(), request, catalog)
+	} else {
+		outcome, err = BuildPlan(context.Background(), request)
+	}
 	if err != nil {
 		t.Fatalf(
 			"BuildPlan() formatter composition error = %v; %s",
@@ -189,7 +200,9 @@ func TestFormatterComposition(t *testing.T) {
 	}
 	plan := *outcome.Plan
 
-	catalog := mustEmbeddedCatalog(t)
+	if catalog == nil {
+		catalog = mustEmbeddedCatalog(t)
+	}
 	profile, ok := catalog.Profile("standard-typescript-monorepo")
 	if !ok {
 		t.Fatal("standard TypeScript Profile is missing")

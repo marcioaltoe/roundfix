@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0062-baseline-digest-regeneration-bootstrap
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -72,3 +72,63 @@ after it.
   regeneration once succeeds).
 - `_techspec.md` → Testing Approach: cycle regression fixture; Build Order 3.
 - ADR-0085.
+
+## Result
+
+Implemented the update-path wiring without changing the strict public path.
+The regeneration-only catalog loader now accepts any package-owned asset
+filesystem, while `LoadCatalog` and `LoadEmbeddedCatalog` retain their strict
+behavior. The maintained Source Baseline and catalog-compatibility refreshes
+load their on-disk assets through regeneration mode. Formatter composition
+loads the embedded catalog through regeneration mode only under `-update` and
+passes that catalog through package-local planning and plan validation;
+ordinary `BuildPlan` and `ValidatePlanDocument` still acquire the strict
+embedded catalog themselves.
+
+Added `TestRegenerationBreaksGoldenDigestCycle` with one catalog fixture whose
+generated backend guide differs from the formatter digest pin. Separate
+subtests prove strict loading reports
+`catalog.profile.formatter.goldenDigest.mismatch` and regeneration loading
+accepts the same fixture.
+
+Focused checks:
+
+- Red signal: before adding the regeneration filesystem entry point, the
+  regeneration subtest failed to compile at
+  `catalog_test.go:166:19: undefined: loadCatalogForRegeneration`.
+- `rtk gofmt -w internal/baseline/catalog.go internal/baseline/catalog_test.go
+  internal/baseline/plan.go internal/baseline/plan_test.go` — exit 0.
+- Each `TestRegenerationBreaksGoldenDigestCycle` subtest was run separately
+  with `-count=1` and a writable local `GOCACHE`; both exited 0.
+- Focused `TestFormatterComposition` runs without and with `-update` each
+  exited 0. The update run exercised the regeneration catalog through planning
+  and its package-local self-validation; the ordinary run exercised public,
+  strict `BuildPlan`.
+- Focused `TestReadoptionCompatibilityMaintainedFixture -update` and
+  `TestCatalogCompatibility -update` runs each exited 0, exercising the other
+  catalog-loading regeneration steps.
+- Focused ordinary `TestCatalogCompatibility` exited 0, and focused
+  `TestFileChangesProjectionRejectsMismatch` exited 0 after the plan-validation
+  split.
+- The non-allowlisted-diagnostic subtest from
+  `TestCatalogRegenerationMode` exited 0.
+- `rtk git diff --exit-code --
+  internal/baseline/testdata/catalog.diagnostics.golden.json` — exit 0.
+- `rtk git diff --check` — exit 0.
+
+Acceptance evidence:
+
+1. The cycle fixture's regeneration subtest accepted the changed generated
+   guide, and all three catalog-loading `-update` steps exited 0 through the
+   regeneration entry points.
+2. The strict subtest loaded the same fixture through `LoadCatalog` and
+   observed `catalog.profile.formatter.goldenDigest.mismatch`.
+3. The ordinary formatter-composition and catalog-compatibility focused runs
+   exited 0 through public strict loaders. Source inspection also confirms
+   public `BuildPlan` and public `ValidatePlanDocument` still call
+   `LoadEmbeddedCatalog` before entering their package-local cores.
+4. The task 01 diagnostic characterization golden is byte-unchanged.
+5. Final changed-path inspection is limited to `internal/baseline/` and this
+   task file; the task status line was the pre-existing Daemon-owned change.
+
+The commands under `## Verification` were not run; the Daemon owns them.

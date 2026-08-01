@@ -132,11 +132,15 @@ func LoadEmbeddedCatalog() (*Catalog, error) {
 // loadEmbeddedCatalogForRegeneration loads the embedded catalog while
 // deferring only diagnostics for pins rewritten by the regeneration run.
 func loadEmbeddedCatalogForRegeneration() (*Catalog, error) {
-	catalog, err := loadCatalog(embeddedAssets, true)
+	catalog, err := loadCatalogForRegeneration(embeddedAssets)
 	if err != nil {
 		return nil, fmt.Errorf("load embedded Baseline catalog for regeneration: %w", err)
 	}
 	return catalog, nil
+}
+
+func loadCatalogForRegeneration(assetsFS fs.FS) (*Catalog, error) {
+	return loadCatalog(assetsFS, true)
 }
 
 // LoadCatalog validates a catalog filesystem rooted at the assets directory.
