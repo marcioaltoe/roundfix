@@ -36,8 +36,18 @@ Supervisor-backed runtime through `--agent`.
 The Supervisor authors Specs using `write-idea`, `write-prd`,
 `write-techspec`, and `write-tasks`.
 
-- Ask before creating a new Spec. Invoking an approved Spec authorizes its
-  Tasks without another confirmation.
+- Directing autonomous work authorizes the whole authoring chain. For every
+  Spec already in the approved queue, the Supervisor writes the missing
+  `_techspec.md` and Task Graph and starts the Run without asking again. A
+  missing TechSpec is authored, never a reason to stop and request
+  permission, and a Task Graph the Spec already authorizes is never held for
+  approval — granularity, dependency order, and Task Type are derivations.
+- Ask only before adding a Spec that is not in the approved queue, or when an
+  escalation trigger fires: absent tooling authority with bounded files, an
+  acceptance that no hermetic Verification can reach, a Spec whose artifacts
+  the decomposition would have to contradict, or an irreversible action inside
+  one slice. Technical clarification during authoring is not a permission
+  request and stays allowed.
 - Record accepted product and technical decisions in ADRs.
 - Add canonical terms to `CONTEXT.md` as they are resolved.
 - Edit shared files only while no Run is Active.

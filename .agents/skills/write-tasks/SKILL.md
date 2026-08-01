@@ -16,7 +16,7 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 
 ## Preconditions
 
-`$ARGUMENTS` names the spec. `_prd.md` must exist. If `_techspec.md` is missing on a feature with real architectural surface, call that out and say `write-techspec` should run first; use `AskUserQuestion` to get explicit user acceptance before proceeding without the tech spec. Continue only after acceptance, compensating with deeper codebase exploration before decomposing.
+`$ARGUMENTS` names the spec. `_prd.md` must exist. If `_techspec.md` is missing on a feature with real architectural surface, run `write-techspec` first and then decompose — authoring the missing artifact is the resolution, never a reason to stop for permission. Under autonomous work this needs no confirmation: directing autonomous work authorizes the whole authoring chain for every Spec already in the approved queue, per `docs/agents/autonomous-work.md`. Ask for acceptance only when explicitly told to decompose *without* a tech spec, and then compensate with deeper codebase exploration before decomposing.
 
 ### Project Constraint preflight
 
