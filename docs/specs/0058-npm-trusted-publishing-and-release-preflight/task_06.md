@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0058-npm-trusted-publishing-and-release-preflight
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -95,3 +95,59 @@ is reported under a non-identity prefix and triggers no token retry.
   vocabulary.
 - `qa/qa-report-2026-07-31.md` → QA-002.
 - ADR-0084.
+
+## Result
+
+The publish function now captures a failed OIDC attempt in memory and checks
+its output for npm authentication signals before choosing a failure branch.
+Only `ENEEDAUTH`, `E401`, or `Unable to authenticate` evidence reaches the
+existing `identity:` fallback path. Every other failure emits `publish:` with
+the coordinate and underlying npm error, then returns without a token retry.
+
+### Focused checks
+
+- A pre-change Ruby structural assertion over the parsed workflow exited 1
+  with `RED: first publish failure is not captured or classified before
+  fallback`, confirming the missing attribution gate before implementation.
+- A focused Ruby harness extracted and executed the `Publish to npm` step with
+  a fake `npm`. The first harness attempt was invalid because it inherited a
+  host `NODE_AUTH_TOKEN`; the rerun explicitly removed that variable and
+  passed all three scenarios: open-window authentication exited 0 after two
+  npm calls, closed-window authentication exited 1 after one call, and a
+  network failure exited 1 after one call.
+- The focused structural post-check parsed the workflow, confirmed the
+  capture/classification/fallback order, checked the single secret reference
+  and absence of token-printing commands, and confirmed the five-platform loop
+  still precedes the launcher while the GitHub Release step remains after npm
+  publication.
+- `rtk git diff --check` exited 0 after the final implementation and Result
+  edits.
+- `rtk git -c core.fsmonitor=false status --short` and
+  `rtk git diff --name-only HEAD` listed only
+  `.github/workflows/release.yml` and this task file. The task file's
+  pre-existing change is the Daemon-owned `status: in_progress` transition;
+  this implementation did not alter that field.
+
+### Acceptance evidence
+
+1. The open-window authentication scenario emitted
+   `::warning::identity: roundfix`, invoked npm exactly twice, and wrote
+   `roundfix` to the fallback record rendered in the step summary.
+2. The closed-window authentication scenario emitted
+   `::error::identity: roundfix`, exited nonzero, invoked npm exactly once,
+   and produced no fallback record for the coordinate.
+3. The network scenario emitted `::error::publish: roundfix`, contained no
+   `identity:` prefix, exited nonzero, and invoked npm exactly once.
+4. The network scenario surfaced `npm ERR! network timeout while contacting
+   registry` after the coordinate-bearing `publish:` error.
+5. The workflow retains one `${{ secrets.NPM_TOKEN }}` reference solely in
+   the fallback publish environment assignment. No `echo` or `printf` command
+   references `NPM_TOKEN` or `NODE_AUTH_TOKEN`, and captured output is held
+   only in memory rather than written to a file.
+6. The implementation diff changes only `publish_coordinate`; the existing
+   five-platform loop still calls the function before the launcher call, and
+   the GitHub Release step remains unchanged after the npm publication step.
+7. The changed-path postflight contains only the authorized release workflow
+   and this task file.
+
+The commands under `## Verification` were not run; the Daemon owns that gate.

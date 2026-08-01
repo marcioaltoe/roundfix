@@ -233,7 +233,13 @@ jobs:
             pkgdir="$1"
             coordinate="$2"
 
-            ( cd "$pkgdir" && npm publish --access public ) && return 0
+            out="$( cd "$pkgdir" && npm publish --access public 2>&1 )" && return 0
+
+            if ! printf '%s' "$out" | grep -qiE 'ENEEDAUTH|E401|Unable to authenticate'; then
+              echo "::error::publish: $coordinate failed for a non-identity reason"
+              printf '%s\n' "$out"
+              return 1
+            fi
 
             if [ "$FALLBACK_WINDOW" != "1" ]; then
               echo "::error::identity: $coordinate failed OIDC publish and the fallback window is closed"
