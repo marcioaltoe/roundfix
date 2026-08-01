@@ -101,6 +101,55 @@ func TestEmbeddedCatalog(t *testing.T) {
 	}
 }
 
+func TestCatalogRegenerationMode(t *testing.T) {
+	t.Parallel()
+
+	const formatterDigestMismatch = "catalog.profile.formatter.goldenDigest.mismatch"
+	if len(deferredDuringRegeneration) != 1 {
+		t.Fatalf("deferredDuringRegeneration has %d codes, want 1", len(deferredDuringRegeneration))
+	}
+	if _, ok := deferredDuringRegeneration[formatterDigestMismatch]; !ok {
+		t.Fatalf("deferredDuringRegeneration does not contain %q", formatterDigestMismatch)
+	}
+
+	var _ func(fs.FS) (*Catalog, error) = LoadCatalog
+	var _ func() (*Catalog, error) = loadEmbeddedCatalogForRegeneration
+
+	t.Run("strict load records allowlisted mismatch", func(t *testing.T) {
+		t.Parallel()
+		assets := cloneEmbeddedAssets(t)
+		addFormatterGoldenDrift(t, assets)
+
+		_, err := LoadCatalog(assets)
+		requireCatalogDiagnostic(t, err, formatterDigestMismatch)
+	})
+
+	t.Run("regeneration load defers allowlisted mismatch", func(t *testing.T) {
+		t.Parallel()
+		assets := cloneEmbeddedAssets(t)
+		addFormatterGoldenDrift(t, assets)
+
+		if _, err := loadCatalog(assets, true); err != nil {
+			t.Fatalf("load catalog in regeneration mode: %v", err)
+		}
+	})
+
+	t.Run("regeneration load records non-allowlisted diagnostic", func(t *testing.T) {
+		t.Parallel()
+		assets := cloneEmbeddedAssets(t)
+		replaceAsset(
+			t,
+			assets,
+			"profiles/rust-cli.json",
+			`"rust",`,
+			`"rust", "missing-module",`,
+		)
+
+		_, err := loadCatalog(assets, true)
+		requireCatalogDiagnostic(t, err, "catalog.profile.module.unknown")
+	})
+}
+
 func TestSourceMachinePathRecognizesMarkdownAndFileURLs(t *testing.T) {
 	t.Parallel()
 
@@ -1060,10 +1109,7 @@ func catalogMutationTests() []catalogMutationTest {
 			code: "catalog.profile.formatter.goldenDigest.mismatch",
 			edit: func(t *testing.T, assets fstest.MapFS) {
 				t.Helper()
-				path := "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md"
-				asset := assets[path]
-				asset.Data = append(append([]byte(nil), asset.Data...), []byte("\ndrift\n")...)
-				assets[path] = asset
+				addFormatterGoldenDrift(t, assets)
 			},
 		},
 		{
@@ -1340,6 +1386,27 @@ func cloneEmbeddedAssets(t *testing.T) fstest.MapFS {
 		t.Fatalf("clone embedded assets: %v", err)
 	}
 	return assets
+}
+
+func addFormatterGoldenDrift(t *testing.T, assets fstest.MapFS) {
+	t.Helper()
+
+	const fixturePath = "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md"
+	asset := assets[fixturePath]
+	asset.Data = append(append([]byte(nil), asset.Data...), []byte("\ndrift\n")...)
+	assets[fixturePath] = asset
+}
+
+func requireCatalogDiagnostic(t *testing.T, err error, code string) {
+	t.Helper()
+
+	var validationErr *ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("load catalog error = %v, want *ValidationError", err)
+	}
+	if !validationErr.Has(code) {
+		t.Fatalf("load catalog diagnostics = %v, want %q", validationErr.Diagnostics, code)
+	}
 }
 
 // removeProfileRule drops one rule from a profile's requiredRules by identity.
