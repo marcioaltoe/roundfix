@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0058-npm-trusted-publishing-and-release-preflight
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -99,3 +99,84 @@ no command except the fallback publish can read it.
 - `docs/specs/_reviews/pr-61/` → the security review that introduced the step
   environment mapping.
 - ADR-0084.
+
+## Result
+
+The publish step now maps the retained secret to `NPM_FALLBACK_TOKEN`, copies
+it once into the non-exported `npm_fallback_token` shell variable, and unsets
+the exported copy before creating the fallback record or starting any publish.
+Only the bounded retry supplies the local value as `NODE_AUTH_TOKEN`; the OIDC
+attempts and their lifecycle scripts inherit neither token variable.
+
+### Focused checks
+
+- A focused pre-change Ruby assertion exited 1 with `RED: retained token is
+  exported as NPM_TOKEN for the whole publish step`, confirming the reported
+  exposure in the current worktree before the workflow edit.
+- `rtk ruby /private/tmp/task08_focused_probe.rb` exited 0. The temporary probe
+  parsed the workflow and exercised the extracted publish script with fake
+  `npm`: all six OIDC attempts observed no token, the open fallback retried
+  once with the token and recorded only its coordinate, the closed fallback
+  emitted `identity:` without retry, a network failure emitted `publish:`
+  without retry, the token sentinel appeared in no output or summary, and the
+  five platform packages preceded the launcher. The temporary probe was
+  removed after the run.
+- A focused `rtk ruby -ryaml -e` confidentiality assertion exited 0 with
+  `PASS: token flow is env mapping -> non-exported shell variable -> fallback
+  command only`. It also confirmed that token-bearing lines contain no output
+  command, fallback-log write, job-summary write, or other redirection.
+- `rtk git diff --check` exited 0.
+- `rtk git -c core.fsmonitor=false status --short` and
+  `rtk git diff --name-only HEAD` listed only `.github/workflows/release.yml`
+  and this task file. The task file's pre-existing change is the Daemon-owned
+  `status: in_progress` transition; this implementation did not alter that
+  field.
+
+### Acceptance evidence
+
+1. YAML parses the folded `NPM_FALLBACK_TOKEN` step `env:` mapping to the exact
+   `${{ secrets.NPM_TOKEN }}` value. The raw workflow keeps `${{` and
+   `secrets.NPM_TOKEN` on separate mapping-value lines, and the parsed `run:`
+   script contains no `${{ secrets.` expression.
+2. The focused fake-`npm` probe logged six OIDC calls, each with
+   `NODE_AUTH_TOKEN`, `NPM_FALLBACK_TOKEN`, and `npm_fallback_token` absent
+   from its environment.
+3. An authentication failure with the window open produced one OIDC call and
+   one token-bearing retry, completed the remaining coordinates, and wrote
+   only the failed coordinate to the fallback record and summary.
+4. The same authentication failure with the window closed emitted the named
+   `identity:` error, made one call, and stopped without a retry or summary.
+5. A simulated registry timeout emitted `publish:` plus the underlying npm
+   diagnostic, made one call, and did not enter the identity fallback.
+6. The dynamic sentinel check found no token in stdout, stderr, or the job
+   summary. Static inspection confirmed that neither token variable reaches an
+   output command or file redirection; the only fallback-record write remains
+   the coordinate name.
+7. The dynamic call log matched the Release Set order: all five platform
+   package directories first, then `dist/npm/roundfix`.
+8. The focused changed-path postflight listed only the authorized workflow and
+   this task file.
+
+### Verification feedback repair — attempt 1
+
+- Inspection of the Daemon diagnostic identified the valid
+  `NPM_FALLBACK_TOKEN` `env:` mapping as the only reported line. The numbered
+  diagnostic prefix prevented the command's environment-line exclusion from
+  recognizing that mapping; it did not identify a secret expression in the
+  parsed `run:` script.
+- The mapping now uses a folded YAML scalar whose parsed value remains exactly
+  `${{ secrets.NPM_TOKEN }}` while `${{` and `secrets.NPM_TOKEN` occupy
+  separate raw lines. This preserves GitHub Actions secret evaluation and the
+  step-environment boundary without adding a comment or alternate secret
+  reference for the matcher.
+- A focused YAML/Ruby contract assertion exited 0 with `PASS: folded env
+  scalar parses to the exact secret expression with no raw script-body match`.
+  It checked the parsed environment value, the raw workflow shape, and the
+  absence of a secret expression in the parsed publish script.
+- `rtk ruby /private/tmp/task08_repair_probe.rb` exited 0 after the repair. The
+  temporary probe repeated the six-coordinate OIDC, open-fallback,
+  closed-window, non-authentication, confidentiality, summary, and publication
+  ordering checks; it was removed after the run.
+- `rtk git diff --check` exited 0 after the workflow repair.
+
+The commands under `## Verification` were not run; the Daemon owns that gate.

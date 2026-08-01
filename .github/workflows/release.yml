@@ -222,9 +222,16 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         env:
           FALLBACK_WINDOW: ${{ vars.NPM_TRUSTED_PUBLISHING_FALLBACK }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_FALLBACK_TOKEN: >-
+            ${{
+            secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
+
+          npm_fallback_token="$NPM_FALLBACK_TOKEN"
+          unset NPM_FALLBACK_TOKEN
+          export -n npm_fallback_token
+          readonly npm_fallback_token
 
           FALLBACK_LOG="$RUNNER_TEMP/roundfix-npm-token-fallback"
           : > "$FALLBACK_LOG"
@@ -247,7 +254,7 @@ jobs:
             fi
 
             echo "::warning::identity: $coordinate failed OIDC publish; retrying with the bounded token fallback"
-            ( cd "$pkgdir" && NODE_AUTH_TOKEN="$NPM_TOKEN" npm publish --access public ) || return 1
+            ( cd "$pkgdir" && NODE_AUTH_TOKEN="$npm_fallback_token" npm publish --access public ) || return 1
             printf '%s\n' "$coordinate" >> "$FALLBACK_LOG"
           }
 
