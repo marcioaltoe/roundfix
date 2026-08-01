@@ -1,0 +1,417 @@
+{
+  "schemaVersion": "roundfix/baseline-catalog-diagnostics/v1",
+  "catalogs": [
+    {
+      "catalog": "embedded",
+      "diagnostics": []
+    },
+    {
+      "catalog": "legacy-v2",
+      "diagnostics": []
+    },
+    {
+      "catalog": "mutation/decision dependency cycle",
+      "diagnostics": [
+        {
+          "code": "catalog.decision.dependency.cycle",
+          "subject": "spec.scaffold",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/duplicate JSON key",
+      "diagnostics": [
+        {
+          "code": "catalog.json.key.duplicate",
+          "subject": "decisions.json",
+          "detail": "schemaVersion"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/duplicate catalog identifier",
+      "diagnostics": [
+        {
+          "code": "catalog.instruction-hierarchy.root.unknown",
+          "subject": "core.levels[4]",
+          "detail": "root.bun"
+        },
+        {
+          "code": "catalog.module.filename.mismatch",
+          "subject": "modules/bun.json",
+          "detail": "core.json"
+        },
+        {
+          "code": "catalog.module.id.duplicate",
+          "subject": "modules/core.json",
+          "detail": "core"
+        },
+        {
+          "code": "catalog.profile.module.unknown",
+          "subject": "standard-typescript-monorepo",
+          "detail": "bun"
+        },
+        {
+          "code": "catalog.profile.rule.unknown",
+          "subject": "standard-typescript-monorepo",
+          "detail": "rule.bun.package-manager"
+        },
+        {
+          "code": "catalog.profile.rule.unknown",
+          "subject": "standard-typescript-monorepo",
+          "detail": "rule.bun.warning-free-verification"
+        },
+        {
+          "code": "catalog.semantic-owner.destination.unknown",
+          "subject": "core.semanticOwners[10]",
+          "detail": "guide.bun"
+        },
+        {
+          "code": "catalog.sourceBaseline.required-rule.missing",
+          "subject": "baseline.standard-typescript-monorepo-0.0.1",
+          "detail": "rule.bun.package-manager"
+        },
+        {
+          "code": "catalog.sourceBaseline.required-rule.missing",
+          "subject": "baseline.standard-typescript-monorepo-0.0.1",
+          "detail": "rule.bun.warning-free-verification"
+        },
+        {
+          "code": "catalog.transition.target.unknown",
+          "subject": "transition.legacy-typescript-bun-to-portable-v3",
+          "detail": "clause.bun.add-from-owning-workspace"
+        },
+        {
+          "code": "catalog.transition.target.unknown",
+          "subject": "transition.legacy-typescript-bun-to-portable-v3",
+          "detail": "clause.bun.block-warnings-when-profile-treats-them-as-errors"
+        },
+        {
+          "code": "catalog.transition.target.unknown",
+          "subject": "transition.legacy-typescript-bun-to-portable-v3",
+          "detail": "clause.bun.verify-dependency-before-add"
+        },
+        {
+          "code": "catalog.transition.target.unknown",
+          "subject": "transition.managed-v2-to-portable-v3",
+          "detail": "clause.bun.prohibit-other-package-managers"
+        },
+        {
+          "code": "catalog.transition.target.unknown",
+          "subject": "transition.managed-v2-to-portable-v3",
+          "detail": "clause.bun.use-bun-owned-commands"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/duplicate semantic ownership",
+      "diagnostics": [
+        {
+          "code": "catalog.semantic-owner.classification.duplicate",
+          "subject": "universal-execution",
+          "detail": "guide.agent-instructions, guide.domain"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/formatter golden drift",
+      "diagnostics": [
+        {
+          "code": "catalog.profile.formatter.goldenDigest.mismatch",
+          "subject": "standard-typescript-monorepo",
+          "detail": "got 9bc59a439dd0f280aff81057e9ad57b663083424f7a5f6f6e941a1531e9ed3c5, want c50ae1155497abf696249ea4dae2f8102fb8e500d4dcc06dd69e143f4042ad3d"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/instruction dependency after dependent",
+      "diagnostics": [
+        {
+          "code": "catalog.instruction-hierarchy.dependency.order",
+          "subject": "root.tui-surface",
+          "detail": "root.cli-surface"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/invalid decision default",
+      "diagnostics": [
+        {
+          "code": "catalog.decision.default.invalid",
+          "subject": "spec.scaffold",
+          "detail": "must be a boolean"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/invalid instruction precedence",
+      "diagnostics": [
+        {
+          "code": "catalog.instruction-hierarchy.order.invalid",
+          "subject": "core.levels[1]",
+          "detail": "spec"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/missing formatter fixture",
+      "diagnostics": [
+        {
+          "code": "catalog.profile.formatter.fixture.missing",
+          "subject": "standard-typescript-monorepo",
+          "detail": "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/module dependency cycle",
+      "diagnostics": [
+        {
+          "code": "catalog.instruction-hierarchy.dependency.order",
+          "subject": "root.core",
+          "detail": "root.context-workflow"
+        },
+        {
+          "code": "catalog.module.dependency.cycle",
+          "subject": "context-workflow",
+          "detail": "context-workflow -\u003e core -\u003e context-workflow"
+        },
+        {
+          "code": "catalog.profile.dependency.order",
+          "subject": "go-cli-tui",
+          "detail": "core -\u003e context-workflow"
+        },
+        {
+          "code": "catalog.profile.dependency.order",
+          "subject": "rust-cli",
+          "detail": "core -\u003e context-workflow"
+        },
+        {
+          "code": "catalog.profile.dependency.order",
+          "subject": "standard-typescript-monorepo",
+          "detail": "core -\u003e context-workflow"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/narrower clause weakens universal policy",
+      "diagnostics": [
+        {
+          "code": "catalog.clause.weakening.prohibited",
+          "subject": "clause.autonomous.supervisor-prohibition",
+          "detail": "clause.core.fix-root-causes"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/setup snapshot digest drift",
+      "diagnostics": [
+        {
+          "code": "catalog.setup.digest.mismatch",
+          "subject": "rust-cli",
+          "detail": "got 0f03942f2641a3722a5e568755473bb7c03050cdd81b7cad539839c7e591f5b78, want f03942f2641a3722a5e568755473bb7c03050cdd81b7cad539839c7e591f5b78"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/stale Source Baseline accounting target",
+      "diagnostics": [
+        {
+          "code": "catalog.sourceBaseline.integrity.invalid",
+          "subject": "baseline.standard-typescript-monorepo-0.0.1",
+          "detail": "load Source Baseline \"baseline.standard-typescript-monorepo-0.0.1\": accounting for \"clause.legacy.audit-new-dependencies\" targets unknown entry \"clause.missing\""
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/undeclared template token",
+      "diagnostics": [
+        {
+          "code": "catalog.template.token.undeclared",
+          "subject": "template.root.core",
+          "detail": "decision.missing"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/unknown Source Baseline profile",
+      "diagnostics": [
+        {
+          "code": "catalog.sourceBaseline.integrity.invalid",
+          "subject": "baseline.standard-typescript-monorepo-0.0.1",
+          "detail": "load Source Baseline \"baseline.standard-typescript-monorepo-0.0.1\": identity headers disagree"
+        },
+        {
+          "code": "catalog.sourceBaseline.profile.mismatch",
+          "subject": "baseline.standard-typescript-monorepo-0.0.1",
+          "detail": "standard-typescript-monorepo"
+        },
+        {
+          "code": "catalog.sourceBaseline.profile.unknown",
+          "subject": "baseline.standard-typescript-monorepo-0.0.1",
+          "detail": "missing-profile"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/unknown decision effect module",
+      "diagnostics": [
+        {
+          "code": "catalog.decision.effect.module.unknown",
+          "subject": "spec.scaffold",
+          "detail": "missing-module"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/unknown profile module",
+      "diagnostics": [
+        {
+          "code": "catalog.profile.module.unknown",
+          "subject": "rust-cli",
+          "detail": "missing-module"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/unknown retention target",
+      "diagnostics": [
+        {
+          "code": "catalog.transition.target.unknown",
+          "subject": "transition.managed-v2-to-portable-v3",
+          "detail": "clause.missing"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/unknown schema field",
+      "diagnostics": [
+        {
+          "code": "catalog.profile.field.unknown",
+          "subject": "rust-cli",
+          "detail": "unexpected"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/unknown setup",
+      "diagnostics": [
+        {
+          "code": "catalog.profile.setup.unknown",
+          "subject": "rust-cli",
+          "detail": "missing-setup"
+        }
+      ]
+    },
+    {
+      "catalog": "mutation/unknown template reference",
+      "diagnostics": [
+        {
+          "code": "catalog.instruction-hierarchy.pointer.missing",
+          "subject": "docs/agents/rust.md",
+          "detail": "guide.rust"
+        },
+        {
+          "code": "catalog.reference.token.unknown",
+          "subject": "reference.root.rust",
+          "detail": "reference.rust"
+        },
+        {
+          "code": "catalog.template.reference.unknown",
+          "subject": "root.rust",
+          "detail": "template.missing"
+        }
+      ]
+    },
+    {
+      "catalog": "project-decision/missing auth.provider",
+      "diagnostics": [
+        {
+          "code": "catalog.profile.decision.capability.invalid",
+          "subject": "standard-typescript-monorepo",
+          "detail": "custom.profile.decision.capability.required: capability.stack.better-auth requires auth.provider"
+        },
+        {
+          "code": "catalog.project-decision.profile.missing",
+          "subject": "standard-typescript-monorepo",
+          "detail": "auth.provider"
+        }
+      ]
+    },
+    {
+      "catalog": "project-decision/missing identifier.strategy",
+      "diagnostics": [
+        {
+          "code": "catalog.project-decision.profile.missing",
+          "subject": "standard-typescript-monorepo",
+          "detail": "identifier.strategy"
+        }
+      ]
+    },
+    {
+      "catalog": "repository-assets",
+      "diagnostics": []
+    },
+    {
+      "catalog": "source-baseline/new required clause",
+      "diagnostics": [
+        {
+          "code": "catalog.sourceBaseline.required-clause.missing",
+          "subject": "baseline.standard-typescript-monorepo-0.0.1",
+          "detail": "clause.core.characterization-new-clause"
+        }
+      ]
+    },
+    {
+      "catalog": "tooling-authority/Profile omits the universal rule",
+      "diagnostics": [
+        {
+          "code": "catalog.tooling-authority.profile.rule.missing",
+          "subject": "rust-cli",
+          "detail": "rule.core.tooling-authority"
+        }
+      ]
+    },
+    {
+      "catalog": "tooling-authority/decision controls the core module",
+      "diagnostics": [
+        {
+          "code": "catalog.tooling-authority.effect.prohibited",
+          "subject": "spec.scaffold",
+          "detail": "core tooling authority cannot be conditional or excluded"
+        }
+      ]
+    },
+    {
+      "catalog": "tooling-authority/decision excludes the universal guide",
+      "diagnostics": [
+        {
+          "code": "catalog.tooling-authority.effect.prohibited",
+          "subject": "spec.scaffold",
+          "detail": "core tooling authority cannot be conditional or excluded"
+        }
+      ]
+    },
+    {
+      "catalog": "tooling-authority/retention accounting removal",
+      "diagnostics": [
+        {
+          "code": "catalog.tooling-authority.retention.missing",
+          "subject": "transition.managed-v2-to-portable-v3",
+          "detail": "clause.core.require-tooling-authorization"
+        }
+      ]
+    },
+    {
+      "catalog": "tooling-authority/source accounting removal",
+      "diagnostics": [
+        {
+          "code": "catalog.sourceBaseline.integrity.invalid",
+          "subject": "baseline.standard-typescript-monorepo-0.0.1",
+          "detail": "load Source Baseline \"baseline.standard-typescript-monorepo-0.0.1\": counts or digests disagree"
+        }
+      ]
+    }
+  ]
+}

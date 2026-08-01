@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0062-baseline-digest-regeneration-bootstrap
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -74,3 +74,71 @@ measured against, and it only works if it lands first.
 - `_prd.md` → Core Features 4; Success Metrics (every catalog loads with the
   same diagnostics after the change).
 - `_techspec.md` → Testing Approach: characterization corpus; Build Order 1.
+
+## Result
+
+### Implementation
+
+- Added `TestCatalogDiagnosticCharacterization` at the existing catalog-loader
+  test seam. It deterministically sorts and records each diagnostic's code,
+  subject, and detail for 32 catalog inputs: the embedded and repository
+  catalogs, the maintained legacy-v2 fixture, every existing catalog mutation,
+  project-decision and tooling-authority variants, and the newly-required-clause
+  case this Spec changes later.
+- Added `testdata/catalog.diagnostics.golden.json`, containing 51 diagnostic
+  records across 36 codes. The three valid catalogs are recorded with empty
+  diagnostic arrays rather than omitted.
+- Added a readable record-level comparison that reports the changed diagnostic
+  codes and the removed/added triples.
+- Added the dedicated `-update-catalog-diagnostics` flag. The golden write is
+  reachable only inside that flag guard; an ordinary test run only reads and
+  compares the corpus.
+- Changed no production source, diagnostic, message, or exported API. Existing
+  mutation and tooling-authority tables were only lifted into shared test
+  fixtures so the characterization test exercises the same inputs.
+
+### Focused-check evidence
+
+- The first focused Go invocation could not use the host cache under
+  `~/Library/Caches/go-build`; retrying with
+  `GOCACHE=/private/tmp/roundfix-task01-gocache` removed that environment block.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task01-gocache rtk go test
+  ./internal/baseline -run '^TestCatalogDiagnosticCharacterization$'
+  -update-catalog-diagnostics` — exit 0 (`2 passed`) on two consecutive runs.
+  Both runs produced SHA-256
+  `7ec5328da2eefa03e857e9b7776a688c8a2cb7fb87fc34a7185cbc2d41618992`.
+- After deliberately changing the recorded detail for
+  `catalog.decision.dependency.cycle`, the ordinary focused comparison exited 1
+  and reported `changed diagnostic codes:
+  catalog.decision.dependency.cycle`. Regeneration through the dedicated flag
+  restored the recorded hash above.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task01-gocache rtk go test
+  ./internal/baseline -run
+  '^TestCatalogDiagnosticCharacterization$/failure_diff_names_the_changed_code$'`
+  — exit 0 (`2 passed`). The golden hash was identical before and after this
+  no-update run.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task01-gocache rtk go test
+  ./internal/baseline -run
+  '^(TestCatalogMutation|TestToolingAuthorityCannotBeDisabled|TestToolingAuthorityAccounting)$'`
+  — exit 0 (`29 passed`).
+- `rtk git diff --check` — exit 0.
+
+### Acceptance-criterion evidence
+
+1. The focused characterization run loaded and compared all 32 enumerated
+   inputs; the golden contains 29 diagnostic-bearing inputs and three valid
+   inputs with empty diagnostic arrays.
+2. The deliberate golden mutation failed the comparator and named
+   `catalog.decision.dependency.cycle`; the in-memory negative check also
+   requires both removed and added records in the diff.
+3. Consecutive explicit generations and the intervening ordinary comparison
+   retained the same SHA-256 shown above.
+4. Source inspection found the golden writer only below the
+   `updateCatalogDiagnosticCharacterization` guard, and the ordinary focused
+   comparison left the golden unchanged.
+5. `rtk git status --porcelain` reported only this task file,
+   `internal/baseline/catalog_test.go`, and
+   `internal/baseline/testdata/catalog.diagnostics.golden.json` (plus a benign
+   fsmonitor IPC warning).
+
+The Daemon-owned commands in `## Verification` were not run in this Agent turn.
