@@ -9,10 +9,17 @@ import (
 )
 
 type catalogLoader struct {
-	source      fs.FS
-	assets      map[string][]byte
-	documents   map[string]document
-	diagnostics []Diagnostic
+	source       fs.FS
+	assets       map[string][]byte
+	documents    map[string]document
+	diagnostics  []Diagnostic
+	regenerating bool
+}
+
+// deferredDuringRegeneration lists the diagnostics that a regeneration run is
+// allowed to defer.
+var deferredDuringRegeneration = map[string]struct{}{
+	"catalog.profile.formatter.goldenDigest.mismatch": {},
 }
 
 func newCatalogLoader(source fs.FS) *catalogLoader {
@@ -360,6 +367,11 @@ func (l *catalogLoader) validateVersions(kind string, values map[string]document
 }
 
 func (l *catalogLoader) add(code, assetPath, info string) {
+	if l.regenerating {
+		if _, deferred := deferredDuringRegeneration[code]; deferred {
+			return
+		}
+	}
 	l.diagnostics = append(l.diagnostics, Diagnostic{Code: code, Path: assetPath, Info: info})
 }
 

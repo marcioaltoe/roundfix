@@ -37,6 +37,8 @@ const (
 	toolingAuthorityGuidance   = "Do not create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization."
 )
 
+const sourceBaselineManifestRowGuidance = "; the regenerator maintains manifest rows but never creates them, so add this row first"
+
 func (l *catalogLoader) validateTemplates(catalog *Catalog) {
 	for templateID, template := range catalog.templates {
 		requireFields(l, "template", templateID, template, "id", "version", "kind", "path")
@@ -1467,7 +1469,7 @@ func (l *catalogLoader) validateSourceBaselineCoverage(
 				l.add(
 					"catalog.sourceBaseline.required-rule.missing",
 					baseline.Identity.ID,
-					ruleID,
+					ruleID+sourceBaselineManifestRowGuidance,
 				)
 			}
 			continue
@@ -1478,7 +1480,7 @@ func (l *catalogLoader) validateSourceBaselineCoverage(
 				l.add(
 					"catalog.sourceBaseline.required-clause.missing",
 					baseline.Identity.ID,
-					clauseID,
+					clauseID+sourceBaselineManifestRowGuidance,
 				)
 			}
 		}

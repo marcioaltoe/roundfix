@@ -11,9 +11,11 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io/fs"
 	"os"
 	"slices"
+	"sort"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -24,7 +26,15 @@ var compatibilityFixtures embed.FS
 
 var updateBaselineDigests = flag.Bool("update", false, "regenerate derived digest artifacts")
 
+var updateCatalogDiagnosticCharacterization = flag.Bool(
+	"update-catalog-diagnostics",
+	false,
+	"regenerate the catalog diagnostic characterization corpus",
+)
+
 const baselineDigestRegenerationHint = "run 'make baseline-digests'"
+
+const catalogDiagnosticGoldenPath = "testdata/catalog.diagnostics.golden.json"
 
 func TestEmbeddedCatalog(t *testing.T) {
 	t.Chdir(t.TempDir())
@@ -88,6 +98,132 @@ func TestEmbeddedCatalog(t *testing.T) {
 	unchanged, _ := catalog.Profile("rust-cli")
 	if unchanged.Data[0] == 'x' {
 		t.Fatal("Profile(rust-cli) exposed mutable catalog bytes")
+	}
+}
+
+func TestCatalogRegenerationMode(t *testing.T) {
+	t.Parallel()
+
+	const formatterDigestMismatch = "catalog.profile.formatter.goldenDigest.mismatch"
+	if len(deferredDuringRegeneration) != 1 {
+		t.Fatalf("deferredDuringRegeneration has %d codes, want 1", len(deferredDuringRegeneration))
+	}
+	if _, ok := deferredDuringRegeneration[formatterDigestMismatch]; !ok {
+		t.Fatalf("deferredDuringRegeneration does not contain %q", formatterDigestMismatch)
+	}
+
+	var _ func(fs.FS) (*Catalog, error) = LoadCatalog
+	var _ func() (*Catalog, error) = loadEmbeddedCatalogForRegeneration
+
+	t.Run("strict load records allowlisted mismatch", func(t *testing.T) {
+		t.Parallel()
+		assets := cloneEmbeddedAssets(t)
+		addFormatterGoldenDrift(t, assets)
+
+		_, err := LoadCatalog(assets)
+		requireCatalogDiagnostic(t, err, formatterDigestMismatch)
+	})
+
+	t.Run("regeneration load defers allowlisted mismatch", func(t *testing.T) {
+		t.Parallel()
+		assets := cloneEmbeddedAssets(t)
+		addFormatterGoldenDrift(t, assets)
+
+		if _, err := loadCatalog(assets, true); err != nil {
+			t.Fatalf("load catalog in regeneration mode: %v", err)
+		}
+	})
+
+	t.Run("regeneration load records non-allowlisted diagnostic", func(t *testing.T) {
+		t.Parallel()
+		assets := cloneEmbeddedAssets(t)
+		replaceAsset(
+			t,
+			assets,
+			"profiles/rust-cli.json",
+			`"rust",`,
+			`"rust", "missing-module",`,
+		)
+
+		_, err := loadCatalog(assets, true)
+		requireCatalogDiagnostic(t, err, "catalog.profile.module.unknown")
+	})
+}
+
+func TestRegenerationBreaksGoldenDigestCycle(t *testing.T) {
+	t.Parallel()
+
+	assets := newGoldenDigestCycleFixture(t)
+
+	t.Run("strict load rejects the changed generated guide", func(t *testing.T) {
+		t.Parallel()
+		_, err := LoadCatalog(assets)
+		requireCatalogDiagnostic(t, err, "catalog.profile.formatter.goldenDigest.mismatch")
+	})
+
+	t.Run("regeneration load accepts the changed generated guide", func(t *testing.T) {
+		t.Parallel()
+		catalog, err := loadCatalogForRegeneration(assets)
+		if err != nil {
+			t.Fatalf("load cycle fixture for regeneration: %v", err)
+		}
+		if _, ok := catalog.Profile("standard-typescript-monorepo"); !ok {
+			t.Fatal("regeneration catalog has no standard TypeScript Profile")
+		}
+	})
+}
+
+func TestSourceBaselineManifestRowGuidance(t *testing.T) {
+	t.Parallel()
+
+	const baselineID = "baseline.standard-typescript-monorepo-0.0.1"
+	tests := []struct {
+		name      string
+		code      string
+		missingID string
+		assets    func(t *testing.T) fs.FS
+	}{
+		{
+			name:      "missing clause",
+			code:      "catalog.sourceBaseline.required-clause.missing",
+			missingID: "clause.core.characterization-new-clause",
+			assets: func(t *testing.T) fs.FS {
+				t.Helper()
+				assets := cloneEmbeddedAssets(t)
+				addRequiredClauseWithoutManifestRow(t, assets)
+				return assets
+			},
+		},
+		{
+			name:      "missing rule",
+			code:      "catalog.sourceBaseline.required-rule.missing",
+			missingID: "rule.core.characterization-new-rule",
+			assets: func(t *testing.T) fs.FS {
+				t.Helper()
+				assets := cloneEmbeddedAssets(t)
+				addRequiredRuleWithoutManifestRow(t, assets)
+				return assets
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := LoadCatalog(test.assets(t))
+			diagnostic := catalogDiagnosticByCode(t, err, test.code)
+			if diagnostic.Code != test.code {
+				t.Fatalf("diagnostic code = %q, want %q", diagnostic.Code, test.code)
+			}
+			if diagnostic.Path != baselineID {
+				t.Fatalf("diagnostic subject = %q, want %q", diagnostic.Path, baselineID)
+			}
+			wantDetail := test.missingID + "; the regenerator maintains manifest rows but never creates them, so add this row first"
+			if diagnostic.Info != wantDetail {
+				t.Fatalf("diagnostic detail = %q, want %q", diagnostic.Info, wantDetail)
+			}
+		})
 	}
 }
 
@@ -343,7 +479,13 @@ func TestCatalogCompatibility(t *testing.T) {
 		t.Parallel()
 	}
 
-	catalog, err := LoadEmbeddedCatalog()
+	var catalog *Catalog
+	var err error
+	if *updateBaselineDigests {
+		catalog, err = loadEmbeddedCatalogForRegeneration()
+	} else {
+		catalog, err = LoadEmbeddedCatalog()
+	}
 	if err != nil {
 		t.Fatalf(
 			"LoadEmbeddedCatalog() error = %v; %s to regenerate stale derived artifacts",
@@ -404,7 +546,7 @@ func regenerateCatalogCompatibility(t *testing.T, catalog *Catalog) {
 
 func regenerateCatalogCompatibilityFromAssets(t *testing.T) {
 	t.Helper()
-	catalog, err := LoadCatalog(os.DirFS("assets"))
+	catalog, err := loadCatalogForRegeneration(os.DirFS("assets"))
 	if err != nil {
 		t.Fatalf("load regenerated Baseline assets: %v", err)
 	}
@@ -424,6 +566,343 @@ func writeBaselineDerivedArtifact(t *testing.T, filePath string, data []byte) {
 		t.Fatalf("write derived artifact %s: %v", filePath, err)
 	}
 	t.Logf("regenerated %s", filePath)
+}
+
+type catalogDiagnosticRecord struct {
+	Code    string `json:"code"`
+	Subject string `json:"subject"`
+	Detail  string `json:"detail"`
+}
+
+type catalogDiagnosticResult struct {
+	Catalog     string                    `json:"catalog"`
+	Diagnostics []catalogDiagnosticRecord `json:"diagnostics"`
+}
+
+type catalogDiagnosticCorpus struct {
+	SchemaVersion string                    `json:"schemaVersion"`
+	Catalogs      []catalogDiagnosticResult `json:"catalogs"`
+}
+
+type catalogDiagnosticFixture struct {
+	name   string
+	assets func(t *testing.T) fs.FS
+}
+
+func TestCatalogDiagnosticCharacterization(t *testing.T) {
+	actual := loadCatalogDiagnosticCorpus(t)
+	actualBytes := marshalCatalogDiagnosticCorpus(t, actual)
+
+	if *updateCatalogDiagnosticCharacterization {
+		writeBaselineDerivedArtifact(t, catalogDiagnosticGoldenPath, actualBytes)
+	}
+
+	wantBytes, err := os.ReadFile(catalogDiagnosticGoldenPath)
+	if err != nil {
+		t.Fatalf("read catalog diagnostic characterization: %v", err)
+	}
+	var want catalogDiagnosticCorpus
+	if err := json.Unmarshal(wantBytes, &want); err != nil {
+		t.Fatalf("decode catalog diagnostic characterization: %v", err)
+	}
+	if want.SchemaVersion != actual.SchemaVersion {
+		t.Fatalf(
+			"catalog diagnostic characterization schema = %q, want %q",
+			want.SchemaVersion,
+			actual.SchemaVersion,
+		)
+	}
+	if diff := catalogDiagnosticDiff(want.Catalogs, actual.Catalogs); diff != "" {
+		t.Fatalf(
+			"catalog diagnostic characterization differs; run with -update-catalog-diagnostics to re-record an intentional change:\n%s",
+			diff,
+		)
+	}
+
+	t.Run("failure diff names the changed code", func(t *testing.T) {
+		mutated := cloneCatalogDiagnosticResults(actual.Catalogs)
+		var changedCode string
+		for catalogIndex := range mutated {
+			if len(mutated[catalogIndex].Diagnostics) == 0 {
+				continue
+			}
+			changedCode = mutated[catalogIndex].Diagnostics[0].Code
+			mutated[catalogIndex].Diagnostics[0].Detail += " deliberately changed"
+			break
+		}
+		if changedCode == "" {
+			t.Fatal("catalog diagnostic characterization contains no diagnostic to mutation-test")
+		}
+		diff := catalogDiagnosticDiff(actual.Catalogs, mutated)
+		if !strings.Contains(diff, changedCode) {
+			t.Fatalf("diagnostic diff does not name changed code %q:\n%s", changedCode, diff)
+		}
+		if !strings.Contains(diff, "- ") || !strings.Contains(diff, "+ ") {
+			t.Fatalf("diagnostic diff does not show removed and added records:\n%s", diff)
+		}
+	})
+}
+
+func loadCatalogDiagnosticCorpus(t *testing.T) catalogDiagnosticCorpus {
+	t.Helper()
+
+	fixtures := catalogDiagnosticFixtures()
+	sort.Slice(fixtures, func(i, j int) bool { return fixtures[i].name < fixtures[j].name })
+	results := make([]catalogDiagnosticResult, 0, len(fixtures))
+	for index, fixture := range fixtures {
+		if index != 0 && fixtures[index-1].name == fixture.name {
+			t.Fatalf("duplicate catalog diagnostic fixture %q", fixture.name)
+		}
+		_, err := LoadCatalog(fixture.assets(t))
+		diagnostics := make([]catalogDiagnosticRecord, 0)
+		if err != nil {
+			var validationErr *ValidationError
+			if !errors.As(err, &validationErr) {
+				t.Fatalf("load catalog diagnostic fixture %q: %v", fixture.name, err)
+			}
+			for _, diagnostic := range validationErr.Diagnostics {
+				diagnostics = append(diagnostics, catalogDiagnosticRecord{
+					Code:    diagnostic.Code,
+					Subject: diagnostic.Path,
+					Detail:  diagnostic.Info,
+				})
+			}
+			sortCatalogDiagnosticRecords(diagnostics)
+		}
+		results = append(results, catalogDiagnosticResult{
+			Catalog:     fixture.name,
+			Diagnostics: diagnostics,
+		})
+	}
+	return catalogDiagnosticCorpus{
+		SchemaVersion: "roundfix/baseline-catalog-diagnostics/v1",
+		Catalogs:      results,
+	}
+}
+
+func catalogDiagnosticFixtures() []catalogDiagnosticFixture {
+	fixtures := []catalogDiagnosticFixture{
+		{
+			name: "embedded",
+			assets: func(*testing.T) fs.FS {
+				return embeddedAssets
+			},
+		},
+		{
+			name: "legacy-v2",
+			assets: func(t *testing.T) fs.FS {
+				t.Helper()
+				assets, err := fs.Sub(compatibilityFixtures, "testdata/legacy-v2/assets")
+				if err != nil {
+					t.Fatalf("open maintained v2 compatibility assets: %v", err)
+				}
+				return assets
+			},
+		},
+		{
+			name: "repository-assets",
+			assets: func(*testing.T) fs.FS {
+				return os.DirFS("assets")
+			},
+		},
+	}
+
+	for _, mutation := range catalogMutationTests() {
+		fixtures = append(fixtures, editedCatalogDiagnosticFixture(
+			"mutation/"+mutation.name,
+			mutation.edit,
+		))
+	}
+	for _, decisionID := range []string{"auth.provider", "identifier.strategy"} {
+		fixtures = append(fixtures, editedCatalogDiagnosticFixture(
+			"project-decision/missing "+decisionID,
+			func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"profiles/standard-typescript-monorepo.json",
+					`    "`+decisionID+`",`+"\n",
+					"",
+				)
+			},
+		))
+	}
+	for _, authority := range catalogToolingAuthorityTests() {
+		fixtures = append(fixtures, editedCatalogDiagnosticFixture(
+			"tooling-authority/"+authority.name,
+			authority.edit,
+		))
+	}
+
+	const toolingClauseID = "clause.core.require-tooling-authorization"
+	fixtures = append(fixtures,
+		editedCatalogDiagnosticFixture(
+			"source-baseline/new required clause",
+			func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				addRequiredClauseWithoutManifestRow(t, assets)
+			},
+		),
+		editedCatalogDiagnosticFixture(
+			"tooling-authority/source accounting removal",
+			func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json",
+					toolingClauseID,
+					"clause.missing-tooling-authority-accounting",
+				)
+			},
+		),
+		editedCatalogDiagnosticFixture(
+			"tooling-authority/retention accounting removal",
+			func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"retention/transition.managed-v2-to-portable-v3.json",
+					`, "`+toolingClauseID+`"`,
+					``,
+				)
+			},
+		),
+	)
+	return fixtures
+}
+
+func editedCatalogDiagnosticFixture(
+	name string,
+	edit func(t *testing.T, assets fstest.MapFS),
+) catalogDiagnosticFixture {
+	return catalogDiagnosticFixture{
+		name: name,
+		assets: func(t *testing.T) fs.FS {
+			t.Helper()
+			assets := cloneEmbeddedAssets(t)
+			edit(t, assets)
+			return assets
+		},
+	}
+}
+
+func marshalCatalogDiagnosticCorpus(t *testing.T, corpus catalogDiagnosticCorpus) []byte {
+	t.Helper()
+	data, err := json.MarshalIndent(corpus, "", "  ")
+	if err != nil {
+		t.Fatalf("encode catalog diagnostic characterization: %v", err)
+	}
+	return append(data, '\n')
+}
+
+func cloneCatalogDiagnosticResults(results []catalogDiagnosticResult) []catalogDiagnosticResult {
+	cloned := make([]catalogDiagnosticResult, len(results))
+	for index, result := range results {
+		cloned[index] = result
+		cloned[index].Diagnostics = slices.Clone(result.Diagnostics)
+	}
+	return cloned
+}
+
+func catalogDiagnosticDiff(
+	want []catalogDiagnosticResult,
+	got []catalogDiagnosticResult,
+) string {
+	wantByCatalog := make(map[string][]catalogDiagnosticRecord, len(want))
+	gotByCatalog := make(map[string][]catalogDiagnosticRecord, len(got))
+	names := make(map[string]struct{}, len(want)+len(got))
+	for _, result := range want {
+		wantByCatalog[result.Catalog] = result.Diagnostics
+		names[result.Catalog] = struct{}{}
+	}
+	for _, result := range got {
+		gotByCatalog[result.Catalog] = result.Diagnostics
+		names[result.Catalog] = struct{}{}
+	}
+
+	changedCodes := make(map[string]struct{})
+	var details strings.Builder
+	for _, name := range sortedKeys(names) {
+		wantDiagnostics, wantOK := wantByCatalog[name]
+		gotDiagnostics, gotOK := gotByCatalog[name]
+		if wantOK && gotOK && slices.Equal(wantDiagnostics, gotDiagnostics) {
+			continue
+		}
+		fmt.Fprintf(&details, "catalog %q:\n", name)
+		if !wantOK {
+			details.WriteString("+ catalog added\n")
+		}
+		if !gotOK {
+			details.WriteString("- catalog removed\n")
+		}
+		removed, added := changedCatalogDiagnostics(wantDiagnostics, gotDiagnostics)
+		for _, diagnostic := range removed {
+			changedCodes[diagnostic.Code] = struct{}{}
+			fmt.Fprintf(&details, "- %s\n", formatCatalogDiagnostic(diagnostic))
+		}
+		for _, diagnostic := range added {
+			changedCodes[diagnostic.Code] = struct{}{}
+			fmt.Fprintf(&details, "+ %s\n", formatCatalogDiagnostic(diagnostic))
+		}
+	}
+	if details.Len() == 0 {
+		return ""
+	}
+	codes := sortedKeys(changedCodes)
+	if len(codes) == 0 {
+		return "changed diagnostic codes: none (catalog set changed)\n" + details.String()
+	}
+	return "changed diagnostic codes: " + strings.Join(codes, ", ") + "\n" + details.String()
+}
+
+func changedCatalogDiagnostics(
+	want []catalogDiagnosticRecord,
+	got []catalogDiagnosticRecord,
+) (removed []catalogDiagnosticRecord, added []catalogDiagnosticRecord) {
+	remaining := make(map[catalogDiagnosticRecord]int, len(want))
+	for _, diagnostic := range want {
+		remaining[diagnostic]++
+	}
+	for _, diagnostic := range got {
+		if remaining[diagnostic] != 0 {
+			remaining[diagnostic]--
+			continue
+		}
+		added = append(added, diagnostic)
+	}
+	for diagnostic, count := range remaining {
+		for range count {
+			removed = append(removed, diagnostic)
+		}
+	}
+	sortCatalogDiagnosticRecords(removed)
+	sortCatalogDiagnosticRecords(added)
+	return removed, added
+}
+
+func sortCatalogDiagnosticRecords(diagnostics []catalogDiagnosticRecord) {
+	sort.Slice(diagnostics, func(i, j int) bool {
+		left, right := diagnostics[i], diagnostics[j]
+		if left.Code != right.Code {
+			return left.Code < right.Code
+		}
+		if left.Subject != right.Subject {
+			return left.Subject < right.Subject
+		}
+		return left.Detail < right.Detail
+	})
+}
+
+func formatCatalogDiagnostic(diagnostic catalogDiagnosticRecord) string {
+	return fmt.Sprintf(
+		"%s subject=%q detail=%q",
+		diagnostic.Code,
+		diagnostic.Subject,
+		diagnostic.Detail,
+	)
 }
 
 func TestInstructionHierarchy(t *testing.T) {
@@ -511,14 +990,14 @@ func TestSemanticOwnerRegistry(t *testing.T) {
 	}
 }
 
-func TestCatalogMutation(t *testing.T) {
-	t.Parallel()
+type catalogMutationTest struct {
+	name string
+	code string
+	edit func(t *testing.T, assets fstest.MapFS)
+}
 
-	tests := []struct {
-		name string
-		code string
-		edit func(t *testing.T, assets fstest.MapFS)
-	}{
+func catalogMutationTests() []catalogMutationTest {
+	return []catalogMutationTest{
 		{
 			name: "duplicate JSON key",
 			code: "catalog.json.key.duplicate",
@@ -695,10 +1174,7 @@ func TestCatalogMutation(t *testing.T) {
 			code: "catalog.profile.formatter.goldenDigest.mismatch",
 			edit: func(t *testing.T, assets fstest.MapFS) {
 				t.Helper()
-				path := "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md"
-				asset := assets[path]
-				asset.Data = append(append([]byte(nil), asset.Data...), []byte("\ndrift\n")...)
-				assets[path] = asset
+				addFormatterGoldenDrift(t, assets)
 			},
 		},
 		{
@@ -780,8 +1256,12 @@ func TestCatalogMutation(t *testing.T) {
 			},
 		},
 	}
+}
 
-	for _, test := range tests {
+func TestCatalogMutation(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range catalogMutationTests() {
 		t.Run(test.name, func(t *testing.T) {
 			assets := cloneEmbeddedAssets(t)
 			test.edit(t, assets)
@@ -801,14 +1281,14 @@ func TestCatalogMutation(t *testing.T) {
 	}
 }
 
-func TestToolingAuthorityCannotBeDisabled(t *testing.T) {
-	t.Parallel()
+type catalogToolingAuthorityTest struct {
+	name string
+	code string
+	edit func(t *testing.T, assets fstest.MapFS)
+}
 
-	tests := []struct {
-		name string
-		code string
-		edit func(t *testing.T, assets fstest.MapFS)
-	}{
+func catalogToolingAuthorityTests() []catalogToolingAuthorityTest {
+	return []catalogToolingAuthorityTest{
 		{
 			name: "Profile omits the universal rule",
 			code: "catalog.tooling-authority.profile.rule.missing",
@@ -846,7 +1326,12 @@ func TestToolingAuthorityCannotBeDisabled(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
+}
+
+func TestToolingAuthorityCannotBeDisabled(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range catalogToolingAuthorityTests() {
 		t.Run(test.name, func(t *testing.T) {
 			assets := cloneEmbeddedAssets(t)
 			test.edit(t, assets)
@@ -966,6 +1451,126 @@ func cloneEmbeddedAssets(t *testing.T) fstest.MapFS {
 		t.Fatalf("clone embedded assets: %v", err)
 	}
 	return assets
+}
+
+func addFormatterGoldenDrift(t *testing.T, assets fstest.MapFS) {
+	t.Helper()
+
+	const fixturePath = "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md"
+	asset := assets[fixturePath]
+	asset.Data = append(append([]byte(nil), asset.Data...), []byte("\ndrift\n")...)
+	assets[fixturePath] = asset
+}
+
+func newGoldenDigestCycleFixture(t *testing.T) fstest.MapFS {
+	t.Helper()
+
+	assets := cloneEmbeddedAssets(t)
+	addFormatterGoldenDrift(t, assets)
+	return assets
+}
+
+func mustEmbeddedCatalogForRegeneration(t *testing.T) *Catalog {
+	t.Helper()
+
+	catalog, err := loadEmbeddedCatalogForRegeneration()
+	if err != nil {
+		t.Fatalf("load embedded Baseline catalog for regeneration: %v", err)
+	}
+	return catalog
+}
+
+func requireCatalogDiagnostic(t *testing.T, err error, code string) {
+	t.Helper()
+
+	var validationErr *ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("load catalog error = %v, want *ValidationError", err)
+	}
+	if !validationErr.Has(code) {
+		t.Fatalf("load catalog diagnostics = %v, want %q", validationErr.Diagnostics, code)
+	}
+}
+
+func catalogDiagnosticByCode(t *testing.T, err error, code string) Diagnostic {
+	t.Helper()
+
+	var validationErr *ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("load catalog error = %v, want *ValidationError", err)
+	}
+	for _, diagnostic := range validationErr.Diagnostics {
+		if diagnostic.Code == code {
+			return diagnostic
+		}
+	}
+	t.Fatalf("load catalog diagnostics = %v, want %q", validationErr.Diagnostics, code)
+	return Diagnostic{}
+}
+
+func addRequiredClauseWithoutManifestRow(t *testing.T, assets fstest.MapFS) {
+	t.Helper()
+
+	replaceAsset(
+		t,
+		assets,
+		"modules/core.json",
+		`"clauses": [
+        {
+          "id": "clause.core.fix-root-causes",`,
+		`"clauses": [
+        {
+          "id": "clause.core.characterization-new-clause",
+          "enforcement": "mandatory",
+          "guidance": "Characterize a newly required clause."
+        },
+        {
+          "id": "clause.core.fix-root-causes",`,
+	)
+}
+
+func addRequiredRuleWithoutManifestRow(t *testing.T, assets fstest.MapFS) {
+	t.Helper()
+
+	replaceAsset(
+		t,
+		assets,
+		"modules/core.json",
+		`"rules": [
+        "rule.core.compact-root",`,
+		`"rules": [
+        "rule.core.characterization-new-rule",
+        "rule.core.compact-root",`,
+	)
+	replaceAsset(
+		t,
+		assets,
+		"modules/core.json",
+		`"rules": [
+    {
+      "id": "rule.core.compact-root",`,
+		`"rules": [
+    {
+      "id": "rule.core.characterization-new-rule",
+      "version": 1,
+      "coverage": [
+        "coverage.universal-safety"
+      ],
+      "guidance": "Characterize a newly required rule."
+    },
+    {
+      "id": "rule.core.compact-root",`,
+	)
+	replaceAsset(
+		t,
+		assets,
+		"profiles/standard-typescript-monorepo.json",
+		`"requiredRules": [
+    "rule.core.compact-root",`,
+		`"requiredRules": [
+    "rule.core.characterization-new-rule",
+    "rule.core.compact-root",`,
+	)
 }
 
 // removeProfileRule drops one rule from a profile's requiredRules by identity.

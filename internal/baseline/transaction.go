@@ -152,6 +152,28 @@ func BeginTransaction(
 	return beginTransaction(ctx, repository, document, nil)
 }
 
+func beginTransactionWithCatalog(
+	ctx context.Context,
+	repository string,
+	document PlanDocument,
+	catalog *Catalog,
+) (Transaction, error) {
+	if catalog == nil {
+		return nil, errors.New("begin Baseline transaction with catalog: catalog is required")
+	}
+	validate := func(ctx context.Context, repository string, document PlanDocument) error {
+		return validatePlanRepositoryWithCatalog(ctx, repository, document, catalog)
+	}
+	return beginFileTransaction(
+		ctx,
+		repository,
+		document,
+		nil,
+		validate,
+		verifyAppliedPlanState,
+	)
+}
+
 func beginTransaction(
 	ctx context.Context,
 	repository string,

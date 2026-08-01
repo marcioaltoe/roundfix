@@ -148,6 +148,95 @@ func TestPlanDeterminismAndNoMutation(t *testing.T) {
 	}
 }
 
+func TestRegenerationLoadsCatalogOnce(t *testing.T) {
+	originalAssets := embeddedAssets
+	assets := newGoldenDigestCycleFixture(t)
+	countedAssets := &catalogLoadCountingFS{FS: assets}
+	embeddedAssets = countedAssets
+	t.Cleanup(func() {
+		embeddedAssets = originalAssets
+	})
+
+	catalog, err := loadEmbeddedCatalogForRegeneration()
+	if err != nil {
+		t.Fatalf("load regeneration catalog: %v", err)
+	}
+	if countedAssets.loads != 1 {
+		t.Fatalf("initial regeneration embedded catalog loads = %d, want 1", countedAssets.loads)
+	}
+	repository := newAlignedTypeScriptRepository(t)
+	runPlanGit(t, repository, "init", "-q")
+	runPlanGit(t, repository, "config", "user.email", "fixture@example.invalid")
+	runPlanGit(t, repository, "config", "user.name", "Fixture Test")
+	runPlanGit(t, repository, "config", "commit.gpgsign", "false")
+	runPlanGit(t, repository, "add", ".")
+	runPlanGit(t, repository, "commit", "-qm", "seed regeneration fixture")
+	request := PlanRequest{
+		Repository:   repository,
+		ProfileID:    "standard-typescript-monorepo",
+		Decisions:    standardTypeScriptDecisions("make verify"),
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}
+	outcome, err := buildPlanWithCatalog(context.Background(), request, catalog)
+	if err != nil {
+		t.Fatalf("build regeneration plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("build regeneration plan result = %+v", outcome.Result)
+	}
+
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		repository,
+		*outcome.Plan,
+		outcome.Plan.PlanDigest,
+		catalog,
+	); err != nil {
+		t.Fatalf("apply regeneration plan: %v", err)
+	}
+	secondOutcome, err := buildPlanWithCatalog(context.Background(), request, catalog)
+	if err != nil {
+		t.Fatalf("build second regeneration plan: %v", err)
+	}
+	if secondOutcome.Plan == nil {
+		t.Fatalf("build second regeneration plan result = %+v", secondOutcome.Result)
+	}
+	if len(secondOutcome.Plan.FileChanges) != 0 {
+		t.Fatalf("second regeneration plan changes = %+v, want none", secondOutcome.Plan.FileChanges)
+	}
+	result, err := applyPlanWithCatalog(
+		context.Background(),
+		repository,
+		*secondOutcome.Plan,
+		secondOutcome.Plan.PlanDigest,
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("reapply regeneration plan: %v", err)
+	}
+	if result.State != "verified" || !strings.Contains(result.Message, "already applied") {
+		t.Fatalf("reapply regeneration plan result = %+v", result)
+	}
+	if countedAssets.loads != 1 {
+		t.Fatalf("regeneration embedded catalog loads = %d, want 1", countedAssets.loads)
+	}
+
+	_, err = LoadCatalog(assets)
+	requireCatalogDiagnostic(t, err, "catalog.profile.formatter.goldenDigest.mismatch")
+}
+
+type catalogLoadCountingFS struct {
+	fs.FS
+	loads int
+}
+
+func (counted *catalogLoadCountingFS) Open(name string) (fs.File, error) {
+	if name == "templates/index.json" {
+		counted.loads++
+	}
+	return counted.FS.Open(name)
+}
+
 func TestFormatterComposition(t *testing.T) {
 	repository := newAlignedTypeScriptRepository(t)
 	runPlanGit(t, repository, "init", "-q")
@@ -157,7 +246,7 @@ func TestFormatterComposition(t *testing.T) {
 	runPlanGit(t, repository, "add", ".")
 	runPlanGit(t, repository, "commit", "-qm", "seed formatter fixture")
 
-	outcome, err := BuildPlan(context.Background(), PlanRequest{
+	request := PlanRequest{
 		Repository: repository,
 		ProfileID:  "standard-typescript-monorepo",
 		Decisions: []DecisionValue{
@@ -176,7 +265,18 @@ func TestFormatterComposition(t *testing.T) {
 			{ID: "repository.extension.enabled", Value: false},
 		},
 		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
-	})
+	}
+	var (
+		catalog *Catalog
+		outcome PlanOutcome
+		err     error
+	)
+	if *updateBaselineDigests {
+		catalog = mustEmbeddedCatalogForRegeneration(t)
+		outcome, err = buildPlanWithCatalog(context.Background(), request, catalog)
+	} else {
+		outcome, err = BuildPlan(context.Background(), request)
+	}
 	if err != nil {
 		t.Fatalf(
 			"BuildPlan() formatter composition error = %v; %s",
@@ -189,7 +289,20 @@ func TestFormatterComposition(t *testing.T) {
 	}
 	plan := *outcome.Plan
 
-	catalog := mustEmbeddedCatalog(t)
+	if catalog == nil {
+		catalog = mustEmbeddedCatalog(t)
+	}
+	apply := ApplyPlan
+	if *updateBaselineDigests {
+		apply = func(
+			ctx context.Context,
+			repository string,
+			document PlanDocument,
+			confirmation string,
+		) (Result, error) {
+			return applyPlanWithCatalog(ctx, repository, document, confirmation, catalog)
+		}
+	}
 	profile, ok := catalog.Profile("standard-typescript-monorepo")
 	if !ok {
 		t.Fatal("standard TypeScript Profile is missing")
@@ -267,10 +380,10 @@ func TestFormatterComposition(t *testing.T) {
 		t.Fatalf("greenfield formatter composition created %q", specificRepositoryPath)
 	}
 
-	if _, err := ApplyPlan(context.Background(), repository, plan, plan.PlanDigest); err != nil {
+	if _, err := apply(context.Background(), repository, plan, plan.PlanDigest); err != nil {
 		t.Fatalf("ApplyPlan() formatter composition error = %v", err)
 	}
-	result, err := ApplyPlan(context.Background(), repository, plan, plan.PlanDigest)
+	result, err := apply(context.Background(), repository, plan, plan.PlanDigest)
 	if err != nil {
 		t.Fatalf("ApplyPlan() empty formatter reapply error = %v", err)
 	}

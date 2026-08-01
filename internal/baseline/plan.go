@@ -231,6 +231,14 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 	if err != nil {
 		return PlanOutcome{}, err
 	}
+	return buildPlanWithCatalog(ctx, request, catalog)
+}
+
+func buildPlanWithCatalog(
+	ctx context.Context,
+	request PlanRequest,
+	catalog *Catalog,
+) (PlanOutcome, error) {
 	initial, err := InspectRepository(ctx, request.Repository, nil)
 	if err != nil {
 		return PlanOutcome{}, err
@@ -326,7 +334,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 	preservationRequest := request.Preservation
 	preservationRequest.semanticOwners = semanticOwners
 
-	preservation, err := PlanRootPreservation(initial, preservationRequest)
+	preservation, err := planRootPreservationWithCatalog(initial, preservationRequest, catalog)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -396,7 +404,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		}
 	}
 	inspection := RepositoryInspection{Root: initial.Root, Identity: initial.Identity, Snapshot: snapshot}
-	preservation, err = PlanRootPreservation(inspection, preservationRequest)
+	preservation, err = planRootPreservationWithCatalog(inspection, preservationRequest, catalog)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -491,7 +499,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 	if err != nil {
 		return PlanOutcome{}, err
 	}
-	if err := ValidatePlanDocument(doc); err != nil {
+	if err := validatePlanDocumentWithCatalog(doc, catalog); err != nil {
 		return PlanOutcome{}, fmt.Errorf("validate assembled Baseline Plan: %w", err)
 	}
 	result := readyResult(doc.PlanDigest, doc.Warnings, alignment.Verification)
@@ -2247,6 +2255,24 @@ func computePlanDigest(document PlanDocument) (string, error) {
 // ValidatePlanDocument checks ordering, projection, exact postimages, and the
 // Plan Digest without consulting a checkout.
 func ValidatePlanDocument(document PlanDocument) error {
+	if err := validatePlanDocumentShape(document); err != nil {
+		return err
+	}
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		return fmt.Errorf("load Baseline catalog for plan validation: %w", err)
+	}
+	return validatePlanDocumentAgainstCatalog(document, catalog)
+}
+
+func validatePlanDocumentWithCatalog(document PlanDocument, catalog *Catalog) error {
+	if err := validatePlanDocumentShape(document); err != nil {
+		return err
+	}
+	return validatePlanDocumentAgainstCatalog(document, catalog)
+}
+
+func validatePlanDocumentShape(document PlanDocument) error {
 	if document.SchemaVersion != PlanSchemaVersion {
 		return fmt.Errorf("unsupported Baseline Plan schema %q", document.SchemaVersion)
 	}
@@ -2259,10 +2285,10 @@ func ValidatePlanDocument(document PlanDocument) error {
 	if err := validatePlanRepositoryIdentity(document.Repository); err != nil {
 		return err
 	}
-	catalog, err := LoadEmbeddedCatalog()
-	if err != nil {
-		return fmt.Errorf("load Baseline catalog for plan validation: %w", err)
-	}
+	return nil
+}
+
+func validatePlanDocumentAgainstCatalog(document PlanDocument, catalog *Catalog) error {
 	if document.Catalog.SchemaVersion != CatalogSchemaVersion() ||
 		document.Catalog.Digest != catalog.Digest() {
 		return errors.New("Baseline Plan catalog identity does not match the embedded catalog")
@@ -2503,6 +2529,29 @@ func ValidatePlanRepository(ctx context.Context, repository string, document Pla
 	if err := ValidatePlanDocument(document); err != nil {
 		return err
 	}
+	return validatePlanRepositoryState(ctx, repository, document)
+}
+
+func validatePlanRepositoryWithCatalog(
+	ctx context.Context,
+	repository string,
+	document PlanDocument,
+	catalog *Catalog,
+) error {
+	if catalog == nil {
+		return errors.New("validate Baseline Plan repository with catalog: catalog is required")
+	}
+	if err := validatePlanDocumentWithCatalog(document, catalog); err != nil {
+		return err
+	}
+	return validatePlanRepositoryState(ctx, repository, document)
+}
+
+func validatePlanRepositoryState(
+	ctx context.Context,
+	repository string,
+	document PlanDocument,
+) error {
 	root, identity, err := inspectRepositoryIdentity(ctx, repository, nil)
 	if err != nil {
 		return err
