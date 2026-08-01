@@ -708,14 +708,12 @@ func catalogDiagnosticFixtures() []catalogDiagnosticFixture {
 	}
 
 	for _, mutation := range catalogMutationTests() {
-		mutation := mutation
 		fixtures = append(fixtures, editedCatalogDiagnosticFixture(
 			"mutation/"+mutation.name,
 			mutation.edit,
 		))
 	}
 	for _, decisionID := range []string{"auth.provider", "identifier.strategy"} {
-		decisionID := decisionID
 		fixtures = append(fixtures, editedCatalogDiagnosticFixture(
 			"project-decision/missing "+decisionID,
 			func(t *testing.T, assets fstest.MapFS) {
@@ -731,7 +729,6 @@ func catalogDiagnosticFixtures() []catalogDiagnosticFixture {
 		))
 	}
 	for _, authority := range catalogToolingAuthorityTests() {
-		authority := authority
 		fixtures = append(fixtures, editedCatalogDiagnosticFixture(
 			"tooling-authority/"+authority.name,
 			authority.edit,
