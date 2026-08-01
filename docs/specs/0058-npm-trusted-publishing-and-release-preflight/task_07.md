@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0058-npm-trusted-publishing-and-release-preflight
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -77,3 +77,46 @@ window ends with the credential actually powerless.
 - `qa/qa-report-2026-07-31.md` → QA-003.
 - `docs/findings/2026-07-25-npm-trusted-publishing-and-release-preflight.md` →
   the Trusted Publishing recommendation this Spec implements.
+
+## Result
+
+The fallback-window closing procedure now couples the existing repository-side
+removals with npm's registry-side token shutdown. It names the per-package
+setting and all six Release Set coordinates, prohibits changing that setting
+before a complete release produces an empty fallback record, and requires the
+maintainer to reopen every package's settings and confirm the shutdown.
+
+### Focused checks
+
+- `rtk sed -n '108,194p' docs/user-guide/release-runbook.md` showed the
+  pre-change signal: the procedure removed the repository variable, secret,
+  and workflow fallback branch but contained no registry-side shutdown.
+- A focused `rtk ruby -e` assertion scoped to `## Closing the fallback window`
+  exited 0 and printed `PASS` for the six coordinates, empty-record ordering,
+  confirmation procedure, and preservation of the repository removals.
+- `rtk git diff --check` exited 0 after the runbook edit.
+- `rtk git -c core.fsmonitor=false status --short` and
+  `rtk git diff --name-only HEAD` listed only the release runbook and this task
+  file. The task file's pre-existing change is the Daemon-owned
+  `status: in_progress` transition; this implementation did not alter that
+  field.
+
+### Acceptance evidence
+
+1. The closing procedure identifies npm's token-publication control as a
+   per-package setting and lists `roundfix` plus all five `@roundfix/cli-*`
+   coordinates explicitly.
+2. The procedure says not to disallow token publication before a complete
+   tagged release has produced the required empty fallback record and explains
+   that doing so while the fallback is needed would break the release path.
+3. The confirmation step tells the maintainer to reopen each package's
+   settings, verify that token publication remains disallowed, and require all
+   six confirmations before treating the window as closed.
+4. Removal of `NPM_TRUSTED_PUBLISHING_FALLBACK`, the `NPM_TOKEN` repository
+   secret, and the bounded fallback branch in `release.yml` remains in the same
+   closing procedure with the same operational meaning.
+5. The focused changed-path postflight listed only
+   `docs/user-guide/release-runbook.md` and this task file; no workflow file is
+   modified by this Task.
+
+The commands under `## Verification` were not run; the Daemon owns that gate.

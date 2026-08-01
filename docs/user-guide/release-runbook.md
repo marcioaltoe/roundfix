@@ -167,8 +167,25 @@ prove another complete release.
 
 After the empty record exists, remove the repository variable (or set it to a
 value other than `1`) so an OIDC failure stops instead of retrying. Remove the
-`NPM_TOKEN` repository secret at the same time, then remove the bounded
-fallback branch from `release.yml` in a dedicated workflow change.
+`NPM_TOKEN` repository secret at the same time. Do not disallow token
+publication before that empty record exists: while any coordinate still needs
+the token fallback, disabling token publication would break the release path.
+
+As part of the same window-closing procedure, use npm package settings to
+disallow token publication with the per-package setting for each Release Set
+coordinate:
+
+- `roundfix`
+- `@roundfix/cli-darwin-arm64`
+- `@roundfix/cli-darwin-x64`
+- `@roundfix/cli-linux-arm64`
+- `@roundfix/cli-linux-x64`
+- `@roundfix/cli-win32-x64`
+
+Reopen each package's settings and confirm that its per-package setting still
+reports token publication as disallowed. The window is not closed until all
+six confirmations pass. Then remove the bounded fallback branch from
+`release.yml` in a dedicated workflow change.
 
 ## Release workflow failure vocabulary
 
