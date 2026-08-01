@@ -24,9 +24,12 @@ Spec owns the database and artifact halves.
 - Identifier strategy: not applicable — Run IDs, Artifact Root paths, and
   table names keep their existing identities; no project-owned Internal
   Identifier is created. Source: `docs/agents/domain.md`.
-- Authentication and HTTP: not applicable — all behavior is local SQLite
-  and filesystem maintenance; no authentication or HTTP surface. Source:
-  `docs/agents/cli.md`.
+- Authentication and HTTP: not applicable — the governing clause prohibits
+  reading, printing, committing, or generating secrets and forbids inventing
+  authentication, authorization, transport, or deployment policy; this Spec
+  handles no credential and opens no transport, since all behavior is local
+  SQLite and filesystem maintenance. Source:
+  `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0033 keeps the Run Event Journal
   pruned by its retention window (compaction reclaims pages, it never
   changes retention); ADR-0052 protects terminal completion — compaction
