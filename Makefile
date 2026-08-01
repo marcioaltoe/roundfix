@@ -97,6 +97,9 @@ baseline-digests: ## Regenerate derived Baseline digest artifacts
 	err_code="comparison_failed"; err_stage="comparison"; \
 	err_next="Rerun make baseline-digests; if the comparison keeps failing, inspect the derived artifact paths for unreadable files."; \
 	changed=$$(sort "$$raw" | comm -3 "$$snapshot" - | awk '{print $$2}' | sort -u) || exit $$?; \
+	err_code="strict_validation_failed"; err_stage="strict-validation"; err_retryable="false"; \
+	err_next="Read the strict catalog validation output above, repair any remaining inconsistency, then rerun make baseline-digests."; \
+	$(GO) test ./internal/baseline -run TestCatalogCompatibility -count=1 >&2 || { status=$$?; printf 'baseline-digests: strict validation failed\n' >&2; exit "$$status"; }; \
 	if [ -z "$$changed" ]; then result_changed=false; printf '%s\n' "baseline-digests: no changes; derived artifacts already match their canonical sources" >&2; else result_changed=true; printf '%s\n' "baseline-digests: regenerated" >&2; printf '%s\n' "$$changed" | sed 's/^/  /' >&2; fi; printf '{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":%s}\n' "$$result_changed"
 
 ##@ Build & Run

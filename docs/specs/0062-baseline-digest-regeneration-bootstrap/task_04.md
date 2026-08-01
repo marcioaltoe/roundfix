@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0062-baseline-digest-regeneration-bootstrap
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -78,3 +78,50 @@ abandoned. It is the authorized tooling change of this Spec.
 - `_prd.md` → Core Features 2; Project Constraints: Tooling authority.
 - `_techspec.md` → Build Order 4; Risks (deferral could mask a real mismatch).
 - ADR-0081, ADR-0085.
+
+## Result
+
+Added one ordinary `TestCatalogCompatibility` run after the post-regeneration
+artifact comparison and immediately before the existing success branch. The
+test omits `-update`, so it loads through the public strict catalog path after
+all five regeneration steps have rewritten their artifacts. A failure exits
+the recipe and reaches the existing structured failure trap with
+`errorCode: strict_validation_failed`, `stage: strict-validation`, and
+`retryable: false`.
+
+Focused checks:
+
+- Red signal: pre-change `rtk make -n baseline-digests` showed the five
+  `-update` steps proceeding directly through the post-scan and comparison to
+  the success output, with no strict validation invocation.
+- Post-change `rtk make -n baseline-digests` exited 0 and showed the unchanged
+  five-step list, pre/post derived-path scans, comparison, the new ordinary
+  strict validation, and then the unchanged success output.
+- `rtk go test ./internal/baseline -run TestCatalogCompatibility -count=1`
+  exited 0, exercising `LoadEmbeddedCatalog` against the current consistent
+  catalog without regeneration mode.
+- `rtk git diff --check` exited 0.
+- `rtk git -c core.fsmonitor=false status --short` and
+  `rtk git -c core.fsmonitor=false diff --name-only` exited 0 and listed only
+  `Makefile` and this task file.
+
+Acceptance evidence:
+
+1. The focused ordinary catalog-compatibility test accepted the current
+   consistent catalog, and recipe inspection shows the existing no-change
+   success branch remains after that check. The Daemon-owned end-to-end target
+   invocation remains under `## Verification`.
+2. The dry-run recipe places `stage: strict-validation` after every `-update`
+   step, the post-scan, and the changed-artifact comparison; its command omits
+   `-update`.
+3. The strict command preserves its nonzero status and exits the recipe on any
+   diagnostic. The existing EXIT trap then emits the structured failure with
+   `errorCode: strict_validation_failed` and `stage: strict-validation` rather
+   than reaching success output.
+4. The `Makefile` diff adds only the three strict-stage recipe lines. The
+   `BASELINE_DIGEST_STEPS`, `DERIVED_DIGEST_PATHS`, both scans, changed-artifact
+   comparison, and success-output line are unchanged.
+5. Final changed-path inspection is limited to `Makefile` and this task file;
+   the task status line was the pre-existing Daemon-owned change.
+
+The commands under `## Verification` were not run; the Daemon owns them.
