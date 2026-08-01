@@ -1,9 +1,12 @@
 ---
 spec: 0062-baseline-digest-regeneration-bootstrap
-status: active
+status: archived
 created: 2026-08-01
 surfaces: [backend, infra, docs]
+archived: "2026-08-01"
+source_slug: 0062-baseline-digest-regeneration-bootstrap
 ---
+
 
 # Baseline digest regeneration bootstrap
 
