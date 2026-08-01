@@ -1,14 +1,14 @@
 defaults:
-    artifact_dir: "artefatos/revisão"
+  artifact_dir: "artefatos/revisão"
 notify:
-    command: "printf 'execução concluída — ação necessária'"
+  command: "printf 'execução concluída — ação necessária'"
 profiles:
-    backend:
-        preferred:
-            runtime: codex
-            model: characterization-backend
-            reasoning_effort: high
-        fallbacks:
-            - runtime: claude
-              model: characterization-fallback
-              reasoning_effort: xhigh
+  backend:
+    preferred:
+      runtime: codex
+      model: characterization-backend
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: characterization-fallback
+        reasoning_effort: xhigh
