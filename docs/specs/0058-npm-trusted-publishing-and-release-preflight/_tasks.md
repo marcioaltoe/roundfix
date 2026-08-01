@@ -24,6 +24,9 @@ graph:
     - id: task_07
       file: task_07.md
       needs: [task_06]
+    - id: task_08
+      file: task_08.md
+      needs: [task_07]
 ---
 
 # Tasks — npm Trusted Publishing and release preflight
@@ -37,9 +40,10 @@ graph:
 | task_05 | Document the migration, window, and vocabulary  | docs  | medium     | task_04 |
 | task_06 | Attribute a publish failure to its actual cause | infra | medium     | task_05 |
 | task_07 | Document the registry-side token shutdown       | docs  | low        | task_06 |
+| task_08 | Confine the retained token without interpolating it | infra | medium | task_07 |
 
 Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 ·
-6 → task_06 · 7 → task_07
+6 → task_06 · 7 → task_07 · 8 → task_08
 
 The graph is a chain rather than a fan-out because tasks 01–04, 06 all mutate
 the single authorized file `.github/workflows/release.yml`. Parallel waves
