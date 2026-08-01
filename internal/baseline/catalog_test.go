@@ -173,6 +173,60 @@ func TestRegenerationBreaksGoldenDigestCycle(t *testing.T) {
 	})
 }
 
+func TestSourceBaselineManifestRowGuidance(t *testing.T) {
+	t.Parallel()
+
+	const baselineID = "baseline.standard-typescript-monorepo-0.0.1"
+	tests := []struct {
+		name      string
+		code      string
+		missingID string
+		assets    func(t *testing.T) fs.FS
+	}{
+		{
+			name:      "missing clause",
+			code:      "catalog.sourceBaseline.required-clause.missing",
+			missingID: "clause.core.characterization-new-clause",
+			assets: func(t *testing.T) fs.FS {
+				t.Helper()
+				assets := cloneEmbeddedAssets(t)
+				addRequiredClauseWithoutManifestRow(t, assets)
+				return assets
+			},
+		},
+		{
+			name:      "missing rule",
+			code:      "catalog.sourceBaseline.required-rule.missing",
+			missingID: "rule.core.characterization-new-rule",
+			assets: func(t *testing.T) fs.FS {
+				t.Helper()
+				assets := cloneEmbeddedAssets(t)
+				addRequiredRuleWithoutManifestRow(t, assets)
+				return assets
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := LoadCatalog(test.assets(t))
+			diagnostic := catalogDiagnosticByCode(t, err, test.code)
+			if diagnostic.Code != test.code {
+				t.Fatalf("diagnostic code = %q, want %q", diagnostic.Code, test.code)
+			}
+			if diagnostic.Path != baselineID {
+				t.Fatalf("diagnostic subject = %q, want %q", diagnostic.Path, baselineID)
+			}
+			wantDetail := test.missingID + "; the regenerator maintains manifest rows but never creates them, so add this row first"
+			if diagnostic.Info != wantDetail {
+				t.Fatalf("diagnostic detail = %q, want %q", diagnostic.Info, wantDetail)
+			}
+		})
+	}
+}
+
 func TestSourceMachinePathRecognizesMarkdownAndFileURLs(t *testing.T) {
 	t.Parallel()
 
@@ -690,22 +744,7 @@ func catalogDiagnosticFixtures() []catalogDiagnosticFixture {
 			"source-baseline/new required clause",
 			func(t *testing.T, assets fstest.MapFS) {
 				t.Helper()
-				replaceAsset(
-					t,
-					assets,
-					"modules/core.json",
-					`"clauses": [
-        {
-          "id": "clause.core.fix-root-causes",`,
-					`"clauses": [
-        {
-          "id": "clause.core.characterization-new-clause",
-          "enforcement": "mandatory",
-          "guidance": "Characterize a newly required clause."
-        },
-        {
-          "id": "clause.core.fix-root-causes",`,
-				)
+				addRequiredClauseWithoutManifestRow(t, assets)
 			},
 		),
 		editedCatalogDiagnosticFixture(
@@ -1454,6 +1493,87 @@ func requireCatalogDiagnostic(t *testing.T, err error, code string) {
 	if !validationErr.Has(code) {
 		t.Fatalf("load catalog diagnostics = %v, want %q", validationErr.Diagnostics, code)
 	}
+}
+
+func catalogDiagnosticByCode(t *testing.T, err error, code string) Diagnostic {
+	t.Helper()
+
+	var validationErr *ValidationError
+	if !errors.As(err, &validationErr) {
+		t.Fatalf("load catalog error = %v, want *ValidationError", err)
+	}
+	for _, diagnostic := range validationErr.Diagnostics {
+		if diagnostic.Code == code {
+			return diagnostic
+		}
+	}
+	t.Fatalf("load catalog diagnostics = %v, want %q", validationErr.Diagnostics, code)
+	return Diagnostic{}
+}
+
+func addRequiredClauseWithoutManifestRow(t *testing.T, assets fstest.MapFS) {
+	t.Helper()
+
+	replaceAsset(
+		t,
+		assets,
+		"modules/core.json",
+		`"clauses": [
+        {
+          "id": "clause.core.fix-root-causes",`,
+		`"clauses": [
+        {
+          "id": "clause.core.characterization-new-clause",
+          "enforcement": "mandatory",
+          "guidance": "Characterize a newly required clause."
+        },
+        {
+          "id": "clause.core.fix-root-causes",`,
+	)
+}
+
+func addRequiredRuleWithoutManifestRow(t *testing.T, assets fstest.MapFS) {
+	t.Helper()
+
+	replaceAsset(
+		t,
+		assets,
+		"modules/core.json",
+		`"rules": [
+        "rule.core.compact-root",`,
+		`"rules": [
+        "rule.core.characterization-new-rule",
+        "rule.core.compact-root",`,
+	)
+	replaceAsset(
+		t,
+		assets,
+		"modules/core.json",
+		`"rules": [
+    {
+      "id": "rule.core.compact-root",`,
+		`"rules": [
+    {
+      "id": "rule.core.characterization-new-rule",
+      "version": 1,
+      "coverage": [
+        "coverage.universal-safety"
+      ],
+      "guidance": "Characterize a newly required rule."
+    },
+    {
+      "id": "rule.core.compact-root",`,
+	)
+	replaceAsset(
+		t,
+		assets,
+		"profiles/standard-typescript-monorepo.json",
+		`"requiredRules": [
+    "rule.core.compact-root",`,
+		`"requiredRules": [
+    "rule.core.characterization-new-rule",
+    "rule.core.compact-root",`,
+	)
 }
 
 // removeProfileRule drops one rule from a profile's requiredRules by identity.

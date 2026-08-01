@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0062-baseline-digest-regeneration-bootstrap
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -72,3 +72,48 @@ limitation legible at the moment it bites.
 
 - `_prd.md` → Core Features 3; Non-Goals (not generating manifest rows).
 - `_techspec.md` → API Contracts; Build Order 5.
+
+## Result
+
+### Implementation
+
+- Extended only the `required-clause.missing` and `required-rule.missing`
+  diagnostic details with one shared sentence: the regenerator maintains
+  manifest rows but never creates them, so the named row must be added first.
+- Kept each existing diagnostic code and Source Baseline subject unchanged.
+  The missing clause or rule identifier remains the first part of the detail.
+- Added a package-level table test that constructs a newly required clause and
+  rule without adding manifest rows, then asserts each exact code, subject, and
+  guided detail. The fixture never creates or infers a manifest row.
+- Re-recorded the characterization corpus. Its diff changes only the detail of
+  the existing missing-rule records and the existing missing-clause record.
+
+### Focused checks
+
+- Red signal before the production edit:
+  `GOCACHE=/private/tmp/roundfix-task05-gocache rtk proxy go test ./internal/baseline -run '^TestSourceBaselineManifestRowGuidance$/^missing (clause|rule)$' -count=1`
+  exited 1 because both details contained only their missing identifiers.
+- `GOCACHE=/private/tmp/roundfix-task05-gocache rtk go test ./internal/baseline -run '^TestCatalogDiagnosticCharacterization$' -update-catalog-diagnostics -count=1`
+  exited 0 and re-recorded the intentional message changes.
+- `GOCACHE=/private/tmp/roundfix-task05-gocache rtk go test ./internal/baseline -run '^(TestSourceBaselineManifestRowGuidance|TestCatalogDiagnosticCharacterization)$' -count=1`
+  exited 0 with 5 passing test and subtest results after the final code edit.
+- `rtk git diff --check` exited 0.
+- The Task's declared `## Verification` commands were not run; they remain for
+  the Daemon.
+
+### Acceptance-criterion evidence
+
+1. `TestSourceBaselineManifestRowGuidance/missing_clause` passed while
+   asserting the exact missing clause identifier and the regenerator guidance.
+2. `TestSourceBaselineManifestRowGuidance/missing_rule` passed with the same
+   assertions for a required rule without a manifest row.
+3. The table test asserts the byte-identical codes
+   `catalog.sourceBaseline.required-clause.missing` and
+   `catalog.sourceBaseline.required-rule.missing`; the production diff changes
+   only the detail arguments at their existing call sites.
+4. `TestCatalogDiagnosticCharacterization` passed, and the golden diff contains
+   only three detail replacements under those two codes; no other diagnostic
+   record changed.
+5. `rtk git -c core.fsmonitor=false status --short` listed only this Task file,
+   `internal/baseline/catalog_validate.go`, `internal/baseline/catalog_test.go`,
+   and `internal/baseline/testdata/catalog.diagnostics.golden.json`.

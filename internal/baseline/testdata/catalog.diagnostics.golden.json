@@ -70,12 +70,12 @@
         {
           "code": "catalog.sourceBaseline.required-rule.missing",
           "subject": "baseline.standard-typescript-monorepo-0.0.1",
-          "detail": "rule.bun.package-manager"
+          "detail": "rule.bun.package-manager; the regenerator maintains manifest rows but never creates them, so add this row first"
         },
         {
           "code": "catalog.sourceBaseline.required-rule.missing",
           "subject": "baseline.standard-typescript-monorepo-0.0.1",
-          "detail": "rule.bun.warning-free-verification"
+          "detail": "rule.bun.warning-free-verification; the regenerator maintains manifest rows but never creates them, so add this row first"
         },
         {
           "code": "catalog.transition.target.unknown",
@@ -359,7 +359,7 @@
         {
           "code": "catalog.sourceBaseline.required-clause.missing",
           "subject": "baseline.standard-typescript-monorepo-0.0.1",
-          "detail": "clause.core.characterization-new-clause"
+          "detail": "clause.core.characterization-new-clause; the regenerator maintains manifest rows but never creates them, so add this row first"
         }
       ]
     },
