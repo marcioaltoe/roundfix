@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0062-baseline-digest-regeneration-bootstrap
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -95,3 +95,69 @@ re-acquires — and adds a guard that fails when a future call site breaks it.
 - `_techspec.md` → System Architecture; Build Order 3 and 4.
 - `qa/qa-report-2026-08-01.md` → F-01.
 - ADR-0085.
+
+## Result
+
+Threaded the regeneration catalog through the complete formatter-composition
+planning and apply path. Package-local catalog-aware entry points now cover
+root preservation, plan-document validation, repository validation, and
+transaction setup. The existing public `BuildPlan`, `ApplyPlan`,
+`PlanRootPreservation`, `ValidatePlanDocument`, `ValidatePlanRepository`, and
+`BeginTransaction` signatures remain unchanged; callers that do not opt into
+threading retain their independent strict embedded-catalog acquisition.
+
+Added `TestRegenerationLoadsCatalogOnce` at the existing formatter-composition
+suite boundary. It wraps the stale-pin embedded fixture with a real filesystem
+load counter, acquires one regeneration catalog, builds and applies through the
+real plan/transaction path, builds again against the resulting Setup Manifest,
+and requires the second plan to contain no file changes. It then loads the same
+still-inconsistent fixture strictly and requires the formatter-digest mismatch,
+so the final strict-validation contract remains effective.
+
+Focused checks:
+
+- Red signal: before the catalog-aware apply path existed, the temporarily
+  named focused regression failed at the first apply with
+  `catalog.profile.formatter.goldenDigest.mismatch`; the strict apply stage had
+  re-acquired the stale embedded catalog.
+- The same temporarily named regression exited 0 after the implementation,
+  including its first apply, zero-change second plan, already-applied second
+  apply, one-load assertion, and strict-load negative assertion. The final test
+  name is `TestRegenerationLoadsCatalogOnce`; its declared full command remains
+  for Daemon Verification.
+- Focused `TestFormatterComposition -update` exited 0 and exercised the actual
+  regeneration-mode planning and apply wiring. Focused ordinary
+  `TestFormatterComposition` also exited 0 through the public strict path.
+- Focused `TestApplyExactDigest` and
+  `TestPreservationPreviouslyBackedUpRootGuidanceIsNotReclassified` runs exited
+  0 (four tests/subtests), exercising non-regeneration public apply and
+  preservation behavior.
+- `rtk gofmt -w` on the five changed Go files exited 0.
+- The focused characterization-corpus `git diff --exit-code` check exited 0;
+  the diagnostic golden is byte-unchanged.
+- `rtk git diff --check` exited 0.
+- `rtk git -c core.fsmonitor=false status --short` lists only
+  `internal/baseline/` paths and this task file; the task status line was the
+  pre-existing Daemon-owned change.
+
+Acceptance evidence:
+
+1. The stale-pin regression completed its first plan/apply with the originally
+   acquired regeneration catalog. Its second build produced zero file changes,
+   and applying that second plan reported the already-applied verified state.
+2. The regression counts a required catalog asset read once per acquisition
+   and requires exactly one read after both planning/apply invocations. Any
+   nested embedded-catalog acquisition increments the count and fails the test;
+   before threading apply, the nested strict acquisition instead failed even
+   earlier on the stale pin.
+3. After the regeneration operations, strict `LoadCatalog` against the same
+   deliberately unrepaired fixture still produced
+   `catalog.profile.formatter.goldenDigest.mismatch`, preserving the target's
+   strict closing signal for a genuinely inconsistent result.
+4. Public non-regeneration signatures and strict wrappers are unchanged. The
+   focused ordinary formatter, apply, and preservation checks all exited 0.
+5. The diagnostic characterization golden has no byte diff.
+6. Final changed-path inspection is bounded to `internal/baseline/` and this
+   task file.
+
+The commands under `## Verification` were not run; the Daemon owns them.

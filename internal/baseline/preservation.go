@@ -527,6 +527,14 @@ func PlanRootPreservation(
 	inspection RepositoryInspection,
 	request RootPreservationRequest,
 ) (RootPreservationPlan, error) {
+	return planRootPreservationWithCatalog(inspection, request, nil)
+}
+
+func planRootPreservationWithCatalog(
+	inspection RepositoryInspection,
+	request RootPreservationRequest,
+	catalog *Catalog,
+) (RootPreservationPlan, error) {
 	if request.Mode != PreservationModeGreenfield && request.Mode != PreservationModePreservation {
 		return RootPreservationPlan{}, fmt.Errorf(
 			"plan root-instruction preservation: unsupported mode %q",
@@ -544,7 +552,10 @@ func PlanRootPreservation(
 		return RootPreservationPlan{}, err
 	}
 	plan.Findings = append(plan.Findings, findings...)
-	retainsRepositoryRules, err := currentSetupRetainsRecognizedRepositoryRules(inspection.Root)
+	retainsRepositoryRules, err := currentSetupRetainsRecognizedRepositoryRulesWithCatalog(
+		inspection.Root,
+		catalog,
+	)
 	if err != nil {
 		return RootPreservationPlan{}, err
 	}
@@ -731,6 +742,13 @@ func loadRecognizedRepositoryRuleSources(
 }
 
 func currentSetupRetainsRecognizedRepositoryRules(rootPath string) (bool, error) {
+	return currentSetupRetainsRecognizedRepositoryRulesWithCatalog(rootPath, nil)
+}
+
+func currentSetupRetainsRecognizedRepositoryRulesWithCatalog(
+	rootPath string,
+	catalog *Catalog,
+) (bool, error) {
 	manifestBytes, err := readOptionalRegular(rootPath, manifestPath)
 	if err != nil {
 		return false, fmt.Errorf("read current Setup Manifest ownership: %w", err)
@@ -749,9 +767,11 @@ func currentSetupRetainsRecognizedRepositoryRules(rootPath string) (bool, error)
 		manifest.Generator.Baseline != "baseline."+manifest.Profile+"-"+ManifestVersion {
 		return false, nil
 	}
-	catalog, err := LoadEmbeddedCatalog()
-	if err != nil {
-		return false, fmt.Errorf("load catalog for Setup Manifest ownership: %w", err)
+	if catalog == nil {
+		catalog, err = LoadEmbeddedCatalog()
+		if err != nil {
+			return false, fmt.Errorf("load catalog for Setup Manifest ownership: %w", err)
+		}
 	}
 	if manifest.CatalogDigest != catalog.Digest() {
 		return false, nil

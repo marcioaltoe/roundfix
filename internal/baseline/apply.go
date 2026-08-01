@@ -45,6 +45,29 @@ func ApplyPlan(
 	document PlanDocument,
 	confirmation string,
 ) (Result, error) {
+	return applyPlan(ctx, repository, document, confirmation, nil)
+}
+
+func applyPlanWithCatalog(
+	ctx context.Context,
+	repository string,
+	document PlanDocument,
+	confirmation string,
+	catalog *Catalog,
+) (Result, error) {
+	if catalog == nil {
+		return Result{}, errors.New("apply Baseline Plan with catalog: catalog is required")
+	}
+	return applyPlan(ctx, repository, document, confirmation, catalog)
+}
+
+func applyPlan(
+	ctx context.Context,
+	repository string,
+	document PlanDocument,
+	confirmation string,
+	catalog *Catalog,
+) (Result, error) {
 	if ctx == nil {
 		return Result{}, applyError(
 			ApplyErrorInvalid,
@@ -55,11 +78,17 @@ func ApplyPlan(
 	if err := ctx.Err(); err != nil {
 		return Result{}, err
 	}
-	if err := ValidatePlanDocument(document); err != nil {
+	var validationErr error
+	if catalog == nil {
+		validationErr = ValidatePlanDocument(document)
+	} else {
+		validationErr = validatePlanDocumentWithCatalog(document, catalog)
+	}
+	if validationErr != nil {
 		return Result{}, applyError(
 			ApplyErrorInvalid,
 			"generate a new plan with roundfix baseline plan and approve that exact document",
-			fmt.Errorf("validate supplied Baseline Plan: %w", err),
+			fmt.Errorf("validate supplied Baseline Plan: %w", validationErr),
 		)
 	}
 	if confirmation != document.PlanDigest {
@@ -82,7 +111,12 @@ func ApplyPlan(
 		return verifiedApplyResult(document, document.Postimages, true), nil
 	}
 
-	transaction, err := BeginTransaction(ctx, repository, document)
+	var transaction Transaction
+	if catalog == nil {
+		transaction, err = BeginTransaction(ctx, repository, document)
+	} else {
+		transaction, err = beginTransactionWithCatalog(ctx, repository, document, catalog)
+	}
 	if err != nil {
 		// A mixed pre/postimage can be an interrupted transaction. BeginTransaction
 		// recovers it before returning; classify any remaining mismatch as stale.

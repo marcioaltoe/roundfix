@@ -334,7 +334,7 @@ func buildPlanWithCatalog(
 	preservationRequest := request.Preservation
 	preservationRequest.semanticOwners = semanticOwners
 
-	preservation, err := PlanRootPreservation(initial, preservationRequest)
+	preservation, err := planRootPreservationWithCatalog(initial, preservationRequest, catalog)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -404,7 +404,7 @@ func buildPlanWithCatalog(
 		}
 	}
 	inspection := RepositoryInspection{Root: initial.Root, Identity: initial.Identity, Snapshot: snapshot}
-	preservation, err = PlanRootPreservation(inspection, preservationRequest)
+	preservation, err = planRootPreservationWithCatalog(inspection, preservationRequest, catalog)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -2529,6 +2529,29 @@ func ValidatePlanRepository(ctx context.Context, repository string, document Pla
 	if err := ValidatePlanDocument(document); err != nil {
 		return err
 	}
+	return validatePlanRepositoryState(ctx, repository, document)
+}
+
+func validatePlanRepositoryWithCatalog(
+	ctx context.Context,
+	repository string,
+	document PlanDocument,
+	catalog *Catalog,
+) error {
+	if catalog == nil {
+		return errors.New("validate Baseline Plan repository with catalog: catalog is required")
+	}
+	if err := validatePlanDocumentWithCatalog(document, catalog); err != nil {
+		return err
+	}
+	return validatePlanRepositoryState(ctx, repository, document)
+}
+
+func validatePlanRepositoryState(
+	ctx context.Context,
+	repository string,
+	document PlanDocument,
+) error {
 	root, identity, err := inspectRepositoryIdentity(ctx, repository, nil)
 	if err != nil {
 		return err
