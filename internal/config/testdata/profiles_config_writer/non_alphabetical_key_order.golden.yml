@@ -1,0 +1,16 @@
+worktree:
+    concurrency: 3
+profiles:
+    backend:
+        preferred:
+            runtime: codex
+            model: characterization-backend
+            reasoning_effort: high
+        fallbacks:
+            - runtime: claude
+              model: characterization-fallback
+              reasoning_effort: xhigh
+defaults:
+    artifact_dir: artifacts
+budget:
+    max_run_duration: 90m

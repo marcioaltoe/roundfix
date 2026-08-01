@@ -1,0 +1,15 @@
+notify:
+    command: &bootstrap_command |
+        make bootstrap
+worktree:
+    bootstrap: *bootstrap_command
+profiles:
+    backend:
+        preferred:
+            runtime: codex
+            model: characterization-backend
+            reasoning_effort: high
+        fallbacks:
+            - runtime: claude
+              model: characterization-fallback
+              reasoning_effort: xhigh

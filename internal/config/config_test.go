@@ -3,6 +3,8 @@ package config
 import (
 	"bytes"
 	"context"
+	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +12,12 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+)
+
+var updateProfilesConfigGoldens = flag.Bool(
+	"update-profiles-config-goldens",
+	false,
+	"re-record profiles config writer characterization goldens",
 )
 
 func TestLoadAppliesConfigPrecedence(t *testing.T) {
@@ -582,6 +590,127 @@ runtimes:
 	if !profilesEqual(resolved.Profile, want) {
 		t.Fatalf("legacy default Codex profile mismatch\nwant: %#v\n got: %#v", want, resolved.Profile)
 	}
+}
+
+func TestProfilesConfigWriterCharacterization(t *testing.T) {
+	const corpusDir = "testdata/profiles_config_writer"
+	tests := []struct {
+		name string
+		file string
+	}{
+		{name: "five categories with Fallback Chains", file: "five_categories_with_fallback_chains"},
+		{name: "comments above and beside entries", file: "comments_above_and_beside_entries"},
+		{name: "non-default indentation", file: "non_default_indentation"},
+		{name: "non-alphabetical key order", file: "non_alphabetical_key_order"},
+		{name: "multiline scalar", file: "multiline_scalar"},
+		{name: "YAML anchor and alias", file: "yaml_anchor_and_alias"},
+		{name: "non-ASCII values", file: "non_ascii_values"},
+		{name: "empty file", file: "empty_file"},
+		{name: "no profiles section", file: "no_profiles_section"},
+	}
+	configuredProfiles := Profiles{
+		CategoryBackend: {
+			Profile: profileForTest(
+				selectionForTest("codex", "characterization-backend", "high"),
+				selectionForTest("claude", "characterization-fallback", "xhigh"),
+			),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputPath := filepath.Join(corpusDir, tt.file+".input.yml")
+			input, err := os.ReadFile(inputPath)
+			if err != nil {
+				t.Fatalf("read characterization config %q: %v", tt.file, err)
+			}
+
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+			mustMkdir(t, filepath.Dir(configPath))
+			if err := os.WriteFile(configPath, input, 0o644); err != nil {
+				t.Fatalf("write characterization config %q: %v", tt.file, err)
+			}
+
+			if _, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+				Scope:    InitScopeUser,
+				HomeDir:  homeDir,
+				WorkDir:  workDir,
+				Profiles: configuredProfiles,
+			}); err != nil {
+				t.Fatalf("write characterization config %q through current writer: %v", tt.file, err)
+			}
+			actual, err := os.ReadFile(configPath)
+			if err != nil {
+				t.Fatalf("read written characterization config %q: %v", tt.file, err)
+			}
+			if _, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir}); err != nil {
+				t.Fatalf("load written characterization config %q: %v", tt.file, err)
+			}
+
+			goldenPath := filepath.Join(corpusDir, tt.file+".golden.yml")
+			if *updateProfilesConfigGoldens {
+				if err := os.WriteFile(goldenPath, actual, 0o644); err != nil {
+					t.Fatalf("update characterization golden %q: %v", tt.file, err)
+				}
+				return
+			}
+			golden, err := os.ReadFile(goldenPath)
+			if err != nil {
+				t.Fatalf("read characterization golden %q: %v (re-record deliberately with -update-profiles-config-goldens)", tt.file, err)
+			}
+			if !bytes.Equal(actual, golden) {
+				t.Fatalf("characterization config %q changed:\n%s", tt.file, profilesConfigGoldenDiff(golden, actual))
+			}
+		})
+	}
+}
+
+func profilesConfigGoldenDiff(golden []byte, actual []byte) string {
+	goldenLines := strings.Split(string(golden), "\n")
+	actualLines := strings.Split(string(actual), "\n")
+	prefix := 0
+	for prefix < len(goldenLines) && prefix < len(actualLines) && goldenLines[prefix] == actualLines[prefix] {
+		prefix++
+	}
+	suffix := 0
+	for suffix < len(goldenLines)-prefix &&
+		suffix < len(actualLines)-prefix &&
+		goldenLines[len(goldenLines)-1-suffix] == actualLines[len(actualLines)-1-suffix] {
+		suffix++
+	}
+
+	const contextLines = 2
+	contextStart := max(0, prefix-contextLines)
+	goldenChangeEnd := len(goldenLines) - suffix
+	actualChangeEnd := len(actualLines) - suffix
+	contextEnd := min(len(goldenLines), goldenChangeEnd+contextLines)
+
+	var diff strings.Builder
+	diff.WriteString("--- golden\n+++ actual\n")
+	fmt.Fprintf(
+		&diff,
+		"@@ -%d,%d +%d,%d @@\n",
+		contextStart+1,
+		contextEnd-contextStart,
+		contextStart+1,
+		(prefix-contextStart)+(actualChangeEnd-prefix)+min(contextLines, suffix),
+	)
+	for _, line := range goldenLines[contextStart:prefix] {
+		fmt.Fprintf(&diff, " %s\n", line)
+	}
+	for _, line := range goldenLines[prefix:goldenChangeEnd] {
+		fmt.Fprintf(&diff, "-%s\n", line)
+	}
+	for _, line := range actualLines[prefix:actualChangeEnd] {
+		fmt.Fprintf(&diff, "+%s\n", line)
+	}
+	for _, line := range goldenLines[goldenChangeEnd:contextEnd] {
+		fmt.Fprintf(&diff, " %s\n", line)
+	}
+	return diff.String()
 }
 
 func TestProfileResolverPreferredOverridePreservesFallbackChain(t *testing.T) {

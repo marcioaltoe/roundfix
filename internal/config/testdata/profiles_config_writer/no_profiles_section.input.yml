@@ -1,0 +1,6 @@
+notify:
+  enabled: false
+watch:
+  max_rounds: 8
+worktree:
+  concurrency: 2

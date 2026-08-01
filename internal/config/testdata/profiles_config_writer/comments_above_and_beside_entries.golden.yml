@@ -1,0 +1,14 @@
+# Keep this comment above the watch settings.
+watch:
+    # The current poll interval is intentional.
+    poll_interval: 15s # beside a scalar entry
+profiles: # beside the profiles entry
+    backend:
+        preferred:
+            runtime: codex
+            model: characterization-backend
+            reasoning_effort: high
+        fallbacks:
+            - runtime: claude
+              model: characterization-fallback
+              reasoning_effort: xhigh
