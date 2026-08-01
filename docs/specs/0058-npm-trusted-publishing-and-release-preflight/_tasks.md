@@ -18,6 +18,12 @@ graph:
     - id: task_05
       file: task_05.md
       needs: [task_04]
+    - id: task_06
+      file: task_06.md
+      needs: [task_05]
+    - id: task_07
+      file: task_07.md
+      needs: [task_06]
 ---
 
 # Tasks — npm Trusted Publishing and release preflight
@@ -29,9 +35,18 @@ graph:
 | task_03 | Expose a publish-free preflight rehearsal       | infra | medium     | task_02 |
 | task_04 | Publish through OIDC with a bounded fallback    | infra | high       | task_03 |
 | task_05 | Document the migration, window, and vocabulary  | docs  | medium     | task_04 |
+| task_06 | Attribute a publish failure to its actual cause | infra | medium     | task_05 |
+| task_07 | Document the registry-side token shutdown       | docs  | low        | task_06 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 ·
+6 → task_06 · 7 → task_07
 
-The graph is a chain rather than a fan-out because tasks 01–04 all mutate the
-single authorized file `.github/workflows/release.yml`. Parallel waves would
-put two Agent Sessions in the same file.
+The graph is a chain rather than a fan-out because tasks 01–04, 06 all mutate
+the single authorized file `.github/workflows/release.yml`. Parallel waves
+would put two Agent Sessions in the same file.
+
+Tasks 06 and 07 are remediation slices added after the QA gate returned
+`fail` on 2026-07-31. They close QA-002 (every publish failure was attributed
+to identity and token-retried) and QA-003 (the runbook omitted the
+registry-side token shutdown). QA-001 was closed by amending the PRD, since
+npm offers no read-only way to verify the promise it made.

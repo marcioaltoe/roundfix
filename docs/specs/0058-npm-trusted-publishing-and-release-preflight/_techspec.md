@@ -108,7 +108,13 @@ The publish loop, preserving platform-before-launcher order:
 
 ```bash
 publish_coordinate() {           # $1 = package dir, $2 = coordinate name
-  ( cd "$1" && npm publish --access public ) && return 0
+  out="$( cd "$1" && npm publish --access public 2>&1 )" && return 0
+  # Attribution is evidence-based: only an authentication failure is identity.
+  if ! printf '%s' "$out" | grep -qE 'ENEEDAUTH|E401|Unable to authenticate'; then
+    echo "::error::publish: $2 failed for a non-identity reason"
+    printf '%s\n' "$out"                      # never retried with the token
+    return 1
+  fi
   if [ "${FALLBACK_WINDOW}" != "1" ]; then
     echo "::error::identity: $2 failed OIDC publish and the fallback window is closed"
     return 1
@@ -142,7 +148,8 @@ is unambiguous per PRD Core Feature 3:
 | --- | --- | --- |
 | `registry:` | coordinate ineligible — used version or cooldown, with the exact package and timestamp | preflight |
 | `undetermined:` | registry could not be read; eligibility unknown, nothing published | preflight |
-| `identity:` | OIDC authentication failed for a named coordinate | publish |
+| `identity:` | OIDC authentication failed for a named coordinate — the only cause that may reach the token fallback | publish |
+| `publish:` | the coordinate failed for a non-identity reason; the underlying error is surfaced and no retry happens | publish |
 | `runtime:` | npm or Node too old for Trusted Publishing | preflight |
 
 **Permissions.** `id-token: write` joins the existing `contents: write`. The
