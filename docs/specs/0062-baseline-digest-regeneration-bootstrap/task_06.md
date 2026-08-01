@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0062-baseline-digest-regeneration-bootstrap
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -77,3 +77,47 @@ still requires by hand.
 - `_prd.md` → Goals; Core Features 1 and 3.
 - `_techspec.md` → Build Order 6; Decisions.
 - ADR-0085.
+
+## Result
+
+### Implementation
+
+- Added a reference-style workflow page that confines regeneration mode to
+  `make baseline-digests` through the unexported `-update` path and states that
+  production, CLI, CI, and Verification loads remain strict.
+- Recorded the complete one-code deferred allowlist and the strict
+  re-validation that checks the deferred pin later in the same run.
+- Recorded the manual Source Baseline manifest-row step for a new Normative
+  Clause and the distinct recovery paths for a stale pin and a missing row.
+- Linked ADR-0085 for the decision instead of repeating its reasoning.
+
+### Focused checks
+
+- Pre-change signal: `rtk ls docs/workflow` listed only
+  `spec-implementation-loop.md` and `authorizations/`; the contract page did
+  not exist.
+- `rtk read docs/workflow/baseline-digest-regeneration.md` exited 0 and showed
+  the complete operating contract after the edit.
+- A focused `rg` scan for the strict boundary, exact deferred code, manifest
+  row, ADR-0085, and recovery command exited 0 with matches for every contract
+  element.
+- `rtk git diff --check` exited 0.
+- `rtk git -c core.fsmonitor=false status --short` listed only this Task file
+  and `docs/workflow/baseline-digest-regeneration.md`.
+- The Task's declared `## Verification` commands were not run; they remain for
+  the Daemon.
+
+### Acceptance-criterion evidence
+
+1. The opening and Boundary sections state that regeneration mode is
+   unreachable outside the regeneration path and enumerate the strict
+   production, CLI, CI, and Verification surfaces.
+2. Deferred diagnostic allowlist names only
+   `catalog.profile.formatter.goldenDigest.mismatch`; the following paragraph
+   states that strict re-validation closes the run and checks the pin later.
+3. Adding a Normative Clause says to add its Source Baseline manifest row by
+   hand before regenerating because the regenerator never creates rows.
+4. The opening links ADR-0085, while the page stays focused on the operating
+   contract.
+5. The focused status inspection listed no path outside `docs/workflow/` and
+   this Task file.
