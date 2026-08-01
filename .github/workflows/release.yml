@@ -4,13 +4,21 @@ on:
   push:
     tags:
       - "v*"
-
-permissions:
-  contents: write # create the GitHub Release and upload binary assets
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to evaluate (vMAJOR.MINOR.PATCH)"
+        required: true
+        type: string
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # mint the npm Trusted Publishing OIDC token
+      contents: write # create the GitHub Release and upload binary assets
+    env:
+      TARGET_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -21,36 +29,167 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
-      # The pushed tag is the single source of truth for the release version:
-      # it is injected into the binary (ldflags) and set on every npm package
-      # below, so nothing can disagree. Validate the tag is a semver version.
+      - name: Guard Trusted Publishing runtime
+        run: |
+          set -euo pipefail
+          npm_version="$(npm --version)"
+          if [ "$(printf '%s\n' "11.5.1" "$npm_version" | sort -V | head -n 1)" != "11.5.1" ]; then
+            echo "::error::runtime: npm $npm_version is below the Trusted Publishing floor 11.5.1"
+            exit 1
+          fi
+          echo "npm $npm_version satisfies the Trusted Publishing floor 11.5.1"
+
+      # A pushed tag remains the single source of truth for a release. A manual
+      # dispatch supplies only the version evaluated by the publish-free
+      # preflight. Validate either source as a semver version.
       - name: Validate tag
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${TARGET_VERSION#v}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            VERSION_SOURCE="input"
+          else
+            VERSION_SOURCE="tag"
+          fi
           if ! printf '%s' "$TAG" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
-            echo "::error::tag $GITHUB_REF_NAME is not a semver version (expected vMAJOR.MINOR.PATCH)"
+            echo "::error::$VERSION_SOURCE $TARGET_VERSION is not a semver version (expected vMAJOR.MINOR.PATCH)"
             exit 1
           fi
           OWNED_VERSION="$(jq -r .version dist/npm/roundfix/package.json)"
           if [ "$TAG" != "$OWNED_VERSION" ]; then
-            echo "::error::tag $GITHUB_REF_NAME does not match the checked-in Roundfix version $OWNED_VERSION"
+            echo "::error::$VERSION_SOURCE $TARGET_VERSION does not match the checked-in Roundfix version $OWNED_VERSION"
             exit 1
           fi
-          echo "releasing $TAG"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "preflighting $TAG"
+          else
+            echo "releasing $TAG"
+          fi
 
       # The full local gate must pass before any build or publish.
       - name: Verify gate
         run: make verify
+
+      - name: Publication preflight
+        run: |
+          set -euo pipefail
+          TAG="${TARGET_VERSION#v}"
+          CLASSIFY_JQ='if type != "object" or ((.versions? | type) != "object") or ((.time? | type) != "object") then error("invalid packument") elif (.versions | has($tag)) or (.time | has($tag)) then "used" elif (.time | has("unpublished")) then "cooldown" else "eligible" end'
+          RELEASE_SET="$RUNNER_TEMP/roundfix-release-set"
+          body="$(mktemp)"
+          trap 'rm -f "$body"' EXIT
+          blocked=0
+
+          if ! jq -nr \
+            --slurpfile platforms dist/npm/platforms.json \
+            --slurpfile launcher dist/npm/roundfix/package.json '
+              ($platforms[0] | map(.package)) as $platform_coordinates
+              | ($launcher[0].name) as $launcher_coordinate
+              | if (($platform_coordinates | length) == 5)
+                  and (all($platform_coordinates[]; type == "string" and startswith("@roundfix/cli-")))
+                  and (($platform_coordinates | unique | length) == 5)
+                  and ($launcher_coordinate == "roundfix")
+                then $platform_coordinates[], $launcher_coordinate
+                else error("invalid release set")
+                end
+            ' > "$RELEASE_SET"; then
+            echo "::error::undetermined: the release set could not be derived"
+            exit 1
+          fi
+
+          printf '%-36s %-12s %s\n' "PACKAGE" "VERSION" "STATE"
+          {
+            printf '### Publication preflight\n\n'
+            printf '| Package | Version | State |\n'
+            printf '| --- | --- | --- |\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          while IFS= read -r coordinate; do
+            state=""
+            reason=""
+            encoded_coordinate="$(jq -nr --arg coordinate "$coordinate" '$coordinate | @uri')"
+
+            if http_status="$(curl --silent --show-error --location \
+              --connect-timeout 10 --max-time 30 \
+              --output "$body" --write-out '%{http_code}' \
+              "https://registry.npmjs.org/$encoded_coordinate")"; then
+              case "$http_status" in
+                200)
+                  if ! state="$(jq -er --arg tag "$TAG" "$CLASSIFY_JQ" "$body" 2>/dev/null)"; then
+                    state="undetermined"
+                    reason="the registry body could not be parsed"
+                  fi
+                  ;;
+                404)
+                  state="absent"
+                  ;;
+                *)
+                  state="undetermined"
+                  reason="the registry returned HTTP $http_status"
+                  ;;
+              esac
+            else
+              state="undetermined"
+              reason="the registry transport failed"
+            fi
+
+            cooldown_until=""
+            if [ "$state" = "cooldown" ]; then
+              if ! cooldown_until="$(jq -er '
+                .time.unpublished
+                | if type == "object" then .time else . end
+                | select(type == "string" and length > 0)
+                | sub("\\.[0-9]+Z$"; "Z")
+                | fromdateiso8601 + 86400
+                | todateiso8601
+              ' "$body" 2>/dev/null)"; then
+                state="undetermined"
+                reason="the cooldown expiry could not be resolved"
+              fi
+            fi
+
+            printf '%-36s %-12s %s\n' "$coordinate" "$TAG" "$state"
+            printf '| `%s` | `%s` | `%s` |\n' "$coordinate" "$TAG" "$state" >> "$GITHUB_STEP_SUMMARY"
+
+            case "$state" in
+              eligible)
+                ;;
+              used)
+                echo "::error::registry: $coordinate@$TAG is already used"
+                blocked=1
+                ;;
+              cooldown)
+                echo "::error::registry: $coordinate@$TAG is in cooldown until $cooldown_until"
+                blocked=1
+                ;;
+              absent)
+                echo "::error::registry: $coordinate@$TAG is absent"
+                blocked=1
+                ;;
+              undetermined)
+                echo "::error::undetermined: $coordinate@$TAG: $reason"
+                blocked=1
+                ;;
+              *)
+                echo "::error::undetermined: $coordinate@$TAG: classifier returned '$state'"
+                blocked=1
+                ;;
+            esac
+          done < "$RELEASE_SET"
+
+          if [ "$blocked" -ne 0 ]; then
+            exit 1
+          fi
 
       # Cross-compile every target from one runner (Go needs no per-OS runner),
       # stage each binary into its per-platform npm package, pin versions to the
       # tag, and collect release assets named with GOOS+GOARCH tokens so the
       # Upgrade Command's platform selection resolves them.
       - name: Cross-compile and stage
+        if: ${{ github.event_name == 'push' }}
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME#v}"
@@ -80,18 +219,70 @@ jobs:
       # Publish the per-platform packages first so the launcher's
       # optionalDependencies resolve the moment it goes live.
       - name: Publish to npm
+        if: ${{ github.event_name == 'push' }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          FALLBACK_WINDOW: ${{ vars.NPM_TRUSTED_PUBLISHING_FALLBACK }}
+          NPM_FALLBACK_TOKEN: >-
+            ${{
+            secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
-          for pkgdir in dist/npm/packages/cli-*; do
-            ( cd "$pkgdir" && npm publish --access public )
-          done
-          ( cd dist/npm/roundfix && npm publish --access public )
+
+          npm_fallback_token="$NPM_FALLBACK_TOKEN"
+          unset NPM_FALLBACK_TOKEN
+          export -n npm_fallback_token
+          readonly npm_fallback_token
+
+          FALLBACK_LOG="$RUNNER_TEMP/roundfix-npm-token-fallback"
+          : > "$FALLBACK_LOG"
+
+          publish_coordinate() {
+            pkgdir="$1"
+            coordinate="$2"
+
+            out="$( cd "$pkgdir" && npm publish --access public 2>&1 )" && return 0
+
+            if ! printf '%s' "$out" | grep -qiE 'ENEEDAUTH|E401|Unable to authenticate'; then
+              echo "::error::publish: $coordinate failed for a non-identity reason"
+              printf '%s\n' "$out"
+              return 1
+            fi
+
+            if [ "$FALLBACK_WINDOW" != "1" ]; then
+              echo "::error::identity: $coordinate failed OIDC publish and the fallback window is closed"
+              return 1
+            fi
+
+            echo "::warning::identity: $coordinate failed OIDC publish; retrying with the bounded token fallback"
+            ( cd "$pkgdir" && NODE_AUTH_TOKEN="$npm_fallback_token" npm publish --access public ) || return 1
+            printf '%s\n' "$coordinate" >> "$FALLBACK_LOG"
+          }
+
+          while IFS= read -r coordinate; do
+            if [ "$coordinate" = "roundfix" ]; then
+              continue
+            fi
+            pkgdir="dist/npm/packages/cli-${coordinate#@roundfix/cli-}"
+            publish_coordinate "$pkgdir" "$coordinate"
+          done < "$RUNNER_TEMP/roundfix-release-set"
+          publish_coordinate "dist/npm/roundfix" "roundfix"
+
+          {
+            printf '### npm Trusted Publishing fallback\n\n'
+            if [ -s "$FALLBACK_LOG" ]; then
+              printf 'Coordinates that required the bounded token fallback:\n\n'
+              while IFS= read -r coordinate; do
+                printf -- '- `%s`\n' "$coordinate"
+              done < "$FALLBACK_LOG"
+            else
+              printf 'No coordinates required the bounded token fallback.\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # Upload the same binaries as GitHub Release assets to feed the Upgrade
       # Command's release channel.
       - name: GitHub Release
+        if: ${{ github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

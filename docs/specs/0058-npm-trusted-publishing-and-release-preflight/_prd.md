@@ -23,10 +23,14 @@ launcher. Evidence:
 - Identifier strategy: not applicable — package names, tags, and versions
   keep their existing identities; no project-owned Internal Identifier is
   created. Source: `docs/agents/domain.md`.
-- Authentication and HTTP: applicable — publication authentication moves
-  from a long-lived npm token to GitHub Actions OIDC Trusted Publishing;
-  no Roundfix-runtime authentication or HTTP surface changes, and registry
-  access stays inside the release workflow. Source: `docs/agents/cli.md`.
+- Authentication and HTTP: applicable — the governing clause prohibits
+  reading, printing, committing, or generating secrets and keeps credentials
+  inside the repository's existing secure configuration boundary, which binds
+  how the retained npm token is referenced. Publication authentication moves
+  from a long-lived npm token to GitHub Actions OIDC Trusted Publishing; no
+  Roundfix-runtime authentication or HTTP surface changes, and registry
+  access stays inside the release workflow. Source:
+  `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0031 keeps Roundfix shipping
   through npm platform packages with the existing layout; ADR-0048 keeps
   release planning read-only and confirmation-gated (the Release Plan
@@ -75,12 +79,17 @@ launcher. Evidence:
    publish grant.
 2. A publication preflight runs after Verification and before
    cross-compilation: for the launcher and all platform packages it
-   refuses an already-used exact version, detects a post-unpublish
-   cooldown, and detects missing ownership or trusted-publisher
-   configuration, emitting the exact blocked coordinate; no package
-   publishes unless every coordinate is eligible.
+   refuses an already-used exact version and detects a post-unpublish
+   cooldown, emitting the exact blocked coordinate; no package publishes
+   unless every coordinate is eligible. Ownership and trusted-publisher
+   configuration are explicitly out of the preflight's reach — npm exposes
+   no read-only way to verify either, so identity is proven by publishing
+   under the bounded fallback of ADR-0084 rather than by a pre-check.
 3. Identity migration and release-set preflight are separable failures: a
-   failed release names which one blocked it.
+   failed release names which one blocked it. Attribution is evidence-based
+   — only an authentication failure may be reported as identity, and a
+   publish that failed for any other reason is never retried with the
+   token.
 4. The long-lived `NPM_TOKEN` remains through one complete OIDC-proven
    release as rollback, then is removed and token publication disallowed
    for the owned packages; the runbook records the rollback window.
@@ -92,8 +101,9 @@ launcher. Evidence:
 ## User Experience
 
 - A blocked preflight prints one line per blocked coordinate with the
-  reason (version used, cooldown until when, ownership or publisher
-  configuration missing) and stops before any publish.
+  reason (version used, or cooldown until when) and stops before any
+  publish. A registry read that cannot be completed stops the release too,
+  but is reported as undetermined and never as an ineligible coordinate.
 - The release runbook documents the OIDC setup, the rollback window, and
   the preflight's failure vocabulary.
 
@@ -127,6 +137,18 @@ launcher. Evidence:
   checked where publication happens.
 - Migration and preflight are separate workflow steps so failures
   attribute cleanly.
+- Identity is unverifiable before publishing: npm never validates a
+  trusted-publisher configuration until a publish attempt, offers no
+  read-only check, and scopes configuration per package. The release set
+  therefore stays whole through a bounded per-coordinate token fallback
+  rather than a pre-check. See
+  [ADR-0084](../../adr/0084-a-bounded-token-fallback-proves-trusted-publishing.md).
+- This Spec evolves the release path and never regresses it. The declared
+  breaks are the authentication mechanism and the added preflight stop;
+  package names, asset names, publication ordering, changelog extraction,
+  and GitHub Release creation stay byte-compatible. A registry read that
+  cannot be completed is never reported as an ineligible coordinate, so a
+  legitimate release is never blocked by a false positive.
 
 ## Open Questions
 
