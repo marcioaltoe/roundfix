@@ -161,7 +161,6 @@ func TestRunDetachedCommandReportsSilentChildExitBeforeHandshake(t *testing.T) {
 
 func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time.Duration, runCreationTimeout time.Duration) (string, string, int) {
 	t.Helper()
-	t.Setenv(detachTestChildModeEnv, childMode)
 	oldTimeouts := detachTimeouts
 	detachTimeouts = detachPhaseTimeouts{
 		liveness:    livenessTimeout,
@@ -179,6 +178,8 @@ func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time
 		roundconfig.Loaded{GitRoot: t.TempDir(), HomeDir: t.TempDir()},
 		&stdout,
 		&stderr,
+		withEnvValue(commandEnvironmentFromProcess().environ, detachTestChildModeEnv, childMode),
+		t.TempDir(),
 	)
 	return stdout.String(), stderr.String(), code
 }

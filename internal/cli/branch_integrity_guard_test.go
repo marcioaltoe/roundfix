@@ -51,7 +51,7 @@ func TestBranchIntegrityIgnoresRunBranchesOwnedByOtherBranches(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected fetch to ignore the other branch's Run Branch, got %d stderr=%q", code, stderr.String())
@@ -100,7 +100,7 @@ func TestBranchIntegrityRejectsLocklessBypassRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected lockless Active Run refusal exit 2, got %d stderr=%q", code, stderr.String())
@@ -133,7 +133,7 @@ func TestReviewCleanTreeRefusalPrecedesAutoIntegration(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), branchIntegrityCommandArgs("resolve"), &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), branchIntegrityCommandArgs("resolve"), &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected dirty tracked refusal exit 2, got %d stderr=%q", code, stderr.String())
@@ -161,7 +161,7 @@ func TestBranchIntegrityBypassAuditFollowsProfileProof(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+		code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected probe failure exit 2, got %d stderr=%q", code, stderr.String())
@@ -186,7 +186,7 @@ func TestBranchIntegrityBypassAuditFollowsProfileProof(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+		code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected audit publish failure exit 2, got %d stderr=%q", code, stderr.String())

@@ -15,16 +15,17 @@ func styleFor(writer io.Writer) terminalStyle {
 }
 
 func colorEnabled(writer io.Writer) bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("ROUNDFIX_COLOR"))) {
+	environment, output := environmentForWriter(writer)
+	switch strings.ToLower(strings.TrimSpace(environment.colorMode)) {
 	case "always", "1", "true", "yes", "on":
 		return true
 	case "never", "0", "false", "no", "off":
 		return false
 	}
-	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
+	if environment.noColor != "" || environment.term == "dumb" {
 		return false
 	}
-	file, ok := writer.(*os.File)
+	file, ok := output.(*os.File)
 	if !ok {
 		return false
 	}

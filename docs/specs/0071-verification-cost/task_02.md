@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0071-verification-cost
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -70,3 +70,72 @@ boundary. No test declares parallelism yet — that is the next slice.
 - `_prd.md` → Core Features 1; Goals (uses the machine it runs on).
 - `_techspec.md` → Implementation Design: Interfaces; Build Order 2; Risks.
 - ADR-0089.
+
+## Result
+
+Implementation-ready for the Daemon-owned Verification step:
+
+- `Run` and `RunContext` now capture home, working directory, terminal/color
+  settings, detach values, child environment, Codex path, and branch actor once
+  in `commandEnvironmentFromProcess`. Command handlers receive that snapshot;
+  config loading, repository discovery, release planning, Setup/Doctor checks,
+  detach, and rendering no longer resolve those defaults themselves.
+- CLI tests now pass explicit home and working-directory values through
+  concurrency-safe test helpers. The package has 9 process-state mutations,
+  down from the recorded 38: 7 exercise TUI/color defaults and 2 exercise the
+  capability check's PATH default. Every remaining mutation has an adjacent
+  one-line reason.
+
+Acceptance evidence:
+
+1. `rg` over non-test `internal/cli` sources found `os.UserHomeDir`, `os.Getwd`,
+   `os.Getenv`, and `os.Environ` only in `commandEnvironmentFromProcess`.
+   `roundconfig.Load` now has one call site behind `loadCommandConfig`.
+2. Focused behavior check:
+   `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/cli -run '^(TestRunInitCreatesProjectConfigWithExplicitScope|TestRunSetupHealthyMachineIsIdempotent|TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest|TestRunGCDryRunListsEligibleRunsAndChangesNothing|TestRunArchiveMovesCompletedSpecAndStampsMetadata|TestRunSkillsInstallCopiesArtifactsToProjectByDefault|TestRunStopByRunIDRecordsStopRequest|TestEventsReplayDefaultAndFilterJSONLRecordsOnly|TestRunReconcileDryRunReadOnly|TestRunSettleRequiresSpecAndTask|TestReleasePlanCommandMatchesPRDOutcomes|TestProfilesConfigureFileWritesProjectProfileJSON|TestBaselineProfileCommandInitShowAndValidate|TestCapabilityRecheck|TestRunImplementValidationFailures|TestRunRunsWithoutSubcommandHonorsInteractivity|TestRunPreflightFailureColorsOutputWhenForced|TestAttachRunBrowserCancelExitsZeroWithoutAttaching)$' -count=1`
+   exercised 51 cases successfully across the affected command surfaces.
+3. `rg -c 't\.(Setenv|Chdir)\(' internal/cli -g '*_test.go'` reports 7 in
+   `cli_test.go` and 2 in `baseline_profile_test.go`; inspection with one line
+   of context confirms a reason immediately precedes every mutation.
+4. `git diff --exit-code -- docs/specs/0071-verification-cost/coverage-record.json`
+   exits 0; the task 01 coverage record is unchanged.
+5. `rg -n 't\.Parallel\(' internal/cli -g '*_test.go'` finds no matches. The
+   pre-existing declaration was removed and this Task added none.
+6. `git status --short` lists only this task file and paths under
+   `internal/cli/`. `git diff --check` exits 0.
+
+Additional focused compile evidence:
+`GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/cli -run '^$' -count=1`
+exits 0. The commands under `## Verification` were not run; the Daemon owns
+that gate.
+
+### Verification feedback repair — attempt 1
+
+The Daemon check exposed two gaps in the explicit test environment. A parent
+test's home/work override did not reach its subtests, and subprocess-based
+detach tests did not project the explicit home and working directory into the
+child process. This made those commands read the real Run Database or a
+different temporary home.
+
+The test environment registry now resolves overrides through the test-name
+ancestry and cleans each registration at its owning test boundary. Explicit
+home values are also projected into the child environment, and detached
+commands receive the command boundary's resolved working directory through
+`exec.Cmd.Dir`.
+
+Focused repair evidence:
+
+- Before the repair,
+  `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/cli -run '^TestRunReconcileInvalidSelectorsMutateNothing$' -count=1`
+  reproduced four failing cases, and the equivalent focused detach check
+  reproduced its child-environment failure.
+- After the repair,
+  `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/cli -run '^(TestRunReconcileInvalidSelectorsMutateNothing|TestRunRunsListStateFlagFiltersAndNotes|TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository|TestRunRunsListLimitBoundsNewestMatches|TestRunImplementDetachPrintsReportAndCompletesRun|TestRunImplementDetachSurvivesCallerProcessGroupKill)$' -count=1`
+  exercised all diagnostic test groups successfully: 20 cases.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/cli -run '^TestRunDetachedCommand' -count=1`
+  exercised 7 detach handshake cases successfully.
+- The mutation audit remains 9 documented process-default cases, the coverage
+  record remains unchanged, and `git diff --check` exits 0.
+
+The failed declared Verification command was not rerun; the Daemon owns its
+next full attempt.

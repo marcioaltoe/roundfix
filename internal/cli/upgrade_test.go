@@ -29,7 +29,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"upgrade"}, &stdout, &stderr)
+		code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("expected upgrade exit 0, got %d (stderr %q)", code, stderr.String())
@@ -57,7 +57,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"upgrade"}, &stdout, &stderr)
+		code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("expected upgrade exit 0, got %d", code)
@@ -81,7 +81,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"upgrade"}, &stdout, &stderr)
+		code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("expected upgrade exit 0, got %d", code)
@@ -106,7 +106,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"upgrade"}, &stdout, &stderr)
+		code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("expected upgrade exit 1, got %d", code)
@@ -132,7 +132,7 @@ func TestRunUpgradeCheckReportsAvailableWithoutInstalling(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"upgrade", "--check"}, &stdout, &stderr)
+	code := runCLI(t, []string{"upgrade", "--check"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected upgrade --check exit 0, got %d", code)
@@ -242,7 +242,7 @@ func TestVersionFreshnessFetchWiringDoesNotAffectOutcome(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected fetch exit 0, got %d (stderr %q)", code, stderr.String())

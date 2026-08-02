@@ -26,7 +26,7 @@ func TestRunGCDryRunListsEligibleRunsAndChangesNothing(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"gc", "--dry-run"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"gc", "--dry-run"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected gc --dry-run exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -71,7 +71,7 @@ func TestRunGCPrunesEligibleJournalsArtifactsAndOrphans(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"gc"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"gc"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected gc exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -117,7 +117,7 @@ func TestRunGCSkipsWhenJournalRetentionIsZero(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"gc"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"gc"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected gc zero-retention exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -140,7 +140,7 @@ func TestRunGCHelp(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"gc", "--help"}, &stdout, &stderr)
+	code := runCLI(t, []string{"gc", "--help"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected gc --help exit 0, got %d", code)

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"roundfix/internal/agent"
@@ -92,7 +91,7 @@ func (err profileProofError) Unwrap() error {
 	return err.Err
 }
 
-func runProfilesValidateCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runProfilesValidateCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("profiles validate"))
 		return exitOK
@@ -105,15 +104,15 @@ func runProfilesValidateCommand(ctx context.Context, args []string, stdout, stde
 	if err != nil {
 		return printProfilesValidateError(req, profileProofResult{}, err, stdout, stderr)
 	}
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+	loaded, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		return printProfilesValidateError(req, profileProofResult{}, err, stdout, stderr)
 	}
 	workDir := loaded.GitRoot
 	if strings.TrimSpace(workDir) == "" {
-		workDir, err = os.Getwd()
+		workDir, err = environment.resolveWorkDir("resolve validation working directory")
 		if err != nil {
-			return printProfilesValidateError(req, profileProofResult{}, fmt.Errorf("resolve validation working directory: %w", err), stdout, stderr)
+			return printProfilesValidateError(req, profileProofResult{}, err, stdout, stderr)
 		}
 	}
 	result := proveProfileSelections(ctx, loaded.Config, categories, workDir, newEngineCollaborators().runner)

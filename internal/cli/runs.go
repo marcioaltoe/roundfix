@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"roundfix/internal/app"
-	roundconfig "roundfix/internal/config"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	runworktree "roundfix/internal/worktree"
@@ -41,7 +40,7 @@ var runsListNow = time.Now
 // tests override it to prove the non-interactive contract.
 var runsInteractiveInputAvailable = defaultAttachInteractiveInputAvailable
 
-func runRunsCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runRunsCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("runs"))
 		return exitOK
@@ -51,12 +50,12 @@ func runRunsCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 			fmt.Fprintf(stderr, "%s: runs requires a subcommand in non-interactive mode; use 'roundfix runs list'\n", app.Name)
 			return exitPreflight
 		}
-		return runRunsBrowserCommand(ctx, stdout, stderr)
+		return runRunsBrowserCommand(ctx, stdout, stderr, environment)
 	}
 
 	switch args[0] {
 	case "list":
-		return runRunsListCommand(ctx, args[1:], stdout, stderr)
+		return runRunsListCommand(ctx, args[1:], stdout, stderr, environment)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown runs command %q\n", app.Name, args[0])
 		fmt.Fprintf(stderr, "Run '%s runs --help' for usage.\n", app.Name)
@@ -64,7 +63,7 @@ func runRunsCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 	}
 }
 
-func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("runs"))
 		return exitOK
@@ -75,7 +74,7 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return exitPreflight
 	}
 
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+	loaded, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		printRunsListFailure(err, stderr)
 		return exitPreflight

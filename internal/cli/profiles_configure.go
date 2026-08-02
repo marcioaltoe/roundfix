@@ -50,7 +50,7 @@ type profilesConfigureProfile struct {
 var profilesConfigureInput = func() io.Reader { return os.Stdin }
 var confirmProfilesConfigure = defaultConfirmProfilesConfigure
 
-func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("profiles configure"))
 		return exitOK
@@ -59,6 +59,10 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	if err != nil {
 		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{}, err, stdout, stderr)
 	}
+	loadOptions, err := environment.loadOptions(stderr)
+	if err != nil {
+		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{Scope: req.scope}, err, stdout, stderr)
+	}
 
 	profiles, err := profilesForConfigureRequest(ctx, req, stderr)
 	if err != nil {
@@ -66,6 +70,8 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	}
 	proposal, err := roundconfig.PrepareProfilesConfig(ctx, roundconfig.ProfileConfigOptions{
 		Scope:    req.scope,
+		HomeDir:  loadOptions.HomeDir,
+		WorkDir:  loadOptions.WorkDir,
 		Profiles: profiles,
 		Removals: req.removals,
 	})
@@ -73,9 +79,9 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{Scope: req.scope}, err, stdout, stderr)
 	}
 	result := proposal.Result()
-	workDir, err := os.Getwd()
+	workDir, err := environment.resolveWorkDir("resolve profiles configure proof working directory")
 	if err != nil {
-		return printProfilesConfigureError(req, result, fmt.Errorf("resolve profiles configure proof working directory: %w", err), stdout, stderr)
+		return printProfilesConfigureError(req, result, err, stdout, stderr)
 	}
 	proofProfiles, proofCategories := profilesConfigureProofScope(result.Changes)
 	readiness := proveProfileSelections(

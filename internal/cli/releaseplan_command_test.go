@@ -325,7 +325,7 @@ func TestReleasePlanExitCodesAndInvalidInputIsolation(t *testing.T) {
 
 func TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary(t *testing.T) {
 	var rootStdout, rootStderr bytes.Buffer
-	rootCode := Run([]string{"--help"}, &rootStdout, &rootStderr)
+	rootCode := runCLI(t, []string{"--help"}, &rootStdout, &rootStderr)
 	if rootCode != exitOK {
 		t.Fatalf("root help exit = %d, want 0 stderr=%q", rootCode, rootStderr.String())
 	}
@@ -334,7 +334,7 @@ func TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary(t *testi
 	}
 
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{"release", "plan", "--help"}, &stdout, &stderr)
+	code := runCLI(t, []string{"release", "plan", "--help"}, &stdout, &stderr)
 	if code != exitOK {
 		t.Fatalf("release plan help exit = %d, want 0 stderr=%q", code, stderr.String())
 	}
@@ -438,14 +438,14 @@ func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.
 	t.Cleanup(restore)
 
 	var textStdout, textStderr bytes.Buffer
-	textExit := RunContext(context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1"}, &textStdout, &textStderr)
+	textExit := runCLIContext(t, context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1"}, &textStdout, &textStderr)
 	if textExit != exitUnverified {
 		t.Fatalf("text exit = %d, want 3 stdout=%q stderr=%q", textExit, textStdout.String(), textStderr.String())
 	}
 	assertReleasePlanNoStderr(t, textStderr.String())
 
 	var jsonStdout, jsonStderr bytes.Buffer
-	jsonExit := RunContext(context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &jsonStdout, &jsonStderr)
+	jsonExit := runCLIContext(t, context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &jsonStdout, &jsonStderr)
 	if jsonExit != exitUnverified {
 		t.Fatalf("JSON exit = %d, want 3 stdout=%q stderr=%q", jsonExit, jsonStdout.String(), jsonStderr.String())
 	}
@@ -534,15 +534,14 @@ func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly
 	restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
 	t.Cleanup(restore)
 	before := snapshotReleasePlanRepo(t, repoDir)
-	t.Chdir(repoDir)
+	setCommandWorkDirForTest(t, repoDir)
 
 	var stdout, stderr bytes.Buffer
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"},
 		&stdout,
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitUnverified {
 		t.Fatalf("exit = %d, want 3 stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -605,7 +604,7 @@ func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *te
 			t.Cleanup(restore)
 
 			var stdout, stderr bytes.Buffer
-			code := RunContext(context.Background(), append([]string{"release", "plan"}, tt.args...), &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), append([]string{"release", "plan"}, tt.args...), &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("exit = %d, want 2 stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -666,7 +665,7 @@ func TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory(t *testing.T) 
 			t.Cleanup(restore)
 
 			var stdout, stderr bytes.Buffer
-			code := RunContext(context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("exit = %d, want 2 stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -841,11 +840,11 @@ func newReleasePlanCommandRepo(t *testing.T, baseTag string, commits ...releaseP
 func runReleasePlanCommandInRepo(t *testing.T, repoDir string, args ...string) (int, string, string) {
 	t.Helper()
 	before := snapshotReleasePlanRepo(t, repoDir)
-	t.Chdir(repoDir)
+	setCommandWorkDirForTest(t, repoDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	commandArgs := append([]string{"release", "plan"}, args...)
-	code := RunContext(context.Background(), commandArgs, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), commandArgs, &stdout, &stderr)
 	assertReleasePlanRepoUnchanged(t, repoDir, before)
 	return code, stdout.String(), stderr.String()
 }

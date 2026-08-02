@@ -7,7 +7,6 @@ import (
 	"io"
 	"strings"
 
-	roundconfig "roundfix/internal/config"
 	"roundfix/internal/runevent"
 	"roundfix/internal/store"
 )
@@ -18,7 +17,7 @@ type eventsRequest struct {
 	filter runevent.StreamCategoryFilter
 }
 
-func runEventsCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runEventsCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("events"))
 		return exitOK
@@ -28,7 +27,7 @@ func runEventsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printEventsFailure(err, stderr)
 		return exitPreflight
 	}
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+	loaded, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		printEventsFailure(err, stderr)
 		return exitPreflight

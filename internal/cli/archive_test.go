@@ -22,7 +22,7 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -67,7 +67,7 @@ func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -95,7 +95,7 @@ func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected archive refusal exit %d, got %d", exitPreflight, code)
@@ -177,7 +177,7 @@ func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected archive refusal exit %d, got %d", exitPreflight, code)
@@ -201,7 +201,7 @@ func TestRunArchiveHelp(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"archive", "--help"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"archive", "--help"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected help exit 0, got %d", code)

@@ -94,7 +94,7 @@ func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *t
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -151,7 +151,7 @@ func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
@@ -217,7 +217,7 @@ func TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner(t *testing.T) 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("legacy force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -302,7 +302,7 @@ func TestRunImplementReclaimsDeadOwnerActiveRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement to proceed after reclaim, got %d stderr=%q", code, stderr.String())
@@ -326,7 +326,7 @@ func TestRunSettleReclaimsDeadOwnerActiveRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected settle to proceed after reclaim, got %d stderr=%q", code, stderr.String())
@@ -346,7 +346,7 @@ func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected fetch to proceed after reclaim, got %d stderr=%q", code, stderr.String())
@@ -367,7 +367,7 @@ func TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected fetch to block on older live Run after reclaim, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -402,7 +402,7 @@ func TestStopTerminalRunWithDeadOwnerKeepsTerminalError(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", seeded.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", seeded.ID}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected terminal-Run stop refusal exit 2, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())

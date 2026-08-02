@@ -63,7 +63,7 @@ var loadCommittedSpecGraph = defaultLoadCommittedSpecGraph
 // runImplementCommand executes the Implement Command: Preflight Validation,
 // Run creation, the Live Run View, one Task cycle over the Task Graph, and
 // the terminal outcome, following the runOperationalCommand shape.
-func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.Writer, detachChild *detachChild) int {
+func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.Writer, detachChild *detachChild, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("implement"))
 		return exitOK
@@ -73,7 +73,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 
-	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+	loadedConfig, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
@@ -100,7 +100,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 	if req.detach {
-		return runDetachedCommand(append([]string{"implement"}, args...), req, loadedConfig, stdout, stderr)
+		return runDetachedCommand(append([]string{"implement"}, args...), req, loadedConfig, stdout, stderr, environment.environ, environment.workDir)
 	}
 	outcomeNotifier := outcomeNotifierFromConfig(loadedConfig.Config)
 
@@ -269,7 +269,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 
-	view := implementLiveRunView(req, loadedConfig, gitState, run.ID, runRef.Path, executionSpecsRoot, executionGraph)
+	view := implementLiveRunView(req, loadedConfig, gitState, run.ID, runRef.Path, executionSpecsRoot, executionGraph, stderr)
 	if !liveTUIEnabled(stderr) {
 		fmt.Fprint(stderr, roundtui.RenderLiveRunView(view))
 	}
@@ -741,7 +741,7 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 // the Work Items of the left pane, in Task Graph order, located through the
 // git root and Spec slug so the cockpit refreshes their statuses from the
 // task files.
-func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitState preflight.GitState, runID string, workDir string, specsRoot string, graph *spec.Graph) roundtui.LiveRunView {
+func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitState preflight.GitState, runID string, workDir string, specsRoot string, graph *spec.Graph, output io.Writer) roundtui.LiveRunView {
 	return roundtui.LiveRunView{
 		Command:         "implement",
 		RunKind:         store.KindImplement,
@@ -768,7 +768,7 @@ func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitStat
 		AutoPush:                loaded.Config.Implement.AutoPush,
 		LastPush:                implementPushState(loaded.Config.Implement.AutoPush),
 		Console:                 []string{"Agent and verification output will stream below."},
-		Width:                   liveViewWidth(),
+		Width:                   liveViewWidth(output),
 	}
 }
 

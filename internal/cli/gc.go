@@ -108,7 +108,7 @@ func sweepRunRetention(ctx context.Context, runStore *store.Store, artifactRoot 
 	)
 }
 
-func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("gc"))
 		return exitOK
@@ -118,7 +118,12 @@ func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		printPreflightFailure("gc", err, stderr)
 		return exitPreflight
 	}
-	loaded, err := gcDeps.loadConfig(roundconfig.LoadOptions{Stderr: stderr})
+	loadOptions, err := environment.loadOptions(stderr)
+	if err != nil {
+		printPreflightFailure("gc", err, stderr)
+		return exitPreflight
+	}
+	loaded, err := gcDeps.loadConfig(loadOptions)
 	if err != nil {
 		printPreflightFailure("gc", err, stderr)
 		return exitPreflight

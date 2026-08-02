@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"roundfix/internal/agent"
@@ -52,7 +51,8 @@ type healthCheckDependencies struct {
 }
 
 type runtimeHealthChecker struct {
-	deps healthCheckDependencies
+	deps      healthCheckDependencies
+	codexPath string
 }
 
 type codexInspector interface {
@@ -60,7 +60,11 @@ type codexInspector interface {
 }
 
 func newHealthChecker(deps healthCheckDependencies) HealthChecker {
-	return runtimeHealthChecker{deps: deps}
+	return newHealthCheckerWithCodexPath(deps, "")
+}
+
+func newHealthCheckerWithCodexPath(deps healthCheckDependencies, codexPath string) HealthChecker {
+	return runtimeHealthChecker{deps: deps, codexPath: codexPath}
 }
 
 func (checker runtimeHealthChecker) Node(ctx context.Context) CheckResult {
@@ -171,7 +175,7 @@ func (checker runtimeHealthChecker) Codex(ctx context.Context) CheckResult {
 		// first (mirroring the codex-acp spawn path), then PATH inside the
 		// inspector. Without the configured path, Doctor would check the wrong
 		// binary.
-		inspector = codex.Inspector{ConfiguredPath: os.Getenv("CODEX_PATH")}
+		inspector = codex.Inspector{ConfiguredPath: checker.codexPath}
 	}
 	result := inspector.Inspect(ctx)
 	return CheckResult{

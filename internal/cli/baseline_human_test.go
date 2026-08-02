@@ -379,8 +379,6 @@ func TestProjectDecisionPrompts(t *testing.T) {
 }
 
 func TestToolingAuthorityNoPrompt(t *testing.T) {
-	t.Parallel()
-
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
 		t.Fatalf("load Baseline catalog: %v", err)

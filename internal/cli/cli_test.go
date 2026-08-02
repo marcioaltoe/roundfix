@@ -42,6 +42,115 @@ func init() {
 	}
 }
 
+var testCommandEnvironments sync.Map
+var testCommandEnvironmentCleanups sync.Map
+
+type testCommandEnvironmentOverrides struct {
+	homeDir        string
+	homeDirSet     bool
+	workDir        string
+	workDirSet     bool
+	detachFD       string
+	detachTempPath string
+	detachSet      bool
+}
+
+func setCommandEnvironmentForTest(t *testing.T, homeDir, workDir string) {
+	t.Helper()
+	overrides := testCommandEnvironmentOverrides{
+		homeDir:    homeDir,
+		homeDirSet: true,
+		workDir:    workDir,
+		workDirSet: true,
+	}
+	storeCommandEnvironmentOverridesForTest(t, overrides)
+}
+
+func setCommandHomeDirForTest(t *testing.T, homeDir string) {
+	t.Helper()
+	overrides := commandEnvironmentOverridesForTest(t)
+	overrides.homeDir = homeDir
+	overrides.homeDirSet = true
+	storeCommandEnvironmentOverridesForTest(t, overrides)
+}
+
+func setCommandWorkDirForTest(t *testing.T, workDir string) {
+	t.Helper()
+	overrides := commandEnvironmentOverridesForTest(t)
+	overrides.workDir = workDir
+	overrides.workDirSet = true
+	storeCommandEnvironmentOverridesForTest(t, overrides)
+}
+
+func setDetachChildEnvironmentForTest(t *testing.T, fd, tempPath string) {
+	t.Helper()
+	overrides := commandEnvironmentOverridesForTest(t)
+	overrides.detachFD = fd
+	overrides.detachTempPath = tempPath
+	overrides.detachSet = true
+	storeCommandEnvironmentOverridesForTest(t, overrides)
+}
+
+func commandEnvironmentForTest(t *testing.T) commandEnvironment {
+	t.Helper()
+	environment := commandEnvironmentFromProcess()
+	overrides := commandEnvironmentOverridesForTest(t)
+	if overrides.homeDirSet {
+		environment.homeDir = overrides.homeDir
+		environment.homeDirErr = nil
+		environment.environ = withEnvValue(environment.environ, "HOME", overrides.homeDir)
+	}
+	if overrides.workDirSet {
+		environment.workDir = overrides.workDir
+		environment.workDirErr = nil
+	}
+	if overrides.detachSet {
+		environment.detachFD = overrides.detachFD
+		environment.detachTempPath = overrides.detachTempPath
+	}
+	return environment
+}
+
+func commandEnvironmentOverridesForTest(t *testing.T) testCommandEnvironmentOverrides {
+	t.Helper()
+	for name := t.Name(); name != ""; {
+		if overrides, ok := testCommandEnvironments.Load(name); ok {
+			return overrides.(testCommandEnvironmentOverrides)
+		}
+		separator := strings.LastIndex(name, "/")
+		if separator < 0 {
+			break
+		}
+		name = name[:separator]
+	}
+	return testCommandEnvironmentOverrides{}
+}
+
+func storeCommandEnvironmentOverridesForTest(t *testing.T, overrides testCommandEnvironmentOverrides) {
+	t.Helper()
+	name := t.Name()
+	if _, loaded := testCommandEnvironmentCleanups.LoadOrStore(name, struct{}{}); !loaded {
+		t.Cleanup(func() {
+			testCommandEnvironments.Delete(name)
+			testCommandEnvironmentCleanups.Delete(name)
+		})
+	}
+	testCommandEnvironments.Store(name, overrides)
+}
+
+func runCLI(t *testing.T, args []string, stdout, stderr io.Writer) int {
+	t.Helper()
+	ctx, cleanup, interrupted := interruptContext(context.Background())
+	defer cleanup()
+	code := runWithContext(ctx, args, stdout, stderr, commandEnvironmentForTest(t))
+	return exitForInterrupt(code, interrupted())
+}
+
+func runCLIContext(t *testing.T, ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	t.Helper()
+	return runWithContext(ctx, args, stdout, stderr, commandEnvironmentForTest(t))
+}
+
 type testNoopOutcomeNotifier struct{}
 
 func (testNoopOutcomeNotifier) Notify(context.Context, roundnotify.Outcome) (roundnotify.NotificationReceipt, error) {
@@ -56,7 +165,7 @@ func TestRunHelp(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"--help"}, &stdout, &stderr)
+	code := runCLI(t, []string{"--help"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -81,7 +190,7 @@ func TestRunVersion(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(args, &stdout, &stderr)
+			code := runCLI(t, args, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d", code)
@@ -101,7 +210,7 @@ func TestRunInitCreatesProjectConfigWithExplicitScope(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"init", "--scope", "project"}, &stdout, &stderr)
+	code := runCLI(t, []string{"init", "--scope", "project"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -123,7 +232,7 @@ func TestRunInitCreatesUserConfigWithExplicitScope(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"init", "--scope", "user"}, &stdout, &stderr)
+	code := runCLI(t, []string{"init", "--scope", "user"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -150,7 +259,7 @@ func TestRunInitPromptsForScopeAndDefaultsProject(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"init"}, &stdout, &stderr)
+	code := runCLI(t, []string{"init"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -189,7 +298,7 @@ func TestRunInitRejectsExistingConfigWithoutForce(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"init", "--scope", "project"}, &stdout, &stderr)
+	code := runCLI(t, []string{"init", "--scope", "project"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -216,7 +325,7 @@ func TestRunInitForceOverwritesExistingConfig(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"init", "--scope", "project", "--force"}, &stdout, &stderr)
+	code := runCLI(t, []string{"init", "--scope", "project", "--force"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -303,7 +412,7 @@ func TestRunCommandHelp(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d", code)
@@ -328,12 +437,11 @@ func TestRunReconcileDryRunReadOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", run.ID, "--format", "text"},
 		&stdout,
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitOK {
 		t.Fatalf("dry-run exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -373,12 +481,11 @@ func TestRunReconcileDryRunOutputFailure(t *testing.T) {
 	_, _, _ = newReconcileWorkspace(t)
 	var stderr bytes.Buffer
 
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile"},
 		failingWriter{err: errors.New("output unavailable")},
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("output failure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
@@ -395,12 +502,11 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", "--format=json", run.ID},
 		&stdout,
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitOK {
 		t.Fatalf("JSON dry-run exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -464,12 +570,11 @@ func TestRunReconcileSupersededJSONAndApply(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", run.ID, "--apply", "--format=json"},
 		&stdout,
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitOK {
 		t.Fatalf("superseded apply exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -555,7 +660,7 @@ func TestRunReconcileRepositoryScopeNewestFirst(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"reconcile"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"reconcile"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("repository scan exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -638,12 +743,11 @@ func TestRunReconcileInvalidSelectorsMutateNothing(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(
+			code := runCLIContext(t,
 				context.Background(),
 				[]string{"reconcile", tt.id, "--apply"},
 				&stdout,
-				&stderr,
-			)
+				&stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("invalid selector exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
@@ -680,7 +784,7 @@ func TestRunReconcileApplyMixedResults(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"reconcile", "--apply"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"reconcile", "--apply"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("mixed apply exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -715,12 +819,11 @@ func TestRunReconcileApplyFailureNamesNextSafeAction(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", run.ID, "--apply"},
 		&stdout,
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("apply failure exit = %d, want %d stderr=%q stdout=%q", code, exitRunFailed, stderr.String(), stdout.String())
@@ -749,12 +852,12 @@ func TestRunReconcileIdempotentApply(t *testing.T) {
 	)
 	var firstStdout bytes.Buffer
 	var firstStderr bytes.Buffer
-	firstCode := RunContext(
+	firstCode := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", run.ID, "--apply"},
 		&firstStdout,
-		&firstStderr,
-	)
+		&firstStderr)
+
 	if firstCode != exitOK {
 		t.Fatalf("first apply exit = %d, want 0 stderr=%q stdout=%q", firstCode, firstStderr.String(), firstStdout.String())
 	}
@@ -763,12 +866,11 @@ func TestRunReconcileIdempotentApply(t *testing.T) {
 	var secondStdout bytes.Buffer
 	var secondStderr bytes.Buffer
 
-	secondCode := RunContext(
+	secondCode := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", run.ID, "--apply"},
 		&secondStdout,
-		&secondStderr,
-	)
+		&secondStderr)
 
 	if secondCode != exitOK {
 		t.Fatalf("second apply exit = %d, want 0 stderr=%q stdout=%q", secondCode, secondStderr.String(), secondStdout.String())
@@ -823,7 +925,7 @@ func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"events", "--help"}, &stdout, &stderr)
+	code := runCLI(t, []string{"events", "--help"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("events help exit = %d, want 0 stderr=%q", code, stderr.String())
@@ -1104,7 +1206,7 @@ profiles:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "show", "--category", "backend", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "show", "--category", "backend", "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("profiles show exit = %d, stderr=%q", code, stderr.String())
@@ -1163,7 +1265,7 @@ func TestProfilesShowOptionalCategoryReportsGeneralRecommendationSource(t *testi
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "show", "--category", "data", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "show", "--category", "data", "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("profiles show exit = %d, stderr=%q", code, stderr.String())
@@ -1215,7 +1317,7 @@ func TestProfilesShowRejectsUnknownCategory(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "show", "--category", "design", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "show", "--category", "design", "--json"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("exit = %d, want %d", code, exitPreflight)
@@ -1268,7 +1370,7 @@ profiles:
 	} {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		if code := Run(args, &stdout, &stderr); code != exitOK {
+		if code := runCLI(t, args, &stdout, &stderr); code != exitOK {
 			t.Fatalf("Run(%v) exit = %d stderr=%q", args, code, stderr.String())
 		}
 		if stdout.Len() == 0 {
@@ -1311,7 +1413,7 @@ profiles:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("profiles configure exit = %d stderr=%q", code, stderr.String())
@@ -1376,7 +1478,7 @@ backend:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("profiles configure --yes exit = %d stderr=%q", code, stderr.String())
@@ -1444,7 +1546,7 @@ backend:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", validFragment, "--dry-run", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", validFragment, "--dry-run", "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("dry-run exit = %d stderr=%q", code, stderr.String())
@@ -1470,7 +1572,7 @@ backend:
 `)
 	stdout.Reset()
 	stderr.Reset()
-	code = Run([]string{"profiles", "configure", "--scope", "project", "--file", invalidFragment, "--json"}, &stdout, &stderr)
+	code = runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", invalidFragment, "--json"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("invalid configure exit = %d, want %d", code, exitPreflight)
@@ -1514,7 +1616,7 @@ backend:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("configure exit = %d stderr=%q", code, stderr.String())
@@ -1544,7 +1646,7 @@ func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testin
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--json"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("interactive configure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
@@ -1614,7 +1716,7 @@ backend:
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
+			code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("configure exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
@@ -1668,7 +1770,7 @@ backend:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("proof failure exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
@@ -1696,7 +1798,7 @@ func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
+		code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("cleanup failure exit = %d stderr=%q", code, stderr.String())
@@ -1722,7 +1824,7 @@ func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+		code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("decline exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
@@ -1747,7 +1849,7 @@ func TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig(t *testing.T) {
 	writeErr := errors.New("stdout failed")
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, failingWriter{err: writeErr}, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, failingWriter{err: writeErr}, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("output failure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
@@ -1768,7 +1870,7 @@ func TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm(t *te
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "user", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "user", "--json"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("interactive configure exit = %d, want %d", code, exitPreflight)
@@ -1790,7 +1892,7 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "validate", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "validate", "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("profiles validate exit = %d stderr=%q", code, stderr.String())
@@ -1879,7 +1981,7 @@ profiles:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "validate", "--category", "backend", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "validate", "--category", "backend", "--json"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("profiles validate exit = %d, want %d", code, exitPreflight)
@@ -2301,7 +2403,7 @@ func runProfilesShowTwice(t *testing.T, args []string) (string, string) {
 	t.Helper()
 	var firstStdout bytes.Buffer
 	var firstStderr bytes.Buffer
-	if code := Run(args, &firstStdout, &firstStderr); code != exitOK {
+	if code := runCLI(t, args, &firstStdout, &firstStderr); code != exitOK {
 		t.Fatalf("first Run(%v) exit = %d stderr=%q", args, code, firstStderr.String())
 	}
 	if firstStderr.Len() != 0 {
@@ -2309,7 +2411,7 @@ func runProfilesShowTwice(t *testing.T, args []string) (string, string) {
 	}
 	var secondStdout bytes.Buffer
 	var secondStderr bytes.Buffer
-	if code := Run(args, &secondStdout, &secondStderr); code != exitOK {
+	if code := runCLI(t, args, &secondStdout, &secondStderr); code != exitOK {
 		t.Fatalf("second Run(%v) exit = %d stderr=%q", args, code, secondStderr.String())
 	}
 	if secondStderr.Len() != 0 {
@@ -2425,7 +2527,7 @@ func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2460,7 +2562,7 @@ func TestRunRunsListRendersOwnerIdentityUnprovenMarker(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2529,7 +2631,7 @@ func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2546,7 +2648,7 @@ func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
 
 func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testing.T) {
 	homeDir, repoDir, location := newReconcileWorkspace(t)
-	t.Chdir(repoDir)
+	setCommandWorkDirForTest(t, repoDir)
 	base := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
 	_, retained := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
 	_, branchOnly := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateStopped)
@@ -2576,7 +2678,7 @@ func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testi
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2603,7 +2705,7 @@ func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testi
 
 func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing.T) {
 	homeDir, repoDir, location := newReconcileWorkspace(t)
-	t.Chdir(repoDir)
+	setCommandWorkDirForTest(t, repoDir)
 	currentRun, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
 
 	otherRepo := t.TempDir()
@@ -2669,7 +2771,7 @@ func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2702,14 +2804,14 @@ func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing
 
 func TestRunRunsListRetainedWorktreeNoteOmittedWhenReleased(t *testing.T) {
 	homeDir, repoDir, location := newReconcileWorkspace(t)
-	t.Chdir(repoDir)
+	setCommandWorkDirForTest(t, repoDir)
 	run, released := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateClean)
 	gitImplement(t, repoDir, "worktree", "remove", released.Path)
 	gitImplement(t, repoDir, "branch", "-D", released.Branch)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list", "--state", "terminal"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list", "--state", "terminal"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2741,7 +2843,7 @@ func TestRunRunsListReportsRetainedWorktreeInspectionFailure(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list", "--all", "--state", "terminal"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list", "--all", "--state", "terminal"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2816,7 +2918,7 @@ func TestRunRunsListLimitBoundsNewestMatches(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2856,7 +2958,7 @@ func TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2876,7 +2978,7 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"runs"}, &stdout, &stderr)
+		code := runCLI(t, []string{"runs"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected exit code 2, got %d", code)
@@ -2891,11 +2993,12 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 	t.Run("interactive stdin without a TTY exits 2 naming runs list", func(t *testing.T) {
 		withCLIWorkspace(t)
 		withRunsInteractiveInput(t, true)
+		// This case verifies the process-level default when no TUI override is set.
 		t.Setenv("ROUNDFIX_TUI", "")
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"runs"}, &stdout, &stderr)
+		code := runCLI(t, []string{"runs"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected exit code 2, got %d", code)
@@ -2930,12 +3033,13 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 			},
 		})
 		withRunsInteractiveInput(t, true)
+		// This case verifies that the process-level TUI override opens the Run Browser.
 		t.Setenv("ROUNDFIX_TUI", "always")
 		sessionCalls := withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"runs"}, &stdout, &stderr)
+		code := runCLI(t, []string{"runs"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2957,12 +3061,13 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 	t.Run("interactive terminal without a Run Database opens the empty browser", func(t *testing.T) {
 		withCLIWorkspace(t)
 		withRunsInteractiveInput(t, true)
+		// This case verifies that the process-level TUI override opens the empty Run Browser.
 		t.Setenv("ROUNDFIX_TUI", "always")
 		sessionCalls := withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"runs"}, &stdout, &stderr)
+		code := runCLI(t, []string{"runs"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2982,7 +3087,7 @@ func TestRunRunsListEmptyResultExitsZero(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected empty list exit 0, got %d stderr=%q", code, stderr.String())
@@ -3012,7 +3117,7 @@ func TestRunRunsListUsageErrors(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected exit code 2, got %d", code)
@@ -3030,12 +3135,11 @@ func TestRunRunsListUsageErrors(t *testing.T) {
 func TestRunRunsListOutsideRepositoryRequiresAll(t *testing.T) {
 	homeDir := t.TempDir()
 	outsideRepo := t.TempDir()
-	t.Setenv("HOME", homeDir)
-	t.Chdir(outsideRepo)
+	setCommandEnvironmentForTest(t, homeDir, outsideRepo)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected exit code 2 outside repository, got %d", code)
@@ -3063,7 +3167,7 @@ func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected exit code 2, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -3087,7 +3191,7 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3147,7 +3251,7 @@ func TestRunSetupNewerACPXIsReadyWithoutInstall(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3175,7 +3279,7 @@ func assertSetupCommandHealthyMachineIsIdempotent(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3242,7 +3346,7 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+			code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 			if code != exitRunFailed {
 				t.Fatalf("expected adapter failure exit %d, got %d", exitRunFailed, code)
@@ -3279,7 +3383,7 @@ func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3321,7 +3425,7 @@ func TestRunSetupProfileProofFailurePreservesAllTargets(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
@@ -3360,7 +3464,7 @@ func TestRunSetupProfileCleanupAndInvalidEvidencePreserveAllTargets(t *testing.T
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+			code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 			if code != exitRunFailed {
 				t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
@@ -3382,7 +3486,7 @@ func TestRunSetupProfileWriteFailurePreservesNotYetCommittedTargets(t *testing.T
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
@@ -3404,7 +3508,7 @@ func TestRunSetupProfilePersistenceMatchesSubsequentValidation(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3441,7 +3545,7 @@ func TestRunSetupNoInputProfileProofCreatesNoTargets(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3467,7 +3571,7 @@ func TestRunSetupAdapterMigrationDeclinePreservesAllTargets(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("declined migration exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3492,7 +3596,7 @@ func TestRunSetupAdapterMigrationPersistsSupportedCommand(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3552,7 +3656,7 @@ func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"setup"}, &stdout, &stderr)
+			code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3620,7 +3724,7 @@ func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+		code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3640,7 +3744,7 @@ func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+		code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
@@ -3660,7 +3764,7 @@ func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+		code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
@@ -3705,7 +3809,7 @@ func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3748,7 +3852,7 @@ func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
@@ -3772,7 +3876,7 @@ func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
@@ -3795,7 +3899,7 @@ func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected setup selection failure exit %d, got %d", exitRunFailed, code)
@@ -3820,7 +3924,7 @@ func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3845,7 +3949,7 @@ func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3878,7 +3982,7 @@ func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected declined setup offers to exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3905,7 +4009,7 @@ func TestRunSetupNoInputSkipsOffers(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected no-input skipped offers to exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3931,7 +4035,7 @@ func TestRunSetupExitCodes(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"setup"}, &stdout, &stderr)
+		code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("expected setup check failure exit 1, got %d", code)
@@ -3945,7 +4049,7 @@ func TestRunSetupExitCodes(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"setup", "--yes", "--no-input"}, &stdout, &stderr)
+		code := runCLI(t, []string{"setup", "--yes", "--no-input"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected setup usage error exit 2, got %d", code)
@@ -4121,7 +4225,7 @@ func TestRunSkillsCheck(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "check"}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "check"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -4141,7 +4245,7 @@ func TestRunSkillsListSeparatesOwnedFromExternal(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "list"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -4168,7 +4272,7 @@ func TestRunSkillsInstallCopiesArtifactsToProjectByDefault(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "install"}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "install"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -4195,7 +4299,7 @@ func TestRunSkillsInstallCopiesArtifactsToExplicitTarget(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "install", "--target", "codex", "--dir", targetDir}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "install", "--target", "codex", "--dir", targetDir}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -4235,7 +4339,7 @@ func TestRunSkillsInstallCreatesClaudeProjectSymlink(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "install"}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "install"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -4264,7 +4368,7 @@ func TestRunSkillsInstallRejectsUnsupportedTarget(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "install", "--target", "other"}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "install", "--target", "other"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -4306,7 +4410,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, repoDir := withCLIWorkspace(t)
+			homeDir, repoDir := withCLIWorkspace(t)
 			withSuccessfulPreflight(t, repoDir)
 			if tt.name == "resolve" {
 				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -4314,7 +4418,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != tt.expectedCode {
 				t.Fatalf("expected exit code %d, got %d", tt.expectedCode, code)
@@ -4347,7 +4451,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(string(issueContent), "source_ref: thread:PRRT_test,comment:PRRC_test") {
 					t.Fatalf("expected source ref in issue artifact, got %s", string(issueContent))
 				}
-				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
+				assertRunCount(t, filepath.Join(homeDir, ".roundfix", "roundfix.db"), 1)
 			} else if tt.name == "resolve" {
 				if !strings.Contains(stderr.String(), "fake agent output") {
 					t.Fatalf("expected fake Agent output, got %q", stderr.String())
@@ -4364,7 +4468,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stderr.String(), "Final Push completed") {
 					t.Fatalf("expected Final Push confirmation, got %q", stderr.String())
 				}
-				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
+				assertRunCount(t, filepath.Join(homeDir, ".roundfix", "roundfix.db"), 1)
 				assertNoAgentLogs(t, repoDir)
 			} else if tt.name == "watch" {
 				if !strings.Contains(stderr.String(), "Review Source status: verified") {
@@ -4391,7 +4495,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stderr.String(), "reached Clean") {
 					t.Fatalf("expected watch Clean terminal outcome, got %q", stderr.String())
 				}
-				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
+				assertRunCount(t, filepath.Join(homeDir, ".roundfix", "roundfix.db"), 1)
 				assertNoAgentLogs(t, repoDir)
 			}
 		})
@@ -4406,7 +4510,7 @@ func TestRunFetchWritesReviewArtifactsUnderSpecSelector(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--pr", "123", "--spec", specSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--pr", "123", "--spec", specSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -4430,7 +4534,7 @@ func TestRunFetchWritesReviewArtifactsUnderTrailerSpec(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -4447,7 +4551,7 @@ func TestRunFetchWritesReviewArtifactsUnderSpeclessRoot(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -4583,7 +4687,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected fetch exit 0, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -4701,7 +4805,7 @@ resolve:
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
@@ -4720,7 +4824,7 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q", code, stderr.String())
@@ -4772,7 +4876,7 @@ profiles:
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("%s exit = %d stderr=%q stdout=%q", tt.name, code, stderr.String(), stdout.String())
@@ -4796,7 +4900,7 @@ func TestReviewProfilePreflightFetchCreatesNoAgentSession(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("fetch exit = %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -4903,7 +5007,7 @@ func TestRunResolvePersistsEffectiveSelection(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"resolve",
 		"--pr", "123",
 		"--agent", "codex",
@@ -4936,7 +5040,7 @@ func TestRunResolveAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"resolve",
 		"--pr", "123",
 		"--agent", "codex",
@@ -4965,7 +5069,7 @@ func TestRunWatchPersistsEffectiveSelection(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"watch",
 		"--source", "coderabbit",
 		"--pr", "123",
@@ -4999,7 +5103,7 @@ func TestRunWatchRendersModelManagedReasoningHeader(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"watch",
 		"--source", "coderabbit",
 		"--pr", "123",
@@ -5094,7 +5198,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != tt.wantExitCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q stdout=%q", tt.wantExitCode, code, stderr.String(), stdout.String())
@@ -5152,9 +5256,10 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *test
 	var resolveStderr bytes.Buffer
 	resolveDone := make(chan int, 1)
 	go func() {
-		resolveDone <- RunContext(context.Background(), []string{
+		resolveDone <- runCLIContext(t, context.Background(), []string{
 			"resolve", "--pr", "123", "--round", "all", "--no-input",
 		}, &resolveStdout, &resolveStderr)
+
 	}()
 
 	<-agentStarted
@@ -5176,7 +5281,7 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *test
 
 	var stopStdout bytes.Buffer
 	var stopStderr bytes.Buffer
-	stopCode := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr)
+	stopCode := runCLIContext(t, context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr)
 	if stopCode != exitOK {
 		release()
 		<-resolveDone
@@ -5218,7 +5323,7 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *test
 
 	stopStdout.Reset()
 	stopStderr.Reset()
-	if replayCode := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr); replayCode != exitOK {
+	if replayCode := runCLIContext(t, context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr); replayCode != exitOK {
 		t.Fatalf("identical Force Stop replay exit = %d, want %d; stderr=%q", replayCode, exitOK, stopStderr.String())
 	}
 	events = runEvents(t, homeDir, active.ID)
@@ -5249,7 +5354,7 @@ func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected fetch exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5481,7 +5586,7 @@ func TestRunOutcomeNotificationsDisabledJournalsSkippedReceipt(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5527,7 +5632,7 @@ func TestRunReviewCommandsRefuseDirtyTrackedCheckout(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), branchIntegrityCommandArgs(command), &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), branchIntegrityCommandArgs(command), &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected preflight exit 2, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5562,7 +5667,7 @@ func TestRunResolveAllowsUntrackedCheckoutFiles(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit with untracked file, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5597,7 +5702,7 @@ func TestRunResolveCommitsOnUserBranchWithoutRunBranch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5653,7 +5758,7 @@ func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5730,7 +5835,7 @@ func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5785,7 +5890,7 @@ budget:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected BudgetExceeded exit %d, got %d stderr=%q", exitRunFailed, code, stderr.String())
@@ -5843,7 +5948,7 @@ func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
 			}
 			recorder := &orderedWriteRecorder{}
 
-			code := RunContext(context.Background(), tt.args, recorder.writer("stdout"), recorder.writer("stderr"))
+			code := runCLIContext(t, context.Background(), tt.args, recorder.writer("stdout"), recorder.writer("stderr"))
 
 			if code != exitOK {
 				t.Fatalf("expected exit code 0, got %d stderr=%q", code, recorder.content("stderr"))
@@ -5907,7 +6012,7 @@ defaults:
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d, stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -5937,14 +6042,14 @@ func TestRunFetchReusesMatchingAutoRound(t *testing.T) {
 
 	var firstStdout bytes.Buffer
 	var firstStderr bytes.Buffer
-	firstCode := Run(args, &firstStdout, &firstStderr)
+	firstCode := runCLI(t, args, &firstStdout, &firstStderr)
 	if firstCode != 0 {
 		t.Fatalf("expected first fetch exit 0, got %d stdout=%q stderr=%q", firstCode, firstStdout.String(), firstStderr.String())
 	}
 
 	var secondStdout bytes.Buffer
 	var secondStderr bytes.Buffer
-	secondCode := Run(args, &secondStdout, &secondStderr)
+	secondCode := runCLI(t, args, &secondStdout, &secondStderr)
 	if secondCode != 0 {
 		t.Fatalf("expected second fetch exit 0, got %d stdout=%q stderr=%q", secondCode, secondStdout.String(), secondStderr.String())
 	}
@@ -5979,7 +6084,7 @@ watch:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected watch timeout exit 1, got %d", code)
@@ -6022,7 +6127,7 @@ watch:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitUnverified {
 		t.Fatalf("expected CleanUnverified watch exit %d, got %d stderr=%q", exitUnverified, code, stderr.String())
@@ -6078,7 +6183,7 @@ func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testin
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitUnverified {
 		t.Fatalf("Review Skipped exit = %d, want %d; stderr=%q", code, exitUnverified, stderr.String())
@@ -6199,7 +6304,7 @@ func TestRunWatchCleanupBeforeAgentWarningFollowsReviewSkippedReason(t *testing.
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitUnverified {
 		t.Fatalf("Review Skipped exit = %d, want %d; stderr=%q", code, exitUnverified, stderr.String())
@@ -6230,7 +6335,7 @@ func TestRunWatchReviewIssuesUnknownWhenFetchFailsKeepsArtifactsUnpublished(t *t
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("failed fetch exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
@@ -6270,7 +6375,7 @@ func TestRunWatchReviewIssuesKnownAfterFetchedZero(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("fetched-zero exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -6329,7 +6434,7 @@ func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"watch", "--source", "coderabbit", "--pr", "123",
 		"--until-clean", "--max-rounds", "1", "--no-input",
 	}, &stdout, &stderr)
@@ -6412,7 +6517,7 @@ func TestRunWatchArtifactEvidenceProofFailureFallsBackAfterPush(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"watch", "--source", "coderabbit", "--pr", "123",
 		"--until-clean", "--max-rounds", "1", "--no-input",
 	}, &stdout, &stderr)
@@ -6619,7 +6724,7 @@ func TestRunWatchArtifactEvidenceThreadRefusesAndFallsBack(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"watch", "--source", "coderabbit", "--pr", "123",
 		"--until-clean", "--max-rounds", "1", "--no-input",
 	}, &stdout, &stderr)
@@ -6775,7 +6880,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit 0, got %d stderr=%q", code, stderr.String())
@@ -6830,7 +6935,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
@@ -6873,7 +6978,7 @@ func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
@@ -6928,7 +7033,7 @@ func TestRunResolveSIGINTStopReturns130(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	stoppedCode := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	stoppedCode := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 	code := exitForInterrupt(stoppedCode, true)
 
 	if code != 130 {
@@ -6975,7 +7080,7 @@ func TestRunResolveRejectsMissingCompatibleArtifactsBeforeRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -7007,7 +7112,7 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--round", "2", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--round", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Unresolved resolve exit code 1, got %d", code)
@@ -7044,7 +7149,7 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit code 0, got %d", code)
@@ -7106,7 +7211,7 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Run failure exit 1, got %d", code)
@@ -7194,7 +7299,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -7298,7 +7403,7 @@ func TestRunResolveFinalPushRunsOnceAfterAllUnresolvedTerminal(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -7339,7 +7444,7 @@ func TestRunResolveResolvesInvalidAssignedIssueSourceThread(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -7362,7 +7467,7 @@ func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected probe preflight exit 2, got %d", code)
@@ -7398,7 +7503,7 @@ runtimes:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
@@ -7448,7 +7553,7 @@ func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
@@ -7511,7 +7616,7 @@ func TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun(t *te
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected selection preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7562,7 +7667,7 @@ func TestRunResolveSelectionFailureDoesNotProbeDynamicCandidates(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "gpt-5.6-sol", "--reasoning-effort", "unsupported", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "gpt-5.6-sol", "--reasoning-effort", "unsupported", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
@@ -7633,7 +7738,7 @@ func TestRunReviewAgentCommandsDoNotPromptForDynamicFallback(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected profile proof preflight exit %d, got exit %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7686,7 +7791,7 @@ func TestRunResolveProfileProofFailureIgnoresFallbackConfirmationInput(t *testin
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"resolve", "--pr", "123"}, &stdout, &stderr)
+			code := runCLI(t, []string{"resolve", "--pr", "123"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected profile proof preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7723,7 +7828,7 @@ func TestRunResolveNoInputProfileProofFailureReportsRemediation(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected profile proof preflight exit %d, got %d", exitPreflight, code)
@@ -7764,12 +7869,11 @@ func TestRunResolveDetachedChildReportsProfileProofFailure(t *testing.T) {
 		_ = readPipe.Close()
 		_ = writePipe.Close()
 	})
-	t.Setenv(detachHandshakeFDEnv, strconv.Itoa(int(writePipe.Fd())))
-	t.Setenv(detachConsoleTempEnv, filepath.Join(t.TempDir(), "console.tmp"))
+	setDetachChildEnvironmentForTest(t, strconv.Itoa(int(writePipe.Fd())), filepath.Join(t.TempDir(), "console.tmp"))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected detached preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7812,7 +7916,7 @@ func TestRunReviewAgentCommandsPassOneRunSelectionOverridesToPreflight(t *testin
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7855,7 +7959,7 @@ func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7908,7 +8012,7 @@ func assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run(args, &stdout, &stderr)
+	code := runCLI(t, args, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7967,7 +8071,7 @@ func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+			code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected probe preflight exit 2, got %d", code)
@@ -8000,7 +8104,7 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Run failure exit 1, got %d", code)
@@ -8067,7 +8171,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Unresolved exit 1, got %d", code)
@@ -8139,7 +8243,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit 0, got %d stderr=%q", code, stderr.String())
@@ -8205,7 +8309,7 @@ func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
@@ -8227,7 +8331,7 @@ func TestRunResolveRejectsIncompatibleArtifacts(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -8297,7 +8401,7 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected exit code 2, got %d", code)
@@ -8338,11 +8442,12 @@ func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			homeDir, _ := withCLIWorkspace(t)
+			// This case verifies the process-level TUI override conflict with --no-agent-console.
 			t.Setenv("ROUNDFIX_TUI", "always")
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -8372,7 +8477,7 @@ func TestRunFetchCollectsMissingPullRequestWithInteractiveInput(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected fetch exit 0, got %d", code)
@@ -8405,7 +8510,7 @@ func TestRunFetchReportsBlankInteractivePullRequestWithoutSuggestingInteractiveA
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -8450,7 +8555,7 @@ func TestRunResolveInteractiveInputSuggestsConfiguredAgentAndRememberedPullReque
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--interactive"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--interactive"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected resolve exit 0, got %d", code)
@@ -8488,7 +8593,7 @@ func TestRunInteractiveInputRunsPreflightBeforeSideEffects(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected post-input preflight exit 2, got %d", code)
@@ -8518,7 +8623,7 @@ defaults:
 
 	var projectStdout bytes.Buffer
 	var projectStderr bytes.Buffer
-	projectCode := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &projectStdout, &projectStderr)
+	projectCode := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &projectStdout, &projectStderr)
 
 	if projectCode != 0 {
 		t.Fatalf("expected tracked Fetch Run exit 0, got %d", projectCode)
@@ -8529,7 +8634,7 @@ defaults:
 
 	var cliStdout bytes.Buffer
 	var cliStderr bytes.Buffer
-	cliCode := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--artifact-dir", "cli-artifacts", "--no-input"}, &cliStdout, &cliStderr)
+	cliCode := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--artifact-dir", "cli-artifacts", "--no-input"}, &cliStdout, &cliStderr)
 
 	if cliCode != 0 {
 		t.Fatalf("expected tracked Fetch Run exit 0, got %d", cliCode)
@@ -8567,11 +8672,11 @@ func TestRunFetchRejectsDuplicateActiveRun(t *testing.T) {
 	}
 	subdir := filepath.Join(repoDir, "nested")
 	mustMkdir(t, subdir)
-	t.Chdir(subdir)
+	setCommandWorkDirForTest(t, subdir)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2 for duplicate Active Run, got %d", code)
@@ -8606,7 +8711,7 @@ func TestBranchIntegrityPreflightRejectsPendingRunBranchForReviewCommands(t *tes
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(branchIntegrityCommandArgs(command), &stdout, &stderr)
+			code := runCLI(t, branchIntegrityCommandArgs(command), &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected Branch Integrity Preflight exit 2, got %d", code)
@@ -8646,7 +8751,7 @@ func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *te
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected fetch to proceed after auto-integration, got %d stderr=%q", code, stderr.String())
@@ -8723,7 +8828,7 @@ func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+			code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 			if code != test.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", test.wantCode, code, stderr.String())
@@ -8772,7 +8877,7 @@ func TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately(t 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected Branch Integrity Preflight refusal, got %d stderr=%q", code, stderr.String())
@@ -8843,7 +8948,7 @@ func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected fetch to migrate the outdated Run Database and proceed, got %d stderr=%q", code, stderr.String())
@@ -8900,7 +9005,7 @@ func TestBranchIntegrityPreflightRejectsActiveRunForReviewCommands(t *testing.T)
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(branchIntegrityCommandArgs(command), &stdout, &stderr)
+			code := runCLI(t, branchIntegrityCommandArgs(command), &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected active Run refusal exit 2, got %d", code)
@@ -8934,7 +9039,7 @@ func TestBranchIntegrityBypassPublishesAuditBeforeFetch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected bypassed fetch to proceed, got %d stderr=%q", code, stderr.String())
@@ -9002,7 +9107,7 @@ func TestBranchIntegrityBypassAuditsActiveRunAndProceeds(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected bypassed fetch to proceed despite active Run, got %d stderr=%q", code, stderr.String())
@@ -9040,7 +9145,7 @@ func TestBranchIntegrityBypassFailsWhenAuditCommentPublishFails(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected audit publish failure exit 2, got %d", code)
@@ -9067,7 +9172,7 @@ func TestReviewCommandHelpDocumentsSkipBranchIntegrity(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{command, "--help"}, &stdout, &stderr)
+			code := runCLI(t, []string{command, "--help"}, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected help exit 0, got %d", code)
@@ -9108,7 +9213,7 @@ func TestRunStopByRunIDRecordsStopRequest(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"stop", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", active.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9161,7 +9266,7 @@ func TestRunStopByPullRequestRecordsStopRequestForMatchingActiveRun(t *testing.T
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"stop", "--pr", "123"}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--pr", "123"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9200,7 +9305,7 @@ func TestRunStopBySpecRecordsStopRequestForMatchingActiveRun(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"stop", "--spec", "0001-widget-flow"}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--spec", "0001-widget-flow"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9277,7 +9382,7 @@ func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -9303,7 +9408,7 @@ func TestRunForceStopAcceptsFlagsInAnyPosition(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), argsFor(active.ID), &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), argsFor(active.ID), &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("Force Stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -9396,7 +9501,7 @@ func TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof(t *testi
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), args, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("Force Stop exit = %d, want %d; stdout=%q stderr=%q", code, tt.wantCode, stdout.String(), stderr.String())
@@ -9439,7 +9544,7 @@ func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testi
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+			code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 			if code != exitRunFailed {
 				t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
@@ -9511,7 +9616,7 @@ func TestRunForceStopOwnerProofFailurePreservesAgentSessions(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("Force Stop failure exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
@@ -9590,7 +9695,7 @@ func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("Force Stop failure exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
@@ -9664,7 +9769,7 @@ func TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions(t *testi
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("idempotent force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -9694,7 +9799,7 @@ func TestRunStopForceAgentSessionCleanupSkipsRunWithoutActiveLifecycle(t *testin
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", "--spec", "0001-widget-flow"}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", "--spec", "0001-widget-flow"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9776,7 +9881,7 @@ func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9831,7 +9936,7 @@ func TestRunStopForceRegisteredAgentSessionAbsenceIsIdempotent(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9867,7 +9972,7 @@ func TestRunStopForceAgentSessionCleanupFailureRemainsVisibleWithoutClosedLifecy
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9903,7 +10008,7 @@ func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9948,7 +10053,7 @@ func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -10004,7 +10109,7 @@ func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+			code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -10062,7 +10167,7 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	var gracefulStdout bytes.Buffer
 	var gracefulStderr bytes.Buffer
 
-	gracefulCode := Run([]string{"stop", "--spec", "0001-widget-flow"}, &gracefulStdout, &gracefulStderr)
+	gracefulCode := runCLI(t, []string{"stop", "--spec", "0001-widget-flow"}, &gracefulStdout, &gracefulStderr)
 
 	if gracefulCode != 0 {
 		t.Fatalf("expected graceful stop exit 0, got %d stderr=%q", gracefulCode, gracefulStderr.String())
@@ -10079,7 +10184,7 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	var forceStdout bytes.Buffer
 	var forceStderr bytes.Buffer
 
-	forceCode := Run([]string{"stop", "--force", "--spec", "0001-widget-flow"}, &forceStdout, &forceStderr)
+	forceCode := runCLI(t, []string{"stop", "--force", "--spec", "0001-widget-flow"}, &forceStdout, &forceStderr)
 
 	if forceCode != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", forceCode, forceStderr.String())
@@ -10124,7 +10229,7 @@ func TestRunStopSpecSelectorRejectsOtherSelectors(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected stop validation exit 2, got %d", code)
@@ -10144,7 +10249,7 @@ func TestRunStopBySpecReportsMissingActiveRun(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"stop", "--spec", "0002-missing"}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--spec", "0002-missing"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected stop validation exit 2, got %d", code)
@@ -10162,7 +10267,7 @@ func TestRunStopHelpExplainsProofBeforeCompletion(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--help"}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--help"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected stop help exit 0, got %d", code)
@@ -10230,7 +10335,7 @@ func TestRunStopRejectsAlreadyTerminalRun(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"stop", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", active.ID}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected stop validation exit 2, got %d", code)
@@ -10252,7 +10357,7 @@ func TestRunPreflightFailureLeavesBufferOutputPlainByDefault(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -10266,6 +10371,7 @@ func TestRunPreflightFailureLeavesBufferOutputPlainByDefault(t *testing.T) {
 }
 
 func TestRunPreflightFailureColorsOutputWhenForced(t *testing.T) {
+	// This case verifies the process-level color override at the public command boundary.
 	t.Setenv("ROUNDFIX_COLOR", "always")
 	withCLIWorkspace(t)
 	withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
@@ -10274,7 +10380,7 @@ func TestRunPreflightFailureColorsOutputWhenForced(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -10295,7 +10401,7 @@ func TestRunOperationalCommandRejectsInvalidConfigAndArtifactDirectory(t *testin
 
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+		code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 		if code != 2 {
 			t.Fatalf("expected exit code 2, got %d", code)
@@ -10318,7 +10424,7 @@ func TestRunOperationalCommandRejectsInvalidConfigAndArtifactDirectory(t *testin
 
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--artifact-dir", artifactFile, "--no-input"}, &stdout, &stderr)
+		code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--artifact-dir", artifactFile, "--no-input"}, &stdout, &stderr)
 
 		if code != 2 {
 			t.Fatalf("expected exit code 2, got %d", code)
@@ -10631,7 +10737,7 @@ func runCleanResolveWithOutcomeNotifier(t *testing.T, notifier *recordingOutcome
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -10647,8 +10753,7 @@ func withCLIWorkspace(t *testing.T) (string, string) {
 	homeDir := t.TempDir()
 	repoDir := t.TempDir()
 	mustMkdir(t, filepath.Join(repoDir, ".git"))
-	t.Setenv("HOME", homeDir)
-	t.Chdir(repoDir)
+	setCommandEnvironmentForTest(t, homeDir, repoDir)
 	return homeDir, repoDir
 }
 
@@ -10952,7 +11057,6 @@ func withRunsInteractiveInput(t *testing.T, available bool) {
 func withReviewGitWorkspace(t *testing.T) (string, string) {
 	t.Helper()
 	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
 	repoDir := t.TempDir()
 	gittest.InitRepo(t, repoDir, "--initial-branch=main")
 	gitImplement(t, repoDir, "config", "user.name", "Roundfix Test")
@@ -10974,7 +11078,7 @@ watch:
 	if err != nil {
 		t.Fatalf("resolve review repo dir: %v", err)
 	}
-	t.Chdir(resolved)
+	setCommandEnvironmentForTest(t, homeDir, resolved)
 	return homeDir, resolved
 }
 
@@ -11924,7 +12028,7 @@ func defaultReviewRootForRepo(repoDir string, prNumber string) string {
 
 func builtinArtifactDirForRepo(t *testing.T, repoDir string) string {
 	t.Helper()
-	homeDir := os.Getenv("HOME")
+	homeDir := commandEnvironmentForTest(t).homeDir
 	if homeDir == "" {
 		t.Fatal("HOME is required for builtin Artifact Directory")
 	}
@@ -12743,7 +12847,7 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -12783,7 +12887,7 @@ func TestRunResolveSkipsAgentLogFilesByDefaultAndStillJournals(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -12804,7 +12908,7 @@ logs:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -12828,7 +12932,7 @@ func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-agent-console", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -12858,7 +12962,7 @@ func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-agent-console", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -12898,7 +13002,7 @@ func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit, got %d stderr=%q", code, stderr.String())
@@ -12946,7 +13050,7 @@ func TestWatchSkipsFinalPushWhenAutoPushDisabled(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -12970,7 +13074,7 @@ func TestWatchFinalPushRunsOncePerCleanRoundThroughEngine(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -12992,7 +13096,7 @@ func runResolveForAttachTest(t *testing.T, repoDir string) (string, *bytes.Buffe
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("seed resolve run failed: %d stderr=%q", code, stderr.String())
 	}
@@ -13020,7 +13124,7 @@ func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", runID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
@@ -13060,7 +13164,7 @@ func TestAttachDisplaysStoredSelectionAfterConfigChanges(t *testing.T) {
 	var resolveStdout bytes.Buffer
 	var resolveStderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"resolve",
 		"--pr", "123",
 		"--agent", "codex",
@@ -13068,6 +13172,7 @@ func TestAttachDisplaysStoredSelectionAfterConfigChanges(t *testing.T) {
 		"--reasoning-effort", "historical-reasoning",
 		"--no-input",
 	}, &resolveStdout, &resolveStderr)
+
 	if code != exitOK {
 		t.Fatalf("seed resolve run failed: %d stderr=%q", code, resolveStderr.String())
 	}
@@ -13081,7 +13186,7 @@ runtimes:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code = RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+	code = runCLIContext(t, context.Background(), []string{"attach", runID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected attach exit 0, got %d stderr=%q", code, stderr.String())
@@ -13182,7 +13287,7 @@ func TestAgentSelectionAttachReplayRendersPerScopeSelectionState(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"attach", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"attach", run.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected attach exit 0, got %d stderr=%q", code, stderr.String())
@@ -13316,6 +13421,7 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	})
 	terminalRun, activeRun, otherRepoRun := runs[0], runs[1], runs[2]
 	withAttachInteractiveInput(t, true)
+	// This case verifies the process-level TUI override for the Attach browser loop.
 	t.Setenv("ROUNDFIX_TUI", "always")
 	var createdBehindCockpit store.Run
 	cockpitCalls := withBrowserAttachCockpit(t, func(run store.Run, capacities attachCapacities) int {
@@ -13338,7 +13444,7 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected browser loop exit 0, got %d stderr=%q", code, stderr.String())
@@ -13381,13 +13487,14 @@ func TestAttachRunBrowserCancelExitsZeroWithoutAttaching(t *testing.T) {
 	dbPath := filepath.Join(homeDir, ".roundfix", "roundfix.db")
 	assertRunCount(t, dbPath, 1)
 	withAttachInteractiveInput(t, true)
+	// This case verifies the process-level TUI override for Attach cancellation.
 	t.Setenv("ROUNDFIX_TUI", "always")
 	cockpitCalls := withBrowserAttachCockpit(t, nil)
 	withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected cancelled browser exit 0, got %d stderr=%q", code, stderr.String())
@@ -13429,7 +13536,7 @@ func TestAttachWithoutRunIDNonInteractiveNamesAllRunsList(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected exit 2, got %d", code)
@@ -13465,7 +13572,7 @@ func TestAttachAcceptsDocumentedFlagOrders(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), argsFor(run.ID), &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), argsFor(run.ID), &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected the documented order to replay the Run, got %d stderr=%q", code, stderr.String())
@@ -13530,7 +13637,7 @@ func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
@@ -13559,7 +13666,7 @@ func TestAttachSpecRunFallsBackToGitRootWhenCleanWorkDirIsPruned(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean attach exit for pruned worktree, got %d stderr=%q", code, stderr.String())
@@ -13582,7 +13689,7 @@ func TestAttachUnknownRunFailsBeforeTUIStart(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", "41"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", "41"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected preflight exit for unknown Run, got %d", code)
@@ -13601,7 +13708,7 @@ func TestAttachWithoutRunDatabaseFailsAsCLIError(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", "run_x"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", "run_x"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected preflight exit without a Run Database, got %d", code)
@@ -13634,7 +13741,7 @@ func TestAttachSkipsUnknownEventKindsOnReplay(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", runID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected unknown kinds skipped, got exit %d stderr=%q", code, stderr.String())
@@ -13729,7 +13836,7 @@ func TestAttachSpecRunReplaysTaskAndVerificationCapacity(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
@@ -13755,7 +13862,7 @@ func TestAttachSpecRunLegacyCapacityEventFallsBackDeterministically(t *testing.T
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected a legacy Run to attach cleanly, got %d stderr=%q", code, stderr.String())
@@ -13818,7 +13925,7 @@ func TestEventsReplayDefaultAndFilterJSONLRecordsOnly(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected replay exit 0, got %d stderr=%q", code, stderr.String())
@@ -13840,7 +13947,7 @@ func TestEventsReplayDefaultAndFilterJSONLRecordsOnly(t *testing.T) {
 
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(context.Background(), []string{"events", run.ID, "--filter", "verification,outcome"}, &stdout, &stderr)
+	code = runCLIContext(t, context.Background(), []string{"events", run.ID, "--filter", "verification,outcome"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected filtered replay exit 0, got %d stderr=%q", code, stderr.String())
@@ -13865,7 +13972,7 @@ func TestEventsReplayLegacyVerificationEvent(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected legacy replay exit 0, got %d stderr=%q", code, stderr.String())
@@ -13909,7 +14016,7 @@ func TestEventsFollowDrainsTerminalWithoutDuplicateBoundary(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected follow exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -13940,7 +14047,7 @@ func TestEventsTerminalRunReplaysAndExitsImmediately(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected terminal follow exit 0, got %d stderr=%q", code, stderr.String())
@@ -13967,7 +14074,7 @@ func TestEventsValidationErrorsEmitNoStdout(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected validation exit 2, got %d stderr=%q", code, stderr.String())
@@ -13996,7 +14103,7 @@ func TestEventsMalformedRelevantPayloadFailsNoStdout(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected malformed payload exit 1, got %d stderr=%q", code, stderr.String())
@@ -14020,7 +14127,7 @@ func TestEventsFollowCancellationExits130WithoutTrailer(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"events", run.ID, "--follow"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"events", run.ID, "--follow"}, &stdout, &stderr)
 
 	if code != exitSIGINT {
 		t.Fatalf("expected cancellation exit 130, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -14313,7 +14420,7 @@ func TestAttachDetachLeavesRunActive(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"attach", active.ID}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"attach", active.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean detach exit, got %d stderr=%q", code, stderr.String())
@@ -14382,7 +14489,7 @@ func TestAttachFollowsLiveRunToTerminalState(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{"attach", active.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", active.ID}, &stdout, &stderr)
 
 	if err := <-writerDone; err != nil {
 		t.Fatalf("writer goroutine: %v", err)
@@ -14501,7 +14608,7 @@ func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -14543,7 +14650,7 @@ func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit, got %d", code)
@@ -14575,7 +14682,7 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code == 0 {
 		t.Fatal("expected failed verification to fail the Run")
@@ -14628,7 +14735,7 @@ func TestTriageOnlyBatchJournalsCommitSkipDecision(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected triage-only Batch to succeed, got %d stderr=%q", code, stderr.String())
@@ -14656,7 +14763,7 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 	withSuccessfulPreflight(t, repoDir)
 	var watchStdout bytes.Buffer
 	var watchStderr bytes.Buffer
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &watchStdout, &watchStderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &watchStdout, &watchStderr)
 	if code != 0 {
 		t.Fatalf("seed watch run failed: %d stderr=%q", code, watchStderr.String())
 	}
@@ -14673,7 +14780,7 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	attachCode := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+	attachCode := runCLIContext(t, context.Background(), []string{"attach", runID}, &stdout, &stderr)
 
 	if attachCode != 0 {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", attachCode, stderr.String())
@@ -14698,7 +14805,7 @@ func TestResolvePrintsIssueSummaryAfterCompletion(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())

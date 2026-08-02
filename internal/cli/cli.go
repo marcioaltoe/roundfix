@@ -110,37 +110,38 @@ const (
 )
 
 type commandRequest struct {
-	name                string
-	arguments           []string
-	pr                  string
-	spec                string
-	source              string
-	agent               string
-	agentSet            bool
-	round               string
-	noInput             bool
-	interactive         bool
-	inputShown          bool
-	untilClean          bool
-	maxRounds           int
-	artifactDir         string
-	explicitArtifactDir bool
-	reviewRoot          string
-	baseRepo            string
-	model               string
-	modelSet            bool
-	reasoningEffort     string
-	reasoningEffortSet  bool
-	agentCmd            string
-	agentFullAccess     bool
-	noAgentConsole      bool
-	headBranch          string
-	headRepo            string
-	skipBranchIntegrity bool
-	branchIntegrity     branchIntegrityReport
-	qa                  bool
-	detach              bool
-	detachChild         *detachChild
+	name                 string
+	arguments            []string
+	pr                   string
+	spec                 string
+	source               string
+	agent                string
+	agentSet             bool
+	round                string
+	noInput              bool
+	interactive          bool
+	inputShown           bool
+	untilClean           bool
+	maxRounds            int
+	artifactDir          string
+	explicitArtifactDir  bool
+	reviewRoot           string
+	baseRepo             string
+	model                string
+	modelSet             bool
+	reasoningEffort      string
+	reasoningEffortSet   bool
+	agentCmd             string
+	agentFullAccess      bool
+	noAgentConsole       bool
+	headBranch           string
+	headRepo             string
+	skipBranchIntegrity  bool
+	branchIntegrity      branchIntegrityReport
+	qa                   bool
+	detach               bool
+	detachChild          *detachChild
+	branchIntegrityActor string
 }
 
 var runCommandPreflight = defaultRunCommandPreflight
@@ -181,22 +182,114 @@ func (err validationError) Error() string {
 	return err.message
 }
 
+type commandEnvironment struct {
+	homeDir        string
+	homeDirErr     error
+	workDir        string
+	workDirErr     error
+	environ        []string
+	detachFD       string
+	detachTempPath string
+	tuiMode        string
+	term           string
+	columns        string
+	colorMode      string
+	noColor        string
+	codexPath      string
+	branchActor    string
+}
+
+func commandEnvironmentFromProcess() commandEnvironment {
+	homeDir, homeDirErr := os.UserHomeDir()
+	workDir, workDirErr := os.Getwd()
+	branchActor := ""
+	for _, key := range []string{"GITHUB_ACTOR", "GIT_AUTHOR_NAME", "USER", "USERNAME"} {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			branchActor = value
+			break
+		}
+	}
+	return commandEnvironment{
+		homeDir:        homeDir,
+		homeDirErr:     homeDirErr,
+		workDir:        workDir,
+		workDirErr:     workDirErr,
+		environ:        os.Environ(),
+		detachFD:       os.Getenv(detachHandshakeFDEnv),
+		detachTempPath: os.Getenv(detachConsoleTempEnv),
+		tuiMode:        os.Getenv("ROUNDFIX_TUI"),
+		term:           os.Getenv("TERM"),
+		columns:        os.Getenv("COLUMNS"),
+		colorMode:      os.Getenv("ROUNDFIX_COLOR"),
+		noColor:        os.Getenv("NO_COLOR"),
+		codexPath:      os.Getenv("CODEX_PATH"),
+		branchActor:    branchActor,
+	}
+}
+
+type commandEnvironmentWriter struct {
+	io.Writer
+	environment commandEnvironment
+}
+
+func commandWriter(writer io.Writer, environment commandEnvironment) io.Writer {
+	return commandEnvironmentWriter{Writer: writer, environment: environment}
+}
+
+func environmentForWriter(writer io.Writer) (commandEnvironment, io.Writer) {
+	if wrapped, ok := writer.(commandEnvironmentWriter); ok {
+		return wrapped.environment, wrapped.Writer
+	}
+	return commandEnvironment{}, writer
+}
+
+func (environment commandEnvironment) loadOptions(stderr io.Writer) (roundconfig.LoadOptions, error) {
+	if environment.homeDirErr != nil {
+		return roundconfig.LoadOptions{}, fmt.Errorf("resolve User Config home: %w", environment.homeDirErr)
+	}
+	if environment.workDirErr != nil {
+		return roundconfig.LoadOptions{}, fmt.Errorf("resolve work directory: %w", environment.workDirErr)
+	}
+	return roundconfig.LoadOptions{
+		HomeDir: environment.homeDir,
+		WorkDir: environment.workDir,
+		Stderr:  stderr,
+	}, nil
+}
+
+func loadCommandConfig(environment commandEnvironment, stderr io.Writer) (roundconfig.Loaded, error) {
+	options, err := environment.loadOptions(stderr)
+	if err != nil {
+		return roundconfig.Loaded{}, err
+	}
+	return roundconfig.Load(options)
+}
+
+func (environment commandEnvironment) resolveWorkDir(operation string) (string, error) {
+	if environment.workDirErr != nil {
+		return "", fmt.Errorf("%s: %w", operation, environment.workDirErr)
+	}
+	return environment.workDir, nil
+}
+
 func Run(args []string, stdout, stderr io.Writer) int {
 	ctx, cleanup, interrupted := interruptContext(context.Background())
 	defer cleanup()
-	code := runWithContext(ctx, args, stdout, stderr)
+	code := runWithContext(ctx, args, stdout, stderr, commandEnvironmentFromProcess())
 	return exitForInterrupt(code, interrupted())
 }
 
 func RunContext(ctx context.Context, args []string, stdout, stderr io.Writer) int {
-	return runWithContext(ctx, args, stdout, stderr)
+	return runWithContext(ctx, args, stdout, stderr, commandEnvironmentFromProcess())
 }
 
-func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	detachChild, err := newDetachChildFromEnv()
+	stdout = commandWriter(stdout, environment)
+	stderr = commandWriter(stderr, environment)
+	detachChild, err := newDetachChildFromEnv(environment.detachFD, environment.detachTempPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: detach setup failed: %v\n", app.Name, err)
 		return exitPreflight
@@ -219,41 +312,41 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		fmt.Fprintf(stdout, "%s %s\n", app.Name, app.VersionLine())
 		return exitOK
 	case "init":
-		return runInitCommand(ctx, args[1:], stdout, stderr)
+		return runInitCommand(ctx, args[1:], stdout, stderr, environment)
 	case "setup":
-		return runSetupCommand(ctx, args[1:], stdout, stderr)
+		return runSetupCommand(ctx, args[1:], stdout, stderr, environment)
 	case "doctor":
-		return runDoctorCommand(ctx, args[1:], stdout, stderr)
+		return runDoctorCommand(ctx, args[1:], stdout, stderr, environment)
 	case "gc":
-		return runGCCommand(ctx, args[1:], stdout, stderr)
+		return runGCCommand(ctx, args[1:], stdout, stderr, environment)
 	case "upgrade":
 		return runUpgradeCommand(ctx, args[1:], stdout, stderr)
 	case "runs":
-		return runRunsCommand(ctx, args[1:], stdout, stderr)
+		return runRunsCommand(ctx, args[1:], stdout, stderr, environment)
 	case "stop":
-		return runStopCommand(ctx, args[1:], stdout, stderr)
+		return runStopCommand(ctx, args[1:], stdout, stderr, environment)
 	case "attach":
-		return runAttachCommand(ctx, args[1:], stdout, stderr)
+		return runAttachCommand(ctx, args[1:], stdout, stderr, environment)
 	case "events":
-		return runEventsCommand(ctx, args[1:], stdout, stderr)
+		return runEventsCommand(ctx, args[1:], stdout, stderr, environment)
 	case "skills":
-		return runSkillsCommand(ctx, args[1:], stdout, stderr)
+		return runSkillsCommand(ctx, args[1:], stdout, stderr, environment)
 	case "fetch", "resolve", "watch":
-		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild)
+		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild, environment)
 	case "implement":
-		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild)
+		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
 	case "settle":
-		return runSettleCommand(ctx, args[1:], stdout, stderr)
+		return runSettleCommand(ctx, args[1:], stdout, stderr, environment)
 	case "reconcile":
-		return runReconcileCommand(ctx, args[1:], stdout, stderr)
+		return runReconcileCommand(ctx, args[1:], stdout, stderr, environment)
 	case "release":
-		return runReleaseCommand(ctx, args[1:], stdout, stderr)
+		return runReleaseCommand(ctx, args[1:], stdout, stderr, environment)
 	case "baseline":
-		return runBaselineCommand(ctx, args[1:], stdout, stderr)
+		return runBaselineCommand(ctx, args[1:], stdout, stderr, environment)
 	case "profiles":
-		return runProfilesCommand(ctx, args[1:], stdout, stderr)
+		return runProfilesCommand(ctx, args[1:], stdout, stderr, environment)
 	case "archive":
-		return runArchiveCommand(ctx, args[1:], stdout, stderr)
+		return runArchiveCommand(ctx, args[1:], stdout, stderr, environment)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown command %q\n", app.Name, args[0])
 		fmt.Fprintf(stderr, "Run '%s --help' for usage.\n", app.Name)
@@ -261,7 +354,7 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	}
 }
 
-func runInitCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runInitCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("init"))
 		return exitOK
@@ -289,9 +382,16 @@ func runInitCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		}
 	}
 
+	loadOptions, err := environment.loadOptions(stderr)
+	if err != nil {
+		printInitFailure(err, stderr)
+		return exitRunFailed
+	}
 	result, err := roundconfig.Init(ctx, roundconfig.InitOptions{
-		Scope: selectedScope,
-		Force: *force,
+		Scope:   selectedScope,
+		HomeDir: loadOptions.HomeDir,
+		WorkDir: loadOptions.WorkDir,
+		Force:   *force,
 	})
 	if err != nil {
 		printInitFailure(err, stderr)
@@ -301,7 +401,7 @@ func runInitCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 	return exitOK
 }
 
-func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("skills"))
 		return exitOK
@@ -344,7 +444,7 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 		return runSkillsList(stdout)
 	case "install":
-		return runSkillsInstall(ctx, args[1:], stdout, stderr)
+		return runSkillsInstall(ctx, args[1:], stdout, stderr, environment)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown skills command %q\n", app.Name, args[0])
 		fmt.Fprintf(stderr, "Run '%s skills --help' for usage.\n", app.Name)
@@ -437,7 +537,7 @@ func (err forceStopOwnerError) Unwrap() error {
 	return err.Err
 }
 
-func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("stop"))
 		return exitOK
@@ -448,7 +548,7 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		printStopFailure(err, stderr)
 		return exitPreflight
 	}
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+	loaded, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		printStopFailure(err, stderr)
 		return exitPreflight
@@ -919,7 +1019,7 @@ func defaultResolvePullRequestForStop(ctx context.Context, workDir string, pr st
 	return (preflight.GHPullRequestResolver{}).ResolvePullRequest(ctx, workDir, pr)
 }
 
-func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	fs := flag.NewFlagSet("skills install", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	target := fs.String("target", "project", "Skill install target: project, codex, claude, opencode, or all")
@@ -950,7 +1050,12 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 	projectRoot := ""
 	if targetValue == "project" && strings.TrimSpace(*dir) == "" {
 		var err error
-		projectRoot, err = resolveSkillsProjectRoot(ctx)
+		workDir, workDirErr := environment.resolveWorkDir("resolve work directory")
+		if workDirErr != nil {
+			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, workDirErr)
+			return exitPreflight
+		}
+		projectRoot, err = resolveSkillsProjectRoot(ctx, workDir)
 		if err != nil {
 			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
 			return exitPreflight
@@ -988,16 +1093,12 @@ func defaultPromptInitScope(ctx context.Context, stderr io.Writer) (string, erro
 	return readInitScope(ctx, os.Stdin, stderr)
 }
 
-func defaultResolveSkillsProjectRoot(ctx context.Context) (string, error) {
+func defaultResolveSkillsProjectRoot(ctx context.Context, cwd string) (string, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	if err := ctx.Err(); err != nil {
 		return "", err
-	}
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("resolve work directory: %w", err)
 	}
 	if root := findSkillsGitRoot(cwd); root != "" {
 		return root, nil
@@ -1387,7 +1488,7 @@ func defaultSuggestCurrentPullRequest(ctx context.Context, gitRoot string) (stri
 	return strings.TrimSpace(string(output)), nil
 }
 
-func runOperationalCommand(ctx context.Context, name string, args []string, stdout, stderr io.Writer, detachChild *detachChild) int {
+func runOperationalCommand(ctx context.Context, name string, args []string, stdout, stderr io.Writer, detachChild *detachChild, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage(name))
 		return exitOK
@@ -1399,7 +1500,7 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		}
 	}
 
-	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+	loadedConfig, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
@@ -1412,6 +1513,7 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		return exitPreflight
 	}
 	req.detachChild = detachChild
+	req.branchIntegrityActor = environment.branchActor
 	req = applyDetachSemantics(req)
 
 	req, err = maybeCollectInteractiveInput(ctx, req, loadedConfig, stderr)
@@ -1428,7 +1530,7 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		return exitPreflight
 	}
 	if req.detach {
-		return runDetachedCommand(append([]string{name}, args...), req, loadedConfig, stdout, stderr)
+		return runDetachedCommand(append([]string{name}, args...), req, loadedConfig, stdout, stderr, environment.environ, environment.workDir)
 	}
 
 	explicitArtifactDir := strings.TrimSpace(req.artifactDir) != ""
@@ -1854,7 +1956,7 @@ func publishBranchIntegrityBypassAudit(ctx context.Context, req commandRequest, 
 		return fmt.Errorf("publish Branch Integrity Preflight bypass audit comment: Base Repository is unknown for Open Pull Request #%d", prNumber)
 	}
 	marker := branchIntegrityBypassMarker(runID, preflightResult.PullRequest.Number)
-	body := branchIntegrityBypassAuditBody(runID, preflightResult, req.branchIntegrity, marker, time.Now().UTC())
+	body := branchIntegrityBypassAuditBody(runID, preflightResult, req.branchIntegrity, marker, time.Now().UTC(), req.branchIntegrityActor)
 	if err := commentOnPullRequest(ctx, req.source, baseRepository, prNumber, body); err != nil {
 		return fmt.Errorf("publish Branch Integrity Preflight bypass audit comment: %w", err)
 	}
@@ -1866,11 +1968,11 @@ func branchIntegrityBypassMarker(runID string, prNumber string) string {
 	return coderabbit.RoundfixCommentMarker("run:"+strings.TrimSpace(runID), "bypass:branch-integrity", "pr:"+strings.TrimSpace(prNumber))
 }
 
-func branchIntegrityBypassAuditBody(runID string, preflightResult preflight.Result, report branchIntegrityReport, marker string, now time.Time) string {
+func branchIntegrityBypassAuditBody(runID string, preflightResult preflight.Result, report branchIntegrityReport, marker string, now time.Time, actor string) string {
 	var builder strings.Builder
 	builder.WriteString("Roundfix Branch Integrity Preflight bypassed.\n\n")
 	fmt.Fprintf(&builder, "Run: %s\n", runID)
-	fmt.Fprintf(&builder, "Actor: %s\n", branchIntegrityAuditActor())
+	fmt.Fprintf(&builder, "Actor: %s\n", branchIntegrityAuditActor(actor))
 	fmt.Fprintf(&builder, "Time: %s\n", now.UTC().Format(time.RFC3339))
 	fmt.Fprintf(&builder, "Open Pull Request: #%s\n", preflightResult.PullRequest.Number)
 	fmt.Fprintf(&builder, "Head Repository: %s\n", preflightResult.PullRequest.HeadRepository)
@@ -1922,11 +2024,9 @@ func branchIntegrityBypassAuditBody(runID string, preflightResult preflight.Resu
 	return coderabbit.RoundfixCommentBody(builder.String(), marker)
 }
 
-func branchIntegrityAuditActor() string {
-	for _, key := range []string{"GITHUB_ACTOR", "GIT_AUTHOR_NAME", "USER", "USERNAME"} {
-		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
-			return value
-		}
+func branchIntegrityAuditActor(actor string) string {
+	if actor = strings.TrimSpace(actor); actor != "" {
+		return actor
 	}
 	return "unknown"
 }
@@ -2188,10 +2288,10 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
 	}
-	cockpitView := buildLiveRunView(req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, nil)
+	cockpitView := buildLiveRunView(req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, nil, stderr)
 	cockpitView.WorkDir = preflightResult.Git.Root
 	if !liveTUIEnabled(stderr) {
-		plainView := buildLiveRunView(req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{"Agent and verification output will stream below."})
+		plainView := buildLiveRunView(req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{"Agent and verification output will stream below."}, stderr)
 		plainView.WorkDir = preflightResult.Git.Root
 		fmt.Fprint(stderr, roundtui.RenderLiveRunView(plainView))
 	}
@@ -2653,10 +2753,10 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	fmt.Fprintf(stderr, "Max Rounds: %d\n", req.maxRounds)
 
 	// One cockpit for the entire Watch Run, across all Rounds and Batches.
-	cockpitView := buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, nil)
+	cockpitView := buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, nil, stderr)
 	cockpitView.WorkDir = preflightResult.Git.Root
 	if !liveTUIEnabled(stderr) {
-		plainView := buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, []string{"Waiting for Review Source status..."})
+		plainView := buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, []string{"Waiting for Review Source status..."}, stderr)
 		plainView.WorkDir = preflightResult.Git.Root
 		fmt.Fprint(stderr, roundtui.RenderLiveRunView(plainView))
 	}
@@ -3185,10 +3285,10 @@ func printFetchSuccess(stdout io.Writer, view fetchSuccessView) {
 }
 
 func printLiveRunView(stderr io.Writer, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, pipelineState string, issues []rounds.Issue, console []string) {
-	fmt.Fprint(stderr, roundtui.RenderLiveRunView(buildLiveRunView(req, loaded, preflightResult, runID, pipelineState, issues, console)))
+	fmt.Fprint(stderr, roundtui.RenderLiveRunView(buildLiveRunView(req, loaded, preflightResult, runID, pipelineState, issues, console, stderr)))
 }
 
-func buildLiveRunView(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, pipelineState string, issues []rounds.Issue, console []string) roundtui.LiveRunView {
+func buildLiveRunView(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, pipelineState string, issues []rounds.Issue, console []string, output io.Writer) roundtui.LiveRunView {
 	return roundtui.LiveRunView{
 		Command:         req.name,
 		Repository:      preflightResult.PullRequest.HeadRepository,
@@ -3210,18 +3310,19 @@ func buildLiveRunView(req commandRequest, loaded roundconfig.Loaded, preflightRe
 		LastPush:        lastPushState(preflightResult.PushPlan),
 		Issues:          issues,
 		Console:         console,
-		Width:           liveViewWidth(),
+		Width:           liveViewWidth(output),
 	}
 }
 
 func liveTUIEnabled(output io.Writer) bool {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv("ROUNDFIX_TUI"))) {
+	environment, output := environmentForWriter(output)
+	switch strings.ToLower(strings.TrimSpace(environment.tuiMode)) {
 	case "always", "1", "true", "yes", "on":
 		return true
 	case "never", "0", "false", "no", "off":
 		return false
 	}
-	if strings.EqualFold(os.Getenv("TERM"), "dumb") {
+	if strings.EqualFold(environment.term, "dumb") {
 		return false
 	}
 	file, ok := output.(*os.File)
@@ -3232,8 +3333,9 @@ func liveTUIEnabled(output io.Writer) bool {
 	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
 
-func liveViewWidth() int {
-	width, err := strconv.Atoi(strings.TrimSpace(os.Getenv("COLUMNS")))
+func liveViewWidth(output io.Writer) int {
+	environment, _ := environmentForWriter(output)
+	width, err := strconv.Atoi(strings.TrimSpace(environment.columns))
 	if err == nil && width >= 80 {
 		return width
 	}

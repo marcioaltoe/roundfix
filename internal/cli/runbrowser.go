@@ -79,8 +79,8 @@ func browserRunListings(ctx context.Context, reader *store.Store) (active []stor
 // runRunsBrowserCommand is the bare `runs` interactive entry point: it
 // opens the machine-wide Run Browser. No repository is required — the
 // browser lists every repository's Runs.
-func runRunsBrowserCommand(ctx context.Context, stdout, stderr io.Writer) int {
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+func runRunsBrowserCommand(ctx context.Context, stdout, stderr io.Writer, environment commandEnvironment) int {
+	loaded, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		printRunsBrowserFailure(err, stderr)
 		return exitPreflight

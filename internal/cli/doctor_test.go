@@ -189,7 +189,7 @@ func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T)
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"doctor"}, &stdout, &stderr)
+			code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
 
 			if code != test.wantCode {
 				t.Fatalf("Doctor exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
@@ -272,7 +272,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"doctor"}, &stdout, &stderr)
+			code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d", tt.wantCode, code)
@@ -415,7 +415,7 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"doctor"}, &stdout, &stderr)
+			code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
 
 			if code != test.wantCode {
 				t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
@@ -507,7 +507,7 @@ func TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"doctor"}, &stdout, &stderr)
+	code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -576,7 +576,7 @@ func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"doctor"}, &stdout, &stderr)
+	code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected doctor adapter failure exit %d, got %d", exitRunFailed, code)
@@ -638,7 +638,7 @@ profiles:
 	withAgentRunner(t, runner)
 	var validateStdout bytes.Buffer
 	var validateStderr bytes.Buffer
-	validateCode := Run([]string{"profiles", "validate", "--category", "backend", "--json"}, &validateStdout, &validateStderr)
+	validateCode := runCLI(t, []string{"profiles", "validate", "--category", "backend", "--json"}, &validateStdout, &validateStderr)
 	if validateCode != exitPreflight {
 		t.Fatalf("profiles validate exit = %d, want %d", validateCode, exitPreflight)
 	}
@@ -652,7 +652,7 @@ profiles:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"doctor"}, &stdout, &stderr)
+	code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected doctor selection failure exit %d, got %d", exitRunFailed, code)
@@ -701,7 +701,7 @@ func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"doctor"}, &stdout, &stderr)
+	code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected rejected model exit %d, got %d", exitRunFailed, code)
@@ -845,7 +845,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"doctor"}, &stdout, &stderr)
+			code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
 
 			if code != test.wantCode {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", code, test.wantCode, stderr.String())
@@ -908,7 +908,7 @@ func TestRunDoctorPassesCommandContextToRepositorySkillReadiness(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := runDoctorCommand(commandContext, nil, &stdout, &stderr)
+	code := runDoctorCommand(commandContext, nil, &stdout, &stderr, commandEnvironmentForTest(t))
 
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -917,7 +917,7 @@ func TestRunDoctorPassesCommandContextToRepositorySkillReadiness(t *testing.T) {
 
 func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 	processDir := t.TempDir()
-	t.Chdir(processDir)
+	setCommandWorkDirForTest(t, processDir)
 	var calls []string
 	recordCall := func(name string) {
 		calls = append(calls, name)
@@ -945,7 +945,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"doctor"}, &stdout, &stderr)
+	code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("exit code = %d, want %d", code, exitRunFailed)
@@ -981,8 +981,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 	homeDir := t.TempDir()
 	repoDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
-	t.Chdir(repoDir)
+	setCommandEnvironmentForTest(t, homeDir, repoDir)
 	mustMkdir(t, filepath.Join(repoDir, ".git"))
 	writeDoctorReadyRepositoryFixture(t, repoDir)
 	external, manifestOK, err := resolveExternalSkillRequirement(repoDir)
@@ -1034,7 +1033,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"doctor"}, &stdout, &stderr)
+	code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -1073,7 +1072,7 @@ func TestRunDoctorRejectsArguments(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"doctor", "extra"}, &stdout, &stderr)
+	code := runCLI(t, []string{"doctor", "extra"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected exit code %d, got %d", exitPreflight, code)
@@ -1292,7 +1291,7 @@ func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loade
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
 			return loaded, nil
 		},
-		healthChecker: func(roundconfig.Loaded) HealthChecker {
+		healthChecker: func(roundconfig.Loaded, string) HealthChecker {
 			return checker
 		},
 		profileReadiness: readiness,
@@ -1315,7 +1314,7 @@ func withDoctorLiveDeps(t *testing.T, checker HealthChecker) {
 	t.Helper()
 	old := doctorDeps
 	doctorDeps = defaultDoctorDependencies()
-	doctorDeps.healthChecker = func(roundconfig.Loaded) HealthChecker { return checker }
+	doctorDeps.healthChecker = func(roundconfig.Loaded, string) HealthChecker { return checker }
 	doctorDeps.resolveExternal = func(string) ([]string, bool, error) {
 		return skills.Recommended(), true, nil
 	}

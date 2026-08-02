@@ -73,9 +73,9 @@ func (req commandRequest) reportDetachedRunCreated(runID string) error {
 	return req.detachChild.reportRunCreated(runID, req.artifactDir)
 }
 
-func newDetachChildFromEnv() (*detachChild, error) {
-	fdValue := strings.TrimSpace(os.Getenv(detachHandshakeFDEnv))
-	tempPath := strings.TrimSpace(os.Getenv(detachConsoleTempEnv))
+func newDetachChildFromEnv(fdValue, tempPath string) (*detachChild, error) {
+	fdValue = strings.TrimSpace(fdValue)
+	tempPath = strings.TrimSpace(tempPath)
 	if fdValue == "" && tempPath == "" {
 		return nil, nil
 	}
@@ -140,7 +140,7 @@ func (child *detachChild) reportRunCreated(runID string, artifactDir string) err
 	return child.Close()
 }
 
-func runDetachedCommand(args []string, req commandRequest, loaded roundconfig.Loaded, stdout, stderr io.Writer) int {
+func runDetachedCommand(args []string, req commandRequest, loaded roundconfig.Loaded, stdout, stderr io.Writer, baseEnv []string, workDir string) int {
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(req.artifactDir, loaded.GitRoot, loaded.HomeDir)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -185,7 +185,8 @@ func runDetachedCommand(args []string, req commandRequest, loaded roundconfig.Lo
 	}()
 
 	cmd := exec.Command(executable, removeDetachArg(args)...)
-	cmd.Env = detachedChildEnv(os.Environ(), detachHandshakeFD, tempPath)
+	cmd.Dir = workDir
+	cmd.Env = detachedChildEnv(baseEnv, detachHandshakeFD, tempPath)
 	cmd.Stdin = devNull
 	cmd.Stdout = tempFile
 	cmd.Stderr = tempFile

@@ -23,7 +23,7 @@ var doctorDeps = defaultDoctorDependencies()
 
 type doctorDependencies struct {
 	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
-	healthChecker    func(roundconfig.Loaded) HealthChecker
+	healthChecker    func(roundconfig.Loaded, string) HealthChecker
 	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
 	resolveExternal  func(string) ([]string, bool, error)
 	checkSkills      func(context.Context, string, []string) (skills.RepositoryReadiness, error)
@@ -32,8 +32,8 @@ type doctorDependencies struct {
 func defaultDoctorDependencies() doctorDependencies {
 	return doctorDependencies{
 		loadConfig: roundconfig.Load,
-		healthChecker: func(roundconfig.Loaded) HealthChecker {
-			return setupDeps.healthChecker()
+		healthChecker: func(_ roundconfig.Loaded, codexPath string) HealthChecker {
+			return setupDeps.healthChecker(codexPath)
 		},
 		profileReadiness: func(ctx context.Context, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string) profileProofResult {
 			return proveProfileSelections(ctx, config, categories, workDir, newEngineCollaborators().runner)
@@ -43,7 +43,7 @@ func defaultDoctorDependencies() doctorDependencies {
 	}
 }
 
-func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("doctor"))
 		return exitOK
@@ -53,19 +53,24 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
-	loaded, err := doctorDeps.loadConfig(roundconfig.LoadOptions{Stderr: stderr})
+	loadOptions, err := environment.loadOptions(stderr)
+	if err != nil {
+		printDoctorFailure(err, stderr)
+		return exitRunFailed
+	}
+	loaded, err := doctorDeps.loadConfig(loadOptions)
 	if err != nil {
 		printDoctorFailure(err, stderr)
 		return exitRunFailed
 	}
 
-	checker := doctorDeps.healthChecker(loaded)
+	checker := doctorDeps.healthChecker(loaded, environment.codexPath)
 	repositoryRoot := strings.TrimSpace(loaded.GitRoot)
 	profileWorkDir := repositoryRoot
 	if profileWorkDir == "" {
-		profileWorkDir, err = os.Getwd()
+		profileWorkDir, err = environment.resolveWorkDir("resolve process working directory")
 		if err != nil {
-			printDoctorFailure(fmt.Errorf("resolve process working directory: %w", err), stderr)
+			printDoctorFailure(err, stderr)
 			return exitRunFailed
 		}
 	}
