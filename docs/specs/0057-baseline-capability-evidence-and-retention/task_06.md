@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -73,3 +73,48 @@ outcomes a full plan would.
 - `_prd.md` → User Story 4; Core Features 6; Success Metrics (obtainable with
   zero decisions and matching full-plan outcomes).
 - `_techspec.md` → API Contracts; Build Order 5.
+
+## Result
+
+Implementation did not start because this Task's required Task 04 dependency
+is marked completed without its implementation. Task 04's `## Result` records
+that probe rendering and blocking, advisory, and informational grouping were
+not implemented because its changed-path criterion excluded the sole renderer
+in `internal/cli/baseline_human.go`. The current full-plan renderer still
+prints only each divergence's message and next action, derives only blocking or
+advisory labels, and never reads `ProfileDivergence.Probe`, `.Evidence`, or
+`.Requirement` for the required presentation.
+
+Task 06 therefore cannot both render the same probe evidence and requirement
+grouping as the full plan and leave the full plan's behavior and output
+unchanged. Implementing the missing renderer here would absorb Task 04's slice,
+contrary to the bounded Task contract.
+
+Focused inspection evidence:
+
+- `rtk git -c core.fsmonitor=false status --short` showed only the Daemon-owned
+  `pending` to `in_progress` edit in this task file before inspection.
+- `rtk git -c core.fsmonitor=false show --stat --oneline 6192029` showed that
+  the Task 04 commit changed only `task_04.md`.
+- `rtk rg -n
+  "TestDivergenceRendersProbe|TestDivergenceGroupsByRequirement|DivergenceGroup|informational"
+  internal` found no Task 04 implementation or regression test.
+- Reading `renderBaselineProfileAlignment` confirmed it has no probe renderer
+  and no informational requirement group.
+- Repository search found no other shared alignment renderer that Task 06 can
+  reuse.
+
+Acceptance evidence:
+
+- The zero-decision re-check, field-by-field equivalence, read-only behavior,
+  named missing-Profile error, and CLI rendering were not implemented or
+  claimed because the required presentation dependency is absent.
+- Full-plan behavior and characterization artifacts remain unchanged because
+  no implementation code, test, or golden file was edited.
+- The changed-path postflight contains no path outside this task file.
+
+Required follow-up: reopen Task 04 with `internal/cli/baseline_human.go` and its
+canonical tests in scope, implement and verify its declared presentation
+contract, then run Task 06 fresh against that shared renderer.
+
+Daemon Verification was not run in this Agent turn.
