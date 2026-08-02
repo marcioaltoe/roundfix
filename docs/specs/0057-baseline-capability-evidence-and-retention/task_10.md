@@ -59,12 +59,12 @@ disappears wrongly is worse than one that fires too often.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/baseline -run TestCarrierClassification -count=1` —
+- `go test ./internal/baseline -run '^TestCarrierClassification$' -count=1 -v | grep -q -- "--- PASS: TestCarrierClassification"` —
   expected: exit 0; all four kinds classify and only unmanaged nested carriers
   warn.
-- `go test ./internal/baseline -run TestUnclassifiableCarrierStillWarns -count=1`
+- `go test ./internal/baseline -run '^TestUnclassifiableCarrierStillWarns$' -count=1 -v | grep -q -- "--- PASS: TestUnclassifiableCarrierStillWarns"`
   — expected: exit 0; narrowing requires positive evidence.
-- `go test ./internal/baseline -run TestBaselinePlanCharacterization -count=1` —
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -v | grep -q -- "--- PASS: TestBaselinePlanCharacterization"` —
   expected: exit 0 with goldens re-recorded only for the intended warning
   suppression; no warning disappears without a positive classification.
 - `go test ./internal/baseline -count=1` — expected: exit 0.

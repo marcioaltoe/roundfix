@@ -1,7 +1,7 @@
 ---
 task: task_12
 spec: 0057-baseline-capability-evidence-and-retention
-status: completed
+status: pending
 type: docs
 complexity: medium
 ---
@@ -77,57 +77,3 @@ lives.
 - `_techspec.md` → API Contracts; Build Order 12.
 - ADR-0087.
 
-## Result
-
-### Implementation
-
-- The Baseline command reference now explains requirement-strength grouping,
-  the advisory non-blocking contract, and executable discovery's bounded,
-  non-executing symlink resolution with each rejection reason.
-- It records all four Profile-divergence outcomes. The adaptation option is
-  explicitly removal-only, while remediate-and-re-run exits without writing,
-  prints per-divergence remediation and the exact re-check command, and remains
-  distinct from decline.
-- It explains when to use the capability re-check, its shared capability
-  outcomes, its zero-decision contract, and its prohibition on repository,
-  journal, and configuration writes.
-- It documents same-identity Profile or catalog digest drift, clause-level
-  retention accounting, the action-required stop for an unaccounted clause,
-  all five status axes, and the retention-plus-idempotence completion rule.
-
-### Focused checks
-
-- The Daemon diagnostic artifact for Verification attempt 1 was inspected; it
-  exists but contains no log body. The reported failed command identified the
-  missing `re-check` documentation as the actionable diagnostic.
-- Static inspection of ADR-0087, `resolveExecutableCandidate`,
-  `TestSameIdentityDriftRequiresRetention`, `ResultStatusMatrix`, and
-  `resultStatusMatrix` grounded the symlink reasons, retention boundary, axis
-  names, and `verified`/`not run` vocabulary in repository sources.
-- `rtk git -c core.fsmonitor=false diff --check` passed after the documentation
-  and Result edits.
-- The commands declared under `## Verification` were not rerun; the Daemon
-  owns the next configured Verification attempt.
-
-### Acceptance evidence
-
-- Re-check: the command reference states when to use it, that it shares full
-  plan capability outcomes, requires and resolves no decisions, and writes no
-  repository file, journal entry, or configuration.
-- Prompt outcomes: the reference lists four outcomes and states the adaptation
-  option's removal-only boundary.
-- Retention: the reference binds retention accounting to Profile or catalog
-  digest drift under an unchanged Baseline identifier and states that an
-  unaccounted clause stops planning before apply.
-- Status matrix: the reference lists approved postimages, semantic retention,
-  Profile alignment, repository Verification, and idempotence, each as
-  `verified` or `not run`; completion language requires verified retention and
-  a passing idempotence check.
-- Discovery: the reference states that bounded symlink chains resolve without
-  execution and explains `link-cycle`, `broken-link`, and `not-executable`.
-- Requirement strength: the reference groups blocking, advisory, and
-  informational divergences and states that an advisory never blocks readiness
-  or apply.
-- Scope: this repair changed only `docs/user-guide/commands.md` and this Task
-  file. No Go source, tooling file, sibling Task, or Task Graph manifest was
-  edited.

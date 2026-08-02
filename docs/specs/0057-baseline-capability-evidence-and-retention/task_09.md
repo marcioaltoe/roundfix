@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0057-baseline-capability-evidence-and-retention
-status: completed
+status: pending
 type: backend
 complexity: medium
 ---
@@ -53,11 +53,11 @@ against meaning rather than against bytes.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/baseline -run TestClauseDeltaRendersBeforeLedger -count=1`
+- `go test ./internal/baseline -run '^TestClauseDeltaRendersBeforeLedger$' -count=1 -v | grep -q -- "--- PASS: TestClauseDeltaRendersBeforeLedger"`
   — expected: exit 0; ordering, dispositions, and counts hold.
-- `go test ./internal/baseline -run TestSameIdentityDriftRequiresRetention -count=1`
+- `go test ./internal/baseline -run '^TestSameIdentityDriftRequiresRetention$' -count=1 -v | grep -q -- "--- PASS: TestSameIdentityDriftRequiresRetention"`
   — expected: exit 0; the gate from task 08 still holds.
-- `go test ./internal/baseline -run TestBaselinePlanCharacterization -count=1` —
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -v | grep -q -- "--- PASS: TestBaselinePlanCharacterization"` —
   expected: exit 0.
 - `go test ./internal/baseline -count=1` — expected: exit 0.
 

@@ -75,11 +75,11 @@ lives in the public command surface.
 - `go build -buildvcs=false ./...` — expected: exit 0.
 - `go test ./internal/cli -run 'TestBaselineMacroJourneysPublicCLI/update_and_profile_change' -count=1`
   — expected: exit 0; the journey that regressed completes again.
-- `go test ./internal/baseline -run TestSameIdentityDriftRequiresRetention -count=1`
+- `go test ./internal/baseline -run '^TestSameIdentityDriftRequiresRetention$' -count=1 -v | grep -q -- "--- PASS: TestSameIdentityDriftRequiresRetention"`
   — expected: exit 0; the gate still fires on the path it owns.
-- `go test ./internal/baseline -run TestReadyPlanNeverCarriesEmptyLedger -count=1`
+- `go test ./internal/baseline -run '^TestReadyPlanNeverCarriesEmptyLedger$' -count=1 -v | grep -q -- "--- PASS: TestReadyPlanNeverCarriesEmptyLedger"`
   — expected: exit 0.
-- `go test ./internal/baseline -run TestBaselinePlanCharacterization -count=1` —
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -v | grep -q -- "--- PASS: TestBaselinePlanCharacterization"` —
   expected: exit 0; the corpus now covers the public command journeys.
 - `go test ./internal/baseline ./internal/cli -count=1` — expected: exit 0.
 

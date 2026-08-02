@@ -54,9 +54,9 @@ its evidence through the projection. Nothing renders them differently yet.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/baseline -run TestDivergenceCarriesProbeEvidence -count=1`
+- `go test ./internal/baseline -run '^TestDivergenceCarriesProbeEvidence$' -count=1 -v | grep -q -- "--- PASS: TestDivergenceCarriesProbeEvidence"`
   — expected: exit 0; probe and evidence are present and match the evaluation.
-- `go test ./internal/baseline -run TestBaselinePlanCharacterization -count=1` —
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -v | grep -q -- "--- PASS: TestBaselinePlanCharacterization"` —
   expected: exit 0; no rendered outcome moved.
 - `go test ./internal/baseline -count=1` — expected: exit 0.
 - `go vet ./internal/baseline` — expected: exit 0.

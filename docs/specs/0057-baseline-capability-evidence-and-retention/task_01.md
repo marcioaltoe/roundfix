@@ -57,9 +57,9 @@ measured against.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/baseline -run TestBaselinePlanCharacterization -count=1` —
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -v | grep -q -- "--- PASS: TestBaselinePlanCharacterization"` —
   expected: exit 0; the corpus matches the current tree.
-- `go test ./internal/baseline -run TestBaselinePlanCharacterization -count=1` —
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -v | grep -q -- "--- PASS: TestBaselinePlanCharacterization"` —
   expected: exit 0 on a second consecutive run, proving the comparison is stable
   and self-recording is gated.
 - `grep -rq "TestBaselinePlanCharacterization" internal/baseline` — expected:

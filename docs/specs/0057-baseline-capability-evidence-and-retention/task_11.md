@@ -60,11 +60,11 @@ language for the case that earns it.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/baseline -run TestResultStatusMatrix -count=1` — expected:
+- `go test ./internal/baseline -run '^TestResultStatusMatrix$' -count=1 -v | grep -q -- "--- PASS: TestResultStatusMatrix"` — expected:
   exit 0; five axes, each verified or not run.
-- `go test ./internal/baseline -run TestCompletionLanguageRequiresRetention -count=1`
+- `go test ./internal/baseline -run '^TestCompletionLanguageRequiresRetention$' -count=1 -v | grep -q -- "--- PASS: TestCompletionLanguageRequiresRetention"`
   — expected: exit 0; verified postimages alone never read as complete.
-- `go test ./internal/baseline -run TestBaselinePlanCharacterization -count=1` —
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -v | grep -q -- "--- PASS: TestBaselinePlanCharacterization"` —
   expected: exit 0.
 - `go test ./internal/baseline -count=1` — expected: exit 0.
 

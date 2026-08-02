@@ -40,7 +40,10 @@ this report's items were covered there.
   confirmation-gated workflow; ADR-0070 keeps the audit byte-exhaustive
   while preserving root instructions; ADR-0071 keeps plans portable and
   preimage-bound; ADR-0075 keeps divergence resolution a confirmed
-  repository-owned adaptation. Source: `docs/agents/domain.md`.
+  repository-owned adaptation; ADR-0087 governs executable capability discovery
+  resolving a bounded symlink chain without ever executing a candidate, which
+  is what lets a symlinked install stop reporting as missing. Source:
+  `docs/agents/domain.md`.
 - Tooling authority: applicable — on 2026-07-28, the maintainer expressly
   authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
   `skills/roundfix/SKILL.md`, plus the deterministic Skill-digest fallout in

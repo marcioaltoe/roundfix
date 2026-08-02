@@ -58,10 +58,10 @@ expectation; this Task lets that mapping satisfy the role.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/baseline -run TestPortableVerificationRoleMapping -count=1`
+- `go test ./internal/baseline -run '^TestPortableVerificationRoleMapping$' -count=1 -v | grep -q -- "--- PASS: TestPortableVerificationRoleMapping"`
   — expected: exit 0; mapped-and-present satisfies, unmapped and
   mapped-but-absent do not.
-- `go test ./internal/baseline -run TestBaselinePlanCharacterization -count=1` —
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -v | grep -q -- "--- PASS: TestBaselinePlanCharacterization"` —
   expected: exit 0; unmapped repositories are unchanged.
 - `go test ./internal/baseline -count=1` — expected: exit 0.
 

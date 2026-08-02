@@ -64,11 +64,11 @@ It is also the only slice that turns a completing plan into a stopping one.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/baseline -run TestSameIdentityDriftRequiresRetention -count=1`
+- `go test ./internal/baseline -run '^TestSameIdentityDriftRequiresRetention$' -count=1 -v | grep -q -- "--- PASS: TestSameIdentityDriftRequiresRetention"`
   — expected: exit 0; the disappearing-clause fixture exits action-required.
-- `go test ./internal/baseline -run TestReadyPlanNeverCarriesEmptyLedger -count=1`
+- `go test ./internal/baseline -run '^TestReadyPlanNeverCarriesEmptyLedger$' -count=1 -v | grep -q -- "--- PASS: TestReadyPlanNeverCarriesEmptyLedger"`
   — expected: exit 0.
-- `go test ./internal/baseline -run TestBaselinePlanCharacterization -count=1` —
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -v | grep -q -- "--- PASS: TestBaselinePlanCharacterization"` —
   expected: exit 0; every plan ready today is still ready.
 - `go test ./internal/baseline -count=1` — expected: exit 0.
 

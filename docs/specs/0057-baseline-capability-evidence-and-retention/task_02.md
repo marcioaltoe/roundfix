@@ -60,11 +60,11 @@ the candidate it inspected instead of an empty result.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/baseline -run TestExecutableCandidateResolution -count=1` —
+- `go test ./internal/baseline -run '^TestExecutableCandidateResolution$' -count=1 -v | grep -q -- "--- PASS: TestExecutableCandidateResolution"` —
   expected: exit 0; all seven probe cases assert their own reason.
-- `go test ./internal/baseline -run TestExecutableCandidateNeverExecutes -count=1`
+- `go test ./internal/baseline -run '^TestExecutableCandidateNeverExecutes$' -count=1 -v | grep -q -- "--- PASS: TestExecutableCandidateNeverExecutes"`
   — expected: exit 0; a target that would record its invocation records nothing.
-- `go test ./internal/baseline -run TestBaselinePlanCharacterization -count=1` —
+- `go test ./internal/baseline -run '^TestBaselinePlanCharacterization$' -count=1 -v | grep -q -- "--- PASS: TestBaselinePlanCharacterization"` —
   expected: exit 0.
 - `go test ./internal/baseline -count=1` — expected: exit 0.
 
