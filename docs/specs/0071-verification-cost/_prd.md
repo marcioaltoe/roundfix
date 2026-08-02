@@ -29,8 +29,22 @@ slowest test — each of which already builds its own repository — took it fro
 `t.TempDir()`, and sixty-nine subtest blocks are structurally similar
 candidates.
 
-Neither problem is about having too many tests. Coverage is the asset; the cost
-is how the suite is executed and how often it is asked for.
+A third cost is how often the gate closes the graph, and Spec 0072 owns the
+mechanism. In summary: The Daemon withholds QA
+correctly — Spec 0057's first Run ended with one Task failed and ran no gate at
+all — so nothing runs early. What is missing is the other direction: the gate
+is a flag on the command rather than part of the graph, so a graph that grows
+*after* a gate has reported leaves no structural trace. On Spec 0057 a
+corrective Task was appended after each gate, and three gates ran against three
+different graphs at roughly twenty to twenty-five minutes each. Read from the
+outside those look like three normal cycles instead of one decomposition that
+was wrong twice. `docs/agents/autonomous-work.md` already warns about the
+serial chain and already caps corrective Tasks at two; an advisory cap on a
+flag is what allowed it to pass unnoticed.
+
+None of the three is about having too many tests. Coverage is the asset; the
+cost is how the suite is executed, how often each Task pays for it, and how
+many times the gate is requested.
 
 ## Project Constraints
 
@@ -85,6 +99,7 @@ is how the suite is executed and how often it is asked for.
 - Reducing what is covered in exchange for speed.
 - Changing the QA gate's discovery order or detector placement, owned by
   Spec 0063.
+- Where the QA gate lives in the Task Graph, owned by Spec 0072.
 - Rewriting the test suite's structure beyond what parallel execution requires.
 
 ## Success Metrics
@@ -106,6 +121,8 @@ is how the suite is executed and how often it is asked for.
   not.
 - The Run-level gate is where "nothing else regressed" belongs. Asking every
   Task to prove it costs the same answer fourteen times.
+- How often the gate closes a Spec is a graph-shape question, owned by Spec
+  0072. This Spec owns what each closing costs.
 - This Spec evolves verification cost and never regresses coverage: any change
   that reduces what is exercised is a defect, not a saving.
 
