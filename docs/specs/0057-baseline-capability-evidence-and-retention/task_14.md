@@ -1,7 +1,7 @@
 ---
 task: task_14
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -75,3 +75,44 @@ another format, and text is the format a human reads.
 - `_prd.md` → User Story 2; Core Features 5; User Experience (a blocking
   divergence reads as probe evidence, not prose).
 - `qa/qa-report-2026-08-02-01.md` → F-001.
+
+## Result
+
+Implemented the human-text projection over the divergence's carried probe
+evidence. When a legacy or universal probe omits `probe.kind`, text now uses
+the evidence kind that produced the machine verdict. An inspected invalid
+executable keeps its candidate and rejection reason and receives a repair
+action; a genuinely absent candidate keeps the distinct absence line and the
+existing installation action. The divergence value and its JSON projection
+were not changed.
+
+Focused checks (Daemon Verification not run):
+
+- Before the production edit,
+  `rtk env GOCACHE=/private/tmp/roundfix-task14-baseline-gocache go test ./internal/baseline -run TestCapabilityTextRendersProbe -count=1`
+  and the corresponding `internal/cli` focused run failed with the QA symptom:
+  the broken `rtk` candidate and `broken-link` were absent and text recommended
+  `Install rtk`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task14-baseline-gocache go test ./internal/baseline -run '^(TestDivergenceRendersProbe|TestDivergenceGroupsByRequirement|TestCapabilityTextRendersProbe|TestCapabilityTextAndJSONAgree)$' -count=1`
+  exited 0.
+- `rtk env GOCACHE=/private/tmp/roundfix-task14-cli-gocache go test ./internal/cli -run '^(TestCapabilityRecheck|TestCapabilityTextRendersProbe)$' -count=1`
+  exited 0.
+- `rtk git diff --check` exited 0.
+
+Focused acceptance evidence:
+
+- `TestCapabilityTextRendersProbe` in `internal/baseline` and `internal/cli`
+  asserts that the public text names the rejected candidate and
+  `broken-link`, prints repair guidance instead of `Install rtk`, and renders
+  `Inspected candidate: none existed` only when no candidate exists.
+- The baseline renderer test also asserts an unsatisfied declared-file probe's
+  inspected path, `absent (file not found)` state, and expected content.
+- `TestCapabilityTextAndJSONAgree` resolves one repository, compares text with
+  the machine divergence's `sourcePath` and `detail`, and proves that rendering
+  leaves the marshaled machine bytes unchanged.
+- The implementation diff changes only the text renderer and its focused
+  tests; it does not change `ProfileDivergence`, capability evaluation, or JSON
+  encoding.
+- Final `rtk git -c core.fsmonitor=false status --porcelain` listed only this
+  Task file, `internal/baseline/profile_alignment.go`, its canonical test, and
+  `internal/cli/baseline_profile_test.go`.

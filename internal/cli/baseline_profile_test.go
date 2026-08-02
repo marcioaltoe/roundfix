@@ -108,6 +108,39 @@ func TestCapabilityRecheck(t *testing.T) {
 	})
 }
 
+func TestCapabilityTextRendersProbe(t *testing.T) {
+	repository := newHumanBaselineRepository(t)
+	bin := t.TempDir()
+	candidate := filepath.Join(bin, "rtk")
+	if err := os.Symlink("missing-rtk-target", candidate); err != nil {
+		t.Fatalf("create broken rtk candidate: %v", err)
+	}
+	t.Setenv("PATH", bin)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"baseline", "capabilities", "check",
+		"--profile", "go-cli-tui",
+		"--repo", repository,
+		"--format", "text",
+	}, &stdout, &stderr)
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("capability text exit = %d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	for _, want := range []string{
+		"Inspected candidate: " + filepath.ToSlash(candidate) + " (broken-link)",
+		"Repair the inspected candidate " + filepath.ToSlash(candidate) + " (broken-link)",
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("public capability text missing %q:\n%s", want, stdout.String())
+		}
+	}
+	if strings.Contains(stdout.String(), "Install rtk") {
+		t.Errorf("public capability text recommends installing rejected candidate:\n%s", stdout.String())
+	}
+}
+
 func TestBaselineProfileCommandInitShowAndValidate(t *testing.T) {
 	repo := newBaselineProfileTestRepository(t)
 	t.Chdir(repo)

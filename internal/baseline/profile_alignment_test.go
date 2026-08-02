@@ -1122,6 +1122,101 @@ func TestDivergenceRendersProbe(t *testing.T) {
 	}
 }
 
+func TestCapabilityTextRendersProbe(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
+	if err := os.Remove(filepath.Join(repository, "packages", "frontend", "package.json")); err != nil {
+		t.Fatalf("remove declared-file fixture: %v", err)
+	}
+
+	bin := t.TempDir()
+	candidate := filepath.Join(bin, "rtk")
+	if err := os.Symlink("missing-rtk-target", candidate); err != nil {
+		t.Fatalf("create broken rtk candidate: %v", err)
+	}
+	t.Setenv("PATH", bin)
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve rejected executable fixture: %v", err)
+	}
+	rendered := RenderProfileDivergences(alignment.Divergences)
+	for _, want := range []string{
+		"Inspected candidate: " + filepath.ToSlash(candidate) + " (broken-link)",
+		"Repair the inspected candidate " + filepath.ToSlash(candidate) + " (broken-link)",
+		`packages/frontend/package.json: absent (file not found); expected content: "better-auth"`,
+	} {
+		if !strings.Contains(rendered, want) {
+			t.Errorf("capability text missing %q:\n%s", want, rendered)
+		}
+	}
+	if strings.Contains(rendered, "Install rtk") {
+		t.Errorf("rejected rtk candidate incorrectly recommends installation:\n%s", rendered)
+	}
+
+	t.Setenv("PATH", t.TempDir())
+	alignment, err = ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve absent executable fixture: %v", err)
+	}
+	rtkDivergence, ok := findProfileDivergence(alignment.Divergences, "capability.rtk")
+	if !ok {
+		t.Fatal("absent rtk divergence is missing")
+	}
+	rendered = RenderProfileDivergences([]ProfileDivergence{rtkDivergence})
+	if !strings.Contains(rendered, "Inspected candidate: none existed") ||
+		!strings.Contains(rendered, "Install rtk") {
+		t.Fatalf("absent candidate text does not distinguish absence:\n%s", rendered)
+	}
+}
+
+func TestCapabilityTextAndJSONAgree(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	bin := t.TempDir()
+	candidate := filepath.Join(bin, "rtk")
+	if err := os.Symlink("missing-rtk-target", candidate); err != nil {
+		t.Fatalf("create broken rtk candidate: %v", err)
+	}
+	t.Setenv("PATH", bin)
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve text and JSON fixture: %v", err)
+	}
+	divergence, ok := findProfileDivergence(alignment.Divergences, "capability.rtk")
+	if !ok || len(divergence.Evidence) != 1 {
+		t.Fatalf("rtk divergence = %+v, found=%v", divergence, ok)
+	}
+
+	machineBefore, err := json.Marshal(divergence)
+	if err != nil {
+		t.Fatalf("marshal machine divergence: %v", err)
+	}
+	rendered := RenderProfileDivergences([]ProfileDivergence{divergence})
+	evidence := divergence.Evidence[0]
+	if !strings.Contains(rendered, evidence.SourcePath) || !strings.Contains(rendered, evidence.Detail) {
+		t.Fatalf("text and machine evidence disagree:\njson=%s\ntext=%s", machineBefore, rendered)
+	}
+	machineAfter, err := json.Marshal(divergence)
+	if err != nil {
+		t.Fatalf("marshal machine divergence after text rendering: %v", err)
+	}
+	if string(machineAfter) != string(machineBefore) {
+		t.Fatalf("text rendering changed machine bytes:\nbefore=%s\nafter=%s", machineBefore, machineAfter)
+	}
+}
+
 func TestDivergenceGroupsByRequirement(t *testing.T) {
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)

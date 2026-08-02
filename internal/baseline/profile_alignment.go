@@ -1679,8 +1679,12 @@ func RenderProfileDivergences(divergences []ProfileDivergence) string {
 				}
 				fmt.Fprintf(&rendered, "  %s\n", statement)
 			}
-			if divergence.NextAction != "" {
-				fmt.Fprintf(&rendered, "  Next action: %s\n", divergence.NextAction)
+			nextAction := divergence.NextAction
+			if repair := rejectedExecutableNextAction(divergence); repair != "" {
+				nextAction = repair
+			}
+			if nextAction != "" {
+				fmt.Fprintf(&rendered, "  Next action: %s\n", nextAction)
 			}
 		}
 	}
@@ -1688,8 +1692,8 @@ func RenderProfileDivergences(divergences []ProfileDivergence) string {
 }
 
 func renderProfileDivergenceProbe(rendered *strings.Builder, divergence ProfileDivergence) {
-	kind, _ := divergence.Probe["kind"].(string)
-	switch CapabilityEvidenceKind(kind) {
+	kind := profileDivergenceProbeKind(divergence)
+	switch kind {
 	case CapabilityEvidenceDeclaredFile:
 		expected, _ := divergence.Probe["contains"].(string)
 		inspected := 0
@@ -1746,6 +1750,37 @@ func renderProfileDivergenceProbe(rendered *strings.Builder, divergence ProfileD
 	default:
 		fmt.Fprintf(rendered, "  Probe kind: %s\n", kind)
 	}
+}
+
+func profileDivergenceProbeKind(divergence ProfileDivergence) CapabilityEvidenceKind {
+	if kind, _ := divergence.Probe["kind"].(string); kind != "" {
+		return CapabilityEvidenceKind(kind)
+	}
+	for _, evidence := range divergence.Evidence {
+		if evidence.Kind != "" {
+			return evidence.Kind
+		}
+	}
+	return ""
+}
+
+func rejectedExecutableNextAction(divergence ProfileDivergence) string {
+	if profileDivergenceProbeKind(divergence) != CapabilityEvidenceExecutable {
+		return ""
+	}
+	for _, evidence := range divergence.Evidence {
+		if evidence.Kind != CapabilityEvidenceExecutable ||
+			evidence.Status != CapabilityEvidenceInvalid ||
+			evidence.SourcePath == "" || evidence.Detail == "" {
+			continue
+		}
+		return fmt.Sprintf(
+			"Repair the inspected candidate %s (%s), then rerun profile alignment.",
+			evidence.SourcePath,
+			evidence.Detail,
+		)
+	}
+	return ""
 }
 
 func renderProfileCapabilityResolution(
