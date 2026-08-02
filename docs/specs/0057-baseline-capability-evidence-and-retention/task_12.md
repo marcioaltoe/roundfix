@@ -1,7 +1,7 @@
 ---
 task: task_12
 spec: 0057-baseline-capability-evidence-and-retention
-status: completed
+status: pending
 type: docs
 complexity: medium
 ---
@@ -77,68 +77,3 @@ lives.
 - `_techspec.md` → API Contracts; Build Order 12.
 - ADR-0087.
 
-## Result
-
-### Implementation
-
-- Published `roundfix baseline capabilities check [--profile <id>] [--repo
-  <path>] [--format <text|json>]` in the Baseline command synopsis. The
-  remediation workflow now tells maintainers to run the exact command printed
-  by the prompt before returning to planning and states that the re-check
-  requires and resolves no decisions and writes nothing.
-- Documented all four blocked-alignment prompt outcomes. Repository-owned
-  Profile adaptation is explicitly removal-only, while repository remediation
-  exits without writing, prints remediation and the re-check command, and stays
-  distinct from decline.
-- Documented same-identity Profile or catalog digest drift as a retention
-  transition. Every previously managed Normative Clause needs an explicit
-  disposition; an unaccounted clause produces an action-required stop and no
-  apply offer.
-- Documented the five independent result axes: approved postimages, semantic
-  retention, Profile alignment, repository Verification, and idempotence.
-  Completion language requires verified semantic retention and a passing
-  idempotence check.
-- Documented bounded symlink-chain resolution without candidate or target
-  execution, including distinct `link-cycle`, `broken-link`, and
-  `not-executable` rejection meanings.
-- Documented blocking, advisory, and informational requirement-strength
-  groups, including the rule that an advisory divergence never blocks
-  readiness or apply.
-
-### Focused checks
-
-- `rtk proxy env GOCACHE=/private/tmp/roundfix-task12-gocache rtk go test
-  ./internal/cli -run '^TestBaselineDocumentationContract$' -count=1` exited 0
-  with 13 passing tests in one package.
-- `rtk git diff --check` exited 0 with no diagnostics after the user-guide
-  change.
-- A focused inspection of the published Baseline section confirmed the command
-  synopsis, the three requirement-strength groups, all four prompt outcomes,
-  the no-decision/no-write re-check contract, all three executable rejection
-  reasons, retention accounting, and all five status axes.
-- `rtk git -c core.fsmonitor=false status --short` listed only
-  `docs/user-guide/commands.md` and this Task file. The Task status change was
-  present before this Agent's edits and remains Daemon-owned.
-
-### Acceptance evidence
-
-1. The capability-evidence section names the public re-check, directs its use
-   after remediation and before re-planning, and states that it requires and
-   resolves no decisions and writes nothing.
-2. The numbered prompt list contains Profile change, removal-only Profile
-   adaptation, remediate-and-re-run, and decline outcomes.
-3. The retention section requires clause-level accounting for an unchanged
-   Baseline identifier with a changed Profile or catalog digest and states that
-   any unaccounted clause stops planning action-required without apply.
-4. The status table contains all five required axes, and its following
-   completion rule requires verified semantic retention and passed
-   idempotence.
-5. The discovery section states that bounded symlink chains resolve without
-   execution and defines cycle, broken-link, and non-executable diagnostics.
-6. The requirement-strength paragraph states that advisory divergences never
-   block readiness or apply.
-7. The focused changed-path inspection contains no path outside
-   `docs/user-guide/` and this Task file.
-
-The Daemon-owned commands under `## Verification` were not run in this Agent
-turn.
