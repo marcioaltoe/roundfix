@@ -14,9 +14,11 @@ archives.
 | 3 | `0064-spec-artifact-consistency-gate` | Highest leverage per unit of work. Half of this repository's QA findings were artifact contradictions catchable in seconds; every Spec after this one costs less. |
 | 4 | `0063-qa-cycle-economics` | Largest throughput win. A cold gate costs 148s against 5s warm, and one stale assertion hides every behavioral finding for a whole cycle. |
 | 5 | `0065-loop-order-and-verification-honesty` | The loop states two contradictory orders, and a Task can settle `completed` having done nothing. |
-| 6 | `0066-run-teardown-reclaims-what-it-created` | Failed cycles leave Run Branches that block review Runs, and adapter children that outlive their Run by days. |
-| 7 | `0068-spec-close-audit` | Pairs with 0066. A Spec cycle leaves branches and worktrees nobody audits, and an unmerged Pull Request lets delivered work stay invisible on the default branch. |
-| 8 | `0067-derived-artifact-regeneration-boundary` | Smallest of the group. Recurs on every owned-skill edit, but has a known manual workaround. |
+| 6 | `0070-declared-unreachable-acceptance` | Follows 0065. A Spec whose acceptance no hermetic Verification can reach cannot archive without `qa_override`, which spends the mechanism reserved for failed evidence on a Spec that has none. |
+| 7 | `0066-run-teardown-reclaims-what-it-created` | Failed cycles leave Run Branches that block review Runs, and adapter children that outlive their Run by days. |
+| 8 | `0068-spec-close-audit` | Pairs with 0066. A Spec cycle leaves branches and worktrees nobody audits, and an unmerged Pull Request lets delivered work stay invisible on the default branch. |
+| 9 | `0069-review-run-targets-its-pull-request` | Pairs with 0068. A Review Run resolves its branch from the checkout instead of from the Pull Request it names, and the mismatch check runs after the Review Source query rather than at Preflight. |
+| 10 | `0067-derived-artifact-regeneration-boundary` | Smallest of the group. Recurs on every owned-skill edit, but has a known manual workaround. |
 
 ## Why this order
 
@@ -32,10 +34,13 @@ implemented after it — including 0063 itself — is authored under its check.
 
 0065 follows because it changes how Task Graphs are authored and how the loop
 sequences itself; landing it after 0064 means its own graph is authored under
-the consistency check. 0066 and 0068 are adjacent and run together: both close
+the consistency check. 0070 sits immediately after it because both concern what
+the loop is allowed to call finished: 0065 fixes a Task settling `completed`
+without doing the work, 0070 fixes a Spec that did all reachable work and still
+cannot close. 0066, 0068, and 0069 are adjacent and run together: both close
 the gap between what a Run creates and what survives it, one for process trees
-and Run Branches, the other for the Supervisor's own branches and worktrees.
-0067 is last: it recurs often but its workaround is one
+and Run Branches, 0068 for the Supervisor's own branches and worktrees, and
+0069 for a Review Run acting on the wrong branch entirely. 0067 is last: it recurs often but its workaround is one
 documented command.
 
 ## Prerequisites the maintainer owns
