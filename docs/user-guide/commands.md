@@ -231,6 +231,7 @@ Agent prompt, and closes every Session on success or error. JSON schemas are
 roundfix baseline [--repo <path>] [--format <text|json>]
 roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
 roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
 roundfix baseline profile init --id <id> [--from <built-in-id>]
 roundfix baseline profile show <id> [--format <text|json>]
 roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
@@ -275,10 +276,11 @@ outcomes:
    re-check command, and records an outcome distinct from decline.
 4. Decline without writing.
 
-After applying the printed remediation, use the capability re-check before
-returning to planning. The re-check evaluates the same capability evidence and
-produces the same capability outcomes as a full plan. It requires no decisions,
-resolves no decisions, and writes no repository file, journal entry, or
+After applying the printed remediation, run the exact
+`roundfix baseline capabilities check` command from the prompt before returning
+to planning. The re-check evaluates the same capability evidence and produces
+the same capability outcomes as a full plan. It requires no decisions, resolves
+no decisions, and writes nothing: no repository file, journal entry, or
 configuration.
 
 #### Retention and completion evidence
