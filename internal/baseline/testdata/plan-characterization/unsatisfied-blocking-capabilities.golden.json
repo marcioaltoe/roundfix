@@ -1,0 +1,263 @@
+{
+  "schemaVersion": "roundfix/baseline-plan-characterization/v1",
+  "shape": "unsatisfied-blocking-capabilities",
+  "fixture": {
+    "profileId": "go-cli-tui"
+  },
+  "alignment": {
+    "state": "action_required",
+    "ready": false,
+    "profile": {
+      "schemaVersion": "roundfix/baseline-profile/v1",
+      "catalogSchema": "roundfix/baseline-catalog/v1",
+      "id": "go-cli-tui",
+      "source": "built-in",
+      "modules": [
+        "core",
+        "context-workflow",
+        "go",
+        "cli-surface",
+        "tui-surface",
+        "autonomous-work",
+        "spec-workflow",
+        "external-triage",
+        "secondbrain",
+        "repository-extension"
+      ],
+      "decisions": [
+        "language.generated",
+        "verification.gate",
+        "spec.scaffold",
+        "domain.layout",
+        "triage.external",
+        "autonomous.enabled",
+        "secondbrain.enabled",
+        "repository.extension.enabled"
+      ],
+      "capabilities": [],
+      "templates": [
+        "template.extension.repository-rules",
+        "template.guide.agent-instructions",
+        "template.guide.autonomous-work",
+        "template.guide.cli-surface",
+        "template.guide.docs-layout",
+        "template.guide.domain",
+        "template.guide.domain.multi-context",
+        "template.guide.domain.single-context",
+        "template.guide.external-triage",
+        "template.guide.go",
+        "template.guide.issue-tracker",
+        "template.guide.secondbrain",
+        "template.guide.skill-dispatch",
+        "template.guide.spec-docs-layout",
+        "template.guide.spec-routing",
+        "template.guide.tui-surface",
+        "template.root.autonomous-work",
+        "template.root.cli-surface",
+        "template.root.context-workflow",
+        "template.root.core",
+        "template.root.external-triage",
+        "template.root.go",
+        "template.root.repository-extension",
+        "template.root.secondbrain",
+        "template.root.spec-workflow",
+        "template.root.tui-surface"
+      ],
+      "values": {},
+      "digest": "sha256:2b8bd2acd9e79f93524954e5de32e89cd8ba9eea4145e98b06834db56e917ef7"
+    },
+    "decisions": [
+      {
+        "id": "autonomous.enabled",
+        "value": true
+      },
+      {
+        "id": "domain.layout",
+        "value": "single-context"
+      },
+      {
+        "id": "language.generated",
+        "value": "English"
+      },
+      {
+        "id": "repository.extension.enabled",
+        "value": false
+      },
+      {
+        "id": "secondbrain.enabled",
+        "value": false
+      },
+      {
+        "id": "spec.scaffold",
+        "value": true
+      },
+      {
+        "id": "triage.external",
+        "value": false
+      },
+      {
+        "id": "verification.gate",
+        "value": "make verify"
+      }
+    ],
+    "capabilities": [
+      {
+        "id": "capability.context7",
+        "title": "Context7",
+        "requirement": "required",
+        "evidenceKind": "installed-skill",
+        "minimumEvidence": "verified",
+        "status": "missing",
+        "blocking": true,
+        "evidence": [
+          {
+            "status": "absent",
+            "kind": "installed-skill",
+            "strength": "none",
+            "classification": "profile-requirement"
+          }
+        ],
+        "diagnostic": {
+          "code": "capability.required.missing",
+          "message": "Context7 has no compatible local evidence.",
+          "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment."
+        },
+        "explanation": "Context7 provides current authoritative library and API documentation."
+      },
+      {
+        "id": "capability.exa",
+        "title": "Exa",
+        "requirement": "required",
+        "evidenceKind": "installed-skill",
+        "minimumEvidence": "verified",
+        "status": "satisfied",
+        "blocking": false,
+        "evidence": [
+          {
+            "status": "present",
+            "kind": "installed-skill",
+            "strength": "verified",
+            "classification": "profile-requirement",
+            "sourcePath": ".agents/skills/exa-web-search/SKILL.md",
+            "sourceDigest": "sha256:d34c8c83f304bf09fbd3cc3d2deb779e273c22a8572e5600667a56b28cb59aa3"
+          }
+        ],
+        "diagnostic": {
+          "code": "capability.satisfied",
+          "message": "Exa has sufficient local evidence."
+        },
+        "explanation": "Exa provides broad-source searches when local and authoritative sources are insufficient."
+      },
+      {
+        "id": "capability.firecrawl",
+        "title": "Firecrawl",
+        "requirement": "recommended",
+        "evidenceKind": "installed-skill",
+        "minimumEvidence": "verified",
+        "status": "satisfied",
+        "blocking": false,
+        "evidence": [
+          {
+            "status": "present",
+            "kind": "installed-skill",
+            "strength": "verified",
+            "classification": "profile-requirement",
+            "sourcePath": ".agents/skills/firecrawl/SKILL.md",
+            "sourceDigest": "sha256:41a5c1bece366ebe7940e3aa1e70ef3bbc94066e7026157b4b775323abb35d3d"
+          }
+        ],
+        "diagnostic": {
+          "code": "capability.satisfied",
+          "message": "Firecrawl has sufficient local evidence."
+        },
+        "explanation": "Firecrawl provides structured web-content extraction for external research."
+      },
+      {
+        "id": "capability.rg",
+        "title": "rg",
+        "requirement": "recommended",
+        "evidenceKind": "executable",
+        "minimumEvidence": "discovered",
+        "status": "satisfied",
+        "blocking": false,
+        "evidence": [
+          {
+            "status": "present",
+            "kind": "executable",
+            "strength": "discovered",
+            "classification": "profile-requirement",
+            "sourcePath": "<characterization-bin>/rg"
+          }
+        ],
+        "diagnostic": {
+          "code": "capability.satisfied",
+          "message": "rg has sufficient local evidence."
+        },
+        "explanation": "rg provides fast bounded local repository search."
+      },
+      {
+        "id": "capability.rtk",
+        "title": "rtk",
+        "requirement": "recommended",
+        "evidenceKind": "executable",
+        "minimumEvidence": "discovered",
+        "status": "satisfied",
+        "blocking": false,
+        "evidence": [
+          {
+            "status": "present",
+            "kind": "executable",
+            "strength": "discovered",
+            "classification": "profile-requirement",
+            "sourcePath": "<characterization-bin>/rtk"
+          }
+        ],
+        "diagnostic": {
+          "code": "capability.satisfied",
+          "message": "rtk has sufficient local evidence."
+        },
+        "explanation": "rtk keeps command evidence compact without changing command behavior."
+      }
+    ],
+    "divergences": [
+      {
+        "code": "capability.required.missing",
+        "id": "capability.context7",
+        "requirement": "required",
+        "blocking": true,
+        "message": "Context7 has no compatible local evidence.",
+        "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment."
+      }
+    ],
+    "httpRouteCandidates": null,
+    "postgresql": {
+      "acceptedContractPaths": null,
+      "implementation": null
+    },
+    "verification": [
+      {
+        "id": "verification.gate",
+        "role": "repository-gate",
+        "command": "make verify",
+        "classification": "repository-command",
+        "repositoryExecutable": true,
+        "declarationPath": "Makefile",
+        "declarationDigest": "sha256:93bad285a2319c6daef756f4c0686fb4cbd749b0f7a2890721d5d475d8142ad3"
+      }
+    ]
+  },
+  "outcome": {
+    "Plan": null,
+    "Result": {
+      "schemaVersion": "roundfix/baseline-result/v1",
+      "operation": "plan",
+      "state": "action_required",
+      "category": "decision",
+      "message": "required profile alignment is unresolved: capability.context7",
+      "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment.",
+      "verifiedPostimages": [],
+      "warnings": [],
+      "recommendations": []
+    }
+  }
+}

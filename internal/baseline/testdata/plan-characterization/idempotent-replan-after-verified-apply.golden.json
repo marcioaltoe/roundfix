@@ -1,0 +1,1214 @@
+{
+  "schemaVersion": "roundfix/baseline-plan-characterization/v1",
+  "shape": "idempotent-replan-after-verified-apply",
+  "fixture": {
+    "profileId": "go-cli-tui",
+    "verifiedApplyState": "verified"
+  },
+  "alignment": {
+    "state": "ready",
+    "ready": true,
+    "profile": {
+      "schemaVersion": "roundfix/baseline-profile/v1",
+      "catalogSchema": "roundfix/baseline-catalog/v1",
+      "id": "go-cli-tui",
+      "source": "built-in",
+      "modules": [
+        "core",
+        "context-workflow",
+        "go",
+        "cli-surface",
+        "tui-surface",
+        "autonomous-work",
+        "spec-workflow",
+        "external-triage",
+        "secondbrain",
+        "repository-extension"
+      ],
+      "decisions": [
+        "language.generated",
+        "verification.gate",
+        "spec.scaffold",
+        "domain.layout",
+        "triage.external",
+        "autonomous.enabled",
+        "secondbrain.enabled",
+        "repository.extension.enabled"
+      ],
+      "capabilities": [],
+      "templates": [
+        "template.extension.repository-rules",
+        "template.guide.agent-instructions",
+        "template.guide.autonomous-work",
+        "template.guide.cli-surface",
+        "template.guide.docs-layout",
+        "template.guide.domain",
+        "template.guide.domain.multi-context",
+        "template.guide.domain.single-context",
+        "template.guide.external-triage",
+        "template.guide.go",
+        "template.guide.issue-tracker",
+        "template.guide.secondbrain",
+        "template.guide.skill-dispatch",
+        "template.guide.spec-docs-layout",
+        "template.guide.spec-routing",
+        "template.guide.tui-surface",
+        "template.root.autonomous-work",
+        "template.root.cli-surface",
+        "template.root.context-workflow",
+        "template.root.core",
+        "template.root.external-triage",
+        "template.root.go",
+        "template.root.repository-extension",
+        "template.root.secondbrain",
+        "template.root.spec-workflow",
+        "template.root.tui-surface"
+      ],
+      "values": {},
+      "digest": "sha256:2b8bd2acd9e79f93524954e5de32e89cd8ba9eea4145e98b06834db56e917ef7"
+    },
+    "decisions": [
+      {
+        "id": "autonomous.enabled",
+        "value": true
+      },
+      {
+        "id": "domain.layout",
+        "value": "single-context"
+      },
+      {
+        "id": "language.generated",
+        "value": "English"
+      },
+      {
+        "id": "repository.extension.enabled",
+        "value": false
+      },
+      {
+        "id": "secondbrain.enabled",
+        "value": false
+      },
+      {
+        "id": "spec.scaffold",
+        "value": true
+      },
+      {
+        "id": "triage.external",
+        "value": false
+      },
+      {
+        "id": "verification.gate",
+        "value": "make verify"
+      }
+    ],
+    "capabilities": [
+      {
+        "id": "capability.context7",
+        "title": "Context7",
+        "requirement": "required",
+        "evidenceKind": "installed-skill",
+        "minimumEvidence": "verified",
+        "status": "satisfied",
+        "blocking": false,
+        "evidence": [
+          {
+            "status": "present",
+            "kind": "installed-skill",
+            "strength": "verified",
+            "classification": "profile-requirement",
+            "sourcePath": ".agents/skills/context7/SKILL.md",
+            "sourceDigest": "sha256:f9c25a6adba2403268e2912941bb1be3e7219d3712c5d0a42c8afb28a34131bb"
+          }
+        ],
+        "diagnostic": {
+          "code": "capability.satisfied",
+          "message": "Context7 has sufficient local evidence."
+        },
+        "explanation": "Context7 provides current authoritative library and API documentation."
+      },
+      {
+        "id": "capability.exa",
+        "title": "Exa",
+        "requirement": "required",
+        "evidenceKind": "installed-skill",
+        "minimumEvidence": "verified",
+        "status": "satisfied",
+        "blocking": false,
+        "evidence": [
+          {
+            "status": "present",
+            "kind": "installed-skill",
+            "strength": "verified",
+            "classification": "profile-requirement",
+            "sourcePath": ".agents/skills/exa-web-search/SKILL.md",
+            "sourceDigest": "sha256:d34c8c83f304bf09fbd3cc3d2deb779e273c22a8572e5600667a56b28cb59aa3"
+          }
+        ],
+        "diagnostic": {
+          "code": "capability.satisfied",
+          "message": "Exa has sufficient local evidence."
+        },
+        "explanation": "Exa provides broad-source searches when local and authoritative sources are insufficient."
+      },
+      {
+        "id": "capability.firecrawl",
+        "title": "Firecrawl",
+        "requirement": "recommended",
+        "evidenceKind": "installed-skill",
+        "minimumEvidence": "verified",
+        "status": "satisfied",
+        "blocking": false,
+        "evidence": [
+          {
+            "status": "present",
+            "kind": "installed-skill",
+            "strength": "verified",
+            "classification": "profile-requirement",
+            "sourcePath": ".agents/skills/firecrawl/SKILL.md",
+            "sourceDigest": "sha256:41a5c1bece366ebe7940e3aa1e70ef3bbc94066e7026157b4b775323abb35d3d"
+          }
+        ],
+        "diagnostic": {
+          "code": "capability.satisfied",
+          "message": "Firecrawl has sufficient local evidence."
+        },
+        "explanation": "Firecrawl provides structured web-content extraction for external research."
+      },
+      {
+        "id": "capability.rg",
+        "title": "rg",
+        "requirement": "recommended",
+        "evidenceKind": "executable",
+        "minimumEvidence": "discovered",
+        "status": "satisfied",
+        "blocking": false,
+        "evidence": [
+          {
+            "status": "present",
+            "kind": "executable",
+            "strength": "discovered",
+            "classification": "profile-requirement",
+            "sourcePath": "<characterization-bin>/rg"
+          }
+        ],
+        "diagnostic": {
+          "code": "capability.satisfied",
+          "message": "rg has sufficient local evidence."
+        },
+        "explanation": "rg provides fast bounded local repository search."
+      },
+      {
+        "id": "capability.rtk",
+        "title": "rtk",
+        "requirement": "recommended",
+        "evidenceKind": "executable",
+        "minimumEvidence": "discovered",
+        "status": "satisfied",
+        "blocking": false,
+        "evidence": [
+          {
+            "status": "present",
+            "kind": "executable",
+            "strength": "discovered",
+            "classification": "profile-requirement",
+            "sourcePath": "<characterization-bin>/rtk"
+          }
+        ],
+        "diagnostic": {
+          "code": "capability.satisfied",
+          "message": "rtk has sufficient local evidence."
+        },
+        "explanation": "rtk keeps command evidence compact without changing command behavior."
+      }
+    ],
+    "divergences": null,
+    "httpRouteCandidates": null,
+    "postgresql": {
+      "acceptedContractPaths": null,
+      "implementation": null
+    },
+    "verification": [
+      {
+        "id": "verification.gate",
+        "role": "repository-gate",
+        "command": "make verify",
+        "classification": "repository-command",
+        "repositoryExecutable": true,
+        "declarationPath": "Makefile",
+        "declarationDigest": "sha256:93bad285a2319c6daef756f4c0686fb4cbd749b0f7a2890721d5d475d8142ad3"
+      }
+    ]
+  },
+  "outcome": {
+    "Plan": {
+      "schemaVersion": "roundfix/baseline-plan/v1",
+      "repository": {
+        "schemaVersion": "roundfix/repository-identity/v1",
+        "objectFormat": "sha1",
+        "rootCommits": [
+          "943a43231aeecc55be9f70c8bee6901c69cc3427"
+        ],
+        "digest": "sha256:36dfafb700f40c2267f805c7bd6af0735afdde43914b94af243bb3903a9d56dc"
+      },
+      "catalog": {
+        "schemaVersion": "roundfix/baseline-catalog/v1",
+        "digest": "sha256:cc5ebbde8bdb960a1a69ac62ccbe285eccfc6b40735f4acee7805068f97815bc"
+      },
+      "profile": {
+        "schemaVersion": "roundfix/baseline-profile/v1",
+        "catalogSchema": "roundfix/baseline-catalog/v1",
+        "id": "go-cli-tui",
+        "source": "built-in",
+        "modules": [
+          "core",
+          "context-workflow",
+          "go",
+          "cli-surface",
+          "tui-surface",
+          "autonomous-work",
+          "spec-workflow",
+          "external-triage",
+          "secondbrain",
+          "repository-extension"
+        ],
+        "decisions": [
+          "language.generated",
+          "verification.gate",
+          "spec.scaffold",
+          "domain.layout",
+          "triage.external",
+          "autonomous.enabled",
+          "secondbrain.enabled",
+          "repository.extension.enabled"
+        ],
+        "capabilities": [],
+        "templates": [
+          "template.extension.repository-rules",
+          "template.guide.agent-instructions",
+          "template.guide.autonomous-work",
+          "template.guide.cli-surface",
+          "template.guide.docs-layout",
+          "template.guide.domain",
+          "template.guide.domain.multi-context",
+          "template.guide.domain.single-context",
+          "template.guide.external-triage",
+          "template.guide.go",
+          "template.guide.issue-tracker",
+          "template.guide.secondbrain",
+          "template.guide.skill-dispatch",
+          "template.guide.spec-docs-layout",
+          "template.guide.spec-routing",
+          "template.guide.tui-surface",
+          "template.root.autonomous-work",
+          "template.root.cli-surface",
+          "template.root.context-workflow",
+          "template.root.core",
+          "template.root.external-triage",
+          "template.root.go",
+          "template.root.repository-extension",
+          "template.root.secondbrain",
+          "template.root.spec-workflow",
+          "template.root.tui-surface"
+        ],
+        "values": {},
+        "digest": "sha256:2b8bd2acd9e79f93524954e5de32e89cd8ba9eea4145e98b06834db56e917ef7"
+      },
+      "decisions": [
+        {
+          "id": "autonomous.enabled",
+          "value": true
+        },
+        {
+          "id": "domain.layout",
+          "value": "single-context"
+        },
+        {
+          "id": "language.generated",
+          "value": "English"
+        },
+        {
+          "id": "repository.extension.enabled",
+          "value": false
+        },
+        {
+          "id": "runtime.backend",
+          "value": "codex gpt-5.5 xhigh"
+        },
+        {
+          "id": "runtime.design",
+          "value": "claude opus xhigh"
+        },
+        {
+          "id": "secondbrain.enabled",
+          "value": false
+        },
+        {
+          "id": "spec.scaffold",
+          "value": true
+        },
+        {
+          "id": "triage.external",
+          "value": false
+        },
+        {
+          "id": "verification.gate",
+          "value": "make verify"
+        }
+      ],
+      "retention": [],
+      "preimages": [
+        {
+          "path": ".agents/skills/context7/SKILL.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 11,
+          "contentIdentity": "sha256:f9c25a6adba2403268e2912941bb1be3e7219d3712c5d0a42c8afb28a34131bb"
+        },
+        {
+          "path": ".agents/skills/exa-web-search/SKILL.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 6,
+          "contentIdentity": "sha256:d34c8c83f304bf09fbd3cc3d2deb779e273c22a8572e5600667a56b28cb59aa3"
+        },
+        {
+          "path": ".agents/skills/firecrawl/SKILL.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 12,
+          "contentIdentity": "sha256:41a5c1bece366ebe7940e3aa1e70ef3bbc94066e7026157b4b775323abb35d3d"
+        },
+        {
+          "path": "AGENTS.a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf.md",
+          "exists": false,
+          "kind": "missing",
+          "mode": 0,
+          "bytes": 0
+        },
+        {
+          "path": "AGENTS.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 2021,
+          "contentIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf"
+        },
+        {
+          "path": "CLAUDE.md",
+          "exists": false,
+          "kind": "missing",
+          "mode": 0,
+          "bytes": 0
+        },
+        {
+          "path": "Makefile",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 15,
+          "contentIdentity": "sha256:93bad285a2319c6daef756f4c0686fb4cbd749b0f7a2890721d5d475d8142ad3"
+        },
+        {
+          "path": "docs/agents/agent-instructions.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 4182,
+          "contentIdentity": "sha256:eb769f99afa32a901723e1962a06fca09d856c8d37284b36c9aed071bd6e4f86"
+        },
+        {
+          "path": "docs/agents/autonomous-work.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 3872,
+          "contentIdentity": "sha256:8c639482f4554c602ddfb97094fa8adad7f22f63745c69156e2cb469720e5372"
+        },
+        {
+          "path": "docs/agents/cli.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 564,
+          "contentIdentity": "sha256:6e614e498b584f16f479dc563dd85e4f517d30cab40c3f0a15765c7db7d3714f"
+        },
+        {
+          "path": "docs/agents/docs-layout.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 4335,
+          "contentIdentity": "sha256:5b94f909459c6f68d1a6aa8adb35bdb8485c0b112e3c5bf2c4118b172d4c4f5d"
+        },
+        {
+          "path": "docs/agents/domain.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 388,
+          "contentIdentity": "sha256:4a1162377d8834a15497ae60c06a537a59357884dc8862063ee0da11dcd6a6ea"
+        },
+        {
+          "path": "docs/agents/go.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 789,
+          "contentIdentity": "sha256:feab6387ac680fd1cc87823773191405c445f9c0d404974698cd1318c1913187"
+        },
+        {
+          "path": "docs/agents/issue-tracker.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 353,
+          "contentIdentity": "sha256:f2139d498fb79358a240d8c99ab1718764217cf28aec0fb024beadfa2b0231cc"
+        },
+        {
+          "path": "docs/agents/repository-rules.md",
+          "exists": false,
+          "kind": "missing",
+          "mode": 0,
+          "bytes": 0
+        },
+        {
+          "path": "docs/agents/repository.md",
+          "exists": false,
+          "kind": "missing",
+          "mode": 0,
+          "bytes": 0
+        },
+        {
+          "path": "docs/agents/setup-context.json",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 6918,
+          "contentIdentity": "sha256:806773b445675cb675b7df067b0bea2f6a2f699833d874d2f559259d659229cc"
+        },
+        {
+          "path": "docs/agents/skill-dispatch.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 6016,
+          "contentIdentity": "sha256:aa933c9fd41917aafa01961c26140467aee11a6f1d5d5ea425af2cf80a1581c8"
+        },
+        {
+          "path": "docs/agents/spec-routing.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 2269,
+          "contentIdentity": "sha256:ce1b67f65ce8ad8a5dc1505e2201833d0e477ff91a6161c395db1188ae83ce9f"
+        },
+        {
+          "path": "docs/agents/specific-repository.md",
+          "exists": false,
+          "kind": "missing",
+          "mode": 0,
+          "bytes": 0
+        },
+        {
+          "path": "docs/agents/tui.md",
+          "exists": true,
+          "kind": "regular",
+          "mode": 420,
+          "bytes": 391,
+          "contentIdentity": "sha256:5514dfa61b1db35ef6627c88a8a4199406d966707c56c77a7f7f05c4407e5dd9"
+        }
+      ],
+      "postimages": [
+        {
+          "path": "AGENTS.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1yb290LmNvcmUgdmVyc2lvbj0wLjAuMSAtLT4KCiMjIyBJbnN0cnVjdGlvbiBoaWVyYXJjaHkKCkFwcGx5IGFjdGl2ZSBndWlkYW5jZSBpbiB0aGlzIG9yZGVyLiBBIG5hcnJvd2VyIGd1aWRlIG1heSBhZGQgY29uc3RyYWludHMgZm9yIGl0cyBjb25jZXJuIGJ1dCBjYW5ub3Qgd2Vha2VuIGEgdW5pdmVyc2FsIE5vcm1hdGl2ZSBDbGF1c2Ugb3IgY29uZmlybWVkIHByb2plY3QgZGVjaXNpb24uCgoxLiAqKlVuaXZlcnNhbCBpbnN0cnVjdGlvbnMqKgoyLiAqKkNvbnRleHQgYW5kIGRvY3VtZW50YXRpb24qKgozLiAqKlNwZWMgd29ya2Zsb3cqKgo0LiAqKkF1dG9ub21vdXMgd29yayoqCjUuICoqU3RhY2sgZ3VpZGFuY2UqKgo2LiAqKlN1cmZhY2UgZ3VpZGFuY2UqKgoKIyMjIFVuaXZlcnNhbCBpbnN0cnVjdGlvbnMKCi0gRm9sbG93IHRoZSBtYW5kYXRvcnkgc2V0dXAtb3duZWQgYmFzZWxpbmUgaW4gYGRvY3MvYWdlbnRzL2FnZW50LWluc3RydWN0aW9ucy5tZGAuCi0gQWN0aXZhdGUgc2tpbGxzIHRocm91Z2ggYGRvY3MvYWdlbnRzL3NraWxsLWRpc3BhdGNoLm1kYCBiZWZvcmUgZ292ZXJuZWQgd29yay4KCjwhLS0gc2V0dXAtY29udGV4dC1kcml2ZW46ZW5kIGlkPXJvb3QuY29yZSAtLT4KCjwhLS0gc2V0dXAtY29udGV4dC1kcml2ZW46YmVnaW4gaWQ9cm9vdC5jb250ZXh0LXdvcmtmbG93IHZlcnNpb249MC4wLjEgLS0+CgojIyMgQ09OVEVYVC1kcml2ZW4gd29ya2Zsb3cKCi0gRG9tYWluIGFuZCBkb2N1bWVudGF0aW9uIHJ1bGVzIGFyZSBtYW5kYXRvcnk6IGBkb2NzL2FnZW50cy9kb21haW4ubWRgIGFuZCBgZG9jcy9hZ2VudHMvZG9jcy1sYXlvdXQubWRgLgoKPCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjplbmQgaWQ9cm9vdC5jb250ZXh0LXdvcmtmbG93IC0tPgoKPCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1yb290LnNwZWMtd29ya2Zsb3cgdmVyc2lvbj0wLjAuMSAtLT4KCiMjIyBMb2NhbCBTcGVjIHdvcmtmbG93CgotIFJvdXRlIGFuZCBleGVjdXRlIGxvY2FsIFNwZWNzIHRocm91Z2ggYGRvY3MvYWdlbnRzL3NwZWMtcm91dGluZy5tZGAgYW5kIGBkb2NzL2FnZW50cy9pc3N1ZS10cmFja2VyLm1kYC4KCjwhLS0gc2V0dXAtY29udGV4dC1kcml2ZW46ZW5kIGlkPXJvb3Quc3BlYy13b3JrZmxvdyAtLT4KCjwhLS0gc2V0dXAtY29udGV4dC1kcml2ZW46YmVnaW4gaWQ9cm9vdC5hdXRvbm9tb3VzLXdvcmsgdmVyc2lvbj0wLjAuMSAtLT4KCiMjIyBBdXRvbm9tb3VzIHdvcmsKCi0gU3VwZXJ2aXNvciBhbmQgQUNQIFJ1bnRpbWUgcnVsZXMgYXJlIG1hbmRhdG9yeTogYGRvY3MvYWdlbnRzL2F1dG9ub21vdXMtd29yay5tZGAuCgo8IS0tIHNldHVwLWNvbnRleHQtZHJpdmVuOmVuZCBpZD1yb290LmF1dG9ub21vdXMtd29yayAtLT4KCjwhLS0gc2V0dXAtY29udGV4dC1kcml2ZW46YmVnaW4gaWQ9cm9vdC5nbyB2ZXJzaW9uPTAuMC4xIC0tPgoKIyMjIEdvCgotIEdvIGltcGxlbWVudGF0aW9uIHJ1bGVzIGFyZSBtYW5kYXRvcnk6IGBkb2NzL2FnZW50cy9nby5tZGAuCgo8IS0tIHNldHVwLWNvbnRleHQtZHJpdmVuOmVuZCBpZD1yb290LmdvIC0tPgoKPCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1yb290LmNsaS1zdXJmYWNlIHZlcnNpb249MC4wLjEgLS0+CgojIyMgQ0xJIHN1cmZhY2UKCi0gQ0xJIHB1YmxpYy1jb250cmFjdCBydWxlcyBhcmUgbWFuZGF0b3J5OiBgZG9jcy9hZ2VudHMvY2xpLm1kYC4KCjwhLS0gc2V0dXAtY29udGV4dC1kcml2ZW46ZW5kIGlkPXJvb3QuY2xpLXN1cmZhY2UgLS0+Cgo8IS0tIHNldHVwLWNvbnRleHQtZHJpdmVuOmJlZ2luIGlkPXJvb3QudHVpLXN1cmZhY2UgdmVyc2lvbj0wLjAuMSAtLT4KCiMjIyBUVUkgc3VyZmFjZQoKLSBUVUkgaW50ZXJhY3Rpb24gcnVsZXMgYXJlIG1hbmRhdG9yeTogYGRvY3MvYWdlbnRzL3R1aS5tZGAuCgo8IS0tIHNldHVwLWNvbnRleHQtZHJpdmVuOmVuZCBpZD1yb290LnR1aS1zdXJmYWNlIC0tPgo=",
+          "contentIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf"
+        },
+        {
+          "path": "docs/agents/agent-instructions.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1ndWlkZS5hZ2VudC1pbnN0cnVjdGlvbnMgdmVyc2lvbj0wLjAuMSAtLT4KCiMgQWdlbnQgaW5zdHJ1Y3Rpb25zCgpUaGlzIHNldHVwLW93bmVkIGd1aWRlIGRlZmluZXMgdGhlIHBvcnRhYmxlIGJhc2VsaW5lLiBSZXBvc2l0b3J5IGF1dGhvcnMgb3duCnByb2plY3Qtc3BlY2lmaWMgZXh0ZW5zaW9ucyBvdXRzaWRlIHNldHVwIG1hcmtlcnMgYW5kIG1heSBhZGQgc3RyaWN0ZXIgcnVsZXMuClRoZSBzZWxlY3RlZCByZXBvc2l0b3J5IFZlcmlmaWNhdGlvbiBpcyBgbWFrZSB2ZXJpZnlgLgoKLSAqKm1hbmRhdG9yeSoqOiBLZWVwIHJvb3QgYWdlbnQgaW5zdHJ1Y3Rpb25zIGFzIHNob3J0IG1hbmRhdG9yeSBwb2ludGVycy4gU2V0dXAgb3ducyBvbmx5IG1hcmtlZCBiYXNlbGluZSBjb250ZW50OyBwcmVzZXJ2ZSByZXBvc2l0b3J5LWF1dGhvcmVkIGJ5dGVzIG91dHNpZGUgc2V0dXAgbWFya2VycyBhbmQga2VlcCBwcm9qZWN0LXNwZWNpZmljIGFyY2hpdGVjdHVyZSBhbmQgcG9saWN5IGluIHJlcG9zaXRvcnktb3duZWQgZG9jdW1lbnRzLgoKLSAqKm1hbmRhdG9yeSoqOiBGaXggcm9vdCBjYXVzZXMuCgotICoqcHJvaGliaXRlZCoqOiBEbyBub3Qgc3VwcHJlc3MgZGlhZ25vc3RpY3MsIHdlYWtlbiBhc3NlcnRpb25zLCBzd2FsbG93IGVycm9ycywgYWRkIHRpbWluZyBoYWNrcywgb3IgYnlwYXNzIGEgcmVxdWlyZWQgY2hlY2sgdG8gcHJvZHVjZSBhIHBhc3NpbmcgcmVzdWx0LgoKLSAqKm1hbmRhdG9yeSoqOiBLZWVwIGZvbGxvdy11cCB3b3JrIG91dHNpZGUgdGhlIGN1cnJlbnQgc2xpY2U7IHJlY29yZCBpdCBmb3IgbGF0ZXIgaW5zdGVhZCBvZiBleHBhbmRpbmcgdGhlIGFjdGl2ZSBjaGFuZ2UuCgotICoqbWFuZGF0b3J5Kio6IFJlY29yZCB0aGUgY29tbWFuZHMgYW5kIG91dGNvbWVzIHRoYXQgcHJvdmlkZSBmcmVzaCBldmlkZW5jZSBmb3IgZXZlcnkgYWNjZXB0YW5jZSBjcml0ZXJpb24uCgotICoqbWFuZGF0b3J5Kio6IFVzZSBmcmVzaCBldmlkZW5jZSBmcm9tIHRoZSBjdXJyZW50IHdvcmt0cmVlIGJlZm9yZSBjbGFpbWluZyB3b3JrIGNvbXBsZXRlLCBmaXhlZCwgcGFzc2luZywgcmVhZHksIGNvbW1pdHRlZCwgb3IgZGVsaXZlcmVkLiBBIG5hcnJvd2VyIGNoZWNrIHN1cHBvcnRzIG9ubHkgdGhlIGJlaGF2aW9yIGl0IGV4ZXJjaXNlZC4KCi0gKiptYW5kYXRvcnkqKjogUnVuIHRoZSBzZWxlY3RlZCByZXBvc2l0b3J5IFZlcmlmaWNhdGlvbiBiZWZvcmUgY29tcGxldGlvbiBjbGFpbXMuIFRyZWF0IGV2ZXJ5IGZhaWx1cmUgYXMgYmxvY2tpbmcgYW5kIHJlcG9ydCB0aGUgY29tbWFuZCBwbHVzIGl0cyBhY3Rpb25hYmxlIGRpYWdub3N0aWMuCgotICoqc3RvcC1hbmQtYXNrKio6IFN0b3AgYW5kIGFzayBmb3IgZXhwbGljaXQgYXV0aG9yaXR5IGJlZm9yZSBpbnRlbnRpb25hbGx5IGNoYW5naW5nIGxpbnQsIGZvcm1hdHRlciwgdHlwZWNoZWNrLCB0ZXN0LXJ1bm5lciwgYXJjaGl0ZWN0dXJlLCBvciBWZXJpZmljYXRpb24gY29uZmlndXJhdGlvbi4KCi0gKipwcm9oaWJpdGVkKio6IERvIG5vdCBlZGl0IHZlcmlmaWNhdGlvbiBjb25maWd1cmF0aW9uLCB0ZXN0cywgZml4dHVyZXMsIGdvbGRlbiBmaWxlcywgb3IgZ2VuZXJhdGVkIGV4cGVjdGF0aW9ucyBtZXJlbHkgdG8gbWFrZSBhIGZhaWx1cmUgZGlzYXBwZWFyLiBDaGFuZ2UgdGhlbSBvbmx5IHdoZW4gdGhlIHJlcG9zaXRvcnkgY29udHJhY3QgaW50ZW50aW9uYWxseSBjaGFuZ2VzLCBhbmQgcHJvdmUgdGhlIG5ldyBjb250cmFjdC4KCi0gKipwcm9oaWJpdGVkKio6IERvIG5vdCBjcmVhdGUsIGVkaXQsIHJlbmFtZSwgbW92ZSwgb3IgZGVsZXRlIGFueSBsaW50ZXIsIGZvcm1hdHRlciwgdHlwZWNoZWNrZXIsIHRlc3QtcnVubmVyLCBhcmNoaXRlY3R1cmUtY2hlY2tlciwgYnVpbGQtdG9vbCwgcGFja2FnZS1tYW5hZ2VyLCBjb2RlLWdlbmVyYXRvciwgb3Igb3RoZXIgcmVwb3NpdG9yeS10b29saW5nIGNvbmZpZ3VyYXRpb24sIHNjcmlwdCwgaWdub3JlIGZpbGUsIHBsdWdpbiBkZWNsYXJhdGlvbiwgb3IgdmVyc2lvbiBwaW4gd2l0aG91dCBleHByZXNzIG1haW50YWluZXIgYXV0aG9yaXphdGlvbi4gU2V0dXAgY29tcGxldGlvbiwgYSBQcm9maWxlLCBhIG5hcnJvd2VyIGd1aWRlLCBvciBhIGdlbmVyaWMgaW1wbGVtZW50YXRpb24gcmVxdWVzdCBkb2VzIG5vdCBncmFudCB0aGF0IGF1dGhvcml6YXRpb24uCgotICoqbWFuZGF0b3J5Kio6IFdyaXRlIGdlbmVyYXRlZCByZXBvc2l0b3J5IGd1aWRhbmNlLCBpZGVudGlmaWVycywgaGVhZGluZ3MsIGFuZCBleGFtcGxlcyBpbiBFbmdsaXNoLiBQcmVzZXJ2ZSByZXBvc2l0b3J5LWF1dGhvcmVkIGxhbmd1YWdlIG91dHNpZGUgc2V0dXAtb3duZWQgbWFya2Vycy4KCi0gKipwcm9oaWJpdGVkKio6IERvIG5vdCB1c2UgZXh0ZXJuYWwgcmVzZWFyY2ggdG9vbHMgdG8gZGlzY292ZXIgb3IgaW5mZXIgbG9jYWwgcmVwb3NpdG9yeSBjb2RlIG9yIGJlaGF2aW9yLgoKLSAqKm1hbmRhdG9yeSoqOiBGb3IgZXh0ZXJuYWwgQVBJcyBhbmQgbGlicmFyaWVzLCB1c2UgY3VycmVudCBhdXRob3JpdGF0aXZlIGRvY3VtZW50YXRpb24gdGhyb3VnaCB0aGUgcHJvZmlsZSdzIGRlY2xhcmVkIGRvY3VtZW50YXRpb24gc2tpbGwuCgotICoqbWFuZGF0b3J5Kio6IFNlYXJjaCByZXBvc2l0b3J5IGZpbGVzIHdpdGggbG9jYWwgY29kZS1zZWFyY2ggdG9vbHMuCgotICoqbWFuZGF0b3J5Kio6IFdoZW4gYXV0aG9yaXRhdGl2ZSBkb2N1bWVudGF0aW9uIGNhbm5vdCBhbnN3ZXIgYW4gZXh0ZXJuYWwgcXVlc3Rpb24sIHVzZSB0aGUgcHJvZmlsZSdzIGRlY2xhcmVkIGV4dGVybmFsIHdlYi1yZXNlYXJjaCBmYWxsYmFjayB3aXRoIHZhcmllZCBzZWFyY2hlcyBhbmQgdmVyaWZ5IGNvbmNsdXNpb25zIGFnYWluc3QgcHJpbWFyeSBzb3VyY2VzLgoKLSAqKm1hbmRhdG9yeSoqOiBVc2UgdGhlIHJlcG9zaXRvcnkncyBkZWNsYXJlZCBwYWNrYWdlIG1hbmFnZXIgYW5kIGxvY2tmaWxlIHdvcmtmbG93LiBBZGQgb3IgdXBncmFkZSBhIGRlcGVuZGVuY3kgb25seSBmb3IgYSBuYW1lZCBqb2IgdGhlIGV4aXN0aW5nIHN0YWNrIGNhbm5vdCBwZXJmb3JtLCBhbmQga2VlcCBtYW5pZmVzdCBhbmQgbG9ja2ZpbGUgY2hhbmdlcyB0b2dldGhlci4KCi0gKiptYW5kYXRvcnkqKjogUmV2aWV3IGV2ZXJ5IG5ldyBkZXBlbmRlbmN5IGZvciBuZWNlc3NpdHksIHByb3ZlbmFuY2UsIG1haW50ZW5hbmNlLCBhbmQgc2VjdXJpdHkgYmVmb3JlIGRlbGl2ZXJ5LgoKLSAqKnN0b3AtYW5kLWFzayoqOiBTdG9wIGFuZCBhc2sgZm9yIGV4cGxpY2l0IGF1dGhvcml0eSBiZWZvcmUgY29tbWl0dGluZywgcHVzaGluZywgY3JlYXRpbmcgYSBicmFuY2gsIG9yIG9wZW5pbmcgYSBwdWxsIHJlcXVlc3Qgd2hlbiB0aGF0IGF1dGhvcml0eSBpcyBub3QgYWxyZWFkeSBleHBsaWNpdC4KCi0gKipzdG9wLWFuZC1hc2sqKjogU3RvcCBhbmQgYXNrIGZvciBleHBsaWNpdCBhdXRob3JpdHkgYmVmb3JlIGRlc3RydWN0aXZlIEdpdCBvcGVyYXRpb25zIHRoYXQgZGlzY2FyZCwgb3ZlcndyaXRlLCBvciByZW1vdmUgd29yay4KCi0gKiptYW5kYXRvcnkqKjogSW5zcGVjdCByZXBvc2l0b3J5IHN0YXR1cyBiZWZvcmUgc3RhZ2luZyBvciBkZWxpdmVyeSBhbmQgcHJlc2VydmUgdW5yZWxhdGVkIHdvcmsuCgotICoqc3RvcC1hbmQtYXNrKio6IE5ldmVyIGd1ZXNzIGEgZGVjaXNpb24gdGhlIHVzZXIgY2FuIGFuc3dlciBjaGVhcGx5LiBBc2sgdGhyb3VnaCB0aGUgYXZhaWxhYmxlIHVzZXItaW50ZXJhY3Rpb24gdG9vbCwgb3IgYXNrIHBsYWlubHkgYW5kIHN0b3Agd2hlbiBubyBzdWNoIHRvb2wgZXhpc3RzLgoKLSAqKnByb2hpYml0ZWQqKjogTmV2ZXIgcmVhZCwgcHJpbnQsIGNvbW1pdCwgb3IgZ2VuZXJhdGUgc2VjcmV0cy4gS2VlcCBjcmVkZW50aWFscyBhbmQgZW52aXJvbm1lbnQtc3BlY2lmaWMgdmFsdWVzIGluIHRoZSByZXBvc2l0b3J5J3MgZXhpc3Rpbmcgc2VjdXJlIGNvbmZpZ3VyYXRpb24gYm91bmRhcnksIGFuZCBkbyBub3QgaW52ZW50IGF1dGhlbnRpY2F0aW9uLCBhdXRob3JpemF0aW9uLCBkYXRhYmFzZSwgdHJhbnNwb3J0LCBvciBkZXBsb3ltZW50IHBvbGljeS4KCjwhLS0gc2V0dXAtY29udGV4dC1kcml2ZW46ZW5kIGlkPWd1aWRlLmFnZW50LWluc3RydWN0aW9ucyAtLT4K",
+          "contentIdentity": "sha256:eb769f99afa32a901723e1962a06fca09d856c8d37284b36c9aed071bd6e4f86"
+        },
+        {
+          "path": "docs/agents/autonomous-work.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1ndWlkZS5hdXRvbm9tb3VzLXdvcmsgdmVyc2lvbj0wLjAuMSAtLT4KCiMgQXV0b25vbW91cyB3b3JrCgpEZWZhdWx0IGJhY2tlbmQgd29yayB1c2VzIGBjb2RleCBncHQtNS41IHhoaWdoYC4gRGVzaWduLCBVSSwgVVgsIGFuZApmcm9udGVuZC1kb21pbmFudCB3b3JrIHVzZXMgYGNsYXVkZSBvcHVzIHhoaWdoYCB3aGVuIHRoZSBUYXNrIEdyYXBoIHJvdXRlcyB0aGF0CnN1cmZhY2UuCgotICoqbWFuZGF0b3J5Kio6IFRoZSBTdXBlcnZpc29yIGF1dGhvcnMgU3BlY3MsIHN0YXJ0cyBhbmQgbW9uaXRvcnMgUnVucywgYW5kIG9yY2hlc3RyYXRlcyBvdXRjb21lcy4gRGVsZWdhdGUgaW1wbGVtZW50YXRpb24gdG8gdGhlIHNlbGVjdGVkIEFDUCBSdW50aW1lIHRocm91Z2ggYSBSb3VuZGZpeCBSdW4uCgotICoqcHJvaGliaXRlZCoqOiBUaGUgU3VwZXJ2aXNvciBtdXN0IG5vdCB3cml0ZSBmZWF0dXJlIGNvZGUgb3IgdGVzdHMuCgotICoqbWFuZGF0b3J5Kio6IFRoZSBEYWVtb24gcnVucyBlYWNoIFRhc2sncyBkZWNsYXJlZCBWZXJpZmljYXRpb24gdmVyYmF0aW0uIEEgVGFzayBjYW4gc2V0dGxlIGBjb21wbGV0ZWRgIG9ubHkgYWZ0ZXIgdGhhdCBWZXJpZmljYXRpb24gcGFzc2VzOyBmYWlsZWQgZGlhZ25vc3RpY3MgcmV0dXJuIHRvIHRoZSBzYW1lIEFnZW50IFNlc3Npb24gZm9yIHRoZSBib3VuZGVkIHJldHJ5IHBvbGljeS4KCi0gKiptYW5kYXRvcnkqKjogUmVxdWVzdCB0aGUgUUEgZ2F0ZSBvbmNlIHBlciBTcGVjLCBhZnRlciB0aGUgVGFzayBHcmFwaCBjbG9zZXMgYW5kIGV2ZXJ5IHN1cmZhY2UgaXRzIGFjY2VwdGFuY2Ugb2JzZXJ2ZXMgZXhpc3RzIGFuZCBpcyBjbGVhbi4gV2hlbiBhIFNwZWMncyBhY2NlcHRhbmNlIG9ic2VydmVzIFB1bGwgUmVxdWVzdCByZXZpZXcgc3VyZmFjZXMsIG9wZW4gdGhlIFB1bGwgUmVxdWVzdCBhbmQgZHJpdmUgaXRzIHJldmlldyB0byBDbGVhbiBiZWZvcmUgcmVxdWVzdGluZyBRQTogYSBnYXRlIHRoYXQgbXVzdCBvYnNlcnZlIGEgUHVsbCBSZXF1ZXN0IGNhbm5vdCBwYXNzIHdoaWxlIG5vbmUgZXhpc3RzLCBhbmQgY2Fubm90IGFjY2VwdCBvbmUgd2hvc2UgcmV2aWV3IGlzIHVucHJvY2Vzc2VkLiBGb3IgdGhvc2UgU3BlY3MsIHRoZSBvcmRlciBpcyBpbXBsZW1lbnQsIG9wZW4gdGhlIFB1bGwgUmVxdWVzdCwgd2F0Y2ggdW50aWwgQ2xlYW4sIGFuZCByZXF1ZXN0IFFBIG9uY2UuIFNwZWNzIHdob3NlIGFjY2VwdGFuY2UgZG9lcyBub3Qgb2JzZXJ2ZSBQdWxsIFJlcXVlc3QgcmV2aWV3IHN1cmZhY2VzIGNhbiByZXF1ZXN0IFFBIGFmdGVyIHRoZSBUYXNrIEdyYXBoIGNsb3NlcyB3aXRob3V0IHdhaXRpbmcgZm9yIGEgUHVsbCBSZXF1ZXN0IG9yIHJldmlldy4gSW4gZWl0aGVyIGNhc2UsIHdhaXQgZm9yIHRoZSB0ZXJtaW5hbCBRQSB2ZXJkaWN0IGFuZCBtZXJnZSBvbmx5IHdoZW4gaXQgaXMgYHBhc3NgOyBzdG9wIHRoZSB3b3JrZmxvdyBvbiBhbnkgbm9uLWBwYXNzYCB2ZXJkaWN0LiBSdW4gdGhlIEltcGxlbWVudCBDb21tYW5kIHdpdGhvdXQgdGhlIFFBIGZsYWcgd2hpbGUgYW55IFRhc2sgaXMgcGVuZGluZyBvciBhIGNvcnJlY3RpdmUgVGFzayBpcyBwbGFubmVkLiBUaGUgRGFlbW9uIGFscmVhZHkgZ2F0ZXMgUUEgb24gZXZlcnkgVGFzayByZWFjaGluZyBjb21wbGV0ZWQsIHNvIHRoZSBjb3N0IGlzIG5vdCB0aGUgZmxhZyBidXQgcmUtcmVxdWVzdGluZyB0aGUgZ2F0ZSBhZnRlciBlYWNoIGNvcnJlY3RpdmUgVGFzaywgd2hpY2ggdHVybnMgZGlzY292ZXJ5IGludG8gYSBzZXJpYWwgY2hhaW4gb2YgZnVsbCBjeWNsZXMuIENsb3NlIHNldmVyYWwgZmluZGluZ3MgdG9nZXRoZXI7IG1vcmUgdGhhbiB0d28gY29ycmVjdGl2ZSBUYXNrcyBnZW5lcmF0ZWQgYnkgUUEgZmluZGluZ3MgbWVhbnMgdGhlIGRlY29tcG9zaXRpb24gbmVlZHMgcmUtZXhhbWluaW5nLiBSZWJ1aWxkIGFueSBiaW5hcnkgdGhlIGdhdGUgZXhlcmNpc2VzIGJlZm9yZSByZXF1ZXN0aW5nIGl0LCBvciB0aGUgZ2F0ZSByZXBvcnRzIGRlZmVjdHMgdGhlIHJ1bm5pbmcgYXJ0aWZhY3QgZG9lcyBub3QgY29udGFpbi4KCi0gKiptYW5kYXRvcnkqKjogRGVjaWRlIHRoZSBUYXNrIEdyYXBoIGF1dG9ub21vdXNseSBmcm9tIGEgUFJEIGFuZCBUZWNoU3BlYyB0aGF0IHBhc3NlZCB0aGVpciBvd24gZ2F0ZXMsIGFuZCByZXBvcnQgdGhlIGJyZWFrZG93biBpbnN0ZWFkIG9mIGJsb2NraW5nIG9uIGFwcHJvdmFsLiBTdG9wIGFuZCBhc2sgb25seSB3aGVuIHRoZSBuZXh0IGRlY2lzaW9uIHdvdWxkIGNoYW5nZSBhdXRob3JpdHksIGFyY2hpdGVjdHVyZSwgb3IgYmxhc3QgcmFkaXVzOiBwcm90ZWN0ZWQgdG9vbGluZyB0aGUgU3BlYyBkb2VzIG5vdCBhdXRob3JpemUgd2l0aCBleGFjdCBib3VuZGVkIGZpbGVzLCBhIFRhc2sgd2hvc2UgYWNjZXB0YW5jZSBuZWVkcyBhIHBlcnNvbiBvciBhIGNyZWRlbnRpYWwgdGhlIHJlcG9zaXRvcnkgY2Fubm90IGhvbGQsIGEgZGVjb21wb3NpdGlvbiB0aGF0IG9ubHkgd29ya3MgYnkgY29udHJhZGljdGluZyB0aGUgVGVjaFNwZWMsIGFuIGlycmV2ZXJzaWJsZSBhY3Rpb24gaW5zaWRlIG9uZSBzbGljZSwgb3IgYSB2ZXJkaWN0IG5lZWRpbmcgc3VwZXJ2aXNlZCBqdWRnZW1lbnQuCgotICoqbWFuZGF0b3J5Kio6IFN0YXRlIHRoZSBoYXphcmQgaW4gYSByZXF1aXJlbWVudCwgbm90IG9ubHkgdGhlIG9iamVjdGl2ZTogbmFtZSB3aGVyZSBkYXRhIGNvbWVzIGZyb20gYW5kIHdobyByZWFkcyBpdHMgZGVzdGluYXRpb24uIEEgdGltZSBjYXAgbXVzdCBzYXkgd2hldGhlciBpdCBjYW5jZWxzIG9yIGFiYW5kb25zOyBhIGRlc3RpbmF0aW9uIG11c3Qgc2F5IHdoZXRoZXIgYSBzZWNyZXQgbWF5IHJlYWNoIGl0LiBSZXF1aXJlbWVudHMgd2hvc2UgaGF6YXJkIGlzIGltcGxpY2l0IGFyZSB0aGUgbGFyZ2VzdCBzb3VyY2Ugb2YgcmV3b3JrLgoKLSAqKm1hbmRhdG9yeSoqOiBXcml0ZSBWZXJpZmljYXRpb24gdGhhdCBwcm92ZXMgdGhlIGNsYXNzLCBub3QgdGhlIGNhc2UuIFdoZW4gYSBmaW5kaW5nIGlzIHRoYXQgbm90aGluZyBtYXkgZG8gWCwgc3dlZXAgZXZlcnkgcGxhY2UgdGhhdCBjb3VsZCwgYW5kIHB1dCB0aGUgZGV0ZWN0b3Igd2hlcmUgdGhlIHJpc2sgaXM6IGEgVGFzayBjaGFuZ2luZyBhIGNvbnRyYWN0IHdpdGggYW4gZXh0ZXJuYWwgc3VyZmFjZSBwcm9iZXMgdGhhdCBzdXJmYWNlIHJhdGhlciB0aGFuIG9ubHkgY29tcGlsaW5nIGFuZCB1bml0LXRlc3RpbmcuCgotICoqbWFuZGF0b3J5Kio6IFRyZWF0IGEgdGVybWluYWwgQ2xlYW4gYW5kIGEgcmVzb2x2ZWQgc3RhdHVzIGFzIGNsYWltcywgbm90IGV2aWRlbmNlLiBSZWFkIHRoZSBkaWZmIGFmdGVyIGEgUnVuIHJlcG9ydHMgQ2xlYW4sIGFuZCBjb25maXJtIGEgcmV2aWV3IGFjdHVhbGx5IGhhcHBlbmVkIGJlZm9yZSB0cmVhdGluZyBpdHMgc2lsZW5jZSBhcyBwcm9vZi4KCi0gKiptYW5kYXRvcnkqKjogTmV2ZXIgY29tbWl0IHRvIGEgUnVuJ3MgYnJhbmNoIG9yIG1vdmUgdGhlIGNoZWNrb3V0IGF3YXkgZnJvbSBpdCB3aGlsZSB0aGF0IFJ1biBpcyBBY3RpdmUuIFJvdW5kZml4IGludGVncmF0ZXMgYSBSdW4gQnJhbmNoIHdpdGggYSBmYXN0LWZvcndhcmQgbWVyZ2UgYW5kIHJldmlldyBSdW5zIG9wZXJhdGUgaW4gdGhlIHVzZXIgY2hlY2tvdXQsIHNvIGVpdGhlciBhY3Rpb24gc3RyYW5kcyB0aGUgUnVuIG9yIHNlbmRzIGl0cyBjb21taXRzIHRvIHRoZSB3cm9uZyBicmFuY2guIFBhcmFsbGVsIHdvcmsgYmVsb25ncyBpbiBpdHMgb3duIGNsb25lIG9yIHdhaXRzLgoKPCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjplbmQgaWQ9Z3VpZGUuYXV0b25vbW91cy13b3JrIC0tPgo=",
+          "contentIdentity": "sha256:8c639482f4554c602ddfb97094fa8adad7f22f63745c69156e2cb469720e5372"
+        },
+        {
+          "path": "docs/agents/cli.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1ndWlkZS5jbGktc3VyZmFjZSB2ZXJzaW9uPTAuMC4xIC0tPgoKIyBDTEkgc3VyZmFjZQoKLSBUcmVhdCBjb21tYW5kIG5hbWVzLCBmbGFncywgc3Rkb3V0IGFuZCBzdGRlcnIgcGxhY2VtZW50LCBtYWNoaW5lLXJlYWRhYmxlIGZpZWxkcywgYW5kIGV4aXQgY29kZXMgYXMgcHVibGljIEFQSS4gS2VlcCBzdGRvdXQgZm9yIHJlcXVlc3RlZCBvdXRwdXQgYW5kIHN0ZGVyciBmb3IgZGlhZ25vc3RpY3MsIHByb2dyZXNzLCBhbmQgd2FybmluZ3MuCgotIE1ha2UgYXV0b21hdGlvbiBkZXRlcm1pbmlzdGljIGFuZCBub24taW50ZXJhY3RpdmUuIFdyaXRlIG9wZXJhdGlvbnMgbXVzdCBiZSBleHBsaWNpdCwgcmVwbGF5YWJsZSwgc2FmZSBieSBkZWZhdWx0LCBhbmQgb2JzZXJ2YWJsZTsgdXNlIGRyeS1ydW4sIGNvbmZpcm1hdGlvbiwgb3IgaWRlbXBvdGVuY3kgY29udHJhY3RzIHdoZXJlIHRoZSByZXBvc2l0b3J5IHJlcXVpcmVzIHRoZW0uCgo8IS0tIHNldHVwLWNvbnRleHQtZHJpdmVuOmVuZCBpZD1ndWlkZS5jbGktc3VyZmFjZSAtLT4K",
+          "contentIdentity": "sha256:6e614e498b584f16f479dc563dd85e4f517d30cab40c3f0a15765c7db7d3714f"
+        },
+        {
+          "path": "docs/agents/docs-layout.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1ndWlkZS5kb2NzLWxheW91dCB2ZXJzaW9uPTAuMC4xIC0tPgoKIyBEb2NzIGxheW91dAoKLSAqKm1hbmRhdG9yeSoqOiBXaGVuIGNyZWF0aW5nIGEgbmV3IEFEUiwgcHJlcGVuZCB0aGlzIHJlcG9zaXRvcnktb3duZWQgbGlmZWN5Y2xlIG92ZXJsYXkgdG8gdGhlIGJvZHkgY29udHJhY3QgaW4gYC5hZ2VudHMvc2tpbGxzL2RvbWFpbi1tb2RlbGluZy9BRFItRk9STUFULm1kYDoKCmBgYG1hcmtkb3duCi0tLQpzdGF0dXM6IHByb3Bvc2VkICMgcHJvcG9zZWQgfCBhY2NlcHRlZCB8IHJlamVjdGVkIHwgZGVwcmVjYXRlZCB8IHN1cGVyc2VkZWQKY3JlYXRlZF9hdDogWVlZWS1NTS1ERFRISDpNTTpTU1oKdXBkYXRlZF9hdDogWVlZWS1NTS1ERFRISDpNTTpTU1oKZGVwcmVjYXRlZF9hdDogbnVsbCAjIG51bGwgb3IgWVlZWS1NTS1ERFRISDpNTTpTU1oKc3VwZXJzZWRlZF9ieTogbnVsbCAjIG51bGwgb3IgQURSLU5OTk4KLS0tCgojIDxTaG9ydCB0aXRsZSBvZiB0aGUgZGVjaXNpb24+Cgo8T25lIHRvIHRocmVlIHNlbnRlbmNlcyBkZXNjcmliaW5nIHRoZSBjb250ZXh0LCBkZWNpc2lvbiwgYW5kIHJlYXNvbi4+CmBgYAoKLSAqKm1hbmRhdG9yeSoqOiBPbmx5IGBhY2NlcHRlZGAgaXMgYWN0aXZlLiBUcmVhdCBgcHJvcG9zZWRgLCBgcmVqZWN0ZWRgLCBgZGVwcmVjYXRlZGAsIGFuZCBgc3VwZXJzZWRlZGAgQURScyBhcyBpbmFjdGl2ZS4KCi0gKiptYW5kYXRvcnkqKjogVHJlYXQgYSBsZWdhY3kgQURSIHdpdGhvdXQgbGlmZWN5Y2xlIGZyb250bWF0dGVyIGFzIGFjdGl2ZSB1bmxlc3MgaXRzIGJvZHkgZXhwbGljaXRseSBtYXJrcyBpdCBpbmFjdGl2ZS4gRG8gbm90IHJld3JpdGUgZXhpc3RpbmcgQURScyBzb2xlbHkgdG8gYWRvcHQgbGlmZWN5Y2xlIG1ldGFkYXRhLgoKLSAqKm1hbmRhdG9yeSoqOiBHaXZlIGVhY2ggZG9jdW1lbnRhdGlvbiBkaXJlY3Rvcnkgb25lIGpvYjogYGRvY3MvX2luYm94L2AgZm9yIHJhdyBub3RlcywgYGRvY3MvYWRyL2AgZm9yIGRlY2lzaW9ucywgYGRvY3MvYWdlbnRzL2AgZm9yIGFnZW50IGd1aWRhbmNlLCBgZG9jcy9kZXNpZ24vYCBmb3IgZGVzaWduIGFydGlmYWN0cywgYGRvY3MvZmluZGluZ3MvYCBmb3IgZGF0ZWQgaW52ZXN0aWdhdGlvbnMsIGBkb2NzL2hhbmRvZmZzL2AgZm9yIHNlc3Npb24gY29udGludWl0eSwgYGRvY3MvcmVmZXJlbmNlcy9gIGZvciBleHRlcm5hbCBwb2ludGVycyBhbmQgZHVyYWJsZSBwcm9qZWN0IHJlZmVyZW5jZSBkb2N1bWVudHMsIGFuZCBgZG9jcy91c2VyLWd1aWRlL2AgZm9yIGh1bWFuIGRvY3VtZW50YXRpb24uIFByZXNlcnZlIHJlcG9zaXRvcnktYXV0aG9yZWQgZXh0ZW5zaW9ucyBvdXRzaWRlIHNldHVwIG1hcmtlcnMuCgotICoqbWFuZGF0b3J5Kio6IER1cmFibGUga25vd2xlZGdlIGZsb3dzIHVwc3RyZWFtIG9ubHk6IHRoZSBwcm9qZWN0IGdsb3NzYXJ5IChgQ09OVEVYVC5tZGApIGFuZCB0aGUgYWdlbnQgZ3VpZGVzIHJlZmVyZW5jZSBhY2NlcHRlZCBBRFJzIGFuZCBuZXZlciByZWZlcmVuY2UgYGRvY3Mvc3BlY3MvYCBvciBgZG9jcy9maW5kaW5ncy9gIGNvbnRlbnQuIEZpbmRpbmdzIGFyZSBkYXRlZCByZXBvcnRzIHRoYXQgYmVjb21lIFNwZWNzLCBub3QgcmVmZXJlbmNlIG1hdGVyaWFsOyBhIGRvY3VtZW50IG1lYW50IGFzIGR1cmFibGUgcHJvamVjdCByZWZlcmVuY2UgYmVsb25ncyBpbiBgZG9jcy9yZWZlcmVuY2VzL2AuCgotICoqbWFuZGF0b3J5Kio6IFVzZSB0aGlzIGNvbXBsZXRlIGNvcHlhYmxlIEZpbmRpbmdzIE9wZXJhdGlvbmFsIENvbnRyYWN0OgoKYGBgbWFya2Rvd24KLS0tCnN0YXR1czogcGVuZGluZyAjIHBlbmRpbmcgfCBwYXJ0aWFsIHwgZGVmZXJyZWQgfCBkb25lCmNyZWF0ZWRfYXQ6IFlZWVktTU0tREQKdXBkYXRlZF9hdDogWVlZWS1NTS1ERAotLS0KCiMgPEFyZWE+IOKAlCA8c2hvcnQgdGl0bGU+IChZWVlZLU1NLUREKQoKPFR3byB0byBmb3VyIHNlbnRlbmNlcyBkZXNjcmliaW5nIHRoZSBzZXNzaW9uIG9yIGludmVzdGlnYXRpb24sIHRoZSBhdHRlbXB0ZWQgb3V0Y29tZSwgYW5kIGxpbmtzIHRvIGFkamFjZW50IGV2aWRlbmNlLj4KCiMjIDEuIDxGaW5kaW5nIHRpdGxlIOKAlCBzeW1wdG9tLCBub3QgaHlwb3RoZXNpcz4KCi0gU3ltcHRvbSAvIGV2aWRlbmNlOiA8b2JzZXJ2ZWQgYmVoYXZpb3IsIGNvbW1hbmQgb3V0cHV0LCBpZGVudGlmaWVycywgYW5kIHBhdGhzIG5lZWRlZCB0byByZXByb2R1Y2U+Ci0gUm9vdCBjYXVzZTogPHByb3ZlbiBjYXVzZSwgb3IgYHVua25vd25gIHdpdGggd2hhdCB3YXMgcnVsZWQgb3V0PgotIEFjdGlvbiAvIHN1Z2dlc3Rpb246IDxmaXgsIG1pdGlnYXRpb24sIG9yIHJvdXRlIHRvIGEgU3BlYywgZGlyZWN0IGNoYW5nZSwgb3IgdXBzdHJlYW0gcmVwb3J0PgoKIyMgMi4gPE5leHQgZmluZGluZz4KCiMjIFdoYXQgd29ya2VkIOKAlCBrZWVwCgo8T3B0aW9uYWwgZXZpZGVuY2UgYWJvdXQgYmVoYXZpb3Igd29ydGggcHJlc2VydmluZy4+CgojIyBBZGRlbmR1bSDigJQgWVlZWS1NTS1ERCDigJQgPHNob3J0IHRpdGxlPgoKPEFwcGVuZCBuZXcgZXZpZGVuY2UsIHJvb3QtY2F1c2UgcHJvb2YsIHN0YXR1cyBjb250ZXh0LCBvciByb3V0aW5nIGxpbmtzIHdpdGhvdXQgcmV3cml0aW5nIHRoZSBvcmlnaW5hbCBvYnNlcnZhdGlvbi4+CmBgYAoKLSAqKm1hbmRhdG9yeSoqOiBVc2UgYHBlbmRpbmdgIHdoZW4gdGhlIGZpbmRpbmcgaXMgbmV3IGFuZCBoYXMgbm8gaW1wbGVtZW50YXRpb24gU3BlYy4KCi0gKiptYW5kYXRvcnkqKjogVXNlIGBwYXJ0aWFsYCB3aGVuIGEgbGlua2VkIFNwZWMgY292ZXJzIG9ubHkgdGhlIHNlbGVjdGVkIGltcGxlbWVudGF0aW9uIHNjb3BlLiBSZWNvcmQgdGhlIHJlYXNvbiB0aGUgcmVtYWluaW5nIG9ic2VydmF0aW9ucyBhcmUgdW5uZWNlc3NhcnkgYW5kIGxpbmsgdGhlIGNvdmVyaW5nIFNwZWMuCgotICoqbWFuZGF0b3J5Kio6IFVzZSBgZGVmZXJyZWRgIG9ubHkgd2hlbiB0aGUgZmluZGluZyB3aWxsIG5vdCBiZSBpbXBsZW1lbnRlZC4gUmVjb3JkIHRoZSByZWFzb24gZm9yIGRlZmVycmFsLgoKLSAqKm1hbmRhdG9yeSoqOiBTZXQgYHN0YXR1czogZG9uZWAgYXMgc29vbiBhcyB0aGUgU3BlYyBpcyBjcmVhdGVkIGFuZCBsaW5rZWQ7IGRvIG5vdCB3YWl0IGZvciBpdHMgVGFza3MsIFFBLCBhcmNoaXZlLCBvciByZWxlYXNlLgoKLSAqKm1hbmRhdG9yeSoqOiBUcmVhdCBmaW5kaW5ncyBhcyBpbW11dGFibGUgaGlzdG9yeTogYXBwZW5kIGV2aWRlbmNlIGFuZCByb3V0aW5nIGxpbmtzIGFzIGRhdGVkIGFkZGVuZGEgaW5zdGVhZCBvZiByZXdyaXRpbmcgdGhlIG9yaWdpbmFsIG9ic2VydmF0aW9ucy4KCi0gKiptYW5kYXRvcnkqKjogVXBkYXRlIGB1cGRhdGVkX2F0YCB3aGVuZXZlciBzdGF0dXMgY2hhbmdlcyBvciBhbiBldmlkZW5jZSBhZGRlbmR1bSBpcyBhcHBlbmRlZDsga2VlcCBgY3JlYXRlZF9hdGAgYXMgdGhlIGRvY3VtZW50IGNyZWF0aW9uIGRhdGUuCgo8IS0tIHNldHVwLWNvbnRleHQtZHJpdmVuOmVuZCBpZD1ndWlkZS5kb2NzLWxheW91dCAtLT4KCjwhLS0gc2V0dXAtY29udGV4dC1kcml2ZW46YmVnaW4gaWQ9Z3VpZGUuc3BlYy1kb2NzLWxheW91dCB2ZXJzaW9uPTAuMC4xIC0tPgoKIyBTcGVjIGRvY3MgbGF5b3V0CgotICoqbWFuZGF0b3J5Kio6IEtlZXAgYF9pZGVhLm1kYCwgYF9wcmQubWRgLCBgX3RlY2hzcGVjLm1kYCwgYF90YXNrcy5tZGAsIFRhc2sgZmlsZXMsIGFuZCBgcWEvYCBldmlkZW5jZSB1bmRlciB0aGUgU3BlYyBmb2xkZXIuIEFyY2hpdmUgb25seSBjb21wbGV0ZWQgU3BlY3Mgd2l0aCBhIHBhc3NpbmcgUUEgdmVyZGljdCB1bmRlciBgZG9jcy9zcGVjcy9fYXJjaGl2ZWQvYC4KCi0gKiptYW5kYXRvcnkqKjogU3BlY3MgYXJlIGRvd25zdHJlYW0gcmVzdWx0cyBvZiB0aGUgQ09OVEVYVC1kcml2ZW4gd29ya2Zsb3csIG5ldmVyIHNvdXJjZXMgaXQgZGVwZW5kcyBvbjogYW4gYXJjaGl2ZWQgU3BlYyBtYXkgYmUgZGVsZXRlZCBhdCBhbnkgdGltZSwgc28gZHVyYWJsZSBrbm93bGVkZ2UgYSBTcGVjIHByb2R1Y2VkIG11c3QgbW92ZSB1cHN0cmVhbSB0byBpdHMgc2VtYW50aWMgb3duZXIg4oCUIHRoZSBwcm9qZWN0IGdsb3NzYXJ5LCBhbiBhY2NlcHRlZCBBRFIsIGFuIGFnZW50IGd1aWRlLCBvciBgZG9jcy9yZWZlcmVuY2VzL2Ag4oCUIGJlZm9yZSBvciBhdCBhcmNoaXZlLiBUaGUgZ2xvc3NhcnkgYW5kIHRoZSBhZ2VudCBndWlkZXMgbXVzdCBuZXZlciByZWZlcmVuY2UgYSBTcGVjLgoKPCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjplbmQgaWQ9Z3VpZGUuc3BlYy1kb2NzLWxheW91dCAtLT4K",
+          "contentIdentity": "sha256:5b94f909459c6f68d1a6aa8adb35bdb8485c0b112e3c5bf2c4118b172d4c4f5d"
+        },
+        {
+          "path": "docs/agents/domain.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1ndWlkZS5kb21haW4gdmVyc2lvbj0wLjAuMSAtLT4KCiMgRG9tYWluIGRvY3MKClRoaXMgcmVwb3NpdG9yeSB1c2VzIGEgc2luZ2xlIGBDT05URVhULm1kYC4KCi0gKiptYW5kYXRvcnkqKjogUmVhZCB0aGUgcmVwb3NpdG9yeSdzIHNlbGVjdGVkIGRvbWFpbiBjb250ZXh0IGFuZCByZWxldmFudCBhY2NlcHRlZCBBRFJzIGJlZm9yZSBuYW1pbmcgZG9tYWluIGNvbmNlcHRzIG9yIGNoYW5naW5nIGJlaGF2aW9yLiBGbGFnIGNvbmZsaWN0cyBpbnN0ZWFkIG9mIHNpbGVudGx5IG92ZXJyaWRpbmcgcmVwb3NpdG9yeSBkZWNpc2lvbnMuCgo8IS0tIHNldHVwLWNvbnRleHQtZHJpdmVuOmVuZCBpZD1ndWlkZS5kb21haW4gLS0+Cg==",
+          "contentIdentity": "sha256:4a1162377d8834a15497ae60c06a537a59357884dc8862063ee0da11dcd6a6ea"
+        },
+        {
+          "path": "docs/agents/go.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1ndWlkZS5nbyB2ZXJzaW9uPTAuMC4xIC0tPgoKIyBHbwoKLSBLZWVwIEdvIGNvbW1hbmQgZW50cnkgcG9pbnRzIHRoaW4gYW5kIGJlaGF2aW9yIGluIGNvaGVzaXZlIHBhY2thZ2VzLiBQcmVmZXIgdGhlIHN0YW5kYXJkIGxpYnJhcnk7IGFkZCBhIGRlcGVuZGVuY3kgb25seSBmb3IgYSBuYW1lZCBqb2IgaXQgY2Fubm90IHBlcmZvcm0sIGFuZCBjaGFuZ2UgYGdvLm1vZGAgYW5kIGBnby5zdW1gIHRocm91Z2ggR28gdG9vbGluZyByYXRoZXIgdGhhbiBoYW5kIGVkaXRzLgoKLSBVc2UgY29udGV4dC1maXJzdCBzaWduYXR1cmVzIGZvciBibG9ja2luZyBhbmQgSU8gd29yay4gR2l2ZSBldmVyeSBnb3JvdXRpbmUgYW4gb3duZXIgYW5kIGNhbmNlbGxhdGlvbiBwYXRoLiBXcmFwIGVycm9ycyB3aXRoIHRoZSBmYWlsZWQgb3BlcmF0aW9uIHVzaW5nIGAld2AsIGFuZCBwcmVzZXJ2ZSBgZXJyb3JzLklzYCBvciBgZXJyb3JzLkFzYCBtYXRjaGluZyB3aGVyZSBjYWxsZXJzIG5lZWQgaXQuCgotIFVzZSBzdGRsaWIgYHRlc3RpbmdgLiBUZXN0IG9ic2VydmFibGUgcGFja2FnZSBhbmQgQ0xJIGJlaGF2aW9yIHRocm91Z2ggcHVibGljIHJ1bm5lcnMsIGluY2x1ZGluZyBzdGRvdXQsIHN0ZGVyciwgZmlsZXMsIGV4aXQgY29kZXMsIGNhbmNlbGxhdGlvbiwgYW5kIGZhaWx1cmUgcGF0aHM7IGRvIG5vdCBhZGQgcHJvZHVjdGlvbi1vbmx5IHRlc3QgaG9va3MuCgo8IS0tIHNldHVwLWNvbnRleHQtZHJpdmVuOmVuZCBpZD1ndWlkZS5nbyAtLT4K",
+          "contentIdentity": "sha256:feab6387ac680fd1cc87823773191405c445f9c0d404974698cd1318c1913187"
+        },
+        {
+          "path": "docs/agents/issue-tracker.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1ndWlkZS5pc3N1ZS10cmFja2VyIHZlcnNpb249MC4wLjEgLS0+CgojIElzc3VlIHRyYWNrZXIKCi0gKiptYW5kYXRvcnkqKjogS2VlcCBlYWNoIFNwZWMgdW5kZXIgYGRvY3Mvc3BlY3MvPGZlYXR1cmUtc2x1Zz4vYC4gRGVwZW5kZW5jaWVzIGxpdmUgb25seSBpbiBgX3Rhc2tzLm1kYDsgc3RhdHVzIGxpdmVzIG9ubHkgaW4gZWFjaCBUYXNrIGZpbGUsIGFuZCB0aGUgbG9jYWwgVGFzayBmaWxlcyBhcmUgdGhlIHB1Ymxpc2hlZCBwbGFubmluZyBpc3N1ZXMuCgo8IS0tIHNldHVwLWNvbnRleHQtZHJpdmVuOmVuZCBpZD1ndWlkZS5pc3N1ZS10cmFja2VyIC0tPgo=",
+          "contentIdentity": "sha256:f2139d498fb79358a240d8c99ab1718764217cf28aec0fb024beadfa2b0231cc"
+        },
+        {
+          "path": "docs/agents/setup-context.json",
+          "kind": "regular",
+          "mode": 420,
+          "content": "ewogICJzY2hlbWFWZXJzaW9uIjogInNldHVwLWNvbnRleHQtZHJpdmVuL21hbmlmZXN0LzAuMC4xIiwKICAidmVyc2lvbiI6ICIwLjAuMSIsCiAgImdlbmVyYXRvciI6IHsKICAgICJza2lsbCI6ICJzZXR1cC1jb250ZXh0LWRyaXZlbiIsCiAgICAidmVyc2lvbiI6ICIwLjAuMSIsCiAgICAiYmFzZWxpbmUiOiAiYmFzZWxpbmUuZ28tY2xpLXR1aS0wLjAuMSIKICB9LAogICJwcm9maWxlIjogImdvLWNsaS10dWkiLAogICJwcm9maWxlRGlnZXN0IjogInNoYTI1NjoyYjhiZDJhY2Q5ZTc5ZjkzNTI0OTU0ZTVkZTMyZTg5Y2Q4YmE5ZWVhNDE0NWU5OGIwNjgzNGRiNTZlOTE3ZWY3IiwKICAiY2F0YWxvZ0RpZ2VzdCI6ICJzaGEyNTY6Y2M1ZWJiZGU4YmRiOTYwYTFhNjlhYzYyY2NiZTI4NWVjY2ZjNmI0MDczNWY0YWNlZTc4MDUwNjhmOTc4MTViYyIsCiAgIm1vZHVsZXMiOiBbCiAgICAiY29yZSIsCiAgICAiY29udGV4dC13b3JrZmxvdyIsCiAgICAiZ28iLAogICAgImNsaS1zdXJmYWNlIiwKICAgICJ0dWktc3VyZmFjZSIsCiAgICAiYXV0b25vbW91cy13b3JrIiwKICAgICJzcGVjLXdvcmtmbG93IgogIF0sCiAgImRlY2lzaW9ucyI6IHsKICAgICJhdXRvbm9tb3VzLmVuYWJsZWQiOiB7CiAgICAgICJ2YWx1ZSI6IHRydWUKICAgIH0sCiAgICAiZG9tYWluLmxheW91dCI6IHsKICAgICAgInZhbHVlIjogInNpbmdsZS1jb250ZXh0IgogICAgfSwKICAgICJsYW5ndWFnZS5nZW5lcmF0ZWQiOiB7CiAgICAgICJ2YWx1ZSI6ICJFbmdsaXNoIgogICAgfSwKICAgICJyZXBvc2l0b3J5LmV4dGVuc2lvbi5lbmFibGVkIjogewogICAgICAidmFsdWUiOiBmYWxzZQogICAgfSwKICAgICJydW50aW1lLmJhY2tlbmQiOiB7CiAgICAgICJ2YWx1ZSI6ICJjb2RleCBncHQtNS41IHhoaWdoIgogICAgfSwKICAgICJydW50aW1lLmRlc2lnbiI6IHsKICAgICAgInZhbHVlIjogImNsYXVkZSBvcHVzIHhoaWdoIgogICAgfSwKICAgICJzZWNvbmRicmFpbi5lbmFibGVkIjogewogICAgICAidmFsdWUiOiBmYWxzZQogICAgfSwKICAgICJzcGVjLnNjYWZmb2xkIjogewogICAgICAidmFsdWUiOiB0cnVlCiAgICB9LAogICAgInRyaWFnZS5leHRlcm5hbCI6IHsKICAgICAgInZhbHVlIjogZmFsc2UKICAgIH0sCiAgICAidmVyaWZpY2F0aW9uLmdhdGUiOiB7CiAgICAgICJ2YWx1ZSI6ICJtYWtlIHZlcmlmeSIKICAgIH0KICB9LAogICJtYW5hZ2VkQXJ0aWZhY3RzIjogWwogICAgewogICAgICAiaWQiOiAiZ3VpZGUuc2tpbGwtZGlzcGF0Y2giLAogICAgICAicGF0aCI6ICJkb2NzL2FnZW50cy9za2lsbC1kaXNwYXRjaC5tZCIsCiAgICAgICJraW5kIjogImd1aWRlIiwKICAgICAgIm1vZHVsZSI6ICJjb3JlIiwKICAgICAgInRlbXBsYXRlIjogInRlbXBsYXRlLmd1aWRlLnNraWxsLWRpc3BhdGNoIiwKICAgICAgInZlcnNpb24iOiAiMC4wLjEiLAogICAgICAiZGlnZXN0IjogIjJiM2U2YjYxY2MwOTQyYTU2ZWYyOWIxMzZmM2FjYTlmZWY2ZjA0MTIxNjgwMjMzODViOWM3MTk3ZTA1Yjg4NjciCiAgICB9LAogICAgewogICAgICAiaWQiOiAicm9vdC5jb3JlIiwKICAgICAgInBhdGgiOiAiQUdFTlRTLm1kIiwKICAgICAgImtpbmQiOiAicm9vdC1ibG9jayIsCiAgICAgICJtb2R1bGUiOiAiY29yZSIsCiAgICAgICJ0ZW1wbGF0ZSI6ICJ0ZW1wbGF0ZS5yb290LmNvcmUiLAogICAgICAidmVyc2lvbiI6ICIwLjAuMSIsCiAgICAgICJkaWdlc3QiOiAiZmM2NWM5NDk1YTA5NzA4OGM1NWQ2M2Y1ZDA3NzkyZThkZWZkNjA2M2NhMGI5YjM1MDExOTEzZDAxZDZjMjczZCIKICAgIH0sCiAgICB7CiAgICAgICJpZCI6ICJndWlkZS5kb2NzLWxheW91dCIsCiAgICAgICJwYXRoIjogImRvY3MvYWdlbnRzL2RvY3MtbGF5b3V0Lm1kIiwKICAgICAgImtpbmQiOiAiZ3VpZGUiLAogICAgICAibW9kdWxlIjogImNvbnRleHQtd29ya2Zsb3ciLAogICAgICAidGVtcGxhdGUiOiAidGVtcGxhdGUuZ3VpZGUuZG9jcy1sYXlvdXQiLAogICAgICAidmVyc2lvbiI6ICIwLjAuMSIsCiAgICAgICJkaWdlc3QiOiAiMjI4MTc1NDQxYTVhMjk2NDViMWRiYTIzNTRjOWM2YWNlZWNhNDQxNGY2ZGZiYjFiZmYzYTExNDVlN2RkODdhMCIKICAgIH0sCiAgICB7CiAgICAgICJpZCI6ICJyb290LmNvbnRleHQtd29ya2Zsb3ciLAogICAgICAicGF0aCI6ICJBR0VOVFMubWQiLAogICAgICAia2luZCI6ICJyb290LWJsb2NrIiwKICAgICAgIm1vZHVsZSI6ICJjb250ZXh0LXdvcmtmbG93IiwKICAgICAgInRlbXBsYXRlIjogInRlbXBsYXRlLnJvb3QuY29udGV4dC13b3JrZmxvdyIsCiAgICAgICJ2ZXJzaW9uIjogIjAuMC4xIiwKICAgICAgImRpZ2VzdCI6ICI0MDAxY2U2NDA2MWZmYWZlZGYyNDU2ZmZkOTU4ZTNmZTcwMGUxZGE5NTRkN2M0Mjg2N2YxYWFkNmZhMTBlMGE4IgogICAgfSwKICAgIHsKICAgICAgImlkIjogImd1aWRlLmdvIiwKICAgICAgInBhdGgiOiAiZG9jcy9hZ2VudHMvZ28ubWQiLAogICAgICAia2luZCI6ICJndWlkZSIsCiAgICAgICJtb2R1bGUiOiAiZ28iLAogICAgICAidGVtcGxhdGUiOiAidGVtcGxhdGUuZ3VpZGUuZ28iLAogICAgICAidmVyc2lvbiI6ICIwLjAuMSIsCiAgICAgICJkaWdlc3QiOiAiMjk3ZWM1YmZiNWE1MGMxZjM5MDU2OGI2NTE5ZGY2OTg1ZWNiY2U2MzI5NWU4MzU3MzU3ZDgwYmY5OTM4MDdmNiIKICAgIH0sCiAgICB7CiAgICAgICJpZCI6ICJyb290LnNwZWMtd29ya2Zsb3ciLAogICAgICAicGF0aCI6ICJBR0VOVFMubWQiLAogICAgICAia2luZCI6ICJyb290LWJsb2NrIiwKICAgICAgIm1vZHVsZSI6ICJzcGVjLXdvcmtmbG93IiwKICAgICAgInRlbXBsYXRlIjogInRlbXBsYXRlLnJvb3Quc3BlYy13b3JrZmxvdyIsCiAgICAgICJ2ZXJzaW9uIjogIjAuMC4xIiwKICAgICAgImRpZ2VzdCI6ICI3ZDI2MzcwN2FkYTI2YmYyMzNjOWFhODIzNDIzYjZjNzRkYzAwNmI4NmM1MDM4OTlmY2Q5NWE0NmY2YTE1ZTdmIgogICAgfSwKICAgIHsKICAgICAgImlkIjogImd1aWRlLmNsaS1zdXJmYWNlIiwKICAgICAgInBhdGgiOiAiZG9jcy9hZ2VudHMvY2xpLm1kIiwKICAgICAgImtpbmQiOiAiZ3VpZGUiLAogICAgICAibW9kdWxlIjogImNsaS1zdXJmYWNlIiwKICAgICAgInRlbXBsYXRlIjogInRlbXBsYXRlLmd1aWRlLmNsaS1zdXJmYWNlIiwKICAgICAgInZlcnNpb24iOiAiMC4wLjEiLAogICAgICAiZGlnZXN0IjogImVjY2QxNmM0YjA0ZGQyMDYzOTVmMDMwZjY0MTE1YjVjZDFhOTE0NTBiYTc0NTg2N2VmMTY0ZTIxOTdmNzNhN2EiCiAgICB9LAogICAgewogICAgICAiaWQiOiAicm9vdC5hdXRvbm9tb3VzLXdvcmsiLAogICAgICAicGF0aCI6ICJBR0VOVFMubWQiLAogICAgICAia2luZCI6ICJyb290LWJsb2NrIiwKICAgICAgIm1vZHVsZSI6ICJhdXRvbm9tb3VzLXdvcmsiLAogICAgICAidGVtcGxhdGUiOiAidGVtcGxhdGUucm9vdC5hdXRvbm9tb3VzLXdvcmsiLAogICAgICAidmVyc2lvbiI6ICIwLjAuMSIsCiAgICAgICJkaWdlc3QiOiAiZjA1NmIzZTY3MmVjYjQzOWM1NzgwOTZkMmUxNTdlZDQzOGVjMjkxZWNlMDFlYWRlOTEwMmEwM2M3ZGE1MWRlYyIKICAgIH0sCiAgICB7CiAgICAgICJpZCI6ICJndWlkZS50dWktc3VyZmFjZSIsCiAgICAgICJwYXRoIjogImRvY3MvYWdlbnRzL3R1aS5tZCIsCiAgICAgICJraW5kIjogImd1aWRlIiwKICAgICAgIm1vZHVsZSI6ICJ0dWktc3VyZmFjZSIsCiAgICAgICJ0ZW1wbGF0ZSI6ICJ0ZW1wbGF0ZS5ndWlkZS50dWktc3VyZmFjZSIsCiAgICAgICJ2ZXJzaW9uIjogIjAuMC4xIiwKICAgICAgImRpZ2VzdCI6ICI0ODdjYjA3YjExMGRmODY2NTFjN2VmNGE0NWQxMDc5OWNiNjRiNWRhYjA3YWZkMzc4ZmVmMzQzZjAzZjY5ZDJhIgogICAgfSwKICAgIHsKICAgICAgImlkIjogInJvb3QuZ28iLAogICAgICAicGF0aCI6ICJBR0VOVFMubWQiLAogICAgICAia2luZCI6ICJyb290LWJsb2NrIiwKICAgICAgIm1vZHVsZSI6ICJnbyIsCiAgICAgICJ0ZW1wbGF0ZSI6ICJ0ZW1wbGF0ZS5yb290LmdvIiwKICAgICAgInZlcnNpb24iOiAiMC4wLjEiLAogICAgICAiZGlnZXN0IjogIjY2ZWJlMzhjMGNhZTAxYTkwMzllMTI2OTc5ZmNlODRkMTBmM2Y0ZjU2MmIyZjVmYTA4Y2JlOWVjZjhiOWRjODQiCiAgICB9LAogICAgewogICAgICAiaWQiOiAiZ3VpZGUuYWdlbnQtaW5zdHJ1Y3Rpb25zIiwKICAgICAgInBhdGgiOiAiZG9jcy9hZ2VudHMvYWdlbnQtaW5zdHJ1Y3Rpb25zLm1kIiwKICAgICAgImtpbmQiOiAiZ3VpZGUiLAogICAgICAibW9kdWxlIjogImNvcmUiLAogICAgICAidGVtcGxhdGUiOiAidGVtcGxhdGUuZ3VpZGUuYWdlbnQtaW5zdHJ1Y3Rpb25zIiwKICAgICAgInZlcnNpb24iOiAiMC4wLjEiLAogICAgICAiZGlnZXN0IjogImU5NTMwYWRhYjlhZDZkYWVmN2NiOGEwMTg1ZGU2NmU2OWZmNjRhNDgwNDEyNDlkZjAwN2Y4OGYyNDYyNjQxYTAiCiAgICB9LAogICAgewogICAgICAiaWQiOiAicm9vdC5jbGktc3VyZmFjZSIsCiAgICAgICJwYXRoIjogIkFHRU5UUy5tZCIsCiAgICAgICJraW5kIjogInJvb3QtYmxvY2siLAogICAgICAibW9kdWxlIjogImNsaS1zdXJmYWNlIiwKICAgICAgInRlbXBsYXRlIjogInRlbXBsYXRlLnJvb3QuY2xpLXN1cmZhY2UiLAogICAgICAidmVyc2lvbiI6ICIwLjAuMSIsCiAgICAgICJkaWdlc3QiOiAiMDBkNzgwYWEwN2EzNzBlY2Q3N2IwOWQ0YjBlYjAzMjZmODA5ODAzNzI2NTJiZTY3ZDMwYzY5OWFlZTkzMWJkYiIKICAgIH0sCiAgICB7CiAgICAgICJpZCI6ICJndWlkZS5zcGVjLXJvdXRpbmciLAogICAgICAicGF0aCI6ICJkb2NzL2FnZW50cy9zcGVjLXJvdXRpbmcubWQiLAogICAgICAia2luZCI6ICJndWlkZSIsCiAgICAgICJtb2R1bGUiOiAic3BlYy13b3JrZmxvdyIsCiAgICAgICJ0ZW1wbGF0ZSI6ICJ0ZW1wbGF0ZS5ndWlkZS5zcGVjLXJvdXRpbmciLAogICAgICAidmVyc2lvbiI6ICIwLjAuMSIsCiAgICAgICJkaWdlc3QiOiAiNThmOTU4MDZiZmQ0NWVhMTA5MWVhM2NjOTEwY2FiMzMzNWZiMjQ3NjRjMzM5ODRlNjJjZjJmMzg1YTE4MzJmOSIKICAgIH0sCiAgICB7CiAgICAgICJpZCI6ICJndWlkZS5pc3N1ZS10cmFja2VyIiwKICAgICAgInBhdGgiOiAiZG9jcy9hZ2VudHMvaXNzdWUtdHJhY2tlci5tZCIsCiAgICAgICJraW5kIjogImd1aWRlIiwKICAgICAgIm1vZHVsZSI6ICJzcGVjLXdvcmtmbG93IiwKICAgICAgInRlbXBsYXRlIjogInRlbXBsYXRlLmd1aWRlLmlzc3VlLXRyYWNrZXIiLAogICAgICAidmVyc2lvbiI6ICIwLjAuMSIsCiAgICAgICJkaWdlc3QiOiAiODRlZjNjMDNkMjNjYmFlODBhMjAyMzkzZTJiZTA1ZGRjMzQ1OTE4ZmY4N2E2OWRlNjI5OWIxMjhiNWZiODZhMyIKICAgIH0sCiAgICB7CiAgICAgICJpZCI6ICJndWlkZS5zcGVjLWRvY3MtbGF5b3V0IiwKICAgICAgInBhdGgiOiAiZG9jcy9hZ2VudHMvZG9jcy1sYXlvdXQubWQiLAogICAgICAia2luZCI6ICJndWlkZSIsCiAgICAgICJtb2R1bGUiOiAic3BlYy13b3JrZmxvdyIsCiAgICAgICJ0ZW1wbGF0ZSI6ICJ0ZW1wbGF0ZS5ndWlkZS5zcGVjLWRvY3MtbGF5b3V0IiwKICAgICAgInZlcnNpb24iOiAiMC4wLjEiLAogICAgICAiZGlnZXN0IjogIjc0NDFlMzExMDgzM2U4ZGZhMzljZjQ4YTU4MGRmMTdlMTI3NTYyMWE0YmI3OTVjOThjYTExOWI1MWM3MGFkMjEiCiAgICB9LAogICAgewogICAgICAiaWQiOiAiZ3VpZGUuZG9tYWluIiwKICAgICAgInBhdGgiOiAiZG9jcy9hZ2VudHMvZG9tYWluLm1kIiwKICAgICAgImtpbmQiOiAiZ3VpZGUiLAogICAgICAibW9kdWxlIjogImNvbnRleHQtd29ya2Zsb3ciLAogICAgICAidGVtcGxhdGUiOiAidGVtcGxhdGUuZ3VpZGUuZG9tYWluLnNpbmdsZS1jb250ZXh0IiwKICAgICAgInZlcnNpb24iOiAiMC4wLjEiLAogICAgICAiZGlnZXN0IjogIjg2YjEzZDlhYzdjZDY0ZjA1Mjc4YzZlYTQ1ZTQ2MDdiM2U4M2E4N2ZjYjQ5OTMwZTY3ZDdkZjYzNzU5M2IzMDQiCiAgICB9LAogICAgewogICAgICAiaWQiOiAicm9vdC50dWktc3VyZmFjZSIsCiAgICAgICJwYXRoIjogIkFHRU5UUy5tZCIsCiAgICAgICJraW5kIjogInJvb3QtYmxvY2siLAogICAgICAibW9kdWxlIjogInR1aS1zdXJmYWNlIiwKICAgICAgInRlbXBsYXRlIjogInRlbXBsYXRlLnJvb3QudHVpLXN1cmZhY2UiLAogICAgICAidmVyc2lvbiI6ICIwLjAuMSIsCiAgICAgICJkaWdlc3QiOiAiZDZiNTZmZDFmOTkwZGUxZTNjM2RkMzFiYTZiZjQwNjdmYzdmOWZhMWI2OTAxYmE1ZGI2NzFmMTM0ZjUxODkyOSIKICAgIH0sCiAgICB7CiAgICAgICJpZCI6ICJndWlkZS5hdXRvbm9tb3VzLXdvcmsiLAogICAgICAicGF0aCI6ICJkb2NzL2FnZW50cy9hdXRvbm9tb3VzLXdvcmsubWQiLAogICAgICAia2luZCI6ICJndWlkZSIsCiAgICAgICJtb2R1bGUiOiAiYXV0b25vbW91cy13b3JrIiwKICAgICAgInRlbXBsYXRlIjogInRlbXBsYXRlLmd1aWRlLmF1dG9ub21vdXMtd29yayIsCiAgICAgICJ2ZXJzaW9uIjogIjAuMC4xIiwKICAgICAgImRpZ2VzdCI6ICIxYjQ2MTUwMjI1YWE3MWFiYTYwODFiNjRlYWY2MTFlMTZlMzlkZTc3OTk2MTU2MzcyNmQ1NjM4NWVjMGE0M2E2IgogICAgfQogIF0sCiAgImxvY2FsU2tpbGxzIjogW10sCiAgInZlcmlmaWNhdGlvbiI6IFsKICAgIHsKICAgICAgImlkIjogInZlcmlmaWNhdGlvbi5nYXRlIiwKICAgICAgInJvbGUiOiAicmVwb3NpdG9yeS1nYXRlIiwKICAgICAgImNvbW1hbmQiOiAibWFrZSB2ZXJpZnkiLAogICAgICAiY2xhc3NpZmljYXRpb24iOiAicmVwb3NpdG9yeS1jb21tYW5kIiwKICAgICAgInJlcG9zaXRvcnlFeGVjdXRhYmxlIjogdHJ1ZSwKICAgICAgImRlY2xhcmF0aW9uUGF0aCI6ICJNYWtlZmlsZSIsCiAgICAgICJkZWNsYXJhdGlvbkRpZ2VzdCI6ICJzaGEyNTY6OTNiYWQyODVhMjMxOWM2ZGFlZjc1NmY0YzA2ODZmYjRjYmQ3NDliMGY3YTI4OTA3MjFkNWQ0NzVkODE0MmFkMyIKICAgIH0KICBdCn0K",
+          "contentIdentity": "sha256:806773b445675cb675b7df067b0bea2f6a2f699833d874d2f559259d659229cc"
+        },
+        {
+          "path": "docs/agents/skill-dispatch.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1ndWlkZS5za2lsbC1kaXNwYXRjaCB2ZXJzaW9uPTAuMC4xIC0tPgoKIyBTa2lsbCBkaXNwYXRjaAoKVGhpcyBzZXR1cC1vd25lZCBndWlkZSBpcyBnZW5lcmF0ZWQgZnJvbSB0aGUgYWN0aXZlIG1vZHVsZXMuIEFjdGl2YXRlIGV2ZXJ5Cm1hdGNoaW5nIHNraWxsIGJlZm9yZSBnb3Zlcm5lZCB3b3JrOyByZXBvc2l0b3J5LWF1dGhvcmVkIGRpc3BhdGNoIGV4dGVuc2lvbnMKbWF5IGFkZCBzdHJpY3RlciB0cmlnZ2Vycy4KCi0gKiptYW5kYXRvcnkqKjogQWN0aXZhdGUgZXZlcnkgbWF0Y2hpbmcgcmVxdWlyZWQgc2tpbGwgYmVmb3JlIGdvdmVybmVkIHdvcmsuIFdoZW4gb25lIHNraWxsIGhhcyBkaXN0aW5jdCBhY3RpdmUtbW9kdWxlIHRyaWdnZXJzLCByZXRhaW4gYW5kIGZvbGxvdyBlYWNoIHRyaWdnZXIuCgotICoqbWFuZGF0b3J5Kio6IFVzZSB0aGUgZ292ZXJuaW5nIGBjb252ZW50aW9uYWwtY29tbWl0c2Agc2tpbGwgYmVmb3JlIHN0YWdpbmcgY2hhbmdlcywgd3JpdGluZyBjb21taXQgbWVzc2FnZXMsIG9yIHByZXBhcmluZyBwdWxsIHJlcXVlc3QgdGl0bGVzLgoKLSAqKm1hbmRhdG9yeSoqOiBVc2UgdGhlIGdvdmVybmluZyBgZ2l0aHViLXByLXdvcmtmbG93YCBza2lsbCBiZWZvcmUgcHJlcGFyaW5nLCBvcGVuaW5nLCB1cGRhdGluZywgb3IgaGFuZGluZyBvZmYgYSBwdWxsIHJlcXVlc3QuCgpFeGFjdCBhY3RpdmF0aW9uIGJ1bmRsZXM6CgotIGB0cmlnZ2VyLmRlbGl2ZXJ5YDogUHJlcGFyaW5nIGNvbW1pdHMgb3IgcHVsbCByZXF1ZXN0IGRlbGl2ZXJ5LgogIC0gYGJ1bmRsZS5kZWxpdmVyeWA6IGBjb252ZW50aW9uYWwtY29tbWl0c2AsIGBnaXRodWItcHItd29ya2Zsb3dgCi0gYHRyaWdnZXIucWFgOiBSdW5uaW5nIGZpbmFsIFNwZWMgUUEuCiAgLSBgYnVuZGxlLnFhYDogYHFhLWdhdGVgLCBgZXZpZGVuY2UtZ2F0ZWAKCkluZGl2aWR1YWwgc2tpbGwgdHJpZ2dlcnM6CgotIGBhZ2VudGljLWNsaS1kZXNpZ25gOgogIC0gYHRyaWdnZXIuY2xpLXN1cmZhY2UuYWdlbnRpYy1jbGktZGVzaWduYDogQ2hhbmdpbmcgQ0xJIGZsYWdzLCBzdHJlYW1zLCBleGl0IGNvZGVzLCBKU09OLCBkcnktcnVuLCBub24taW50ZXJhY3RpdmUsIG9yIGludHJvc3BlY3Rpb24gYmVoYXZpb3IuCi0gYGFyY2hpdmUtc3BlY2A6CiAgLSBgdHJpZ2dlci5jb250ZXh0LXdvcmtmbG93LmFyY2hpdmUtc3BlY2A6IEFyY2hpdmluZyBhIGNvbXBsZXRlZCBhbmQgUUEtcGFzc2VkIFNwZWMuCi0gYGJyYWluc3Rvcm1pbmdgOgogIC0gYHRyaWdnZXIuY29udGV4dC13b3JrZmxvdy5icmFpbnN0b3JtaW5nYDogU3RhcnRpbmcgY3JlYXRpdmUgZmVhdHVyZSBvciBiZWhhdmlvciBkZXNpZ24gYmVmb3JlIGltcGxlbWVudGF0aW9uLgotIGBidWJibGV0ZWFgOgogIC0gYHRyaWdnZXIudHVpLXN1cmZhY2UuYnViYmxldGVhYDogQnVpbGRpbmcgb3IgY2hhbmdpbmcgQnViYmxlIFRlYSBtb2RlbHMsIGNvbW1hbmRzLCBtZXNzYWdlcywgb3IgY29tcG9uZW50IGNvbXBvc2l0aW9uLgotIGBidXNpbmVzcy1hbmFseXN0YDoKICAtIGB0cmlnZ2VyLmNvbnRleHQtd29ya2Zsb3cuYnVzaW5lc3MtYW5hbHlzdGA6IEV2YWx1YXRpbmcgcHJvZHVjdCB2aWFiaWxpdHksIG9wdGlvbnMsIEtQSXMsIG9yIGJ1c2luZXNzIHRyYWRlLW9mZnMuCi0gYGNvZGluZy1ndWlkZWxpbmVzYDoKICAtIGB0cmlnZ2VyLmNvcmUuY29kaW5nLWd1aWRlbGluZXNgOiBXcml0aW5nLCBtb2RpZnlpbmcsIHJlZmFjdG9yaW5nLCBvciByZXZpZXdpbmcgaW1wbGVtZW50YXRpb24gY29kZS4KLSBgY29udGV4dDdgOgogIC0gYHRyaWdnZXIuY29yZS5jb250ZXh0N2A6IENvbnN1bHRpbmcgYXV0aG9yaXRhdGl2ZSBjdXJyZW50IGRvY3VtZW50YXRpb24gZm9yIGEgbGlicmFyeSwgZnJhbWV3b3JrLCBydW50aW1lLCBvciB0b29sY2hhaW4uCi0gYGNvbnZlbnRpb25hbC1jb21taXRzYDoKICAtIGB0cmlnZ2VyLmNvcmUuY29udmVudGlvbmFsLWNvbW1pdHNgOiBTdGFnaW5nIGNoYW5nZXMsIHdyaXRpbmcgY29tbWl0IG1lc3NhZ2VzLCBvciBwcmVwYXJpbmcgcHVsbCByZXF1ZXN0IHRpdGxlcy4KLSBgY291bmNpbGA6CiAgLSBgdHJpZ2dlci5jb250ZXh0LXdvcmtmbG93LmNvdW5jaWxgOiBEZWJhdGluZyBhIGhpZ2gtaW1wYWN0IHByb2R1Y3Qgb3IgYXJjaGl0ZWN0dXJlIGRlY2lzaW9uIHRocm91Z2ggbXVsdGlwbGUgYWR2aXNvcnMuCi0gYGRvbWFpbi1tb2RlbGluZ2A6CiAgLSBgdHJpZ2dlci5jb250ZXh0LXdvcmtmbG93LmRvbWFpbi1tb2RlbGluZ2A6IERlZmluaW5nIG9yIGNoYW5naW5nIGRvbWFpbiB2b2NhYnVsYXJ5LCBvd25lcnNoaXAsIG9yIGJvdW5kZWQtY29udGV4dCByZWxhdGlvbnNoaXBzLgotIGBldmlkZW5jZS1nYXRlYDoKICAtIGB0cmlnZ2VyLmNvcmUuZXZpZGVuY2UtZ2F0ZWA6IE1ha2luZyBhbnkgY29tcGxldGlvbiwgcmVhZGluZXNzLCBvciBoYW5kb2ZmIGNsYWltLgotIGBnaXRodWItcHItd29ya2Zsb3dgOgogIC0gYHRyaWdnZXIuY29yZS5naXRodWItcHItd29ya2Zsb3dgOiBQcmVwYXJpbmcsIG9wZW5pbmcsIHVwZGF0aW5nLCBvciBoYW5kaW5nIG9mZiBhIHB1bGwgcmVxdWVzdC4KLSBgZ29sYW5nLWNsaWA6CiAgLSBgdHJpZ2dlci5nby5nb2xhbmctY2xpYDogQ2hhbmdpbmcgR28gY29tbWFuZCBzdHJ1Y3R1cmUsIGZsYWdzLCBwYWNrYWdlIGxheW91dCwgdmVyc2lvbiBvdXRwdXQsIG9yIGNvbW1hbmQgdGVzdHMuCi0gYGdvbGFuZy1jb25jdXJyZW5jeWA6CiAgLSBgdHJpZ2dlci5nby5nb2xhbmctY29uY3VycmVuY3lgOiBVc2luZyBnb3JvdXRpbmVzLCBjaGFubmVscywgbG9ja3MsIHdvcmtlciBwb29scywgb3Igb3RoZXIgY29uY3VycmVudCBHbyBiZWhhdmlvci4KLSBgZ29sYW5nLWNvbnRleHRgOgogIC0gYHRyaWdnZXIuZ28uZ29sYW5nLWNvbnRleHRgOiBEZXNpZ25pbmcgR28gSU8gYm91bmRhcmllcywgY2FuY2VsbGF0aW9uLCB0aW1lb3V0cywgZGVhZGxpbmVzLCBvciByZXF1ZXN0LXNjb3BlZCB2YWx1ZXMuCi0gYGdvbGFuZy1lcnJvci1oYW5kbGluZ2A6CiAgLSBgdHJpZ2dlci5nby5nb2xhbmctZXJyb3ItaGFuZGxpbmdgOiBDcmVhdGluZywgd3JhcHBpbmcsIG1hdGNoaW5nLCBsb2dnaW5nLCBvciBleHBvc2luZyBHbyBlcnJvcnMuCi0gYGdvbGFuZy1saW50YDoKICAtIGB0cmlnZ2VyLmdvLmdvbGFuZy1saW50YDogQ2hhbmdpbmcgR28gbGludCBjb25maWd1cmF0aW9uIG9yIGFkZGluZyBhIGxpbnQgc3VwcHJlc3Npb24uCi0gYGdvbGFuZy10ZXN0aW5nYDoKICAtIGB0cmlnZ2VyLmdvLmdvbGFuZy10ZXN0aW5nYDogV3JpdGluZyBvciByZXZpZXdpbmcgR28gdGVzdHMsIGZpeHR1cmVzLCBmdXp6IHRlc3RzLCBvciBpbnRlZ3JhdGlvbiB0ZXN0cy4KLSBgZ3JpbGwtd2l0aC1kb2NzYDoKICAtIGB0cmlnZ2VyLmNvbnRleHQtd29ya2Zsb3cuZ3JpbGwtd2l0aC1kb2NzYDogU3RyZXNzLXRlc3RpbmcgYSBwbGFuIG9yIGRlY2lzaW9uIGFnYWluc3QgcmVwb3NpdG9yeSBkb2N1bWVudHMuCi0gYGdyaWxsaW5nYDoKICAtIGB0cmlnZ2VyLmNvbnRleHQtd29ya2Zsb3cuZ3JpbGxpbmdgOiBTdHJlc3MtdGVzdGluZyBhbiBpZGVhIG9yIHBsYW4gdGhyb3VnaCBkaXJlY3QgcXVlc3Rpb25zLgotIGBoYW5kb2ZmYDoKICAtIGB0cmlnZ2VyLmNvcmUuaGFuZG9mZmA6IFJlY29yZGluZyByZXN1bWFibGUgc2Vzc2lvbiBzdGF0ZSBmb3IgYW5vdGhlciBBZ2VudCBvciBtYWludGFpbmVyLgotIGBpbXBsZW1lbnQtc3BlY2A6CiAgLSBgdHJpZ2dlci5hdXRvbm9tb3VzLXdvcmsuaW1wbGVtZW50LXNwZWNgOiBEZWxlZ2F0aW5nIGEgY29tcGxldGUgYXV0b25vbW91cyBTcGVjIFRhc2sgR3JhcGguCiAgLSBgdHJpZ2dlci5jb250ZXh0LXdvcmtmbG93LmltcGxlbWVudC1zcGVjYDogRXhlY3V0aW5nIGV2ZXJ5IHBlbmRpbmcgVGFzayBpbiBhIFNwZWMgVGFzayBHcmFwaC4KLSBgaW1wbGVtZW50LXRhc2tgOgogIC0gYHRyaWdnZXIuYXV0b25vbW91cy13b3JrLmltcGxlbWVudC10YXNrYDogRGVsZWdhdGluZyBvbmUgYXV0b25vbW91cyBUYXNrIHRvIGFuIEFDUCBSdW50aW1lLgogIC0gYHRyaWdnZXIuY29udGV4dC13b3JrZmxvdy5pbXBsZW1lbnQtdGFza2A6IEV4ZWN1dGluZyBleGFjdGx5IG9uZSBhc3NpZ25lZCBTcGVjIFRhc2suCi0gYGtub3dsZWRnZS13b3Jrc3BhY2VgOgogIC0gYHRyaWdnZXIuY29udGV4dC13b3JrZmxvdy5rbm93bGVkZ2Utd29ya3NwYWNlYDogQ29uc3VsdGluZyB0aGUgY29uZmlndXJlZCBrbm93bGVkZ2Ugd29ya3NwYWNlIGZvciByZWxldmFudCBwcmlvciBjb250ZXh0LgotIGBuby13b3JrYXJvdW5kc2A6CiAgLSBgdHJpZ2dlci5jb3JlLm5vLXdvcmthcm91bmRzYDogRml4aW5nIGRlZmVjdHMsIHJlZ3Jlc3Npb25zLCBvciB2ZXJpZmljYXRpb24gZmFpbHVyZXMgYXQgdGhlaXIgcm9vdCBjYXVzZS4KLSBgcWEtZ2F0ZWA6CiAgLSBgdHJpZ2dlci5jb250ZXh0LXdvcmtmbG93LnFhLWdhdGVgOiBSdW5uaW5nIGZpbmFsIFNwZWMgUUEgYWZ0ZXIgaW1wbGVtZW50YXRpb24gVGFza3MgY29tcGxldGUuCi0gYHJldmlld2A6CiAgLSBgdHJpZ2dlci5jb3JlLnJldmlld2A6IFJldmlld2luZyBhIGNoYW5nZSBhZ2FpbnN0IHJlcG9zaXRvcnkgc3RhbmRhcmRzIGFuZCBpdHMgb3JpZ2luYXRpbmcgY29udHJhY3QuCi0gYHNldHVwLWNvbnRleHQtZHJpdmVuYDoKICAtIGB0cmlnZ2VyLmNvbnRleHQtd29ya2Zsb3cuc2V0dXAtY29udGV4dC1kcml2ZW5gOiBBdWRpdGluZywgYXBwbHlpbmcsIG9yIHJlZnJlc2hpbmcgdGhlIENvbnRleHQtRHJpdmVuIEJhc2VsaW5lLgotIGBzeXN0ZW1hdGljLWRlYnVnZ2luZ2A6CiAgLSBgdHJpZ2dlci5jb3JlLnN5c3RlbWF0aWMtZGVidWdnaW5nYDogRGlhZ25vc2luZyBhIGJ1ZywgZmFpbGluZyBjaGVjaywgb3IgdW5leHBlY3RlZCBiZWhhdmlvciBiZWZvcmUgcHJvcG9zaW5nIGEgZml4LgotIGB0ZWNoLXdyaXRlcmA6CiAgLSBgdHJpZ2dlci5jb3JlLnRlY2gtd3JpdGVyYDogV3JpdGluZyBvciByZXZpc2luZyB0ZWNobmljYWwgZG9jdW1lbnRhdGlvbiwgU3BlY3MsIGZpbmRpbmdzLCBvciBkZWxpdmVyeSBub3Rlcy4KLSBgdGVzdGluZy1ib3NzYDoKICAtIGB0cmlnZ2VyLmNvcmUudGVzdGluZy1ib3NzYDogV3JpdGluZywgY2hhbmdpbmcsIG9yIHJldmlld2luZyB0ZXN0cyBhbmQgZml4dHVyZXMuCi0gYHRoZS1mb29sYDoKICAtIGB0cmlnZ2VyLmNvbnRleHQtd29ya2Zsb3cudGhlLWZvb2xgOiBDaGFsbGVuZ2luZyBhIHByb3Bvc2FsIHRocm91Z2ggYSBwcmUtbW9ydGVtLCByZWQtdGVhbSwgb3IgZXZpZGVuY2UgYXVkaXQuCi0gYHR1aS1kZXNpZ25gOgogIC0gYHRyaWdnZXIudHVpLXN1cmZhY2UudHVpLWRlc2lnbmA6IERlc2lnbmluZyB0ZXJtaW5hbCBsYXlvdXQsIG5hdmlnYXRpb24sIGtleWJvYXJkLCBtb3VzZSwgY29sb3IsIG9yIGFjY2Vzc2liaWxpdHkgYmVoYXZpb3IuCi0gYHdyaXRlLWlkZWFgOgogIC0gYHRyaWdnZXIuY29udGV4dC13b3JrZmxvdy53cml0ZS1pZGVhYDogRXhwYW5kaW5nIGEgcHJvZHVjdC1sZXZlbCBpZGVhIGludG8gYSByZXNlYXJjaGVkIG9wcG9ydHVuaXR5IGFydGlmYWN0LgotIGB3cml0ZS1wcmRgOgogIC0gYHRyaWdnZXIuY29udGV4dC13b3JrZmxvdy53cml0ZS1wcmRgOiBEZWZpbmluZyBwcm9kdWN0IHJlcXVpcmVtZW50cyBhbmQgdXNlciBvdXRjb21lcy4KLSBgd3JpdGUtdGFza3NgOgogIC0gYHRyaWdnZXIuY29udGV4dC13b3JrZmxvdy53cml0ZS10YXNrc2A6IERlY29tcG9zaW5nIGFuIGFwcHJvdmVkIFNwZWMgaW50byBhIGRlcGVuZGVuY3ktb3JkZXJlZCBUYXNrIEdyYXBoLgotIGB3cml0ZS10ZWNoc3BlY2A6CiAgLSBgdHJpZ2dlci5jb250ZXh0LXdvcmtmbG93LndyaXRlLXRlY2hzcGVjYDogU2V0dGxpbmcgaW1wbGVtZW50YXRpb24gYXJjaGl0ZWN0dXJlIGFuZCB0ZWNobmljYWwgY29udHJhY3RzLgoKPCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjplbmQgaWQ9Z3VpZGUuc2tpbGwtZGlzcGF0Y2ggLS0+Cg==",
+          "contentIdentity": "sha256:aa933c9fd41917aafa01961c26140467aee11a6f1d5d5ea425af2cf80a1581c8"
+        },
+        {
+          "path": "docs/agents/spec-routing.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1ndWlkZS5zcGVjLXJvdXRpbmcgdmVyc2lvbj0wLjAuMSAtLT4KCiMgU3BlYyByb3V0aW5nCgotICoqbWFuZGF0b3J5Kio6IExhcmdlIG9yIGZ1enp5IHByb2R1Y3QgaW5pdGlhdGl2ZTogcnVuIGB3cml0ZS1pZGVhYCDihpIgYHdyaXRlLXByZGAg4oaSIGB3cml0ZS10ZWNoc3BlY2Ag4oaSIGB3cml0ZS10YXNrc2AuCgotICoqbWFuZGF0b3J5Kio6IFN0YW5kYXJkIGZlYXR1cmUgdGhhdCBjaGFuZ2VzIHByb2R1Y3QgYmVoYXZpb3I6IHJ1biBgd3JpdGUtcHJkYCDihpIgYHdyaXRlLXRlY2hzcGVjYCDihpIgYHdyaXRlLXRhc2tzYDsgc2tpcCB0aGUgVGVjaFNwZWMgb25seSB3aGVuIHRoZSBmZWF0dXJlIGhhcyBubyBhcmNoaXRlY3R1cmFsIHN1cmZhY2UuCgotICoqbWFuZGF0b3J5Kio6IFJlZmFjdG9yIG9yIGJ1ZyBmaXggd2l0aG91dCBwcm9kdWN0LWJlaGF2aW9yIGNoYW5nZTogcnVuIGB3cml0ZS10ZWNoc3BlY2Ag4oaSIGB3cml0ZS10YXNrc2AgYW5kIGNyZWF0ZSB0aGUgbWluaW1hbCBgX3ByZC5tZGAgcmVxdWlyZWQgYnkgdGhlIGRvd25zdHJlYW0gYXJ0aWZhY3QgY29udHJhY3QuCgotICoqbWFuZGF0b3J5Kio6IFRyaXZpYWwgb25lLWxpbmUgZml4LCB0eXBvLCBvciBjb25maWd1cmF0aW9uIHR3ZWFrOiBpbXBsZW1lbnQgZGlyZWN0bHkgd2l0aG91dCBhIFNwZWMgb25seSB3aGVuIGludGVudCwgYWNjZXB0YW5jZSBjcml0ZXJpYSwgYW5kIFZlcmlmaWNhdGlvbiBhcmUgb2J2aW91cy4KCi0gKiptYW5kYXRvcnkqKjogVXNlIGBicmFpbnN0b3JtaW5nYCBiZWZvcmUgY3JlYXRpdmUgb3IgZmVhdHVyZSB3b3JrLCBzdGFydCB3aXRoIHRoZSBzbWFsbGVyIHN1ZmZpY2llbnQgcm91dGUgd2hlbiB0d28gcm91dGVzIGZpdCwgYW5kIGV4ZWN1dGUgaW1wbGVtZW50YXRpb24gZnJvbSB0aGUgVGFzayBHcmFwaC4KCi0gKiptYW5kYXRvcnkqKjogQmVmb3JlIHByb2R1Y2luZyBhIFRhc2sgR3JhcGgsIHJlcXVpcmUgZXZlcnkgYWN0aXZlLCBub24tYXJjaGl2ZWQsIGFuZCBub3QgYWxyZWFkeSBjb21wbGV0ZWQgU3BlYyBQUkQgYW5kIHByZXNlbnQgVGVjaFNwZWMgdG8gY29udGFpbiBjb21wbGV0ZSBQcm9qZWN0IENvbnN0cmFpbnRzOiBhcHBsaWNhYmlsaXR5IHdpdGggcmVhc29ucyBmb3IgaWRlbnRpZmllciBzdHJhdGVneSwgYXV0aGVudGljYXRpb24gYW5kIEhUVFAsIGFjdGl2ZSBBRFIgb2JsaWdhdGlvbnMsIGFuZCB0b29saW5nIGF1dGhvcml0eSwgZWFjaCBjaXRpbmcgaXRzIG9wZXJhdGl2ZSBgZG9jcy9hZ2VudHMvYCBzb3VyY2UuCgotICoqbWFuZGF0b3J5Kio6IFJlZnVzZSBhIHRvb2xpbmcgVGFzayB1bmxlc3MgdGhlIGFjdGl2ZSBQUkQgYW5kIHByZXNlbnQgVGVjaFNwZWMgcmVjb3JkIGV4cHJlc3MgbWFpbnRhaW5lciBhdXRob3JpemF0aW9uIGFuZCB0aGUgZXhhY3QgYm91bmRlZCByZXBvc2l0b3J5LXJlbGF0aXZlIGZpbGVzOyBUYXNrIGFzc2lnbm1lbnQsIHNldHVwIGFwcHJvdmFsLCBvciBnZW5lcmljIGltcGxlbWVudGF0aW9uIGFwcHJvdmFsIGlzIG5vdCBhdXRob3JpemF0aW9uLgoKLSAqKm1hbmRhdG9yeSoqOiBBbiBhdXRob3JpemVkIHRvb2xpbmcgVGFzayBtYXkgbXV0YXRlIG9ubHkgaXRzIGJvdW5kZWQgcmVwb3NpdG9yeS1yZWxhdGl2ZSBmaWxlcyBhbmQgaXRzIG93biBUYXNrIGZpbGU7IHN0b3AgYmVmb3JlIGFueSBvdGhlciBtdXRhdGlvbiBhbmQgZmFpbCB0aGUgVGFzayBpZiBjaGFuZ2VkLWZpbGUgcG9zdGZsaWdodCBmaW5kcyBhbm90aGVyIHBhdGguCgotICoqbWFuZGF0b3J5Kio6IEZpbmFsIFFBIHZlcmlmaWVzIFByb2plY3QgQ29uc3RyYWludCBhcHBsaWNhYmlsaXR5LCBvcGVyYXRpdmUgc291cmNlIHBhdGhzLCB0b29saW5nIGF1dGhvcml6YXRpb24sIGFuZCBhY3R1YWwgY2hhbmdlZC1maWxlIHNjb3BlIGZyb20gR2l0IGV2aWRlbmNlOyBtaXNzaW5nIGF1dGhvcml6YXRpb24sIHVudHJhY2VhYmxlIHNjb3BlLCBvciBvdXQtb2Ytc2NvcGUgdG9vbGluZyBjaGFuZ2VzIGZhaWxzIHRoZSBnYXRlLgoKLSAqKm1hbmRhdG9yeSoqOiBLZWVwIGNvbXBsZXRlZCBvciBhcmNoaXZlZCBsZWdhY3kgU3BlY3MgYnl0ZS1pZGVudGljYWwuIERlcGVuZGVuY2llcyByZW1haW4gb3duZWQgb25seSBieSB0aGUgVGFzayBHcmFwaCwgYW5kIHN0YXR1cyByZW1haW5zIG93bmVkIG9ubHkgYnkgZWFjaCBUYXNrIGZpbGUuCgo8IS0tIHNldHVwLWNvbnRleHQtZHJpdmVuOmVuZCBpZD1ndWlkZS5zcGVjLXJvdXRpbmcgLS0+Cg==",
+          "contentIdentity": "sha256:ce1b67f65ce8ad8a5dc1505e2201833d0e477ff91a6161c395db1188ae83ce9f"
+        },
+        {
+          "path": "docs/agents/tui.md",
+          "kind": "regular",
+          "mode": 420,
+          "content": "PCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjpiZWdpbiBpZD1ndWlkZS50dWktc3VyZmFjZSB2ZXJzaW9uPTAuMC4xIC0tPgoKIyBUVUkgc3VyZmFjZQoKLSBEcml2ZSBUVUkgbW9kZWwgdXBkYXRlcyBzeW5jaHJvbm91c2x5IGFuZCBhc3NlcnQgcmVuZGVyZWQgc3RhdGUsIG1lc3NhZ2VzLCBhbmQgdHJhbnNpdGlvbnMuIFVzZSB0ZXJtaW5hbCBlbXVsYXRpb24gb25seSB3aGVuIG1vZGVsLWxldmVsIHRlc3RzIGNhbm5vdCBwcm92ZSB0aGUgYmVoYXZpb3IsIGFuZCBrZWVwIGxheW91dCBhbmQgaW50ZXJhY3Rpb24gcG9saWN5IGluIHJlcG9zaXRvcnktb3duZWQgZGVzaWduIGd1aWRhbmNlLgoKPCEtLSBzZXR1cC1jb250ZXh0LWRyaXZlbjplbmQgaWQ9Z3VpZGUudHVpLXN1cmZhY2UgLS0+Cg==",
+          "contentIdentity": "sha256:5514dfa61b1db35ef6627c88a8a4199406d966707c56c77a7f7f05c4407e5dd9"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/agent-instructions.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/autonomous-work.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/cli.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/docs-layout.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/domain.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/go.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/issue-tracker.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/setup-context.json",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/skill-dispatch.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/spec-routing.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/tui.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        }
+      ],
+      "setupManifest": {
+        "schemaVersion": "setup-context-driven/manifest/0.0.1",
+        "version": "0.0.1",
+        "generator": {
+          "skill": "setup-context-driven",
+          "version": "0.0.1",
+          "baseline": "baseline.go-cli-tui-0.0.1"
+        },
+        "profile": "go-cli-tui",
+        "profileDigest": "sha256:2b8bd2acd9e79f93524954e5de32e89cd8ba9eea4145e98b06834db56e917ef7",
+        "catalogDigest": "sha256:cc5ebbde8bdb960a1a69ac62ccbe285eccfc6b40735f4acee7805068f97815bc",
+        "modules": [
+          "core",
+          "context-workflow",
+          "go",
+          "cli-surface",
+          "tui-surface",
+          "autonomous-work",
+          "spec-workflow"
+        ],
+        "decisions": {
+          "autonomous.enabled": {
+            "value": true
+          },
+          "domain.layout": {
+            "value": "single-context"
+          },
+          "language.generated": {
+            "value": "English"
+          },
+          "repository.extension.enabled": {
+            "value": false
+          },
+          "runtime.backend": {
+            "value": "codex gpt-5.5 xhigh"
+          },
+          "runtime.design": {
+            "value": "claude opus xhigh"
+          },
+          "secondbrain.enabled": {
+            "value": false
+          },
+          "spec.scaffold": {
+            "value": true
+          },
+          "triage.external": {
+            "value": false
+          },
+          "verification.gate": {
+            "value": "make verify"
+          }
+        },
+        "managedArtifacts": [
+          {
+            "id": "guide.skill-dispatch",
+            "path": "docs/agents/skill-dispatch.md",
+            "kind": "guide",
+            "module": "core",
+            "template": "template.guide.skill-dispatch",
+            "version": "0.0.1",
+            "digest": "2b3e6b61cc0942a56ef29b136f3aca9fef6f0412168023385b9c7197e05b8867"
+          },
+          {
+            "id": "root.core",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "core",
+            "template": "template.root.core",
+            "version": "0.0.1",
+            "digest": "fc65c9495a097088c55d63f5d07792e8defd6063ca0b9b35011913d01d6c273d"
+          },
+          {
+            "id": "guide.docs-layout",
+            "path": "docs/agents/docs-layout.md",
+            "kind": "guide",
+            "module": "context-workflow",
+            "template": "template.guide.docs-layout",
+            "version": "0.0.1",
+            "digest": "228175441a5a29645b1dba2354c9c6aceeca4414f6dfbb1bff3a1145e7dd87a0"
+          },
+          {
+            "id": "root.context-workflow",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "context-workflow",
+            "template": "template.root.context-workflow",
+            "version": "0.0.1",
+            "digest": "4001ce64061ffafedf2456ffd958e3fe700e1da954d7c42867f1aad6fa10e0a8"
+          },
+          {
+            "id": "guide.go",
+            "path": "docs/agents/go.md",
+            "kind": "guide",
+            "module": "go",
+            "template": "template.guide.go",
+            "version": "0.0.1",
+            "digest": "297ec5bfb5a50c1f390568b6519df6985ecbce63295e8357357d80bf993807f6"
+          },
+          {
+            "id": "root.spec-workflow",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "spec-workflow",
+            "template": "template.root.spec-workflow",
+            "version": "0.0.1",
+            "digest": "7d263707ada26bf233c9aa823423b6c74dc006b86c503899fcd95a46f6a15e7f"
+          },
+          {
+            "id": "guide.cli-surface",
+            "path": "docs/agents/cli.md",
+            "kind": "guide",
+            "module": "cli-surface",
+            "template": "template.guide.cli-surface",
+            "version": "0.0.1",
+            "digest": "eccd16c4b04dd206395f030f64115b5cd1a91450ba745867ef164e2197f73a7a"
+          },
+          {
+            "id": "root.autonomous-work",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "autonomous-work",
+            "template": "template.root.autonomous-work",
+            "version": "0.0.1",
+            "digest": "f056b3e672ecb439c578096d2e157ed438ec291ece01eade9102a03c7da51dec"
+          },
+          {
+            "id": "guide.tui-surface",
+            "path": "docs/agents/tui.md",
+            "kind": "guide",
+            "module": "tui-surface",
+            "template": "template.guide.tui-surface",
+            "version": "0.0.1",
+            "digest": "487cb07b110df86651c7ef4a45d10799cb64b5dab07afd378fef343f03f69d2a"
+          },
+          {
+            "id": "root.go",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "go",
+            "template": "template.root.go",
+            "version": "0.0.1",
+            "digest": "66ebe38c0cae01a9039e126979fce84d10f3f4f562b2f5fa08cbe9ecf8b9dc84"
+          },
+          {
+            "id": "guide.agent-instructions",
+            "path": "docs/agents/agent-instructions.md",
+            "kind": "guide",
+            "module": "core",
+            "template": "template.guide.agent-instructions",
+            "version": "0.0.1",
+            "digest": "e9530adab9ad6daef7cb8a0185de66e69ff64a48041249df007f88f2462641a0"
+          },
+          {
+            "id": "root.cli-surface",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "cli-surface",
+            "template": "template.root.cli-surface",
+            "version": "0.0.1",
+            "digest": "00d780aa07a370ecd77b09d4b0eb0326f80980372652be67d30c699aee931bdb"
+          },
+          {
+            "id": "guide.spec-routing",
+            "path": "docs/agents/spec-routing.md",
+            "kind": "guide",
+            "module": "spec-workflow",
+            "template": "template.guide.spec-routing",
+            "version": "0.0.1",
+            "digest": "58f95806bfd45ea1091ea3cc910cab3335fb24764c33984e62cf2f385a1832f9"
+          },
+          {
+            "id": "guide.issue-tracker",
+            "path": "docs/agents/issue-tracker.md",
+            "kind": "guide",
+            "module": "spec-workflow",
+            "template": "template.guide.issue-tracker",
+            "version": "0.0.1",
+            "digest": "84ef3c03d23cbae80a202393e2be05ddc345918ff87a69de6299b128b5fb86a3"
+          },
+          {
+            "id": "guide.spec-docs-layout",
+            "path": "docs/agents/docs-layout.md",
+            "kind": "guide",
+            "module": "spec-workflow",
+            "template": "template.guide.spec-docs-layout",
+            "version": "0.0.1",
+            "digest": "7441e3110833e8dfa39cf48a580df17e1275621a4bb795c98ca119b51c70ad21"
+          },
+          {
+            "id": "guide.domain",
+            "path": "docs/agents/domain.md",
+            "kind": "guide",
+            "module": "context-workflow",
+            "template": "template.guide.domain.single-context",
+            "version": "0.0.1",
+            "digest": "86b13d9ac7cd64f05278c6ea45e4607b3e83a87fcb49930e67d7df637593b304"
+          },
+          {
+            "id": "root.tui-surface",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "tui-surface",
+            "template": "template.root.tui-surface",
+            "version": "0.0.1",
+            "digest": "d6b56fd1f990de1e3c3dd31ba6bf4067fc7f9fa1b6901ba5db671f134f518929"
+          },
+          {
+            "id": "guide.autonomous-work",
+            "path": "docs/agents/autonomous-work.md",
+            "kind": "guide",
+            "module": "autonomous-work",
+            "template": "template.guide.autonomous-work",
+            "version": "0.0.1",
+            "digest": "1b46150225aa71aba6081b64eaf611e16e39de779961563726d56385ec0a43a6"
+          }
+        ],
+        "localSkills": [],
+        "verification": [
+          {
+            "id": "verification.gate",
+            "role": "repository-gate",
+            "command": "make verify",
+            "classification": "repository-command",
+            "repositoryExecutable": true,
+            "declarationPath": "Makefile",
+            "declarationDigest": "sha256:93bad285a2319c6daef756f4c0686fb4cbd749b0f7a2890721d5d475d8142ad3"
+          }
+        ]
+      },
+      "managedEntries": [
+        {
+          "ordinal": 0,
+          "id": "root.core",
+          "path": "AGENTS.md",
+          "action": "unchanged",
+          "kind": "root-block",
+          "module": "core",
+          "template": "template.root.core",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "afterIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "contentIdentity": "sha256:fc65c9495a097088c55d63f5d07792e8defd6063ca0b9b35011913d01d6c273d"
+        },
+        {
+          "ordinal": 1,
+          "id": "root.context-workflow",
+          "path": "AGENTS.md",
+          "action": "unchanged",
+          "kind": "root-block",
+          "module": "context-workflow",
+          "template": "template.root.context-workflow",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "afterIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "contentIdentity": "sha256:4001ce64061ffafedf2456ffd958e3fe700e1da954d7c42867f1aad6fa10e0a8"
+        },
+        {
+          "ordinal": 2,
+          "id": "root.spec-workflow",
+          "path": "AGENTS.md",
+          "action": "unchanged",
+          "kind": "root-block",
+          "module": "spec-workflow",
+          "template": "template.root.spec-workflow",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "afterIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "contentIdentity": "sha256:7d263707ada26bf233c9aa823423b6c74dc006b86c503899fcd95a46f6a15e7f"
+        },
+        {
+          "ordinal": 3,
+          "id": "root.autonomous-work",
+          "path": "AGENTS.md",
+          "action": "unchanged",
+          "kind": "root-block",
+          "module": "autonomous-work",
+          "template": "template.root.autonomous-work",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "afterIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "contentIdentity": "sha256:f056b3e672ecb439c578096d2e157ed438ec291ece01eade9102a03c7da51dec"
+        },
+        {
+          "ordinal": 4,
+          "id": "root.go",
+          "path": "AGENTS.md",
+          "action": "unchanged",
+          "kind": "root-block",
+          "module": "go",
+          "template": "template.root.go",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "afterIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "contentIdentity": "sha256:66ebe38c0cae01a9039e126979fce84d10f3f4f562b2f5fa08cbe9ecf8b9dc84"
+        },
+        {
+          "ordinal": 5,
+          "id": "root.cli-surface",
+          "path": "AGENTS.md",
+          "action": "unchanged",
+          "kind": "root-block",
+          "module": "cli-surface",
+          "template": "template.root.cli-surface",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "afterIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "contentIdentity": "sha256:00d780aa07a370ecd77b09d4b0eb0326f80980372652be67d30c699aee931bdb"
+        },
+        {
+          "ordinal": 6,
+          "id": "root.tui-surface",
+          "path": "AGENTS.md",
+          "action": "unchanged",
+          "kind": "root-block",
+          "module": "tui-surface",
+          "template": "template.root.tui-surface",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "afterIdentity": "sha256:a5d1be2a55389526438b704fe3f74b9ca9cf24ebe14e82367aac5f7a991929bf",
+          "contentIdentity": "sha256:d6b56fd1f990de1e3c3dd31ba6bf4067fc7f9fa1b6901ba5db671f134f518929"
+        },
+        {
+          "ordinal": 7,
+          "id": "guide.agent-instructions",
+          "path": "docs/agents/agent-instructions.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "core",
+          "template": "template.guide.agent-instructions",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:eb769f99afa32a901723e1962a06fca09d856c8d37284b36c9aed071bd6e4f86",
+          "afterIdentity": "sha256:eb769f99afa32a901723e1962a06fca09d856c8d37284b36c9aed071bd6e4f86",
+          "contentIdentity": "sha256:e9530adab9ad6daef7cb8a0185de66e69ff64a48041249df007f88f2462641a0"
+        },
+        {
+          "ordinal": 8,
+          "id": "guide.autonomous-work",
+          "path": "docs/agents/autonomous-work.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "autonomous-work",
+          "template": "template.guide.autonomous-work",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:8c639482f4554c602ddfb97094fa8adad7f22f63745c69156e2cb469720e5372",
+          "afterIdentity": "sha256:8c639482f4554c602ddfb97094fa8adad7f22f63745c69156e2cb469720e5372",
+          "contentIdentity": "sha256:1b46150225aa71aba6081b64eaf611e16e39de779961563726d56385ec0a43a6"
+        },
+        {
+          "ordinal": 9,
+          "id": "guide.cli-surface",
+          "path": "docs/agents/cli.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "cli-surface",
+          "template": "template.guide.cli-surface",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:6e614e498b584f16f479dc563dd85e4f517d30cab40c3f0a15765c7db7d3714f",
+          "afterIdentity": "sha256:6e614e498b584f16f479dc563dd85e4f517d30cab40c3f0a15765c7db7d3714f",
+          "contentIdentity": "sha256:eccd16c4b04dd206395f030f64115b5cd1a91450ba745867ef164e2197f73a7a"
+        },
+        {
+          "ordinal": 10,
+          "id": "guide.docs-layout",
+          "path": "docs/agents/docs-layout.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "context-workflow",
+          "template": "template.guide.docs-layout",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:5b94f909459c6f68d1a6aa8adb35bdb8485c0b112e3c5bf2c4118b172d4c4f5d",
+          "afterIdentity": "sha256:5b94f909459c6f68d1a6aa8adb35bdb8485c0b112e3c5bf2c4118b172d4c4f5d",
+          "contentIdentity": "sha256:228175441a5a29645b1dba2354c9c6aceeca4414f6dfbb1bff3a1145e7dd87a0"
+        },
+        {
+          "ordinal": 11,
+          "id": "guide.spec-docs-layout",
+          "path": "docs/agents/docs-layout.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "spec-workflow",
+          "template": "template.guide.spec-docs-layout",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:5b94f909459c6f68d1a6aa8adb35bdb8485c0b112e3c5bf2c4118b172d4c4f5d",
+          "afterIdentity": "sha256:5b94f909459c6f68d1a6aa8adb35bdb8485c0b112e3c5bf2c4118b172d4c4f5d",
+          "contentIdentity": "sha256:7441e3110833e8dfa39cf48a580df17e1275621a4bb795c98ca119b51c70ad21"
+        },
+        {
+          "ordinal": 12,
+          "id": "guide.domain",
+          "path": "docs/agents/domain.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "context-workflow",
+          "template": "template.guide.domain.single-context",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:4a1162377d8834a15497ae60c06a537a59357884dc8862063ee0da11dcd6a6ea",
+          "afterIdentity": "sha256:4a1162377d8834a15497ae60c06a537a59357884dc8862063ee0da11dcd6a6ea",
+          "contentIdentity": "sha256:86b13d9ac7cd64f05278c6ea45e4607b3e83a87fcb49930e67d7df637593b304"
+        },
+        {
+          "ordinal": 13,
+          "id": "guide.go",
+          "path": "docs/agents/go.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "go",
+          "template": "template.guide.go",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:feab6387ac680fd1cc87823773191405c445f9c0d404974698cd1318c1913187",
+          "afterIdentity": "sha256:feab6387ac680fd1cc87823773191405c445f9c0d404974698cd1318c1913187",
+          "contentIdentity": "sha256:297ec5bfb5a50c1f390568b6519df6985ecbce63295e8357357d80bf993807f6"
+        },
+        {
+          "ordinal": 14,
+          "id": "guide.issue-tracker",
+          "path": "docs/agents/issue-tracker.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "spec-workflow",
+          "template": "template.guide.issue-tracker",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:f2139d498fb79358a240d8c99ab1718764217cf28aec0fb024beadfa2b0231cc",
+          "afterIdentity": "sha256:f2139d498fb79358a240d8c99ab1718764217cf28aec0fb024beadfa2b0231cc",
+          "contentIdentity": "sha256:84ef3c03d23cbae80a202393e2be05ddc345918ff87a69de6299b128b5fb86a3"
+        },
+        {
+          "ordinal": 15,
+          "id": "manifest",
+          "path": "docs/agents/setup-context.json",
+          "action": "unchanged",
+          "kind": "manifest",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:806773b445675cb675b7df067b0bea2f6a2f699833d874d2f559259d659229cc",
+          "afterIdentity": "sha256:806773b445675cb675b7df067b0bea2f6a2f699833d874d2f559259d659229cc",
+          "contentIdentity": "sha256:806773b445675cb675b7df067b0bea2f6a2f699833d874d2f559259d659229cc"
+        },
+        {
+          "ordinal": 16,
+          "id": "guide.skill-dispatch",
+          "path": "docs/agents/skill-dispatch.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "core",
+          "template": "template.guide.skill-dispatch",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:aa933c9fd41917aafa01961c26140467aee11a6f1d5d5ea425af2cf80a1581c8",
+          "afterIdentity": "sha256:aa933c9fd41917aafa01961c26140467aee11a6f1d5d5ea425af2cf80a1581c8",
+          "contentIdentity": "sha256:2b3e6b61cc0942a56ef29b136f3aca9fef6f0412168023385b9c7197e05b8867"
+        },
+        {
+          "ordinal": 17,
+          "id": "guide.spec-routing",
+          "path": "docs/agents/spec-routing.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "spec-workflow",
+          "template": "template.guide.spec-routing",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:ce1b67f65ce8ad8a5dc1505e2201833d0e477ff91a6161c395db1188ae83ce9f",
+          "afterIdentity": "sha256:ce1b67f65ce8ad8a5dc1505e2201833d0e477ff91a6161c395db1188ae83ce9f",
+          "contentIdentity": "sha256:58f95806bfd45ea1091ea3cc910cab3335fb24764c33984e62cf2f385a1832f9"
+        },
+        {
+          "ordinal": 18,
+          "id": "guide.tui-surface",
+          "path": "docs/agents/tui.md",
+          "action": "unchanged",
+          "kind": "guide",
+          "module": "tui-surface",
+          "template": "template.guide.tui-surface",
+          "version": "0.0.1",
+          "beforeIdentity": "sha256:5514dfa61b1db35ef6627c88a8a4199406d966707c56c77a7f7f05c4407e5dd9",
+          "afterIdentity": "sha256:5514dfa61b1db35ef6627c88a8a4199406d966707c56c77a7f7f05c4407e5dd9",
+          "contentIdentity": "sha256:487cb07b110df86651c7ef4a45d10799cb64b5dab07afd378fef343f03f69d2a"
+        }
+      ],
+      "fileChanges": [],
+      "planDigest": "sha256:4a7a5b40219b0c9bbf13a1267f1301f15b5a0433af48a352fa1f66e1532c38fc"
+    },
+    "Result": {
+      "schemaVersion": "roundfix/baseline-result/v1",
+      "operation": "plan",
+      "state": "ready",
+      "planDigest": "sha256:4a7a5b40219b0c9bbf13a1267f1301f15b5a0433af48a352fa1f66e1532c38fc",
+      "verifiedPostimages": [],
+      "warnings": [
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/agent-instructions.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/autonomous-work.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/cli.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/docs-layout.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/domain.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/go.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/issue-tracker.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/setup-context.json",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/skill-dispatch.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/spec-routing.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        },
+        {
+          "code": "baseline.inventory.nested-carrier-conflict",
+          "path": "docs/agents/tui.md",
+          "message": "nested carrier remains unchanged and requires conflict review"
+        }
+      ],
+      "recommendations": [
+        "make verify"
+      ]
+    }
+  }
+}
