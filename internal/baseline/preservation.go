@@ -52,6 +52,7 @@ type RootPreservationRequest struct {
 	semanticOwners   SemanticOwnerRegistry
 	managedArtifacts []plannedArtifact
 	classifyCarriers bool
+	classifications  []carrierClassification
 }
 
 // RootBackup is one immutable raw-byte backup selected before mutation.
@@ -546,12 +547,19 @@ func planRootPreservationWithCatalog(
 	warnings := append([]Finding(nil), inspection.Snapshot.Warnings...)
 	var carrierClassifications []carrierClassification
 	if request.classifyCarriers && catalog != nil {
-		carrierClassifications = classifyCarriers(
-			inspection.Root,
-			inspection.Snapshot.Carriers,
-			catalog,
-			request.managedArtifacts,
-		)
+		carrierClassifications = request.classifications
+		if carrierClassifications == nil {
+			var err error
+			carrierClassifications, err = classifyCarriers(
+				inspection.Root,
+				inspection.Snapshot.Carriers,
+				catalog,
+				request.managedArtifacts,
+			)
+			if err != nil {
+				return RootPreservationPlan{}, err
+			}
+		}
 		warnings = warningsForCarrierClassifications(warnings, carrierClassifications)
 	}
 	plan := RootPreservationPlan{

@@ -9,11 +9,12 @@ import (
 )
 
 type catalogLoader struct {
-	source       fs.FS
-	assets       map[string][]byte
-	documents    map[string]document
-	diagnostics  []Diagnostic
-	regenerating bool
+	source                   fs.FS
+	assets                   map[string][]byte
+	documents                map[string]document
+	diagnostics              []Diagnostic
+	validatedSourceBaselines []SourceBaseline
+	regenerating             bool
 }
 
 // deferredDuringRegeneration lists the diagnostics that a regeneration run is

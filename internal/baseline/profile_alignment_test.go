@@ -164,6 +164,51 @@ func TestCapabilityRecheck(t *testing.T) {
 			t.Fatalf("re-check Profile = %#v, want %q %q", result.Profile, profile.ID, profile.Digest)
 		}
 	})
+
+	t.Run("rejects an invalid current Setup Manifest", func(t *testing.T) {
+		repository := t.TempDir()
+		writeProfileAlignmentFile(t, repository, manifestPath, "{}")
+
+		_, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+			Repository: repository,
+		})
+		if !errors.Is(err, ErrNoResolvableProfile) ||
+			!strings.Contains(err.Error(), "current Setup Manifest is invalid") {
+			t.Fatalf("RecheckCapabilities() error = %v, want invalid manifest ErrNoResolvableProfile", err)
+		}
+	})
+
+	t.Run("wraps an explicit Profile resolution failure", func(t *testing.T) {
+		repository := t.TempDir()
+		_, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+			Repository: repository,
+			ProfileID:  "missing-profile",
+		})
+		if !errors.Is(err, ErrNoResolvableProfile) || !errors.Is(err, fs.ErrNotExist) {
+			t.Fatalf("RecheckCapabilities() error = %v, want ErrNoResolvableProfile and fs.ErrNotExist", err)
+		}
+	})
+
+	t.Run("normalizes omitted PostgreSQL evidence to arrays", func(t *testing.T) {
+		result, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+			Repository: t.TempDir(),
+			ProfileID:  "go-cli-tui",
+		})
+		if err != nil {
+			t.Fatalf("RecheckCapabilities() error = %v", err)
+		}
+		if result.PostgreSQL.AcceptedContractPaths == nil || result.PostgreSQL.Implementation == nil {
+			t.Fatalf("PostgreSQL evidence contains nil slices: %#v", result.PostgreSQL)
+		}
+		encoded, err := json.Marshal(result.PostgreSQL)
+		if err != nil {
+			t.Fatalf("marshal PostgreSQL evidence: %v", err)
+		}
+		if !strings.Contains(string(encoded), `"acceptedContractPaths":[]`) ||
+			!strings.Contains(string(encoded), `"implementation":[]`) {
+			t.Fatalf("PostgreSQL evidence JSON = %s, want empty arrays", encoded)
+		}
+	})
 }
 
 func TestRequiredDivergencePreventsReadyPlan(t *testing.T) {
@@ -646,6 +691,18 @@ func TestPortableVerificationRoleMapping(t *testing.T) {
 			t.Fatalf("undeclared mapped workspace divergence = %+v, found=%v", divergence, ok)
 		}
 	})
+
+	t.Run("mapped role rejects an empty command", func(t *testing.T) {
+		repository := newRepository(t)
+		_, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+			ProfileID:                "standard-typescript-monorepo",
+			Decisions:                standardTypeScriptDecisions(declaredCommand),
+			VerificationRoleMappings: map[string]string{role: "   "},
+		}, loadProfileAlignmentCatalog(t))
+		if err == nil || !strings.Contains(err.Error(), `mapped repository command for role "workspace" is empty`) {
+			t.Fatalf("empty role mapping error = %v", err)
+		}
+	})
 }
 
 func TestProfileAlignmentDiscoversDeclaredRepositoryFormatter(t *testing.T) {
@@ -769,6 +826,30 @@ func TestExecutableCandidateResolution(t *testing.T) {
 			wantResolved: func(_, _ string) string { return "" },
 			wantReason:   executableProbeReasonLinkCycle,
 			wantHops:     2,
+		},
+		{
+			name: "link depth exceeded",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				writeProfileAlignmentExecutable(t, bin, "target", "executable")
+				for index := range maxExecutableLinkHops + 1 {
+					link := name
+					if index != 0 {
+						link = fmt.Sprintf("link-%d", index)
+					}
+					target := "target"
+					if index != maxExecutableLinkHops {
+						target = fmt.Sprintf("link-%d", index+1)
+					}
+					if err := os.Symlink(target, filepath.Join(bin, link)); err != nil {
+						t.Fatalf("create executable symlink %d: %v", index, err)
+					}
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(_, _ string) string { return "" },
+			wantReason:   "link-depth-exceeded",
+			wantHops:     maxExecutableLinkHops,
 		},
 		{
 			name: "broken link",

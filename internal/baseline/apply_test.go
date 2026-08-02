@@ -255,6 +255,22 @@ func TestResultStatusMatrix(t *testing.T) {
 }
 
 func TestCompletionLanguageRequiresRetention(t *testing.T) {
+	t.Run("retention and idempotence without approved postimages", func(t *testing.T) {
+		plan := planWithVerifiedRetention(t, buildTestPlan(t, newPlanRepository(t)))
+		plan.Postimages = nil
+		result := verifiedApplyResult(plan, nil, true)
+		assertResultStatusMatrix(t, result, ResultStatusMatrix{
+			ApprovedPostimages:     EvidenceStatusNotRun,
+			SemanticRetention:      EvidenceStatusVerified,
+			ProfileAlignment:       EvidenceStatusVerified,
+			RepositoryVerification: EvidenceStatusNotRun,
+			Idempotence:            EvidenceStatusVerified,
+		})
+		if strings.Contains(strings.ToLower(result.Message), "complete") {
+			t.Fatalf("result without approved postimages reads as complete: %q", result.Message)
+		}
+	})
+
 	t.Run("postimages and idempotence without retention", func(t *testing.T) {
 		repo := newPlanRepository(t)
 		plan := buildTestPlan(t, repo)

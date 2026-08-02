@@ -10,6 +10,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"io/fs"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -365,7 +368,11 @@ func TestSealedClassificationEquivalentProposalsProduceSamePlanDigest(t *testing
 }
 
 func TestCarrierClassification(t *testing.T) {
+	t.Parallel()
+
 	t.Run("four kinds warn only when human review is needed", func(t *testing.T) {
+		t.Parallel()
+
 		repo := newInspectionRepository(t)
 		catalog, err := LoadEmbeddedCatalog()
 		if err != nil {
@@ -391,6 +398,9 @@ func TestCarrierClassification(t *testing.T) {
 		}
 		if len(guides) != 2 {
 			t.Fatalf("active guide artifacts = %d, want at least two", len(guides))
+		}
+		if guides[0].Path == guides[1].Path {
+			t.Fatalf("selected guides share path %q, want distinct carriers", guides[0].Path)
 		}
 
 		current := "preserved repository bytes\n\n" + upsertManagedBlock("", guides[0])
@@ -419,7 +429,10 @@ func TestCarrierClassification(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		classifications := classifyCarriers(repo, inspection.Snapshot.Carriers, catalog, artifacts)
+		classifications, err := classifyCarriers(repo, inspection.Snapshot.Carriers, catalog, artifacts)
+		if err != nil {
+			t.Fatal(err)
+		}
 		got := make(map[string]carrierClassificationKind, len(classifications))
 		for _, classification := range classifications {
 			got[classification.Path] = classification.Kind
@@ -468,6 +481,7 @@ func TestCarrierClassification(t *testing.T) {
 				semanticOwners:   semanticOwners,
 				managedArtifacts: artifacts,
 				classifyCarriers: true,
+				classifications:  classifications,
 			},
 			catalog,
 		)
@@ -492,6 +506,8 @@ func TestCarrierClassification(t *testing.T) {
 	})
 
 	t.Run("verified apply replans without managed carrier warnings", func(t *testing.T) {
+		t.Parallel()
+
 		repo := newBaselinePlanCharacterizationRepository(t, true, true, true)
 		request := baselinePlanCharacterizationRequest(repo)
 		initial, err := BuildPlan(context.Background(), request)
@@ -526,7 +542,11 @@ func TestCarrierClassification(t *testing.T) {
 }
 
 func TestUnclassifiableCarrierStillWarns(t *testing.T) {
+	t.Parallel()
+
 	t.Run("unknown managed marker retains boundary warning", func(t *testing.T) {
+		t.Parallel()
+
 		repo := newInspectionRepository(t)
 		const carrierPath = "packages/api/AGENTS.md"
 		writeInspectionFile(t, repo, carrierPath, `<!-- setup-context-driven:begin id=unknown.guide version=1 -->
@@ -553,7 +573,10 @@ unknown managed-looking bytes
 		if err != nil {
 			t.Fatal(err)
 		}
-		classifications := classifyCarriers(repo, inspection.Snapshot.Carriers, catalog, artifacts)
+		classifications, err := classifyCarriers(repo, inspection.Snapshot.Carriers, catalog, artifacts)
+		if err != nil {
+			t.Fatal(err)
+		}
 		for _, classification := range classifications {
 			if classification.Path == carrierPath && classification.Kind != "" {
 				t.Fatalf("unclassifiable carrier classification = %q", classification.Kind)
@@ -571,6 +594,21 @@ unknown managed-looking bytes
 			}
 		}
 	})
+}
+
+func TestCarrierClassificationReportsRootOpenFailure(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	missingRoot := filepath.Join(t.TempDir(), "missing")
+	_, err = classifyCarriers(missingRoot, nil, catalog, nil)
+	if !errors.Is(err, fs.ErrNotExist) ||
+		!strings.Contains(err.Error(), "open repository root for carrier classification") {
+		t.Fatalf("classifyCarriers() error = %v, want root-open failure", err)
+	}
 }
 
 func classificationTestSource() ReadoptionSourceBaseline {

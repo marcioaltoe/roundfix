@@ -30,6 +30,7 @@ const (
 	executableProbeReasonNotFound      = "not-found"
 	executableProbeReasonBrokenLink    = "broken-link"
 	executableProbeReasonLinkCycle     = "link-cycle"
+	executableProbeReasonLinkDepth     = "link-depth-exceeded"
 	executableProbeReasonNotExecutable = "not-executable"
 )
 
@@ -478,6 +479,13 @@ func RecheckCapabilities(
 			break
 		}
 	}
+	postgres := evaluation.postgres
+	if postgres.AcceptedContractPaths == nil {
+		postgres.AcceptedContractPaths = []string{}
+	}
+	if postgres.Implementation == nil {
+		postgres.Implementation = []CapabilityEvidence{}
+	}
 	return CapabilityRecheckResult{
 		SchemaVersion: CapabilityRecheckSchemaVersion,
 		Operation:     "capabilities.check",
@@ -487,7 +495,7 @@ func RecheckCapabilities(
 		},
 		Capabilities: evaluation.capabilities,
 		Divergences:  evaluation.divergences,
-		PostgreSQL:   evaluation.postgres,
+		PostgreSQL:   postgres,
 	}, nil
 }
 
@@ -981,7 +989,7 @@ func inspectExecutableCandidate(candidate string) (executableProbeResult, bool) 
 			return result, true
 		}
 		if result.HopCount >= maxExecutableLinkHops {
-			result.Reason = executableProbeReasonLinkCycle
+			result.Reason = executableProbeReasonLinkDepth
 			return result, true
 		}
 
@@ -1337,6 +1345,13 @@ func resolveVerificationProjection(
 			var err error
 			if mapped {
 				resolvedCommand = strings.TrimSpace(mappedCommand)
+				if resolvedCommand == "" {
+					return nil, nil, fmt.Errorf(
+						"validate profile Verification expectation %q: mapped repository command for role %q is empty",
+						id,
+						role,
+					)
+				}
 				declaration, err = validateLocalCommandDeclaration(root, resolvedCommand)
 			} else {
 				resolvedCommand, declaration, err = resolveProfileVerificationCommand(

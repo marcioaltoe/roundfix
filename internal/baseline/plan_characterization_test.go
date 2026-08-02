@@ -142,26 +142,6 @@ func TestBaselinePlanCharacterizationDiffNamesShapeAndField(t *testing.T) {
 	}
 }
 
-func TestBaselinePlanCharacterizationPublicCommandJourneys(t *testing.T) {
-	projectRoot, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatalf("resolve project root: %v", err)
-	}
-	command := exec.Command(
-		"go",
-		"test",
-		"./internal/cli",
-		"-run",
-		"^TestBaselineMacroJourneysPublicCLI$",
-		"-count=1",
-	)
-	command.Dir = projectRoot
-	command.Env = os.Environ()
-	if output, err := command.CombinedOutput(); err != nil {
-		t.Fatalf("public command characterization journeys changed: %v\n%s", err, output)
-	}
-}
-
 func buildCleanAdoptionCharacterization(t *testing.T) (string, PlanRequest, baselinePlanCharacterizationShape) {
 	t.Helper()
 	repository := newBaselinePlanCharacterizationRepository(t, true, true, true)

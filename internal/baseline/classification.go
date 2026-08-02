@@ -825,7 +825,7 @@ func classifyCarriers(
 	carriers []InstructionCarrier,
 	catalog *Catalog,
 	currentArtifacts []plannedArtifact,
-) []carrierClassification {
+) ([]carrierClassification, error) {
 	knownPaths := managedArtifactPaths(catalog)
 	sourceByPath := make(map[string]map[string]ManifestArtifact)
 	sourceManifestPresent := false
@@ -839,7 +839,7 @@ func classifyCarriers(
 
 	anchored, err := os.OpenRoot(rootPath)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("open repository root for carrier classification: %w", err)
 	}
 	defer anchored.Close()
 	for _, carrier := range carriers {
@@ -891,7 +891,7 @@ func classifyCarriers(
 		}
 		classifications = append(classifications, classification)
 	}
-	return classifications
+	return classifications, nil
 }
 
 func readCarrierClassificationBytes(

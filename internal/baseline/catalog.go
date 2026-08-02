@@ -169,7 +169,7 @@ func loadCatalog(assetsFS fs.FS, regenerating bool) (*Catalog, error) {
 		})
 		return nil, &ValidationError{Diagnostics: loader.diagnostics}
 	}
-	if err := catalog.captureCurrentRetentionSources(); err != nil {
+	if err := catalog.captureCurrentRetentionSources(loader.validatedSourceBaselines); err != nil {
 		return nil, fmt.Errorf("capture Baseline retention sources: %w", err)
 	}
 	return catalog, nil

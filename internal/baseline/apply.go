@@ -279,7 +279,8 @@ func verifiedApplyResult(document PlanDocument, verified []Postimage, alreadyApp
 	if alreadyApplied {
 		message = "approved Baseline Plan is already applied"
 	}
-	if matrix.SemanticRetention == EvidenceStatusVerified &&
+	if matrix.ApprovedPostimages == EvidenceStatusVerified &&
+		matrix.SemanticRetention == EvidenceStatusVerified &&
 		matrix.Idempotence == EvidenceStatusVerified {
 		message = "Baseline update complete; approved Baseline Plan is already applied"
 	}

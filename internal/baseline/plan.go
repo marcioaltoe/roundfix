@@ -322,9 +322,18 @@ func buildPlanWithCatalog(
 	if err != nil {
 		return PlanOutcome{}, err
 	}
+	initialClassifications, err := classifyCarriers(
+		initial.Root,
+		initial.Snapshot.Carriers,
+		catalog,
+		carrierArtifacts,
+	)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
 	initial.Snapshot.Warnings = warningsForCarrierClassifications(
 		initial.Snapshot.Warnings,
-		classifyCarriers(initial.Root, initial.Snapshot.Carriers, catalog, carrierArtifacts),
+		initialClassifications,
 	)
 	remediationProfileID := profile.ID
 	if request.ProfileDraft != nil {
@@ -369,6 +378,7 @@ func buildPlanWithCatalog(
 	preservationRequest.semanticOwners = semanticOwners
 	preservationRequest.managedArtifacts = carrierArtifacts
 	preservationRequest.classifyCarriers = true
+	preservationRequest.classifications = initialClassifications
 
 	preservation, err := planRootPreservationWithCatalog(initial, preservationRequest, catalog)
 	if err != nil {
@@ -434,10 +444,20 @@ func buildPlanWithCatalog(
 	if err != nil {
 		return PlanOutcome{}, err
 	}
+	currentClassifications, err := classifyCarriers(
+		initial.Root,
+		snapshot.Carriers,
+		catalog,
+		carrierArtifacts,
+	)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
 	snapshot.Warnings = warningsForCarrierClassifications(
 		snapshot.Warnings,
-		classifyCarriers(initial.Root, snapshot.Carriers, catalog, carrierArtifacts),
+		currentClassifications,
 	)
+	preservationRequest.classifications = currentClassifications
 	if plannedDraft != nil {
 		if err := validateProfileDraftTarget(snapshot, *plannedDraft); err != nil {
 			return PlanOutcome{}, err

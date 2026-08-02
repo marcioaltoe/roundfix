@@ -102,20 +102,8 @@ func allClauseDispositions() []ClauseDisposition {
 	}
 }
 
-func (c *Catalog) captureCurrentRetentionSources() error {
-	indexAsset, ok := c.Asset("source-baselines/index.json")
-	if !ok {
-		return nil
-	}
-	var index sourceBaselineIndex
-	if err := strictJSON(indexAsset.Data, &index); err != nil {
-		return fmt.Errorf("load Source Baseline index: %w", err)
-	}
-	for _, record := range index.Baselines {
-		source, err := c.SourceBaseline(record.ID)
-		if err != nil {
-			return err
-		}
+func (c *Catalog) captureCurrentRetentionSources(sources []SourceBaseline) error {
+	for _, source := range sources {
 		profile, err := ResolveProfile("", source.Identity.Profile, c)
 		if err != nil {
 			return fmt.Errorf(

@@ -2487,7 +2487,7 @@ func newSameIdentityRetentionDrift(
 		t.Fatalf("apply source plan: %v", err)
 	}
 
-	target := cloneCatalogForRetentionDrift(source)
+	target := cloneCatalogForRetentionDrift(t, source)
 	target.digest = "sha256:" + strings.Repeat("f", 64)
 	tuple := BaselineSourceTuple{
 		Baseline:      outcome.Plan.SetupManifest.Generator.Baseline,
@@ -2497,11 +2497,17 @@ func newSameIdentityRetentionDrift(
 	return repository, request, target, tuple
 }
 
-func cloneCatalogForRetentionDrift(source *Catalog) *Catalog {
+func cloneCatalogForRetentionDrift(t *testing.T, source *Catalog) *Catalog {
+	t.Helper()
+
 	target := *source
 	target.modules = make(map[string]document, len(source.modules))
 	for id, module := range source.modules {
-		target.modules[id] = document(cloneJSONValue(module).(map[string]any))
+		cloned, ok := cloneJSONValue(module).(map[string]any)
+		if !ok {
+			t.Fatalf("cloned catalog module %q is not an object", id)
+		}
+		target.modules[id] = document(cloned)
 	}
 	target.retentionSources = make(map[BaselineSourceTuple]SourceBaseline, len(source.retentionSources))
 	for tuple, baseline := range source.retentionSources {

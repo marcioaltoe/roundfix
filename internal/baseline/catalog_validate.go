@@ -1437,6 +1437,7 @@ func (l *catalogLoader) validateSourceBaselines(catalog *Catalog) {
 			l.add("catalog.sourceBaseline.integrity.invalid", baselineID, err.Error())
 			continue
 		}
+		l.validatedSourceBaselines = append(l.validatedSourceBaselines, baseline)
 		l.validateSourceBaselineCoverage(catalog, baseline)
 	}
 }
