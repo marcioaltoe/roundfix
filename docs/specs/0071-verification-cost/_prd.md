@@ -29,8 +29,18 @@ slowest test — each of which already builds its own repository — took it fro
 `t.TempDir()`, and sixty-nine subtest blocks are structurally similar
 candidates.
 
-Neither problem is about having too many tests. Coverage is the asset; the cost
-is how the suite is executed and how often it is asked for.
+A third cost is how often the gate is asked for at all. The Daemon withholds QA
+correctly — Spec 0057's first Run ended with one Task failed and ran no gate.
+But the graph itself kept growing: a corrective Task was appended after each
+gate, so three gates ran against three different graphs at roughly twenty to
+twenty-five minutes each. `docs/agents/autonomous-work.md` already warns that
+re-requesting after each corrective Task turns discovery into a serial chain,
+and caps corrective Tasks at two before the decomposition itself is suspect.
+The rule was not applied.
+
+None of the three is about having too many tests. Coverage is the asset; the
+cost is how the suite is executed, how often each Task pays for it, and how
+many times the gate is requested.
 
 ## Project Constraints
 
@@ -76,7 +86,15 @@ is how the suite is executed and how often it is asked for.
    Tasks do not reintroduce the same per-Task tax.
 5. A measured suite-time budget is asserted, so a change that makes
    verification materially slower fails rather than accumulating.
-6. Coverage equivalence is proven, not assumed: the set of test functions
+6. The QA gate is requested once per Spec attempt, against a Task Graph that is
+   complete before the request rather than grown in response to it. A Spec that
+   needs corrective Tasks after a gate has its count recorded, and exceeding the
+   documented cap routes back to decomposition instead of appending another
+   round.
+7. Gate cycles per Spec are measured and reported, so a Spec that took four
+   rounds is visible as a decomposition problem rather than absorbed as normal
+   cost.
+8. Coverage equivalence is proven, not assumed: the set of test functions
    executed before and after is identical.
 
 ## Non-Goals / Out of Scope
@@ -97,6 +115,8 @@ is how the suite is executed and how often it is asked for.
 - No Task Verification in any active Spec carries a whole-package suite command.
 - A deliberately introduced slow test trips the suite-time budget.
 - Every test left sequential carries a stated reason.
+- Gate cycles per Spec are recorded, and a Spec exceeding the corrective-Task
+  cap is reported rather than silently continuing.
 
 ## Decisions
 
@@ -106,6 +126,9 @@ is how the suite is executed and how often it is asked for.
   not.
 - The Run-level gate is where "nothing else regressed" belongs. Asking every
   Task to prove it costs the same answer fourteen times.
+- A Task Graph is completed before the gate is requested, never grown in
+  response to it. Corrective Tasks appended after a gate are a signal about the
+  decomposition, and the existing cap of two is enforced rather than advisory.
 - This Spec evolves verification cost and never regresses coverage: any change
   that reduces what is exercised is a defect, not a saving.
 
