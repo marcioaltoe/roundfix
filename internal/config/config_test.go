@@ -596,8 +596,9 @@ runtimes:
 func TestProfilesConfigWriterCharacterization(t *testing.T) {
 	const corpusDir = "testdata/profiles_config_writer"
 	tests := []struct {
-		name string
-		file string
+		name     string
+		file     string
+		removals []WorkCategory
 	}{
 		{name: "five categories with Fallback Chains", file: "five_categories_with_fallback_chains"},
 		{name: "comments above and beside entries", file: "comments_above_and_beside_entries"},
@@ -608,6 +609,16 @@ func TestProfilesConfigWriterCharacterization(t *testing.T) {
 		{name: "non-ASCII values", file: "non_ascii_values"},
 		{name: "empty file", file: "empty_file"},
 		{name: "no profiles section", file: "no_profiles_section"},
+		{
+			name:     "removal before top-level separator",
+			file:     "removal_before_top_level_separator",
+			removals: []WorkCategory{CategoryFrontend},
+		},
+		{
+			name:     "removal with adjacent trivia",
+			file:     "removal_with_adjacent_trivia",
+			removals: []WorkCategory{CategoryBackend},
+		},
 	}
 	configuredProfiles := Profiles{
 		CategoryBackend: {
@@ -620,6 +631,10 @@ func TestProfilesConfigWriterCharacterization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			profiles := configuredProfiles
+			if len(tt.removals) > 0 {
+				profiles = nil
+			}
 			inputPath := filepath.Join(corpusDir, tt.file+".input.yml")
 			input, err := os.ReadFile(inputPath)
 			if err != nil {
@@ -639,7 +654,8 @@ func TestProfilesConfigWriterCharacterization(t *testing.T) {
 				Scope:    InitScopeUser,
 				HomeDir:  homeDir,
 				WorkDir:  workDir,
-				Profiles: configuredProfiles,
+				Profiles: profiles,
+				Removals: tt.removals,
 			}); err != nil {
 				t.Fatalf("write characterization config %q through current writer: %v", tt.file, err)
 			}
@@ -667,6 +683,161 @@ func TestProfilesConfigWriterCharacterization(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProfilesConfigureRemovalPreservesSpacing(t *testing.T) {
+	tests := []struct {
+		name     string
+		original string
+		want     string
+		removal  WorkCategory
+	}{
+		{
+			name: "keeps separator before following top-level key",
+			original: `profiles:
+  backend:
+    preferred: {runtime: codex, model: backend-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: backend-fallback, reasoning_effort: xhigh}]
+  frontend:
+    preferred: {runtime: claude, model: frontend-primary, reasoning_effort: xhigh}
+    fallbacks: [{runtime: codex, model: frontend-fallback, reasoning_effort: high}]
+  qa:
+    preferred: {runtime: codex, model: qa-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: qa-fallback, reasoning_effort: xhigh}]
+
+watch:
+  max_rounds: 4
+`,
+			want: `profiles:
+  backend:
+    preferred: {runtime: codex, model: backend-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: backend-fallback, reasoning_effort: xhigh}]
+  qa:
+    preferred: {runtime: codex, model: qa-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: qa-fallback, reasoning_effort: xhigh}]
+
+watch:
+  max_rounds: 4
+`,
+			removal: CategoryFrontend,
+		},
+		{
+			name: "removes only middle category trivia",
+			original: `profiles:
+  # general survives with its comment
+  general:
+    preferred: {runtime: codex, model: general-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: general-fallback, reasoning_effort: xhigh}]
+  # backend comment belongs to the removed category
+  backend:
+    preferred: {runtime: codex, model: backend-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: backend-fallback, reasoning_effort: xhigh}]
+
+  # qa survives with its comment
+  qa:
+    preferred: {runtime: codex, model: qa-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: qa-fallback, reasoning_effort: xhigh}]
+`,
+			want: `profiles:
+  # general survives with its comment
+  general:
+    preferred: {runtime: codex, model: general-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: general-fallback, reasoning_effort: xhigh}]
+  # qa survives with its comment
+  qa:
+    preferred: {runtime: codex, model: qa-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: qa-fallback, reasoning_effort: xhigh}]
+`,
+			removal: CategoryBackend,
+		},
+		{
+			name: "keeps surviving category trailing blank line",
+			original: `profiles:
+  general:
+    preferred: {runtime: codex, model: general-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: general-fallback, reasoning_effort: xhigh}]
+
+  # backend comment belongs to the removed category
+  backend:
+    preferred: {runtime: codex, model: backend-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: backend-fallback, reasoning_effort: xhigh}]
+
+  # qa survives with its comment
+  qa:
+    preferred: {runtime: codex, model: qa-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: qa-fallback, reasoning_effort: xhigh}]
+`,
+			want: `profiles:
+  general:
+    preferred: {runtime: codex, model: general-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: general-fallback, reasoning_effort: xhigh}]
+
+  # qa survives with its comment
+  qa:
+    preferred: {runtime: codex, model: qa-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: qa-fallback, reasoning_effort: xhigh}]
+`,
+			removal: CategoryBackend,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+			mustMkdir(t, filepath.Dir(configPath))
+			mustWrite(t, configPath, tt.original)
+
+			if _, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+				Scope:    InitScopeUser,
+				HomeDir:  homeDir,
+				WorkDir:  workDir,
+				Removals: []WorkCategory{tt.removal},
+			}); err != nil {
+				t.Fatalf("remove %s profile: %v", tt.removal, err)
+			}
+			if got := mustRead(t, configPath); got != tt.want {
+				t.Fatalf("category removal changed unrelated trivia:\n%s", profilesConfigGoldenDiff([]byte(tt.want), []byte(got)))
+			}
+		})
+	}
+
+	t.Run("rejects removal that strands an alias before write", func(t *testing.T) {
+		original := `profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: &backend_model anchored-backend
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: backend-fallback
+        reasoning_effort: xhigh
+
+artifact_dir: *backend_model
+`
+		homeDir := t.TempDir()
+		workDir := t.TempDir()
+		mustMkdir(t, filepath.Join(workDir, ".git"))
+		configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+		mustMkdir(t, filepath.Dir(configPath))
+		mustWrite(t, configPath, original)
+
+		_, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+			Scope:    InitScopeUser,
+			HomeDir:  homeDir,
+			WorkDir:  workDir,
+			Removals: []WorkCategory{CategoryBackend},
+		})
+		if err == nil || !strings.Contains(err.Error(), "unknown anchor") {
+			t.Fatalf("remove anchored backend error = %v, want unknown anchor", err)
+		}
+		if got := mustRead(t, configPath); got != original {
+			t.Fatalf("failed alias removal mutated config\nwant: %q\n got: %q", original, got)
+		}
+	})
 }
 
 func TestProfilesConfigureMergePreservesOtherCategories(t *testing.T) {

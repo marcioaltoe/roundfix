@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0056-profiles-configure-merge-semantics
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -73,3 +73,54 @@ same class of noise the original defect hid behind, just smaller.
   formatting pass).
 - `_techspec.md` → Implementation Design: Interfaces; Risks.
 - `qa/qa-report-2026-08-01.md` → F-003.
+
+## Result
+
+### Implementation
+
+- The removal path now attributes source-only blank lines to the surviving
+  category or following top-level key that owns them. Unique internal comment
+  markers carry those exact bytes through `yaml.v3` encoding and are removed
+  before validation, while the removed category's node comments and trailing
+  blank lines remain absent.
+- `TestProfilesConfigureRemovalPreservesSpacing` covers the top-level
+  separator, a middle category's owned comment and trailing blank, a surviving
+  neighbour's blank line, and dangling-alias rejection without persistence.
+- The characterization corpus gained two new input/golden pairs for removal
+  before a top-level separator and removal beside category trivia. No existing
+  golden was changed.
+
+### Focused checks
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test ./internal/config -run 'TestProfilesConfigureRemovalPreservesSpacing/.+$' -count=1 -v`
+  — exit 0; all four removal spacing and alias-rejection subtests passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test ./internal/config -run 'TestProfilesConfigWriterCharacterization/.+$' -count=1 -v`
+  — exit 0; all 11 cases passed, including the nine prior cases and two new
+  removal cases.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test ./internal/config -run 'TestProfilesConfigureMergePreservesOtherCategories/(replaces_one_category_without_touching_the_other_four|replaces_the_whole_category_object|appends_an_added_category|adds_profiles_to_empty_and_sectionless_configs|rejects_a_replacement_that_strands_an_alias)$' -count=1 -v`
+  — exit 0; replacement, atomic-category replacement, addition,
+  empty/sectionless, and alias canaries passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test ./internal/config -run 'TestProfileConfigAtomic(WritesUserAndProjectProfiles|DryRunAndFailuresLeaveBytesUnchanged)$' -count=1 -v`
+  — exit 0; atomic persistence and no-mutation failure canaries passed.
+- `rtk git diff --check` — exit 0.
+- `rtk git status --porcelain` — exit 0 with the worktree's fsmonitor warning;
+  every changed path is under `internal/config/` or is this task file.
+
+### Acceptance evidence
+
+1. `keeps_separator_before_following_top-level_key` compares the complete
+   written file byte-for-byte and retains the blank line before `watch`.
+2. `keeps_surviving_category_trailing_blank_line` retains the surviving
+   category's blank line and the following category's comment when the middle
+   category is removed.
+3. `removes_only_middle_category_trivia` proves the removed category's leading
+   comment and trailing blank leave no orphaned fragment.
+4. Every removal spacing case compares the complete output with an exact
+   expected file, so any diff outside the removed category fails the test.
+5. The 11-case corpus check passed; Git status lists only the four newly added
+   removal corpus files and no modified prior golden.
+6. The changed-path status check lists only `internal/config/` and this task
+   file.
+
+The commands under `## Verification` were not run; Daemon Verification owns
+those checks and the terminal Task status.
