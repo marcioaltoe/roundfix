@@ -294,6 +294,19 @@ func buildPlanWithCatalog(
 			"rerun with --decision preservation.mode=greenfield or preservation",
 			initial.Snapshot.Warnings), nil
 	}
+	_, carrierArtifacts, err := resolveManagedArtifacts(
+		catalog,
+		profile,
+		decisions,
+		false,
+	)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
+	initial.Snapshot.Warnings = warningsForCarrierClassifications(
+		initial.Snapshot.Warnings,
+		classifyCarriers(initial.Root, initial.Snapshot.Carriers, catalog, carrierArtifacts),
+	)
 	remediationProfileID := profile.ID
 	if request.ProfileDraft != nil {
 		remediationProfileID = request.ProfileDraft.SourceProfileID
@@ -335,6 +348,8 @@ func buildPlanWithCatalog(
 	}
 	preservationRequest := request.Preservation
 	preservationRequest.semanticOwners = semanticOwners
+	preservationRequest.managedArtifacts = carrierArtifacts
+	preservationRequest.classifyCarriers = true
 
 	preservation, err := planRootPreservationWithCatalog(initial, preservationRequest, catalog)
 	if err != nil {
@@ -400,6 +415,10 @@ func buildPlanWithCatalog(
 	if err != nil {
 		return PlanOutcome{}, err
 	}
+	snapshot.Warnings = warningsForCarrierClassifications(
+		snapshot.Warnings,
+		classifyCarriers(initial.Root, snapshot.Carriers, catalog, carrierArtifacts),
+	)
 	if plannedDraft != nil {
 		if err := validateProfileDraftTarget(snapshot, *plannedDraft); err != nil {
 			return PlanOutcome{}, err

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -21,7 +22,23 @@ const (
 	ClassificationProposalMaxBytes      = 512 << 10
 
 	analysisSnapshotDigestDomain = AnalysisSnapshotSchemaVersion + "\x00"
+
+	nestedCarrierConflictMessage = "nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review"
 )
+
+type carrierClassificationKind string
+
+const (
+	carrierCurrentManaged      carrierClassificationKind = "current-managed-artifact"
+	carrierStaleManaged        carrierClassificationKind = "stale-managed-artifact"
+	carrierRepositoryExtension carrierClassificationKind = "recognized-repository-extension"
+	carrierUnmanagedNested     carrierClassificationKind = "unmanaged-nested-carrier"
+)
+
+type carrierClassification struct {
+	Path string
+	Kind carrierClassificationKind
+}
 
 // ClassificationSource identifies the exact Source Baseline presented for
 // semantic classification.
@@ -801,4 +818,268 @@ func cloneReadoptionDisposition(disposition ReadoptionDisposition) ReadoptionDis
 		cloned.Destination = &destination
 	}
 	return cloned
+}
+
+func classifyCarriers(
+	rootPath string,
+	carriers []InstructionCarrier,
+	catalog *Catalog,
+	currentArtifacts []plannedArtifact,
+) []carrierClassification {
+	knownPaths := managedArtifactPaths(catalog)
+	sourceByPath := make(map[string]map[string]ManifestArtifact)
+	sourceManifestPresent := false
+	currentByPath := make(map[string]map[string]plannedArtifact)
+	for _, artifact := range currentArtifacts {
+		if currentByPath[artifact.Path] == nil {
+			currentByPath[artifact.Path] = make(map[string]plannedArtifact)
+		}
+		currentByPath[artifact.Path][artifact.ID] = artifact
+	}
+
+	anchored, err := os.OpenRoot(rootPath)
+	if err != nil {
+		return nil
+	}
+	defer anchored.Close()
+	for _, carrier := range carriers {
+		if carrier.Path != manifestPath || carrier.Kind != CarrierRegular {
+			continue
+		}
+		content, ok := readCarrierClassificationBytes(anchored, carrier)
+		if !ok {
+			break
+		}
+		manifest, valid := parseManagedSetupManifest(content)
+		if !valid {
+			break
+		}
+		sourceByPath = manifestArtifactsByPath(manifest.ManagedArtifacts)
+		sourceManifestPresent = true
+		break
+	}
+
+	classifications := make([]carrierClassification, 0, len(carriers))
+	for _, carrier := range carriers {
+		classification := carrierClassification{Path: carrier.Path}
+		switch {
+		case isRecognizedRepositoryRuleCarrier(carrier.Path):
+			classification.Kind = carrierRepositoryExtension
+		case carrier.Kind != CarrierRegular:
+			// Safe narrowing requires trusted regular-file bytes. Aliases and
+			// opaque carriers retain their inventory warning.
+		case carrier.Path == manifestPath:
+			content, ok := readCarrierClassificationBytes(anchored, carrier)
+			if ok {
+				classification.Kind = classifySetupManifestCarrier(rootPath, content, catalog)
+			}
+		default:
+			content, ok := readCarrierClassificationBytes(anchored, carrier)
+			if ok {
+				classification.Kind = classifyMarkedCarrier(
+					carrier.Path,
+					content,
+					knownPaths,
+					sourceByPath[carrier.Path],
+					sourceManifestPresent,
+					currentByPath[carrier.Path],
+				)
+				if carrier.Scope != "nested" && classification.Kind == carrierUnmanagedNested {
+					classification.Kind = ""
+				}
+			}
+		}
+		classifications = append(classifications, classification)
+	}
+	return classifications
+}
+
+func readCarrierClassificationBytes(
+	root *os.Root,
+	carrier InstructionCarrier,
+) ([]byte, bool) {
+	content, err := readRootRegularFile(root, carrier.TargetPath)
+	if err != nil || planContentIdentity(content) != carrier.ContentIdentity {
+		return nil, false
+	}
+	return content, true
+}
+
+func classifySetupManifestCarrier(
+	rootPath string,
+	content []byte,
+	catalog *Catalog,
+) carrierClassificationKind {
+	manifest, valid := parseManagedSetupManifest(content)
+	if !valid {
+		return ""
+	}
+	profile, err := ResolveProfile(rootPath, manifest.Profile, catalog)
+	if err != nil || manifest.CatalogDigest != catalog.Digest() ||
+		manifest.ProfileDigest != profile.Digest {
+		return carrierStaleManaged
+	}
+	return carrierCurrentManaged
+}
+
+func parseManagedSetupManifest(content []byte) (SetupManifest, bool) {
+	var manifest SetupManifest
+	if rejectDuplicateJSONKeys(content) != nil || decodeStrictJSON(content, &manifest) != nil ||
+		manifest.SchemaVersion != ManifestSchema ||
+		manifest.Version != ManifestVersion ||
+		manifest.Generator.Skill != "setup-context-driven" ||
+		manifest.Generator.Version != ManifestVersion ||
+		manifest.Generator.Baseline != "baseline."+manifest.Profile+"-"+ManifestVersion ||
+		manifest.Profile == "" ||
+		!isRawSHA256(strings.TrimPrefix(manifest.ProfileDigest, "sha256:")) ||
+		!isRawSHA256(strings.TrimPrefix(manifest.CatalogDigest, "sha256:")) ||
+		manifest.Modules == nil || manifest.Decisions == nil ||
+		manifest.ManagedArtifacts == nil || manifest.LocalSkills == nil ||
+		manifest.Verification == nil {
+		return SetupManifest{}, false
+	}
+	if manifestArtifactsByPath(manifest.ManagedArtifacts) == nil {
+		return SetupManifest{}, false
+	}
+	return manifest, true
+}
+
+func manifestArtifactsByPath(
+	artifacts []ManifestArtifact,
+) map[string]map[string]ManifestArtifact {
+	byPath := make(map[string]map[string]ManifestArtifact)
+	seen := make(map[string]struct{}, len(artifacts))
+	for _, artifact := range artifacts {
+		if artifact.ID == "" || !repositoryPathIsSafe(artifact.Path) ||
+			(artifact.Kind != "root-block" && artifact.Kind != "guide") ||
+			artifact.Module == "" || artifact.Template == "" ||
+			artifact.Version == "" || !isRawSHA256(artifact.Digest) {
+			return nil
+		}
+		if _, duplicate := seen[artifact.ID]; duplicate {
+			return nil
+		}
+		seen[artifact.ID] = struct{}{}
+		if byPath[artifact.Path] == nil {
+			byPath[artifact.Path] = make(map[string]ManifestArtifact)
+		}
+		byPath[artifact.Path][artifact.ID] = artifact
+	}
+	return byPath
+}
+
+func classifyMarkedCarrier(
+	carrierPath string,
+	content []byte,
+	knownPaths map[string]string,
+	source map[string]ManifestArtifact,
+	sourceManifestPresent bool,
+	current map[string]plannedArtifact,
+) carrierClassificationKind {
+	entries := partitionRootSource(carrierPath, content)
+	seen := make(map[string]struct{})
+	managedCount := 0
+	stale := false
+	for _, entry := range entries {
+		if entry.Kind != "managed-block" {
+			if bytes.Contains(entry.SourceBytes, []byte("setup-context-driven:")) {
+				return ""
+			}
+			continue
+		}
+		managedID, _ := entry.StructuralProvenance["managedId"].(string)
+		sourceArtifact, sourceManaged := source[managedID]
+		if managedID == "" ||
+			(knownPaths[managedID] != carrierPath &&
+				(!sourceManaged || sourceArtifact.Path != carrierPath)) {
+			return ""
+		}
+		managedCount++
+		seen[managedID] = struct{}{}
+		if sourceManaged {
+			if !managedEntryMatchesManifest(entry, sourceArtifact) {
+				stale = true
+			}
+			continue
+		}
+		artifact, active := current[managedID]
+		if !active || !bytes.Equal(entry.SourceBytes, []byte(upsertManagedBlock("", artifact))) {
+			// A familiar marker is not ownership evidence by itself. Without a
+			// manifest ledger entry or exact current bytes, narrowing would risk
+			// suppressing a warning for repository-owned content.
+			return ""
+		}
+	}
+	if managedCount == 0 {
+		if bytes.Contains(content, []byte("setup-context-driven:")) {
+			return ""
+		}
+		return carrierUnmanagedNested
+	}
+	expected := current
+	if sourceManifestPresent {
+		expected = make(map[string]plannedArtifact, len(source))
+		for managedID := range source {
+			expected[managedID] = plannedArtifact{}
+		}
+	}
+	for managedID := range expected {
+		if _, exists := seen[managedID]; !exists {
+			stale = true
+		}
+	}
+	if stale {
+		return carrierStaleManaged
+	}
+	return carrierCurrentManaged
+}
+
+func managedEntryMatchesManifest(
+	entry ReadoptionSourceEntry,
+	artifact ManifestArtifact,
+) bool {
+	markerVersion := fmt.Sprint(entry.StructuralProvenance["markerVersion"])
+	if markerVersion != artifact.Version {
+		return false
+	}
+	content := entry.SourceBytes
+	openEnd := bytes.Index(content, []byte("-->"))
+	closeStart := bytes.LastIndex(content, []byte("<!--"))
+	if openEnd < 0 || closeStart < openEnd+3 {
+		return false
+	}
+	body := strings.TrimSpace(string(content[openEnd+3:closeStart])) + "\n"
+	sum := sha256.Sum256([]byte(body))
+	return hex.EncodeToString(sum[:]) == artifact.Digest
+}
+
+func warningsForCarrierClassifications(
+	warnings []Finding,
+	classifications []carrierClassification,
+) []Finding {
+	byPath := make(map[string]carrierClassificationKind, len(classifications))
+	for _, classification := range classifications {
+		byPath[classification.Path] = classification.Kind
+	}
+	filtered := make([]Finding, 0, len(warnings))
+	for _, warning := range warnings {
+		if warning.Code == "baseline.inventory.nested-carrier-conflict" {
+			switch byPath[warning.Path] {
+			case carrierCurrentManaged, carrierStaleManaged, carrierRepositoryExtension:
+				continue
+			}
+		}
+		filtered = append(filtered, warning)
+	}
+	return filtered
+}
+
+func staleManagedCarrierPaths(classifications []carrierClassification) map[string]struct{} {
+	paths := make(map[string]struct{})
+	for _, classification := range classifications {
+		if classification.Kind == carrierStaleManaged && classification.Path != manifestPath {
+			paths[classification.Path] = struct{}{}
+		}
+	}
+	return paths
 }

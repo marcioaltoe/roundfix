@@ -49,7 +49,9 @@ type RootPreservationRequest struct {
 	Decisions      *DecisionDocument
 	SourceBaseline *ReadoptionSourceBaseline
 
-	semanticOwners SemanticOwnerRegistry
+	semanticOwners   SemanticOwnerRegistry
+	managedArtifacts []plannedArtifact
+	classifyCarriers bool
 }
 
 // RootBackup is one immutable raw-byte backup selected before mutation.
@@ -541,10 +543,21 @@ func planRootPreservationWithCatalog(
 			request.Mode,
 		)
 	}
+	warnings := append([]Finding(nil), inspection.Snapshot.Warnings...)
+	var carrierClassifications []carrierClassification
+	if request.classifyCarriers && catalog != nil {
+		carrierClassifications = classifyCarriers(
+			inspection.Root,
+			inspection.Snapshot.Carriers,
+			catalog,
+			request.managedArtifacts,
+		)
+		warnings = warningsForCarrierClassifications(warnings, carrierClassifications)
+	}
 	plan := RootPreservationPlan{
 		Mode:     request.Mode,
 		State:    PreservationStateReady,
-		Warnings: append([]Finding(nil), inspection.Snapshot.Warnings...),
+		Warnings: warnings,
 		Findings: append([]Finding(nil), inspection.Snapshot.Blocking...),
 	}
 	rootSources, findings, err := loadRootPreservationSources(inspection)
@@ -582,7 +595,16 @@ func planRootPreservationWithCatalog(
 		}
 		plan.Findings = append(plan.Findings, findings...)
 	}
+	staleManagedSources, findings, err := loadStaleManagedCarrierSources(
+		inspection,
+		staleManagedCarrierPaths(carrierClassifications),
+	)
+	if err != nil {
+		return RootPreservationPlan{}, err
+	}
+	plan.Findings = append(plan.Findings, findings...)
 	sources := append(migrationRootSources, repositorySources...)
+	sources = append(sources, staleManagedSources...)
 	plan.SourceBaseline = buildReadoptionSourceBaseline(sources)
 	plan.Findings = sortedFindings(plan.Findings)
 
@@ -591,7 +613,7 @@ func planRootPreservationWithCatalog(
 		plan.NextAction = "repair every blocking root carrier or backup collision and rerun Baseline planning"
 		return plan, nil
 	}
-	if request.Mode == PreservationModeGreenfield {
+	if request.Mode == PreservationModeGreenfield && len(staleManagedSources) == 0 {
 		return plan, nil
 	}
 	if len(plan.SourceBaseline.Entries) == 0 {
@@ -738,6 +760,48 @@ func loadRecognizedRepositoryRuleSources(
 			content:         content,
 		})
 	}
+	return sources, findings, nil
+}
+
+func loadStaleManagedCarrierSources(
+	inspection RepositoryInspection,
+	stalePaths map[string]struct{},
+) ([]rootPreservationSource, []Finding, error) {
+	if len(stalePaths) == 0 {
+		return nil, nil, nil
+	}
+	anchored, err := os.OpenRoot(inspection.Root)
+	if err != nil {
+		return nil, nil, fmt.Errorf("open repository root for stale managed carriers: %w", err)
+	}
+	defer anchored.Close()
+
+	var sources []rootPreservationSource
+	var findings []Finding
+	for _, carrier := range inspection.Snapshot.Carriers {
+		if _, stale := stalePaths[carrier.Path]; !stale {
+			continue
+		}
+		content, ok := readCarrierClassificationBytes(anchored, carrier)
+		if !ok {
+			findings = append(findings, Finding{
+				Code:    "baseline.preservation.source.stale",
+				Path:    carrier.Path,
+				Message: "stale managed carrier bytes changed after repository inspection",
+			})
+			continue
+		}
+		sources = append(sources, rootPreservationSource{
+			carrierPath:           carrier.Path,
+			sourcePath:            carrier.Path,
+			contentIdentity:       carrier.ContentIdentity,
+			content:               content,
+			classificationEntries: partitionRootSource(carrier.Path, content),
+		})
+	}
+	sort.Slice(sources, func(i, j int) bool {
+		return sources[i].sourcePath < sources[j].sourcePath
+	})
 	return sources, findings, nil
 }
 

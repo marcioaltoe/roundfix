@@ -610,63 +610,7 @@
           "contentIdentity": "sha256:5514dfa61b1db35ef6627c88a8a4199406d966707c56c77a7f7f05c4407e5dd9"
         }
       ],
-      "warnings": [
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/agent-instructions.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/autonomous-work.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/cli.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/docs-layout.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/domain.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/go.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/issue-tracker.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/setup-context.json",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/skill-dispatch.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/spec-routing.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/tui.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        }
-      ],
+      "warnings": [],
       "setupManifest": {
         "schemaVersion": "setup-context-driven/manifest/0.0.1",
         "version": "0.0.1",
@@ -1154,71 +1098,15 @@
           ]
         }
       ],
-      "planDigest": "sha256:73e5c780e6137af583fe6c043d71fab792bca9a5d891e0663b8e742ba19c1ca5"
+      "planDigest": "sha256:9cc52bf62a462f3abe0191ecb64ce26b2d72bdff57a80b803681fe979ff4c54b"
     },
     "Result": {
       "schemaVersion": "roundfix/baseline-result/v1",
       "operation": "plan",
       "state": "ready",
-      "planDigest": "sha256:73e5c780e6137af583fe6c043d71fab792bca9a5d891e0663b8e742ba19c1ca5",
+      "planDigest": "sha256:9cc52bf62a462f3abe0191ecb64ce26b2d72bdff57a80b803681fe979ff4c54b",
       "verifiedPostimages": [],
-      "warnings": [
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/agent-instructions.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/autonomous-work.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/cli.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/docs-layout.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/domain.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/go.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/issue-tracker.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/setup-context.json",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/skill-dispatch.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/spec-routing.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        },
-        {
-          "code": "baseline.inventory.nested-carrier-conflict",
-          "path": "docs/agents/tui.md",
-          "message": "nested carrier remains unchanged and requires conflict review"
-        }
-      ],
+      "warnings": [],
       "recommendations": [
         "make verify"
       ]

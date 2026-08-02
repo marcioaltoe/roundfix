@@ -412,7 +412,7 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
 		builder.warnings = append(builder.warnings, Finding{
 			Code:    "baseline.inventory.nested-carrier-conflict",
 			Path:    normalized,
-			Message: "nested carrier remains unchanged and requires conflict review",
+			Message: nestedCarrierConflictMessage,
 		})
 	}
 	if entry.IsDir() {

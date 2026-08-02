@@ -1,6 +1,6 @@
-// Suite: Baseline root-instruction classification contracts
-// Invariant: only a complete digest-bound classification of every sealed source entry can become deterministic planning input.
-// Boundary IN: canonical analysis snapshots, strict proposal parsing, manual fallback, and Decision Document normalization.
+// Suite: Baseline classification contracts
+// Invariant: semantic dispositions stay digest-bound, and carrier warnings narrow only from exact managed or repository-extension evidence.
+// Boundary IN: canonical analysis snapshots, strict proposal parsing, carrier bytes, Setup Manifest ownership, and retention input.
 // Boundary OUT: ACPX process lifecycle, human interaction, and repository mutation.
 
 package baseline
@@ -362,6 +362,215 @@ func TestSealedClassificationEquivalentProposalsProduceSamePlanDigest(t *testing
 		t.Fatalf("equivalent proposal sources changed Plan Digest: %s != %s",
 			first.PlanDigest, second.PlanDigest)
 	}
+}
+
+func TestCarrierClassification(t *testing.T) {
+	t.Run("four kinds warn only when human review is needed", func(t *testing.T) {
+		repo := newInspectionRepository(t)
+		catalog, err := LoadEmbeddedCatalog()
+		if err != nil {
+			t.Fatal(err)
+		}
+		profile, err := ResolveProfile(repo, "go-cli-tui", catalog)
+		if err != nil {
+			t.Fatal(err)
+		}
+		decisions := planTestDecisions()
+		modules, artifacts, err := resolveManagedArtifacts(catalog, profile, decisions, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		guides := make([]plannedArtifact, 0, 2)
+		for _, artifact := range artifacts {
+			if artifact.Kind == "guide" {
+				guides = append(guides, artifact)
+				if len(guides) == 2 {
+					break
+				}
+			}
+		}
+		if len(guides) != 2 {
+			t.Fatalf("active guide artifacts = %d, want at least two", len(guides))
+		}
+
+		current := "preserved repository bytes\n\n" + upsertManagedBlock("", guides[0])
+		staleArtifact := guides[1]
+		staleArtifact.Body += "\nstale managed clause"
+		manifestBytes, err := marshalSetupManifestBytes(buildSetupManifest(
+			catalog,
+			profile,
+			decisions,
+			modules,
+			artifacts,
+			nil,
+		))
+		if err != nil {
+			t.Fatal(err)
+		}
+		writeInspectionFile(t, repo, manifestPath, string(append(manifestBytes, '\n')))
+		writeInspectionFile(t, repo, guides[0].Path, current)
+		writeInspectionFile(t, repo, guides[1].Path, upsertManagedBlock("", staleArtifact))
+		writeInspectionFile(t, repo, specificRepositoryPath, "Keep this recognized repository extension.\n")
+		const unmanagedPath = "services/payments/AGENTS.md"
+		writeInspectionFile(t, repo, unmanagedPath, "Keep this unmanaged nested policy.\n")
+		commitInspectionRepository(t, repo, "seed classified carriers")
+
+		inspection, err := InspectRepository(context.Background(), repo, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		classifications := classifyCarriers(repo, inspection.Snapshot.Carriers, catalog, artifacts)
+		got := make(map[string]carrierClassificationKind, len(classifications))
+		for _, classification := range classifications {
+			got[classification.Path] = classification.Kind
+		}
+		want := map[string]carrierClassificationKind{
+			guides[0].Path:         carrierCurrentManaged,
+			guides[1].Path:         carrierStaleManaged,
+			specificRepositoryPath: carrierRepositoryExtension,
+			unmanagedPath:          carrierUnmanagedNested,
+		}
+		for carrierPath, wantKind := range want {
+			if got[carrierPath] != wantKind {
+				t.Errorf("carrier %q classification = %q, want %q", carrierPath, got[carrierPath], wantKind)
+			}
+		}
+
+		nonCarrier := Finding{Code: "baseline.inventory.other", Path: "other", Message: "unchanged"}
+		warnings := append(append([]Finding(nil), inspection.Snapshot.Warnings...), nonCarrier)
+		filtered := warningsForCarrierClassifications(warnings, classifications)
+		if !hasRepositoryFinding(filtered, "baseline.inventory.nested-carrier-conflict", unmanagedPath) {
+			t.Fatalf("unmanaged nested carrier warning missing: %+v", filtered)
+		}
+		for _, warning := range filtered {
+			if warning.Code == "baseline.inventory.nested-carrier-conflict" {
+				if warning.Path != unmanagedPath {
+					t.Errorf("managed or recognized carrier still warns: %+v", warning)
+				}
+				if !strings.Contains(warning.Message, "inside setup-context-driven begin/end markers") ||
+					!strings.Contains(warning.Message, "outside those markers are preserved") {
+					t.Errorf("carrier warning does not name managed/preserved boundary: %q", warning.Message)
+				}
+			}
+		}
+		if filtered[len(filtered)-1] != nonCarrier {
+			t.Fatalf("non-carrier diagnostic changed: %+v", filtered)
+		}
+
+		semanticOwners, err := ResolveSemanticOwnerRegistry(catalog, profile, planTestDecisions())
+		if err != nil {
+			t.Fatal(err)
+		}
+		preservation, err := planRootPreservationWithCatalog(
+			inspection,
+			RootPreservationRequest{
+				Mode:             PreservationModeGreenfield,
+				semanticOwners:   semanticOwners,
+				managedArtifacts: artifacts,
+				classifyCarriers: true,
+			},
+			catalog,
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if preservation.State != PreservationStateActionRequired {
+			t.Fatalf("stale managed carrier preservation state = %q, want action_required", preservation.State)
+		}
+		staleIsRetentionInput := false
+		for _, entry := range preservation.SourceBaseline.Entries {
+			if entry.Path == guides[1].Path && entry.Kind == "managed-block" {
+				staleIsRetentionInput = true
+			}
+			if entry.Path == guides[0].Path {
+				t.Fatalf("current managed carrier became retention input: %+v", entry)
+			}
+		}
+		if !staleIsRetentionInput {
+			t.Fatalf("stale managed carrier is absent from retention input: %+v", preservation.SourceBaseline.Entries)
+		}
+	})
+
+	t.Run("verified apply replans without managed carrier warnings", func(t *testing.T) {
+		repo := newBaselinePlanCharacterizationRepository(t, true, true, true)
+		request := baselinePlanCharacterizationRequest(repo)
+		initial, err := BuildPlan(context.Background(), request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if initial.Plan == nil {
+			t.Fatalf("initial adoption returned result: %+v", initial.Result)
+		}
+		if _, err := ApplyPlan(
+			context.Background(),
+			repo,
+			*initial.Plan,
+			initial.Plan.PlanDigest,
+		); err != nil {
+			t.Fatal(err)
+		}
+		fresh, err := BuildPlan(context.Background(), request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if fresh.Plan == nil {
+			t.Fatalf("verified re-plan returned result: %+v", fresh.Result)
+		}
+		if len(fresh.Plan.Warnings) != 0 || len(fresh.Result.Warnings) != 0 {
+			t.Fatalf("verified re-plan warnings = plan:%+v result:%+v", fresh.Plan.Warnings, fresh.Result.Warnings)
+		}
+		if len(fresh.Plan.FileChanges) != 0 {
+			t.Fatalf("verified re-plan file changes = %+v", fresh.Plan.FileChanges)
+		}
+	})
+}
+
+func TestUnclassifiableCarrierStillWarns(t *testing.T) {
+	t.Run("unknown managed marker retains boundary warning", func(t *testing.T) {
+		repo := newInspectionRepository(t)
+		const carrierPath = "packages/api/AGENTS.md"
+		writeInspectionFile(t, repo, carrierPath, `<!-- setup-context-driven:begin id=unknown.guide version=1 -->
+
+unknown managed-looking bytes
+
+<!-- setup-context-driven:end id=unknown.guide -->
+`)
+		commitInspectionRepository(t, repo, "seed unclassifiable carrier")
+
+		catalog, err := LoadEmbeddedCatalog()
+		if err != nil {
+			t.Fatal(err)
+		}
+		profile, err := ResolveProfile(repo, "go-cli-tui", catalog)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, artifacts, err := resolveManagedArtifacts(catalog, profile, planTestDecisions(), false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		inspection, err := InspectRepository(context.Background(), repo, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		classifications := classifyCarriers(repo, inspection.Snapshot.Carriers, catalog, artifacts)
+		for _, classification := range classifications {
+			if classification.Path == carrierPath && classification.Kind != "" {
+				t.Fatalf("unclassifiable carrier classification = %q", classification.Kind)
+			}
+		}
+		filtered := warningsForCarrierClassifications(inspection.Snapshot.Warnings, classifications)
+		if !hasRepositoryFinding(filtered, "baseline.inventory.nested-carrier-conflict", carrierPath) {
+			t.Fatalf("unclassifiable carrier warning disappeared: %+v", filtered)
+		}
+		for _, warning := range filtered {
+			if warning.Path == carrierPath &&
+				(!strings.Contains(warning.Message, "inside setup-context-driven begin/end markers") ||
+					!strings.Contains(warning.Message, "outside those markers are preserved")) {
+				t.Fatalf("unclassifiable warning does not name byte boundary: %q", warning.Message)
+			}
+		}
+	})
 }
 
 func classificationTestSource() ReadoptionSourceBaseline {
