@@ -29,7 +29,8 @@ slowest test — each of which already builds its own repository — took it fro
 `t.TempDir()`, and sixty-nine subtest blocks are structurally similar
 candidates.
 
-A third cost is how often the gate closes the graph. The Daemon withholds QA
+A third cost is how often the gate closes the graph, and Spec 0072 owns the
+mechanism. In summary: The Daemon withholds QA
 correctly — Spec 0057's first Run ended with one Task failed and ran no gate at
 all — so nothing runs early. What is missing is the other direction: the gate
 is a flag on the command rather than part of the graph, so a graph that grows
@@ -89,17 +90,7 @@ many times the gate is requested.
    Tasks do not reintroduce the same per-Task tax.
 5. A measured suite-time budget is asserted, so a change that makes
    verification materially slower fails rather than accumulating.
-6. The QA gate is the Task Graph's terminal node, not a flag on the command
-   that runs it. It depends on every leaf Task, so it cannot begin before the
-   last Task settles and cannot be requested independently of the graph it
-   closes.
-7. A corrective Task appended after the gate has run is structurally visible as
-   what it is — a node inserted before a terminal that already reported — and
-   invalidates that gate's result rather than adding a second one beside it.
-8. Gate runs per Spec are measured and reported, so a Spec that needed four
-   closings is visible as a decomposition problem rather than absorbed as
-   normal cost.
-9. Coverage equivalence is proven, not assumed: the set of test functions
+6. Coverage equivalence is proven, not assumed: the set of test functions
    executed before and after is identical.
 
 ## Non-Goals / Out of Scope
@@ -108,6 +99,7 @@ many times the gate is requested.
 - Reducing what is covered in exchange for speed.
 - Changing the QA gate's discovery order or detector placement, owned by
   Spec 0063.
+- Where the QA gate lives in the Task Graph, owned by Spec 0072.
 - Rewriting the test suite's structure beyond what parallel execution requires.
 
 ## Success Metrics
@@ -120,8 +112,6 @@ many times the gate is requested.
 - No Task Verification in any active Spec carries a whole-package suite command.
 - A deliberately introduced slow test trips the suite-time budget.
 - Every test left sequential carries a stated reason.
-- Gate cycles per Spec are recorded, and a Spec exceeding the corrective-Task
-  cap is reported rather than silently continuing.
 
 ## Decisions
 
@@ -131,14 +121,8 @@ many times the gate is requested.
   not.
 - The Run-level gate is where "nothing else regressed" belongs. Asking every
   Task to prove it costs the same answer fourteen times.
-- The gate belongs to the graph, not to the command. Modelling it as the
-  terminal node is what makes "the graph grew after the gate ran" impossible to
-  do quietly: today the gate is a flag, so a graph that grows afterwards leaves
-  no trace, and three closings on Spec 0057 read as three normal cycles rather
-  than as one decomposition that was wrong twice.
-- The Daemon's current withholding is correct and stays: no gate begins while
-  any Task is unsettled. This changes where the gate lives, not when it is
-  allowed to run.
+- How often the gate closes a Spec is a graph-shape question, owned by Spec
+  0072. This Spec owns what each closing costs.
 - This Spec evolves verification cost and never regresses coverage: any change
   that reduces what is exercised is a defect, not a saving.
 
