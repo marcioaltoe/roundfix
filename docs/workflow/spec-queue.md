@@ -9,18 +9,25 @@ archives.
 
 | # | Spec | Why here |
 | --- | --- | --- |
-| 1 | `0057-baseline-capability-evidence-and-retention` | Managed clauses disappear with an empty retention ledger in live consumer repositories. Unblocked by 0062. |
-| 2 | `0059-run-storage-compaction-and-global-sanitation` | Operational: the Run Database grows with every cycle and its pages are never reclaimed. |
-| 3 | `0064-spec-artifact-consistency-gate` | Highest leverage per unit of work. Half of this repository's QA findings were artifact contradictions catchable in seconds; every Spec after this one costs less. |
-| 4 | `0063-qa-cycle-economics` | Largest throughput win. A cold gate costs 148s against 5s warm, and one stale assertion hides every behavioral finding for a whole cycle. |
-| 5 | `0065-loop-order-and-verification-honesty` | The loop states two contradictory orders, and a Task can settle `completed` having done nothing. |
-| 6 | `0070-declared-unreachable-acceptance` | Follows 0065. A Spec whose acceptance no hermetic Verification can reach cannot archive without `qa_override`, which spends the mechanism reserved for failed evidence on a Spec that has none. |
-| 7 | `0066-run-teardown-reclaims-what-it-created` | Failed cycles leave Run Branches that block review Runs, and adapter children that outlive their Run by days. |
-| 8 | `0068-spec-close-audit` | Pairs with 0066. A Spec cycle leaves branches and worktrees nobody audits, and an unmerged Pull Request lets delivered work stay invisible on the default branch. |
-| 9 | `0069-review-run-targets-its-pull-request` | Pairs with 0068. A Review Run resolves its branch from the checkout instead of from the Pull Request it names, and the mismatch check runs after the Review Source query rather than at Preflight. |
-| 10 | `0067-derived-artifact-regeneration-boundary` | Smallest of the group. Recurs on every owned-skill edit, but has a known manual workaround. |
+| 1 | `0071-verification-cost` | Measured first. A third of Spec 0057's five hours was one whole-package command repeated in every Task, and the suite runs almost sequentially on twelve cores. Every Spec after this one is cheaper. |
+| 2 | `0057-baseline-capability-evidence-and-retention` | Managed clauses disappear with an empty retention ledger in live consumer repositories. Unblocked by 0062. |
+| 3 | `0059-run-storage-compaction-and-global-sanitation` | Operational: the Run Database grows with every cycle and its pages are never reclaimed. |
+| 4 | `0064-spec-artifact-consistency-gate` | Highest leverage per unit of work. Half of this repository's QA findings were artifact contradictions catchable in seconds; every Spec after this one costs less. |
+| 5 | `0063-qa-cycle-economics` | Largest throughput win. A cold gate costs 148s against 5s warm, and one stale assertion hides every behavioral finding for a whole cycle. |
+| 6 | `0065-loop-order-and-verification-honesty` | The loop states two contradictory orders, and a Task can settle `completed` having done nothing. |
+| 7 | `0070-declared-unreachable-acceptance` | Follows 0065. A Spec whose acceptance no hermetic Verification can reach cannot archive without `qa_override`, which spends the mechanism reserved for failed evidence on a Spec that has none. |
+| 8 | `0066-run-teardown-reclaims-what-it-created` | Failed cycles leave Run Branches that block review Runs, and adapter children that outlive their Run by days. |
+| 9 | `0068-spec-close-audit` | Pairs with 0066. A Spec cycle leaves branches and worktrees nobody audits, and an unmerged Pull Request lets delivered work stay invisible on the default branch. |
+| 10 | `0069-review-run-targets-its-pull-request` | Pairs with 0068. A Review Run resolves its branch from the checkout instead of from the Pull Request it names, and the mismatch check runs after the Review Source query rather than at Preflight. |
+| 11 | `0067-derived-artifact-regeneration-boundary` | Smallest of the group. Recurs on every owned-skill edit, but has a known manual workaround. |
 
 ## Why this order
+
+0071 is first because it was measured, not estimated: `go test ./internal/baseline
+-count=1` costs 109s warm, every one of Spec 0057's fourteen Tasks carried one
+such command, and adding `t.Parallel()` to one test's subtests took it from 29s
+to 17s. Until that changes, every later Spec pays the same tax multiplied by its
+Task count.
 
 0056 archived on 2026-08-02 and left this list. 0057 and 0059 were approved and
 ordered before this group existed, and both carry live defects in shipped
