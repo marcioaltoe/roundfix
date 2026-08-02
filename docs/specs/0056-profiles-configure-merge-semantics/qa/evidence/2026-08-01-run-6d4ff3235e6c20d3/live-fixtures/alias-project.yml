@@ -1,0 +1,12 @@
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: &backend_model backend-primary
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: backend-fallback
+        reasoning_effort: xhigh
+defaults:
+  artifact_dir: *backend_model

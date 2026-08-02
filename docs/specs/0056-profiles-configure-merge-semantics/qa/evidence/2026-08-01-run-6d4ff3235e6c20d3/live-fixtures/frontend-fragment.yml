@@ -1,0 +1,4 @@
+profiles:
+  frontend:
+    preferred: {runtime: claude, model: frontend-replacement, reasoning_effort: xhigh}
+    fallbacks: [{runtime: codex, model: frontend-fallback, reasoning_effort: high}]
