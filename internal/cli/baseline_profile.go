@@ -220,11 +220,15 @@ func printBaselineCapabilitiesCheckFailure(
 
 func baselineCapabilitiesCheckJSONRequested(args []string) bool {
 	for index, arg := range args {
-		if arg == "--format" && index+1 < len(args) && strings.TrimSpace(args[index+1]) == "json" {
+		if (arg == "--format" || arg == "-format") &&
+			index+1 < len(args) && strings.TrimSpace(args[index+1]) == "json" {
 			return true
 		}
-		if strings.HasPrefix(arg, "--format=") && strings.TrimSpace(strings.TrimPrefix(arg, "--format=")) == "json" {
-			return true
+		for _, prefix := range []string{"--format=", "-format="} {
+			if value, found := strings.CutPrefix(arg, prefix); found &&
+				strings.TrimSpace(value) == "json" {
+				return true
+			}
 		}
 	}
 	return false

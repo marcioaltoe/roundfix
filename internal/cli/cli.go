@@ -4803,6 +4803,7 @@ Profile error instead of an empty result.
 
 Exit codes:
   0  capability evidence evaluated with no blocking divergence
+  1  output failure
   2  invalid arguments, repository failure, or no resolvable Baseline Profile
   3  capability evidence evaluated with a blocking divergence
 

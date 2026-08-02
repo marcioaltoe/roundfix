@@ -902,7 +902,17 @@ func TestDivergencePromptRemediateOutcome(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve divergence fixture alignment: %v", err)
 	}
-	if alignment.Ready || len(alignment.Divergences) < 2 {
+	blocking := 0
+	advisory := 0
+	for _, divergence := range alignment.Divergences {
+		if divergence.Group == baseline.ProfileDivergenceBlocking {
+			blocking++
+		}
+		if divergence.Group == baseline.ProfileDivergenceAdvisory {
+			advisory++
+		}
+	}
+	if alignment.Ready || blocking == 0 || advisory == 0 {
 		t.Fatalf("divergence fixture alignment = %+v, want mixed unsatisfied divergences", alignment)
 	}
 
@@ -931,7 +941,7 @@ func TestDivergencePromptRemediateOutcome(t *testing.T) {
 		t.Fatalf("remediation action result = %+v", actionErr.result)
 	}
 	for _, divergence := range alignment.Divergences {
-		want := "- " + divergence.ID + ": " + divergence.NextAction
+		want := "- [" + string(divergence.Group) + "] " + divergence.ID + ": " + divergence.NextAction
 		if !strings.Contains(review.String(), want) {
 			t.Errorf("remediation review missing %q:\n%s", want, review.String())
 		}
@@ -1119,30 +1129,7 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 			catalog,
 			baselineHumanState{},
 			source,
-			[]baseline.DecisionValue{
-				{ID: "language.generated", Value: "English"},
-				{ID: "verification.gate", Value: "make verify"},
-				{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
-				{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
-				{
-					ID: "auth.provider",
-					Value: map[string]any{
-						"kind": "better-auth",
-						"routeException": map[string]any{
-							"scope":   "/api/auth/*",
-							"methods": []any{"GET", "POST"},
-							"owner":   "Better Auth",
-							"reason":  "Provider protocol routes require GET and POST semantics.",
-						},
-					},
-				},
-				{ID: "spec.scaffold", Value: true},
-				{ID: "domain.layout", Value: "single-context"},
-				{ID: "triage.external", Value: false},
-				{ID: "autonomous.enabled", Value: false},
-				{ID: "secondbrain.enabled", Value: false},
-				{ID: "repository.extension.enabled", Value: false},
-			},
+			standardTypeScriptDivergenceDecisions(),
 		)
 		var actionErr *baselineHumanActionError
 		if !errors.As(declineErr, &actionErr) ||

@@ -106,6 +106,36 @@ func TestCapabilityRecheck(t *testing.T) {
 			t.Fatalf("missing-Profile re-check changed repository bytes: before=%s after=%s", before, after)
 		}
 	})
+
+	t.Run("preserves JSON failures for every format flag spelling", func(t *testing.T) {
+		for _, formatArgs := range [][]string{
+			{"--format", "json"},
+			{"--format=json"},
+			{"-format", "json"},
+			{"-format=json"},
+		} {
+			t.Run(strings.Join(formatArgs, "_"), func(t *testing.T) {
+				args := []string{"baseline", "capabilities", "check"}
+				args = append(args, formatArgs...)
+				args = append(args, "--unknown")
+				var stdout bytes.Buffer
+				var stderr bytes.Buffer
+				code := RunContext(context.Background(), args, &stdout, &stderr)
+				if code != exitPreflight {
+					t.Fatalf("invalid capability re-check exit = %d, want %d stdout=%q stderr=%q",
+						code, exitPreflight, stdout.String(), stderr.String())
+				}
+				var result baseline.CapabilityRecheckResult
+				if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+					t.Fatalf("decode structured capability failure: %v\nstdout=%q\nstderr=%q",
+						err, stdout.String(), stderr.String())
+				}
+				if result.State != "failed" || result.Category != "preflight" {
+					t.Fatalf("structured capability failure = %#v", result)
+				}
+			})
+		}
+	})
 }
 
 func TestCapabilityTextRendersProbe(t *testing.T) {
@@ -320,6 +350,13 @@ func TestBaselineProfileHelpContract(t *testing.T) {
 				"roundfix baseline profile init --id <id> [--from <built-in-id>]",
 				"roundfix baseline profile show <id> [--format <text|json>]",
 				"roundfix baseline profile validate [<id>|<path>] [--format <text|json>]",
+			},
+		},
+		{
+			args: []string{"baseline", "capabilities", "check", "--help"},
+			want: []string{
+				"Exit codes:",
+				"1  output failure",
 			},
 		},
 		{

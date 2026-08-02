@@ -1118,12 +1118,7 @@ func resolvePlanRetention(
 			if reflectJSONEqual(existing.ManagedArtifacts, targetManifest.ManagedArtifacts) {
 				return retention, nil, "", nil
 			}
-			tuple := BaselineSourceTuple{
-				Baseline:      declaredBaseline,
-				ProfileDigest: existing.ProfileDigest,
-				CatalogDigest: existing.CatalogDigest,
-			}
-			source, found := catalog.retentionSources[tuple]
+			source, found := catalog.retentionSources[declaredBaseline]
 			if !found {
 				// Artifact drift proves bytes changed, but without an exact source
 				// inventory it does not prove that a managed clause disappeared.

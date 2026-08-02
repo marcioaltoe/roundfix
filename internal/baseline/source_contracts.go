@@ -61,18 +61,12 @@ type SourceBaseline struct {
 	Accounting []SourceAccountingEntry `json:"accounting"`
 }
 
-// BaselineSourceTuple binds retained clause evidence to the exact Baseline
-// generation that produced it.
-type BaselineSourceTuple struct {
-	Baseline      string `json:"baseline"`
-	ProfileDigest string `json:"profileDigest"`
-	CatalogDigest string `json:"catalogDigest"`
-}
-
 // ClauseDisposition is the exhaustive semantic outcome for one previous
 // managed Normative Clause.
 type ClauseDisposition string
 
+// ClauseDisposition values exhaustively classify each previous managed
+// Normative Clause.
 const (
 	ClauseRetained            ClauseDisposition = "retained"
 	ClauseMoved               ClauseDisposition = "moved"
@@ -104,23 +98,11 @@ func allClauseDispositions() []ClauseDisposition {
 
 func (c *Catalog) captureCurrentRetentionSources(sources []SourceBaseline) error {
 	for _, source := range sources {
-		profile, err := ResolveProfile("", source.Identity.Profile, c)
-		if err != nil {
-			return fmt.Errorf(
-				"resolve Source Baseline %q Profile: %w",
-				source.Identity.ID,
-				err,
-			)
+		baselineID := source.Identity.ID
+		if _, duplicate := c.retentionSources[baselineID]; duplicate {
+			return fmt.Errorf("duplicate Baseline retention source identity %q", baselineID)
 		}
-		tuple := BaselineSourceTuple{
-			Baseline:      source.Identity.ID,
-			ProfileDigest: profile.Digest,
-			CatalogDigest: c.Digest(),
-		}
-		if _, duplicate := c.retentionSources[tuple]; duplicate {
-			return fmt.Errorf("duplicate Baseline retention source tuple %+v", tuple)
-		}
-		c.retentionSources[tuple] = source
+		c.retentionSources[baselineID] = source
 	}
 	return nil
 }

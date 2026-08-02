@@ -42,7 +42,7 @@ func (l *catalogLoader) load() *Catalog {
 		transitions:      l.readCollection("retention", transitionSchemas, "transition", false),
 		orderedModules:   make(map[string][]string),
 		semanticOwners:   make(map[string]SemanticOwner),
-		retentionSources: make(map[BaselineSourceTuple]SourceBaseline),
+		retentionSources: make(map[string]SourceBaseline),
 	}
 	catalog.decisions = l.readIndexed(
 		"decisions.json",

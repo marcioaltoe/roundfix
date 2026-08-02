@@ -999,7 +999,18 @@ func renderBaselineProfileRemediation(
 		if action == "" {
 			action = "review the reported evidence and remediate this divergence"
 		}
-		fmt.Fprintf(output, "- %s: %s\n", divergence.ID, action)
+		group := divergence.Group
+		if group == "" {
+			switch divergence.Requirement {
+			case baseline.CapabilityRequired:
+				group = baseline.ProfileDivergenceBlocking
+			case baseline.CapabilityRecommended:
+				group = baseline.ProfileDivergenceAdvisory
+			default:
+				group = baseline.ProfileDivergenceInformational
+			}
+		}
+		fmt.Fprintf(output, "- [%s] %s: %s\n", group, divergence.ID, action)
 	}
 	command := strings.Join([]string{
 		app.Name,

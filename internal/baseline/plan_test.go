@@ -2250,23 +2250,69 @@ func TestPlanDocumentIncludesMaintainedUpgradeRetention(t *testing.T) {
 }
 
 func TestSameIdentityDriftRequiresRetention(t *testing.T) {
+	const profileID = "standard-typescript-monorepo"
 	const disappearingClause = "clause.core.keep-follow-ups-outside-slice"
-	_, request, target, tuple := newSameIdentityRetentionDrift(t)
+	repository := newProjectDecisionPlanRepository(t)
+	request := PlanRequest{
+		Repository:   repository,
+		ProfileID:    profileID,
+		Decisions:    standardTypeScriptDecisions("make verify"),
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}
+	source := mustEmbeddedCatalog(t)
+	initial, err := buildPlanWithCatalog(context.Background(), request, source)
+	if err != nil {
+		t.Fatalf("build source plan: %v", err)
+	}
+	if initial.Plan == nil {
+		t.Fatalf("source plan result = %+v", initial.Result)
+	}
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		repository,
+		*initial.Plan,
+		initial.Plan.PlanDigest,
+		source,
+	); err != nil {
+		t.Fatalf("apply source plan: %v", err)
+	}
+
+	target := cloneCatalogForRetentionDrift(t, source)
+	changeCatalogProfileDigest(t, target, profileID)
+	target.digest = "sha256:" + strings.Repeat("f", 64)
 	removeCatalogClause(t, target, "core", disappearingClause)
-	target.retentionSources[tuple] = SourceBaseline{Entries: []SourceBaselineEntry{
-		{
-			ID:          "clause.core.keep-root-compact",
-			Kind:        "normative-clause",
-			Enforcement: "mandatory",
-			Carrier:     "docs/agents/agent-instructions.md",
-		},
-		{
-			ID:          disappearingClause,
-			Kind:        "normative-clause",
-			Enforcement: "mandatory",
-			Carrier:     "docs/agents/agent-instructions.md",
-		},
-	}}
+	targetProfile, err := ResolveProfile("", profileID, target)
+	if err != nil {
+		t.Fatalf("resolve changed target Profile: %v", err)
+	}
+	if targetProfile.Digest == initial.Plan.SetupManifest.ProfileDigest ||
+		target.Digest() == initial.Plan.SetupManifest.CatalogDigest {
+		t.Fatalf(
+			"target digests did not change: profile=%s catalog=%s",
+			targetProfile.Digest,
+			target.Digest(),
+		)
+	}
+	retentionSource, err := target.SourceBaseline(initial.Plan.SetupManifest.Generator.Baseline)
+	if err != nil {
+		t.Fatalf("load retained Source Baseline: %v", err)
+	}
+	retentionSource.Entries = filterSourceBaselineEntries(
+		retentionSource.Entries,
+		"clause.core.keep-root-compact",
+		disappearingClause,
+	)
+	if len(retentionSource.Entries) != 2 {
+		t.Fatalf("retained Source Baseline entries = %v, want two focused clauses", retentionSource.Entries)
+	}
+	clear(target.retentionSources)
+	if err := target.captureCurrentRetentionSources([]SourceBaseline{retentionSource}); err != nil {
+		t.Fatalf("recapture changed-generation retention sources: %v", err)
+	}
+	if err := target.captureCurrentRetentionSources([]SourceBaseline{retentionSource}); err == nil ||
+		!strings.Contains(err.Error(), "duplicate Baseline retention source identity") {
+		t.Fatalf("duplicate retention source error = %v", err)
+	}
 
 	outcome, err := buildPlanWithCatalog(context.Background(), request, target)
 	if err != nil {
@@ -2342,9 +2388,9 @@ func TestClauseDeltaRendersBeforeLedger(t *testing.T) {
 
 	t.Run("unaccounted clause withholds apply", func(t *testing.T) {
 		const unaccountedClause = "clause.core.keep-follow-ups-outside-slice"
-		_, request, target, tuple := newSameIdentityRetentionDrift(t)
+		_, request, target, baselineID := newSameIdentityRetentionDrift(t)
 		removeCatalogClause(t, target, "core", unaccountedClause)
-		target.retentionSources[tuple] = SourceBaseline{Entries: []SourceBaselineEntry{{
+		target.retentionSources[baselineID] = SourceBaseline{Entries: []SourceBaselineEntry{{
 			ID:          unaccountedClause,
 			Kind:        "normative-clause",
 			Enforcement: "mandatory",
@@ -2370,9 +2416,9 @@ func TestClauseDeltaRendersBeforeLedger(t *testing.T) {
 
 func TestReadyPlanNeverCarriesEmptyLedger(t *testing.T) {
 	const changedClause = "clause.core.keep-follow-ups-outside-slice"
-	_, request, target, tuple := newSameIdentityRetentionDrift(t)
+	_, request, target, baselineID := newSameIdentityRetentionDrift(t)
 	changeCatalogClauseGuidance(t, target, "core", changedClause)
-	target.retentionSources[tuple] = SourceBaseline{Entries: []SourceBaselineEntry{{
+	target.retentionSources[baselineID] = SourceBaseline{Entries: []SourceBaselineEntry{{
 		ID:          changedClause,
 		Kind:        "normative-clause",
 		Enforcement: "mandatory",
@@ -2460,7 +2506,7 @@ func TestDifferentIdentityKeepsExistingTransitionPath(t *testing.T) {
 
 func newSameIdentityRetentionDrift(
 	t *testing.T,
-) (string, PlanRequest, *Catalog, BaselineSourceTuple) {
+) (string, PlanRequest, *Catalog, string) {
 	t.Helper()
 	repository := newPlanRepository(t)
 	request := PlanRequest{
@@ -2489,18 +2535,21 @@ func newSameIdentityRetentionDrift(
 
 	target := cloneCatalogForRetentionDrift(t, source)
 	target.digest = "sha256:" + strings.Repeat("f", 64)
-	tuple := BaselineSourceTuple{
-		Baseline:      outcome.Plan.SetupManifest.Generator.Baseline,
-		ProfileDigest: outcome.Plan.SetupManifest.ProfileDigest,
-		CatalogDigest: outcome.Plan.SetupManifest.CatalogDigest,
-	}
-	return repository, request, target, tuple
+	return repository, request, target, outcome.Plan.SetupManifest.Generator.Baseline
 }
 
 func cloneCatalogForRetentionDrift(t *testing.T, source *Catalog) *Catalog {
 	t.Helper()
 
 	target := *source
+	target.profiles = make(map[string]document, len(source.profiles))
+	for id, profile := range source.profiles {
+		cloned, ok := cloneJSONValue(profile).(map[string]any)
+		if !ok {
+			t.Fatalf("cloned catalog Profile %q is not an object", id)
+		}
+		target.profiles[id] = document(cloned)
+	}
 	target.modules = make(map[string]document, len(source.modules))
 	for id, module := range source.modules {
 		cloned, ok := cloneJSONValue(module).(map[string]any)
@@ -2509,11 +2558,37 @@ func cloneCatalogForRetentionDrift(t *testing.T, source *Catalog) *Catalog {
 		}
 		target.modules[id] = document(cloned)
 	}
-	target.retentionSources = make(map[BaselineSourceTuple]SourceBaseline, len(source.retentionSources))
+	target.retentionSources = make(map[string]SourceBaseline, len(source.retentionSources))
 	for tuple, baseline := range source.retentionSources {
 		target.retentionSources[tuple] = baseline
 	}
 	return &target
+}
+
+func changeCatalogProfileDigest(t *testing.T, catalog *Catalog, profileID string) {
+	t.Helper()
+	profile, ok := catalog.profiles[profileID]
+	if !ok {
+		t.Fatalf("catalog Profile %q is missing", profileID)
+	}
+	modules, ok := profile["modules"].([]any)
+	if !ok || len(modules) < 2 {
+		t.Fatalf("catalog Profile %q modules = %#v, want at least two", profileID, profile["modules"])
+	}
+	modules = append([]any(nil), modules...)
+	modules[0], modules[1] = modules[1], modules[0]
+	profile["modules"] = modules
+}
+
+func filterSourceBaselineEntries(entries []SourceBaselineEntry, ids ...string) []SourceBaselineEntry {
+	selected := stringSet(ids)
+	filtered := make([]SourceBaselineEntry, 0, len(ids))
+	for _, entry := range entries {
+		if _, ok := selected[entry.ID]; ok {
+			filtered = append(filtered, entry)
+		}
+	}
+	return filtered
 }
 
 func removeCatalogClause(t *testing.T, catalog *Catalog, moduleID, clauseID string) {

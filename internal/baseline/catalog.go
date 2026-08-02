@@ -116,7 +116,7 @@ type Catalog struct {
 	orderedModules       map[string][]string
 	instructionHierarchy []InstructionHierarchyLevel
 	semanticOwners       map[string]SemanticOwner
-	retentionSources     map[BaselineSourceTuple]SourceBaseline
+	retentionSources     map[string]SourceBaseline
 	normalized           []byte
 	digest               string
 }
