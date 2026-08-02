@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0071-verification-cost
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -66,3 +66,48 @@ against, and it only works if it lands first.
 - `_prd.md` → Core Features 6; Non-Goals (no test deleted, skipped, or
   weakened).
 - `_techspec.md` → Implementation Design: CoverageRecord; Build Order 1.
+
+## Result
+
+Implemented a test-only coverage-equivalence harness in `internal/spec`. It
+uses `go list ./...` as the package authority, records each package's sorted
+top-level `Test...` names in `coverage-record.json`, fails with package/test
+diagnostics for removals, logs additions without failing, and rewrites the
+record only when `-update-coverage-record` is explicit. No production file,
+existing test body, or exported API changed.
+
+Focused checks:
+
+- `GOCACHE="$PWD/.gocache" GOFLAGS=-buildvcs=false go test ./internal/spec -run '^Test(CompareCoverageRecords|MarshalCoverageRecord)' -count=1`
+  exited 0. The focused cases exercise missing-test diagnostics, non-failing
+  addition reporting, and deterministic marshaling.
+- `GOCACHE="$PWD/.gocache" GOFLAGS=-buildvcs=false go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1 -update-coverage-record`
+  exited 0 and deliberately created the record through its explicit update
+  flag.
+- Two consecutive non-update runs of
+  `GOCACHE="$PWD/.gocache" GOFLAGS=-buildvcs=false go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1`
+  exited 0. The record's SHA-256 was
+  `286c812bf3b144027e2d7cc0dd156b79e4e0fe90812c02bd21c1800fa5c1a2d1`
+  before and after both runs.
+- Final focused run
+  `GOCACHE="$PWD/.gocache" GOFLAGS=-buildvcs=false go test ./internal/spec -run 'CoverageRecord|CoverageEquivalence' -count=1`
+  exited 0 after the last Go edit.
+
+Acceptance evidence:
+
+1. The record contains all 24 packages returned by the repository package
+   list, including the package with no test functions, and 1,493 test names.
+2. The real-tree comparison exited 0 in each non-update focused run.
+3. `TestCompareCoverageRecordsReportsMissingTest` removes `TestRemoved` from
+   the actual set and requires a regression naming both
+   `roundfix/internal/spec` and `TestRemoved`.
+4. `TestCompareCoverageRecordsReportsAddedTestWithoutRegression` requires the
+   addition report for `TestAdded` while requiring zero regressions.
+5. The two comparison runs produced the same result and preserved the exact
+   golden hash; deterministic marshaling also has focused coverage.
+6. `git -c core.fsmonitor=false status --short` showed only this task file,
+   `docs/specs/0071-verification-cost/coverage-record.json`, and
+   `internal/spec/coverage_test.go`.
+
+The Daemon-owned commands under `## Verification` were not run. No follow-up
+outside this Task's slice was discovered.
