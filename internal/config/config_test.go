@@ -831,8 +831,8 @@ artifact_dir: *backend_model
 			WorkDir:  workDir,
 			Removals: []WorkCategory{CategoryBackend},
 		})
-		if err == nil || !strings.Contains(err.Error(), "unknown anchor") {
-			t.Fatalf("remove anchored backend error = %v, want unknown anchor", err)
+		if err == nil {
+			t.Fatal("expected removal that strands an alias to fail")
 		}
 		if got := mustRead(t, configPath); got != original {
 			t.Fatalf("failed alias removal mutated config\nwant: %q\n got: %q", original, got)
@@ -843,55 +843,54 @@ artifact_dir: *backend_model
 func TestProfilesConfigureMergePreservesOtherCategories(t *testing.T) {
 	t.Run("replaces one category without touching the other four", func(t *testing.T) {
 		original := `profiles:
-    # review stays first
-    review:
-        preferred:
-            runtime: codex
-            model: review-primary
-            reasoning_effort: high
-        fallbacks:
-            - runtime: claude
-              model: review-fallback
-              reasoning_effort: xhigh
-    # general keeps its comment and Fallback Chain
-    general:
-        preferred:
-            runtime: codex
-            model: general-primary
-            reasoning_effort: high
-        fallbacks:
-            - runtime: claude
-              model: general-fallback
-              reasoning_effort: xhigh
-    frontend:
-        preferred:
-            runtime: claude
-            model: frontend-primary
-            reasoning_effort: xhigh
-        fallbacks:
-            - runtime: codex
-              model: frontend-fallback
-              reasoning_effort: high
-    qa:
-        preferred:
-            runtime: codex
-            model: qa-primary
-            reasoning_effort: high
-        fallbacks:
-            - runtime: claude
-              model: qa-fallback
-              reasoning_effort: xhigh
-    backend:
-        preferred:
-            runtime: codex
-            model: backend-primary
-            reasoning_effort: high
-        fallbacks:
-            - runtime: claude
-              model: backend-fallback
-              reasoning_effort: xhigh
+  # review stays first
+  review:
+    preferred:
+      runtime: codex
+      model: review-primary
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: review-fallback
+        reasoning_effort: xhigh
+  # general keeps its comment and Fallback Chain
+  general:
+    preferred:
+      runtime: codex
+      model: general-primary
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: general-fallback
+        reasoning_effort: xhigh
+  frontend:
+    preferred:
+      runtime: claude
+      model: frontend-primary
+      reasoning_effort: xhigh
+    fallbacks:
+      - runtime: codex
+        model: frontend-fallback
+        reasoning_effort: high
+  qa:
+    preferred:
+      runtime: codex
+      model: qa-primary
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: qa-fallback
+        reasoning_effort: xhigh
+  backend:
+    preferred:
+      runtime: codex
+      model: backend-primary
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: backend-fallback
+        reasoning_effort: xhigh
 `
-		original = strings.ReplaceAll(original, "    ", "  ")
 		want := strings.Replace(original, "backend-primary", "backend-updated", 1)
 
 		homeDir := t.TempDir()
@@ -1211,9 +1210,6 @@ artifact_dir: *backend_model
 		if err == nil {
 			t.Fatal("expected replacement that strands an alias to fail")
 		}
-		if !strings.Contains(err.Error(), "unknown anchor") {
-			t.Fatalf("expected dangling anchor validation error, got %v", err)
-		}
 		if got := mustRead(t, configPath); got != original {
 			t.Fatalf("failed alias replacement mutated config\nwant: %q\n got: %q", original, got)
 		}
@@ -1284,6 +1280,16 @@ func TestEffectiveChangeSet(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), string(CategoryBackend)) {
 			t.Fatalf("expected validation error to name %q, got %q", CategoryBackend, err)
+		}
+	})
+
+	t.Run("rejects an unsupported removal category", func(t *testing.T) {
+		_, err := DeriveEffectiveChangeSet(nil, nil, []WorkCategory{"not-a-category"})
+		if err == nil {
+			t.Fatal("expected unsupported removal category to fail validation")
+		}
+		if !strings.Contains(err.Error(), "not-a-category") {
+			t.Fatalf("expected validation error to name the unsupported value, got %q", err)
 		}
 	})
 

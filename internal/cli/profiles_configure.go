@@ -324,7 +324,7 @@ func defaultConfirmProfilesConfigure(ctx context.Context, stderr io.Writer, prev
 	if _, err := fmt.Fprint(stderr, "Write this Agent Selection Profile config? [y/N]: "); err != nil {
 		return false, fmt.Errorf("write profiles configure confirmation prompt: %w", err)
 	}
-	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	line, err := bufio.NewReader(profilesConfigureInput()).ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
 		return false, fmt.Errorf("read profiles configure confirmation prompt: %w", err)
 	}
@@ -377,15 +377,15 @@ func printProfilesConfigureOutputError(err error, stderr io.Writer) int {
 
 func printProfilesConfigureRefusal(req profilesConfigureRequest, result roundconfig.ProfileConfigResult, stdout, stderr io.Writer) int {
 	result.Changed = false
-	if _, err := fmt.Fprintf(stderr, "Profile configuration unchanged: confirmation declined for %s\n", result.Path); err != nil {
-		return exitRunFailed
-	}
 	if req.json {
 		response := profilesConfigureResponseForResult(result, "")
 		response.Refused = true
 		if err := json.NewEncoder(stdout).Encode(response); err != nil {
 			return printProfilesConfigureOutputError(err, stderr)
 		}
+	}
+	if _, err := fmt.Fprintf(stderr, "Profile configuration unchanged: confirmation declined for %s\n", result.Path); err != nil {
+		return exitRunFailed
 	}
 	return exitRunFailed
 }
