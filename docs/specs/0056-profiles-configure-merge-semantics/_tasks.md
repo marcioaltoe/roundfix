@@ -21,6 +21,9 @@ graph:
     - id: task_06
       file: task_06.md
       needs: [task_05]
+    - id: task_07
+      file: task_07.md
+      needs: [task_06]
 ---
 
 # Tasks — Profiles configure merge semantics
@@ -33,9 +36,10 @@ graph:
 | task_04 | Summarize the effective change before writing      | backend | medium     | task_03 |
 | task_05 | Make a refusal distinguishable by exit code        | backend | medium     | task_04 |
 | task_06 | Document the merge contract                        | docs    | low        | task_05 |
+| task_07 | Remove a category without touching neighbour spacing | backend | medium   | task_06 |
 
 Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 ·
-6 → task_06
+6 → task_06 · 7 → task_07
 
 The graph is a chain. Tasks 02–05 all edit the same two files — the profile
 config document writer and the configure command — so parallel waves would put

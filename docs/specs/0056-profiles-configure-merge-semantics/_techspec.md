@@ -40,7 +40,10 @@ pre-existing entry block an unrelated edit that works today.
 - Active ADR obligations: applicable — ADR-0049 keeps each present profile
   atomic, so a named category is replaced as one object and the merge is at map
   level, never field level; ADR-0037/0039 selection-proof obligations stand,
-  with proof still preceding every write; ADR-0086 makes removal a declared
+  with proof still preceding every write; ADR-0055 governs how a single Agent
+  Selection is proven against advertised ACP capabilities, and this Spec
+  changes which categories are proven, never how one tuple is proven;
+  ADR-0086 makes removal a declared
   flag rather than a fragment shape. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: on
   2026-07-28 the maintainer authorized the Skill pair plus its deterministic

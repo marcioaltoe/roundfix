@@ -33,8 +33,11 @@ refusal as success. Evidence:
 - Active ADR obligations: applicable — ADR-0049 keeps each present profile
   atomic (a named category still replaces that category as one object; the
   merge is at map level, never field level); ADR-0037/0039 selection-proof
-  obligations are unchanged — proof-before-write is preserved. Source:
-  `docs/agents/domain.md`.
+  obligations are unchanged — proof-before-write is preserved; ADR-0055
+  governs how an Agent Selection is proven against advertised ACP
+  capabilities, which is the proof this Spec scopes to written categories
+  without changing how any single tuple is proven; ADR-0086 makes removal a
+  declared flag rather than a fragment shape. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — on 2026-07-28, the maintainer expressly
   authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
   `skills/roundfix/SKILL.md`, plus the deterministic Skill-digest fallout in
@@ -91,8 +94,12 @@ refusal as success. Evidence:
 5. A declined or unconfirmable write exits non-zero with a distinct
    refusal, while `--dry-run` keeps its current successful-no-write
    contract; the `roundfix/profiles-configure/v1` schema evolves additively.
-6. The proof-before-write behavior is unchanged: every distinct tuple in
-   the resulting effective map is exact-proven before confirmation.
+6. Proof still precedes every write, scoped to what the operation writes:
+   every distinct tuple in an added or replaced category is exact-proven
+   before confirmation. Categories the operation does not touch are not
+   re-proven — re-proving them would let one stale pre-existing entry block
+   an unrelated edit that succeeds today, which this Spec's own
+   non-regression clause forbids.
 7. A characterization corpus captured from the current implementation
    before any behavior change bounds the new writer: every config the
    current writer handles round-trips through the new one with only the
