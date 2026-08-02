@@ -73,6 +73,30 @@ func validateResult(result Result) error {
 	if result.VerifiedPostimages == nil || result.Warnings == nil || result.Recommendations == nil {
 		return errors.New("Baseline result verifiedPostimages, warnings, and recommendations must be arrays")
 	}
+	if result.Operation == "apply" && result.State == "verified" && result.StatusMatrix == nil {
+		return errors.New("verified Baseline apply result requires a status matrix")
+	}
+	if result.StatusMatrix != nil {
+		axes := []struct {
+			name   string
+			status EvidenceStatus
+		}{
+			{name: "approvedPostimages", status: result.StatusMatrix.ApprovedPostimages},
+			{name: "semanticRetention", status: result.StatusMatrix.SemanticRetention},
+			{name: "profileAlignment", status: result.StatusMatrix.ProfileAlignment},
+			{name: "repositoryVerification", status: result.StatusMatrix.RepositoryVerification},
+			{name: "idempotence", status: result.StatusMatrix.Idempotence},
+		}
+		for _, axis := range axes {
+			if axis.status != EvidenceStatusVerified && axis.status != EvidenceStatusNotRun {
+				return fmt.Errorf(
+					"Baseline result status matrix axis %q has invalid status %q",
+					axis.name,
+					axis.status,
+				)
+			}
+		}
+	}
 	return nil
 }
 

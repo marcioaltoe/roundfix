@@ -274,10 +274,23 @@ func verifiedApplyResult(document PlanDocument, verified []Postimage, alreadyApp
 		}
 	}
 	sort.Strings(recommendations)
-	message := "approved Baseline Plan applied and verified"
+	matrix := resultStatusMatrix(document, verified, alreadyApplied)
+	message := "approved Baseline Plan applied"
 	if alreadyApplied {
-		message = "approved Baseline Plan is already applied and verified"
+		message = "approved Baseline Plan is already applied"
 	}
+	if matrix.SemanticRetention == EvidenceStatusVerified &&
+		matrix.Idempotence == EvidenceStatusVerified {
+		message = "Baseline update complete; approved Baseline Plan is already applied"
+	}
+	message += fmt.Sprintf(
+		"\nStatus matrix:\n- Approved postimages: %s\n- Semantic retention: %s\n- Profile alignment: %s\n- Repository Verification: %s\n- Idempotence: %s",
+		matrix.ApprovedPostimages,
+		matrix.SemanticRetention,
+		matrix.ProfileAlignment,
+		matrix.RepositoryVerification,
+		matrix.Idempotence,
+	)
 	return Result{
 		SchemaVersion:      ResultSchemaVersion,
 		Operation:          "apply",
@@ -287,7 +300,53 @@ func verifiedApplyResult(document PlanDocument, verified []Postimage, alreadyApp
 		VerifiedPostimages: clonePostimages(verified),
 		Warnings:           cloneFindings(document.Warnings),
 		Recommendations:    recommendations,
+		StatusMatrix:       &matrix,
 	}
+}
+
+func resultStatusMatrix(
+	document PlanDocument,
+	verified []Postimage,
+	alreadyApplied bool,
+) ResultStatusMatrix {
+	matrix := ResultStatusMatrix{
+		ApprovedPostimages:     EvidenceStatusNotRun,
+		SemanticRetention:      EvidenceStatusNotRun,
+		ProfileAlignment:       EvidenceStatusNotRun,
+		RepositoryVerification: EvidenceStatusNotRun,
+		Idempotence:            EvidenceStatusNotRun,
+	}
+	if verifiedPostimagesMatch(document.Postimages, verified) {
+		matrix.ApprovedPostimages = EvidenceStatusVerified
+	}
+	if delta := document.ClauseDelta; delta != nil &&
+		len(delta.Dispositions) != 0 &&
+		delta.Counts[ClauseUnaccounted] == 0 {
+		matrix.SemanticRetention = EvidenceStatusVerified
+	}
+	if document.Profile.ID != "" && document.SetupManifest.Profile == document.Profile.ID {
+		matrix.ProfileAlignment = EvidenceStatusVerified
+	}
+	if alreadyApplied {
+		matrix.Idempotence = EvidenceStatusVerified
+	}
+	return matrix
+}
+
+func verifiedPostimagesMatch(approved, verified []Postimage) bool {
+	if len(approved) == 0 || len(approved) != len(verified) {
+		return false
+	}
+	for index := range approved {
+		if approved[index].Path != verified[index].Path ||
+			approved[index].Kind != verified[index].Kind ||
+			approved[index].Mode != verified[index].Mode ||
+			approved[index].ContentIdentity != verified[index].ContentIdentity ||
+			!bytes.Equal(approved[index].Content, verified[index].Content) {
+			return false
+		}
+	}
+	return true
 }
 
 func clonePostimages(postimages []Postimage) []Postimage {

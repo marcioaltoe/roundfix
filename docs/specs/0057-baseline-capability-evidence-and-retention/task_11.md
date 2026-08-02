@@ -1,7 +1,7 @@
 ---
 task: task_11
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -72,3 +72,64 @@ language for the case that earns it.
 
 - `_prd.md` → User Story 7; Core Features 10; User Experience.
 - `_techspec.md` → API Contracts; Build Order 11.
+
+## Result
+
+### Implementation
+
+- Successful apply results now carry an additive `statusMatrix` with approved
+  postimages, semantic retention, profile alignment, repository Verification,
+  and idempotence. Every axis is exactly `verified` or `not run`.
+- The matrix derives approved postimages from the transaction's exact
+  postimage evidence, semantic retention from a nonempty fully accounted
+  `ClauseDelta`, profile alignment from the digest-bound Plan and Setup
+  Manifest identity, and idempotence from the exact already-applied preimage
+  branch. Repository Verification remains `not run` because apply does not
+  execute the recommended command.
+- Human result text renders the same five axes. It uses `Baseline update
+  complete` only when semantic retention and idempotence are both `verified`;
+  first apply and retention-free reapply results do not use completion
+  language.
+- The existing result fields, apply state, transaction, digest confirmation,
+  verified-postimage list, warnings, and recommendations remain in place. The
+  strict result codec accepts the new field and rejects any axis value outside
+  `verified` and `not run`.
+
+### Focused checks
+
+- Pre-change signal: `rtk go test ./internal/baseline -run
+  'TestResultStatusMatrix/first_apply' -count=1` reached the expected compile
+  failure because the status-matrix types did not exist.
+- `rtk gofmt -w internal/baseline/plan.go internal/baseline/apply.go
+  internal/baseline/plan_json.go internal/baseline/apply_test.go` — exit 0.
+- `rtk sh -c 'GOCACHE=/private/tmp/roundfix-task11-gocache rtk go test
+  ./internal/baseline -run
+  "StatusMatrix|CompletionLanguage|ApplyExactDigest|EmptyReapply|PlanDocumentStrictCodecs"'`
+  — 8 tests passed. The task-scoped cache was required because the sandbox
+  denied the default macOS Go cache.
+- `rtk sh -c 'GOCACHE=/private/tmp/roundfix-task11-gocache rtk go test
+  ./internal/baseline -run
+  "InstructionHierarchyPreservesPlanAndResultSchemas|BaselineVerification"'`
+  — 2 tests passed; existing result-schema fields and the no-execution
+  repository Verification contract remain covered.
+- The commands declared under `## Verification` were not run; the Daemon owns
+  those checks.
+
+### Acceptance evidence
+
+- Five axes: `TestResultStatusMatrix` checks all five human labels and the five
+  machine fields with their exact statuses.
+- Not-run distinction: the first apply reports idempotence as `not run`, while
+  the exact already-applied branch reports it as `verified`; repository
+  Verification remains `not run` in both.
+- Completion gate: `TestCompletionLanguageRequiresRetention` checks that
+  retention-free reapply and retention-only first apply do not read as
+  complete, while verified retention plus verified idempotence does.
+- Unverified retention: the first greenfield apply has verified postimages and
+  `not run` semantic retention without completion language.
+- Additive machine output: `TestResultStatusMatrix` marshals the result, checks
+  the prior schema, operation, state, message, digest, postimage, warning, and
+  recommendation fields, and verifies the additive `statusMatrix`; it also
+  checks rejection of an invalid axis status.
+- Scope: the final changed-path audit reports only `internal/baseline/` paths
+  and this Task file.

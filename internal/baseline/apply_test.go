@@ -172,6 +172,157 @@ func TestApplyExactDigest(t *testing.T) {
 	}
 }
 
+func TestResultStatusMatrix(t *testing.T) {
+	repo := newPlanRepository(t)
+	plan := buildTestPlan(t, repo)
+
+	first, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("first ApplyPlan(): %v", err)
+	}
+	assertResultStatusMatrix(t, first, ResultStatusMatrix{
+		ApprovedPostimages:     EvidenceStatusVerified,
+		SemanticRetention:      EvidenceStatusNotRun,
+		ProfileAlignment:       EvidenceStatusVerified,
+		RepositoryVerification: EvidenceStatusNotRun,
+		Idempotence:            EvidenceStatusNotRun,
+	})
+	for _, axis := range []string{
+		"Approved postimages: verified",
+		"Semantic retention: not run",
+		"Profile alignment: verified",
+		"Repository Verification: not run",
+		"Idempotence: not run",
+	} {
+		if !strings.Contains(first.Message, axis) {
+			t.Errorf("human result lacks %q: %q", axis, first.Message)
+		}
+	}
+
+	data, err := MarshalResult(first)
+	if err != nil {
+		t.Fatalf("MarshalResult(): %v", err)
+	}
+	var machine map[string]any
+	if err := json.Unmarshal(data, &machine); err != nil {
+		t.Fatalf("decode machine result: %v", err)
+	}
+	matrix, ok := machine["statusMatrix"].(map[string]any)
+	wantMachineMatrix := map[string]any{
+		"approvedPostimages":     "verified",
+		"semanticRetention":      "not run",
+		"profileAlignment":       "verified",
+		"repositoryVerification": "not run",
+		"idempotence":            "not run",
+	}
+	if !ok || !reflect.DeepEqual(matrix, wantMachineMatrix) {
+		t.Fatalf("machine statusMatrix = %#v, want %#v", machine["statusMatrix"], wantMachineMatrix)
+	}
+	for _, field := range []string{
+		"schemaVersion",
+		"operation",
+		"state",
+		"message",
+		"planDigest",
+		"verifiedPostimages",
+		"warnings",
+		"recommendations",
+	} {
+		if _, exists := machine[field]; !exists {
+			t.Errorf("machine result lost prior field %q", field)
+		}
+	}
+	matrix["idempotence"] = "passed"
+	invalid, err := json.Marshal(machine)
+	if err != nil {
+		t.Fatalf("encode invalid machine result: %v", err)
+	}
+	if _, err := ParseResult(invalid); err == nil || !strings.Contains(err.Error(), "invalid status") {
+		t.Fatalf("ParseResult() invalid status error = %v", err)
+	}
+
+	second, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("second ApplyPlan(): %v", err)
+	}
+	assertResultStatusMatrix(t, second, ResultStatusMatrix{
+		ApprovedPostimages:     EvidenceStatusVerified,
+		SemanticRetention:      EvidenceStatusNotRun,
+		ProfileAlignment:       EvidenceStatusVerified,
+		RepositoryVerification: EvidenceStatusNotRun,
+		Idempotence:            EvidenceStatusVerified,
+	})
+}
+
+func TestCompletionLanguageRequiresRetention(t *testing.T) {
+	t.Run("postimages and idempotence without retention", func(t *testing.T) {
+		repo := newPlanRepository(t)
+		plan := buildTestPlan(t, repo)
+		if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err != nil {
+			t.Fatalf("first ApplyPlan(): %v", err)
+		}
+		result, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+		if err != nil {
+			t.Fatalf("second ApplyPlan(): %v", err)
+		}
+		if strings.Contains(strings.ToLower(result.Message), "complete") {
+			t.Fatalf("result without retention reads as complete: %q", result.Message)
+		}
+	})
+
+	t.Run("retention without idempotence", func(t *testing.T) {
+		repo := newPlanRepository(t)
+		plan := planWithVerifiedRetention(t, buildTestPlan(t, repo))
+		result, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+		if err != nil {
+			t.Fatalf("first ApplyPlan(): %v", err)
+		}
+		if strings.Contains(strings.ToLower(result.Message), "complete") {
+			t.Fatalf("result without idempotence reads as complete: %q", result.Message)
+		}
+
+		result, err = ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+		if err != nil {
+			t.Fatalf("second ApplyPlan(): %v", err)
+		}
+		if !strings.Contains(strings.ToLower(result.Message), "complete") {
+			t.Fatalf("result with retention and idempotence lacks completion language: %q", result.Message)
+		}
+	})
+}
+
+func assertResultStatusMatrix(t *testing.T, result Result, want ResultStatusMatrix) {
+	t.Helper()
+	if result.StatusMatrix == nil || *result.StatusMatrix != want {
+		t.Fatalf("status matrix = %+v, want %+v", result.StatusMatrix, want)
+	}
+}
+
+func planWithVerifiedRetention(t *testing.T, plan PlanDocument) PlanDocument {
+	t.Helper()
+	const clauseID = "clause.status-matrix-retained"
+	delta := newClauseDelta()
+	delta.Dispositions[clauseID] = ClauseRetained
+	delta.Counts[ClauseRetained] = 1
+	plan.Retention = append(plan.Retention, RetentionEvidence{
+		FromClause:  clauseID,
+		Enforcement: "mandatory",
+		Disposition: string(ClauseRetained),
+		Targets:     []string{clauseID},
+		Reason:      "Stable clause identity and enforcement remain in the selected Baseline.",
+	})
+	plan.ClauseDelta = &delta
+	var err error
+	plan.PlanDigest, err = computePlanDigest(plan)
+	if err != nil {
+		t.Fatalf("compute retained Plan Digest: %v", err)
+	}
+	if err := ValidatePlanDocument(plan); err != nil {
+		t.Fatalf("validate retained Plan: %v", err)
+	}
+	return plan
+}
+
 func TestApplyStalePreimage(t *testing.T) {
 	tests := []struct {
 		name     string

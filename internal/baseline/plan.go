@@ -197,20 +197,39 @@ type PlanDocument struct {
 	PlanDigest     string              `json:"planDigest"`
 }
 
+// EvidenceStatus reports whether one result axis produced affirmative evidence.
+type EvidenceStatus string
+
+const (
+	EvidenceStatusVerified EvidenceStatus = "verified"
+	EvidenceStatusNotRun   EvidenceStatus = "not run"
+)
+
+// ResultStatusMatrix keeps independent Baseline evidence from collapsing into
+// one success state.
+type ResultStatusMatrix struct {
+	ApprovedPostimages     EvidenceStatus `json:"approvedPostimages"`
+	SemanticRetention      EvidenceStatus `json:"semanticRetention"`
+	ProfileAlignment       EvidenceStatus `json:"profileAlignment"`
+	RepositoryVerification EvidenceStatus `json:"repositoryVerification"`
+	Idempotence            EvidenceStatus `json:"idempotence"`
+}
+
 // Result is the strict automation result used when no complete plan can be
 // emitted and by later Baseline operations.
 type Result struct {
-	SchemaVersion      string       `json:"schemaVersion"`
-	Operation          string       `json:"operation"`
-	State              string       `json:"state"`
-	Category           string       `json:"category,omitempty"`
-	Message            string       `json:"message,omitempty"`
-	NextAction         string       `json:"nextAction,omitempty"`
-	PlanDigest         string       `json:"planDigest,omitempty"`
-	VerifiedPostimages []Postimage  `json:"verifiedPostimages"`
-	Warnings           []Finding    `json:"warnings"`
-	Recommendations    []string     `json:"recommendations"`
-	ClauseDelta        *ClauseDelta `json:"clauseDelta,omitempty"`
+	SchemaVersion      string              `json:"schemaVersion"`
+	Operation          string              `json:"operation"`
+	State              string              `json:"state"`
+	Category           string              `json:"category,omitempty"`
+	Message            string              `json:"message,omitempty"`
+	NextAction         string              `json:"nextAction,omitempty"`
+	PlanDigest         string              `json:"planDigest,omitempty"`
+	VerifiedPostimages []Postimage         `json:"verifiedPostimages"`
+	Warnings           []Finding           `json:"warnings"`
+	Recommendations    []string            `json:"recommendations"`
+	ClauseDelta        *ClauseDelta        `json:"clauseDelta,omitempty"`
+	StatusMatrix       *ResultStatusMatrix `json:"statusMatrix,omitempty"`
 }
 
 type plannedArtifact struct {
