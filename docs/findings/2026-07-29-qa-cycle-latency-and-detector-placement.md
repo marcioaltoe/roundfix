@@ -112,3 +112,7 @@ overhead.
 - The gate audited the supervisor with the same rigor as the Agents, refusing a
   recovery commit that touched Project Config outside the Spec's bounded
   authorization. One of the four cycles was that refusal, and it was correct.
+
+## Routing — 2026-08-01
+
+Routed to [Spec 0063](../specs/0063-qa-cycle-economics/_prd.md) on 2026-08-01.

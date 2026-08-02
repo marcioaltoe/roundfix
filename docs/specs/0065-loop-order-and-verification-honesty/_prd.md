@@ -1,0 +1,103 @@
+---
+spec: 0065-loop-order-and-verification-honesty
+status: active
+created: 2026-08-01
+surfaces: [backend, docs]
+---
+
+# Loop order and verification honesty
+
+Two defects in the loop's own discipline, both proven by the loop running
+against itself.
+
+The loop prescribes implement → QA → open the Pull Request → merge, but a Spec
+whose acceptance observes its own Pull Request cannot reach `pass` in that
+order: Spec 0053 spent four cycles learning it, and Spec 0058 repeated the
+blocked row. A correction landed in `docs/agents/autonomous-work.md`, but only
+partly — the file now states the corrected order in one place and the original
+order in another, so the contradiction is live and still being followed.
+Evidence:
+[the autonomous loop orders QA before its own preconditions](../../findings/2026-07-30-the-autonomous-loop-orders-qa-before-its-own-preconditions.md).
+
+Separately, a Task can settle `completed` having done nothing. Spec 0060's
+`task_03` existed to prove an instruction-level gate fires; its Verification
+was `make verify` plus a clean `git status`, both of which pass most easily
+when no work happened, and its requirements contradicted each other so the
+rehearsal could not be performed as written. It settled `completed` having run
+none of its four cases. Evidence:
+[a rehearsal Task can settle completed without rehearsing](../../findings/2026-07-31-a-rehearsal-task-can-settle-completed-without-rehearsing.md).
+
+## Project Constraints
+
+- Identifier strategy: not applicable — no project-owned Internal Identifier is
+  created; Task identifiers, statuses, and clause identifiers keep their
+  existing contracts. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — the governing clause prohibits
+  reading, printing, committing, or generating secrets and forbids inventing
+  authentication, authorization, transport, or deployment policy; this Spec
+  handles no credential and opens no transport. Source:
+  `docs/agents/agent-instructions.md`.
+- Active ADR obligations: applicable — ADR-0080 keeps QA verdicts
+  distinguishing environment-blocked rows, and the reorder must not turn a
+  legitimately blocked row into a passing one. Source: `docs/agents/domain.md`.
+- Tooling authority: not yet requested — the loop discipline is delivered
+  through the Baseline module, so changing the shipped clause touches protected
+  tooling. No mutation is authorized today; the maintainer must grant it with
+  bounded files before decomposition. Source:
+  `docs/agents/agent-instructions.md`.
+
+## Goals
+
+- The loop states one order, in one place, and that order lets a Spec whose
+  acceptance observes a review surface reach `pass`.
+- A Task's Verification cannot pass most easily when no work was done.
+- A Task whose requirements contradict each other is caught before an Agent
+  Session spends a turn on it.
+
+## Core Features
+
+1. The loop's order is stated once and consistently — implement the graph, open
+   the Pull Request, watch until Clean, request QA once, merge — with every
+   place that restates it agreeing, including the shipped clause and the
+   repository guide.
+2. A Spec whose acceptance observes no review surface is unaffected by the
+   order, so one order serves both cases.
+3. Task Verification must prove the Task's effect, not merely that unrelated
+   suites still pass. A Verification consisting only of a repository-wide gate
+   and a clean working tree is rejected at authoring time.
+4. Authoring rejects a Task whose requirements are mutually unsatisfiable —
+   specifically, one requirement forbidding a state another requirement needs.
+5. A rehearsal Task, whose purpose is proving a gate fires, declares the cases
+   it must exercise and how each is observed, so settling `completed` without
+   exercising them is impossible.
+
+## Non-Goals / Out of Scope
+
+- Changing what the QA gate checks or how verdicts are computed.
+- Weakening the Daemon's ownership of Task status or Verification execution.
+- Requiring every Task to carry a bespoke harness; the rule targets
+  Verification that cannot distinguish work from no work.
+- Re-litigating the blocked-row typing that ADR-0080 owns.
+
+## Success Metrics
+
+- The loop's order appears identically everywhere it is stated, verified by a
+  check rather than by reading.
+- Spec 0060's `task_03`, replayed as written, is rejected at authoring time for
+  both its contradictory requirements and its work-independent Verification.
+- A Spec whose acceptance observes a Pull Request reaches `pass` in one cycle
+  under the stated order.
+
+## Decisions
+
+- One order serves both Spec shapes; a separate path for review-observing Specs
+  would be a second contract to keep consistent.
+- The Verification rule targets a property — can this check distinguish work
+  from no work — rather than banning particular commands.
+- This Spec evolves the loop and never regresses it. The declared break is that
+  some Task Verifications valid today become invalid at authoring time; no
+  existing Task's recorded evidence is retroactively invalidated.
+
+## Open Questions
+
+None.

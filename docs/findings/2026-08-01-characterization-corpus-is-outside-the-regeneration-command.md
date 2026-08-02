@@ -85,3 +85,7 @@ go test ./internal/baseline -run '^TestCatalogDiagnosticCharacterization$' \
 - `make baseline-digests` completed in **one invocation** with `changed:true`,
   confirming 0062's fix on the first real edit that would previously have hit
   the bootstrap cycle.
+
+## Routing — 2026-08-01
+
+Routed to [Spec 0067](../specs/0067-derived-artifact-regeneration-boundary/_prd.md) on 2026-08-01.

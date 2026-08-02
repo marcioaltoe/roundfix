@@ -81,3 +81,10 @@ block the autonomous Spec loop rather than being incidental to one change.
 - `make verify` caught two consequences the change had not anticipated: a
   wholesale reformat of three profile assets, and a mutation test keyed to
   incidental JSON adjacency that silently stopped mutating.
+
+## Routing — 2026-08-01
+
+Defects 1 and 2 shipped in [Spec 0062](../specs/_archived/0062-baseline-digest-regeneration-bootstrap/_prd.md).
+Defect 3 — the frozen parity corpus reading as a derived artifact — was
+explicitly excluded from that Spec's authorization and is routed to
+[Spec 0067](../specs/0067-derived-artifact-regeneration-boundary/_prd.md).

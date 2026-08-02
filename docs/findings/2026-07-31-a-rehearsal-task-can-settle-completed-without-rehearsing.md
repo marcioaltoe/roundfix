@@ -66,3 +66,7 @@ the Task is required to leave clean.
 
 Both are Task-authoring rules, so the natural owner is `write-tasks` and the
 Verification guidance in `docs/agents/autonomous-work.md`.
+
+## Routing — 2026-08-01
+
+Routed to [Spec 0065](../specs/0065-loop-order-and-verification-honesty/_prd.md) on 2026-08-01.

@@ -112,3 +112,7 @@ Worktrees behind under `~/.roundfix/worktrees/` with nothing able to classify
 them — `roundfix reconcile` reads the Run Database, and a Run whose repository
 is gone has no repository to reconcile against. The GC Command could detect an
 unresolvable parent gitdir and offer the removal.
+
+## Routing — 2026-08-01
+
+Routed to [Spec 0066](../specs/0066-run-teardown-reclaims-what-it-created/_prd.md) on 2026-08-01.

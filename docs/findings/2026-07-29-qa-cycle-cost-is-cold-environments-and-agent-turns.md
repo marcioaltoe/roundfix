@@ -126,3 +126,7 @@ the one with the smallest reach.
 - The gate's expensive parts are its valuable parts. Both product defects found
   by QA today came from building the real binary and driving it, not from any
   unit test.
+
+## Routing — 2026-08-01
+
+Routed to [Spec 0063](../specs/0063-qa-cycle-economics/_prd.md) on 2026-08-01.
