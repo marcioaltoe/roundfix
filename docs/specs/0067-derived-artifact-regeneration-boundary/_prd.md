@@ -41,10 +41,10 @@ which it does not.
   regeneration a fallout of the authorized edit; ADR-0085 keeps a regeneration
   run ungated by the pins it rewrites while every other load stays strict, and
   any new regeneration step must preserve both. Source: `docs/agents/domain.md`.
-- Tooling authority: not yet requested — the regeneration step list and derived
-  path scan live in the `Makefile`, and marking a frozen artifact at its path
-  may add a file. No mutation is authorized today; the maintainer must grant it
-  with bounded files before decomposition. Source:
+- Tooling authority: applicable — express maintainer authorization: on 2026-08-02 the maintainer
+  authorized tooling adjustment for the queued Specs, recorded at
+  `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`; bounded
+  files: `Makefile`. Deterministic digest fallout is sanctioned by ADR-0081. Source:
   `docs/agents/agent-instructions.md`.
 
 ## Goals
