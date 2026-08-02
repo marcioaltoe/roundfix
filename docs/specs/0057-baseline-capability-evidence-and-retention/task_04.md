@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -77,3 +77,38 @@ by requirement strength, so an advisory stops reading like a blocker.
 
 - `_prd.md` → User Story 2; Core Features 5 and 8; User Experience.
 - `_techspec.md` → API Contracts; Build Order 4.
+
+## Result
+
+Implementation did not start because the required rendered behavior and the
+changed-path acceptance criterion conflict. The human Baseline Profile
+alignment renderer lives in `internal/cli/baseline_human.go`; it prints probe
+evidence from no field and derives only `blocking` or `advisory` from
+`ProfileDivergence.Blocking`. An optional divergence therefore cannot render as
+`informational` without changing that renderer. The acceptance criterion limits
+new changed paths to `internal/baseline/` and this task file.
+
+Focused inspection evidence:
+
+- `rtk git -c core.fsmonitor=false status --short` showed only the Daemon-owned
+  `pending` to `in_progress` edit in this task file before inspection.
+- `rtk rg -n "ProfileDivergence|Divergences:" internal cmd` located the model
+  and evaluator in `internal/baseline/profile_alignment.go` and the sole human
+  alignment renderer in `internal/cli/baseline_human.go`.
+- Reading `renderBaselineProfileAlignment` confirmed it prints only
+  `Message` and `NextAction`, labels every non-blocking divergence `advisory`,
+  and never reads `Probe`, `Evidence`, or `Requirement`.
+
+Acceptance-criterion evidence:
+
+- Probe rendering, stack-capability resolutions, requirement grouping, and
+  advisory ordering were not implemented or claimed; satisfying their rendered
+  half requires the currently out-of-scope CLI renderer.
+- Verdicts, blocking flags, and readiness values remain unchanged because no
+  implementation code or characterization artifact was edited.
+- No path outside this task file changed during this Agent turn.
+
+Required scope decision: either include
+`internal/cli/baseline_human.go` and its existing test file in Task 04, or
+revise "rendered output" to name a baseline-owned projection that a later Task
+will connect to the human CLI.
