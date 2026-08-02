@@ -68,3 +68,7 @@ Request is opened from a Task Graph that closed green, so it is not a draft.
 - The gate refused to claim `pass` on a journey it could not run, under a rule
   that explicitly permits `pass` when equivalent evidence exists. That boundary
   behaved exactly as designed in all four cycles.
+
+## Routing — 2026-08-01
+
+Routed to [Spec 0065](../specs/0065-loop-order-and-verification-honesty/_prd.md) on 2026-08-01.

@@ -125,3 +125,7 @@ Worth naming, because the corrections should not weaken it:
 - **Task `## Result` sections refused scope creep correctly.** One Task diagnosed a stub outside
   its slice, recorded it as a follow-up and did not touch it — which is what let the Supervisor
   route it deliberately instead of discovering it inside an unrelated diff.
+
+## Routing — 2026-08-01
+
+Routed to [Spec 0063](../specs/0063-qa-cycle-economics/_prd.md) on 2026-08-01.

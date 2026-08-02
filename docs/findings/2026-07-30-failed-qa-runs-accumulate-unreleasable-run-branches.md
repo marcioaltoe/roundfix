@@ -82,3 +82,7 @@ deleting branches by hand outside the tool.
   branches genuinely are `unintegrated`, and the fix that made preflight agree
   with the classifier (Spec 0053) is what made this gap visible instead of
   letting preflight offer a release the classifier would refuse.
+
+## Routing — 2026-08-01
+
+Routed to [Spec 0066](../specs/0066-run-teardown-reclaims-what-it-created/_prd.md) on 2026-08-01.
