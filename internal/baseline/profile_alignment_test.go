@@ -107,6 +107,75 @@ func TestRequiredDivergencePreventsReadyPlan(t *testing.T) {
 	}
 }
 
+func TestDivergenceCarriesProbeEvidence(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
+	t.Setenv("PATH", t.TempDir())
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve alignment with capability divergences: %v", err)
+	}
+	capabilities, err := resolvedProfileCapabilities(alignment.Profile, catalog)
+	if err != nil {
+		t.Fatalf("resolve evaluated capability definitions: %v", err)
+	}
+	definitions := make(map[string]RepositoryCapability, len(capabilities))
+	for _, capability := range capabilities {
+		definitions[capability.ID] = capability
+	}
+
+	for _, outcome := range alignment.Capabilities {
+		if outcome.Status == CapabilitySatisfied {
+			continue
+		}
+		divergence, ok := findProfileDivergence(alignment.Divergences, outcome.ID)
+		if !ok {
+			t.Errorf("unsatisfied capability %q has no divergence", outcome.ID)
+			continue
+		}
+		definition, ok := definitions[outcome.ID]
+		if !ok {
+			t.Errorf("unsatisfied capability %q has no evaluated definition", outcome.ID)
+			continue
+		}
+		wantProbe, err := json.Marshal(definition.Probe)
+		if err != nil {
+			t.Fatalf("marshal evaluated probe for %q: %v", outcome.ID, err)
+		}
+		gotProbe, err := json.Marshal(divergence.Probe)
+		if err != nil {
+			t.Fatalf("marshal divergence probe for %q: %v", outcome.ID, err)
+		}
+		if !slices.Equal(gotProbe, wantProbe) {
+			t.Errorf("divergence probe for %q = %s, want evaluated bytes %s", outcome.ID, gotProbe, wantProbe)
+		}
+		if !reflect.DeepEqual(divergence.Evidence, outcome.Evidence) {
+			t.Errorf("divergence evidence for %q = %+v, want verdict evidence %+v", outcome.ID, divergence.Evidence, outcome.Evidence)
+		}
+	}
+
+	legacy, err := json.Marshal(ProfileDivergence{
+		Code:        "profile.decision.required",
+		ID:          "language.generated",
+		Requirement: CapabilityRequired,
+		Blocking:    true,
+		Message:     "answer required",
+		NextAction:  "answer the decision",
+	})
+	if err != nil {
+		t.Fatalf("marshal legacy divergence: %v", err)
+	}
+	const wantLegacy = `{"code":"profile.decision.required","id":"language.generated","requirement":"required","blocking":true,"message":"answer required","nextAction":"answer the decision"}`
+	if string(legacy) != wantLegacy {
+		t.Fatalf("legacy divergence JSON = %s, want %s", legacy, wantLegacy)
+	}
+}
+
 func TestProfileAlignmentAdvisoryDivergenceNeverBlocksOrInfersPolicy(t *testing.T) {
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)

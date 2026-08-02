@@ -226,7 +226,18 @@
         "requirement": "recommended",
         "blocking": false,
         "message": "Firecrawl has no compatible local evidence.",
-        "nextAction": "Add the firecrawl skill if structured web extraction is useful."
+        "nextAction": "Add the firecrawl skill if structured web extraction is useful.",
+        "probe": {
+          "skill": "firecrawl"
+        },
+        "evidence": [
+          {
+            "status": "absent",
+            "kind": "installed-skill",
+            "strength": "none",
+            "classification": "profile-requirement"
+          }
+        ]
       }
     ],
     "httpRouteCandidates": null,

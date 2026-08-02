@@ -141,6 +141,8 @@ type ProfileDivergence struct {
 	Blocking    bool                  `json:"blocking"`
 	Message     string                `json:"message"`
 	NextAction  string                `json:"nextAction,omitempty"`
+	Probe       map[string]any        `json:"probe,omitempty"`
+	Evidence    []CapabilityEvidence  `json:"evidence,omitempty"`
 }
 
 // HTTPRouteCandidate records only locally observed route facts. Repository
@@ -326,7 +328,7 @@ func ResolveProfileAlignment(
 	}
 	applyUniversalCapabilityRemediation(outcomes, remediationProfileID)
 	divergences := append([]ProfileDivergence(nil), decisionDivergences...)
-	for _, outcome := range outcomes {
+	for index, outcome := range outcomes {
 		if outcome.Status == CapabilitySatisfied {
 			continue
 		}
@@ -337,6 +339,8 @@ func ResolveProfileAlignment(
 			Blocking:    outcome.Blocking,
 			Message:     outcome.Diagnostic.Message,
 			NextAction:  outcome.Diagnostic.NextAction,
+			Probe:       capabilities[index].Probe,
+			Evidence:    outcome.Evidence,
 		})
 	}
 

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -65,3 +65,38 @@ its evidence through the projection. Nothing renders them differently yet.
 
 - `_prd.md` → User Story 2; Core Features 5.
 - `_techspec.md` → System Architecture; Build Order 3.
+
+## Result
+
+Implemented the capability-to-divergence projection without changing its
+rendering. `ProfileDivergence` now carries optional `probe` and `evidence`
+fields, populated directly from the capability definition and outcome used by
+the evaluation. Decision and Verification divergences omit both fields and
+retain their existing JSON shape.
+
+Focused checks:
+
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/baseline -run 'Test(RequiredDivergencePreventsReadyPlan|DivergenceCarriesProbeEvidence|ProfileAlignmentAdvisoryDivergenceNeverBlocksOrInfersPolicy|PostgreSQLEvidenceSeparatesImplementationAndContract)$' -count=1` — passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/baseline -run 'TestBaselinePlanCharacterization/(unsatisfied-blocking-capabilities|advisory-only-divergences)$' -count=1` — passed after deliberate corpus regeneration.
+- The first focused test attempt with the default Go cache was blocked by the
+  sandbox at `/Users/marcio/Library/Caches/go-build`; rerunning with the
+  writable cache above passed.
+
+Acceptance evidence:
+
+1. `TestDivergenceCarriesProbeEvidence` iterates every unsatisfied capability
+   outcome and requires a matching divergence with a probe.
+2. The same test compares each divergence's evidence with the exact
+   `CapabilityOutcome.Evidence` that produced its verdict.
+3. The same test marshals the evaluated capability definition and divergence
+   probe and requires byte-equal JSON.
+4. Both new fields use `omitempty`; the legacy-shape assertion proves every
+   prior field name, type, value, and ordering remains unchanged when the new
+   fields are absent. Characterization diffs add only `probe` and `evidence`.
+5. The focused characterization cases pass, and the regenerated golden diff
+   changes no code, ID, requirement, blocking flag, message, next action,
+   grouping, or verdict.
+6. The post-edit worktree status contains only `internal/baseline/` paths and
+   this Task file.
+
+The Daemon-owned Verification commands were not run.

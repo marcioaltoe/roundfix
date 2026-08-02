@@ -226,7 +226,18 @@
         "requirement": "required",
         "blocking": true,
         "message": "Context7 has no compatible local evidence.",
-        "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment."
+        "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment.",
+        "probe": {
+          "skill": "context7"
+        },
+        "evidence": [
+          {
+            "status": "absent",
+            "kind": "installed-skill",
+            "strength": "none",
+            "classification": "profile-requirement"
+          }
+        ]
       }
     ],
     "httpRouteCandidates": null,
