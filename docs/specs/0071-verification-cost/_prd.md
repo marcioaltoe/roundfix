@@ -13,21 +13,31 @@ third of that was one line repeated in every Task. Measured on a warm cache:
 | Command | Wall clock |
 | --- | --- |
 | `go build -buildvcs=false ./...` | 0s |
-| `go test ./internal/baseline -count=1` | **109s** |
-| `go test ./internal/baseline ./internal/cli -count=1` | **142s** |
+| `go test ./... -count=1`, warm | **136.9s** |
+| `go test ./... -count=1`, **cold** | **146.2s** |
+| `go test ./internal/cli -count=1` alone | **113.2s** |
+| `go test ./internal/baseline -count=1` alone | **83.9s** |
+
+Compilation is not the cost: cold versus warm is 9.3s. Packages already overlap,
+so the suite can never finish faster than its slowest package — and
+`internal/cli` alone is 113.2s of essentially sequential work, with **488 test
+functions and one `t.Parallel()` call** on a twelve-core machine.
+`internal/cli` and `internal/baseline` together are 84% of the cost; the
+fifteen smallest packages sum to about eight seconds. The full baseline is
+recorded under `baseline/`.
 
 Every one of that Spec's fourteen Tasks carried one of those whole-package
 commands as the last line of its Verification — about 28 minutes per pass,
 paid again on every retry, to prove something the Run-level gate already
 proves.
 
-The suite itself is the other half. The Baseline package holds 176 test
-functions and 28 `t.Parallel()` calls, so it runs almost entirely sequentially
-on a twelve-core machine. Adding `t.Parallel()` to the subtests of the single
-slowest test — each of which already builds its own repository — took it from
-**29s to 17s**. Forty-one tests already isolate their own filesystem with
-`t.TempDir()`, and sixty-nine subtest blocks are structurally similar
-candidates.
+The suite itself is the other half, and the critical path is `internal/cli`.
+Adding `t.Parallel()` to the subtests of the slowest Baseline test — each of
+which already builds its own repository — took it from **29s to 17s**. Forty-one
+Baseline tests already isolate their filesystem with `t.TempDir()`, and
+`internal/cli` has 253 subtest blocks against one parallel call. Binary builds
+there are already shared through `TestMain`, so repeated compilation is not the
+cost.
 
 A third cost is how often the gate closes the graph, and Spec 0072 owns the
 mechanism. In summary: The Daemon withholds QA
@@ -92,6 +102,10 @@ many times the gate is requested.
    verification materially slower fails rather than accumulating.
 6. Coverage equivalence is proven, not assumed: the set of test functions
    executed before and after is identical.
+7. The Spec closes with a published before-and-after comparison: the same
+   commands on the same machine, the headline and per-package tables side by
+   side, and the delta stated. The baseline recorded under `baseline/` before
+   any change is the "before"; it is not re-derived afterwards.
 
 ## Non-Goals / Out of Scope
 
@@ -104,9 +118,11 @@ many times the gate is requested.
 
 ## Success Metrics
 
-- `go test ./internal/baseline -count=1` completes materially faster than the
-  recorded 109s baseline on the same machine, and
-  `./internal/baseline ./internal/cli` faster than 142s.
+- `go test ./... -count=1` completes materially faster than the recorded 136.9s
+  baseline on the same machine, and `internal/cli` alone faster than 113.2s —
+  the package that sets the floor.
+- A published before-and-after comparison accompanies the Spec at close,
+  measured with the baseline's own commands.
 - The set of test functions that execute is identical before and after,
   compared mechanically rather than by inspection.
 - No Task Verification in any active Spec carries a whole-package suite command.
