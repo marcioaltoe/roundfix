@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0056-profiles-configure-merge-semantics
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -78,3 +78,59 @@ applied change without parsing prose.
 - `_prd.md` → User Story 4; Core Features 5; Success Metrics (automation
   distinguishes by exit code alone).
 - `_techspec.md` → API Contracts: exit codes; Build Order 5.
+
+## Result
+
+### Implementation
+
+- A declined or EOF-unconfirmable write now returns the existing
+  unresolved/failed-operation code `1`, keeps the proposed config unpersisted,
+  and writes the refusal diagnostic to stderr.
+- The `roundfix/profiles-configure/v1` response now includes an additive
+  boolean `refused` field. Refusals set it to `true`; success, no-op, dry-run,
+  and validation responses set it to `false`. Existing response fields and
+  their meanings are unchanged.
+- Validation and proof errors still use code `2`. Applied writes,
+  already-satisfied no-ops, and dry-runs still use code `0`.
+
+### Focused checks
+
+- Red signal before the implementation:
+  `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli -run '^TestProfilesConfigureExitCodes$/declined_confirmation$'`
+  failed because the declined confirmation returned `0` instead of `1`.
+- After the final Go edit:
+  `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli -run '^TestProfilesConfigure' -count=1`
+  exited `0` and exercised the complete profiles-configure test family,
+  including the new exit-code matrix and the earlier merge, summary, and proof
+  behavior.
+- `rtk git diff --check -- internal/cli/profiles_configure.go internal/cli/cli_test.go docs/specs/0056-profiles-configure-merge-semantics/task_05.md`
+  exited `0`.
+- The commands under `## Verification` were not run; Daemon Verification owns
+  them for this execution mode.
+
+### Acceptance evidence
+
+- Declined confirmation: `TestProfilesConfigureExitCodes/declined_confirmation`
+  asserts code `1`, `changed: false`, `refused: true`, and byte-identical config.
+- Non-interactive refusal:
+  `TestProfilesConfigureExitCodes/non-interactive_confirmation_EOF` drives the
+  real confirmation reader with EOF and asserts the same code `1`, refusal
+  marker, and byte-identical config.
+- Validation isolation: the `validation_failures` subtests assert code `2` and
+  `refused: false` for an invalid scope, a category both configured and
+  removed, and a failed exact-selection proof.
+- Successful paths: the `applied_write`, `already-satisfied_no-op`, and
+  `dry_run` subtests assert code `0`; the first reports `changed: true`, while
+  the no-op and dry-run report `changed: false`, and the latter two preserve
+  the original bytes.
+- Stream separation: the decline test asserts the human refusal text is
+  present on stderr and absent from stdout; stdout remains the requested JSON
+  result.
+- Additive machine contract: the refusal test decodes all existing typed
+  fields with their prior values and separately requires the new boolean
+  marker; all non-refusal matrix cases require the marker to exist and be
+  `false`.
+- Scope postflight: `rtk git status --porcelain` lists only
+  `internal/cli/profiles_configure.go`, `internal/cli/cli_test.go`, and this
+  task file. Git also reported a non-fatal fsmonitor IPC diagnostic; the status
+  command exited `0` and reported no additional changed path.

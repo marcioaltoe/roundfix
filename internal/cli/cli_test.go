@@ -1484,6 +1484,233 @@ backend:
 	}
 }
 
+func TestProfilesConfigureExitCodes(t *testing.T) {
+	t.Run("declined confirmation", func(t *testing.T) {
+		_, repoDir := withCLIWorkspace(t)
+		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+		original := "watch:\n  max_rounds: 4\n"
+		mustWrite(t, configPath, original)
+		fragmentPath := filepath.Join(repoDir, "declined-profile.yml")
+		mustWrite(t, fragmentPath, profilesConfigureTestFragment("declined-preferred", "declined-fallback"))
+		withSuccessfulProfilesConfigureProof(t)
+		withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+			return false, nil
+		})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("declined confirmation exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
+		}
+		response := decodeProfilesConfigureResponse(t, stdout.String())
+		if response.Changed || response.Error != "" || response.Scope != "project" || response.Path != configPath || len(response.Profiles) != 1 || len(response.Changes) != 1 {
+			t.Fatalf("declined confirmation changed existing machine fields: %+v", response)
+		}
+		if !decodeProfilesConfigureRefused(t, stdout.String()) {
+			t.Fatalf("declined confirmation did not mark refusal: %s", stdout.String())
+		}
+		if !strings.Contains(stderr.String(), "confirmation declined") {
+			t.Fatalf("declined confirmation diagnostic missing from stderr: %q", stderr.String())
+		}
+		if strings.Contains(stdout.String(), "confirmation declined") {
+			t.Fatalf("declined confirmation diagnostic leaked to stdout: %q", stdout.String())
+		}
+		if got := mustRead(t, configPath); got != original {
+			t.Fatalf("declined confirmation mutated config\nwant: %q\n got: %q", original, got)
+		}
+	})
+
+	t.Run("non-interactive confirmation EOF", func(t *testing.T) {
+		_, repoDir := withCLIWorkspace(t)
+		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+		original := "watch:\n  max_rounds: 4\n"
+		mustWrite(t, configPath, original)
+		fragmentPath := filepath.Join(repoDir, "non-interactive-profile.yml")
+		mustWrite(t, fragmentPath, profilesConfigureTestFragment("non-interactive-preferred", "non-interactive-fallback"))
+		withSuccessfulProfilesConfigureProof(t)
+		withProfilesConfigureConfirm(t, defaultConfirmProfilesConfigure)
+		emptyInputPath := filepath.Join(t.TempDir(), "stdin")
+		mustWrite(t, emptyInputPath, "")
+		emptyInput, err := os.Open(emptyInputPath)
+		if err != nil {
+			t.Fatalf("open empty stdin: %v", err)
+		}
+		oldStdin := os.Stdin
+		os.Stdin = emptyInput
+		t.Cleanup(func() {
+			os.Stdin = oldStdin
+			_ = emptyInput.Close()
+		})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("non-interactive confirmation exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
+		}
+		if !decodeProfilesConfigureRefused(t, stdout.String()) {
+			t.Fatalf("non-interactive confirmation did not mark refusal: %s", stdout.String())
+		}
+		if !strings.Contains(stderr.String(), "confirmation declined") {
+			t.Fatalf("non-interactive refusal diagnostic missing from stderr: %q", stderr.String())
+		}
+		if got := mustRead(t, configPath); got != original {
+			t.Fatalf("non-interactive refusal mutated config\nwant: %q\n got: %q", original, got)
+		}
+	})
+
+	t.Run("validation failures", func(t *testing.T) {
+		t.Run("invalid flags", func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"profiles", "configure", "--scope", "invalid", "--json"}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("invalid flag exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if decodeProfilesConfigureRefused(t, stdout.String()) {
+				t.Fatalf("invalid flag was marked as a refusal: %s", stdout.String())
+			}
+		})
+
+		t.Run("configured and removed category", func(t *testing.T) {
+			_, repoDir := withCLIWorkspace(t)
+			configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+			original := "watch:\n  max_rounds: 4\n"
+			mustWrite(t, configPath, original)
+			fragmentPath := filepath.Join(repoDir, "conflicting-profile.yml")
+			mustWrite(t, fragmentPath, profilesConfigureTestFragment("conflicting-preferred", "conflicting-fallback"))
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--remove", "backend", "--yes", "--json"}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("conflicting category exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			response := decodeProfilesConfigureResponse(t, stdout.String())
+			if response.Changed || !strings.Contains(response.Error, "cannot be both configured and removed") {
+				t.Fatalf("unexpected conflicting category response: %+v", response)
+			}
+			if decodeProfilesConfigureRefused(t, stdout.String()) {
+				t.Fatalf("conflicting category was marked as a refusal: %s", stdout.String())
+			}
+			if got := mustRead(t, configPath); got != original {
+				t.Fatalf("conflicting category mutated config\nwant: %q\n got: %q", original, got)
+			}
+		})
+
+		t.Run("failed proof", func(t *testing.T) {
+			_, repoDir := withCLIWorkspace(t)
+			configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+			original := "watch:\n  max_rounds: 4\n"
+			mustWrite(t, configPath, original)
+			fragmentPath := filepath.Join(repoDir, "unproven-profile.yml")
+			mustWrite(t, fragmentPath, profilesConfigureTestFragment("unproven-preferred", "unproven-fallback"))
+			withAgentRunner(t, &profileReadinessExactRunner{prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+				return agent.SelectionProof{}, &agent.SelectionUnsupportedError{
+					Kind:            agent.SelectionModelNotAdvertised,
+					Runtime:         req.Runtime.ID,
+					Model:           req.Runtime.Model,
+					ReasoningEffort: req.Runtime.ReasoningEffort,
+				}
+			}})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("failed proof exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if decodeProfilesConfigureRefused(t, stdout.String()) {
+				t.Fatalf("failed proof was marked as a refusal: %s", stdout.String())
+			}
+			if got := mustRead(t, configPath); got != original {
+				t.Fatalf("failed proof mutated config\nwant: %q\n got: %q", original, got)
+			}
+		})
+	})
+
+	for _, tt := range []struct {
+		name        string
+		original    string
+		extraArgs   []string
+		wantChanged bool
+		wantWritten bool
+	}{
+		{
+			name:        "applied write",
+			original:    "watch:\n  max_rounds: 4\n",
+			extraArgs:   []string{"--yes"},
+			wantChanged: true,
+			wantWritten: true,
+		},
+		{
+			name: "already-satisfied no-op",
+			original: `profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: stable-preferred
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: stable-fallback
+        reasoning_effort: xhigh
+`,
+			extraArgs: []string{"--yes"},
+		},
+		{
+			name:      "dry run",
+			original:  "watch:\n  max_rounds: 4\n",
+			extraArgs: []string{"--dry-run"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, repoDir := withCLIWorkspace(t)
+			configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+			mustWrite(t, configPath, tt.original)
+			fragmentPath := filepath.Join(repoDir, "stable-profile.yml")
+			mustWrite(t, fragmentPath, profilesConfigureTestFragment("stable-preferred", "stable-fallback"))
+			withSuccessfulProfilesConfigureProof(t)
+			withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+				t.Fatal("explicit consent and dry-run paths must not confirm")
+				return false, nil
+			})
+			args := []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}
+			args = append(args, tt.extraArgs...)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(args, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("%s exit = %d, want %d stderr=%q", tt.name, code, exitOK, stderr.String())
+			}
+			response := decodeProfilesConfigureResponse(t, stdout.String())
+			if response.Changed != tt.wantChanged {
+				t.Fatalf("%s changed = %t, want %t response=%+v", tt.name, response.Changed, tt.wantChanged, response)
+			}
+			if decodeProfilesConfigureRefused(t, stdout.String()) {
+				t.Fatalf("%s was marked as a refusal: %s", tt.name, stdout.String())
+			}
+			got := mustRead(t, configPath)
+			if tt.wantWritten {
+				if got == tt.original {
+					t.Fatalf("%s did not write config", tt.name)
+				}
+			} else if got != tt.original {
+				t.Fatalf("%s mutated config\nwant: %q\n got: %q", tt.name, tt.original, got)
+			}
+		})
+	}
+}
+
 func TestProfilesConfigureProofRunsBeforeConfirmationAndWrite(t *testing.T) {
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -1781,8 +2008,8 @@ func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testin
 
 	code := Run([]string{"profiles", "configure", "--scope", "project", "--json"}, &stdout, &stderr)
 
-	if code != exitOK {
-		t.Fatalf("interactive configure exit = %d stderr=%q", code, stderr.String())
+	if code != exitRunFailed {
+		t.Fatalf("interactive configure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
 	}
 	if len(runner.exactRequests) != 2 {
 		t.Fatalf("interactive exact proofs = %#v, want preferred and fallback", runner.exactRequests)
@@ -1794,7 +2021,7 @@ func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testin
 		t.Fatalf("interactive fallback proof = %+v", got)
 	}
 	response := decodeProfilesConfigureResponse(t, stdout.String())
-	if response.Changed || len(response.Profiles) != 1 || response.Profiles[0].Preferred.Model != "interactive-choice" || response.Profiles[0].Fallbacks[0].Model != "interactive-fallback" {
+	if response.Changed || !response.Refused || len(response.Profiles) != 1 || response.Profiles[0].Preferred.Model != "interactive-choice" || response.Profiles[0].Fallbacks[0].Model != "interactive-fallback" {
 		t.Fatalf("interactive response inserted or changed a selection: %+v", response)
 	}
 	if got := mustRead(t, configPath); got != original {
@@ -1959,10 +2186,10 @@ func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.
 
 		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
-		if code != exitOK {
-			t.Fatalf("decline exit = %d stderr=%q", code, stderr.String())
+		if code != exitRunFailed {
+			t.Fatalf("decline exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
 		}
-		if response := decodeProfilesConfigureResponse(t, stdout.String()); response.Changed {
+		if response := decodeProfilesConfigureResponse(t, stdout.String()); response.Changed || !response.Refused {
 			t.Fatalf("decline response = %+v", response)
 		}
 		if got := mustRead(t, configPath); got != original {
@@ -2497,6 +2724,20 @@ func decodeProfilesConfigureResponse(t *testing.T, output string) profilesConfig
 		t.Fatalf("decode profiles configure JSON %q: %v", output, err)
 	}
 	return response
+}
+
+func decodeProfilesConfigureRefused(t *testing.T, output string) bool {
+	t.Helper()
+	var response struct {
+		Refused *bool `json:"refused"`
+	}
+	if err := json.Unmarshal([]byte(output), &response); err != nil {
+		t.Fatalf("decode profiles configure refusal marker %q: %v", output, err)
+	}
+	if response.Refused == nil {
+		t.Fatalf("profiles configure response is missing boolean refused field: %s", output)
+	}
+	return *response.Refused
 }
 
 func decodeProfilesValidateResponse(t *testing.T, output string) profilesValidateResponse {

@@ -28,6 +28,7 @@ type profilesConfigureRequest struct {
 type profilesConfigureResponse struct {
 	Schema   string                     `json:"schema"`
 	Changed  bool                       `json:"changed"`
+	Refused  bool                       `json:"refused"`
 	Scope    string                     `json:"scope"`
 	Path     string                     `json:"path"`
 	Profiles []profilesConfigureProfile `json:"profiles"`
@@ -106,17 +107,7 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 			return printProfilesConfigureError(req, result, err, stdout, stderr)
 		}
 		if !confirmed {
-			result.Changed = false
-			if !req.json {
-				if _, err := fmt.Fprintf(stdout, "Profile configuration unchanged: confirmation declined for %s\n", result.Path); err != nil {
-					return printProfilesConfigureOutputError(err, stderr)
-				}
-				return exitOK
-			}
-			if err := printProfilesConfigureSuccess(req, result, stdout); err != nil {
-				return printProfilesConfigureOutputError(err, stderr)
-			}
-			return exitOK
+			return printProfilesConfigureRefusal(req, result, stdout, stderr)
 		}
 	} else if !req.json {
 		if _, err := fmt.Fprint(stdout, preview); err != nil {
@@ -381,6 +372,21 @@ func printProfilesConfigureSuccess(req profilesConfigureRequest, result roundcon
 
 func printProfilesConfigureOutputError(err error, stderr io.Writer) int {
 	printProfilesFailure(fmt.Errorf("encode profiles configure JSON: %w", err), stderr)
+	return exitRunFailed
+}
+
+func printProfilesConfigureRefusal(req profilesConfigureRequest, result roundconfig.ProfileConfigResult, stdout, stderr io.Writer) int {
+	result.Changed = false
+	if _, err := fmt.Fprintf(stderr, "Profile configuration unchanged: confirmation declined for %s\n", result.Path); err != nil {
+		return exitRunFailed
+	}
+	if req.json {
+		response := profilesConfigureResponseForResult(result, "")
+		response.Refused = true
+		if err := json.NewEncoder(stdout).Encode(response); err != nil {
+			return printProfilesConfigureOutputError(err, stderr)
+		}
+	}
 	return exitRunFailed
 }
 
