@@ -172,6 +172,7 @@ type VerificationProjection struct {
 	Role                 string                     `json:"role"`
 	Tool                 string                     `json:"tool,omitempty"`
 	Command              string                     `json:"command"`
+	SatisfiedByCommand   string                     `json:"satisfiedByCommand,omitempty"`
 	Classification       VerificationClassification `json:"classification"`
 	RepositoryExecutable bool                       `json:"repositoryExecutable"`
 	DeclarationPath      string                     `json:"declarationPath,omitempty"`
@@ -179,10 +180,11 @@ type VerificationProjection struct {
 }
 
 type ProfileAlignmentRequest struct {
-	ProfileID            string
-	Decisions            []DecisionValue
-	Profile              *ResolvedProfile
-	RemediationProfileID string
+	ProfileID                string
+	Decisions                []DecisionValue
+	Profile                  *ResolvedProfile
+	RemediationProfileID     string
+	VerificationRoleMappings map[string]string
 }
 
 // ProfileAlignment is the deterministic, read-only result consumed by later
@@ -348,7 +350,13 @@ func ResolveProfileAlignment(
 	if err != nil {
 		return ProfileAlignment{}, err
 	}
-	verification, verificationDivergences, err := resolveVerificationProjection(root, profile, decisions, catalog)
+	verification, verificationDivergences, err := resolveVerificationProjection(
+		root,
+		profile,
+		decisions,
+		request.VerificationRoleMappings,
+		catalog,
+	)
 	if err != nil {
 		return ProfileAlignment{}, err
 	}
@@ -1031,6 +1039,7 @@ func resolveVerificationProjection(
 	root *os.Root,
 	profile ResolvedProfile,
 	decisions []DecisionValue,
+	roleMappings map[string]string,
 	catalog *Catalog,
 ) ([]VerificationProjection, []ProfileDivergence, error) {
 	projections := make([]VerificationProjection, 0)
@@ -1041,29 +1050,54 @@ func resolveVerificationProjection(
 			role, _ := stringValue(raw, "kind")
 			tool, _ := stringValue(raw, "tool")
 			command, _ := stringValue(raw, "command")
-			resolvedCommand, declaration, err := resolveProfileVerificationCommand(
-				root,
-				role,
-				command,
-			)
+			resolvedCommand := command
+			mappedCommand, mapped := roleMappings[role]
+			var declaration commandDeclaration
+			var err error
+			if mapped {
+				resolvedCommand = strings.TrimSpace(mappedCommand)
+				declaration, err = validateLocalCommandDeclaration(root, resolvedCommand)
+			} else {
+				resolvedCommand, declaration, err = resolveProfileVerificationCommand(
+					root,
+					role,
+					command,
+				)
+			}
 			if err != nil {
 				return nil, nil, fmt.Errorf("validate profile Verification expectation %q: %w", id, err)
 			}
 			classification := VerificationProfileExpectation
-			if resolvedCommand != command {
+			if mapped || resolvedCommand != command {
 				classification = VerificationRepositoryCommand
+			}
+			satisfiedByCommand := ""
+			if mapped && declaration.Path != "" {
+				satisfiedByCommand = resolvedCommand
 			}
 			projections = append(projections, VerificationProjection{
 				ID:                   id,
 				Role:                 role,
 				Tool:                 tool,
 				Command:              resolvedCommand,
+				SatisfiedByCommand:   satisfiedByCommand,
 				Classification:       classification,
 				RepositoryExecutable: declaration.Path != "",
 				DeclarationPath:      declaration.Path,
 				DeclarationDigest:    declaration.Digest,
 			})
 			if declaration.Path == "" {
+				if mapped {
+					divergences = append(divergences, ProfileDivergence{
+						Code:        "verification.role-mapping.undeclared",
+						ID:          id,
+						Requirement: CapabilityRecommended,
+						Blocking:    false,
+						Message:     fmt.Sprintf("portable %s role maps to repository command %q, but no matching local declaration exists", role, resolvedCommand),
+						NextAction:  "declare the mapped repository command or map the portable role to another declared command",
+					})
+					continue
+				}
 				divergences = append(divergences, ProfileDivergence{
 					Code:        "verification.profile-expectation.unresolved",
 					ID:          id,

@@ -465,6 +465,96 @@ func TestExecutableVerificationCommandRequiresLocalDeclaration(t *testing.T) {
 	}
 }
 
+func TestPortableVerificationRoleMapping(t *testing.T) {
+	const (
+		role                = "workspace"
+		portableCommand     = "bun run verify"
+		declaredCommand     = "make verify"
+		undeclaredCommand   = "make missing"
+		legacyMessage       = "portable workspace role expects \"bun run verify\", but no matching local declaration exists"
+		legacyNextAction    = "map the portable role to a declared repository command or keep it as a profile expectation"
+		mappedAbsentMessage = "portable workspace role maps to repository command \"make missing\", but no matching local declaration exists"
+		mappedAbsentAction  = "declare the mapped repository command or map the portable role to another declared command"
+		executionMarker     = "verification-role-executed"
+	)
+
+	newRepository := func(t *testing.T) string {
+		t.Helper()
+		repository := newAlignedTypeScriptRepository(t)
+		writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(true, false))
+		writeProfileAlignmentFile(t, repository, "Makefile", "verify:\n\t@touch "+executionMarker+"\n")
+		return repository
+	}
+	resolve := func(t *testing.T, repository string, mappings map[string]string) ProfileAlignment {
+		t.Helper()
+		alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+			ProfileID:                "standard-typescript-monorepo",
+			Decisions:                standardTypeScriptDecisions(declaredCommand),
+			VerificationRoleMappings: mappings,
+		}, loadProfileAlignmentCatalog(t))
+		if err != nil {
+			t.Fatalf("resolve portable Verification role mapping: %v", err)
+		}
+		return alignment
+	}
+
+	t.Run("mapped role is satisfied by a present declaration without execution", func(t *testing.T) {
+		repository := newRepository(t)
+		alignment := resolve(t, repository, map[string]string{role: declaredCommand})
+
+		projection, ok := findVerificationProjection(alignment.Verification, "verification.workspace")
+		if !ok || projection.Command != declaredCommand ||
+			projection.SatisfiedByCommand != declaredCommand ||
+			projection.Classification != VerificationRepositoryCommand ||
+			!projection.RepositoryExecutable || projection.DeclarationPath != "Makefile" ||
+			!strings.HasPrefix(projection.DeclarationDigest, "sha256:") {
+			t.Fatalf("mapped workspace projection = %+v, found=%v", projection, ok)
+		}
+		if divergence, exists := findProfileDivergence(alignment.Divergences, "verification.workspace"); exists {
+			t.Fatalf("mapped workspace role remained divergent: %+v", divergence)
+		}
+		if _, err := os.Stat(filepath.Join(repository, executionMarker)); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("mapped repository command was executed: %v", err)
+		}
+	})
+
+	t.Run("unmapped role keeps its legacy divergence", func(t *testing.T) {
+		alignment := resolve(t, newRepository(t), nil)
+
+		projection, ok := findVerificationProjection(alignment.Verification, "verification.workspace")
+		if !ok || projection.Command != portableCommand ||
+			projection.SatisfiedByCommand != "" ||
+			projection.Classification != VerificationProfileExpectation ||
+			projection.RepositoryExecutable {
+			t.Fatalf("unmapped workspace projection = %+v, found=%v", projection, ok)
+		}
+		divergence, ok := findProfileDivergence(alignment.Divergences, "verification.workspace")
+		if !ok || divergence.Code != "verification.profile-expectation.unresolved" ||
+			divergence.Requirement != CapabilityRecommended || divergence.Blocking ||
+			divergence.Message != legacyMessage || divergence.NextAction != legacyNextAction {
+			t.Fatalf("unmapped workspace divergence = %+v, found=%v", divergence, ok)
+		}
+	})
+
+	t.Run("mapped role rejects an absent declaration with a reason", func(t *testing.T) {
+		alignment := resolve(t, newRepository(t), map[string]string{role: undeclaredCommand})
+
+		projection, ok := findVerificationProjection(alignment.Verification, "verification.workspace")
+		if !ok || projection.Command != undeclaredCommand ||
+			projection.SatisfiedByCommand != "" ||
+			projection.Classification != VerificationRepositoryCommand ||
+			projection.RepositoryExecutable {
+			t.Fatalf("undeclared mapped workspace projection = %+v, found=%v", projection, ok)
+		}
+		divergence, ok := findProfileDivergence(alignment.Divergences, "verification.workspace")
+		if !ok || divergence.Code != "verification.role-mapping.undeclared" ||
+			divergence.Requirement != CapabilityRecommended || divergence.Blocking ||
+			divergence.Message != mappedAbsentMessage || divergence.NextAction != mappedAbsentAction {
+			t.Fatalf("undeclared mapped workspace divergence = %+v, found=%v", divergence, ok)
+		}
+	})
+}
+
 func TestProfileAlignmentDiscoversDeclaredRepositoryFormatter(t *testing.T) {
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
