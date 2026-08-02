@@ -1,0 +1,12 @@
+watch:
+    max_rounds: 6
+profiles:
+    backend:
+        preferred:
+            runtime: codex
+            model: wide-indent-primary
+            reasoning_effort: high
+        fallbacks:
+            - runtime: claude
+              model: wide-indent-fallback
+              reasoning_effort: xhigh

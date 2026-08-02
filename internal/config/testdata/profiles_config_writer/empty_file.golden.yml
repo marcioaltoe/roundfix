@@ -1,0 +1,10 @@
+profiles:
+    backend:
+        preferred:
+            runtime: codex
+            model: characterization-backend
+            reasoning_effort: high
+        fallbacks:
+            - runtime: claude
+              model: characterization-fallback
+              reasoning_effort: xhigh

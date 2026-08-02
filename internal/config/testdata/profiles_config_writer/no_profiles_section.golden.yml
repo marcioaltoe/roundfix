@@ -1,0 +1,16 @@
+notify:
+  enabled: false
+watch:
+  max_rounds: 8
+worktree:
+  concurrency: 2
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: characterization-backend
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: characterization-fallback
+        reasoning_effort: xhigh

@@ -1546,8 +1546,8 @@ func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testin
 
 	code := Run([]string{"profiles", "configure", "--scope", "project", "--json"}, &stdout, &stderr)
 
-	if code != exitOK {
-		t.Fatalf("interactive configure exit = %d stderr=%q", code, stderr.String())
+	if code != exitRunFailed {
+		t.Fatalf("interactive configure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
 	}
 	if len(runner.exactRequests) != 2 {
 		t.Fatalf("interactive exact proofs = %#v, want preferred and fallback", runner.exactRequests)
@@ -1559,7 +1559,7 @@ func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testin
 		t.Fatalf("interactive fallback proof = %+v", got)
 	}
 	response := decodeProfilesConfigureResponse(t, stdout.String())
-	if response.Changed || len(response.Profiles) != 1 || response.Profiles[0].Preferred.Model != "interactive-choice" || response.Profiles[0].Fallbacks[0].Model != "interactive-fallback" {
+	if response.Changed || !response.Refused || len(response.Profiles) != 1 || response.Profiles[0].Preferred.Model != "interactive-choice" || response.Profiles[0].Fallbacks[0].Model != "interactive-fallback" {
 		t.Fatalf("interactive response inserted or changed a selection: %+v", response)
 	}
 	if got := mustRead(t, configPath); got != original {
@@ -1724,10 +1724,10 @@ func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.
 
 		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
-		if code != exitOK {
-			t.Fatalf("decline exit = %d stderr=%q", code, stderr.String())
+		if code != exitRunFailed {
+			t.Fatalf("decline exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
 		}
-		if response := decodeProfilesConfigureResponse(t, stdout.String()); response.Changed {
+		if response := decodeProfilesConfigureResponse(t, stdout.String()); response.Changed || !response.Refused {
 			t.Fatalf("decline response = %+v", response)
 		}
 		if got := mustRead(t, configPath); got != original {

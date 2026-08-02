@@ -1,0 +1,16 @@
+worktree:
+  concurrency: 3
+profiles:
+  backend:
+    fallbacks:
+      - reasoning_effort: xhigh
+        model: key-order-fallback
+        runtime: claude
+    preferred:
+      reasoning_effort: high
+      model: key-order-primary
+      runtime: codex
+defaults:
+  artifact_dir: artifacts
+budget:
+  max_run_duration: 90m

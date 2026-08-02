@@ -15,11 +15,30 @@ import (
 
 const profileConfigTempPattern = ".roundfix-profiles-*"
 
+type ChangeKind string
+
+const (
+	ChangeAdded    ChangeKind = "added"
+	ChangeReplaced ChangeKind = "replaced"
+	ChangeRemoved  ChangeKind = "removed"
+)
+
+type CategoryChange struct {
+	Category WorkCategory
+	Kind     ChangeKind
+	Profile  AgentSelectionProfile
+}
+
+type EffectiveChangeSet struct {
+	Changes []CategoryChange
+}
+
 type ProfileConfigOptions struct {
 	Scope    string
 	HomeDir  string
 	WorkDir  string
 	Profiles Profiles
+	Removals []WorkCategory
 	DryRun   bool
 }
 
@@ -28,6 +47,7 @@ type ProfileConfigResult struct {
 	Path     string
 	Changed  bool
 	Profiles Profiles
+	Changes  EffectiveChangeSet
 }
 
 type ProfileConfigProposal struct {
@@ -95,6 +115,41 @@ func NormalizeProfilesFragment(profiles Profiles) (Profiles, error) {
 	return normalized, nil
 }
 
+func DeriveEffectiveChangeSet(existing Profiles, fragment Profiles, removals []WorkCategory) (EffectiveChangeSet, error) {
+	removedCategories := make(map[WorkCategory]struct{}, len(removals))
+	for _, removal := range removals {
+		category, ok := ParseWorkCategory(string(removal))
+		if !ok {
+			return EffectiveChangeSet{}, fmt.Errorf("remove category %q is not a supported Agent Work Category; supported values: %s", removal, supportedWorkCategoryList())
+		}
+		if _, conflict := fragment[category]; conflict {
+			return EffectiveChangeSet{}, fmt.Errorf("profiles.%s cannot be both configured and removed", category)
+		}
+		removedCategories[category] = struct{}{}
+	}
+
+	changes := make([]CategoryChange, 0, len(fragment)+len(removedCategories))
+	for _, category := range allWorkCategories {
+		if entry, ok := fragment[category]; ok {
+			kind := ChangeAdded
+			if _, configured := existing[category]; configured {
+				kind = ChangeReplaced
+			}
+			changes = append(changes, CategoryChange{
+				Category: category,
+				Kind:     kind,
+				Profile:  cloneProfile(entry.Profile),
+			})
+			continue
+		}
+		if _, removed := removedCategories[category]; removed {
+			changes = append(changes, CategoryChange{Category: category, Kind: ChangeRemoved})
+		}
+	}
+
+	return EffectiveChangeSet{Changes: changes}, nil
+}
+
 func WriteProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (ProfileConfigResult, error) {
 	proposal, err := PrepareProfilesConfig(ctx, opts)
 	if err != nil {
@@ -117,9 +172,14 @@ func PrepareProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (Prof
 	if err != nil {
 		return ProfileConfigProposal{}, err
 	}
-	profiles, err := NormalizeProfilesFragment(opts.Profiles)
-	if err != nil {
-		return ProfileConfigProposal{}, err
+	profiles := Profiles{}
+	if len(opts.Profiles) > 0 {
+		profiles, err = NormalizeProfilesFragment(opts.Profiles)
+		if err != nil {
+			return ProfileConfigProposal{}, err
+		}
+	} else if len(opts.Removals) == 0 {
+		return ProfileConfigProposal{}, errors.New("profiles must define at least one Agent Selection Profile")
 	}
 	result := ProfileConfigResult{
 		Scope:    scope,
@@ -132,7 +192,16 @@ func PrepareProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (Prof
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return ProfileConfigProposal{}, fmt.Errorf("read config %q: %w", path, err)
 	}
-	next, err := mergeProfilesConfigContent(path, current, profiles, source)
+	existing, err := configuredProfilesForChangeSet(path, current, source)
+	if err != nil {
+		return ProfileConfigProposal{}, err
+	}
+	changes, err := DeriveEffectiveChangeSet(existing, profiles, opts.Removals)
+	if err != nil {
+		return ProfileConfigProposal{}, err
+	}
+	result.Changes = cloneEffectiveChangeSet(changes)
+	next, err := mergeProfilesConfigContent(path, current, changes, source)
 	if err != nil {
 		return ProfileConfigProposal{}, err
 	}
@@ -147,6 +216,7 @@ func PrepareProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (Prof
 func (proposal ProfileConfigProposal) Result() ProfileConfigResult {
 	result := proposal.result
 	result.Profiles = cloneProfilesForWrite(proposal.result.Profiles)
+	result.Changes = cloneEffectiveChangeSet(proposal.result.Changes)
 	return result
 }
 
@@ -244,25 +314,329 @@ func profileConfigTarget(scope string, homeDir string, workDir string) (string, 
 	return normalizedScope, filepath.Join(gitRoot, projectConfigName), ProfileSourceProject, nil
 }
 
-func mergeProfilesConfigContent(path string, content []byte, profiles Profiles, source ProfileSource) ([]byte, error) {
-	document, root, err := decodeConfigDocumentForProfiles(path, content)
+func configuredProfilesForChangeSet(path string, content []byte, source ProfileSource) (Profiles, error) {
+	_, root, hasProfiles, err := decodeProfilesConfigForMerge(path, content, source)
 	if err != nil {
 		return nil, err
+	}
+	if !hasProfiles {
+		return nil, nil
+	}
+	profilesNode, _ := topLevelYAMLNode(root, "profiles")
+	if profilesNode.Kind != yaml.MappingNode {
+		return nil, fmt.Errorf("parse config %q: profiles must be a mapping", path)
+	}
+
+	existing := Profiles{}
+	for index := 0; index+1 < len(profilesNode.Content); index += 2 {
+		category, ok := ParseWorkCategory(strings.TrimSpace(profilesNode.Content[index].Value))
+		if !ok {
+			return nil, fmt.Errorf(
+				"parse config %q: profiles.%s is not a supported Agent Work Category; supported values: %s",
+				path,
+				profilesNode.Content[index].Value,
+				supportedWorkCategoryList(),
+			)
+		}
+		existing[category] = ProfileEntry{}
+	}
+	return existing, nil
+}
+
+func mergeProfilesConfigContent(path string, content []byte, changes EffectiveChangeSet, source ProfileSource) ([]byte, error) {
+	document, root, hasProfiles, err := decodeProfilesConfigForMerge(path, content, source)
+	if err != nil {
+		return nil, err
+	}
+	profilesNode, _ := topLevelYAMLNode(root, "profiles")
+	if !hasProfiles {
+		profilesNode = &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
+	}
+	if profilesNode.Kind != yaml.MappingNode {
+		return nil, fmt.Errorf("parse config %q: profiles must be a mapping", path)
+	}
+	if !profilesNodeWillChange(profilesNode, changes) {
+		return append([]byte(nil), content...), nil
+	}
+	removalBlankMarkers := markProfilesRemovalBlankLines(content, root, profilesNode, changes)
+	if err := mergeProfilesNode(profilesNode, changes); err != nil {
+		return nil, fmt.Errorf("merge config %q profiles: %w", path, err)
+	}
+	if !hasProfiles {
+		setTopLevelYAMLNode(root, "profiles", profilesNode)
+	}
+	encoded, err := encodeProfilesConfigDocument(document, profilesConfigIndent(content))
+	if err != nil {
+		return nil, fmt.Errorf("encode config %q: %w", path, err)
+	}
+	encoded, err = restoreProfilesRemovalBlankLines(encoded, removalBlankMarkers)
+	if err != nil {
+		return nil, fmt.Errorf("restore config %q spacing: %w", path, err)
+	}
+	if _, _, err := decodeConfigDocumentForProfiles(path, encoded); err != nil {
+		return nil, fmt.Errorf("validate merged config %q: %w", path, err)
+	}
+	return encoded, nil
+}
+
+func markProfilesRemovalBlankLines(content []byte, root *yaml.Node, profilesNode *yaml.Node, changes EffectiveChangeSet) map[string][]byte {
+	// yaml.Node retains comments but not otherwise empty source lines. Unique
+	// comment markers carry surviving blank lines through the encoder and are
+	// replaced with their original bytes immediately afterward.
+	removed := make(map[WorkCategory]bool, len(changes.Changes))
+	for _, change := range changes.Changes {
+		if change.Kind == ChangeRemoved {
+			removed[change.Category] = true
+		}
+	}
+	if len(removed) == 0 {
+		return nil
+	}
+
+	type profileNodePair struct {
+		category WorkCategory
+		key      *yaml.Node
+		value    *yaml.Node
+	}
+	pairs := make([]profileNodePair, 0, len(profilesNode.Content)/2)
+	removesPresentCategory := false
+	for index := 0; index+1 < len(profilesNode.Content); index += 2 {
+		category, ok := ParseWorkCategory(strings.TrimSpace(profilesNode.Content[index].Value))
+		if !ok {
+			continue
+		}
+		if removed[category] {
+			removesPresentCategory = true
+		}
+		pairs = append(pairs, profileNodePair{
+			category: category,
+			key:      profilesNode.Content[index],
+			value:    profilesNode.Content[index+1],
+		})
+	}
+	if !removesPresentCategory {
+		return nil
+	}
+
+	lines := bytes.Split(content, []byte("\n"))
+	_, profilesIndex := topLevelYAMLNode(root, "profiles")
+	var followingTopLevelKey *yaml.Node
+	if profilesIndex >= 0 && profilesIndex+2 < len(root.Content) {
+		followingTopLevelKey = root.Content[profilesIndex+2]
+	}
+
+	type blankLineCarrier struct {
+		node  *yaml.Node
+		lines [][]byte
+	}
+	carriers := make([]blankLineCarrier, 0, len(pairs)+1)
+	addCarrier := func(node *yaml.Node, blankLines [][]byte) {
+		if node == nil || len(blankLines) == 0 {
+			return
+		}
+		for index := range carriers {
+			if carriers[index].node == node {
+				carriers[index].lines = append(carriers[index].lines, blankLines...)
+				return
+			}
+		}
+		carriers = append(carriers, blankLineCarrier{node: node, lines: blankLines})
+	}
+
+	for index, pair := range pairs {
+		if removed[pair.category] || index+1 >= len(pairs) {
+			continue
+		}
+		blankLines := sourceBlankLinesAfter(lines, maxYAMLNodeLine(pair.value), pairs[index+1].key.Line)
+		carrier := followingTopLevelKey
+		for next := index + 1; next < len(pairs); next++ {
+			if !removed[pairs[next].category] {
+				carrier = pairs[next].key
+				break
+			}
+		}
+		addCarrier(carrier, blankLines)
+	}
+
+	if followingTopLevelKey != nil {
+		addCarrier(followingTopLevelKey, sourceBlankLinesAfter(lines, maxYAMLNodeLine(profilesNode), followingTopLevelKey.Line))
+	}
+
+	markerPrefix := "# roundfix-internal-removal-blank"
+	for bytes.Contains(content, []byte(markerPrefix)) {
+		markerPrefix += "-x"
+	}
+	markers := make(map[string][]byte)
+	for _, carrier := range carriers {
+		comments := make([]string, 0, len(carrier.lines))
+		for _, line := range carrier.lines {
+			marker := fmt.Sprintf("%s-%d", markerPrefix, len(markers))
+			markers[marker] = line
+			comments = append(comments, marker)
+		}
+		if carrier.node.HeadComment != "" {
+			comments = append(comments, carrier.node.HeadComment)
+		}
+		carrier.node.HeadComment = strings.Join(comments, "\n")
+	}
+	return markers
+}
+
+func sourceBlankLinesAfter(lines [][]byte, line int, beforeLine int) [][]byte {
+	if line <= 0 || beforeLine <= line {
+		return nil
+	}
+	blankLines := make([][]byte, 0, beforeLine-line-1)
+	for lineNumber := line + 1; lineNumber < beforeLine && lineNumber <= len(lines); lineNumber++ {
+		if len(bytes.TrimSpace(lines[lineNumber-1])) != 0 {
+			break
+		}
+		blankLines = append(blankLines, append([]byte(nil), lines[lineNumber-1]...))
+	}
+	return blankLines
+}
+
+func maxYAMLNodeLine(node *yaml.Node) int {
+	if node == nil {
+		return 0
+	}
+	line := node.Line
+	for _, child := range node.Content {
+		if childLine := maxYAMLNodeLine(child); childLine > line {
+			line = childLine
+		}
+	}
+	return line
+}
+
+func restoreProfilesRemovalBlankLines(content []byte, markers map[string][]byte) ([]byte, error) {
+	if len(markers) == 0 {
+		return content, nil
+	}
+	encodedLines := bytes.Split(content, []byte("\n"))
+	restored := 0
+	for index, line := range encodedLines {
+		marker := string(bytes.TrimSpace(line))
+		if original, ok := markers[marker]; ok {
+			encodedLines[index] = original
+			restored++
+		}
+	}
+	if restored != len(markers) {
+		return nil, errors.New("encoded profiles config lost a blank-line marker")
+	}
+	return bytes.Join(encodedLines, []byte("\n")), nil
+}
+
+func encodeProfilesConfigDocument(document *yaml.Node, indent int) ([]byte, error) {
+	var buffer bytes.Buffer
+	encoder := yaml.NewEncoder(&buffer)
+	encoder.SetIndent(indent)
+	if err := encoder.Encode(document); err != nil {
+		return nil, err
+	}
+	if err := encoder.Close(); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
+func profilesConfigIndent(content []byte) int {
+	indent := 0
+	for _, line := range bytes.Split(content, []byte("\n")) {
+		trimmed := bytes.TrimSpace(line)
+		if len(trimmed) == 0 || trimmed[0] == '#' {
+			continue
+		}
+		spaces := 0
+		for spaces < len(line) && line[spaces] == ' ' {
+			spaces++
+		}
+		if spaces > 0 && (indent == 0 || spaces < indent) {
+			indent = spaces
+		}
+	}
+	if indent == 0 {
+		return 4
+	}
+	return indent
+}
+
+func decodeProfilesConfigForMerge(path string, content []byte, source ProfileSource) (*yaml.Node, *yaml.Node, bool, error) {
+	document, root, err := decodeConfigDocumentForProfiles(path, content)
+	if err != nil {
+		return nil, nil, false, err
 	}
 	hasProfiles := configHasProfilesSection(document)
 	hasLegacy := configHasLegacyRuntimeDefaults(document)
 	if hasProfiles && hasLegacy {
-		return nil, fmt.Errorf("parse config %q: %w", path, profileSchemaConflictError(source))
+		return nil, nil, false, fmt.Errorf("parse config %q: %w", path, profileSchemaConflictError(source))
 	}
 	if hasLegacy {
-		return nil, fmt.Errorf("parse config %q: legacy runtime defaults cannot be combined with profiles; migrate with `roundfix profiles configure --scope %s` after removing defaults.agent and runtimes", path, scopeForProfileSource(source))
+		return nil, nil, false, fmt.Errorf("parse config %q: legacy runtime defaults cannot be combined with profiles; migrate with `roundfix profiles configure --scope %s` after removing defaults.agent and runtimes", path, scopeForProfileSource(source))
 	}
-	setTopLevelYAMLNode(root, "profiles", profilesYAMLNode(profiles))
-	encoded, err := encodeYAMLNode(document)
-	if err != nil {
-		return nil, fmt.Errorf("encode config %q: %w", path, err)
+	return document, root, hasProfiles, nil
+}
+
+func profilesNodeWillChange(profilesNode *yaml.Node, changes EffectiveChangeSet) bool {
+	for _, change := range changes.Changes {
+		if change.Kind != ChangeRemoved {
+			return true
+		}
+		for index := 0; index+1 < len(profilesNode.Content); index += 2 {
+			if profilesNode.Content[index].Value == string(change.Category) {
+				return true
+			}
+		}
 	}
-	return encoded, nil
+	return false
+}
+
+func mergeProfilesNode(profilesNode *yaml.Node, changes EffectiveChangeSet) error {
+	if profilesNode == nil || profilesNode.Kind != yaml.MappingNode {
+		return errors.New("profiles must be a mapping")
+	}
+	changesByCategory := make(map[WorkCategory]CategoryChange, len(changes.Changes))
+	for _, change := range changes.Changes {
+		category, ok := ParseWorkCategory(string(change.Category))
+		if !ok {
+			return fmt.Errorf("category %q is not a supported Agent Work Category", change.Category)
+		}
+		if _, duplicate := changesByCategory[category]; duplicate {
+			return fmt.Errorf("category %q appears more than once in the Effective Change Set", category)
+		}
+		switch change.Kind {
+		case ChangeAdded, ChangeReplaced, ChangeRemoved:
+		default:
+			return fmt.Errorf("category %q has unsupported change kind %q", category, change.Kind)
+		}
+		changesByCategory[category] = change
+	}
+
+	merged := make([]*yaml.Node, 0, len(profilesNode.Content)+2*len(changesByCategory))
+	applied := make(map[WorkCategory]bool, len(changesByCategory))
+	for index := 0; index+1 < len(profilesNode.Content); index += 2 {
+		keyNode := profilesNode.Content[index]
+		valueNode := profilesNode.Content[index+1]
+		category, ok := ParseWorkCategory(strings.TrimSpace(keyNode.Value))
+		change, changed := changesByCategory[category]
+		if !ok || !changed {
+			merged = append(merged, keyNode, valueNode)
+			continue
+		}
+		applied[category] = true
+		if change.Kind != ChangeRemoved {
+			merged = append(merged, keyNode, profileYAMLNode(change.Profile))
+		}
+	}
+	for _, change := range changes.Changes {
+		if applied[change.Category] || change.Kind == ChangeRemoved {
+			continue
+		}
+		merged = append(merged, yamlStringNode(string(change.Category)), profileYAMLNode(change.Profile))
+	}
+	profilesNode.Content = merged
+	return nil
 }
 
 func decodeConfigDocumentForProfiles(path string, content []byte) (*yaml.Node, *yaml.Node, error) {
@@ -319,25 +693,20 @@ func onlyProfilesWrapper(root *yaml.Node) (*yaml.Node, bool, error) {
 }
 
 func setTopLevelYAMLNode(root *yaml.Node, key string, value *yaml.Node) {
-	for index := 0; index+1 < len(root.Content); index += 2 {
-		if root.Content[index].Value == key {
-			root.Content[index+1] = value
-			return
-		}
+	if _, index := topLevelYAMLNode(root, key); index >= 0 {
+		root.Content[index+1] = value
+		return
 	}
 	root.Content = append(root.Content, yamlStringNode(key), value)
 }
 
-func profilesYAMLNode(profiles Profiles) *yaml.Node {
-	node := &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
-	for _, category := range allWorkCategories {
-		entry, ok := profiles[category]
-		if !ok {
-			continue
+func topLevelYAMLNode(root *yaml.Node, key string) (*yaml.Node, int) {
+	for index := 0; index+1 < len(root.Content); index += 2 {
+		if root.Content[index].Value == key {
+			return root.Content[index+1], index
 		}
-		node.Content = append(node.Content, yamlStringNode(string(category)), profileYAMLNode(entry.Profile))
 	}
-	return node
+	return nil, -1
 }
 
 func profileYAMLNode(profile AgentSelectionProfile) *yaml.Node {
@@ -411,6 +780,15 @@ func cloneProfilesForWrite(profiles Profiles) Profiles {
 	cloned := Profiles{}
 	for category, entry := range profiles {
 		cloned[category] = ProfileEntry{Profile: cloneProfile(entry.Profile), Source: entry.Source}
+	}
+	return cloned
+}
+
+func cloneEffectiveChangeSet(changes EffectiveChangeSet) EffectiveChangeSet {
+	cloned := EffectiveChangeSet{Changes: make([]CategoryChange, len(changes.Changes))}
+	for index, change := range changes.Changes {
+		cloned.Changes[index] = change
+		cloned.Changes[index].Profile = cloneProfile(change.Profile)
 	}
 	return cloned
 }

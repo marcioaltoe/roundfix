@@ -1,0 +1,15 @@
+profiles:
+  # general survives with its comment
+  general:
+    preferred: {runtime: codex, model: general-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: general-fallback, reasoning_effort: xhigh}]
+
+  # backend comment belongs to the removed category
+  backend:
+    preferred: {runtime: codex, model: backend-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: backend-fallback, reasoning_effort: xhigh}]
+
+  # qa survives with its comment
+  qa:
+    preferred: {runtime: codex, model: qa-primary, reasoning_effort: high}
+    fallbacks: [{runtime: claude, model: qa-fallback, reasoning_effort: xhigh}]

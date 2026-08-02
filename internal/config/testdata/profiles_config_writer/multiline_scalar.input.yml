@@ -1,0 +1,14 @@
+notify:
+  command: |
+    printf 'Run finished\n'
+    printf 'Inspect the report before continuing\n'
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: multiline-primary
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: multiline-fallback
+        reasoning_effort: xhigh

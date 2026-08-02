@@ -1,0 +1,14 @@
+defaults:
+  artifact_dir: "artefatos/revisão"
+notify:
+  command: "printf 'execução concluída — ação necessária'"
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: modelo-primário
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: modèle-secondaire
+        reasoning_effort: xhigh
