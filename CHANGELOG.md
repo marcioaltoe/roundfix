@@ -2,6 +2,97 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.0.3] - 2026-08-02
+
+### Added
+
+- Added npm Trusted Publishing: the release workflow authenticates publication
+  through GitHub Actions OIDC instead of a long-lived repository token, on a
+  Node 24 runtime with an asserted npm floor. A bounded per-coordinate token
+  fallback keeps the release set whole while trusted-publisher configuration is
+  still unproven, records every coordinate that needed it, and closes when one
+  release publishes all six packages without it.
+- Added a publication preflight that evaluates the launcher and every platform
+  package as one release set after Verification and before cross-compilation.
+  It refuses an already-used version, detects a post-unpublish cooldown, names
+  the exact blocked coordinate, and reports a registry it could not read as
+  undetermined rather than as ineligible — so no package publishes unless every
+  coordinate is eligible.
+- Added a publish-free rehearsal of that preflight, so the release set can be
+  checked against the live registry without cutting a tag.
+- Added a read-only capability re-check that resolves no decisions and writes
+  nothing, so remediating a blocking Baseline divergence and re-checking is a
+  loop rather than a full re-plan.
+- Added a fourth outcome to the Baseline divergence prompt — exit without
+  writing, print per-divergence remediation, name the re-check command —
+  journaled distinctly from a decline, so pausing for repository work is no
+  longer recorded as refusing the Baseline.
+- Added a five-axis result matrix to Baseline runs: approved postimages,
+  semantic retention, profile alignment, repository Verification, and
+  idempotence, each reported as verified or not run. Completion language now
+  requires verified retention and a passing idempotence check.
+- Added an explicit removal declaration to `profiles configure`, so deleting a
+  configured category is always intentional.
+- Added the autonomous-loop discipline to the Context-Driven Baseline, so an
+  adopting repository receives it from `roundfix baseline` rather than from a
+  hand-copied block.
+
+### Changed
+
+- `profiles configure` now merges by Agent Work Category instead of replacing
+  the whole `profiles` map. Configuring one category leaves every other
+  configured category byte-identical, including its Fallback Chain, comments,
+  key order, and indentation. A per-category summary — added, replaced,
+  removed — renders before any write, so a removal can no longer hide inside
+  reformatting churn.
+- Executable capability discovery now resolves a bounded symlink chain and
+  judges the target without ever executing it. Tools installed through Homebrew
+  or Docker Desktop stopped reporting as missing, and a cycle, a broken link,
+  and a non-executable target each produce their own diagnostic instead of a
+  bare absence.
+- Every unsatisfied Baseline divergence now renders the probe it evaluated —
+  inspected paths with their states, or the inspected PATH candidate — in text
+  as well as machine output, so remediation no longer requires reading catalog
+  assets or source. Divergences group by requirement strength, and every
+  advisory states that it does not block readiness or apply.
+- A Profile or catalog digest change under an unchanged Baseline identifier is
+  now an upgrade rather than a refresh: every previous managed Normative Clause
+  receives an explicit disposition, or planning exits action-required. A ready
+  update plan can no longer carry an empty retention ledger.
+- Baseline carrier classification stops warning about the managed artifacts an
+  apply just wrote. Only unmanaged nested carriers warn, and a carrier that
+  cannot be classified keeps its warning.
+- The QA gate is now reachable for a Spec whose acceptance observes its own
+  Pull Request, and its verdict semantics distinguish rows blocked by
+  environment from rows blocked by a finding.
+- A Spec now owns the sources it adopts: `write-prd` moves adopted inbox notes
+  and findings into the Spec's own `references/`, and archiving verifies the
+  Spec is self-contained.
+- Force Stop reads owner identity from the kernel instead of forking `ps`, so
+  it survives a host that cannot fork, and an unreadable identity is reported
+  distinctly from a proven mismatch.
+- The release workflow's GitHub Actions are pinned to the current majors, which
+  run on the Node 24 runtime GitHub now requires.
+
+### Fixed
+
+- Fixed `make baseline-digests` refusing the very edit it exists to regenerate.
+  A module edit changed a generated guide, which invalidated the derived pin,
+  which refused the catalog load, which prevented the refresh — so the
+  command's own remediation was the command itself. Regeneration now defers the
+  pins it rewrites and re-validates strictly afterwards; every other load stays
+  strict.
+- Fixed a declined `profiles configure` in a non-interactive context exiting
+  zero, so automation can no longer read a refusal as a successful write.
+- Fixed a fragment deleting configured profiles by omission. Removal is now a
+  declared operation and can never be a side effect of an incomplete file.
+- Fixed removal of a profile category disturbing unrelated blank lines and
+  comments around its neighbours.
+- Fixed the required Repository Skill Set being a fixed list, so a repository
+  is no longer asked for skills its stack has no reason to hold.
+- Fixed the autonomous loop requesting the QA gate before the surfaces its
+  acceptance observes exist.
+
 ## [0.0.2] - 2026-07-29
 
 ### Added
@@ -136,5 +227,6 @@ All notable changes to Roundfix are documented in this file.
 Earlier release sections are intentionally omitted from the restarted
 changelog. Git history remains the source for prior implementation history.
 
+[0.0.3]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.0.3
 [0.0.2]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.0.2
 [0.0.1]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.0.1
