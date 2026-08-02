@@ -61,6 +61,82 @@ type SourceBaseline struct {
 	Accounting []SourceAccountingEntry `json:"accounting"`
 }
 
+// BaselineSourceTuple binds retained clause evidence to the exact Baseline
+// generation that produced it.
+type BaselineSourceTuple struct {
+	Baseline      string `json:"baseline"`
+	ProfileDigest string `json:"profileDigest"`
+	CatalogDigest string `json:"catalogDigest"`
+}
+
+// ClauseDisposition is the exhaustive semantic outcome for one previous
+// managed Normative Clause.
+type ClauseDisposition string
+
+const (
+	ClauseRetained            ClauseDisposition = "retained"
+	ClauseMoved               ClauseDisposition = "moved"
+	ClauseReplaced            ClauseDisposition = "replaced"
+	ClauseRepositoryDocument  ClauseDisposition = "repository-document"
+	ClauseRepositoryExtension ClauseDisposition = "repository-extension"
+	ClauseReasonedRejection   ClauseDisposition = "reasoned-rejection"
+	ClauseUnaccounted         ClauseDisposition = "unaccounted"
+)
+
+// ClauseDelta records exactly one disposition for every previous managed
+// Normative Clause and deterministic counts for presentation.
+type ClauseDelta struct {
+	Dispositions map[string]ClauseDisposition `json:"dispositions"`
+	Counts       map[ClauseDisposition]int    `json:"counts"`
+}
+
+func allClauseDispositions() []ClauseDisposition {
+	return []ClauseDisposition{
+		ClauseRetained,
+		ClauseMoved,
+		ClauseReplaced,
+		ClauseRepositoryDocument,
+		ClauseRepositoryExtension,
+		ClauseReasonedRejection,
+		ClauseUnaccounted,
+	}
+}
+
+func (c *Catalog) captureCurrentRetentionSources() error {
+	indexAsset, ok := c.Asset("source-baselines/index.json")
+	if !ok {
+		return nil
+	}
+	var index sourceBaselineIndex
+	if err := strictJSON(indexAsset.Data, &index); err != nil {
+		return fmt.Errorf("load Source Baseline index: %w", err)
+	}
+	for _, record := range index.Baselines {
+		source, err := c.SourceBaseline(record.ID)
+		if err != nil {
+			return err
+		}
+		profile, err := ResolveProfile("", source.Identity.Profile, c)
+		if err != nil {
+			return fmt.Errorf(
+				"resolve Source Baseline %q Profile: %w",
+				source.Identity.ID,
+				err,
+			)
+		}
+		tuple := BaselineSourceTuple{
+			Baseline:      source.Identity.ID,
+			ProfileDigest: profile.Digest,
+			CatalogDigest: c.Digest(),
+		}
+		if _, duplicate := c.retentionSources[tuple]; duplicate {
+			return fmt.Errorf("duplicate Baseline retention source tuple %+v", tuple)
+		}
+		c.retentionSources[tuple] = source
+	}
+	return nil
+}
+
 // SourceAccountingEntry records how one earlier source entry is retained by a
 // maintained Source Baseline.
 type SourceAccountingEntry struct {

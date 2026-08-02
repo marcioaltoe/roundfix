@@ -34,13 +34,14 @@ func (l *catalogLoader) load() *Catalog {
 	l.readAssets()
 
 	catalog := &Catalog{
-		assets:         l.assets,
-		profiles:       l.readCollection("profiles", profileSchemas, "profile", true),
-		modules:        l.readCollection("modules", moduleSchemas, "module", true),
-		setups:         l.readCollection("setups", setupSchemas, "setup", true),
-		transitions:    l.readCollection("retention", transitionSchemas, "transition", false),
-		orderedModules: make(map[string][]string),
-		semanticOwners: make(map[string]SemanticOwner),
+		assets:           l.assets,
+		profiles:         l.readCollection("profiles", profileSchemas, "profile", true),
+		modules:          l.readCollection("modules", moduleSchemas, "module", true),
+		setups:           l.readCollection("setups", setupSchemas, "setup", true),
+		transitions:      l.readCollection("retention", transitionSchemas, "transition", false),
+		orderedModules:   make(map[string][]string),
+		semanticOwners:   make(map[string]SemanticOwner),
+		retentionSources: make(map[BaselineSourceTuple]SourceBaseline),
 	}
 	catalog.decisions = l.readIndexed(
 		"decisions.json",

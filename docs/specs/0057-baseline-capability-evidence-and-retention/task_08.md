@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -77,3 +77,59 @@ It is also the only slice that turns a completing plan into a stopping one.
 - `_prd.md` → User Story 1; Core Features 1 and 11; Success Metrics.
 - `_techspec.md` → Implementation Design: Interfaces; Risks; Build Order 6.
 - ADR-0058.
+
+## Result
+
+Implemented same-identity retention accounting in `internal/baseline/` without
+changing the fail-closed apply transaction, digest confirmation, or preimage
+binding. Planning now binds the previous managed-clause inventory to the exact
+Baseline, Profile digest, and catalog digest tuple; builds one exhaustive
+clause delta; and returns action-required without a Plan when an exact source
+inventory proves that any previous clause is unaccounted. A ready drift plan
+carries both its non-empty retention evidence and clause delta, and portable
+Plan validation rejects empty, incomplete, or unaccounted deltas.
+
+Focused checks:
+
+- The new focused tests first failed against the pre-change behavior: the
+  disappearing-clause fixture returned ready, and the accounted drift fixture
+  carried an empty retention ledger. This established the intended regression
+  signal after rerunning with a writable `GOCACHE` (the default user cache is
+  unavailable in this sandbox).
+- `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test
+  ./internal/baseline -run
+  'Test(SameIdentityDriftRequiresRetention|ReadyPlanNeverCarriesEmptyLedger|PlanDocument|ProfileDraftPlan)$'
+  -count=1` passed (`ok roundfix/internal/baseline`, 1.703s).
+- `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test
+  ./internal/baseline -run
+  'Test(EmbeddedCatalog|PlanDocumentStrictCodecs|PlanDocumentIncludesMaintainedUpgradeRetention|SameIdentityDriftRequiresRetention|ReadyPlanNeverCarriesEmptyLedger)$'
+  -count=1` passed (`ok roundfix/internal/baseline`, 1.622s), covering catalog
+  source capture, strict codecs, the existing maintained upgrade path, both new
+  drift outcomes, and rejection of an externally supplied empty delta.
+- `rtk git diff --check` passed.
+
+Acceptance criterion evidence:
+
+- `TestSameIdentityDriftRequiresRetention` applies an initial Baseline, keeps
+  its identity, changes the catalog digest, removes one known clause, and
+  asserts action-required with `1 unaccounted clause` and that clause's stable
+  ID in the message.
+- `TestReadyPlanNeverCarriesEmptyLedger` changes a known retained clause and
+  asserts a ready Plan has one retained ledger entry and one retained clause
+  disposition. It also proves Plan validation rejects a non-nil empty delta.
+- The unaccounted fixture asserts `outcome.Plan == nil`, so no apply operation
+  is offered while the delta contains an unaccounted clause.
+- Classification walks the exact previous managed-clause inventory once into a
+  map keyed by clause ID and a seven-disposition count map. The fixture asserts
+  both previous clauses receive exactly one disposition and the retained plus
+  unaccounted counts are exact.
+- Digest-only drift with unchanged managed artifacts preserves the existing
+  ready path. Changed artifacts are classified only when an exact source tuple
+  supplies positive evidence; action-required messages enumerate only clauses
+  proven absent by stable identity and enforcement. The full characterization
+  corpus remains for Daemon Verification and was not run in this Agent turn.
+- `rtk git -c core.fsmonitor=false status --porcelain` showed only this task
+  file and files under `internal/baseline/`.
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+that gate.

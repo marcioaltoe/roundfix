@@ -116,6 +116,7 @@ type Catalog struct {
 	orderedModules       map[string][]string
 	instructionHierarchy []InstructionHierarchyLevel
 	semanticOwners       map[string]SemanticOwner
+	retentionSources     map[BaselineSourceTuple]SourceBaseline
 	normalized           []byte
 	digest               string
 }
@@ -167,6 +168,9 @@ func loadCatalog(assetsFS fs.FS, regenerating bool) (*Catalog, error) {
 			return left.Info < right.Info
 		})
 		return nil, &ValidationError{Diagnostics: loader.diagnostics}
+	}
+	if err := catalog.captureCurrentRetentionSources(); err != nil {
+		return nil, fmt.Errorf("capture Baseline retention sources: %w", err)
 	}
 	return catalog, nil
 }
