@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
