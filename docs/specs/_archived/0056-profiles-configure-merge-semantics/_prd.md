@@ -1,9 +1,12 @@
 ---
 spec: 0056-profiles-configure-merge-semantics
-status: active
+status: archived
 created: 2026-07-28
 surfaces: [backend, cli, docs]
+archived: "2026-08-02"
+source_slug: 0056-profiles-configure-merge-semantics
 ---
+
 
 # Profiles configure merge semantics
 
