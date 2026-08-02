@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -73,3 +73,78 @@ the candidate it inspected instead of an empty result.
 - `_prd.md` → User Story 3; Core Features 4.
 - `_techspec.md` → Implementation Design: Interfaces; Build Order 2.
 - ADR-0087.
+
+## Result
+
+### Implementation
+
+- Replaced link-level executable rejection with a PATH-ordered resolver that
+  follows at most 64 symlink hops, detects visited-path cycles, resolves
+  relative and absolute targets, and judges only the final regular file's
+  executable bits.
+- Preserved the first failed existing PATH candidate when no later candidate
+  resolves, while returning `not-found` with no candidate when PATH contains no
+  candidate.
+- Projected successful and failed probes into capability evidence: the
+  inspected candidate remains `sourcePath`; failures carry `broken-link`,
+  `link-cycle`, or `not-executable`; true absence carries `not-found` without a
+  path.
+- Added filesystem-backed coverage for the seven resolver cases, evidence
+  projection, and a symlinked script whose invocation would create a marker.
+  The implementation uses only `Lstat` and `Readlink`; it has no process launch
+  path.
+
+### Focused checks
+
+- Pre-change signal:
+  `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/baseline -run '^TestExecutableCandidateResolution$/one-hop_symlink$'`
+  failed to compile because `resolveExecutableCandidate` did not exist.
+- Resolver cases:
+  `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/baseline -run '^TestExecutableCandidateResolution$/(direct_regular_executable|one-hop_symlink|multi-hop_symlink|link_cycle|broken_link|non-executable_target|absent_candidate)$'`
+  reported 8 passing tests.
+- Evidence and no-execution checks:
+  `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/baseline -run '^(TestExecutableCandidateNeverExecutes|TestExecutableEvidenceDistinguishesFailureFromAbsence|TestCapabilityAuditNoExecution)$'`
+  reported 5 passing tests.
+- Fresh combined implementation check:
+  `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/baseline -run '^(TestExecutableCandidateResolution|TestExecutableCandidateNeverExecutes|TestExecutableEvidenceDistinguishesFailureFromAbsence|TestCapabilityAuditNoExecution)$'`
+  reported 13 passing tests.
+- Existing evidence/ranking checks:
+  `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/baseline -run '^(TestProfileAlignmentCapabilityEvidenceRanking|TestProfileAlignmentDiscoversDeclaredRepositoryFormatter)$'`
+  reported 5 passing tests.
+- `rtk git diff --check` reported no whitespace errors.
+- `rtk git -c core.fsmonitor=false status --porcelain` and
+  `rtk git diff --name-only` listed only this Task file,
+  `internal/baseline/profile_alignment.go`, and
+  `internal/baseline/profile_alignment_test.go`.
+- A bounded source search found no `exec.Command`, `exec.CommandContext`,
+  `os.StartProcess`, or `syscall.Exec` reference in the changed implementation
+  or tests.
+
+### Acceptance criterion evidence
+
+1. `TestExecutableCandidateResolution/one-hop_symlink` resolves the inspected
+   link to its executable target with one hop and no rejection reason.
+2. `TestExecutableCandidateResolution/multi-hop_symlink` resolves two relative
+   links to the executable target with two hops.
+3. `TestExecutableCandidateResolution/link_cycle` terminates with
+   `link-cycle`, the inspected candidate, and no resolved target.
+4. `TestExecutableCandidateResolution/broken_link` returns `broken-link`, and
+   `TestExecutableEvidenceDistinguishesFailureFromAbsence/failed_candidate`
+   retains that candidate in invalid evidence.
+5. `TestExecutableCandidateResolution/non-executable_target` returns
+   `not-executable` for a link whose regular target has no executable bit.
+6. `TestExecutableCandidateResolution/direct_regular_executable` preserves the
+   direct candidate as both inspected and resolved with zero hops.
+7. `TestExecutableCandidateNeverExecutes` discovers a symlinked script through
+   the real evidence collector and confirms its invocation marker is absent;
+   `TestCapabilityAuditNoExecution` preserves the broader command-free audit.
+8. No characterization fixture or golden file changed. The declared
+   `TestBaselinePlanCharacterization` command was not run because the Daemon
+   owns Task Verification; its corpus comparison remains pending that gate.
+9. The final status and diff-name postflight listed only paths under
+   `internal/baseline/` and this Task file.
+
+### Daemon-owned Verification
+
+No command from `## Verification` was run in this Agent turn. The Daemon owns
+those commands and the terminal Task status.

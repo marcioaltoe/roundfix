@@ -21,8 +21,14 @@ import (
 const (
 	maxCapabilityPaths     = 32
 	maxCapabilityFileBytes = 1024 * 1024
+	maxExecutableLinkHops  = 64
 	maxHTTPSourceFiles     = 256
 	maxHTTPSourceBytes     = 2 * 1024 * 1024
+
+	executableProbeReasonNotFound      = "not-found"
+	executableProbeReasonBrokenLink    = "broken-link"
+	executableProbeReasonLinkCycle     = "link-cycle"
+	executableProbeReasonNotExecutable = "not-executable"
 )
 
 type ProfileAlignmentState string
@@ -119,6 +125,13 @@ type CapabilityOutcome struct {
 	Evidence        []CapabilityEvidence       `json:"evidence"`
 	Diagnostic      CapabilityDiagnostic       `json:"diagnostic"`
 	Explanation     string                     `json:"explanation"`
+}
+
+type executableProbeResult struct {
+	Candidate string
+	Resolved  string
+	Reason    string
+	HopCount  int
 }
 
 type ProfileDivergence struct {
@@ -614,36 +627,113 @@ func collectExecutableEvidence(capability RepositoryCapability) CapabilityEviden
 	if !ok || !identifierIsSafe(executable) {
 		return invalidCapabilityEvidence(capability.EvidenceKind, "executable probe is invalid")
 	}
-	discovered := lookPathWithoutExecution(executable)
-	if discovered == "" {
-		return absentCapabilityEvidence(capability.EvidenceKind)
+	result := resolveExecutableCandidate(executable)
+	if result.Reason == executableProbeReasonNotFound {
+		evidence := absentCapabilityEvidence(capability.EvidenceKind)
+		evidence.Detail = result.Reason
+		return evidence
+	}
+	if result.Reason != "" {
+		return CapabilityEvidence{
+			Status:         CapabilityEvidenceInvalid,
+			Kind:           capability.EvidenceKind,
+			Strength:       CapabilityEvidenceNone,
+			Classification: EvidenceProfileRequirement,
+			SourcePath:     filepath.ToSlash(result.Candidate),
+			Detail:         result.Reason,
+		}
 	}
 	return CapabilityEvidence{
 		Status:         CapabilityEvidencePresent,
 		Kind:           capability.EvidenceKind,
 		Strength:       CapabilityEvidenceDiscovered,
 		Classification: EvidenceProfileRequirement,
-		SourcePath:     filepath.ToSlash(discovered),
+		SourcePath:     filepath.ToSlash(result.Candidate),
 	}
 }
 
-func lookPathWithoutExecution(name string) string {
+// resolveExecutableCandidate inspects PATH candidates without executing them.
+func resolveExecutableCandidate(name string) executableProbeResult {
+	var firstFailure executableProbeResult
 	for _, directory := range filepath.SplitList(os.Getenv("PATH")) {
 		if directory == "" {
 			directory = "."
 		}
-		candidate := filepath.Join(directory, name)
-		info, err := os.Lstat(candidate)
-		if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0o111 == 0 {
+		result, exists := inspectExecutableCandidate(filepath.Join(directory, name))
+		if !exists {
 			continue
 		}
-		absolute, err := filepath.Abs(candidate)
-		if err == nil {
-			return absolute
+		if result.Reason == "" {
+			return result
 		}
-		return candidate
+		if firstFailure.Candidate == "" {
+			firstFailure = result
+		}
 	}
-	return ""
+	if firstFailure.Candidate != "" {
+		return firstFailure
+	}
+	return executableProbeResult{Reason: executableProbeReasonNotFound}
+}
+
+func inspectExecutableCandidate(candidate string) (executableProbeResult, bool) {
+	absolute, err := filepath.Abs(candidate)
+	if err == nil {
+		candidate = absolute
+	}
+	candidate = filepath.Clean(candidate)
+	result := executableProbeResult{Candidate: candidate}
+	info, err := os.Lstat(candidate)
+	if errors.Is(err, fs.ErrNotExist) {
+		return executableProbeResult{}, false
+	}
+	if err != nil {
+		result.Reason = executableProbeReasonNotExecutable
+		return result, true
+	}
+
+	current := candidate
+	visited := make(map[string]struct{}, maxExecutableLinkHops)
+	for {
+		if _, exists := visited[current]; exists {
+			result.Reason = executableProbeReasonLinkCycle
+			return result, true
+		}
+		visited[current] = struct{}{}
+
+		if info.Mode()&fs.ModeSymlink == 0 {
+			if !info.Mode().IsRegular() || info.Mode().Perm()&0o111 == 0 {
+				result.Reason = executableProbeReasonNotExecutable
+				return result, true
+			}
+			result.Resolved = current
+			return result, true
+		}
+		if result.HopCount >= maxExecutableLinkHops {
+			result.Reason = executableProbeReasonLinkCycle
+			return result, true
+		}
+
+		target, err := os.Readlink(current)
+		if err != nil {
+			result.Reason = executableProbeReasonBrokenLink
+			return result, true
+		}
+		result.HopCount++
+		if !filepath.IsAbs(target) {
+			target = filepath.Join(filepath.Dir(current), target)
+		}
+		current = filepath.Clean(target)
+		info, err = os.Lstat(current)
+		if errors.Is(err, fs.ErrNotExist) {
+			result.Reason = executableProbeReasonBrokenLink
+			return result, true
+		}
+		if err != nil {
+			result.Reason = executableProbeReasonNotExecutable
+			return result, true
+		}
+	}
 }
 
 func evaluateCapability(capability RepositoryCapability, evidence []CapabilityEvidence) CapabilityOutcome {

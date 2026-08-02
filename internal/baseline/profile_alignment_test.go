@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -452,6 +453,185 @@ func TestProfileAlignmentEquivalentNormalizedDecisions(t *testing.T) {
 	if string(firstJSON) != string(secondJSON) {
 		t.Fatalf("equivalent answers normalized differently:\nfirst=%s\nsecond=%s", firstJSON, secondJSON)
 	}
+}
+
+func TestExecutableCandidateResolution(t *testing.T) {
+	tests := []struct {
+		name         string
+		arrange      func(*testing.T, string, string) string
+		wantResolved func(string, string) string
+		wantReason   string
+		wantHops     int
+	}{
+		{
+			name: "direct regular executable",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				writeProfileAlignmentExecutable(t, bin, name, "executable")
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(bin, name string) string { return filepath.Join(bin, name) },
+		},
+		{
+			name: "one-hop symlink",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				target := filepath.Join(bin, "target")
+				writeProfileAlignmentExecutable(t, bin, "target", "executable")
+				if err := os.Symlink(filepath.Base(target), filepath.Join(bin, name)); err != nil {
+					t.Fatalf("create one-hop executable symlink: %v", err)
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(bin, _ string) string { return filepath.Join(bin, "target") },
+			wantHops:     1,
+		},
+		{
+			name: "multi-hop symlink",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				writeProfileAlignmentExecutable(t, bin, "target", "executable")
+				if err := os.Symlink("target", filepath.Join(bin, "middle")); err != nil {
+					t.Fatalf("create middle executable symlink: %v", err)
+				}
+				if err := os.Symlink("middle", filepath.Join(bin, name)); err != nil {
+					t.Fatalf("create first executable symlink: %v", err)
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(bin, _ string) string { return filepath.Join(bin, "target") },
+			wantHops:     2,
+		},
+		{
+			name: "link cycle",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				if err := os.Symlink("second", filepath.Join(bin, name)); err != nil {
+					t.Fatalf("create first cycle link: %v", err)
+				}
+				if err := os.Symlink(name, filepath.Join(bin, "second")); err != nil {
+					t.Fatalf("create second cycle link: %v", err)
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(_, _ string) string { return "" },
+			wantReason:   executableProbeReasonLinkCycle,
+			wantHops:     2,
+		},
+		{
+			name: "broken link",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				if err := os.Symlink("missing-target", filepath.Join(bin, name)); err != nil {
+					t.Fatalf("create broken executable symlink: %v", err)
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(_, _ string) string { return "" },
+			wantReason:   executableProbeReasonBrokenLink,
+			wantHops:     1,
+		},
+		{
+			name: "non-executable target",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				if err := os.WriteFile(filepath.Join(bin, "target"), []byte("not executable"), 0o644); err != nil {
+					t.Fatalf("write non-executable target: %v", err)
+				}
+				if err := os.Symlink("target", filepath.Join(bin, name)); err != nil {
+					t.Fatalf("create non-executable target symlink: %v", err)
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(_, _ string) string { return "" },
+			wantReason:   executableProbeReasonNotExecutable,
+			wantHops:     1,
+		},
+		{
+			name: "absent candidate",
+			arrange: func(_ *testing.T, _, _ string) string {
+				return ""
+			},
+			wantResolved: func(_, _ string) string { return "" },
+			wantReason:   executableProbeReasonNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bin := t.TempDir()
+			const name = "probe"
+			wantCandidate := tt.arrange(t, bin, name)
+			t.Setenv("PATH", bin)
+
+			result := resolveExecutableCandidate(name)
+
+			if result.Candidate != wantCandidate ||
+				result.Resolved != tt.wantResolved(bin, name) ||
+				result.Reason != tt.wantReason ||
+				result.HopCount != tt.wantHops {
+				t.Fatalf("resolveExecutableCandidate(%q) = %+v", name, result)
+			}
+		})
+	}
+}
+
+func TestExecutableCandidateNeverExecutes(t *testing.T) {
+	bin := t.TempDir()
+	marker := filepath.Join(t.TempDir(), "executed")
+	target := filepath.Join(bin, "target")
+	content := "#!/bin/sh\nprintf executed > \"" + marker + "\"\n"
+	writeProfileAlignmentExecutable(t, bin, filepath.Base(target), content)
+	if err := os.Symlink(filepath.Base(target), filepath.Join(bin, "probe")); err != nil {
+		t.Fatalf("create executable probe symlink: %v", err)
+	}
+	t.Setenv("PATH", bin)
+
+	evidence := collectExecutableEvidence(RepositoryCapability{
+		EvidenceKind: CapabilityEvidenceExecutable,
+		Probe:        map[string]any{"executable": "probe"},
+	})
+
+	if evidence.Status != CapabilityEvidencePresent || evidence.SourcePath != filepath.ToSlash(filepath.Join(bin, "probe")) {
+		t.Fatalf("collectExecutableEvidence(probe) = %+v", evidence)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("executable candidate was invoked: %v", err)
+	}
+}
+
+func TestExecutableEvidenceDistinguishesFailureFromAbsence(t *testing.T) {
+	const name = "probe"
+	capability := RepositoryCapability{
+		EvidenceKind: CapabilityEvidenceExecutable,
+		Probe:        map[string]any{"executable": name},
+	}
+
+	t.Run("failed candidate", func(t *testing.T) {
+		bin := t.TempDir()
+		candidate := filepath.Join(bin, name)
+		if err := os.Symlink("missing-target", candidate); err != nil {
+			t.Fatalf("create broken executable symlink: %v", err)
+		}
+		t.Setenv("PATH", bin)
+
+		evidence := collectExecutableEvidence(capability)
+
+		if evidence.Status != CapabilityEvidenceInvalid ||
+			evidence.SourcePath != filepath.ToSlash(candidate) ||
+			evidence.Detail != executableProbeReasonBrokenLink {
+			t.Fatalf("failed executable evidence = %+v", evidence)
+		}
+	})
+
+	t.Run("absent candidate", func(t *testing.T) {
+		t.Setenv("PATH", t.TempDir())
+
+		evidence := collectExecutableEvidence(capability)
+
+		if evidence.Status != CapabilityEvidenceAbsent || evidence.SourcePath != "" || evidence.Detail != executableProbeReasonNotFound {
+			t.Fatalf("absent executable evidence = %+v", evidence)
+		}
+	})
 }
 
 func TestCapabilityAuditNoExecution(t *testing.T) {
