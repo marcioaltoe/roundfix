@@ -2290,6 +2290,84 @@ func TestSameIdentityDriftRequiresRetention(t *testing.T) {
 	}
 }
 
+func TestClauseDeltaRendersBeforeLedger(t *testing.T) {
+	t.Run("accounted dispositions precede unchanged file ledger", func(t *testing.T) {
+		delta := newClauseDelta()
+		clauses := []struct {
+			id          string
+			disposition ClauseDisposition
+		}{
+			{id: "clause.01-retained", disposition: ClauseRetained},
+			{id: "clause.02-moved", disposition: ClauseMoved},
+			{id: "clause.03-replaced", disposition: ClauseReplaced},
+			{id: "clause.04-repository-document", disposition: ClauseRepositoryDocument},
+			{id: "clause.05-repository-extension", disposition: ClauseRepositoryExtension},
+			{id: "clause.06-reasoned-rejection", disposition: ClauseReasonedRejection},
+			{id: "clause.07-unaccounted", disposition: ClauseUnaccounted},
+		}
+		for _, clause := range clauses {
+			delta.Dispositions[clause.id] = clause.disposition
+			delta.Counts[clause.disposition]++
+		}
+		ledger := "File changes:\n" +
+			"1. update docs/agents/agent-instructions.md\n" +
+			"   Before: sha256:before\n" +
+			"   After: sha256:after\n" +
+			"   Managed entries: guide.agent-instructions\n"
+
+		rendered := RenderClauseDeltaBeforeLedger(&delta, ledger)
+		if !strings.HasSuffix(rendered, ledger) {
+			t.Fatalf("rendered review changed file ledger:\n%s", rendered)
+		}
+		deltaIndex := strings.Index(rendered, "Clause-level semantic delta:")
+		ledgerIndex := strings.Index(rendered, ledger)
+		if deltaIndex < 0 || ledgerIndex < 0 || deltaIndex >= ledgerIndex {
+			t.Fatalf("clause delta does not precede file ledger:\n%s", rendered)
+		}
+		for _, disposition := range allClauseDispositions() {
+			if count := strings.Count(rendered, "- "+string(disposition)+": 1\n"); count != 1 {
+				t.Fatalf("rendered %q count occurrences = %d, want 1:\n%s", disposition, count, rendered)
+			}
+		}
+		if !strings.Contains(rendered, "Total clauses: 7\n") {
+			t.Fatalf("rendered review does not report the clause total:\n%s", rendered)
+		}
+		for _, clause := range clauses {
+			want := "- " + clause.id + ": " + string(clause.disposition) + "\n"
+			if strings.Count(rendered, want) != 1 {
+				t.Fatalf("rendered review does not contain %q exactly once:\n%s", strings.TrimSpace(want), rendered)
+			}
+		}
+	})
+
+	t.Run("unaccounted clause withholds apply", func(t *testing.T) {
+		const unaccountedClause = "clause.core.keep-follow-ups-outside-slice"
+		_, request, target, tuple := newSameIdentityRetentionDrift(t)
+		removeCatalogClause(t, target, "core", unaccountedClause)
+		target.retentionSources[tuple] = SourceBaseline{Entries: []SourceBaselineEntry{{
+			ID:          unaccountedClause,
+			Kind:        "normative-clause",
+			Enforcement: "mandatory",
+			Carrier:     "docs/agents/agent-instructions.md",
+		}}}
+
+		outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+		if err != nil {
+			t.Fatalf("build unaccounted clause plan: %v", err)
+		}
+		if outcome.Plan != nil {
+			t.Fatalf("unaccounted clause offered apply plan: %+v", outcome.Plan)
+		}
+		if outcome.Result.ClauseDelta == nil {
+			t.Fatal("unaccounted clause result has no clause delta")
+		}
+		rendered := RenderClauseDeltaBeforeLedger(outcome.Result.ClauseDelta, "")
+		if !strings.Contains(rendered, "- "+unaccountedClause+": unaccounted\n") {
+			t.Fatalf("unaccounted clause identity is absent from rendered delta:\n%s", rendered)
+		}
+	})
+}
+
 func TestReadyPlanNeverCarriesEmptyLedger(t *testing.T) {
 	const changedClause = "clause.core.keep-follow-ups-outside-slice"
 	_, request, target, tuple := newSameIdentityRetentionDrift(t)

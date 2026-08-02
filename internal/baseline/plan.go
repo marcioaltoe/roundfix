@@ -1290,6 +1290,34 @@ func clauseDeltaIDs(delta ClauseDelta, disposition ClauseDisposition) []string {
 	return result
 }
 
+// RenderClauseDeltaBeforeLedger renders the accounted semantic projection
+// ahead of an already-rendered file ledger. The ledger bytes are appended
+// unchanged, and no clause disposition is inferred from another plan field.
+func RenderClauseDeltaBeforeLedger(delta *ClauseDelta, fileLedger string) string {
+	if delta == nil || len(delta.Dispositions) == 0 {
+		return fileLedger
+	}
+
+	var rendered strings.Builder
+	fmt.Fprintln(&rendered, "Clause-level semantic delta:")
+	fmt.Fprintf(&rendered, "Total clauses: %d\n", len(delta.Dispositions))
+	fmt.Fprintln(&rendered, "Disposition counts:")
+	for _, disposition := range allClauseDispositions() {
+		fmt.Fprintf(&rendered, "- %s: %d\n", disposition, delta.Counts[disposition])
+	}
+	fmt.Fprintln(&rendered, "Clauses:")
+	clauseIDs := make([]string, 0, len(delta.Dispositions))
+	for clauseID := range delta.Dispositions {
+		clauseIDs = append(clauseIDs, clauseID)
+	}
+	sort.Strings(clauseIDs)
+	for _, clauseID := range clauseIDs {
+		fmt.Fprintf(&rendered, "- %s: %s\n", clauseID, delta.Dispositions[clauseID])
+	}
+	rendered.WriteString(fileLedger)
+	return rendered.String()
+}
+
 func readoptionRetentionEvidence(dispositions []ReadoptionDisposition) []RetentionEvidence {
 	result := make([]RetentionEvidence, 0, len(dispositions))
 	for _, disposition := range dispositions {
