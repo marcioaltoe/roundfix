@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -78,3 +78,70 @@ by requirement strength, so an advisory stops reading like a blocker.
 - `_prd.md` → User Story 2; Core Features 5 and 8; User Experience.
 - `_techspec.md` → API Contracts; Build Order 4.
 
+## Result
+
+Implemented a baseline-owned divergence rendering projection over the evidence
+carried by `ProfileDivergence`. Declared-file evidence now records every path
+the evaluator inspected, including file presence, content mismatch, and the
+expected content. Executable rendering reports the rejected candidate and its
+reason, or states that no candidate existed. Required stack divergences carry
+the selected technology, repository remediation, reviewed Profile-adaptation
+alternative, and the decisions caused by that removal.
+
+Every divergence now carries the additive machine `group` value `blocking`,
+`advisory`, or `informational`; sorting and text rendering use that same value.
+Advisories carry the additive non-blocking statement before `nextAction` in
+machine output, and the renderer emits that statement before its next-action
+line. The evaluator still derives readiness only from the existing `Blocking`
+field.
+
+Verification Feedback diagnosis:
+
+- The Daemon artifact for attempt 1 was empty because the pipeline's `grep`
+  found no matching PASS line. Both named Task tests were absent, so the root
+  cause was the previously missing implementation and tests rather than an
+  assertion failure or environment fault.
+
+Focused checks:
+
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task04-gocache go test
+  ./internal/baseline -run
+  'TestDivergence(RendersProbe|GroupsByRequirement)$' -count=1` — failed before
+  implementation with undefined renderer and grouping symbols, then passed
+  after the implementation.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task04-gocache go test
+  ./internal/baseline -run
+  'Test(ProfileAlignment|RequiredDivergence|DivergenceCarries|DivergenceRenders|DivergenceGroups|PostgreSQL|UniversalCapability)'
+  -count=1` — passed after the final evaluator and rendering edits.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task04-gocache go test
+  ./internal/baseline -run 'TestBaselinePlanCharacterization/.'
+  -update-baseline-plan-characterization -count=1` — passed and regenerated
+  only the two corpus shapes whose divergence projection changed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task04-gocache go test
+  ./internal/baseline -run
+  'TestBaselinePlanCharacterization/(unsatisfied-blocking-capabilities|advisory-only-divergences)$'
+  -count=1` — passed against the regenerated corpus.
+
+Acceptance evidence:
+
+1. `TestDivergenceRendersProbe` requires all three Better Auth paths with their
+   present or absent state and the exact expected content.
+2. The same test requires both executable outcomes: no Docker candidate and a
+   named non-executable Docker candidate with its rejection reason.
+3. The same test requires both stack resolutions, the Better Auth cascade to
+   `auth.provider`, and an explicit `none` cascade for shadcn removal.
+4. `TestDivergenceGroupsByRequirement` requires ordered blocking, advisory,
+   and informational sections in rendered text and the matching `group` on
+   every machine divergence.
+5. The grouping test requires the advisory non-blocking statement before any
+   `nextAction` in both rendered text and marshaled JSON.
+6. The grouping test preserves the action-required readiness fixture. The
+   characterization golden diff adds only two `group` fields and one
+   `nonBlockingStatement`; no state, readiness, blocking flag, verdict,
+   message, or next action changed.
+7. Changed-path postflight is limited to `internal/baseline/` and this Task
+   file.
+
+Follow-up boundary: Task 06 already owns the `internal/cli/` surface that can
+reuse `RenderProfileDivergences` for the full-plan and read-only re-check
+commands. The Daemon-owned Verification commands were not rerun.

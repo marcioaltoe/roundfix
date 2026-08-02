@@ -134,15 +134,35 @@ type executableProbeResult struct {
 	HopCount  int
 }
 
+type ProfileDivergenceGroup string
+
+const (
+	ProfileDivergenceBlocking      ProfileDivergenceGroup = "blocking"
+	ProfileDivergenceAdvisory      ProfileDivergenceGroup = "advisory"
+	ProfileDivergenceInformational ProfileDivergenceGroup = "informational"
+
+	advisoryNonBlockingStatement = "This advisory does not block readiness or apply."
+)
+
+type ProfileCapabilityResolution struct {
+	SelectedTechnology    string   `json:"selectedTechnology"`
+	RepositoryRemediation string   `json:"repositoryRemediation"`
+	ProfileAdaptation     string   `json:"profileAdaptation"`
+	RemovedDecisions      []string `json:"removedDecisions"`
+}
+
 type ProfileDivergence struct {
-	Code        string                `json:"code"`
-	ID          string                `json:"id"`
-	Requirement CapabilityRequirement `json:"requirement"`
-	Blocking    bool                  `json:"blocking"`
-	Message     string                `json:"message"`
-	NextAction  string                `json:"nextAction,omitempty"`
-	Probe       map[string]any        `json:"probe,omitempty"`
-	Evidence    []CapabilityEvidence  `json:"evidence,omitempty"`
+	Code                 string                       `json:"code"`
+	ID                   string                       `json:"id"`
+	Requirement          CapabilityRequirement        `json:"requirement"`
+	Group                ProfileDivergenceGroup       `json:"group,omitempty"`
+	Blocking             bool                         `json:"blocking"`
+	Message              string                       `json:"message"`
+	NonBlockingStatement string                       `json:"nonBlockingStatement,omitempty"`
+	NextAction           string                       `json:"nextAction,omitempty"`
+	Probe                map[string]any               `json:"probe,omitempty"`
+	Evidence             []CapabilityEvidence         `json:"evidence,omitempty"`
+	CapabilityResolution *ProfileCapabilityResolution `json:"capabilityResolution,omitempty"`
 }
 
 // HTTPRouteCandidate records only locally observed route facts. Repository
@@ -335,14 +355,15 @@ func ResolveProfileAlignment(
 			continue
 		}
 		divergences = append(divergences, ProfileDivergence{
-			Code:        outcome.Diagnostic.Code,
-			ID:          outcome.ID,
-			Requirement: outcome.Requirement,
-			Blocking:    outcome.Blocking,
-			Message:     outcome.Diagnostic.Message,
-			NextAction:  outcome.Diagnostic.NextAction,
-			Probe:       capabilities[index].Probe,
-			Evidence:    outcome.Evidence,
+			Code:                 outcome.Diagnostic.Code,
+			ID:                   outcome.ID,
+			Requirement:          outcome.Requirement,
+			Blocking:             outcome.Blocking,
+			Message:              outcome.Diagnostic.Message,
+			NextAction:           outcome.Diagnostic.NextAction,
+			Probe:                capabilities[index].Probe,
+			Evidence:             outcome.Evidence,
+			CapabilityResolution: stackCapabilityResolution(profile, outcome, catalog),
 		})
 	}
 
@@ -361,6 +382,7 @@ func ResolveProfileAlignment(
 		return ProfileAlignment{}, err
 	}
 	divergences = append(divergences, verificationDivergences...)
+	classifyProfileDivergences(divergences)
 	sortProfileDivergences(divergences)
 
 	ready := true
@@ -405,6 +427,71 @@ func applyUniversalCapabilityRemediation(
 			profileID,
 			skill,
 		)
+	}
+}
+
+func stackCapabilityResolution(
+	profile ResolvedProfile,
+	outcome CapabilityOutcome,
+	catalog *Catalog,
+) *ProfileCapabilityResolution {
+	if outcome.Requirement != CapabilityRequired ||
+		!strings.HasPrefix(outcome.ID, "capability.stack.") ||
+		!slices.Contains(profile.Capabilities, outcome.ID) {
+		return nil
+	}
+	retainedCapabilities := make([]string, 0, len(profile.Capabilities)-1)
+	for _, capabilityID := range profile.Capabilities {
+		if capabilityID != outcome.ID {
+			retainedCapabilities = append(retainedCapabilities, capabilityID)
+		}
+	}
+	beforeRemoval := profileAdaptationDecisions(
+		profile.Decisions,
+		profile.Modules,
+		profile.Capabilities,
+		catalog,
+	)
+	retainedDecisions := stringSet(profileAdaptationDecisions(
+		profile.Decisions,
+		profile.Modules,
+		retainedCapabilities,
+		catalog,
+	))
+	removedDecisions := make([]string, 0)
+	for _, decisionID := range beforeRemoval {
+		if _, retained := retainedDecisions[decisionID]; !retained {
+			removedDecisions = append(removedDecisions, decisionID)
+		}
+	}
+	return &ProfileCapabilityResolution{
+		SelectedTechnology:    outcome.Title,
+		RepositoryRemediation: outcome.Diagnostic.NextAction,
+		ProfileAdaptation: fmt.Sprintf(
+			"Remove %s through a reviewed repository-owned Profile adaptation.",
+			outcome.Title,
+		),
+		RemovedDecisions: removedDecisions,
+	}
+}
+
+func classifyProfileDivergences(divergences []ProfileDivergence) {
+	for index := range divergences {
+		divergences[index].Group = profileDivergenceGroup(divergences[index].Requirement)
+		if divergences[index].Group == ProfileDivergenceAdvisory {
+			divergences[index].NonBlockingStatement = advisoryNonBlockingStatement
+		}
+	}
+}
+
+func profileDivergenceGroup(requirement CapabilityRequirement) ProfileDivergenceGroup {
+	switch requirement {
+	case CapabilityRequired:
+		return ProfileDivergenceBlocking
+	case CapabilityRecommended:
+		return ProfileDivergenceAdvisory
+	default:
+		return ProfileDivergenceInformational
 	}
 }
 
@@ -561,7 +648,7 @@ func evaluateRepositoryCapabilities(
 			outcome, postgres, err = evaluatePostgreSQLCapability(root, capability)
 		} else {
 			evidence := collectCapabilityEvidence(root, capability)
-			outcome = evaluateCapability(capability, []CapabilityEvidence{evidence})
+			outcome = evaluateCapability(capability, evidence)
 		}
 		if err != nil {
 			return nil, PostgreSQLEvidence{}, err
@@ -571,44 +658,67 @@ func evaluateRepositoryCapabilities(
 	return outcomes, postgres, nil
 }
 
-func collectCapabilityEvidence(root *os.Root, capability RepositoryCapability) CapabilityEvidence {
+func collectCapabilityEvidence(root *os.Root, capability RepositoryCapability) []CapabilityEvidence {
 	switch capability.EvidenceKind {
 	case CapabilityEvidenceDeclaredFile:
 		return collectDeclaredFileEvidence(root, capability)
 	case CapabilityEvidenceInstalledSkill:
-		return collectInstalledSkillEvidence(root, capability)
+		return []CapabilityEvidence{collectInstalledSkillEvidence(root, capability)}
 	case CapabilityEvidenceExecutable:
-		return collectExecutableEvidence(capability)
+		return []CapabilityEvidence{collectExecutableEvidence(capability)}
 	default:
-		return invalidCapabilityEvidence(capability.EvidenceKind, "unsupported capability evidence kind")
+		return []CapabilityEvidence{invalidCapabilityEvidence(capability.EvidenceKind, "unsupported capability evidence kind")}
 	}
 }
 
-func collectDeclaredFileEvidence(root *os.Root, capability RepositoryCapability) CapabilityEvidence {
+func collectDeclaredFileEvidence(root *os.Root, capability RepositoryCapability) []CapabilityEvidence {
 	paths := stringsFromAny(capability.Probe["paths"])
 	contains, containsOK := capability.Probe["contains"].(string)
 	if len(paths) == 0 || len(paths) > maxCapabilityPaths || !containsOK {
-		return invalidCapabilityEvidence(capability.EvidenceKind, "declared file probe is invalid")
+		return []CapabilityEvidence{invalidCapabilityEvidence(capability.EvidenceKind, "declared file probe is invalid")}
 	}
 	slices.Sort(paths)
+	evidence := make([]CapabilityEvidence, 0, len(paths))
 	for _, relative := range paths {
 		data, state, detail := readBoundedRegularFile(root, relative, maxCapabilityFileBytes)
 		if state == CapabilityEvidenceInvalid {
-			return invalidCapabilityEvidence(capability.EvidenceKind, detail)
+			item := invalidCapabilityEvidence(capability.EvidenceKind, detail)
+			item.SourcePath = relative
+			return append(evidence, item)
 		}
-		if state != CapabilityEvidencePresent || !bytes.Contains(data, []byte(contains)) {
+		if state != CapabilityEvidencePresent {
+			evidence = append(evidence, CapabilityEvidence{
+				Status:         CapabilityEvidenceAbsent,
+				Kind:           capability.EvidenceKind,
+				Strength:       CapabilityEvidenceNone,
+				Classification: EvidenceProfileRequirement,
+				SourcePath:     relative,
+				Detail:         "file not found",
+			})
 			continue
 		}
-		return CapabilityEvidence{
+		if !bytes.Contains(data, []byte(contains)) {
+			evidence = append(evidence, CapabilityEvidence{
+				Status:         CapabilityEvidenceAbsent,
+				Kind:           capability.EvidenceKind,
+				Strength:       CapabilityEvidenceNone,
+				Classification: EvidenceProfileRequirement,
+				SourcePath:     relative,
+				SourceDigest:   contentIdentity(data),
+				Detail:         "expected content not found",
+			})
+			continue
+		}
+		return append(evidence, CapabilityEvidence{
 			Status:         CapabilityEvidencePresent,
 			Kind:           capability.EvidenceKind,
 			Strength:       CapabilityEvidenceDeclared,
 			Classification: EvidenceProfileRequirement,
 			SourcePath:     relative,
 			SourceDigest:   contentIdentity(data),
-		}
+		})
 	}
-	return absentCapabilityEvidence(capability.EvidenceKind)
+	return evidence
 }
 
 func collectInstalledSkillEvidence(root *os.Root, capability RepositoryCapability) CapabilityEvidence {
@@ -811,12 +921,33 @@ func evaluatePostgreSQLCapability(
 	slices.Sort(accepted)
 	postgres := PostgreSQLEvidence{AcceptedContractPaths: accepted}
 	contains, _ := capability.Probe["contains"].(string)
+	contractEvidence := make([]CapabilityEvidence, 0, len(accepted))
 	for _, relative := range accepted {
 		data, state, detail := readBoundedRegularFile(root, relative, maxCapabilityFileBytes)
 		if state == CapabilityEvidenceInvalid {
 			return CapabilityOutcome{}, PostgreSQLEvidence{}, fmt.Errorf("inspect PostgreSQL contract %q: %s", relative, detail)
 		}
-		if state != CapabilityEvidencePresent || !bytes.Contains(data, []byte(contains)) {
+		if state != CapabilityEvidencePresent {
+			contractEvidence = append(contractEvidence, CapabilityEvidence{
+				Status:         CapabilityEvidenceAbsent,
+				Kind:           CapabilityEvidenceDeclaredFile,
+				Strength:       CapabilityEvidenceNone,
+				Classification: EvidenceRepositoryContract,
+				SourcePath:     relative,
+				Detail:         "file not found",
+			})
+			continue
+		}
+		if !bytes.Contains(data, []byte(contains)) {
+			contractEvidence = append(contractEvidence, CapabilityEvidence{
+				Status:         CapabilityEvidenceAbsent,
+				Kind:           CapabilityEvidenceDeclaredFile,
+				Strength:       CapabilityEvidenceNone,
+				Classification: EvidenceRepositoryContract,
+				SourcePath:     relative,
+				SourceDigest:   contentIdentity(data),
+				Detail:         "expected content not found",
+			})
 			continue
 		}
 		evidence := CapabilityEvidence{
@@ -829,6 +960,7 @@ func evaluatePostgreSQLCapability(
 			Detail:         "accepted PostgreSQL repository contract",
 		}
 		postgres.Contract = &evidence
+		contractEvidence = append(contractEvidence, evidence)
 		break
 	}
 	implementation, err := collectPostgreSQLImplementationEvidence(root)
@@ -837,11 +969,11 @@ func evaluatePostgreSQLCapability(
 	}
 	postgres.Implementation = implementation
 	if postgres.Contract != nil {
-		return evaluateCapability(capability, []CapabilityEvidence{*postgres.Contract}), postgres, nil
+		return evaluateCapability(capability, contractEvidence), postgres, nil
 	}
 
 	evidence := append([]CapabilityEvidence(nil), implementation...)
-	evidence = append(evidence, absentCapabilityEvidence(CapabilityEvidenceDeclaredFile))
+	evidence = append(evidence, contractEvidence...)
 	outcome := evaluateCapability(capability, evidence)
 	outcome.Status = CapabilityMissing
 	outcome.Blocking = capability.Requirement == CapabilityRequired
@@ -1356,14 +1488,155 @@ func identifierIsSafe(value string) bool {
 	return true
 }
 
+// RenderProfileDivergences renders the projection carried by each divergence.
+// It does not inspect the repository or repeat capability evaluation.
+func RenderProfileDivergences(divergences []ProfileDivergence) string {
+	if len(divergences) == 0 {
+		return "Divergences: none\n"
+	}
+	var rendered strings.Builder
+	groups := []struct {
+		group   ProfileDivergenceGroup
+		heading string
+	}{
+		{group: ProfileDivergenceBlocking, heading: "Blocking divergences:"},
+		{group: ProfileDivergenceAdvisory, heading: "Advisory divergences:"},
+		{group: ProfileDivergenceInformational, heading: "Informational divergences:"},
+	}
+	for _, section := range groups {
+		wroteHeading := false
+		for _, divergence := range divergences {
+			group := divergence.Group
+			if group == "" {
+				group = profileDivergenceGroup(divergence.Requirement)
+			}
+			if group != section.group {
+				continue
+			}
+			if !wroteHeading {
+				if rendered.Len() != 0 {
+					rendered.WriteByte('\n')
+				}
+				fmt.Fprintln(&rendered, section.heading)
+				wroteHeading = true
+			}
+			fmt.Fprintf(&rendered, "- %s (%s): %s\n", divergence.ID, divergence.Code, divergence.Message)
+			renderProfileDivergenceProbe(&rendered, divergence)
+			renderProfileCapabilityResolution(&rendered, divergence.CapabilityResolution)
+			if group == ProfileDivergenceAdvisory {
+				statement := divergence.NonBlockingStatement
+				if statement == "" {
+					statement = advisoryNonBlockingStatement
+				}
+				fmt.Fprintf(&rendered, "  %s\n", statement)
+			}
+			if divergence.NextAction != "" {
+				fmt.Fprintf(&rendered, "  Next action: %s\n", divergence.NextAction)
+			}
+		}
+	}
+	return rendered.String()
+}
+
+func renderProfileDivergenceProbe(rendered *strings.Builder, divergence ProfileDivergence) {
+	kind, _ := divergence.Probe["kind"].(string)
+	switch CapabilityEvidenceKind(kind) {
+	case CapabilityEvidenceDeclaredFile:
+		expected, _ := divergence.Probe["contains"].(string)
+		inspected := 0
+		for _, evidence := range divergence.Evidence {
+			if evidence.Kind != CapabilityEvidenceDeclaredFile ||
+				evidence.Classification == EvidenceImplementation ||
+				evidence.SourcePath == "" {
+				continue
+			}
+			state := string(evidence.Status)
+			if evidence.Status == CapabilityEvidenceAbsent && evidence.SourceDigest != "" {
+				state = "present"
+			}
+			if evidence.Detail != "" {
+				state += " (" + evidence.Detail + ")"
+			}
+			fmt.Fprintf(
+				rendered,
+				"  Inspected path: %s: %s; expected content: %s\n",
+				evidence.SourcePath,
+				state,
+				expected,
+			)
+			inspected++
+		}
+		if inspected == 0 {
+			fmt.Fprintln(rendered, "  Inspected paths: none recorded")
+		}
+	case CapabilityEvidenceExecutable:
+		executable, _ := divergence.Probe["executable"].(string)
+		if executable != "" {
+			fmt.Fprintf(rendered, "  Executable probe: %s\n", executable)
+		}
+		for _, evidence := range divergence.Evidence {
+			if evidence.Kind != CapabilityEvidenceExecutable || evidence.SourcePath == "" {
+				continue
+			}
+			detail := ""
+			if evidence.Detail != "" {
+				detail = " (" + evidence.Detail + ")"
+			}
+			fmt.Fprintf(rendered, "  Inspected candidate: %s%s\n", evidence.SourcePath, detail)
+			return
+		}
+		fmt.Fprintln(rendered, "  Inspected candidate: none existed")
+	case CapabilityEvidenceInstalledSkill:
+		skill, _ := divergence.Probe["skill"].(string)
+		fmt.Fprintf(rendered, "  Installed-skill probe: %s\n", skill)
+		if len(divergence.Evidence) != 0 {
+			fmt.Fprintf(rendered, "  Evidence state: %s\n", divergence.Evidence[0].Status)
+		}
+	case "":
+		return
+	default:
+		fmt.Fprintf(rendered, "  Probe kind: %s\n", kind)
+	}
+}
+
+func renderProfileCapabilityResolution(
+	rendered *strings.Builder,
+	resolution *ProfileCapabilityResolution,
+) {
+	if resolution == nil {
+		return
+	}
+	fmt.Fprintf(rendered, "  Selected technology: %s\n", resolution.SelectedTechnology)
+	fmt.Fprintf(rendered, "  Repository remediation: %s\n", resolution.RepositoryRemediation)
+	fmt.Fprintf(rendered, "  Profile adaptation: %s\n", resolution.ProfileAdaptation)
+	if len(resolution.RemovedDecisions) == 0 {
+		fmt.Fprintln(rendered, "  Decision cascade: none")
+		return
+	}
+	fmt.Fprintf(rendered, "  Decision cascade: %s\n", strings.Join(resolution.RemovedDecisions, ", "))
+}
+
 func sortProfileDivergences(divergences []ProfileDivergence) {
 	sort.Slice(divergences, func(i, j int) bool {
-		if divergences[i].Blocking != divergences[j].Blocking {
-			return divergences[i].Blocking
+		leftGroup := profileDivergenceGroup(divergences[i].Requirement)
+		rightGroup := profileDivergenceGroup(divergences[j].Requirement)
+		if leftGroup != rightGroup {
+			return profileDivergenceGroupRank(leftGroup) < profileDivergenceGroupRank(rightGroup)
 		}
 		if divergences[i].ID != divergences[j].ID {
 			return divergences[i].ID < divergences[j].ID
 		}
 		return divergences[i].Code < divergences[j].Code
 	})
+}
+
+func profileDivergenceGroupRank(group ProfileDivergenceGroup) int {
+	switch group {
+	case ProfileDivergenceBlocking:
+		return 0
+	case ProfileDivergenceAdvisory:
+		return 1
+	default:
+		return 2
+	}
 }

@@ -224,6 +224,7 @@
         "code": "capability.required.missing",
         "id": "capability.context7",
         "requirement": "required",
+        "group": "blocking",
         "blocking": true,
         "message": "Context7 has no compatible local evidence.",
         "nextAction": "Run roundfix baseline skills restore --profile go-cli-tui --skill context7, review its exact restoration Plan Digest, rerun with --confirm-plan \u003cdigest\u003e, then rerun profile alignment.",

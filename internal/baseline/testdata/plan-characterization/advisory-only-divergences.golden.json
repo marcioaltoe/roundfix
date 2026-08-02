@@ -224,8 +224,10 @@
         "code": "capability.recommended.missing",
         "id": "capability.firecrawl",
         "requirement": "recommended",
+        "group": "advisory",
         "blocking": false,
         "message": "Firecrawl has no compatible local evidence.",
+        "nonBlockingStatement": "This advisory does not block readiness or apply.",
         "nextAction": "Add the firecrawl skill if structured web extraction is useful.",
         "probe": {
           "skill": "firecrawl"

@@ -947,6 +947,163 @@ func TestUniversalCapabilityRemediation(t *testing.T) {
 	}
 }
 
+func TestDivergenceRendersProbe(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
+	if err := os.Remove(filepath.Join(repository, "packages", "frontend", "package.json")); err != nil {
+		t.Fatalf("remove declared-file fixture: %v", err)
+	}
+	t.Setenv("PATH", t.TempDir())
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve divergence rendering fixture: %v", err)
+	}
+	rendered := RenderProfileDivergences(alignment.Divergences)
+	for _, want := range []string{
+		`package.json: present (expected content not found); expected content: "better-auth"`,
+		`packages/frontend/package.json: absent (file not found); expected content: "better-auth"`,
+		`packages/backend/package.json: present (expected content not found); expected content: "better-auth"`,
+		"Inspected candidate: none existed",
+		"Selected technology: Better Auth",
+		"Repository remediation:",
+		"Profile adaptation:",
+		"Decision cascade: auth.provider",
+	} {
+		if !strings.Contains(rendered, want) {
+			t.Errorf("rendered divergences missing %q:\n%s", want, rendered)
+		}
+	}
+
+	betterAuth, ok := findProfileDivergence(alignment.Divergences, "capability.stack.better-auth")
+	if !ok || betterAuth.CapabilityResolution == nil {
+		t.Fatalf("Better Auth divergence resolution = %+v, found=%v", betterAuth, ok)
+	}
+	if betterAuth.CapabilityResolution.SelectedTechnology != "Better Auth" ||
+		betterAuth.CapabilityResolution.RepositoryRemediation == "" ||
+		betterAuth.CapabilityResolution.ProfileAdaptation == "" ||
+		!slices.Equal(betterAuth.CapabilityResolution.RemovedDecisions, []string{"auth.provider"}) {
+		t.Fatalf("Better Auth resolution = %+v", betterAuth.CapabilityResolution)
+	}
+
+	withoutShadcn := strings.Replace(typeScriptPackageJSON(false, true), `"shadcn":"latest",`, "", 1)
+	writeProfileAlignmentFile(t, repository, "package.json", withoutShadcn)
+	alignment, err = ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve decision-free cascade fixture: %v", err)
+	}
+	shadcn, ok := findProfileDivergence(alignment.Divergences, "capability.stack.shadcn")
+	if !ok || shadcn.CapabilityResolution == nil {
+		t.Fatalf("shadcn divergence resolution = %+v, found=%v", shadcn, ok)
+	}
+	if len(shadcn.CapabilityResolution.RemovedDecisions) != 0 ||
+		!strings.Contains(RenderProfileDivergences([]ProfileDivergence{shadcn}), "Decision cascade: none") {
+		t.Fatalf("shadcn decision cascade = %+v", shadcn.CapabilityResolution)
+	}
+
+	bin := t.TempDir()
+	writeProfileAlignmentFile(t, bin, "docker", "not executable")
+	t.Setenv("PATH", bin)
+	alignment, err = ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve rejected executable fixture: %v", err)
+	}
+	docker, ok := findProfileDivergence(alignment.Divergences, "capability.optional.docker")
+	if !ok {
+		t.Fatal("Docker divergence is missing")
+	}
+	rendered = RenderProfileDivergences([]ProfileDivergence{docker})
+	wantCandidate := "Inspected candidate: " + filepath.ToSlash(filepath.Join(bin, "docker")) + " (not-executable)"
+	if !strings.Contains(rendered, wantCandidate) {
+		t.Fatalf("executable divergence missing inspected candidate %q:\n%s", wantCandidate, rendered)
+	}
+}
+
+func TestDivergenceGroupsByRequirement(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
+	t.Setenv("PATH", t.TempDir())
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve grouped divergences: %v", err)
+	}
+	if alignment.Ready || alignment.State != ProfileAlignmentActionRequired {
+		t.Fatalf("grouping changed blocking readiness: %+v", alignment)
+	}
+
+	groupRank := map[ProfileDivergenceGroup]int{
+		ProfileDivergenceBlocking:      0,
+		ProfileDivergenceAdvisory:      1,
+		ProfileDivergenceInformational: 2,
+	}
+	lastRank := -1
+	seen := make(map[ProfileDivergenceGroup]bool)
+	for _, divergence := range alignment.Divergences {
+		wantGroup := profileDivergenceGroup(divergence.Requirement)
+		if divergence.Group != wantGroup {
+			t.Errorf("divergence %q group = %q, want %q", divergence.ID, divergence.Group, wantGroup)
+		}
+		rank := groupRank[divergence.Group]
+		if rank < lastRank {
+			t.Fatalf("divergence groups are not ordered: %+v", alignment.Divergences)
+		}
+		lastRank = rank
+		seen[divergence.Group] = true
+		if divergence.Group == ProfileDivergenceAdvisory {
+			if divergence.NonBlockingStatement != advisoryNonBlockingStatement {
+				t.Errorf("advisory %q statement = %q", divergence.ID, divergence.NonBlockingStatement)
+			}
+			encoded, marshalErr := json.Marshal(divergence)
+			if marshalErr != nil {
+				t.Fatalf("marshal advisory %q: %v", divergence.ID, marshalErr)
+			}
+			statementAt := strings.Index(string(encoded), `"nonBlockingStatement"`)
+			nextActionAt := strings.Index(string(encoded), `"nextAction"`)
+			if statementAt < 0 || nextActionAt >= 0 && statementAt > nextActionAt {
+				t.Errorf("advisory machine statement does not precede next action: %s", encoded)
+			}
+		}
+	}
+	for _, group := range []ProfileDivergenceGroup{
+		ProfileDivergenceBlocking,
+		ProfileDivergenceAdvisory,
+		ProfileDivergenceInformational,
+	} {
+		if !seen[group] {
+			t.Errorf("group %q is absent from machine divergences", group)
+		}
+	}
+
+	rendered := RenderProfileDivergences(alignment.Divergences)
+	blockingAt := strings.Index(rendered, "Blocking divergences:")
+	advisoryAt := strings.Index(rendered, "Advisory divergences:")
+	informationalAt := strings.Index(rendered, "Informational divergences:")
+	if blockingAt < 0 || advisoryAt <= blockingAt || informationalAt <= advisoryAt {
+		t.Fatalf("rendered divergence groups are not ordered:\n%s", rendered)
+	}
+	advisorySection := rendered[advisoryAt:informationalAt]
+	statementAt := strings.Index(advisorySection, advisoryNonBlockingStatement)
+	nextActionAt := strings.Index(advisorySection, "Next action:")
+	if statementAt < 0 || nextActionAt >= 0 && statementAt > nextActionAt {
+		t.Fatalf("rendered advisory statement does not precede next action:\n%s", advisorySection)
+	}
+}
+
 func decisionsForResolvedProfile(input []DecisionValue, profile ResolvedProfile) []DecisionValue {
 	selected := stringSet(profile.Decisions)
 	result := make([]DecisionValue, 0, len(input))
