@@ -40,10 +40,14 @@ none of its four cases. Evidence:
 - Active ADR obligations: applicable — ADR-0080 keeps QA verdicts
   distinguishing environment-blocked rows, and the reorder must not turn a
   legitimately blocked row into a passing one. Source: `docs/agents/domain.md`.
-- Tooling authority: not yet requested — the loop discipline is delivered
-  through the Baseline module, so changing the shipped clause touches protected
-  tooling. No mutation is authorized today; the maintainer must grant it with
-  bounded files before decomposition. Source:
+- Tooling authority: applicable — express maintainer authorization: on 2026-08-02 the maintainer
+  authorized tooling adjustment for the queued Specs, recorded at
+  `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`; bounded
+  files: the owned skill pair. Delivering the loop-order correction through the
+  Baseline module would additionally need
+  `internal/baseline/assets/modules/autonomous-work.json`, which this grant does
+  not clearly reach and must be confirmed before decomposition. Deterministic
+  digest fallout is sanctioned by ADR-0081. Source:
   `docs/agents/agent-instructions.md`.
 
 ## Goals

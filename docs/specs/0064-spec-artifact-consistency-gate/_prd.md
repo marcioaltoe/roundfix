@@ -35,10 +35,11 @@ contradictions in seconds, before a Run exists.
 - Active ADR obligations: applicable — ADR-0080 owns QA verdict semantics, and
   nothing here may weaken or duplicate a verdict; this gate reports before QA
   rather than inside it. Source: `docs/agents/domain.md`.
-- Tooling authority: not yet requested — wiring the check into the local
-  verification gate would touch protected tooling. No mutation is authorized
-  today; the maintainer must grant it with bounded files before decomposition.
-  Source: `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — express maintainer authorization: on 2026-08-02
+  the maintainer authorized tooling adjustment for the queued Specs, recorded at
+  `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`; bounded files:
+  `Makefile`, plus the owned skill pair if the check ships as a skill. Deterministic digest fallout is sanctioned by ADR-0081. Source:
+  `docs/agents/agent-instructions.md`.
 
 ## Goals
 
