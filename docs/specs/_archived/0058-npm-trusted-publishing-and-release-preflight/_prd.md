@@ -1,7 +1,10 @@
 ---
 spec: 0058-npm-trusted-publishing-and-release-preflight
-status: active
+status: archived
 created: 2026-07-28
+archived: 2026-08-01
+qa_override: true
+release: https://github.com/marcioaltoe/roundfix/pull/61
 surfaces: [infra, docs]
 ---
 
