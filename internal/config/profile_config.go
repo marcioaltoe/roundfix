@@ -47,6 +47,7 @@ type ProfileConfigResult struct {
 	Path     string
 	Changed  bool
 	Profiles Profiles
+	Changes  EffectiveChangeSet
 }
 
 type ProfileConfigProposal struct {
@@ -171,9 +172,14 @@ func PrepareProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (Prof
 	if err != nil {
 		return ProfileConfigProposal{}, err
 	}
-	profiles, err := NormalizeProfilesFragment(opts.Profiles)
-	if err != nil {
-		return ProfileConfigProposal{}, err
+	profiles := Profiles{}
+	if len(opts.Profiles) > 0 {
+		profiles, err = NormalizeProfilesFragment(opts.Profiles)
+		if err != nil {
+			return ProfileConfigProposal{}, err
+		}
+	} else if len(opts.Removals) == 0 {
+		return ProfileConfigProposal{}, errors.New("profiles must define at least one Agent Selection Profile")
 	}
 	result := ProfileConfigResult{
 		Scope:    scope,
@@ -194,6 +200,7 @@ func PrepareProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (Prof
 	if err != nil {
 		return ProfileConfigProposal{}, err
 	}
+	result.Changes = cloneEffectiveChangeSet(changes)
 	next, err := mergeProfilesConfigContent(path, current, changes, source)
 	if err != nil {
 		return ProfileConfigProposal{}, err
@@ -209,6 +216,7 @@ func PrepareProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (Prof
 func (proposal ProfileConfigProposal) Result() ProfileConfigResult {
 	result := proposal.result
 	result.Profiles = cloneProfilesForWrite(proposal.result.Profiles)
+	result.Changes = cloneEffectiveChangeSet(proposal.result.Changes)
 	return result
 }
 
@@ -618,6 +626,15 @@ func cloneProfilesForWrite(profiles Profiles) Profiles {
 	cloned := Profiles{}
 	for category, entry := range profiles {
 		cloned[category] = ProfileEntry{Profile: cloneProfile(entry.Profile), Source: entry.Source}
+	}
+	return cloned
+}
+
+func cloneEffectiveChangeSet(changes EffectiveChangeSet) EffectiveChangeSet {
+	cloned := EffectiveChangeSet{Changes: make([]CategoryChange, len(changes.Changes))}
+	for index, change := range changes.Changes {
+		cloned.Changes[index] = change
+		cloned.Changes[index].Profile = cloneProfile(change.Profile)
 	}
 	return cloned
 }

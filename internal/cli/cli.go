@@ -57,7 +57,7 @@ Usage:
   roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
   roundfix profiles show [--category <category>] [--json]
-  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
   roundfix archive <slug>
   roundfix init [--scope <project|user>]
@@ -4944,7 +4944,7 @@ Options:
 	case "profiles":
 		return `Usage:
   roundfix profiles show [--category <category>] [--json]
-  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
 
 Commands:
@@ -4969,16 +4969,18 @@ Options:
 `
 	case "profiles configure":
 		return `Usage:
-  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--remove <category>] [--dry-run] [--yes] [--json]
 
-Writes complete Agent Selection Profiles to User Config or Project Config.
-Without --file, collects one profile through Interactive Input, shows the
-normalized profile and target scope, then proves every exact Agent Selection
-before confirmation. --dry-run performs the same proof without writing.
+Adds or replaces complete Agent Selection Profiles in User Config or Project
+Config. --remove declares a category removal and may be repeated. Without
+--file or --remove, collects one profile through Interactive Input. The command
+proves every exact Agent Selection it writes before confirmation. --dry-run
+performs the same proof and change summary without writing.
 
 Options:
   --scope    Required config scope: user or project
   --file     Strict profile fragment YAML; omitted opens Interactive Input
+  --remove   Agent Work Category to remove; repeatable
   --dry-run  Validate and render the normalized result without writing
   --yes      Write without confirmation after validation
   --json     Print deterministic JSON report

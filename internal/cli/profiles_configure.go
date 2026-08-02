@@ -17,11 +17,12 @@ import (
 const profilesConfigureSchema = "roundfix/profiles-configure/v1"
 
 type profilesConfigureRequest struct {
-	scope  string
-	file   string
-	dryRun bool
-	json   bool
-	yes    bool
+	scope    string
+	file     string
+	removals []roundconfig.WorkCategory
+	dryRun   bool
+	json     bool
+	yes      bool
 }
 
 type profilesConfigureResponse struct {
@@ -30,7 +31,13 @@ type profilesConfigureResponse struct {
 	Scope    string                     `json:"scope"`
 	Path     string                     `json:"path"`
 	Profiles []profilesConfigureProfile `json:"profiles"`
+	Changes  []profilesConfigureChange  `json:"changes"`
 	Error    string                     `json:"error,omitempty"`
+}
+
+type profilesConfigureChange struct {
+	Category roundconfig.WorkCategory `json:"category"`
+	Kind     roundconfig.ChangeKind   `json:"kind"`
 }
 
 type profilesConfigureProfile struct {
@@ -59,6 +66,7 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	proposal, err := roundconfig.PrepareProfilesConfig(ctx, roundconfig.ProfileConfigOptions{
 		Scope:    req.scope,
 		Profiles: profiles,
+		Removals: req.removals,
 	})
 	if err != nil {
 		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{Scope: req.scope}, err, stdout, stderr)
@@ -68,19 +76,21 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	if err != nil {
 		return printProfilesConfigureError(req, result, fmt.Errorf("resolve profiles configure proof working directory: %w", err), stdout, stderr)
 	}
+	proofProfiles, proofCategories := profilesConfigureProofScope(result.Changes)
 	readiness := proveProfileSelections(
 		ctx,
-		roundconfig.Config{Profiles: profiles},
-		profilesConfigureCategories(profiles),
+		roundconfig.Config{Profiles: proofProfiles},
+		proofCategories,
 		workDir,
 		newEngineCollaborators().runner,
 	)
 	if readiness.Err != nil {
 		return printProfilesConfigureError(req, result, readiness.Err, stdout, stderr)
 	}
+	preview := profilesConfigurePreview(result)
 	if req.dryRun {
 		if !req.json {
-			if _, err := fmt.Fprint(stdout, profilesConfigurePreview(result)); err != nil {
+			if _, err := fmt.Fprint(stdout, preview); err != nil {
 				return printProfilesConfigureOutputError(err, stderr)
 			}
 		}
@@ -90,7 +100,6 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 		return exitOK
 	}
 
-	preview := profilesConfigurePreview(result)
 	if !req.yes {
 		confirmed, err := confirmProfilesConfigure(ctx, stderr, preview)
 		if err != nil {
@@ -109,6 +118,10 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 			}
 			return exitOK
 		}
+	} else if !req.json {
+		if _, err := fmt.Fprint(stdout, preview); err != nil {
+			return printProfilesConfigureOutputError(err, stderr)
+		}
 	}
 
 	result, err = roundconfig.PersistProfilesConfig(ctx, proposal)
@@ -125,21 +138,26 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	return exitOK
 }
 
-func profilesConfigureCategories(profiles roundconfig.Profiles) []roundconfig.WorkCategory {
-	categories := make([]roundconfig.WorkCategory, 0, len(profiles))
-	for _, category := range roundconfig.AllWorkCategories() {
-		if _, ok := profiles[category]; ok {
-			categories = append(categories, category)
+func profilesConfigureProofScope(changes roundconfig.EffectiveChangeSet) (roundconfig.Profiles, []roundconfig.WorkCategory) {
+	profiles := roundconfig.Profiles{}
+	categories := make([]roundconfig.WorkCategory, 0, len(changes.Changes))
+	for _, change := range changes.Changes {
+		if change.Kind == roundconfig.ChangeRemoved {
+			continue
 		}
+		profiles[change.Category] = roundconfig.ProfileEntry{Profile: change.Profile}
+		categories = append(categories, change.Category)
 	}
-	return categories
+	return profiles, categories
 }
 
 func parseProfilesConfigureCommand(args []string) (profilesConfigureRequest, error) {
 	req := profilesConfigureRequest{}
+	var removals stringListFlag
 	fs := flagSet("profiles configure")
 	fs.StringVar(&req.scope, "scope", "", "Config scope: user or project")
 	fs.StringVar(&req.file, "file", "", "Strict profile fragment YAML")
+	fs.Var(&removals, "remove", "Agent Work Category to remove (repeatable)")
 	fs.BoolVar(&req.dryRun, "dry-run", false, "Validate and render without writing")
 	fs.BoolVar(&req.json, "json", false, "Print roundfix/profiles-configure/v1 JSON")
 	fs.BoolVar(&req.yes, "yes", false, "Write without confirmation after validation")
@@ -157,6 +175,13 @@ func parseProfilesConfigureCommand(args []string) (profilesConfigureRequest, err
 	if req.scope != roundconfig.InitScopeUser && req.scope != roundconfig.InitScopeProject {
 		return req, validationError{message: fmt.Sprintf("unsupported profiles scope %q; supported values: user, project", req.scope)}
 	}
+	for _, removal := range removals {
+		category, ok := roundconfig.ParseWorkCategory(strings.TrimSpace(removal))
+		if !ok {
+			return req, validationError{message: fmt.Sprintf("unknown profile category %q; supported values: %s", strings.TrimSpace(removal), profilesCategoryList())}
+		}
+		req.removals = append(req.removals, category)
+	}
 	return req, nil
 }
 
@@ -171,6 +196,9 @@ func profilesForConfigureRequest(ctx context.Context, req profilesConfigureReque
 			return nil, fmt.Errorf("read profiles file %q: %w", req.file, err)
 		}
 		return profiles, nil
+	}
+	if len(req.removals) > 0 {
+		return roundconfig.Profiles{}, nil
 	}
 	return collectProfilesConfigureInput(ctx, profilesConfigureInput(), stderr)
 }
@@ -320,6 +348,10 @@ func profilesConfigurePreview(result roundconfig.ProfileConfigResult) string {
 	fmt.Fprintf(&builder, "Profile Configure Preview\n")
 	fmt.Fprintf(&builder, "Scope: %s\n", result.Scope)
 	fmt.Fprintf(&builder, "Path: %s\n", result.Path)
+	fmt.Fprintln(&builder, "Changes:")
+	for _, change := range result.Changes.Changes {
+		fmt.Fprintf(&builder, "%s: %s\n", change.Kind, change.Category)
+	}
 	for _, profile := range profilesConfigureProfiles(result.Profiles) {
 		fmt.Fprintf(&builder, "Category: %s\n", profile.Category)
 		fmt.Fprintf(&builder, "Preferred Selection: %s\n", formatProfileSelection(profile.Preferred))
@@ -369,8 +401,20 @@ func profilesConfigureResponseForResult(result roundconfig.ProfileConfigResult, 
 		Scope:    result.Scope,
 		Path:     result.Path,
 		Profiles: profilesConfigureProfiles(result.Profiles),
+		Changes:  profilesConfigureChanges(result.Changes),
 		Error:    errorMessage,
 	}
+}
+
+func profilesConfigureChanges(changes roundconfig.EffectiveChangeSet) []profilesConfigureChange {
+	output := make([]profilesConfigureChange, 0, len(changes.Changes))
+	for _, change := range changes.Changes {
+		output = append(output, profilesConfigureChange{
+			Category: change.Category,
+			Kind:     change.Kind,
+		})
+	}
+	return output
 }
 
 func profilesConfigureProfiles(profiles roundconfig.Profiles) []profilesConfigureProfile {

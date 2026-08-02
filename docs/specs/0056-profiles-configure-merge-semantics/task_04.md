@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0056-profiles-configure-merge-semantics
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -82,3 +82,55 @@ the operation writes.
 - `_techspec.md` → Coverage Map; Build Order 4; Decisions (proof-scope
   deviation).
 - ADR-0037, ADR-0039.
+
+## Result
+
+Implemented the Task 04 slice without changing the Daemon-owned status or exit
+codes. The prepared proposal now retains its ordered Effective Change Set, and
+`profiles configure` uses that one value to render the text summary, populate
+the additive JSON `changes` array, select only added/replaced categories for
+exact tuple proof, and pass declared removals to the category-level merge. The
+CLI accepts repeatable `--remove` flags, including a removal-only invocation;
+an absent category remains a reported removal even when persistence is a
+no-op.
+
+Acceptance evidence:
+
+- `TestProfilesConfigureChangeSummary/added_category_agrees_in_text_and_machine_output`
+  observes exactly `added: backend` and the matching JSON
+  `{category:"backend", kind:"added"}` entry.
+- `TestProfilesConfigureChangeSummary/replacement_excludes_untouched_categories`
+  observes exactly `replaced: backend` and proves the preview and JSON omit the
+  untouched `frontend` category.
+- `TestProfilesConfigureChangeSummary/declared_removals_include_present_and_absent_categories`
+  observes `removed: frontend` and `removed: review` in both text and JSON,
+  including the absent `review` category.
+- `TestProfilesConfigureProofScope` observes all three distinct tuples from the
+  written `backend` and `qa` profiles before confirmation, rejects any attempt
+  to prove the stale untouched `frontend` tuple, and confirms the config bytes
+  are unchanged when confirmation begins.
+- `TestProfilesConfigureChangeSummary/dry_run_reports_the_same_change_and_preserves_bytes`
+  observes the same added classification in text and JSON dry-run modes and
+  verifies the target file remains byte-identical after each invocation.
+- Changed-path inspection after implementation shows only `internal/config/`,
+  `internal/cli/`, and this task file.
+
+Focused checks run with `GOCACHE=/private/tmp/roundfix-task04-gocache`:
+
+- Pre-change signal:
+  `go test ./internal/cli -run '^TestProfilesConfigureChangeSummary$/^added_category_agrees_in_text_and_machine_output$' -count=1`
+  failed to compile because the machine response had no `Changes` field.
+- Each `TestProfilesConfigureChangeSummary` subtest passed independently for
+  add, replace, removal, and dry-run behavior.
+- `go test ./internal/cli -run '^TestProfilesConfigureProofScope$/' -count=1`
+  passed.
+- `go test ./internal/cli -run '^TestProfilesConfigure' -count=1` passed.
+- The focused pre-existing configure regression group covering file, `--yes`,
+  dry-run, proof order/failures, interactive input, fallback validation, and
+  JSON rollback passed.
+- `go test ./internal/config -run '^(TestEffectiveChangeSet|TestWriteProfilesConfig.*)$' -count=1`
+  passed.
+- `go test ./internal/cli -run '^TestProfilesDocumentationContractMatchesPublicGuidance$' -count=1`
+  passed.
+
+The commands in `## Verification` were not run; the Daemon owns that gate.
