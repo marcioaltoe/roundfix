@@ -915,8 +915,12 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Baseline Profile alignment: action_required",
-		"blocking capability.workspace.frontend",
-		"advisory capability.firecrawl",
+		"Blocking divergences:",
+		"capability.workspace.frontend",
+		"Advisory divergences:",
+		"capability.firecrawl",
+		"This advisory does not block readiness or apply.",
+		"Informational divergences:",
 		"Repository-owned Profile adaptation proposal",
 		"Modules removed",
 		"Capabilities removed",

@@ -73,6 +73,99 @@ func TestProfileAlignmentResolvesExactlyOneProfile(t *testing.T) {
 	}
 }
 
+func TestCapabilityRecheckMatchesFullPlan(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	t.Setenv("PATH", t.TempDir())
+
+	fullPlanAlignment, err := ResolveProfileAlignment(
+		context.Background(),
+		repository,
+		ProfileAlignmentRequest{
+			ProfileID: "standard-typescript-monorepo",
+			Decisions: standardTypeScriptDecisions("make verify"),
+		},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("resolve full-plan alignment: %v", err)
+	}
+
+	recheck, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+		Repository: repository,
+		ProfileID:  "standard-typescript-monorepo",
+	})
+	if err != nil {
+		t.Fatalf("re-check capabilities: %v", err)
+	}
+	if !reflect.DeepEqual(recheck.Capabilities, fullPlanAlignment.Capabilities) {
+		t.Fatalf("re-check capabilities differ from full-plan alignment:\nre-check=%#v\nfull-plan=%#v",
+			recheck.Capabilities, fullPlanAlignment.Capabilities)
+	}
+
+	capabilityIDs := make(map[string]struct{}, len(fullPlanAlignment.Capabilities))
+	for _, outcome := range fullPlanAlignment.Capabilities {
+		capabilityIDs[outcome.ID] = struct{}{}
+	}
+	fullPlanDivergences := make([]ProfileDivergence, 0, len(fullPlanAlignment.Divergences))
+	for _, divergence := range fullPlanAlignment.Divergences {
+		if _, capability := capabilityIDs[divergence.ID]; capability {
+			fullPlanDivergences = append(fullPlanDivergences, divergence)
+		}
+	}
+	if !reflect.DeepEqual(recheck.Divergences, fullPlanDivergences) {
+		t.Fatalf("re-check divergences differ from full-plan alignment:\nre-check=%#v\nfull-plan=%#v",
+			recheck.Divergences, fullPlanDivergences)
+	}
+	if got, want := RenderProfileDivergences(recheck.Divergences), RenderProfileDivergences(fullPlanDivergences); got != want {
+		t.Fatalf("re-check rendering differs from full-plan rendering:\nre-check=%s\nfull-plan=%s", got, want)
+	}
+}
+
+func TestCapabilityRecheck(t *testing.T) {
+	t.Run("names a missing Profile", func(t *testing.T) {
+		repository := t.TempDir()
+		_, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+			Repository: repository,
+		})
+		if !errors.Is(err, ErrNoResolvableProfile) {
+			t.Fatalf("RecheckCapabilities() error = %v, want ErrNoResolvableProfile", err)
+		}
+	})
+
+	t.Run("resolves the current Setup Manifest Profile without decisions", func(t *testing.T) {
+		catalog := loadProfileAlignmentCatalog(t)
+		repository := newAlignedTypeScriptRepository(t)
+		profile, err := ResolveProfile(repository, "standard-typescript-monorepo", catalog)
+		if err != nil {
+			t.Fatalf("resolve manifest Profile: %v", err)
+		}
+		manifest := buildSetupManifest(
+			catalog,
+			profile,
+			nil,
+			profile.Modules,
+			nil,
+			[]VerificationProjection{},
+		)
+		data, err := marshalSetupManifestBytes(manifest)
+		if err != nil {
+			t.Fatalf("marshal Setup Manifest: %v", err)
+		}
+		writeProfileAlignmentFile(t, repository, manifestPath, string(data))
+
+		result, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+			Repository: repository,
+		})
+		if err != nil {
+			t.Fatalf("re-check current Setup Manifest Profile: %v", err)
+		}
+		if result.Profile == nil || result.Profile.ID != profile.ID || result.Profile.Digest != profile.Digest {
+			t.Fatalf("re-check Profile = %#v, want %q %q", result.Profile, profile.ID, profile.Digest)
+		}
+	})
+}
+
 func TestRequiredDivergencePreventsReadyPlan(t *testing.T) {
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)

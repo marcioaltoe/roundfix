@@ -1184,28 +1184,7 @@ func decisionsSelectedByProfile(
 func renderBaselineProfileAlignment(output io.Writer, alignment baseline.ProfileAlignment) {
 	fmt.Fprintf(output, "\nBaseline Profile alignment: %s\n", alignment.State)
 	fmt.Fprintf(output, "Profile: %s\n", alignment.Profile.ID)
-	if len(alignment.Divergences) == 0 {
-		fmt.Fprintln(output, "Divergences: none")
-		return
-	}
-	fmt.Fprintln(output, "Divergences:")
-	for _, divergence := range alignment.Divergences {
-		severity := "advisory"
-		if divergence.Blocking {
-			severity = "blocking"
-		}
-		fmt.Fprintf(
-			output,
-			"- %s %s (%s): %s\n",
-			severity,
-			divergence.ID,
-			divergence.Code,
-			divergence.Message,
-		)
-		if divergence.NextAction != "" {
-			fmt.Fprintf(output, "  Next action: %s\n", divergence.NextAction)
-		}
-	}
+	fmt.Fprint(output, baseline.RenderProfileDivergences(alignment.Divergences))
 }
 
 func printProfileRemovalReview(output io.Writer, label string, removed []string) {

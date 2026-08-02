@@ -19,6 +19,8 @@ import (
 )
 
 const (
+	CapabilityRecheckSchemaVersion = "roundfix/baseline-capability-recheck/v1"
+
 	maxCapabilityPaths     = 32
 	maxCapabilityFileBytes = 1024 * 1024
 	maxExecutableLinkHops  = 64
@@ -30,6 +32,10 @@ const (
 	executableProbeReasonLinkCycle     = "link-cycle"
 	executableProbeReasonNotExecutable = "not-executable"
 )
+
+// ErrNoResolvableProfile names a capability re-check that cannot select a
+// current Baseline Profile from either the request or the Setup Manifest.
+var ErrNoResolvableProfile = errors.New("capability re-check: no resolvable Baseline Profile")
 
 type ProfileAlignmentState string
 
@@ -221,6 +227,44 @@ type ProfileAlignment struct {
 	Verification   []VerificationProjection `json:"verification"`
 }
 
+// CapabilityRecheckRequest selects the repository and, optionally, an exact
+// Baseline Profile. When ProfileID is empty, the current Setup Manifest owns
+// selection. Decisions are intentionally not an input to this operation.
+type CapabilityRecheckRequest struct {
+	Repository string
+	ProfileID  string
+}
+
+// CapabilityRecheckProfile identifies the exact Profile evaluated by a
+// capability re-check without projecting its decision declarations or values.
+type CapabilityRecheckProfile struct {
+	ID     string                `json:"id"`
+	Source BaselineProfileSource `json:"source"`
+	Digest string                `json:"digest"`
+}
+
+// CapabilityRecheckResult is the read-only capability projection returned to
+// automation. It deliberately omits decisions and every write-bearing plan
+// field.
+type CapabilityRecheckResult struct {
+	SchemaVersion string                    `json:"schemaVersion"`
+	Operation     string                    `json:"operation"`
+	State         string                    `json:"state"`
+	Category      string                    `json:"category,omitempty"`
+	Message       string                    `json:"message,omitempty"`
+	NextAction    string                    `json:"nextAction,omitempty"`
+	Profile       *CapabilityRecheckProfile `json:"profile,omitempty"`
+	Capabilities  []CapabilityOutcome       `json:"capabilities"`
+	Divergences   []ProfileDivergence       `json:"divergences"`
+	PostgreSQL    PostgreSQLEvidence        `json:"postgresql"`
+}
+
+type profileCapabilityEvaluation struct {
+	capabilities []CapabilityOutcome
+	divergences  []ProfileDivergence
+	postgres     PostgreSQLEvidence
+}
+
 var (
 	httpMethodCall = regexp.MustCompile(`(?i)\.\s*(get|post|put|patch|delete|options|head|all)\s*\(\s*["'\x60]([^"'` + "\x60" + `\r\n]+)["'\x60]`)
 	httpScopeCall  = regexp.MustCompile(`(?i)\.\s*(?:route|basePath)\s*\(\s*["'\x60]([^"'` + "\x60" + `\r\n]+)["'\x60]`)
@@ -336,36 +380,22 @@ func ResolveProfileAlignment(
 	if err != nil {
 		return ProfileAlignment{}, err
 	}
-	capabilities, err := resolvedProfileCapabilities(profile, catalog)
-	if err != nil {
-		return ProfileAlignment{}, err
-	}
-	outcomes, postgres, err := evaluateRepositoryCapabilities(ctx, root, capabilities)
-	if err != nil {
-		return ProfileAlignment{}, err
-	}
 	remediationProfileID := strings.TrimSpace(request.RemediationProfileID)
 	if remediationProfileID == "" {
 		remediationProfileID = profile.ID
 	}
-	applyUniversalCapabilityRemediation(outcomes, remediationProfileID)
-	divergences := append([]ProfileDivergence(nil), decisionDivergences...)
-	for index, outcome := range outcomes {
-		if outcome.Status == CapabilitySatisfied {
-			continue
-		}
-		divergences = append(divergences, ProfileDivergence{
-			Code:                 outcome.Diagnostic.Code,
-			ID:                   outcome.ID,
-			Requirement:          outcome.Requirement,
-			Blocking:             outcome.Blocking,
-			Message:              outcome.Diagnostic.Message,
-			NextAction:           outcome.Diagnostic.NextAction,
-			Probe:                capabilities[index].Probe,
-			Evidence:             outcome.Evidence,
-			CapabilityResolution: stackCapabilityResolution(profile, outcome, catalog),
-		})
+	capabilityEvaluation, err := evaluateProfileCapabilities(
+		ctx,
+		root,
+		profile,
+		remediationProfileID,
+		catalog,
+	)
+	if err != nil {
+		return ProfileAlignment{}, err
 	}
+	divergences := append([]ProfileDivergence(nil), decisionDivergences...)
+	divergences = append(divergences, capabilityEvaluation.divergences...)
 
 	httpCandidates, err := collectHTTPRouteCandidates(ctx, root, profile, catalog)
 	if err != nil {
@@ -401,11 +431,130 @@ func ResolveProfileAlignment(
 		Ready:          ready,
 		Profile:        profile,
 		Decisions:      decisions,
-		Capabilities:   outcomes,
+		Capabilities:   capabilityEvaluation.capabilities,
 		Divergences:    divergences,
 		HTTPCandidates: httpCandidates,
-		PostgreSQL:     postgres,
+		PostgreSQL:     capabilityEvaluation.postgres,
 		Verification:   verification,
+	}, nil
+}
+
+// RecheckCapabilities evaluates Repository Capabilities without accepting or
+// resolving decisions and without constructing a Change Plan. It shares the
+// capability evaluator and divergence projection used by full planning.
+func RecheckCapabilities(
+	ctx context.Context,
+	request CapabilityRecheckRequest,
+) (CapabilityRecheckResult, error) {
+	if err := ctx.Err(); err != nil {
+		return CapabilityRecheckResult{}, err
+	}
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		return CapabilityRecheckResult{}, err
+	}
+	rootPath, err := cleanRepositoryRoot(request.Repository)
+	if err != nil {
+		return CapabilityRecheckResult{}, fmt.Errorf("re-check capabilities repository: %w", err)
+	}
+	root, err := os.OpenRoot(rootPath)
+	if err != nil {
+		return CapabilityRecheckResult{}, fmt.Errorf("open capability re-check repository: %w", err)
+	}
+	defer root.Close()
+
+	profile, err := resolveCapabilityRecheckProfile(root, rootPath, request.ProfileID, catalog)
+	if err != nil {
+		return CapabilityRecheckResult{}, err
+	}
+	evaluation, err := evaluateProfileCapabilities(ctx, root, profile, profile.ID, catalog)
+	if err != nil {
+		return CapabilityRecheckResult{}, err
+	}
+	state := ProfileAlignmentReady
+	for _, divergence := range evaluation.divergences {
+		if divergence.Blocking {
+			state = ProfileAlignmentActionRequired
+			break
+		}
+	}
+	return CapabilityRecheckResult{
+		SchemaVersion: CapabilityRecheckSchemaVersion,
+		Operation:     "capabilities.check",
+		State:         string(state),
+		Profile: &CapabilityRecheckProfile{
+			ID: profile.ID, Source: profile.Source, Digest: profile.Digest,
+		},
+		Capabilities: evaluation.capabilities,
+		Divergences:  evaluation.divergences,
+		PostgreSQL:   evaluation.postgres,
+	}, nil
+}
+
+func resolveCapabilityRecheckProfile(
+	root *os.Root,
+	rootPath string,
+	requestedID string,
+	catalog *Catalog,
+) (ResolvedProfile, error) {
+	profileID := strings.TrimSpace(requestedID)
+	if profileID == "" {
+		data, err := readRootRegularFile(root, manifestPath)
+		if err != nil {
+			return ResolvedProfile{}, fmt.Errorf("%w: current Setup Manifest is unavailable", ErrNoResolvableProfile)
+		}
+		manifest, valid := parseManagedSetupManifest(data)
+		if !valid {
+			return ResolvedProfile{}, fmt.Errorf("%w: current Setup Manifest is invalid", ErrNoResolvableProfile)
+		}
+		profileID = manifest.Profile
+	}
+	profile, err := ResolveProfile(rootPath, profileID, catalog)
+	if err != nil {
+		return ResolvedProfile{}, fmt.Errorf("%w %q: %w", ErrNoResolvableProfile, profileID, err)
+	}
+	return profile, nil
+}
+
+func evaluateProfileCapabilities(
+	ctx context.Context,
+	root *os.Root,
+	profile ResolvedProfile,
+	remediationProfileID string,
+	catalog *Catalog,
+) (profileCapabilityEvaluation, error) {
+	capabilities, err := resolvedProfileCapabilities(profile, catalog)
+	if err != nil {
+		return profileCapabilityEvaluation{}, err
+	}
+	outcomes, postgres, err := evaluateRepositoryCapabilities(ctx, root, capabilities)
+	if err != nil {
+		return profileCapabilityEvaluation{}, err
+	}
+	applyUniversalCapabilityRemediation(outcomes, remediationProfileID)
+	divergences := make([]ProfileDivergence, 0)
+	for index, outcome := range outcomes {
+		if outcome.Status == CapabilitySatisfied {
+			continue
+		}
+		divergences = append(divergences, ProfileDivergence{
+			Code:                 outcome.Diagnostic.Code,
+			ID:                   outcome.ID,
+			Requirement:          outcome.Requirement,
+			Blocking:             outcome.Blocking,
+			Message:              outcome.Diagnostic.Message,
+			NextAction:           outcome.Diagnostic.NextAction,
+			Probe:                capabilities[index].Probe,
+			Evidence:             outcome.Evidence,
+			CapabilityResolution: stackCapabilityResolution(profile, outcome, catalog),
+		})
+	}
+	classifyProfileDivergences(divergences)
+	sortProfileDivergences(divergences)
+	return profileCapabilityEvaluation{
+		capabilities: outcomes,
+		divergences:  divergences,
+		postgres:     postgres,
 	}, nil
 }
 

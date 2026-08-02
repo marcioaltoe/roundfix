@@ -13,7 +13,100 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"roundfix/internal/baseline"
 )
+
+func TestCapabilityRecheck(t *testing.T) {
+	t.Run("requires no decisions and writes nothing", func(t *testing.T) {
+		repository := newHumanBaselineRepository(t)
+		writeBaselinePlanTestFile(t, repository, ".roundfix/run-journal.jsonl", "existing journal entry\n")
+		t.Setenv("PATH", t.TempDir())
+		before := baselinePlanTestTree(t, repository)
+
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		code := RunContext(context.Background(), []string{
+			"baseline", "capabilities", "check",
+			"--profile", "standard-typescript-monorepo",
+			"--repo", repository,
+			"--format", "json",
+		}, &stdout, &stderr)
+		if code != exitUnverified {
+			t.Fatalf("capability re-check exit = %d, want %d stdout=%s stderr=%s",
+				code, exitUnverified, stdout.String(), stderr.String())
+		}
+		if stderr.Len() != 0 {
+			t.Fatalf("capability re-check stderr = %q, want empty", stderr.String())
+		}
+		var result baseline.CapabilityRecheckResult
+		if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+			t.Fatalf("decode capability re-check: %v\n%s", err, stdout.String())
+		}
+		if result.SchemaVersion != baseline.CapabilityRecheckSchemaVersion ||
+			result.Operation != "capabilities.check" || result.Profile == nil ||
+			result.Profile.ID != "standard-typescript-monorepo" ||
+			len(result.Capabilities) == 0 || len(result.Divergences) == 0 {
+			t.Fatalf("capability re-check result = %#v", result)
+		}
+		var topLevel map[string]json.RawMessage
+		if err := json.Unmarshal(stdout.Bytes(), &topLevel); err != nil {
+			t.Fatalf("decode capability re-check fields: %v", err)
+		}
+		if _, resolvedDecisions := topLevel["decisions"]; resolvedDecisions {
+			t.Fatalf("capability re-check unexpectedly emitted resolved decisions:\n%s", stdout.String())
+		}
+		if after := baselinePlanTestTree(t, repository); after != before {
+			t.Fatalf("capability re-check changed repository or journal bytes: before=%s after=%s", before, after)
+		}
+
+		stdout.Reset()
+		stderr.Reset()
+		code = RunContext(context.Background(), []string{
+			"baseline", "capabilities", "check",
+			"--profile", "standard-typescript-monorepo",
+			"--repo", repository,
+		}, &stdout, &stderr)
+		if code != exitUnverified || stderr.Len() != 0 {
+			t.Fatalf("text capability re-check exit = %d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+		}
+		if rendered := baseline.RenderProfileDivergences(result.Divergences); !strings.Contains(stdout.String(), rendered) {
+			t.Fatalf("text capability re-check did not share divergence rendering:\n%s", stdout.String())
+		}
+		if after := baselinePlanTestTree(t, repository); after != before {
+			t.Fatalf("text capability re-check changed repository or journal bytes: before=%s after=%s", before, after)
+		}
+	})
+
+	t.Run("names an unresolvable Profile", func(t *testing.T) {
+		repository := newBaselineProfileTestRepository(t)
+		before := baselinePlanTestTree(t, repository)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		code := RunContext(context.Background(), []string{
+			"baseline", "capabilities", "check",
+			"--repo", repository,
+			"--format", "json",
+		}, &stdout, &stderr)
+		if code != exitPreflight {
+			t.Fatalf("missing-Profile re-check exit = %d, want %d stdout=%s stderr=%s",
+				code, exitPreflight, stdout.String(), stderr.String())
+		}
+		if !strings.Contains(stderr.String(), "no resolvable Baseline Profile") {
+			t.Fatalf("missing-Profile stderr = %q", stderr.String())
+		}
+		var result baseline.CapabilityRecheckResult
+		if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+			t.Fatalf("decode missing-Profile result: %v\n%s", err, stdout.String())
+		}
+		if result.State != "failed" || result.Category != "profile" {
+			t.Fatalf("missing-Profile result = %#v", result)
+		}
+		if after := baselinePlanTestTree(t, repository); after != before {
+			t.Fatalf("missing-Profile re-check changed repository bytes: before=%s after=%s", before, after)
+		}
+	})
+}
 
 func TestBaselineProfileCommandInitShowAndValidate(t *testing.T) {
 	repo := newBaselineProfileTestRepository(t)

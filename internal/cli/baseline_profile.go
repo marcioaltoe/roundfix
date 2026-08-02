@@ -45,6 +45,18 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return runBaselinePlanCommand(ctx, args[1:], stdout, stderr)
 	case "apply":
 		return runBaselineApplyCommand(ctx, args[1:], stdout, stderr)
+	case "capabilities":
+		if len(args) == 1 || args[1] != "check" {
+			printBaselineProfileFailure(
+				"baseline capabilities",
+				validationError{message: "baseline capabilities requires the check command"},
+				false,
+				stdout,
+				stderr,
+			)
+			return exitPreflight
+		}
+		return runBaselineCapabilitiesCheckCommand(ctx, args[2:], stdout, stderr)
 	case "profile":
 		return runBaselineProfileCommand(args[1:], stdout, stderr)
 	case "skills":
@@ -81,6 +93,141 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		)
 		return exitPreflight
 	}
+}
+
+type baselineCapabilitiesCheckRequest struct {
+	repo    string
+	profile string
+	format  string
+}
+
+func runBaselineCapabilitiesCheckCommand(
+	ctx context.Context,
+	args []string,
+	stdout io.Writer,
+	stderr io.Writer,
+) int {
+	if commandWantsHelp(args) {
+		fmt.Fprint(stdout, commandUsage("baseline capabilities check"))
+		return exitOK
+	}
+	request, err := parseBaselineCapabilitiesCheckCommand(args)
+	jsonOutput := request.format == "json" || baselineCapabilitiesCheckJSONRequested(args)
+	if err != nil {
+		printBaselineCapabilitiesCheckFailure(err, jsonOutput, stdout, stderr)
+		return exitPreflight
+	}
+	result, err := baseline.RecheckCapabilities(ctx, baseline.CapabilityRecheckRequest{
+		Repository: request.repo,
+		ProfileID:  request.profile,
+	})
+	if err != nil {
+		printBaselineCapabilitiesCheckFailure(err, jsonOutput, stdout, stderr)
+		return exitPreflight
+	}
+	if err := writeBaselineCapabilitiesCheckResult(result, jsonOutput, stdout); err != nil {
+		fmt.Fprintf(stderr, "%s: baseline capabilities check output failed: %v\n", app.Name, err)
+		return exitRunFailed
+	}
+	if result.State == string(baseline.ProfileAlignmentActionRequired) {
+		return exitUnverified
+	}
+	return exitOK
+}
+
+func parseBaselineCapabilitiesCheckCommand(args []string) (baselineCapabilitiesCheckRequest, error) {
+	request := baselineCapabilitiesCheckRequest{repo: ".", format: "text"}
+	flags := flag.NewFlagSet("baseline capabilities check", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	flags.StringVar(&request.repo, "repo", ".", "Git worktree or a path inside it")
+	flags.StringVar(&request.profile, "profile", "", "Built-in or repository-owned Baseline Profile")
+	flags.StringVar(&request.format, "format", "text", "Output format: text or json")
+	if err := flags.Parse(args); err != nil {
+		return baselineCapabilitiesCheckRequest{}, validationError{
+			message: fmt.Sprintf("invalid baseline capabilities check arguments: %v; run '%s baseline capabilities check --help' for usage", err, app.Name),
+		}
+	}
+	if remaining := flags.Args(); len(remaining) != 0 {
+		return baselineCapabilitiesCheckRequest{}, validationError{
+			message: fmt.Sprintf("unexpected argument %q; run '%s baseline capabilities check --help' for usage", remaining[0], app.Name),
+		}
+	}
+	request.repo = strings.TrimSpace(request.repo)
+	request.profile = strings.TrimSpace(request.profile)
+	request.format = strings.TrimSpace(request.format)
+	if request.repo == "" {
+		return baselineCapabilitiesCheckRequest{}, validationError{message: "--repo cannot be empty"}
+	}
+	if request.format != "text" && request.format != "json" {
+		return baselineCapabilitiesCheckRequest{}, validationError{
+			message: fmt.Sprintf("unsupported --format %q; use text or json", request.format),
+		}
+	}
+	return request, nil
+}
+
+func writeBaselineCapabilitiesCheckResult(
+	result baseline.CapabilityRecheckResult,
+	jsonOutput bool,
+	stdout io.Writer,
+) error {
+	if jsonOutput {
+		return json.NewEncoder(stdout).Encode(result)
+	}
+	fmt.Fprintf(stdout, "Baseline capability re-check: %s\n", strings.ReplaceAll(result.State, "_", " "))
+	if result.Profile != nil {
+		fmt.Fprintf(stdout, "Profile: %s\n", result.Profile.ID)
+	}
+	_, err := fmt.Fprint(stdout, baseline.RenderProfileDivergences(result.Divergences))
+	return err
+}
+
+func printBaselineCapabilitiesCheckFailure(
+	err error,
+	jsonOutput bool,
+	stdout io.Writer,
+	stderr io.Writer,
+) {
+	fmt.Fprintf(stderr, "%s: baseline capabilities check failed: %v\n", app.Name, err)
+	fmt.Fprintf(stderr, "Run '%s baseline capabilities check --help' for usage.\n", app.Name)
+	if !jsonOutput {
+		return
+	}
+	category := "preflight"
+	nextAction := "correct the repository or command input and rerun roundfix baseline capabilities check"
+	if errors.Is(err, baseline.ErrNoResolvableProfile) {
+		category = "profile"
+		nextAction = "supply --profile <id> or restore a current Setup Manifest, then rerun roundfix baseline capabilities check"
+	}
+	result := baseline.CapabilityRecheckResult{
+		SchemaVersion: baseline.CapabilityRecheckSchemaVersion,
+		Operation:     "capabilities.check",
+		State:         "failed",
+		Category:      category,
+		Message:       err.Error(),
+		NextAction:    nextAction,
+		Capabilities:  []baseline.CapabilityOutcome{},
+		Divergences:   []baseline.ProfileDivergence{},
+		PostgreSQL: baseline.PostgreSQLEvidence{
+			AcceptedContractPaths: []string{},
+			Implementation:        []baseline.CapabilityEvidence{},
+		},
+	}
+	if encodeErr := json.NewEncoder(stdout).Encode(result); encodeErr != nil {
+		fmt.Fprintf(stderr, "%s: baseline capabilities check output failed: %v\n", app.Name, encodeErr)
+	}
+}
+
+func baselineCapabilitiesCheckJSONRequested(args []string) bool {
+	for index, arg := range args {
+		if arg == "--format" && index+1 < len(args) && strings.TrimSpace(args[index+1]) == "json" {
+			return true
+		}
+		if strings.HasPrefix(arg, "--format=") && strings.TrimSpace(strings.TrimPrefix(arg, "--format=")) == "json" {
+			return true
+		}
+	}
+	return false
 }
 
 func runBaselinePlanCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
