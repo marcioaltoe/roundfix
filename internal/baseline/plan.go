@@ -1086,7 +1086,6 @@ func resolvePlanRetention(
 	for _, profileID := range profileIDs {
 		compatibleBaselines["baseline."+profileID+"-"+ManifestVersion] = struct{}{}
 	}
-	_, compatibleBaseline := compatibleBaselines[declaredBaseline]
 	if manifest["schemaVersion"] == ManifestSchema && manifest["version"] == ManifestVersion {
 		var existing SetupManifest
 		if err := strictJSON(data, &existing); err != nil {
@@ -1095,7 +1094,7 @@ func resolvePlanRetention(
 		if reflectJSONEqual(existing, targetManifest) {
 			return retention, nil, "", nil
 		}
-		if compatibleBaseline {
+		if declaredBaseline == targetManifest.Generator.Baseline {
 			if reflectJSONEqual(existing.ManagedArtifacts, targetManifest.ManagedArtifacts) {
 				return retention, nil, "", nil
 			}
@@ -1132,6 +1131,12 @@ func resolvePlanRetention(
 			}
 			return retention, nil, "", nil
 		}
+		if _, compatibleBaseline := compatibleBaselines[declaredBaseline]; compatibleBaseline {
+			return retention, nil, "", nil
+		}
+	}
+	if currentSetupManifestProfileIsValid(root, manifest, generator, catalog) {
+		return retention, nil, "", nil
 	}
 	// The portable-v3 manifest remains a supported reader contract while the
 	// current writer emits the profile-bound 0.0.1 identity.
@@ -1177,6 +1182,30 @@ func compatibleRetentionProfileIDs(
 		result = append(result, draft.SourceProfileID)
 	}
 	return result
+}
+
+func currentSetupManifestProfileIsValid(
+	root string,
+	manifest document,
+	generator document,
+	catalog *Catalog,
+) bool {
+	if manifest["schemaVersion"] != ManifestSchema ||
+		manifest["version"] != ManifestVersion ||
+		generator["skill"] != "setup-context-driven" ||
+		generator["version"] != ManifestVersion ||
+		manifest["catalogDigest"] != catalog.Digest() {
+		return false
+	}
+	profileID, profileOK := stringValue(manifest, "profile")
+	profileDigest, digestOK := stringValue(manifest, "profileDigest")
+	declaredBaseline, baselineOK := stringValue(generator, "baseline")
+	if !profileOK || !digestOK || !baselineOK ||
+		declaredBaseline != "baseline."+profileID+"-"+ManifestVersion {
+		return false
+	}
+	profile, err := ResolveProfile(root, profileID, catalog)
+	return err == nil && profile.Digest == profileDigest
 }
 
 func classifySourceClauseTransition(

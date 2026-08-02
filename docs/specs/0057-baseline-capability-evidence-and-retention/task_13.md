@@ -1,7 +1,7 @@
 ---
 task: task_13
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -89,3 +89,89 @@ lives in the public command surface.
   blocked ones is out of scope).
 - `_techspec.md` → Risks (the retention gate is the regression risk).
 - ADR-0058.
+
+## Result
+
+Implementation:
+
+- The retention resolver now enters same-identity clause accounting only when
+  the existing Setup Manifest's Baseline identifier exactly matches the target
+  Setup Manifest. A valid current manifest with a different identifier uses
+  the pre-existing transition path.
+- The plan suite now covers an applied `go-cli-tui` Baseline changing to
+  `rust-cli`, including the ready result, target Profile, target Baseline
+  identifier, and absence of a same-identity clause delta.
+- `TestBaselinePlanCharacterizationPublicCommandJourneys` makes the existing
+  real `TestBaselineMacroJourneysPublicCLI` suite part of the characterization
+  gate. The bridge reuses the public command suite instead of copying its
+  journey logic.
+
+Focused checks:
+
+- Before the fix,
+  `GOCACHE="$PWD/.gocache-task13" go test ./internal/baseline -run '^TestDifferentIdentityKeepsExistingTransitionPath$' -count=1 -v`
+  failed because the different-identity plan returned `action_required` with
+  `baseline.go-cli-tui-0.0.1` having no unique maintained transition.
+- After the fix,
+  `GOCACHE="/private/tmp/roundfix-task13-go-cache" go test ./internal/baseline -run '^(TestSameIdentityDriftRequiresRetention|TestReadyPlanNeverCarriesEmptyLedger|TestDifferentIdentityKeepsExistingTransitionPath)$' -count=1`
+  passed all three tests.
+- `GOCACHE="/private/tmp/roundfix-task13-go-cache" go test ./internal/baseline -run '^(TestDifferentIdentityKeepsExistingTransitionPath|TestBaselinePlanCharacterizationPublicCommandJourneys)$' -count=1`
+  passed both tests after the final production edit.
+- With the exact different-identity fall-through defect temporarily restored,
+  `GOCACHE="/private/tmp/roundfix-task13-go-cache" go test ./internal/baseline -run '^TestBaselinePlanCharacterizationPublicCommandJourneys$' -count=1 -v`
+  failed at
+  `TestBaselineMacroJourneysPublicCLI/update_and_profile_change`: planning
+  exited `3` with `action_required`. The temporary mutation was then removed,
+  and the preceding two-test check passed.
+- `git diff --check` passed. `git status --porcelain` and
+  `git diff --name-only` reported only `internal/baseline/` paths and this Task
+  file; the Task file's pre-existing change is the Daemon-owned status update.
+
+Acceptance evidence:
+
+- The public Profile-change journey completed through the characterization
+  bridge, whose canonical CLI assertion verifies that the Setup Manifest
+  records `rust-cli`.
+- The combined focused check kept the matching-identifier disappearing-clause
+  case action-required with its unaccounted count.
+- The same check kept the fully accounted matching-identifier case ready with
+  its non-empty retention ledger and clause delta.
+- The new different-identifier plan test passed with the default-branch ready
+  outcome and no same-identity clause delta.
+- The public command macro journeys are now reachable from the characterization
+  test name, and the temporary regression proved the Profile-change journey
+  turns that corpus red.
+- No changed path falls outside `internal/baseline/` and this Task file, which
+  is narrower than the allowed `internal/baseline/`, `internal/cli/`, and Task
+  scope.
+
+Daemon Verification commands were not run in this Agent turn.
+
+### Verification feedback attempt 1
+
+- Inspected the Daemon diagnostic artifact for the failed combined package
+  test. It identified the baseline-level reviewed Profile adaptation and its
+  real public CLI journey as the two failing paths.
+- Root cause: the first repair removed the existing `SourceProfileID`
+  compatibility path while narrowing the new gate to the exact target
+  identifier. A reviewed Profile adaptation therefore bypassed same-identity
+  accounting correctly but fell through to legacy transition lookup.
+- Repair: exact target identifier equality remains the only entry to
+  same-identity clause accounting. A current Setup Manifest whose identifier
+  matches the reviewed draft's source Profile now returns through its existing
+  compatibility path before legacy transition lookup. The valid-current-profile
+  fallback remains in place for ordinary different-Profile changes.
+- Before the repair,
+  `GOCACHE="/private/tmp/roundfix-task13-repair-cache" go test ./internal/baseline -run '^TestProfileDraftPlanAcceptsMatchingSourceBaselineWithoutTransition$' -count=1 -v`
+  reproduced the diagnostic: the reviewed adaptation returned
+  `action_required` because its source Baseline had no maintained transition.
+- After the repair,
+  `GOCACHE="/private/tmp/roundfix-task13-repair-cache" go test ./internal/baseline -run '^(TestProfileDraftPlanAcceptsMatchingSourceBaselineWithoutTransition|TestDifferentIdentityKeepsExistingTransitionPath|TestSameIdentityDriftRequiresRetention|TestReadyPlanNeverCarriesEmptyLedger)$' -count=1`
+  passed all four baseline controls.
+- `GOCACHE="/private/tmp/roundfix-task13-repair-cache" go test ./internal/cli -run '^TestProfileAdaptationJourney$' -count=1`
+  passed the real public Profile-adaptation journey.
+- `GOCACHE="/private/tmp/roundfix-task13-repair-cache" go test ./internal/baseline -run '^TestBaselinePlanCharacterizationPublicCommandJourneys$' -count=1`
+  passed the public macro characterization bridge after the final production
+  edit.
+- The failed declared Verification command was not rerun; the Daemon owns the
+  next full Verification attempt and Task settlement.

@@ -2331,6 +2331,55 @@ func TestReadyPlanNeverCarriesEmptyLedger(t *testing.T) {
 	}
 }
 
+func TestDifferentIdentityKeepsExistingTransitionPath(t *testing.T) {
+	repository := newPlanRepository(t)
+	request := PlanRequest{
+		Repository:   repository,
+		ProfileID:    "go-cli-tui",
+		Decisions:    planTestDecisions(),
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}
+	target := mustEmbeddedCatalog(t)
+	initial, err := buildPlanWithCatalog(context.Background(), request, target)
+	if err != nil {
+		t.Fatalf("build initial plan: %v", err)
+	}
+	if initial.Plan == nil {
+		t.Fatalf("initial plan result = %+v", initial.Result)
+	}
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		repository,
+		*initial.Plan,
+		initial.Plan.PlanDigest,
+		target,
+	); err != nil {
+		t.Fatalf("apply initial plan: %v", err)
+	}
+	request.ProfileID = "rust-cli"
+
+	outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+	if err != nil {
+		t.Fatalf("build different-identity plan: %v", err)
+	}
+	if outcome.Plan == nil || outcome.Result.State != "ready" {
+		t.Fatalf("different-identity outcome = %+v, want ready plan", outcome)
+	}
+	if outcome.Plan.Profile.ID != "rust-cli" ||
+		outcome.Plan.SetupManifest.Profile != "rust-cli" ||
+		outcome.Plan.SetupManifest.Generator.Baseline != "baseline.rust-cli-"+ManifestVersion {
+		t.Fatalf(
+			"different-identity target = profile %q manifest profile %q baseline %q",
+			outcome.Plan.Profile.ID,
+			outcome.Plan.SetupManifest.Profile,
+			outcome.Plan.SetupManifest.Generator.Baseline,
+		)
+	}
+	if outcome.Plan.ClauseDelta != nil {
+		t.Fatalf("different-identity clause delta = %+v, want existing transition path", outcome.Plan.ClauseDelta)
+	}
+}
+
 func newSameIdentityRetentionDrift(
 	t *testing.T,
 ) (string, PlanRequest, *Catalog, BaselineSourceTuple) {
