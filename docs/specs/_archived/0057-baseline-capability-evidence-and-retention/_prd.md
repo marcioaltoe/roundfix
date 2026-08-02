@@ -1,7 +1,10 @@
 ---
 spec: 0057-baseline-capability-evidence-and-retention
-status: active
+status: archived
 created: 2026-07-28
+archived: 2026-08-02
+qa_override: true
+release: https://github.com/marcioaltoe/roundfix/pull/72
 surfaces: [backend, cli, docs]
 ---
 
