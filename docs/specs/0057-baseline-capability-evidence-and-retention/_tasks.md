@@ -36,9 +36,12 @@ graph:
     - id: task_11
       file: task_11.md
       needs: [task_05, task_09, task_10]
+    - id: task_13
+      file: task_13.md
+      needs: [task_11]
     - id: task_12
       file: task_12.md
-      needs: [task_07, task_11]
+      needs: [task_07, task_11, task_13]
 ---
 
 # Tasks — Baseline capability evidence and retention
@@ -56,10 +59,11 @@ graph:
 | task_09 | Render the clause-level delta before apply        | backend | medium     | task_08                   |
 | task_10 | Warn only about carriers nobody manages           | backend | high       | task_01                   |
 | task_11 | Report the result as a status matrix              | backend | medium     | task_05, task_09, task_10 |
-| task_12 | Document the evidence and retention contract      | docs    | medium     | task_07, task_11          |
+| task_12 | Document the evidence and retention contract      | docs    | medium     | task_07, task_11, task_13 |
+| task_13 | Keep the retention gate on the path it was scoped to | backend | high     | task_11                   |
 
 Waves: 1 → task_01 · 2 → task_02, task_08, task_10 · 3 → task_03, task_09 ·
-4 → task_04 · 5 → task_05 · 6 → task_06, task_11 · 7 → task_07 · 8 → task_12
+4 → task_04 · 5 → task_05 · 6 → task_06, task_11 · 7 → task_07, task_13 · 8 → task_12
 
 The graph fans out by file ownership rather than by feature. Tasks 02–07 all
 edit the profile alignment surface and form one chain; 08 and 09 edit plan
