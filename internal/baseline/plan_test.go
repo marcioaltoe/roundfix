@@ -2249,6 +2249,392 @@ func TestPlanDocumentIncludesMaintainedUpgradeRetention(t *testing.T) {
 	}
 }
 
+func TestSameIdentityDriftRequiresRetention(t *testing.T) {
+	const profileID = "standard-typescript-monorepo"
+	const disappearingClause = "clause.core.keep-follow-ups-outside-slice"
+	repository := newProjectDecisionPlanRepository(t)
+	request := PlanRequest{
+		Repository:   repository,
+		ProfileID:    profileID,
+		Decisions:    standardTypeScriptDecisions("make verify"),
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}
+	source := mustEmbeddedCatalog(t)
+	initial, err := buildPlanWithCatalog(context.Background(), request, source)
+	if err != nil {
+		t.Fatalf("build source plan: %v", err)
+	}
+	if initial.Plan == nil {
+		t.Fatalf("source plan result = %+v", initial.Result)
+	}
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		repository,
+		*initial.Plan,
+		initial.Plan.PlanDigest,
+		source,
+	); err != nil {
+		t.Fatalf("apply source plan: %v", err)
+	}
+
+	target := cloneCatalogForRetentionDrift(t, source)
+	changeCatalogProfileDigest(t, target, profileID)
+	target.digest = "sha256:" + strings.Repeat("f", 64)
+	removeCatalogClause(t, target, "core", disappearingClause)
+	targetProfile, err := ResolveProfile("", profileID, target)
+	if err != nil {
+		t.Fatalf("resolve changed target Profile: %v", err)
+	}
+	if targetProfile.Digest == initial.Plan.SetupManifest.ProfileDigest ||
+		target.Digest() == initial.Plan.SetupManifest.CatalogDigest {
+		t.Fatalf(
+			"target digests did not change: profile=%s catalog=%s",
+			targetProfile.Digest,
+			target.Digest(),
+		)
+	}
+	retentionSource, err := target.SourceBaseline(initial.Plan.SetupManifest.Generator.Baseline)
+	if err != nil {
+		t.Fatalf("load retained Source Baseline: %v", err)
+	}
+	retentionSource.Entries = filterSourceBaselineEntries(
+		retentionSource.Entries,
+		"clause.core.keep-root-compact",
+		disappearingClause,
+	)
+	if len(retentionSource.Entries) != 2 {
+		t.Fatalf("retained Source Baseline entries = %v, want two focused clauses", retentionSource.Entries)
+	}
+	clear(target.retentionSources)
+	if err := target.captureCurrentRetentionSources([]SourceBaseline{retentionSource}); err != nil {
+		t.Fatalf("recapture changed-generation retention sources: %v", err)
+	}
+	if err := target.captureCurrentRetentionSources([]SourceBaseline{retentionSource}); err == nil ||
+		!strings.Contains(err.Error(), "duplicate Baseline retention source identity") {
+		t.Fatalf("duplicate retention source error = %v", err)
+	}
+
+	outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+	if err != nil {
+		t.Fatalf("build same-identity drift plan: %v", err)
+	}
+	if outcome.Plan != nil || outcome.Result.State != "action_required" ||
+		outcome.Result.Category != "classification" {
+		t.Fatalf("same-identity drift outcome = %+v, want action-required without apply plan", outcome)
+	}
+	if !strings.Contains(outcome.Result.Message, "1 unaccounted clause") ||
+		!strings.Contains(outcome.Result.Message, disappearingClause) {
+		t.Fatalf("same-identity drift message = %q, want count and clause ID", outcome.Result.Message)
+	}
+	delta := outcome.Result.ClauseDelta
+	if delta == nil || len(delta.Dispositions) != 2 ||
+		delta.Dispositions["clause.core.keep-root-compact"] != ClauseRetained ||
+		delta.Dispositions[disappearingClause] != ClauseUnaccounted ||
+		delta.Counts[ClauseRetained] != 1 ||
+		delta.Counts[ClauseUnaccounted] != 1 {
+		t.Fatalf("same-identity drift clause delta = %+v", delta)
+	}
+}
+
+func TestClauseDeltaRendersBeforeLedger(t *testing.T) {
+	t.Run("accounted dispositions precede unchanged file ledger", func(t *testing.T) {
+		delta := newClauseDelta()
+		clauses := []struct {
+			id          string
+			disposition ClauseDisposition
+		}{
+			{id: "clause.01-retained", disposition: ClauseRetained},
+			{id: "clause.02-moved", disposition: ClauseMoved},
+			{id: "clause.03-replaced", disposition: ClauseReplaced},
+			{id: "clause.04-repository-document", disposition: ClauseRepositoryDocument},
+			{id: "clause.05-repository-extension", disposition: ClauseRepositoryExtension},
+			{id: "clause.06-reasoned-rejection", disposition: ClauseReasonedRejection},
+			{id: "clause.07-unaccounted", disposition: ClauseUnaccounted},
+		}
+		for _, clause := range clauses {
+			delta.Dispositions[clause.id] = clause.disposition
+			delta.Counts[clause.disposition]++
+		}
+		ledger := "File changes:\n" +
+			"1. update docs/agents/agent-instructions.md\n" +
+			"   Before: sha256:before\n" +
+			"   After: sha256:after\n" +
+			"   Managed entries: guide.agent-instructions\n"
+
+		rendered := RenderClauseDeltaBeforeLedger(&delta, ledger)
+		if !strings.HasSuffix(rendered, ledger) {
+			t.Fatalf("rendered review changed file ledger:\n%s", rendered)
+		}
+		deltaIndex := strings.Index(rendered, "Clause-level semantic delta:")
+		ledgerIndex := strings.Index(rendered, ledger)
+		if deltaIndex < 0 || ledgerIndex < 0 || deltaIndex >= ledgerIndex {
+			t.Fatalf("clause delta does not precede file ledger:\n%s", rendered)
+		}
+		for _, disposition := range allClauseDispositions() {
+			if count := strings.Count(rendered, "- "+string(disposition)+": 1\n"); count != 1 {
+				t.Fatalf("rendered %q count occurrences = %d, want 1:\n%s", disposition, count, rendered)
+			}
+		}
+		if !strings.Contains(rendered, "Total clauses: 7\n") {
+			t.Fatalf("rendered review does not report the clause total:\n%s", rendered)
+		}
+		for _, clause := range clauses {
+			want := "- " + clause.id + ": " + string(clause.disposition) + "\n"
+			if strings.Count(rendered, want) != 1 {
+				t.Fatalf("rendered review does not contain %q exactly once:\n%s", strings.TrimSpace(want), rendered)
+			}
+		}
+	})
+
+	t.Run("unaccounted clause withholds apply", func(t *testing.T) {
+		const unaccountedClause = "clause.core.keep-follow-ups-outside-slice"
+		_, request, target, baselineID := newSameIdentityRetentionDrift(t)
+		removeCatalogClause(t, target, "core", unaccountedClause)
+		target.retentionSources[baselineID] = SourceBaseline{Entries: []SourceBaselineEntry{{
+			ID:          unaccountedClause,
+			Kind:        "normative-clause",
+			Enforcement: "mandatory",
+			Carrier:     "docs/agents/agent-instructions.md",
+		}}}
+
+		outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+		if err != nil {
+			t.Fatalf("build unaccounted clause plan: %v", err)
+		}
+		if outcome.Plan != nil {
+			t.Fatalf("unaccounted clause offered apply plan: %+v", outcome.Plan)
+		}
+		if outcome.Result.ClauseDelta == nil {
+			t.Fatal("unaccounted clause result has no clause delta")
+		}
+		rendered := RenderClauseDeltaBeforeLedger(outcome.Result.ClauseDelta, "")
+		if !strings.Contains(rendered, "- "+unaccountedClause+": unaccounted\n") {
+			t.Fatalf("unaccounted clause identity is absent from rendered delta:\n%s", rendered)
+		}
+	})
+}
+
+func TestReadyPlanNeverCarriesEmptyLedger(t *testing.T) {
+	const changedClause = "clause.core.keep-follow-ups-outside-slice"
+	_, request, target, baselineID := newSameIdentityRetentionDrift(t)
+	changeCatalogClauseGuidance(t, target, "core", changedClause)
+	target.retentionSources[baselineID] = SourceBaseline{Entries: []SourceBaselineEntry{{
+		ID:          changedClause,
+		Kind:        "normative-clause",
+		Enforcement: "mandatory",
+		Carrier:     "docs/agents/agent-instructions.md",
+	}}}
+
+	outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+	if err != nil {
+		t.Fatalf("build accounted same-identity drift plan: %v", err)
+	}
+	if outcome.Plan == nil || outcome.Result.State != "ready" {
+		t.Fatalf("accounted same-identity drift outcome = %+v, want ready plan", outcome)
+	}
+	if len(outcome.Plan.Retention) != 1 ||
+		outcome.Plan.Retention[0].FromClause != changedClause ||
+		outcome.Plan.Retention[0].Disposition != string(ClauseRetained) {
+		t.Fatalf("accounted same-identity drift retention = %+v", outcome.Plan.Retention)
+	}
+	delta := outcome.Plan.ClauseDelta
+	if delta == nil || len(delta.Dispositions) != 1 ||
+		delta.Dispositions[changedClause] != ClauseRetained ||
+		delta.Counts[ClauseRetained] != 1 ||
+		delta.Counts[ClauseUnaccounted] != 0 {
+		t.Fatalf("accounted same-identity drift clause delta = %+v", delta)
+	}
+	emptyDeltaPlan := *outcome.Plan
+	emptyDeltaPlan.ClauseDelta = &ClauseDelta{
+		Dispositions: map[string]ClauseDisposition{},
+		Counts:       map[ClauseDisposition]int{},
+	}
+	if err := validatePlanDocumentWithCatalog(emptyDeltaPlan, target); err == nil ||
+		!strings.Contains(err.Error(), "clause delta is empty or incomplete") {
+		t.Fatalf("validate ready plan with empty clause delta error = %v", err)
+	}
+}
+
+func TestDifferentIdentityKeepsExistingTransitionPath(t *testing.T) {
+	repository := newPlanRepository(t)
+	request := PlanRequest{
+		Repository:   repository,
+		ProfileID:    "go-cli-tui",
+		Decisions:    planTestDecisions(),
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}
+	target := mustEmbeddedCatalog(t)
+	initial, err := buildPlanWithCatalog(context.Background(), request, target)
+	if err != nil {
+		t.Fatalf("build initial plan: %v", err)
+	}
+	if initial.Plan == nil {
+		t.Fatalf("initial plan result = %+v", initial.Result)
+	}
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		repository,
+		*initial.Plan,
+		initial.Plan.PlanDigest,
+		target,
+	); err != nil {
+		t.Fatalf("apply initial plan: %v", err)
+	}
+	request.ProfileID = "rust-cli"
+
+	outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+	if err != nil {
+		t.Fatalf("build different-identity plan: %v", err)
+	}
+	if outcome.Plan == nil || outcome.Result.State != "ready" {
+		t.Fatalf("different-identity outcome = %+v, want ready plan", outcome)
+	}
+	if outcome.Plan.Profile.ID != "rust-cli" ||
+		outcome.Plan.SetupManifest.Profile != "rust-cli" ||
+		outcome.Plan.SetupManifest.Generator.Baseline != "baseline.rust-cli-"+ManifestVersion {
+		t.Fatalf(
+			"different-identity target = profile %q manifest profile %q baseline %q",
+			outcome.Plan.Profile.ID,
+			outcome.Plan.SetupManifest.Profile,
+			outcome.Plan.SetupManifest.Generator.Baseline,
+		)
+	}
+	if outcome.Plan.ClauseDelta != nil {
+		t.Fatalf("different-identity clause delta = %+v, want existing transition path", outcome.Plan.ClauseDelta)
+	}
+}
+
+func newSameIdentityRetentionDrift(
+	t *testing.T,
+) (string, PlanRequest, *Catalog, string) {
+	t.Helper()
+	repository := newPlanRepository(t)
+	request := PlanRequest{
+		Repository:   repository,
+		ProfileID:    "go-cli-tui",
+		Decisions:    planTestDecisions(),
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}
+	source := mustEmbeddedCatalog(t)
+	outcome, err := buildPlanWithCatalog(context.Background(), request, source)
+	if err != nil {
+		t.Fatalf("build source plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("source plan result = %+v", outcome.Result)
+	}
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		repository,
+		*outcome.Plan,
+		outcome.Plan.PlanDigest,
+		source,
+	); err != nil {
+		t.Fatalf("apply source plan: %v", err)
+	}
+
+	target := cloneCatalogForRetentionDrift(t, source)
+	target.digest = "sha256:" + strings.Repeat("f", 64)
+	return repository, request, target, outcome.Plan.SetupManifest.Generator.Baseline
+}
+
+func cloneCatalogForRetentionDrift(t *testing.T, source *Catalog) *Catalog {
+	t.Helper()
+
+	target := *source
+	target.profiles = make(map[string]document, len(source.profiles))
+	for id, profile := range source.profiles {
+		cloned, ok := cloneJSONValue(profile).(map[string]any)
+		if !ok {
+			t.Fatalf("cloned catalog Profile %q is not an object", id)
+		}
+		target.profiles[id] = document(cloned)
+	}
+	target.modules = make(map[string]document, len(source.modules))
+	for id, module := range source.modules {
+		cloned, ok := cloneJSONValue(module).(map[string]any)
+		if !ok {
+			t.Fatalf("cloned catalog module %q is not an object", id)
+		}
+		target.modules[id] = document(cloned)
+	}
+	target.retentionSources = make(map[string]SourceBaseline, len(source.retentionSources))
+	for tuple, baseline := range source.retentionSources {
+		target.retentionSources[tuple] = baseline
+	}
+	return &target
+}
+
+func changeCatalogProfileDigest(t *testing.T, catalog *Catalog, profileID string) {
+	t.Helper()
+	profile, ok := catalog.profiles[profileID]
+	if !ok {
+		t.Fatalf("catalog Profile %q is missing", profileID)
+	}
+	modules, ok := profile["modules"].([]any)
+	if !ok || len(modules) < 2 {
+		t.Fatalf("catalog Profile %q modules = %#v, want at least two", profileID, profile["modules"])
+	}
+	modules = append([]any(nil), modules...)
+	modules[0], modules[1] = modules[1], modules[0]
+	profile["modules"] = modules
+}
+
+func filterSourceBaselineEntries(entries []SourceBaselineEntry, ids ...string) []SourceBaselineEntry {
+	selected := stringSet(ids)
+	filtered := make([]SourceBaselineEntry, 0, len(ids))
+	for _, entry := range entries {
+		if _, ok := selected[entry.ID]; ok {
+			filtered = append(filtered, entry)
+		}
+	}
+	return filtered
+}
+
+func removeCatalogClause(t *testing.T, catalog *Catalog, moduleID, clauseID string) {
+	t.Helper()
+	mutateCatalogClause(t, catalog, moduleID, clauseID, func(document) bool { return false })
+}
+
+func changeCatalogClauseGuidance(t *testing.T, catalog *Catalog, moduleID, clauseID string) {
+	t.Helper()
+	mutateCatalogClause(t, catalog, moduleID, clauseID, func(clause document) bool {
+		guidance, _ := stringValue(clause, "guidance")
+		clause["guidance"] = guidance + " The retained clause changed in this generation."
+		return true
+	})
+}
+
+func mutateCatalogClause(
+	t *testing.T,
+	catalog *Catalog,
+	moduleID string,
+	clauseID string,
+	keep func(document) bool,
+) {
+	t.Helper()
+	module := catalog.modules[moduleID]
+	found := false
+	for _, rule := range objectsOrEmpty(module["rules"]) {
+		clauses := objectsOrEmpty(rule["clauses"])
+		updated := make([]any, 0, len(clauses))
+		for _, clause := range clauses {
+			id, _ := stringValue(clause, "id")
+			if id == clauseID {
+				found = true
+				if !keep(clause) {
+					continue
+				}
+			}
+			updated = append(updated, map[string]any(clause))
+		}
+		rule["clauses"] = updated
+	}
+	if !found {
+		t.Fatalf("catalog module %q has no clause %q", moduleID, clauseID)
+	}
+}
+
 func TestPlanDocumentRejectsUnknownManifestRetentionWithoutPartialPlan(t *testing.T) {
 	repo := newPlanRepository(t)
 	writeInspectionFile(t, repo, manifestPath, `{

@@ -51,6 +51,7 @@ Usage:
   roundfix release plan --reset-to <version> [--format <text|json>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+  roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
@@ -4756,6 +4757,7 @@ explicit post-QA authority.
   roundfix baseline [--repo <path>] [--format <text|json>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+  roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
@@ -4771,6 +4773,7 @@ explicit confirmation of the displayed Plan Digest.
 Commands:
   plan     Automation: emit a portable, digest-bound Baseline Plan without prompting or writing.
   apply    Automation: apply and verify exactly one approved portable Baseline Plan without prompting.
+  capabilities  Re-check Profile capability evidence without decisions, prompts, or writes.
   profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
   skills   Preview or apply immutable external Repository Skill Set restoration.
   assets   Check or refresh Go-owned canonical Baseline setup snapshots.
@@ -4782,6 +4785,32 @@ approved Plan Digest.
 Repository-owned profiles live only under
 .roundfix/baseline/profiles/<id>.json and may reference only entries in the
 embedded Baseline catalog.
+`
+	case "baseline capabilities check":
+		return `Usage:
+  roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
+
+Re-checks Repository Capability evidence through the same evaluator and
+divergence renderer used by Baseline planning. The command accepts and resolves
+no decisions, never writes repository or journal bytes, never executes a
+candidate or repository command, and never uses the network.
+
+JSON output uses roundfix/baseline-capability-recheck/v1.
+
+When --profile is omitted, the command resolves the current Baseline Profile
+from a valid Setup Manifest. A repository without either source returns a named
+Profile error instead of an empty result.
+
+Exit codes:
+  0  capability evidence evaluated with no blocking divergence
+  1  output failure
+  2  invalid arguments, repository failure, or no resolvable Baseline Profile
+  3  capability evidence evaluated with a blocking divergence
+
+Options:
+  --profile  Built-in or repository-owned Baseline Profile; defaults to the current Setup Manifest
+  --repo     Git worktree or a path inside it (default current directory)
+  --format   Output format: text or json (default text)
 `
 	case "baseline plan":
 		return `Usage:

@@ -187,6 +187,7 @@ type PlanDocument struct {
 	Profile        ResolvedProfile     `json:"profile"`
 	Decisions      []DecisionValue     `json:"decisions"`
 	Retention      []RetentionEvidence `json:"retention"`
+	ClauseDelta    *ClauseDelta        `json:"clauseDelta,omitempty"`
 	Preimages      []Preimage          `json:"preimages"`
 	Postimages     []Postimage         `json:"postimages"`
 	Warnings       []Finding           `json:"warnings"`
@@ -196,19 +197,39 @@ type PlanDocument struct {
 	PlanDigest     string              `json:"planDigest"`
 }
 
+// EvidenceStatus reports whether one result axis produced affirmative evidence.
+type EvidenceStatus string
+
+const (
+	EvidenceStatusVerified EvidenceStatus = "verified"
+	EvidenceStatusNotRun   EvidenceStatus = "not run"
+)
+
+// ResultStatusMatrix keeps independent Baseline evidence from collapsing into
+// one success state.
+type ResultStatusMatrix struct {
+	ApprovedPostimages     EvidenceStatus `json:"approvedPostimages"`
+	SemanticRetention      EvidenceStatus `json:"semanticRetention"`
+	ProfileAlignment       EvidenceStatus `json:"profileAlignment"`
+	RepositoryVerification EvidenceStatus `json:"repositoryVerification"`
+	Idempotence            EvidenceStatus `json:"idempotence"`
+}
+
 // Result is the strict automation result used when no complete plan can be
 // emitted and by later Baseline operations.
 type Result struct {
-	SchemaVersion      string      `json:"schemaVersion"`
-	Operation          string      `json:"operation"`
-	State              string      `json:"state"`
-	Category           string      `json:"category,omitempty"`
-	Message            string      `json:"message,omitempty"`
-	NextAction         string      `json:"nextAction,omitempty"`
-	PlanDigest         string      `json:"planDigest,omitempty"`
-	VerifiedPostimages []Postimage `json:"verifiedPostimages"`
-	Warnings           []Finding   `json:"warnings"`
-	Recommendations    []string    `json:"recommendations"`
+	SchemaVersion      string              `json:"schemaVersion"`
+	Operation          string              `json:"operation"`
+	State              string              `json:"state"`
+	Category           string              `json:"category,omitempty"`
+	Message            string              `json:"message,omitempty"`
+	NextAction         string              `json:"nextAction,omitempty"`
+	PlanDigest         string              `json:"planDigest,omitempty"`
+	VerifiedPostimages []Postimage         `json:"verifiedPostimages"`
+	Warnings           []Finding           `json:"warnings"`
+	Recommendations    []string            `json:"recommendations"`
+	ClauseDelta        *ClauseDelta        `json:"clauseDelta,omitempty"`
+	StatusMatrix       *ResultStatusMatrix `json:"statusMatrix,omitempty"`
 }
 
 type plannedArtifact struct {
@@ -292,6 +313,28 @@ func buildPlanWithCatalog(
 			"rerun with --decision preservation.mode=greenfield or preservation",
 			initial.Snapshot.Warnings), nil
 	}
+	_, carrierArtifacts, err := resolveManagedArtifacts(
+		catalog,
+		profile,
+		decisions,
+		false,
+	)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
+	initialClassifications, err := classifyCarriers(
+		initial.Root,
+		initial.Snapshot.Carriers,
+		catalog,
+		carrierArtifacts,
+	)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
+	initial.Snapshot.Warnings = warningsForCarrierClassifications(
+		initial.Snapshot.Warnings,
+		initialClassifications,
+	)
 	remediationProfileID := profile.ID
 	if request.ProfileDraft != nil {
 		remediationProfileID = request.ProfileDraft.SourceProfileID
@@ -333,6 +376,9 @@ func buildPlanWithCatalog(
 	}
 	preservationRequest := request.Preservation
 	preservationRequest.semanticOwners = semanticOwners
+	preservationRequest.managedArtifacts = carrierArtifacts
+	preservationRequest.classifyCarriers = true
+	preservationRequest.classifications = initialClassifications
 
 	preservation, err := planRootPreservationWithCatalog(initial, preservationRequest, catalog)
 	if err != nil {
@@ -398,6 +444,20 @@ func buildPlanWithCatalog(
 	if err != nil {
 		return PlanOutcome{}, err
 	}
+	currentClassifications, err := classifyCarriers(
+		initial.Root,
+		snapshot.Carriers,
+		catalog,
+		carrierArtifacts,
+	)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
+	snapshot.Warnings = warningsForCarrierClassifications(
+		snapshot.Warnings,
+		currentClassifications,
+	)
+	preservationRequest.classifications = currentClassifications
 	if plannedDraft != nil {
 		if err := validateProfileDraftTarget(snapshot, *plannedDraft); err != nil {
 			return PlanOutcome{}, err
@@ -445,23 +505,27 @@ func buildPlanWithCatalog(
 			snapshot.Warnings,
 		), nil
 	}
-	retention, retentionAction, err := resolvePlanRetention(
+	retention, clauseDelta, retentionAction, err := resolvePlanRetention(
 		initial.Root,
 		snapshot,
 		catalog,
 		compatibleRetentionProfileIDs(profile.ID, request.ProfileDraft),
+		manifest,
+		activeModules,
 		preservation,
 	)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
 	if retentionAction != "" {
-		return actionOutcome(
+		outcome := actionOutcome(
 			"classification",
 			retentionAction,
 			"restore an exact supported Setup Manifest or add a reviewed Upgrade Retention Contract",
 			snapshot.Warnings,
-		), nil
+		)
+		outcome.Result.ClauseDelta = clauseDelta
+		return outcome, nil
 	}
 	retention = append(retention, repositoryRules.Retention...)
 
@@ -485,6 +549,7 @@ func buildPlanWithCatalog(
 		Profile:        profile,
 		Decisions:      decisions,
 		Retention:      retention,
+		ClauseDelta:    clauseDelta,
 		Preimages:      snapshot.Preimages,
 		Postimages:     postimages,
 		Warnings:       cloneFindings(preservation.Warnings),
@@ -1011,26 +1076,28 @@ func resolvePlanRetention(
 	snapshot RepositorySnapshot,
 	catalog *Catalog,
 	profileIDs []string,
+	targetManifest SetupManifest,
+	activeModules []string,
 	preservation RootPreservationPlan,
-) ([]RetentionEvidence, string, error) {
+) ([]RetentionEvidence, *ClauseDelta, string, error) {
 	retention := readoptionRetentionEvidence(preservation.Dispositions)
 	preimage, ok := preimagesByPath(snapshot.Preimages)[manifestPath]
 	if !ok || !preimage.Exists {
-		return retention, "", nil
+		return retention, nil, "", nil
 	}
 	if preimage.Kind != PreimageRegular {
-		return nil, "", fmt.Errorf("resolve Upgrade Retention: Setup Manifest is not a regular file")
+		return nil, nil, "", fmt.Errorf("resolve Upgrade Retention: Setup Manifest is not a regular file")
 	}
 	data, err := readOptionalRegular(root, manifestPath)
 	if err != nil {
-		return nil, "", fmt.Errorf("resolve Upgrade Retention: %w", err)
+		return nil, nil, "", fmt.Errorf("resolve Upgrade Retention: %w", err)
 	}
 	if planContentIdentity(data) != preimage.ContentIdentity {
-		return nil, "", errors.New("resolve Upgrade Retention: Setup Manifest changed during planning")
+		return nil, nil, "", errors.New("resolve Upgrade Retention: Setup Manifest changed during planning")
 	}
 	manifest, diagnostics := decodeDocument(data, manifestPath)
 	if len(diagnostics) != 0 || manifest == nil {
-		return retention, "the existing Setup Manifest is not valid strict JSON", nil
+		return retention, nil, "the existing Setup Manifest is not valid strict JSON", nil
 	}
 
 	generator, _ := objectValue(manifest["generator"])
@@ -1039,19 +1106,57 @@ func resolvePlanRetention(
 	for _, profileID := range profileIDs {
 		compatibleBaselines["baseline."+profileID+"-"+ManifestVersion] = struct{}{}
 	}
-	_, compatibleBaseline := compatibleBaselines[declaredBaseline]
-	if manifest["schemaVersion"] == ManifestSchema &&
-		manifest["version"] == ManifestVersion &&
-		compatibleBaseline {
-		return retention, "", nil
+	if manifest["schemaVersion"] == ManifestSchema && manifest["version"] == ManifestVersion {
+		var existing SetupManifest
+		if err := strictJSON(data, &existing); err != nil {
+			return retention, nil, "the existing Setup Manifest is not valid strict JSON", nil
+		}
+		if reflectJSONEqual(existing, targetManifest) {
+			return retention, nil, "", nil
+		}
+		if declaredBaseline == targetManifest.Generator.Baseline {
+			if reflectJSONEqual(existing.ManagedArtifacts, targetManifest.ManagedArtifacts) {
+				return retention, nil, "", nil
+			}
+			source, found := catalog.retentionSources[declaredBaseline]
+			if !found {
+				// Artifact drift proves bytes changed, but without an exact source
+				// inventory it does not prove that a managed clause disappeared.
+				return retention, nil, "", nil
+			}
+			evidence, delta := classifySourceClauseTransition(
+				source,
+				existing.ManagedArtifacts,
+				catalog,
+				activeModules,
+			)
+			retention = append(retention, evidence...)
+			if unaccounted := clauseDeltaIDs(delta, ClauseUnaccounted); len(unaccounted) != 0 {
+				return retention,
+					&delta,
+					fmt.Sprintf(
+						"retention transition has %d unaccounted clause(s): %s",
+						len(unaccounted),
+						strings.Join(unaccounted, ", "),
+					),
+					nil
+			}
+			if len(delta.Dispositions) != 0 {
+				return retention, &delta, "", nil
+			}
+			return retention, nil, "", nil
+		}
+		if _, compatibleBaseline := compatibleBaselines[declaredBaseline]; compatibleBaseline {
+			return retention, nil, "", nil
+		}
 	}
 	if currentSetupManifestProfileIsValid(root, manifest, generator, catalog) {
-		return retention, "", nil
+		return retention, nil, "", nil
 	}
 	// The portable-v3 manifest remains a supported reader contract while the
 	// current writer emits the profile-bound 0.0.1 identity.
 	if declaredBaseline == "baseline.portable-v3" {
-		return retention, "", nil
+		return retention, nil, "", nil
 	}
 
 	var matches []UpgradeRetentionContract
@@ -1059,7 +1164,7 @@ func resolvePlanRetention(
 	for _, transitionID := range catalog.TransitionIDs() {
 		contract, err := catalog.UpgradeRetentionContract(transitionID)
 		if err != nil {
-			return nil, "", err
+			return nil, nil, "", err
 		}
 		matched := declaredBaseline != "" && contract.FromBaseline == declaredBaseline
 		if declaredBaseline == "" && fingerprint != "" {
@@ -1074,11 +1179,11 @@ func resolvePlanRetention(
 		if identity == "" {
 			identity = "manifest fingerprint " + fingerprint
 		}
-		return retention,
+		return retention, nil,
 			fmt.Sprintf("the existing Setup Manifest identity %q has no unique maintained transition", identity),
 			nil
 	}
-	return append(retention, transitionRetentionEvidence(matches[0])...), "", nil
+	return append(retention, transitionRetentionEvidence(matches[0])...), nil, "", nil
 }
 
 func compatibleRetentionProfileIDs(
@@ -1116,6 +1221,116 @@ func currentSetupManifestProfileIsValid(
 	}
 	profile, err := ResolveProfile(root, profileID, catalog)
 	return err == nil && profile.Digest == profileDigest
+}
+
+func classifySourceClauseTransition(
+	source SourceBaseline,
+	managedArtifacts []ManifestArtifact,
+	catalog *Catalog,
+	activeModules []string,
+) ([]RetentionEvidence, ClauseDelta) {
+	managedCarriers := make(map[string]struct{}, len(managedArtifacts))
+	for _, artifact := range managedArtifacts {
+		if artifact.Kind == "root-block" || artifact.Kind == "guide" {
+			managedCarriers[artifact.Path] = struct{}{}
+		}
+	}
+	current := selectedClauseEnforcement(catalog, activeModules)
+	delta := newClauseDelta()
+	var evidence []RetentionEvidence
+	for _, previous := range source.Entries {
+		if previous.Kind != "normative-clause" {
+			continue
+		}
+		if _, managed := managedCarriers[previous.Carrier]; !managed {
+			continue
+		}
+		disposition := ClauseUnaccounted
+		targets := []string{}
+		reason := "The selected Baseline has no clause with the same identity and enforcement."
+		if enforcement, retained := current[previous.ID]; retained && enforcement == previous.Enforcement {
+			disposition = ClauseRetained
+			targets = append(targets, previous.ID)
+			reason = "Stable clause identity and enforcement remain in the selected Baseline."
+		}
+		delta.Dispositions[previous.ID] = disposition
+		delta.Counts[disposition]++
+		evidence = append(evidence, RetentionEvidence{
+			FromClause:  previous.ID,
+			Enforcement: previous.Enforcement,
+			Disposition: string(disposition),
+			Targets:     targets,
+			Reason:      reason,
+		})
+	}
+	return evidence, delta
+}
+
+func selectedClauseEnforcement(catalog *Catalog, activeModules []string) map[string]string {
+	result := make(map[string]string)
+	for _, moduleID := range activeModules {
+		module := catalog.modules[moduleID]
+		for _, rule := range objectsOrEmpty(module["rules"]) {
+			for _, clause := range objectsOrEmpty(rule["clauses"]) {
+				id, idOK := stringValue(clause, "id")
+				enforcement, enforcementOK := stringValue(clause, "enforcement")
+				if idOK && enforcementOK {
+					result[id] = enforcement
+				}
+			}
+		}
+	}
+	return result
+}
+
+func newClauseDelta() ClauseDelta {
+	counts := make(map[ClauseDisposition]int, 7)
+	for _, disposition := range allClauseDispositions() {
+		counts[disposition] = 0
+	}
+	return ClauseDelta{
+		Dispositions: make(map[string]ClauseDisposition),
+		Counts:       counts,
+	}
+}
+
+func clauseDeltaIDs(delta ClauseDelta, disposition ClauseDisposition) []string {
+	var result []string
+	for id, observed := range delta.Dispositions {
+		if observed == disposition {
+			result = append(result, id)
+		}
+	}
+	sort.Strings(result)
+	return result
+}
+
+// RenderClauseDeltaBeforeLedger renders the accounted semantic projection
+// ahead of an already-rendered file ledger. The ledger bytes are appended
+// unchanged, and no clause disposition is inferred from another plan field.
+func RenderClauseDeltaBeforeLedger(delta *ClauseDelta, fileLedger string) string {
+	if delta == nil || len(delta.Dispositions) == 0 {
+		return fileLedger
+	}
+
+	var rendered strings.Builder
+	fmt.Fprintln(&rendered, "Clause-level semantic delta:")
+	fmt.Fprintf(&rendered, "Total clauses: %d\n", len(delta.Dispositions))
+	fmt.Fprintln(&rendered, "Disposition counts:")
+	for _, disposition := range allClauseDispositions() {
+		fmt.Fprintf(&rendered, "- %s: %d\n", disposition, delta.Counts[disposition])
+	}
+	fmt.Fprintln(&rendered, "Clauses:")
+	clauseIDs := make([]string, 0, len(delta.Dispositions))
+	for clauseID := range delta.Dispositions {
+		clauseIDs = append(clauseIDs, clauseID)
+	}
+	sort.Strings(clauseIDs)
+	for _, clauseID := range clauseIDs {
+		fmt.Fprintf(&rendered, "- %s: %s\n", clauseID, delta.Dispositions[clauseID])
+	}
+	rendered.WriteString(fileLedger)
+	return rendered.String()
 }
 
 func readoptionRetentionEvidence(dispositions []ReadoptionDisposition) []RetentionEvidence {
@@ -2322,6 +2537,9 @@ func validatePlanDocumentAgainstCatalog(document PlanDocument, catalog *Catalog)
 			return fmt.Errorf("invalid retention entry %d", index)
 		}
 	}
+	if err := validateReadyClauseDelta(document.ClauseDelta, document.Retention); err != nil {
+		return err
+	}
 	preimagePaths := make(map[string]struct{}, len(document.Preimages))
 	for index, preimage := range document.Preimages {
 		if !safeRelative(preimage.Path) {
@@ -2390,6 +2608,46 @@ func validatePlanDocumentAgainstCatalog(document PlanDocument, catalog *Catalog)
 	}
 	if err := validatePlanApplyContract(document); err != nil {
 		return err
+	}
+	return nil
+}
+
+func validateReadyClauseDelta(delta *ClauseDelta, retention []RetentionEvidence) error {
+	if delta == nil {
+		return nil
+	}
+	if len(delta.Dispositions) == 0 || len(delta.Counts) != len(allClauseDispositions()) {
+		return errors.New("Baseline Plan clause delta is empty or incomplete")
+	}
+	allowed := make(map[ClauseDisposition]struct{}, len(allClauseDispositions()))
+	calculated := make(map[ClauseDisposition]int, len(allClauseDispositions()))
+	for _, disposition := range allClauseDispositions() {
+		allowed[disposition] = struct{}{}
+	}
+	retentionByClause := make(map[string]RetentionEvidence, len(retention))
+	for _, entry := range retention {
+		retentionByClause[entry.FromClause] = entry
+	}
+	for clauseID, disposition := range delta.Dispositions {
+		if clauseID == "" {
+			return errors.New("Baseline Plan clause delta has an empty clause ID")
+		}
+		if _, ok := allowed[disposition]; !ok {
+			return fmt.Errorf("Baseline Plan clause %q has invalid disposition %q", clauseID, disposition)
+		}
+		if disposition == ClauseUnaccounted {
+			return fmt.Errorf("Baseline Plan clause %q is unaccounted", clauseID)
+		}
+		entry, ok := retentionByClause[clauseID]
+		if !ok || entry.Disposition != string(disposition) {
+			return fmt.Errorf("Baseline Plan clause %q has no matching retention record", clauseID)
+		}
+		calculated[disposition]++
+	}
+	for _, disposition := range allClauseDispositions() {
+		if delta.Counts[disposition] != calculated[disposition] {
+			return fmt.Errorf("Baseline Plan clause disposition %q count is invalid", disposition)
+		}
 	}
 	return nil
 }

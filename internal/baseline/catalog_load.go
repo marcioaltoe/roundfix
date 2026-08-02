@@ -9,11 +9,12 @@ import (
 )
 
 type catalogLoader struct {
-	source       fs.FS
-	assets       map[string][]byte
-	documents    map[string]document
-	diagnostics  []Diagnostic
-	regenerating bool
+	source                   fs.FS
+	assets                   map[string][]byte
+	documents                map[string]document
+	diagnostics              []Diagnostic
+	validatedSourceBaselines []SourceBaseline
+	regenerating             bool
 }
 
 // deferredDuringRegeneration lists the diagnostics that a regeneration run is
@@ -34,13 +35,14 @@ func (l *catalogLoader) load() *Catalog {
 	l.readAssets()
 
 	catalog := &Catalog{
-		assets:         l.assets,
-		profiles:       l.readCollection("profiles", profileSchemas, "profile", true),
-		modules:        l.readCollection("modules", moduleSchemas, "module", true),
-		setups:         l.readCollection("setups", setupSchemas, "setup", true),
-		transitions:    l.readCollection("retention", transitionSchemas, "transition", false),
-		orderedModules: make(map[string][]string),
-		semanticOwners: make(map[string]SemanticOwner),
+		assets:           l.assets,
+		profiles:         l.readCollection("profiles", profileSchemas, "profile", true),
+		modules:          l.readCollection("modules", moduleSchemas, "module", true),
+		setups:           l.readCollection("setups", setupSchemas, "setup", true),
+		transitions:      l.readCollection("retention", transitionSchemas, "transition", false),
+		orderedModules:   make(map[string][]string),
+		semanticOwners:   make(map[string]SemanticOwner),
+		retentionSources: make(map[string]SourceBaseline),
 	}
 	catalog.decisions = l.readIndexed(
 		"decisions.json",

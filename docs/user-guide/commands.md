@@ -231,6 +231,7 @@ Agent prompt, and closes every Session on success or error. JSON schemas are
 roundfix baseline [--repo <path>] [--format <text|json>]
 roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
 roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
 roundfix baseline profile init --id <id> [--from <built-in-id>]
 roundfix baseline profile show <id> [--format <text|json>]
 roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
@@ -244,6 +245,66 @@ one Baseline Profile, and repository decisions, then presents one consolidated
 Change Plan. Rejecting the plan returns to a selected decision area and
 recalculates the complete plan. Mutation requires one explicit confirmation of
 the current displayed Plan Digest.
+
+#### Capability evidence and remediation
+
+Profile alignment groups unsatisfied Repository Capabilities by requirement
+strength: blocking, advisory, and informational. A blocking divergence prevents
+readiness until it is resolved. An advisory divergence never blocks readiness
+or apply; any optional next action appears after that statement. Informational
+divergences record evidence without requesting a decision.
+
+Executable discovery inspects each PATH candidate and resolves a bounded
+symlink chain without executing the candidate or its target. A rejected
+candidate reports one of these reasons:
+
+- `link-cycle`: the chain revisited a link or exceeded the bounded hop count.
+- `broken-link`: a link could not be read or its target does not exist.
+- `not-executable`: the resolved target is not a regular executable file or
+  lacks an executable permission bit.
+
+When Profile alignment is blocked, the interactive prompt offers four
+outcomes:
+
+1. Change the Baseline Profile and recalculate alignment.
+2. Create a reviewed repository-owned Profile adaptation. Adaptation is
+   removal-only: it can remove repository-inapplicable Profile modules or
+   Repository Capabilities, but cannot add policy, waive a universal
+   requirement, or weaken one.
+3. Remediate in the repository and re-run. This exits without writing, prints
+   remediation for every unsatisfied divergence, prints the exact capability
+   re-check command, and records an outcome distinct from decline.
+4. Decline without writing.
+
+After applying the printed remediation, run the exact
+`roundfix baseline capabilities check` command from the prompt before returning
+to planning. The re-check evaluates the same capability evidence and produces
+the same capability outcomes as a full plan. It requires no decisions, resolves
+no decisions, and writes nothing: no repository file, journal entry, or
+configuration.
+
+#### Retention and completion evidence
+
+When the Baseline identifier is unchanged but the Profile or catalog digest
+changes, planning requires retention accounting for every previously managed
+Normative Clause. Each clause must have an explicit disposition. An
+unaccounted clause stops planning with an action-required result, and Roundfix
+does not offer apply.
+
+The final result reports five independent status axes. Each axis is `verified`
+or `not run`:
+
+| Axis | Evidence reported |
+| --- | --- |
+| Approved postimages | The approved repository postimages were written and verified. |
+| Semantic retention | Every applicable prior Normative Clause has an accounted disposition. |
+| Profile alignment | The resulting Setup Manifest and selected Baseline Profile align. |
+| Repository Verification | The repository's declared Verification command ran successfully. |
+| Idempotence | A repeated check found no further Baseline change to apply. |
+
+Verified postimages alone do not mean the Baseline update is complete.
+Completion language appears only when semantic retention is `verified` and the
+idempotence check passed.
 
 `baseline plan` is read-only, non-interactive, local, and network-free. JSON
 exit `0` emits one complete `roundfix/baseline-plan/v1` document. Missing

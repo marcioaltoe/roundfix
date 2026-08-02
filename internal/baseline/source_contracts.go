@@ -61,6 +61,52 @@ type SourceBaseline struct {
 	Accounting []SourceAccountingEntry `json:"accounting"`
 }
 
+// ClauseDisposition is the exhaustive semantic outcome for one previous
+// managed Normative Clause.
+type ClauseDisposition string
+
+// ClauseDisposition values exhaustively classify each previous managed
+// Normative Clause.
+const (
+	ClauseRetained            ClauseDisposition = "retained"
+	ClauseMoved               ClauseDisposition = "moved"
+	ClauseReplaced            ClauseDisposition = "replaced"
+	ClauseRepositoryDocument  ClauseDisposition = "repository-document"
+	ClauseRepositoryExtension ClauseDisposition = "repository-extension"
+	ClauseReasonedRejection   ClauseDisposition = "reasoned-rejection"
+	ClauseUnaccounted         ClauseDisposition = "unaccounted"
+)
+
+// ClauseDelta records exactly one disposition for every previous managed
+// Normative Clause and deterministic counts for presentation.
+type ClauseDelta struct {
+	Dispositions map[string]ClauseDisposition `json:"dispositions"`
+	Counts       map[ClauseDisposition]int    `json:"counts"`
+}
+
+func allClauseDispositions() []ClauseDisposition {
+	return []ClauseDisposition{
+		ClauseRetained,
+		ClauseMoved,
+		ClauseReplaced,
+		ClauseRepositoryDocument,
+		ClauseRepositoryExtension,
+		ClauseReasonedRejection,
+		ClauseUnaccounted,
+	}
+}
+
+func (c *Catalog) captureCurrentRetentionSources(sources []SourceBaseline) error {
+	for _, source := range sources {
+		baselineID := source.Identity.ID
+		if _, duplicate := c.retentionSources[baselineID]; duplicate {
+			return fmt.Errorf("duplicate Baseline retention source identity %q", baselineID)
+		}
+		c.retentionSources[baselineID] = source
+	}
+	return nil
+}
+
 // SourceAccountingEntry records how one earlier source entry is retained by a
 // maintained Source Baseline.
 type SourceAccountingEntry struct {

@@ -909,7 +909,8 @@ func promptBaselineProfileAlignment(
 
 		selected, err := prompt.selectOne(ctx, "Profile divergence resolution", []string{
 			"Change Baseline Profile",
-			"Create a reviewed repository-owned Profile adaptation",
+			"Create a reviewed repository-owned Profile adaptation (removal-only)",
+			"Remediate in the repository and re-run",
 			"Decline without writing",
 		})
 		if err != nil {
@@ -960,6 +961,20 @@ func promptBaselineProfileAlignment(
 			profile = adapted
 			decisions = adaptedDecisions
 			draft = &input
+		case 2:
+			recheckCommand := renderBaselineProfileRemediation(
+				review,
+				alignment.Divergences,
+				profile.ID,
+				root,
+			)
+			return baseline.ResolvedProfile{}, nil, nil, &baselineHumanActionError{
+				result: baselineHumanActionResult(
+					"remediation",
+					"Profile divergence resolution paused for repository remediation; instruction classification did not start and no repository bytes were written",
+					recheckCommand,
+				),
+			}
 		default:
 			return baseline.ResolvedProfile{}, nil, nil, &baselineHumanActionError{
 				result: baselineHumanActionResult(
@@ -970,6 +985,45 @@ func promptBaselineProfileAlignment(
 			}
 		}
 	}
+}
+
+func renderBaselineProfileRemediation(
+	output io.Writer,
+	divergences []baseline.ProfileDivergence,
+	profileID string,
+	repository string,
+) string {
+	fmt.Fprintln(output, "\nRepository remediation before Baseline re-run:")
+	for _, divergence := range divergences {
+		action := strings.TrimSpace(divergence.NextAction)
+		if action == "" {
+			action = "review the reported evidence and remediate this divergence"
+		}
+		group := divergence.Group
+		if group == "" {
+			switch divergence.Requirement {
+			case baseline.CapabilityRequired:
+				group = baseline.ProfileDivergenceBlocking
+			case baseline.CapabilityRecommended:
+				group = baseline.ProfileDivergenceAdvisory
+			default:
+				group = baseline.ProfileDivergenceInformational
+			}
+		}
+		fmt.Fprintf(output, "- [%s] %s: %s\n", group, divergence.ID, action)
+	}
+	command := strings.Join([]string{
+		app.Name,
+		"baseline",
+		"capabilities",
+		"check",
+		"--profile",
+		quoteCommandArg(profileID),
+		"--repo",
+		quoteCommandArg(repository),
+	}, " ")
+	fmt.Fprintf(output, "Re-check command: %s\n", command)
+	return command
 }
 
 func promptBaselineProfileAdaptation(
@@ -1184,28 +1238,7 @@ func decisionsSelectedByProfile(
 func renderBaselineProfileAlignment(output io.Writer, alignment baseline.ProfileAlignment) {
 	fmt.Fprintf(output, "\nBaseline Profile alignment: %s\n", alignment.State)
 	fmt.Fprintf(output, "Profile: %s\n", alignment.Profile.ID)
-	if len(alignment.Divergences) == 0 {
-		fmt.Fprintln(output, "Divergences: none")
-		return
-	}
-	fmt.Fprintln(output, "Divergences:")
-	for _, divergence := range alignment.Divergences {
-		severity := "advisory"
-		if divergence.Blocking {
-			severity = "blocking"
-		}
-		fmt.Fprintf(
-			output,
-			"- %s %s (%s): %s\n",
-			severity,
-			divergence.ID,
-			divergence.Code,
-			divergence.Message,
-		)
-		if divergence.NextAction != "" {
-			fmt.Fprintf(output, "  Next action: %s\n", divergence.NextAction)
-		}
-	}
+	fmt.Fprint(output, baseline.RenderProfileDivergences(alignment.Divergences))
 }
 
 func printProfileRemovalReview(output io.Writer, label string, removed []string) {

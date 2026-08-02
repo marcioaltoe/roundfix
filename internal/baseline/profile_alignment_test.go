@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -72,6 +73,144 @@ func TestProfileAlignmentResolvesExactlyOneProfile(t *testing.T) {
 	}
 }
 
+func TestCapabilityRecheckMatchesFullPlan(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	t.Setenv("PATH", t.TempDir())
+
+	fullPlanAlignment, err := ResolveProfileAlignment(
+		context.Background(),
+		repository,
+		ProfileAlignmentRequest{
+			ProfileID: "standard-typescript-monorepo",
+			Decisions: standardTypeScriptDecisions("make verify"),
+		},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("resolve full-plan alignment: %v", err)
+	}
+
+	recheck, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+		Repository: repository,
+		ProfileID:  "standard-typescript-monorepo",
+	})
+	if err != nil {
+		t.Fatalf("re-check capabilities: %v", err)
+	}
+	if !reflect.DeepEqual(recheck.Capabilities, fullPlanAlignment.Capabilities) {
+		t.Fatalf("re-check capabilities differ from full-plan alignment:\nre-check=%#v\nfull-plan=%#v",
+			recheck.Capabilities, fullPlanAlignment.Capabilities)
+	}
+
+	capabilityIDs := make(map[string]struct{}, len(fullPlanAlignment.Capabilities))
+	for _, outcome := range fullPlanAlignment.Capabilities {
+		capabilityIDs[outcome.ID] = struct{}{}
+	}
+	fullPlanDivergences := make([]ProfileDivergence, 0, len(fullPlanAlignment.Divergences))
+	for _, divergence := range fullPlanAlignment.Divergences {
+		if _, capability := capabilityIDs[divergence.ID]; capability {
+			fullPlanDivergences = append(fullPlanDivergences, divergence)
+		}
+	}
+	if !reflect.DeepEqual(recheck.Divergences, fullPlanDivergences) {
+		t.Fatalf("re-check divergences differ from full-plan alignment:\nre-check=%#v\nfull-plan=%#v",
+			recheck.Divergences, fullPlanDivergences)
+	}
+	if got, want := RenderProfileDivergences(recheck.Divergences), RenderProfileDivergences(fullPlanDivergences); got != want {
+		t.Fatalf("re-check rendering differs from full-plan rendering:\nre-check=%s\nfull-plan=%s", got, want)
+	}
+}
+
+func TestCapabilityRecheck(t *testing.T) {
+	t.Run("names a missing Profile", func(t *testing.T) {
+		repository := t.TempDir()
+		_, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+			Repository: repository,
+		})
+		if !errors.Is(err, ErrNoResolvableProfile) {
+			t.Fatalf("RecheckCapabilities() error = %v, want ErrNoResolvableProfile", err)
+		}
+	})
+
+	t.Run("resolves the current Setup Manifest Profile without decisions", func(t *testing.T) {
+		catalog := loadProfileAlignmentCatalog(t)
+		repository := newAlignedTypeScriptRepository(t)
+		profile, err := ResolveProfile(repository, "standard-typescript-monorepo", catalog)
+		if err != nil {
+			t.Fatalf("resolve manifest Profile: %v", err)
+		}
+		manifest := buildSetupManifest(
+			catalog,
+			profile,
+			nil,
+			profile.Modules,
+			nil,
+			[]VerificationProjection{},
+		)
+		data, err := marshalSetupManifestBytes(manifest)
+		if err != nil {
+			t.Fatalf("marshal Setup Manifest: %v", err)
+		}
+		writeProfileAlignmentFile(t, repository, manifestPath, string(data))
+
+		result, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+			Repository: repository,
+		})
+		if err != nil {
+			t.Fatalf("re-check current Setup Manifest Profile: %v", err)
+		}
+		if result.Profile == nil || result.Profile.ID != profile.ID || result.Profile.Digest != profile.Digest {
+			t.Fatalf("re-check Profile = %#v, want %q %q", result.Profile, profile.ID, profile.Digest)
+		}
+	})
+
+	t.Run("rejects an invalid current Setup Manifest", func(t *testing.T) {
+		repository := t.TempDir()
+		writeProfileAlignmentFile(t, repository, manifestPath, "{}")
+
+		_, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+			Repository: repository,
+		})
+		if !errors.Is(err, ErrNoResolvableProfile) ||
+			!strings.Contains(err.Error(), "current Setup Manifest is invalid") {
+			t.Fatalf("RecheckCapabilities() error = %v, want invalid manifest ErrNoResolvableProfile", err)
+		}
+	})
+
+	t.Run("wraps an explicit Profile resolution failure", func(t *testing.T) {
+		repository := t.TempDir()
+		_, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+			Repository: repository,
+			ProfileID:  "missing-profile",
+		})
+		if !errors.Is(err, ErrNoResolvableProfile) || !errors.Is(err, fs.ErrNotExist) {
+			t.Fatalf("RecheckCapabilities() error = %v, want ErrNoResolvableProfile and fs.ErrNotExist", err)
+		}
+	})
+
+	t.Run("normalizes omitted PostgreSQL evidence to arrays", func(t *testing.T) {
+		result, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
+			Repository: t.TempDir(),
+			ProfileID:  "go-cli-tui",
+		})
+		if err != nil {
+			t.Fatalf("RecheckCapabilities() error = %v", err)
+		}
+		if result.PostgreSQL.AcceptedContractPaths == nil || result.PostgreSQL.Implementation == nil {
+			t.Fatalf("PostgreSQL evidence contains nil slices: %#v", result.PostgreSQL)
+		}
+		encoded, err := json.Marshal(result.PostgreSQL)
+		if err != nil {
+			t.Fatalf("marshal PostgreSQL evidence: %v", err)
+		}
+		if !strings.Contains(string(encoded), `"acceptedContractPaths":[]`) ||
+			!strings.Contains(string(encoded), `"implementation":[]`) {
+			t.Fatalf("PostgreSQL evidence JSON = %s, want empty arrays", encoded)
+		}
+	})
+}
+
 func TestRequiredDivergencePreventsReadyPlan(t *testing.T) {
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
@@ -103,6 +242,75 @@ func TestRequiredDivergencePreventsReadyPlan(t *testing.T) {
 	}
 	if !resolved.Ready {
 		t.Fatalf("remediated alignment remains blocked: %+v", resolved.Divergences)
+	}
+}
+
+func TestDivergenceCarriesProbeEvidence(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
+	t.Setenv("PATH", t.TempDir())
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve alignment with capability divergences: %v", err)
+	}
+	capabilities, err := resolvedProfileCapabilities(alignment.Profile, catalog)
+	if err != nil {
+		t.Fatalf("resolve evaluated capability definitions: %v", err)
+	}
+	definitions := make(map[string]RepositoryCapability, len(capabilities))
+	for _, capability := range capabilities {
+		definitions[capability.ID] = capability
+	}
+
+	for _, outcome := range alignment.Capabilities {
+		if outcome.Status == CapabilitySatisfied {
+			continue
+		}
+		divergence, ok := findProfileDivergence(alignment.Divergences, outcome.ID)
+		if !ok {
+			t.Errorf("unsatisfied capability %q has no divergence", outcome.ID)
+			continue
+		}
+		definition, ok := definitions[outcome.ID]
+		if !ok {
+			t.Errorf("unsatisfied capability %q has no evaluated definition", outcome.ID)
+			continue
+		}
+		wantProbe, err := json.Marshal(definition.Probe)
+		if err != nil {
+			t.Fatalf("marshal evaluated probe for %q: %v", outcome.ID, err)
+		}
+		gotProbe, err := json.Marshal(divergence.Probe)
+		if err != nil {
+			t.Fatalf("marshal divergence probe for %q: %v", outcome.ID, err)
+		}
+		if !slices.Equal(gotProbe, wantProbe) {
+			t.Errorf("divergence probe for %q = %s, want evaluated bytes %s", outcome.ID, gotProbe, wantProbe)
+		}
+		if !reflect.DeepEqual(divergence.Evidence, outcome.Evidence) {
+			t.Errorf("divergence evidence for %q = %+v, want verdict evidence %+v", outcome.ID, divergence.Evidence, outcome.Evidence)
+		}
+	}
+
+	legacy, err := json.Marshal(ProfileDivergence{
+		Code:        "profile.decision.required",
+		ID:          "language.generated",
+		Requirement: CapabilityRequired,
+		Blocking:    true,
+		Message:     "answer required",
+		NextAction:  "answer the decision",
+	})
+	if err != nil {
+		t.Fatalf("marshal legacy divergence: %v", err)
+	}
+	const wantLegacy = `{"code":"profile.decision.required","id":"language.generated","requirement":"required","blocking":true,"message":"answer required","nextAction":"answer the decision"}`
+	if string(legacy) != wantLegacy {
+		t.Fatalf("legacy divergence JSON = %s, want %s", legacy, wantLegacy)
 	}
 }
 
@@ -395,6 +603,108 @@ func TestExecutableVerificationCommandRequiresLocalDeclaration(t *testing.T) {
 	}
 }
 
+func TestPortableVerificationRoleMapping(t *testing.T) {
+	const (
+		role                = "workspace"
+		portableCommand     = "bun run verify"
+		declaredCommand     = "make verify"
+		undeclaredCommand   = "make missing"
+		legacyMessage       = "portable workspace role expects \"bun run verify\", but no matching local declaration exists"
+		legacyNextAction    = "map the portable role to a declared repository command or keep it as a profile expectation"
+		mappedAbsentMessage = "portable workspace role maps to repository command \"make missing\", but no matching local declaration exists"
+		mappedAbsentAction  = "declare the mapped repository command or map the portable role to another declared command"
+		executionMarker     = "verification-role-executed"
+	)
+
+	newRepository := func(t *testing.T) string {
+		t.Helper()
+		repository := newAlignedTypeScriptRepository(t)
+		writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(true, false))
+		writeProfileAlignmentFile(t, repository, "Makefile", "verify:\n\t@touch "+executionMarker+"\n")
+		return repository
+	}
+	resolve := func(t *testing.T, repository string, mappings map[string]string) ProfileAlignment {
+		t.Helper()
+		alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+			ProfileID:                "standard-typescript-monorepo",
+			Decisions:                standardTypeScriptDecisions(declaredCommand),
+			VerificationRoleMappings: mappings,
+		}, loadProfileAlignmentCatalog(t))
+		if err != nil {
+			t.Fatalf("resolve portable Verification role mapping: %v", err)
+		}
+		return alignment
+	}
+
+	t.Run("mapped role is satisfied by a present declaration without execution", func(t *testing.T) {
+		repository := newRepository(t)
+		alignment := resolve(t, repository, map[string]string{role: declaredCommand})
+
+		projection, ok := findVerificationProjection(alignment.Verification, "verification.workspace")
+		if !ok || projection.Command != declaredCommand ||
+			projection.SatisfiedByCommand != declaredCommand ||
+			projection.Classification != VerificationRepositoryCommand ||
+			!projection.RepositoryExecutable || projection.DeclarationPath != "Makefile" ||
+			!strings.HasPrefix(projection.DeclarationDigest, "sha256:") {
+			t.Fatalf("mapped workspace projection = %+v, found=%v", projection, ok)
+		}
+		if divergence, exists := findProfileDivergence(alignment.Divergences, "verification.workspace"); exists {
+			t.Fatalf("mapped workspace role remained divergent: %+v", divergence)
+		}
+		if _, err := os.Stat(filepath.Join(repository, executionMarker)); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("mapped repository command was executed: %v", err)
+		}
+	})
+
+	t.Run("unmapped role keeps its legacy divergence", func(t *testing.T) {
+		alignment := resolve(t, newRepository(t), nil)
+
+		projection, ok := findVerificationProjection(alignment.Verification, "verification.workspace")
+		if !ok || projection.Command != portableCommand ||
+			projection.SatisfiedByCommand != "" ||
+			projection.Classification != VerificationProfileExpectation ||
+			projection.RepositoryExecutable {
+			t.Fatalf("unmapped workspace projection = %+v, found=%v", projection, ok)
+		}
+		divergence, ok := findProfileDivergence(alignment.Divergences, "verification.workspace")
+		if !ok || divergence.Code != "verification.profile-expectation.unresolved" ||
+			divergence.Requirement != CapabilityRecommended || divergence.Blocking ||
+			divergence.Message != legacyMessage || divergence.NextAction != legacyNextAction {
+			t.Fatalf("unmapped workspace divergence = %+v, found=%v", divergence, ok)
+		}
+	})
+
+	t.Run("mapped role rejects an absent declaration with a reason", func(t *testing.T) {
+		alignment := resolve(t, newRepository(t), map[string]string{role: undeclaredCommand})
+
+		projection, ok := findVerificationProjection(alignment.Verification, "verification.workspace")
+		if !ok || projection.Command != undeclaredCommand ||
+			projection.SatisfiedByCommand != "" ||
+			projection.Classification != VerificationRepositoryCommand ||
+			projection.RepositoryExecutable {
+			t.Fatalf("undeclared mapped workspace projection = %+v, found=%v", projection, ok)
+		}
+		divergence, ok := findProfileDivergence(alignment.Divergences, "verification.workspace")
+		if !ok || divergence.Code != "verification.role-mapping.undeclared" ||
+			divergence.Requirement != CapabilityRecommended || divergence.Blocking ||
+			divergence.Message != mappedAbsentMessage || divergence.NextAction != mappedAbsentAction {
+			t.Fatalf("undeclared mapped workspace divergence = %+v, found=%v", divergence, ok)
+		}
+	})
+
+	t.Run("mapped role rejects an empty command", func(t *testing.T) {
+		repository := newRepository(t)
+		_, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+			ProfileID:                "standard-typescript-monorepo",
+			Decisions:                standardTypeScriptDecisions(declaredCommand),
+			VerificationRoleMappings: map[string]string{role: "   "},
+		}, loadProfileAlignmentCatalog(t))
+		if err == nil || !strings.Contains(err.Error(), `mapped repository command for role "workspace" is empty`) {
+			t.Fatalf("empty role mapping error = %v", err)
+		}
+	})
+}
+
 func TestProfileAlignmentDiscoversDeclaredRepositoryFormatter(t *testing.T) {
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
@@ -452,6 +762,209 @@ func TestProfileAlignmentEquivalentNormalizedDecisions(t *testing.T) {
 	if string(firstJSON) != string(secondJSON) {
 		t.Fatalf("equivalent answers normalized differently:\nfirst=%s\nsecond=%s", firstJSON, secondJSON)
 	}
+}
+
+func TestExecutableCandidateResolution(t *testing.T) {
+	tests := []struct {
+		name         string
+		arrange      func(*testing.T, string, string) string
+		wantResolved func(string, string) string
+		wantReason   string
+		wantHops     int
+	}{
+		{
+			name: "direct regular executable",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				writeProfileAlignmentExecutable(t, bin, name, "executable")
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(bin, name string) string { return filepath.Join(bin, name) },
+		},
+		{
+			name: "one-hop symlink",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				target := filepath.Join(bin, "target")
+				writeProfileAlignmentExecutable(t, bin, "target", "executable")
+				if err := os.Symlink(filepath.Base(target), filepath.Join(bin, name)); err != nil {
+					t.Fatalf("create one-hop executable symlink: %v", err)
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(bin, _ string) string { return filepath.Join(bin, "target") },
+			wantHops:     1,
+		},
+		{
+			name: "multi-hop symlink",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				writeProfileAlignmentExecutable(t, bin, "target", "executable")
+				if err := os.Symlink("target", filepath.Join(bin, "middle")); err != nil {
+					t.Fatalf("create middle executable symlink: %v", err)
+				}
+				if err := os.Symlink("middle", filepath.Join(bin, name)); err != nil {
+					t.Fatalf("create first executable symlink: %v", err)
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(bin, _ string) string { return filepath.Join(bin, "target") },
+			wantHops:     2,
+		},
+		{
+			name: "link cycle",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				if err := os.Symlink("second", filepath.Join(bin, name)); err != nil {
+					t.Fatalf("create first cycle link: %v", err)
+				}
+				if err := os.Symlink(name, filepath.Join(bin, "second")); err != nil {
+					t.Fatalf("create second cycle link: %v", err)
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(_, _ string) string { return "" },
+			wantReason:   executableProbeReasonLinkCycle,
+			wantHops:     2,
+		},
+		{
+			name: "link depth exceeded",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				writeProfileAlignmentExecutable(t, bin, "target", "executable")
+				for index := range maxExecutableLinkHops + 1 {
+					link := name
+					if index != 0 {
+						link = fmt.Sprintf("link-%d", index)
+					}
+					target := "target"
+					if index != maxExecutableLinkHops {
+						target = fmt.Sprintf("link-%d", index+1)
+					}
+					if err := os.Symlink(target, filepath.Join(bin, link)); err != nil {
+						t.Fatalf("create executable symlink %d: %v", index, err)
+					}
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(_, _ string) string { return "" },
+			wantReason:   "link-depth-exceeded",
+			wantHops:     maxExecutableLinkHops,
+		},
+		{
+			name: "broken link",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				if err := os.Symlink("missing-target", filepath.Join(bin, name)); err != nil {
+					t.Fatalf("create broken executable symlink: %v", err)
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(_, _ string) string { return "" },
+			wantReason:   executableProbeReasonBrokenLink,
+			wantHops:     1,
+		},
+		{
+			name: "non-executable target",
+			arrange: func(t *testing.T, bin, name string) string {
+				t.Helper()
+				if err := os.WriteFile(filepath.Join(bin, "target"), []byte("not executable"), 0o644); err != nil {
+					t.Fatalf("write non-executable target: %v", err)
+				}
+				if err := os.Symlink("target", filepath.Join(bin, name)); err != nil {
+					t.Fatalf("create non-executable target symlink: %v", err)
+				}
+				return filepath.Join(bin, name)
+			},
+			wantResolved: func(_, _ string) string { return "" },
+			wantReason:   executableProbeReasonNotExecutable,
+			wantHops:     1,
+		},
+		{
+			name: "absent candidate",
+			arrange: func(_ *testing.T, _, _ string) string {
+				return ""
+			},
+			wantResolved: func(_, _ string) string { return "" },
+			wantReason:   executableProbeReasonNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bin := t.TempDir()
+			const name = "probe"
+			wantCandidate := tt.arrange(t, bin, name)
+			t.Setenv("PATH", bin)
+
+			result := resolveExecutableCandidate(name)
+
+			if result.Candidate != wantCandidate ||
+				result.Resolved != tt.wantResolved(bin, name) ||
+				result.Reason != tt.wantReason ||
+				result.HopCount != tt.wantHops {
+				t.Fatalf("resolveExecutableCandidate(%q) = %+v", name, result)
+			}
+		})
+	}
+}
+
+func TestExecutableCandidateNeverExecutes(t *testing.T) {
+	bin := t.TempDir()
+	marker := filepath.Join(t.TempDir(), "executed")
+	target := filepath.Join(bin, "target")
+	content := "#!/bin/sh\nprintf executed > \"" + marker + "\"\n"
+	writeProfileAlignmentExecutable(t, bin, filepath.Base(target), content)
+	if err := os.Symlink(filepath.Base(target), filepath.Join(bin, "probe")); err != nil {
+		t.Fatalf("create executable probe symlink: %v", err)
+	}
+	t.Setenv("PATH", bin)
+
+	evidence := collectExecutableEvidence(RepositoryCapability{
+		EvidenceKind: CapabilityEvidenceExecutable,
+		Probe:        map[string]any{"executable": "probe"},
+	})
+
+	if evidence.Status != CapabilityEvidencePresent || evidence.SourcePath != filepath.ToSlash(filepath.Join(bin, "probe")) {
+		t.Fatalf("collectExecutableEvidence(probe) = %+v", evidence)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("executable candidate was invoked: %v", err)
+	}
+}
+
+func TestExecutableEvidenceDistinguishesFailureFromAbsence(t *testing.T) {
+	const name = "probe"
+	capability := RepositoryCapability{
+		EvidenceKind: CapabilityEvidenceExecutable,
+		Probe:        map[string]any{"executable": name},
+	}
+
+	t.Run("failed candidate", func(t *testing.T) {
+		bin := t.TempDir()
+		candidate := filepath.Join(bin, name)
+		if err := os.Symlink("missing-target", candidate); err != nil {
+			t.Fatalf("create broken executable symlink: %v", err)
+		}
+		t.Setenv("PATH", bin)
+
+		evidence := collectExecutableEvidence(capability)
+
+		if evidence.Status != CapabilityEvidenceInvalid ||
+			evidence.SourcePath != filepath.ToSlash(candidate) ||
+			evidence.Detail != executableProbeReasonBrokenLink {
+			t.Fatalf("failed executable evidence = %+v", evidence)
+		}
+	})
+
+	t.Run("absent candidate", func(t *testing.T) {
+		t.Setenv("PATH", t.TempDir())
+
+		evidence := collectExecutableEvidence(capability)
+
+		if evidence.Status != CapabilityEvidenceAbsent || evidence.SourcePath != "" || evidence.Detail != executableProbeReasonNotFound {
+			t.Fatalf("absent executable evidence = %+v", evidence)
+		}
+	})
 }
 
 func TestCapabilityAuditNoExecution(t *testing.T) {
@@ -605,6 +1118,258 @@ func TestUniversalCapabilityRemediation(t *testing.T) {
 		if !strings.Contains(divergence.NextAction, want) {
 			t.Fatalf("universal remediation missing %q: %s", want, divergence.NextAction)
 		}
+	}
+}
+
+func TestDivergenceRendersProbe(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
+	if err := os.Remove(filepath.Join(repository, "packages", "frontend", "package.json")); err != nil {
+		t.Fatalf("remove declared-file fixture: %v", err)
+	}
+	t.Setenv("PATH", t.TempDir())
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve divergence rendering fixture: %v", err)
+	}
+	rendered := RenderProfileDivergences(alignment.Divergences)
+	for _, want := range []string{
+		`package.json: present (expected content not found); expected content: "better-auth"`,
+		`packages/frontend/package.json: absent (file not found); expected content: "better-auth"`,
+		`packages/backend/package.json: present (expected content not found); expected content: "better-auth"`,
+		"Inspected candidate: none existed",
+		"Selected technology: Better Auth",
+		"Repository remediation:",
+		"Profile adaptation:",
+		"Decision cascade: auth.provider",
+	} {
+		if !strings.Contains(rendered, want) {
+			t.Errorf("rendered divergences missing %q:\n%s", want, rendered)
+		}
+	}
+
+	betterAuth, ok := findProfileDivergence(alignment.Divergences, "capability.stack.better-auth")
+	if !ok || betterAuth.CapabilityResolution == nil {
+		t.Fatalf("Better Auth divergence resolution = %+v, found=%v", betterAuth, ok)
+	}
+	if betterAuth.CapabilityResolution.SelectedTechnology != "Better Auth" ||
+		betterAuth.CapabilityResolution.RepositoryRemediation == "" ||
+		betterAuth.CapabilityResolution.ProfileAdaptation == "" ||
+		!slices.Equal(betterAuth.CapabilityResolution.RemovedDecisions, []string{"auth.provider"}) {
+		t.Fatalf("Better Auth resolution = %+v", betterAuth.CapabilityResolution)
+	}
+
+	withoutShadcn := strings.Replace(typeScriptPackageJSON(false, true), `"shadcn":"latest",`, "", 1)
+	writeProfileAlignmentFile(t, repository, "package.json", withoutShadcn)
+	alignment, err = ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve decision-free cascade fixture: %v", err)
+	}
+	shadcn, ok := findProfileDivergence(alignment.Divergences, "capability.stack.shadcn")
+	if !ok || shadcn.CapabilityResolution == nil {
+		t.Fatalf("shadcn divergence resolution = %+v, found=%v", shadcn, ok)
+	}
+	if len(shadcn.CapabilityResolution.RemovedDecisions) != 0 ||
+		!strings.Contains(RenderProfileDivergences([]ProfileDivergence{shadcn}), "Decision cascade: none") {
+		t.Fatalf("shadcn decision cascade = %+v", shadcn.CapabilityResolution)
+	}
+
+	bin := t.TempDir()
+	writeProfileAlignmentFile(t, bin, "docker", "not executable")
+	t.Setenv("PATH", bin)
+	alignment, err = ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve rejected executable fixture: %v", err)
+	}
+	docker, ok := findProfileDivergence(alignment.Divergences, "capability.optional.docker")
+	if !ok {
+		t.Fatal("Docker divergence is missing")
+	}
+	rendered = RenderProfileDivergences([]ProfileDivergence{docker})
+	wantCandidate := "Inspected candidate: " + filepath.ToSlash(filepath.Join(bin, "docker")) + " (not-executable)"
+	if !strings.Contains(rendered, wantCandidate) {
+		t.Fatalf("executable divergence missing inspected candidate %q:\n%s", wantCandidate, rendered)
+	}
+}
+
+func TestCapabilityTextRendersProbe(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
+	if err := os.Remove(filepath.Join(repository, "packages", "frontend", "package.json")); err != nil {
+		t.Fatalf("remove declared-file fixture: %v", err)
+	}
+
+	bin := t.TempDir()
+	candidate := filepath.Join(bin, "rtk")
+	if err := os.Symlink("missing-rtk-target", candidate); err != nil {
+		t.Fatalf("create broken rtk candidate: %v", err)
+	}
+	t.Setenv("PATH", bin)
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve rejected executable fixture: %v", err)
+	}
+	rendered := RenderProfileDivergences(alignment.Divergences)
+	for _, want := range []string{
+		"Inspected candidate: " + filepath.ToSlash(candidate) + " (broken-link)",
+		"Repair the inspected candidate " + filepath.ToSlash(candidate) + " (broken-link)",
+		`packages/frontend/package.json: absent (file not found); expected content: "better-auth"`,
+	} {
+		if !strings.Contains(rendered, want) {
+			t.Errorf("capability text missing %q:\n%s", want, rendered)
+		}
+	}
+	if strings.Contains(rendered, "Install rtk") {
+		t.Errorf("rejected rtk candidate incorrectly recommends installation:\n%s", rendered)
+	}
+
+	t.Setenv("PATH", t.TempDir())
+	alignment, err = ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve absent executable fixture: %v", err)
+	}
+	rtkDivergence, ok := findProfileDivergence(alignment.Divergences, "capability.rtk")
+	if !ok {
+		t.Fatal("absent rtk divergence is missing")
+	}
+	rendered = RenderProfileDivergences([]ProfileDivergence{rtkDivergence})
+	if !strings.Contains(rendered, "Inspected candidate: none existed") ||
+		!strings.Contains(rendered, "Install rtk") {
+		t.Fatalf("absent candidate text does not distinguish absence:\n%s", rendered)
+	}
+}
+
+func TestCapabilityTextAndJSONAgree(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	bin := t.TempDir()
+	candidate := filepath.Join(bin, "rtk")
+	if err := os.Symlink("missing-rtk-target", candidate); err != nil {
+		t.Fatalf("create broken rtk candidate: %v", err)
+	}
+	t.Setenv("PATH", bin)
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve text and JSON fixture: %v", err)
+	}
+	divergence, ok := findProfileDivergence(alignment.Divergences, "capability.rtk")
+	if !ok || len(divergence.Evidence) != 1 {
+		t.Fatalf("rtk divergence = %+v, found=%v", divergence, ok)
+	}
+
+	machineBefore, err := json.Marshal(divergence)
+	if err != nil {
+		t.Fatalf("marshal machine divergence: %v", err)
+	}
+	rendered := RenderProfileDivergences([]ProfileDivergence{divergence})
+	evidence := divergence.Evidence[0]
+	if !strings.Contains(rendered, evidence.SourcePath) || !strings.Contains(rendered, evidence.Detail) {
+		t.Fatalf("text and machine evidence disagree:\njson=%s\ntext=%s", machineBefore, rendered)
+	}
+	machineAfter, err := json.Marshal(divergence)
+	if err != nil {
+		t.Fatalf("marshal machine divergence after text rendering: %v", err)
+	}
+	if string(machineAfter) != string(machineBefore) {
+		t.Fatalf("text rendering changed machine bytes:\nbefore=%s\nafter=%s", machineBefore, machineAfter)
+	}
+}
+
+func TestDivergenceGroupsByRequirement(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
+	t.Setenv("PATH", t.TempDir())
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve grouped divergences: %v", err)
+	}
+	if alignment.Ready || alignment.State != ProfileAlignmentActionRequired {
+		t.Fatalf("grouping changed blocking readiness: %+v", alignment)
+	}
+
+	groupRank := map[ProfileDivergenceGroup]int{
+		ProfileDivergenceBlocking:      0,
+		ProfileDivergenceAdvisory:      1,
+		ProfileDivergenceInformational: 2,
+	}
+	lastRank := -1
+	seen := make(map[ProfileDivergenceGroup]bool)
+	for _, divergence := range alignment.Divergences {
+		wantGroup := profileDivergenceGroup(divergence.Requirement)
+		if divergence.Group != wantGroup {
+			t.Errorf("divergence %q group = %q, want %q", divergence.ID, divergence.Group, wantGroup)
+		}
+		rank := groupRank[divergence.Group]
+		if rank < lastRank {
+			t.Fatalf("divergence groups are not ordered: %+v", alignment.Divergences)
+		}
+		lastRank = rank
+		seen[divergence.Group] = true
+		if divergence.Group == ProfileDivergenceAdvisory {
+			if divergence.NonBlockingStatement != advisoryNonBlockingStatement {
+				t.Errorf("advisory %q statement = %q", divergence.ID, divergence.NonBlockingStatement)
+			}
+			encoded, marshalErr := json.Marshal(divergence)
+			if marshalErr != nil {
+				t.Fatalf("marshal advisory %q: %v", divergence.ID, marshalErr)
+			}
+			statementAt := strings.Index(string(encoded), `"nonBlockingStatement"`)
+			nextActionAt := strings.Index(string(encoded), `"nextAction"`)
+			if statementAt < 0 || nextActionAt >= 0 && statementAt > nextActionAt {
+				t.Errorf("advisory machine statement does not precede next action: %s", encoded)
+			}
+		}
+	}
+	for _, group := range []ProfileDivergenceGroup{
+		ProfileDivergenceBlocking,
+		ProfileDivergenceAdvisory,
+		ProfileDivergenceInformational,
+	} {
+		if !seen[group] {
+			t.Errorf("group %q is absent from machine divergences", group)
+		}
+	}
+
+	rendered := RenderProfileDivergences(alignment.Divergences)
+	blockingAt := strings.Index(rendered, "Blocking divergences:")
+	advisoryAt := strings.Index(rendered, "Advisory divergences:")
+	informationalAt := strings.Index(rendered, "Informational divergences:")
+	if blockingAt < 0 || advisoryAt <= blockingAt || informationalAt <= advisoryAt {
+		t.Fatalf("rendered divergence groups are not ordered:\n%s", rendered)
+	}
+	advisorySection := rendered[advisoryAt:informationalAt]
+	statementAt := strings.Index(advisorySection, advisoryNonBlockingStatement)
+	nextActionAt := strings.Index(advisorySection, "Next action:")
+	if statementAt < 0 || nextActionAt >= 0 && statementAt > nextActionAt {
+		t.Fatalf("rendered advisory statement does not precede next action:\n%s", advisorySection)
 	}
 }
 
