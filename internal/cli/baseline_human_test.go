@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/app"
 	"roundfix/internal/baseline"
 )
 
@@ -884,6 +886,127 @@ func TestHumanAutomationPlanParity(t *testing.T) {
 	}
 }
 
+func TestDivergencePromptRemediateOutcome(t *testing.T) {
+	repository, catalog, source := divergencePromptFixture(t)
+	before := baselinePlanTestTree(t, repository)
+	alignment, err := baseline.ResolveProfileAlignment(
+		context.Background(),
+		repository,
+		baseline.ProfileAlignmentRequest{
+			ProfileID:            source.ID,
+			Decisions:            standardTypeScriptDivergenceDecisions(),
+			RemediationProfileID: source.ID,
+		},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("resolve divergence fixture alignment: %v", err)
+	}
+	if alignment.Ready || len(alignment.Divergences) < 2 {
+		t.Fatalf("divergence fixture alignment = %+v, want mixed unsatisfied divergences", alignment)
+	}
+
+	var review bytes.Buffer
+	var prompts bytes.Buffer
+	_, _, _, promptErr := promptBaselineProfileAlignment(
+		context.Background(),
+		&baselineHumanPrompt{
+			reader: bufioReader("3\n"),
+			writer: &prompts,
+		},
+		&review,
+		repository,
+		catalog,
+		baselineHumanState{},
+		source,
+		standardTypeScriptDivergenceDecisions(),
+	)
+	var actionErr *baselineHumanActionError
+	if !errors.As(promptErr, &actionErr) {
+		t.Fatalf("remediation prompt error = %v, want Baseline action result", promptErr)
+	}
+	if actionErr.result.Category != "remediation" ||
+		actionErr.result.State != "action_required" ||
+		!strings.Contains(actionErr.result.Message, "repository remediation") {
+		t.Fatalf("remediation action result = %+v", actionErr.result)
+	}
+	for _, divergence := range alignment.Divergences {
+		want := "- " + divergence.ID + ": " + divergence.NextAction
+		if !strings.Contains(review.String(), want) {
+			t.Errorf("remediation review missing %q:\n%s", want, review.String())
+		}
+	}
+	wantCommand := strings.Join([]string{
+		app.Name,
+		"baseline",
+		"capabilities",
+		"check",
+		"--profile",
+		quoteCommandArg(source.ID),
+		"--repo",
+		quoteCommandArg(repository),
+	}, " ")
+	if actionErr.result.NextAction != wantCommand ||
+		!strings.Contains(review.String(), "Re-check command: "+wantCommand) {
+		t.Fatalf("remediation re-check = %q, review:\n%s", actionErr.result.NextAction, review.String())
+	}
+	for _, want := range []string{
+		"Profile adaptation (removal-only)",
+		"Remediate in the repository and re-run",
+		"Decline without writing",
+	} {
+		if !strings.Contains(prompts.String(), want) {
+			t.Errorf("divergence prompt missing %q:\n%s", want, prompts.String())
+		}
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if exit := writeBaselineHumanAction(actionErr.result, false, &stdout, &stderr); exit != exitUnverified {
+		t.Fatalf("remediation exit = %d, want %d; stdout=%s stderr=%s", exit, exitUnverified, stdout.String(), stderr.String())
+	}
+	if after := baselinePlanTestTree(t, repository); before != after {
+		t.Fatal("remediation outcome changed repository bytes")
+	}
+}
+
+func TestDivergencePromptJournalsDistinctly(t *testing.T) {
+	remediation := divergencePromptResult(t, "3\n")
+	decline := divergencePromptResult(t, "4\n")
+	if remediation.Category != "remediation" {
+		t.Fatalf("remediation category = %q, want remediation", remediation.Category)
+	}
+	if decline.Category != "decision" || !strings.Contains(decline.Message, "declined") {
+		t.Fatalf("decline result changed = %+v", decline)
+	}
+	if remediation.Category == decline.Category || remediation.Message == decline.Message {
+		t.Fatalf("remediation and decline records are not distinct:\nremediation=%+v\ndecline=%+v", remediation, decline)
+	}
+	var remediationRecord bytes.Buffer
+	var declineRecord bytes.Buffer
+	remediationExit := writeBaselineHumanAction(remediation, true, &remediationRecord, io.Discard)
+	declineExit := writeBaselineHumanAction(decline, true, &declineRecord, io.Discard)
+	var journaledRemediation baseline.Result
+	if err := json.Unmarshal(remediationRecord.Bytes(), &journaledRemediation); err != nil {
+		t.Fatalf("decode remediation journal: %v", err)
+	}
+	var journaledDecline baseline.Result
+	if err := json.Unmarshal(declineRecord.Bytes(), &journaledDecline); err != nil {
+		t.Fatalf("decode decline journal: %v", err)
+	}
+	if bytes.Equal(remediationRecord.Bytes(), declineRecord.Bytes()) ||
+		journaledRemediation.Category != "remediation" ||
+		journaledDecline.Category != "decision" {
+		t.Fatalf(
+			"remediation and decline journals are not distinct:\nremediation=%s\ndecline=%s",
+			remediationRecord.String(),
+			declineRecord.String(),
+		)
+	}
+	if remediation.State != decline.State || remediationExit != declineExit {
+		t.Fatalf("remediation and decline should retain the action-required exit contract")
+	}
+}
+
 func TestBaselineHumanProfileAdaptation(t *testing.T) {
 	repository, _, _ := baselinePlanProfileFileFixture(t)
 	before := baselinePlanTestTree(t, repository)
@@ -988,7 +1111,7 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 		_, _, _, declineErr := promptBaselineProfileAlignment(
 			context.Background(),
 			&baselineHumanPrompt{
-				reader: bufioReader("3\n"),
+				reader: bufioReader("4\n"),
 				writer: &declinePrompts,
 			},
 			&declineReview,
@@ -1220,6 +1343,76 @@ func newHumanBaselineRepository(t *testing.T) string {
 	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\n")
 	commitBaselinePlanTestRepository(t, repo)
 	return repo
+}
+
+func divergencePromptFixture(
+	t *testing.T,
+) (string, *baseline.Catalog, baseline.ResolvedProfile) {
+	t.Helper()
+	repository, _, _ := baselinePlanProfileFileFixture(t)
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	source, err := baseline.ResolveProfile(
+		repository,
+		"standard-typescript-monorepo",
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("resolve Standard TypeScript Monorepo Profile: %v", err)
+	}
+	return repository, catalog, source
+}
+
+func divergencePromptResult(t *testing.T, answer string) baseline.Result {
+	t.Helper()
+	repository, catalog, source := divergencePromptFixture(t)
+	_, _, _, err := promptBaselineProfileAlignment(
+		context.Background(),
+		&baselineHumanPrompt{
+			reader: bufioReader(answer),
+			writer: io.Discard,
+		},
+		io.Discard,
+		repository,
+		catalog,
+		baselineHumanState{},
+		source,
+		standardTypeScriptDivergenceDecisions(),
+	)
+	var actionErr *baselineHumanActionError
+	if !errors.As(err, &actionErr) {
+		t.Fatalf("divergence prompt error = %v, want Baseline action result", err)
+	}
+	return actionErr.result
+}
+
+func standardTypeScriptDivergenceDecisions() []baseline.DecisionValue {
+	return []baseline.DecisionValue{
+		{ID: "language.generated", Value: "English"},
+		{ID: "verification.gate", Value: "make verify"},
+		{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
+		{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
+		{
+			ID: "auth.provider",
+			Value: map[string]any{
+				"kind": "better-auth",
+				"routeException": map[string]any{
+					"scope":   "/api/auth/*",
+					"methods": []any{"GET", "POST"},
+					"owner":   "Better Auth",
+					"reason":  "Provider protocol routes require GET and POST semantics.",
+				},
+			},
+		},
+		{ID: "spec.scaffold", Value: true},
+		{ID: "domain.layout", Value: "single-context"},
+		{ID: "triage.external", Value: false},
+		{ID: "autonomous.enabled", Value: false},
+		{ID: "secondbrain.enabled", Value: false},
+		{ID: "repository.extension.enabled", Value: false},
+	}
 }
 
 func newCLIProjectDecisionRepository(t *testing.T) string {

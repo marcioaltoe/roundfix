@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0057-baseline-capability-evidence-and-retention
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -69,3 +69,49 @@ divergence prompt a fourth outcome.
 - `_techspec.md` → API Contracts; Build Order 10.
 - ADR-0075.
 
+## Result
+
+Implemented the fourth Profile-divergence prompt outcome. Choosing repository
+remediation now returns the existing action-required exit contract without
+mutation, renders one remediation line for every unsatisfied divergence, and
+prints an exact shell-quoted `roundfix baseline capabilities check` command for
+the selected Profile and repository. Its machine result uses the distinct
+`remediation` category, while decline retains its existing `decision` category,
+message, next action, and exit. The adaptation prompt now labels the path as
+`removal-only`.
+
+Focused implementation evidence:
+
+- Pre-change inspection found only the three existing Profile-divergence
+  choices and no remediate branch; the Task 06 re-check command was present and
+  callable through `roundfix baseline capabilities check`.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task07-gocache rtk go test
+  ./internal/cli -run '^(TestDivergencePrompt.*|TestBaselineHumanProfileAdaptation|TestHumanBaselineAdoption|TestHumanBaselineUpdate)$'
+  -count=1` passed 7 tests in 1 package.
+- `rtk git diff --check` exited 0 with no diagnostics.
+- `rtk git -c core.fsmonitor=false status --short` listed only this task file,
+  `internal/cli/baseline_human.go`, and
+  `internal/cli/baseline_human_test.go`.
+
+Acceptance evidence:
+
+- `TestDivergencePromptRemediateOutcome` snapshots the repository tree before
+  selection and proves it is byte-identical afterwards; it also proves the new
+  outcome preserves the action-required exit code.
+- The same test resolves a mixed alignment fixture first, then requires the
+  remediation output to contain every returned divergence ID with its exact
+  next action and the exact Profile/repository capability re-check command.
+- `TestDivergencePromptJournalsDistinctly` reopens the JSON records and proves
+  remediation journals as category `remediation` while decline remains
+  category `decision`; the serialized records differ.
+- The prompt assertion requires the adaptation label to contain
+  `removal-only`.
+- The existing Profile adaptation test still exercises reviewed adaptation
+  through a ready Plan and the unchanged decline result/no-write behavior;
+  focused human adoption and update tests also remain green. The profile-change
+  branch and adaptation selection indices remain unchanged.
+- The changed-path inspection contains no path outside `internal/cli/` and
+  this task file, which is narrower than the Task's allowed path set.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.
