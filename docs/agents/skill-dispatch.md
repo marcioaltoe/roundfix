@@ -51,10 +51,16 @@ Individual skill triggers:
   - `trigger.go.golang-concurrency`: Using goroutines, channels, locks, worker pools, or other concurrent Go behavior.
 - `golang-context`:
   - `trigger.go.golang-context`: Designing Go IO boundaries, cancellation, timeouts, deadlines, or request-scoped values.
+- `golang-dependency-management`:
+  - `trigger.go.golang-dependency-management`: Adding, upgrading, or removing Go dependencies, auditing vulnerabilities, resolving version conflicts, or configuring automated updates.
 - `golang-error-handling`:
   - `trigger.go.golang-error-handling`: Creating, wrapping, matching, logging, or exposing Go errors.
 - `golang-lint`:
   - `trigger.go.golang-lint`: Changing Go lint configuration or adding a lint suppression.
+- `golang-safety`:
+  - `trigger.go.golang-safety`: Writing or reviewing Go for nil safety, append aliasing, concurrent map access, numeric conversion overflow, defer in loops, or defensive copying.
+- `golang-structs-interfaces`:
+  - `trigger.go.golang-structs-interfaces`: Designing Go types and interfaces — composition, embedding, type assertions and switches, struct field tags, or pointer versus value receivers.
 - `golang-testing`:
   - `trigger.go.golang-testing`: Writing or reviewing Go tests, fixtures, fuzz tests, or integration tests.
 - `grill-with-docs`:
