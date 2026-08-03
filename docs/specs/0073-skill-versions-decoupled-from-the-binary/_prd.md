@@ -58,17 +58,22 @@ schedule.
   under `internal/baseline/assets/**` are product assets rather than protected
   tooling. Source: `docs/agents/agent-instructions.md`.
 
-## The prerequisite this Spec depends on
+## Which skills the contract covers
 
-**No skill declares a version today.** Skill frontmatter carries `name` and
-`description` and nothing else, so there is currently no value to compare a
-minimum against. The compatibility contract requires skills to declare a
-version, which is a change in the skills source rather than in Roundfix.
+Only the authorial CONTEXT-driven skills Roundfix owns — the set `OWNED_SKILLS`
+names, authored in this repository and embedded in the binary. Those are the
+skills Roundfix's own behavior depends on, and the only ones whose staleness
+can break it.
 
-This Spec is written so Roundfix is ready for that and degrades honestly until
-it arrives: a skill with no declared version is reported as unversioned, which
-is distinct from satisfying the minimum and distinct from falling below it.
-Roundfix never invents a version for a skill that does not state one.
+Third-party skills are out of scope. Roundfix routes to them through the
+dispatch and must not demand a version from content it neither owns nor
+publishes; finding `2026-07-29-doctor-requires-roundfix-own-development-skills`
+records what happens when Roundfix imposes its own needs on repositories that
+have no reason to hold them.
+
+None of the owned skills declares a version today — frontmatter carries `name`
+and `description` and nothing else. Because they are authored here, adding one
+is this Spec's own work rather than a dependency on anyone else.
 
 ## Goals
 
@@ -82,10 +87,11 @@ Roundfix never invents a version for a skill that does not state one.
 
 ## Core Features
 
-1. Roundfix declares a minimum version per required skill. That declaration —
-   not a content digest — is what a profile carries.
-2. A skill's installed version is read from what the skill itself declares.
-   Roundfix compares; it never derives or assumes a version.
+1. Every authorial CONTEXT-driven skill declares its own version, and that
+   declaration is the skill's compatibility identity.
+2. Roundfix declares a minimum version per owned skill. That declaration — not
+   a content digest — is what a profile carries, and Roundfix compares rather
+   than deriving or assuming.
 3. Readiness is a comparison, not an equality: at or above the minimum
    satisfies, and a newer skill needs no change in Roundfix.
 4. Below the minimum is a blocking failure that names the skill, the required
@@ -93,9 +99,10 @@ Roundfix never invents a version for a skill that does not state one.
 5. Three states stay distinct and are never collapsed: satisfies the minimum,
    below the minimum, and unversioned or unresolvable. An unreachable source is
    never reported as a missing skill.
-6. The Doctor Command reports skill readiness under this contract, and every
-   command that gates on skills uses the same comparison, so two surfaces
-   cannot disagree.
+6. The Doctor Command reports owned-skill readiness under this contract, and
+   every command that gates on skills uses the same comparison, so two surfaces
+   cannot disagree. Third-party skills keep their present treatment and are
+   never held to a version Roundfix invented for them.
 7. Content digests stop gating compatibility. Where a digest still protects
    something Roundfix genuinely owns — the guides it generates — it stays.
 8. The characterization corpora stop embedding volatile skill digests in
@@ -106,8 +113,8 @@ Roundfix never invents a version for a skill that does not state one.
 ## Non-Goals / Out of Scope
 
 - Changing what any skill contains, or which skills a profile needs.
-- Adding version declarations to the skills themselves; that is upstream work
-  this Spec depends on but does not perform.
+- Imposing a version contract on third-party skills, which Roundfix neither
+  owns nor publishes.
 - Removing digest verification from artifacts Roundfix does own.
 - Vendoring skills into the binary.
 - The derived-artifact regeneration boundary, owned by Spec 0067. This Spec
@@ -116,8 +123,10 @@ Roundfix never invents a version for a skill that does not state one.
 ## Success Metrics
 
 - Editing an owned skill leaves `make verify` green with no regeneration step.
-- A skill one minor above its declared minimum satisfies readiness with no
-  change to Roundfix.
+- Every authorial CONTEXT-driven skill declares a version.
+- An owned skill one minor above its declared minimum satisfies readiness with
+  no change to Roundfix.
+- A third-party skill is never failed for lacking a version.
 - A skill below the minimum blocks with a message naming skill, minimum, found
   version, and upgrade path.
 - A skill declaring no version is reported unversioned, distinctly from both
@@ -134,6 +143,9 @@ Roundfix never invents a version for a skill that does not state one.
 - The skill owns its version; Roundfix owns the minimum. Neither derives the
   other, and Roundfix never invents a version for a skill that does not declare
   one.
+- The contract covers only what Roundfix authors and ships. Demanding a version
+  from a third-party skill would repeat the defect the 2026-07-29 finding
+  recorded, in a new form.
 - Unversioned is its own state. Collapsing it into either pass or fail would
   make the contract unreadable during the transition.
 - This Spec evolves the skill contract and never regresses it: a Baseline
