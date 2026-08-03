@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+: "${ACPX_QA_LOG:?set ACPX_QA_LOG}"
+: "${ACPX_QA_REAL:?set ACPX_QA_REAL}"
+
+printf 'marker=%s' "${QA_ENV_MARKER:-<unset>}" >>"$ACPX_QA_LOG"
+for arg in "$@"; do
+	printf '\t%s' "$arg" >>"$ACPX_QA_LOG"
+done
+printf '\n' >>"$ACPX_QA_LOG"
+
+exec "$ACPX_QA_REAL" "$@"

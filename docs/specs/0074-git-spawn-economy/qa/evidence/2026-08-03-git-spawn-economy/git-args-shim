@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+: "${GIT_ARGS_LOG:?set GIT_ARGS_LOG}"
+: "${GIT_ARGS_REAL:?set GIT_ARGS_REAL}"
+
+printf '%s' "$PWD" >>"$GIT_ARGS_LOG"
+for arg in "$@"; do
+	printf '\t%s' "$arg" >>"$GIT_ARGS_LOG"
+done
+printf '\n' >>"$GIT_ARGS_LOG"
+
+exec "$GIT_ARGS_REAL" "$@"

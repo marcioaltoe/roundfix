@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0074-git-spawn-economy
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
