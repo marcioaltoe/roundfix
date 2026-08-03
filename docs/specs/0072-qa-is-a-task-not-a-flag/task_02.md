@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0072-qa-is-a-task-not-a-flag
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -70,3 +70,64 @@ and the engine refuses to schedule one as Agent work.
 - `_prd.md` → Core Features 2, 5; Decisions (withholding stays).
 - `_techspec.md` → Integration Points; Risks (a gate node must never reach
   an Agent); ADR-0080.
+
+## Result
+
+### Implementation
+
+- `TaskCycle` now removes the graph's `qa`-typed node from ordinary Task
+  scheduling and invokes the existing `runQAGate` only after that node's
+  declared dependencies settle completed. The legacy request QA value is
+  inert.
+- The gate verdict settles the QA task file `completed` only for `pass` and
+  `failed` for every other verdict. When a report exists, its existing commit
+  also carries the settled QA task file; the report path, verdict, QA Agent
+  session, and `daemon.qa` payload retain their existing contracts.
+- A withheld gate never enters the scheduler's skipped path, so a failed
+  dependency leaves the QA node pending, resumable, and absent from Task
+  outcomes and gate events.
+- The Task worker refuses a `qa`-typed node before worktree creation or Agent
+  work and names the node in the error.
+- Daemon QA fixtures now write validated graph declarations and terminal QA
+  nodes instead of enabling a request flag. Declined and legacy fixtures prove
+  that leftover request state cannot start a gate.
+
+### Focused checks
+
+- Red signal before implementation:
+  `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/daemon -count=1 -run '^TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport/pass$'`
+  failed because the QA node was counted as ordinary completed Agent work and
+  produced no QA verdict.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/daemon -run '^(TestTaskCycleQA|TestPerWorkAgentSessionMixedTaskTypesAndQA|TestTaskSchedulerRefusesQATaskAsAgentWork|TestQACommitDropsExecutableFileAndCommitsRemainingPaths|TestTaskCycleStopRequestBeforeQAStepSkipsQA|TestTaskCycleStopRequestMidWaveSkipsQAWithEveryTaskCompleted|TestTaskNeedsCompletedCoversEveryGateDependency)'`
+  passed.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/daemon -run '^(TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrency|TestTaskCycleValidatesPlan|TestInitialTaskRunStatusesSeedsEarlierRunCompletions)$'`
+  passed.
+- Final post-edit focused check:
+  `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/daemon -run '^(TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport|TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted|TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState|TestTaskSchedulerRefusesQATaskAsAgentWork|TestTaskCycleStopRequestBeforeQAStepSkipsQA|TestTaskCycleStopRequestMidWaveSkipsQAWithEveryTaskCompleted|TestTaskNeedsCompletedCoversEveryGateDependency|TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrency)$'`
+  passed.
+- `git diff --check` passed.
+- The commands under `## Verification` were not run; Daemon Verification owns
+  them.
+
+### Acceptance evidence
+
+- Gate ordering and byte-compatible gate output: the existing QA verdict
+  matrix, per-work Agent-session test, QA-only Run test, prompt tests, and Stop
+  Request tests pass with graph-declared QA setup. The matrix still asserts the
+  same report paths, verdicts, QA Batch ordinal, commit message, and
+  `daemon.qa` payload, and now also proves task-file settlement.
+- Declined and legacy graphs: `TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState`
+  passes with no QA prompt, report, verdict, commit, or `daemon.qa` event even
+  when legacy request state is true.
+- Failed dependency: `TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted`
+  passes and proves the gate task remains `pending`, has no Task outcome, and
+  produces no QA report or event.
+- Agent refusal: `TestTaskSchedulerRefusesQATaskAsAgentWork` passes and proves
+  the refusal names a hand-built QA node before any Agent call.
+- Changed-path scope: postflight shows changes only under `internal/daemon/`
+  and this task file; no path outside the Task's allowed scope was introduced.
+
+### Follow-up
+
+- Task 03 owns removal of the now-inert `TaskPlan.QA` field and the Implement
+  Command's request parameter.
