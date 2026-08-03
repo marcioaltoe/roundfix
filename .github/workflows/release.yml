@@ -244,7 +244,7 @@ jobs:
             pkgdir="$1"
             coordinate="$2"
 
-            out="$( cd "$pkgdir" && npm publish --access public 2>&1 )" && return 0
+            out="$( cd "$pkgdir" && npm publish --access public --tag latest 2>&1 )" && return 0
 
             if ! printf '%s' "$out" | grep -qiE 'ENEEDAUTH|E401|Unable to authenticate'; then
               echo "::error::publish: $coordinate failed for a non-identity reason"
@@ -258,7 +258,7 @@ jobs:
             fi
 
             echo "::warning::identity: $coordinate failed OIDC publish; retrying with the bounded token fallback"
-            ( cd "$pkgdir" && NODE_AUTH_TOKEN="$npm_fallback_token" npm publish --access public ) || return 1
+            ( cd "$pkgdir" && NODE_AUTH_TOKEN="$npm_fallback_token" npm publish --access public --tag latest ) || return 1
             printf '%s\n' "$coordinate" >> "$FALLBACK_LOG"
           }
 
