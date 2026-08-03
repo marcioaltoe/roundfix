@@ -1,11 +1,34 @@
 ---
 spec: 0063-qa-cycle-economics
-status: active
+status: archived
 created: 2026-08-01
+archived: 2026-08-03
+superseded_by: 0070-declared-unreachable-acceptance
 surfaces: [backend, docs]
 ---
 
 # QA cycle economics
+
+> **Archived without implementation on 2026-08-03, superseded by Spec 0070.**
+>
+> Half its premise died to Spec 0071's measurements. The `148s cold against 5s
+> warm` figure described Go's *test-result* cache, which `-count=1` disables by
+> design — cold versus warm compilation was worth about nine seconds, not two
+> minutes. The Run Worktree it wanted to warm already inherits the ambient
+> `GOCACHE`; no code forces a cold one. And the twenty-minute cycle it costed
+> now measures eight to thirteen.
+>
+> What stayed true got sharper, not weaker: Core Features 1 and 4 — a static
+> failure must not suppress the rows it does not implicate, and a report must
+> distinguish wasted discovery from genuine blocking. Spec 0072's close proved
+> it at scale, with one governance defect blocking fifteen of twenty-four rows
+> across four gate executions. Those two features moved into Spec 0070, which
+> already owned the other half of the same question: what a blocked row means.
+>
+> Running cheap detectors ahead of the gate is the one live idea neither Spec
+> claims. It is left unclaimed here rather than carried as scope nobody owns.
+>
+> The text below is the original, unedited.
 
 A QA cycle costs roughly twenty minutes, and Specs routinely need four to seven
 of them. Measurement shows the cost is not defect density and not the gate's
