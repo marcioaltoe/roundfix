@@ -4,6 +4,16 @@ import "strings"
 
 const Name = "roundfix"
 
+// Version is the Roundfix semantic version for local builds only. The
+// released value comes from the tag, stamped at build time with
+// -ldflags "-X roundfix/internal/app.Version=<version>".
+//
+// This constant is NOT the release source of truth: the release workflow
+// validates the tag against dist/npm/roundfix/package.json. Bumping only
+// this one fails the release at its first step with "tag does not match the
+// checked-in Roundfix version" — keep the two in step, and treat the
+// package manifest as the authority.
+//
 // Version is the Roundfix semantic version. Local builds keep this product
 // identity; the release workflow overrides it with the matching pushed tag via
 // -ldflags "-X roundfix/internal/app.Version=<version>".
