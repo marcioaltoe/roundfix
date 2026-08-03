@@ -101,7 +101,7 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
-	collaborators := newEngineCollaborators()
+	collaborators := commandDependenciesForContext(ctx).newEngineCollaborators()
 	verificationRunID := settleVerificationRunID(plan)
 	fmt.Fprintf(stderr, "Settle surface: %s\n", plan.workDir)
 	for _, command := range plan.task.Verification {
@@ -550,7 +550,7 @@ func integrateSettledRun(ctx context.Context, plan settlePlan) (string, error) {
 	if result.Mode == runworktree.ModePending {
 		return implementIntegrationCommand(ref), nil
 	}
-	if err := cleanupCleanRunWorktree(ctx, ref); err != nil {
+	if err := commandDependenciesForContext(ctx).cleanupCleanRunWorktree(ctx, ref); err != nil {
 		return "", err
 	}
 	return "", nil

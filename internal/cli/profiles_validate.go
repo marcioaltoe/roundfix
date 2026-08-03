@@ -115,7 +115,7 @@ func runProfilesValidateCommand(ctx context.Context, args []string, stdout, stde
 			return printProfilesValidateError(req, profileProofResult{}, err, stdout, stderr)
 		}
 	}
-	result := proveProfileSelections(ctx, loaded.Config, categories, workDir, newEngineCollaborators().runner)
+	result := proveProfileSelections(ctx, loaded.Config, categories, workDir, commandDependenciesForContext(ctx).newEngineCollaborators().runner)
 	if result.Err != nil {
 		return printProfilesValidateError(req, result, result.Err, stdout, stderr)
 	}

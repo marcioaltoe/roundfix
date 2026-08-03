@@ -63,7 +63,7 @@ func runEventsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 	follower := journalFollower{
 		source: reader,
-		sleep:  attachSleep,
+		sleep:  commandDependenciesForContext(ctx).attachSleep,
 		accept: func(entry store.JournalEvent) error {
 			return encodeStreamEntry(entry, req.filter, encoder)
 		},

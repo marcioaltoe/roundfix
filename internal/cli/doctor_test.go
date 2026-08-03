@@ -39,7 +39,7 @@ func TestResolveExternalSkillRequirementUnreadableManifest(t *testing.T) {
 }
 
 func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	ownedCount := len(skills.Names())
 	goTUISkills := []string{
 		"agentic-cli-design",
@@ -173,21 +173,23 @@ func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T)
 			}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
 				return profileProofResult{}
 			})
-			doctorDeps.resolveExternal = resolveExternalSkillRequirement
 			skillCalls := 0
-			doctorDeps.checkSkills = func(_ context.Context, root string, external []string) (skills.RepositoryReadiness, error) {
-				skillCalls++
-				if root != repoDir {
-					t.Fatalf("Doctor repository root = %q, want %q", root, repoDir)
+			updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+				dependencies.doctor.resolveExternal = resolveExternalSkillRequirement
+				dependencies.doctor.checkSkills = func(_ context.Context, root string, external []string) (skills.RepositoryReadiness, error) {
+					skillCalls++
+					if root != repoDir {
+						t.Fatalf("Doctor repository root = %q, want %q", root, repoDir)
+					}
+					if test.validateExternal != nil {
+						test.validateExternal(t, external)
+					}
+					return skills.RepositoryReadiness{
+						OwnedRequired:    len(skills.Names()),
+						ExternalRequired: len(external),
+					}, test.skillErr
 				}
-				if test.validateExternal != nil {
-					test.validateExternal(t, external)
-				}
-				return skills.RepositoryReadiness{
-					OwnedRequired:    len(skills.Names()),
-					ExternalRequired: len(external),
-				}, test.skillErr
-			}
+			})
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
@@ -212,7 +214,7 @@ func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T)
 }
 
 func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name       string
 		checker    *doctorFakeHealthChecker
@@ -306,7 +308,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 }
 
 func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name           string
 		adapterResults map[string]CheckResult
@@ -484,7 +486,7 @@ func TestDoctorAdapterCheckAggregatesEveryFailure(t *testing.T) {
 }
 
 func TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	config := roundconfig.Builtin()
 	general := config.Profiles[roundconfig.CategoryGeneral]
 	general.Profile.Fallbacks = append(general.Profile.Fallbacks, roundconfig.AgentSelection{
@@ -535,7 +537,7 @@ func TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime(t *testing.T) {
 }
 
 func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	config := roundconfig.Builtin()
 	config.Defaults.Agent = "codex"
 	config.Runtimes.Codex.Model = "legacy-model-default"
@@ -615,7 +617,7 @@ func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t 
 }
 
 func TestRunDoctorProfileReadinessMatchesProfilesValidateFailureEvidence(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
 profiles:
@@ -689,7 +691,7 @@ profiles:
 }
 
 func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	checker := newDoctorFakeHealthChecker(
 		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
 		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion},
@@ -733,7 +735,7 @@ func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
 }
 
 func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	ownedCommand := "roundfix skills install --target project"
 	genericExternalCommand := "bunx skills experimental_install && bunx skills update -p -y"
 	installAgenticCLIDesign := "bunx skills add marcioaltoe/skills@agentic-cli-design"
@@ -844,14 +846,16 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				return profileProofResult{}
 			})
 			skillCalls := 0
-			doctorDeps.checkSkills = func(_ context.Context, root string, _ []string) (skills.RepositoryReadiness, error) {
-				skillCalls++
-				recordCall(HealthCheckSkills)
-				if root != "/repo/project" {
-					t.Fatalf("skill readiness root = %q, want /repo/project", root)
+			updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+				dependencies.doctor.checkSkills = func(_ context.Context, root string, _ []string) (skills.RepositoryReadiness, error) {
+					skillCalls++
+					recordCall(HealthCheckSkills)
+					if root != "/repo/project" {
+						t.Fatalf("skill readiness root = %q, want /repo/project", root)
+					}
+					return test.readiness, test.err
 				}
-				return test.readiness, test.err
-			}
+			})
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
@@ -888,7 +892,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 }
 
 func TestRunDoctorPassesCommandContextToRepositorySkillReadiness(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	type contextKey struct{}
 	const marker = "doctor-command"
 
@@ -903,18 +907,20 @@ func TestRunDoctorPassesCommandContextToRepositorySkillReadiness(t *testing.T) {
 	}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
 		return profileProofResult{}
 	})
-	doctorDeps.checkSkills = func(ctx context.Context, root string, _ []string) (skills.RepositoryReadiness, error) {
-		if got := ctx.Value(contextKey{}); got != marker {
-			t.Fatalf("repository checker context marker = %v, want %q", got, marker)
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.doctor.checkSkills = func(ctx context.Context, root string, _ []string) (skills.RepositoryReadiness, error) {
+			if got := ctx.Value(contextKey{}); got != marker {
+				t.Fatalf("repository checker context marker = %v, want %q", got, marker)
+			}
+			if root != "/repo/project" {
+				t.Fatalf("repository checker root = %q, want /repo/project", root)
+			}
+			return skills.RepositoryReadiness{
+				OwnedRequired:    14,
+				ExternalRequired: 25,
+			}, nil
 		}
-		if root != "/repo/project" {
-			t.Fatalf("repository checker root = %q, want /repo/project", root)
-		}
-		return skills.RepositoryReadiness{
-			OwnedRequired:    14,
-			ExternalRequired: 25,
-		}, nil
-	}
+	})
 	commandContext := context.WithValue(t.Context(), contextKey{}, marker)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -927,7 +933,7 @@ func TestRunDoctorPassesCommandContextToRepositorySkillReadiness(t *testing.T) {
 }
 
 func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	processDir := t.TempDir()
 	setCommandWorkDirForTest(t, processDir)
 	var calls []string
@@ -950,10 +956,12 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		return profileProofResult{}
 	})
 	skillCalls := 0
-	doctorDeps.checkSkills = func(_ context.Context, root string, _ []string) (skills.RepositoryReadiness, error) {
-		skillCalls++
-		return skills.RepositoryReadiness{}, fmt.Errorf("unexpected repository check for %q", root)
-	}
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.doctor.checkSkills = func(_ context.Context, root string, _ []string) (skills.RepositoryReadiness, error) {
+			skillCalls++
+			return skills.RepositoryReadiness{}, fmt.Errorf("unexpected repository check for %q", root)
+		}
+	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -991,7 +999,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 }
 
 func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir := t.TempDir()
 	repoDir := t.TempDir()
 	setCommandEnvironmentForTest(t, homeDir, repoDir)
@@ -1041,8 +1049,10 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 	}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
 		return profileProofResult{}
 	})
-	doctorDeps.resolveExternal = resolveExternalSkillRequirement
-	doctorDeps.checkSkills = skills.CheckRepositoryWithExternal
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.doctor.resolveExternal = resolveExternalSkillRequirement
+		dependencies.doctor.checkSkills = skills.CheckRepositoryWithExternal
+	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -1300,8 +1310,7 @@ func withDoctorFakeLoaded(t *testing.T, checker HealthChecker, loaded roundconfi
 
 func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loaded roundconfig.Loaded, readiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult) {
 	t.Helper()
-	old := doctorDeps
-	doctorDeps = doctorDependencies{
+	dependencies := doctorDependencies{
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
 			return loaded, nil
 		},
@@ -1319,27 +1328,26 @@ func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loade
 			}, nil
 		},
 	}
-	t.Cleanup(func() {
-		doctorDeps = old
+	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
+		commandDependencies.doctor = dependencies
 	})
 }
 
 func withDoctorLiveDeps(t *testing.T, checker HealthChecker) {
 	t.Helper()
-	old := doctorDeps
-	doctorDeps = defaultDoctorDependencies()
-	doctorDeps.healthChecker = func(roundconfig.Loaded, string) HealthChecker { return checker }
-	doctorDeps.resolveExternal = func(string) ([]string, bool, error) {
+	dependencies := defaultDoctorDependencies()
+	dependencies.healthChecker = func(roundconfig.Loaded, string) HealthChecker { return checker }
+	dependencies.resolveExternal = func(string) ([]string, bool, error) {
 		return skills.Recommended(), true, nil
 	}
-	doctorDeps.checkSkills = func(context.Context, string, []string) (skills.RepositoryReadiness, error) {
+	dependencies.checkSkills = func(context.Context, string, []string) (skills.RepositoryReadiness, error) {
 		return skills.RepositoryReadiness{
 			OwnedRequired:    14,
 			ExternalRequired: 25,
 		}, nil
 	}
-	t.Cleanup(func() {
-		doctorDeps = old
+	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
+		commandDependencies.doctor = dependencies
 	})
 }
 

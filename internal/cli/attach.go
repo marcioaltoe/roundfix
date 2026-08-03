@@ -48,7 +48,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 	missingRunID := strings.TrimSpace(req.runID) == ""
-	if missingRunID && (req.noInput || !attachInteractiveInputAvailable() || !liveTUIEnabled(stdout)) {
+	if missingRunID && (req.noInput || !commandDependenciesForContext(ctx).attachInteractiveInputAvailable() || !liveTUIEnabled(stdout)) {
 		printAttachFailure(validationError{message: "missing run id in non-interactive mode; pass a run id or run 'roundfix runs list --all' to discover Runs"}, stderr)
 		return exitPreflight
 	}
@@ -109,7 +109,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	fmt.Fprintln(stdout, "Following live events. Detach with Ctrl-C; detaching never stops the Run.")
 	follower := attachFollower{
 		source: reader,
-		sleep:  attachSleep,
+		sleep:  commandDependenciesForContext(ctx).attachSleep,
 		accept: func(entry store.JournalEvent) error {
 			if text := timeline.Append(entry.Event); text != "" {
 				fmt.Fprint(stdout, text)

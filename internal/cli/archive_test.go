@@ -13,7 +13,7 @@ import (
 )
 
 func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
 		{id: "task_02", title: "Wire the widget API", status: string(spec.StatusCompleted), needs: []string{"task_01"}},
@@ -53,7 +53,7 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 }
 
 func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay active", status: string(spec.StatusCompleted)},
 	})
@@ -253,12 +253,10 @@ func assertPathMissing(t *testing.T, path string) {
 
 func withNoEngineCollaborators(t *testing.T) {
 	t.Helper()
-	old := newEngineCollaborators
-	newEngineCollaborators = func() engineCollaborators {
-		t.Fatal("archive must not create Run engine collaborators")
-		return engineCollaborators{}
-	}
-	t.Cleanup(func() {
-		newEngineCollaborators = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.newEngineCollaborators = func() engineCollaborators {
+			t.Fatal("archive must not create Run engine collaborators")
+			return engineCollaborators{}
+		}
 	})
 }

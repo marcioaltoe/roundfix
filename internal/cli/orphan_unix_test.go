@@ -240,7 +240,7 @@ func TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner(t *testing.T) 
 }
 
 func TestCLIForceStopOwnerProcessHelper(t *testing.T) {
-	// Sequential: coordinates process-wide signal handling.
+	// Sequential: registers process-wide SIGTERM handling required by the helper process.
 	if os.Getenv("ROUNDFIX_CLI_FORCE_STOP_OWNER_HELPER") == "" {
 		return
 	}
@@ -295,7 +295,7 @@ func startCLIForceStopOwnerProcess(t *testing.T) (int, <-chan error) {
 }
 
 func TestRunImplementReclaimsDeadOwnerActiveRun(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -345,7 +345,7 @@ func TestRunSettleReclaimsDeadOwnerActiveRun(t *testing.T) {
 }
 
 func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pid := reapedCLIProcessPID(t)
@@ -366,7 +366,7 @@ func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
 }
 
 func TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	live := seedReviewActiveRun(t, homeDir, repoDir, store.KindWatch, os.Getpid())

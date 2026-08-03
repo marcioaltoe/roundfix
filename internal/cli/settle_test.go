@@ -173,7 +173,7 @@ func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
 }
 
 func TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",

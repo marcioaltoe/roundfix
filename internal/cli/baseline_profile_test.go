@@ -18,7 +18,7 @@ import (
 )
 
 func TestCapabilityRecheck(t *testing.T) {
-	// Sequential: verifies a process-level environment default.
+	// Sequential: mutates the process-wide PATH required by capability detection.
 	t.Run("requires no decisions and writes nothing", func(t *testing.T) {
 		repository := newHumanBaselineRepository(t)
 		writeBaselinePlanTestFile(t, repository, ".roundfix/run-journal.jsonl", "existing journal entry\n")
@@ -144,7 +144,7 @@ func TestCapabilityRecheck(t *testing.T) {
 }
 
 func TestCapabilityTextRendersProbe(t *testing.T) {
-	// Sequential: verifies a process-level environment default.
+	// Sequential: mutates the process-wide PATH required by capability detection.
 	repository := newHumanBaselineRepository(t)
 	bin := t.TempDir()
 	candidate := filepath.Join(bin, "rtk")

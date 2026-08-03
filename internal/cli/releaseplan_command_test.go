@@ -430,7 +430,7 @@ func TestReleasePlanDirtyTreeBlocksWithActionableDiagnostic(t *testing.T) {
 }
 
 func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	gitRunner := newResetPlanRecordingGitRunner()
 	ghRunner := &resetPlanRecordingGHRunner{
 		output: `[
@@ -443,7 +443,7 @@ func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.
 			]
 		]`,
 	}
-	restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+	restore := setReleasePlanCommandRunnersForTest(t, gitRunner, ghRunner)
 	t.Cleanup(restore)
 
 	var textStdout, textStderr bytes.Buffer
@@ -508,7 +508,7 @@ func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.
 }
 
 func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	repoDir := newEmptyReleasePlanGitRepo(t)
 	writeReleasePlanFile(t, repoDir, "README.md", "seed\n")
 	gitReleasePlan(t, repoDir, "add", "-A")
@@ -541,7 +541,7 @@ func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly
 			]
 		]`,
 	}
-	restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+	restore := setReleasePlanCommandRunnersForTest(t, gitRunner, ghRunner)
 	t.Cleanup(restore)
 	before := snapshotReleasePlanRepo(t, repoDir)
 	setCommandWorkDirForTest(t, repoDir)
@@ -594,7 +594,7 @@ func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly
 }
 
 func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -611,7 +611,7 @@ func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *te
 		t.Run(tt.name, func(t *testing.T) {
 			gitRunner := newResetPlanRecordingGitRunner()
 			ghRunner := &resetPlanRecordingGHRunner{output: `[[]]`}
-			restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+			restore := setReleasePlanCommandRunnersForTest(t, gitRunner, ghRunner)
 			t.Cleanup(restore)
 
 			var stdout, stderr bytes.Buffer
@@ -632,7 +632,7 @@ func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *te
 }
 
 func TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name      string
 		configure func(*resetPlanRecordingGitRunner, *resetPlanRecordingGHRunner)
@@ -673,7 +673,7 @@ func TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory(t *testing.T) 
 			gitRunner := newResetPlanRecordingGitRunner()
 			ghRunner := &resetPlanRecordingGHRunner{output: `[[]]`}
 			tt.configure(gitRunner, ghRunner)
-			restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+			restore := setReleasePlanCommandRunnersForTest(t, gitRunner, ghRunner)
 			t.Cleanup(restore)
 
 			var stdout, stderr bytes.Buffer
@@ -815,15 +815,13 @@ func resetPlanGHCallMutates(args []string) bool {
 	return false
 }
 
-func setReleasePlanCommandRunnersForTest(gitRunner preflight.GitRunner, ghRunner preflight.GHRunner) func() {
-	previousGit := releasePlanCommandGitRunner
-	previousGH := releasePlanCommandGHRunner
-	releasePlanCommandGitRunner = gitRunner
-	releasePlanCommandGHRunner = ghRunner
-	return func() {
-		releasePlanCommandGitRunner = previousGit
-		releasePlanCommandGHRunner = previousGH
-	}
+func setReleasePlanCommandRunnersForTest(t *testing.T, gitRunner preflight.GitRunner, ghRunner preflight.GHRunner) func() {
+	t.Helper()
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.releasePlanGitRunner = gitRunner
+		dependencies.releasePlanGHRunner = ghRunner
+	})
+	return func() {}
 }
 
 func newReleasePlanCommandRepo(t *testing.T, baseTag string, commits ...releasePlanCommandCommit) string {

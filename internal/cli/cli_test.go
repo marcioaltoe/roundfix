@@ -46,23 +46,24 @@ var testCommandEnvironments sync.Map
 var testCommandEnvironmentCleanups sync.Map
 
 type testCommandEnvironmentOverrides struct {
-	homeDir        string
-	homeDirSet     bool
-	workDir        string
-	workDirSet     bool
-	detachFD       string
-	detachTempPath string
-	detachSet      bool
+	homeDir         string
+	homeDirSet      bool
+	workDir         string
+	workDirSet      bool
+	detachFD        string
+	detachTempPath  string
+	detachSet       bool
+	dependencies    commandDependencies
+	dependenciesSet bool
 }
 
 func setCommandEnvironmentForTest(t *testing.T, homeDir, workDir string) {
 	t.Helper()
-	overrides := testCommandEnvironmentOverrides{
-		homeDir:    homeDir,
-		homeDirSet: true,
-		workDir:    workDir,
-		workDirSet: true,
-	}
+	overrides := commandEnvironmentOverridesForTest(t)
+	overrides.homeDir = homeDir
+	overrides.homeDirSet = true
+	overrides.workDir = workDir
+	overrides.workDirSet = true
 	storeCommandEnvironmentOverridesForTest(t, overrides)
 }
 
@@ -108,7 +109,21 @@ func commandEnvironmentForTest(t *testing.T) commandEnvironment {
 		environment.detachFD = overrides.detachFD
 		environment.detachTempPath = overrides.detachTempPath
 	}
+	if overrides.dependenciesSet {
+		environment.dependencies = overrides.dependencies
+	}
 	return environment
+}
+
+func updateCommandDependenciesForTest(t *testing.T, mutate func(*commandDependencies)) {
+	t.Helper()
+	overrides := commandEnvironmentOverridesForTest(t)
+	if !overrides.dependenciesSet {
+		overrides.dependencies = defaultCommandDependencies()
+		overrides.dependenciesSet = true
+	}
+	mutate(&overrides.dependencies)
+	storeCommandEnvironmentOverridesForTest(t, overrides)
 }
 
 func commandEnvironmentOverridesForTest(t *testing.T) testCommandEnvironmentOverrides {
@@ -149,6 +164,14 @@ func runCLI(t *testing.T, args []string, stdout, stderr io.Writer) int {
 func runCLIContext(t *testing.T, ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	t.Helper()
 	return runWithContext(ctx, args, stdout, stderr, commandEnvironmentForTest(t))
+}
+
+func commandContextForTest(t *testing.T, ctx context.Context) context.Context {
+	t.Helper()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return contextWithCommandDependencies(ctx, commandEnvironmentForTest(t).dependencies)
 }
 
 type testNoopOutcomeNotifier struct{}
@@ -254,7 +277,7 @@ func TestRunInitCreatesUserConfigWithExplicitScope(t *testing.T) {
 }
 
 func TestRunInitPromptsForScopeAndDefaultsProject(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	prompted := false
 	withInitScopePrompt(t, func(context.Context, io.Writer) (string, error) {
@@ -1416,7 +1439,7 @@ profiles:
 }
 
 func TestProfilesConfigureFileWritesProjectProfileJSON(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runner := withSuccessfulProfilesConfigureProof(t)
 	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
@@ -1484,7 +1507,7 @@ profiles:
 }
 
 func TestProfilesConfigureYesSkipsConfirmation(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runner := withSuccessfulProfilesConfigureProof(t)
 	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
@@ -1551,7 +1574,7 @@ func TestProfilesJSONSuccessReturnsEncoderFailures(t *testing.T) {
 }
 
 func TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	runner := withSuccessfulProfilesConfigureProof(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -1617,7 +1640,7 @@ backend:
 }
 
 func TestProfilesConfigureProofRunsBeforeConfirmationAndWrite(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1667,7 +1690,7 @@ backend:
 }
 
 func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1702,7 +1725,7 @@ func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testin
 }
 
 func TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1769,7 +1792,7 @@ backend:
 }
 
 func TestProfilesConfigureProofFailureYesJSONPreservesBytes(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1819,7 +1842,7 @@ backend:
 }
 
 func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	t.Run("cleanup failure", func(t *testing.T) {
 		_, repoDir := withCLIWorkspace(t)
 		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -1874,7 +1897,7 @@ func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.
 }
 
 func TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1896,7 +1919,7 @@ func TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig(t *testing.T) {
 }
 
 func TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, _ := withCLIWorkspace(t)
 	withProfilesConfigureInput(t, "backend\ncodex\ninteractive-backend\nhigh\n\n")
 	confirmCalls := 0
@@ -1923,7 +1946,7 @@ func TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm(t *te
 }
 
 func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, _ := withCLIWorkspace(t)
 	runner := &fakeAgentRunner{}
 	withAgentRunner(t, runner)
@@ -1988,7 +2011,7 @@ func TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields(t *testing.
 }
 
 func TestProfilesValidateFailedProofNamesTupleAffectedCategoriesAndRecovery(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	mustWrite(t, configPath, `
@@ -2567,7 +2590,7 @@ func seedRunsForListColumns(t *testing.T, homeDir, repoDir, otherRepo string) []
 }
 
 func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
 	mustMkdir(t, filepath.Join(otherRepo, ".git"))
@@ -2593,7 +2616,7 @@ func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
 }
 
 func TestRunRunsListRendersOwnerIdentityUnprovenMarker(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	createdAt := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	runs := seedRunsForList(t, homeDir, []runListSeed{
@@ -2629,7 +2652,7 @@ func TestRunRunsListRendersOwnerIdentityUnprovenMarker(t *testing.T) {
 }
 
 func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
 	mustMkdir(t, filepath.Join(otherRepo, ".git"))
@@ -2697,7 +2720,7 @@ func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
 }
 
 func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	setCommandWorkDirForTest(t, repoDir)
 	base := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
@@ -2755,7 +2778,7 @@ func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testi
 }
 
 func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	setCommandWorkDirForTest(t, repoDir)
 	currentRun, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
@@ -2919,7 +2942,7 @@ func TestRunRunsListReportsRetainedWorktreeInspectionFailure(t *testing.T) {
 }
 
 func TestRunRunsListLimitBoundsNewestMatches(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	seeds := make([]runListSeed, 0, 25)
@@ -2996,7 +3019,7 @@ func TestRunRunsListLimitBoundsNewestMatches(t *testing.T) {
 }
 
 func TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	seedRunsForList(t, homeDir, []runListSeed{
@@ -3028,7 +3051,7 @@ func TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine(t *testing.T) {
 }
 
 func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
-	// Sequential: verifies a process-level environment default.
+	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
 	t.Run("non-interactive exits 2 naming runs list", func(t *testing.T) {
 		withCLIWorkspace(t)
 		withRunsInteractiveInput(t, false)
@@ -3245,7 +3268,7 @@ func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
 }
 
 func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
 	fake.paths["npx"] = "/bin/npx"
@@ -3299,12 +3322,12 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 }
 
 func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	assertSetupCommandHealthyMachineIsIdempotent(t)
 }
 
 func TestRunSetupNewerACPXIsReadyWithoutInstall(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.acpxVersion = "0.12.1"
 	fake.paths["codex-acp"] = "/bin/codex-acp"
@@ -3329,7 +3352,7 @@ func TestRunSetupNewerACPXIsReadyWithoutInstall(t *testing.T) {
 }
 
 func TestSetupCommandCompatibility(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	assertSetupCommandHealthyMachineIsIdempotent(t)
 }
 
@@ -3370,7 +3393,7 @@ func assertSetupCommandHealthyMachineIsIdempotent(t *testing.T) {
 }
 
 func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name       string
 		adapterErr error
@@ -3444,7 +3467,7 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 }
 
 func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
@@ -3477,7 +3500,7 @@ func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing
 }
 
 func TestRunSetupProfileProofFailurePreservesAllTargets(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.files[fake.acpxConfigPath] = "{\n  \"theme\": \"sentinel\"\n}\n"
 	fake.probeErr = &agent.SelectionUnsupportedError{
@@ -3507,7 +3530,7 @@ func TestRunSetupProfileProofFailurePreservesAllTargets(t *testing.T) {
 }
 
 func TestRunSetupProfileCleanupAndInvalidEvidencePreserveAllTargets(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name string
 		err  error
@@ -3549,7 +3572,7 @@ func TestRunSetupProfileCleanupAndInvalidEvidencePreserveAllTargets(t *testing.T
 }
 
 func TestRunSetupProfileWriteFailurePreservesNotYetCommittedTargets(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.writeErrors = map[string]error{fake.userConfigPath: errors.New("disk full")}
 	withSetupFakeDeps(t, fake)
@@ -3573,7 +3596,7 @@ func TestRunSetupProfileWriteFailurePreservesNotYetCommittedTargets(t *testing.T
 }
 
 func TestRunSetupProfilePersistenceMatchesSubsequentValidation(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
@@ -3611,7 +3634,7 @@ func TestRunSetupProfilePersistenceMatchesSubsequentValidation(t *testing.T) {
 }
 
 func TestRunSetupNoInputProfileProofCreatesNoTargets(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
@@ -3628,7 +3651,7 @@ func TestRunSetupNoInputProfileProofCreatesNoTargets(t *testing.T) {
 }
 
 func TestRunSetupAdapterMigrationDeclinePreservesAllTargets(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
 	fake.files[fake.userConfigPath] = "# user config sentinel\n{}\n"
@@ -3658,7 +3681,7 @@ func TestRunSetupAdapterMigrationDeclinePreservesAllTargets(t *testing.T) {
 }
 
 func TestRunSetupAdapterMigrationPersistsSupportedCommand(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
 	fake.adapterErrors["codex"] = &agent.AdapterLineageError{
@@ -3696,7 +3719,7 @@ func TestRunSetupAdapterMigrationPersistsSupportedCommand(t *testing.T) {
 }
 
 func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name   string
 		accept bool
@@ -3772,7 +3795,7 @@ func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
 }
 
 func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	newFake := func() *setupFakeDeps {
 		fake := newSetupFakeDeps()
 		fake.files[fake.acpxConfigPath] = "{\n  \"theme\": \"sentinel\",\n  \"agents\": {\n    \"claude\": {\n      \"command\": \"claude-agent-acp\"\n    }\n  }\n}\n"
@@ -3852,7 +3875,7 @@ func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing
 }
 
 func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	const unrelated = "  \"theme\": {\"color\": \"blue\"},\n"
 	const customAgent = "    \"custom\": {\n      \"command\": \"existing-custom\"\n    },\n"
@@ -3922,7 +3945,7 @@ func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
 }
 
 func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.config.Runtimes.Codex.Model = "repo-codex"
 	fake.config.Runtimes.Codex.ReasoningEffort = "repo-xhigh"
@@ -3946,7 +3969,7 @@ func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
 }
 
 func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	customConfig := strings.ReplaceAll(roundconfig.DefaultConfigYAML(), "reasoning_effort: high", `reasoning_effort: ""`)
 	fake.files[fake.userConfigPath] = customConfig
@@ -3972,7 +3995,7 @@ func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 }
 
 func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.config.Runtimes.Codex.Model = ""
 	withSetupFakeDeps(t, fake)
@@ -3996,7 +4019,7 @@ func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
 }
 
 func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.acpxVersion = "0.11.0"
 	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
@@ -4019,7 +4042,7 @@ func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 }
 
 func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.paths["npx"] = "/bin/npx"
 	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
@@ -4054,7 +4077,7 @@ func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) 
 }
 
 func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
 	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
@@ -4085,7 +4108,7 @@ func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
 }
 
 func TestRunSetupNoInputSkipsOffers(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
 	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
@@ -4110,7 +4133,7 @@ func TestRunSetupNoInputSkipsOffers(t *testing.T) {
 }
 
 func TestRunSetupExitCodes(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	t.Run("check failure exits one", func(t *testing.T) {
 		fake := newSetupFakeDeps()
 		fake.nodeVersion = "v20.0.0"
@@ -4414,7 +4437,7 @@ func TestRunSkillsInstallCopiesArtifactsToExplicitTarget(t *testing.T) {
 }
 
 func TestRunSkillsInstallCreatesClaudeProjectSymlink(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	mustMkdir(t, filepath.Join(repoDir, ".claude", "skills"))
 	prompted := false
@@ -4477,7 +4500,7 @@ func TestRunSkillsInstallRejectsUnsupportedTarget(t *testing.T) {
 }
 
 func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name           string
 		args           []string
@@ -4599,7 +4622,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 }
 
 func TestRunFetchWritesReviewArtifactsUnderSpecSelector(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	specSlug := "0001-widget-flow"
@@ -4623,7 +4646,7 @@ func TestRunFetchWritesReviewArtifactsUnderSpecSelector(t *testing.T) {
 }
 
 func TestRunFetchWritesReviewArtifactsUnderTrailerSpec(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	specSlug := "0001-widget-flow"
@@ -4644,7 +4667,7 @@ func TestRunFetchWritesReviewArtifactsUnderTrailerSpec(t *testing.T) {
 }
 
 func TestRunFetchWritesReviewArtifactsUnderSpeclessRoot(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var stdout bytes.Buffer
@@ -4778,7 +4801,7 @@ func (runner *failingReviewArtifactProofGitRunner) RunGit(ctx context.Context, w
 }
 
 func TestRunFetchWarnsAndIgnoresDeprecatedUserConfig(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -4811,7 +4834,7 @@ resolve:
 }
 
 func TestRunWatchPrintsDeterministicStdoutReport(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name       string
 		setup      func(t *testing.T, repoDir string)
@@ -4921,7 +4944,7 @@ resolve:
 }
 
 func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -4943,7 +4966,7 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 }
 
 func TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -4998,7 +5021,7 @@ profiles:
 }
 
 func TestReviewProfilePreflightFetchCreatesNoAgentSession(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{}
@@ -5110,7 +5133,7 @@ func TestReviewIssueReportDataMarksCumulativeUnavailableOnLoadFailure(t *testing
 }
 
 func TestRunResolvePersistsEffectiveSelection(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -5144,7 +5167,7 @@ func TestRunResolvePersistsEffectiveSelection(t *testing.T) {
 }
 
 func TestRunResolveAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -5175,7 +5198,7 @@ func TestRunResolveAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
 }
 
 func TestRunWatchPersistsEffectiveSelection(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var stdout bytes.Buffer
@@ -5210,7 +5233,7 @@ func TestRunWatchPersistsEffectiveSelection(t *testing.T) {
 }
 
 func TestRunWatchRendersModelManagedReasoningHeader(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var stdout bytes.Buffer
@@ -5241,7 +5264,7 @@ func TestRunWatchRendersModelManagedReasoningHeader(t *testing.T) {
 }
 
 func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name         string
 		args         []string
@@ -5335,7 +5358,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 }
 
 func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -5462,7 +5485,7 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *test
 }
 
 func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	notifier := &recordingOutcomeNotifier{}
@@ -5531,7 +5554,7 @@ func TestOutcomeNotificationCarriesTerminalContextWithBoundedDeadline(t *testing
 }
 
 func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	wantStdout, _, wantCode, _ := runCleanResolveForOutcomeNotification(t, nil)
 	gotStdout, gotStderr, gotCode, homeDir := runCleanResolveForOutcomeNotification(t, errors.New("forced notifier failure"))
 
@@ -5571,7 +5594,7 @@ func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExi
 }
 
 func TestNotificationReceiptJournalsExactlyOnePerOutcomeAttempt(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name   string
 		route  roundnotify.Route
@@ -5624,7 +5647,7 @@ func TestNotificationReceiptJournalsExactlyOnePerOutcomeAttempt(t *testing.T) {
 }
 
 func TestNotificationReceiptDefaultsZeroValueFieldsBeforeJournaling(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name       string
 		notifyErr  error
@@ -5693,7 +5716,7 @@ func assertCleanCleanupWarningEvent(t *testing.T, homeDir string, stderr string,
 }
 
 func TestRunOutcomeNotificationsDisabledJournalsSkippedReceipt(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "notify:\n  enabled: false\n")
 	withSuccessfulPreflight(t, repoDir)
@@ -5744,7 +5767,7 @@ func TestRunOutcomeNotificationsDisabledJournalsSkippedReceipt(t *testing.T) {
 }
 
 func TestRunReviewCommandsRefuseDirtyTrackedCheckout(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	for _, command := range []string{"resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			homeDir, repoDir := withReviewGitWorkspace(t)
@@ -5771,7 +5794,7 @@ func TestRunReviewCommandsRefuseDirtyTrackedCheckout(t *testing.T) {
 }
 
 func TestRunResolveAllowsUntrackedCheckoutFiles(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	withRealReviewPreflight(t, repoDir, true)
@@ -5809,7 +5832,7 @@ func TestRunResolveAllowsUntrackedCheckoutFiles(t *testing.T) {
 }
 
 func TestRunResolveCommitsOnUserBranchWithoutRunBranch(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	withRealReviewPreflight(t, repoDir, true)
@@ -5856,7 +5879,7 @@ func TestRunResolveCommitsOnUserBranchWithoutRunBranch(t *testing.T) {
 }
 
 func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	withRealReviewPreflight(t, repoDir, true)
@@ -5919,7 +5942,7 @@ func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
 }
 
 func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	withRealReviewPreflight(t, repoDir, true)
 	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
@@ -5996,7 +6019,7 @@ func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 }
 
 func TestRunWatchPrintsBudgetExceededStdoutReport(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
@@ -6035,7 +6058,7 @@ budget:
 }
 
 func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name           string
 		args           []string
@@ -6100,7 +6123,7 @@ func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
 }
 
 func TestRunResolveAgentFullAccessIsExplicitOptIn(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name       string
 		config     string
@@ -6165,7 +6188,7 @@ defaults:
 }
 
 func TestRunFetchReusesMatchingAutoRound(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	args := []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}
@@ -6194,7 +6217,7 @@ func TestRunFetchReusesMatchingAutoRound(t *testing.T) {
 }
 
 func TestRunWatchTimeoutOffersManualReviewWithoutFetching(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
@@ -6244,7 +6267,7 @@ watch:
 }
 
 func TestRunWatchMissingHeadCheckEndsCleanUnverified(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
@@ -6282,7 +6305,7 @@ watch:
 }
 
 func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	reason := "Pull request is too large to review"
@@ -6385,7 +6408,7 @@ func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testin
 }
 
 func TestRunWatchCleanupBeforeAgentWarningFollowsReviewSkippedReason(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	reason := "Review Source size limit was exceeded"
@@ -6451,7 +6474,7 @@ func TestRunWatchCleanupBeforeAgentWarningFollowsReviewSkippedReason(t *testing.
 }
 
 func TestRunWatchReviewIssuesUnknownWhenFetchFailsKeepsArtifactsUnpublished(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
@@ -6494,7 +6517,7 @@ func TestRunWatchReviewIssuesUnknownWhenFetchFailsKeepsArtifactsUnpublished(t *t
 }
 
 func TestRunWatchReviewIssuesKnownAfterFetchedZero(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withFetchReviewItems(t, nil)
@@ -6546,7 +6569,7 @@ func TestRunWatchReviewIssuesKnownAfterFetchedZero(t *testing.T) {
 }
 
 func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withRealReviewPreflight(t, repoDir, true)
@@ -6628,7 +6651,7 @@ func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T
 }
 
 func TestRunWatchArtifactEvidenceProofFailureFallsBackAfterPush(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withReviewGitWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withRealReviewPreflight(t, repoDir, true)
@@ -6680,7 +6703,7 @@ func TestRunWatchArtifactEvidenceProofFailureFallsBackAfterPush(t *testing.T) {
 }
 
 func TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name  string
 		setup func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit
@@ -6834,7 +6857,7 @@ func TestWatchArtifactEvidenceMixedFallsBackToCurrentHeadPolling(t *testing.T) {
 }
 
 func TestRunWatchArtifactEvidenceThreadRefusesAndFallsBack(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withRealReviewPreflight(t, repoDir, true)
@@ -6957,7 +6980,7 @@ func TestTerminalContextAddsReasonAndNextActionForEveryNonCleanOutcome(t *testin
 }
 
 func TestRunWatchReusesOneAgentSessionAcrossRoundsAndCloses(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	inner := &fakeAgentRunner{statuses: []string{rounds.StatusResolved, rounds.StatusFailed, rounds.StatusResolved}}
@@ -7042,7 +7065,7 @@ resolve:
 }
 
 func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	statusCalls := 0
@@ -7105,7 +7128,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 }
 
 func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	verifier := &fakeVerifier{}
@@ -7170,7 +7193,7 @@ func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t 
 }
 
 func TestRunResolveSIGINTStopReturns130(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeStoppingAgentRunner{})
@@ -7219,7 +7242,7 @@ func TestExitForWatchOutcome(t *testing.T) {
 }
 
 func TestRunResolveRejectsMissingCompatibleArtifactsBeforeRun(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
@@ -7250,7 +7273,7 @@ func TestRunResolveRejectsMissingCompatibleArtifactsBeforeRun(t *testing.T) {
 }
 
 func TestRunResolveHonorsRoundSelector(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
@@ -7290,7 +7313,7 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 }
 
 func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	sourceResolver := &fakeSourceResolver{}
@@ -7347,7 +7370,7 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 }
 
 func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	verifier := &fakeVerifier{err: errors.New("tests failed")}
@@ -7407,7 +7430,7 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 }
 
 func TestRunResolveProcessesAllBatchesBeforeFinalPush(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	verifier := &fakeVerifier{}
@@ -7514,7 +7537,7 @@ resolve:
 }
 
 func TestRunResolveFinalPushRunsOnceAfterAllUnresolvedTerminal(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	verifier := &fakeVerifier{}
@@ -7588,7 +7611,7 @@ func TestRunResolveFinalPushRunsOnceAfterAllUnresolvedTerminal(t *testing.T) {
 }
 
 func TestRunResolveResolvesInvalidAssignedIssueSourceThread(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	sourceResolver := &fakeSourceResolver{}
@@ -7614,7 +7637,7 @@ func TestRunResolveResolvesInvalidAssignedIssueSourceThread(t *testing.T) {
 }
 
 func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeAgentRunner{probeErr: errors.New("adapter missing")})
@@ -7638,7 +7661,7 @@ func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
 }
 
 func TestRunResolveSelectionPreflightRejectionReportsTupleAndCreatesNoRun(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	probeErr := &agent.SelectionPreflightError{
@@ -7697,7 +7720,7 @@ runtimes:
 }
 
 func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{probeErr: &agent.SelectionPreflightError{
@@ -7732,7 +7755,7 @@ func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
 }
 
 func TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name             string
 		args             []string
@@ -7812,7 +7835,7 @@ func TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun(t *te
 }
 
 func TestRunResolveSelectionFailureDoesNotProbeDynamicCandidates(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{probeErr: &agent.SelectionPreflightError{
@@ -7858,7 +7881,7 @@ func TestRunResolveSelectionFailureDoesNotProbeDynamicCandidates(t *testing.T) {
 }
 
 func TestRunReviewAgentCommandsDoNotPromptForDynamicFallback(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name             string
 		args             []string
@@ -7922,7 +7945,7 @@ func TestRunReviewAgentCommandsDoNotPromptForDynamicFallback(t *testing.T) {
 }
 
 func TestRunResolveProfileProofFailureIgnoresFallbackConfirmationInput(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name  string
 		input string
@@ -7978,7 +8001,7 @@ func TestRunResolveProfileProofFailureIgnoresFallbackConfirmationInput(t *testin
 }
 
 func TestRunResolveNoInputProfileProofFailureReportsRemediation(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{
@@ -8009,7 +8032,7 @@ func TestRunResolveNoInputProfileProofFailureReportsRemediation(t *testing.T) {
 }
 
 func TestRunResolveDetachedChildReportsProfileProofFailure(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{
@@ -8055,7 +8078,7 @@ func TestRunResolveDetachedChildReportsProfileProofFailure(t *testing.T) {
 }
 
 func TestRunReviewAgentCommandsPassOneRunSelectionOverridesToPreflight(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -8204,7 +8227,7 @@ func assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T
 }
 
 func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	installCommand := "npm install -g acpx@" + agent.MinimumACPXVersion
 	tests := []struct {
 		name     string
@@ -8265,7 +8288,7 @@ func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
 }
 
 func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeAgentRunner{runErr: errors.New("agent crashed")})
@@ -8303,7 +8326,7 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 }
 
 func TestRunResolveAgentFailureContinuesWithLaterBatches(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{runErr: errors.New("agent crashed")}
@@ -8375,7 +8398,7 @@ resolve:
 }
 
 func TestRunResolveUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	inner := &fakeAgentRunner{}
@@ -8429,7 +8452,7 @@ resolve:
 }
 
 func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name      string
 		inner     agent.Runner
@@ -8498,7 +8521,7 @@ func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 }
 
 func TestRunResolveRejectsIncompatibleArtifacts(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "other-branch")
@@ -8596,7 +8619,7 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 }
 
 func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
-	// Sequential: verifies a process-level environment default.
+	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
 	tests := []struct {
 		name string
 		args []string
@@ -8640,7 +8663,7 @@ func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
 }
 
 func TestRunFetchCollectsMissingPullRequestWithInteractiveInput(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withCurrentPullRequestSuggestion(t, "321")
@@ -8679,7 +8702,7 @@ func TestRunFetchCollectsMissingPullRequestWithInteractiveInput(t *testing.T) {
 }
 
 func TestRunFetchReportsBlankInteractivePullRequestWithoutSuggestingInteractiveAgain(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, _ := withCLIWorkspace(t)
 	withCurrentPullRequestSuggestion(t, "")
 	withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
@@ -8709,7 +8732,7 @@ func TestRunFetchReportsBlankInteractivePullRequestWithoutSuggestingInteractiveA
 }
 
 func TestRunResolveInteractiveInputSuggestsConfiguredAgentAndRememberedPullRequest(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
@@ -8755,7 +8778,7 @@ func TestRunResolveInteractiveInputSuggestsConfiguredAgentAndRememberedPullReque
 }
 
 func TestRunInteractiveInputRunsPreflightBeforeSideEffects(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
 		t.Fatal("fetch must not run after post-input Preflight Validation failure")
@@ -8789,7 +8812,7 @@ func TestRunInteractiveInputRunsPreflightBeforeSideEffects(t *testing.T) {
 }
 
 func TestRunOperationalCommandAppliesConfigAndCLIArtifactDirPrecedence(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -8826,7 +8849,7 @@ defaults:
 }
 
 func TestRunFetchRejectsDuplicateActiveRun(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 
@@ -8875,7 +8898,7 @@ func TestRunFetchRejectsDuplicateActiveRun(t *testing.T) {
 }
 
 func TestBranchIntegrityPreflightRejectsPendingRunBranchForReviewCommands(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			homeDir, repoDir := withCLIWorkspace(t)
@@ -8922,7 +8945,7 @@ func TestBranchIntegrityPreflightRejectsPendingRunBranchForReviewCommands(t *tes
 }
 
 func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pending := []runworktree.PendingRunWork{{
@@ -8957,7 +8980,7 @@ func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *te
 }
 
 func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name             string
 		probeResult      bool
@@ -9033,7 +9056,7 @@ func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
 }
 
 func TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	taskRun := createBranchIntegrityImplementRun(t, homeDir, repoDir, "0053-task-work")
@@ -9127,7 +9150,7 @@ func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) int {
 }
 
 func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withBranchIntegrity(t, nil, nil)
@@ -9162,7 +9185,7 @@ func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
 }
 
 func TestBranchIntegrityPreflightRejectsActiveRunForReviewCommands(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			homeDir, repoDir := withCLIWorkspace(t)
@@ -9214,7 +9237,7 @@ func TestBranchIntegrityPreflightRejectsActiveRunForReviewCommands(t *testing.T)
 }
 
 func TestBranchIntegrityBypassPublishesAuditBeforeFetch(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pending := []runworktree.PendingRunWork{{
@@ -9267,7 +9290,7 @@ func TestBranchIntegrityBypassPublishesAuditBeforeFetch(t *testing.T) {
 }
 
 func TestBranchIntegrityBypassAuditsActiveRunAndProceeds(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withBranchIntegrity(t, nil, nil)
@@ -9319,7 +9342,7 @@ func TestBranchIntegrityBypassAuditsActiveRunAndProceeds(t *testing.T) {
 }
 
 func TestBranchIntegrityBypassFailsWhenAuditCommentPublishFails(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withBranchIntegrity(t, []runworktree.PendingRunWork{{
@@ -9377,7 +9400,7 @@ func TestReviewCommandHelpDocumentsSkipBranchIntegrity(t *testing.T) {
 }
 
 func TestRunStopByRunIDRecordsStopRequest(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 
@@ -9424,7 +9447,7 @@ func TestRunStopByRunIDRecordsStopRequest(t *testing.T) {
 }
 
 func TestRunStopByPullRequestRecordsStopRequestForMatchingActiveRun(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withStopPullRequestResolver(t, preflight.PullRequest{
@@ -9542,7 +9565,7 @@ func TestRunStopBySpecRecordsStopRequestForMatchingActiveRun(t *testing.T) {
 }
 
 func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	proved := false
@@ -9593,7 +9616,7 @@ func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
 }
 
 func TestRunForceStopAcceptsFlagsInAnyPosition(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	orders := map[string]func(runID string) []string{
 		"run id then flag": func(runID string) []string { return []string{"stop", runID, "--force"} },
 		"flag then run id": func(runID string) []string { return []string{"stop", "--force", runID} },
@@ -9619,7 +9642,7 @@ func TestRunForceStopAcceptsFlagsInAnyPosition(t *testing.T) {
 }
 
 func TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name              string
 		proofErr          error
@@ -9716,7 +9739,7 @@ func TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof(t *testi
 }
 
 func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name string
 		step string
@@ -9780,7 +9803,7 @@ func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testi
 }
 
 func TestRunForceStopOwnerProofFailurePreservesAgentSessions(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -9868,7 +9891,7 @@ func TestRunForceStopOwnerProofFailurePreservesAgentSessions(t *testing.T) {
 }
 
 func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -9934,7 +9957,7 @@ func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T
 // stored owner identity token differs from its genuine one.
 
 func TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -9986,7 +10009,7 @@ func TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions(t *testi
 }
 
 func TestRunStopForceAgentSessionCleanupSkipsRunWithoutActiveLifecycle(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	cancelCalls := 0
@@ -10037,7 +10060,7 @@ func TestRunStopForceAgentSessionCleanupSkipsRunWithoutActiveLifecycle(t *testin
 }
 
 func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Stopped task",
@@ -10118,7 +10141,7 @@ func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *
 }
 
 func TestRunStopForceRegisteredAgentSessionAbsenceIsIdempotent(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -10160,7 +10183,7 @@ func TestRunStopForceRegisteredAgentSessionAbsenceIsIdempotent(t *testing.T) {
 }
 
 func TestRunStopForceAgentSessionCleanupFailureRemainsVisibleWithoutClosedLifecycle(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -10198,7 +10221,7 @@ func TestRunStopForceAgentSessionCleanupFailureRemainsVisibleWithoutClosedLifecy
 }
 
 func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Stopped task",
@@ -10239,7 +10262,7 @@ func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
 }
 
 func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Stopped task",
@@ -10275,7 +10298,7 @@ func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
 }
 
 func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name          string
 		runtime       string
@@ -10365,7 +10388,7 @@ func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 }
 
 func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -10517,7 +10540,7 @@ func TestRunStopHelpExplainsProofBeforeCompletion(t *testing.T) {
 }
 
 func TestRunStopRejectsAlreadyTerminalRun(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 
@@ -10564,7 +10587,7 @@ func TestRunStopRejectsAlreadyTerminalRun(t *testing.T) {
 }
 
 func TestRunPreflightFailureLeavesBufferOutputPlainByDefault(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	withCLIWorkspace(t)
 	withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
 		return preflight.Result{}, errors.New("plain preflight failure")
@@ -10586,7 +10609,7 @@ func TestRunPreflightFailureLeavesBufferOutputPlainByDefault(t *testing.T) {
 }
 
 func TestRunPreflightFailureColorsOutputWhenForced(t *testing.T) {
-	// Sequential: verifies a process-level environment default.
+	// Sequential: mutates the process-wide ROUNDFIX_COLOR setting required by rendering.
 	// This case verifies the process-level color override at the public command boundary.
 	t.Setenv("ROUNDFIX_COLOR", "always")
 	withCLIWorkspace(t)
@@ -10719,7 +10742,6 @@ func cloneSetupFiles(files map[string]string) map[string]string {
 
 func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 	t.Helper()
-	old := setupDeps
 	profileRunner := &profileReadinessExactRunner{
 		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
 			fake.probeRequests = append(fake.probeRequests, req)
@@ -10736,7 +10758,7 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			}, nil
 		},
 	}
-	setupDeps = setupDependencies{
+	dependencies := setupDependencies{
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
 			return roundconfig.Loaded{
 				Config:            fake.config,
@@ -10820,8 +10842,8 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			return true, nil
 		},
 	}
-	t.Cleanup(func() {
-		setupDeps = old
+	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
+		commandDependencies.setup = dependencies
 	})
 }
 
@@ -10920,10 +10942,8 @@ func withOutcomeNotifier(t *testing.T, notifier roundnotify.Notifier) {
 
 func withOutcomeNotifierFactory(t *testing.T, factory func(roundconfig.Config) roundnotify.Notifier) {
 	t.Helper()
-	old := newOutcomeNotifier
-	newOutcomeNotifier = factory
-	t.Cleanup(func() {
-		newOutcomeNotifier = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.newOutcomeNotifier = factory
 	})
 }
 
@@ -11253,21 +11273,15 @@ func setListedRunCompletedAt(t *testing.T, homeDir string, runID string, complet
 
 func withRunsListNow(t *testing.T, now time.Time) {
 	t.Helper()
-	old := runsListNow
-	runsListNow = func() time.Time { return now }
-	t.Cleanup(func() {
-		runsListNow = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.runsListNow = func() time.Time { return now }
 	})
 }
 
 func withRunsInteractiveInput(t *testing.T, available bool) {
 	t.Helper()
-	old := runsInteractiveInputAvailable
-	runsInteractiveInputAvailable = func() bool {
-		return available
-	}
-	t.Cleanup(func() {
-		runsInteractiveInputAvailable = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.runsInteractiveInputAvailable = func() bool { return available }
 	})
 }
 
@@ -11411,27 +11425,19 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 
 func withNoReviewRunWorktrees(t *testing.T) {
 	t.Helper()
-	oldCreate := createRunWorktree
-	oldIntegrate := integrateRunWorktree
-	oldCleanup := cleanupCleanRunWorktree
-	oldPrune := pruneTerminalRunWorktrees
-	createRunWorktree = func(_ context.Context, opts runworktree.CreateOptions) (runworktree.Ref, error) {
-		return runworktree.Ref{}, fmt.Errorf("review command unexpectedly created a Run Worktree for run %s", opts.RunID)
-	}
-	integrateRunWorktree = func(context.Context, runworktree.Ref, string, string) (runworktree.IntegrationResult, error) {
-		return runworktree.IntegrationResult{}, errors.New("review command unexpectedly integrated a Run Worktree")
-	}
-	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
-		return fmt.Errorf("review command unexpectedly cleaned a Run Worktree %s", ref.Path)
-	}
-	pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
-		return nil, nil
-	}
-	t.Cleanup(func() {
-		createRunWorktree = oldCreate
-		integrateRunWorktree = oldIntegrate
-		cleanupCleanRunWorktree = oldCleanup
-		pruneTerminalRunWorktrees = oldPrune
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.createRunWorktree = func(_ context.Context, opts runworktree.CreateOptions) (runworktree.Ref, error) {
+			return runworktree.Ref{}, fmt.Errorf("review command unexpectedly created a Run Worktree for run %s", opts.RunID)
+		}
+		dependencies.integrateRunWorktree = func(context.Context, runworktree.Ref, string, string) (runworktree.IntegrationResult, error) {
+			return runworktree.IntegrationResult{}, errors.New("review command unexpectedly integrated a Run Worktree")
+		}
+		dependencies.cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
+			return fmt.Errorf("review command unexpectedly cleaned a Run Worktree %s", ref.Path)
+		}
+		dependencies.pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
+			return nil, nil
+		}
 	})
 }
 
@@ -11444,19 +11450,15 @@ func withFetchReviewItems(t *testing.T, items []reviewsource.ReviewItem) {
 
 func withFetchReviewItemsFunc(t *testing.T, fn func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error)) {
 	t.Helper()
-	old := fetchReviewItems
-	fetchReviewItems = fn
-	t.Cleanup(func() {
-		fetchReviewItems = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.fetchReviewItems = fn
 	})
 }
 
 func withPreflight(t *testing.T, fn func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error)) {
 	t.Helper()
-	old := runCommandPreflight
-	runCommandPreflight = fn
-	t.Cleanup(func() {
-		runCommandPreflight = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.runCommandPreflight = fn
 	})
 }
 
@@ -11467,24 +11469,18 @@ type branchIntegrityRecorder struct {
 func withBranchIntegrity(t *testing.T, pending []runworktree.PendingRunWork, integrateErr error) *branchIntegrityRecorder {
 	t.Helper()
 	recorder := &branchIntegrityRecorder{}
-	oldList := listPendingRunWork
-	oldIntegrate := integratePendingRunWork
-	oldRefresh := refreshBranchIntegrityHead
-	listPendingRunWork = func(context.Context, string, string) ([]runworktree.PendingRunWork, error) {
-		return append([]runworktree.PendingRunWork(nil), pending...), nil
-	}
-	integratePendingRunWork = func(_ context.Context, _ string, _ string, runBranch string) error {
-		recorder.integrations = append(recorder.integrations, runBranch)
-		return integrateErr
-	}
-	refreshBranchIntegrityHead = func(_ context.Context, result preflight.Result) (preflight.Result, error) {
-		result.Git.HEAD = "integrated-head"
-		return result, nil
-	}
-	t.Cleanup(func() {
-		listPendingRunWork = oldList
-		integratePendingRunWork = oldIntegrate
-		refreshBranchIntegrityHead = oldRefresh
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.listPendingRunWork = func(context.Context, string, string) ([]runworktree.PendingRunWork, error) {
+			return append([]runworktree.PendingRunWork(nil), pending...), nil
+		}
+		dependencies.integratePendingRunWork = func(_ context.Context, _ string, _ string, runBranch string) error {
+			recorder.integrations = append(recorder.integrations, runBranch)
+			return integrateErr
+		}
+		dependencies.refreshBranchIntegrityHead = func(_ context.Context, result preflight.Result) (preflight.Result, error) {
+			result.Git.HEAD = "integrated-head"
+			return result, nil
+		}
 	})
 	return recorder
 }
@@ -11494,10 +11490,8 @@ func withSupersedingQAReport(
 	fn func(context.Context, string, string, string, string) (string, bool),
 ) {
 	t.Helper()
-	old := supersedingQAReport
-	supersedingQAReport = fn
-	t.Cleanup(func() {
-		supersedingQAReport = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.supersedingQAReport = fn
 	})
 }
 
@@ -11544,13 +11538,11 @@ type pullRequestCommentRecord struct {
 func withPullRequestComments(t *testing.T, publishErr error) *pullRequestCommentRecorder {
 	t.Helper()
 	recorder := &pullRequestCommentRecorder{}
-	old := commentOnPullRequest
-	commentOnPullRequest = func(_ context.Context, source string, repository string, prNumber int, body string) error {
-		recorder.calls = append(recorder.calls, pullRequestCommentRecord{source: source, repository: repository, pr: prNumber, body: body})
-		return publishErr
-	}
-	t.Cleanup(func() {
-		commentOnPullRequest = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.commentOnPullRequest = func(_ context.Context, source string, repository string, prNumber int, body string) error {
+			recorder.calls = append(recorder.calls, pullRequestCommentRecord{source: source, repository: repository, pr: prNumber, body: body})
+			return publishErr
+		}
 	})
 	return recorder
 }
@@ -11579,21 +11571,17 @@ func journalPayloadContains(events []store.JournalEvent, text string) bool {
 
 func withReviewSpecGitRunner(t *testing.T, runner preflight.GitRunner) {
 	t.Helper()
-	old := reviewSpecGitRunner
-	reviewSpecGitRunner = runner
-	t.Cleanup(func() {
-		reviewSpecGitRunner = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.reviewSpecGitRunner = runner
 	})
 }
 
 func overrideCollaborators(t *testing.T, mutate func(*engineCollaborators)) {
 	t.Helper()
-	old := newEngineCollaborators
-	current := old()
-	mutate(&current)
-	newEngineCollaborators = func() engineCollaborators { return current }
-	t.Cleanup(func() {
-		newEngineCollaborators = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		current := dependencies.newEngineCollaborators()
+		mutate(&current)
+		dependencies.newEngineCollaborators = func() engineCollaborators { return current }
 	})
 }
 
@@ -11611,31 +11599,23 @@ func withAgentRunner(t *testing.T, runner agent.Runner) {
 
 func withFallbackConfirmation(t *testing.T, input string) {
 	t.Helper()
-	oldAvailable := fallbackConfirmationAvailable
-	oldInput := fallbackConfirmationInput
-	fallbackConfirmationAvailable = func(io.Writer) bool { return true }
-	fallbackConfirmationInput = func() io.Reader { return strings.NewReader(input) }
-	t.Cleanup(func() {
-		fallbackConfirmationAvailable = oldAvailable
-		fallbackConfirmationInput = oldInput
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.fallbackConfirmationAvailable = func(io.Writer) bool { return true }
+		dependencies.fallbackConfirmationInput = func() io.Reader { return strings.NewReader(input) }
 	})
 }
 
 func withProfilesConfigureInput(t *testing.T, input string) {
 	t.Helper()
-	old := profilesConfigureInput
-	profilesConfigureInput = func() io.Reader { return strings.NewReader(input) }
-	t.Cleanup(func() {
-		profilesConfigureInput = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.profilesConfigureInput = func() io.Reader { return strings.NewReader(input) }
 	})
 }
 
 func withProfilesConfigureConfirm(t *testing.T, confirm func(context.Context, io.Writer, string) (bool, error)) {
 	t.Helper()
-	old := confirmProfilesConfigure
-	confirmProfilesConfigure = confirm
-	t.Cleanup(func() {
-		confirmProfilesConfigure = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.confirmProfilesConfigure = confirm
 	})
 }
 
@@ -11671,10 +11651,8 @@ backend:
 
 func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
 	t.Helper()
-	old := cancelStopAgentSession
-	cancelStopAgentSession = cancel
-	t.Cleanup(func() {
-		cancelStopAgentSession = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.cancelStopAgentSession = cancel
 	})
 	withRoundfixSessionLister(t, func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error) {
 		return nil, nil
@@ -11686,19 +11664,15 @@ func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, age
 
 func withRoundfixSessionLister(t *testing.T, list func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error)) {
 	t.Helper()
-	old := listRoundfixAgentSessions
-	listRoundfixAgentSessions = list
-	t.Cleanup(func() {
-		listRoundfixAgentSessions = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.listRoundfixAgentSessions = list
 	})
 }
 
 func withStopAgentSessionCloser(t *testing.T, closeSession func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
 	t.Helper()
-	old := closeStopAgentSession
-	closeStopAgentSession = closeSession
-	t.Cleanup(func() {
-		closeStopAgentSession = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.closeStopAgentSession = closeSession
 	})
 }
 
@@ -11738,10 +11712,8 @@ func (controller ownerProcessControllerStub) TerminateAndWait(ctx context.Contex
 
 func withOwnerProcessController(t *testing.T, controller OwnerProcessController) {
 	t.Helper()
-	old := ownerProcesses
-	ownerProcesses = controller
-	t.Cleanup(func() {
-		ownerProcesses = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.ownerProcesses = controller
 	})
 }
 
@@ -11810,111 +11782,83 @@ func withFakeWorktree(t *testing.T) {
 
 func withWatchEvidence(t *testing.T, fn func(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error)) {
 	t.Helper()
-	old := watchReviewEvidence
-	watchReviewEvidence = fn
-	t.Cleanup(func() {
-		watchReviewEvidence = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.watchReviewEvidence = fn
 	})
 }
 
 func withWatchHeadSHA(t *testing.T, fn func(context.Context, string) (string, error)) {
 	t.Helper()
-	old := watchHeadSHA
-	watchHeadSHA = fn
-	t.Cleanup(func() {
-		watchHeadSHA = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.watchHeadSHA = fn
 	})
 }
 
 func withWatchTiming(t *testing.T, clock watch.Clock, sleeper watch.Sleeper) {
 	t.Helper()
-	oldClock := watchClock
-	oldSleeper := watchSleeper
-	watchClock = clock
-	watchSleeper = sleeper
-	t.Cleanup(func() {
-		watchClock = oldClock
-		watchSleeper = oldSleeper
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.watchClock = clock
+		dependencies.watchSleeper = sleeper
 	})
 }
 
 func withInteractiveInput(t *testing.T, fn func(context.Context, roundtui.InputRequest) (roundtui.CommandValues, error)) {
 	t.Helper()
-	old := collectInteractiveInput
-	collectInteractiveInput = fn
-	t.Cleanup(func() {
-		collectInteractiveInput = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.collectInteractiveInput = fn
 	})
 }
 
 func withInitScopePrompt(t *testing.T, fn func(context.Context, io.Writer) (string, error)) {
 	t.Helper()
-	old := promptInitScope
-	promptInitScope = fn
-	t.Cleanup(func() {
-		promptInitScope = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.promptInitScope = fn
 	})
 }
 
 func withClaudeSkillSymlinkPrompt(t *testing.T, fn func(context.Context, io.Writer, string, string) (bool, error)) {
 	t.Helper()
-	old := promptProjectClaudeSkillSymlink
-	promptProjectClaudeSkillSymlink = fn
-	t.Cleanup(func() {
-		promptProjectClaudeSkillSymlink = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.promptProjectClaudeSkillSymlink = fn
 	})
 }
 
 func withCurrentPullRequestSuggestion(t *testing.T, value string) {
 	t.Helper()
-	old := suggestCurrentPullRequest
-	suggestCurrentPullRequest = func(context.Context, string) (string, error) {
-		return value, nil
-	}
-	t.Cleanup(func() {
-		suggestCurrentPullRequest = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.suggestCurrentPullRequest = func(context.Context, string) (string, error) { return value, nil }
 	})
 }
 
 func withStopPullRequestResolver(t *testing.T, result preflight.PullRequest) {
 	t.Helper()
-	old := resolvePullRequestForStop
-	resolvePullRequestForStop = func(context.Context, string, string) (preflight.PullRequest, error) {
-		return result, nil
-	}
-	t.Cleanup(func() {
-		resolvePullRequestForStop = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.resolvePullRequestForStop = func(context.Context, string, string) (preflight.PullRequest, error) { return result, nil }
 	})
 }
 
 func withChangedPaths(t *testing.T, changes []preflight.ChangedPath) {
 	t.Helper()
-	old := inspectChangedPaths
-	inspectChangedPaths = func(context.Context, string) ([]preflight.ChangedPath, error) {
-		return changes, nil
-	}
-	t.Cleanup(func() {
-		inspectChangedPaths = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.inspectChangedPaths = func(context.Context, string) ([]preflight.ChangedPath, error) { return changes, nil }
 	})
 }
 
 func withChangedPathSnapshots(t *testing.T, snapshots ...[]preflight.ChangedPath) {
 	t.Helper()
-	old := inspectChangedPaths
 	index := 0
-	inspectChangedPaths = func(context.Context, string) ([]preflight.ChangedPath, error) {
-		if len(snapshots) == 0 {
-			return nil, nil
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.inspectChangedPaths = func(context.Context, string) ([]preflight.ChangedPath, error) {
+			if len(snapshots) == 0 {
+				return nil, nil
+			}
+			if index >= len(snapshots) {
+				return snapshots[len(snapshots)-1], nil
+			}
+			changes := snapshots[index]
+			index++
+			return changes, nil
 		}
-		if index >= len(snapshots) {
-			return snapshots[len(snapshots)-1], nil
-		}
-		changes := snapshots[index]
-		index++
-		return changes, nil
-	}
-	t.Cleanup(func() {
-		inspectChangedPaths = old
 	})
 }
 
@@ -13055,7 +12999,7 @@ func assertJournalContainsAgentAndDaemonEvents(t *testing.T, events []store.Jour
 }
 
 func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withVerifier(t, &fakeVerifier{})
@@ -13103,7 +13047,7 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 }
 
 func TestRunResolveSkipsAgentLogFilesByDefaultAndStillJournals(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -13121,7 +13065,7 @@ func TestRunResolveSkipsAgentLogFilesByDefaultAndStillJournals(t *testing.T) {
 }
 
 func TestRunResolveWritesAgentLogFilesWhenEnabledAndStillJournals(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
@@ -13143,7 +13087,7 @@ logs:
 }
 
 func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withVerifier(t, &fakeVerifier{})
@@ -13182,7 +13126,7 @@ func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 }
 
 func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var stdout bytes.Buffer
@@ -13214,7 +13158,7 @@ func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 }
 
 func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withVerifier(t, &fakeVerifier{})
@@ -13250,7 +13194,7 @@ func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
 }
 
 func TestWatchSkipsFinalPushWhenAutoPushDisabled(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pusher := &fakePusher{}
@@ -13295,7 +13239,7 @@ func TestWatchSkipsFinalPushWhenAutoPushDisabled(t *testing.T) {
 }
 
 func TestWatchFinalPushRunsOncePerCleanRoundThroughEngine(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pusher := &fakePusher{}
@@ -13343,7 +13287,7 @@ func runResolveForAttachTest(t *testing.T, repoDir string) (string, *bytes.Buffe
 }
 
 func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runID, _ := runResolveForAttachTest(t, repoDir)
 	// Attach must never probe or start an Agent; a probing attach would
@@ -13388,7 +13332,7 @@ func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
 }
 
 func TestAttachDisplaysStoredSelectionAfterConfigChanges(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -13622,7 +13566,7 @@ func assertCLIContainsInOrder(t *testing.T, haystack string, needles ...string) 
 }
 
 func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
-	// Sequential: verifies a process-level environment default.
+	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
 	mustMkdir(t, filepath.Join(otherRepo, ".git"))
@@ -13717,7 +13661,7 @@ func TestBrowserAttachCockpitIsTheExplicitAttachCockpit(t *testing.T) {
 }
 
 func TestAttachRunBrowserCancelExitsZeroWithoutAttaching(t *testing.T) {
-	// Sequential: verifies a process-level environment default.
+	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
 	homeDir, repoDir := withCLIWorkspace(t)
 	runID, _ := runResolveForAttachTest(t, repoDir)
 	dbPath := filepath.Join(homeDir, ".roundfix", "roundfix.db")
@@ -13757,7 +13701,7 @@ func TestAttachRunBrowserCancelExitsZeroWithoutAttaching(t *testing.T) {
 }
 
 func TestAttachWithoutRunIDNonInteractiveNamesAllRunsList(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	tests := []struct {
 		name        string
 		args        []string
@@ -13925,7 +13869,7 @@ func TestAttachSpecRunFallsBackToGitRootWhenCleanWorkDirIsPruned(t *testing.T) {
 }
 
 func TestAttachUnknownRunFailsBeforeTUIStart(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	runResolveForAttachTest(t, repoDir)
 	var stdout bytes.Buffer
@@ -13962,7 +13906,7 @@ func TestAttachWithoutRunDatabaseFailsAsCLIError(t *testing.T) {
 }
 
 func TestAttachSkipsUnknownEventKindsOnReplay(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runID, _ := runResolveForAttachTest(t, repoDir)
 	writer, err := store.Open(context.Background(), homeDir)
@@ -14235,7 +14179,7 @@ func TestEventsReplayLegacyVerificationEvent(t *testing.T) {
 }
 
 func TestEventsFollowDrainsTerminalWithoutDuplicateBoundary(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateActive)
 	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
@@ -14280,7 +14224,7 @@ func TestEventsFollowDrainsTerminalWithoutDuplicateBoundary(t *testing.T) {
 }
 
 func TestEventsTerminalRunReplaysAndExitsImmediately(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
 	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
@@ -14369,7 +14313,7 @@ func TestEventsMalformedRelevantPayloadFailsNoStdout(t *testing.T) {
 }
 
 func TestEventsFollowCancellationExits130WithoutTrailer(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateActive)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -14642,7 +14586,7 @@ func TestAttachFollowerIdlePollsReadNoEventRows(t *testing.T) {
 }
 
 func TestAttachDetachLeavesRunActive(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runResolveForAttachTest(t, repoDir)
 	writer, err := store.Open(context.Background(), homeDir)
@@ -14702,7 +14646,7 @@ func TestAttachDetachLeavesRunActive(t *testing.T) {
 }
 
 func TestAttachFollowsLiveRunToTerminalState(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runResolveForAttachTest(t, repoDir)
 	writer, err := store.Open(context.Background(), homeDir)
@@ -14724,10 +14668,23 @@ func TestAttachFollowsLiveRunToTerminalState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create active run: %v", err)
 	}
-	withAttachSleep(t, func(ctx context.Context) error { return ctx.Err() })
+	followStarted := make(chan struct{})
+	writerCompleted := make(chan struct{})
+	var signalFollowStarted sync.Once
+	withAttachSleep(t, func(ctx context.Context) error {
+		signalFollowStarted.Do(func() { close(followStarted) })
+		select {
+		case <-writerCompleted:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	})
 
 	writerDone := make(chan error, 1)
 	go func() {
+		<-followStarted
+		defer close(writerCompleted)
 		for index := 0; index < 5; index++ {
 			if _, err := writer.AppendRunEvent(context.Background(), runevent.RunEvent{
 				RunID:   active.ID,
@@ -14768,10 +14725,8 @@ func TestAttachFollowsLiveRunToTerminalState(t *testing.T) {
 
 func withAttachSleep(t *testing.T, sleep func(ctx context.Context) error) {
 	t.Helper()
-	old := attachSleep
-	attachSleep = sleep
-	t.Cleanup(func() {
-		attachSleep = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.attachSleep = sleep
 	})
 }
 
@@ -14785,17 +14740,15 @@ type browserSessionCall struct {
 func withRunBrowserSession(t *testing.T, outcomes ...roundtui.BrowserOutcome) *[]browserSessionCall {
 	t.Helper()
 	calls := &[]browserSessionCall{}
-	old := runBrowserSession
-	runBrowserSession = func(_ context.Context, _ io.Writer, active, all []store.Run) (roundtui.BrowserOutcome, error) {
-		index := len(*calls)
-		*calls = append(*calls, browserSessionCall{active: active, all: all})
-		if index >= len(outcomes) {
-			t.Fatalf("unexpected Run Browser session call %d", index+1)
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.runBrowserSession = func(_ context.Context, _ io.Writer, active, all []store.Run) (roundtui.BrowserOutcome, error) {
+			index := len(*calls)
+			*calls = append(*calls, browserSessionCall{active: active, all: all})
+			if index >= len(outcomes) {
+				t.Fatalf("unexpected Run Browser session call %d", index+1)
+			}
+			return outcomes[index], nil
 		}
-		return outcomes[index], nil
-	}
-	t.Cleanup(func() {
-		runBrowserSession = old
 	})
 	return calls
 }
@@ -14810,28 +14763,22 @@ type browserCockpitCall struct {
 func withBrowserAttachCockpit(t *testing.T, handler func(run store.Run, capacities attachCapacities) int) *[]browserCockpitCall {
 	t.Helper()
 	calls := &[]browserCockpitCall{}
-	old := browserAttachCockpit
-	browserAttachCockpit = func(_ context.Context, _ roundconfig.Loaded, _ *store.Store, run store.Run, capacities attachCapacities, _ io.Writer, _ io.Writer) int {
-		*calls = append(*calls, browserCockpitCall{runID: run.ID, capacities: capacities})
-		if handler == nil {
-			return exitOK
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.browserAttachCockpit = func(_ context.Context, _ roundconfig.Loaded, _ *store.Store, run store.Run, capacities attachCapacities, _ io.Writer, _ io.Writer) int {
+			*calls = append(*calls, browserCockpitCall{runID: run.ID, capacities: capacities})
+			if handler == nil {
+				return exitOK
+			}
+			return handler(run, capacities)
 		}
-		return handler(run, capacities)
-	}
-	t.Cleanup(func() {
-		browserAttachCockpit = old
 	})
 	return calls
 }
 
 func withAttachInteractiveInput(t *testing.T, available bool) {
 	t.Helper()
-	old := attachInteractiveInputAvailable
-	attachInteractiveInputAvailable = func() bool {
-		return available
-	}
-	t.Cleanup(func() {
-		attachInteractiveInputAvailable = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.attachInteractiveInputAvailable = func() bool { return available }
 	})
 }
 
@@ -14860,7 +14807,7 @@ func assertOrderedSubsequence(t *testing.T, haystack []string, expected []string
 }
 
 func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var stdout bytes.Buffer
@@ -14900,7 +14847,7 @@ func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
 }
 
 func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeStoppingAgentRunner{})
@@ -14934,7 +14881,7 @@ func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
 }
 
 func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withVerifier(t, &fakeVerifier{err: errors.New("tests failed")})
@@ -14985,7 +14932,7 @@ func assertOutcomeFollowedByNotificationReceipt(t *testing.T, events []store.Jou
 }
 
 func TestTriageOnlyBatchJournalsCommitSkipDecision(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	// Identical snapshots: the Agent triaged without touching the worktree.
@@ -15020,7 +14967,7 @@ func (staticWorktree) Snapshot(context.Context, string) ([]string, error) {
 }
 
 func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var watchStdout bytes.Buffer
@@ -15061,7 +15008,7 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 }
 
 func TestResolvePrintsIssueSummaryAfterCompletion(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")

@@ -24,8 +24,6 @@ const (
 	setupNodeMinimumVersion = "22.13.0"
 )
 
-var setupDeps = defaultSetupDependencies()
-
 type setupDependencies struct {
 	loadConfig    func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
 	nodeVersion   func(context.Context) (string, error)
@@ -90,6 +88,7 @@ type setupAdapterMigration struct {
 }
 
 func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
+	dependencies := commandDependenciesForContext(ctx).setup
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("setup"))
 		return exitOK
@@ -101,20 +100,20 @@ func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	loadOptions, err := environment.loadOptions(stderr)
 	if err != nil {
-		runner := setupRunner{req: req, deps: setupDeps, stdout: stdout, stderr: stderr}
+		runner := setupRunner{req: req, deps: dependencies, stdout: stdout, stderr: stderr}
 		runner.report("config", "failed", err.Error())
 		return exitRunFailed
 	}
-	loaded, err := setupDeps.loadConfig(loadOptions)
+	loaded, err := dependencies.loadConfig(loadOptions)
 	if err != nil {
-		runner := setupRunner{req: req, deps: setupDeps, stdout: stdout, stderr: stderr}
+		runner := setupRunner{req: req, deps: dependencies, stdout: stdout, stderr: stderr}
 		runner.report("config", "failed", err.Error())
 		return exitRunFailed
 	}
 	runner := setupRunner{
 		req:     req,
-		deps:    setupDeps,
-		health:  setupDeps.healthChecker(environment.codexPath),
+		deps:    dependencies,
+		health:  dependencies.healthChecker(environment.codexPath),
 		loaded:  loaded,
 		stdout:  stdout,
 		stderr:  stderr,
@@ -292,7 +291,7 @@ func (runner *setupRunner) readFileProposal(label string, path string, generated
 func (runner *setupRunner) proveProposal(ctx context.Context, proposal *setupProposal) bool {
 	proofRunner := runner.deps.profileRunner
 	if proofRunner == nil {
-		proofRunner = newEngineCollaborators().runner
+		proofRunner = commandDependenciesForContext(ctx).newEngineCollaborators().runner
 	}
 	if _, ok := proofRunner.(agent.SelectionProver); !ok {
 		runner.report("profile readiness", "failed", "exact Agent Selection proof is unavailable")
@@ -586,9 +585,9 @@ func defaultSetupDependencies() setupDependencies {
 		acpxVersion:   defaultSetupACPXVersion,
 		installACPX:   defaultSetupInstallACPX,
 		checkAdapter:  agent.CheckAdapter,
-		profileRunner: newEngineCollaborators().runner,
+		profileRunner: defaultEngineCollaborators().runner,
 		probeAgent: func(ctx context.Context, req agent.ProbeRequest) error {
-			return newEngineCollaborators().runner.Probe(ctx, req)
+			return defaultEngineCollaborators().runner.Probe(ctx, req)
 		},
 		lookPath: exec.LookPath,
 		exists: func(path string) (bool, error) {

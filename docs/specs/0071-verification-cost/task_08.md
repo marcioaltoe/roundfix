@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0071-verification-cost
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -71,3 +71,52 @@ the whole package takes 143.4s.
 - `_techspec.md` → Build Order 3; Risks.
 - `baseline/2026-08-03-after.md` → the measurement that identified this cost.
 - ADR-0089.
+
+## Result
+
+### Implementation
+
+- Replaced mutable package-level CLI test seams with invocation-scoped
+  `commandDependencies` carried by `commandEnvironment` and `context.Context`.
+  Parallel tests now receive isolated collaborators, clocks, inputs, runners,
+  worktree operations, and command-specific dependencies without mutating
+  process state.
+- Declared `t.Parallel()` on every runnable top-level test without a remaining
+  process-global dependency. The focused AST inventory reports 479 parallel
+  tests and eight sequential tests out of 487 runnable tests, up from 207
+  parallel declarations.
+- Kept only the eight tests that require process-wide `PATH`,
+  `ROUNDFIX_TUI`, `ROUNDFIX_COLOR`, or `SIGTERM` handling sequential, with the
+  exact dependency named in a one-line comment on each test.
+- Fixed failures surfaced during overlap testing: workspace registration now
+  merges with an existing per-test dependency override instead of replacing
+  it, and the live Attach test now gates its writer on entry to follow mode
+  instead of racing command startup.
+
+### Acceptance evidence
+
+- Parallel count: the AST inventory reported
+  `parallel=479 sequential=8 runnable=487 parallel_global_assignments=0`.
+- Sequential reasons: the same inventory enumerated exactly eight tests; every
+  entry names one of `PATH`, `ROUNDFIX_TUI`, `ROUNDFIX_COLOR`, or process-wide
+  `SIGTERM` handling.
+- Focused race and repeat checks:
+  - the non-Implement command group passed with `-race -count=2 -parallel=12`
+    in 14.175s;
+  - the Implement/Settle group passed with `-race -count=2 -parallel=12` in
+    16.250s;
+  - the Baseline/profile group passed with `-race -count=2 -parallel=12` in
+    64.141s;
+  - the Stop/Attach group passed with `-race -count=2 -parallel=12` in 4.563s;
+  - the owner-identity and live Attach regressions each passed ten repetitions
+    with race detection.
+- Compile-only package check passed with `-run '^$' -count=1`.
+- Coverage record: `git diff --exit-code --
+  docs/specs/0071-verification-cost/coverage-record.json` exited 0.
+- Diff hygiene: `git diff --check` exited 0. This task authored changes only
+  under `internal/cli/` and this task file. The raw worktree status also contains
+  pre-existing Task 06 changes to `Makefile` and `task_06.md`; they were not
+  modified by this task.
+- The full-package race, repeated-run, coverage-equivalence, pass-count, and
+  143.4s wall-clock comparisons remain for the Daemon-owned `## Verification`
+  commands, which were intentionally not run during this child-agent turn.

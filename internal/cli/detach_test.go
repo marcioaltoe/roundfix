@@ -25,7 +25,7 @@ const (
 )
 
 func TestRunDetachedCommandTimesOutWaitingForLiveness(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	stdout, stderr, code := runDetachParentForTest(t, detachTestChildSleepBeforeLiveness, 50*time.Millisecond, time.Second)
 
 	if code != exitRunFailed {
@@ -45,7 +45,7 @@ func TestRunDetachedCommandTimesOutWaitingForLiveness(t *testing.T) {
 }
 
 func TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	stdout, stderr, code := runDetachParentForTest(t, detachTestChildRunCreated, 500*time.Millisecond, 2*time.Second)
 
 	if code != exitOK {
@@ -72,7 +72,7 @@ func TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline(t 
 }
 
 func TestRunDetachedCommandTimesOutWaitingForRunCreation(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	stdout, stderr, code := runDetachParentForTest(t, detachTestChildSlowRunCreation, 500*time.Millisecond, 50*time.Millisecond)
 
 	if code != exitRunFailed {
@@ -92,7 +92,7 @@ func TestRunDetachedCommandTimesOutWaitingForRunCreation(t *testing.T) {
 }
 
 func TestRunDetachedCommandReportsInvalidLivenessHandshake(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	stdout, stderr, code := runDetachParentForTest(t, detachTestChildInvalidLiveness, time.Second, time.Second)
 
 	if code != exitRunFailed {
@@ -112,7 +112,7 @@ func TestRunDetachedCommandReportsInvalidLivenessHandshake(t *testing.T) {
 }
 
 func TestRunDetachedCommandReportsMalformedRunCreationHandshake(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	stdout, stderr, code := runDetachParentForTest(t, detachTestChildMalformedRunCreated, time.Second, time.Second)
 
 	if code != exitRunFailed {
@@ -132,7 +132,7 @@ func TestRunDetachedCommandReportsMalformedRunCreationHandshake(t *testing.T) {
 }
 
 func TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	stdout, stderr, code := runDetachParentForTest(t, detachTestChildExitTwoWithOutput, time.Second, time.Second)
 
 	if code != exitPreflight {
@@ -152,7 +152,7 @@ func TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput(t *testing.
 }
 
 func TestRunDetachedCommandReportsSilentChildExitBeforeHandshake(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	stdout, stderr, code := runDetachParentForTest(t, detachTestChildExitOneSilently, time.Second, time.Second)
 
 	if code != exitRunFailed {
@@ -168,25 +168,25 @@ func TestRunDetachedCommandReportsSilentChildExitBeforeHandshake(t *testing.T) {
 
 func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time.Duration, runCreationTimeout time.Duration) (string, string, int) {
 	t.Helper()
-	oldTimeouts := detachTimeouts
-	detachTimeouts = detachPhaseTimeouts{
-		liveness:    livenessTimeout,
-		runCreation: runCreationTimeout,
-	}
-	t.Cleanup(func() {
-		detachTimeouts = oldTimeouts
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.detachTimeouts = detachPhaseTimeouts{
+			liveness:    livenessTimeout,
+			runCreation: runCreationTimeout,
+		}
 	})
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
+	environment := commandEnvironmentForTest(t)
 	code := runDetachedCommand(
 		[]string{"implement", "--detach"},
 		commandRequest{name: "implement", detach: true, artifactDir: filepath.Join(t.TempDir(), "artifacts")},
 		roundconfig.Loaded{GitRoot: t.TempDir(), HomeDir: t.TempDir()},
 		&stdout,
 		&stderr,
-		withEnvValue(commandEnvironmentFromProcess().environ, detachTestChildModeEnv, childMode),
+		withEnvValue(environment.environ, detachTestChildModeEnv, childMode),
 		t.TempDir(),
+		environment.dependencies.detachTimeouts,
 	)
 	return stdout.String(), stderr.String(), code
 }

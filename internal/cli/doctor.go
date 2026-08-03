@@ -19,8 +19,6 @@ import (
 	"roundfix/skills"
 )
 
-var doctorDeps = defaultDoctorDependencies()
-
 type doctorDependencies struct {
 	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
 	healthChecker    func(roundconfig.Loaded, string) HealthChecker
@@ -33,10 +31,10 @@ func defaultDoctorDependencies() doctorDependencies {
 	return doctorDependencies{
 		loadConfig: roundconfig.Load,
 		healthChecker: func(_ roundconfig.Loaded, codexPath string) HealthChecker {
-			return setupDeps.healthChecker(codexPath)
+			return defaultSetupDependencies().healthChecker(codexPath)
 		},
 		profileReadiness: func(ctx context.Context, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string) profileProofResult {
-			return proveProfileSelections(ctx, config, categories, workDir, newEngineCollaborators().runner)
+			return proveProfileSelections(ctx, config, categories, workDir, commandDependenciesForContext(ctx).newEngineCollaborators().runner)
 		},
 		resolveExternal: resolveExternalSkillRequirement,
 		checkSkills:     skills.CheckRepositoryWithExternal,
@@ -44,6 +42,8 @@ func defaultDoctorDependencies() doctorDependencies {
 }
 
 func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
+	ctx = contextWithCommandDependencies(ctx, environment.dependencies)
+	dependencies := commandDependenciesForContext(ctx).doctor
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("doctor"))
 		return exitOK
@@ -58,13 +58,13 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printDoctorFailure(err, stderr)
 		return exitRunFailed
 	}
-	loaded, err := doctorDeps.loadConfig(loadOptions)
+	loaded, err := dependencies.loadConfig(loadOptions)
 	if err != nil {
 		printDoctorFailure(err, stderr)
 		return exitRunFailed
 	}
 
-	checker := doctorDeps.healthChecker(loaded, environment.codexPath)
+	checker := dependencies.healthChecker(loaded, environment.codexPath)
 	repositoryRoot := strings.TrimSpace(loaded.GitRoot)
 	profileWorkDir := repositoryRoot
 	if profileWorkDir == "" {
@@ -81,16 +81,16 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results = append(results, checker.ACPX(ctx))
 	runtimes, runtimeErr := doctorAdapterRuntimes(loaded.Config)
 	results = append(results, doctorAdapterCheck(ctx, checker, runtimes, runtimeErr))
-	profileReadiness := doctorDeps.profileReadiness(ctx, loaded.Config, roundconfig.RequiredWorkCategories(), profileWorkDir)
+	profileReadiness := dependencies.profileReadiness(ctx, loaded.Config, roundconfig.RequiredWorkCategories(), profileWorkDir)
 	results = append(results, doctorProfileReadinessResult(profileReadiness))
 	if repositoryRoot == "" {
 		results = append(results, doctorMissingRepositoryRootResult())
 	} else {
-		external, manifestOK, requirementErr := doctorDeps.resolveExternal(repositoryRoot)
+		external, manifestOK, requirementErr := dependencies.resolveExternal(repositoryRoot)
 		if requirementErr != nil {
 			results = append(results, doctorSkillRequirementResult(requirementErr))
 		} else {
-			skillReadiness, skillErr := doctorDeps.checkSkills(ctx, repositoryRoot, external)
+			skillReadiness, skillErr := dependencies.checkSkills(ctx, repositoryRoot, external)
 			if manifestOK {
 				results = append(results, doctorSkillReadinessResult(skillReadiness, skillErr))
 			} else {

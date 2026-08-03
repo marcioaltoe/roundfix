@@ -123,8 +123,8 @@ func probeRuntimeSelection(ctx context.Context, req commandRequest, runtime agen
 		candidates: candidates,
 		rerun:      fallbackRerunCommand(req, fallback),
 	}
-	if !selectionFailureIsNonInteractive(req, stderr) {
-		confirmed, confirmErr := confirmFallbackSelection(ctx, fallbackConfirmationInput(), stderr, selectionErr, fallback)
+	if !selectionFailureIsNonInteractive(ctx, req, stderr) {
+		confirmed, confirmErr := confirmFallbackSelection(ctx, commandDependenciesForContext(ctx).fallbackConfirmationInput(), stderr, selectionErr, fallback)
 		if confirmErr != nil {
 			return runtime, fmt.Errorf("confirm fallback selection: %w", confirmErr)
 		}
@@ -158,8 +158,8 @@ func fallbackCandidates(runtime agent.RuntimeSpec) agent.FallbackCandidateSet {
 	return agent.FallbackCandidateSet{Models: models, Efforts: efforts}
 }
 
-func selectionFailureIsNonInteractive(req commandRequest, stderr io.Writer) bool {
-	return req.noInput || req.detach || req.detachChild != nil || !fallbackConfirmationAvailable(stderr)
+func selectionFailureIsNonInteractive(ctx context.Context, req commandRequest, stderr io.Writer) bool {
+	return req.noInput || req.detach || req.detachChild != nil || !commandDependenciesForContext(ctx).fallbackConfirmationAvailable(stderr)
 }
 
 func confirmFallbackSelection(ctx context.Context, stdin io.Reader, stderr io.Writer, failure *agent.SelectionPreflightError, fallback agent.FallbackSelection) (bool, error) {

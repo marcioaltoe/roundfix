@@ -84,7 +84,7 @@ func runUpgradeCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		printUpgradeFailure(err, stderr)
 		return exitPreflight
 	}
-	outcome, err := performUpgrade(ctx, req, upgradeDeps)
+	outcome, err := performUpgrade(ctx, req, commandDependenciesForContext(ctx).upgrade)
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: upgrade failed: %v\n", app.Name, err)
 		return exitRunFailed
@@ -312,7 +312,7 @@ func releaseAssetName(asset app.ReleaseAsset) string {
 }
 
 func maybeReportVersionFreshness(ctx context.Context, loaded roundconfig.Loaded, stderr io.Writer) {
-	deps := versionFreshnessDeps
+	deps := commandDependenciesForContext(ctx).versionFreshness
 	if deps.now == nil {
 		deps.now = time.Now
 	}

@@ -46,7 +46,7 @@ func runRunsCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		return exitOK
 	}
 	if len(args) == 0 {
-		if !runsInteractiveInputAvailable() || !liveTUIEnabled(stdout) {
+		if !commandDependenciesForContext(ctx).runsInteractiveInputAvailable() || !liveTUIEnabled(stdout) {
 			fmt.Fprintf(stderr, "%s: runs requires a subcommand in non-interactive mode; use 'roundfix runs list'\n", app.Name)
 			return exitPreflight
 		}
@@ -91,7 +91,7 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return exitPreflight
 	}
 	if !found {
-		printRunsList(stdout, nil, opts, runsListNow())
+		printRunsList(stdout, nil, opts, commandDependenciesForContext(ctx).runsListNow())
 		return exitOK
 	}
 	defer func() {
@@ -119,7 +119,7 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	if opts.limit > 0 && len(matching) > opts.limit {
 		visible = matching[:opts.limit]
 	}
-	printRunsList(stdout, visible, opts, runsListNow())
+	printRunsList(stdout, visible, opts, commandDependenciesForContext(ctx).runsListNow())
 	note := runsListRetainedWorktreeNote(retainedWorktrees)
 	if note == "" {
 		note = runsListHiddenNote(opts.state, len(runs), len(matching), len(visible))

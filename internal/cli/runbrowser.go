@@ -36,7 +36,7 @@ func runRunBrowserLoop(ctx context.Context, loaded roundconfig.Loaded, reader *s
 		if err != nil {
 			return exitPreflight, err
 		}
-		outcome, err := runBrowserSession(ctx, stdout, active, all)
+		outcome, err := commandDependenciesForContext(ctx).runBrowserSession(ctx, stdout, active, all)
 		if err != nil {
 			return exitRunFailed, fmt.Errorf("run the Run Browser: %w", err)
 		}
@@ -53,7 +53,7 @@ func runRunBrowserLoop(ctx context.Context, loaded roundconfig.Loaded, reader *s
 			continue
 		}
 		capacities := attachRunCapacities(ctx, reader, run, configuredAttachCapacities(loaded))
-		if code := browserAttachCockpit(ctx, loaded, reader, run, capacities, stdout, stderr); code != exitOK {
+		if code := commandDependenciesForContext(ctx).browserAttachCockpit(ctx, loaded, reader, run, capacities, stdout, stderr); code != exitOK {
 			return code, nil
 		}
 	}
@@ -93,7 +93,7 @@ func runRunsBrowserCommand(ctx context.Context, stdout, stderr io.Writer, enviro
 	if !found {
 		// No Run Database yet: one browser pass shows the empty state;
 		// with no rows, only cancel closes it.
-		if _, err := runBrowserSession(ctx, stdout, nil, nil); err != nil {
+		if _, err := commandDependenciesForContext(ctx).runBrowserSession(ctx, stdout, nil, nil); err != nil {
 			printRunsBrowserFailure(fmt.Errorf("run the Run Browser: %w", err), stderr)
 			return exitRunFailed
 		}

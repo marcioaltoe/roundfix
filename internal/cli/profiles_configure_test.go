@@ -16,7 +16,7 @@ import (
 )
 
 func TestProfilesConfigureExitCodes(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	t.Run("declined confirmation", func(t *testing.T) {
 		_, repoDir := withCLIWorkspace(t)
 		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -233,7 +233,7 @@ func TestProfilesConfigureExitCodes(t *testing.T) {
 }
 
 func TestProfilesConfigureChangeSummary(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	t.Run("added category agrees in text and machine output", func(t *testing.T) {
 		_, repoDir := withCLIWorkspace(t)
 		fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
@@ -375,7 +375,7 @@ profiles:
 }
 
 func TestProfilesConfigureProofScope(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := `

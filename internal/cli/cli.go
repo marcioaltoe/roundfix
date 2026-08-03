@@ -29,6 +29,7 @@ import (
 	"roundfix/internal/reviewsource/coderabbit"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	"roundfix/internal/watch"
@@ -198,6 +199,128 @@ type commandEnvironment struct {
 	codexPath      string
 	executablePath string
 	branchActor    string
+	dependencies   commandDependencies
+}
+
+type commandDependencies struct {
+	runCommandPreflight             func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error)
+	fetchReviewItems                func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error)
+	newOutcomeNotifier              func(roundconfig.Config) roundnotify.Notifier
+	newEngineCollaborators          func() engineCollaborators
+	watchReviewEvidence             func(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error)
+	watchHeadSHA                    func(context.Context, string) (string, error)
+	listPendingRunWork              func(context.Context, string, string) ([]runworktree.PendingRunWork, error)
+	supersedingQAReport             func(context.Context, string, string, string, string) (string, bool)
+	integratePendingRunWork         func(context.Context, string, string, string) error
+	refreshBranchIntegrityHead      func(context.Context, preflight.Result) (preflight.Result, error)
+	commentOnPullRequest            func(context.Context, string, string, int, string) error
+	reviewSpecGitRunner             preflight.GitRunner
+	watchClock                      watch.Clock
+	watchSleeper                    watch.Sleeper
+	inspectChangedPaths             func(context.Context, string) ([]preflight.ChangedPath, error)
+	collectInteractiveInput         func(context.Context, roundtui.InputRequest) (roundtui.CommandValues, error)
+	suggestCurrentPullRequest       func(context.Context, string) (string, error)
+	resolvePullRequestForStop       func(context.Context, string, string) (preflight.PullRequest, error)
+	promptInitScope                 func(context.Context, io.Writer) (string, error)
+	resolveSkillsProjectRoot        func(context.Context, string) (string, error)
+	promptProjectClaudeSkillSymlink func(context.Context, io.Writer, string, string) (bool, error)
+	cancelStopAgentSession          func(context.Context, agent.RuntimeSpec, agent.SessionRef) error
+	listRoundfixAgentSessions       func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error)
+	closeStopAgentSession           func(context.Context, agent.RuntimeSpec, agent.SessionRef) error
+	ownerProcesses                  OwnerProcessController
+	fallbackConfirmationInput       func() io.Reader
+	fallbackConfirmationAvailable   func(io.Writer) bool
+	runsListNow                     func() time.Time
+	runsInteractiveInputAvailable   func() bool
+	doctor                          doctorDependencies
+	runBrowserSession               func(context.Context, io.Writer, []store.Run, []store.Run) (roundtui.BrowserOutcome, error)
+	browserAttachCockpit            func(context.Context, roundconfig.Loaded, *store.Store, store.Run, attachCapacities, io.Writer, io.Writer) int
+	setup                           setupDependencies
+	profilesConfigureInput          func() io.Reader
+	confirmProfilesConfigure        func(context.Context, io.Writer, string) (bool, error)
+	implementOwnerIdentity          func(context.Context) string
+	createRunWorktree               func(context.Context, runworktree.CreateOptions) (runworktree.Ref, error)
+	integrateRunWorktree            func(context.Context, runworktree.Ref, string, string) (runworktree.IntegrationResult, error)
+	cleanupCleanRunWorktree         func(context.Context, runworktree.Ref) error
+	pruneTerminalRunWorktrees       func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error)
+	loadCommittedSpecGraph          func(context.Context, string, roundconfig.SpecsRoot, string, string) (*spec.Graph, string, error)
+	detachTimeouts                  detachPhaseTimeouts
+	attachInteractiveInputAvailable func() bool
+	attachSleep                     func(context.Context) error
+	upgrade                         upgradeDependencies
+	versionFreshness                versionFreshnessDependencies
+	gc                              gcDependencies
+	releasePlanGitRunner            preflight.GitRunner
+	releasePlanGHRunner             preflight.GHRunner
+}
+
+type commandDependenciesContextKey struct{}
+
+func defaultCommandDependencies() commandDependencies {
+	return commandDependencies{
+		runCommandPreflight:             runCommandPreflight,
+		fetchReviewItems:                fetchReviewItems,
+		newOutcomeNotifier:              newOutcomeNotifier,
+		newEngineCollaborators:          newEngineCollaborators,
+		watchReviewEvidence:             watchReviewEvidence,
+		watchHeadSHA:                    watchHeadSHA,
+		listPendingRunWork:              listPendingRunWork,
+		supersedingQAReport:             supersedingQAReport,
+		integratePendingRunWork:         integratePendingRunWork,
+		refreshBranchIntegrityHead:      refreshBranchIntegrityHead,
+		commentOnPullRequest:            commentOnPullRequest,
+		reviewSpecGitRunner:             reviewSpecGitRunner,
+		watchClock:                      watchClock,
+		watchSleeper:                    watchSleeper,
+		inspectChangedPaths:             inspectChangedPaths,
+		collectInteractiveInput:         collectInteractiveInput,
+		suggestCurrentPullRequest:       suggestCurrentPullRequest,
+		resolvePullRequestForStop:       resolvePullRequestForStop,
+		promptInitScope:                 promptInitScope,
+		resolveSkillsProjectRoot:        resolveSkillsProjectRoot,
+		promptProjectClaudeSkillSymlink: promptProjectClaudeSkillSymlink,
+		cancelStopAgentSession:          cancelStopAgentSession,
+		listRoundfixAgentSessions:       listRoundfixAgentSessions,
+		closeStopAgentSession:           closeStopAgentSession,
+		ownerProcesses:                  ownerProcesses,
+		fallbackConfirmationInput:       fallbackConfirmationInput,
+		fallbackConfirmationAvailable:   fallbackConfirmationAvailable,
+		runsListNow:                     runsListNow,
+		runsInteractiveInputAvailable:   runsInteractiveInputAvailable,
+		doctor:                          defaultDoctorDependencies(),
+		runBrowserSession:               runBrowserSession,
+		browserAttachCockpit:            browserAttachCockpit,
+		setup:                           defaultSetupDependencies(),
+		profilesConfigureInput:          func() io.Reader { return os.Stdin },
+		confirmProfilesConfigure:        defaultConfirmProfilesConfigure,
+		implementOwnerIdentity:          implementOwnerIdentity,
+		createRunWorktree:               createRunWorktree,
+		integrateRunWorktree:            integrateRunWorktree,
+		cleanupCleanRunWorktree:         cleanupCleanRunWorktree,
+		pruneTerminalRunWorktrees:       pruneTerminalRunWorktrees,
+		loadCommittedSpecGraph:          loadCommittedSpecGraph,
+		detachTimeouts:                  detachTimeouts,
+		attachInteractiveInputAvailable: attachInteractiveInputAvailable,
+		attachSleep:                     attachSleep,
+		upgrade:                         upgradeDeps,
+		versionFreshness:                versionFreshnessDeps,
+		gc:                              gcDeps,
+		releasePlanGitRunner:            releasePlanCommandGitRunner,
+		releasePlanGHRunner:             releasePlanCommandGHRunner,
+	}
+}
+
+func commandDependenciesForContext(ctx context.Context) commandDependencies {
+	if ctx != nil {
+		if dependencies, ok := ctx.Value(commandDependenciesContextKey{}).(commandDependencies); ok {
+			return dependencies
+		}
+	}
+	return defaultCommandDependencies()
+}
+
+func contextWithCommandDependencies(ctx context.Context, dependencies commandDependencies) context.Context {
+	return context.WithValue(ctx, commandDependenciesContextKey{}, dependencies)
 }
 
 func commandEnvironmentFromProcess() commandEnvironment {
@@ -226,6 +349,7 @@ func commandEnvironmentFromProcess() commandEnvironment {
 		codexPath:      os.Getenv("CODEX_PATH"),
 		executablePath: os.Getenv("PATH"),
 		branchActor:    branchActor,
+		dependencies:   defaultCommandDependencies(),
 	}
 }
 
@@ -306,6 +430,7 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	ctx = contextWithCommandDependencies(ctx, environment.dependencies)
 	stdout = commandWriter(stdout, environment)
 	stderr = commandWriter(stderr, environment)
 	detachChild, err := newDetachChildFromEnv(environment.detachFD, environment.detachTempPath)
@@ -394,7 +519,7 @@ func runInitCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 	selectedScope := strings.TrimSpace(*scope)
 	if selectedScope == "" {
 		var err error
-		selectedScope, err = promptInitScope(ctx, stderr)
+		selectedScope, err = commandDependenciesForContext(ctx).promptInitScope(ctx, stderr)
 		if err != nil {
 			printInitFailure(err, stderr)
 			return exitPreflight
@@ -596,7 +721,7 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		publishTerminalCompletion(
 			ctx,
 			runStore,
-			outcomeNotifierFromConfig(loaded.Config),
+			outcomeNotifierFromConfig(ctx, loaded.Config),
 			stderr,
 			store.CompleteRunResult{Run: result.Run, Transitioned: true},
 			0,
@@ -724,13 +849,13 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 	if headRepo == "" || headBranch == "" {
 		pr := strings.TrimSpace(req.pr)
 		if pr == "" {
-			suggested, _ := suggestCurrentPullRequest(ctx, loaded.GitRoot)
+			suggested, _ := commandDependenciesForContext(ctx).suggestCurrentPullRequest(ctx, loaded.GitRoot)
 			pr = strings.TrimSpace(suggested)
 		}
 		if pr == "" {
 			return stopResult{}, validationError{message: "missing stop target; pass a Run ID, --run-id, --pr, --spec, or --head-repo with --head-branch"}
 		}
-		resolved, err := resolvePullRequestForStop(ctx, loaded.GitRoot, pr)
+		resolved, err := commandDependenciesForContext(ctx).resolvePullRequestForStop(ctx, loaded.GitRoot, pr)
 		if err != nil {
 			return stopResult{}, fmt.Errorf("resolve Open Pull Request %s for stop target: %w", pr, err)
 		}
@@ -789,7 +914,7 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 	// destructive steps: cancel registered Agent Sessions, then terminate the
 	// owner and wait for its exit.
 	terminationIdentity := active.OwnerIdentity
-	if err := ownerProcesses.ProveOwner(ctx, pid, active.OwnerIdentity); err != nil {
+	if err := commandDependenciesForContext(ctx).ownerProcesses.ProveOwner(ctx, pid, active.OwnerIdentity); err != nil {
 		switch {
 		case ownerIdentityUnreadable && errors.Is(err, store.ErrOwnerIdentityUnreadable):
 			// The explicit supervised flag authorizes the existing PID-only
@@ -810,7 +935,7 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 		return stopResult{Run: active}, validationError{message: "--owner-identity-unreadable may be used only when the owner identity is unreadable"}
 	}
 	warnings := bestEffortForceStopAgentSessions(ctx, runStore, active)
-	if err := ownerProcesses.TerminateAndWait(ctx, pid, terminationIdentity); err != nil {
+	if err := commandDependenciesForContext(ctx).ownerProcesses.TerminateAndWait(ctx, pid, terminationIdentity); err != nil {
 		return stopResult{Run: active, Warnings: warnings}, forceStopOwnerError{
 			RunID: active.ID,
 			PID:   pid,
@@ -823,7 +948,7 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 		return stopResult{Run: active, Warnings: warnings}, err
 	}
 	if strings.TrimSpace(active.GitRoot) != "" && strings.TrimSpace(active.WorkDir) != "" {
-		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, runStore, func(lookupCtx context.Context, runID string) (store.Run, bool, error) {
+		pruned, pruneErr := commandDependenciesForContext(ctx).pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, runStore, func(lookupCtx context.Context, runID string) (store.Run, bool, error) {
 			return runStore.Run(lookupCtx, runID)
 		})
 		for _, ref := range pruned {
@@ -900,7 +1025,7 @@ func cleanupRegisteredAgentSession(
 	}
 
 	cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	cancelErr := cancelStopAgentSession(cancelCtx, runtime, session)
+	cancelErr := commandDependenciesForContext(ctx).cancelStopAgentSession(cancelCtx, runtime, session)
 	cancel()
 	if cancelErr != nil && !agent.IsAgentSessionAbsent(cancelErr) {
 		warnings = append(warnings, cleanupFailuref(
@@ -913,7 +1038,7 @@ func cleanupRegisteredAgentSession(
 	}
 
 	closeCtx, closeCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	closeErr := closeStopAgentSession(closeCtx, runtime, session)
+	closeErr := commandDependenciesForContext(ctx).closeStopAgentSession(closeCtx, runtime, session)
 	closeCancel()
 	if closeErr != nil && !agent.IsAgentSessionAbsent(closeErr) {
 		warnings = append(warnings, cleanupFailuref(
@@ -1074,7 +1199,7 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, workDirErr)
 			return exitPreflight
 		}
-		projectRoot, err = resolveSkillsProjectRoot(ctx, workDir)
+		projectRoot, err = commandDependenciesForContext(ctx).resolveSkillsProjectRoot(ctx, workDir)
 		if err != nil {
 			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
 			return exitPreflight
@@ -1182,7 +1307,7 @@ func maybeCreateProjectClaudeSkillSymlink(ctx context.Context, projectRoot strin
 	if err != nil {
 		return fmt.Errorf("resolve Claude skill symlink target: %w", err)
 	}
-	create, err := promptProjectClaudeSkillSymlink(ctx, stderr, linkPath, relativeTarget)
+	create, err := commandDependenciesForContext(ctx).promptProjectClaudeSkillSymlink(ctx, stderr, linkPath, relativeTarget)
 	if err != nil {
 		return err
 	}
@@ -1313,7 +1438,7 @@ func maybeCollectInteractiveInput(ctx context.Context, req commandRequest, loade
 	if err != nil {
 		return req, err
 	}
-	values, err := collectInteractiveInput(ctx, inputReq)
+	values, err := commandDependenciesForContext(ctx).collectInteractiveInput(ctx, inputReq)
 	if err != nil {
 		return req, fmt.Errorf("Interactive Input failed: %w", err)
 	}
@@ -1369,7 +1494,7 @@ func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loade
 	}
 	var prSuggestion roundtui.Suggestion
 	if req.name != "implement" {
-		currentPR, _ := suggestCurrentPullRequest(ctx, loaded.GitRoot)
+		currentPR, _ := commandDependenciesForContext(ctx).suggestCurrentPullRequest(ctx, loaded.GitRoot)
 		prSuggestion = roundtui.Suggestion{Value: currentPR, Source: "current"}
 		if prSuggestion.Value == "" {
 			prSuggestion = roundtui.Suggestion{Value: remembered.PRNumber, Source: "remembered"}
@@ -1549,7 +1674,7 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		return exitPreflight
 	}
 	if req.detach {
-		return runDetachedCommand(append([]string{name}, args...), req, loadedConfig, stdout, stderr, environment.environ, environment.workDir)
+		return runDetachedCommand(append([]string{name}, args...), req, loadedConfig, stdout, stderr, environment.environ, environment.workDir, environment.dependencies.detachTimeouts)
 	}
 
 	explicitArtifactDir := strings.TrimSpace(req.artifactDir) != ""
@@ -1561,7 +1686,7 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	req.artifactDir = artifactDir
 	req.explicitArtifactDir = explicitArtifactDir
 
-	preflightResult, err := runCommandPreflight(ctx, req, loadedConfig)
+	preflightResult, err := commandDependenciesForContext(ctx).runCommandPreflight(ctx, req, loadedConfig)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
@@ -1597,9 +1722,9 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	case "fetch":
 		return runFetchCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
 	case "resolve":
-		return runResolveCommand(ctx, req, loadedConfig, preflightResult, outcomeNotifierFromConfig(loadedConfig.Config), stdout, stderr)
+		return runResolveCommand(ctx, req, loadedConfig, preflightResult, outcomeNotifierFromConfig(ctx, loadedConfig.Config), stdout, stderr)
 	case "watch":
-		return runWatchCommand(ctx, req, loadedConfig, preflightResult, outcomeNotifierFromConfig(loadedConfig.Config), stdout, stderr)
+		return runWatchCommand(ctx, req, loadedConfig, preflightResult, outcomeNotifierFromConfig(ctx, loadedConfig.Config), stdout, stderr)
 	}
 
 	fmt.Fprintf(stderr, "%s: %s command input accepted, but execution is not wired in this MVP slice\n", app.Name, req.name)
@@ -1761,14 +1886,14 @@ func runBranchIntegrityPreflight(ctx context.Context, req commandRequest, loaded
 		return report, preflightResult, err
 	}
 	for _, pending := range integrationPlan {
-		if err := integratePendingRunWork(ctx, preflightResult.Git.Root, preflightResult.PullRequest.HeadBranch, pending.Branch); err != nil {
+		if err := commandDependenciesForContext(ctx).integratePendingRunWork(ctx, preflightResult.Git.Root, preflightResult.PullRequest.HeadBranch, pending.Branch); err != nil {
 			return report, preflightResult, fmt.Errorf("Branch Integrity Preflight integrate %s: %w", pending.Branch, err)
 		}
 		report.Integrated = append(report.Integrated, pending)
 		fmt.Fprintf(stderr, "Branch Integrity Preflight: integrated %s with %s (%d commit(s), worktree %s).\n",
 			pending.Branch, branchIntegrityIntegrationCommand(pending.Branch), pending.AheadCommits, branchIntegrityWorktreePath(pending.WorktreePath))
 	}
-	updated, err := refreshBranchIntegrityHead(ctx, preflightResult)
+	updated, err := commandDependenciesForContext(ctx).refreshBranchIntegrityHead(ctx, preflightResult)
 	if err != nil {
 		return report, preflightResult, err
 	}
@@ -1779,7 +1904,7 @@ func requireCleanTrackedReviewTree(ctx context.Context, commandName string, pref
 	if commandName != "resolve" && commandName != "watch" {
 		return nil
 	}
-	changes, err := inspectChangedPaths(ctx, preflightResult.Git.Root)
+	changes, err := commandDependenciesForContext(ctx).inspectChangedPaths(ctx, preflightResult.Git.Root)
 	if err != nil {
 		return fmt.Errorf("inspect clean tracked checkout for review Run: %w", err)
 	}
@@ -1839,7 +1964,7 @@ func branchIntegrityIsAncestor(ctx context.Context, gitRoot string, ancestor str
 
 func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult preflight.Result) (branchIntegrityReport, error) {
 	report := branchIntegrityReport{}
-	pending, err := listPendingRunWork(ctx, preflightResult.Git.Root, preflightResult.PullRequest.HeadBranch)
+	pending, err := commandDependenciesForContext(ctx).listPendingRunWork(ctx, preflightResult.Git.Root, preflightResult.PullRequest.HeadBranch)
 	if err != nil {
 		return report, err
 	}
@@ -1921,7 +2046,7 @@ func filterPendingRunWorkByTarget(
 			// target-side report this branch is unintegrated, and offering
 			// `roundfix reconcile --apply` would name a release that the
 			// classifier refuses.
-			if _, proven := supersedingQAReport(ctx, gitRoot, targetHead, work.Branch, row.SpecSlug); proven {
+			if _, proven := commandDependenciesForContext(ctx).supersedingQAReport(ctx, gitRoot, targetHead, work.Branch, row.SpecSlug); proven {
 				supersededQAReports = append(supersededQAReports, work)
 				continue
 			}
@@ -1976,7 +2101,7 @@ func publishBranchIntegrityBypassAudit(ctx context.Context, req commandRequest, 
 	}
 	marker := branchIntegrityBypassMarker(runID, preflightResult.PullRequest.Number)
 	body := branchIntegrityBypassAuditBody(runID, preflightResult, req.branchIntegrity, marker, time.Now().UTC(), req.branchIntegrityActor)
-	if err := commentOnPullRequest(ctx, req.source, baseRepository, prNumber, body); err != nil {
+	if err := commandDependenciesForContext(ctx).commentOnPullRequest(ctx, req.source, baseRepository, prNumber, body); err != nil {
 		return fmt.Errorf("publish Branch Integrity Preflight bypass audit comment: %w", err)
 	}
 	journalBranchIntegrityBypass(ctx, runStore, runID, req.branchIntegrity, marker)
@@ -2156,7 +2281,7 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "FetchingIssues", nil, []string{"Fetching Review Source issues..."})
 
-	items, err := fetchReviewItems(ctx, reviewsource.FetchRequest{
+	items, err := commandDependenciesForContext(ctx).fetchReviewItems(ctx, reviewsource.FetchRequest{
 		Source:          req.source,
 		PRNumber:        preflightResult.PullRequest.Number,
 		BaseRepository:  preflightResult.PullRequest.BaseRepository,
@@ -2251,7 +2376,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	collaborators := newEngineCollaborators()
+	collaborators := commandDependenciesForContext(ctx).newEngineCollaborators()
 	categories := reviewProfileCategories()
 	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loaded.Config, categories, preflightResult.Git.Root, collaborators.runner, stderr)
 	if err != nil {
@@ -2338,7 +2463,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 				return code
 			}
 			fmt.Fprintf(stderr, "%s Run %s reached %s.\n", commandDisplayName(req.name), run.ID, store.StateStopped)
-			printStopSummary(req, preflightResult, stderr)
+			printStopSummary(ctx, req, preflightResult, stderr)
 			printReviewIssueReport(stdout, store.StateStopped, 1, true, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 			return exitOK
 		}
@@ -2705,7 +2830,7 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 }
 
 func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, notifier roundnotify.Notifier, stdout, stderr io.Writer) int {
-	collaborators := newEngineCollaborators()
+	collaborators := commandDependenciesForContext(ctx).newEngineCollaborators()
 	categories := reviewProfileCategories()
 	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loaded.Config, categories, preflightResult.Git.Root, collaborators.runner, stderr)
 	if err != nil {
@@ -2804,7 +2929,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}, watch.Dependencies{
 		StopRequests: runStore,
 		ReviewEvidence: watch.ReviewEvidenceFunc(func(ctx context.Context, evidenceReq watch.ReviewEvidenceRequest) (reviewsource.Evidence, error) {
-			return watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
+			return commandDependenciesForContext(ctx).watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
 				Source:          req.source,
 				PRNumber:        evidenceReq.PRNumber,
 				BaseRepository:  preflightResult.PullRequest.BaseRepository,
@@ -2865,8 +2990,8 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
 			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, agentSelections, runtimeFactory, run.ID, session, collaborators, runStore, ui)
 		}),
-		Clock:   watchClock,
-		Sleeper: watchSleeper,
+		Clock:   commandDependenciesForContext(ctx).watchClock,
+		Sleeper: commandDependenciesForContext(ctx).watchSleeper,
 		Sink:    store.JournalSink{Store: runStore},
 		Progress: func(progress watch.WaitProgress) {
 			fmt.Fprintln(ui.progress, formatReviewWaitProgress(progress))
@@ -2942,7 +3067,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printReviewIssueReport(stdout, completed.State, result.Rounds, result.ReviewIssuesKnown, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues, stderr))
 	}
 	if stopped {
-		printStopSummary(req, preflightResult, stderr)
+		printStopSummary(ctx, req, preflightResult, stderr)
 		return exitOK
 	}
 	if err != nil {
@@ -3134,7 +3259,7 @@ func (writer *bootstrapRunWriter) Write(p []byte) (int, error) {
 }
 
 func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stderr io.Writer) (watch.FetchResult, []rounds.Issue, error) {
-	items, err := fetchReviewItems(ctx, reviewsource.FetchRequest{
+	items, err := commandDependenciesForContext(ctx).fetchReviewItems(ctx, reviewsource.FetchRequest{
 		Source:          req.source,
 		PRNumber:        preflightResult.PullRequest.Number,
 		BaseRepository:  preflightResult.PullRequest.BaseRepository,
@@ -3198,7 +3323,7 @@ func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundco
 	}
 	headSHA := ""
 	if req.untilClean && result.Remaining == 0 {
-		headSHA, err = watchHeadSHA(ctx, preflightResult.Git.Root)
+		headSHA, err = commandDependenciesForContext(ctx).watchHeadSHA(ctx, preflightResult.Git.Root)
 		if err != nil {
 			return watch.ResolveResult{}, err
 		}
@@ -3225,9 +3350,9 @@ func exitForWatchOutcome(outcome string) int {
 	}
 }
 
-func printStopSummary(req commandRequest, preflightResult preflight.Result, stderr io.Writer) {
+func printStopSummary(ctx context.Context, req commandRequest, preflightResult preflight.Result, stderr io.Writer) {
 	fmt.Fprintln(stderr, "Stop Request preserved local work and stopped before any later verification, commit, push, fetch, or Review Source mutation.")
-	changes, err := inspectChangedPaths(context.Background(), preflightResult.Git.Root)
+	changes, err := commandDependenciesForContext(ctx).inspectChangedPaths(ctx, preflightResult.Git.Root)
 	if err != nil {
 		fmt.Fprintf(stderr, "Changed paths after Stop Request: unavailable: %v\n", err)
 		return
@@ -3744,7 +3869,7 @@ func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, prefligh
 			RepoRoot:     preflightResult.Git.Root,
 			SpecsRoot:    specsRoot.Path,
 			HeadSHA:      preflightResult.Git.HEAD,
-		}, reviewSpecGitRunner)
+		}, commandDependenciesForContext(ctx).reviewSpecGitRunner)
 		if err != nil {
 			return "", err
 		}
@@ -3969,14 +4094,14 @@ func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded 
 		publishReviewArtifactCommitDecision(ctx, sink, runID, "skipped", message)
 		return reviewsource.ArtifactCommit{}, nil
 	}
-	output, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "status", "--porcelain", "--", relative)
+	output, err := commandDependenciesForContext(ctx).reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "status", "--porcelain", "--", relative)
 	if err != nil {
 		return reviewsource.ArtifactCommit{}, fmt.Errorf("inspect review artifact changes under %q: %w", relative, err)
 	}
 	if strings.TrimSpace(output) == "" {
 		return reviewsource.ArtifactCommit{}, nil
 	}
-	parentSHA, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
+	parentSHA, err := commandDependenciesForContext(ctx).reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
 	if err != nil {
 		return reviewsource.ArtifactCommit{}, fmt.Errorf("read review artifact commit parent: %w", err)
 	}
@@ -3992,7 +4117,7 @@ func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded 
 	}); err != nil {
 		return reviewsource.ArtifactCommit{}, fmt.Errorf("create review artifact commit: %w", err)
 	}
-	commitSHA, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
+	commitSHA, err := commandDependenciesForContext(ctx).reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
 	if err != nil {
 		return reviewsource.ArtifactCommit{}, fmt.Errorf("read created review artifact commit: %w", err)
 	}
@@ -4028,7 +4153,7 @@ func inheritReviewArtifactEvidence(ctx context.Context, req reviewArtifactEviden
 		return reviewsource.Evidence{}, false, nil
 	}
 
-	currentHead, err := reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "rev-parse", "HEAD")
+	currentHead, err := commandDependenciesForContext(ctx).reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "rev-parse", "HEAD")
 	if err != nil {
 		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact current head: %w", err)
 	}
@@ -4036,7 +4161,7 @@ func inheritReviewArtifactEvidence(ctx context.Context, req reviewArtifactEviden
 		return reviewsource.Evidence{}, false, nil
 	}
 
-	parentLine, err := reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "rev-list", "--parents", "-n", "1", commit.CommitSHA)
+	parentLine, err := commandDependenciesForContext(ctx).reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "rev-list", "--parents", "-n", "1", commit.CommitSHA)
 	if err != nil {
 		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact parent: %w", err)
 	}
@@ -4045,7 +4170,7 @@ func inheritReviewArtifactEvidence(ctx context.Context, req reviewArtifactEviden
 		return reviewsource.Evidence{}, false, nil
 	}
 
-	subject, err := reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "show", "-s", "--format=%s", commit.CommitSHA)
+	subject, err := commandDependenciesForContext(ctx).reviewSpecGitRunner.RunGit(ctx, req.GitRoot, "show", "-s", "--format=%s", commit.CommitSHA)
 	if err != nil {
 		return reviewsource.Evidence{}, false, fmt.Errorf("prove review artifact commit message: %w", err)
 	}
@@ -4057,7 +4182,7 @@ func inheritReviewArtifactEvidence(ctx context.Context, req reviewArtifactEviden
 	if !stageable {
 		return reviewsource.Evidence{}, false, nil
 	}
-	diffOutput, err := reviewSpecGitRunner.RunGit(
+	diffOutput, err := commandDependenciesForContext(ctx).reviewSpecGitRunner.RunGit(
 		ctx,
 		req.GitRoot,
 		"diff",
@@ -4079,7 +4204,7 @@ func inheritReviewArtifactEvidence(ctx context.Context, req reviewArtifactEviden
 		return reviewsource.Evidence{}, false, nil
 	}
 
-	refreshed, err := watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
+	refreshed, err := commandDependenciesForContext(ctx).watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
 		Source:          req.Source,
 		PRNumber:        req.PRNumber,
 		BaseRepository:  req.BaseRepository,
@@ -4482,11 +4607,12 @@ func warnCleanRunWorktreeCleanupFailed(ctx context.Context, runStore *store.Stor
 	})
 }
 
-func outcomeNotifierFromConfig(config roundconfig.Config) roundnotify.Notifier {
-	if newOutcomeNotifier == nil {
+func outcomeNotifierFromConfig(ctx context.Context, config roundconfig.Config) roundnotify.Notifier {
+	factory := commandDependenciesForContext(ctx).newOutcomeNotifier
+	if factory == nil {
 		return nil
 	}
-	return newOutcomeNotifier(config)
+	return factory(config)
 }
 
 const outcomeNotificationTimeout = 30 * time.Second

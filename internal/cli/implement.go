@@ -100,9 +100,9 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 	if req.detach {
-		return runDetachedCommand(append([]string{"implement"}, args...), req, loadedConfig, stdout, stderr, environment.environ, environment.workDir)
+		return runDetachedCommand(append([]string{"implement"}, args...), req, loadedConfig, stdout, stderr, environment.environ, environment.workDir, environment.dependencies.detachTimeouts)
 	}
-	outcomeNotifier := outcomeNotifierFromConfig(loadedConfig.Config)
+	outcomeNotifier := outcomeNotifierFromConfig(ctx, loadedConfig.Config)
 
 	// Preflight Validation: every failure below exits 2 with one actionable
 	// message, and nothing is written to the Run Database until every check
@@ -130,7 +130,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
-	graph, graphSpecsRoot, err := loadCommittedSpecGraph(ctx, gitState.Root, resolvedSpecsRoot, gitState.HEAD, req.spec)
+	graph, graphSpecsRoot, err := commandDependenciesForContext(ctx).loadCommittedSpecGraph(ctx, gitState.Root, resolvedSpecsRoot, gitState.HEAD, req.spec)
 	if err != nil {
 		// spec.Load returns typed validation errors whose messages name the
 		// offending Task or check and the next useful action.
@@ -153,7 +153,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 
 	categories := implementProfileCategories(graph, req.qa)
-	collaborators := newEngineCollaborators()
+	collaborators := commandDependenciesForContext(ctx).newEngineCollaborators()
 	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loadedConfig.Config, categories, gitState.Root, collaborators.runner, stderr)
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -210,7 +210,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			Model:           runtime.Model,
 			ReasoningEffort: runtime.ReasoningEffort,
 			OwnerPID:        os.Getpid(),
-			OwnerIdentity:   implementOwnerIdentity(ctx),
+			OwnerIdentity:   commandDependenciesForContext(ctx).implementOwnerIdentity(ctx),
 		})
 	})
 	if err != nil {
@@ -229,7 +229,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		fmt.Fprintf(stderr, "%s: note: working tree %s has %d uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.\n", app.Name, gitState.Root, len(gitState.Dirty))
 	}
 	reportNonDefaultSpecsRoot(stderr, gitState.Root, resolvedSpecsRoot)
-	runRef, err := createRunWorktree(ctx, runworktree.CreateOptions{
+	runRef, err := commandDependenciesForContext(ctx).createRunWorktree(ctx, runworktree.CreateOptions{
 		UserRoot:        gitState.Root,
 		Location:        loadedConfig.Config.Worktree.Location,
 		RunID:           run.ID,
@@ -337,7 +337,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		if integration.Mode == runworktree.ModePending {
 			outcome = store.StateIntegrationPending
 			integrationCommand = implementIntegrationCommand(runRef)
-		} else if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
+		} else if err := commandDependenciesForContext(ctx).cleanupCleanRunWorktree(ctx, runRef); err != nil {
 			warnCleanRunWorktreeCleanupFailed(ctx, runStore, run.ID, runRef.Path, err, stderr)
 		}
 	}
@@ -956,7 +956,7 @@ func integrateCleanImplementRun(ctx context.Context, ref runworktree.Ref, target
 	if err != nil {
 		return runworktree.IntegrationResult{}, fmt.Errorf("read Run Worktree HEAD before integration: %w", err)
 	}
-	result, err := integrateRunWorktree(ctx, ref, targetBranch, runSHA)
+	result, err := commandDependenciesForContext(ctx).integrateRunWorktree(ctx, ref, targetBranch, runSHA)
 	if err != nil {
 		return runworktree.IntegrationResult{}, err
 	}
@@ -980,7 +980,7 @@ func gitHEAD(ctx context.Context, workDir string) (string, error) {
 }
 
 func pruneTerminalRunWorktreeDebris(ctx context.Context, gitRoot string, location string, runtime agent.RuntimeSpec, runStore *store.Store, stderr io.Writer) error {
-	pruned, err := pruneTerminalRunWorktrees(ctx, gitRoot, location, runStore, func(lookupCtx context.Context, runID string) (store.Run, bool, error) {
+	pruned, err := commandDependenciesForContext(ctx).pruneTerminalRunWorktrees(ctx, gitRoot, location, runStore, func(lookupCtx context.Context, runID string) (store.Run, bool, error) {
 		return runStore.Run(lookupCtx, runID)
 	})
 	if err != nil {
@@ -996,7 +996,7 @@ func pruneTerminalRunWorktreeDebris(ctx context.Context, gitRoot string, locatio
 func sweepTerminalRunSessions(ctx context.Context, runtime agent.RuntimeSpec, gitRoot string, runStore *store.Store, stderr io.Writer) {
 	sweepCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
-	sessions, err := listRoundfixAgentSessions(sweepCtx, runtime, gitRoot)
+	sessions, err := commandDependenciesForContext(ctx).listRoundfixAgentSessions(sweepCtx, runtime, gitRoot)
 	if err != nil {
 		return
 	}
@@ -1017,7 +1017,7 @@ func sweepTerminalRunSessions(ctx context.Context, runtime agent.RuntimeSpec, gi
 			continue
 		}
 		ref := sessionRefForDiscoveredRunSession(run, session)
-		if err := closeStopAgentSession(sweepCtx, runtime, ref); err != nil {
+		if err := commandDependenciesForContext(ctx).closeStopAgentSession(sweepCtx, runtime, ref); err != nil {
 			fmt.Fprintf(stderr, "%s: could not close session %s: %v\n", app.Name, ref.Name, err)
 			continue
 		}

@@ -15,7 +15,7 @@ import (
 )
 
 func TestRunGCDryRunListsEligibleRunsAndChangesNothing(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
 	artifactDir := filepath.Join(homeDir, "artifacts")
@@ -61,7 +61,7 @@ func TestRunGCDryRunListsEligibleRunsAndChangesNothing(t *testing.T) {
 }
 
 func TestRunGCPrunesEligibleJournalsArtifactsAndOrphans(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
 	artifactDir := filepath.Join(homeDir, "artifacts")
@@ -108,7 +108,7 @@ func TestRunGCPrunesEligibleJournalsArtifactsAndOrphans(t *testing.T) {
 }
 
 func TestRunGCSkipsWhenJournalRetentionIsZero(t *testing.T) {
-	// Sequential: overrides package-level test seams.
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
 	artifactDir := filepath.Join(homeDir, "artifacts")
@@ -166,11 +166,10 @@ func TestRunGCHelp(t *testing.T) {
 
 func withGCNow(t *testing.T, now time.Time) {
 	t.Helper()
-	previous := gcDeps
-	gcDeps = defaultGCDependencies()
-	gcDeps.now = func() time.Time { return now }
-	t.Cleanup(func() {
-		gcDeps = previous
+	dependencies := defaultGCDependencies()
+	dependencies.now = func() time.Time { return now }
+	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
+		commandDependencies.gc = dependencies
 	})
 }
 

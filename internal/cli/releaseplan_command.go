@@ -70,7 +70,7 @@ func runReleasePlanCommand(ctx context.Context, args []string, stdout, stderr io
 		printReleasePlanFailure(err, stderr)
 		return exitPreflight
 	}
-	source := newReleasePlanGitSource(workDir, releasePlanCommandGitRunner)
+	source := newReleasePlanGitSource(workDir, commandDependenciesForContext(ctx).releasePlanGitRunner)
 	plan, err := releaseplan.Build(ctx, releaseplan.Request{
 		From:         req.from,
 		To:           req.to,
@@ -103,7 +103,7 @@ func runReleaseResetPlanCommand(ctx context.Context, req releasePlanCommandReque
 		printReleasePlanFailure(err, stderr)
 		return exitPreflight
 	}
-	source := newReleasePlanResetSource(workDir, releasePlanCommandGitRunner, releasePlanCommandGHRunner)
+	source := newReleasePlanResetSource(workDir, commandDependenciesForContext(ctx).releasePlanGitRunner, commandDependenciesForContext(ctx).releasePlanGHRunner)
 	target, err := source.ResolveTarget(ctx)
 	if err != nil {
 		printReleasePlanFailure(err, stderr)

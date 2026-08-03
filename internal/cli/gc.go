@@ -109,6 +109,7 @@ func sweepRunRetention(ctx context.Context, runStore *store.Store, artifactRoot 
 }
 
 func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
+	dependencies := commandDependenciesForContext(ctx).gc
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("gc"))
 		return exitOK
@@ -123,7 +124,7 @@ func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer, 
 		printPreflightFailure("gc", err, stderr)
 		return exitPreflight
 	}
-	loaded, err := gcDeps.loadConfig(loadOptions)
+	loaded, err := dependencies.loadConfig(loadOptions)
 	if err != nil {
 		printPreflightFailure("gc", err, stderr)
 		return exitPreflight
@@ -152,6 +153,7 @@ func parseGCCommand(args []string) (gcOptions, error) {
 }
 
 func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcReport, error) {
+	dependencies := commandDependenciesForContext(ctx).gc
 	retention := loaded.Config.Store.JournalRetention
 	report := gcReport{
 		DryRun:    opts.dryRun,
@@ -166,7 +168,7 @@ func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcRe
 	if err != nil {
 		return gcReport{}, err
 	}
-	cutoff := gcDeps.now().UTC().Add(-retention)
+	cutoff := dependencies.now().UTC().Add(-retention)
 	report.Cutoff = cutoff
 
 	dbExists, err := gcDatabaseExists(loaded.HomeDir)
@@ -243,10 +245,11 @@ func gcDatabaseExists(homeDir string) (bool, error) {
 }
 
 func openGCStore(ctx context.Context, dryRun bool, homeDir string) (*store.Store, error) {
+	dependencies := commandDependenciesForContext(ctx).gc
 	if dryRun {
-		return gcDeps.openStoreReader(ctx, homeDir)
+		return dependencies.openStoreReader(ctx, homeDir)
 	}
-	return gcDeps.openStore(ctx, homeDir)
+	return dependencies.openStore(ctx, homeDir)
 }
 
 func gcStoreState(ctx context.Context, runStore *store.Store, cutoff time.Time) ([]store.PruneCandidate, map[string]struct{}, error) {
