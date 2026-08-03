@@ -37,3 +37,26 @@ so this grant does not obviously reach it. A precedent exists — the 2026-07-30
 authorization for `rule.autonomous.loop` covered exactly that file — but the
 boundary is confirmed per Spec, not inherited. Confirm it when 0065 reaches the
 front.
+
+## Addendum — 2026-08-02 — Baseline module asset for the skill dispatch
+
+The maintainer added three Go skills to the repository and directed that the
+skill dispatch be updated. The dispatch catalog's canonical source is
+`internal/baseline/assets/modules/go.json`, a Baseline module asset — the exact
+path this grant's "Not covered" section flagged as not clearly reached by
+"the Makefile and skills".
+
+Treated as covered, because the maintainer directed the outcome and this asset
+is the only durable path to it. Recorded here rather than assumed silently.
+
+- `internal/baseline/assets/modules/go.json` — add the three skills to
+  `skillDispatch` with their triggers.
+
+The three skills were deliberately **not** added to `requiredSkills`. That
+field drives the Doctor's required-skill set for every adopting repository, and
+finding `2026-07-29-doctor-requires-roundfix-own-development-skills` records
+what happens when Roundfix's own development skills become required elsewhere:
+three consumer repositories failed `roundfix doctor` for skills they had no
+reason to hold. Adding them would also demand a matching setup snapshot entry,
+whose `treeDigest` is computed at a pinned source ref that the local skills
+checkout does not carry.

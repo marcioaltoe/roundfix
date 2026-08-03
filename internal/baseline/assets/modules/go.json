@@ -1,6 +1,13 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "go", "version": 2, "kind": "language-runtime", "title": "Go repository guidance",
-  "dependsOn": ["core"], "conflictsWith": [],
+  "schemaVersion": "setup-context-driven/module-v2",
+  "id": "go",
+  "version": 2,
+  "kind": "language-runtime",
+  "title": "Go repository guidance",
+  "dependsOn": [
+    "core"
+  ],
+  "conflictsWith": [],
   "requiredSkills": [
     "golang-cli",
     "golang-concurrency",
@@ -38,6 +45,15 @@
       ]
     },
     {
+      "skill": "golang-dependency-management",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-dependency-management",
+          "when": "Adding, upgrading, or removing Go dependencies, auditing vulnerabilities, resolving version conflicts, or configuring automated updates."
+        }
+      ]
+    },
+    {
       "skill": "golang-error-handling",
       "triggers": [
         {
@@ -56,6 +72,24 @@
       ]
     },
     {
+      "skill": "golang-safety",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-safety",
+          "when": "Writing or reviewing Go for nil safety, append aliasing, concurrent map access, numeric conversion overflow, defer in loops, or defensive copying."
+        }
+      ]
+    },
+    {
+      "skill": "golang-structs-interfaces",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-structs-interfaces",
+          "when": "Designing Go types and interfaces — composition, embedding, type assertions and switches, struct field tags, or pointer versus value receivers."
+        }
+      ]
+    },
+    {
       "skill": "golang-testing",
       "triggers": [
         {
@@ -66,13 +100,63 @@
     }
   ],
   "requiredDecisions": [],
-  "rootBlocks": [{"id": "root.go", "version": 2, "template": "template.root.go", "rules": [], "references": [
-    {"id": "reference.root.go", "token": "reference.go", "ownership": "setup", "managedId": "guide.go"}
-  ]}],
-  "supportingGuides": [{"id": "guide.go", "version": 2, "path": "docs/agents/go.md", "template": "template.guide.go", "rules": ["rule.go.stdlib-first", "rule.go.context-errors", "rule.go.observable-tests"], "references": []}],
+  "rootBlocks": [
+    {
+      "id": "root.go",
+      "version": 2,
+      "template": "template.root.go",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.go",
+          "token": "reference.go",
+          "ownership": "setup",
+          "managedId": "guide.go"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.go",
+      "version": 2,
+      "path": "docs/agents/go.md",
+      "template": "template.guide.go",
+      "rules": [
+        "rule.go.stdlib-first",
+        "rule.go.context-errors",
+        "rule.go.observable-tests"
+      ],
+      "references": []
+    }
+  ],
   "rules": [
-    {"id": "rule.go.stdlib-first", "version": 2, "coverage": ["coverage.go", "coverage.dependencies"], "guidance": "Keep Go command entry points thin and behavior in cohesive packages. Prefer the standard library; add a dependency only for a named job it cannot perform, and change `go.mod` and `go.sum` through Go tooling rather than hand edits."},
-    {"id": "rule.go.context-errors", "version": 2, "coverage": ["coverage.go", "coverage.backend"], "guidance": "Use context-first signatures for blocking and IO work. Give every goroutine an owner and cancellation path. Wrap errors with the failed operation using `%w`, and preserve `errors.Is` or `errors.As` matching where callers need it."},
-    {"id": "rule.go.observable-tests", "version": 2, "coverage": ["coverage.go", "coverage.verification-integrity"], "guidance": "Use stdlib `testing`. Test observable package and CLI behavior through public runners, including stdout, stderr, files, exit codes, cancellation, and failure paths; do not add production-only test hooks."}
+    {
+      "id": "rule.go.stdlib-first",
+      "version": 2,
+      "coverage": [
+        "coverage.go",
+        "coverage.dependencies"
+      ],
+      "guidance": "Keep Go command entry points thin and behavior in cohesive packages. Prefer the standard library; add a dependency only for a named job it cannot perform, and change `go.mod` and `go.sum` through Go tooling rather than hand edits."
+    },
+    {
+      "id": "rule.go.context-errors",
+      "version": 2,
+      "coverage": [
+        "coverage.go",
+        "coverage.backend"
+      ],
+      "guidance": "Use context-first signatures for blocking and IO work. Give every goroutine an owner and cancellation path. Wrap errors with the failed operation using `%w`, and preserve `errors.Is` or `errors.As` matching where callers need it."
+    },
+    {
+      "id": "rule.go.observable-tests",
+      "version": 2,
+      "coverage": [
+        "coverage.go",
+        "coverage.verification-integrity"
+      ],
+      "guidance": "Use stdlib `testing`. Test observable package and CLI behavior through public runners, including stdout, stderr, files, exit codes, cancellation, and failure paths; do not add production-only test hooks."
+    }
   ]
 }
