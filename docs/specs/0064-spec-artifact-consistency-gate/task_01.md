@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0064-spec-artifact-consistency-gate
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -100,3 +100,59 @@ listed in.
 - `_prd.md` → Core Features 3 and 7; Goals.
 - `_techspec.md` → Interfaces; Data Models; API Contracts; Build Order 1 and 2.
 - ADR-0093, ADR-0094.
+
+## Result
+
+### Implementation
+
+- Added the read-only `speccheck.Check` entry point with the stable finding,
+  severity, location, skipped-detector, and result models from the TechSpec.
+- Added heading-anchored, multiline parsing for all four required Project
+  Constraint rows, including applicability, reason, operative source,
+  authorization-record citation, bounded-file declaration, and 1-based line.
+- Added the five Task 01 detectors. Every reported error carries the declaring
+  artifact location and the cited, counterpart, missing, or governing-source
+  location that forms its other side.
+- Added compact `roundfix-speccheck/v1` JSON rendering and text rendering with
+  every code, severity, summary, location, fix, and recorded skip.
+- Added one clean fixture, one isolated dirty fixture per detector, and an
+  absent-TechSpec fixture. The clean tooling path exercises a real cited
+  authorization record that names the fixture Spec and records bounded files.
+
+### Focused checks
+
+- Red signal: `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260803T233822Z_3ffcad0ced4ba246/.gocache go test -buildvcs=false ./internal/speccheck -run '^TestCheckConstraintAndTooling$' -count=1`
+  exited 1 before implementation because `internal/speccheck` had no non-test
+  Go files.
+- The same filtered command exited 0 after implementation.
+- `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260803T233822Z_3ffcad0ced4ba246/.gocache go test -buildvcs=false -shuffle=on ./internal/speccheck -count=1`
+  exited 0 after the final Go edit; shuffled execution covered every Task 01
+  fixture and both renderers.
+- `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260803T233822Z_3ffcad0ced4ba246/.gocache go vet -buildvcs=false ./internal/speccheck`
+  exited 0.
+- The Task's declared `## Verification` commands were not run; they remain
+  Daemon-owned.
+
+### Acceptance criteria evidence
+
+1. `TestCheckConstraintAndTooling/missing_required_PRD_row` asserts the
+   `constraint-missing` fixture reports `SC-CONSTRAINT-MISSING` at `error`.
+2. `TestCheckConstraintAndTooling/applicability_without_reason` asserts the
+   `constraint-unreasoned` fixture reports `SC-CONSTRAINT-UNREASONED`.
+3. `TestCheckConstraintSourceNamesMissingPath` asserts
+   `SC-CONSTRAINT-SOURCE` names and locates
+   `docs/agents/missing-guide.md` beside the citing PRD row.
+4. `TestCheckToolingUnauthorizedLocatesSpecAndRecord` asserts
+   `SC-TOOLING-UNAUTHORIZED` locates both the PRD row and
+   `docs/workflow/authorizations/other-spec.md`.
+5. `TestCheckConstraintAndTooling/applicable_tooling_has_no_bounded_files`
+   asserts `SC-TOOLING-UNBOUNDED` for the applicable unbounded row.
+6. `TestCheckSkipMissingTechSpec` asserts the absent-TechSpec fixture has zero
+   findings and records `_techspec.md` as missing for all five detectors.
+7. `TestCheckErrorLocations` walks every error from every dirty fixture and
+   requires at least two repository-relative paths with 1-based lines.
+8. `TestCheckCleanFixture` asserts the clean fixture produces zero findings;
+   `TestRenderResultTextAndJSON` separately validates both public report
+   formats and the exact `roundfix-speccheck/v1` schema identifier.
+
+No follow-up outside Task 01's slice was discovered.
