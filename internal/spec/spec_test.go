@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -1306,11 +1307,21 @@ func TestQAGateLegacyArchivedManifestsLoadUnchanged(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Load archived Spec %q: %v", entry.Name(), err)
 		}
-		if graph.QATaskID != "" || graph.QADeclined || graph.QAReason != "" {
+		// The archive holds two generations. A pre-contract manifest carries
+		// no qa: declaration and must gain no QA state from loading — that
+		// is the legacy guarantee this test characterizes. A post-contract
+		// manifest (0072 itself is the first) legitimately declares its
+		// authored gate, and for it the guarantee is agreement: the loaded
+		// state matches the declaration byte the manifest carries.
+		declaresGate := bytes.Contains(before, []byte("\nqa:"))
+		if !declaresGate && (graph.QATaskID != "" || graph.QADeclined || graph.QAReason != "") {
 			t.Fatalf("archived Spec %q gained QA declaration state: (%q, %t, %q)", entry.Name(), graph.QATaskID, graph.QADeclined, graph.QAReason)
 		}
+		if declaresGate && graph.QATaskID == "" && !graph.QADeclined {
+			t.Fatalf("archived Spec %q declares a gate its load did not surface", entry.Name())
+		}
 		for _, task := range graph.Tasks {
-			if task.Type == TaskTypeQA {
+			if task.Type == TaskTypeQA && !declaresGate {
 				t.Fatalf("archived Spec %q unexpectedly has QA Task %q", entry.Name(), task.ID)
 			}
 		}
