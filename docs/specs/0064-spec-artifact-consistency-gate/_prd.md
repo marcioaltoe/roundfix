@@ -34,7 +34,10 @@ contradictions in seconds, before a Run exists.
   `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0080 owns QA verdict semantics, and
   nothing here may weaken or duplicate a verdict; this gate reports before QA
-  rather than inside it. Source: `docs/agents/domain.md`.
+  rather than inside it. ADR-0088 and ADR-0091 own the authored QA gate as a
+  typed Task node, under which this Spec's own graph is authored. ADR-0093 and
+  ADR-0094 are minted by this Spec and govern its detection boundary and its
+  presence-awareness. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: on 2026-08-02
   the maintainer authorized tooling adjustment for the queued Specs, recorded at
   `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`; bounded files:
