@@ -8,6 +8,7 @@ package baselineacp
 import "testing"
 
 func TestBaselineMacroJourneysACPProposals(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		run  func(*testing.T)

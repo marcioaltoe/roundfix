@@ -26,6 +26,7 @@ surfaces: [cli]
 }
 
 func TestQAVerdictReadsSupportedVerdicts(t *testing.T) {
+	t.Parallel()
 	for _, verdict := range []string{VerdictPass, VerdictFail, VerdictPartial} {
 		t.Run(verdict, func(t *testing.T) {
 			specDir := t.TempDir()
@@ -43,6 +44,7 @@ func TestQAVerdictReadsSupportedVerdicts(t *testing.T) {
 }
 
 func TestQAVerdictValidatesBlockedCounts(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name             string
 		verdict          string
@@ -134,6 +136,7 @@ func TestQAVerdictValidatesBlockedCounts(t *testing.T) {
 }
 
 func TestQAVerdictSelectsTheNewestReport(t *testing.T) {
+	t.Parallel()
 	specDir := t.TempDir()
 	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-06-28.md"), qaReportFixture(VerdictFail))
 	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-07-01.md"), qaReportFixture(VerdictPartial))
@@ -149,6 +152,7 @@ func TestQAVerdictSelectsTheNewestReport(t *testing.T) {
 }
 
 func TestNewestQAReportOrdersByDateThenRunSequence(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		reports []string
@@ -234,6 +238,7 @@ func TestNewestQAReportOrdersByDateThenRunSequence(t *testing.T) {
 }
 
 func TestNewestQAReportReportsMissingReports(t *testing.T) {
+	t.Parallel()
 	specDir := t.TempDir()
 	writeFile(t, filepath.Join(specDir, "qa", "notes.md"), "# not a report\n")
 
@@ -243,6 +248,7 @@ func TestNewestQAReportReportsMissingReports(t *testing.T) {
 }
 
 func TestQAVerdictPrefersTheSameDateRerun(t *testing.T) {
+	t.Parallel()
 	specDir := t.TempDir()
 	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-07-28.md"), qaReportFixture(VerdictFail))
 	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-07-28-02.md"), qaReportFixture(VerdictPass))
@@ -257,6 +263,7 @@ func TestQAVerdictPrefersTheSameDateRerun(t *testing.T) {
 }
 
 func TestQAVerdictReportsMissingReports(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		setup func(t *testing.T, specDir string)
@@ -287,6 +294,7 @@ func TestQAVerdictReportsMissingReports(t *testing.T) {
 }
 
 func TestQAVerdictReportsUnreadableReports(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		content string

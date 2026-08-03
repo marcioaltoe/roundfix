@@ -32,6 +32,7 @@ type baselineDigestTargetResult struct {
 // Boundary OUT: executable setup-runtime removal and Baseline CLI behavior.
 
 func TestBaselineSkillContract(t *testing.T) {
+	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	skillNames := []string{"setup-context-driven", "roundfix"}
 	embeddedFiles, err := Files()
@@ -92,6 +93,7 @@ func TestBaselineSkillContract(t *testing.T) {
 }
 
 func TestNoPythonBaselineRuntime(t *testing.T) {
+	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	for _, root := range []string{
 		filepath.Join(repoRoot, ".agents", "skills", "setup-context-driven"),
@@ -153,6 +155,7 @@ func TestNoPythonBaselineRuntime(t *testing.T) {
 }
 
 func TestBaselineDigestTargetReportsMachineReadableOutcomes(t *testing.T) {
+	t.Parallel()
 	t.Run("reports regenerated artifacts", func(t *testing.T) {
 		derivedRoot := t.TempDir()
 		writeBaselineDigestTargetFile(t, filepath.Join(derivedRoot, "before"), nil, 0o644)
@@ -200,6 +203,7 @@ func TestBaselineDigestTargetReportsMachineReadableOutcomes(t *testing.T) {
 }
 
 func TestThinSetupSkill(t *testing.T) {
+	t.Parallel()
 	files, err := Files()
 	if err != nil {
 		t.Fatalf("read embedded skills: %v", err)
@@ -318,6 +322,7 @@ func assertBaselineDigestTargetResult(t *testing.T, result baselineDigestTargetR
 }
 
 func TestAuthorialSkillSync(t *testing.T) {
+	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	embeddedFiles, err := Files()
 	if err != nil {
@@ -459,6 +464,7 @@ func TestAuthorialSkillSync(t *testing.T) {
 }
 
 func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
+	t.Parallel()
 	repoRoot := t.TempDir()
 	skillRoot := filepath.Join(repoRoot, ".agents", "skills", "roundfix")
 	if err := os.MkdirAll(skillRoot, 0o755); err != nil {
@@ -523,14 +529,17 @@ func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
 }
 
 func TestWritePRDProjectConstraints(t *testing.T) {
+	t.Parallel()
 	testAuthoringProjectConstraints(t, "write-prd", "prd-template.md")
 }
 
 func TestWriteTechSpecProjectConstraints(t *testing.T) {
+	t.Parallel()
 	testAuthoringProjectConstraints(t, "write-techspec", "techspec-template.md")
 }
 
 func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
+	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	tests := []struct {
 		name     string
@@ -630,6 +639,7 @@ func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 }
 
 func TestProjectConstraintTaskGate(t *testing.T) {
+	t.Parallel()
 	testWorkflowProjectConstraintContract(t, "write-tasks", []string{
 		"Project Constraint preflight",
 		"active, non-archived, and not already completed",
@@ -648,6 +658,7 @@ func TestProjectConstraintTaskGate(t *testing.T) {
 }
 
 func TestProjectConstraintImplementationGate(t *testing.T) {
+	t.Parallel()
 	testWorkflowProjectConstraintContract(t, "implement-task", []string{
 		"Project Constraint preflight",
 		"before changing the Task status to `in_progress`",
@@ -664,6 +675,7 @@ func TestProjectConstraintImplementationGate(t *testing.T) {
 }
 
 func TestProjectConstraintQAGate(t *testing.T) {
+	t.Parallel()
 	testWorkflowProjectConstraintContract(t, "qa-gate", []string{
 		"Project Constraint audit",
 		"applicability",
@@ -679,6 +691,7 @@ func TestProjectConstraintQAGate(t *testing.T) {
 }
 
 func TestProjectConstraintJourney(t *testing.T) {
+	t.Parallel()
 	fixtureRoot := filepath.Join("testdata", "project-constraint-journey")
 	fixtures := []string{"_prd.md", "_techspec.md"}
 	for _, fixture := range fixtures {
@@ -726,6 +739,7 @@ func TestProjectConstraintJourney(t *testing.T) {
 }
 
 func TestToolingAuthorizationJourney(t *testing.T) {
+	t.Parallel()
 	fixtureRoot := filepath.Join("testdata", "project-constraint-journey")
 	prd := string(readBaselineSkillContractFile(t, filepath.Join(fixtureRoot, "_prd.md")))
 	techspec := string(readBaselineSkillContractFile(t, filepath.Join(fixtureRoot, "_techspec.md")))
@@ -806,6 +820,7 @@ func TestToolingAuthorizationJourney(t *testing.T) {
 }
 
 func TestLegacySpecConstraintExemption(t *testing.T) {
+	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	for _, skillName := range []string{"write-tasks", "implement-task", "qa-gate"} {
 		t.Run(skillName, func(t *testing.T) {
@@ -854,6 +869,7 @@ func TestLegacySpecConstraintExemption(t *testing.T) {
 }
 
 func TestAuthoringConstraintOwnership(t *testing.T) {
+	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	lockBytes := readBaselineSkillContractFile(t, filepath.Join(repoRoot, "skills-lock.json"))
 	var lock struct {
@@ -883,6 +899,7 @@ func TestAuthoringConstraintOwnership(t *testing.T) {
 }
 
 func TestUpstreamADRFormatUnchanged(t *testing.T) {
+	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	lockBytes := readBaselineSkillContractFile(
 		t,

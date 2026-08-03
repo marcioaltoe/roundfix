@@ -319,7 +319,7 @@ func TestExecGitRunnerReportsStderrDetailOnFailure(t *testing.T) {
 
 func TestExecGitRunnerDisablesFSMonitorPerInvocation(t *testing.T) {
 	repo := initGitRepoForTest(t)
-	runGitForSetup(t, repo, "config", "core.fsmonitor", "true")
+	gittest.AppendConfig(t, repo, "[core]\n\tfsmonitor = true\n")
 
 	value, err := ExecGitRunner{}.RunGit(context.Background(), repo, "config", "core.fsmonitor")
 
@@ -357,9 +357,7 @@ func initGitRepoForTest(t *testing.T) string {
 	t.Helper()
 	repo := t.TempDir()
 	gittest.InitRepo(t, repo, "-b", "main")
-	runGitForSetup(t, repo, "config", "user.name", "Roundfix Test")
-	runGitForSetup(t, repo, "config", "user.email", "test@example.com")
-	runGitForSetup(t, repo, "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, repo, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
 	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("initial\n"), 0o644); err != nil {
 		t.Fatalf("write seed file: %v", err)
 	}

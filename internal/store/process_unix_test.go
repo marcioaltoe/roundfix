@@ -19,12 +19,14 @@ import (
 )
 
 func TestProcessAliveReportsCurrentProcessAlive(t *testing.T) {
+	t.Parallel()
 	if !ProcessAlive(os.Getpid()) {
 		t.Fatal("expected current process to report alive")
 	}
 }
 
 func TestProcessAliveReportsReapedChildDead(t *testing.T) {
+	t.Parallel()
 	cmd := exec.Command("/bin/sh", "-c", "exit 0")
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start child process: %v", err)
@@ -39,6 +41,7 @@ func TestProcessAliveReportsReapedChildDead(t *testing.T) {
 }
 
 func TestOwnerProcessControllerGracefulExitProof(t *testing.T) {
+	t.Parallel()
 	pid, wait := startOwnerProcessHelper(t, "graceful")
 	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
 
@@ -50,6 +53,7 @@ func TestOwnerProcessControllerGracefulExitProof(t *testing.T) {
 }
 
 func TestOwnerProcessControllerForceKillExitProof(t *testing.T) {
+	t.Parallel()
 	pid, wait := startOwnerProcessHelper(t, "ignore")
 	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
 
@@ -61,6 +65,7 @@ func TestOwnerProcessControllerForceKillExitProof(t *testing.T) {
 }
 
 func TestOwnerProcessControllerRejectsUnprovenCurrentProcess(t *testing.T) {
+	t.Parallel()
 	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
 
 	err := controller.TerminateAndWait(t.Context(), os.Getpid(), "")
@@ -78,6 +83,7 @@ func TestOwnerProcessControllerRejectsUnprovenCurrentProcess(t *testing.T) {
 }
 
 func TestOwnerProcessControllerAcceptsAlreadyAbsentProcess(t *testing.T) {
+	t.Parallel()
 	cmd := exec.Command("/bin/sh", "-c", "exit 0")
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start child process: %v", err)
@@ -94,6 +100,7 @@ func TestOwnerProcessControllerAcceptsAlreadyAbsentProcess(t *testing.T) {
 }
 
 func TestOwnerProcessControllerRefusesMismatchedOwnerIdentity(t *testing.T) {
+	t.Parallel()
 	pid, _ := startOwnerProcessHelper(t, "graceful")
 	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
 
@@ -115,6 +122,7 @@ func TestOwnerProcessControllerRefusesMismatchedOwnerIdentity(t *testing.T) {
 }
 
 func TestOwnerProcessControllerMatchingOwnerIdentityProceeds(t *testing.T) {
+	t.Parallel()
 	pid, wait := startOwnerProcessHelper(t, "graceful")
 	identity, err := OwnerProcessIdentity(t.Context(), pid)
 	if err != nil {
@@ -130,6 +138,7 @@ func TestOwnerProcessControllerMatchingOwnerIdentityProceeds(t *testing.T) {
 }
 
 func TestOwnerProcessControllerProveOwnerLeavesProvenOwnerRunning(t *testing.T) {
+	t.Parallel()
 	pid, _ := startOwnerProcessHelper(t, "graceful")
 	identity, err := OwnerProcessIdentity(t.Context(), pid)
 	if err != nil {
@@ -147,6 +156,7 @@ func TestOwnerProcessControllerProveOwnerLeavesProvenOwnerRunning(t *testing.T) 
 }
 
 func TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity(t *testing.T) {
+	t.Parallel()
 	pid, _ := startOwnerProcessHelper(t, "graceful")
 	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
 
@@ -168,6 +178,7 @@ func TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity(t *testing.T)
 }
 
 func TestOwnerProcessControllerProveOwnerDoesNotReportLegacyIdentityAsReusedPID(t *testing.T) {
+	t.Parallel()
 	pid, _ := startOwnerProcessHelper(t, "graceful")
 	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
 
@@ -185,6 +196,7 @@ func TestOwnerProcessControllerProveOwnerDoesNotReportLegacyIdentityAsReusedPID(
 }
 
 func TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence(t *testing.T) {
+	t.Parallel()
 	type absenceResult struct {
 		absent bool
 		err    error
@@ -331,6 +343,7 @@ func TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence(t *testing.T
 }
 
 func TestOwnerProcessControllerProveOwnerAcceptsAbsentOwner(t *testing.T) {
+	t.Parallel()
 	cmd := exec.Command("/bin/sh", "-c", "exit 0")
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start child process: %v", err)
@@ -347,6 +360,7 @@ func TestOwnerProcessControllerProveOwnerAcceptsAbsentOwner(t *testing.T) {
 }
 
 func TestOwnerProcessControllerProveOwnerRejectsCurrentProcess(t *testing.T) {
+	t.Parallel()
 	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
 
 	err := controller.ProveOwner(t.Context(), os.Getpid(), "")
@@ -357,6 +371,7 @@ func TestOwnerProcessControllerProveOwnerRejectsCurrentProcess(t *testing.T) {
 }
 
 func TestOwnerProcessIdentityIsStableForOneProcess(t *testing.T) {
+	t.Parallel()
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.Skip("owner process identity is unsupported on this Unix platform")
 	}
@@ -412,6 +427,7 @@ func TestOwnerProcessIdentityIgnoresCallerTimezone(t *testing.T) {
 }
 
 func TestOwnerProcessIdentityFailsForAbsentProcess(t *testing.T) {
+	t.Parallel()
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.Skip("owner process identity is unsupported on this Unix platform")
 	}
@@ -438,6 +454,7 @@ func TestOwnerProcessIdentityFailsForAbsentProcess(t *testing.T) {
 }
 
 func TestOwnerProcessHelper(t *testing.T) {
+	t.Parallel()
 	mode := os.Getenv("ROUNDFIX_OWNER_PROCESS_HELPER")
 	if mode == "" {
 		return

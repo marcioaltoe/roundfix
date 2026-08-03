@@ -73,6 +73,7 @@ Fixture task.
 }
 
 func TestNormalizeStatus(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		raw  string
 		want string
@@ -140,6 +141,7 @@ func diamondSpecFiles() map[string]string {
 }
 
 func TestLoadReturnsTasksInDeterministicTopologicalOrder(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)
 	writeSpecDir(t, specsRoot, "demo", diamondSpecFiles())
@@ -175,6 +177,7 @@ func TestLoadReturnsTasksInDeterministicTopologicalOrder(t *testing.T) {
 }
 
 func TestLoadParsesTaskFiles(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)
 	verification := md(`## Verification
@@ -231,6 +234,7 @@ func TestLoadParsesTaskFiles(t *testing.T) {
 }
 
 func TestTaskTypeCanonicalValuesLoadThroughTaskGraph(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)
 	taskTypes := []string{"backend", "frontend", "data", "infra", "docs", "test", "chore"}
@@ -263,6 +267,7 @@ func TestTaskTypeCanonicalValuesLoadThroughTaskGraph(t *testing.T) {
 }
 
 func TestTaskTypeRejectsInvalidFrontmatterValues(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		taskFile  string
@@ -342,6 +347,7 @@ func TestTaskTypeRejectsInvalidFrontmatterValues(t *testing.T) {
 }
 
 func TestTaskTypeProjectionMustMatchTaskFile(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)
 	writeSpecDir(t, specsRoot, "demo", map[string]string{
@@ -379,6 +385,7 @@ func TestTaskTypeProjectionMustMatchTaskFile(t *testing.T) {
 }
 
 func TestTaskTypeProjectionTablePresenceValidatesRows(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		table    string
@@ -440,6 +447,7 @@ func TestTaskTypeProjectionTablePresenceValidatesRows(t *testing.T) {
 }
 
 func TestLoadParsesOptionalTaskContext(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)
 	contextSection := md(`## Context
@@ -485,6 +493,7 @@ func TestLoadParsesOptionalTaskContext(t *testing.T) {
 }
 
 func TestLoadRejectsInvalidTaskContext(t *testing.T) {
+	t.Parallel()
 	tooMany := strings.Builder{}
 	tooMany.WriteString("## Context\n\n")
 	for index := 0; index < maxTaskContextRefs+1; index++ {
@@ -554,6 +563,7 @@ func TestLoadRejectsInvalidTaskContext(t *testing.T) {
 }
 
 func TestLoadReturnsTypedValidationErrors(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		files map[string]string
@@ -842,6 +852,7 @@ graph:
 }
 
 func TestLoadAcceptsValidGraph(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)
 	writeSpecDir(t, specsRoot, "demo", diamondSpecFiles())
@@ -864,6 +875,7 @@ func TestLoadAcceptsValidGraph(t *testing.T) {
 }
 
 func TestLoadUsesExplicitExternalSpecRoot(t *testing.T) {
+	t.Parallel()
 	specsRoot := filepath.Join(t.TempDir(), "external-specs")
 	writeSpecDir(t, specsRoot, "demo", diamondSpecFiles())
 
@@ -891,6 +903,7 @@ func TestLoadUsesExplicitExternalSpecRoot(t *testing.T) {
 }
 
 func TestListActiveFiltersInactiveArchivedAndNonSpecDirectories(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)
 	writeSpecDir(t, specsRoot, "0002-later", map[string]string{"_prd.md": prdFixture("active")})
@@ -920,6 +933,7 @@ func TestListActiveFiltersInactiveArchivedAndNonSpecDirectories(t *testing.T) {
 }
 
 func TestListActiveDetailedReportsSkippedSpecFolders(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)
 	writeSpecDir(t, specsRoot, "0001-active", map[string]string{"_prd.md": prdFixture("active")})
@@ -961,6 +975,7 @@ func TestListActiveDetailedReportsSkippedSpecFolders(t *testing.T) {
 }
 
 func TestListActiveWithoutSpecsRootReturnsNothing(t *testing.T) {
+	t.Parallel()
 	specs, err := ListActive(t.TempDir())
 	if err != nil {
 		t.Fatalf("ListActive: %v", err)

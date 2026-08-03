@@ -22,6 +22,7 @@ var updateProfilesConfigGoldens = flag.Bool(
 )
 
 func TestLoadAppliesConfigPrecedence(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	userWorktreeLocation := filepath.Join(homeDir, "configured-user-worktrees")
@@ -118,6 +119,7 @@ specs:
 }
 
 func TestBuiltinRuntimeDefaults(t *testing.T) {
+	t.Parallel()
 	config := Builtin()
 
 	if config.Runtimes.Codex.Model != "gpt-5.5" || config.Runtimes.Codex.ReasoningEffort != "xhigh" {
@@ -132,6 +134,7 @@ func TestBuiltinRuntimeDefaults(t *testing.T) {
 }
 
 func TestBuiltinProfilesGeneratedCodexPolicy(t *testing.T) {
+	t.Parallel()
 	config := Builtin()
 	wantPreferred := selectionForTest("codex", "gpt-5.6-sol", "high")
 	wantFallback := selectionForTest("codex", "gpt-5.5", "xhigh")
@@ -150,6 +153,7 @@ func TestBuiltinProfilesGeneratedCodexPolicy(t *testing.T) {
 }
 
 func TestDefaultConfigYAMLGeneratedCodexPolicy(t *testing.T) {
+	t.Parallel()
 	content := DefaultConfigYAML()
 	if got := strings.Count(content, "model: gpt-5.6-sol"); got != 5 {
 		t.Fatalf("Sol occurrence count = %d, want 5:\n%s", got, content)
@@ -165,6 +169,7 @@ func TestDefaultConfigYAMLGeneratedCodexPolicy(t *testing.T) {
 }
 
 func TestDefaultConfigYAMLVerificationCapacity(t *testing.T) {
+	t.Parallel()
 	content := DefaultConfigYAML()
 	for _, want := range []string{
 		"# Verification command for review Batches; Spec Tasks use their task file commands.\n  verification: make verify",
@@ -196,6 +201,7 @@ func TestDefaultConfigYAMLVerificationCapacity(t *testing.T) {
 }
 
 func TestModelCatalogRetainsOfficialCodexIdentifiers(t *testing.T) {
+	t.Parallel()
 	catalog := agent.ModelCatalog("codex")
 	for _, identifier := range []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"} {
 		found := false
@@ -212,6 +218,7 @@ func TestModelCatalogRetainsOfficialCodexIdentifiers(t *testing.T) {
 }
 
 func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
+	t.Parallel()
 	config := Builtin()
 	tests := []struct {
 		name     string
@@ -280,6 +287,7 @@ func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
 }
 
 func TestAgentSelectionProfileOptionalCategoryInheritsGeneral(t *testing.T) {
+	t.Parallel()
 	config := Builtin()
 	general, err := ResolveProfile(config, CategoryGeneral, nil)
 	if err != nil {
@@ -306,6 +314,7 @@ func TestAgentSelectionProfileOptionalCategoryInheritsGeneral(t *testing.T) {
 }
 
 func TestProfileResolverUsesAtomicProjectOverUserPrecedence(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -357,6 +366,7 @@ profiles:
 }
 
 func TestAgentSelectionProfileRejectsInvalidConfiguredProfiles(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		config   string
@@ -498,6 +508,7 @@ profiles:
 }
 
 func TestAgentSelectionProfileDistinguishesMissingReasoningFromEmptyReasoning(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -532,6 +543,7 @@ profiles:
 }
 
 func TestProfileLegacyMigrationConvertsRuntimeDefaults(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -567,6 +579,7 @@ runtimes:
 }
 
 func TestProfileLegacyDefaultCodexKeepsDistinctBuiltInFallback(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(workDir, ".git"))
@@ -594,6 +607,7 @@ runtimes:
 }
 
 func TestProfilesConfigWriterCharacterization(t *testing.T) {
+	t.Parallel()
 	const corpusDir = "testdata/profiles_config_writer"
 	tests := []struct {
 		name     string
@@ -686,6 +700,7 @@ func TestProfilesConfigWriterCharacterization(t *testing.T) {
 }
 
 func TestProfilesConfigureRemovalPreservesSpacing(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		original string
@@ -841,6 +856,7 @@ artifact_dir: *backend_model
 }
 
 func TestProfilesConfigureMergePreservesOtherCategories(t *testing.T) {
+	t.Parallel()
 	t.Run("replaces one category without touching the other four", func(t *testing.T) {
 		original := `profiles:
   # review stays first
@@ -1217,6 +1233,7 @@ artifact_dir: *backend_model
 }
 
 func TestEffectiveChangeSet(t *testing.T) {
+	t.Parallel()
 	backendProfile := profileForTest(selectionForTest("codex", "backend-model", "high"))
 	frontendProfile := profileForTest(selectionForTest("claude", "frontend-model", "xhigh"))
 	generalProfile := profileForTest(selectionForTest("codex", "general-model", "high"))
@@ -1366,6 +1383,7 @@ func profilesConfigGoldenDiff(golden []byte, actual []byte) string {
 }
 
 func TestProfileResolverPreferredOverridePreservesFallbackChain(t *testing.T) {
+	t.Parallel()
 	config := Builtin()
 	override := selectionForTest("claude", "custom-frontier", "")
 
@@ -1387,6 +1405,7 @@ func TestProfileResolverPreferredOverridePreservesFallbackChain(t *testing.T) {
 }
 
 func TestProfileConfigAtomicWritesUserAndProjectProfiles(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(workDir, ".git"))
@@ -1458,6 +1477,7 @@ watch:
 }
 
 func TestProfileConfigAtomicDryRunAndFailuresLeaveBytesUnchanged(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(workDir, ".git"))
@@ -1565,6 +1585,7 @@ profiles:
 }
 
 func TestNormalizeProfilesFragmentRequiresDistinctFallback(t *testing.T) {
+	t.Parallel()
 	preferred := selectionForTest("codex", "only-selection", "high")
 	tests := []struct {
 		name     string
@@ -1598,6 +1619,7 @@ func TestNormalizeProfilesFragmentRequiresDistinctFallback(t *testing.T) {
 }
 
 func TestProfileConfigAtomicParsesStrictProfileFragments(t *testing.T) {
+	t.Parallel()
 	profiles, err := ParseProfilesFragment([]byte(`
 profiles:
   backend:
@@ -1659,6 +1681,7 @@ backend:
 }
 
 func TestWriteProfilesConfigRejectsMultiDocumentConfigWithoutMutating(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(workDir, ".git"))
@@ -1687,6 +1710,7 @@ func TestWriteProfilesConfigRejectsMultiDocumentConfigWithoutMutating(t *testing
 }
 
 func TestBuiltinWatchDefaultsIncludeCheckGracePeriod(t *testing.T) {
+	t.Parallel()
 	config := Builtin()
 
 	if config.Watch.CheckGracePeriod != 5*time.Minute {
@@ -1698,6 +1722,7 @@ func TestBuiltinWatchDefaultsIncludeCheckGracePeriod(t *testing.T) {
 }
 
 func TestBuiltinReviewSourceExcludesNitpicks(t *testing.T) {
+	t.Parallel()
 	config := Builtin()
 
 	if config.ReviewSource.IncludeNitpicks {
@@ -1709,6 +1734,7 @@ func TestBuiltinReviewSourceExcludesNitpicks(t *testing.T) {
 }
 
 func TestLoadAppliesReviewSourceIncludeNitpicksHierarchy(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		userConfig    string
@@ -1754,6 +1780,7 @@ func TestLoadAppliesReviewSourceIncludeNitpicksHierarchy(t *testing.T) {
 }
 
 func TestLoadAppliesRuntimeConfigHierarchy(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -1800,6 +1827,7 @@ runtimes:
 }
 
 func TestLoadAppliesWorktreeConfigHierarchy(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		userConfig      string
@@ -1897,6 +1925,7 @@ worktree:
 }
 
 func TestLoadVerificationCapacityHierarchy(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		userConfig    string
@@ -1952,6 +1981,7 @@ func TestLoadVerificationCapacityHierarchy(t *testing.T) {
 }
 
 func TestLoadAppliesAgentLogConfigHierarchy(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		userConfig    string
@@ -2017,6 +2047,7 @@ logs:
 }
 
 func TestLoadAppliesNotifyConfigHierarchy(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		userConfig    string
@@ -2082,6 +2113,7 @@ notify:
 }
 
 func TestLoadAppliesStoreRetentionConfigHierarchy(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		userConfig    string
@@ -2151,6 +2183,7 @@ store:
 }
 
 func TestLoadWarnsAndIgnoresDeprecatedConfigKeys(t *testing.T) {
+	t.Parallel()
 	const warning = "config: resolve.concurrent is deprecated and ignored; use worktree.concurrency\n"
 
 	tests := []struct {
@@ -2242,6 +2275,7 @@ resolve:
 }
 
 func TestLoadWarnsAndIgnoresDeprecatedDefaultsModel(t *testing.T) {
+	t.Parallel()
 	const warning = "config: defaults.model is deprecated and ignored; use profiles.<category>.preferred.model\n"
 
 	homeDir := t.TempDir()
@@ -2275,6 +2309,7 @@ defaults:
 }
 
 func TestLoadRejectsUnknownConfigKeys(t *testing.T) {
+	t.Parallel()
 	const warning = "config: resolve.concurrent is deprecated and ignored; use worktree.concurrency\n"
 
 	tests := []struct {
@@ -2339,6 +2374,7 @@ resolve:
 }
 
 func TestLoadRejectsUnknownRuntimeConfigKeys(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		config   string
@@ -2385,6 +2421,7 @@ runtimes:
 }
 
 func TestLoadRejectsUnknownStoreConfigKey(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -2405,6 +2442,7 @@ store:
 }
 
 func TestLoadRejectsUnknownWorktreeConfigKey(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -2425,6 +2463,7 @@ worktree:
 }
 
 func TestLoadRejectsUnknownNotifyConfigKey(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -2445,6 +2484,7 @@ notify:
 }
 
 func TestLoadRejectsInvalidConfig(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		config   string
@@ -2584,6 +2624,7 @@ specs:
 }
 
 func TestValidateVerificationCapacity(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		config   string
@@ -2636,6 +2677,7 @@ func TestValidateVerificationCapacity(t *testing.T) {
 }
 
 func TestLoadRejectsWorktreeLocationInsideRepository(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -2656,6 +2698,7 @@ worktree:
 }
 
 func TestLoadExpandsWorktreeLocationHome(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -2676,6 +2719,7 @@ worktree:
 }
 
 func TestInitCreatesUserConfig(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(workDir, ".git"))
@@ -2722,6 +2766,7 @@ func TestInitCreatesUserConfig(t *testing.T) {
 }
 
 func TestProfileGeneratedConfigUsesCompleteProfilesSchema(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(workDir, ".git"))
@@ -2782,6 +2827,7 @@ func TestProfileGeneratedConfigUsesCompleteProfilesSchema(t *testing.T) {
 }
 
 func TestInitCreatesProjectConfig(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(workDir, ".git"))
@@ -2804,6 +2850,7 @@ func TestInitCreatesProjectConfig(t *testing.T) {
 }
 
 func TestInitRejectsProjectScopeOutsideGitRoot(t *testing.T) {
+	t.Parallel()
 	_, err := Init(context.Background(), InitOptions{
 		Scope:   InitScopeProject,
 		HomeDir: t.TempDir(),
@@ -2818,6 +2865,7 @@ func TestInitRejectsProjectScopeOutsideGitRoot(t *testing.T) {
 }
 
 func TestInitDoesNotOverwriteWithoutForce(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(workDir, ".git"))
@@ -2841,6 +2889,7 @@ func TestInitDoesNotOverwriteWithoutForce(t *testing.T) {
 }
 
 func TestInitForceOverwritesExistingConfig(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 	mustMkdir(t, filepath.Join(workDir, ".git"))
@@ -2869,6 +2918,7 @@ func TestInitForceOverwritesExistingConfig(t *testing.T) {
 }
 
 func TestValidateArtifactDirectoryResolvesAndCreatesPaths(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	gitRoot := t.TempDir()
 
@@ -2911,6 +2961,7 @@ func TestValidateArtifactDirectoryResolvesAndCreatesPaths(t *testing.T) {
 }
 
 func TestValidateArtifactDirectoryRejectsInvalidPaths(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	gitRoot := t.TempDir()
 
@@ -2933,6 +2984,7 @@ func TestValidateArtifactDirectoryRejectsInvalidPaths(t *testing.T) {
 }
 
 func TestResolveSpecsRoot(t *testing.T) {
+	t.Parallel()
 	repoRoot := t.TempDir()
 	mustMkdir(t, filepath.Join(repoRoot, "docs", "specs"))
 	mustMkdir(t, filepath.Join(repoRoot, "configured-specs"))
@@ -2990,6 +3042,7 @@ func TestResolveSpecsRoot(t *testing.T) {
 }
 
 func TestResolveSpecsRootUsesLoadedDefault(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	repoRoot := t.TempDir()
 	mustMkdir(t, filepath.Join(repoRoot, ".git"))
@@ -3013,6 +3066,7 @@ func TestResolveSpecsRootUsesLoadedDefault(t *testing.T) {
 }
 
 func TestResolveSpecsRootClassifiesExternalSymlink(t *testing.T) {
+	t.Parallel()
 	repoRoot := t.TempDir()
 	externalRoot := filepath.Join(t.TempDir(), "external-specs")
 	mustMkdir(t, filepath.Join(repoRoot, "docs"))
@@ -3036,6 +3090,7 @@ func TestResolveSpecsRootClassifiesExternalSymlink(t *testing.T) {
 }
 
 func TestResolveSpecsRootRejectsInvalidRoots(t *testing.T) {
+	t.Parallel()
 	repoRoot := t.TempDir()
 	filePath := filepath.Join(repoRoot, "spec-file")
 	mustWrite(t, filePath, "not a directory")
@@ -3080,6 +3135,7 @@ func TestResolveSpecsRootRejectsInvalidRoots(t *testing.T) {
 }
 
 func TestResolveReviewRoot(t *testing.T) {
+	t.Parallel()
 	repoRoot := t.TempDir()
 	specSlug := "0001-widget-flow"
 	mustMkdir(t, filepath.Join(repoRoot, "docs", "specs", specSlug))

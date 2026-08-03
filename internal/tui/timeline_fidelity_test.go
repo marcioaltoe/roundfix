@@ -35,6 +35,7 @@ func timelineToolEvent(batch int, at time.Time) runevent.RunEvent {
 }
 
 func TestTimelineSettledBatchCollapsesAndExecutingBatchExpands(t *testing.T) {
+	t.Parallel()
 	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	entries := timelineJournal(
 		runevent.RunEvent{
@@ -75,6 +76,7 @@ func TestTimelineSettledBatchCollapsesAndExecutingBatchExpands(t *testing.T) {
 }
 
 func TestTimelineGutterAlignsAcrossKinds(t *testing.T) {
+	t.Parallel()
 	startedAt := time.Date(2026, 7, 5, 12, 0, 5, 0, time.UTC)
 	entries := timelineJournal(
 		runevent.RunEvent{
@@ -111,6 +113,7 @@ func TestTimelineGutterAlignsAcrossKinds(t *testing.T) {
 }
 
 func TestTimelineSelectionProjectionErrorFallsBackToPersistedSummary(t *testing.T) {
+	t.Parallel()
 	startedAt := time.Date(2026, 7, 5, 12, 0, 5, 0, time.UTC)
 	entries := timelineJournal(runevent.RunEvent{
 		Source:  runevent.SourceDaemon,
@@ -129,6 +132,7 @@ func TestTimelineSelectionProjectionErrorFallsBackToPersistedSummary(t *testing.
 }
 
 func TestTimelineRowsStyledThroughTokensAndNoColorTwin(t *testing.T) {
+	t.Parallel()
 	tokens := ResolveTokens(true)
 	styled := &cockpitModel{tokens: tokens}
 	plain := &cockpitModel{tokens: ResolveTokens(false)}
@@ -165,6 +169,7 @@ func TestTimelineRowsStyledThroughTokensAndNoColorTwin(t *testing.T) {
 }
 
 func TestTimelineToolPayloadRendersOneBoundedLineInThePane(t *testing.T) {
+	t.Parallel()
 	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	events := []runevent.RunEvent{
 		{
@@ -193,6 +198,7 @@ func TestTimelineToolPayloadRendersOneBoundedLineInThePane(t *testing.T) {
 }
 
 func TestTimelinePaneHeaderIndicatorFollowsModalState(t *testing.T) {
+	t.Parallel()
 	model := newQueueFidelityCockpit(t, true, store.StateResolvingWithAgent, nil, time.Now())
 	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 

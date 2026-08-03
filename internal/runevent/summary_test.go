@@ -7,12 +7,14 @@ import (
 )
 
 func TestBoundSummaryKeepsShortTextUntouched(t *testing.T) {
+	t.Parallel()
 	if got := BoundSummary("short summary"); got != "short summary" {
 		t.Fatalf("expected identity for short text, got %q", got)
 	}
 }
 
 func TestBoundSummaryTruncatesOnRuneBoundary(t *testing.T) {
+	t.Parallel()
 	huge := strings.Repeat("é", MaxSummaryLength)
 
 	bounded := BoundSummary(huge)

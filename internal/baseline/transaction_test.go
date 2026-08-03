@@ -202,6 +202,9 @@ func TestTransactionFailureMatrix(t *testing.T) {
 			name += "/" + strings.ReplaceAll(point.Path, "/", "_")
 		}
 		t.Run(name, func(t *testing.T) {
+			// Each case builds its own repository and shares no mutable
+			// state, so the 57 fault points overlap instead of queueing.
+			t.Parallel()
 			repo, plan := newTransactionRepository(t)
 			before := snapshotVisibleTree(t, repo)
 			hook := failTransactionOnce(point.Phase, point.Path, fmt.Errorf("injected %s failure", point.Phase))

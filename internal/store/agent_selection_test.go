@@ -15,6 +15,7 @@ import (
 )
 
 func TestSchema9CreatesAgentSelectionTable(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -31,6 +32,7 @@ func TestSchema9CreatesAgentSelectionTable(t *testing.T) {
 }
 
 func TestSchema8To9MigratesRunsEventsAndSelectionTable(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	buildV8Fixture(t, ctx, homeDir)
@@ -63,6 +65,7 @@ func TestSchema8To9MigratesRunsEventsAndSelectionTable(t *testing.T) {
 }
 
 func TestAgentSelectionAttemptsRoundTripTaskQAReviewHistories(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -157,6 +160,7 @@ func TestAgentSelectionAttemptsRoundTripTaskQAReviewHistories(t *testing.T) {
 }
 
 func TestSelectionAttemptOrderingRejectsInvalidOrOutOfOrderAppendsWithoutPartialRows(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -205,6 +209,7 @@ func TestSelectionAttemptOrderingRejectsInvalidOrOutOfOrderAppendsWithoutPartial
 }
 
 func TestAgentSelectionAttemptLifecycleUpdatesSameAttempt(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -292,6 +297,7 @@ func TestAgentSelectionAttemptLifecycleUpdatesSameAttempt(t *testing.T) {
 }
 
 func TestAgentSelectionActiveScopesReturnsLatestLifecycleInStableOrder(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -386,6 +392,7 @@ func TestAgentSelectionActiveScopesReturnsLatestLifecycleInStableOrder(t *testin
 }
 
 func TestAgentSelectionAttemptLifecycleRejectsImmutableFieldChanges(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -422,6 +429,7 @@ func TestAgentSelectionAttemptLifecycleRejectsImmutableFieldChanges(t *testing.T
 }
 
 func TestAgentSelectionAttemptsStoreNoSensitiveFields(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -451,6 +459,7 @@ func TestAgentSelectionAttemptsStoreNoSensitiveFields(t *testing.T) {
 }
 
 func TestAgentSelectionAttemptsAppendExhaustedEventFromPersistedHistory(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)

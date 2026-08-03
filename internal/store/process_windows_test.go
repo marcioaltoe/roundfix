@@ -11,6 +11,7 @@ import (
 const synchronizeProcess = 0x00100000
 
 func TestProcessAliveReportsExitedUnreapedChildDead(t *testing.T) {
+	t.Parallel()
 	cmd := exec.Command("cmd", "/c", "exit", "0")
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start child process: %v", err)

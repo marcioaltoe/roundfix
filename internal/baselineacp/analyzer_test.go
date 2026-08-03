@@ -25,6 +25,7 @@ import (
 )
 
 func TestPreferredFallbackValidPreferredPreventsFallback(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerTestSnapshot(t)
 	runtime := &fakeSealedRuntime{
 		outputs: map[string]fakeSealedOutput{
@@ -48,6 +49,7 @@ func TestPreferredFallbackValidPreferredPreventsFallback(t *testing.T) {
 }
 
 func TestRuleSegmentationPreferredFallbackUsesIdenticalSnapshotBytes(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerSegmentationSnapshot(t)
 	runtime := &fakeSealedRuntime{
 		outputs: map[string]fakeSealedOutput{
@@ -95,6 +97,7 @@ func TestRuleSegmentationPreferredFallbackUsesIdenticalSnapshotBytes(t *testing.
 }
 
 func TestRuleSegmentationACPFailureRetainsCompleteOriginalEntry(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerSegmentationSnapshot(t)
 	runtime := &fakeSealedRuntime{
 		proofErrors: map[string]error{
@@ -121,6 +124,7 @@ func TestRuleSegmentationACPFailureRetainsCompleteOriginalEntry(t *testing.T) {
 }
 
 func TestRuleSegmentationUsesPrivateCheckoutFreeDirectories(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerSegmentationSnapshot(t)
 	runtime := &fakeSealedRuntime{
 		outputs: map[string]fakeSealedOutput{
@@ -143,6 +147,7 @@ func TestRuleSegmentationUsesPrivateCheckoutFreeDirectories(t *testing.T) {
 }
 
 func TestPreferredFallbackInvalidPreferredUsesIdenticalSnapshotBytes(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerTestSnapshot(t)
 	runtime := &fakeSealedRuntime{
 		outputs: map[string]fakeSealedOutput{
@@ -171,6 +176,7 @@ func TestPreferredFallbackInvalidPreferredUsesIdenticalSnapshotBytes(t *testing.
 }
 
 func TestPreferredFallbackRejectsToolTimeoutAndOversizedOutput(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerTestSnapshot(t)
 	tests := []struct {
 		name      string
@@ -210,6 +216,7 @@ func TestPreferredFallbackRejectsToolTimeoutAndOversizedOutput(t *testing.T) {
 }
 
 func TestManualClassificationFallbackWhenSelectionsUnavailableOrInvalid(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerTestSnapshot(t)
 	runtime := &fakeSealedRuntime{
 		proofErrors: map[string]error{
@@ -238,6 +245,7 @@ func TestManualClassificationFallbackWhenSelectionsUnavailableOrInvalid(t *testi
 }
 
 func TestPreferredFallbackDoesNotStartAfterProofCleanupFailure(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerTestSnapshot(t)
 	runtime := &fakeSealedRuntime{
 		proofErrors: map[string]error{
@@ -267,6 +275,7 @@ func TestPreferredFallbackDoesNotStartAfterProofCleanupFailure(t *testing.T) {
 }
 
 func TestPreferredFallbackRejectsToolUseAndStopsAfterCleanupFailure(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerTestSnapshot(t)
 	runtime := &fakeSealedRuntime{
 		outputs: map[string]fakeSealedOutput{
@@ -291,6 +300,7 @@ func TestPreferredFallbackRejectsToolUseAndStopsAfterCleanupFailure(t *testing.T
 }
 
 func TestAnalyzerCancellationClosesActiveSessionWithoutFallback(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerTestSnapshot(t)
 	runtime := &cancelingSealedRuntime{started: make(chan struct{})}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -315,6 +325,7 @@ func TestAnalyzerCancellationClosesActiveSessionWithoutFallback(t *testing.T) {
 }
 
 func TestAnalyzerNoPersistenceOrRepositoryMutation(t *testing.T) {
+	t.Parallel()
 	checkout := t.TempDir()
 	sentinel := filepath.Join(checkout, "sentinel.txt")
 	if err := os.WriteFile(sentinel, []byte("unchanged\n"), 0o644); err != nil {
@@ -349,6 +360,7 @@ func TestAnalyzerNoPersistenceOrRepositoryMutation(t *testing.T) {
 }
 
 func TestRevisionManualFallback(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerRevisionSnapshot(t)
 	runtime := &fakeSealedRuntime{
 		proofErrors: map[string]error{
@@ -366,6 +378,7 @@ func TestRevisionManualFallback(t *testing.T) {
 }
 
 func TestScopedRevisionProposal(t *testing.T) {
+	t.Parallel()
 	snapshot := analyzerRevisionSnapshot(t)
 	output, err := json.Marshal(baseline.RevisionProposal{
 		SchemaVersion:  baseline.RevisionProposalSchemaVersion,
@@ -401,6 +414,7 @@ func TestScopedRevisionProposal(t *testing.T) {
 }
 
 func TestACPXReadOnlyArguments(t *testing.T) {
+	t.Parallel()
 	runtime := agent.RuntimeSpec{
 		ID:              "codex",
 		Protocol:        agent.ProtocolACP,

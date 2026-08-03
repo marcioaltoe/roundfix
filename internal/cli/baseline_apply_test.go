@@ -199,17 +199,7 @@ func TestBaselineApplyCommandRealCLI(t *testing.T) {
 	t.Parallel()
 	repo := newBaselineApplyTestRepository(t)
 	plan, planPath := baselineApplyTestPlan(t, repo)
-	projectRoot, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatal(err)
-	}
-	binary := filepath.Join(t.TempDir(), "roundfix")
-	build := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
-	build.Dir = projectRoot
-	build.Env = append(os.Environ(), "GOCACHE="+filepath.Join(t.TempDir(), "go-cache"))
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build real roundfix CLI: %v\n%s", err, output)
-	}
+	binary := buildBaselineReleaseBinary(t)
 	command := exec.Command(
 		binary,
 		"baseline", "apply",

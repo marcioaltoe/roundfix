@@ -524,6 +524,7 @@ func (fixture *engineFixture) engine(t *testing.T, runner agent.Runner, verifier
 }
 
 func TestResolveCycleExecutesResolveVerifyCommitSourceContract(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store}
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
@@ -584,6 +585,7 @@ func TestResolveCycleExecutesResolveVerifyCommitSourceContract(t *testing.T) {
 }
 
 func TestPerWorkAgentSessionReviewUsesReviewProfile(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	runner := &selectionLifecycleRunner{}
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
@@ -612,6 +614,7 @@ func TestPerWorkAgentSessionReviewUsesReviewProfile(t *testing.T) {
 }
 
 func TestResolveCycleReportsReviewAgentSessionCloseFailure(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	closeErr := errors.New("close failed")
 	runner := &selectionLifecycleRunner{closeErr: closeErr}
@@ -638,6 +641,7 @@ func TestResolveCycleReportsReviewAgentSessionCloseFailure(t *testing.T) {
 }
 
 func TestResolveCyclePropagatesSettledIssueOutcomesIndividually(t *testing.T) {
+	t.Parallel()
 	const (
 		resolvedRef   = "thread:PRRT_resolved,comment:PRRC_resolved"
 		invalidRef    = "thread:PRRT_invalid,comment:PRRC_invalid"
@@ -715,6 +719,7 @@ func TestResolveCyclePropagatesSettledIssueOutcomesIndividually(t *testing.T) {
 }
 
 func TestResolveCycleOutcomeCommentsAreIdempotent(t *testing.T) {
+	t.Parallel()
 	const sourceRef = "thread:PRRT_invalid,comment:PRRC_invalid"
 	fixture := newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
 		reviewItemForTest("major: invalid", "internal/invalid.go", 5, sourceRef, "hash-invalid", "9001"),
@@ -749,6 +754,7 @@ func TestResolveCycleOutcomeCommentsAreIdempotent(t *testing.T) {
 }
 
 func TestResolveCycleSourcePropagationFailureContinues(t *testing.T) {
+	t.Parallel()
 	const (
 		firstRef  = "thread:PRRT_first,comment:PRRC_first"
 		secondRef = "thread:PRRT_second,comment:PRRC_second"
@@ -811,6 +817,7 @@ func TestResolveCycleSourcePropagationFailureContinues(t *testing.T) {
 }
 
 func TestOutcomeCommentBodyUsesPublicDuplicateReference(t *testing.T) {
+	t.Parallel()
 	canonicalPath := filepath.Join(t.TempDir(), "issue_001.md")
 	content := `---
 source: coderabbit
@@ -843,6 +850,7 @@ source_ref: "thread:PRRT_public,comment:PRRC_public"
 }
 
 func TestOutcomeCommentBodySanitizesPublicReasons(t *testing.T) {
+	t.Parallel()
 	body := outcomeCommentBody("run_1", rounds.Issue{
 		Status:         rounds.StatusFailed,
 		TerminalReason: "Verification failed:\nsee /Users/alice/dev/roundfix/.roundfix/verification.log and ping @team for details",
@@ -861,6 +869,7 @@ func TestOutcomeCommentBodySanitizesPublicReasons(t *testing.T) {
 }
 
 func TestResolveCycleRunEndLeavesUnresolvedIssuesCommented(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	source := &engineFakeSource{calls: fixture.calls}
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store, err: errors.New("agent crashed")}
@@ -881,6 +890,7 @@ func TestResolveCycleRunEndLeavesUnresolvedIssuesCommented(t *testing.T) {
 }
 
 func TestResolveCycleJournalsTransportAnomalyBeforeVerification(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	const anomaly = "acpx exited with exit code 1 after parsed session/prompt result\n--- acpx stderr tail ---\nMessage buffer exceeded 10485760 bytes"
 	runner := &engineFakeRunner{
@@ -929,6 +939,7 @@ func TestResolveCycleJournalsTransportAnomalyBeforeVerification(t *testing.T) {
 }
 
 func TestResolveCycleKeepsAgentProvidedTerminalReason(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	const reason = "invalid: reviewer asked for generated code"
 	runner := &engineFakeRunner{
@@ -961,6 +972,7 @@ func TestResolveCycleKeepsAgentProvidedTerminalReason(t *testing.T) {
 }
 
 func TestFinalPushIsASeparateExplicitOperation(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	pusher := &engineFakePusher{calls: fixture.calls}
 	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, &engineFakeCommitter{calls: fixture.calls}, pusher, &engineFakeSource{calls: fixture.calls})
@@ -984,6 +996,7 @@ func TestFinalPushIsASeparateExplicitOperation(t *testing.T) {
 }
 
 func TestResolveCycleAgentFailureFailsBatchAndContinues(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store, err: errors.New("agent crashed")}
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
@@ -1028,6 +1041,7 @@ func TestResolveCycleAgentFailureFailsBatchAndContinues(t *testing.T) {
 }
 
 func TestResolveCycleModelNotAdvertisedFailureSettlesReviewIssueReason(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store, err: modelNotAdvertisedBatchErrorForTest()}
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
@@ -1073,6 +1087,7 @@ func TestResolveCycleModelNotAdvertisedFailureSettlesReviewIssueReason(t *testin
 }
 
 func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, err: errors.New("exit status 7")}
 	committer := &engineFakeCommitter{calls: fixture.calls}
@@ -1125,6 +1140,7 @@ func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 }
 
 func TestResolveCycleVerificationFailureRepairsSameSessionAndAvoidsDuplicateBatchStart(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store}
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, failFirst: true}
@@ -1186,6 +1202,7 @@ func TestResolveCycleVerificationFailureRepairsSameSessionAndAvoidsDuplicateBatc
 }
 
 func TestResolveCycleVerificationFailureRetainsDiagnosticsWithoutStreamingOutput(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	plan := fixture.plan()
 	plan.Verification = `printf '\117\125\124\120\125\124\137\102\117\104\131'; exit 7`
@@ -1266,6 +1283,7 @@ func TestResolveCycleVerificationFailureRetainsDiagnosticsWithoutStreamingOutput
 }
 
 func TestResolveCycleVerificationInfrastructureErrorHaltsWithoutFailedSettlement(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	infraErr := errors.New("artifact filesystem unavailable")
 	verifier := &engineInfrastructureVerifier{calls: fixture.calls, err: infraErr}
@@ -1306,6 +1324,7 @@ func TestResolveCycleVerificationInfrastructureErrorHaltsWithoutFailedSettlement
 }
 
 func TestResolveCycleStopRequestAfterAttemptOneFailureDoesNotRepair(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store}
 	verifier := &engineStopAfterCommandFailureVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
@@ -1335,6 +1354,7 @@ func TestResolveCycleStopRequestAfterAttemptOneFailureDoesNotRepair(t *testing.T
 }
 
 func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
 		{
 			Title:                   "major: handle nil cache",
@@ -1437,6 +1457,7 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 }
 
 func TestResolveCycleStopBeforeBatchPublishesStopAndDoesNothing(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1457,6 +1478,7 @@ func TestResolveCycleStopBeforeBatchPublishesStopAndDoesNothing(t *testing.T) {
 }
 
 func TestResolveCycleStopRequestBeforeBatchPublishesStopAndDoesNothing(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	if err := fixture.store.RequestStop(context.Background(), fixture.run.ID); err != nil {
 		t.Fatalf("request Stop: %v", err)
@@ -1481,6 +1503,7 @@ func TestResolveCycleStopRequestBeforeBatchPublishesStopAndDoesNothing(t *testin
 }
 
 func TestResolveCycleStopRequestAfterBatchSettlementHaltsBeforeNextBatch(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
 		{
 			Title:                   "major: handle first",
@@ -1553,6 +1576,7 @@ func TestResolveCycleStopRequestAfterBatchSettlementHaltsBeforeNextBatch(t *test
 }
 
 func TestResolveCycleStopDuringAgentPreservesWorktreeAndHaltsDaemonActions(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store, err: agent.StopError{Err: context.Canceled}}
 	committer := &engineFakeCommitter{calls: fixture.calls}
@@ -1588,6 +1612,7 @@ func TestResolveCycleStopDuringAgentPreservesWorktreeAndHaltsDaemonActions(t *te
 }
 
 func TestNewEngineRequiresExplicitDependencies(t *testing.T) {
+	t.Parallel()
 	_, err := NewEngine(Dependencies{})
 
 	if err == nil {
@@ -1639,6 +1664,7 @@ func (failingCriticalSink) Publish(context.Context, runevent.RunEvent) error {
 }
 
 func TestResolveCycleFailsRunWhenCriticalJournalSinkFails(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	fanout := runevent.NewFanout([]runevent.Sink{failingCriticalSink{}}, nil)
 	defer fanout.Close()
@@ -1670,6 +1696,7 @@ func TestResolveCycleFailsRunWhenCriticalJournalSinkFails(t *testing.T) {
 }
 
 func TestResolveCycleStagesOnlyAgentTouchedPaths(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	issuePath := fixture.issuePaths[0]
 	issueStagePath, err := filepath.Rel(fixture.gitRoot, issuePath)
@@ -1709,6 +1736,7 @@ func TestResolveCycleStagesOnlyAgentTouchedPaths(t *testing.T) {
 }
 
 func TestResolveCycleDropsExecutableFileAndCommitsRemainingBatchPaths(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	executablePath := "bin/roundfix"
 	regularPath := "src/fixed.go"
@@ -1752,6 +1780,7 @@ func TestResolveCycleDropsExecutableFileAndCommitsRemainingBatchPaths(t *testing
 }
 
 func TestResolveCycleSkipsCommitForTriageOnlyBatch(t *testing.T) {
+	t.Parallel()
 	fixture := newEngineFixture(t)
 	// Identical snapshots: the Agent triaged without changing the worktree.
 	fixture.worktree.snapshots = [][]string{{"user-wip.txt"}, {"user-wip.txt"}}

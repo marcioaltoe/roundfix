@@ -16,6 +16,7 @@ import (
 )
 
 func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 
@@ -35,6 +36,7 @@ func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
 }
 
 func TestInteractiveDefaultsRememberLastPullRequestAndAgent(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -70,6 +72,7 @@ func TestInteractiveDefaultsRememberLastPullRequestAndAgent(t *testing.T) {
 }
 
 func TestCreateFetchRunCompletesFetchedAndReleasesLock(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -127,6 +130,7 @@ func TestCreateFetchRunCompletesFetchedAndReleasesLock(t *testing.T) {
 }
 
 func TestCreateRunRejectsDuplicateActiveRunWithoutNewRecord(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -156,6 +160,7 @@ func TestCreateRunRejectsDuplicateActiveRunWithoutNewRecord(t *testing.T) {
 }
 
 func TestStoppedRunReleasesActiveLock(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -187,6 +192,7 @@ func TestStoppedRunReleasesActiveLock(t *testing.T) {
 }
 
 func TestRunLooksUpExistingRunByID(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -214,6 +220,7 @@ func TestRunLooksUpExistingRunByID(t *testing.T) {
 }
 
 func TestListRunsScopesByRepositoryAndOrdersNewestFirst(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -262,6 +269,7 @@ func TestListRunsScopesByRepositoryAndOrdersNewestFirst(t *testing.T) {
 }
 
 func TestListRunsStateFilterAndLimit(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -373,6 +381,7 @@ func TestListRunsStateFilterAndLimit(t *testing.T) {
 }
 
 func TestListRunsEmptyDatabaseReturnsEmptySlice(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -390,6 +399,7 @@ func TestListRunsEmptyDatabaseReturnsEmptySlice(t *testing.T) {
 }
 
 func TestCreateRunPersistsWorkDir(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -430,6 +440,7 @@ func TestCreateRunPersistsWorkDir(t *testing.T) {
 }
 
 func TestCreateRunPersistsAgentSelectionAcrossRunQueries(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -474,6 +485,7 @@ func TestCreateRunPersistsAgentSelectionAcrossRunQueries(t *testing.T) {
 }
 
 func TestCreateRunPersistsOwnerPIDAcrossRunQueries(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -524,6 +536,7 @@ func TestCreateRunPersistsOwnerPIDAcrossRunQueries(t *testing.T) {
 }
 
 func TestCreateRunPersistsOwnerIdentityAcrossRunQueries(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -576,6 +589,7 @@ func TestCreateRunPersistsOwnerIdentityAcrossRunQueries(t *testing.T) {
 }
 
 func TestCreateRunWithoutOwnerIdentityMarksCaptureFailure(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -610,6 +624,7 @@ func TestCreateRunWithoutOwnerIdentityMarksCaptureFailure(t *testing.T) {
 }
 
 func TestCreateRunAllowsDifferentHeadBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -637,6 +652,7 @@ func TestCreateRunAllowsDifferentHeadBranch(t *testing.T) {
 }
 
 func TestCompleteRunAcceptsUnresolvedAsTerminal(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -662,6 +678,7 @@ func TestCompleteRunAcceptsUnresolvedAsTerminal(t *testing.T) {
 }
 
 func TestCompleteRunRejectsNonTerminalState(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -683,6 +700,7 @@ func TestCompleteRunRejectsNonTerminalState(t *testing.T) {
 }
 
 func TestCompleteRunReviewSkippedIsTerminal(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -709,6 +727,7 @@ func TestCompleteRunReviewSkippedIsTerminal(t *testing.T) {
 }
 
 func TestCompleteRunWinnerAndIdenticalReplay(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -762,6 +781,7 @@ func TestCompleteRunWinnerAndIdenticalReplay(t *testing.T) {
 }
 
 func TestTerminalOutcomeConflictPreservesWinner(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -809,6 +829,7 @@ func TestTerminalOutcomeConflictPreservesWinner(t *testing.T) {
 }
 
 func TestTerminalOutcomeRejectsIntermediateStateUpdate(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -839,6 +860,7 @@ func TestTerminalOutcomeRejectsIntermediateStateUpdate(t *testing.T) {
 }
 
 func TestTerminalOutcomeEveryStoredTerminalStateIsImmutable(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -894,6 +916,7 @@ func TestTerminalOutcomeEveryStoredTerminalStateIsImmutable(t *testing.T) {
 }
 
 func TestCompleteRunConcurrentTerminalOutcomesHaveOneWinner(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -954,6 +977,7 @@ func TestCompleteRunConcurrentTerminalOutcomesHaveOneWinner(t *testing.T) {
 }
 
 func TestCompleteRunDatabaseFailureNamesOperationAndRun(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
@@ -973,6 +997,7 @@ func TestCompleteRunDatabaseFailureNamesOperationAndRun(t *testing.T) {
 }
 
 func TestReconcileIntegrationPendingRecordsEvidence(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -1045,6 +1070,7 @@ func TestReconcileIntegrationPendingRecordsEvidence(t *testing.T) {
 }
 
 func TestReconcileIntegrationDatabaseFailureNamesOperationAndRun(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	req := sampleCreateRunRequest()
@@ -1082,6 +1108,7 @@ func TestReconcileIntegrationDatabaseFailureNamesOperationAndRun(t *testing.T) {
 }
 
 func TestReconcileIntegrationRejectsIncompleteEvidence(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -1145,6 +1172,7 @@ func TestReconcileIntegrationRejectsIncompleteEvidence(t *testing.T) {
 }
 
 func TestReconcileIntegrationRejectsStaleTargetBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -1194,6 +1222,7 @@ func TestReconcileIntegrationRejectsStaleTargetBranch(t *testing.T) {
 }
 
 func TestReconcileIntegrationRejectsEveryOtherSourceOutcome(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -1259,6 +1288,7 @@ func TestReconcileIntegrationRejectsEveryOtherSourceOutcome(t *testing.T) {
 }
 
 func TestReconcileIntegrationRollsBackWhenJournalFails(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -1315,6 +1345,7 @@ END`); err != nil {
 }
 
 func TestReconcileIntegrationSafeCompleteEvidence(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -1382,6 +1413,7 @@ func TestReconcileIntegrationSafeCompleteEvidence(t *testing.T) {
 }
 
 func TestReconcileIntegrationInvalidCompleteEvidence(t *testing.T) {
+	t.Parallel()
 	valid := IntegrationReconciliation{
 		RunID:           "run_01",
 		PreviousOutcome: StateIntegrationPending,
@@ -1416,6 +1448,7 @@ func TestReconcileIntegrationInvalidCompleteEvidence(t *testing.T) {
 }
 
 func TestReconcileIntegrationOutcomePreservedWithEvidence(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -1462,6 +1495,7 @@ func TestReconcileIntegrationOutcomePreservedWithEvidence(t *testing.T) {
 }
 
 func TestReconcileIntegrationIdempotent(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -1506,6 +1540,7 @@ func TestReconcileIntegrationIdempotent(t *testing.T) {
 }
 
 func TestRequestStopRecordsStopRequestForActiveRun(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -1555,6 +1590,7 @@ func TestRequestStopRecordsStopRequestForActiveRun(t *testing.T) {
 }
 
 func TestRequestStopRejectsTerminalRunWithNamedError(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -1598,6 +1634,7 @@ func closeStore(t *testing.T, store *Store) {
 }
 
 func TestIsTerminalState(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		state string
 		want  bool
@@ -1820,6 +1857,7 @@ func buildV3Fixture(t *testing.T, homeDir string) {
 }
 
 func TestOpenMigratesV3RunDatabasePreservingRunsAndRekeyingLocks(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	buildV3Fixture(t, homeDir)
@@ -1975,6 +2013,7 @@ func buildV4Fixture(t *testing.T, homeDir string) {
 }
 
 func TestOpenMigratesV4RunDatabasePreservingRunsLocksAndAddingStopRequests(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	buildV4Fixture(t, homeDir)
@@ -2128,6 +2167,7 @@ func buildV5Fixture(t *testing.T, homeDir string) {
 }
 
 func TestOpenMigratesV5RunDatabasePreservingRunsLocksAndAddingWorkDir(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	buildV5Fixture(t, homeDir)
@@ -2284,6 +2324,7 @@ func buildV6Fixture(t *testing.T, homeDir string) {
 }
 
 func TestOpenMigratesV6RunDatabaseAddingSelectionDefaults(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	buildV6Fixture(t, homeDir)
@@ -2416,6 +2457,7 @@ func buildV7Fixture(t *testing.T, homeDir string) {
 }
 
 func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	buildV7Fixture(t, homeDir)
@@ -2472,6 +2514,7 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 }
 
 func TestOpenMigratesV11RunDatabaseAddingOwnerIdentityUnproven(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	runStore := openTestStore(t, ctx, homeDir)
@@ -2534,6 +2577,7 @@ func buildV9Fixture(t *testing.T, homeDir string) {
 }
 
 func TestOpenReaderRejectsMismatchedSchemaVersion(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	buildV9Fixture(t, homeDir)
@@ -2571,6 +2615,7 @@ func TestOpenReaderRejectsMismatchedSchemaVersion(t *testing.T) {
 }
 
 func TestSchemaBeforeReviewSkippedMigrationRequiresWriter(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	buildV9Fixture(t, homeDir)
@@ -2610,6 +2655,7 @@ func TestSchemaBeforeReviewSkippedMigrationRequiresWriter(t *testing.T) {
 }
 
 func TestSchemaReviewSkippedReaderRejectsNewerDatabase(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	runStore := openTestStore(t, ctx, homeDir)
@@ -2640,6 +2686,7 @@ func TestSchemaReviewSkippedReaderRejectsNewerDatabase(t *testing.T) {
 }
 
 func TestCreateRunRejectsSecondActiveRunForSameSpecTarget(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -2677,6 +2724,7 @@ func TestCreateRunRejectsSecondActiveRunForSameSpecTarget(t *testing.T) {
 }
 
 func TestCompletedImplementRunReleasesSpecTargetLock(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -2698,6 +2746,7 @@ func TestCompletedImplementRunReleasesSpecTargetLock(t *testing.T) {
 }
 
 func TestReviewKindActiveRunErrorTextUnchanged(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -2718,6 +2767,7 @@ func TestReviewKindActiveRunErrorTextUnchanged(t *testing.T) {
 }
 
 func TestActiveRunInGitRootFindsActiveRunsOfAnyKind(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -2761,6 +2811,7 @@ func TestActiveRunInGitRootFindsActiveRunsOfAnyKind(t *testing.T) {
 }
 
 func TestCreateRunValidatesRequiredFieldsByKind(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -2872,6 +2923,7 @@ func sampleImplementCreateRunRequest() CreateRunRequest {
 }
 
 func TestUpdateRunStateRejectsTerminalStatesAndMissingRuns(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)

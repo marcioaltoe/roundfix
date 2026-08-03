@@ -12,6 +12,7 @@ import (
 )
 
 func TestReclaimOrphanedRunCompletesFailedReleasesLockAndJournalsReason(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -53,6 +54,7 @@ func TestReclaimOrphanedRunCompletesFailedReleasesLockAndJournalsReason(t *testi
 }
 
 func TestReclaimOrphanedRunConcurrentAttemptsJournalOnce(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)

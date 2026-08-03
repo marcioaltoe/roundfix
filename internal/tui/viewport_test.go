@@ -69,6 +69,7 @@ func seededSource(total int) *fakeTimelineSource {
 }
 
 func TestViewportReplayLoadsNewestBoundedWindowAndFollows(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := seededSource(60)
 	viewport := NewTimelineViewport(source, "run-1", 50, 10)
@@ -91,6 +92,7 @@ func TestViewportReplayLoadsNewestBoundedWindowAndFollows(t *testing.T) {
 }
 
 func TestViewportFollowingAdvancesTailAndKeepsWindowBound(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := seededSource(50)
 	viewport := NewTimelineViewport(source, "run-1", 50, 10)
@@ -115,6 +117,7 @@ func TestViewportFollowingAdvancesTailAndKeepsWindowBound(t *testing.T) {
 }
 
 func TestViewportScrolledFreezesAndCountsNewEventsBelow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := seededSource(40)
 	viewport := NewTimelineViewport(source, "run-1", 50, 10)
@@ -158,6 +161,7 @@ func TestViewportScrolledFreezesAndCountsNewEventsBelow(t *testing.T) {
 }
 
 func TestViewportScrollUpPagesBackwardAcrossWindowEdgeWithoutGaps(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := seededSource(120)
 	viewport := NewTimelineViewport(source, "run-1", 30, 10)
@@ -192,6 +196,7 @@ func TestViewportScrollUpPagesBackwardAcrossWindowEdgeWithoutGaps(t *testing.T) 
 }
 
 func TestViewportScrollDownPagesForwardAndResumesFollowingAtTail(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := seededSource(120)
 	viewport := NewTimelineViewport(source, "run-1", 30, 10)
@@ -230,6 +235,7 @@ func TestViewportScrollDownPagesForwardAndResumesFollowingAtTail(t *testing.T) {
 }
 
 func TestViewportTerminalRunsNeverFollow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := seededSource(20)
 	viewport := NewTimelineViewport(source, "run-1", 50, 10)
@@ -257,6 +263,7 @@ func TestViewportTerminalRunsNeverFollow(t *testing.T) {
 }
 
 func TestViewportCoalescesChunksAcrossEventsAndWindowSlides(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := &fakeTimelineSource{}
 	for index := 1; index <= 10; index++ {
@@ -284,6 +291,7 @@ func TestViewportCoalescesChunksAcrossEventsAndWindowSlides(t *testing.T) {
 }
 
 func TestViewportCoalescesChunksInsideGroupedBatch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := &fakeTimelineSource{}
 	for _, chunk := range []string{"Hel", "lo ", "world\n"} {
@@ -310,6 +318,7 @@ func TestViewportCoalescesChunksInsideGroupedBatch(t *testing.T) {
 }
 
 func TestViewportSkipsUnknownKindsWithoutBlankLines(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := &fakeTimelineSource{}
 	source.addLine("line one\n")
@@ -331,6 +340,7 @@ func TestViewportSkipsUnknownKindsWithoutBlankLines(t *testing.T) {
 }
 
 func TestViewportGroupsReviewTimelineByBatchAndKind(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := &fakeTimelineSource{}
 	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
@@ -406,6 +416,7 @@ func TestViewportGroupsReviewTimelineByBatchAndKind(t *testing.T) {
 }
 
 func TestViewportGroupsSpecTimelineTaskAndQAMilestones(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := &fakeTimelineSource{}
 	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
@@ -462,6 +473,7 @@ func TestViewportGroupsSpecTimelineTaskAndQAMilestones(t *testing.T) {
 }
 
 func TestViewportFollowModeTracksGroupedBatchBoundaries(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	source := &fakeTimelineSource{}
 	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)

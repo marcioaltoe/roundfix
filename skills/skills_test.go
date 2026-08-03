@@ -35,6 +35,7 @@ type lockHashCompatibilityFixture struct {
 }
 
 func TestSkillFolderHashMatchesExternalCompatibilityFixture(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile(lockHashCompatibilityFixturePath)
 	if err != nil {
 		t.Fatalf("read Go-owned lock compatibility fixture: %v", err)
@@ -86,6 +87,7 @@ func TestSkillFolderHashMatchesExternalCompatibilityFixture(t *testing.T) {
 }
 
 func TestSkillFolderHashExcludesMetadataAndDependencyDirectories(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	writeSkillHashTestFile(t, root, "SKILL.md", "fixture\n")
 	want, err := SkillFolderHash(t.Context(), root)
@@ -111,6 +113,7 @@ func TestSkillFolderHashExcludesMetadataAndDependencyDirectories(t *testing.T) {
 }
 
 func TestSkillFolderHashRejectsUnsafeFilesystemShapes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		prepare func(*testing.T) string
@@ -158,6 +161,7 @@ func TestSkillFolderHashRejectsUnsafeFilesystemShapes(t *testing.T) {
 }
 
 func TestSkillFolderHashWrapsMissingRootError(t *testing.T) {
+	t.Parallel()
 	root := filepath.Join(t.TempDir(), "missing")
 	_, err := SkillFolderHash(t.Context(), root)
 	if err == nil {
@@ -172,6 +176,7 @@ func TestSkillFolderHashWrapsMissingRootError(t *testing.T) {
 }
 
 func TestSkillFolderHashHonorsPreCanceledContext(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		context func(*testing.T) context.Context
@@ -211,6 +216,7 @@ func TestSkillFolderHashHonorsPreCanceledContext(t *testing.T) {
 }
 
 func TestSkillFolderHashStopsAfterCancellationDuringRead(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(t.Context())
 	tree := &cancelOnFirstFileOpenFS{
 		FS: fstest.MapFS{
@@ -257,6 +263,7 @@ func writeSkillHashTestFile(t *testing.T, root string, relative string, content 
 }
 
 func TestCheckValidatesRoundfixSkillArtifacts(t *testing.T) {
+	t.Parallel()
 	if diagnostics := Check(); len(diagnostics) > 0 {
 		var messages []string
 		for _, diagnostic := range diagnostics {
@@ -267,6 +274,7 @@ func TestCheckValidatesRoundfixSkillArtifacts(t *testing.T) {
 }
 
 func TestOwnedSkillContractRejectsSetAndVersionDisagreement(t *testing.T) {
+	t.Parallel()
 	files, err := Files()
 	if err != nil {
 		t.Fatalf("read skill files: %v", err)
@@ -339,6 +347,7 @@ func TestOwnedSkillContractRejectsSetAndVersionDisagreement(t *testing.T) {
 }
 
 func TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand(t *testing.T) {
+	t.Parallel()
 	diagnostics := checkOpenAIManifest("roundfix/agents/openai.yaml", []byte(`
 name: roundfix
 runtime_hints: {}
@@ -360,6 +369,7 @@ runtime_hints: {}
 }
 
 func TestCheckOpenAIManifestAcceptsNestedRuntimeHints(t *testing.T) {
+	t.Parallel()
 	diagnostics := checkOpenAIManifest("roundfix/agents/openai.yaml", []byte(`
 name: roundfix
 entrypoint: SKILL.md
@@ -374,6 +384,7 @@ runtime:
 }
 
 func TestFilesIncludeEveryOwnedSkill(t *testing.T) {
+	t.Parallel()
 	files, err := Files()
 	if err != nil {
 		t.Fatalf("read skill files: %v", err)
@@ -401,6 +412,7 @@ func TestFilesIncludeEveryOwnedSkill(t *testing.T) {
 }
 
 func TestFrontmatterName(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		text string
@@ -421,6 +433,7 @@ func TestFrontmatterName(t *testing.T) {
 }
 
 func TestRecommendedListsExternallyManagedSkills(t *testing.T) {
+	t.Parallel()
 	recommended := Recommended()
 	if len(recommended) == 0 {
 		t.Fatal("expected recommended skills from skills-lock.json, got none")
@@ -437,6 +450,7 @@ func TestRecommendedListsExternallyManagedSkills(t *testing.T) {
 }
 
 func TestRecommendedSkillsMatchLock(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile(filepath.Join("..", "skills-lock.json"))
 	if err != nil {
 		t.Fatalf("read skills lock: %v", err)
@@ -464,6 +478,7 @@ func TestRecommendedSkillsMatchLock(t *testing.T) {
 }
 
 func TestCheckRejectsExecutableSetupEngineArtifacts(t *testing.T) {
+	t.Parallel()
 	diagnostics := checkThinSetupSkill([]File{
 		{
 			Skill: "setup-context-driven",
@@ -484,6 +499,7 @@ func TestCheckRejectsExecutableSetupEngineArtifacts(t *testing.T) {
 }
 
 func TestInstallCopiesSkillsToSupportedTargetDirectories(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	targetDirs := map[string]string{
 		"codex":    filepath.Join(root, "codex"),
@@ -532,6 +548,7 @@ func embeddedFileCount(t *testing.T) int {
 }
 
 func TestInstallCopiesSkillsToProjectDirectoryByDefault(t *testing.T) {
+	t.Parallel()
 	projectDir := t.TempDir()
 
 	result, err := Install(context.Background(), InstallRequest{ProjectDir: projectDir})
@@ -564,6 +581,7 @@ func TestInstallCopiesSkillsToProjectDirectoryByDefault(t *testing.T) {
 }
 
 func TestInstallRejectsUnsupportedTarget(t *testing.T) {
+	t.Parallel()
 	_, err := Install(context.Background(), InstallRequest{Target: "other"})
 	if err == nil {
 		t.Fatal("expected unsupported target error")

@@ -31,6 +31,7 @@ func detailFidelityView() *issueDetailView {
 }
 
 func TestCockpitDetailModalStyledThroughTokensWithNoColorTwin(t *testing.T) {
+	t.Parallel()
 	tokens := ResolveTokens(true)
 	model := &cockpitModel{tokens: tokens, detail: detailFidelityView()}
 	const width, height = 60, 14
@@ -81,6 +82,7 @@ func TestCockpitDetailModalStyledThroughTokensWithNoColorTwin(t *testing.T) {
 }
 
 func TestCockpitFetchRunAttachRendersExplanatoryEmptyStates(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-fetch", State: store.StateFetched}, version: 1}
 	model := newTestCockpit(t, source, LiveRunView{
 		Command:       "attach",
@@ -110,6 +112,7 @@ func TestCockpitFetchRunAttachRendersExplanatoryEmptyStates(t *testing.T) {
 }
 
 func TestCockpitEmptyStatesNameReviewAndSpecRunExpectations(t *testing.T) {
+	t.Parallel()
 	reviewSource := &cockpitFakeSource{run: store.Run{ID: "run-review", State: store.StateActive}, version: 1}
 	review := newTestCockpit(t, reviewSource, LiveRunView{PipelineState: store.StateActive})
 	review.Update(tea.WindowSizeMsg{Width: 120, Height: 40})

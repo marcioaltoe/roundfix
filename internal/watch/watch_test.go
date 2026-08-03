@@ -14,6 +14,7 @@ import (
 )
 
 func TestRunReviewEvidenceSharedByPreFetchAndMergeReady(t *testing.T) {
+	t.Parallel()
 	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
 	evidence := reviewsource.Evidence{
 		State:           reviewsource.EvidenceVerified,
@@ -77,6 +78,7 @@ func TestRunReviewEvidenceSharedByPreFetchAndMergeReady(t *testing.T) {
 }
 
 func TestRunReviewIssuesUnknownWhenStatusDiscoveryFailsBeforeFetch(t *testing.T) {
+	t.Parallel()
 	sourceErr := errors.New("discover Review Source status")
 	fetcher := &fakeFetcher{}
 
@@ -103,6 +105,7 @@ func TestRunReviewIssuesUnknownWhenStatusDiscoveryFailsBeforeFetch(t *testing.T)
 }
 
 func TestRunReviewIssuesKnownAfterFetchedZero(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	evidence := evidenceForHead(reviewsource.EvidenceVerified, reviewsource.EvidenceKindCheckRun, req.HeadSHA)
 
@@ -127,6 +130,7 @@ func TestRunReviewIssuesKnownAfterFetchedZero(t *testing.T) {
 }
 
 func TestRunTransientReviewEvidenceRecoversWithinExistingBounds(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
 	source := &fakeReviewEvidenceSource{
@@ -161,6 +165,7 @@ func TestRunTransientReviewEvidenceRecoversWithinExistingBounds(t *testing.T) {
 }
 
 func TestRunTransientReviewEvidenceRecoversDuringMergeReadyWait(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
 	source := &fakeReviewEvidenceSource{
@@ -195,6 +200,7 @@ func TestRunTransientReviewEvidenceRecoversDuringMergeReadyWait(t *testing.T) {
 }
 
 func TestRunTransientReviewEvidenceExhaustsReviewTimeout(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.ReviewTimeout = 2 * time.Second
 	req.PollInterval = time.Second
@@ -228,6 +234,7 @@ func TestRunTransientReviewEvidenceExhaustsReviewTimeout(t *testing.T) {
 }
 
 func TestRunTransientReviewEvidenceExhaustsMergeReadyTimeout(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.ReviewTimeout = 2 * time.Second
 	req.PollInterval = time.Second
@@ -264,6 +271,7 @@ func TestRunTransientReviewEvidenceExhaustsMergeReadyTimeout(t *testing.T) {
 }
 
 func TestRunTransientReviewEvidenceAfterMissingCheckExhaustsReviewTimeout(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.ReviewTimeout = 2 * time.Second
 	req.CheckGracePeriod = 10 * time.Second
@@ -302,6 +310,7 @@ func TestRunTransientReviewEvidenceAfterMissingCheckExhaustsReviewTimeout(t *tes
 }
 
 func TestRunTransientReviewEvidenceExhaustsRunBudgetBeforeTimeout(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.ReviewTimeout = 5 * time.Second
 	req.PollInterval = time.Second
@@ -348,6 +357,7 @@ func TestRunTransientReviewEvidenceExhaustsRunBudgetBeforeTimeout(t *testing.T) 
 }
 
 func TestRunPermanentReviewEvidenceFailureDoesNotRetry(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	permanent := errors.New("authentication failed: temporary Review Source failure")
 	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
@@ -379,6 +389,7 @@ func TestRunPermanentReviewEvidenceFailureDoesNotRetry(t *testing.T) {
 }
 
 func TestRunPermanentMergeReadyEvidenceFailureDoesNotRetry(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	permanent := errors.New("validation failed")
 	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
@@ -413,6 +424,7 @@ func TestRunPermanentMergeReadyEvidenceFailureDoesNotRetry(t *testing.T) {
 }
 
 func TestRunWaitPhaseProjectionDeduplicatesUnchangedEvidence(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.QuietPeriod = 0
 	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
@@ -493,6 +505,7 @@ func TestRunWaitPhaseProjectionDeduplicatesUnchangedEvidence(t *testing.T) {
 }
 
 func TestRunReviewSkippedStopsBeforeFetch(t *testing.T) {
+	t.Parallel()
 	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
 	evidence := reviewsource.Evidence{
 		State:           reviewsource.EvidenceSkipped,
@@ -542,6 +555,7 @@ func TestRunReviewSkippedStopsBeforeFetch(t *testing.T) {
 }
 
 func TestRunReviewSkippedDuringMergeReadyPreservesTerminalEvidence(t *testing.T) {
+	t.Parallel()
 	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
 	calls := 0
 	skipped := reviewsource.Evidence{
@@ -588,6 +602,7 @@ func TestRunReviewSkippedDuringMergeReadyPreservesTerminalEvidence(t *testing.T)
 }
 
 func TestRunWaitsFetchesResolvesToClean(t *testing.T) {
+	t.Parallel()
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	sleeper := &fakeSleeper{clock: clock}
 	status := &fakeStatusSource{
@@ -631,6 +646,7 @@ func TestRunWaitsFetchesResolvesToClean(t *testing.T) {
 }
 
 func TestRunSkipsQuietPeriodWhenReviewAlreadySettledAtStart(t *testing.T) {
+	t.Parallel()
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	sleeper := &fakeSleeper{clock: clock}
 	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
@@ -664,6 +680,7 @@ func TestRunSkipsQuietPeriodWhenReviewAlreadySettledAtStart(t *testing.T) {
 }
 
 func TestRunSleepsBetweenStatusChecksAndKeepsQuietPeriodWhenReviewSettlesDuringRun(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	sleeper := &fakeSleeper{clock: clock}
@@ -706,6 +723,7 @@ func TestRunSleepsBetweenStatusChecksAndKeepsQuietPeriodWhenReviewSettlesDuringR
 }
 
 func TestRunStopRequestDuringStatusWaitStopsAtNextPoll(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	stops := &fakeStopRequestSource{}
@@ -749,6 +767,7 @@ func TestRunStopRequestDuringStatusWaitStopsAtNextPoll(t *testing.T) {
 }
 
 func TestRunStopRequestDuringQuietPeriodStopsBeforeFetch(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	stops := &fakeStopRequestSource{}
@@ -794,6 +813,7 @@ func TestRunStopRequestDuringQuietPeriodStopsBeforeFetch(t *testing.T) {
 }
 
 func TestRunStopRequestDuringTransientRetryStopsBeforeNextCheck(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	stops := &fakeStopRequestSource{}
@@ -837,6 +857,7 @@ func TestRunStopRequestDuringTransientRetryStopsBeforeNextCheck(t *testing.T) {
 }
 
 func TestRunStopRequestDuringMergeReadyWaitStopsBeforeNextCheck(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	stops := &fakeStopRequestSource{}
@@ -877,6 +898,7 @@ func TestRunStopRequestDuringMergeReadyWaitStopsBeforeNextCheck(t *testing.T) {
 }
 
 func TestRunStopRequestSourceFailureIncludesRunAndOperation(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	sourceErr := errors.New("Run Database unavailable")
 	stops := &fakeStopRequestSource{err: sourceErr, errAtCall: 1}
@@ -907,6 +929,7 @@ func TestRunStopRequestSourceFailureIncludesRunAndOperation(t *testing.T) {
 }
 
 func TestRunTimesOutAndOffersManualReviewTrigger(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.ReviewTimeout = 2 * time.Second
 	req.PollInterval = time.Second
@@ -945,6 +968,7 @@ func TestRunTimesOutAndOffersManualReviewTrigger(t *testing.T) {
 }
 
 func TestRunStopsAtMaxRoundsReached(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.MaxRounds = 2
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
@@ -988,6 +1012,7 @@ func TestRunStopsAtMaxRoundsReached(t *testing.T) {
 }
 
 func TestRunWithoutStopRequestKeepsRunBudgetBehavior(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.BudgetEnabled = true
 	req.MaxRunDuration = 2 * time.Second
@@ -1025,6 +1050,7 @@ func TestRunWithoutStopRequestKeepsRunBudgetBehavior(t *testing.T) {
 }
 
 func TestRunReturnsUnresolvedWhenResolveMakesNoProgress(t *testing.T) {
+	t.Parallel()
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
 	fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}}
@@ -1053,6 +1079,7 @@ func TestRunReturnsUnresolvedWhenResolveMakesNoProgress(t *testing.T) {
 }
 
 func TestRunConfirmsMergeReadyThroughGraceWindow(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name             string
 		states           []HeadCheckState
@@ -1154,6 +1181,7 @@ func TestRunConfirmsMergeReadyThroughGraceWindow(t *testing.T) {
 }
 
 func TestRunKeepsPollingWhenLocalQueueIsEmptyUntilHeadCheckSucceeds(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.ReviewTimeout = 5 * time.Second
 	req.PollInterval = time.Second
@@ -1188,6 +1216,7 @@ func TestRunKeepsPollingWhenLocalQueueIsEmptyUntilHeadCheckSucceeds(t *testing.T
 }
 
 func TestRunReentersFetchWhenHeadCheckFails(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.MaxRounds = 2
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
@@ -1255,6 +1284,7 @@ func TestRunReentersFetchWhenHeadCheckFails(t *testing.T) {
 }
 
 func TestRunReturnsMaxRoundsReachedWhenHeadCheckFailsOnFinalRound(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.MaxRounds = 1
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
@@ -1287,6 +1317,7 @@ func TestRunReturnsMaxRoundsReachedWhenHeadCheckFailsOnFinalRound(t *testing.T) 
 }
 
 func TestRunTimesOutWhileHeadCheckStaysPending(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.ReviewTimeout = 2 * time.Second
 	req.PollInterval = time.Second
@@ -1324,6 +1355,7 @@ func TestRunTimesOutWhileHeadCheckStaysPending(t *testing.T) {
 }
 
 func TestRunDoesNotConfirmMergeReadinessWithoutUntilClean(t *testing.T) {
+	t.Parallel()
 	req := validRequest()
 	req.UntilClean = false
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}

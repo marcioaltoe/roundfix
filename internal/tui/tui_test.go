@@ -16,6 +16,7 @@ import (
 )
 
 func TestRenderInteractiveInputShowsCurrentAndConfiguredDefaults(t *testing.T) {
+	t.Parallel()
 	view := RenderInteractiveInput(InputRequest{
 		Command: "resolve",
 		Values: CommandValues{
@@ -46,6 +47,7 @@ func TestRenderInteractiveInputShowsCurrentAndConfiguredDefaults(t *testing.T) {
 }
 
 func TestCollectInputAppliesDefaultsAndUserOverrides(t *testing.T) {
+	t.Parallel()
 	input := strings.NewReader("\nclaude\nsonnet\nmaximum\n2\n\n")
 	var output strings.Builder
 
@@ -87,6 +89,7 @@ func TestCollectInputAppliesDefaultsAndUserOverrides(t *testing.T) {
 }
 
 func TestCollectInputRecomputesSelectionDefaultsWhenAgentChanges(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name             string
 		input            string
@@ -155,6 +158,7 @@ func TestCollectInputRecomputesSelectionDefaultsWhenAgentChanges(t *testing.T) {
 }
 
 func TestCollectInputAcceptsModelManagedReasoningDefault(t *testing.T) {
+	t.Parallel()
 	defaults := testSelectionDefaults()
 	defaults["codex"] = RuntimeSelectionDefaults{
 		Model:           "gpt-5.6-sol",
@@ -192,6 +196,7 @@ func TestCollectInputAcceptsModelManagedReasoningDefault(t *testing.T) {
 }
 
 func TestCollectInputSpecPickerSelectsListedSpec(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		input    string
@@ -240,6 +245,7 @@ func TestCollectInputSpecPickerSelectsListedSpec(t *testing.T) {
 }
 
 func TestCollectInputImplementQAGate(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		input      string
@@ -278,6 +284,7 @@ func TestCollectInputImplementQAGate(t *testing.T) {
 }
 
 func TestCollectInputImplementQAGateInvalidInputRepromptsOnce(t *testing.T) {
+	t.Parallel()
 	var output strings.Builder
 
 	_, err := CollectInput(context.Background(), InputRequest{
@@ -298,6 +305,7 @@ func TestCollectInputImplementQAGateInvalidInputRepromptsOnce(t *testing.T) {
 }
 
 func TestCollectInputDisplaysCodexCatalogAndMapsNumbers(t *testing.T) {
+	t.Parallel()
 	var output strings.Builder
 
 	values, err := CollectInput(context.Background(), InputRequest{
@@ -336,6 +344,7 @@ func TestCollectInputDisplaysCodexCatalogAndMapsNumbers(t *testing.T) {
 }
 
 func TestCollectInputDisplaysClaudeCatalogDefaultAsConcreteModel(t *testing.T) {
+	t.Parallel()
 	defaults := testSelectionDefaults()
 	claude := defaults["claude"]
 	claude.Model = "claude-project-default"
@@ -376,6 +385,7 @@ func TestCollectInputDisplaysClaudeCatalogDefaultAsConcreteModel(t *testing.T) {
 }
 
 func TestCollectInputPreservesCustomModelAndReasoningValues(t *testing.T) {
+	t.Parallel()
 	values, err := CollectInput(context.Background(), InputRequest{
 		Command: "resolve",
 		Values: CommandValues{
@@ -395,6 +405,7 @@ func TestCollectInputPreservesCustomModelAndReasoningValues(t *testing.T) {
 }
 
 func TestCollectInputOpenCodeRequiresTypedOrConfiguredSelectionValues(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		defaults RuntimeSelectionDefaults
@@ -433,6 +444,7 @@ func TestCollectInputOpenCodeRequiresTypedOrConfiguredSelectionValues(t *testing
 }
 
 func TestCollectInputOpenCodeAcceptsTypedModelWithModelManagedReasoning(t *testing.T) {
+	t.Parallel()
 	defaults := testSelectionDefaults()
 	defaults["opencode"] = RuntimeSelectionDefaults{}
 
@@ -454,6 +466,7 @@ func TestCollectInputOpenCodeAcceptsTypedModelWithModelManagedReasoning(t *testi
 }
 
 func TestValidateCollectedSelectionsKeepsAgentModelRequired(t *testing.T) {
+	t.Parallel()
 	err := validateCollectedSelections(InputRequest{
 		Command: "resolve",
 		Values:  CommandValues{Agent: "codex"},
@@ -468,6 +481,7 @@ func TestValidateCollectedSelectionsKeepsAgentModelRequired(t *testing.T) {
 }
 
 func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
+	t.Parallel()
 	view := RenderLiveRunView(LiveRunView{
 		Command:         "resolve",
 		Repository:      "owner/project",
@@ -548,6 +562,7 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 }
 
 func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
+	t.Parallel()
 	view := RenderLiveRunView(LiveRunView{
 		Command:         "implement",
 		RunKind:         store.KindImplement,
@@ -627,6 +642,7 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 // Boundary IN: the plain RenderLiveRunView header for both Run Kinds.
 // Boundary OUT: journal replay (attach) and interactive cockpit rendering.
 func TestRenderLiveRunViewSpecRunShowsTaskAndVerificationCapacity(t *testing.T) {
+	t.Parallel()
 	specView := RenderLiveRunView(LiveRunView{
 		Command:                 "implement",
 		RunKind:                 store.KindImplement,
@@ -678,6 +694,7 @@ func TestRenderLiveRunViewSpecRunShowsTaskAndVerificationCapacity(t *testing.T) 
 }
 
 func TestRenderLiveRunViewShowsLegacyEmptySelectionAsDash(t *testing.T) {
+	t.Parallel()
 	view := RenderLiveRunView(LiveRunView{
 		Command:       "attach",
 		Repository:    "owner/project",
@@ -703,6 +720,7 @@ func TestRenderLiveRunViewShowsLegacyEmptySelectionAsDash(t *testing.T) {
 }
 
 func TestAgentSelectionLiveRunViewRendersActualPerWorkSelections(t *testing.T) {
+	t.Parallel()
 	view := RenderLiveRunView(LiveRunView{
 		Command:         "implement",
 		RunKind:         store.KindImplement,
@@ -770,6 +788,7 @@ func TestAgentSelectionLiveRunViewRendersActualPerWorkSelections(t *testing.T) {
 }
 
 func TestLegacyRunSelectionViewRendersUnavailableHistory(t *testing.T) {
+	t.Parallel()
 	view := RenderLiveRunView(LiveRunView{
 		Command:       "attach",
 		RunKind:       store.KindResolve,
@@ -789,6 +808,7 @@ func TestLegacyRunSelectionViewRendersUnavailableHistory(t *testing.T) {
 }
 
 func TestRenderAgentTimelineDoesNotRenderAutoModelPlaceholder(t *testing.T) {
+	t.Parallel()
 	timeline := stripANSI(renderAgentTimeline(LiveRunView{
 		Agent:           "Codex",
 		Model:           "",
@@ -804,6 +824,7 @@ func TestRenderAgentTimelineDoesNotRenderAutoModelPlaceholder(t *testing.T) {
 }
 
 func TestRunTimelineRendersTaskAndQAEventSummaries(t *testing.T) {
+	t.Parallel()
 	timeline := NewRunTimeline(10)
 	timeline.Append(runevent.RunEvent{Source: runevent.SourceDaemon, Kind: runevent.KindDaemonTask, Summary: "Task task_01 started as Batch 001: Build core"})
 	timeline.Append(runevent.RunEvent{Source: runevent.SourceDaemon, Kind: runevent.KindDaemonTask, Summary: "Task task_01 settled completed."})
@@ -826,6 +847,7 @@ func TestRunTimelineRendersTaskAndQAEventSummaries(t *testing.T) {
 }
 
 func TestStreamBufferKeepsRecentConsoleOutput(t *testing.T) {
+	t.Parallel()
 	buffer := &StreamBuffer{MaxLines: 2}
 	if _, err := buffer.Write([]byte("first\nsecond\nthi")); err != nil {
 		t.Fatalf("write stream: %v", err)
@@ -841,6 +863,7 @@ func TestStreamBufferKeepsRecentConsoleOutput(t *testing.T) {
 }
 
 func TestRenderAgentSidebarShowsBatchProgressAndTotalIssues(t *testing.T) {
+	t.Parallel()
 	view := LiveRunView{
 		BatchNumber: 1,
 		BatchTotal:  3,
@@ -884,6 +907,7 @@ func rawAgentEvent(text string) runevent.RunEvent {
 }
 
 func TestRunTimelineCoalescesMessageChunksIntoOneLine(t *testing.T) {
+	t.Parallel()
 	timeline := NewRunTimeline(10)
 	for _, chunk := range []string{"Hel", "lo ", "world\n"} {
 		timeline.Append(runevent.RunEvent{
@@ -900,6 +924,7 @@ func TestRunTimelineCoalescesMessageChunksIntoOneLine(t *testing.T) {
 }
 
 func TestRunTimelineBoundsConsoleMemory(t *testing.T) {
+	t.Parallel()
 	timeline := NewRunTimeline(5)
 	for index := 0; index < 50; index++ {
 		timeline.Append(rawAgentEvent("line " + strconv.Itoa(index) + "\n"))
@@ -915,6 +940,7 @@ func TestRunTimelineBoundsConsoleMemory(t *testing.T) {
 }
 
 func TestRunTimelineSkipsUnknownEventKinds(t *testing.T) {
+	t.Parallel()
 	timeline := NewRunTimeline(5)
 	timeline.Append(runevent.RunEvent{Source: runevent.SourceAgent, Kind: "future.unknown", Payload: []byte(`{}`)})
 	timeline.Append(rawAgentEvent("kept\n"))
@@ -926,6 +952,7 @@ func TestRunTimelineSkipsUnknownEventKinds(t *testing.T) {
 }
 
 func TestRunTimelineRendersToolEventsFromRawPayloads(t *testing.T) {
+	t.Parallel()
 	timeline := NewRunTimeline(20)
 	timeline.Append(runevent.RunEvent{
 		Source:  runevent.SourceAgent,
@@ -948,6 +975,7 @@ func TestRunTimelineRendersToolEventsFromRawPayloads(t *testing.T) {
 }
 
 func TestFallbackNotificationOrderingInTimeline(t *testing.T) {
+	t.Parallel()
 	timeline := NewRunTimeline(20)
 	timeline.Append(runevent.RunEvent{
 		RunID:  "run_9",
@@ -1006,6 +1034,7 @@ func TestFallbackNotificationOrderingInTimeline(t *testing.T) {
 }
 
 func TestRunTimelineUsesConsoleTextForCompactReadEditSummaries(t *testing.T) {
+	t.Parallel()
 	payload := []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"edit_1","kind":"edit","title":"edit","status":"completed","locations":[{"path":"internal/tui/timeline.go"}],"content":[{"type":"diff","path":"internal/tui/timeline.go","oldText":"old line 1\nold line 2\n","newText":"new line 1\n"}]}}`)
 	update, ok := agent.StreamUpdateFromEvent(runevent.RunEvent{
 		Source:  runevent.SourceAgent,

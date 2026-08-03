@@ -181,6 +181,7 @@ func sampleIssues(count int) []rounds.Issue {
 // Boundary IN: synchronous cockpit model rendering for review and spec Runs.
 // Boundary OUT: terminal emulation, ANSI color assertions, daemon/store behavior covered by lower suites.
 func TestCockpitRenderSnapshots(t *testing.T) {
+	t.Parallel()
 	sizes := []struct {
 		name   string
 		width  int
@@ -432,6 +433,7 @@ func cockpitSnapshotDiff(want string, got string) string {
 // Boundary IN: synchronous cockpit model rendering and journal-backed phase derivation.
 // Boundary OUT: rich Work Queue rows, timeline grouping, and modal detail covered by later cockpit tasks.
 func TestCockpitReviewPhaseRowAndTwoPaneStructure(t *testing.T) {
+	t.Parallel()
 	model := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
 	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 
@@ -464,6 +466,7 @@ func TestCockpitReviewPhaseRowAndTwoPaneStructure(t *testing.T) {
 }
 
 func TestAgentSelectionLiveRunViewDetailModalShowsScopedSelection(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{State: store.StateResolvingWithAgent}}
 	source.addEvent(runevent.RunEvent{
 		Batch:  1,
@@ -513,6 +516,7 @@ func TestAgentSelectionLiveRunViewDetailModalShowsScopedSelection(t *testing.T) 
 }
 
 func TestCockpitSpecPhaseRowCoversQAOmittedAndLocked(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		qaEvent    bool
@@ -559,6 +563,7 @@ func TestCockpitSpecPhaseRowCoversQAOmittedAndLocked(t *testing.T) {
 }
 
 func TestCockpitTimelinePaneIsDominantAtTestedSizes(t *testing.T) {
+	t.Parallel()
 	for _, size := range []struct {
 		name   string
 		width  int
@@ -658,6 +663,7 @@ func assertTaskQueueRow(t *testing.T, rendered string, taskID string, marker str
 }
 
 func TestCockpitWorkQueueRowsRenderMarkersMetadataAndOptionalSeverity(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		label    string
@@ -749,6 +755,7 @@ func TestCockpitWorkQueueRowsRenderMarkersMetadataAndOptionalSeverity(t *testing
 }
 
 func TestCockpitWorkQueueBatchSeparatorShowsOrdinalAndElapsed(t *testing.T) {
+	t.Parallel()
 	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	clock := startedAt.Add(83 * time.Second)
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
@@ -792,6 +799,7 @@ func TestCockpitWorkQueueBatchSeparatorShowsOrdinalAndElapsed(t *testing.T) {
 }
 
 func TestCockpitWorkQueueFooterTotalsForRunKinds(t *testing.T) {
+	t.Parallel()
 	review := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
 	review.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	reviewRendered := viewText(review)
@@ -808,6 +816,7 @@ func TestCockpitWorkQueueFooterTotalsForRunKinds(t *testing.T) {
 }
 
 func TestCockpitFooterHintsForStatesAndRunKinds(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		model func(t *testing.T) *cockpitModel
@@ -908,6 +917,7 @@ func TestCockpitFooterHintsForStatesAndRunKinds(t *testing.T) {
 }
 
 func TestCockpitResponsiveFallbackAndStableSizes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		width      int
@@ -980,6 +990,7 @@ func TestCockpitResponsiveFallbackAndStableSizes(t *testing.T) {
 }
 
 func TestCockpitDegenerateSizesRenderEmptyWithoutPanic(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		width  int
@@ -1004,6 +1015,7 @@ func TestCockpitDegenerateSizesRenderEmptyWithoutPanic(t *testing.T) {
 }
 
 func TestCockpitTabSwitchesFocusAndArrowsMoveSelection(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	source.addLine("line one\n")
 	model := newTestCockpit(t, source, LiveRunView{PipelineState: store.StateActive, Issues: sampleIssues(3)})
@@ -1040,6 +1052,7 @@ func TestCockpitTabSwitchesFocusAndArrowsMoveSelection(t *testing.T) {
 }
 
 func TestCockpitEnterOpensIssueDetailModalAndEscRestoresReviewContext(t *testing.T) {
+	t.Parallel()
 	artifactDir := t.TempDir()
 	persisted, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
 		ArtifactDir:    artifactDir,
@@ -1117,6 +1130,7 @@ func TestCockpitEnterOpensIssueDetailModalAndEscRestoresReviewContext(t *testing
 }
 
 func TestCockpitDetailTogglesWithDAndKeepsTimelineFollowing(t *testing.T) {
+	t.Parallel()
 	artifactDir := t.TempDir()
 	persisted, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
 		ArtifactDir:    artifactDir,
@@ -1183,6 +1197,7 @@ func TestCockpitDetailTogglesWithDAndKeepsTimelineFollowing(t *testing.T) {
 }
 
 func TestCockpitSpecTaskDetailModalRestoresContextAndSurvivesStaleReload(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	slug := "0005-tui-cockpit"
 	file := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Open modal", spec.StatusInProgress)
@@ -1235,6 +1250,7 @@ func TestCockpitSpecTaskDetailModalRestoresContextAndSurvivesStaleReload(t *test
 }
 
 func TestCockpitDetailUsesFullSurfaceFallbackWhenTerminalIsTooShort(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateClean}, version: 1}
 	model := newTestCockpit(t, source, LiveRunView{
 		PipelineState: store.StateClean,
@@ -1256,6 +1272,7 @@ func TestCockpitDetailUsesFullSurfaceFallbackWhenTerminalIsTooShort(t *testing.T
 }
 
 func TestCockpitDetailKeepsAttachDetachKey(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	model := newTestCockpit(t, source, LiveRunView{
 		PipelineState: store.StateActive,
@@ -1277,6 +1294,7 @@ func TestCockpitDetailKeepsAttachDetachKey(t *testing.T) {
 }
 
 func TestCockpitMissingArtifactDegradesWithoutFailing(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateClean}, version: 1}
 	model := newTestCockpit(t, source, LiveRunView{
 		PipelineState: store.StateClean,
@@ -1295,6 +1313,7 @@ func TestCockpitMissingArtifactDegradesWithoutFailing(t *testing.T) {
 }
 
 func TestCockpitDetachKeysQuitInAttachModeAndRunIsUntouched(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	model := newTestCockpit(t, source, LiveRunView{PipelineState: store.StateActive})
 
@@ -1317,6 +1336,7 @@ func TestCockpitDetachKeysQuitInAttachModeAndRunIsUntouched(t *testing.T) {
 // Boundary IN: synchronous cockpit model rendering, journal replay, Attach key routing, and Work Item detail modal rendering.
 // Boundary OUT: CLI command parsing and store read-only opening, covered by internal/cli attach tests.
 func TestCockpitAttachReplaysFinishedReviewRunThroughRedesignedCockpit(t *testing.T) {
+	t.Parallel()
 	artifactDir := t.TempDir()
 	persisted, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
 		ArtifactDir:    artifactDir,
@@ -1487,6 +1507,7 @@ func TestCockpitAttachReplaysFinishedReviewRunThroughRedesignedCockpit(t *testin
 }
 
 func TestCockpitAttachReplaysFinishedSpecRunThroughRedesignedCockpit(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	slug := "0005-tui-cockpit"
 	fileOne := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Build modal detail", spec.StatusCompleted)
@@ -1607,6 +1628,7 @@ func TestCockpitAttachReplaysFinishedSpecRunThroughRedesignedCockpit(t *testing.
 }
 
 func TestCockpitScrollFreezesFollowAndStatusBarNarratesStates(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	for index := 1; index <= 60; index++ {
 		source.addLine(fmt.Sprintf("line %04d\n", index))
@@ -1635,6 +1657,7 @@ func TestCockpitScrollFreezesFollowAndStatusBarNarratesStates(t *testing.T) {
 }
 
 func TestCockpitTickPollsViewportOnlyOnDataVersionChange(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 7}
 	source.addLine("line one\n")
 	model := newTestCockpit(t, source, LiveRunView{PipelineState: store.StateActive})
@@ -1650,6 +1673,7 @@ func TestCockpitTickPollsViewportOnlyOnDataVersionChange(t *testing.T) {
 }
 
 func TestCockpitTerminalRunShowsReadOnlyAndStopsTicking(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateClean}, version: 1}
 	source.addLine("line one\n")
 	model := newTestCockpit(t, source, LiveRunView{PipelineState: store.StateClean})
@@ -1667,6 +1691,7 @@ func TestCockpitTerminalRunShowsReadOnlyAndStopsTicking(t *testing.T) {
 }
 
 func TestCockpitOwningModeKeysDifferFromAttach(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	stopped := false
 	model, err := newCockpitModel(context.Background(), CockpitConfig{
@@ -1695,6 +1720,7 @@ func TestCockpitOwningModeKeysDifferFromAttach(t *testing.T) {
 }
 
 func TestOwningCockpitPollsJournalWhileOwnProcessWrites(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	writer, err := store.Open(ctx, homeDir)
@@ -1797,6 +1823,7 @@ func TestOwningCockpitPollsJournalWhileOwnProcessWrites(t *testing.T) {
 }
 
 func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
+	t.Parallel()
 	artifactDir := t.TempDir()
 	persisted, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
 		ArtifactDir:    artifactDir,
@@ -1918,6 +1945,7 @@ func appendToFile(t *testing.T, path string, content string) {
 }
 
 func TestCockpitSpecRunShowsTasksInGraphOrderAndRefreshesStatuses(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	slug := "0001-widget-flow"
 	fileOne := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Build core", spec.StatusPending)
@@ -1975,6 +2003,7 @@ func TestCockpitSpecRunShowsTasksInGraphOrderAndRefreshesStatuses(t *testing.T) 
 }
 
 func TestCockpitSpecRunDerivesConcurrentTaskStateFromJournal(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	slug := "0009-parallel-scheduling"
 	files := []string{
@@ -2034,6 +2063,7 @@ func TestCockpitSpecRunDerivesConcurrentTaskStateFromJournal(t *testing.T) {
 }
 
 func TestCockpitSpecRunInterleavedTaskReplayMatchesLivePolling(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	slug := "0009-parallel-scheduling"
 	tasks := []spec.Task{
@@ -2117,6 +2147,7 @@ func newPhaseProjectionCockpit(t *testing.T, source *cockpitFakeSource, colorEna
 }
 
 func TestCockpitWaitingForVerificationReplayProjectsTaskPhases(t *testing.T) {
+	t.Parallel()
 	// The aggregate Run state says Verifying for the whole Run; per-Task
 	// journal evidence must still place each Task in its own phase.
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateVerifying}, version: 1}
@@ -2159,6 +2190,7 @@ func TestCockpitWaitingForVerificationReplayProjectsTaskPhases(t *testing.T) {
 }
 
 func TestCockpitSpecRunTaskVerificationFeedbackReturnsOneTaskToAgentWorking(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
 	source.addTaskEvent(t, "task_01", "started", "", 1)
 	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseWaiting, 1, 1)
@@ -2194,6 +2226,7 @@ func TestCockpitSpecRunTaskVerificationFeedbackReturnsOneTaskToAgentWorking(t *t
 }
 
 func TestCockpitSpecRunTaskSettlementResistsStaleAndReplayedEvents(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
 	source.addTaskEvent(t, "task_01", "started", "", 1)
 	source.addVerificationEvent(t, "task_01", runevent.VerificationPhaseWaiting, 1, 1)
@@ -2229,6 +2262,7 @@ func TestCockpitSpecRunTaskSettlementResistsStaleAndReplayedEvents(t *testing.T)
 }
 
 func TestCockpitSpecRunTaskPhaseLabelsReadTheSameUnderNoColor(t *testing.T) {
+	t.Parallel()
 	events := func(source *cockpitFakeSource) {
 		source.addTaskEvent(t, "task_01", "started", "", 1)
 		source.addTaskEvent(t, "task_02", "started", "", 2)
@@ -2259,6 +2293,7 @@ func TestCockpitSpecRunTaskPhaseLabelsReadTheSameUnderNoColor(t *testing.T) {
 }
 
 func TestCockpitSpecRunTaskVerifyingLabelsKeepNarrowLayoutStable(t *testing.T) {
+	t.Parallel()
 	baseline := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
 	phased := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
 	phased.addTaskEvent(t, "task_01", "started", "", 1)
@@ -2290,6 +2325,7 @@ func TestCockpitSpecRunTaskVerifyingLabelsKeepNarrowLayoutStable(t *testing.T) {
 }
 
 func TestCockpitSpecRunHeaderShowsTaskAndVerificationCapacity(t *testing.T) {
+	t.Parallel()
 	model := newSpecPhaseCockpit(t, false, store.StateResolvingWithAgent, spec.StatusPending)
 	model.cfg.View.Concurrency = 2
 	model.cfg.View.VerificationConcurrency = 1
@@ -2307,6 +2343,7 @@ func TestCockpitSpecRunHeaderShowsTaskAndVerificationCapacity(t *testing.T) {
 }
 
 func TestCockpitReviewRunHeaderShowsNoCapacity(t *testing.T) {
+	t.Parallel()
 	model := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
 	model.cfg.View.Concurrency = 2
 	model.cfg.View.VerificationConcurrency = 1
@@ -2321,6 +2358,7 @@ func TestCockpitReviewRunHeaderShowsNoCapacity(t *testing.T) {
 }
 
 func TestCockpitSpecRunReadsTaskStatusAndDetailFromWorkDir(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	workDir := t.TempDir()
 	slug := "0001-widget-flow"
@@ -2359,6 +2397,7 @@ func TestCockpitSpecRunReadsTaskStatusAndDetailFromWorkDir(t *testing.T) {
 }
 
 func TestCockpitSpecRunFallsBackToGitRootWhenWorkDirIsGone(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	workDir := filepath.Join(t.TempDir(), "pruned-worktree")
 	slug := "0001-widget-flow"
@@ -2388,6 +2427,7 @@ func TestCockpitSpecRunFallsBackToGitRootWhenWorkDirIsGone(t *testing.T) {
 }
 
 func TestCockpitSpecRunKeepsLastGoodStatusOnMidWriteTaskFile(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	slug := "0001-widget-flow"
 	file := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Build core", spec.StatusCompleted)
@@ -2424,6 +2464,7 @@ func TestCockpitSpecRunKeepsLastGoodStatusOnMidWriteTaskFile(t *testing.T) {
 }
 
 func TestOwningCockpitClosesOnQOnlyAfterTerminalState(t *testing.T) {
+	t.Parallel()
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	model, err := newCockpitModel(context.Background(), CockpitConfig{
 		Mode:   CockpitOwning,

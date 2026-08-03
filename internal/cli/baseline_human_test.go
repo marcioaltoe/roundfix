@@ -1315,17 +1315,7 @@ func TestBaselineNoTTY(t *testing.T) {
 		t.Fatalf("no-TTY baseline changed repository bytes:\nbefore=%s\nafter=%s", before, after)
 	}
 
-	projectRoot, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatal(err)
-	}
-	binary := filepath.Join(t.TempDir(), "roundfix")
-	build := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
-	build.Dir = projectRoot
-	build.Env = append(os.Environ(), "GOCACHE="+filepath.Join(t.TempDir(), "go-cache"))
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build real roundfix CLI: %v\n%s", err, output)
-	}
+	binary := buildBaselineReleaseBinary(t)
 	command := exec.Command(binary, "baseline", "--repo", repo, "--format=json")
 	command.Stdin = strings.NewReader("1\n1\n1\n")
 	var realOut bytes.Buffer

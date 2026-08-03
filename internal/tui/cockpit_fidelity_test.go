@@ -45,6 +45,7 @@ func newQueueFidelityCockpit(t *testing.T, colorEnabled bool, runState string, e
 }
 
 func TestCockpitHeaderRendersSectionLabelAndStateChipTokens(t *testing.T) {
+	t.Parallel()
 	tokens := ResolveTokens(true)
 	model := newQueueFidelityCockpit(t, true, store.StateResolvingWithAgent, nil, time.Now())
 
@@ -78,6 +79,7 @@ func TestCockpitHeaderRendersSectionLabelAndStateChipTokens(t *testing.T) {
 }
 
 func TestCockpitHeaderNoColorRendersMarkerOnlyText(t *testing.T) {
+	t.Parallel()
 	styled := renderCockpitHeaderLine(newQueueFidelityCockpit(t, true, store.StateResolvingWithAgent, nil, time.Now()), 100)
 	plain := renderCockpitHeaderLine(newQueueFidelityCockpit(t, false, store.StateResolvingWithAgent, nil, time.Now()), 100)
 	if strings.Contains(plain, "\x1b") {
@@ -94,6 +96,7 @@ func TestCockpitHeaderNoColorRendersMarkerOnlyText(t *testing.T) {
 }
 
 func TestCockpitPhaseRowColorsMarkersThroughTokens(t *testing.T) {
+	t.Parallel()
 	tokens := ResolveTokens(true)
 	identity := ResolveTokens(false)
 	tests := []struct {
@@ -132,6 +135,7 @@ func queueFidelityCard() WorkItem {
 }
 
 func TestCockpitWorkItemCardPinsSelectionStyling(t *testing.T) {
+	t.Parallel()
 	tokens := ResolveTokens(true)
 	model := &cockpitModel{tokens: tokens, selected: 0}
 	item := queueFidelityCard()
@@ -163,6 +167,7 @@ func TestCockpitWorkItemCardPinsSelectionStyling(t *testing.T) {
 }
 
 func TestCockpitWorkItemCardNoColorKeepsMarkerDistinctions(t *testing.T) {
+	t.Parallel()
 	model := &cockpitModel{tokens: ResolveTokens(false), selected: 0}
 	item := queueFidelityCard()
 
@@ -188,6 +193,7 @@ func TestCockpitWorkItemCardNoColorKeepsMarkerDistinctions(t *testing.T) {
 }
 
 func TestCockpitBatchSeparatorStampDerivesFromRunEventTimestamps(t *testing.T) {
+	t.Parallel()
 	tokens := ResolveTokens(true)
 	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	events := []runevent.RunEvent{

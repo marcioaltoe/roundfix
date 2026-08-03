@@ -38,6 +38,7 @@ func (sink *blockingSink) Publish(context.Context, RunEvent) error {
 }
 
 func TestFanoutPropagatesCriticalSinkError(t *testing.T) {
+	t.Parallel()
 	critical := &recordingSink{err: errors.New("journal write failed")}
 	fanout := NewFanout([]Sink{critical}, nil)
 	defer fanout.Close()
@@ -50,6 +51,7 @@ func TestFanoutPropagatesCriticalSinkError(t *testing.T) {
 }
 
 func TestFanoutSwallowsAndCountsBestEffortErrors(t *testing.T) {
+	t.Parallel()
 	broken := &recordingSink{err: errors.New("ui broke")}
 	fanout := NewFanout(nil, []Sink{broken})
 
@@ -67,6 +69,7 @@ func TestFanoutSwallowsAndCountsBestEffortErrors(t *testing.T) {
 }
 
 func TestFanoutBlockedBestEffortSinkNeverStallsPublication(t *testing.T) {
+	t.Parallel()
 	blocked := &blockingSink{release: make(chan struct{})}
 	healthy := &recordingSink{}
 	fanout := NewFanout([]Sink{healthy}, []Sink{blocked})
@@ -97,6 +100,7 @@ func TestFanoutBlockedBestEffortSinkNeverStallsPublication(t *testing.T) {
 }
 
 func TestFanoutDeliversEverythingUnderConcurrentPublishers(t *testing.T) {
+	t.Parallel()
 	var received atomic.Int64
 	counter := sinkFunc(func(context.Context, RunEvent) error {
 		received.Add(1)
@@ -130,6 +134,7 @@ func TestFanoutDeliversEverythingUnderConcurrentPublishers(t *testing.T) {
 }
 
 func TestFanoutCloseIsIdempotentAndDropsLatePublishes(t *testing.T) {
+	t.Parallel()
 	sink := &recordingSink{}
 	fanout := NewFanout(nil, []Sink{sink})
 	fanout.Close()
