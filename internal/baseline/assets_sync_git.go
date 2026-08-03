@@ -17,14 +17,24 @@ var assetsSyncGitHubRemote = regexp.MustCompile(
 	`^(?:https://github\.com/|git@github\.com:|ssh://git@github\.com/)([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?$`,
 )
 
+type assetsSyncSourceGitRunner func(context.Context, ...string) ([]byte, error)
+
 func inspectAssetsSyncCheckout(
 	ctx context.Context,
 	sourceDir string,
 ) (assetsSyncCheckout, error) {
-	rootOutput, err := runAssetsSyncSourceGit(
+	return inspectAssetsSyncCheckoutWithRunner(ctx, sourceDir, runAssetsSyncSourceGit)
+}
+
+func inspectAssetsSyncCheckoutWithRunner(
+	ctx context.Context,
+	sourceDir string,
+	gitRunner assetsSyncSourceGitRunner,
+) (assetsSyncCheckout, error) {
+	resolutionOutput, err := gitRunner(
 		ctx,
 		"-C", sourceDir,
-		"rev-parse", "--show-toplevel",
+		"rev-parse", "--show-toplevel", "--verify", "HEAD^{commit}",
 	)
 	if err != nil {
 		return assetsSyncCheckout{}, assetsSyncError(
@@ -38,22 +48,21 @@ func inspectAssetsSyncCheckout(
 			err,
 		)
 	}
-	root, err := filepath.Abs(strings.TrimSpace(string(rootOutput)))
+	resolutionLines := strings.Split(strings.TrimSpace(string(resolutionOutput)), "\n")
+	if len(resolutionLines) != 2 {
+		return assetsSyncCheckout{}, assetsSyncCheckoutError(
+			sourceDir,
+			fmt.Errorf("git rev-parse returned %d resolution lines, want 2", len(resolutionLines)),
+		)
+	}
+	root, err := filepath.Abs(strings.TrimSpace(resolutionLines[0]))
 	if err != nil {
 		return assetsSyncCheckout{}, err
 	}
 	if resolved, resolveErr := filepath.EvalSymlinks(root); resolveErr == nil {
 		root = resolved
 	}
-	revisionOutput, err := runAssetsSyncSourceGit(
-		ctx,
-		"-C", root,
-		"rev-parse", "--verify", "HEAD^{commit}",
-	)
-	if err != nil {
-		return assetsSyncCheckout{}, assetsSyncCheckoutError(sourceDir, err)
-	}
-	revision := strings.TrimSpace(string(revisionOutput))
+	revision := strings.TrimSpace(resolutionLines[1])
 	if !immutableGitID.MatchString(revision) {
 		return assetsSyncCheckout{}, assetsSyncError(
 			AssetsSyncInvalid,
@@ -66,7 +75,7 @@ func inspectAssetsSyncCheckout(
 			errors.New("source revision is not immutable"),
 		)
 	}
-	status, err := runAssetsSyncSourceGit(
+	status, err := gitRunner(
 		ctx,
 		"-C", root,
 		"status", "--porcelain=v1", "--untracked-files=all",
@@ -86,7 +95,7 @@ func inspectAssetsSyncCheckout(
 			errors.New("source checkout is dirty"),
 		)
 	}
-	remote, err := runAssetsSyncSourceGit(
+	remote, err := gitRunner(
 		ctx,
 		"-C", root,
 		"remote", "get-url", "origin",

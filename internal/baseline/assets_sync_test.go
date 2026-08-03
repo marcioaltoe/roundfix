@@ -20,6 +20,46 @@ import (
 	"testing"
 )
 
+func TestInspectAssetsSyncCheckoutCombinesResolutionQueries(t *testing.T) {
+	t.Parallel()
+
+	sourceDir := t.TempDir()
+	root, err := filepath.EvalSymlinks(sourceDir)
+	if err != nil {
+		t.Fatalf("resolve temporary checkout root: %v", err)
+	}
+	revision := strings.Repeat("a", 40)
+	var calls [][]string
+	runner := assetsSyncSourceGitRunner(func(_ context.Context, args ...string) ([]byte, error) {
+		calls = append(calls, append([]string(nil), args...))
+		switch strings.Join(args, "\x00") {
+		case "-C\x00" + sourceDir + "\x00rev-parse\x00--show-toplevel\x00--verify\x00HEAD^{commit}":
+			return []byte(root + "\n" + revision + "\n"), nil
+		case "-C\x00" + root + "\x00status\x00--porcelain=v1\x00--untracked-files=all":
+			return nil, nil
+		case "-C\x00" + root + "\x00remote\x00get-url\x00origin":
+			return []byte("https://github.com/example/skills.git\n"), nil
+		default:
+			return nil, fmt.Errorf("unexpected Git command: %v", args)
+		}
+	})
+
+	checkout, err := inspectAssetsSyncCheckoutWithRunner(t.Context(), sourceDir, runner)
+	if err != nil {
+		t.Fatalf("inspect assets sync checkout: %v", err)
+	}
+	if checkout.root != root || checkout.repository != "example/skills" || checkout.revision != revision {
+		t.Fatalf("checkout = %+v, want root, repository, and revision from combined resolution", checkout)
+	}
+	if len(calls) != 3 {
+		t.Fatalf("Git calls = %v, want one resolution plus status and remote", calls)
+	}
+	wantResolution := []string{"-C", sourceDir, "rev-parse", "--show-toplevel", "--verify", "HEAD^{commit}"}
+	if !reflect.DeepEqual(calls[0], wantResolution) {
+		t.Fatalf("resolution call = %v, want %v", calls[0], wantResolution)
+	}
+}
+
 func TestAssetsSyncCommittedTreeDigestReadsManyFilesThroughOneBatchProcess(t *testing.T) {
 	t.Parallel()
 

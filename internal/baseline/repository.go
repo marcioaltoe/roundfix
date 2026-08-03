@@ -178,11 +178,29 @@ func inspectRepositoryIdentity(ctx context.Context, workDir string, runner GitRu
 	if runner == nil {
 		runner = ExecGitRunner{}
 	}
-	rootText, err := runner.RunGit(ctx, workDir, "rev-parse", "--show-toplevel")
+	resolutionOutput, err := runner.RunGit(
+		ctx,
+		workDir,
+		"rev-parse",
+		"--show-toplevel",
+		"--show-object-format",
+		"--verify",
+		"HEAD^{commit}",
+	)
 	if err != nil {
-		return "", RepositoryIdentity{}, fmt.Errorf("detect Git worktree root: %w", err)
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return "", RepositoryIdentity{}, ctxErr
+		}
+		if _, rootErr := runner.RunGit(ctx, workDir, "rev-parse", "--show-toplevel"); rootErr != nil {
+			return "", RepositoryIdentity{}, fmt.Errorf("detect Git worktree root: %w", rootErr)
+		}
+		return "", RepositoryIdentity{}, fmt.Errorf("Baseline repository requires at least one commit: %w", err)
 	}
-	root, err := filepath.Abs(strings.TrimSpace(rootText))
+	resolution, err := parseRepositoryResolution(resolutionOutput)
+	if err != nil {
+		return "", RepositoryIdentity{}, err
+	}
+	root, err := filepath.Abs(resolution.root)
 	if err != nil {
 		return "", RepositoryIdentity{}, fmt.Errorf("normalize Git worktree root: %w", err)
 	}
@@ -195,17 +213,7 @@ func inspectRepositoryIdentity(ctx context.Context, workDir string, runner GitRu
 		return "", RepositoryIdentity{}, fmt.Errorf("inspect Git worktree root: %q must be a real directory", root)
 	}
 
-	if _, err := runner.RunGit(ctx, root, "rev-parse", "--verify", "HEAD^{commit}"); err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil {
-			return "", RepositoryIdentity{}, ctxErr
-		}
-		return "", RepositoryIdentity{}, fmt.Errorf("Baseline repository requires at least one commit: %w", err)
-	}
-	objectFormat, err := runner.RunGit(ctx, root, "rev-parse", "--show-object-format")
-	if err != nil {
-		return "", RepositoryIdentity{}, fmt.Errorf("detect Git object format: %w", err)
-	}
-	objectFormat = strings.TrimSpace(objectFormat)
+	objectFormat := resolution.objectFormat
 	objectLength := 0
 	switch objectFormat {
 	case "sha1":
@@ -251,6 +259,37 @@ func inspectRepositoryIdentity(ctx context.Context, workDir string, runner GitRu
 		RootCommits:   append([]string(nil), rootCommits...),
 		Digest:        "sha256:" + hex.EncodeToString(sum[:]),
 	}, nil
+}
+
+type repositoryResolution struct {
+	root         string
+	objectFormat string
+	head         string
+}
+
+func parseRepositoryResolution(output string) (repositoryResolution, error) {
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	if len(lines) != 3 {
+		return repositoryResolution{}, fmt.Errorf(
+			"parse Git repository resolution: got %d output lines, want 3",
+			len(lines),
+		)
+	}
+	resolution := repositoryResolution{
+		root:         strings.TrimSpace(lines[0]),
+		objectFormat: strings.TrimSpace(lines[1]),
+		head:         strings.TrimSpace(lines[2]),
+	}
+	if resolution.root == "" {
+		return repositoryResolution{}, errors.New("detect Git worktree root: rev-parse returned an empty root")
+	}
+	if resolution.objectFormat == "" {
+		return repositoryResolution{}, errors.New("detect Git object format: rev-parse returned an empty format")
+	}
+	if resolution.head == "" {
+		return repositoryResolution{}, errors.New("Baseline repository requires at least one commit: rev-parse returned an empty HEAD")
+	}
+	return resolution, nil
 }
 
 type inventoryBuilder struct {
