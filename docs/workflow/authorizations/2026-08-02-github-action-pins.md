@@ -39,6 +39,23 @@ No input contract this repository uses changed: `node-version`,
 runs on `pull_request` and `release.yml` on tag push and `workflow_dispatch` —
 so the change does not reach this repository.
 
+## Addendum — security review hardening
+
+CodeRabbit raised two Major findings on the pin bump, both accepted:
+
+- Every action is pinned to a full commit SHA rather than a mutable tag, across
+  all three workflows. Each SHA was verified against its tag ref through the
+  forge API before use — a wrong pin fails the workflow, so the bot's values
+  were checked rather than trusted.
+- `persist-credentials: false` on the `release.yml` and `ci-conventions.yml`
+  checkouts. Neither workflow performs a Git write — confirmed by grep — and
+  the release step already passes `GH_TOKEN` explicitly for `gh release`. The
+  `secondbrain-sync.yml` checkout that pushes keeps its credentials, since
+  disabling them there would break the sync.
+
+This extends the authorized paths to `.github/workflows/ci-conventions.yml` and
+`.github/workflows/secondbrain-sync.yml`, which the pin change reaches.
+
 ## Not verified here
 
 GitHub Actions cannot be exercised locally. These pins are proven only by the
