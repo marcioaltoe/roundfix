@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0074-git-spawn-economy
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -73,3 +73,40 @@ the defect survives.
   Risks (parallelising surfaces real defects — as it did in cli and
   daemon).
 - ADR-0089.
+
+## Result
+
+Implementation-ready handoff for Daemon Verification:
+
+- Explicit environment: `ACPXRunner.Environment` now supplies the base for
+  ACPX version probes, adapter inspection/config resolution, Codex hygiene
+  resolution, session setup, prompts, cancellation, listing, and sealed
+  prompts. A nil base resolves `os.Environ()` at the child-command boundary;
+  `acpxCommandEnv(base, overrides)` preserves the existing guard filtering and
+  per-session override behavior.
+- Per-call fake injection: fake ACPX behavior, prompt paths, milestone paths,
+  adapter configuration, and Codex-path values now live on each test runner.
+  `rtk proxy rg -n 't\.Setenv\(' internal/agent --glob '*_test.go'` reports
+  three calls: the zero-value process-environment default test and the two
+  process-`PATH` adapter-resolution tests. Each stays sequential with a
+  one-line reason.
+- Parallel coverage: the top-level inventory is 137 tests, with 129 declaring
+  `t.Parallel()` and 8 stated sequential exceptions. The exceptions are the
+  three process-environment tests above and five `ProbeFallback` tests that
+  exercise its process working-directory default through `t.Chdir`.
+- Focused concurrency check:
+  `GOCACHE=<worktree>/.gocache go test ./internal/agent -race -count=2 -parallel 12`
+  exited 0 with no race report after the final production edit. This differs
+  from the Daemon-owned `-parallel 16` Verification command.
+- Timing evidence for task_06: before this Task,
+  `go test ./internal/agent -count=1 -parallel 12` reported package time
+  10.250s and real time 11.01s. After the change, the same command reported
+  package time 6.305s and real time 6.72s, a 39% real-time reduction. A fresh
+  post-change `go test ./... -count=1 -parallel 12` measurement reported
+  `internal/agent` at 20.221s while packages competed for the same machine;
+  task_06 owns the full-suite before/after attribution.
+- Scope: `git -c core.fsmonitor=false status --porcelain` reports only
+  `internal/agent/` and this Task file. `rtk git diff --check` exits 0.
+
+The three commands under `## Verification` were not run; the Daemon owns
+them and Task settlement.

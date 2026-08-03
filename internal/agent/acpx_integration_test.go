@@ -20,6 +20,8 @@ import (
 const realACPXIntegrationEnv = "ROUNDFIX_REAL_ACPX"
 
 func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
+	t.Parallel()
+
 	if os.Getenv(realACPXIntegrationEnv) != "1" {
 		t.Skipf("set %s=1 to run the real acpx integration test; requires Node and acpx %s or newer", realACPXIntegrationEnv, MinimumACPXVersion)
 	}
@@ -40,8 +42,10 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 	helper := buildRealACPXEchoAgent(t, dir)
 	helperLog := filepath.Join(dir, "echo-agent.log")
 	helperState := filepath.Join(dir, "echo-agent-state")
-	t.Setenv("ROUNDFIX_ACPX_ECHO_LOG", helperLog)
-	t.Setenv("ROUNDFIX_ACPX_ECHO_STATE", helperState)
+	runner.Environment = environmentForTest(
+		"ROUNDFIX_ACPX_ECHO_LOG="+helperLog,
+		"ROUNDFIX_ACPX_ECHO_STATE="+helperState,
+	)
 
 	runtime := RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: helper}
 	session := SessionRef{Name: "roundfix-real-acpx-" + strconv.FormatInt(time.Now().UnixNano(), 36), WorkDir: dir}

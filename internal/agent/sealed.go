@@ -56,7 +56,7 @@ func (runner *ACPXRunner) RunSealedPrompt(
 	attemptCtx, attemptCancel := context.WithTimeout(ctx, SealedPromptTimeout)
 	defer attemptCancel()
 
-	adapter, err := CheckAdapter(attemptCtx, request.Runtime)
+	adapter, err := checkAdapter(attemptCtx, request.Runtime, runner.baseEnv())
 	if err != nil {
 		return SealedPromptResult{}, err
 	}
@@ -285,7 +285,7 @@ func (runner *ACPXRunner) runSealedPromptCommand(
 		return SealedPromptResult{}, err
 	}
 	command := exec.CommandContext(ctx, runner.command(), args...)
-	command.Env = acpxCommandEnv(codexEnv)
+	command.Env = runner.commandEnv(codexEnv)
 	command.Dir = request.WorkDir
 	command.Stdin = bytes.NewReader(request.Input)
 	stdout := newSealedStreamParser()

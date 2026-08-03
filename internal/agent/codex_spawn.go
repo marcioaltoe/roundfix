@@ -127,14 +127,13 @@ func codexResultPath(result codex.Result) string {
 // processes, not nested sessions, so the guard never applies to them.
 const claudeNestedGuardEnv = "CLAUDECODE"
 
-// acpxCommandEnv builds the acpx child environment: the caller's environment
-// minus variables that must not leak into Agent runtimes (the codex hygiene
-// path, re-added per session through overrides, and Claude Code's
-// nested-session guard), plus the per-runtime overrides.
-func acpxCommandEnv(overrides []string) []string {
-	env := os.Environ()
-	filtered := make([]string, 0, len(env)+len(overrides))
-	for _, entry := range env {
+// acpxCommandEnv builds the acpx child environment from the explicit base:
+// variables that must not leak into Agent runtimes are removed (the codex
+// hygiene path, re-added per session through overrides, and Claude Code's
+// nested-session guard), then per-runtime overrides are appended.
+func acpxCommandEnv(base []string, overrides []string) []string {
+	filtered := make([]string, 0, len(base)+len(overrides))
+	for _, entry := range base {
 		key, _, _ := strings.Cut(entry, "=")
 		if key == codexPathEnv || key == claudeNestedGuardEnv {
 			continue
@@ -142,4 +141,25 @@ func acpxCommandEnv(overrides []string) []string {
 		filtered = append(filtered, entry)
 	}
 	return append(filtered, overrides...)
+}
+
+func (runner ACPXRunner) commandEnv(overrides []string) []string {
+	return acpxCommandEnv(runner.baseEnv(), overrides)
+}
+
+func (runner ACPXRunner) baseEnv() []string {
+	if runner.Environment == nil {
+		return os.Environ()
+	}
+	return append([]string(nil), runner.Environment...)
+}
+
+func environmentValue(environment []string, key string) string {
+	for index := len(environment) - 1; index >= 0; index-- {
+		entryKey, value, ok := strings.Cut(environment[index], "=")
+		if ok && entryKey == key {
+			return value
+		}
+	}
+	return ""
 }

@@ -6,11 +6,14 @@ import (
 )
 
 func TestACPXCommandEnvStripsGuardAndHygieneVariables(t *testing.T) {
-	t.Setenv(claudeNestedGuardEnv, "1")
-	t.Setenv(codexPathEnv, "/tmp/dirty-codex")
-	t.Setenv("ROUNDFIX_TEST_KEEP", "kept")
+	t.Parallel()
 
-	env := acpxCommandEnv([]string{codexPathEnv + "=/tmp/clean-codex"})
+	base := []string{
+		claudeNestedGuardEnv + "=1",
+		codexPathEnv + "=/tmp/dirty-codex",
+		"ROUNDFIX_TEST_KEEP=kept",
+	}
+	env := acpxCommandEnv(base, []string{codexPathEnv + "=/tmp/clean-codex"})
 
 	var keep, override bool
 	for _, entry := range env {
@@ -36,11 +39,21 @@ func TestACPXCommandEnvStripsGuardAndHygieneVariables(t *testing.T) {
 }
 
 func TestACPXCommandEnvStripsGuardWithoutOverrides(t *testing.T) {
-	t.Setenv(claudeNestedGuardEnv, "1")
+	t.Parallel()
 
-	for _, entry := range acpxCommandEnv(nil) {
+	for _, entry := range acpxCommandEnv([]string{claudeNestedGuardEnv + "=1"}, nil) {
 		if strings.HasPrefix(entry, claudeNestedGuardEnv+"=") {
 			t.Fatalf("expected %s stripped even without overrides, got %q", claudeNestedGuardEnv, entry)
 		}
+	}
+}
+
+func TestACPXRunnerCommandEnvDefaultsToProcessEnvironment(t *testing.T) {
+	// Sequential: verifies the zero-value runner reads the process environment.
+	t.Setenv("ROUNDFIX_TEST_PROCESS_ENV", "process-value")
+
+	environment := (ACPXRunner{}).commandEnv(nil)
+	if got := environmentValue(environment, "ROUNDFIX_TEST_PROCESS_ENV"); got != "process-value" {
+		t.Fatalf("process environment value = %q, want process-value", got)
 	}
 }

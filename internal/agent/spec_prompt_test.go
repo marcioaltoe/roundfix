@@ -28,6 +28,8 @@ func sampleTaskPromptRequest() TaskPromptRequest {
 }
 
 func TestBuildTaskPromptStatesExecutionInvariants(t *testing.T) {
+	t.Parallel()
+
 	prompt, err := BuildTaskPrompt(sampleTaskPromptRequest())
 	if err != nil {
 		t.Fatalf("BuildTaskPrompt returned error: %v", err)
@@ -66,6 +68,8 @@ func TestBuildTaskPromptStatesExecutionInvariants(t *testing.T) {
 }
 
 func TestBuildTaskPromptEmbedsTaskContentVerbatim(t *testing.T) {
+	t.Parallel()
+
 	prompt, err := BuildTaskPrompt(sampleTaskPromptRequest())
 	if err != nil {
 		t.Fatalf("BuildTaskPrompt returned error: %v", err)
@@ -76,6 +80,8 @@ func TestBuildTaskPromptEmbedsTaskContentVerbatim(t *testing.T) {
 }
 
 func TestBuildTaskPromptRendersSpecContextBundlePathOnly(t *testing.T) {
+	t.Parallel()
+
 	req := sampleTaskPromptRequest()
 	req.Context = SpecContextBundle{
 		PRD:       "docs/specs/0001-implement-command/_prd.md",
@@ -132,6 +138,8 @@ func TestBuildTaskPromptRendersSpecContextBundlePathOnly(t *testing.T) {
 }
 
 func TestBuildTaskPromptDeterministicForIdenticalInput(t *testing.T) {
+	t.Parallel()
+
 	first, err := BuildTaskPrompt(sampleTaskPromptRequest())
 	if err != nil {
 		t.Fatalf("BuildTaskPrompt returned error: %v", err)
@@ -146,6 +154,8 @@ func TestBuildTaskPromptDeterministicForIdenticalInput(t *testing.T) {
 }
 
 func TestBuildTaskPromptValidatesRequiredFields(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		mutate func(req *TaskPromptRequest)
@@ -185,6 +195,8 @@ func sampleQAPromptRequest() QAPromptRequest {
 }
 
 func TestBuildQAPromptStatesQAGateContract(t *testing.T) {
+	t.Parallel()
+
 	prompt, err := BuildQAPrompt(sampleQAPromptRequest())
 	if err != nil {
 		t.Fatalf("BuildQAPrompt returned error: %v", err)
@@ -217,6 +229,8 @@ func TestBuildQAPromptStatesQAGateContract(t *testing.T) {
 // The gate reasons about the user's branch from a checkout that can never
 // be on it, so the prompt has to name both branches and separate them.
 func TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget(t *testing.T) {
+	t.Parallel()
+
 	prompt, err := BuildQAPrompt(sampleQAPromptRequest())
 	if err != nil {
 		t.Fatalf("BuildQAPrompt returned error: %v", err)
@@ -247,6 +261,8 @@ func TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget(t *testin
 }
 
 func TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOpen(t *testing.T) {
+	t.Parallel()
+
 	req := sampleQAPromptRequest()
 	req.PullRequest = ""
 	req.PullRequestResolved = true
@@ -266,6 +282,8 @@ func TestBuildQAPromptStatesPullRequestJourneysAreEnvironmentBlockedWhenNoneIsOp
 // the first may be reported as an absence. Collapsing them lets a gh failure
 // reach the gate as evidence that no Pull Request exists.
 func TestBuildQAPromptSeparatesUnresolvedPullRequestFromProvenAbsence(t *testing.T) {
+	t.Parallel()
+
 	resolved := sampleQAPromptRequest()
 	resolved.PullRequest = ""
 	resolved.PullRequestResolved = true
@@ -296,6 +314,8 @@ func TestBuildQAPromptSeparatesUnresolvedPullRequestFromProvenAbsence(t *testing
 }
 
 func TestBuildQAPromptOmitsUnrecordedCheckoutFacts(t *testing.T) {
+	t.Parallel()
+
 	req := sampleQAPromptRequest()
 	req.RunBranch = ""
 	req.TargetBranch = ""
@@ -316,6 +336,8 @@ func TestBuildQAPromptOmitsUnrecordedCheckoutFacts(t *testing.T) {
 }
 
 func TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name      string
 		mutate    func(req *QAPromptRequest)
@@ -345,6 +367,8 @@ func TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts(t *testing.T) {
 }
 
 func TestBuildQAPromptDeterministicForIdenticalInput(t *testing.T) {
+	t.Parallel()
+
 	first, err := BuildQAPrompt(sampleQAPromptRequest())
 	if err != nil {
 		t.Fatalf("BuildQAPrompt returned error: %v", err)
@@ -359,6 +383,8 @@ func TestBuildQAPromptDeterministicForIdenticalInput(t *testing.T) {
 }
 
 func TestBuildQAPromptValidatesRequiredFields(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		mutate func(req *QAPromptRequest)
