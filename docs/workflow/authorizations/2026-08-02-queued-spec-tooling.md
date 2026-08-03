@@ -105,3 +105,11 @@ execute the gate.
   with their `skills/` mirrors via `make skills-sync`, for the authored-gate
   decision rule and the gate's authored-node contract. Deterministic digest
   fallout is sanctioned by ADR-0081.
+
+At close (2026-08-03) the maintainer additionally directed: "Lembre-se de
+atualizar as skills com a mudança do spec e comandos." The CLI reference
+skill still taught the deleted flag in six places, so the direction reaches:
+
+- **0072, close** — `.agents/skills/roundfix/**` with its `skills/` mirror,
+  for every `--qa` reference and the authored-gate command guidance. The one
+  remaining `--qa` mention documents the unknown-flag remediation itself.
