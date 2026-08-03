@@ -479,6 +479,33 @@ func TestLoadRejectsExplicitNullQAReasonWithoutDeclaration(t *testing.T) {
 	}
 }
 
+func TestLoadWrapsManifestDecodeErrors(t *testing.T) {
+	t.Parallel()
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
+		"_prd.md": prdFixture("active"),
+		"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa: [task_01]\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+`, ""),
+		"task_01.md": taskFixture("task_01", "Docs", "pending", "docs", defaultVerificationSection),
+	})
+
+	_, err := Load(specsRoot, "demo")
+
+	if err == nil {
+		t.Fatal("Load succeeded, want manifest decode error")
+	}
+	var manifestErr ManifestError
+	if !errors.As(err, &manifestErr) {
+		t.Fatalf("Load error = %T %v, want ManifestError", err, err)
+	}
+	if !strings.Contains(err.Error(), "decode manifest frontmatter") {
+		t.Fatalf("Load error = %v, want manifest decode context", err)
+	}
+}
+
 func TestLoadRejectsInvalidQAGateShape(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -605,6 +632,9 @@ func TestLoadRejectsInvalidQAGateShape(t *testing.T) {
 			var gateErr QAGateError
 			if !errors.As(err, &gateErr) {
 				t.Fatalf("error = %v, want QAGateError", err)
+			}
+			if !strings.Contains(err.Error(), "validate qa gate") {
+				t.Fatalf("error %q does not identify QA gate validation", err)
 			}
 			if !strings.Contains(err.Error(), tt.wantTask) {
 				t.Fatalf("error %q does not name %q", err, tt.wantTask)

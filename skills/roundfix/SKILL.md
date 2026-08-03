@@ -453,7 +453,8 @@ Before an operational Run mutates state, Roundfix validates Task Types, resolves
 the relevant profiles, deduplicates exact preferred/fallback tuples, proves
 them sequentially through disposable sessions, and closes those sessions.
 `fetch` remains Agent-free. `resolve` and `watch` use only `review`; `implement`
-uses the Task categories and adds `qa` only when requested.
+derives its categories, including `qa`, from Task Graph metadata and accepts no
+per-run QA selection.
 
 After Run creation, automatic fallback is notification-first and pre-prompt
 only. If selection start fails before the first prompt, Roundfix records the
@@ -1256,7 +1257,8 @@ outcome and never opens pull requests (ADR-0021).
      Daemon runs an authored gate after the last Task settles; only a `pass`
      verdict lets the Run end Clean, and any other verdict — or a missing or
      unreadable QA Report — ends the Run Unresolved. Passing `--qa` is an
-     unknown-flag error whose remediation names this contract.
+     unknown-flag error whose remediation names this contract. A reasoned
+     `qa: declined` declaration creates no QA Task and executes no gate.
    - `--agent` — Agent runtime. Supported: `codex`, `claude`, `opencode`.
    - `--model` — Agent Model override.
    - `--reasoning-effort` — Default Reasoning Effort override.
@@ -1283,8 +1285,9 @@ outcome and never opens pull requests (ADR-0021).
    - One outcome line: `Clean: all N Task(s) completed.`,
      `Unresolved: X completed, Y failed, Z skipped, W pending.`,
      `IntegrationPending: X completed, Y failed, Z skipped, W pending; integrate with git merge --ff-only roundfix/run-<id>`,
-     or — when every Task is already completed and the graph authors no
-     unsettled gate — `All N Task(s) already completed; no Run was created.`
+     or — when every Task is already completed and the graph has no unsettled
+     gate, including a `qa: declined` declaration —
+     `All N Task(s) already completed; no Run was created.`
      An all-completed graph whose authored gate is still unsettled is not a
      no-op: the Run starts and executes the gate.
    - When `implement.auto_push: true` and the Run ends Clean with an upstream

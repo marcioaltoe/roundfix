@@ -141,7 +141,7 @@ func (manifest *manifestFrontmatter) UnmarshalYAML(node *yaml.Node) error {
 	type plainManifest manifestFrontmatter
 	var decoded plainManifest
 	if err := node.Decode(&decoded); err != nil {
-		return err
+		return fmt.Errorf("decode manifest frontmatter: %w", err)
 	}
 	*manifest = manifestFrontmatter(decoded)
 	for index := 0; index+1 < len(node.Content); index += 2 {
@@ -287,7 +287,7 @@ func Load(specsRoot string, slug string) (*Graph, error) {
 		tasks = append(tasks, task)
 	}
 	if err := validateQAGate(manifestPath, nodes, tasks, qa); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("validate qa gate: %w", err)
 	}
 	return &Graph{
 		Spec:       Spec{Slug: slug, Dir: dir},

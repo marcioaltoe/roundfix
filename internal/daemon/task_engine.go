@@ -309,7 +309,9 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 		result.QAVerdict = verdict
 		result.QAReportPath = reportPath
 	} else if qaTask != nil && qaTask.Status != spec.StatusCompleted {
-		fmt.Fprintf(engine.deps.Progress, "QA Task %s withheld; unmet dependencies: %s\n", qaTask.ID, strings.Join(uncompletedTaskNeeds(*qaTask, statuses), ", "))
+		if _, err := fmt.Fprintf(engine.deps.Progress, "QA Task %s withheld; unmet dependencies: %s\n", qaTask.ID, strings.Join(uncompletedTaskNeeds(*qaTask, statuses), ", ")); err != nil {
+			return result, fmt.Errorf("write withheld QA task progress: %w", err)
+		}
 	}
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonOutcome,
 		fmt.Sprintf("Task cycle finished: %d completed, %d failed, %d skipped.", result.Completed, result.Failed, result.Skipped),

@@ -4855,6 +4855,30 @@ func TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted(t *testing.T) {
 	}
 }
 
+func TestTaskCycleReturnsWithheldQATaskProgressWriteError(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	engine := fixture.engine(t, &taskFakeRunner{}, &taskFakeVerifier{}, &engineFakeCommitter{}, fixture.worktree)
+	progressErr := errors.New("progress closed")
+	engine.deps.Progress = failingProgressWriter{err: progressErr}
+	plan := fixture.qaPlan()
+	qaTask := plan.Tasks[len(plan.Tasks)-1]
+	qaTask.Needs = []string{"task_missing"}
+	plan.Tasks = []spec.Task{qaTask}
+
+	_, err := engine.TaskCycle(context.Background(), plan)
+
+	if err == nil {
+		t.Fatal("TaskCycle succeeded, want withheld QA Task progress write error")
+	}
+	if !errors.Is(err, progressErr) {
+		t.Fatalf("TaskCycle error = %v, want wrapped progress error", err)
+	}
+	if !strings.Contains(err.Error(), "write withheld QA task progress") {
+		t.Fatalf("TaskCycle error = %v, want withheld QA task progress context", err)
+	}
+}
+
 func TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
