@@ -1,7 +1,10 @@
 ---
 spec: 0072-qa-is-a-task-not-a-flag
-status: active
+status: archived
 created: 2026-08-02
+archived: 2026-08-03
+qa_override: true
+release: https://github.com/marcioaltoe/roundfix/pull/87
 surfaces: [backend, cli, docs]
 ---
 

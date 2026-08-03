@@ -10,7 +10,6 @@ archives.
 | # | Spec | Why here |
 | --- | --- | --- |
 | 1 | `0071-verification-cost` | Measured first. A third of Spec 0057's five hours was one whole-package command repeated in every Task, and the suite runs almost sequentially on twelve cores. Every Spec after this one is cheaper. |
-| 2 | `0072-qa-is-a-task-not-a-flag` | Follows 0071. The gate is a flag on the invocation, so a graph that grows after it reported leaves no trace — three closings on 0057 read as three normal cycles. Authoring it into the graph changes every Spec after it. |
 | 3 | `0074-git-spawn-economy` | Measured, like 0071: the suite is spawn-bound (36% utilization, kernel time 3× user, 13,926 git spawns per run), and ~6k of those are production-issued — every real Run pays them against the user's repository. Test-side waste is already removed; deleting the twelve heaviest tests was measured to buy only 7–14s. The maintainer's <60s full-fresh target lands here. |
 | 4 | `0073-skill-versions-decoupled-from-the-binary` | Requested during the 0.0.3 release. Skill content is pinned by digest into the binary, so a skill edit changes what Roundfix claims — three failures in one session came from it. Compatibility becomes a declared minimum version instead, and the 0.3.1 release cut waits for it. |
 | 5 | `0075-typed-docs-backlog` | Maintainer-directed structure improvement (2026-08-03): the layout gives observations a home and intent none. Adds `docs/backlog/` with typed entries aligned with Conventional Commits (`feat`, `fix`, `perf`, `refactor`) to the Baseline's managed layout guide; small, docs-and-assets scoped, and every triage artifact filed after it lands in the right place. |
@@ -32,7 +31,7 @@ such command, and adding `t.Parallel()` to one test's subtests took it from 29s
 to 17s. Until that changes, every later Spec pays the same tax multiplied by its
 Task count.
 
-0056 and 0057 archived on 2026-08-02 and left this list. 0059 was approved and
+0056 and 0057 archived on 2026-08-02; 0071 and 0072 archived and left this list — 0072 closed under qa_override, its sole remaining finding being immutable recording chronology (see docs/findings/2026-08-03-a-recording-order-defect-blocked-every-public-qa-row.md). 0059 was approved and
 ordered before this group existed and carries live defects in shipped
 behavior, which outranks improving the loop that ships them.
 
