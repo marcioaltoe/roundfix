@@ -26,7 +26,13 @@ var updateCoverageRecord = flag.Bool(
 	"re-record the repository test function coverage record",
 )
 
-const coverageRecordPath = "docs/specs/0071-verification-cost/coverage-record.json"
+// The record travels with its Spec: it was recorded under the active tree
+// and moved to the archive when Spec 0071 closed. Resolution tries the
+// archived home first and falls back to the active path, so the harness
+// survives the archive without weakening — a missing record at both homes
+// still fails.
+const coverageRecordArchivedPath = "docs/specs/_archived/0071-verification-cost/coverage-record.json"
+const coverageRecordActivePath = "docs/specs/0071-verification-cost/coverage-record.json"
 
 // CoverageRecord is the deterministic set of top-level test functions the Go
 // suite discovers, grouped by every package in the repository package list.
@@ -47,12 +53,15 @@ func TestCoverageEquivalence(t *testing.T) {
 		t.Fatalf("collect coverage record: %v", err)
 	}
 
-	recordPath := filepath.Join(repoRoot, coverageRecordPath)
+	recordPath := filepath.Join(repoRoot, coverageRecordArchivedPath)
+	if _, statErr := os.Stat(recordPath); statErr != nil {
+		recordPath = filepath.Join(repoRoot, coverageRecordActivePath)
+	}
 	if *updateCoverageRecord {
 		if err := writeCoverageRecord(recordPath, actual); err != nil {
-			t.Fatalf("re-record coverage at %s: %v", coverageRecordPath, err)
+			t.Fatalf("re-record coverage at %s: %v", recordPath, err)
 		}
-		t.Logf("re-recorded %s", coverageRecordPath)
+		t.Logf("re-recorded %s", recordPath)
 	}
 
 	recorded, err := readCoverageRecord(recordPath)
