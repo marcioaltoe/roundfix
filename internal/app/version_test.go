@@ -1,6 +1,12 @@
 package app
 
-import "testing"
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"runtime"
+	"testing"
+)
 
 func TestVersionLineIncludesBuildIdentityWhenStamped(t *testing.T) {
 	tests := []struct {
@@ -30,5 +36,31 @@ func TestVersionLineIncludesBuildIdentityWhenStamped(t *testing.T) {
 				t.Fatalf("VersionLine() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+// TestVersionMatchesTheReleaseManifest keeps the local constant in step with
+// the manifest the release workflow validates the tag against. The 0.3.1
+// release failed its first step because only the constant had been bumped;
+// this test turns that into a red suite instead of a red release.
+func TestVersionMatchesTheReleaseManifest(t *testing.T) {
+	t.Parallel()
+	_, testFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller could not locate the repository")
+	}
+	manifestPath := filepath.Join(filepath.Dir(testFile), "..", "..", "dist", "npm", "roundfix", "package.json")
+	content, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatalf("read release manifest: %v", err)
+	}
+	var manifest struct {
+		Version string `json:"version"`
+	}
+	if err := json.Unmarshal(content, &manifest); err != nil {
+		t.Fatalf("parse release manifest: %v", err)
+	}
+	if manifest.Version != Version {
+		t.Fatalf("dist/npm/roundfix/package.json version = %q, but internal/app.Version = %q; the release workflow validates the tag against the manifest, so both must match", manifest.Version, Version)
 	}
 }
