@@ -22,6 +22,7 @@ import (
 // Boundary OUT: release mutation, Run creation, Roundfix configuration, network services.
 
 func TestReleasePlanCommandMatchesPRDOutcomes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                 string
 		baseTag              string
@@ -133,6 +134,7 @@ func TestReleasePlanCommandMatchesPRDOutcomes(t *testing.T) {
 }
 
 func TestReleasePlanCommandMixedOrderSelectsHighestImpact(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		commits []releasePlanCommandCommit
@@ -172,6 +174,7 @@ func TestReleasePlanCommandMixedOrderSelectsHighestImpact(t *testing.T) {
 }
 
 func TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits(t *testing.T) {
+	t.Parallel()
 	t.Run("determining commits", func(t *testing.T) {
 		repoDir := newReleasePlanCommandRepo(t, "v0.4.1",
 			releasePlanCommandCommit{subject: "fix: correct release output", paths: []string{"internal/cli/fix.go"}},
@@ -223,6 +226,7 @@ func TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits(t *testing.T) {
 }
 
 func TestReleasePlanJSONIncludesEveryCommitEvidence(t *testing.T) {
+	t.Parallel()
 	repoDir := newReleasePlanCommandRepo(t, "v0.4.1",
 		releasePlanCommandCommit{subject: "fix: correct release output", paths: []string{"internal/cli/fix.go"}},
 		releasePlanCommandCommit{subject: "docs: record planning evidence", paths: []string{"docs/specs/0034-release-plan/task_04.md"}},
@@ -250,6 +254,7 @@ func TestReleasePlanJSONIncludesEveryCommitEvidence(t *testing.T) {
 }
 
 func TestReleasePlanExitCodesAndInvalidInputIsolation(t *testing.T) {
+	t.Parallel()
 	t.Run("ready and no release exit zero", func(t *testing.T) {
 		for _, tt := range []struct {
 			name    string
@@ -324,6 +329,7 @@ func TestReleasePlanExitCodesAndInvalidInputIsolation(t *testing.T) {
 }
 
 func TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary(t *testing.T) {
+	t.Parallel()
 	var rootStdout, rootStderr bytes.Buffer
 	rootCode := runCLI(t, []string{"--help"}, &rootStdout, &rootStderr)
 	if rootCode != exitOK {
@@ -355,6 +361,7 @@ func TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary(t *testi
 }
 
 func TestReleasePlanReadOnlyPreservesRepositoryForOutcomes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		commits  []releasePlanCommandCommit
@@ -399,6 +406,7 @@ func TestReleasePlanReadOnlyPreservesRepositoryForOutcomes(t *testing.T) {
 }
 
 func TestReleasePlanDirtyTreeBlocksWithActionableDiagnostic(t *testing.T) {
+	t.Parallel()
 	repoDir := newReleasePlanCommandRepo(t, "v0.4.1",
 		releasePlanCommandCommit{subject: "fix: correct release output", paths: []string{"internal/cli/fix.go"}},
 	)
@@ -422,6 +430,7 @@ func TestReleasePlanDirtyTreeBlocksWithActionableDiagnostic(t *testing.T) {
 }
 
 func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	gitRunner := newResetPlanRecordingGitRunner()
 	ghRunner := &resetPlanRecordingGHRunner{
 		output: `[
@@ -499,6 +508,7 @@ func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.
 }
 
 func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	repoDir := newEmptyReleasePlanGitRepo(t)
 	writeReleasePlanFile(t, repoDir, "README.md", "seed\n")
 	gitReleasePlan(t, repoDir, "add", "-A")
@@ -584,6 +594,7 @@ func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly
 }
 
 func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	tests := []struct {
 		name string
 		args []string
@@ -621,6 +632,7 @@ func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *te
 }
 
 func TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	tests := []struct {
 		name      string
 		configure func(*resetPlanRecordingGitRunner, *resetPlanRecordingGHRunner)

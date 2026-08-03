@@ -18,6 +18,7 @@ import (
 )
 
 func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -64,6 +65,7 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 }
 
 func TestRunSettleWarnsWhenOtherSpecTasksAreFailed(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Recover the completed work", status: string(spec.StatusFailed), verification: []string{"true"}},
 		{id: "task_02", title: "Other failed work", status: string(spec.StatusFailed)},
@@ -94,6 +96,7 @@ func TestRunSettleWarnsWhenOtherSpecTasksAreFailed(t *testing.T) {
 }
 
 func TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
@@ -125,6 +128,7 @@ func TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning(t *testing.T) {
 }
 
 func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
@@ -169,6 +173,7 @@ func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
 }
 
 func TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -236,6 +241,7 @@ func TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *
 }
 
 func TestRunSettleSkipsStaleKeptRunWorktreeAndUsesFailedCheckout(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -276,6 +282,7 @@ func TestRunSettleSkipsStaleKeptRunWorktreeAndUsesFailedCheckout(t *testing.T) {
 }
 
 func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -331,6 +338,7 @@ func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testin
 }
 
 func TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -390,6 +398,7 @@ func TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces(t *testing.T) {
 }
 
 func TestRunSettleRefusalEnumeratesCandidateStatuses(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -432,6 +441,7 @@ func TestRunSettleRefusalEnumeratesCandidateStatuses(t *testing.T) {
 }
 
 func TestRunSettleRequiresSpecAndTask(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		args    []string
@@ -472,6 +482,7 @@ func TestRunSettleRequiresSpecAndTask(t *testing.T) {
 }
 
 func TestRunSettlePreflightRefusalsWriteNothing(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		setup   func(t *testing.T) (homeDir string, repoDir string, taskPath string)
@@ -580,6 +591,7 @@ func TestRunSettlePreflightRefusalsWriteNothing(t *testing.T) {
 }
 
 func TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:     "task_01",
@@ -630,6 +642,7 @@ func TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched(t *testing.T) {
 }
 
 func TestRunSettleActiveRunOnSameWorkingTreeBlocks(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusFailed)}})
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
@@ -700,6 +713,7 @@ func TestRunSettleActiveRunOnSameWorkingTreeBlocks(t *testing.T) {
 }
 
 func TestRunSettleHelpDocumentsContract(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 

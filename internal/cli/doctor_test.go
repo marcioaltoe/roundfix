@@ -22,6 +22,7 @@ import (
 const doctorReadyAdapterLine = "adapter: ok (claude: claude-agent-acp | codex: codex-acp)\n"
 
 func TestResolveExternalSkillRequirementUnreadableManifest(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 	manifestPath := filepath.Join(repoDir, "docs", "agents", "setup-context.json")
 	mustMkdir(t, filepath.Dir(manifestPath))
@@ -38,6 +39,7 @@ func TestResolveExternalSkillRequirementUnreadableManifest(t *testing.T) {
 }
 
 func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	ownedCount := len(skills.Names())
 	goTUISkills := []string{
 		"agentic-cli-design",
@@ -210,6 +212,7 @@ func TestRunDoctorDerivesExternalSkillRequirementFromSetupManifest(t *testing.T)
 }
 
 func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	tests := []struct {
 		name       string
 		checker    *doctorFakeHealthChecker
@@ -303,6 +306,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 }
 
 func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	tests := []struct {
 		name           string
 		adapterResults map[string]CheckResult
@@ -446,6 +450,7 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 }
 
 func TestDoctorAdapterCheckAggregatesEveryFailure(t *testing.T) {
+	t.Parallel()
 	claudeFailure := errors.New("claude adapter failed")
 	codexFailure := errors.New("codex adapter failed")
 	checker := newDoctorFakeHealthChecker(CheckResult{}, CheckResult{}, CheckResult{})
@@ -479,6 +484,7 @@ func TestDoctorAdapterCheckAggregatesEveryFailure(t *testing.T) {
 }
 
 func TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	config := roundconfig.Builtin()
 	general := config.Profiles[roundconfig.CategoryGeneral]
 	general.Profile.Fallbacks = append(general.Profile.Fallbacks, roundconfig.AgentSelection{
@@ -529,6 +535,7 @@ func TestRunDoctorAdapterReadinessIncludesFallbackOnlyRuntime(t *testing.T) {
 }
 
 func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	config := roundconfig.Builtin()
 	config.Defaults.Agent = "codex"
 	config.Runtimes.Codex.Model = "legacy-model-default"
@@ -608,6 +615,7 @@ func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t 
 }
 
 func TestRunDoctorProfileReadinessMatchesProfilesValidateFailureEvidence(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	_, repoDir := withCLIWorkspace(t)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
 profiles:
@@ -681,6 +689,7 @@ profiles:
 }
 
 func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	checker := newDoctorFakeHealthChecker(
 		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
 		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion},
@@ -724,6 +733,7 @@ func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
 }
 
 func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	ownedCommand := "roundfix skills install --target project"
 	genericExternalCommand := "bunx skills experimental_install && bunx skills update -p -y"
 	installAgenticCLIDesign := "bunx skills add marcioaltoe/skills@agentic-cli-design"
@@ -878,6 +888,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 }
 
 func TestRunDoctorPassesCommandContextToRepositorySkillReadiness(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	type contextKey struct{}
 	const marker = "doctor-command"
 
@@ -916,6 +927,7 @@ func TestRunDoctorPassesCommandContextToRepositorySkillReadiness(t *testing.T) {
 }
 
 func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	processDir := t.TempDir()
 	setCommandWorkDirForTest(t, processDir)
 	var calls []string
@@ -979,6 +991,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 }
 
 func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir := t.TempDir()
 	repoDir := t.TempDir()
 	setCommandEnvironmentForTest(t, homeDir, repoDir)
@@ -1069,6 +1082,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 }
 
 func TestRunDoctorRejectsArguments(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 

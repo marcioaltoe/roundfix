@@ -8,6 +8,7 @@ import (
 )
 
 func TestResolveSelectionUsesBuiltInRuntimeDefaults(t *testing.T) {
+	t.Parallel()
 	config := roundconfig.Builtin()
 
 	codex, err := ResolveSelection("codex", config.Runtimes.Codex, InvocationSelection{})
@@ -33,6 +34,7 @@ func TestResolveSelectionUsesBuiltInRuntimeDefaults(t *testing.T) {
 }
 
 func TestResolveSelectionAppliesInvocationPrecedence(t *testing.T) {
+	t.Parallel()
 	defaults := roundconfig.RuntimeDefaults{
 		Model:           "configured-model",
 		ReasoningEffort: "configured-reasoning",
@@ -54,6 +56,7 @@ func TestResolveSelectionAppliesInvocationPrecedence(t *testing.T) {
 }
 
 func TestResolveSelectionRejectsExplicitEmptyModel(t *testing.T) {
+	t.Parallel()
 	defaults := roundconfig.RuntimeDefaults{
 		Model:           "configured-model",
 		ReasoningEffort: "configured-reasoning",
@@ -69,6 +72,7 @@ func TestResolveSelectionRejectsExplicitEmptyModel(t *testing.T) {
 }
 
 func TestResolveSelectionAllowsEmptyReasoningEffort(t *testing.T) {
+	t.Parallel()
 	defaults := roundconfig.RuntimeDefaults{Model: "configured-model"}
 
 	got, err := ResolveSelection("codex", defaults, InvocationSelection{})
@@ -92,6 +96,7 @@ func TestResolveSelectionAllowsEmptyReasoningEffort(t *testing.T) {
 }
 
 func TestResolveSelectionPreservesCustomValues(t *testing.T) {
+	t.Parallel()
 	defaults := roundconfig.RuntimeDefaults{
 		Model:           "vendor-new-model",
 		ReasoningEffort: "experimental-reasoning",
@@ -108,6 +113,7 @@ func TestResolveSelectionPreservesCustomValues(t *testing.T) {
 }
 
 func TestInvocationProfileOverrideRequiresCompleteTuple(t *testing.T) {
+	t.Parallel()
 	const wantGrammar = "--agent, --model, and --reasoning-effort must be provided together for a one-Run Agent Selection override; omit all three to use Agent Selection Profiles"
 	tests := []struct {
 		name    string
@@ -161,6 +167,7 @@ func TestInvocationProfileOverrideRequiresCompleteTuple(t *testing.T) {
 }
 
 func TestInvocationProfileOverrideParsingPreservesExplicitEmptyReasoning(t *testing.T) {
+	t.Parallel()
 	req, err := parseOperationalCommand("resolve", []string{
 		"--agent", "codex",
 		"--model", "gpt-5.6-sol",
@@ -182,6 +189,7 @@ func TestInvocationProfileOverrideParsingPreservesExplicitEmptyReasoning(t *test
 }
 
 func TestInvocationProfileOverridePresenceIgnoresFlagLikeValues(t *testing.T) {
+	t.Parallel()
 	presence := selectionFlagPresence([]string{
 		"--spec", "--agent",
 		"--agent-command", "--model",

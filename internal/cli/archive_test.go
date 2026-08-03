@@ -13,6 +13,7 @@ import (
 )
 
 func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
 		{id: "task_02", title: "Wire the widget API", status: string(spec.StatusCompleted), needs: []string{"task_01"}},
@@ -52,6 +53,7 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 }
 
 func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay active", status: string(spec.StatusCompleted)},
 	})
@@ -87,6 +89,7 @@ func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
 }
 
 func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
 		{id: "task_02", title: "Wire the widget API", status: string(spec.StatusPending), needs: []string{"task_01"}},
@@ -121,6 +124,7 @@ func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
 }
 
 func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name             string
 		verdict          string
@@ -198,6 +202,7 @@ func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
 }
 
 func TestRunArchiveHelp(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 

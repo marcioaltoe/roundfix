@@ -17,6 +17,7 @@ import (
 )
 
 func TestRunUpgradeFixtureMatrix(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	t.Run("newer release replaces binary", func(t *testing.T) {
 		fake := newUpgradeFake(t)
 		newBinary := []byte("#!/bin/sh\necho upgraded\n")
@@ -124,6 +125,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 }
 
 func TestRunUpgradeCheckReportsAvailableWithoutInstalling(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	fake := newUpgradeFake(t)
 	newBinary := []byte("#!/bin/sh\necho upgraded\n")
 	fake.releaseTag = "v1.1.0"
@@ -150,6 +152,7 @@ func TestRunUpgradeCheckReportsAvailableWithoutInstalling(t *testing.T) {
 }
 
 func TestVersionFreshnessCachesDailyAndReportsBehind(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir := t.TempDir()
 	checkedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	calls := 0
@@ -190,6 +193,7 @@ func TestVersionFreshnessCachesDailyAndReportsBehind(t *testing.T) {
 }
 
 func TestVersionFreshnessNetworkFailureIsSilentAndCachesAttempt(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir := t.TempDir()
 	now := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	calls := 0
@@ -226,6 +230,7 @@ func TestVersionFreshnessNetworkFailureIsSilentAndCachesAttempt(t *testing.T) {
 }
 
 func TestVersionFreshnessFetchWiringDoesNotAffectOutcome(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withVersionFreshnessFakeDeps(t, versionFreshnessDependencies{

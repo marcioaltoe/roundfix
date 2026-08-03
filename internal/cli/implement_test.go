@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -35,6 +36,7 @@ import (
 const implementTestSlug = "0001-widget-flow"
 
 const cliTestHelperEnv = "ROUNDFIX_CLI_TEST_HELPER"
+const cliTestHoldAfterRunEnv = "ROUNDFIX_CLI_TEST_HOLD_AFTER_RUN"
 const detachTestChildModeEnv = "ROUNDFIX_DETACH_TEST_CHILD"
 
 func TestMain(m *testing.M) {
@@ -42,7 +44,16 @@ func TestMain(m *testing.M) {
 		os.Exit(runDetachTestChild(mode))
 	}
 	if os.Getenv(cliTestHelperEnv) == "1" {
-		os.Exit(Run(os.Args[1:], os.Stdout, os.Stderr))
+		var callerSignals chan os.Signal
+		if os.Getenv(cliTestHoldAfterRunEnv) == "1" && os.Getenv(detachHandshakeFDEnv) == "" {
+			callerSignals = make(chan os.Signal, 1)
+			signal.Notify(callerSignals, syscall.SIGTERM)
+		}
+		code := Run(os.Args[1:], os.Stdout, os.Stderr)
+		if callerSignals != nil {
+			<-callerSignals
+		}
+		os.Exit(code)
 	}
 	os.Exit(m.Run())
 }
@@ -422,6 +433,7 @@ func newImplementWorkspace(t *testing.T, seeds []implementSeed) (string, string)
 }
 
 func TestLoadCommittedSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", taskType: "backend", status: string(spec.StatusPending)}})
 	taskPath := implementTaskPath(repoDir, "task_01")
 	dirty := strings.ReplaceAll(mustRead(t, taskPath), "status: pending\ntype: backend", "status: completed\ntype: frontend")
@@ -441,6 +453,7 @@ func TestLoadCommittedSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testing.T) {
 }
 
 func TestLoadCommittedExternalSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	_, externalRoot := newExternalSpecsRoot(t, implementTestSlug, []implementSeed{{id: "task_01", taskType: "backend", status: string(spec.StatusPending)}})
 	taskPath := implementTaskPathInRoot(externalRoot, implementTestSlug, "task_01")
@@ -460,6 +473,7 @@ func TestLoadCommittedExternalSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testi
 }
 
 func TestLoadCommittedExternalSpecGraphRequiresExternalGitRepository(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	externalRoot := filepath.Join(t.TempDir(), "external-specs")
 	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{{id: "task_01"}})
@@ -1293,6 +1307,7 @@ func taskRefForImplementRun(t *testing.T, run store.Run, repoDir string, taskID 
 }
 
 func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -1336,6 +1351,7 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 }
 
 func TestRunImplementVerificationCapacityDoesNotAddFlag(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -1353,6 +1369,7 @@ func TestRunImplementVerificationCapacityDoesNotAddFlag(t *testing.T) {
 }
 
 func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	fakeACPX := fakeACPXCommand(t)
 	stdout, stderr, code := runCLIHelper(t, repoDir, fakeACPX, nil,
@@ -1390,6 +1407,7 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 }
 
 func TestRunImplementDetachReportsAndRelaysPreflightFailure(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	var foregroundStdout bytes.Buffer
 	var foregroundStderr bytes.Buffer
@@ -1417,6 +1435,7 @@ func TestRunImplementDetachReportsAndRelaysPreflightFailure(t *testing.T) {
 }
 
 func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	dir := t.TempDir()
 	promptStarted := filepath.Join(dir, "prompt-started")
@@ -1430,6 +1449,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	cmd.Env = cliHelperEnv(t, fakeACPX, map[string]string{
 		"ROUNDFIX_FAKE_ACPX_PROMPT_STARTED": promptStarted,
 		"ROUNDFIX_FAKE_ACPX_RELEASE":        releasePrompt,
+		cliTestHoldAfterRunEnv:              "1",
 	})
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	stdoutPipe, err := cmd.StdoutPipe()
@@ -1474,6 +1494,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 }
 
 func TestRunHelpListsImplementCommand(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -1488,6 +1509,7 @@ func TestRunHelpListsImplementCommand(t *testing.T) {
 }
 
 func TestRunImplementValidationFailures(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		args    []string
@@ -1559,6 +1581,7 @@ func TestRunImplementValidationFailures(t *testing.T) {
 }
 
 func TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		config   string
@@ -1594,6 +1617,7 @@ func TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation(t *test
 }
 
 func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -1667,6 +1691,7 @@ func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
 }
 
 func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
@@ -1710,6 +1735,7 @@ func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
 }
 
 func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should not be listed"},
 	})
@@ -1754,6 +1780,7 @@ func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.
 }
 
 func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	tests := []struct {
 		name        string
 		args        []string
@@ -1799,6 +1826,7 @@ func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
 }
 
 func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -1858,6 +1886,7 @@ func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
 }
 
 func TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -1892,6 +1921,7 @@ func TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow(t *testing
 }
 
 func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	withImplementOwnerIdentity(t, "test-owner-identity")
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Write the widget guide", taskType: "docs", verification: []string{"echo docs-check"}},
@@ -1961,6 +1991,7 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 }
 
 func TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	withImplementOwnerIdentity(t, "")
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget backend", verification: []string{"echo backend-check"}},
@@ -1996,6 +2027,7 @@ func TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture(t *testing.T) {
 }
 
 func TestRunImplementPassesVerificationCapacityIntoTaskCycle(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Build the widget backend"}})
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "worktree:\n  concurrency: 1\nverification:\n  concurrency: 3\n")
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
@@ -2042,6 +2074,7 @@ func TestRunImplementPassesVerificationCapacityIntoTaskCycle(t *testing.T) {
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementExecutesSpecEndToEnd.
 func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	verificationDir := t.TempDir()
 	logPath := filepath.Join(verificationDir, "verification.log")
 	startedPaths := map[string]string{
@@ -2210,6 +2243,7 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementExecutesSpecEndToEnd.
 func TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	markerPath := filepath.Join(t.TempDir(), "temporary-seen")
 	command := fmt.Sprintf(
 		"if test -f %s; then printf 'exclusive retry passed\\n'; exit 0; fi; printf 'initial temporary failure\\n'; : > %s; exit 75",
@@ -2298,6 +2332,7 @@ func TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair(t *t
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree.
 func TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	counterPath := filepath.Join(t.TempDir(), "temporary-count")
 	command := fmt.Sprintf(
 		"count=0; if test -f %s; then count=$(cat %s); fi; count=$((count + 1)); printf '%%s' \"$count\" > %s; printf 'temporary failure %%s\\n' \"$count\"; exit 75",
@@ -2391,6 +2426,7 @@ func TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWork
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree.
 func TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	repairPath := filepath.Join(t.TempDir(), "agent-repaired")
 	command := fmt.Sprintf(
 		"if test -f %s; then printf 'deterministic repair passed\\n'; exit 0; fi; printf 'deterministic failure\\n'; exit 42",
@@ -2469,6 +2505,7 @@ func TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair(t *te
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementStopRequestEndsStoppedWithInterruptMapping.
 func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	verificationDir := t.TempDir()
 	logPath := filepath.Join(verificationDir, "verification.log")
 	startedPaths := map[string]string{
@@ -2588,6 +2625,7 @@ func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *te
 }
 
 func TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	wantStdout, _, wantCode, _, _ := runCleanImplementForCleanup(t, nil)
 	gotStdout, gotStderr, gotCode, homeDir, keptPath := runCleanImplementForCleanup(t, errors.New("forced cleanup failure"))
 
@@ -2606,6 +2644,7 @@ func TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrE
 }
 
 func TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:    "task_01",
 		title: "Build the widget core",
@@ -2664,6 +2703,7 @@ func TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork(t *testing.T) {
 }
 
 func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:           "task_01",
 		title:        "Build the widget core",
@@ -2709,6 +2749,7 @@ func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
 }
 
 func TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the first slice", verification: []string{"test -f bootstrap.ready"}},
 		{id: "task_02", title: "Build the second slice", verification: []string{"test -f bootstrap.ready"}},
@@ -2774,6 +2815,7 @@ func TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork(t *test
 }
 
 func TestRenderImplementTaskLinesKeepsGraphOrderWhenCompletionReversed(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build scheduler"},
 		{id: "task_02", title: "Wire queue"},
@@ -2804,6 +2846,7 @@ func TestRenderImplementTaskLinesKeepsGraphOrderWhenCompletionReversed(t *testin
 }
 
 func TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build scheduler"},
 		{id: "task_02", title: "Wire queue", needs: []string{"task_01"}},
@@ -2858,6 +2901,7 @@ func TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks(t *testing.
 // Owning layer: Implement terminal report projection.
 // Existing canonical suite: TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks.
 func TestRenderImplementTaskLinesUsesDaemonOutcomeForPreservedTaskWorktree(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:    "task_01",
 		title: "Preserve failed parallel work",
@@ -2889,6 +2933,7 @@ func TestRenderImplementTaskLinesUsesDaemonOutcomeForPreservedTaskWorktree(t *te
 }
 
 func TestRenderImplementTaskLinesNormalizesMultilineReasons(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build scheduler"},
 	})
@@ -2919,6 +2964,7 @@ func TestRenderImplementTaskLinesNormalizesMultilineReasons(t *testing.T) {
 }
 
 func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	tests := []struct {
 		name            string
 		enableAutoPush  bool
@@ -3072,6 +3118,7 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 }
 
 func TestRunImplementReportPrintsVerificationFailureReason(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", verification: []string{"make verify"}},
 	})
@@ -3108,6 +3155,7 @@ func TestRunImplementReportPrintsVerificationFailureReason(t *testing.T) {
 }
 
 func TestRunImplementReportPrintsModelNotAdvertisedReason(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	const reason = `Agent Model "gpt-5.6-sol" not advertised by runtime "codex"; advertised: gpt-5.5, gpt-5.1`
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", verification: []string{"make verify"}},
@@ -3148,6 +3196,7 @@ func TestRunImplementReportPrintsModelNotAdvertisedReason(t *testing.T) {
 }
 
 func TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -3185,6 +3234,7 @@ func TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean(t *testing.T) {
 }
 
 func TestRunImplementAutoPushFailureEndsFailedAndJournalsPush(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -3234,6 +3284,7 @@ func assertImplementPushEvent(t *testing.T, events []store.JournalEvent, decisio
 }
 
 func TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -3270,6 +3321,7 @@ func TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 }
 
 func TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	tests := []struct {
 		name         string
 		config       string
@@ -3331,6 +3383,7 @@ func TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs(t *testing.T) {
 }
 
 func TestRunImplementUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 		{id: "task_02", title: "Wire the widget API"},
@@ -3365,6 +3418,7 @@ func TestRunImplementUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
 }
 
 func TestRunImplementClosesAgentSessionForTerminalOutcomes(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	tests := []struct {
 		name      string
 		inner     *implementFakeRunner
@@ -3436,6 +3490,7 @@ func TestRunImplementClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 }
 
 func TestRunImplementPreflightFailures(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	tests := []struct {
 		name     string
 		seeds    []implementSeed
@@ -3515,6 +3570,7 @@ func TestRunImplementPreflightFailures(t *testing.T) {
 }
 
 func TestImplementRejectsInvalidTaskTypeBeforeSideEffects(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", taskType: "Backend"},
 	})
@@ -3564,6 +3620,7 @@ func TestImplementRejectsInvalidTaskTypeBeforeSideEffects(t *testing.T) {
 }
 
 func TestRunImplementDirtyWorkingTreePrintsNoteAndRuns(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	withImplementCollaborators(t, &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -3598,6 +3655,7 @@ func TestRunImplementDirtyWorkingTreePrintsNoteAndRuns(t *testing.T) {
 }
 
 func TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:           "task_01",
 		title:        "Build isolated work",
@@ -3649,6 +3707,7 @@ func TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUs
 }
 
 func TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:           "task_01",
 		title:        "Build isolated work",
@@ -3707,6 +3766,7 @@ func TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T)
 }
 
 func TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:           "task_01",
 		title:        "Edit shared file",
@@ -3766,6 +3826,7 @@ func TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks(t *test
 }
 
 func TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:    "task_01",
 		title: "Leave unresolved work",
@@ -3807,6 +3868,7 @@ func TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath(t *testing.T) {
 }
 
 func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Build after cleanup",
@@ -3845,6 +3907,7 @@ func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T
 }
 
 func TestRunImplementPreflightTerminalReachableChangedBranch(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Build after reachable cleanup",
@@ -3877,6 +3940,7 @@ func TestRunImplementPreflightTerminalReachableChangedBranch(t *testing.T) {
 }
 
 func TestRunImplementPreflightTerminalUniqueChangedBranch(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Build while preserving unique work",
@@ -3908,6 +3972,7 @@ func TestRunImplementPreflightTerminalUniqueChangedBranch(t *testing.T) {
 }
 
 func TestRunImplementPreflightClosesTerminalRunSessionsOnly(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Build after session cleanup",
@@ -3977,6 +4042,7 @@ func TestRunImplementPreflightClosesTerminalRunSessionsOnly(t *testing.T) {
 }
 
 func TestRunImplementPreflightPrunesRetainedRunStorage(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	ctx := context.Background()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
@@ -4015,6 +4081,7 @@ func TestRunImplementPreflightPrunesRetainedRunStorage(t *testing.T) {
 }
 
 func TestRunImplementPreflightRetentionPruneFailureIsNonFatal(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	ctx := context.Background()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
@@ -4060,6 +4127,7 @@ func TestRunImplementPreflightRetentionPruneFailureIsNonFatal(t *testing.T) {
 }
 
 func TestRunImplementPreflightRetentionZeroSkipsPrune(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	ctx := context.Background()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
@@ -4093,6 +4161,7 @@ func TestRunImplementPreflightRetentionZeroSkipsPrune(t *testing.T) {
 }
 
 func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
 	ctx := context.Background()
@@ -4139,6 +4208,7 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 }
 
 func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("codex-acp is not on PATH")}
 	withImplementCollaborators(t, runner)
@@ -4160,6 +4230,7 @@ func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 }
 
 func TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", taskType: "backend"}})
 	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("adapter rejected configured tuple")}
 	withImplementCollaborators(t, runner)
@@ -4194,6 +4265,7 @@ func TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt(t *te
 }
 
 func TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{
 		gitRoot: repoDir,
@@ -4241,6 +4313,7 @@ func TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun
 }
 
 func TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Confirm fallback"}})
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	configContent := "runtimes:\n  codex:\n    model: broken-model\n    reasoning_effort: unsupported\n"
@@ -4286,6 +4359,7 @@ func TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback(t *testing.
 }
 
 func TestRunImplementPassesOneRunSelectionOverridesToPreflight(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("stop after selection preflight")}
 	withImplementCollaborators(t, runner)
@@ -4318,6 +4392,7 @@ func TestRunImplementPassesOneRunSelectionOverridesToPreflight(t *testing.T) {
 }
 
 func TestRunImplementPersistsEffectiveSelection(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Store selection"}})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -4353,6 +4428,7 @@ func TestRunImplementPersistsEffectiveSelection(t *testing.T) {
 }
 
 func TestRunImplementAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Store model-managed selection"}})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -4385,6 +4461,7 @@ func TestRunImplementAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
 }
 
 func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -4419,6 +4496,7 @@ func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
 }
 
 func TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T) {
+	t.Parallel()
 	homeDir, _ := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 	const invalidConfig = "defaults:\n  agent: [\n"
@@ -4452,6 +4530,7 @@ func TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.
 }
 
 func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Write the widget guide", status: string(spec.StatusCompleted)},
 		{id: "task_02", title: "Build the widget backend", status: string(spec.StatusCompleted), needs: []string{"task_01"}},
@@ -4479,6 +4558,7 @@ func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {
 }
 
 func TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}, verification: []string{"fail-task-02"}},
@@ -4534,6 +4614,7 @@ func TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree(t *testing.T) 
 }
 
 func TestRunImplementResumesStaleInProgressTask(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", status: string(spec.StatusInProgress)},
 	})
@@ -4563,6 +4644,7 @@ func TestRunImplementResumesStaleInProgressTask(t *testing.T) {
 }
 
 func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
@@ -4604,6 +4686,7 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 }
 
 func TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLock(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
@@ -4687,6 +4770,7 @@ func implementJournaledQAEvent(t *testing.T, homeDir string, runID string) (rune
 }
 
 func TestRunImplementQAVerdictMatrix(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	reportRel := implementQAReportRelPath()
 	tests := []struct {
 		name        string
@@ -4769,6 +4853,7 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 }
 
 func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", verification: []string{"fail-task-01"}},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
@@ -4812,6 +4897,7 @@ func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
 }
 
 func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	tests := []struct {
 		name      string
 		verdict   string
@@ -4868,6 +4954,7 @@ func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
 // branch from the Run record into the QA prompt so the gate can reach the
 // Pull Request the user's branch owns.
 func TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Write the widget guide", status: string(spec.StatusCompleted)},
 	})
@@ -4905,6 +4992,7 @@ func TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord(t *testing.T) {
 }
 
 func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Guide docs", taskType: "docs"},
 		{id: "task_02", title: "Build core", needs: []string{"task_01"}},
@@ -4966,6 +5054,7 @@ func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
 }
 
 func TestRunImplementInfrastructureFailureEndsFailed(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -4997,6 +5086,7 @@ func TestRunImplementInfrastructureFailureEndsFailed(t *testing.T) {
 }
 
 func TestAgentSelectionProfilesMacro(t *testing.T) {
+	t.Parallel()
 	binary := buildRoundfixBinaryForMacro(t)
 
 	t.Run("mixed profiles configure validate fallback persist and stream", func(t *testing.T) {

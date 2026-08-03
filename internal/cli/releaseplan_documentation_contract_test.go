@@ -14,6 +14,7 @@ import (
 // Boundary OUT: publication workflow execution, GitHub, npm, and release assets.
 
 func TestReleasePlanDocumentationContract(t *testing.T) {
+	t.Parallel()
 	var rootStdout, rootStderr bytes.Buffer
 	if code := Run([]string{"--help"}, &rootStdout, &rootStderr); code != exitOK {
 		t.Fatalf("root help exit = %d, want 0 stderr=%q", code, rootStderr.String())

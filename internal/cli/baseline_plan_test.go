@@ -26,6 +26,7 @@ import (
 )
 
 func TestBaselinePlanPreflightJSONActionRequired(t *testing.T) {
+	t.Parallel()
 	repo := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repo, "AGENTS.md", "root policy\n")
 	commitBaselinePlanTestRepository(t, repo)
@@ -62,6 +63,7 @@ func TestBaselinePlanPreflightJSONActionRequired(t *testing.T) {
 }
 
 func TestBaselinePlanPreflightText(t *testing.T) {
+	t.Parallel()
 	repo := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repo, "nested/CLAUDE.md", "nested policy\n")
 	commitBaselinePlanTestRepository(t, repo)
@@ -90,6 +92,7 @@ func TestBaselinePlanPreflightText(t *testing.T) {
 }
 
 func TestBaselinePlanPreflightBlocksUnsafeRepository(t *testing.T) {
+	t.Parallel()
 	repo := newBaselinePlanTestRepository(t)
 	if err := os.Symlink("../outside.md", filepath.Join(repo, "AGENTS.md")); err != nil {
 		t.Fatalf("create escaping alias: %v", err)
@@ -118,6 +121,7 @@ func TestBaselinePlanPreflightBlocksUnsafeRepository(t *testing.T) {
 }
 
 func TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args func(*testing.T) []string
@@ -151,6 +155,7 @@ func TestBaselinePlanPreflightRejectsUsageAndUncommittedRepository(t *testing.T)
 }
 
 func TestBaselinePlanPreflightHelp(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := RunContext(context.Background(), []string{"baseline", "plan", "--help"}, &stdout, &stderr)
@@ -180,6 +185,7 @@ func TestBaselinePlanPreflightHelp(t *testing.T) {
 }
 
 func TestBaselinePlanProfileFile(t *testing.T) {
+	t.Parallel()
 	repository, input, decisions := baselinePlanProfileFileFixture(t)
 	draftPath := filepath.Join(t.TempDir(), "guided-backend.json")
 	if err := os.WriteFile(draftPath, input.Document, 0o644); err != nil {
@@ -299,6 +305,7 @@ func TestBaselinePlanProfileFile(t *testing.T) {
 }
 
 func TestBaselinePlanPreflightRealCLI(t *testing.T) {
+	t.Parallel()
 	repo := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repo, "AGENTS.md", "real CLI policy\n")
 	commitBaselinePlanTestRepository(t, repo)
@@ -338,6 +345,7 @@ func TestBaselinePlanPreflightRealCLI(t *testing.T) {
 }
 
 func TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles(t *testing.T) {
+	t.Parallel()
 	repo := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")

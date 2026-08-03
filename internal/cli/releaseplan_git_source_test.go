@@ -21,6 +21,7 @@ import (
 // Boundary OUT: Release Plan classification, CLI rendering, network services, release mutation.
 
 func TestReleasePlanGitSourceDefaultRangeResolvesLatestReachableStableTag(t *testing.T) {
+	t.Parallel()
 	repo := newReleasePlanGitSourceRepo(t)
 	source := newReleasePlanGitSource(repo.dir, preflight.ExecGitRunner{})
 	before := snapshotReleasePlanRepo(t, repo.dir)
@@ -59,6 +60,7 @@ func TestReleasePlanGitSourceDefaultRangeResolvesLatestReachableStableTag(t *tes
 }
 
 func TestReleasePlanGitSourceExplicitEndpointsReturnOrderedCommitsAndPaths(t *testing.T) {
+	t.Parallel()
 	repo := newReleasePlanGitSourceRepo(t)
 	source := newReleasePlanGitSource(repo.dir, preflight.ExecGitRunner{})
 	before := snapshotReleasePlanRepo(t, repo.dir)
@@ -91,6 +93,7 @@ func TestReleasePlanGitSourceExplicitEndpointsReturnOrderedCommitsAndPaths(t *te
 }
 
 func TestReleasePlanGitSourceDirtyWorktreeReportsPathsAndPreservesRepo(t *testing.T) {
+	t.Parallel()
 	repo := newReleasePlanGitSourceRepo(t)
 	writeReleasePlanFile(t, repo.dir, "internal/cli/release.go", "dirty tracked change\n")
 	writeReleasePlanFile(t, repo.dir, "scratch.txt", "untracked change\n")
@@ -118,6 +121,7 @@ func TestReleasePlanGitSourceDirtyWorktreeReportsPathsAndPreservesRepo(t *testin
 }
 
 func TestReleasePlanGitSourceInvalidInputsFailReadOnly(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		prepare func(t *testing.T) (string, string, string)
@@ -216,6 +220,7 @@ func TestReleasePlanGitSourceInvalidInputsFailReadOnly(t *testing.T) {
 }
 
 func TestReleasePlanGitSourceHonorsContextCancellation(t *testing.T) {
+	t.Parallel()
 	repo := newReleasePlanGitSourceRepo(t)
 	source := newReleasePlanGitSource(repo.dir, preflight.ExecGitRunner{})
 	before := snapshotReleasePlanRepo(t, repo.dir)

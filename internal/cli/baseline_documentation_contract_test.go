@@ -18,6 +18,7 @@ import (
 // Boundary OUT: real repository adoption journeys and Python-runtime removal.
 
 func TestBaselineDocumentationContract(t *testing.T) {
+	t.Parallel()
 	helpCases := []struct {
 		command  string
 		args     []string
@@ -224,6 +225,7 @@ func TestBaselineDocumentationContract(t *testing.T) {
 }
 
 func TestGuidanceCompositionDocumentation(t *testing.T) {
+	t.Parallel()
 	root := baselineDocumentationRepoRoot()
 	guide := readBaselineDocumentation(
 		t,
@@ -313,6 +315,7 @@ func TestGuidanceCompositionDocumentation(t *testing.T) {
 }
 
 func TestProjectConstraintDocumentation(t *testing.T) {
+	t.Parallel()
 	root := baselineDocumentationRepoRoot()
 	guidePath := filepath.Join(
 		root,
@@ -445,6 +448,7 @@ func TestProjectConstraintDocumentation(t *testing.T) {
 }
 
 func TestBaselineExamplesParse(t *testing.T) {
+	t.Parallel()
 	root := baselineDocumentationRepoRoot()
 	paths := []string{
 		filepath.Join(root, "README.md"),
@@ -482,6 +486,7 @@ func TestBaselineExamplesParse(t *testing.T) {
 }
 
 func TestBaselineDecisionExamples(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(
 		baselineDocumentationRepoRoot(),
 		"docs",

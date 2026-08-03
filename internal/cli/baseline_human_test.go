@@ -26,6 +26,7 @@ import (
 )
 
 func TestHumanBaselineAdoption(t *testing.T) {
+	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	before := baselinePlanTestTree(t, repo)
 	var stdout bytes.Buffer
@@ -61,6 +62,7 @@ func TestHumanBaselineAdoption(t *testing.T) {
 }
 
 func TestHumanBaselineUpdate(t *testing.T) {
+	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	applyHumanBaselineFixturePlan(t, repo)
 	before := baselinePlanTestTree(t, repo)
@@ -150,6 +152,7 @@ func TestHumanBaselineUpdate(t *testing.T) {
 }
 
 func TestHumanBaselineIncompatibleManifestKeepsValidDefaults(t *testing.T) {
+	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	applyHumanBaselineFixturePlan(t, repo)
 	manifestPath := filepath.Join(repo, filepath.FromSlash(baselineSetupManifestPath))
@@ -210,6 +213,7 @@ func TestHumanBaselineIncompatibleManifestKeepsValidDefaults(t *testing.T) {
 }
 
 func TestHumanBaselineDecisionDefaults(t *testing.T) {
+	t.Parallel()
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
 		t.Fatalf("load Baseline catalog: %v", err)
@@ -268,6 +272,7 @@ func TestHumanBaselineDecisionDefaults(t *testing.T) {
 }
 
 func TestProjectDecisionPrompts(t *testing.T) {
+	t.Parallel()
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
 		t.Fatalf("load Baseline catalog: %v", err)
@@ -379,6 +384,7 @@ func TestProjectDecisionPrompts(t *testing.T) {
 }
 
 func TestToolingAuthorityNoPrompt(t *testing.T) {
+	t.Parallel()
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
 		t.Fatalf("load Baseline catalog: %v", err)
@@ -417,6 +423,7 @@ func TestToolingAuthorityNoPrompt(t *testing.T) {
 }
 
 func TestProjectDecisionParity(t *testing.T) {
+	t.Parallel()
 	repository := newCLIProjectDecisionRepository(t)
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
@@ -481,6 +488,7 @@ func TestProjectDecisionParity(t *testing.T) {
 }
 
 func TestProjectDecisionReuse(t *testing.T) {
+	t.Parallel()
 	repository := newCLIProjectDecisionRepository(t)
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
@@ -540,6 +548,7 @@ func TestProjectDecisionReuse(t *testing.T) {
 }
 
 func TestBetterAuthSuggestionReusesFullHTTPException(t *testing.T) {
+	t.Parallel()
 	repository := newCLIProjectDecisionRepository(t)
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
@@ -602,6 +611,7 @@ func TestBetterAuthSuggestionReusesFullHTTPException(t *testing.T) {
 }
 
 func TestProfileAdaptationRetriesAccumulateEarlierRemovals(t *testing.T) {
+	t.Parallel()
 	repository := newCLIProjectDecisionRepository(t)
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
@@ -666,6 +676,7 @@ func TestProfileAdaptationRetriesAccumulateEarlierRemovals(t *testing.T) {
 }
 
 func TestHumanBaselinePreservationDefaultFollowsInstructionInventory(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		hasInstructions bool
@@ -696,6 +707,7 @@ func TestHumanBaselinePreservationDefaultFollowsInstructionInventory(t *testing.
 }
 
 func TestHumanBaselineConfirmationRequiresExplicitChoice(t *testing.T) {
+	t.Parallel()
 	var output bytes.Buffer
 	selected, err := (&baselineHumanPrompt{
 		reader: bufioReader("\n2\n"),
@@ -713,6 +725,7 @@ func TestHumanBaselineConfirmationRequiresExplicitChoice(t *testing.T) {
 }
 
 func TestConsolidatedReview(t *testing.T) {
+	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	writeBaselinePlanTestFile(t, repo, "AGENTS.md", "Preserve this repository-specific rule.\n")
 	commitBaselinePlanTestRepository(t, repo)
@@ -761,6 +774,7 @@ func TestConsolidatedReview(t *testing.T) {
 }
 
 func TestHumanBaselineInvokesSemanticSegmentationAndClassification(t *testing.T) {
+	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	writeBaselinePlanTestFile(t, repo, "AGENTS.md", "Use the repository domain language.\n")
 	commitBaselinePlanTestRepository(t, repo)
@@ -807,6 +821,7 @@ func TestHumanBaselineInvokesSemanticSegmentationAndClassification(t *testing.T)
 }
 
 func TestConsolidatedReviewEditsManagedClassification(t *testing.T) {
+	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	writeBaselinePlanTestFile(
 		t,
@@ -841,6 +856,7 @@ func TestConsolidatedReviewEditsManagedClassification(t *testing.T) {
 }
 
 func TestHumanAutomationPlanParity(t *testing.T) {
+	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	var review bytes.Buffer
 	var prompts bytes.Buffer
@@ -885,6 +901,7 @@ func TestHumanAutomationPlanParity(t *testing.T) {
 }
 
 func TestDivergencePromptRemediateOutcome(t *testing.T) {
+	t.Parallel()
 	repository, catalog, source := divergencePromptFixture(t)
 	before := baselinePlanTestTree(t, repository)
 	alignment, err := baseline.ResolveProfileAlignment(
@@ -978,6 +995,7 @@ func TestDivergencePromptRemediateOutcome(t *testing.T) {
 }
 
 func TestDivergencePromptJournalsDistinctly(t *testing.T) {
+	t.Parallel()
 	remediation := divergencePromptResult(t, "3\n")
 	decline := divergencePromptResult(t, "4\n")
 	if remediation.Category != "remediation" {
@@ -1016,6 +1034,7 @@ func TestDivergencePromptJournalsDistinctly(t *testing.T) {
 }
 
 func TestBaselineHumanProfileAdaptation(t *testing.T) {
+	t.Parallel()
 	repository, _, _ := baselinePlanProfileFileFixture(t)
 	before := baselinePlanTestTree(t, repository)
 	answers := "\n3\n" +
@@ -1163,6 +1182,7 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 }
 
 func TestRejectedPlanRevision(t *testing.T) {
+	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	initial := humanBaselineFixturePlan(t, repo)
 	specIndex := humanDecisionIndex(t, initial.Decisions, "spec.scaffold")
@@ -1219,6 +1239,7 @@ func TestRejectedPlanRevision(t *testing.T) {
 }
 
 func TestRepeatedPlanRevisionDeterminism(t *testing.T) {
+	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	run := func(t *testing.T, repo string) []string {
 		t.Helper()
@@ -1260,6 +1281,7 @@ func TestRepeatedPlanRevisionDeterminism(t *testing.T) {
 }
 
 func TestBaselineNoTTY(t *testing.T) {
+	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	before := baselinePlanTestTree(t, repo)
 	var stdout bytes.Buffer

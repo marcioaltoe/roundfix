@@ -17,6 +17,7 @@ import (
 // preflight on the target PR Head Branch: git topology alone cannot
 // attribute Run Branches, so the guard consults the Run row.
 func TestBranchIntegrityIgnoresRunBranchesOwnedByOtherBranches(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runStore, err := store.Open(context.Background(), homeDir)
@@ -71,6 +72,7 @@ func TestBranchIntegrityIgnoresRunBranchesOwnedByOtherBranches(t *testing.T) {
 // lock; the guard must still discover it through the runs table so a later
 // normal Run cannot start concurrently in the same checkout.
 func TestBranchIntegrityRejectsLocklessBypassRun(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withBranchIntegrity(t, nil, nil)
@@ -120,6 +122,7 @@ func TestBranchIntegrityRejectsLocklessBypassRun(t *testing.T) {
 // The clean tracked checkout validation must refuse before any
 // fast-forward auto-integration mutates the user's branch.
 func TestReviewCleanTreeRefusalPrecedesAutoIntegration(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	_, repoDir := withReviewGitWorkspace(t)
 	withRealReviewPreflight(t, repoDir, true)
 	pending := []runworktree.PendingRunWork{{
@@ -150,6 +153,7 @@ func TestReviewCleanTreeRefusalPrecedesAutoIntegration(t *testing.T) {
 // a proof failure publishes no audit and creates no Run, while an audit publish
 // failure happens only after the configured review profile has been proven.
 func TestBranchIntegrityBypassAuditFollowsProfileProof(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	t.Run("proof failure prevents audit and Run creation", func(t *testing.T) {
 		homeDir, repoDir := withReviewGitWorkspace(t)
 		persistCLIReviewIssue(t, repoDir, 1, "feature/review")

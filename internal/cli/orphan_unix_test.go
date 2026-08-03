@@ -25,6 +25,7 @@ import (
 )
 
 func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid, ownerWait := startCLIForceStopOwnerProcess(t)
 	ownerIdentity, err := store.OwnerProcessIdentity(context.Background(), pid)
@@ -125,6 +126,7 @@ func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *t
 // with the identity token of a different (exited) owner, so Force Stop must
 // refuse before sending any signal, exactly as it must for a reused PID.
 func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid, _ := startCLIForceStopOwnerProcess(t)
 	request := store.CreateRunRequest{
@@ -193,6 +195,7 @@ func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
 // token keeps the legacy PID-only proof instead of bricking the manual
 // escape hatch.
 func TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid, ownerWait := startCLIForceStopOwnerProcess(t)
 	runStore, err := store.Open(context.Background(), homeDir)
@@ -237,6 +240,7 @@ func TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner(t *testing.T) 
 }
 
 func TestCLIForceStopOwnerProcessHelper(t *testing.T) {
+	// Sequential: coordinates process-wide signal handling.
 	if os.Getenv("ROUNDFIX_CLI_FORCE_STOP_OWNER_HELPER") == "" {
 		return
 	}
@@ -291,6 +295,7 @@ func startCLIForceStopOwnerProcess(t *testing.T) (int, <-chan error) {
 }
 
 func TestRunImplementReclaimsDeadOwnerActiveRun(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -315,6 +320,7 @@ func TestRunImplementReclaimsDeadOwnerActiveRun(t *testing.T) {
 }
 
 func TestRunSettleReclaimsDeadOwnerActiveRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:           "task_01",
 		status:       string(spec.StatusFailed),
@@ -339,6 +345,7 @@ func TestRunSettleReclaimsDeadOwnerActiveRun(t *testing.T) {
 }
 
 func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pid := reapedCLIProcessPID(t)
@@ -359,6 +366,7 @@ func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
 }
 
 func TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	live := seedReviewActiveRun(t, homeDir, repoDir, store.KindWatch, os.Getpid())
@@ -386,6 +394,7 @@ func TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan(t *testing.T) {
 // A terminal Run with a dead owner must never be "reclaimed" by stop: the
 // existing terminal-Run error stands, and no state or lock changes.
 func TestStopTerminalRunWithDeadOwnerKeepsTerminalError(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid := reapedCLIProcessPID(t)
 	seeded := seedReviewActiveRun(t, homeDir, repoDir, store.KindResolve, pid)

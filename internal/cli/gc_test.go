@@ -15,6 +15,7 @@ import (
 )
 
 func TestRunGCDryRunListsEligibleRunsAndChangesNothing(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
 	artifactDir := filepath.Join(homeDir, "artifacts")
@@ -60,6 +61,7 @@ func TestRunGCDryRunListsEligibleRunsAndChangesNothing(t *testing.T) {
 }
 
 func TestRunGCPrunesEligibleJournalsArtifactsAndOrphans(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
 	artifactDir := filepath.Join(homeDir, "artifacts")
@@ -106,6 +108,7 @@ func TestRunGCPrunesEligibleJournalsArtifactsAndOrphans(t *testing.T) {
 }
 
 func TestRunGCSkipsWhenJournalRetentionIsZero(t *testing.T) {
+	// Sequential: overrides package-level test seams.
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
 	artifactDir := filepath.Join(homeDir, "artifacts")
@@ -137,6 +140,7 @@ func TestRunGCSkipsWhenJournalRetentionIsZero(t *testing.T) {
 }
 
 func TestRunGCHelp(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 

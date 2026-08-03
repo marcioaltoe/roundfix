@@ -26,6 +26,7 @@ import (
 )
 
 func TestGuidanceCompositionJourney(t *testing.T) {
+	t.Parallel()
 	binary := buildBaselineReleaseBinary(t)
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
@@ -44,6 +45,7 @@ func TestGuidanceCompositionJourney(t *testing.T) {
 }
 
 func TestProjectDecisionJourney(t *testing.T) {
+	t.Parallel()
 	t.Run("human and automation answers produce one Plan", TestProjectDecisionParity)
 	t.Run("compatible decisions are reused on update", TestProjectDecisionReuse)
 	t.Run("Fluxus-style defaults retain the persisted HTTP exception", TestBetterAuthSuggestionReusesFullHTTPException)
@@ -151,6 +153,7 @@ func testBaselineReleaseProfileJourney(t *testing.T, binary, profile string) {
 }
 
 func TestSemanticRedistributionJourney(t *testing.T) {
+	t.Parallel()
 	binary := buildBaselineReleaseBinary(t)
 	for _, carrier := range []string{
 		"docs/agents/repository.md",
@@ -265,6 +268,7 @@ func TestSemanticRedistributionJourney(t *testing.T) {
 }
 
 func TestProfileAdaptationJourney(t *testing.T) {
+	t.Parallel()
 	binary := buildBaselineReleaseBinary(t)
 	repo, input, decisions := baselinePlanProfileFileFixture(t)
 	seedBaselineReleaseSourceManifest(t, repo, input.SourceProfileID)
@@ -358,6 +362,7 @@ func TestProfileAdaptationJourney(t *testing.T) {
 }
 
 func TestBaselineMacroJourneysPublicCLI(t *testing.T) {
+	t.Parallel()
 	binary := buildBaselineReleaseBinary(t)
 
 	t.Run("greenfield automation apply and empty reapply", func(t *testing.T) {
@@ -491,11 +496,13 @@ func TestBaselineMacroJourneysPublicCLI(t *testing.T) {
 }
 
 func TestBaselineFindingRegressionsHumanReview(t *testing.T) {
+	t.Parallel()
 	t.Run("decisions use one consolidated review", TestConsolidatedReview)
 	t.Run("file projection precedes canonical ledgers", TestRejectedPlanRevision)
 }
 
 func TestBaselineDocumentationContractExamples(t *testing.T) {
+	t.Parallel()
 	t.Run("public examples parse", TestBaselineExamplesParse)
 	t.Run("Decision Documents parse", TestBaselineDecisionExamples)
 }
