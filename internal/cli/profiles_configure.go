@@ -47,10 +47,7 @@ type profilesConfigureProfile struct {
 	Fallbacks []roundconfig.AgentSelection `json:"fallbacks"`
 }
 
-var profilesConfigureInput = func() io.Reader { return os.Stdin }
-var confirmProfilesConfigure = defaultConfirmProfilesConfigure
-
-func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("profiles configure"))
 		return exitOK
@@ -59,6 +56,10 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	if err != nil {
 		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{}, err, stdout, stderr)
 	}
+	loadOptions, err := environment.loadOptions(stderr)
+	if err != nil {
+		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{Scope: req.scope}, err, stdout, stderr)
+	}
 
 	profiles, err := profilesForConfigureRequest(ctx, req, stderr)
 	if err != nil {
@@ -66,6 +67,8 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	}
 	proposal, err := roundconfig.PrepareProfilesConfig(ctx, roundconfig.ProfileConfigOptions{
 		Scope:    req.scope,
+		HomeDir:  loadOptions.HomeDir,
+		WorkDir:  loadOptions.WorkDir,
 		Profiles: profiles,
 		Removals: req.removals,
 	})
@@ -73,9 +76,9 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{Scope: req.scope}, err, stdout, stderr)
 	}
 	result := proposal.Result()
-	workDir, err := os.Getwd()
+	workDir, err := environment.resolveWorkDir("resolve profiles configure proof working directory")
 	if err != nil {
-		return printProfilesConfigureError(req, result, fmt.Errorf("resolve profiles configure proof working directory: %w", err), stdout, stderr)
+		return printProfilesConfigureError(req, result, err, stdout, stderr)
 	}
 	proofProfiles, proofCategories := profilesConfigureProofScope(result.Changes)
 	readiness := proveProfileSelections(
@@ -83,7 +86,7 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 		roundconfig.Config{Profiles: proofProfiles},
 		proofCategories,
 		workDir,
-		newEngineCollaborators().runner,
+		commandDependenciesForContext(ctx).newEngineCollaborators().runner,
 	)
 	if readiness.Err != nil {
 		return printProfilesConfigureError(req, result, readiness.Err, stdout, stderr)
@@ -102,7 +105,7 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	}
 
 	if !req.yes {
-		confirmed, err := confirmProfilesConfigure(ctx, stderr, preview)
+		confirmed, err := commandDependenciesForContext(ctx).confirmProfilesConfigure(ctx, stderr, preview)
 		if err != nil {
 			return printProfilesConfigureError(req, result, err, stdout, stderr)
 		}
@@ -191,7 +194,7 @@ func profilesForConfigureRequest(ctx context.Context, req profilesConfigureReque
 	if len(req.removals) > 0 {
 		return roundconfig.Profiles{}, nil
 	}
-	return collectProfilesConfigureInput(ctx, profilesConfigureInput(), stderr)
+	return collectProfilesConfigureInput(ctx, commandDependenciesForContext(ctx).profilesConfigureInput(), stderr)
 }
 
 func collectProfilesConfigureInput(ctx context.Context, input io.Reader, output io.Writer) (roundconfig.Profiles, error) {
@@ -324,7 +327,7 @@ func defaultConfirmProfilesConfigure(ctx context.Context, stderr io.Writer, prev
 	if _, err := fmt.Fprint(stderr, "Write this Agent Selection Profile config? [y/N]: "); err != nil {
 		return false, fmt.Errorf("write profiles configure confirmation prompt: %w", err)
 	}
-	line, err := bufio.NewReader(profilesConfigureInput()).ReadString('\n')
+	line, err := bufio.NewReader(commandDependenciesForContext(ctx).profilesConfigureInput()).ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
 		return false, fmt.Errorf("read profiles configure confirmation prompt: %w", err)
 	}

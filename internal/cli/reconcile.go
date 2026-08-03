@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"roundfix/internal/app"
-	roundconfig "roundfix/internal/config"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -63,7 +62,7 @@ type reconcileReport struct {
 	Summary       reconcileSummary  `json:"summary"`
 }
 
-func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("reconcile"))
 		return exitOK
@@ -74,7 +73,7 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+	loaded, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		printReconcileValidationFailure(err, stderr)
 		return exitPreflight

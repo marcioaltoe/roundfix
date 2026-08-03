@@ -32,7 +32,7 @@ var (
 	releasePlanCommandGHRunner  preflight.GHRunner  = preflight.ExecGHRunner{}
 )
 
-func runReleaseCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runReleaseCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if len(args) == 0 {
 		fmt.Fprint(stdout, commandUsage("release"))
 		return exitOK
@@ -42,14 +42,14 @@ func runReleaseCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		fmt.Fprint(stdout, commandUsage("release"))
 		return exitOK
 	case "plan":
-		return runReleasePlanCommand(ctx, args[1:], stdout, stderr)
+		return runReleasePlanCommand(ctx, args[1:], stdout, stderr, environment)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown release command %q; run '%s release --help' for usage\n", app.Name, args[0], app.Name)
 		return exitPreflight
 	}
 }
 
-func runReleasePlanCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runReleasePlanCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("release plan"))
 		return exitOK
@@ -62,10 +62,15 @@ func runReleasePlanCommand(ctx context.Context, args []string, stdout, stderr io
 	}
 
 	if req.resetTo != "" {
-		return runReleaseResetPlanCommand(ctx, req, stdout, stderr)
+		return runReleaseResetPlanCommand(ctx, req, stdout, stderr, environment)
 	}
 
-	source := newReleasePlanGitSource("", releasePlanCommandGitRunner)
+	workDir, err := environment.resolveWorkDir("resolve release plan working directory")
+	if err != nil {
+		printReleasePlanFailure(err, stderr)
+		return exitPreflight
+	}
+	source := newReleasePlanGitSource(workDir, commandDependenciesForContext(ctx).releasePlanGitRunner)
 	plan, err := releaseplan.Build(ctx, releaseplan.Request{
 		From:         req.from,
 		To:           req.to,
@@ -92,8 +97,13 @@ func runReleasePlanCommand(ctx context.Context, args []string, stdout, stderr io
 	return releasePlanExitCode(plan.State)
 }
 
-func runReleaseResetPlanCommand(ctx context.Context, req releasePlanCommandRequest, stdout, stderr io.Writer) int {
-	source := newReleasePlanResetSource("", releasePlanCommandGitRunner, releasePlanCommandGHRunner)
+func runReleaseResetPlanCommand(ctx context.Context, req releasePlanCommandRequest, stdout, stderr io.Writer, environment commandEnvironment) int {
+	workDir, err := environment.resolveWorkDir("resolve release plan working directory")
+	if err != nil {
+		printReleasePlanFailure(err, stderr)
+		return exitPreflight
+	}
+	source := newReleasePlanResetSource(workDir, commandDependenciesForContext(ctx).releasePlanGitRunner, commandDependenciesForContext(ctx).releasePlanGHRunner)
 	target, err := source.ResolveTarget(ctx)
 	if err != nil {
 		printReleasePlanFailure(err, stderr)

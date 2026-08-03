@@ -32,17 +32,17 @@ type baselineProfileResult struct {
 	NextAction    string                     `json:"nextAction,omitempty"`
 }
 
-func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if len(args) == 1 && commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline"))
 		return exitOK
 	}
 	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		return runBaselineHumanCommand(ctx, args, stdout, stderr)
+		return runBaselineHumanCommand(ctx, args, stdout, stderr, environment)
 	}
 	switch args[0] {
 	case "plan":
-		return runBaselinePlanCommand(ctx, args[1:], stdout, stderr)
+		return runBaselinePlanCommand(ctx, args[1:], stdout, stderr, environment)
 	case "apply":
 		return runBaselineApplyCommand(ctx, args[1:], stdout, stderr)
 	case "capabilities":
@@ -56,9 +56,9 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 			)
 			return exitPreflight
 		}
-		return runBaselineCapabilitiesCheckCommand(ctx, args[2:], stdout, stderr)
+		return runBaselineCapabilitiesCheckCommand(ctx, args[2:], stdout, stderr, environment)
 	case "profile":
-		return runBaselineProfileCommand(args[1:], stdout, stderr)
+		return runBaselineProfileCommand(args[1:], stdout, stderr, environment)
 	case "skills":
 		if len(args) == 1 || args[1] != "restore" {
 			printBaselineProfileFailure(
@@ -106,6 +106,7 @@ func runBaselineCapabilitiesCheckCommand(
 	args []string,
 	stdout io.Writer,
 	stderr io.Writer,
+	environment commandEnvironment,
 ) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline capabilities check"))
@@ -117,9 +118,15 @@ func runBaselineCapabilitiesCheckCommand(
 		printBaselineCapabilitiesCheckFailure(err, jsonOutput, stdout, stderr)
 		return exitPreflight
 	}
+	executableDirectories, err := environment.executableDirectories("resolve Baseline executable search path")
+	if err != nil {
+		printBaselineCapabilitiesCheckFailure(err, jsonOutput, stdout, stderr)
+		return exitPreflight
+	}
 	result, err := baseline.RecheckCapabilities(ctx, baseline.CapabilityRecheckRequest{
-		Repository: request.repo,
-		ProfileID:  request.profile,
+		Repository:            request.repo,
+		ProfileID:             request.profile,
+		ExecutableDirectories: executableDirectories,
 	})
 	if err != nil {
 		printBaselineCapabilitiesCheckFailure(err, jsonOutput, stdout, stderr)
@@ -234,13 +241,24 @@ func baselineCapabilitiesCheckJSONRequested(args []string) bool {
 	return false
 }
 
-func runBaselinePlanCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runBaselinePlanCommand(
+	ctx context.Context,
+	args []string,
+	stdout io.Writer,
+	stderr io.Writer,
+	environment commandEnvironment,
+) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline plan"))
 		return exitOK
 	}
 	req, err := parseBaselinePlanCommand(args)
 	jsonOutput := req.format == "json" || baselinePlanJSONRequested(args)
+	if err != nil {
+		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
+		return exitPreflight
+	}
+	executableDirectories, err := environment.executableDirectories("resolve Baseline executable search path")
 	if err != nil {
 		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
 		return exitPreflight
@@ -275,11 +293,12 @@ func runBaselinePlanCommand(ctx context.Context, args []string, stdout, stderr i
 		profileDraft = &input
 	}
 	outcome, err := baseline.BuildPlan(ctx, baseline.PlanRequest{
-		Repository:   req.repo,
-		ProfileID:    req.profile,
-		ProfileDraft: profileDraft,
-		Decisions:    decisionInput,
-		Preservation: preservation,
+		Repository:            req.repo,
+		ProfileID:             req.profile,
+		ProfileDraft:          profileDraft,
+		Decisions:             decisionInput,
+		Preservation:          preservation,
+		ExecutableDirectories: executableDirectories,
 	})
 	if err != nil {
 		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
@@ -543,18 +562,18 @@ func baselinePlanJSONRequested(args []string) bool {
 	return false
 }
 
-func runBaselineProfileCommand(args []string, stdout, stderr io.Writer) int {
+func runBaselineProfileCommand(args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if len(args) == 0 || len(args) == 1 && commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline profile"))
 		return exitOK
 	}
 	switch args[0] {
 	case "init":
-		return runBaselineProfileInitCommand(args[1:], stdout, stderr)
+		return runBaselineProfileInitCommand(args[1:], stdout, stderr, environment)
 	case "show":
-		return runBaselineProfileShowCommand(args[1:], stdout, stderr)
+		return runBaselineProfileShowCommand(args[1:], stdout, stderr, environment)
 	case "validate":
-		return runBaselineProfileValidateCommand(args[1:], stdout, stderr)
+		return runBaselineProfileValidateCommand(args[1:], stdout, stderr, environment)
 	default:
 		printBaselineProfileFailure(
 			"profile",
@@ -567,7 +586,7 @@ func runBaselineProfileCommand(args []string, stdout, stderr io.Writer) int {
 	}
 }
 
-func runBaselineProfileInitCommand(args []string, stdout, stderr io.Writer) int {
+func runBaselineProfileInitCommand(args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline profile init"))
 		return exitOK
@@ -588,7 +607,12 @@ func runBaselineProfileInitCommand(args []string, stdout, stderr io.Writer) int 
 		printBaselineProfileFailure("profile.init", validationError{message: "--id is required"}, false, stdout, stderr)
 		return exitPreflight
 	}
-	repoRoot, err := findBaselineRepositoryRoot()
+	workDir, err := environment.resolveWorkDir("resolve Baseline Profile working directory")
+	if err != nil {
+		printBaselineProfileFailure("profile.init", err, false, stdout, stderr)
+		return exitPreflight
+	}
+	repoRoot, err := findBaselineRepositoryRoot(workDir)
 	if err != nil {
 		printBaselineProfileFailure("profile.init", err, false, stdout, stderr)
 		return exitPreflight
@@ -618,7 +642,7 @@ func runBaselineProfileInitCommand(args []string, stdout, stderr io.Writer) int 
 	return exitOK
 }
 
-func runBaselineProfileShowCommand(args []string, stdout, stderr io.Writer) int {
+func runBaselineProfileShowCommand(args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline profile show"))
 		return exitOK
@@ -634,7 +658,12 @@ func runBaselineProfileShowCommand(args []string, stdout, stderr io.Writer) int 
 		printBaselineProfileFailure("profile.show", err, jsonOutput, stdout, stderr)
 		return exitRunFailed
 	}
-	repoRoot, err := findBaselineRepositoryRoot()
+	workDir, err := environment.resolveWorkDir("resolve Baseline Profile working directory")
+	if err != nil {
+		printBaselineProfileFailure("profile.show", err, jsonOutput, stdout, stderr)
+		return exitPreflight
+	}
+	repoRoot, err := findBaselineRepositoryRoot(workDir)
 	if err != nil {
 		printBaselineProfileFailure("profile.show", err, jsonOutput, stdout, stderr)
 		return exitPreflight
@@ -657,7 +686,7 @@ func runBaselineProfileShowCommand(args []string, stdout, stderr io.Writer) int 
 	return exitOK
 }
 
-func runBaselineProfileValidateCommand(args []string, stdout, stderr io.Writer) int {
+func runBaselineProfileValidateCommand(args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline profile validate"))
 		return exitOK
@@ -673,7 +702,12 @@ func runBaselineProfileValidateCommand(args []string, stdout, stderr io.Writer) 
 		printBaselineProfileFailure("profile.validate", err, jsonOutput, stdout, stderr)
 		return exitRunFailed
 	}
-	repoRoot, err := findBaselineRepositoryRoot()
+	workDir, err := environment.resolveWorkDir("resolve Baseline Profile working directory")
+	if err != nil {
+		printBaselineProfileFailure("profile.validate", err, jsonOutput, stdout, stderr)
+		return exitPreflight
+	}
+	repoRoot, err := findBaselineRepositoryRoot(workDir)
 	if err != nil {
 		printBaselineProfileFailure("profile.validate", err, jsonOutput, stdout, stderr)
 		return exitPreflight
@@ -875,11 +909,8 @@ func baselineProfileOutputPath(repoRoot, path string) string {
 	return filepath.ToSlash(relative)
 }
 
-func findBaselineRepositoryRoot() (string, error) {
-	workDir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("resolve current directory: %w", err)
-	}
+func findBaselineRepositoryRoot(workDir string) (string, error) {
+	var err error
 	workDir, err = filepath.Abs(workDir)
 	if err != nil {
 		return "", fmt.Errorf("resolve current directory: %w", err)

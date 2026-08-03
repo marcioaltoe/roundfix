@@ -18,6 +18,8 @@ import (
 )
 
 func TestAssetsSyncCheckIsReadOnlyAndReportsDrift(t *testing.T) {
+	t.Parallel()
+
 	targetRepo, assetRoot := newAssetsSyncTarget(t)
 	sourceDir, _ := newAssetsSyncSource(t, assetRoot)
 	before := captureAssetsSyncTree(t, assetRoot)
@@ -48,6 +50,8 @@ func TestAssetsSyncCheckIsReadOnlyAndReportsDrift(t *testing.T) {
 }
 
 func TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent(t *testing.T) {
+	t.Parallel()
+
 	targetRepo, assetRoot := newAssetsSyncTarget(t)
 	sourceDir, revision := newAssetsSyncSource(t, assetRoot)
 	beforeOwnedDigest := assetsSyncOwnedDigest(t, filepath.Join(assetRoot, "setups", "go-cli.json"))
@@ -114,6 +118,8 @@ func TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent(t *testin
 }
 
 func TestAssetsSyncProvenanceAndPreMutationRefusals(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		mutate func(t *testing.T, sourceDir string)
@@ -233,6 +239,8 @@ func TestAssetsSyncProvenanceAndPreMutationRefusals(t *testing.T) {
 }
 
 func TestAssetsSyncRollbackRestoresCompleteAssetPreimage(t *testing.T) {
+	t.Parallel()
+
 	targetRepo, assetRoot := newAssetsSyncTarget(t)
 	sourceDir, _ := newAssetsSyncSource(t, assetRoot)
 	before := captureAssetsSyncTree(t, assetRoot)
@@ -264,6 +272,8 @@ func TestAssetsSyncRollbackRestoresCompleteAssetPreimage(t *testing.T) {
 }
 
 func TestAssetsSyncCompatibilityMatchesMaintainedPythonContract(t *testing.T) {
+	t.Parallel()
+
 	targetRepo, assetRoot := newAssetsSyncTarget(t)
 	sourceDir, revision := newAssetsSyncSource(t, assetRoot)
 

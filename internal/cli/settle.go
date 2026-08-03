@@ -85,7 +85,7 @@ type settleSurfaceReport struct {
 	status string
 }
 
-func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, settleUsage)
 		return exitOK
@@ -95,13 +95,13 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printPreflightFailure("settle", err, stderr)
 		return exitPreflight
 	}
-	plan, err := preflightSettle(ctx, req, stderr)
+	plan, err := preflightSettle(ctx, req, stderr, environment)
 	if err != nil {
 		printPreflightFailure("settle", err, stderr)
 		return exitPreflight
 	}
 
-	collaborators := newEngineCollaborators()
+	collaborators := commandDependenciesForContext(ctx).newEngineCollaborators()
 	verificationRunID := settleVerificationRunID(plan)
 	fmt.Fprintf(stderr, "Settle surface: %s\n", plan.workDir)
 	for _, command := range plan.task.Verification {
@@ -186,12 +186,16 @@ func parseSettleCommand(args []string) (settleRequest, error) {
 	return req, nil
 }
 
-func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer) (settlePlan, error) {
-	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer, environment commandEnvironment) (settlePlan, error) {
+	loadedConfig, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		return settlePlan{}, err
 	}
-	gitState, err := preflight.InspectGit(ctx, loadedConfig.GitRoot, nil)
+	gitWorkDir := loadedConfig.GitRoot
+	if strings.TrimSpace(gitWorkDir) == "" {
+		gitWorkDir = environment.workDir
+	}
+	gitState, err := preflight.InspectGit(ctx, gitWorkDir, nil)
 	if err != nil {
 		return settlePlan{}, validationError{message: fmt.Sprintf("repository resolves: %v", err)}
 	}
@@ -546,7 +550,7 @@ func integrateSettledRun(ctx context.Context, plan settlePlan) (string, error) {
 	if result.Mode == runworktree.ModePending {
 		return implementIntegrationCommand(ref), nil
 	}
-	if err := cleanupCleanRunWorktree(ctx, ref); err != nil {
+	if err := commandDependenciesForContext(ctx).cleanupCleanRunWorktree(ctx, ref); err != nil {
 		return "", err
 	}
 	return "", nil

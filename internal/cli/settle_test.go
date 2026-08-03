@@ -18,6 +18,7 @@ import (
 )
 
 func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -32,7 +33,7 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -64,6 +65,7 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 }
 
 func TestRunSettleWarnsWhenOtherSpecTasksAreFailed(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Recover the completed work", status: string(spec.StatusFailed), verification: []string{"true"}},
 		{id: "task_02", title: "Other failed work", status: string(spec.StatusFailed)},
@@ -73,7 +75,7 @@ func TestRunSettleWarnsWhenOtherSpecTasksAreFailed(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -94,6 +96,7 @@ func TestRunSettleWarnsWhenOtherSpecTasksAreFailed(t *testing.T) {
 }
 
 func TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
@@ -107,7 +110,7 @@ func TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -125,6 +128,7 @@ func TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning(t *testing.T) {
 }
 
 func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
@@ -142,7 +146,7 @@ func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -169,6 +173,7 @@ func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
 }
 
 func TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -190,7 +195,7 @@ func TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected unresolved implement exit, got %d stderr=%q", code, stderr.String())
@@ -205,7 +210,7 @@ func TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *
 	stdout.Reset()
 	stderr.Reset()
 
-	code = RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code = runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q", code, stderr.String())
@@ -236,6 +241,7 @@ func TestSettleTaskStatusRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *
 }
 
 func TestRunSettleSkipsStaleKeptRunWorktreeAndUsesFailedCheckout(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -258,7 +264,7 @@ func TestRunSettleSkipsStaleKeptRunWorktreeAndUsesFailedCheckout(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -276,6 +282,7 @@ func TestRunSettleSkipsStaleKeptRunWorktreeAndUsesFailedCheckout(t *testing.T) {
 }
 
 func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -296,7 +303,7 @@ func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testin
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q", code, stderr.String())
@@ -331,6 +338,7 @@ func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testin
 }
 
 func TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -360,7 +368,7 @@ func TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected settle conflict exit 1, got %d", code)
@@ -390,6 +398,7 @@ func TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces(t *testing.T) {
 }
 
 func TestRunSettleRefusalEnumeratesCandidateStatuses(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:           "task_01",
@@ -410,7 +419,7 @@ func TestRunSettleRefusalEnumeratesCandidateStatuses(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected preflight exit 2, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -432,6 +441,7 @@ func TestRunSettleRefusalEnumeratesCandidateStatuses(t *testing.T) {
 }
 
 func TestRunSettleRequiresSpecAndTask(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		args    []string
@@ -451,12 +461,11 @@ func TestRunSettleRequiresSpecAndTask(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			homeDir := t.TempDir()
-			t.Setenv("HOME", homeDir)
-			t.Chdir(t.TempDir())
+			setCommandEnvironmentForTest(t, homeDir, t.TempDir())
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected exit code 2, got %d", code)
@@ -473,6 +482,7 @@ func TestRunSettleRequiresSpecAndTask(t *testing.T) {
 }
 
 func TestRunSettlePreflightRefusalsWriteNothing(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		setup   func(t *testing.T) (homeDir string, repoDir string, taskPath string)
@@ -484,8 +494,7 @@ func TestRunSettlePreflightRefusalsWriteNothing(t *testing.T) {
 			setup: func(t *testing.T) (string, string, string) {
 				homeDir := t.TempDir()
 				repoDir := t.TempDir()
-				t.Setenv("HOME", homeDir)
-				t.Chdir(repoDir)
+				setCommandEnvironmentForTest(t, homeDir, repoDir)
 				return homeDir, repoDir, ""
 			},
 			args:    []string{"settle", "--spec", implementTestSlug, "--task", "task_01"},
@@ -554,7 +563,7 @@ func TestRunSettlePreflightRefusalsWriteNothing(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
@@ -582,6 +591,7 @@ func TestRunSettlePreflightRefusalsWriteNothing(t *testing.T) {
 }
 
 func TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{
 			id:     "task_01",
@@ -601,7 +611,7 @@ func TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
@@ -632,6 +642,7 @@ func TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched(t *testing.T) {
 }
 
 func TestRunSettleActiveRunOnSameWorkingTreeBlocks(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusFailed)}})
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
@@ -660,7 +671,7 @@ func TestRunSettleActiveRunOnSameWorkingTreeBlocks(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
@@ -702,10 +713,11 @@ func TestRunSettleActiveRunOnSameWorkingTreeBlocks(t *testing.T) {
 }
 
 func TestRunSettleHelpDocumentsContract(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--help"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--help"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -727,7 +739,7 @@ func TestRunSettleHelpDocumentsContract(t *testing.T) {
 
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(context.Background(), []string{"--help"}, &stdout, &stderr)
+	code = runCLIContext(t, context.Background(), []string{"--help"}, &stdout, &stderr)
 	if code != exitOK {
 		t.Fatalf("expected top-level help exit 0, got %d", code)
 	}

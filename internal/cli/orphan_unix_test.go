@@ -25,6 +25,7 @@ import (
 )
 
 func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid, ownerWait := startCLIForceStopOwnerProcess(t)
 	ownerIdentity, err := store.OwnerProcessIdentity(context.Background(), pid)
@@ -94,7 +95,7 @@ func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *t
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -125,6 +126,7 @@ func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *t
 // with the identity token of a different (exited) owner, so Force Stop must
 // refuse before sending any signal, exactly as it must for a reused PID.
 func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid, _ := startCLIForceStopOwnerProcess(t)
 	request := store.CreateRunRequest{
@@ -151,7 +153,7 @@ func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
@@ -193,6 +195,7 @@ func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
 // token keeps the legacy PID-only proof instead of bricking the manual
 // escape hatch.
 func TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid, ownerWait := startCLIForceStopOwnerProcess(t)
 	runStore, err := store.Open(context.Background(), homeDir)
@@ -217,7 +220,7 @@ func TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner(t *testing.T) 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("legacy force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -237,6 +240,7 @@ func TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner(t *testing.T) 
 }
 
 func TestCLIForceStopOwnerProcessHelper(t *testing.T) {
+	// Sequential: registers process-wide SIGTERM handling required by the helper process.
 	if os.Getenv("ROUNDFIX_CLI_FORCE_STOP_OWNER_HELPER") == "" {
 		return
 	}
@@ -291,6 +295,7 @@ func startCLIForceStopOwnerProcess(t *testing.T) (int, <-chan error) {
 }
 
 func TestRunImplementReclaimsDeadOwnerActiveRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -302,7 +307,7 @@ func TestRunImplementReclaimsDeadOwnerActiveRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement to proceed after reclaim, got %d stderr=%q", code, stderr.String())
@@ -315,6 +320,7 @@ func TestRunImplementReclaimsDeadOwnerActiveRun(t *testing.T) {
 }
 
 func TestRunSettleReclaimsDeadOwnerActiveRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:           "task_01",
 		status:       string(spec.StatusFailed),
@@ -326,7 +332,7 @@ func TestRunSettleReclaimsDeadOwnerActiveRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected settle to proceed after reclaim, got %d stderr=%q", code, stderr.String())
@@ -339,6 +345,7 @@ func TestRunSettleReclaimsDeadOwnerActiveRun(t *testing.T) {
 }
 
 func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pid := reapedCLIProcessPID(t)
@@ -346,7 +353,7 @@ func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected fetch to proceed after reclaim, got %d stderr=%q", code, stderr.String())
@@ -359,6 +366,7 @@ func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
 }
 
 func TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	live := seedReviewActiveRun(t, homeDir, repoDir, store.KindWatch, os.Getpid())
@@ -367,7 +375,7 @@ func TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected fetch to block on older live Run after reclaim, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -386,6 +394,7 @@ func TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan(t *testing.T) {
 // A terminal Run with a dead owner must never be "reclaimed" by stop: the
 // existing terminal-Run error stands, and no state or lock changes.
 func TestStopTerminalRunWithDeadOwnerKeepsTerminalError(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid := reapedCLIProcessPID(t)
 	seeded := seedReviewActiveRun(t, homeDir, repoDir, store.KindResolve, pid)
@@ -402,7 +411,7 @@ func TestStopTerminalRunWithDeadOwnerKeepsTerminalError(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", seeded.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", seeded.ID}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected terminal-Run stop refusal exit 2, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())

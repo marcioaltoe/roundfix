@@ -25,7 +25,7 @@ Exit codes:
   2  Preflight Validation failed
 `
 
-func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, archiveUsage)
 		return exitOK
@@ -35,7 +35,7 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+	loaded, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight

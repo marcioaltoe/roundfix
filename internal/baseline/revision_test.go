@@ -13,6 +13,8 @@ import (
 )
 
 func TestScopedRevisionProposal(t *testing.T) {
+	t.Parallel()
+
 	plan := buildTestPlan(t, newPlanRepository(t))
 	snapshot, err := NewRevisionSnapshot(plan, RevisionAreaDivergences, "disable spec scaffolding")
 	if err != nil {
@@ -46,6 +48,8 @@ func TestScopedRevisionProposal(t *testing.T) {
 }
 
 func TestRevisionOutOfScope(t *testing.T) {
+	t.Parallel()
+
 	plan := buildTestPlan(t, newPlanRepository(t))
 	snapshot, err := NewRevisionSnapshot(plan, RevisionAreaFiles, "write an arbitrary deployment file")
 	if err != nil {
@@ -92,6 +96,8 @@ func TestRevisionOutOfScope(t *testing.T) {
 }
 
 func TestRejectedPlanRevision(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	original := buildTestPlan(t, repo)
 	decisions := planTestDecisions()
@@ -116,6 +122,8 @@ func TestRejectedPlanRevision(t *testing.T) {
 }
 
 func TestRevisionRequiresNewApproval(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	original := buildTestPlan(t, repo)
 	decisions := planTestDecisions()

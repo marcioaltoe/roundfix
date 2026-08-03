@@ -15,6 +15,7 @@ import (
 )
 
 func TestRunGCDryRunListsEligibleRunsAndChangesNothing(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
 	artifactDir := filepath.Join(homeDir, "artifacts")
@@ -26,7 +27,7 @@ func TestRunGCDryRunListsEligibleRunsAndChangesNothing(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"gc", "--dry-run"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"gc", "--dry-run"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected gc --dry-run exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -60,6 +61,7 @@ func TestRunGCDryRunListsEligibleRunsAndChangesNothing(t *testing.T) {
 }
 
 func TestRunGCPrunesEligibleJournalsArtifactsAndOrphans(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
 	artifactDir := filepath.Join(homeDir, "artifacts")
@@ -71,7 +73,7 @@ func TestRunGCPrunesEligibleJournalsArtifactsAndOrphans(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"gc"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"gc"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected gc exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -106,6 +108,7 @@ func TestRunGCPrunesEligibleJournalsArtifactsAndOrphans(t *testing.T) {
 }
 
 func TestRunGCSkipsWhenJournalRetentionIsZero(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
 	artifactDir := filepath.Join(homeDir, "artifacts")
@@ -117,7 +120,7 @@ func TestRunGCSkipsWhenJournalRetentionIsZero(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"gc"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"gc"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected gc zero-retention exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -137,10 +140,11 @@ func TestRunGCSkipsWhenJournalRetentionIsZero(t *testing.T) {
 }
 
 func TestRunGCHelp(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"gc", "--help"}, &stdout, &stderr)
+	code := runCLI(t, []string{"gc", "--help"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected gc --help exit 0, got %d", code)
@@ -162,11 +166,10 @@ func TestRunGCHelp(t *testing.T) {
 
 func withGCNow(t *testing.T, now time.Time) {
 	t.Helper()
-	previous := gcDeps
-	gcDeps = defaultGCDependencies()
-	gcDeps.now = func() time.Time { return now }
-	t.Cleanup(func() {
-		gcDeps = previous
+	dependencies := defaultGCDependencies()
+	dependencies.now = func() time.Time { return now }
+	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
+		commandDependencies.gc = dependencies
 	})
 }
 

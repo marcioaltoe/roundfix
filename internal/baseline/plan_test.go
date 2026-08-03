@@ -22,6 +22,8 @@ import (
 )
 
 func TestPlanDocumentStrictCodecs(t *testing.T) {
+	t.Parallel()
+
 	plan := buildTestPlan(t, newPlanRepository(t))
 	encoded, err := MarshalPlanDocument(plan)
 	if err != nil {
@@ -65,6 +67,8 @@ func TestPlanDocumentStrictCodecs(t *testing.T) {
 }
 
 func TestFileChangesProjectionRejectsMismatch(t *testing.T) {
+	t.Parallel()
+
 	plan := buildTestPlan(t, newPlanRepository(t))
 	if len(plan.FileChanges) == 0 {
 		t.Fatal("plan has no file changes")
@@ -78,6 +82,8 @@ func TestFileChangesProjectionRejectsMismatch(t *testing.T) {
 }
 
 func TestPlanDigestBindsExactPostimagesAndIgnoresProjection(t *testing.T) {
+	t.Parallel()
+
 	plan := buildTestPlan(t, newPlanRepository(t))
 	original := plan.PlanDigest
 
@@ -107,6 +113,8 @@ func TestPlanDigestBindsExactPostimagesAndIgnoresProjection(t *testing.T) {
 }
 
 func TestCrossClonePlanAcceptsMatchingIdentityAndPreimages(t *testing.T) {
+	t.Parallel()
+
 	source := newPlanRepository(t)
 	plan := buildTestPlan(t, source)
 	clone := filepath.Join(t.TempDir(), "clone")
@@ -122,6 +130,8 @@ func TestCrossClonePlanAcceptsMatchingIdentityAndPreimages(t *testing.T) {
 }
 
 func TestPlanDeterminismAndNoMutation(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	before := testRepositoryDigest(t, repo)
 	first := buildTestPlan(t, repo)
@@ -149,20 +159,17 @@ func TestPlanDeterminismAndNoMutation(t *testing.T) {
 }
 
 func TestRegenerationLoadsCatalogOnce(t *testing.T) {
-	originalAssets := embeddedAssets
+	t.Parallel()
+
 	assets := newGoldenDigestCycleFixture(t)
 	countedAssets := &catalogLoadCountingFS{FS: assets}
-	embeddedAssets = countedAssets
-	t.Cleanup(func() {
-		embeddedAssets = originalAssets
-	})
 
-	catalog, err := loadEmbeddedCatalogForRegeneration()
+	catalog, err := loadCatalogForRegeneration(countedAssets)
 	if err != nil {
 		t.Fatalf("load regeneration catalog: %v", err)
 	}
 	if countedAssets.loads != 1 {
-		t.Fatalf("initial regeneration embedded catalog loads = %d, want 1", countedAssets.loads)
+		t.Fatalf("initial regeneration catalog loads = %d, want 1", countedAssets.loads)
 	}
 	repository := newAlignedTypeScriptRepository(t)
 	runPlanGit(t, repository, "init", "-q")
@@ -218,7 +225,7 @@ func TestRegenerationLoadsCatalogOnce(t *testing.T) {
 		t.Fatalf("reapply regeneration plan result = %+v", result)
 	}
 	if countedAssets.loads != 1 {
-		t.Fatalf("regeneration embedded catalog loads = %d, want 1", countedAssets.loads)
+		t.Fatalf("regeneration catalog loads = %d, want 1", countedAssets.loads)
 	}
 
 	_, err = LoadCatalog(assets)
@@ -238,6 +245,10 @@ func (counted *catalogLoadCountingFS) Open(name string) (fs.File, error) {
 }
 
 func TestFormatterComposition(t *testing.T) {
+	// Sequential: can rewrite shared formatter fixtures when the update flag is enabled.
+	if !*updateBaselineDigests {
+		t.Parallel()
+	}
 	repository := newAlignedTypeScriptRepository(t)
 	runPlanGit(t, repository, "init", "-q")
 	runPlanGit(t, repository, "config", "user.email", "fixture@example.invalid")
@@ -420,6 +431,8 @@ func updateBaselineFormatterGoldenDigest(t *testing.T, oldDigest, newDigest stri
 }
 
 func TestInstructionHierarchyRendersActivePointersOnce(t *testing.T) {
+	t.Parallel()
+
 	plan := buildTestPlan(t, newPlanRepository(t))
 	agents := string(planPostimage(t, plan, "AGENTS.md").Content)
 
@@ -466,6 +479,8 @@ func TestInstructionHierarchyRendersActivePointersOnce(t *testing.T) {
 }
 
 func TestInstructionHierarchyPreservesPlanAndResultSchemas(t *testing.T) {
+	t.Parallel()
+
 	plan := buildTestPlan(t, newPlanRepository(t))
 	planJSON, err := MarshalPlanDocument(plan)
 	if err != nil {
@@ -503,6 +518,8 @@ func TestInstructionHierarchyPreservesPlanAndResultSchemas(t *testing.T) {
 }
 
 func TestADRLifecycleContract(t *testing.T) {
+	t.Parallel()
+
 	docsLayout := string(planPostimage(
 		t,
 		buildTestPlan(t, newPlanRepository(t)),
@@ -573,6 +590,8 @@ func TestADRLifecycleContract(t *testing.T) {
 }
 
 func TestFindingsOperationalContract(t *testing.T) {
+	t.Parallel()
+
 	docsLayout := string(planPostimage(
 		t,
 		buildTestPlan(t, newPlanRepository(t)),
@@ -642,6 +661,8 @@ func adrFixtureIsActive(content []byte) bool {
 }
 
 func TestGreenfieldRepositoryExtensionDoesNotCreateEmptyCarrier(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	plan := buildPlanWithRepositoryExtension(t, repo)
 
@@ -700,6 +721,8 @@ func planReadyResult(t *testing.T, plan PlanDocument) Result {
 }
 
 func TestRepositoryExtensionMigratesOneLegacyCarrier(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	const rules = "# Repository rules\n\nKeep the Fluxus boundary explicit.\n"
 	writeInspectionFile(t, repo, "docs/agents/repository.md", rules)
@@ -722,6 +745,8 @@ func TestRepositoryExtensionMigratesOneLegacyCarrier(t *testing.T) {
 }
 
 func TestRepositoryExtensionDropsLegacyEmptyScaffold(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	writeInspectionFile(
 		t,
@@ -749,6 +774,8 @@ func TestRepositoryExtensionDropsLegacyEmptyScaffold(t *testing.T) {
 }
 
 func TestRepositoryExtensionRejectsDivergentLegacyCarriers(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	writeInspectionFile(t, repo, "docs/agents/repository.md", "first repository rule\n")
 	writeInspectionFile(t, repo, "docs/agents/repository-rules.md", "different repository rule\n")
@@ -773,6 +800,8 @@ func TestRepositoryExtensionRejectsDivergentLegacyCarriers(t *testing.T) {
 }
 
 func TestDisabledRepositoryExtensionRejectsNonemptyLegacyCarrier(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	writeInspectionFile(t, repo, legacyRepositoryPath, "keep this repository rule\n")
 	commitInspectionRepository(t, repo, "seed legacy repository rules")
@@ -796,6 +825,8 @@ func TestDisabledRepositoryExtensionRejectsNonemptyLegacyCarrier(t *testing.T) {
 }
 
 func TestSemanticRuleDistributionMovesExactBytesAndAccountsLedgers(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	semanticRule := []byte("Keep requested CLI output on stdout.\n")
 	residualRule := []byte("Keep the repository-specific release name.\n")
@@ -932,6 +963,8 @@ func TestSemanticRuleDistributionMovesExactBytesAndAccountsLedgers(t *testing.T)
 }
 
 func TestPreservationSemanticRedistributionConverges(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	rule := []byte("Keep the repository release name stable.\n")
 	writeInspectionFile(t, repo, "AGENTS.md", string(rule))
@@ -987,6 +1020,8 @@ func TestPreservationSemanticRedistributionConverges(t *testing.T) {
 }
 
 func TestPreservationLaterUnmarkedAdditionConverges(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	initialRule := []byte("Keep CLI diagnostics on stderr for this repository.\n")
 	writeInspectionFile(t, repo, "AGENTS.md", string(initialRule))
@@ -1107,6 +1142,8 @@ func TestPreservationLaterUnmarkedAdditionConverges(t *testing.T) {
 }
 
 func TestPreservationPreviouslyBackedUpRootGuidanceIsNotReclassified(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name        string
 		disposition string
@@ -1223,6 +1260,8 @@ func TestPreservationPreviouslyBackedUpRootGuidanceIsNotReclassified(t *testing.
 }
 
 func TestPreservationPreviouslyBackedUpRootGuidanceExposesOnlyLaterAddition(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	approved := []byte("Keep the already approved root rule.\n")
 	writeInspectionFile(t, repo, "AGENTS.md", string(approved))
@@ -1416,6 +1455,8 @@ func buildSemanticCarrierPlan(t *testing.T, repo, carrierPath string) PlanDocume
 }
 
 func TestResidualCarrierRemovesAllRecognizedEmptyResults(t *testing.T) {
+	t.Parallel()
+
 	for _, carrierPath := range []string{
 		specificRepositoryPath,
 		legacyRepositoryPath,
@@ -1496,6 +1537,8 @@ func TestResidualCarrierRemovesAllRecognizedEmptyResults(t *testing.T) {
 }
 
 func TestNestedCarrierRemainsByteIdenticalAndWarningOnly(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	const nestedPath = "services/payments/AGENTS.md"
 	nested := []byte("Keep this nested repository policy byte-identical.\r\n")
@@ -1531,6 +1574,8 @@ func TestNestedCarrierRemainsByteIdenticalAndWarningOnly(t *testing.T) {
 }
 
 func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
+	t.Parallel()
+
 	fixturePath := filepath.Join(
 		"testdata", "parity-corpus", "v1", "fixtures", "greenfield-go-cli-tui.json",
 	)
@@ -1638,6 +1683,8 @@ func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 }
 
 func TestPlanDocumentMissingDecisionsReturnsResultWithoutPartialPlan(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	outcome, err := BuildPlan(context.Background(), PlanRequest{
 		Repository: repo,
@@ -1696,6 +1743,8 @@ func TestToolingAuthorityClause(t *testing.T) {
 }
 
 func TestIdentifierStrategyDecision(t *testing.T) {
+	t.Parallel()
+
 	catalog := mustEmbeddedCatalog(t)
 	profile, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
 	if err != nil {
@@ -1727,6 +1776,8 @@ func TestIdentifierStrategyDecision(t *testing.T) {
 }
 
 func TestAuthProviderDecision(t *testing.T) {
+	t.Parallel()
+
 	catalog := mustEmbeddedCatalog(t)
 	source, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
 	if err != nil {
@@ -1807,6 +1858,8 @@ func TestAuthProviderDecision(t *testing.T) {
 }
 
 func TestProfileAdaptationRemovesDecisionsWhoseRenderModuleWasRemoved(t *testing.T) {
+	t.Parallel()
+
 	catalog := mustEmbeddedCatalog(t)
 	input, err := NewProfileAdaptationDraft(
 		"standard-typescript-monorepo",
@@ -1860,6 +1913,8 @@ func TestProfileAdaptationRemovesDecisionsWhoseRenderModuleWasRemoved(t *testing
 }
 
 func TestDeriveBetterAuthHTTPContract(t *testing.T) {
+	t.Parallel()
+
 	repository := newProjectDecisionPlanRepository(t)
 	decisions := standardTypeScriptDecisions("make verify")
 	provider := completeAuthProviderDecision()
@@ -1922,6 +1977,8 @@ func TestDeriveBetterAuthHTTPContract(t *testing.T) {
 }
 
 func TestProjectDecisionRendering(t *testing.T) {
+	t.Parallel()
+
 	repository := newProjectDecisionPlanRepository(t)
 	if _, err := os.Stat(filepath.Join(repository, "docs", "adr")); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("repository ADR fixture state = %v, want absent", err)
@@ -1973,6 +2030,8 @@ func TestProjectDecisionRendering(t *testing.T) {
 }
 
 func TestIdentifierGuidance(t *testing.T) {
+	t.Parallel()
+
 	for _, layout := range []string{"single-context", "multi-context"} {
 		t.Run("UUID version 7 scopes the rule for "+layout, func(t *testing.T) {
 			decisions := standardTypeScriptDecisions("make verify")
@@ -2027,6 +2086,8 @@ func TestIdentifierGuidance(t *testing.T) {
 }
 
 func TestBetterAuthGuidance(t *testing.T) {
+	t.Parallel()
+
 	decisions := standardTypeScriptDecisions("make verify")
 	for index := range decisions {
 		if decisions[index].ID == "http.contract" {
@@ -2066,6 +2127,8 @@ func TestBetterAuthGuidance(t *testing.T) {
 }
 
 func TestStructuredRenderSafety(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		mutate func([]DecisionValue)
@@ -2130,6 +2193,8 @@ func TestStructuredRenderSafety(t *testing.T) {
 }
 
 func TestHTTPContractConflict(t *testing.T) {
+	t.Parallel()
+
 	catalog := mustEmbeddedCatalog(t)
 	profile, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
 	if err != nil {
@@ -2214,6 +2279,8 @@ func TestHTTPContractConflict(t *testing.T) {
 }
 
 func TestPlanDocumentIncludesMaintainedUpgradeRetention(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	writeInspectionFile(t, repo, manifestPath, `{
   "schemaVersion": 1,
@@ -2250,6 +2317,8 @@ func TestPlanDocumentIncludesMaintainedUpgradeRetention(t *testing.T) {
 }
 
 func TestSameIdentityDriftRequiresRetention(t *testing.T) {
+	t.Parallel()
+
 	const profileID = "standard-typescript-monorepo"
 	const disappearingClause = "clause.core.keep-follow-ups-outside-slice"
 	repository := newProjectDecisionPlanRepository(t)
@@ -2337,6 +2406,8 @@ func TestSameIdentityDriftRequiresRetention(t *testing.T) {
 }
 
 func TestClauseDeltaRendersBeforeLedger(t *testing.T) {
+	t.Parallel()
+
 	t.Run("accounted dispositions precede unchanged file ledger", func(t *testing.T) {
 		delta := newClauseDelta()
 		clauses := []struct {
@@ -2415,6 +2486,8 @@ func TestClauseDeltaRendersBeforeLedger(t *testing.T) {
 }
 
 func TestReadyPlanNeverCarriesEmptyLedger(t *testing.T) {
+	t.Parallel()
+
 	const changedClause = "clause.core.keep-follow-ups-outside-slice"
 	_, request, target, baselineID := newSameIdentityRetentionDrift(t)
 	changeCatalogClauseGuidance(t, target, "core", changedClause)
@@ -2456,6 +2529,8 @@ func TestReadyPlanNeverCarriesEmptyLedger(t *testing.T) {
 }
 
 func TestDifferentIdentityKeepsExistingTransitionPath(t *testing.T) {
+	t.Parallel()
+
 	repository := newPlanRepository(t)
 	request := PlanRequest{
 		Repository:   repository,
@@ -2636,6 +2711,8 @@ func mutateCatalogClause(
 }
 
 func TestPlanDocumentRejectsUnknownManifestRetentionWithoutPartialPlan(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	writeInspectionFile(t, repo, manifestPath, `{
   "schemaVersion": 1,
@@ -2665,6 +2742,8 @@ func TestPlanDocumentRejectsUnknownManifestRetentionWithoutPartialPlan(t *testin
 }
 
 func TestProfileDraftPlanIncludesCanonicalRepositoryProfile(t *testing.T) {
+	t.Parallel()
+
 	repo := newBackendProfileRepository(t, true)
 	request, draftTemplates := backendProfileDraftPlanRequest(t, repo)
 
@@ -2717,6 +2796,8 @@ func TestProfileDraftPlanIncludesCanonicalRepositoryProfile(t *testing.T) {
 }
 
 func TestProfileDraftPlanAcceptsMatchingSourceBaselineWithoutTransition(t *testing.T) {
+	t.Parallel()
+
 	repo := newBackendProfileRepository(t, true)
 	catalog := mustEmbeddedCatalog(t)
 	source, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
@@ -2764,6 +2845,8 @@ func TestProfileDraftPlanAcceptsMatchingSourceBaselineWithoutTransition(t *testi
 }
 
 func TestProfileDraftPlanRejectsSimultaneousAndConflictingInputs(t *testing.T) {
+	t.Parallel()
+
 	t.Run("simultaneous profile inputs", func(t *testing.T) {
 		repo := newBackendProfileRepository(t, true)
 		request, _ := backendProfileDraftPlanRequest(t, repo)
@@ -2792,6 +2875,8 @@ func TestProfileDraftPlanRejectsSimultaneousAndConflictingInputs(t *testing.T) {
 }
 
 func TestProfileAdaptationCannotRemoveUniversalRequiredCapabilities(t *testing.T) {
+	t.Parallel()
+
 	repo := newBackendProfileRepository(t, false)
 	request, _ := backendProfileDraftPlanRequest(t, repo)
 
@@ -2810,6 +2895,8 @@ func TestProfileAdaptationCannotRemoveUniversalRequiredCapabilities(t *testing.T
 }
 
 func TestProfileAdaptationRejectsInvalidDraftBoundaries(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		mutate func(*ProfileDraftInput, *customProfileDocument)
@@ -2889,6 +2976,8 @@ func TestProfileAdaptationRejectsInvalidDraftBoundaries(t *testing.T) {
 }
 
 func TestProfileDraftPlanRejectsUnsafeTargetParent(t *testing.T) {
+	t.Parallel()
+
 	repo := newBackendProfileRepository(t, true)
 	if err := os.Symlink(t.TempDir(), filepath.Join(repo, ".roundfix")); err != nil {
 		t.Fatalf("create unsafe Profile parent: %v", err)

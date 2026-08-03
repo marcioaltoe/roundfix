@@ -42,6 +42,138 @@ func init() {
 	}
 }
 
+var testCommandEnvironments sync.Map
+var testCommandEnvironmentCleanups sync.Map
+
+type testCommandEnvironmentOverrides struct {
+	homeDir         string
+	homeDirSet      bool
+	workDir         string
+	workDirSet      bool
+	detachFD        string
+	detachTempPath  string
+	detachSet       bool
+	dependencies    commandDependencies
+	dependenciesSet bool
+}
+
+func setCommandEnvironmentForTest(t *testing.T, homeDir, workDir string) {
+	t.Helper()
+	overrides := commandEnvironmentOverridesForTest(t)
+	overrides.homeDir = homeDir
+	overrides.homeDirSet = true
+	overrides.workDir = workDir
+	overrides.workDirSet = true
+	storeCommandEnvironmentOverridesForTest(t, overrides)
+}
+
+func setCommandHomeDirForTest(t *testing.T, homeDir string) {
+	t.Helper()
+	overrides := commandEnvironmentOverridesForTest(t)
+	overrides.homeDir = homeDir
+	overrides.homeDirSet = true
+	storeCommandEnvironmentOverridesForTest(t, overrides)
+}
+
+func setCommandWorkDirForTest(t *testing.T, workDir string) {
+	t.Helper()
+	overrides := commandEnvironmentOverridesForTest(t)
+	overrides.workDir = workDir
+	overrides.workDirSet = true
+	storeCommandEnvironmentOverridesForTest(t, overrides)
+}
+
+func setDetachChildEnvironmentForTest(t *testing.T, fd, tempPath string) {
+	t.Helper()
+	overrides := commandEnvironmentOverridesForTest(t)
+	overrides.detachFD = fd
+	overrides.detachTempPath = tempPath
+	overrides.detachSet = true
+	storeCommandEnvironmentOverridesForTest(t, overrides)
+}
+
+func commandEnvironmentForTest(t *testing.T) commandEnvironment {
+	t.Helper()
+	environment := commandEnvironmentFromProcess()
+	overrides := commandEnvironmentOverridesForTest(t)
+	if overrides.homeDirSet {
+		environment.homeDir = overrides.homeDir
+		environment.homeDirErr = nil
+		environment.environ = withEnvValue(environment.environ, "HOME", overrides.homeDir)
+	}
+	if overrides.workDirSet {
+		environment.workDir = overrides.workDir
+		environment.workDirErr = nil
+	}
+	if overrides.detachSet {
+		environment.detachFD = overrides.detachFD
+		environment.detachTempPath = overrides.detachTempPath
+	}
+	if overrides.dependenciesSet {
+		environment.dependencies = overrides.dependencies
+	}
+	return environment
+}
+
+func updateCommandDependenciesForTest(t *testing.T, mutate func(*commandDependencies)) {
+	t.Helper()
+	overrides := commandEnvironmentOverridesForTest(t)
+	if !overrides.dependenciesSet {
+		overrides.dependencies = defaultCommandDependencies()
+		overrides.dependenciesSet = true
+	}
+	mutate(&overrides.dependencies)
+	storeCommandEnvironmentOverridesForTest(t, overrides)
+}
+
+func commandEnvironmentOverridesForTest(t *testing.T) testCommandEnvironmentOverrides {
+	t.Helper()
+	for name := t.Name(); name != ""; {
+		if overrides, ok := testCommandEnvironments.Load(name); ok {
+			return overrides.(testCommandEnvironmentOverrides)
+		}
+		separator := strings.LastIndex(name, "/")
+		if separator < 0 {
+			break
+		}
+		name = name[:separator]
+	}
+	return testCommandEnvironmentOverrides{}
+}
+
+func storeCommandEnvironmentOverridesForTest(t *testing.T, overrides testCommandEnvironmentOverrides) {
+	t.Helper()
+	name := t.Name()
+	if _, loaded := testCommandEnvironmentCleanups.LoadOrStore(name, struct{}{}); !loaded {
+		t.Cleanup(func() {
+			testCommandEnvironments.Delete(name)
+			testCommandEnvironmentCleanups.Delete(name)
+		})
+	}
+	testCommandEnvironments.Store(name, overrides)
+}
+
+func runCLI(t *testing.T, args []string, stdout, stderr io.Writer) int {
+	t.Helper()
+	ctx, cleanup, interrupted := interruptContext(context.Background())
+	defer cleanup()
+	code := runWithContext(ctx, args, stdout, stderr, commandEnvironmentForTest(t))
+	return exitForInterrupt(code, interrupted())
+}
+
+func runCLIContext(t *testing.T, ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	t.Helper()
+	return runWithContext(ctx, args, stdout, stderr, commandEnvironmentForTest(t))
+}
+
+func commandContextForTest(t *testing.T, ctx context.Context) context.Context {
+	t.Helper()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return contextWithCommandDependencies(ctx, commandEnvironmentForTest(t).dependencies)
+}
+
 type testNoopOutcomeNotifier struct{}
 
 func (testNoopOutcomeNotifier) Notify(context.Context, roundnotify.Outcome) (roundnotify.NotificationReceipt, error) {
@@ -53,10 +185,11 @@ func (testNoopOutcomeNotifier) Notify(context.Context, roundnotify.Outcome) (rou
 }
 
 func TestRunHelp(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"--help"}, &stdout, &stderr)
+	code := runCLI(t, []string{"--help"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -76,12 +209,13 @@ func TestRunHelp(t *testing.T) {
 }
 
 func TestRunVersion(t *testing.T) {
+	t.Parallel()
 	for _, args := range [][]string{{"--version"}, {"version"}, {"-v"}} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(args, &stdout, &stderr)
+			code := runCLI(t, args, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d", code)
@@ -97,11 +231,12 @@ func TestRunVersion(t *testing.T) {
 }
 
 func TestRunInitCreatesProjectConfigWithExplicitScope(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"init", "--scope", "project"}, &stdout, &stderr)
+	code := runCLI(t, []string{"init", "--scope", "project"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -119,11 +254,12 @@ func TestRunInitCreatesProjectConfigWithExplicitScope(t *testing.T) {
 }
 
 func TestRunInitCreatesUserConfigWithExplicitScope(t *testing.T) {
+	t.Parallel()
 	homeDir, _ := withCLIWorkspace(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"init", "--scope", "user"}, &stdout, &stderr)
+	code := runCLI(t, []string{"init", "--scope", "user"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -141,6 +277,7 @@ func TestRunInitCreatesUserConfigWithExplicitScope(t *testing.T) {
 }
 
 func TestRunInitPromptsForScopeAndDefaultsProject(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	prompted := false
 	withInitScopePrompt(t, func(context.Context, io.Writer) (string, error) {
@@ -150,7 +287,7 @@ func TestRunInitPromptsForScopeAndDefaultsProject(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"init"}, &stdout, &stderr)
+	code := runCLI(t, []string{"init"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -167,6 +304,7 @@ func TestRunInitPromptsForScopeAndDefaultsProject(t *testing.T) {
 }
 
 func TestReadInitScopeDefaultsProjectOnBlankInput(t *testing.T) {
+	t.Parallel()
 	var stderr bytes.Buffer
 
 	scope, err := readInitScope(context.Background(), strings.NewReader("\n"), &stderr)
@@ -183,13 +321,14 @@ func TestReadInitScopeDefaultsProjectOnBlankInput(t *testing.T) {
 }
 
 func TestRunInitRejectsExistingConfigWithoutForce(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	mustWrite(t, configPath, "defaults:\n  agent: claude\n")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"init", "--scope", "project"}, &stdout, &stderr)
+	code := runCLI(t, []string{"init", "--scope", "project"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -210,13 +349,14 @@ func TestRunInitRejectsExistingConfigWithoutForce(t *testing.T) {
 }
 
 func TestRunInitForceOverwritesExistingConfig(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	mustWrite(t, configPath, "defaults:\n  agent: claude\n")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"init", "--scope", "project", "--force"}, &stdout, &stderr)
+	code := runCLI(t, []string{"init", "--scope", "project", "--force"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -241,6 +381,7 @@ func TestRunInitForceOverwritesExistingConfig(t *testing.T) {
 }
 
 func TestRunCommandHelp(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		args     []string
@@ -303,7 +444,7 @@ func TestRunCommandHelp(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d", code)
@@ -321,6 +462,7 @@ func TestRunCommandHelp(t *testing.T) {
 }
 
 func TestRunReconcileDryRunReadOnly(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	run, ref := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
 	beforeDatabase := readReconcileBytes(t, store.DatabasePath(homeDir))
@@ -328,12 +470,11 @@ func TestRunReconcileDryRunReadOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", run.ID, "--format", "text"},
 		&stdout,
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitOK {
 		t.Fatalf("dry-run exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -370,15 +511,15 @@ func TestRunReconcileDryRunReadOnly(t *testing.T) {
 }
 
 func TestRunReconcileDryRunOutputFailure(t *testing.T) {
+	t.Parallel()
 	_, _, _ = newReconcileWorkspace(t)
 	var stderr bytes.Buffer
 
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile"},
 		failingWriter{err: errors.New("output unavailable")},
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("output failure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
@@ -390,17 +531,17 @@ func TestRunReconcileDryRunOutputFailure(t *testing.T) {
 }
 
 func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	run, ref := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateStopped)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", "--format=json", run.ID},
 		&stdout,
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitOK {
 		t.Fatalf("JSON dry-run exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -442,6 +583,7 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 }
 
 func TestRunReconcileSupersededJSONAndApply(t *testing.T) {
+	t.Parallel()
 	const slug = "reconcile-spec"
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	run, ref := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateUnresolved)
@@ -464,12 +606,11 @@ func TestRunReconcileSupersededJSONAndApply(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", run.ID, "--apply", "--format=json"},
 		&stdout,
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitOK {
 		t.Fatalf("superseded apply exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -531,6 +672,7 @@ func TestRunReconcileSupersededJSONAndApply(t *testing.T) {
 }
 
 func TestRunReconcileRepositoryScopeNewestFirst(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	older, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
 	newer, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateStopped)
@@ -555,7 +697,7 @@ func TestRunReconcileRepositoryScopeNewestFirst(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"reconcile"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"reconcile"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("repository scan exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -574,6 +716,7 @@ func TestRunReconcileRepositoryScopeNewestFirst(t *testing.T) {
 }
 
 func TestRunReconcileInvalidSelectorsMutateNothing(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, _ := newReconcileWorkspace(t)
 	active := createReconcileMetadataRun(
 		t,
@@ -638,12 +781,11 @@ func TestRunReconcileInvalidSelectorsMutateNothing(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(
+			code := runCLIContext(t,
 				context.Background(),
 				[]string{"reconcile", tt.id, "--apply"},
 				&stdout,
-				&stderr,
-			)
+				&stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("invalid selector exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
@@ -665,6 +807,7 @@ func TestRunReconcileInvalidSelectorsMutateNothing(t *testing.T) {
 }
 
 func TestRunReconcileApplyMixedResults(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	safeRun, safeRef := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
 	_, dirtyRef := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateStopped)
@@ -680,7 +823,7 @@ func TestRunReconcileApplyMixedResults(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"reconcile", "--apply"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"reconcile", "--apply"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("mixed apply exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -709,18 +852,18 @@ func TestRunReconcileApplyMixedResults(t *testing.T) {
 }
 
 func TestRunReconcileApplyFailureNamesNextSafeAction(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	run, ref := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
 	gitImplement(t, repoDir, "worktree", "lock", ref.Path)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", run.ID, "--apply"},
 		&stdout,
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("apply failure exit = %d, want %d stderr=%q stdout=%q", code, exitRunFailed, stderr.String(), stdout.String())
@@ -738,6 +881,7 @@ func TestRunReconcileApplyFailureNamesNextSafeAction(t *testing.T) {
 }
 
 func TestRunReconcileIdempotentApply(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
 	run, ref := createReconcileRun(
 		t,
@@ -749,12 +893,12 @@ func TestRunReconcileIdempotentApply(t *testing.T) {
 	)
 	var firstStdout bytes.Buffer
 	var firstStderr bytes.Buffer
-	firstCode := RunContext(
+	firstCode := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", run.ID, "--apply"},
 		&firstStdout,
-		&firstStderr,
-	)
+		&firstStderr)
+
 	if firstCode != exitOK {
 		t.Fatalf("first apply exit = %d, want 0 stderr=%q stdout=%q", firstCode, firstStderr.String(), firstStdout.String())
 	}
@@ -763,12 +907,11 @@ func TestRunReconcileIdempotentApply(t *testing.T) {
 	var secondStdout bytes.Buffer
 	var secondStderr bytes.Buffer
 
-	secondCode := RunContext(
+	secondCode := runCLIContext(t,
 		context.Background(),
 		[]string{"reconcile", run.ID, "--apply"},
 		&secondStdout,
-		&secondStderr,
-	)
+		&secondStderr)
 
 	if secondCode != exitOK {
 		t.Fatalf("second apply exit = %d, want 0 stderr=%q stdout=%q", secondCode, secondStderr.String(), secondStdout.String())
@@ -796,6 +939,7 @@ func TestRunReconcileIdempotentApply(t *testing.T) {
 }
 
 func TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides(t *testing.T) {
+	t.Parallel()
 	for _, name := range []string{"resolve", "watch", "implement"} {
 		t.Run(name, func(t *testing.T) {
 			got := commandUsage(name)
@@ -820,10 +964,11 @@ func TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides(t *testing
 }
 
 func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"events", "--help"}, &stdout, &stderr)
+	code := runCLI(t, []string{"events", "--help"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("events help exit = %d, want 0 stderr=%q", code, stderr.String())
@@ -851,6 +996,7 @@ func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
 }
 
 func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
+	t.Parallel()
 	repoRoot := cliTestRepoRoot(t)
 	readme := mustRead(t, filepath.Join(repoRoot, "README.md"))
 	commands := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "commands.md"))
@@ -1088,6 +1234,7 @@ type profilesShowTestRecommendation struct {
 }
 
 func TestProfilesShowJSONRendersProfileAndRecommendations(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
 profiles:
@@ -1104,7 +1251,7 @@ profiles:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "show", "--category", "backend", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "show", "--category", "backend", "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("profiles show exit = %d, stderr=%q", code, stderr.String())
@@ -1159,11 +1306,12 @@ profiles:
 }
 
 func TestProfilesShowOptionalCategoryReportsGeneralRecommendationSource(t *testing.T) {
+	t.Parallel()
 	withCLIWorkspace(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "show", "--category", "data", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "show", "--category", "data", "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("profiles show exit = %d, stderr=%q", code, stderr.String())
@@ -1191,6 +1339,7 @@ func TestProfilesShowOptionalCategoryReportsGeneralRecommendationSource(t *testi
 }
 
 func TestProfilesShowTextAndJSONAreByteStableAndConsistent(t *testing.T) {
+	t.Parallel()
 	withCLIWorkspace(t)
 	textFirst, textSecond := runProfilesShowTwice(t, []string{"profiles", "show"})
 	if textFirst != textSecond {
@@ -1211,11 +1360,12 @@ func TestProfilesShowTextAndJSONAreByteStableAndConsistent(t *testing.T) {
 }
 
 func TestProfilesShowRejectsUnknownCategory(t *testing.T) {
+	t.Parallel()
 	withCLIWorkspace(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "show", "--category", "design", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "show", "--category", "design", "--json"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("exit = %d, want %d", code, exitPreflight)
@@ -1231,6 +1381,7 @@ func TestProfilesShowRejectsUnknownCategory(t *testing.T) {
 }
 
 func TestProfilesShowDoesNotMutateConfigOrRunState(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	userConfig := filepath.Join(homeDir, ".roundfix", "config.yml")
 	projectConfig := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -1268,7 +1419,7 @@ profiles:
 	} {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		if code := Run(args, &stdout, &stderr); code != exitOK {
+		if code := runCLI(t, args, &stdout, &stderr); code != exitOK {
 			t.Fatalf("Run(%v) exit = %d stderr=%q", args, code, stderr.String())
 		}
 		if stdout.Len() == 0 {
@@ -1288,6 +1439,7 @@ profiles:
 }
 
 func TestProfilesConfigureFileWritesProjectProfileJSON(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runner := withSuccessfulProfilesConfigureProof(t)
 	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
@@ -1311,7 +1463,7 @@ profiles:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("profiles configure exit = %d stderr=%q", code, stderr.String())
@@ -1355,6 +1507,7 @@ profiles:
 }
 
 func TestProfilesConfigureYesSkipsConfirmation(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runner := withSuccessfulProfilesConfigureProof(t)
 	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
@@ -1376,7 +1529,7 @@ backend:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("profiles configure --yes exit = %d stderr=%q", code, stderr.String())
@@ -1405,6 +1558,7 @@ backend:
 }
 
 func TestProfilesJSONSuccessReturnsEncoderFailures(t *testing.T) {
+	t.Parallel()
 	writeErr := errors.New("write failed")
 	writer := failingWriter{err: writeErr}
 
@@ -1420,6 +1574,7 @@ func TestProfilesJSONSuccessReturnsEncoderFailures(t *testing.T) {
 }
 
 func TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	runner := withSuccessfulProfilesConfigureProof(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -1444,7 +1599,7 @@ backend:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", validFragment, "--dry-run", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", validFragment, "--dry-run", "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("dry-run exit = %d stderr=%q", code, stderr.String())
@@ -1470,7 +1625,7 @@ backend:
 `)
 	stdout.Reset()
 	stderr.Reset()
-	code = Run([]string{"profiles", "configure", "--scope", "project", "--file", invalidFragment, "--json"}, &stdout, &stderr)
+	code = runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", invalidFragment, "--json"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("invalid configure exit = %d, want %d", code, exitPreflight)
@@ -1485,6 +1640,7 @@ backend:
 }
 
 func TestProfilesConfigureProofRunsBeforeConfirmationAndWrite(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1514,7 +1670,7 @@ backend:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("configure exit = %d stderr=%q", code, stderr.String())
@@ -1534,6 +1690,7 @@ backend:
 }
 
 func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1544,7 +1701,7 @@ func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testin
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--json"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("interactive configure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
@@ -1568,6 +1725,7 @@ func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testin
 }
 
 func TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1614,7 +1772,7 @@ backend:
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
+			code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("configure exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
@@ -1634,6 +1792,7 @@ backend:
 }
 
 func TestProfilesConfigureProofFailureYesJSONPreservesBytes(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1668,7 +1827,7 @@ backend:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("proof failure exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
@@ -1683,6 +1842,7 @@ backend:
 }
 
 func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.T) {
+	t.Parallel()
 	t.Run("cleanup failure", func(t *testing.T) {
 		_, repoDir := withCLIWorkspace(t)
 		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -1696,7 +1856,7 @@ func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
+		code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("cleanup failure exit = %d stderr=%q", code, stderr.String())
@@ -1722,7 +1882,7 @@ func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+		code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("decline exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
@@ -1737,6 +1897,7 @@ func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.
 }
 
 func TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
@@ -1747,7 +1908,7 @@ func TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig(t *testing.T) {
 	writeErr := errors.New("stdout failed")
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, failingWriter{err: writeErr}, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, failingWriter{err: writeErr}, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("output failure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
@@ -1758,6 +1919,7 @@ func TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig(t *testing.T) {
 }
 
 func TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm(t *testing.T) {
+	t.Parallel()
 	homeDir, _ := withCLIWorkspace(t)
 	withProfilesConfigureInput(t, "backend\ncodex\ninteractive-backend\nhigh\n\n")
 	confirmCalls := 0
@@ -1768,7 +1930,7 @@ func TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm(t *te
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "user", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "user", "--json"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("interactive configure exit = %d, want %d", code, exitPreflight)
@@ -1784,13 +1946,14 @@ func TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm(t *te
 }
 
 func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T) {
+	t.Parallel()
 	homeDir, _ := withCLIWorkspace(t)
 	runner := &fakeAgentRunner{}
 	withAgentRunner(t, runner)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "validate", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "validate", "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("profiles validate exit = %d stderr=%q", code, stderr.String())
@@ -1824,6 +1987,7 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 const wantProfileProofFallbackBoundary = "fallback: Fallback Chains activate only after Run creation (ADR-0050); Preflight proves every configured tuple and substitutes none"
 
 func TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields(t *testing.T) {
+	t.Parallel()
 	err := profileProofError{
 		Selection: roundconfig.AgentSelection{
 			Runtime:         "codex",
@@ -1847,6 +2011,7 @@ func TestProfileProofErrorAppendsFallbackBoundaryAfterExistingFields(t *testing.
 }
 
 func TestProfilesValidateFailedProofNamesTupleAffectedCategoriesAndRecovery(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	mustWrite(t, configPath, `
@@ -1879,7 +2044,7 @@ profiles:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "validate", "--category", "backend", "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "validate", "--category", "backend", "--json"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("profiles validate exit = %d, want %d", code, exitPreflight)
@@ -1919,6 +2084,7 @@ profiles:
 }
 
 func TestProveProfileSelectionsDeduplicatesReferencesAndStartsFreshProofPass(t *testing.T) {
+	t.Parallel()
 	runner := &profileReadinessExactRunner{
 		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
 			return agent.SelectionProof{
@@ -1961,6 +2127,7 @@ func TestProveProfileSelectionsDeduplicatesReferencesAndStartsFreshProofPass(t *
 }
 
 func TestProveProfileSelectionsRetainsStableFallbackPositions(t *testing.T) {
+	t.Parallel()
 	config := roundconfig.Builtin()
 	shared := config.Profiles[roundconfig.CategoryBackend].Profile.Fallbacks[0]
 	frontend := config.Profiles[roundconfig.CategoryFrontend]
@@ -1999,6 +2166,7 @@ func TestProveProfileSelectionsRetainsStableFallbackPositions(t *testing.T) {
 }
 
 func TestProfileOperationalPreflightMatchesProfilesValidateClassifiedFailure(t *testing.T) {
+	t.Parallel()
 	classified := &agent.SelectionUnsupportedError{
 		Kind:                agent.SelectionReasoningControlNotAdvertised,
 		Runtime:             "codex",
@@ -2065,6 +2233,7 @@ func TestProfileOperationalPreflightMatchesProfilesValidateClassifiedFailure(t *
 }
 
 func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.T) {
+	t.Parallel()
 	runner := &fakeAgentRunner{}
 	var stderr bytes.Buffer
 	graph := &spec.Graph{Tasks: []spec.Task{
@@ -2113,6 +2282,7 @@ func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.
 }
 
 func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWarns(t *testing.T) {
+	t.Parallel()
 	runner := &fakeAgentRunner{}
 	var stderr bytes.Buffer
 	graph := &spec.Graph{Tasks: []spec.Task{
@@ -2165,6 +2335,7 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 }
 
 func TestProfilesShowReportsUnavailableRecommendationWithoutReordering(t *testing.T) {
+	t.Parallel()
 	unavailableSelection := roundconfig.AgentSelection{
 		Runtime:         "codex",
 		Model:           "gpt-5.6-terra",
@@ -2200,6 +2371,7 @@ func TestProfilesShowReportsUnavailableRecommendationWithoutReordering(t *testin
 }
 
 func TestModelRecommendationsUseOfficialCatalogModels(t *testing.T) {
+	t.Parallel()
 	for _, category := range roundconfig.AllWorkCategories() {
 		t.Run(string(category), func(t *testing.T) {
 			recommendations, source, ok := roundconfig.ModelRecommendations(category)
@@ -2301,7 +2473,7 @@ func runProfilesShowTwice(t *testing.T, args []string) (string, string) {
 	t.Helper()
 	var firstStdout bytes.Buffer
 	var firstStderr bytes.Buffer
-	if code := Run(args, &firstStdout, &firstStderr); code != exitOK {
+	if code := runCLI(t, args, &firstStdout, &firstStderr); code != exitOK {
 		t.Fatalf("first Run(%v) exit = %d stderr=%q", args, code, firstStderr.String())
 	}
 	if firstStderr.Len() != 0 {
@@ -2309,7 +2481,7 @@ func runProfilesShowTwice(t *testing.T, args []string) (string, string) {
 	}
 	var secondStdout bytes.Buffer
 	var secondStderr bytes.Buffer
-	if code := Run(args, &secondStdout, &secondStderr); code != exitOK {
+	if code := runCLI(t, args, &secondStdout, &secondStderr); code != exitOK {
 		t.Fatalf("second Run(%v) exit = %d stderr=%q", args, code, secondStderr.String())
 	}
 	if secondStderr.Len() != 0 {
@@ -2418,6 +2590,7 @@ func seedRunsForListColumns(t *testing.T, homeDir, repoDir, otherRepo string) []
 }
 
 func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
 	mustMkdir(t, filepath.Join(otherRepo, ".git"))
@@ -2425,7 +2598,7 @@ func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2443,6 +2616,7 @@ func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
 }
 
 func TestRunRunsListRendersOwnerIdentityUnprovenMarker(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	createdAt := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	runs := seedRunsForList(t, homeDir, []runListSeed{
@@ -2460,7 +2634,7 @@ func TestRunRunsListRendersOwnerIdentityUnprovenMarker(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2478,6 +2652,7 @@ func TestRunRunsListRendersOwnerIdentityUnprovenMarker(t *testing.T) {
 }
 
 func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
 	mustMkdir(t, filepath.Join(otherRepo, ".git"))
@@ -2529,7 +2704,7 @@ func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2545,8 +2720,9 @@ func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
 }
 
 func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
-	t.Chdir(repoDir)
+	setCommandWorkDirForTest(t, repoDir)
 	base := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
 	_, retained := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
 	_, branchOnly := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateStopped)
@@ -2576,7 +2752,7 @@ func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testi
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2602,8 +2778,9 @@ func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testi
 }
 
 func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
-	t.Chdir(repoDir)
+	setCommandWorkDirForTest(t, repoDir)
 	currentRun, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
 
 	otherRepo := t.TempDir()
@@ -2669,7 +2846,7 @@ func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2701,15 +2878,16 @@ func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing
 }
 
 func TestRunRunsListRetainedWorktreeNoteOmittedWhenReleased(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir, location := newReconcileWorkspace(t)
-	t.Chdir(repoDir)
+	setCommandWorkDirForTest(t, repoDir)
 	run, released := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateClean)
 	gitImplement(t, repoDir, "worktree", "remove", released.Path)
 	gitImplement(t, repoDir, "branch", "-D", released.Branch)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list", "--state", "terminal"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list", "--state", "terminal"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2723,6 +2901,7 @@ func TestRunRunsListRetainedWorktreeNoteOmittedWhenReleased(t *testing.T) {
 }
 
 func TestRunRunsListReportsRetainedWorktreeInspectionFailure(t *testing.T) {
+	t.Parallel()
 	homeDir, _ := withCLIWorkspace(t)
 	invalidRoot, err := filepath.EvalSymlinks(t.TempDir())
 	if err != nil {
@@ -2741,7 +2920,7 @@ func TestRunRunsListReportsRetainedWorktreeInspectionFailure(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list", "--all", "--state", "terminal"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list", "--all", "--state", "terminal"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2763,6 +2942,7 @@ func TestRunRunsListReportsRetainedWorktreeInspectionFailure(t *testing.T) {
 }
 
 func TestRunRunsListLimitBoundsNewestMatches(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	seeds := make([]runListSeed, 0, 25)
@@ -2816,7 +2996,7 @@ func TestRunRunsListLimitBoundsNewestMatches(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2839,6 +3019,7 @@ func TestRunRunsListLimitBoundsNewestMatches(t *testing.T) {
 }
 
 func TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	seedRunsForList(t, homeDir, []runListSeed{
@@ -2856,7 +3037,7 @@ func TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2870,13 +3051,14 @@ func TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine(t *testing.T) {
 }
 
 func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
+	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
 	t.Run("non-interactive exits 2 naming runs list", func(t *testing.T) {
 		withCLIWorkspace(t)
 		withRunsInteractiveInput(t, false)
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"runs"}, &stdout, &stderr)
+		code := runCLI(t, []string{"runs"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected exit code 2, got %d", code)
@@ -2891,11 +3073,12 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 	t.Run("interactive stdin without a TTY exits 2 naming runs list", func(t *testing.T) {
 		withCLIWorkspace(t)
 		withRunsInteractiveInput(t, true)
+		// This case verifies the process-level default when no TUI override is set.
 		t.Setenv("ROUNDFIX_TUI", "")
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"runs"}, &stdout, &stderr)
+		code := runCLI(t, []string{"runs"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected exit code 2, got %d", code)
@@ -2930,12 +3113,13 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 			},
 		})
 		withRunsInteractiveInput(t, true)
+		// This case verifies that the process-level TUI override opens the Run Browser.
 		t.Setenv("ROUNDFIX_TUI", "always")
 		sessionCalls := withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"runs"}, &stdout, &stderr)
+		code := runCLI(t, []string{"runs"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2957,12 +3141,13 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 	t.Run("interactive terminal without a Run Database opens the empty browser", func(t *testing.T) {
 		withCLIWorkspace(t)
 		withRunsInteractiveInput(t, true)
+		// This case verifies that the process-level TUI override opens the empty Run Browser.
 		t.Setenv("ROUNDFIX_TUI", "always")
 		sessionCalls := withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"runs"}, &stdout, &stderr)
+		code := runCLI(t, []string{"runs"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2978,11 +3163,12 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 }
 
 func TestRunRunsListEmptyResultExitsZero(t *testing.T) {
+	t.Parallel()
 	withCLIWorkspace(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected empty list exit 0, got %d stderr=%q", code, stderr.String())
@@ -2996,6 +3182,7 @@ func TestRunRunsListEmptyResultExitsZero(t *testing.T) {
 }
 
 func TestRunRunsListUsageErrors(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -3012,7 +3199,7 @@ func TestRunRunsListUsageErrors(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected exit code 2, got %d", code)
@@ -3028,14 +3215,14 @@ func TestRunRunsListUsageErrors(t *testing.T) {
 }
 
 func TestRunRunsListOutsideRepositoryRequiresAll(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	outsideRepo := t.TempDir()
-	t.Setenv("HOME", homeDir)
-	t.Chdir(outsideRepo)
+	setCommandEnvironmentForTest(t, homeDir, outsideRepo)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"runs", "list"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected exit code 2 outside repository, got %d", code)
@@ -3049,6 +3236,7 @@ func TestRunRunsListOutsideRepositoryRequiresAll(t *testing.T) {
 }
 
 func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -3063,7 +3251,7 @@ func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected exit code 2, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -3080,6 +3268,7 @@ func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
 }
 
 func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
 	fake.paths["npx"] = "/bin/npx"
@@ -3087,7 +3276,7 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3133,10 +3322,12 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 }
 
 func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
+	t.Parallel()
 	assertSetupCommandHealthyMachineIsIdempotent(t)
 }
 
 func TestRunSetupNewerACPXIsReadyWithoutInstall(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.acpxVersion = "0.12.1"
 	fake.paths["codex-acp"] = "/bin/codex-acp"
@@ -3147,7 +3338,7 @@ func TestRunSetupNewerACPXIsReadyWithoutInstall(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3161,6 +3352,7 @@ func TestRunSetupNewerACPXIsReadyWithoutInstall(t *testing.T) {
 }
 
 func TestSetupCommandCompatibility(t *testing.T) {
+	t.Parallel()
 	assertSetupCommandHealthyMachineIsIdempotent(t)
 }
 
@@ -3175,7 +3367,7 @@ func assertSetupCommandHealthyMachineIsIdempotent(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3201,6 +3393,7 @@ func assertSetupCommandHealthyMachineIsIdempotent(t *testing.T) {
 }
 
 func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		adapterErr error
@@ -3242,7 +3435,7 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+			code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 			if code != exitRunFailed {
 				t.Fatalf("expected adapter failure exit %d, got %d", exitRunFailed, code)
@@ -3274,12 +3467,13 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 }
 
 func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3306,6 +3500,7 @@ func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing
 }
 
 func TestRunSetupProfileProofFailurePreservesAllTargets(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.files[fake.acpxConfigPath] = "{\n  \"theme\": \"sentinel\"\n}\n"
 	fake.probeErr = &agent.SelectionUnsupportedError{
@@ -3321,7 +3516,7 @@ func TestRunSetupProfileProofFailurePreservesAllTargets(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
@@ -3335,6 +3530,7 @@ func TestRunSetupProfileProofFailurePreservesAllTargets(t *testing.T) {
 }
 
 func TestRunSetupProfileCleanupAndInvalidEvidencePreserveAllTargets(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		err  error
@@ -3360,7 +3556,7 @@ func TestRunSetupProfileCleanupAndInvalidEvidencePreserveAllTargets(t *testing.T
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+			code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 			if code != exitRunFailed {
 				t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
@@ -3376,13 +3572,14 @@ func TestRunSetupProfileCleanupAndInvalidEvidencePreserveAllTargets(t *testing.T
 }
 
 func TestRunSetupProfileWriteFailurePreservesNotYetCommittedTargets(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.writeErrors = map[string]error{fake.userConfigPath: errors.New("disk full")}
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
@@ -3399,12 +3596,13 @@ func TestRunSetupProfileWriteFailurePreservesNotYetCommittedTargets(t *testing.T
 }
 
 func TestRunSetupProfilePersistenceMatchesSubsequentValidation(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3436,12 +3634,13 @@ func TestRunSetupProfilePersistenceMatchesSubsequentValidation(t *testing.T) {
 }
 
 func TestRunSetupNoInputProfileProofCreatesNoTargets(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3452,6 +3651,7 @@ func TestRunSetupNoInputProfileProofCreatesNoTargets(t *testing.T) {
 }
 
 func TestRunSetupAdapterMigrationDeclinePreservesAllTargets(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
 	fake.files[fake.userConfigPath] = "# user config sentinel\n{}\n"
@@ -3467,7 +3667,7 @@ func TestRunSetupAdapterMigrationDeclinePreservesAllTargets(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("declined migration exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3481,6 +3681,7 @@ func TestRunSetupAdapterMigrationDeclinePreservesAllTargets(t *testing.T) {
 }
 
 func TestRunSetupAdapterMigrationPersistsSupportedCommand(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
 	fake.adapterErrors["codex"] = &agent.AdapterLineageError{
@@ -3492,7 +3693,7 @@ func TestRunSetupAdapterMigrationPersistsSupportedCommand(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3518,6 +3719,7 @@ func TestRunSetupAdapterMigrationPersistsSupportedCommand(t *testing.T) {
 }
 
 func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		accept bool
@@ -3552,7 +3754,7 @@ func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"setup"}, &stdout, &stderr)
+			code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3593,6 +3795,7 @@ func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
 }
 
 func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing.T) {
+	t.Parallel()
 	newFake := func() *setupFakeDeps {
 		fake := newSetupFakeDeps()
 		fake.files[fake.acpxConfigPath] = "{\n  \"theme\": \"sentinel\",\n  \"agents\": {\n    \"claude\": {\n      \"command\": \"claude-agent-acp\"\n    }\n  }\n}\n"
@@ -3620,7 +3823,7 @@ func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+		code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3640,7 +3843,7 @@ func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+		code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
@@ -3660,7 +3863,7 @@ func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+		code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
@@ -3672,6 +3875,7 @@ func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing
 }
 
 func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	const unrelated = "  \"theme\": {\"color\": \"blue\"},\n"
 	const customAgent = "    \"custom\": {\n      \"command\": \"existing-custom\"\n    },\n"
@@ -3705,7 +3909,7 @@ func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
@@ -3741,6 +3945,7 @@ func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
 }
 
 func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.config.Runtimes.Codex.Model = "repo-codex"
 	fake.config.Runtimes.Codex.ReasoningEffort = "repo-xhigh"
@@ -3748,7 +3953,7 @@ func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
@@ -3764,6 +3969,7 @@ func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
 }
 
 func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	customConfig := strings.ReplaceAll(roundconfig.DefaultConfigYAML(), "reasoning_effort: high", `reasoning_effort: ""`)
 	fake.files[fake.userConfigPath] = customConfig
@@ -3772,7 +3978,7 @@ func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
@@ -3789,13 +3995,14 @@ func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 }
 
 func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.config.Runtimes.Codex.Model = ""
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected setup selection failure exit %d, got %d", exitRunFailed, code)
@@ -3812,6 +4019,7 @@ func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
 }
 
 func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.acpxVersion = "0.11.0"
 	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
@@ -3820,7 +4028,7 @@ func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3834,6 +4042,7 @@ func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 }
 
 func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.paths["npx"] = "/bin/npx"
 	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
@@ -3845,7 +4054,7 @@ func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--yes"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3868,6 +4077,7 @@ func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) 
 }
 
 func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
 	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
@@ -3878,7 +4088,7 @@ func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected declined setup offers to exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3898,6 +4108,7 @@ func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
 }
 
 func TestRunSetupNoInputSkipsOffers(t *testing.T) {
+	t.Parallel()
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
 	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
@@ -3905,7 +4116,7 @@ func TestRunSetupNoInputSkipsOffers(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"setup", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected no-input skipped offers to exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3922,6 +4133,7 @@ func TestRunSetupNoInputSkipsOffers(t *testing.T) {
 }
 
 func TestRunSetupExitCodes(t *testing.T) {
+	t.Parallel()
 	t.Run("check failure exits one", func(t *testing.T) {
 		fake := newSetupFakeDeps()
 		fake.nodeVersion = "v20.0.0"
@@ -3931,7 +4143,7 @@ func TestRunSetupExitCodes(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"setup"}, &stdout, &stderr)
+		code := runCLI(t, []string{"setup"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("expected setup check failure exit 1, got %d", code)
@@ -3945,7 +4157,7 @@ func TestRunSetupExitCodes(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"setup", "--yes", "--no-input"}, &stdout, &stderr)
+		code := runCLI(t, []string{"setup", "--yes", "--no-input"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected setup usage error exit 2, got %d", code)
@@ -3960,6 +4172,7 @@ func TestRunSetupExitCodes(t *testing.T) {
 }
 
 func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	req := agent.ProbeRequest{
 		Runtime: agent.RuntimeSpec{ID: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"},
@@ -4015,6 +4228,7 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 }
 
 func TestHealthCheckerAcceptsNewerACPXVersion(t *testing.T) {
+	t.Parallel()
 	checker := newHealthChecker(healthCheckDependencies{
 		acpxVersion: func(context.Context) (string, error) {
 			return "0.12.1\n", nil
@@ -4029,6 +4243,7 @@ func TestHealthCheckerAcceptsNewerACPXVersion(t *testing.T) {
 }
 
 func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	probeErr := errors.New("probe denied")
 	adapterErr := &agent.AdapterLineageError{
@@ -4084,6 +4299,7 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 }
 
 func TestHealthCheckerReportsCodexResult(t *testing.T) {
+	t.Parallel()
 	checker := newHealthChecker(healthCheckDependencies{
 		codexInspector: fakeCodexInspector{
 			result: codex.Result{
@@ -4118,10 +4334,11 @@ func (fake fakeCodexInspector) Inspect(context.Context) codex.Result {
 }
 
 func TestRunSkillsCheck(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "check"}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "check"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -4138,10 +4355,11 @@ func TestRunSkillsCheck(t *testing.T) {
 }
 
 func TestRunSkillsListSeparatesOwnedFromExternal(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "list"}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "list"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -4164,11 +4382,12 @@ func TestRunSkillsListSeparatesOwnedFromExternal(t *testing.T) {
 }
 
 func TestRunSkillsInstallCopiesArtifactsToProjectByDefault(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "install"}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "install"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -4191,11 +4410,12 @@ func TestRunSkillsInstallCopiesArtifactsToProjectByDefault(t *testing.T) {
 }
 
 func TestRunSkillsInstallCopiesArtifactsToExplicitTarget(t *testing.T) {
+	t.Parallel()
 	targetDir := t.TempDir()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "install", "--target", "codex", "--dir", targetDir}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "install", "--target", "codex", "--dir", targetDir}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -4217,6 +4437,7 @@ func TestRunSkillsInstallCopiesArtifactsToExplicitTarget(t *testing.T) {
 }
 
 func TestRunSkillsInstallCreatesClaudeProjectSymlink(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	mustMkdir(t, filepath.Join(repoDir, ".claude", "skills"))
 	prompted := false
@@ -4235,7 +4456,7 @@ func TestRunSkillsInstallCreatesClaudeProjectSymlink(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "install"}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "install"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -4261,10 +4482,11 @@ func TestRunSkillsInstallCreatesClaudeProjectSymlink(t *testing.T) {
 }
 
 func TestRunSkillsInstallRejectsUnsupportedTarget(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"skills", "install", "--target", "other"}, &stdout, &stderr)
+	code := runCLI(t, []string{"skills", "install", "--target", "other"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -4278,6 +4500,7 @@ func TestRunSkillsInstallRejectsUnsupportedTarget(t *testing.T) {
 }
 
 func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		args           []string
@@ -4306,7 +4529,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, repoDir := withCLIWorkspace(t)
+			homeDir, repoDir := withCLIWorkspace(t)
 			withSuccessfulPreflight(t, repoDir)
 			if tt.name == "resolve" {
 				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -4314,7 +4537,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != tt.expectedCode {
 				t.Fatalf("expected exit code %d, got %d", tt.expectedCode, code)
@@ -4347,7 +4570,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(string(issueContent), "source_ref: thread:PRRT_test,comment:PRRC_test") {
 					t.Fatalf("expected source ref in issue artifact, got %s", string(issueContent))
 				}
-				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
+				assertRunCount(t, filepath.Join(homeDir, ".roundfix", "roundfix.db"), 1)
 			} else if tt.name == "resolve" {
 				if !strings.Contains(stderr.String(), "fake agent output") {
 					t.Fatalf("expected fake Agent output, got %q", stderr.String())
@@ -4364,7 +4587,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stderr.String(), "Final Push completed") {
 					t.Fatalf("expected Final Push confirmation, got %q", stderr.String())
 				}
-				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
+				assertRunCount(t, filepath.Join(homeDir, ".roundfix", "roundfix.db"), 1)
 				assertNoAgentLogs(t, repoDir)
 			} else if tt.name == "watch" {
 				if !strings.Contains(stderr.String(), "Review Source status: verified") {
@@ -4391,7 +4614,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stderr.String(), "reached Clean") {
 					t.Fatalf("expected watch Clean terminal outcome, got %q", stderr.String())
 				}
-				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
+				assertRunCount(t, filepath.Join(homeDir, ".roundfix", "roundfix.db"), 1)
 				assertNoAgentLogs(t, repoDir)
 			}
 		})
@@ -4399,6 +4622,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 }
 
 func TestRunFetchWritesReviewArtifactsUnderSpecSelector(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	specSlug := "0001-widget-flow"
@@ -4406,7 +4630,7 @@ func TestRunFetchWritesReviewArtifactsUnderSpecSelector(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--pr", "123", "--spec", specSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--pr", "123", "--spec", specSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -4422,6 +4646,7 @@ func TestRunFetchWritesReviewArtifactsUnderSpecSelector(t *testing.T) {
 }
 
 func TestRunFetchWritesReviewArtifactsUnderTrailerSpec(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	specSlug := "0001-widget-flow"
@@ -4430,7 +4655,7 @@ func TestRunFetchWritesReviewArtifactsUnderTrailerSpec(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -4442,12 +4667,13 @@ func TestRunFetchWritesReviewArtifactsUnderTrailerSpec(t *testing.T) {
 }
 
 func TestRunFetchWritesReviewArtifactsUnderSpeclessRoot(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -4459,6 +4685,7 @@ func TestRunFetchWritesReviewArtifactsUnderSpeclessRoot(t *testing.T) {
 }
 
 func TestReviewSpecSlugAssociation(t *testing.T) {
+	t.Parallel()
 	repoRoot := t.TempDir()
 	explicitSlug := "0001-explicit"
 	oldSlug := "0002-old"
@@ -4536,6 +4763,7 @@ func TestReviewSpecSlugAssociation(t *testing.T) {
 }
 
 func TestReviewArtifactUsesDefaultSpecsRootMatchesConfigString(t *testing.T) {
+	t.Parallel()
 	if !reviewArtifactUsesDefaultSpecsRoot("docs/specs") {
 		t.Fatal("expected built-in default Spec Root to match")
 	}
@@ -4573,6 +4801,7 @@ func (runner *failingReviewArtifactProofGitRunner) RunGit(ctx context.Context, w
 }
 
 func TestRunFetchWarnsAndIgnoresDeprecatedUserConfig(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -4583,7 +4812,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected fetch exit 0, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -4605,6 +4834,7 @@ resolve:
 }
 
 func TestRunWatchPrintsDeterministicStdoutReport(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		setup      func(t *testing.T, repoDir string)
@@ -4701,7 +4931,7 @@ resolve:
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
@@ -4714,13 +4944,14 @@ resolve:
 }
 
 func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q", code, stderr.String())
@@ -4735,6 +4966,7 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 }
 
 func TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -4772,7 +5004,7 @@ profiles:
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("%s exit = %d stderr=%q stdout=%q", tt.name, code, stderr.String(), stdout.String())
@@ -4789,6 +5021,7 @@ profiles:
 }
 
 func TestReviewProfilePreflightFetchCreatesNoAgentSession(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{}
@@ -4796,7 +5029,7 @@ func TestReviewProfilePreflightFetchCreatesNoAgentSession(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("fetch exit = %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -4807,6 +5040,7 @@ func TestReviewProfilePreflightFetchCreatesNoAgentSession(t *testing.T) {
 }
 
 func TestWaitingForReviewProgressLineExposesBoundedEvidenceAndRetryState(t *testing.T) {
+	t.Parallel()
 	startedAt := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
 	line := formatReviewWaitProgress(watch.WaitProgress{
 		Phase:           watch.WaitPhaseReviewCheck,
@@ -4835,6 +5069,7 @@ func TestWaitingForReviewProgressLineExposesBoundedEvidenceAndRetryState(t *test
 }
 
 func TestPrintReviewIssueReportSplitsRunAndCumulativeCountsAndReasons(t *testing.T) {
+	t.Parallel()
 	report := reviewIssueReport{
 		runIssues: []rounds.Issue{
 			{Title: "major: generated file", Status: rounds.StatusInvalid, TerminalReason: "invalid: generated file"},
@@ -4864,6 +5099,7 @@ func TestPrintReviewIssueReportSplitsRunAndCumulativeCountsAndReasons(t *testing
 }
 
 func TestReviewIssueReportDataMarksCumulativeUnavailableOnLoadFailure(t *testing.T) {
+	t.Parallel()
 	req := commandRequest{reviewRoot: "["}
 	preflightResult := preflight.Result{
 		PullRequest: preflight.PullRequest{
@@ -4897,13 +5133,14 @@ func TestReviewIssueReportDataMarksCumulativeUnavailableOnLoadFailure(t *testing
 }
 
 func TestRunResolvePersistsEffectiveSelection(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"resolve",
 		"--pr", "123",
 		"--agent", "codex",
@@ -4930,13 +5167,14 @@ func TestRunResolvePersistsEffectiveSelection(t *testing.T) {
 }
 
 func TestRunResolveAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"resolve",
 		"--pr", "123",
 		"--agent", "codex",
@@ -4960,12 +5198,13 @@ func TestRunResolveAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
 }
 
 func TestRunWatchPersistsEffectiveSelection(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"watch",
 		"--source", "coderabbit",
 		"--pr", "123",
@@ -4994,12 +5233,13 @@ func TestRunWatchPersistsEffectiveSelection(t *testing.T) {
 }
 
 func TestRunWatchRendersModelManagedReasoningHeader(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"watch",
 		"--source", "coderabbit",
 		"--pr", "123",
@@ -5024,6 +5264,7 @@ func TestRunWatchRendersModelManagedReasoningHeader(t *testing.T) {
 }
 
 func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		args         []string
@@ -5094,7 +5335,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != tt.wantExitCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q stdout=%q", tt.wantExitCode, code, stderr.String(), stdout.String())
@@ -5117,6 +5358,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 }
 
 func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -5152,9 +5394,10 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *test
 	var resolveStderr bytes.Buffer
 	resolveDone := make(chan int, 1)
 	go func() {
-		resolveDone <- RunContext(context.Background(), []string{
+		resolveDone <- runCLIContext(t, context.Background(), []string{
 			"resolve", "--pr", "123", "--round", "all", "--no-input",
 		}, &resolveStdout, &resolveStderr)
+
 	}()
 
 	<-agentStarted
@@ -5176,7 +5419,7 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *test
 
 	var stopStdout bytes.Buffer
 	var stopStderr bytes.Buffer
-	stopCode := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr)
+	stopCode := runCLIContext(t, context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr)
 	if stopCode != exitOK {
 		release()
 		<-resolveDone
@@ -5218,7 +5461,7 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *test
 
 	stopStdout.Reset()
 	stopStderr.Reset()
-	if replayCode := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr); replayCode != exitOK {
+	if replayCode := runCLIContext(t, context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr); replayCode != exitOK {
 		t.Fatalf("identical Force Stop replay exit = %d, want %d; stderr=%q", replayCode, exitOK, stopStderr.String())
 	}
 	events = runEvents(t, homeDir, active.ID)
@@ -5242,6 +5485,7 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *test
 }
 
 func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	notifier := &recordingOutcomeNotifier{}
@@ -5249,7 +5493,7 @@ func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected fetch exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5258,6 +5502,7 @@ func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
 }
 
 func TestOutcomeNotificationCarriesTerminalContextWithBoundedDeadline(t *testing.T) {
+	t.Parallel()
 	parent, cancel := context.WithCancel(context.Background())
 	cancel()
 	notifier := &deadlineRecordingOutcomeNotifier{}
@@ -5309,6 +5554,7 @@ func TestOutcomeNotificationCarriesTerminalContextWithBoundedDeadline(t *testing
 }
 
 func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
+	t.Parallel()
 	wantStdout, _, wantCode, _ := runCleanResolveForOutcomeNotification(t, nil)
 	gotStdout, gotStderr, gotCode, homeDir := runCleanResolveForOutcomeNotification(t, errors.New("forced notifier failure"))
 
@@ -5348,6 +5594,7 @@ func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExi
 }
 
 func TestNotificationReceiptJournalsExactlyOnePerOutcomeAttempt(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		route  roundnotify.Route
@@ -5400,6 +5647,7 @@ func TestNotificationReceiptJournalsExactlyOnePerOutcomeAttempt(t *testing.T) {
 }
 
 func TestNotificationReceiptDefaultsZeroValueFieldsBeforeJournaling(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		notifyErr  error
@@ -5468,6 +5716,7 @@ func assertCleanCleanupWarningEvent(t *testing.T, homeDir string, stderr string,
 }
 
 func TestRunOutcomeNotificationsDisabledJournalsSkippedReceipt(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "notify:\n  enabled: false\n")
 	withSuccessfulPreflight(t, repoDir)
@@ -5481,7 +5730,7 @@ func TestRunOutcomeNotificationsDisabledJournalsSkippedReceipt(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5518,6 +5767,7 @@ func TestRunOutcomeNotificationsDisabledJournalsSkippedReceipt(t *testing.T) {
 }
 
 func TestRunReviewCommandsRefuseDirtyTrackedCheckout(t *testing.T) {
+	t.Parallel()
 	for _, command := range []string{"resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			homeDir, repoDir := withReviewGitWorkspace(t)
@@ -5527,7 +5777,7 @@ func TestRunReviewCommandsRefuseDirtyTrackedCheckout(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), branchIntegrityCommandArgs(command), &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), branchIntegrityCommandArgs(command), &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected preflight exit 2, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5544,6 +5794,7 @@ func TestRunReviewCommandsRefuseDirtyTrackedCheckout(t *testing.T) {
 }
 
 func TestRunResolveAllowsUntrackedCheckoutFiles(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	withRealReviewPreflight(t, repoDir, true)
@@ -5562,7 +5813,7 @@ func TestRunResolveAllowsUntrackedCheckoutFiles(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit with untracked file, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5581,6 +5832,7 @@ func TestRunResolveAllowsUntrackedCheckoutFiles(t *testing.T) {
 }
 
 func TestRunResolveCommitsOnUserBranchWithoutRunBranch(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	withRealReviewPreflight(t, repoDir, true)
@@ -5597,7 +5849,7 @@ func TestRunResolveCommitsOnUserBranchWithoutRunBranch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5627,6 +5879,7 @@ func TestRunResolveCommitsOnUserBranchWithoutRunBranch(t *testing.T) {
 }
 
 func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	withRealReviewPreflight(t, repoDir, true)
@@ -5653,7 +5906,7 @@ func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5689,6 +5942,7 @@ func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
 }
 
 func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	withRealReviewPreflight(t, repoDir, true)
 	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
@@ -5730,7 +5984,7 @@ func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -5765,6 +6019,7 @@ func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 }
 
 func TestRunWatchPrintsBudgetExceededStdoutReport(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
@@ -5785,7 +6040,7 @@ budget:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected BudgetExceeded exit %d, got %d stderr=%q", exitRunFailed, code, stderr.String())
@@ -5803,6 +6058,7 @@ budget:
 }
 
 func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		args           []string
@@ -5843,7 +6099,7 @@ func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
 			}
 			recorder := &orderedWriteRecorder{}
 
-			code := RunContext(context.Background(), tt.args, recorder.writer("stdout"), recorder.writer("stderr"))
+			code := runCLIContext(t, context.Background(), tt.args, recorder.writer("stdout"), recorder.writer("stderr"))
 
 			if code != exitOK {
 				t.Fatalf("expected exit code 0, got %d stderr=%q", code, recorder.content("stderr"))
@@ -5867,6 +6123,7 @@ func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
 }
 
 func TestRunResolveAgentFullAccessIsExplicitOptIn(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		config     string
@@ -5907,7 +6164,7 @@ defaults:
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d, stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -5931,20 +6188,21 @@ defaults:
 }
 
 func TestRunFetchReusesMatchingAutoRound(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	args := []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}
 
 	var firstStdout bytes.Buffer
 	var firstStderr bytes.Buffer
-	firstCode := Run(args, &firstStdout, &firstStderr)
+	firstCode := runCLI(t, args, &firstStdout, &firstStderr)
 	if firstCode != 0 {
 		t.Fatalf("expected first fetch exit 0, got %d stdout=%q stderr=%q", firstCode, firstStdout.String(), firstStderr.String())
 	}
 
 	var secondStdout bytes.Buffer
 	var secondStderr bytes.Buffer
-	secondCode := Run(args, &secondStdout, &secondStderr)
+	secondCode := runCLI(t, args, &secondStdout, &secondStderr)
 	if secondCode != 0 {
 		t.Fatalf("expected second fetch exit 0, got %d stdout=%q stderr=%q", secondCode, secondStdout.String(), secondStderr.String())
 	}
@@ -5959,6 +6217,7 @@ func TestRunFetchReusesMatchingAutoRound(t *testing.T) {
 }
 
 func TestRunWatchTimeoutOffersManualReviewWithoutFetching(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
@@ -5979,7 +6238,7 @@ watch:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected watch timeout exit 1, got %d", code)
@@ -6008,6 +6267,7 @@ watch:
 }
 
 func TestRunWatchMissingHeadCheckEndsCleanUnverified(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
@@ -6022,7 +6282,7 @@ watch:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitUnverified {
 		t.Fatalf("expected CleanUnverified watch exit %d, got %d stderr=%q", exitUnverified, code, stderr.String())
@@ -6045,6 +6305,7 @@ watch:
 }
 
 func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	reason := "Pull request is too large to review"
@@ -6078,7 +6339,7 @@ func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testin
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitUnverified {
 		t.Fatalf("Review Skipped exit = %d, want %d; stderr=%q", code, exitUnverified, stderr.String())
@@ -6147,6 +6408,7 @@ func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testin
 }
 
 func TestRunWatchCleanupBeforeAgentWarningFollowsReviewSkippedReason(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	reason := "Review Source size limit was exceeded"
@@ -6199,7 +6461,7 @@ func TestRunWatchCleanupBeforeAgentWarningFollowsReviewSkippedReason(t *testing.
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitUnverified {
 		t.Fatalf("Review Skipped exit = %d, want %d; stderr=%q", code, exitUnverified, stderr.String())
@@ -6212,6 +6474,7 @@ func TestRunWatchCleanupBeforeAgentWarningFollowsReviewSkippedReason(t *testing.
 }
 
 func TestRunWatchReviewIssuesUnknownWhenFetchFailsKeepsArtifactsUnpublished(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
@@ -6230,7 +6493,7 @@ func TestRunWatchReviewIssuesUnknownWhenFetchFailsKeepsArtifactsUnpublished(t *t
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("failed fetch exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
@@ -6254,6 +6517,7 @@ func TestRunWatchReviewIssuesUnknownWhenFetchFailsKeepsArtifactsUnpublished(t *t
 }
 
 func TestRunWatchReviewIssuesKnownAfterFetchedZero(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withFetchReviewItems(t, nil)
@@ -6270,7 +6534,7 @@ func TestRunWatchReviewIssuesKnownAfterFetchedZero(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("fetched-zero exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -6305,6 +6569,7 @@ func TestRunWatchReviewIssuesKnownAfterFetchedZero(t *testing.T) {
 }
 
 func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withRealReviewPreflight(t, repoDir, true)
@@ -6329,7 +6594,7 @@ func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"watch", "--source", "coderabbit", "--pr", "123",
 		"--until-clean", "--max-rounds", "1", "--no-input",
 	}, &stdout, &stderr)
@@ -6386,6 +6651,7 @@ func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T
 }
 
 func TestRunWatchArtifactEvidenceProofFailureFallsBackAfterPush(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withReviewGitWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withRealReviewPreflight(t, repoDir, true)
@@ -6412,7 +6678,7 @@ func TestRunWatchArtifactEvidenceProofFailureFallsBackAfterPush(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"watch", "--source", "coderabbit", "--pr", "123",
 		"--until-clean", "--max-rounds", "1", "--no-input",
 	}, &stdout, &stderr)
@@ -6437,6 +6703,7 @@ func TestRunWatchArtifactEvidenceProofFailureFallsBackAfterPush(t *testing.T) {
 }
 
 func TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		setup func(t *testing.T, repoDir string, reviewRoot string, message string) reviewsource.ArtifactCommit
@@ -6534,6 +6801,7 @@ func TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused(t *testing.T) {
 }
 
 func TestWatchArtifactEvidenceMixedFallsBackToCurrentHeadPolling(t *testing.T) {
+	t.Parallel()
 	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	sleeper := &fakeWatchSleeper{clock: clock}
 	var evidenceHeads []string
@@ -6589,6 +6857,7 @@ func TestWatchArtifactEvidenceMixedFallsBackToCurrentHeadPolling(t *testing.T) {
 }
 
 func TestRunWatchArtifactEvidenceThreadRefusesAndFallsBack(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withRealReviewPreflight(t, repoDir, true)
@@ -6619,7 +6888,7 @@ func TestRunWatchArtifactEvidenceThreadRefusesAndFallsBack(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"watch", "--source", "coderabbit", "--pr", "123",
 		"--until-clean", "--max-rounds", "1", "--no-input",
 	}, &stdout, &stderr)
@@ -6649,6 +6918,7 @@ func TestRunWatchArtifactEvidenceThreadRefusesAndFallsBack(t *testing.T) {
 }
 
 func TestWatchTerminalContextCarriesDetachedConsoleAttachEvidenceAndVerifiedHead(t *testing.T) {
+	t.Parallel()
 	known := true
 	req := commandRequest{
 		artifactDir: "/tmp/roundfix-artifacts",
@@ -6685,6 +6955,7 @@ func TestWatchTerminalContextCarriesDetachedConsoleAttachEvidenceAndVerifiedHead
 }
 
 func TestTerminalContextAddsReasonAndNextActionForEveryNonCleanOutcome(t *testing.T) {
+	t.Parallel()
 	states := []string{
 		store.StateFetched,
 		store.StateStopped,
@@ -6709,6 +6980,7 @@ func TestTerminalContextAddsReasonAndNextActionForEveryNonCleanOutcome(t *testin
 }
 
 func TestRunWatchReusesOneAgentSessionAcrossRoundsAndCloses(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	inner := &fakeAgentRunner{statuses: []string{rounds.StatusResolved, rounds.StatusFailed, rounds.StatusResolved}}
@@ -6775,7 +7047,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit 0, got %d stderr=%q", code, stderr.String())
@@ -6793,6 +7065,7 @@ resolve:
 }
 
 func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	statusCalls := 0
@@ -6830,7 +7103,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
@@ -6855,6 +7128,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 }
 
 func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	verifier := &fakeVerifier{}
@@ -6873,7 +7147,7 @@ func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
@@ -6919,6 +7193,7 @@ func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t 
 }
 
 func TestRunResolveSIGINTStopReturns130(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeStoppingAgentRunner{})
@@ -6928,7 +7203,7 @@ func TestRunResolveSIGINTStopReturns130(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	stoppedCode := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	stoppedCode := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 	code := exitForInterrupt(stoppedCode, true)
 
 	if code != 130 {
@@ -6940,6 +7215,7 @@ func TestRunResolveSIGINTStopReturns130(t *testing.T) {
 }
 
 func TestExitForWatchOutcome(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		outcome string
 		code    int
@@ -6966,6 +7242,7 @@ func TestExitForWatchOutcome(t *testing.T) {
 }
 
 func TestRunResolveRejectsMissingCompatibleArtifactsBeforeRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
@@ -6975,7 +7252,7 @@ func TestRunResolveRejectsMissingCompatibleArtifactsBeforeRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -6996,6 +7273,7 @@ func TestRunResolveRejectsMissingCompatibleArtifactsBeforeRun(t *testing.T) {
 }
 
 func TestRunResolveHonorsRoundSelector(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
@@ -7007,7 +7285,7 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--round", "2", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--round", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Unresolved resolve exit code 1, got %d", code)
@@ -7035,6 +7313,7 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 }
 
 func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	sourceResolver := &fakeSourceResolver{}
@@ -7044,7 +7323,7 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit code 0, got %d", code)
@@ -7091,6 +7370,7 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 }
 
 func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	verifier := &fakeVerifier{err: errors.New("tests failed")}
@@ -7106,7 +7386,7 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Run failure exit 1, got %d", code)
@@ -7150,6 +7430,7 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 }
 
 func TestRunResolveProcessesAllBatchesBeforeFinalPush(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	verifier := &fakeVerifier{}
@@ -7194,7 +7475,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -7256,6 +7537,7 @@ resolve:
 }
 
 func TestRunResolveFinalPushRunsOnceAfterAllUnresolvedTerminal(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	verifier := &fakeVerifier{}
@@ -7298,7 +7580,7 @@ func TestRunResolveFinalPushRunsOnceAfterAllUnresolvedTerminal(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -7329,6 +7611,7 @@ func TestRunResolveFinalPushRunsOnceAfterAllUnresolvedTerminal(t *testing.T) {
 }
 
 func TestRunResolveResolvesInvalidAssignedIssueSourceThread(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	sourceResolver := &fakeSourceResolver{}
@@ -7339,7 +7622,7 @@ func TestRunResolveResolvesInvalidAssignedIssueSourceThread(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -7354,6 +7637,7 @@ func TestRunResolveResolvesInvalidAssignedIssueSourceThread(t *testing.T) {
 }
 
 func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeAgentRunner{probeErr: errors.New("adapter missing")})
@@ -7362,7 +7646,7 @@ func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected probe preflight exit 2, got %d", code)
@@ -7377,6 +7661,7 @@ func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
 }
 
 func TestRunResolveSelectionPreflightRejectionReportsTupleAndCreatesNoRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	probeErr := &agent.SelectionPreflightError{
@@ -7398,7 +7683,7 @@ runtimes:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
@@ -7435,6 +7720,7 @@ runtimes:
 }
 
 func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{probeErr: &agent.SelectionPreflightError{
@@ -7448,7 +7734,7 @@ func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
@@ -7469,6 +7755,7 @@ func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
 }
 
 func TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name             string
 		args             []string
@@ -7511,7 +7798,7 @@ func TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun(t *te
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected selection preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7548,6 +7835,7 @@ func TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun(t *te
 }
 
 func TestRunResolveSelectionFailureDoesNotProbeDynamicCandidates(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{probeErr: &agent.SelectionPreflightError{
@@ -7562,7 +7850,7 @@ func TestRunResolveSelectionFailureDoesNotProbeDynamicCandidates(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "gpt-5.6-sol", "--reasoning-effort", "unsupported", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "gpt-5.6-sol", "--reasoning-effort", "unsupported", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
@@ -7593,6 +7881,7 @@ func TestRunResolveSelectionFailureDoesNotProbeDynamicCandidates(t *testing.T) {
 }
 
 func TestRunReviewAgentCommandsDoNotPromptForDynamicFallback(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name             string
 		args             []string
@@ -7633,7 +7922,7 @@ func TestRunReviewAgentCommandsDoNotPromptForDynamicFallback(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected profile proof preflight exit %d, got exit %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7656,6 +7945,7 @@ func TestRunReviewAgentCommandsDoNotPromptForDynamicFallback(t *testing.T) {
 }
 
 func TestRunResolveProfileProofFailureIgnoresFallbackConfirmationInput(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		input string
@@ -7686,7 +7976,7 @@ func TestRunResolveProfileProofFailureIgnoresFallbackConfirmationInput(t *testin
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"resolve", "--pr", "123"}, &stdout, &stderr)
+			code := runCLI(t, []string{"resolve", "--pr", "123"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected profile proof preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7711,6 +8001,7 @@ func TestRunResolveProfileProofFailureIgnoresFallbackConfirmationInput(t *testin
 }
 
 func TestRunResolveNoInputProfileProofFailureReportsRemediation(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{
@@ -7723,7 +8014,7 @@ func TestRunResolveNoInputProfileProofFailureReportsRemediation(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected profile proof preflight exit %d, got %d", exitPreflight, code)
@@ -7740,6 +8031,11 @@ func TestRunResolveNoInputProfileProofFailureReportsRemediation(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+// Sequential: this is the only test that drives the detached-child branch, and
+// that branch mutates process-global state — it hands production code a raw
+// file descriptor number and newDetachChildFromEnv unsets two environment
+// variables. Go refuses t.Parallel() next to t.Setenv for exactly this reason,
+// but cannot see the mutation when it lives in production code.
 func TestRunResolveDetachedChildReportsProfileProofFailure(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -7764,12 +8060,11 @@ func TestRunResolveDetachedChildReportsProfileProofFailure(t *testing.T) {
 		_ = readPipe.Close()
 		_ = writePipe.Close()
 	})
-	t.Setenv(detachHandshakeFDEnv, strconv.Itoa(int(writePipe.Fd())))
-	t.Setenv(detachConsoleTempEnv, filepath.Join(t.TempDir(), "console.tmp"))
+	setDetachChildEnvironmentForTest(t, strconv.Itoa(int(writePipe.Fd())), filepath.Join(t.TempDir(), "console.tmp"))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected detached preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7787,6 +8082,7 @@ func TestRunResolveDetachedChildReportsProfileProofFailure(t *testing.T) {
 }
 
 func TestRunReviewAgentCommandsPassOneRunSelectionOverridesToPreflight(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -7812,7 +8108,7 @@ func TestRunReviewAgentCommandsPassOneRunSelectionOverridesToPreflight(t *testin
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7833,6 +8129,7 @@ func TestRunReviewAgentCommandsPassOneRunSelectionOverridesToPreflight(t *testin
 }
 
 func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -7855,7 +8152,7 @@ func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7872,6 +8169,7 @@ func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.
 }
 
 func TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T) {
+	t.Parallel()
 	partials := []struct {
 		name string
 		args []string
@@ -7893,6 +8191,7 @@ func TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T)
 }
 
 func TestRunWatchSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T) {
+	t.Parallel()
 	assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t, []string{
 		"watch", "--source", "coderabbit", "--pr", "123", "--model", "gpt-5.6-sol", "--no-input",
 	})
@@ -7908,7 +8207,7 @@ func assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run(args, &stdout, &stderr)
+	code := runCLI(t, args, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -7932,6 +8231,7 @@ func assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T
 }
 
 func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
+	t.Parallel()
 	installCommand := "npm install -g acpx@" + agent.MinimumACPXVersion
 	tests := []struct {
 		name     string
@@ -7967,7 +8267,7 @@ func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+			code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected probe preflight exit 2, got %d", code)
@@ -7992,6 +8292,7 @@ func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
 }
 
 func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeAgentRunner{runErr: errors.New("agent crashed")})
@@ -8000,7 +8301,7 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Run failure exit 1, got %d", code)
@@ -8029,6 +8330,7 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 }
 
 func TestRunResolveAgentFailureContinuesWithLaterBatches(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{runErr: errors.New("agent crashed")}
@@ -8067,7 +8369,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Unresolved exit 1, got %d", code)
@@ -8100,6 +8402,7 @@ resolve:
 }
 
 func TestRunResolveUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	inner := &fakeAgentRunner{}
@@ -8139,7 +8442,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit 0, got %d stderr=%q", code, stderr.String())
@@ -8153,6 +8456,7 @@ resolve:
 }
 
 func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		inner     agent.Runner
@@ -8205,7 +8509,7 @@ func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
@@ -8221,13 +8525,14 @@ func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 }
 
 func TestRunResolveRejectsIncompatibleArtifacts(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "other-branch")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -8239,6 +8544,7 @@ func TestRunResolveRejectsIncompatibleArtifacts(t *testing.T) {
 }
 
 func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		args     []string
@@ -8297,7 +8603,7 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected exit code 2, got %d", code)
@@ -8317,6 +8623,7 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 }
 
 func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
+	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
 	tests := []struct {
 		name string
 		args []string
@@ -8338,11 +8645,12 @@ func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			homeDir, _ := withCLIWorkspace(t)
+			// This case verifies the process-level TUI override conflict with --no-agent-console.
 			t.Setenv("ROUNDFIX_TUI", "always")
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -8359,6 +8667,7 @@ func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
 }
 
 func TestRunFetchCollectsMissingPullRequestWithInteractiveInput(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withCurrentPullRequestSuggestion(t, "321")
@@ -8372,7 +8681,7 @@ func TestRunFetchCollectsMissingPullRequestWithInteractiveInput(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected fetch exit 0, got %d", code)
@@ -8397,6 +8706,7 @@ func TestRunFetchCollectsMissingPullRequestWithInteractiveInput(t *testing.T) {
 }
 
 func TestRunFetchReportsBlankInteractivePullRequestWithoutSuggestingInteractiveAgain(t *testing.T) {
+	t.Parallel()
 	homeDir, _ := withCLIWorkspace(t)
 	withCurrentPullRequestSuggestion(t, "")
 	withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
@@ -8405,7 +8715,7 @@ func TestRunFetchReportsBlankInteractivePullRequestWithoutSuggestingInteractiveA
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -8426,6 +8736,7 @@ func TestRunFetchReportsBlankInteractivePullRequestWithoutSuggestingInteractiveA
 }
 
 func TestRunResolveInteractiveInputSuggestsConfiguredAgentAndRememberedPullRequest(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
@@ -8450,7 +8761,7 @@ func TestRunResolveInteractiveInputSuggestsConfiguredAgentAndRememberedPullReque
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--interactive"}, &stdout, &stderr)
+	code := runCLI(t, []string{"resolve", "--interactive"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected resolve exit 0, got %d", code)
@@ -8471,6 +8782,7 @@ func TestRunResolveInteractiveInputSuggestsConfiguredAgentAndRememberedPullReque
 }
 
 func TestRunInteractiveInputRunsPreflightBeforeSideEffects(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
 		t.Fatal("fetch must not run after post-input Preflight Validation failure")
@@ -8488,7 +8800,7 @@ func TestRunInteractiveInputRunsPreflightBeforeSideEffects(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected post-input preflight exit 2, got %d", code)
@@ -8504,6 +8816,7 @@ func TestRunInteractiveInputRunsPreflightBeforeSideEffects(t *testing.T) {
 }
 
 func TestRunOperationalCommandAppliesConfigAndCLIArtifactDirPrecedence(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -8518,7 +8831,7 @@ defaults:
 
 	var projectStdout bytes.Buffer
 	var projectStderr bytes.Buffer
-	projectCode := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &projectStdout, &projectStderr)
+	projectCode := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &projectStdout, &projectStderr)
 
 	if projectCode != 0 {
 		t.Fatalf("expected tracked Fetch Run exit 0, got %d", projectCode)
@@ -8529,7 +8842,7 @@ defaults:
 
 	var cliStdout bytes.Buffer
 	var cliStderr bytes.Buffer
-	cliCode := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--artifact-dir", "cli-artifacts", "--no-input"}, &cliStdout, &cliStderr)
+	cliCode := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--artifact-dir", "cli-artifacts", "--no-input"}, &cliStdout, &cliStderr)
 
 	if cliCode != 0 {
 		t.Fatalf("expected tracked Fetch Run exit 0, got %d", cliCode)
@@ -8540,6 +8853,7 @@ defaults:
 }
 
 func TestRunFetchRejectsDuplicateActiveRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 
@@ -8567,11 +8881,11 @@ func TestRunFetchRejectsDuplicateActiveRun(t *testing.T) {
 	}
 	subdir := filepath.Join(repoDir, "nested")
 	mustMkdir(t, subdir)
-	t.Chdir(subdir)
+	setCommandWorkDirForTest(t, subdir)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2 for duplicate Active Run, got %d", code)
@@ -8588,6 +8902,7 @@ func TestRunFetchRejectsDuplicateActiveRun(t *testing.T) {
 }
 
 func TestBranchIntegrityPreflightRejectsPendingRunBranchForReviewCommands(t *testing.T) {
+	t.Parallel()
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			homeDir, repoDir := withCLIWorkspace(t)
@@ -8606,7 +8921,7 @@ func TestBranchIntegrityPreflightRejectsPendingRunBranchForReviewCommands(t *tes
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(branchIntegrityCommandArgs(command), &stdout, &stderr)
+			code := runCLI(t, branchIntegrityCommandArgs(command), &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected Branch Integrity Preflight exit 2, got %d", code)
@@ -8634,6 +8949,7 @@ func TestBranchIntegrityPreflightRejectsPendingRunBranchForReviewCommands(t *tes
 }
 
 func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pending := []runworktree.PendingRunWork{{
@@ -8646,7 +8962,7 @@ func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *te
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected fetch to proceed after auto-integration, got %d stderr=%q", code, stderr.String())
@@ -8668,6 +8984,7 @@ func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *te
 }
 
 func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name             string
 		probeResult      bool
@@ -8723,7 +9040,7 @@ func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+			code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 			if code != test.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", test.wantCode, code, stderr.String())
@@ -8743,6 +9060,7 @@ func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
 }
 
 func TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	taskRun := createBranchIntegrityImplementRun(t, homeDir, repoDir, "0053-task-work")
@@ -8772,7 +9090,7 @@ func TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately(t 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected Branch Integrity Preflight refusal, got %d stderr=%q", code, stderr.String())
@@ -8836,6 +9154,7 @@ func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) int {
 }
 
 func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withBranchIntegrity(t, nil, nil)
@@ -8843,7 +9162,7 @@ func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected fetch to migrate the outdated Run Database and proceed, got %d stderr=%q", code, stderr.String())
@@ -8870,6 +9189,7 @@ func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
 }
 
 func TestBranchIntegrityPreflightRejectsActiveRunForReviewCommands(t *testing.T) {
+	t.Parallel()
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			homeDir, repoDir := withCLIWorkspace(t)
@@ -8900,7 +9220,7 @@ func TestBranchIntegrityPreflightRejectsActiveRunForReviewCommands(t *testing.T)
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(branchIntegrityCommandArgs(command), &stdout, &stderr)
+			code := runCLI(t, branchIntegrityCommandArgs(command), &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected active Run refusal exit 2, got %d", code)
@@ -8921,6 +9241,7 @@ func TestBranchIntegrityPreflightRejectsActiveRunForReviewCommands(t *testing.T)
 }
 
 func TestBranchIntegrityBypassPublishesAuditBeforeFetch(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pending := []runworktree.PendingRunWork{{
@@ -8934,7 +9255,7 @@ func TestBranchIntegrityBypassPublishesAuditBeforeFetch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected bypassed fetch to proceed, got %d stderr=%q", code, stderr.String())
@@ -8973,6 +9294,7 @@ func TestBranchIntegrityBypassPublishesAuditBeforeFetch(t *testing.T) {
 }
 
 func TestBranchIntegrityBypassAuditsActiveRunAndProceeds(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withBranchIntegrity(t, nil, nil)
@@ -9002,7 +9324,7 @@ func TestBranchIntegrityBypassAuditsActiveRunAndProceeds(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected bypassed fetch to proceed despite active Run, got %d stderr=%q", code, stderr.String())
@@ -9024,6 +9346,7 @@ func TestBranchIntegrityBypassAuditsActiveRunAndProceeds(t *testing.T) {
 }
 
 func TestBranchIntegrityBypassFailsWhenAuditCommentPublishFails(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withBranchIntegrity(t, []runworktree.PendingRunWork{{
@@ -9040,7 +9363,7 @@ func TestBranchIntegrityBypassFailsWhenAuditCommentPublishFails(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected audit publish failure exit 2, got %d", code)
@@ -9062,12 +9385,13 @@ func TestBranchIntegrityBypassFailsWhenAuditCommentPublishFails(t *testing.T) {
 }
 
 func TestReviewCommandHelpDocumentsSkipBranchIntegrity(t *testing.T) {
+	t.Parallel()
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{command, "--help"}, &stdout, &stderr)
+			code := runCLI(t, []string{command, "--help"}, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected help exit 0, got %d", code)
@@ -9080,6 +9404,7 @@ func TestReviewCommandHelpDocumentsSkipBranchIntegrity(t *testing.T) {
 }
 
 func TestRunStopByRunIDRecordsStopRequest(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 
@@ -9108,7 +9433,7 @@ func TestRunStopByRunIDRecordsStopRequest(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"stop", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", active.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9126,6 +9451,7 @@ func TestRunStopByRunIDRecordsStopRequest(t *testing.T) {
 }
 
 func TestRunStopByPullRequestRecordsStopRequestForMatchingActiveRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withStopPullRequestResolver(t, preflight.PullRequest{
@@ -9161,7 +9487,7 @@ func TestRunStopByPullRequestRecordsStopRequestForMatchingActiveRun(t *testing.T
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"stop", "--pr", "123"}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--pr", "123"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9177,6 +9503,7 @@ func TestRunStopByPullRequestRecordsStopRequestForMatchingActiveRun(t *testing.T
 }
 
 func TestRunStopBySpecRecordsStopRequestForMatchingActiveRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 
 	ctx := context.Background()
@@ -9200,7 +9527,7 @@ func TestRunStopBySpecRecordsStopRequestForMatchingActiveRun(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"stop", "--spec", "0001-widget-flow"}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--spec", "0001-widget-flow"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9242,6 +9569,7 @@ func TestRunStopBySpecRecordsStopRequestForMatchingActiveRun(t *testing.T) {
 }
 
 func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	proved := false
@@ -9277,7 +9605,7 @@ func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -9292,6 +9620,7 @@ func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
 }
 
 func TestRunForceStopAcceptsFlagsInAnyPosition(t *testing.T) {
+	t.Parallel()
 	orders := map[string]func(runID string) []string{
 		"run id then flag": func(runID string) []string { return []string{"stop", runID, "--force"} },
 		"flag then run id": func(runID string) []string { return []string{"stop", "--force", runID} },
@@ -9303,7 +9632,7 @@ func TestRunForceStopAcceptsFlagsInAnyPosition(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), argsFor(active.ID), &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), argsFor(active.ID), &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("Force Stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -9317,6 +9646,7 @@ func TestRunForceStopAcceptsFlagsInAnyPosition(t *testing.T) {
 }
 
 func TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name              string
 		proofErr          error
@@ -9396,7 +9726,7 @@ func TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof(t *testi
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), args, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("Force Stop exit = %d, want %d; stdout=%q stderr=%q", code, tt.wantCode, stdout.String(), stderr.String())
@@ -9413,6 +9743,7 @@ func TestRunForceStopOwnerIdentityUnreadableFlagRequiresUnreadableProof(t *testi
 }
 
 func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		step string
@@ -9439,7 +9770,7 @@ func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testi
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+			code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 			if code != exitRunFailed {
 				t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
@@ -9476,6 +9807,7 @@ func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testi
 }
 
 func TestRunForceStopOwnerProofFailurePreservesAgentSessions(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -9511,7 +9843,7 @@ func TestRunForceStopOwnerProofFailurePreservesAgentSessions(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("Force Stop failure exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
@@ -9563,6 +9895,7 @@ func TestRunForceStopOwnerProofFailurePreservesAgentSessions(t *testing.T) {
 }
 
 func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -9590,7 +9923,7 @@ func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("Force Stop failure exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
@@ -9628,6 +9961,7 @@ func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T
 // stored owner identity token differs from its genuine one.
 
 func TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -9664,7 +9998,7 @@ func TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions(t *testi
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("idempotent force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
@@ -9679,6 +10013,7 @@ func TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions(t *testi
 }
 
 func TestRunStopForceAgentSessionCleanupSkipsRunWithoutActiveLifecycle(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	cancelCalls := 0
@@ -9694,7 +10029,7 @@ func TestRunStopForceAgentSessionCleanupSkipsRunWithoutActiveLifecycle(t *testin
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", "--spec", "0001-widget-flow"}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", "--spec", "0001-widget-flow"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9729,6 +10064,7 @@ func TestRunStopForceAgentSessionCleanupSkipsRunWithoutActiveLifecycle(t *testin
 }
 
 func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Stopped task",
@@ -9776,7 +10112,7 @@ func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9809,6 +10145,7 @@ func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *
 }
 
 func TestRunStopForceRegisteredAgentSessionAbsenceIsIdempotent(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -9831,7 +10168,7 @@ func TestRunStopForceRegisteredAgentSessionAbsenceIsIdempotent(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9850,6 +10187,7 @@ func TestRunStopForceRegisteredAgentSessionAbsenceIsIdempotent(t *testing.T) {
 }
 
 func TestRunStopForceAgentSessionCleanupFailureRemainsVisibleWithoutClosedLifecycle(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -9867,7 +10205,7 @@ func TestRunStopForceAgentSessionCleanupFailureRemainsVisibleWithoutClosedLifecy
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9887,6 +10225,7 @@ func TestRunStopForceAgentSessionCleanupFailureRemainsVisibleWithoutClosedLifecy
 }
 
 func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Stopped task",
@@ -9903,7 +10242,7 @@ func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9927,6 +10266,7 @@ func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
 }
 
 func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Stopped task",
@@ -9948,7 +10288,7 @@ func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -9962,6 +10302,7 @@ func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
 }
 
 func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		runtime       string
@@ -10004,7 +10345,7 @@ func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+			code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
@@ -10051,6 +10392,7 @@ func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 }
 
 func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
@@ -10062,7 +10404,7 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	var gracefulStdout bytes.Buffer
 	var gracefulStderr bytes.Buffer
 
-	gracefulCode := Run([]string{"stop", "--spec", "0001-widget-flow"}, &gracefulStdout, &gracefulStderr)
+	gracefulCode := runCLI(t, []string{"stop", "--spec", "0001-widget-flow"}, &gracefulStdout, &gracefulStderr)
 
 	if gracefulCode != 0 {
 		t.Fatalf("expected graceful stop exit 0, got %d stderr=%q", gracefulCode, gracefulStderr.String())
@@ -10079,7 +10421,7 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	var forceStdout bytes.Buffer
 	var forceStderr bytes.Buffer
 
-	forceCode := Run([]string{"stop", "--force", "--spec", "0001-widget-flow"}, &forceStdout, &forceStderr)
+	forceCode := runCLI(t, []string{"stop", "--force", "--spec", "0001-widget-flow"}, &forceStdout, &forceStderr)
 
 	if forceCode != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", forceCode, forceStderr.String())
@@ -10111,6 +10453,7 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 }
 
 func TestRunStopSpecSelectorRejectsOtherSelectors(t *testing.T) {
+	t.Parallel()
 	withCLIWorkspace(t)
 	tests := []struct {
 		name string
@@ -10124,7 +10467,7 @@ func TestRunStopSpecSelectorRejectsOtherSelectors(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(tt.args, &stdout, &stderr)
+			code := runCLI(t, tt.args, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected stop validation exit 2, got %d", code)
@@ -10140,11 +10483,12 @@ func TestRunStopSpecSelectorRejectsOtherSelectors(t *testing.T) {
 }
 
 func TestRunStopBySpecReportsMissingActiveRun(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"stop", "--spec", "0002-missing"}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--spec", "0002-missing"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected stop validation exit 2, got %d", code)
@@ -10159,10 +10503,11 @@ func TestRunStopBySpecReportsMissingActiveRun(t *testing.T) {
 }
 
 func TestRunStopHelpExplainsProofBeforeCompletion(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"stop", "--help"}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", "--help"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected stop help exit 0, got %d", code)
@@ -10199,6 +10544,7 @@ func TestRunStopHelpExplainsProofBeforeCompletion(t *testing.T) {
 }
 
 func TestRunStopRejectsAlreadyTerminalRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 
@@ -10230,7 +10576,7 @@ func TestRunStopRejectsAlreadyTerminalRun(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"stop", active.ID}, &stdout, &stderr)
+	code := runCLI(t, []string{"stop", active.ID}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected stop validation exit 2, got %d", code)
@@ -10245,6 +10591,7 @@ func TestRunStopRejectsAlreadyTerminalRun(t *testing.T) {
 }
 
 func TestRunPreflightFailureLeavesBufferOutputPlainByDefault(t *testing.T) {
+	t.Parallel()
 	withCLIWorkspace(t)
 	withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
 		return preflight.Result{}, errors.New("plain preflight failure")
@@ -10252,7 +10599,7 @@ func TestRunPreflightFailureLeavesBufferOutputPlainByDefault(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -10266,6 +10613,8 @@ func TestRunPreflightFailureLeavesBufferOutputPlainByDefault(t *testing.T) {
 }
 
 func TestRunPreflightFailureColorsOutputWhenForced(t *testing.T) {
+	// Sequential: mutates the process-wide ROUNDFIX_COLOR setting required by rendering.
+	// This case verifies the process-level color override at the public command boundary.
 	t.Setenv("ROUNDFIX_COLOR", "always")
 	withCLIWorkspace(t)
 	withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
@@ -10274,7 +10623,7 @@ func TestRunPreflightFailureColorsOutputWhenForced(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -10288,6 +10637,7 @@ func TestRunPreflightFailureColorsOutputWhenForced(t *testing.T) {
 }
 
 func TestRunOperationalCommandRejectsInvalidConfigAndArtifactDirectory(t *testing.T) {
+	t.Parallel()
 	t.Run("invalid user config YAML", func(t *testing.T) {
 		homeDir, _ := withCLIWorkspace(t)
 		mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
@@ -10295,7 +10645,7 @@ func TestRunOperationalCommandRejectsInvalidConfigAndArtifactDirectory(t *testin
 
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+		code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 		if code != 2 {
 			t.Fatalf("expected exit code 2, got %d", code)
@@ -10318,7 +10668,7 @@ func TestRunOperationalCommandRejectsInvalidConfigAndArtifactDirectory(t *testin
 
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--artifact-dir", artifactFile, "--no-input"}, &stdout, &stderr)
+		code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--artifact-dir", artifactFile, "--no-input"}, &stdout, &stderr)
 
 		if code != 2 {
 			t.Fatalf("expected exit code 2, got %d", code)
@@ -10396,7 +10746,6 @@ func cloneSetupFiles(files map[string]string) map[string]string {
 
 func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 	t.Helper()
-	old := setupDeps
 	profileRunner := &profileReadinessExactRunner{
 		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
 			fake.probeRequests = append(fake.probeRequests, req)
@@ -10413,7 +10762,7 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			}, nil
 		},
 	}
-	setupDeps = setupDependencies{
+	dependencies := setupDependencies{
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
 			return roundconfig.Loaded{
 				Config:            fake.config,
@@ -10497,8 +10846,8 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			return true, nil
 		},
 	}
-	t.Cleanup(func() {
-		setupDeps = old
+	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
+		commandDependencies.setup = dependencies
 	})
 }
 
@@ -10597,10 +10946,8 @@ func withOutcomeNotifier(t *testing.T, notifier roundnotify.Notifier) {
 
 func withOutcomeNotifierFactory(t *testing.T, factory func(roundconfig.Config) roundnotify.Notifier) {
 	t.Helper()
-	old := newOutcomeNotifier
-	newOutcomeNotifier = factory
-	t.Cleanup(func() {
-		newOutcomeNotifier = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.newOutcomeNotifier = factory
 	})
 }
 
@@ -10631,7 +10978,7 @@ func runCleanResolveWithOutcomeNotifier(t *testing.T, notifier *recordingOutcome
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -10647,8 +10994,7 @@ func withCLIWorkspace(t *testing.T) (string, string) {
 	homeDir := t.TempDir()
 	repoDir := t.TempDir()
 	mustMkdir(t, filepath.Join(repoDir, ".git"))
-	t.Setenv("HOME", homeDir)
-	t.Chdir(repoDir)
+	setCommandEnvironmentForTest(t, homeDir, repoDir)
 	return homeDir, repoDir
 }
 
@@ -10931,28 +11277,21 @@ func setListedRunCompletedAt(t *testing.T, homeDir string, runID string, complet
 
 func withRunsListNow(t *testing.T, now time.Time) {
 	t.Helper()
-	old := runsListNow
-	runsListNow = func() time.Time { return now }
-	t.Cleanup(func() {
-		runsListNow = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.runsListNow = func() time.Time { return now }
 	})
 }
 
 func withRunsInteractiveInput(t *testing.T, available bool) {
 	t.Helper()
-	old := runsInteractiveInputAvailable
-	runsInteractiveInputAvailable = func() bool {
-		return available
-	}
-	t.Cleanup(func() {
-		runsInteractiveInputAvailable = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.runsInteractiveInputAvailable = func() bool { return available }
 	})
 }
 
 func withReviewGitWorkspace(t *testing.T) (string, string) {
 	t.Helper()
 	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
 	repoDir := t.TempDir()
 	gittest.InitRepo(t, repoDir, "--initial-branch=main")
 	gitImplement(t, repoDir, "config", "user.name", "Roundfix Test")
@@ -10974,7 +11313,7 @@ watch:
 	if err != nil {
 		t.Fatalf("resolve review repo dir: %v", err)
 	}
-	t.Chdir(resolved)
+	setCommandEnvironmentForTest(t, homeDir, resolved)
 	return homeDir, resolved
 }
 
@@ -11090,27 +11429,19 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 
 func withNoReviewRunWorktrees(t *testing.T) {
 	t.Helper()
-	oldCreate := createRunWorktree
-	oldIntegrate := integrateRunWorktree
-	oldCleanup := cleanupCleanRunWorktree
-	oldPrune := pruneTerminalRunWorktrees
-	createRunWorktree = func(_ context.Context, opts runworktree.CreateOptions) (runworktree.Ref, error) {
-		return runworktree.Ref{}, fmt.Errorf("review command unexpectedly created a Run Worktree for run %s", opts.RunID)
-	}
-	integrateRunWorktree = func(context.Context, runworktree.Ref, string, string) (runworktree.IntegrationResult, error) {
-		return runworktree.IntegrationResult{}, errors.New("review command unexpectedly integrated a Run Worktree")
-	}
-	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
-		return fmt.Errorf("review command unexpectedly cleaned a Run Worktree %s", ref.Path)
-	}
-	pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
-		return nil, nil
-	}
-	t.Cleanup(func() {
-		createRunWorktree = oldCreate
-		integrateRunWorktree = oldIntegrate
-		cleanupCleanRunWorktree = oldCleanup
-		pruneTerminalRunWorktrees = oldPrune
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.createRunWorktree = func(_ context.Context, opts runworktree.CreateOptions) (runworktree.Ref, error) {
+			return runworktree.Ref{}, fmt.Errorf("review command unexpectedly created a Run Worktree for run %s", opts.RunID)
+		}
+		dependencies.integrateRunWorktree = func(context.Context, runworktree.Ref, string, string) (runworktree.IntegrationResult, error) {
+			return runworktree.IntegrationResult{}, errors.New("review command unexpectedly integrated a Run Worktree")
+		}
+		dependencies.cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
+			return fmt.Errorf("review command unexpectedly cleaned a Run Worktree %s", ref.Path)
+		}
+		dependencies.pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
+			return nil, nil
+		}
 	})
 }
 
@@ -11123,19 +11454,15 @@ func withFetchReviewItems(t *testing.T, items []reviewsource.ReviewItem) {
 
 func withFetchReviewItemsFunc(t *testing.T, fn func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error)) {
 	t.Helper()
-	old := fetchReviewItems
-	fetchReviewItems = fn
-	t.Cleanup(func() {
-		fetchReviewItems = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.fetchReviewItems = fn
 	})
 }
 
 func withPreflight(t *testing.T, fn func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error)) {
 	t.Helper()
-	old := runCommandPreflight
-	runCommandPreflight = fn
-	t.Cleanup(func() {
-		runCommandPreflight = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.runCommandPreflight = fn
 	})
 }
 
@@ -11146,24 +11473,18 @@ type branchIntegrityRecorder struct {
 func withBranchIntegrity(t *testing.T, pending []runworktree.PendingRunWork, integrateErr error) *branchIntegrityRecorder {
 	t.Helper()
 	recorder := &branchIntegrityRecorder{}
-	oldList := listPendingRunWork
-	oldIntegrate := integratePendingRunWork
-	oldRefresh := refreshBranchIntegrityHead
-	listPendingRunWork = func(context.Context, string, string) ([]runworktree.PendingRunWork, error) {
-		return append([]runworktree.PendingRunWork(nil), pending...), nil
-	}
-	integratePendingRunWork = func(_ context.Context, _ string, _ string, runBranch string) error {
-		recorder.integrations = append(recorder.integrations, runBranch)
-		return integrateErr
-	}
-	refreshBranchIntegrityHead = func(_ context.Context, result preflight.Result) (preflight.Result, error) {
-		result.Git.HEAD = "integrated-head"
-		return result, nil
-	}
-	t.Cleanup(func() {
-		listPendingRunWork = oldList
-		integratePendingRunWork = oldIntegrate
-		refreshBranchIntegrityHead = oldRefresh
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.listPendingRunWork = func(context.Context, string, string) ([]runworktree.PendingRunWork, error) {
+			return append([]runworktree.PendingRunWork(nil), pending...), nil
+		}
+		dependencies.integratePendingRunWork = func(_ context.Context, _ string, _ string, runBranch string) error {
+			recorder.integrations = append(recorder.integrations, runBranch)
+			return integrateErr
+		}
+		dependencies.refreshBranchIntegrityHead = func(_ context.Context, result preflight.Result) (preflight.Result, error) {
+			result.Git.HEAD = "integrated-head"
+			return result, nil
+		}
 	})
 	return recorder
 }
@@ -11173,10 +11494,8 @@ func withSupersedingQAReport(
 	fn func(context.Context, string, string, string, string) (string, bool),
 ) {
 	t.Helper()
-	old := supersedingQAReport
-	supersedingQAReport = fn
-	t.Cleanup(func() {
-		supersedingQAReport = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.supersedingQAReport = fn
 	})
 }
 
@@ -11223,13 +11542,11 @@ type pullRequestCommentRecord struct {
 func withPullRequestComments(t *testing.T, publishErr error) *pullRequestCommentRecorder {
 	t.Helper()
 	recorder := &pullRequestCommentRecorder{}
-	old := commentOnPullRequest
-	commentOnPullRequest = func(_ context.Context, source string, repository string, prNumber int, body string) error {
-		recorder.calls = append(recorder.calls, pullRequestCommentRecord{source: source, repository: repository, pr: prNumber, body: body})
-		return publishErr
-	}
-	t.Cleanup(func() {
-		commentOnPullRequest = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.commentOnPullRequest = func(_ context.Context, source string, repository string, prNumber int, body string) error {
+			recorder.calls = append(recorder.calls, pullRequestCommentRecord{source: source, repository: repository, pr: prNumber, body: body})
+			return publishErr
+		}
 	})
 	return recorder
 }
@@ -11258,21 +11575,17 @@ func journalPayloadContains(events []store.JournalEvent, text string) bool {
 
 func withReviewSpecGitRunner(t *testing.T, runner preflight.GitRunner) {
 	t.Helper()
-	old := reviewSpecGitRunner
-	reviewSpecGitRunner = runner
-	t.Cleanup(func() {
-		reviewSpecGitRunner = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.reviewSpecGitRunner = runner
 	})
 }
 
 func overrideCollaborators(t *testing.T, mutate func(*engineCollaborators)) {
 	t.Helper()
-	old := newEngineCollaborators
-	current := old()
-	mutate(&current)
-	newEngineCollaborators = func() engineCollaborators { return current }
-	t.Cleanup(func() {
-		newEngineCollaborators = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		current := dependencies.newEngineCollaborators()
+		mutate(&current)
+		dependencies.newEngineCollaborators = func() engineCollaborators { return current }
 	})
 }
 
@@ -11290,31 +11603,23 @@ func withAgentRunner(t *testing.T, runner agent.Runner) {
 
 func withFallbackConfirmation(t *testing.T, input string) {
 	t.Helper()
-	oldAvailable := fallbackConfirmationAvailable
-	oldInput := fallbackConfirmationInput
-	fallbackConfirmationAvailable = func(io.Writer) bool { return true }
-	fallbackConfirmationInput = func() io.Reader { return strings.NewReader(input) }
-	t.Cleanup(func() {
-		fallbackConfirmationAvailable = oldAvailable
-		fallbackConfirmationInput = oldInput
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.fallbackConfirmationAvailable = func(io.Writer) bool { return true }
+		dependencies.fallbackConfirmationInput = func() io.Reader { return strings.NewReader(input) }
 	})
 }
 
 func withProfilesConfigureInput(t *testing.T, input string) {
 	t.Helper()
-	old := profilesConfigureInput
-	profilesConfigureInput = func() io.Reader { return strings.NewReader(input) }
-	t.Cleanup(func() {
-		profilesConfigureInput = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.profilesConfigureInput = func() io.Reader { return strings.NewReader(input) }
 	})
 }
 
 func withProfilesConfigureConfirm(t *testing.T, confirm func(context.Context, io.Writer, string) (bool, error)) {
 	t.Helper()
-	old := confirmProfilesConfigure
-	confirmProfilesConfigure = confirm
-	t.Cleanup(func() {
-		confirmProfilesConfigure = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.confirmProfilesConfigure = confirm
 	})
 }
 
@@ -11350,10 +11655,8 @@ backend:
 
 func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
 	t.Helper()
-	old := cancelStopAgentSession
-	cancelStopAgentSession = cancel
-	t.Cleanup(func() {
-		cancelStopAgentSession = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.cancelStopAgentSession = cancel
 	})
 	withRoundfixSessionLister(t, func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error) {
 		return nil, nil
@@ -11365,19 +11668,15 @@ func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, age
 
 func withRoundfixSessionLister(t *testing.T, list func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error)) {
 	t.Helper()
-	old := listRoundfixAgentSessions
-	listRoundfixAgentSessions = list
-	t.Cleanup(func() {
-		listRoundfixAgentSessions = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.listRoundfixAgentSessions = list
 	})
 }
 
 func withStopAgentSessionCloser(t *testing.T, closeSession func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
 	t.Helper()
-	old := closeStopAgentSession
-	closeStopAgentSession = closeSession
-	t.Cleanup(func() {
-		closeStopAgentSession = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.closeStopAgentSession = closeSession
 	})
 }
 
@@ -11417,10 +11716,8 @@ func (controller ownerProcessControllerStub) TerminateAndWait(ctx context.Contex
 
 func withOwnerProcessController(t *testing.T, controller OwnerProcessController) {
 	t.Helper()
-	old := ownerProcesses
-	ownerProcesses = controller
-	t.Cleanup(func() {
-		ownerProcesses = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.ownerProcesses = controller
 	})
 }
 
@@ -11489,111 +11786,83 @@ func withFakeWorktree(t *testing.T) {
 
 func withWatchEvidence(t *testing.T, fn func(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error)) {
 	t.Helper()
-	old := watchReviewEvidence
-	watchReviewEvidence = fn
-	t.Cleanup(func() {
-		watchReviewEvidence = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.watchReviewEvidence = fn
 	})
 }
 
 func withWatchHeadSHA(t *testing.T, fn func(context.Context, string) (string, error)) {
 	t.Helper()
-	old := watchHeadSHA
-	watchHeadSHA = fn
-	t.Cleanup(func() {
-		watchHeadSHA = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.watchHeadSHA = fn
 	})
 }
 
 func withWatchTiming(t *testing.T, clock watch.Clock, sleeper watch.Sleeper) {
 	t.Helper()
-	oldClock := watchClock
-	oldSleeper := watchSleeper
-	watchClock = clock
-	watchSleeper = sleeper
-	t.Cleanup(func() {
-		watchClock = oldClock
-		watchSleeper = oldSleeper
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.watchClock = clock
+		dependencies.watchSleeper = sleeper
 	})
 }
 
 func withInteractiveInput(t *testing.T, fn func(context.Context, roundtui.InputRequest) (roundtui.CommandValues, error)) {
 	t.Helper()
-	old := collectInteractiveInput
-	collectInteractiveInput = fn
-	t.Cleanup(func() {
-		collectInteractiveInput = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.collectInteractiveInput = fn
 	})
 }
 
 func withInitScopePrompt(t *testing.T, fn func(context.Context, io.Writer) (string, error)) {
 	t.Helper()
-	old := promptInitScope
-	promptInitScope = fn
-	t.Cleanup(func() {
-		promptInitScope = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.promptInitScope = fn
 	})
 }
 
 func withClaudeSkillSymlinkPrompt(t *testing.T, fn func(context.Context, io.Writer, string, string) (bool, error)) {
 	t.Helper()
-	old := promptProjectClaudeSkillSymlink
-	promptProjectClaudeSkillSymlink = fn
-	t.Cleanup(func() {
-		promptProjectClaudeSkillSymlink = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.promptProjectClaudeSkillSymlink = fn
 	})
 }
 
 func withCurrentPullRequestSuggestion(t *testing.T, value string) {
 	t.Helper()
-	old := suggestCurrentPullRequest
-	suggestCurrentPullRequest = func(context.Context, string) (string, error) {
-		return value, nil
-	}
-	t.Cleanup(func() {
-		suggestCurrentPullRequest = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.suggestCurrentPullRequest = func(context.Context, string) (string, error) { return value, nil }
 	})
 }
 
 func withStopPullRequestResolver(t *testing.T, result preflight.PullRequest) {
 	t.Helper()
-	old := resolvePullRequestForStop
-	resolvePullRequestForStop = func(context.Context, string, string) (preflight.PullRequest, error) {
-		return result, nil
-	}
-	t.Cleanup(func() {
-		resolvePullRequestForStop = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.resolvePullRequestForStop = func(context.Context, string, string) (preflight.PullRequest, error) { return result, nil }
 	})
 }
 
 func withChangedPaths(t *testing.T, changes []preflight.ChangedPath) {
 	t.Helper()
-	old := inspectChangedPaths
-	inspectChangedPaths = func(context.Context, string) ([]preflight.ChangedPath, error) {
-		return changes, nil
-	}
-	t.Cleanup(func() {
-		inspectChangedPaths = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.inspectChangedPaths = func(context.Context, string) ([]preflight.ChangedPath, error) { return changes, nil }
 	})
 }
 
 func withChangedPathSnapshots(t *testing.T, snapshots ...[]preflight.ChangedPath) {
 	t.Helper()
-	old := inspectChangedPaths
 	index := 0
-	inspectChangedPaths = func(context.Context, string) ([]preflight.ChangedPath, error) {
-		if len(snapshots) == 0 {
-			return nil, nil
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.inspectChangedPaths = func(context.Context, string) ([]preflight.ChangedPath, error) {
+			if len(snapshots) == 0 {
+				return nil, nil
+			}
+			if index >= len(snapshots) {
+				return snapshots[len(snapshots)-1], nil
+			}
+			changes := snapshots[index]
+			index++
+			return changes, nil
 		}
-		if index >= len(snapshots) {
-			return snapshots[len(snapshots)-1], nil
-		}
-		changes := snapshots[index]
-		index++
-		return changes, nil
-	}
-	t.Cleanup(func() {
-		inspectChangedPaths = old
 	})
 }
 
@@ -11924,7 +12193,7 @@ func defaultReviewRootForRepo(repoDir string, prNumber string) string {
 
 func builtinArtifactDirForRepo(t *testing.T, repoDir string) string {
 	t.Helper()
-	homeDir := os.Getenv("HOME")
+	homeDir := commandEnvironmentForTest(t).homeDir
 	if homeDir == "" {
 		t.Fatal("HOME is required for builtin Artifact Directory")
 	}
@@ -12529,6 +12798,7 @@ func runEvents(t *testing.T, homeDir string, runID string) []store.JournalEvent 
 }
 
 func TestAgentConsoleDisplaySinkKeepsWriterBytesByDefault(t *testing.T) {
+	t.Parallel()
 	event := runevent.RunEvent{
 		Source:  runevent.SourceAgent,
 		Kind:    runevent.KindAgentRaw,
@@ -12550,6 +12820,7 @@ func TestAgentConsoleDisplaySinkKeepsWriterBytesByDefault(t *testing.T) {
 }
 
 func TestAgentConsoleDisplaySinkKeepsDistinctToolCallsVisible(t *testing.T) {
+	t.Parallel()
 	var buffer bytes.Buffer
 	sink := agentConsoleDisplaySink(&buffer, false)
 	events := []runevent.RunEvent{
@@ -12570,6 +12841,7 @@ func TestAgentConsoleDisplaySinkKeepsDistinctToolCallsVisible(t *testing.T) {
 }
 
 func TestAgentConsoleDisplaySinkUsesStatefulSinkForNonTTYAndDetachedLogWriter(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runStore, err := store.Open(ctx, homeDir)
@@ -12675,6 +12947,7 @@ func TestAgentConsoleDisplaySinkUsesStatefulSinkForNonTTYAndDetachedLogWriter(t 
 }
 
 func TestAgentConsoleDisplaySinkKeepsNoAgentConsoleSuppression(t *testing.T) {
+	t.Parallel()
 	event := runevent.RunEvent{
 		Source:  runevent.SourceAgent,
 		Kind:    runevent.KindAgentRaw,
@@ -12730,6 +13003,7 @@ func assertJournalContainsAgentAndDaemonEvents(t *testing.T, events []store.Jour
 }
 
 func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withVerifier(t, &fakeVerifier{})
@@ -12743,7 +13017,7 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -12777,13 +13051,14 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 }
 
 func TestRunResolveSkipsAgentLogFilesByDefaultAndStillJournals(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -12794,6 +13069,7 @@ func TestRunResolveSkipsAgentLogFilesByDefaultAndStillJournals(t *testing.T) {
 }
 
 func TestRunResolveWritesAgentLogFilesWhenEnabledAndStillJournals(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
@@ -12804,7 +13080,7 @@ logs:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -12815,6 +13091,7 @@ logs:
 }
 
 func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withVerifier(t, &fakeVerifier{})
@@ -12828,7 +13105,7 @@ func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-agent-console", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -12853,12 +13130,13 @@ func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 }
 
 func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-agent-console", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -12884,6 +13162,7 @@ func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 }
 
 func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withVerifier(t, &fakeVerifier{})
@@ -12898,7 +13177,7 @@ func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit, got %d stderr=%q", code, stderr.String())
@@ -12919,6 +13198,7 @@ func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
 }
 
 func TestWatchSkipsFinalPushWhenAutoPushDisabled(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pusher := &fakePusher{}
@@ -12946,7 +13226,7 @@ func TestWatchSkipsFinalPushWhenAutoPushDisabled(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -12963,6 +13243,7 @@ func TestWatchSkipsFinalPushWhenAutoPushDisabled(t *testing.T) {
 }
 
 func TestWatchFinalPushRunsOncePerCleanRoundThroughEngine(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	pusher := &fakePusher{}
@@ -12970,7 +13251,7 @@ func TestWatchFinalPushRunsOncePerCleanRoundThroughEngine(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -12992,7 +13273,7 @@ func runResolveForAttachTest(t *testing.T, repoDir string) (string, *bytes.Buffe
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("seed resolve run failed: %d stderr=%q", code, stderr.String())
 	}
@@ -13010,6 +13291,7 @@ func runResolveForAttachTest(t *testing.T, repoDir string) (string, *bytes.Buffe
 }
 
 func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runID, _ := runResolveForAttachTest(t, repoDir)
 	// Attach must never probe or start an Agent; a probing attach would
@@ -13020,7 +13302,7 @@ func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", runID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
@@ -13054,13 +13336,14 @@ func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
 }
 
 func TestAttachDisplaysStoredSelectionAfterConfigChanges(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var resolveStdout bytes.Buffer
 	var resolveStderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"resolve",
 		"--pr", "123",
 		"--agent", "codex",
@@ -13068,6 +13351,7 @@ func TestAttachDisplaysStoredSelectionAfterConfigChanges(t *testing.T) {
 		"--reasoning-effort", "historical-reasoning",
 		"--no-input",
 	}, &resolveStdout, &resolveStderr)
+
 	if code != exitOK {
 		t.Fatalf("seed resolve run failed: %d stderr=%q", code, resolveStderr.String())
 	}
@@ -13081,7 +13365,7 @@ runtimes:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code = RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+	code = runCLIContext(t, context.Background(), []string{"attach", runID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected attach exit 0, got %d stderr=%q", code, stderr.String())
@@ -13107,6 +13391,7 @@ runtimes:
 }
 
 func TestAgentSelectionAttachReplayRendersPerScopeSelectionState(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	ctx := context.Background()
 	runStore, err := store.Open(ctx, homeDir)
@@ -13182,7 +13467,7 @@ func TestAgentSelectionAttachReplayRendersPerScopeSelectionState(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"attach", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"attach", run.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected attach exit 0, got %d stderr=%q", code, stderr.String())
@@ -13209,6 +13494,7 @@ func TestAgentSelectionAttachReplayRendersPerScopeSelectionState(t *testing.T) {
 }
 
 func TestFallbackNotificationOrderingSelectionConsoleSink(t *testing.T) {
+	t.Parallel()
 	var stderr bytes.Buffer
 	fanout := runevent.NewFanout([]runevent.Sink{
 		selectionConsoleDisplaySink(&stderr),
@@ -13284,6 +13570,7 @@ func assertCLIContainsInOrder(t *testing.T, haystack string, needles ...string) 
 }
 
 func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
+	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
 	mustMkdir(t, filepath.Join(otherRepo, ".git"))
@@ -13316,6 +13603,7 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	})
 	terminalRun, activeRun, otherRepoRun := runs[0], runs[1], runs[2]
 	withAttachInteractiveInput(t, true)
+	// This case verifies the process-level TUI override for the Attach browser loop.
 	t.Setenv("ROUNDFIX_TUI", "always")
 	var createdBehindCockpit store.Run
 	cockpitCalls := withBrowserAttachCockpit(t, func(run store.Run, capacities attachCapacities) int {
@@ -13338,7 +13626,7 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected browser loop exit 0, got %d stderr=%q", code, stderr.String())
@@ -13370,24 +13658,27 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 }
 
 func TestBrowserAttachCockpitIsTheExplicitAttachCockpit(t *testing.T) {
+	t.Parallel()
 	if reflect.ValueOf(browserAttachCockpit).Pointer() != reflect.ValueOf(runAttachCockpit).Pointer() {
 		t.Fatal("expected the browser loop to open the same attach cockpit as explicit attach")
 	}
 }
 
 func TestAttachRunBrowserCancelExitsZeroWithoutAttaching(t *testing.T) {
+	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
 	homeDir, repoDir := withCLIWorkspace(t)
 	runID, _ := runResolveForAttachTest(t, repoDir)
 	dbPath := filepath.Join(homeDir, ".roundfix", "roundfix.db")
 	assertRunCount(t, dbPath, 1)
 	withAttachInteractiveInput(t, true)
+	// This case verifies the process-level TUI override for Attach cancellation.
 	t.Setenv("ROUNDFIX_TUI", "always")
 	cockpitCalls := withBrowserAttachCockpit(t, nil)
 	withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected cancelled browser exit 0, got %d stderr=%q", code, stderr.String())
@@ -13414,6 +13705,7 @@ func TestAttachRunBrowserCancelExitsZeroWithoutAttaching(t *testing.T) {
 }
 
 func TestAttachWithoutRunIDNonInteractiveNamesAllRunsList(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		args        []string
@@ -13429,7 +13721,7 @@ func TestAttachWithoutRunIDNonInteractiveNamesAllRunsList(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected exit 2, got %d", code)
@@ -13450,6 +13742,7 @@ func TestAttachWithoutRunIDNonInteractiveNamesAllRunsList(t *testing.T) {
 // TestAttachAcceptsDocumentedFlagOrders replays the exact invocation root
 // help and Attach help print: the Run ID first, then the flag.
 func TestAttachAcceptsDocumentedFlagOrders(t *testing.T) {
+	t.Parallel()
 	orders := map[string]func(runID string) []string{
 		"run id then flag": func(runID string) []string { return []string{"attach", runID, "--no-input"} },
 		"flag then run id": func(runID string) []string { return []string{"attach", "--no-input", runID} },
@@ -13465,7 +13758,7 @@ func TestAttachAcceptsDocumentedFlagOrders(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), argsFor(run.ID), &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), argsFor(run.ID), &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected the documented order to replay the Run, got %d stderr=%q", code, stderr.String())
@@ -13482,6 +13775,7 @@ func TestAttachAcceptsDocumentedFlagOrders(t *testing.T) {
 }
 
 func TestParseAttachCommandAcceptsFlagsInAnyPosition(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		args        []string
@@ -13521,6 +13815,7 @@ func TestParseAttachCommandAcceptsFlagsInAnyPosition(t *testing.T) {
 }
 
 func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	workDir := t.TempDir()
 	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "pending"}})
@@ -13530,7 +13825,7 @@ func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
@@ -13552,6 +13847,7 @@ func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 }
 
 func TestAttachSpecRunFallsBackToGitRootWhenCleanWorkDirIsPruned(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	workDir := filepath.Join(t.TempDir(), "pruned-worktree")
 	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Integrated state", status: "completed"}})
@@ -13559,7 +13855,7 @@ func TestAttachSpecRunFallsBackToGitRootWhenCleanWorkDirIsPruned(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean attach exit for pruned worktree, got %d stderr=%q", code, stderr.String())
@@ -13577,12 +13873,13 @@ func TestAttachSpecRunFallsBackToGitRootWhenCleanWorkDirIsPruned(t *testing.T) {
 }
 
 func TestAttachUnknownRunFailsBeforeTUIStart(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	runResolveForAttachTest(t, repoDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", "41"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", "41"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected preflight exit for unknown Run, got %d", code)
@@ -13597,11 +13894,12 @@ func TestAttachUnknownRunFailsBeforeTUIStart(t *testing.T) {
 }
 
 func TestAttachWithoutRunDatabaseFailsAsCLIError(t *testing.T) {
+	t.Parallel()
 	withCLIWorkspace(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", "run_x"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", "run_x"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected preflight exit without a Run Database, got %d", code)
@@ -13612,6 +13910,7 @@ func TestAttachWithoutRunDatabaseFailsAsCLIError(t *testing.T) {
 }
 
 func TestAttachSkipsUnknownEventKindsOnReplay(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runID, _ := runResolveForAttachTest(t, repoDir)
 	writer, err := store.Open(context.Background(), homeDir)
@@ -13634,7 +13933,7 @@ func TestAttachSkipsUnknownEventKindsOnReplay(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", runID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected unknown kinds skipped, got exit %d stderr=%q", code, stderr.String())
@@ -13718,6 +14017,7 @@ func appendAttachCapacityEvent(t *testing.T, homeDir string, runID string, summa
 // Boundary IN: the read-only attach replay path and its rendered header.
 // Boundary OUT: capacity scheduling, owned by the daemon suites.
 func TestAttachSpecRunReplaysTaskAndVerificationCapacity(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	workDir := t.TempDir()
 	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "pending"}})
@@ -13729,7 +14029,7 @@ func TestAttachSpecRunReplaysTaskAndVerificationCapacity(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
@@ -13746,6 +14046,7 @@ func TestAttachSpecRunReplaysTaskAndVerificationCapacity(t *testing.T) {
 }
 
 func TestAttachSpecRunLegacyCapacityEventFallsBackDeterministically(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	workDir := t.TempDir()
 	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
@@ -13755,7 +14056,7 @@ func TestAttachSpecRunLegacyCapacityEventFallsBackDeterministically(t *testing.T
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected a legacy Run to attach cleanly, got %d stderr=%q", code, stderr.String())
@@ -13771,6 +14072,7 @@ func TestAttachSpecRunLegacyCapacityEventFallsBackDeterministically(t *testing.T
 }
 
 func TestEventsReplayDefaultAndFilterJSONLRecordsOnly(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
 	appendEvents(t, homeDir, run.ID,
@@ -13818,7 +14120,7 @@ func TestEventsReplayDefaultAndFilterJSONLRecordsOnly(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected replay exit 0, got %d stderr=%q", code, stderr.String())
@@ -13840,7 +14142,7 @@ func TestEventsReplayDefaultAndFilterJSONLRecordsOnly(t *testing.T) {
 
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(context.Background(), []string{"events", run.ID, "--filter", "verification,outcome"}, &stdout, &stderr)
+	code = runCLIContext(t, context.Background(), []string{"events", run.ID, "--filter", "verification,outcome"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected filtered replay exit 0, got %d stderr=%q", code, stderr.String())
@@ -13852,6 +14154,7 @@ func TestEventsReplayDefaultAndFilterJSONLRecordsOnly(t *testing.T) {
 }
 
 func TestEventsReplayLegacyVerificationEvent(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
 	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
@@ -13865,7 +14168,7 @@ func TestEventsReplayLegacyVerificationEvent(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected legacy replay exit 0, got %d stderr=%q", code, stderr.String())
@@ -13880,6 +14183,7 @@ func TestEventsReplayLegacyVerificationEvent(t *testing.T) {
 }
 
 func TestEventsFollowDrainsTerminalWithoutDuplicateBoundary(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateActive)
 	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
@@ -13909,7 +14213,7 @@ func TestEventsFollowDrainsTerminalWithoutDuplicateBoundary(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected follow exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -13924,6 +14228,7 @@ func TestEventsFollowDrainsTerminalWithoutDuplicateBoundary(t *testing.T) {
 }
 
 func TestEventsTerminalRunReplaysAndExitsImmediately(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
 	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
@@ -13940,7 +14245,7 @@ func TestEventsTerminalRunReplaysAndExitsImmediately(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected terminal follow exit 0, got %d stderr=%q", code, stderr.String())
@@ -13951,6 +14256,7 @@ func TestEventsTerminalRunReplaysAndExitsImmediately(t *testing.T) {
 }
 
 func TestEventsValidationErrorsEmitNoStdout(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
 	tests := []struct {
@@ -13967,7 +14273,7 @@ func TestEventsValidationErrorsEmitNoStdout(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected validation exit 2, got %d stderr=%q", code, stderr.String())
@@ -13983,6 +14289,7 @@ func TestEventsValidationErrorsEmitNoStdout(t *testing.T) {
 }
 
 func TestEventsMalformedRelevantPayloadFailsNoStdout(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
 	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
@@ -13996,7 +14303,7 @@ func TestEventsMalformedRelevantPayloadFailsNoStdout(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"events", run.ID}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected malformed payload exit 1, got %d stderr=%q", code, stderr.String())
@@ -14010,6 +14317,7 @@ func TestEventsMalformedRelevantPayloadFailsNoStdout(t *testing.T) {
 }
 
 func TestEventsFollowCancellationExits130WithoutTrailer(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateActive)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -14020,7 +14328,7 @@ func TestEventsFollowCancellationExits130WithoutTrailer(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"events", run.ID, "--follow"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"events", run.ID, "--follow"}, &stdout, &stderr)
 
 	if code != exitSIGINT {
 		t.Fatalf("expected cancellation exit 130, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -14193,6 +14501,7 @@ func (source *fakeAttachSource) complete(state string) {
 }
 
 func TestAttachFollowerAppendsOnlyNewerEventsWithoutDuplicates(t *testing.T) {
+	t.Parallel()
 	source := &fakeAttachSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	source.appendEvent("backlog one\n")
 	source.appendEvent("backlog two\n")
@@ -14250,6 +14559,7 @@ func TestAttachFollowerAppendsOnlyNewerEventsWithoutDuplicates(t *testing.T) {
 }
 
 func TestAttachFollowerIdlePollsReadNoEventRows(t *testing.T) {
+	t.Parallel()
 	source := &fakeAttachSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 7}
 	steps := 0
 	ctx, cancel := context.WithCancel(context.Background())
@@ -14280,6 +14590,7 @@ func TestAttachFollowerIdlePollsReadNoEventRows(t *testing.T) {
 }
 
 func TestAttachDetachLeavesRunActive(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runResolveForAttachTest(t, repoDir)
 	writer, err := store.Open(context.Background(), homeDir)
@@ -14313,7 +14624,7 @@ func TestAttachDetachLeavesRunActive(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"attach", active.ID}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"attach", active.ID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean detach exit, got %d stderr=%q", code, stderr.String())
@@ -14339,6 +14650,7 @@ func TestAttachDetachLeavesRunActive(t *testing.T) {
 }
 
 func TestAttachFollowsLiveRunToTerminalState(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	runResolveForAttachTest(t, repoDir)
 	writer, err := store.Open(context.Background(), homeDir)
@@ -14360,10 +14672,23 @@ func TestAttachFollowsLiveRunToTerminalState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create active run: %v", err)
 	}
-	withAttachSleep(t, func(ctx context.Context) error { return ctx.Err() })
+	followStarted := make(chan struct{})
+	writerCompleted := make(chan struct{})
+	var signalFollowStarted sync.Once
+	withAttachSleep(t, func(ctx context.Context) error {
+		signalFollowStarted.Do(func() { close(followStarted) })
+		select {
+		case <-writerCompleted:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	})
 
 	writerDone := make(chan error, 1)
 	go func() {
+		<-followStarted
+		defer close(writerCompleted)
 		for index := 0; index < 5; index++ {
 			if _, err := writer.AppendRunEvent(context.Background(), runevent.RunEvent{
 				RunID:   active.ID,
@@ -14382,7 +14707,7 @@ func TestAttachFollowsLiveRunToTerminalState(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{"attach", active.ID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", active.ID}, &stdout, &stderr)
 
 	if err := <-writerDone; err != nil {
 		t.Fatalf("writer goroutine: %v", err)
@@ -14404,10 +14729,8 @@ func TestAttachFollowsLiveRunToTerminalState(t *testing.T) {
 
 func withAttachSleep(t *testing.T, sleep func(ctx context.Context) error) {
 	t.Helper()
-	old := attachSleep
-	attachSleep = sleep
-	t.Cleanup(func() {
-		attachSleep = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.attachSleep = sleep
 	})
 }
 
@@ -14421,17 +14744,15 @@ type browserSessionCall struct {
 func withRunBrowserSession(t *testing.T, outcomes ...roundtui.BrowserOutcome) *[]browserSessionCall {
 	t.Helper()
 	calls := &[]browserSessionCall{}
-	old := runBrowserSession
-	runBrowserSession = func(_ context.Context, _ io.Writer, active, all []store.Run) (roundtui.BrowserOutcome, error) {
-		index := len(*calls)
-		*calls = append(*calls, browserSessionCall{active: active, all: all})
-		if index >= len(outcomes) {
-			t.Fatalf("unexpected Run Browser session call %d", index+1)
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.runBrowserSession = func(_ context.Context, _ io.Writer, active, all []store.Run) (roundtui.BrowserOutcome, error) {
+			index := len(*calls)
+			*calls = append(*calls, browserSessionCall{active: active, all: all})
+			if index >= len(outcomes) {
+				t.Fatalf("unexpected Run Browser session call %d", index+1)
+			}
+			return outcomes[index], nil
 		}
-		return outcomes[index], nil
-	}
-	t.Cleanup(func() {
-		runBrowserSession = old
 	})
 	return calls
 }
@@ -14446,28 +14767,22 @@ type browserCockpitCall struct {
 func withBrowserAttachCockpit(t *testing.T, handler func(run store.Run, capacities attachCapacities) int) *[]browserCockpitCall {
 	t.Helper()
 	calls := &[]browserCockpitCall{}
-	old := browserAttachCockpit
-	browserAttachCockpit = func(_ context.Context, _ roundconfig.Loaded, _ *store.Store, run store.Run, capacities attachCapacities, _ io.Writer, _ io.Writer) int {
-		*calls = append(*calls, browserCockpitCall{runID: run.ID, capacities: capacities})
-		if handler == nil {
-			return exitOK
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.browserAttachCockpit = func(_ context.Context, _ roundconfig.Loaded, _ *store.Store, run store.Run, capacities attachCapacities, _ io.Writer, _ io.Writer) int {
+			*calls = append(*calls, browserCockpitCall{runID: run.ID, capacities: capacities})
+			if handler == nil {
+				return exitOK
+			}
+			return handler(run, capacities)
 		}
-		return handler(run, capacities)
-	}
-	t.Cleanup(func() {
-		browserAttachCockpit = old
 	})
 	return calls
 }
 
 func withAttachInteractiveInput(t *testing.T, available bool) {
 	t.Helper()
-	old := attachInteractiveInputAvailable
-	attachInteractiveInputAvailable = func() bool {
-		return available
-	}
-	t.Cleanup(func() {
-		attachInteractiveInputAvailable = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.attachInteractiveInputAvailable = func() bool { return available }
 	})
 }
 
@@ -14496,12 +14811,13 @@ func assertOrderedSubsequence(t *testing.T, haystack []string, expected []string
 }
 
 func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -14535,6 +14851,7 @@ func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
 }
 
 func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeStoppingAgentRunner{})
@@ -14543,7 +14860,7 @@ func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit, got %d", code)
@@ -14568,6 +14885,7 @@ func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
 }
 
 func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withVerifier(t, &fakeVerifier{err: errors.New("tests failed")})
@@ -14575,7 +14893,7 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code == 0 {
 		t.Fatal("expected failed verification to fail the Run")
@@ -14618,6 +14936,7 @@ func assertOutcomeFollowedByNotificationReceipt(t *testing.T, events []store.Jou
 }
 
 func TestTriageOnlyBatchJournalsCommitSkipDecision(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	// Identical snapshots: the Agent triaged without touching the worktree.
@@ -14628,7 +14947,7 @@ func TestTriageOnlyBatchJournalsCommitSkipDecision(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected triage-only Batch to succeed, got %d stderr=%q", code, stderr.String())
@@ -14652,11 +14971,12 @@ func (staticWorktree) Snapshot(context.Context, string) ([]string, error) {
 }
 
 func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	var watchStdout bytes.Buffer
 	var watchStderr bytes.Buffer
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &watchStdout, &watchStderr)
+	code := runCLI(t, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &watchStdout, &watchStderr)
 	if code != 0 {
 		t.Fatalf("seed watch run failed: %d stderr=%q", code, watchStderr.String())
 	}
@@ -14673,7 +14993,7 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	attachCode := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+	attachCode := runCLIContext(t, context.Background(), []string{"attach", runID}, &stdout, &stderr)
 
 	if attachCode != 0 {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", attachCode, stderr.String())
@@ -14692,13 +15012,14 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 }
 
 func TestResolvePrintsIssueSummaryAfterCompletion(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -14716,6 +15037,7 @@ func TestResolvePrintsIssueSummaryAfterCompletion(t *testing.T) {
 }
 
 func TestStageableReviewRootClassifiesInsideOutsideAndSymlink(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 	external := t.TempDir()
 	mustMkdir(t, filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-9"))

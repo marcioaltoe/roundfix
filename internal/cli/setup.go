@@ -24,8 +24,6 @@ const (
 	setupNodeMinimumVersion = "22.13.0"
 )
 
-var setupDeps = defaultSetupDependencies()
-
 type setupDependencies struct {
 	loadConfig    func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
 	nodeVersion   func(context.Context) (string, error)
@@ -54,6 +52,7 @@ type setupRunner struct {
 	loaded    roundconfig.Loaded
 	stdout    io.Writer
 	stderr    io.Writer
+	workDir   string
 	failed    bool
 	acpxReady bool
 }
@@ -88,7 +87,8 @@ type setupAdapterMigration struct {
 	Override  acpxAgentOverride
 }
 
-func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
+	dependencies := commandDependenciesForContext(ctx).setup
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("setup"))
 		return exitOK
@@ -98,19 +98,26 @@ func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Write
 		printSetupFailure(err, stderr)
 		return exitPreflight
 	}
-	loaded, err := setupDeps.loadConfig(roundconfig.LoadOptions{Stderr: stderr})
+	loadOptions, err := environment.loadOptions(stderr)
 	if err != nil {
-		runner := setupRunner{req: req, deps: setupDeps, stdout: stdout, stderr: stderr}
+		runner := setupRunner{req: req, deps: dependencies, stdout: stdout, stderr: stderr}
+		runner.report("config", "failed", err.Error())
+		return exitRunFailed
+	}
+	loaded, err := dependencies.loadConfig(loadOptions)
+	if err != nil {
+		runner := setupRunner{req: req, deps: dependencies, stdout: stdout, stderr: stderr}
 		runner.report("config", "failed", err.Error())
 		return exitRunFailed
 	}
 	runner := setupRunner{
-		req:    req,
-		deps:   setupDeps,
-		health: setupDeps.healthChecker(),
-		loaded: loaded,
-		stdout: stdout,
-		stderr: stderr,
+		req:     req,
+		deps:    dependencies,
+		health:  dependencies.healthChecker(environment.codexPath),
+		loaded:  loaded,
+		stdout:  stdout,
+		stderr:  stderr,
+		workDir: environment.workDir,
 	}
 	runner.checkNode(ctx)
 	runner.checkACPX(ctx)
@@ -284,7 +291,7 @@ func (runner *setupRunner) readFileProposal(label string, path string, generated
 func (runner *setupRunner) proveProposal(ctx context.Context, proposal *setupProposal) bool {
 	proofRunner := runner.deps.profileRunner
 	if proofRunner == nil {
-		proofRunner = newEngineCollaborators().runner
+		proofRunner = commandDependenciesForContext(ctx).newEngineCollaborators().runner
 	}
 	if _, ok := proofRunner.(agent.SelectionProver); !ok {
 		runner.report("profile readiness", "failed", "exact Agent Selection proof is unavailable")
@@ -292,12 +299,7 @@ func (runner *setupRunner) proveProposal(ctx context.Context, proposal *setupPro
 	}
 	workDir := strings.TrimSpace(runner.loaded.GitRoot)
 	if workDir == "" {
-		var err error
-		workDir, err = os.Getwd()
-		if err != nil {
-			runner.report("profile readiness", "failed", fmt.Sprintf("resolve Setup proof working directory: %v", err))
-			return false
-		}
+		workDir = runner.workDir
 	}
 	result := proveProfileSelectionsWithOptions(
 		ctx,
@@ -567,13 +569,13 @@ func setupHealthCheckLabel(name string) string {
 	return name
 }
 
-func (deps setupDependencies) healthChecker() HealthChecker {
-	return newHealthChecker(healthCheckDependencies{
+func (deps setupDependencies) healthChecker(codexPath string) HealthChecker {
+	return newHealthCheckerWithCodexPath(healthCheckDependencies{
 		nodeVersion:  deps.nodeVersion,
 		acpxVersion:  deps.acpxVersion,
 		checkAdapter: deps.checkAdapter,
 		probeAgent:   deps.probeAgent,
-	})
+	}, codexPath)
 }
 
 func defaultSetupDependencies() setupDependencies {
@@ -583,9 +585,9 @@ func defaultSetupDependencies() setupDependencies {
 		acpxVersion:   defaultSetupACPXVersion,
 		installACPX:   defaultSetupInstallACPX,
 		checkAdapter:  agent.CheckAdapter,
-		profileRunner: newEngineCollaborators().runner,
+		profileRunner: defaultEngineCollaborators().runner,
 		probeAgent: func(ctx context.Context, req agent.ProbeRequest) error {
-			return newEngineCollaborators().runner.Probe(ctx, req)
+			return defaultEngineCollaborators().runner.Probe(ctx, req)
 		},
 		lookPath: exec.LookPath,
 		exists: func(path string) (bool, error) {

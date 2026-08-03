@@ -16,6 +16,7 @@ import (
 )
 
 func TestProfilesConfigureExitCodes(t *testing.T) {
+	t.Parallel()
 	t.Run("declined confirmation", func(t *testing.T) {
 		_, repoDir := withCLIWorkspace(t)
 		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -30,7 +31,7 @@ func TestProfilesConfigureExitCodes(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+		code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("declined confirmation exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
@@ -66,7 +67,7 @@ func TestProfilesConfigureExitCodes(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+		code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("non-interactive confirmation exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
@@ -87,7 +88,7 @@ func TestProfilesConfigureExitCodes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"profiles", "configure", "--scope", "invalid", "--json"}, &stdout, &stderr)
+			code := runCLI(t, []string{"profiles", "configure", "--scope", "invalid", "--json"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("invalid flag exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
@@ -107,7 +108,7 @@ func TestProfilesConfigureExitCodes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--remove", "backend", "--yes", "--json"}, &stdout, &stderr)
+			code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--remove", "backend", "--yes", "--json"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("conflicting category exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
@@ -142,7 +143,7 @@ func TestProfilesConfigureExitCodes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
+			code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("failed proof exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
@@ -207,7 +208,7 @@ func TestProfilesConfigureExitCodes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run(args, &stdout, &stderr)
+			code := runCLI(t, args, &stdout, &stderr)
 
 			if code != exitOK {
 				t.Fatalf("%s exit = %d, want %d stderr=%q", tt.name, code, exitOK, stderr.String())
@@ -232,6 +233,7 @@ func TestProfilesConfigureExitCodes(t *testing.T) {
 }
 
 func TestProfilesConfigureChangeSummary(t *testing.T) {
+	t.Parallel()
 	t.Run("added category agrees in text and machine output", func(t *testing.T) {
 		_, repoDir := withCLIWorkspace(t)
 		fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
@@ -245,7 +247,7 @@ func TestProfilesConfigureChangeSummary(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+		code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("configure add exit = %d stderr=%q", code, stderr.String())
@@ -283,7 +285,7 @@ profiles:
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+		code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("configure replacement exit = %d stderr=%q", code, stderr.String())
@@ -318,7 +320,7 @@ profiles:
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"profiles", "configure", "--scope", "project", "--remove", "frontend", "--remove", "review", "--json"}, &stdout, &stderr)
+		code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--remove", "frontend", "--remove", "review", "--json"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("configure removals exit = %d stderr=%q", code, stderr.String())
@@ -346,7 +348,7 @@ profiles:
 		var textOutput bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--dry-run"}, &textOutput, &stderr)
+		code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--dry-run"}, &textOutput, &stderr)
 		if code != exitOK {
 			t.Fatalf("text dry-run exit = %d stderr=%q", code, stderr.String())
 		}
@@ -357,7 +359,7 @@ profiles:
 
 		var machineOutput bytes.Buffer
 		stderr.Reset()
-		code = Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--dry-run", "--json"}, &machineOutput, &stderr)
+		code = runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--dry-run", "--json"}, &machineOutput, &stderr)
 		if code != exitOK {
 			t.Fatalf("machine dry-run exit = %d stderr=%q", code, stderr.String())
 		}
@@ -373,6 +375,7 @@ profiles:
 }
 
 func TestProfilesConfigureProofScope(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := `
@@ -424,7 +427,7 @@ profiles:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+	code := runCLI(t, []string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("proof-scoped configure exit = %d stderr=%q", code, stderr.String())
@@ -481,6 +484,7 @@ func decodeProfilesConfigureRefused(t *testing.T, output string) bool {
 }
 
 func TestPrintProfilesConfigureRefusalWritesJSONBeforeDiagnostic(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 
 	code := printProfilesConfigureRefusal(

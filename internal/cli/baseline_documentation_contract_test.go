@@ -18,6 +18,7 @@ import (
 // Boundary OUT: real repository adoption journeys and Python-runtime removal.
 
 func TestBaselineDocumentationContract(t *testing.T) {
+	t.Parallel()
 	helpCases := []struct {
 		command  string
 		args     []string
@@ -224,6 +225,7 @@ func TestBaselineDocumentationContract(t *testing.T) {
 }
 
 func TestGuidanceCompositionDocumentation(t *testing.T) {
+	t.Parallel()
 	root := baselineDocumentationRepoRoot()
 	guide := readBaselineDocumentation(
 		t,
@@ -313,6 +315,7 @@ func TestGuidanceCompositionDocumentation(t *testing.T) {
 }
 
 func TestProjectConstraintDocumentation(t *testing.T) {
+	t.Parallel()
 	root := baselineDocumentationRepoRoot()
 	guidePath := filepath.Join(
 		root,
@@ -433,7 +436,7 @@ func TestProjectConstraintDocumentation(t *testing.T) {
 				continue
 			}
 			args := strings.Fields(command)
-			if err := parsePublishedBaselineExample(args[2:]); err != nil {
+			if err := parsePublishedBaselineExample(args[2:], ""); err != nil {
 				t.Fatalf("project-decision command %q does not parse: %v", command, err)
 			}
 			parsedPlanningExamples++
@@ -445,6 +448,7 @@ func TestProjectConstraintDocumentation(t *testing.T) {
 }
 
 func TestBaselineExamplesParse(t *testing.T) {
+	t.Parallel()
 	root := baselineDocumentationRepoRoot()
 	paths := []string{
 		filepath.Join(root, "README.md"),
@@ -457,19 +461,6 @@ func TestBaselineExamplesParse(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(temporaryRepo, ".git"), 0o755); err != nil {
 		t.Fatalf("create documentation-test Git marker: %v", err)
 	}
-	originalWorkingDirectory, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("read working directory: %v", err)
-	}
-	if err := os.Chdir(temporaryRepo); err != nil {
-		t.Fatalf("enter documentation-test repository: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(originalWorkingDirectory); err != nil {
-			t.Errorf("restore working directory: %v", err)
-		}
-	})
-
 	exampleCount := 0
 	profileCounter := 0
 	for _, path := range paths {
@@ -484,7 +475,7 @@ func TestBaselineExamplesParse(t *testing.T) {
 				profileCounter++
 				args = normalizeBaselineProfileInitExample(args, profileCounter)
 			}
-			if err := parsePublishedBaselineExample(args[2:]); err != nil {
+			if err := parsePublishedBaselineExample(args[2:], temporaryRepo); err != nil {
 				t.Fatalf("%s: command example %q does not parse: %v", path, command, err)
 			}
 		}
@@ -495,6 +486,7 @@ func TestBaselineExamplesParse(t *testing.T) {
 }
 
 func TestBaselineDecisionExamples(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(
 		baselineDocumentationRepoRoot(),
 		"docs",
@@ -548,7 +540,7 @@ func TestBaselineDecisionExamples(t *testing.T) {
 	}
 }
 
-func parsePublishedBaselineExample(args []string) error {
+func parsePublishedBaselineExample(args []string, workDir string) error {
 	switch {
 	case len(args) == 0:
 		_, err := parseBaselineHumanCommand(nil)
@@ -561,7 +553,7 @@ func parsePublishedBaselineExample(args []string) error {
 		return err
 	case len(args) >= 2 && args[0] == "profile" && args[1] == "init":
 		var stdout, stderr bytes.Buffer
-		if code := runBaselineProfileInitCommand(args[2:], &stdout, &stderr); code != exitOK {
+		if code := runBaselineProfileInitCommand(args[2:], &stdout, &stderr, commandEnvironment{workDir: workDir}); code != exitOK {
 			return fmt.Errorf("exit %d: %s", code, stderr.String())
 		}
 		return nil

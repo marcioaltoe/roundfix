@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -35,6 +36,7 @@ import (
 const implementTestSlug = "0001-widget-flow"
 
 const cliTestHelperEnv = "ROUNDFIX_CLI_TEST_HELPER"
+const cliTestHoldAfterRunEnv = "ROUNDFIX_CLI_TEST_HOLD_AFTER_RUN"
 const detachTestChildModeEnv = "ROUNDFIX_DETACH_TEST_CHILD"
 
 func TestMain(m *testing.M) {
@@ -42,7 +44,16 @@ func TestMain(m *testing.M) {
 		os.Exit(runDetachTestChild(mode))
 	}
 	if os.Getenv(cliTestHelperEnv) == "1" {
-		os.Exit(Run(os.Args[1:], os.Stdout, os.Stderr))
+		var callerSignals chan os.Signal
+		if os.Getenv(cliTestHoldAfterRunEnv) == "1" && os.Getenv(detachHandshakeFDEnv) == "" {
+			callerSignals = make(chan os.Signal, 1)
+			signal.Notify(callerSignals, syscall.SIGTERM)
+		}
+		code := Run(os.Args[1:], os.Stdout, os.Stderr)
+		if callerSignals != nil {
+			<-callerSignals
+		}
+		os.Exit(code)
 	}
 	os.Exit(m.Run())
 }
@@ -92,7 +103,7 @@ func runCLIHelper(t *testing.T, dir string, fakeACPX string, extraEnv map[string
 	t.Helper()
 	cmd := exec.Command(os.Args[0], args...)
 	cmd.Dir = dir
-	cmd.Env = cliHelperEnv(fakeACPX, extraEnv)
+	cmd.Env = cliHelperEnv(t, fakeACPX, extraEnv)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -101,8 +112,10 @@ func runCLIHelper(t *testing.T, dir string, fakeACPX string, extraEnv map[string
 	return stdout.String(), stderr.String(), exitCodeFromWait(err)
 }
 
-func cliHelperEnv(fakeACPX string, extra map[string]string) []string {
+func cliHelperEnv(t *testing.T, fakeACPX string, extra map[string]string) []string {
+	t.Helper()
 	env := isolatedGitEnvForTest()
+	env = withEnvValue(env, "HOME", commandEnvironmentForTest(t).homeDir)
 	env = withEnvValue(env, cliTestHelperEnv, "1")
 	if fakeACPX != "" {
 		env = withEnvValue(env, "PATH", filepath.Dir(fakeACPX)+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -397,13 +410,11 @@ func isolatedGitEnvForTest() []string {
 }
 
 // newImplementWorkspace builds a real git repository containing a committed
-// Spec directory, on a non-default work branch, with HOME pointed at a temp
-// dir and the test chdir'd into the repository. It returns the temp home and
-// the symlink-resolved repository root (the root git itself reports).
+// Spec directory on a non-default work branch. It gives CLI calls an explicit
+// temp home and repository working directory and returns both paths.
 func newImplementWorkspace(t *testing.T, seeds []implementSeed) (string, string) {
 	t.Helper()
 	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
 	repoDir := t.TempDir()
 	gittest.InitRepo(t, repoDir, "--initial-branch=main")
 	gitImplement(t, repoDir, "config", "user.name", "Roundfix Test")
@@ -413,15 +424,16 @@ func newImplementWorkspace(t *testing.T, seeds []implementSeed) (string, string)
 	gitImplement(t, repoDir, "add", "-A")
 	gitImplement(t, repoDir, "commit", "-m", "seed spec")
 	gitImplement(t, repoDir, "checkout", "-b", "ma/widget-flow")
-	t.Chdir(repoDir)
 	resolved, err := filepath.EvalSymlinks(repoDir)
 	if err != nil {
 		t.Fatalf("resolve repo dir: %v", err)
 	}
+	setCommandEnvironmentForTest(t, homeDir, resolved)
 	return homeDir, resolved
 }
 
 func TestLoadCommittedSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", taskType: "backend", status: string(spec.StatusPending)}})
 	taskPath := implementTaskPath(repoDir, "task_01")
 	dirty := strings.ReplaceAll(mustRead(t, taskPath), "status: pending\ntype: backend", "status: completed\ntype: frontend")
@@ -441,6 +453,7 @@ func TestLoadCommittedSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testing.T) {
 }
 
 func TestLoadCommittedExternalSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	_, externalRoot := newExternalSpecsRoot(t, implementTestSlug, []implementSeed{{id: "task_01", taskType: "backend", status: string(spec.StatusPending)}})
 	taskPath := implementTaskPathInRoot(externalRoot, implementTestSlug, "task_01")
@@ -460,6 +473,7 @@ func TestLoadCommittedExternalSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testi
 }
 
 func TestLoadCommittedExternalSpecGraphRequiresExternalGitRepository(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	externalRoot := filepath.Join(t.TempDir(), "external-specs")
 	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{{id: "task_01"}})
@@ -785,19 +799,17 @@ func runCleanImplementForCleanup(t *testing.T, cleanupErr error) (string, string
 	withImplementCollaborators(t, runner)
 	cleanupPath := ""
 	if cleanupErr != nil {
-		oldCleanup := cleanupCleanRunWorktree
-		cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
-			cleanupPath = ref.Path
-			return cleanupErr
-		}
-		t.Cleanup(func() {
-			cleanupCleanRunWorktree = oldCleanup
+		updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+			dependencies.cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
+				cleanupPath = ref.Path
+				return cleanupErr
+			}
 		})
 	}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean implement exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -810,45 +822,37 @@ func runCleanImplementForCleanup(t *testing.T, cleanupErr error) (string, string
 
 func withFakeRunWorktrees(t *testing.T) {
 	t.Helper()
-	oldCreate := createRunWorktree
-	oldIntegrate := integrateRunWorktree
-	oldCleanup := cleanupCleanRunWorktree
-	oldPrune := pruneTerminalRunWorktrees
-	createRunWorktree = func(_ context.Context, opts runworktree.CreateOptions) (runworktree.Ref, error) {
-		userRoot := opts.UserRoot
-		runID := opts.RunID
-		path := filepath.Join(os.Getenv("HOME"), ".roundfix", "worktrees", "fake", runID)
-		if err := copyDir(filepath.Join(userRoot, "docs"), filepath.Join(path, "docs")); err != nil {
-			return runworktree.Ref{}, err
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.createRunWorktree = func(_ context.Context, opts runworktree.CreateOptions) (runworktree.Ref, error) {
+			userRoot := opts.UserRoot
+			runID := opts.RunID
+			path := filepath.Join(commandEnvironmentForTest(t).homeDir, ".roundfix", "worktrees", "fake", runID)
+			if err := copyDir(filepath.Join(userRoot, "docs"), filepath.Join(path, "docs")); err != nil {
+				return runworktree.Ref{}, err
+			}
+			gittest.InitRepo(t, path, "--initial-branch=main")
+			gitImplement(t, path, "add", "-A")
+			gitImplement(t, path, "commit", "-m", "seed fake run worktree")
+			gitImplement(t, path, "branch", "-m", runworktree.BranchName(runID))
+			return runworktree.Ref{
+				RunID:    runID,
+				Path:     path,
+				Branch:   runworktree.BranchName(runID),
+				UserRoot: userRoot,
+			}, nil
 		}
-		gittest.InitRepo(t, path, "--initial-branch=main")
-		gitImplement(t, path, "add", "-A")
-		gitImplement(t, path, "commit", "-m", "seed fake run worktree")
-		gitImplement(t, path, "branch", "-m", runworktree.BranchName(runID))
-		return runworktree.Ref{
-			RunID:    runID,
-			Path:     path,
-			Branch:   runworktree.BranchName(runID),
-			UserRoot: userRoot,
-		}, nil
-	}
-	integrateRunWorktree = func(_ context.Context, ref runworktree.Ref, _ string, _ string) (runworktree.IntegrationResult, error) {
-		if err := copyDir(filepath.Join(ref.Path, "docs"), filepath.Join(ref.UserRoot, "docs")); err != nil {
-			return runworktree.IntegrationResult{}, err
+		dependencies.integrateRunWorktree = func(_ context.Context, ref runworktree.Ref, _ string, _ string) (runworktree.IntegrationResult, error) {
+			if err := copyDir(filepath.Join(ref.Path, "docs"), filepath.Join(ref.UserRoot, "docs")); err != nil {
+				return runworktree.IntegrationResult{}, err
+			}
+			return runworktree.IntegrationResult{Mode: runworktree.ModeFastForwardMerge}, nil
 		}
-		return runworktree.IntegrationResult{Mode: runworktree.ModeFastForwardMerge}, nil
-	}
-	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
-		return os.RemoveAll(ref.Path)
-	}
-	pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
-		return nil, nil
-	}
-	t.Cleanup(func() {
-		createRunWorktree = oldCreate
-		integrateRunWorktree = oldIntegrate
-		cleanupCleanRunWorktree = oldCleanup
-		pruneTerminalRunWorktrees = oldPrune
+		dependencies.cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
+			return os.RemoveAll(ref.Path)
+		}
+		dependencies.pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
+			return nil, nil
+		}
 	})
 }
 
@@ -907,12 +911,8 @@ func implementRunIDFromStderr(t *testing.T, stderr string) string {
 
 func withImplementOwnerIdentity(t *testing.T, identity string) {
 	t.Helper()
-	previous := implementOwnerIdentity
-	implementOwnerIdentity = func(context.Context) string {
-		return identity
-	}
-	t.Cleanup(func() {
-		implementOwnerIdentity = previous
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.implementOwnerIdentity = func(context.Context) string { return identity }
 	})
 }
 
@@ -1054,12 +1054,13 @@ type implementCommandResult struct {
 	code   int
 }
 
-func runImplementCommandAsync(ctx context.Context, args ...string) <-chan implementCommandResult {
+func runImplementCommandAsync(t *testing.T, ctx context.Context, args ...string) <-chan implementCommandResult {
+	t.Helper()
 	resultCh := make(chan implementCommandResult, 1)
 	go func() {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		code := RunContext(ctx, args, &stdout, &stderr)
+		code := runCLIContext(t, ctx, args, &stdout, &stderr)
 		resultCh <- implementCommandResult{
 			stdout: stdout.String(),
 			stderr: stderr.String(),
@@ -1069,9 +1070,18 @@ func runImplementCommandAsync(ctx context.Context, args ...string) <-chan implem
 	return resultCh
 }
 
+// implementWaitBudget bounds every "this eventually happened" wait in the
+// Implement tests. It is deliberately far longer than the work needs: a
+// passing wait returns the moment its condition holds and pays none of it,
+// while a stuck one still fails. These tests orchestrate real child processes
+// and assert concurrency semantics, so they need CPU to make progress — and
+// they now run alongside hundreds of parallel siblings. A tight budget here
+// measures how loaded the machine is, not whether the code works.
+const implementWaitBudget = 90 * time.Second
+
 func waitImplementCommandResult(t *testing.T, resultCh <-chan implementCommandResult) implementCommandResult {
 	t.Helper()
-	timer := time.NewTimer(20 * time.Second)
+	timer := time.NewTimer(implementWaitBudget)
 	defer timer.Stop()
 	select {
 	case result := <-resultCh:
@@ -1130,7 +1140,7 @@ func (probe *implementAgentOverlapProbe) maxObservedActive() int {
 func waitImplementAgentStarts(t *testing.T, probe *implementAgentOverlapProbe, count int) []string {
 	t.Helper()
 	started := make([]string, 0, count)
-	timer := time.NewTimer(10 * time.Second)
+	timer := time.NewTimer(implementWaitBudget)
 	defer timer.Stop()
 	for len(started) < count {
 		select {
@@ -1255,7 +1265,7 @@ func implementVerificationEvidenceFromEvents(t *testing.T, events []store.Journa
 
 func waitForImplementJournal(t *testing.T, homeDir string, runID string, condition func([]store.JournalEvent) bool) []store.JournalEvent {
 	t.Helper()
-	timer := time.NewTimer(10 * time.Second)
+	timer := time.NewTimer(implementWaitBudget)
 	defer timer.Stop()
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
@@ -1292,10 +1302,11 @@ func taskRefForImplementRun(t *testing.T, run store.Run, repoDir string, taskID 
 }
 
 func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--help"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--help"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -1335,10 +1346,11 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 }
 
 func TestRunImplementVerificationCapacityDoesNotAddFlag(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--help"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--help"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -1352,6 +1364,7 @@ func TestRunImplementVerificationCapacityDoesNotAddFlag(t *testing.T) {
 }
 
 func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	fakeACPX := fakeACPXCommand(t)
 	stdout, stderr, code := runCLIHelper(t, repoDir, fakeACPX, nil,
@@ -1389,10 +1402,11 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 }
 
 func TestRunImplementDetachReportsAndRelaysPreflightFailure(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	var foregroundStdout bytes.Buffer
 	var foregroundStderr bytes.Buffer
-	foregroundCode := RunContext(context.Background(), []string{"implement", "--spec", "9999-missing", "--no-input"}, &foregroundStdout, &foregroundStderr)
+	foregroundCode := runCLIContext(t, context.Background(), []string{"implement", "--spec", "9999-missing", "--no-input"}, &foregroundStdout, &foregroundStderr)
 	if foregroundCode != exitPreflight {
 		t.Fatalf("expected foreground preflight exit 2, got %d stderr=%q", foregroundCode, foregroundStderr.String())
 	}
@@ -1416,6 +1430,7 @@ func TestRunImplementDetachReportsAndRelaysPreflightFailure(t *testing.T) {
 }
 
 func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	dir := t.TempDir()
 	promptStarted := filepath.Join(dir, "prompt-started")
@@ -1426,9 +1441,10 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	fakeACPX := fakeACPXCommand(t)
 	cmd := exec.Command(os.Args[0], "implement", "--spec", implementTestSlug, "--agent-command", "codex-acp --stdio", "--detach")
 	cmd.Dir = repoDir
-	cmd.Env = cliHelperEnv(fakeACPX, map[string]string{
+	cmd.Env = cliHelperEnv(t, fakeACPX, map[string]string{
 		"ROUNDFIX_FAKE_ACPX_PROMPT_STARTED": promptStarted,
 		"ROUNDFIX_FAKE_ACPX_RELEASE":        releasePrompt,
+		cliTestHoldAfterRunEnv:              "1",
 	})
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	stdoutPipe, err := cmd.StdoutPipe()
@@ -1450,12 +1466,12 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		t.Fatalf("kill caller process group: %v", err)
 	}
 	_, _ = waitProcessForTest(cmd, 2*time.Second)
-	waitForFile(t, promptStarted, 60*time.Second)
+	waitForFile(t, promptStarted, implementWaitBudget)
 
 	var attachStdout bytes.Buffer
 	var attachStderr bytes.Buffer
 	attachCtx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-	attachCode := RunContext(attachCtx, []string{"attach", runID}, &attachStdout, &attachStderr)
+	attachCode := runCLIContext(t, attachCtx, []string{"attach", runID}, &attachStdout, &attachStderr)
 	cancel()
 	if attachCode != exitOK {
 		t.Fatalf("expected attach to detach cleanly from active Run, got %d stderr=%q stdout=%q", attachCode, attachStderr.String(), attachStdout.String())
@@ -1473,10 +1489,11 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 }
 
 func TestRunHelpListsImplementCommand(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"--help"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"--help"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
@@ -1487,6 +1504,7 @@ func TestRunHelpListsImplementCommand(t *testing.T) {
 }
 
 func TestRunImplementValidationFailures(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		args    []string
@@ -1541,7 +1559,7 @@ func TestRunImplementValidationFailures(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
@@ -1558,6 +1576,7 @@ func TestRunImplementValidationFailures(t *testing.T) {
 }
 
 func TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		config   string
@@ -1576,7 +1595,7 @@ func TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation(t *test
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected validation exit code 2, got %d stderr=%q", code, stderr.String())
@@ -1593,6 +1612,7 @@ func TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation(t *test
 }
 
 func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -1617,7 +1637,7 @@ func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -1666,6 +1686,7 @@ func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
 }
 
 func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
@@ -1682,7 +1703,7 @@ func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean exit, got %d (stderr %q stdout %q)", code, stderr.String(), stdout.String())
@@ -1709,6 +1730,7 @@ func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
 }
 
 func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should not be listed"},
 	})
@@ -1731,7 +1753,7 @@ func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean exit, got %d (stderr %q stdout %q)", code, stderr.String(), stdout.String())
@@ -1753,6 +1775,7 @@ func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.
 }
 
 func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		args        []string
@@ -1781,7 +1804,7 @@ func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -1798,6 +1821,7 @@ func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
 }
 
 func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -1818,7 +1842,7 @@ func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	if code := RunContext(context.Background(), []string{"implement"}, &stdout, &stderr); code != 0 {
+	if code := runCLIContext(t, context.Background(), []string{"implement"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("expected first run exit 0, got %d (stderr %q)", code, stderr.String())
 	}
 	if defaults := readInteractiveDefaults(t, homeDir); defaults.Agent != "claude" {
@@ -1839,7 +1863,7 @@ func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 
-	if code := RunContext(context.Background(), []string{"implement", "--interactive"}, &stdout, &stderr); code != 0 {
+	if code := runCLIContext(t, context.Background(), []string{"implement", "--interactive"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("expected second run exit 0, got %d (stderr %q)", code, stderr.String())
 	}
 	if secondReq.AgentSuggestion.Value != "codex" || secondReq.AgentSuggestion.Source != "config" {
@@ -1857,6 +1881,7 @@ func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
 }
 
 func TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -1873,7 +1898,7 @@ func TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow(t *testing
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--interactive"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--interactive"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -1891,6 +1916,7 @@ func TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow(t *testing
 }
 
 func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
+	t.Parallel()
 	withImplementOwnerIdentity(t, "test-owner-identity")
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Write the widget guide", taskType: "docs", verification: []string{"echo docs-check"}},
@@ -1907,7 +1933,7 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -1960,6 +1986,7 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 }
 
 func TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture(t *testing.T) {
+	t.Parallel()
 	withImplementOwnerIdentity(t, "")
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget backend", verification: []string{"echo backend-check"}},
@@ -1974,7 +2001,7 @@ func TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Run creation and execution to succeed, got exit %d stderr=%q", code, stderr.String())
@@ -1995,6 +2022,7 @@ func TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture(t *testing.T) {
 }
 
 func TestRunImplementPassesVerificationCapacityIntoTaskCycle(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Build the widget backend"}})
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "worktree:\n  concurrency: 1\nverification:\n  concurrency: 3\n")
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
@@ -2007,7 +2035,7 @@ func TestRunImplementPassesVerificationCapacityIntoTaskCycle(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
@@ -2041,6 +2069,7 @@ func TestRunImplementPassesVerificationCapacityIntoTaskCycle(t *testing.T) {
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementExecutesSpecEndToEnd.
 func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testing.T) {
+	t.Parallel()
 	verificationDir := t.TempDir()
 	logPath := filepath.Join(verificationDir, "verification.log")
 	startedPaths := map[string]string{
@@ -2078,7 +2107,7 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	resultCh := runImplementCommandAsync(ctx, "implement", "--spec", implementTestSlug, "--no-input")
+	resultCh := runImplementCommandAsync(t, ctx, "implement", "--spec", implementTestSlug, "--no-input")
 	assertImplementTaskSet(t, waitImplementAgentStarts(t, overlap, 2), "task_01", "task_02")
 	if got := overlap.maxObservedActive(); got != 2 {
 		t.Fatalf("expected two simultaneous Agent turns, got max active %d", got)
@@ -2117,7 +2146,7 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 	if firstTask == secondTask {
 		secondTask = "task_02"
 	}
-	waitForFile(t, startedPaths[firstTask], 10*time.Second)
+	waitForFile(t, startedPaths[firstTask], implementWaitBudget)
 	if _, err := os.Stat(startedPaths[secondTask]); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected %s to remain queued before capacity release, stat error %v", secondTask, err)
 	}
@@ -2132,7 +2161,7 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 		}
 		return started == 2
 	})
-	waitForFile(t, startedPaths[secondTask], 10*time.Second)
+	waitForFile(t, startedPaths[secondTask], implementWaitBudget)
 	releaseImplementNamedPipe(t, releasePaths[secondTask])
 
 	result := waitImplementCommandResult(t, resultCh)
@@ -2209,6 +2238,7 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementExecutesSpecEndToEnd.
 func TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair(t *testing.T) {
+	t.Parallel()
 	markerPath := filepath.Join(t.TempDir(), "temporary-seen")
 	command := fmt.Sprintf(
 		"if test -f %s; then printf 'exclusive retry passed\\n'; exit 0; fi; printf 'initial temporary failure\\n'; : > %s; exit 75",
@@ -2228,7 +2258,7 @@ func TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair(t *t
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean exit %d, got %d stderr=%q stdout=%q", exitOK, code, stderr.String(), stdout.String())
@@ -2297,6 +2327,7 @@ func TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair(t *t
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree.
 func TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWorktree(t *testing.T) {
+	t.Parallel()
 	counterPath := filepath.Join(t.TempDir(), "temporary-count")
 	command := fmt.Sprintf(
 		"count=0; if test -f %s; then count=$(cat %s); fi; count=$((count + 1)); printf '%%s' \"$count\" > %s; printf 'temporary failure %%s\\n' \"$count\"; exit 75",
@@ -2320,7 +2351,7 @@ func TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWork
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected Unresolved exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, stderr.String(), stdout.String())
@@ -2390,6 +2421,7 @@ func TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWork
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree.
 func TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair(t *testing.T) {
+	t.Parallel()
 	repairPath := filepath.Join(t.TempDir(), "agent-repaired")
 	command := fmt.Sprintf(
 		"if test -f %s; then printf 'deterministic repair passed\\n'; exit 0; fi; printf 'deterministic failure\\n'; exit 42",
@@ -2420,7 +2452,7 @@ func TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair(t *te
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected repaired Clean exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -2468,6 +2500,7 @@ func TestRunImplementTemporaryVerificationFlowPreservesDeterministicRepair(t *te
 // Owning layer: public Implement Command integration.
 // Existing canonical suite: TestRunImplementStopRequestEndsStoppedWithInterruptMapping.
 func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *testing.T) {
+	t.Parallel()
 	verificationDir := t.TempDir()
 	logPath := filepath.Join(verificationDir, "verification.log")
 	startedPaths := map[string]string{
@@ -2505,7 +2538,7 @@ func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *te
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	resultCh := runImplementCommandAsync(ctx, "implement", "--spec", implementTestSlug, "--no-input")
+	resultCh := runImplementCommandAsync(t, ctx, "implement", "--spec", implementTestSlug, "--no-input")
 	assertImplementTaskSet(t, waitImplementAgentStarts(t, overlap, 2), "task_01", "task_02")
 	overlap.releaseAgents()
 	runID := onlyImplementRunID(t, homeDir)
@@ -2536,7 +2569,7 @@ func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *te
 	if activeTask == queuedTask {
 		queuedTask = "task_02"
 	}
-	waitForFile(t, startedPaths[activeTask], 10*time.Second)
+	waitForFile(t, startedPaths[activeTask], implementWaitBudget)
 	if _, err := os.Stat(startedPaths[queuedTask]); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected queued Task %s to start no child process, stat error %v", queuedTask, err)
 	}
@@ -2587,6 +2620,7 @@ func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *te
 }
 
 func TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
+	t.Parallel()
 	wantStdout, _, wantCode, _, _ := runCleanImplementForCleanup(t, nil)
 	gotStdout, gotStderr, gotCode, homeDir, keptPath := runCleanImplementForCleanup(t, errors.New("forced cleanup failure"))
 
@@ -2605,6 +2639,7 @@ func TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrE
 }
 
 func TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:    "task_01",
 		title: "Build the widget core",
@@ -2616,7 +2651,7 @@ func TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected bootstrap failure exit %d, got %d (stderr %q)", exitRunFailed, code, stderr.String())
@@ -2663,6 +2698,7 @@ func TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork(t *testing.T) {
 }
 
 func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:           "task_01",
 		title:        "Build the widget core",
@@ -2690,7 +2726,7 @@ func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean exit, got %d (stderr %q)", code, stderr.String())
@@ -2708,6 +2744,7 @@ func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
 }
 
 func TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the first slice", verification: []string{"test -f bootstrap.ready"}},
 		{id: "task_02", title: "Build the second slice", verification: []string{"test -f bootstrap.ready"}},
@@ -2750,7 +2787,7 @@ func TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork(t *test
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean exit, got %d (stderr %q)", code, stderr.String())
@@ -2773,6 +2810,7 @@ func TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork(t *test
 }
 
 func TestRenderImplementTaskLinesKeepsGraphOrderWhenCompletionReversed(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build scheduler"},
 		{id: "task_02", title: "Wire queue"},
@@ -2803,6 +2841,7 @@ func TestRenderImplementTaskLinesKeepsGraphOrderWhenCompletionReversed(t *testin
 }
 
 func TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build scheduler"},
 		{id: "task_02", title: "Wire queue", needs: []string{"task_01"}},
@@ -2857,6 +2896,7 @@ func TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks(t *testing.
 // Owning layer: Implement terminal report projection.
 // Existing canonical suite: TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks.
 func TestRenderImplementTaskLinesUsesDaemonOutcomeForPreservedTaskWorktree(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:    "task_01",
 		title: "Preserve failed parallel work",
@@ -2888,6 +2928,7 @@ func TestRenderImplementTaskLinesUsesDaemonOutcomeForPreservedTaskWorktree(t *te
 }
 
 func TestRenderImplementTaskLinesNormalizesMultilineReasons(t *testing.T) {
+	t.Parallel()
 	_, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build scheduler"},
 	})
@@ -2918,6 +2959,7 @@ func TestRenderImplementTaskLinesNormalizesMultilineReasons(t *testing.T) {
 }
 
 func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		enableAutoPush  bool
@@ -3033,7 +3075,7 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
@@ -3071,6 +3113,7 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 }
 
 func TestRunImplementReportPrintsVerificationFailureReason(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", verification: []string{"make verify"}},
 	})
@@ -3086,7 +3129,7 @@ func TestRunImplementReportPrintsVerificationFailureReason(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected unresolved implement exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, stderr.String(), stdout.String())
@@ -3107,6 +3150,7 @@ func TestRunImplementReportPrintsVerificationFailureReason(t *testing.T) {
 }
 
 func TestRunImplementReportPrintsModelNotAdvertisedReason(t *testing.T) {
+	t.Parallel()
 	const reason = `Agent Model "gpt-5.6-sol" not advertised by runtime "codex"; advertised: gpt-5.5, gpt-5.1`
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", verification: []string{"make verify"}},
@@ -3129,7 +3173,7 @@ func TestRunImplementReportPrintsModelNotAdvertisedReason(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected unresolved implement exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, stderr.String(), stdout.String())
@@ -3147,6 +3191,7 @@ func TestRunImplementReportPrintsModelNotAdvertisedReason(t *testing.T) {
 }
 
 func TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -3159,7 +3204,7 @@ func TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected Clean path exit 0, got %d stderr=%q", code, stderr.String())
@@ -3184,6 +3229,7 @@ func TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean(t *testing.T) {
 }
 
 func TestRunImplementAutoPushFailureEndsFailedAndJournalsPush(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -3198,7 +3244,7 @@ func TestRunImplementAutoPushFailureEndsFailedAndJournalsPush(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected push failure exit 1, got %d stderr=%q", code, stderr.String())
@@ -3233,6 +3279,7 @@ func assertImplementPushEvent(t *testing.T, events []store.JournalEvent, decisio
 }
 
 func TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -3245,7 +3292,7 @@ func TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-agent-console", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-agent-console", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -3269,6 +3316,7 @@ func TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 }
 
 func TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		config       string
@@ -3306,7 +3354,7 @@ func TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -3330,6 +3378,7 @@ func TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs(t *testing.T) {
 }
 
 func TestRunImplementUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 		{id: "task_02", title: "Wire the widget API"},
@@ -3349,7 +3398,7 @@ func TestRunImplementUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -3364,6 +3413,7 @@ func TestRunImplementUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
 }
 
 func TestRunImplementClosesAgentSessionForTerminalOutcomes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		inner     *implementFakeRunner
@@ -3419,7 +3469,7 @@ func TestRunImplementClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
@@ -3435,6 +3485,7 @@ func TestRunImplementClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 }
 
 func TestRunImplementPreflightFailures(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		seeds    []implementSeed
@@ -3495,7 +3546,7 @@ func TestRunImplementPreflightFailures(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), args, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
@@ -3514,6 +3565,7 @@ func TestRunImplementPreflightFailures(t *testing.T) {
 }
 
 func TestImplementRejectsInvalidTaskTypeBeforeSideEffects(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", taskType: "Backend"},
 	})
@@ -3525,7 +3577,7 @@ func TestImplementRejectsInvalidTaskTypeBeforeSideEffects(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
@@ -3563,6 +3615,7 @@ func TestImplementRejectsInvalidTaskTypeBeforeSideEffects(t *testing.T) {
 }
 
 func TestRunImplementDirtyWorkingTreePrintsNoteAndRuns(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	withImplementCollaborators(t, &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -3572,7 +3625,7 @@ func TestRunImplementDirtyWorkingTreePrintsNoteAndRuns(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected dirty working tree to continue, got exit %d (stderr %q)", code, stderr.String())
@@ -3597,6 +3650,7 @@ func TestRunImplementDirtyWorkingTreePrintsNoteAndRuns(t *testing.T) {
 }
 
 func TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:           "task_01",
 		title:        "Build isolated work",
@@ -3614,7 +3668,7 @@ func TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUs
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean fast-forward exit, got %d (stderr %q)", code, stderr.String())
@@ -3648,6 +3702,7 @@ func TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUs
 }
 
 func TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:           "task_01",
 		title:        "Build isolated work",
@@ -3670,7 +3725,7 @@ func TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected IntegrationPending exit, got %d (stderr %q)", code, stderr.String())
@@ -3706,6 +3761,7 @@ func TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T)
 }
 
 func TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:           "task_01",
 		title:        "Edit shared file",
@@ -3727,7 +3783,7 @@ func TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks(t *test
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected IntegrationPending exit, got %d (stderr %q)", code, stderr.String())
@@ -3765,6 +3821,7 @@ func TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks(t *test
 }
 
 func TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:    "task_01",
 		title: "Leave unresolved work",
@@ -3782,7 +3839,7 @@ func TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected Unresolved exit, got %d (stderr %q)", code, stderr.String())
@@ -3806,6 +3863,7 @@ func TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath(t *testing.T) {
 }
 
 func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Build after cleanup",
@@ -3821,7 +3879,7 @@ func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -3844,6 +3902,7 @@ func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T
 }
 
 func TestRunImplementPreflightTerminalReachableChangedBranch(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Build after reachable cleanup",
@@ -3863,7 +3922,7 @@ func TestRunImplementPreflightTerminalReachableChangedBranch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -3876,6 +3935,7 @@ func TestRunImplementPreflightTerminalReachableChangedBranch(t *testing.T) {
 }
 
 func TestRunImplementPreflightTerminalUniqueChangedBranch(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Build while preserving unique work",
@@ -3894,7 +3954,7 @@ func TestRunImplementPreflightTerminalUniqueChangedBranch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -3907,6 +3967,7 @@ func TestRunImplementPreflightTerminalUniqueChangedBranch(t *testing.T) {
 }
 
 func TestRunImplementPreflightClosesTerminalRunSessionsOnly(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Build after session cleanup",
@@ -3942,7 +4003,7 @@ func TestRunImplementPreflightClosesTerminalRunSessionsOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -3976,6 +4037,7 @@ func TestRunImplementPreflightClosesTerminalRunSessionsOnly(t *testing.T) {
 }
 
 func TestRunImplementPreflightPrunesRetainedRunStorage(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
@@ -3993,7 +4055,7 @@ func TestRunImplementPreflightPrunesRetainedRunStorage(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -4014,6 +4076,7 @@ func TestRunImplementPreflightPrunesRetainedRunStorage(t *testing.T) {
 }
 
 func TestRunImplementPreflightRetentionPruneFailureIsNonFatal(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
@@ -4044,7 +4107,7 @@ func TestRunImplementPreflightRetentionPruneFailureIsNonFatal(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0 despite retention warning, got %d stderr=%q", code, stderr.String())
@@ -4059,6 +4122,7 @@ func TestRunImplementPreflightRetentionPruneFailureIsNonFatal(t *testing.T) {
 }
 
 func TestRunImplementPreflightRetentionZeroSkipsPrune(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
@@ -4076,7 +4140,7 @@ func TestRunImplementPreflightRetentionZeroSkipsPrune(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -4092,6 +4156,7 @@ func TestRunImplementPreflightRetentionZeroSkipsPrune(t *testing.T) {
 }
 
 func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
 	ctx := context.Background()
@@ -4115,7 +4180,7 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
@@ -4138,13 +4203,14 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 }
 
 func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("codex-acp is not on PATH")}
 	withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
@@ -4159,13 +4225,14 @@ func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 }
 
 func TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", taskType: "backend"}})
 	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("adapter rejected configured tuple")}
 	withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -4193,6 +4260,7 @@ func TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt(t *te
 }
 
 func TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{
 		gitRoot: repoDir,
@@ -4207,7 +4275,7 @@ func TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"implement",
 		"--spec", implementTestSlug,
 		"--agent", "codex",
@@ -4240,6 +4308,7 @@ func TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun
 }
 
 func TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Confirm fallback"}})
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	configContent := "runtimes:\n  codex:\n    model: broken-model\n    reasoning_effort: unsupported\n"
@@ -4261,7 +4330,7 @@ func TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback(t *testing.
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"implement",
 		"--spec", implementTestSlug,
 	}, &stdout, &stderr)
@@ -4285,13 +4354,14 @@ func TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback(t *testing.
 }
 
 func TestRunImplementPassesOneRunSelectionOverridesToPreflight(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("stop after selection preflight")}
 	withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"implement",
 		"--spec", implementTestSlug,
 		"--agent", "codex",
@@ -4317,6 +4387,7 @@ func TestRunImplementPassesOneRunSelectionOverridesToPreflight(t *testing.T) {
 }
 
 func TestRunImplementPersistsEffectiveSelection(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Store selection"}})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -4326,7 +4397,7 @@ func TestRunImplementPersistsEffectiveSelection(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"implement",
 		"--spec", implementTestSlug,
 		"--agent", "codex",
@@ -4352,6 +4423,7 @@ func TestRunImplementPersistsEffectiveSelection(t *testing.T) {
 }
 
 func TestRunImplementAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Store model-managed selection"}})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -4361,7 +4433,7 @@ func TestRunImplementAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"implement",
 		"--spec", implementTestSlug,
 		"--agent", "codex",
@@ -4384,6 +4456,7 @@ func TestRunImplementAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
 }
 
 func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -4401,7 +4474,7 @@ func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -4418,6 +4491,7 @@ func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
 }
 
 func TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T) {
+	t.Parallel()
 	homeDir, _ := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
 	const invalidConfig = "defaults:\n  agent: [\n"
@@ -4425,7 +4499,7 @@ func TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"implement", "--spec", implementTestSlug, "--reasoning-effort", "high", "--no-input",
 	}, &stdout, &stderr)
 
@@ -4451,6 +4525,7 @@ func TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.
 }
 
 func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Write the widget guide", status: string(spec.StatusCompleted)},
 		{id: "task_02", title: "Build the widget backend", status: string(spec.StatusCompleted), needs: []string{"task_01"}},
@@ -4460,7 +4535,7 @@ func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -4478,6 +4553,7 @@ func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {
 }
 
 func TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}, verification: []string{"fail-task-02"}},
@@ -4495,7 +4571,7 @@ func TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree(t *testing.T) 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
@@ -4533,6 +4609,7 @@ func TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree(t *testing.T) 
 }
 
 func TestRunImplementResumesStaleInProgressTask(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", status: string(spec.StatusInProgress)},
 	})
@@ -4544,7 +4621,7 @@ func TestRunImplementResumesStaleInProgressTask(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -4562,6 +4639,7 @@ func TestRunImplementResumesStaleInProgressTask(t *testing.T) {
 }
 
 func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
@@ -4574,7 +4652,7 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	stoppedCode := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	stoppedCode := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 	code := exitForInterrupt(stoppedCode, true)
 
 	if stoppedCode != 0 {
@@ -4603,6 +4681,7 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 }
 
 func TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLock(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
@@ -4618,7 +4697,7 @@ func TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLoc
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected stopped command exit 0, got %d (stderr %q)", code, stderr.String())
@@ -4686,6 +4765,7 @@ func implementJournaledQAEvent(t *testing.T, homeDir string, runID string) (rune
 }
 
 func TestRunImplementQAVerdictMatrix(t *testing.T) {
+	t.Parallel()
 	reportRel := implementQAReportRelPath()
 	tests := []struct {
 		name        string
@@ -4716,7 +4796,7 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
@@ -4768,6 +4848,7 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 }
 
 func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", verification: []string{"fail-task-01"}},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
@@ -4782,7 +4863,7 @@ func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
@@ -4811,6 +4892,7 @@ func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
 }
 
 func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		verdict   string
@@ -4834,7 +4916,7 @@ func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
@@ -4867,6 +4949,7 @@ func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
 // branch from the Run record into the QA prompt so the gate can reach the
 // Pull Request the user's branch owns.
 func TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Write the widget guide", status: string(spec.StatusCompleted)},
 	})
@@ -4878,7 +4961,7 @@ func TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected a clean QA-only Run, got %d (stderr %q)", code, stderr.String())
@@ -4904,6 +4987,7 @@ func TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord(t *testing.T) {
 }
 
 func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Guide docs", taskType: "docs"},
 		{id: "task_02", title: "Build core", needs: []string{"task_01"}},
@@ -4919,7 +5003,7 @@ func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
 	withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	if code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr); code != 0 {
+	if code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("seed implement run failed: %d stderr=%q", code, stderr.String())
 	}
 	runID := implementRunIDFromStderr(t, stderr.String())
@@ -4930,7 +5014,7 @@ func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 
-	code := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"attach", runID}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
@@ -4965,6 +5049,7 @@ func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
 }
 
 func TestRunImplementInfrastructureFailureEndsFailed(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -4977,7 +5062,7 @@ func TestRunImplementInfrastructureFailureEndsFailed(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
@@ -4996,6 +5081,7 @@ func TestRunImplementInfrastructureFailureEndsFailed(t *testing.T) {
 }
 
 func TestAgentSelectionProfilesMacro(t *testing.T) {
+	t.Parallel()
 	binary := buildRoundfixBinaryForMacro(t)
 
 	t.Run("mixed profiles configure validate fallback persist and stream", func(t *testing.T) {

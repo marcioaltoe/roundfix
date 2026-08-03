@@ -1,0 +1,68 @@
+name: CI | Verify
+
+on:
+  pull_request:
+    branches: [main]
+    types:
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# The gate runs as two independent jobs rather than two steps: both execute the
+# whole test suite, so sequencing them would charge the wall clock their sum
+# instead of their maximum. The race detector alone is roughly five times the
+# normal suite.
+jobs:
+  verify:
+    name: Verification gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.26"
+          cache: false
+
+      # The local gate lets Go's test result cache decide what to re-run, so an
+      # implementation loop pays only for what it changed. CI is the tier that
+      # owes a verdict on the whole tree, so it forces a fresh run: -count=1
+      # disables the result cache and every package executes.
+      - name: Verify
+        env:
+          GOFLAGS: -count=1
+        run: make verify
+
+  race:
+    name: Race detector
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "1.26"
+          cache: false
+
+      # No -count=1 here: -race builds a distinct test binary with its own
+      # cache entry, so this run can never be answered by a non-race result.
+      # This job is the reason the suite can be trusted in parallel — 479 of
+      # the 488 tests in internal/cli now declare t.Parallel(), and a data race
+      # is exactly what that buys if nobody looks for one.
+      - name: Race detector
+        run: make test-race

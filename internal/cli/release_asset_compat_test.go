@@ -12,6 +12,7 @@ import (
 // per-platform asset the release workflow uploads must resolve for its
 // GOOS/GOARCH, and checksum-style assets must never be selected as the binary.
 func TestSelectPlatformAssetResolvesReleaseNamingScheme(t *testing.T) {
+	t.Parallel()
 	assets := []app.ReleaseAsset{
 		{Name: "roundfix-darwin-arm64"},
 		{Name: "roundfix-darwin-amd64"},

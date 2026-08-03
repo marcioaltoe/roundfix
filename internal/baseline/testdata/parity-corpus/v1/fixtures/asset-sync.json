@@ -22,15 +22,15 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "fe9f10f3bc2c94f312b7be446e58eb636f53ab63e76cf7c8526391eecf607ab5",
+      "digest": "84953779bc09f45c59d57d9cd8a6f0ce83f438b25f5d4d89a1015c8d24415157",
       "id": "go-cli"
     },
     {
-      "digest": "0d130d7247cc56cd75174c328f779b5cb76c368e0dd7d6fd9e2ee392682fd198",
+      "digest": "5baaef1ed5c3df703275a385af0cd428ef6caca226bbf30ae06f9944ec74d09d",
       "id": "rust-cli"
     },
     {
-      "digest": "48461b26c2532065c2ddbe9abd6bd7a5bf214eb24f98eef698d5365eabc335f6",
+      "digest": "7f06cd934682214b6eb3718f4a7aa6aa60490d5d4857334b8f52503d34568dcc",
       "id": "typescript-bun"
     }
   ],
@@ -53,7 +53,7 @@
             ]
           }
         ],
-        "digest": "fe9f10f3bc2c94f312b7be446e58eb636f53ab63e76cf7c8526391eecf607ab5",
+        "digest": "84953779bc09f45c59d57d9cd8a6f0ce83f438b25f5d4d89a1015c8d24415157",
         "id": "go-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -220,7 +220,7 @@
             }
           },
           {
-            "contentDigest": "deb46cc5e131c275bef3a1f1469949d4933d455a41b1404f9330d6771c1136d7",
+            "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -475,7 +475,7 @@
             ]
           }
         ],
-        "digest": "0d130d7247cc56cd75174c328f779b5cb76c368e0dd7d6fd9e2ee392682fd198",
+        "digest": "5baaef1ed5c3df703275a385af0cd428ef6caca226bbf30ae06f9944ec74d09d",
         "id": "rust-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -631,7 +631,7 @@
             }
           },
           {
-            "contentDigest": "deb46cc5e131c275bef3a1f1469949d4933d455a41b1404f9330d6771c1136d7",
+            "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -920,7 +920,7 @@
             ]
           }
         ],
-        "digest": "48461b26c2532065c2ddbe9abd6bd7a5bf214eb24f98eef698d5365eabc335f6",
+        "digest": "7f06cd934682214b6eb3718f4a7aa6aa60490d5d4857334b8f52503d34568dcc",
         "id": "typescript-bun",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -1172,7 +1172,7 @@
             }
           },
           {
-            "contentDigest": "deb46cc5e131c275bef3a1f1469949d4933d455a41b1404f9330d6771c1136d7",
+            "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {

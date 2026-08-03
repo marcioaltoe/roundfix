@@ -13,6 +13,7 @@ import (
 )
 
 func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
 		{id: "task_02", title: "Wire the widget API", status: string(spec.StatusCompleted), needs: []string{"task_01"}},
@@ -22,7 +23,7 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -52,6 +53,7 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 }
 
 func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay active", status: string(spec.StatusCompleted)},
 	})
@@ -67,7 +69,7 @@ func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -87,6 +89,7 @@ func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
 }
 
 func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
 		{id: "task_02", title: "Wire the widget API", status: string(spec.StatusPending), needs: []string{"task_01"}},
@@ -95,7 +98,7 @@ func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected archive refusal exit %d, got %d", exitPreflight, code)
@@ -121,6 +124,7 @@ func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
 }
 
 func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name             string
 		verdict          string
@@ -177,7 +181,7 @@ func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected archive refusal exit %d, got %d", exitPreflight, code)
@@ -198,10 +202,11 @@ func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
 }
 
 func TestRunArchiveHelp(t *testing.T) {
+	t.Parallel()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"archive", "--help"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"archive", "--help"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected help exit 0, got %d", code)
@@ -248,12 +253,10 @@ func assertPathMissing(t *testing.T, path string) {
 
 func withNoEngineCollaborators(t *testing.T) {
 	t.Helper()
-	old := newEngineCollaborators
-	newEngineCollaborators = func() engineCollaborators {
-		t.Fatal("archive must not create Run engine collaborators")
-		return engineCollaborators{}
-	}
-	t.Cleanup(func() {
-		newEngineCollaborators = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.newEngineCollaborators = func() engineCollaborators {
+			t.Fatal("archive must not create Run engine collaborators")
+			return engineCollaborators{}
+		}
 	})
 }

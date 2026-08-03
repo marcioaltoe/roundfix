@@ -17,6 +17,7 @@ import (
 // preflight on the target PR Head Branch: git topology alone cannot
 // attribute Run Branches, so the guard consults the Run row.
 func TestBranchIntegrityIgnoresRunBranchesOwnedByOtherBranches(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runStore, err := store.Open(context.Background(), homeDir)
@@ -51,7 +52,7 @@ func TestBranchIntegrityIgnoresRunBranchesOwnedByOtherBranches(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected fetch to ignore the other branch's Run Branch, got %d stderr=%q", code, stderr.String())
@@ -71,6 +72,7 @@ func TestBranchIntegrityIgnoresRunBranchesOwnedByOtherBranches(t *testing.T) {
 // lock; the guard must still discover it through the runs table so a later
 // normal Run cannot start concurrently in the same checkout.
 func TestBranchIntegrityRejectsLocklessBypassRun(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withBranchIntegrity(t, nil, nil)
@@ -100,7 +102,7 @@ func TestBranchIntegrityRejectsLocklessBypassRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected lockless Active Run refusal exit 2, got %d stderr=%q", code, stderr.String())
@@ -120,6 +122,7 @@ func TestBranchIntegrityRejectsLocklessBypassRun(t *testing.T) {
 // The clean tracked checkout validation must refuse before any
 // fast-forward auto-integration mutates the user's branch.
 func TestReviewCleanTreeRefusalPrecedesAutoIntegration(t *testing.T) {
+	t.Parallel()
 	_, repoDir := withReviewGitWorkspace(t)
 	withRealReviewPreflight(t, repoDir, true)
 	pending := []runworktree.PendingRunWork{{
@@ -133,7 +136,7 @@ func TestReviewCleanTreeRefusalPrecedesAutoIntegration(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), branchIntegrityCommandArgs("resolve"), &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), branchIntegrityCommandArgs("resolve"), &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected dirty tracked refusal exit 2, got %d stderr=%q", code, stderr.String())
@@ -150,6 +153,7 @@ func TestReviewCleanTreeRefusalPrecedesAutoIntegration(t *testing.T) {
 // a proof failure publishes no audit and creates no Run, while an audit publish
 // failure happens only after the configured review profile has been proven.
 func TestBranchIntegrityBypassAuditFollowsProfileProof(t *testing.T) {
+	t.Parallel()
 	t.Run("proof failure prevents audit and Run creation", func(t *testing.T) {
 		homeDir, repoDir := withReviewGitWorkspace(t)
 		persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -161,7 +165,7 @@ func TestBranchIntegrityBypassAuditFollowsProfileProof(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+		code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected probe failure exit 2, got %d stderr=%q", code, stderr.String())
@@ -186,7 +190,7 @@ func TestBranchIntegrityBypassAuditFollowsProfileProof(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+		code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected audit publish failure exit 2, got %d stderr=%q", code, stderr.String())

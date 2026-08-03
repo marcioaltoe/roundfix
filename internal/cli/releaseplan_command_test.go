@@ -22,6 +22,7 @@ import (
 // Boundary OUT: release mutation, Run creation, Roundfix configuration, network services.
 
 func TestReleasePlanCommandMatchesPRDOutcomes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                 string
 		baseTag              string
@@ -133,6 +134,7 @@ func TestReleasePlanCommandMatchesPRDOutcomes(t *testing.T) {
 }
 
 func TestReleasePlanCommandMixedOrderSelectsHighestImpact(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		commits []releasePlanCommandCommit
@@ -172,6 +174,7 @@ func TestReleasePlanCommandMixedOrderSelectsHighestImpact(t *testing.T) {
 }
 
 func TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits(t *testing.T) {
+	t.Parallel()
 	t.Run("determining commits", func(t *testing.T) {
 		repoDir := newReleasePlanCommandRepo(t, "v0.4.1",
 			releasePlanCommandCommit{subject: "fix: correct release output", paths: []string{"internal/cli/fix.go"}},
@@ -223,6 +226,7 @@ func TestReleasePlanTextPrintsOnlyDeterminingOrBlockingCommits(t *testing.T) {
 }
 
 func TestReleasePlanJSONIncludesEveryCommitEvidence(t *testing.T) {
+	t.Parallel()
 	repoDir := newReleasePlanCommandRepo(t, "v0.4.1",
 		releasePlanCommandCommit{subject: "fix: correct release output", paths: []string{"internal/cli/fix.go"}},
 		releasePlanCommandCommit{subject: "docs: record planning evidence", paths: []string{"docs/specs/0034-release-plan/task_04.md"}},
@@ -250,6 +254,7 @@ func TestReleasePlanJSONIncludesEveryCommitEvidence(t *testing.T) {
 }
 
 func TestReleasePlanExitCodesAndInvalidInputIsolation(t *testing.T) {
+	t.Parallel()
 	t.Run("ready and no release exit zero", func(t *testing.T) {
 		for _, tt := range []struct {
 			name    string
@@ -324,8 +329,9 @@ func TestReleasePlanExitCodesAndInvalidInputIsolation(t *testing.T) {
 }
 
 func TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary(t *testing.T) {
+	t.Parallel()
 	var rootStdout, rootStderr bytes.Buffer
-	rootCode := Run([]string{"--help"}, &rootStdout, &rootStderr)
+	rootCode := runCLI(t, []string{"--help"}, &rootStdout, &rootStderr)
 	if rootCode != exitOK {
 		t.Fatalf("root help exit = %d, want 0 stderr=%q", rootCode, rootStderr.String())
 	}
@@ -334,7 +340,7 @@ func TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary(t *testi
 	}
 
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{"release", "plan", "--help"}, &stdout, &stderr)
+	code := runCLI(t, []string{"release", "plan", "--help"}, &stdout, &stderr)
 	if code != exitOK {
 		t.Fatalf("release plan help exit = %d, want 0 stderr=%q", code, stderr.String())
 	}
@@ -355,6 +361,7 @@ func TestReleasePlanHelpDescribesFlagsDefaultsStatesAndReadOnlyBoundary(t *testi
 }
 
 func TestReleasePlanReadOnlyPreservesRepositoryForOutcomes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		commits  []releasePlanCommandCommit
@@ -399,6 +406,7 @@ func TestReleasePlanReadOnlyPreservesRepositoryForOutcomes(t *testing.T) {
 }
 
 func TestReleasePlanDirtyTreeBlocksWithActionableDiagnostic(t *testing.T) {
+	t.Parallel()
 	repoDir := newReleasePlanCommandRepo(t, "v0.4.1",
 		releasePlanCommandCommit{subject: "fix: correct release output", paths: []string{"internal/cli/fix.go"}},
 	)
@@ -422,6 +430,7 @@ func TestReleasePlanDirtyTreeBlocksWithActionableDiagnostic(t *testing.T) {
 }
 
 func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.T) {
+	t.Parallel()
 	gitRunner := newResetPlanRecordingGitRunner()
 	ghRunner := &resetPlanRecordingGHRunner{
 		output: `[
@@ -434,18 +443,18 @@ func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.
 			]
 		]`,
 	}
-	restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+	restore := setReleasePlanCommandRunnersForTest(t, gitRunner, ghRunner)
 	t.Cleanup(restore)
 
 	var textStdout, textStderr bytes.Buffer
-	textExit := RunContext(context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1"}, &textStdout, &textStderr)
+	textExit := runCLIContext(t, context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1"}, &textStdout, &textStderr)
 	if textExit != exitUnverified {
 		t.Fatalf("text exit = %d, want 3 stdout=%q stderr=%q", textExit, textStdout.String(), textStderr.String())
 	}
 	assertReleasePlanNoStderr(t, textStderr.String())
 
 	var jsonStdout, jsonStderr bytes.Buffer
-	jsonExit := RunContext(context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &jsonStdout, &jsonStderr)
+	jsonExit := runCLIContext(t, context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &jsonStdout, &jsonStderr)
 	if jsonExit != exitUnverified {
 		t.Fatalf("JSON exit = %d, want 3 stdout=%q stderr=%q", jsonExit, jsonStdout.String(), jsonStderr.String())
 	}
@@ -499,6 +508,7 @@ func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.
 }
 
 func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly(t *testing.T) {
+	t.Parallel()
 	repoDir := newEmptyReleasePlanGitRepo(t)
 	writeReleasePlanFile(t, repoDir, "README.md", "seed\n")
 	gitReleasePlan(t, repoDir, "add", "-A")
@@ -531,18 +541,17 @@ func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly
 			]
 		]`,
 	}
-	restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+	restore := setReleasePlanCommandRunnersForTest(t, gitRunner, ghRunner)
 	t.Cleanup(restore)
 	before := snapshotReleasePlanRepo(t, repoDir)
-	t.Chdir(repoDir)
+	setCommandWorkDirForTest(t, repoDir)
 
 	var stdout, stderr bytes.Buffer
-	code := RunContext(
+	code := runCLIContext(t,
 		context.Background(),
 		[]string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"},
 		&stdout,
-		&stderr,
-	)
+		&stderr)
 
 	if code != exitUnverified {
 		t.Fatalf("exit = %d, want 3 stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -585,6 +594,7 @@ func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly
 }
 
 func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -601,11 +611,11 @@ func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *te
 		t.Run(tt.name, func(t *testing.T) {
 			gitRunner := newResetPlanRecordingGitRunner()
 			ghRunner := &resetPlanRecordingGHRunner{output: `[[]]`}
-			restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+			restore := setReleasePlanCommandRunnersForTest(t, gitRunner, ghRunner)
 			t.Cleanup(restore)
 
 			var stdout, stderr bytes.Buffer
-			code := RunContext(context.Background(), append([]string{"release", "plan"}, tt.args...), &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), append([]string{"release", "plan"}, tt.args...), &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("exit = %d, want 2 stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -622,6 +632,7 @@ func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *te
 }
 
 func TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		configure func(*resetPlanRecordingGitRunner, *resetPlanRecordingGHRunner)
@@ -662,11 +673,11 @@ func TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory(t *testing.T) 
 			gitRunner := newResetPlanRecordingGitRunner()
 			ghRunner := &resetPlanRecordingGHRunner{output: `[[]]`}
 			tt.configure(gitRunner, ghRunner)
-			restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+			restore := setReleasePlanCommandRunnersForTest(t, gitRunner, ghRunner)
 			t.Cleanup(restore)
 
 			var stdout, stderr bytes.Buffer
-			code := RunContext(context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("exit = %d, want 2 stdout=%q stderr=%q", code, stdout.String(), stderr.String())
@@ -804,15 +815,13 @@ func resetPlanGHCallMutates(args []string) bool {
 	return false
 }
 
-func setReleasePlanCommandRunnersForTest(gitRunner preflight.GitRunner, ghRunner preflight.GHRunner) func() {
-	previousGit := releasePlanCommandGitRunner
-	previousGH := releasePlanCommandGHRunner
-	releasePlanCommandGitRunner = gitRunner
-	releasePlanCommandGHRunner = ghRunner
-	return func() {
-		releasePlanCommandGitRunner = previousGit
-		releasePlanCommandGHRunner = previousGH
-	}
+func setReleasePlanCommandRunnersForTest(t *testing.T, gitRunner preflight.GitRunner, ghRunner preflight.GHRunner) func() {
+	t.Helper()
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.releasePlanGitRunner = gitRunner
+		dependencies.releasePlanGHRunner = ghRunner
+	})
+	return func() {}
 }
 
 func newReleasePlanCommandRepo(t *testing.T, baseTag string, commits ...releasePlanCommandCommit) string {
@@ -841,11 +850,11 @@ func newReleasePlanCommandRepo(t *testing.T, baseTag string, commits ...releaseP
 func runReleasePlanCommandInRepo(t *testing.T, repoDir string, args ...string) (int, string, string) {
 	t.Helper()
 	before := snapshotReleasePlanRepo(t, repoDir)
-	t.Chdir(repoDir)
+	setCommandWorkDirForTest(t, repoDir)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	commandArgs := append([]string{"release", "plan"}, args...)
-	code := RunContext(context.Background(), commandArgs, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), commandArgs, &stdout, &stderr)
 	assertReleasePlanRepoUnchanged(t, repoDir, before)
 	return code, stdout.String(), stderr.String()
 }

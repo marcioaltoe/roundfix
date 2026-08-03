@@ -22,6 +22,8 @@ import (
 )
 
 func TestGreenfieldPlanBacksUpWithoutImport(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	const instructions = "keep repository policy\n"
 	writeInspectionFile(t, repo, "AGENTS.md", instructions)
@@ -52,6 +54,8 @@ func TestGreenfieldPlanBacksUpWithoutImport(t *testing.T) {
 }
 
 func TestPreservationRequiresEveryDisposition(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "AGENTS.md", "first rule\n\nsecond rule\n")
 	commitInspectionRepository(t, repo, "seed")
@@ -85,6 +89,8 @@ func TestPreservationRequiresEveryDisposition(t *testing.T) {
 }
 
 func TestPreservationPlanAcceptsCompleteDecisionDocument(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	const instructions = "preserve this rule\n"
 	writeInspectionFile(t, repo, "CLAUDE.md", instructions)
@@ -117,6 +123,8 @@ func TestPreservationPlanAcceptsCompleteDecisionDocument(t *testing.T) {
 }
 
 func TestRootBackupIdentityRejectsCollisions(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	const instructions = "root instructions\n"
 	writeInspectionFile(t, repo, "AGENTS.md", instructions)
@@ -138,6 +146,8 @@ func TestRootBackupIdentityRejectsCollisions(t *testing.T) {
 }
 
 func TestRootBackupIdentitySafeAliasesBackUpTargetOnce(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	const instructions = "shared root policy\n"
 	writeInspectionFile(t, repo, "policy/shared.md", instructions)
@@ -165,6 +175,8 @@ func TestRootBackupIdentitySafeAliasesBackUpTargetOnce(t *testing.T) {
 }
 
 func TestDecisionDocumentSkeletonPassesStrictParser(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "AGENTS.md", strings.Join([]string{
 		"classify me",
@@ -199,6 +211,8 @@ func TestDecisionDocumentSkeletonPassesStrictParser(t *testing.T) {
 }
 
 func TestDecisionDocumentSkeletonDoesNotProposeManagedSemanticVersionBytes(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "AGENTS.md", strings.Join([]string{
 		"<!-- setup-context-driven:begin id=root.core version=0.0.1 -->",
@@ -223,6 +237,8 @@ func TestDecisionDocumentSkeletonDoesNotProposeManagedSemanticVersionBytes(t *te
 }
 
 func TestDecisionDocumentSkeletonRejectsMalformedInput(t *testing.T) {
+	t.Parallel()
+
 	_, err := ParseDecisionDocument([]byte(`{
 	  "schemaVersion":"setup-context-driven/decisions/0.0.1",
 	  "version":"0.0.1",
@@ -237,6 +253,10 @@ func TestDecisionDocumentSkeletonRejectsMalformedInput(t *testing.T) {
 }
 
 func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
+	// Sequential: can rewrite shared digest artifacts when the update flag is enabled.
+	if !*updateBaselineDigests {
+		t.Parallel()
+	}
 	if *updateBaselineDigests {
 		regenerateMaintainedSourceBaseline(t)
 		return
@@ -524,6 +544,8 @@ func maintainedSourceBaselineCorpusDigest(t *testing.T, corpusRoot string) strin
 }
 
 func TestSourceBaselineRegenerationRejectsCorruptedSpan(t *testing.T) {
+	t.Parallel()
+
 	const baselineID = "baseline.standard-typescript-monorepo-0.0.1"
 	baselineRoot := filepath.Join("assets", "source-baselines", baselineID)
 	data, err := os.ReadFile(filepath.Join(baselineRoot, "manifest.json"))
@@ -593,6 +615,8 @@ func TestSourceBaselineGuidanceComposition(t *testing.T) {
 }
 
 func TestNestedCarrierWarningLeavesNestedSourcesOutOfPreservation(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "packages/api/AGENTS.md", "nested policy\n")
 	commitInspectionRepository(t, repo, "seed")
@@ -612,6 +636,8 @@ func TestNestedCarrierWarningLeavesNestedSourcesOutOfPreservation(t *testing.T) 
 }
 
 func TestNestedCarrierWarningUnsafeAliasRemainsNonBlocking(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	if err := os.MkdirAll(filepath.Join(repo, "packages", "api"), 0o755); err != nil {
 		t.Fatalf("create nested carrier directory: %v", err)

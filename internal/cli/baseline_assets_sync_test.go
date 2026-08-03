@@ -17,6 +17,7 @@ import (
 )
 
 func TestBaselineAssetsSyncCommand(t *testing.T) {
+	t.Parallel()
 	t.Run("public help exposes the approved contract", func(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer

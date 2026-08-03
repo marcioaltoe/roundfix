@@ -18,20 +18,23 @@ import (
 )
 
 func TestCapabilityRecheck(t *testing.T) {
+	// Sequential: mutates the process-wide PATH required by capability detection.
 	t.Run("requires no decisions and writes nothing", func(t *testing.T) {
 		repository := newHumanBaselineRepository(t)
 		writeBaselinePlanTestFile(t, repository, ".roundfix/run-journal.jsonl", "existing journal entry\n")
+		// This case verifies the process-level PATH default used by capability checks.
 		t.Setenv("PATH", t.TempDir())
 		before := baselinePlanTestTree(t, repository)
 
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		code := RunContext(context.Background(), []string{
+		code := runCLIContext(t, context.Background(), []string{
 			"baseline", "capabilities", "check",
 			"--profile", "standard-typescript-monorepo",
 			"--repo", repository,
 			"--format", "json",
 		}, &stdout, &stderr)
+
 		if code != exitUnverified {
 			t.Fatalf("capability re-check exit = %d, want %d stdout=%s stderr=%s",
 				code, exitUnverified, stdout.String(), stderr.String())
@@ -62,11 +65,12 @@ func TestCapabilityRecheck(t *testing.T) {
 
 		stdout.Reset()
 		stderr.Reset()
-		code = RunContext(context.Background(), []string{
+		code = runCLIContext(t, context.Background(), []string{
 			"baseline", "capabilities", "check",
 			"--profile", "standard-typescript-monorepo",
 			"--repo", repository,
 		}, &stdout, &stderr)
+
 		if code != exitUnverified || stderr.Len() != 0 {
 			t.Fatalf("text capability re-check exit = %d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
 		}
@@ -83,11 +87,12 @@ func TestCapabilityRecheck(t *testing.T) {
 		before := baselinePlanTestTree(t, repository)
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
-		code := RunContext(context.Background(), []string{
+		code := runCLIContext(t, context.Background(), []string{
 			"baseline", "capabilities", "check",
 			"--repo", repository,
 			"--format", "json",
 		}, &stdout, &stderr)
+
 		if code != exitPreflight {
 			t.Fatalf("missing-Profile re-check exit = %d, want %d stdout=%s stderr=%s",
 				code, exitPreflight, stdout.String(), stderr.String())
@@ -120,7 +125,7 @@ func TestCapabilityRecheck(t *testing.T) {
 				args = append(args, "--unknown")
 				var stdout bytes.Buffer
 				var stderr bytes.Buffer
-				code := RunContext(context.Background(), args, &stdout, &stderr)
+				code := runCLIContext(t, context.Background(), args, &stdout, &stderr)
 				if code != exitPreflight {
 					t.Fatalf("invalid capability re-check exit = %d, want %d stdout=%q stderr=%q",
 						code, exitPreflight, stdout.String(), stderr.String())
@@ -139,22 +144,25 @@ func TestCapabilityRecheck(t *testing.T) {
 }
 
 func TestCapabilityTextRendersProbe(t *testing.T) {
+	// Sequential: mutates the process-wide PATH required by capability detection.
 	repository := newHumanBaselineRepository(t)
 	bin := t.TempDir()
 	candidate := filepath.Join(bin, "rtk")
 	if err := os.Symlink("missing-rtk-target", candidate); err != nil {
 		t.Fatalf("create broken rtk candidate: %v", err)
 	}
+	// This case verifies the process-level PATH default used by capability checks.
 	t.Setenv("PATH", bin)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"baseline", "capabilities", "check",
 		"--profile", "go-cli-tui",
 		"--repo", repository,
 		"--format", "text",
 	}, &stdout, &stderr)
+
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("capability text exit = %d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
 	}
@@ -172,16 +180,18 @@ func TestCapabilityTextRendersProbe(t *testing.T) {
 }
 
 func TestBaselineProfileCommandInitShowAndValidate(t *testing.T) {
+	t.Parallel()
 	repo := newBaselineProfileTestRepository(t)
-	t.Chdir(repo)
+	setCommandWorkDirForTest(t, repo)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"baseline", "profile", "init",
 		"--id", "team-go",
 		"--from", "go-cli-tui",
 	}, &stdout, &stderr)
+
 	if code != exitOK {
 		t.Fatalf("profile init exit = %d, want 0 stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
@@ -195,9 +205,10 @@ func TestBaselineProfileCommandInitShowAndValidate(t *testing.T) {
 
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(context.Background(), []string{
+	code = runCLIContext(t, context.Background(), []string{
 		"baseline", "profile", "show", "team-go", "--format", "text",
 	}, &stdout, &stderr)
+
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("profile show text exit = %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
@@ -218,9 +229,10 @@ func TestBaselineProfileCommandInitShowAndValidate(t *testing.T) {
 
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(context.Background(), []string{
+	code = runCLIContext(t, context.Background(), []string{
 		"baseline", "profile", "show", "--format=json", "team-go",
 	}, &stdout, &stderr)
+
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("profile show JSON exit = %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
@@ -241,11 +253,12 @@ func TestBaselineProfileCommandInitShowAndValidate(t *testing.T) {
 
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(context.Background(), []string{
+	code = runCLIContext(t, context.Background(), []string{
 		"baseline", "profile", "validate",
 		".roundfix/baseline/profiles/team-go.json",
 		"--format", "json",
 	}, &stdout, &stderr)
+
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("profile validate exit = %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
@@ -261,11 +274,12 @@ func TestBaselineProfileCommandInitShowAndValidate(t *testing.T) {
 }
 
 func TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles(t *testing.T) {
+	t.Parallel()
 	repo := newBaselineProfileTestRepository(t)
-	t.Chdir(repo)
+	setCommandWorkDirForTest(t, repo)
 
 	userHome := t.TempDir()
-	t.Setenv("HOME", userHome)
+	setCommandHomeDirForTest(t, userHome)
 	userProfileDir := filepath.Join(userHome, ".roundfix", "baseline", "profiles")
 	if err := os.MkdirAll(userProfileDir, 0o755); err != nil {
 		t.Fatalf("create user profile directory: %v", err)
@@ -277,9 +291,10 @@ func TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles(t *testing
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{
+	code := runCLIContext(t, context.Background(), []string{
 		"baseline", "profile", "validate", "--format", "json",
 	}, &stdout, &stderr)
+
 	if code != exitOK || stderr.Len() != 0 {
 		t.Fatalf("empty repository validation exit = %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
@@ -293,9 +308,10 @@ func TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles(t *testing
 
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(context.Background(), []string{
+	code = runCLIContext(t, context.Background(), []string{
 		"baseline", "profile", "validate", userProfilePath, "--format", "json",
 	}, &stdout, &stderr)
+
 	if code != exitPreflight {
 		t.Fatalf("outside profile validation exit = %d, want %d", code, exitPreflight)
 	}
@@ -313,9 +329,10 @@ func TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles(t *testing
 
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(context.Background(), []string{
+	code = runCLIContext(t, context.Background(), []string{
 		"baseline", "profile", "init", "--id", "team", "--from", "go-cli-tui",
 	}, &stdout, &stderr)
+
 	if code != exitOK {
 		t.Fatalf("profile init exit = %d stderr=%q", code, stderr.String())
 	}
@@ -331,15 +348,17 @@ func TestBaselineProfileCommandRejectsInvalidAndNonRepositoryProfiles(t *testing
 
 	stdout.Reset()
 	stderr.Reset()
-	code = RunContext(context.Background(), []string{
+	code = runCLIContext(t, context.Background(), []string{
 		"baseline", "profile", "validate", "team", "--format=json",
 	}, &stdout, &stderr)
+
 	if code != exitPreflight || !strings.Contains(stderr.String(), "custom.profile.field.unknown") {
 		t.Fatalf("invalid profile exit = %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
 }
 
 func TestBaselineProfileHelpContract(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		args []string
 		want []string
@@ -380,7 +399,7 @@ func TestBaselineProfileHelpContract(t *testing.T) {
 		t.Run(strings.Join(tt.args, " "), func(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
-			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
 			if code != exitOK || stderr.Len() != 0 {
 				t.Fatalf("help exit = %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 			}

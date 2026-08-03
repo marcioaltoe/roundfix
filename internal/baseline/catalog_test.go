@@ -37,7 +37,7 @@ const baselineDigestRegenerationHint = "run 'make baseline-digests'"
 const catalogDiagnosticGoldenPath = "testdata/catalog.diagnostics.golden.json"
 
 func TestEmbeddedCatalog(t *testing.T) {
-	t.Chdir(t.TempDir())
+	t.Parallel()
 
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
@@ -475,6 +475,7 @@ func TestProjectDecisionAssets(t *testing.T) {
 }
 
 func TestCatalogCompatibility(t *testing.T) {
+	// Sequential: can rewrite shared digest artifacts when the update flag is enabled.
 	if !*updateBaselineDigests {
 		t.Parallel()
 	}
@@ -590,6 +591,10 @@ type catalogDiagnosticFixture struct {
 }
 
 func TestCatalogDiagnosticCharacterization(t *testing.T) {
+	// Sequential: can rewrite the shared diagnostic golden when its update flag is enabled.
+	if !*updateCatalogDiagnosticCharacterization {
+		t.Parallel()
+	}
 	actual := loadCatalogDiagnosticCorpus(t)
 	actualBytes := marshalCatalogDiagnosticCorpus(t, actual)
 

@@ -39,7 +39,7 @@ type profilesShowRecommendationOutput struct {
 	UnavailableReason string `json:"unavailable_reason,omitempty"`
 }
 
-func runProfilesCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runProfilesCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if len(args) == 0 {
 		fmt.Fprint(stdout, commandUsage("profiles"))
 		return exitOK
@@ -50,18 +50,18 @@ func runProfilesCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	}
 	switch args[0] {
 	case "show":
-		return runProfilesShowCommand(args[1:], stdout, stderr)
+		return runProfilesShowCommand(args[1:], stdout, stderr, environment)
 	case "configure":
-		return runProfilesConfigureCommand(ctx, args[1:], stdout, stderr)
+		return runProfilesConfigureCommand(ctx, args[1:], stdout, stderr, environment)
 	case "validate":
-		return runProfilesValidateCommand(ctx, args[1:], stdout, stderr)
+		return runProfilesValidateCommand(ctx, args[1:], stdout, stderr, environment)
 	default:
 		printProfilesFailure(validationError{message: fmt.Sprintf("unknown profiles command %q", args[0])}, stderr)
 		return exitPreflight
 	}
 }
 
-func runProfilesShowCommand(args []string, stdout, stderr io.Writer) int {
+func runProfilesShowCommand(args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("profiles show"))
 		return exitOK
@@ -76,7 +76,7 @@ func runProfilesShowCommand(args []string, stdout, stderr io.Writer) int {
 		printProfilesFailure(err, stderr)
 		return exitPreflight
 	}
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+	loaded, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		printProfilesFailure(err, stderr)
 		return exitPreflight

@@ -100,6 +100,10 @@ type baselineCompatibilityFixture struct {
 }
 
 func TestBaselineCompatibilityCorpus(t *testing.T) {
+	// Sequential: can rewrite the shared compatibility corpus when the update flag is enabled.
+	if !*updateBaselineDigests {
+		t.Parallel()
+	}
 	if *updateBaselineDigests {
 		regenerateBaselineCompatibilityCorpus(t)
 		return

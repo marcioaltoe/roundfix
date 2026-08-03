@@ -60,3 +60,28 @@ three consumer repositories failed `roundfix doctor` for skills they had no
 reason to hold. Adding them would also demand a matching setup snapshot entry,
 whose `treeDigest` is computed at a pinned source ref that the local skills
 checkout does not carry.
+
+## Addendum — 2026-08-03 — Spec 0071 and the Pull Request verification tier
+
+Spec 0071's Tooling authority row cites this grant for the `Makefile`. Two
+later maintainer directions reach past that boundary:
+
+> Se necessário e possivel, separe os testes importantes para o ci e mantenha
+> no verify somente o que deve ser executado a cada momento. O tempo de
+> implementação não pode ser impactado por 28 minutos de verificação.
+
+> Faça um teste sem o -count=1 na execução local e o -count=1 seria usado
+> somente no CI.
+
+Both name CI as the destination tier, and no workflow ran the test suite on a
+Pull Request — only `release.yml`, on a tag push. Splitting the gate without
+first creating that workflow would have removed verification rather than moved
+it, so the workflow is a precondition of the split, not an extra.
+
+- **0071** — `Makefile`, for the suite-time budget and how the gate is invoked;
+  the owned skill pair, for the Task Verification authoring rule;
+  `.github/workflows/` for the Pull Request verification tier.
+
+Recorded here rather than assumed silently, following the 2026-08-02 addendum's
+precedent: the maintainer directed the outcome and this is the only durable
+path to it.

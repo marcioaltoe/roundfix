@@ -1093,6 +1093,15 @@ func (engine *Engine) acquireVerificationCapacity(ctx context.Context, plan Task
 		return nil, fmt.Errorf("acquire Verification Capacity for run %q Task %s attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, err)
 	}
 	// Dequeue boundary: capacity can be granted in the same instant the
+	// context is cancelled, because Acquire selects between the capacity
+	// signal and the done channel and either may win when both are ready. A
+	// cancelled Run is tearing down, so it must start no further child
+	// command — the same reason the Stop Request is re-read just below.
+	if err := ctx.Err(); err != nil {
+		release()
+		return nil, fmt.Errorf("acquire Verification Capacity for run %q Task %s attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, err)
+	}
+	// Dequeue boundary: capacity can be granted in the same instant the
 	// Stop Request lands, so re-read the flag before any child starts.
 	if stopErr := engine.stopIfRequested(ctx, plan.RunID, request.BatchNumber); stopErr != nil {
 		release()

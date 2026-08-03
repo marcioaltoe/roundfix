@@ -16,6 +16,8 @@ import (
 )
 
 func TestSegmentationSnapshotIsCanonicalAndCheckoutFree(t *testing.T) {
+	t.Parallel()
+
 	source := segmentationTestSource()
 	first, err := NewRuleSegmentationSnapshot(source)
 	if err != nil {
@@ -60,6 +62,8 @@ func TestSegmentationSnapshotIsCanonicalAndCheckoutFree(t *testing.T) {
 }
 
 func TestSegmentationSnapshotMakesExactTextAndBoundariesAvailableToSealedAnalysis(t *testing.T) {
+	t.Parallel()
+
 	snapshot := segmentationTestSnapshot(t)
 	canonical, err := snapshot.CanonicalBytes()
 	if err != nil {
@@ -105,6 +109,8 @@ func TestSegmentationSnapshotMakesExactTextAndBoundariesAvailableToSealedAnalysi
 }
 
 func TestSegmentationProposalRejectsInvalidRangesAndStaleIdentity(t *testing.T) {
+	t.Parallel()
+
 	snapshot := segmentationTestSnapshot(t)
 	valid := segmentationTestProposal(t, snapshot, 11)
 	validJSON, err := json.Marshal(valid)
@@ -216,6 +222,8 @@ func TestSegmentationProposalRejectsInvalidRangesAndStaleIdentity(t *testing.T) 
 }
 
 func TestSegmentationProposalParserRejectsUntrustedJSON(t *testing.T) {
+	t.Parallel()
+
 	snapshot := segmentationTestSnapshot(t)
 	valid := segmentationTestProposal(t, snapshot, 11)
 	payload, err := json.Marshal(valid)
@@ -260,6 +268,8 @@ func TestSegmentationProposalParserRejectsUntrustedJSON(t *testing.T) {
 }
 
 func TestRuleSegmentationMaterializesExactBytesAndStableIdentities(t *testing.T) {
+	t.Parallel()
+
 	snapshot := segmentationTestSnapshot(t)
 	firstProposal := segmentationTestProposal(t, snapshot, 11)
 	encoded, err := json.Marshal(firstProposal)
@@ -305,6 +315,8 @@ func TestRuleSegmentationMaterializesExactBytesAndStableIdentities(t *testing.T)
 }
 
 func TestRuleSegmentationManualFallbackRetainsOriginalEntry(t *testing.T) {
+	t.Parallel()
+
 	snapshot := segmentationTestSnapshot(t)
 	proposal, err := ManualRuleSegmentationProposal(snapshot)
 	if err != nil {

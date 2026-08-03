@@ -19,6 +19,7 @@ import (
 )
 
 func TestBaselineApplyCommand(t *testing.T) {
+	t.Parallel()
 	repo := newBaselinePlanTestRepository(t)
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
 	writeBaselinePlanTestFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
@@ -50,6 +51,7 @@ func TestBaselineApplyCommand(t *testing.T) {
 }
 
 func TestBaselineApplyStdoutStderrAndExitCodes(t *testing.T) {
+	t.Parallel()
 	t.Run("confirmation refusal is actionable JSON", func(t *testing.T) {
 		repo := newBaselineApplyTestRepository(t)
 		plan, planPath := baselineApplyTestPlan(t, repo)
@@ -194,6 +196,7 @@ func TestBaselineApplyStdoutStderrAndExitCodes(t *testing.T) {
 }
 
 func TestBaselineApplyCommandRealCLI(t *testing.T) {
+	t.Parallel()
 	repo := newBaselineApplyTestRepository(t)
 	plan, planPath := baselineApplyTestPlan(t, repo)
 	projectRoot, err := filepath.Abs(filepath.Join("..", ".."))

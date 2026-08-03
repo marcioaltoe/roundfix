@@ -37,7 +37,7 @@ type attachRequest struct {
 // runAttachCommand replays a Run's event timeline from the Run Database.
 // Attach is non-mutating: it opens a read-only connection and never creates
 // Runs, fetches, starts Agents, commits, pushes, or resolves threads.
-func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("attach"))
 		return exitOK
@@ -48,11 +48,11 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 	missingRunID := strings.TrimSpace(req.runID) == ""
-	if missingRunID && (req.noInput || !attachInteractiveInputAvailable() || !liveTUIEnabled(stdout)) {
+	if missingRunID && (req.noInput || !commandDependenciesForContext(ctx).attachInteractiveInputAvailable() || !liveTUIEnabled(stdout)) {
 		printAttachFailure(validationError{message: "missing run id in non-interactive mode; pass a run id or run 'roundfix runs list --all' to discover Runs"}, stderr)
 		return exitPreflight
 	}
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
+	loaded, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		printAttachFailure(err, stderr)
 		return exitPreflight
@@ -97,7 +97,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
-	view := attachRunView(loaded, run, attachIssues(ctx, run), timeline.Lines(), capacities)
+	view := attachRunView(loaded, run, attachIssues(ctx, run), timeline.Lines(), capacities, stdout)
 	view.Selections = timeline.Selections()
 	fmt.Fprint(stdout, roundtui.RenderLiveRunView(view))
 	if store.IsTerminalState(run.State) {
@@ -109,7 +109,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	fmt.Fprintln(stdout, "Following live events. Detach with Ctrl-C; detaching never stops the Run.")
 	follower := attachFollower{
 		source: reader,
-		sleep:  attachSleep,
+		sleep:  commandDependenciesForContext(ctx).attachSleep,
 		accept: func(entry store.JournalEvent) error {
 			if text := timeline.Append(entry.Event); text != "" {
 				fmt.Fprint(stdout, text)
@@ -133,7 +133,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 // runAttachCockpit opens the interactive cockpit in the alternate screen.
 // Attach mode: q/Ctrl-C detach and never stop the Run; no stop key exists.
 func runAttachCockpit(ctx context.Context, loaded roundconfig.Loaded, reader *store.Store, run store.Run, capacities attachCapacities, stdout io.Writer, stderr io.Writer) int {
-	view := attachRunView(loaded, run, attachIssues(ctx, run), nil, capacities)
+	view := attachRunView(loaded, run, attachIssues(ctx, run), nil, capacities, stdout)
 	err := roundtui.RunCockpit(ctx, stdout, roundtui.CockpitConfig{
 		Mode:         roundtui.CockpitAttach,
 		View:         view,
@@ -264,9 +264,6 @@ func parseAttachCommand(args []string) (attachRequest, error) {
 var attachInteractiveInputAvailable = defaultAttachInteractiveInputAvailable
 
 func defaultAttachInteractiveInputAvailable() bool {
-	if strings.EqualFold(os.Getenv("TERM"), "dumb") {
-		return false
-	}
 	info, err := os.Stdin.Stat()
 	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
@@ -297,7 +294,7 @@ func configuredAttachCapacities(loaded roundconfig.Loaded) attachCapacities {
 	}
 }
 
-func attachRunView(loaded roundconfig.Loaded, run store.Run, issues []rounds.Issue, console []string, capacities attachCapacities) roundtui.LiveRunView {
+func attachRunView(loaded roundconfig.Loaded, run store.Run, issues []rounds.Issue, console []string, capacities attachCapacities, output io.Writer) roundtui.LiveRunView {
 	view := roundtui.LiveRunView{
 		Command:         "attach",
 		Repository:      run.HeadRepository,
@@ -315,7 +312,7 @@ func attachRunView(loaded roundconfig.Loaded, run store.Run, issues []rounds.Iss
 		// RunKind lets the cockpit's empty states explain the Run: a Fetch
 		// Run writes artifacts and starts no Agent.
 		RunKind: run.Kind,
-		Width:   liveViewWidth(),
+		Width:   liveViewWidth(output),
 	}
 	if run.Kind == store.KindImplement {
 		specsRoot := attachSpecsRoot(loaded, run)

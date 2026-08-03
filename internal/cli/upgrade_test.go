@@ -17,6 +17,7 @@ import (
 )
 
 func TestRunUpgradeFixtureMatrix(t *testing.T) {
+	t.Parallel()
 	t.Run("newer release replaces binary", func(t *testing.T) {
 		fake := newUpgradeFake(t)
 		newBinary := []byte("#!/bin/sh\necho upgraded\n")
@@ -29,7 +30,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"upgrade"}, &stdout, &stderr)
+		code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("expected upgrade exit 0, got %d (stderr %q)", code, stderr.String())
@@ -57,7 +58,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"upgrade"}, &stdout, &stderr)
+		code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("expected upgrade exit 0, got %d", code)
@@ -81,7 +82,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"upgrade"}, &stdout, &stderr)
+		code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
 
 		if code != exitOK {
 			t.Fatalf("expected upgrade exit 0, got %d", code)
@@ -106,7 +107,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := Run([]string{"upgrade"}, &stdout, &stderr)
+		code := runCLI(t, []string{"upgrade"}, &stdout, &stderr)
 
 		if code != exitRunFailed {
 			t.Fatalf("expected upgrade exit 1, got %d", code)
@@ -124,6 +125,7 @@ func TestRunUpgradeFixtureMatrix(t *testing.T) {
 }
 
 func TestRunUpgradeCheckReportsAvailableWithoutInstalling(t *testing.T) {
+	t.Parallel()
 	fake := newUpgradeFake(t)
 	newBinary := []byte("#!/bin/sh\necho upgraded\n")
 	fake.releaseTag = "v1.1.0"
@@ -132,7 +134,7 @@ func TestRunUpgradeCheckReportsAvailableWithoutInstalling(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"upgrade", "--check"}, &stdout, &stderr)
+	code := runCLI(t, []string{"upgrade", "--check"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected upgrade --check exit 0, got %d", code)
@@ -150,6 +152,7 @@ func TestRunUpgradeCheckReportsAvailableWithoutInstalling(t *testing.T) {
 }
 
 func TestVersionFreshnessCachesDailyAndReportsBehind(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	checkedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	calls := 0
@@ -168,10 +171,11 @@ func TestVersionFreshnessCachesDailyAndReportsBehind(t *testing.T) {
 	var first bytes.Buffer
 	var second bytes.Buffer
 	loaded := roundconfig.Loaded{HomeDir: homeDir}
+	ctx := commandContextForTest(t, context.Background())
 
-	maybeReportVersionFreshness(context.Background(), loaded, &first)
+	maybeReportVersionFreshness(ctx, loaded, &first)
 	checkedAt = checkedAt.Add(time.Hour)
-	maybeReportVersionFreshness(context.Background(), loaded, &second)
+	maybeReportVersionFreshness(ctx, loaded, &second)
 
 	if calls != 1 {
 		t.Fatalf("expected one release lookup inside 24h, got %d", calls)
@@ -190,6 +194,7 @@ func TestVersionFreshnessCachesDailyAndReportsBehind(t *testing.T) {
 }
 
 func TestVersionFreshnessNetworkFailureIsSilentAndCachesAttempt(t *testing.T) {
+	t.Parallel()
 	homeDir := t.TempDir()
 	now := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	calls := 0
@@ -208,10 +213,11 @@ func TestVersionFreshnessNetworkFailureIsSilentAndCachesAttempt(t *testing.T) {
 	var first bytes.Buffer
 	var second bytes.Buffer
 	loaded := roundconfig.Loaded{HomeDir: homeDir}
+	ctx := commandContextForTest(t, context.Background())
 
-	maybeReportVersionFreshness(context.Background(), loaded, &first)
+	maybeReportVersionFreshness(ctx, loaded, &first)
 	now = now.Add(time.Hour)
-	maybeReportVersionFreshness(context.Background(), loaded, &second)
+	maybeReportVersionFreshness(ctx, loaded, &second)
 
 	if calls != 1 {
 		t.Fatalf("expected failed attempt to be cached for 24h, got %d calls", calls)
@@ -226,6 +232,7 @@ func TestVersionFreshnessNetworkFailureIsSilentAndCachesAttempt(t *testing.T) {
 }
 
 func TestVersionFreshnessFetchWiringDoesNotAffectOutcome(t *testing.T) {
+	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withVersionFreshnessFakeDeps(t, versionFreshnessDependencies{
@@ -242,7 +249,7 @@ func TestVersionFreshnessFetchWiringDoesNotAffectOutcome(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+	code := runCLI(t, []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected fetch exit 0, got %d (stderr %q)", code, stderr.String())
@@ -307,8 +314,7 @@ func (fake *upgradeFake) checksumAsset(name string, content string) app.ReleaseA
 
 func withUpgradeFakeDeps(t *testing.T, fake *upgradeFake) {
 	t.Helper()
-	old := upgradeDeps
-	upgradeDeps = upgradeDependencies{
+	dependencies := upgradeDependencies{
 		latestRelease: func(context.Context) (string, []app.ReleaseAsset, error) {
 			return fake.releaseTag, fake.assets, fake.releaseErr
 		},
@@ -329,17 +335,15 @@ func withUpgradeFakeDeps(t *testing.T, fake *upgradeFake) {
 		goos:   fake.goos,
 		goarch: fake.goarch,
 	}
-	t.Cleanup(func() {
-		upgradeDeps = old
+	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
+		commandDependencies.upgrade = dependencies
 	})
 }
 
 func withVersionFreshnessFakeDeps(t *testing.T, deps versionFreshnessDependencies) {
 	t.Helper()
-	old := versionFreshnessDeps
-	versionFreshnessDeps = deps
-	t.Cleanup(func() {
-		versionFreshnessDeps = old
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.versionFreshness = deps
 	})
 }
 

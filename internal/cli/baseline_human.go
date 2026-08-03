@@ -28,10 +28,11 @@ type baselineHumanRequest struct {
 }
 
 type baselineHumanCommandIO struct {
-	input            io.Reader
-	interactive      bool
-	revisionAnalyzer baselineRevisionAnalyzer
-	semanticAnalyzer baselineSemanticAnalyzer
+	input                 io.Reader
+	interactive           bool
+	revisionAnalyzer      baselineRevisionAnalyzer
+	semanticAnalyzer      baselineSemanticAnalyzer
+	executableDirectories []string
 }
 
 type baselineRevisionAnalyzer interface {
@@ -94,8 +95,24 @@ type baselineDecisionDeclaration struct {
 	Suggestion any      `json:"suggestion"`
 }
 
-func runBaselineHumanCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
-	return runBaselineHumanCommandWithIO(ctx, args, stdout, stderr, defaultBaselineHumanCommandIO())
+func runBaselineHumanCommand(
+	ctx context.Context,
+	args []string,
+	stdout io.Writer,
+	stderr io.Writer,
+	environment commandEnvironment,
+) int {
+	executableDirectories, err := environment.executableDirectories("resolve Baseline executable search path")
+	if err != nil {
+		return printBaselineHumanFailure(err, baselineHumanJSONRequested(args), stdout, stderr)
+	}
+	return runBaselineHumanCommandWithIO(
+		ctx,
+		args,
+		stdout,
+		stderr,
+		defaultBaselineHumanCommandIO(executableDirectories),
+	)
 }
 
 func runBaselineHumanCommandWithIO(
@@ -145,6 +162,7 @@ func runBaselineHumanCommandWithIO(
 		review,
 		&planRequest,
 		commandIO.semanticAnalyzer,
+		commandIO.executableDirectories,
 	)
 	if err != nil {
 		var actionErr *baselineHumanActionError
@@ -233,14 +251,15 @@ func baselineHumanOutputFailure(outputs ...*baselineHumanOutput) error {
 	return nil
 }
 
-func defaultBaselineHumanCommandIO() baselineHumanCommandIO {
+func defaultBaselineHumanCommandIO(executableDirectories []string) baselineHumanCommandIO {
 	info, err := os.Stdin.Stat()
 	analyzer := baselineacp.NewDefaultAnalyzer()
 	return baselineHumanCommandIO{
-		input:            os.Stdin,
-		interactive:      err == nil && info.Mode()&os.ModeCharDevice != 0,
-		revisionAnalyzer: analyzer,
-		semanticAnalyzer: analyzer,
+		input:                 os.Stdin,
+		interactive:           err == nil && info.Mode()&os.ModeCharDevice != 0,
+		revisionAnalyzer:      analyzer,
+		semanticAnalyzer:      analyzer,
+		executableDirectories: executableDirectories,
 	}
 }
 
@@ -308,6 +327,7 @@ func driveHumanBaselinePlanWithRequest(
 		review,
 		captured,
 		nil,
+		nil,
 	)
 }
 
@@ -318,6 +338,7 @@ func driveHumanBaselinePlanWithAnalyzers(
 	review io.Writer,
 	captured *baseline.PlanRequest,
 	semanticAnalyzer baselineSemanticAnalyzer,
+	executableDirectories []string,
 ) (baseline.PlanDocument, error) {
 	if prompt == nil {
 		return baseline.PlanDocument{}, errors.New("drive human Baseline workflow: prompt adapter is required")
@@ -366,7 +387,7 @@ func driveHumanBaselinePlanWithAnalyzers(
 	if err != nil {
 		return baseline.PlanDocument{}, err
 	}
-	profile, decisions, profileDraft, err := promptBaselineProfileAlignment(
+	profile, decisions, profileDraft, err := promptBaselineProfileAlignmentWithDirectories(
 		ctx,
 		prompt,
 		review,
@@ -375,6 +396,7 @@ func driveHumanBaselinePlanWithAnalyzers(
 		state,
 		profile,
 		decisions,
+		executableDirectories,
 	)
 	if err != nil {
 		return baseline.PlanDocument{}, err
@@ -395,9 +417,10 @@ func driveHumanBaselinePlanWithAnalyzers(
 	}
 
 	request := baseline.PlanRequest{
-		Repository:   inspection.Root,
-		Decisions:    decisions,
-		Preservation: preservation,
+		Repository:            inspection.Root,
+		Decisions:             decisions,
+		Preservation:          preservation,
+		ExecutableDirectories: executableDirectories,
 	}
 	if profileDraft == nil {
 		request.ProfileID = profile.ID
@@ -853,6 +876,30 @@ func promptBaselineProfileAlignment(
 	profile baseline.ResolvedProfile,
 	decisions []baseline.DecisionValue,
 ) (baseline.ResolvedProfile, []baseline.DecisionValue, *baseline.ProfileDraftInput, error) {
+	return promptBaselineProfileAlignmentWithDirectories(
+		ctx,
+		prompt,
+		review,
+		root,
+		catalog,
+		state,
+		profile,
+		decisions,
+		nil,
+	)
+}
+
+func promptBaselineProfileAlignmentWithDirectories(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	root string,
+	catalog *baseline.Catalog,
+	state baselineHumanState,
+	profile baseline.ResolvedProfile,
+	decisions []baseline.DecisionValue,
+	executableDirectories []string,
+) (baseline.ResolvedProfile, []baseline.DecisionValue, *baseline.ProfileDraftInput, error) {
 	sourceProfileID := profile.ID
 	var draft *baseline.ProfileDraftInput
 	for {
@@ -860,10 +907,11 @@ func promptBaselineProfileAlignment(
 			ctx,
 			root,
 			baseline.ProfileAlignmentRequest{
-				ProfileID:            profile.ID,
-				Decisions:            decisionsSelectedByProfile(decisions, profile),
-				Profile:              profilePointer(profile),
-				RemediationProfileID: sourceProfileID,
+				ProfileID:             profile.ID,
+				Decisions:             decisionsSelectedByProfile(decisions, profile),
+				Profile:               profilePointer(profile),
+				RemediationProfileID:  sourceProfileID,
+				ExecutableDirectories: executableDirectories,
 			},
 			catalog,
 		)
