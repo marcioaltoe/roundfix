@@ -139,7 +139,6 @@ type commandRequest struct {
 	headRepo             string
 	skipBranchIntegrity  bool
 	branchIntegrity      branchIntegrityReport
-	qa                   bool
 	detach               bool
 	detachChild          *detachChild
 	branchIntegrityActor string
@@ -1517,7 +1516,6 @@ func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loade
 			ReasoningEffort: req.reasoningEffort,
 			MaxRounds:       req.maxRounds,
 			UntilClean:      req.untilClean,
-			QA:              req.qa,
 		},
 		PRSuggestion:      prSuggestion,
 		AgentSuggestion:   agentSuggestion,
@@ -1552,7 +1550,6 @@ func applyInteractiveValues(req commandRequest, values roundtui.CommandValues) c
 		req.maxRounds = values.MaxRounds
 	}
 	req.untilClean = values.UntilClean
-	req.qa = values.QA
 	return req
 }
 
