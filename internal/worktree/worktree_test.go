@@ -23,10 +23,32 @@ import (
 // Boundary IN: internal/worktree behavior and real git temp repositories.
 // Boundary OUT: daemon, store, and CLI wiring that will call this package in later tasks.
 
+// TestMain gives the whole package one isolated HOME and a neutralised git
+// global config. Six fixtures used to set HOME per test, each to its own
+// t.TempDir — but nothing in this package reads HOME: every Location is passed
+// explicitly, and the variable existed only so git subprocesses (including the
+// ones production code spawns) would not read the developer's ~/.gitconfig.
+// Isolation needs one deterministic value, not a fresh value per test, and
+// t.Setenv is what forced 41 of these tests to run sequentially: Go refuses
+// t.Parallel() beside it. Setting the environment once, before any test
+// starts, provides the same isolation with no per-test mutation.
+func TestMain(m *testing.M) {
+	homeDir, err := os.MkdirTemp("", "worktree-test-home")
+	if err != nil {
+		panic(err)
+	}
+	os.Setenv("HOME", homeDir)
+	os.Setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+	os.Setenv("GIT_CONFIG_SYSTEM", "/dev/null")
+	code := m.Run()
+	_ = os.RemoveAll(homeDir)
+	os.Exit(code)
+}
+
 func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
 	location := filepath.Join(homeDir, "configured-worktrees")
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, ".gitignore"), ".env\n")
@@ -88,9 +110,9 @@ func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 }
 
 func TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
 	location := filepath.Join(homeDir, "configured-worktrees")
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, ".gitignore"), ".env\n")
@@ -129,6 +151,7 @@ func TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot(t *testing.T) {
 }
 
 func TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "task-bootstrap")
 	mustWriteWorktreeTest(t, filepath.Join(fixture.repoDir, ".env.task"), "TASK_SECRET=1\n")
@@ -250,6 +273,7 @@ func TestDeriveRootPathUsesReadableUniqueRepoSlug(t *testing.T) {
 }
 
 func TestTaskWorktreesIntegrateFirstByFastForwardThenCherryPick(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "task-queue")
 	base := strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", "HEAD"))
@@ -311,6 +335,7 @@ func TestTaskWorktreesIntegrateFirstByFastForwardThenCherryPick(t *testing.T) {
 }
 
 func TestIntegrateTaskReturnsConflictAndLeavesRunBranchUnmoved(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "task-conflict")
 	first, err := CreateTask(ctx, fixture.ref, "task_01", nil)
@@ -359,6 +384,7 @@ func TestIntegrateTaskReturnsConflictAndLeavesRunBranchUnmoved(t *testing.T) {
 }
 
 func TestCleanupTaskRemovesTaskWorktreeAndBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "task-cleanup")
 	task, err := CreateTask(ctx, fixture.ref, "task_01", nil)
@@ -387,6 +413,7 @@ func TestCleanupTaskRemovesTaskWorktreeAndBranch(t *testing.T) {
 }
 
 func TestCleanupTaskRemovesTaskWorktreeWithUntrackedDebris(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "task-debris-cleanup")
 	task, err := CreateTask(ctx, fixture.ref, "task_01", nil)
@@ -420,9 +447,9 @@ func TestCleanupTaskRemovesTaskWorktreeWithUntrackedDebris(t *testing.T) {
 }
 
 func TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
 	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
@@ -629,6 +656,7 @@ func TestIntegratePendingRunWorkRefusesDivergedBranch(t *testing.T) {
 }
 
 func TestIntegrateFastForwardsCleanCheckout(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "ff-clean")
 	runSHA := fixture.commitRunChange(t, "run.txt", "run change\n")
@@ -650,6 +678,7 @@ func TestIntegrateFastForwardsCleanCheckout(t *testing.T) {
 }
 
 func TestIntegrateFastForwardsPreservingNonOverlappingDirt(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "ff-dirty")
 	runSHA := fixture.commitRunChange(t, "run.txt", "run change\n")
@@ -673,6 +702,7 @@ func TestIntegrateFastForwardsPreservingNonOverlappingDirt(t *testing.T) {
 }
 
 func TestIntegrateReturnsPendingOnOverlapAndLeavesBranchAndDirt(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "overlap")
 	before := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main"))
@@ -698,6 +728,7 @@ func TestIntegrateReturnsPendingOnOverlapAndLeavesBranchAndDirt(t *testing.T) {
 }
 
 func TestIntegrateReturnsPendingOnDivergenceAndLeavesBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "diverged")
 	runSHA := fixture.commitRunChange(t, "run.txt", "run change\n")
@@ -725,6 +756,7 @@ func TestIntegrateReturnsPendingOnDivergenceAndLeavesBranch(t *testing.T) {
 }
 
 func TestIntegrateMovesBranchWhenTargetCheckedOutNowhere(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "branch-move")
 	runSHA := fixture.commitRunChange(t, "run.txt", "run change\n")
@@ -750,6 +782,7 @@ func TestIntegrateMovesBranchWhenTargetCheckedOutNowhere(t *testing.T) {
 }
 
 func TestIntegrateReturnsPendingOnNonAncestryWhenTargetCheckedOutNowhere(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "non-ancestry")
 	runSHA := fixture.commitRunChange(t, "run.txt", "run change\n")
@@ -778,6 +811,7 @@ func TestIntegrateReturnsPendingOnNonAncestryWhenTargetCheckedOutNowhere(t *test
 }
 
 func TestCleanupCleanRemovesCleanRunWorktreeAndBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "cleanup")
 
@@ -794,6 +828,7 @@ func TestCleanupCleanRemovesCleanRunWorktreeAndBranch(t *testing.T) {
 }
 
 func TestCleanupCleanRemovesRunWorktreeWithUntrackedDebris(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "debris-cleanup")
 	mustWriteWorktreeTest(t, filepath.Join(fixture.ref.Path, ".env.local"), "secret=1\n")
@@ -813,9 +848,9 @@ func TestCleanupCleanRemovesRunWorktreeWithUntrackedDebris(t *testing.T) {
 }
 
 func TestPruneTerminalPreservesCrashedTerminalRunWithoutCleanlinessProof(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
 	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
@@ -861,6 +896,7 @@ func TestPruneTerminalPreservesCrashedTerminalRunWithoutCleanlinessProof(t *test
 }
 
 func TestInspectTerminalRunSafe(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "reconcile-safe")
 	runHead := fixture.commitRunChange(t, "safe.txt", "safe\n")
@@ -878,6 +914,7 @@ func TestInspectTerminalRunSafe(t *testing.T) {
 }
 
 func TestInspectTerminalRunConcurrentSafe(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "reconcile-concurrent-safe")
 	runHead := fixture.commitRunChange(t, "safe.txt", "safe\n")
@@ -939,6 +976,7 @@ func TestCountRetainedTerminalRunsBatchesGitInspectionByRepository(t *testing.T)
 }
 
 func TestInspectTerminalRunUnintegrated(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "reconcile-unintegrated")
 	runHead := fixture.commitRunChange(t, "unintegrated.txt", "unintegrated\n")
@@ -956,6 +994,7 @@ func TestInspectTerminalRunUnintegrated(t *testing.T) {
 }
 
 func TestQAReportOnlyBranch(t *testing.T) {
+	t.Parallel()
 	const slug = "0053-qa-gate-reachability-and-verdict-semantics"
 	tests := []struct {
 		name  string
@@ -1050,6 +1089,7 @@ func TestQAReportOnlyBranch(t *testing.T) {
 }
 
 func TestInspectTerminalRunBoundsSupersededReason(t *testing.T) {
+	t.Parallel()
 	slug := "0053-" + strings.Repeat("long-spec-slug-", 8)
 	fixture := newTerminalRunFixture(t, "superseded-bounded-reason")
 	fixture.run.SpecSlug = slug
@@ -1081,6 +1121,7 @@ func TestInspectTerminalRunBoundsSupersededReason(t *testing.T) {
 }
 
 func TestInspectTerminalRunClassifiesSupersededQAReport(t *testing.T) {
+	t.Parallel()
 	const slug = "0053-qa-gate-reachability-and-verdict-semantics"
 	tests := []struct {
 		name         string
@@ -1157,6 +1198,7 @@ func TestInspectTerminalRunClassifiesSupersededQAReport(t *testing.T) {
 }
 
 func TestApplyTerminalRunSuperseded(t *testing.T) {
+	t.Parallel()
 	const slug = "0053-qa-gate-reachability-and-verdict-semantics"
 	fixture := newTerminalRunFixture(t, "apply-superseded")
 	fixture.run.SpecSlug = slug
@@ -1188,6 +1230,7 @@ func TestApplyTerminalRunSuperseded(t *testing.T) {
 }
 
 func TestApplyTerminalRunSupersededPreservesWhenFreshProofFails(t *testing.T) {
+	t.Parallel()
 	const slug = "0053-qa-gate-reachability-and-verdict-semantics"
 	fixture := newTerminalRunFixture(t, "apply-superseded-stale")
 	fixture.run.SpecSlug = slug
@@ -1220,6 +1263,7 @@ func TestApplyTerminalRunSupersededPreservesWhenFreshProofFails(t *testing.T) {
 }
 
 func TestInspectTerminalRunDirty(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		missingTarget bool
@@ -1269,6 +1313,7 @@ func TestInspectTerminalRunDirty(t *testing.T) {
 }
 
 func TestInspectTerminalRunUnknownMissingTarget(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "reconcile-unknown-target")
 	fixture.run.LocalBranch = ""
@@ -1286,6 +1331,7 @@ func TestInspectTerminalRunUnknownMissingTarget(t *testing.T) {
 }
 
 func TestInspectTerminalRunUnknownAmbiguousRef(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "reconcile-unknown-ambiguous")
 	fixture.commitRunChange(t, "ambiguous.txt", "ambiguous\n")
@@ -1308,6 +1354,7 @@ func TestInspectTerminalRunUnknownAmbiguousRef(t *testing.T) {
 }
 
 func TestInspectTerminalRunUnknownMissingRunBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "reconcile-unknown-run-branch")
 	gitWorktreeTest(t, fixture.ref.Path, "checkout", "--detach")
@@ -1325,6 +1372,7 @@ func TestInspectTerminalRunUnknownMissingRunBranch(t *testing.T) {
 }
 
 func TestInspectTerminalRunReleased(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "reconcile-released")
 	gitWorktreeTest(t, fixture.repoDir, "worktree", "remove", "--force", fixture.ref.Path)
@@ -1342,6 +1390,7 @@ func TestInspectTerminalRunReleased(t *testing.T) {
 }
 
 func TestInspectTerminalRunSafeWithoutWorktree(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "reconcile-safe-without-worktree")
 	gitWorktreeTest(t, fixture.repoDir, "worktree", "remove", "--force", fixture.ref.Path)
@@ -1359,6 +1408,7 @@ func TestInspectTerminalRunSafeWithoutWorktree(t *testing.T) {
 }
 
 func TestApplyTerminalRunSafe(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "apply-reconcile-safe")
 	fixture.commitRunChange(t, "safe.txt", "safe\n")
@@ -1377,6 +1427,7 @@ func TestApplyTerminalRunSafe(t *testing.T) {
 }
 
 func TestApplyTerminalRunSafeEvidenceOnly(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "apply-safe-evidence-only")
 	fixture.commitRunChange(t, "unique.txt", "unique\n")
@@ -1399,6 +1450,7 @@ func TestApplyTerminalRunSafeEvidenceOnly(t *testing.T) {
 }
 
 func TestApplyTerminalRunStaleHeads(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		change func(t *testing.T, fixture terminalRunFixture)
@@ -1439,6 +1491,7 @@ func TestApplyTerminalRunStaleHeads(t *testing.T) {
 }
 
 func TestApplyTerminalRunStaleMetadata(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "apply-stale-metadata")
 	fixture.commitRunChange(t, "safe.txt", "safe\n")
@@ -1458,6 +1511,7 @@ func TestApplyTerminalRunStaleMetadata(t *testing.T) {
 }
 
 func TestApplyTerminalRunDirty(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "apply-newly-dirty")
 	fixture.commitRunChange(t, "safe.txt", "safe\n")
@@ -1477,6 +1531,7 @@ func TestApplyTerminalRunDirty(t *testing.T) {
 }
 
 func TestApplyTerminalRunIntegrationPendingPersistsBeforeCleanup(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newStoredTerminalRunFixture(t, store.StateIntegrationPending)
 	commitWorktreeFile(t, fixture.ref.Path, "safe.txt", "safe\n", "safe change")
@@ -1520,6 +1575,7 @@ func TestApplyTerminalRunIntegrationPendingPersistsBeforeCleanup(t *testing.T) {
 }
 
 func TestApplyTerminalRunStoreFailureStartsNoCleanup(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "apply-store-failure")
 	fixture.commitRunChange(t, "safe.txt", "safe\n")
@@ -1546,6 +1602,7 @@ func TestApplyTerminalRunStoreFailureStartsNoCleanup(t *testing.T) {
 }
 
 func TestApplyTerminalRunOutcomeRemainsUnchanged(t *testing.T) {
+	t.Parallel()
 	for _, outcome := range []string{
 		store.StateUnresolved,
 		store.StateFailed,
@@ -1587,6 +1644,7 @@ func TestApplyTerminalRunOutcomeRemainsUnchanged(t *testing.T) {
 }
 
 func TestApplyTerminalRunRemovalFailure(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "apply-removal-failure")
 	fixture.commitRunChange(t, "safe.txt", "safe\n")
@@ -1627,6 +1685,7 @@ func TestApplyTerminalRunRemovalFailure(t *testing.T) {
 }
 
 func TestApplyTerminalRunDeletionFailure(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "apply-deletion-failure")
 	fixture.commitRunChange(t, "safe.txt", "safe\n")
@@ -1668,6 +1727,7 @@ func TestApplyTerminalRunDeletionFailure(t *testing.T) {
 }
 
 func TestApplyTerminalRunReleased(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "apply-released")
 	fixture.commitRunChange(t, "safe.txt", "safe\n")
@@ -1695,6 +1755,7 @@ func TestApplyTerminalRunReleased(t *testing.T) {
 }
 
 func TestPruneTerminalReconciliationReachableChangedBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "prune-reconciliation-reachable")
 	fixture.commitRunChange(t, "reachable.txt", "reachable\n")
@@ -1716,6 +1777,7 @@ func TestPruneTerminalReconciliationReachableChangedBranch(t *testing.T) {
 }
 
 func TestPruneTerminalReconciliationPreservesUniqueChangedBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fixture := newTerminalRunFixture(t, "prune-reconciliation-unique")
 	fixture.commitRunChange(t, "unique.txt", "unique\n")
@@ -1736,6 +1798,7 @@ func TestPruneTerminalReconciliationPreservesUniqueChangedBranch(t *testing.T) {
 }
 
 func TestInspectTerminalRunUnsafePath(t *testing.T) {
+	t.Parallel()
 	t.Run("symlinked worktree", func(t *testing.T) {
 		fixture := newTerminalRunFixture(t, "reconcile-unsafe-symlink")
 		link := filepath.Join(t.TempDir(), "linked-worktree")
@@ -1913,7 +1976,6 @@ func newStoredTerminalRunFixture(t *testing.T, outcome string) storedTerminalRun
 	t.Helper()
 	ctx := context.Background()
 	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, "shared.txt"), "base\n")
 	gitWorktreeTest(t, repoDir, "add", "shared.txt")
@@ -1995,7 +2057,6 @@ func newIntegrationFixture(t *testing.T, runID string) integrationFixture {
 	t.Helper()
 	ctx := context.Background()
 	homeDir := t.TempDir()
-	t.Setenv("HOME", homeDir)
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, "shared.txt"), "base\n")
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, "run.txt"), "base\n")
@@ -2089,9 +2150,7 @@ func initWorktreeRepo(t *testing.T) string {
 	t.Helper()
 	repoDir := t.TempDir()
 	gittest.InitRepo(t, repoDir, "-b", "main")
-	gitWorktreeTest(t, repoDir, "config", "user.name", "Roundfix Test")
-	gitWorktreeTest(t, repoDir, "config", "user.email", "test@example.com")
-	gitWorktreeTest(t, repoDir, "config", "commit.gpgsign", "false")
+	gittest.PersistIdentity(t, repoDir)
 	return repoDir
 }
 

@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"roundfix/internal/gittest"
 	"sort"
 	"strings"
 	"syscall"
@@ -365,9 +366,7 @@ func newInspectionRepository(t *testing.T) string {
 	t.Helper()
 	repo := t.TempDir()
 	runInspectionCommand(t, repo, "git", "init", "--quiet")
-	runInspectionCommand(t, repo, "git", "config", "user.name", "Roundfix Test")
-	runInspectionCommand(t, repo, "git", "config", "user.email", "roundfix@example.test")
-	runInspectionCommand(t, repo, "git", "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, repo, "[user]\n\tname = Roundfix Test\n\temail = roundfix@example.test\n[commit]\n\tgpgsign = false\n")
 	return repo
 }
 

@@ -292,9 +292,7 @@ func newEmptyReleasePlanGitRepo(t *testing.T) string {
 	t.Helper()
 	repoDir := t.TempDir()
 	gittest.InitRepo(t, repoDir, "--initial-branch=main")
-	gitReleasePlan(t, repoDir, "config", "user.name", "Roundfix Test")
-	gitReleasePlan(t, repoDir, "config", "user.email", "roundfix-test@example.com")
-	gitReleasePlan(t, repoDir, "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, repoDir, "[user]\n\tname = Roundfix Test\n\temail = roundfix-test@example.com\n[commit]\n\tgpgsign = false\n")
 	return repoDir
 }
 

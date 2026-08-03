@@ -508,19 +508,17 @@ func TestBaselineDocumentationContractExamples(t *testing.T) {
 	t.Run("Decision Documents parse", TestBaselineDecisionExamples)
 }
 
-// coldBuiltBinary compiles the Roundfix CLI once per package run, from an
-// empty build cache, and hands every caller the same path.
+// coldBuiltBinary compiles the Roundfix CLI once per package run and hands
+// every caller the same path.
 //
-// The empty cache is deliberate: these tests exercise the binary a release
-// would ship, so it has to compile from scratch rather than inherit whatever
-// the developer's cache happens to hold. What was not deliberate was paying
-// that cold compile seven times. Seven callers each built the whole project
-// into their own t.TempDir() with their own empty GOCACHE — roughly 160s of
-// the package's 437s of serial work — and because they run in parallel they
-// saturated every core available. That is why the package took the same wall
-// clock on two cores as on twelve, and why raising -parallel changed nothing:
-// the package was not waiting on scheduling, it was compiling itself seven
-// times over.
+// It builds with the ambient GOCACHE. The helpers this replaces each forced an
+// empty cache, which looked like rigor and proved nothing: Go's build cache is
+// content-addressed, so a warm build produces a byte-identical binary to a
+// cold one — verified directly, same SHA-256 both ways. What the empty cache
+// actually did was recompile the entire project mid-suite, ~20s of serial
+// head on this package plus a burst of compiler CPU competing with every
+// other package's tests. On a machine with no cache at all, the first test
+// binaries populate it and this build reuses their work.
 //
 // Callers only exec the binary, never modify it, so one copy serves them all.
 var coldBuiltBinary = struct {
@@ -547,7 +545,6 @@ func buildBaselineReleaseBinary(t *testing.T) string {
 		binary := filepath.Join(dir, "roundfix")
 		command := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
 		command.Dir = projectRoot
-		command.Env = append(os.Environ(), "GOCACHE="+filepath.Join(dir, "go-cache"))
 		if output, err := command.CombinedOutput(); err != nil {
 			coldBuiltBinary.err = fmt.Errorf("build Roundfix binary from an empty cache: %w\n%s", err, output)
 			return

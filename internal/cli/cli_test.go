@@ -2785,9 +2785,7 @@ func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing
 
 	otherRepo := t.TempDir()
 	gittest.InitRepo(t, otherRepo, "--initial-branch=main")
-	gitImplement(t, otherRepo, "config", "user.name", "Roundfix Test")
-	gitImplement(t, otherRepo, "config", "user.email", "roundfix-test@example.com")
-	gitImplement(t, otherRepo, "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, otherRepo, "[user]\n\tname = Roundfix Test\n\temail = roundfix-test@example.com\n[commit]\n\tgpgsign = false\n")
 	mustWrite(t, filepath.Join(otherRepo, "README.md"), "other repository\n")
 	gitImplement(t, otherRepo, "add", "README.md")
 	gitImplement(t, otherRepo, "commit", "-m", "seed other repository")
@@ -11294,9 +11292,7 @@ func withReviewGitWorkspace(t *testing.T) (string, string) {
 	homeDir := t.TempDir()
 	repoDir := t.TempDir()
 	gittest.InitRepo(t, repoDir, "--initial-branch=main")
-	gitImplement(t, repoDir, "config", "user.name", "Roundfix Test")
-	gitImplement(t, repoDir, "config", "user.email", "roundfix-test@example.com")
-	gitImplement(t, repoDir, "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, repoDir, "[user]\n\tname = Roundfix Test\n\temail = roundfix-test@example.com\n[commit]\n\tgpgsign = false\n")
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
 defaults:
   verification: test -f agent.txt

@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"roundfix/internal/gittest"
 	"slices"
 	"strings"
 	"testing"
@@ -173,9 +174,7 @@ func TestRegenerationLoadsCatalogOnce(t *testing.T) {
 	}
 	repository := newAlignedTypeScriptRepository(t)
 	runPlanGit(t, repository, "init", "-q")
-	runPlanGit(t, repository, "config", "user.email", "fixture@example.invalid")
-	runPlanGit(t, repository, "config", "user.name", "Fixture Test")
-	runPlanGit(t, repository, "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, repository, "[user]\n\temail = fixture@example.invalid\n\tname = Fixture Test\n[commit]\n\tgpgsign = false\n")
 	runPlanGit(t, repository, "add", ".")
 	runPlanGit(t, repository, "commit", "-qm", "seed regeneration fixture")
 	request := PlanRequest{
@@ -251,9 +250,7 @@ func TestFormatterComposition(t *testing.T) {
 	}
 	repository := newAlignedTypeScriptRepository(t)
 	runPlanGit(t, repository, "init", "-q")
-	runPlanGit(t, repository, "config", "user.email", "fixture@example.invalid")
-	runPlanGit(t, repository, "config", "user.name", "Fixture Test")
-	runPlanGit(t, repository, "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, repository, "[user]\n\temail = fixture@example.invalid\n\tname = Fixture Test\n[commit]\n\tgpgsign = false\n")
 	runPlanGit(t, repository, "add", ".")
 	runPlanGit(t, repository, "commit", "-qm", "seed formatter fixture")
 
@@ -3175,9 +3172,7 @@ func newProjectDecisionPlanRepository(t *testing.T) string {
 	t.Helper()
 	repository := newAlignedTypeScriptRepository(t)
 	runPlanGit(t, repository, "init", "-q")
-	runPlanGit(t, repository, "config", "user.email", "fixture@example.invalid")
-	runPlanGit(t, repository, "config", "user.name", "Fixture Test")
-	runPlanGit(t, repository, "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, repository, "[user]\n\temail = fixture@example.invalid\n\tname = Fixture Test\n[commit]\n\tgpgsign = false\n")
 	runPlanGit(t, repository, "add", ".")
 	runPlanGit(t, repository, "commit", "-qm", "seed project decisions")
 	return repository

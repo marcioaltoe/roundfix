@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"roundfix/internal/gittest"
 	"strings"
 	"sync"
 	"testing"
@@ -415,9 +416,7 @@ func assetsSyncTemplateRoot(t *testing.T) (string, string) {
 		assetRoot := filepath.Join(repository, "internal", "baseline", "assets")
 		copyAssetsSyncFS(t, embeddedAssets, assetRoot)
 		runAssetsSyncGit(t, repository, "init", "--quiet")
-		runAssetsSyncGit(t, repository, "config", "user.email", "fixture@example.com")
-		runAssetsSyncGit(t, repository, "config", "user.name", "Fixture")
-		runAssetsSyncGit(t, repository, "config", "commit.gpgsign", "false")
+		gittest.AppendConfig(t, repository, "[user]\n\temail = fixture@example.com\n\tname = Fixture\n[commit]\n\tgpgsign = false\n")
 		runAssetsSyncGit(t, repository, "add", ".")
 		runAssetsSyncGit(t, repository, "commit", "--quiet", "-m", "asset target")
 
@@ -506,9 +505,7 @@ func buildAssetsSyncSource(t *testing.T, checkout string, assetRoot string) stri
 		}
 	}
 	runAssetsSyncGit(t, checkout, "init", "--quiet")
-	runAssetsSyncGit(t, checkout, "config", "user.email", "fixture@example.com")
-	runAssetsSyncGit(t, checkout, "config", "user.name", "Fixture")
-	runAssetsSyncGit(t, checkout, "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, checkout, "[user]\n\temail = fixture@example.com\n\tname = Fixture\n[commit]\n\tgpgsign = false\n")
 	runAssetsSyncGit(t, checkout, "remote", "add", "origin", "https://github.com/example/skills.git")
 	runAssetsSyncGit(t, checkout, "add", ".")
 	runAssetsSyncGit(t, checkout, "commit", "--quiet", "-m", "canonical source")

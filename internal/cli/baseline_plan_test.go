@@ -424,9 +424,7 @@ func newBaselinePlanTestRepository(t *testing.T) string {
 	repo := t.TempDir()
 	runBaselinePlanTestCommand(t, repo, "git", "init", "--quiet")
 	gittest.Harden(t, repo)
-	runBaselinePlanTestCommand(t, repo, "git", "config", "user.name", "Roundfix Test")
-	runBaselinePlanTestCommand(t, repo, "git", "config", "user.email", "roundfix@example.test")
-	runBaselinePlanTestCommand(t, repo, "git", "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, repo, "[user]\n\tname = Roundfix Test\n\temail = roundfix@example.test\n[commit]\n\tgpgsign = false\n")
 	return repo
 }
 

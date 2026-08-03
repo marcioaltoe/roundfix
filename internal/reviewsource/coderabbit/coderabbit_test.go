@@ -367,7 +367,9 @@ func TestReplyToIssueUsesMarkerForIdempotency(t *testing.T) {
 }
 
 func TestGHClientWriteMutationsInvokeGHOnce(t *testing.T) {
-	t.Parallel()
+	// Sequential: withRunGH swaps the package-level runGH seam, which is
+	// process-global state exactly like t.Setenv — but invisible to Go's
+	// parallelism guard because the mutation lives in a helper.
 	tests := []struct {
 		name     string
 		act      func(context.Context, GHClient) error
@@ -429,7 +431,9 @@ func TestGHClientWriteMutationsInvokeGHOnce(t *testing.T) {
 }
 
 func TestGHClientWriteMutationFailuresWrapCause(t *testing.T) {
-	t.Parallel()
+	// Sequential: withRunGH swaps the package-level runGH seam, which is
+	// process-global state exactly like t.Setenv — but invisible to Go's
+	// parallelism guard because the mutation lives in a helper.
 	cause := errors.New("gh failed")
 	tests := []struct {
 		name          string

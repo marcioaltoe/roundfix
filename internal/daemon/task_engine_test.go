@@ -4289,9 +4289,7 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 	})
 	repoDir := fixture.gitRoot
 	gittest.InitRepo(t, repoDir, "-b", "main")
-	runGitForTest(t, repoDir, "config", "user.name", "Roundfix Test")
-	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
-	runGitForTest(t, repoDir, "config", "commit.gpgsign", "false")
+	gittest.AppendConfig(t, repoDir, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
 	runGitForTest(t, repoDir, "add", "-A")
 	runGitForTest(t, repoDir, "commit", "-q", "-m", "initial")
 	// Pre-existing user work that must never enter a Task commit.
