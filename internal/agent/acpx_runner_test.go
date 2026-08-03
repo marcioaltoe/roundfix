@@ -3303,7 +3303,7 @@ func (clock *fakeCancellationClock) NewTimer(duration time.Duration) cancellatio
 
 func (clock *fakeCancellationClock) waitForTimer(t *testing.T, index int) *fakeCancellationTimer {
 	t.Helper()
-	deadline := time.NewTimer(5 * time.Second)
+	deadline := time.NewTimer(agentWaitBudget)
 	defer deadline.Stop()
 	for {
 		clock.mu.Lock()
@@ -3696,9 +3696,26 @@ func containsInvocation(invocations [][]string, want []string) bool {
 	return false
 }
 
+// agentWaitBudget bounds every "this eventually happened" wait in this
+// package: file milestones a spawned fake ACPX writes, and results a
+// goroutine sends back. It is deliberately far longer than the work needs —
+// a passing wait returns the moment its condition holds and pays none of it,
+// while a stuck one still fails.
+//
+// These tests spawn real child processes, and since the ADR-0089 environment
+// seam they run beside the package's other parallel tests. Under a saturated
+// machine a five-second budget measures load rather than correctness: two
+// cancellation tests failed exactly that way inside the full suite while
+// passing alone.
+//
+// Behavioral durations are not wait budgets and are untouched: StopGrace
+// still governs how long a stop waits before escalating, and the fake
+// cancellation clock keeps its own scale.
+const agentWaitBudget = 90 * time.Second
+
 func waitForFile(t *testing.T, path string) {
 	t.Helper()
-	deadline := time.After(5 * time.Second)
+	deadline := time.After(agentWaitBudget)
 	ticker := time.NewTicker(5 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -3715,7 +3732,7 @@ func waitForFile(t *testing.T, path string) {
 
 func waitForACPXMilestone(t *testing.T, name string, path string, invocationsPath string) {
 	t.Helper()
-	deadline := time.After(5 * time.Second)
+	deadline := time.After(agentWaitBudget)
 	ticker := time.NewTicker(5 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -3739,7 +3756,7 @@ func receiveError(t *testing.T, resultCh <-chan error) error {
 	select {
 	case err := <-resultCh:
 		return err
-	case <-time.After(5 * time.Second):
+	case <-time.After(agentWaitBudget):
 		t.Fatal("timed out waiting for acpx run")
 		return nil
 	}

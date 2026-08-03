@@ -77,7 +77,7 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 	}()
 	select {
 	case <-cancelSink.done:
-	case <-time.After(10 * time.Second):
+	case <-time.After(agentWaitBudget):
 		cancel()
 		t.Fatal("timed out waiting for blocking prompt to start")
 	}
@@ -147,7 +147,7 @@ func assertRealACPXForceStopClosesLiveSession(t *testing.T, runner *ACPXRunner, 
 	}()
 	select {
 	case <-sink.done:
-	case <-time.After(10 * time.Second):
+	case <-time.After(agentWaitBudget):
 		cancelRun()
 		t.Fatal("timed out waiting for force-stop prompt to start")
 	}
@@ -196,7 +196,7 @@ func buildRealACPXEchoAgent(t *testing.T, dir string) string {
 
 func waitForLogLine(t *testing.T, path string, needle string) {
 	t.Helper()
-	deadline := time.After(10 * time.Second)
+	deadline := time.After(agentWaitBudget)
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -214,7 +214,7 @@ func waitForLogLine(t *testing.T, path string, needle string) {
 
 func assertNoRealACPXOrphans(t *testing.T, sessionName string, helperLog string) {
 	t.Helper()
-	deadline := time.After(10 * time.Second)
+	deadline := time.After(agentWaitBudget)
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
