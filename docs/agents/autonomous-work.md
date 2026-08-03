@@ -1,15 +1,16 @@
 # Autonomous work: Supervisor and implementation runtimes
 
 One Supervisor session orchestrates autonomous work. Each Task owns a Task
-Type-selected Agent Session inside its Roundfix Run, and a requested QA phase
-owns a separate `qa` Agent Session. This split binds interactive and unattended
-sessions without forcing a mixed Task Graph through one Run-wide Agent.
+Type-selected Agent Session inside its Roundfix Run, and an authored terminal
+`qa` Task owns a separate `qa` Agent Session. This split binds interactive and
+unattended sessions without forcing a mixed Task Graph through one Run-wide
+Agent.
 
 ## Roles
 
 | Role | Agent Model and reasoning | Work |
 | --- | --- | --- |
-| Supervisor | Supervising Claude Code session | Author Specs, launch and monitor Runs, integrate outcomes, run `qa-gate`, archive, make boundary commits, and route work |
+| Supervisor | Supervising Claude Code session | Author Specs and their gate decisions, launch and monitor Runs, integrate outcomes, archive, make boundary commits, and route work |
 | Non-frontend implementer | Codex `gpt-5.6-sol` with `high` Default Reasoning Effort; `gpt-5.5`/`xhigh` fallback | CLI, backend, infrastructure, documentation, and other non-frontend Tasks and Review Issue Batches |
 | Frontend implementer | Claude `opus` (Opus 5, 1M context) with `xhigh` Default Reasoning Effort | Design, UI, UX, Bubble Tea/Lip Gloss TUI, and web frontend Tasks |
 
@@ -20,7 +21,8 @@ The Supervisor:
 - routes work through `docs/agents/spec-routing.md`;
 - authors planning artifacts;
 - launches detached Runs and monitors them to a terminal outcome;
-- integrates results, runs `qa-gate`, and archives passing Specs;
+- integrates results, monitors the authored `qa` Task, and archives passing
+  Specs;
 - maintains the Agent Selection Profiles that select each Task and QA Agent
   Session;
 - limits its direct edits to Spec and documentation fixes, Run recovery, and
@@ -61,12 +63,13 @@ The Supervisor authors Specs using `write-idea`, `write-prd`,
 ## Profile-led Task routing
 
 ```bash
-roundfix implement --spec <slug> --qa --detach
+roundfix implement --spec <slug> --detach
 ```
 
 The Implement Command resolves a profile for each Task Type. Review Runs use
-the same profile-led selection for their review Agent Session, and `--qa`
-resolves the separate `qa` profile after every Task settles completed.
+the same profile-led selection for their review Agent Session. When the Task
+Graph declares a terminal `qa` Task, that Task resolves the separate `qa`
+profile after every dependency settles completed.
 
 1. `.roundfixrc.yml` pins `profiles.general`, `profiles.backend`,
    `profiles.qa`, and `profiles.review` to the Sol/high Preferred Selection.
@@ -104,7 +107,8 @@ defaults remain authoritative; model recommendations do not change routing.
   absent.
 - `backend` selects backend work, and `frontend` selects frontend/design work
   where interaction and visual quality are part of the outcome.
-- Requested QA runs in its own `qa` Agent Session after all Tasks complete.
+- The authored terminal `qa` Task runs in its own `qa` Agent Session after all
+  of its dependencies complete.
 - Review work uses a review-selected Agent Session.
 - One-off delegation outside a Run follows the same routing.
 
@@ -123,38 +127,42 @@ Runtime selection does not change completion requirements:
 - Exit `75` is a project-authored Temporary Verification Failure signal for
   one exclusive retry. Roundfix never infers it from logs.
 - `make verify` gates every completion claim.
-- `qa-gate` runs after the final Task regardless of runtime.
+- `qa-gate` runs from the authored terminal `qa` Task regardless of runtime;
+  a Spec that declines the gate records that decision and its reason during
+  decomposition.
 - Agent instructions and Spec conventions bind both runtimes.
 
-### Request QA once per Spec, after its preconditions exist
+### Author the QA gate once per Spec
 
-Pass `--qa` only when the Task Graph is complete, every Task is expected to
-settle in that Run, and every surface the Spec's acceptance observes exists
-and is clean. While any Task is still pending or a corrective Task is
-planned, run `roundfix implement` **without** `--qa`.
+`write-tasks` declares the gate during decomposition. Include one terminal
+`qa` Task that depends on every non-QA leaf, or declare `qa: declined` with a
+non-empty reason. The Implement Command never makes that decision. An
+all-completed implementation graph with an unsettled authored gate remains
+runnable because the gate is still a pending Task.
 
-The order is: implement the graph, open the Pull Request, `roundfix watch`
-until Clean, and request QA once. Wait for the terminal QA verdict and merge
-only when it is `pass`; stop the workflow on any non-`pass` verdict. A gate
-whose matrix observes the Pull Request cannot pass before the Pull Request
-exists, and cannot accept one whose review is unprocessed — both cost a full
-cycle to learn. Rebuild any binary the gate exercises before requesting it,
+Make every surface the Spec's acceptance observes available before the gate
+becomes runnable. Wait for the terminal QA verdict and merge only when it is
+`pass`; stop the workflow on any non-`pass` verdict. A gate whose matrix
+observes the Pull Request cannot pass before the Pull Request exists, and
+cannot accept one whose review is unprocessed — both cost a full cycle to
+learn. Rebuild any binary the gate exercises before the gate becomes runnable,
 or the gate reports defects the running artifact does not contain.
 
-The Daemon already gates QA on every graph Task reaching `completed`, so
-`--qa` on an incomplete graph costs nothing — but re-requesting it after each
-corrective Task turns discovery into a serial chain of full gate cycles.
-Batch instead: when a gate returns several findings, close them together and
-request the gate once more. If a Spec needs more than two corrective Tasks
-generated by QA findings, stop and re-examine the Spec's decomposition rather
-than appending a third.
+If the Task Graph grows after its gate reports, load-time validation
+invalidates that gate and names the inserted Tasks. Batch corrective work:
+appending one corrective Task after each finding turns discovery into a serial
+chain of full gate cycles. When a gate returns several findings, close them
+together before the graph reaches the gate again. If a Spec needs more than
+two corrective Tasks generated by QA findings, stop and re-examine the Spec's
+decomposition rather than appending a third.
 
 ## The loop that implements a Spec
 
 The Supervisor runs Specs end to end without pausing between them. Per Spec:
 branch from the synced default branch, author whatever artifacts are missing,
-commit and push, `roundfix implement --spec <slug> --qa --detach`, monitor to
-a terminal outcome, archive on a QA pass, open the Pull Request,
+including the gate decision, commit and push,
+`roundfix implement --spec <slug> --detach`, monitor to a terminal outcome,
+archive on an authored-gate pass, open the Pull Request,
 `roundfix watch --until-clean`, then squash merge and reconcile.
 
 Invocation is the authorization. Stop only for a decision that is genuinely
