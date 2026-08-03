@@ -1,6 +1,6 @@
 ---
 name: qa-gate
-description: Run the self-contained final QA gate for a completed spec — derive a resumable QA matrix from the PRD and task evidence, execute real user flows through every declared surface, probe high-risk user behavior, capture auditable evidence, classify findings by user impact, and write the spec-local dated QA report. Use after the last spec task, before its PR, or when asked to "QA this feature", "validate the spec", or "run the QA gate". Do not use as a substitute for implementation tests or a broad standalone QA knowledge base.
+description: Execute the self-contained final QA gate as a Spec's authored terminal `qa` Task — derive a resumable QA matrix from the PRD and task evidence, execute real user flows through every declared surface, probe high-risk user behavior, capture auditable evidence, classify findings by user impact, and write the spec-local dated QA report. Do not use as a substitute for implementation tests or a broad standalone QA knowledge base.
 metadata:
   category: qa
   tags: [qa, testing, browser, workflow]
@@ -11,7 +11,7 @@ metadata:
 
 # QA Gate
 
-Validate the assembled feature against the promises in its spec by exercising the public interfaces a real user reaches. This skill owns the complete gate: plan, execution, evidence, findings, report, and final verdict. Use the agent's tools and connected servers directly; do not load another QA skill or create a separate living QA tree.
+Validate the assembled feature against the promises in its spec by exercising the public interfaces a real user reaches. The Daemon runs this skill from the unique authored terminal `qa` Task named by `_tasks.md` frontmatter; it is part of the Task Graph, not a per-run request. That node depends on every non-QA leaf and therefore becomes runnable only after the graph it closes settles. This skill owns the complete gate: plan, execution, evidence, findings, report, and final verdict. Use the agent's tools and connected servers directly; do not load another QA skill or create a separate living QA tree.
 
 ## Non-negotiables
 
@@ -23,7 +23,11 @@ Validate the assembled feature against the promises in its spec by exercising th
 
 ## 1. Resolve scope and preconditions
 
-Resolve `docs/specs/<slug>/`, then read `_prd.md`, every `task_NN.md`, and prior files under `qa/`.
+Resolve `docs/specs/<slug>/`, then read `_tasks.md`, `_prd.md`, every
+`task_NN.md`, and prior files under `qa/`. Confirm that the manifest's `qa:`
+field names the current `type: qa` Task and that this node is terminal and
+depends on every non-QA leaf. A missing or mismatched authored node is a graph
+defect; do not run the gate outside that node.
 
 - Run a Project Constraint audit before crediting Task evidence. A completed or
   archived legacy Spec is exempt from forced backfill; keep every legacy
@@ -56,7 +60,11 @@ Resolve `docs/specs/<slug>/`, then read `_prd.md`, every `task_NN.md`, and prior
   problem blocks flow QA after the complete audit has been reported.
 - QA writes only its report and evidence. It never changes Task status or Task
   Graph dependencies.
-- Require every task status to be `completed`. If any task remains incomplete, stop and list it. Run a partial gate only when the user explicitly requests one; mark its scope and final verdict `partial`.
+- Require every dependency of the authored `qa` Task to be `completed`. If any
+  dependency remains incomplete, stop and list it. The Daemon owns the current
+  gate Task's status and settles it from the final verdict. Run a partial gate
+  only when the authored QA Task explicitly limits its scope; mark its scope
+  and final verdict `partial`.
 - Identify the PRD's declared surfaces, user stories, core features, acceptance criteria, user-experience states, and Non-Goals.
 - Read each task's `## Result`. Credit a task-level criterion only when it points to named, reproducible evidence and the current static gate passes. Spend live QA effort on assembled user journeys, cross-task seams, persistence, failure behavior, and scope creep.
 - On a rerun, start with previously failed or blocked rows, then run the remaining matrix against the current build.
@@ -217,8 +225,8 @@ Close with `status: closed` and apply the verdict mechanically:
 
 - `fail` when any row failed;
 - `partial` when none failed but any row is finding-blocked or skipped, the
-  user requested a partial run, or an environment-blocked row lacks equivalent
-  observed or supervised evidence;
+  authored QA Task defines a partial run, or an environment-blocked row lacks
+  equivalent observed or supervised evidence;
 - `pass` when every runnable row passed, every environment-blocked row records
   its cause and equivalent observed or supervised evidence, no row is
   finding-blocked or skipped, and all evidence paths resolve. A nonzero

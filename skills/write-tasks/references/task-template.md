@@ -4,12 +4,13 @@ Two templates: the `_tasks.md` manifest and the per-task `task_NN.md` file. Guid
 
 ## `_tasks.md` — the DAG manifest
 
-Machine-parseable. Dependencies live **only** here; status and type live **only** in task file frontmatter. The body table is a human-readable projection of the frontmatter graph; every `type` cell must be byte-identical to the matching task file's `type` value. Regenerate it whenever the graph changes.
+Machine-parseable. Dependencies live **only** here; status and type live **only** in task file frontmatter. The manifest frontmatter also owns the one-time QA decision: `qa: task_NN` names the authored terminal gate, or `qa: declined` pairs with a non-empty `qa_reason`. The body table is a human-readable projection of the frontmatter graph; every `type` cell must be byte-identical to the matching task file's `type` value. Regenerate it whenever the graph changes.
 
 ```markdown
 ---
 schema: spec-tasks/v1
 spec: <feature-slug>
+qa: task_04
 graph:
   nodes:
     - id: task_01
@@ -33,10 +34,27 @@ graph:
 | task_01 | <title>                          | chore    | low        | —                |
 | task_02 | <title>                          | backend  | medium     | task_01          |
 | task_03 | <title>                          | frontend | medium     | task_01          |
-| task_04 | <title>                          | backend  | high       | task_02, task_03 |
+| task_04 | Run the final QA gate            | qa       | high       | task_02, task_03 |
 
 Waves: 1 → task_01 · 2 → task_02, task_03 · 3 → task_04
 ```
+
+The included gate is the unique `type: qa` Task, has no dependents, and
+depends on every non-QA leaf (`task_02` and `task_03` in this example). Its
+task file uses the ordinary template below with `type: qa` and directs the
+Daemon to execute `qa-gate` as this authored terminal node.
+
+When the Spec declines the gate, replace the `qa: task_NN` declaration with
+both lines below and emit no `type: qa` Task:
+
+```yaml
+qa: declined
+qa_reason: <specific reason the Spec needs no final QA gate>
+```
+
+Every post-contract manifest must use exactly one of these forms. Refuse to
+produce a graph with neither form or both forms; only proven legacy graphs may
+omit the declaration, and they remain byte-identical.
 
 ## `task_NN.md` — one task
 
@@ -47,7 +65,7 @@ A fresh agent session must be able to build this with no context beyond the spec
 task: task_02
 spec: <feature-slug>
 status: pending # pending | in_progress | completed | failed — only implement-task changes this
-type: backend # REQUIRED: backend | frontend | data | infra | docs | test | chore
+type: backend # REQUIRED: backend | frontend | data | infra | docs | test | chore | qa; qa is only for the authored terminal gate
 complexity: medium # low | medium | high
 ---
 

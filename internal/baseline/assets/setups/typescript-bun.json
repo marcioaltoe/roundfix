@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/typescript-bun.txt"
   },
-  "digest": "55a9193e8cf1570a82eb5549171ee37d0318bc93f837c5589dc47ab87b5771bb",
+  "digest": "9ea74e65669d4a5e8ad25f3bcc1a42f5914293057be87d96fe82c9141f5e376e",
   "skills": [
     {
       "name": "find-rules",
@@ -264,7 +264,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f"
+      "contentDigest": "effe546bb0d662ba9fea2b0b01b752e933ea0c165655789d25433d9d7ff14483"
     },
     {
       "name": "ai-sdk",
@@ -786,7 +786,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "ddff158c403b8565fec292b0f8f9b7faf6cc263a1b06cec7b6f180173d284dbf"
+      "contentDigest": "1461fd9c9c92fc5d40603e2cdc9efcd5746590afe53d5ff4c10168fc28023d69"
     },
     {
       "name": "review",

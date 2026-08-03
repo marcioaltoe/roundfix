@@ -22,15 +22,15 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "84953779bc09f45c59d57d9cd8a6f0ce83f438b25f5d4d89a1015c8d24415157",
+      "digest": "c34639a2db112e8de54052ba3552fd75a7c1ccd478cc41e293e49550c5c91e20",
       "id": "go-cli"
     },
     {
-      "digest": "5baaef1ed5c3df703275a385af0cd428ef6caca226bbf30ae06f9944ec74d09d",
+      "digest": "07d3997919ee657b0e939a027c5b06ecb1f7ba56bf81eae0cc821bf7955b89d7",
       "id": "rust-cli"
     },
     {
-      "digest": "7f06cd934682214b6eb3718f4a7aa6aa60490d5d4857334b8f52503d34568dcc",
+      "digest": "2e5b20cd6aa58b0da42e28a0fb0a47479ec1b8d8169d141ecda0166f27501f1f",
       "id": "typescript-bun"
     }
   ],
@@ -53,7 +53,7 @@
             ]
           }
         ],
-        "digest": "84953779bc09f45c59d57d9cd8a6f0ce83f438b25f5d4d89a1015c8d24415157",
+        "digest": "c34639a2db112e8de54052ba3552fd75a7c1ccd478cc41e293e49550c5c91e20",
         "id": "go-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -220,7 +220,7 @@
             }
           },
           {
-            "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f",
+            "contentDigest": "effe546bb0d662ba9fea2b0b01b752e933ea0c165655789d25433d9d7ff14483",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -366,7 +366,7 @@
             }
           },
           {
-            "contentDigest": "ddff158c403b8565fec292b0f8f9b7faf6cc263a1b06cec7b6f180173d284dbf",
+            "contentDigest": "1461fd9c9c92fc5d40603e2cdc9efcd5746590afe53d5ff4c10168fc28023d69",
             "name": "qa-gate",
             "path": "skills/06-review-repair/qa-gate",
             "source": {
@@ -475,7 +475,7 @@
             ]
           }
         ],
-        "digest": "5baaef1ed5c3df703275a385af0cd428ef6caca226bbf30ae06f9944ec74d09d",
+        "digest": "07d3997919ee657b0e939a027c5b06ecb1f7ba56bf81eae0cc821bf7955b89d7",
         "id": "rust-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -631,7 +631,7 @@
             }
           },
           {
-            "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f",
+            "contentDigest": "effe546bb0d662ba9fea2b0b01b752e933ea0c165655789d25433d9d7ff14483",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -733,7 +733,7 @@
             }
           },
           {
-            "contentDigest": "ddff158c403b8565fec292b0f8f9b7faf6cc263a1b06cec7b6f180173d284dbf",
+            "contentDigest": "1461fd9c9c92fc5d40603e2cdc9efcd5746590afe53d5ff4c10168fc28023d69",
             "name": "qa-gate",
             "path": "skills/06-review-repair/qa-gate",
             "source": {
@@ -920,7 +920,7 @@
             ]
           }
         ],
-        "digest": "7f06cd934682214b6eb3718f4a7aa6aa60490d5d4857334b8f52503d34568dcc",
+        "digest": "2e5b20cd6aa58b0da42e28a0fb0a47479ec1b8d8169d141ecda0166f27501f1f",
         "id": "typescript-bun",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -1172,7 +1172,7 @@
             }
           },
           {
-            "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f",
+            "contentDigest": "effe546bb0d662ba9fea2b0b01b752e933ea0c165655789d25433d9d7ff14483",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -1694,7 +1694,7 @@
             "treeDigest": "7583a30883e595e493871c70cc6d1c76e92d2cc69059f338d65e0da7ec70226b"
           },
           {
-            "contentDigest": "ddff158c403b8565fec292b0f8f9b7faf6cc263a1b06cec7b6f180173d284dbf",
+            "contentDigest": "1461fd9c9c92fc5d40603e2cdc9efcd5746590afe53d5ff4c10168fc28023d69",
             "name": "qa-gate",
             "path": "skills/06-review-repair/qa-gate",
             "source": {

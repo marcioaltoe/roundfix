@@ -1,6 +1,6 @@
 ---
 name: write-tasks
-description: Decompose a spec's PRD/TechSpec into a dependency-ordered task graph — vertical-slice task files plus a machine-parseable _tasks.md DAG manifest under docs/specs/<slug>/, decided autonomously from the Spec and escalated only when authority, architecture, or blast radius is at stake.
+description: Decompose a spec's PRD/TechSpec into a dependency-ordered task graph — vertical-slice task files plus a machine-parseable _tasks.md DAG manifest under docs/specs/<slug>/, including the authored QA gate decision, decided autonomously from the Spec and escalated only when authority, architecture, or blast radius is at stake.
 argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
@@ -54,9 +54,10 @@ by each Task file. The preflight never moves either responsibility.
 - **Dependencies live only in the `_tasks.md` graph.** Never in task files. Two copies of an edge is how graphs drift.
 - **Status lives only in each task file's frontmatter.** `_tasks.md` owns topology, not progress — schedulers re-read task files for state.
 - **Task Type is required in every task file.** Use exactly one of `backend`,
-  `frontend`, `data`, `infra`, `docs`, `test`, or `chore`. The Implement
-  Command consumes this value for routing and rejects missing or unknown
-  values; never leave a placeholder or infer the type later.
+  `frontend`, `data`, `infra`, `docs`, `test`, `chore`, or `qa`. Reserve `qa`
+  for the unique authored terminal gate named by the manifest's `qa:` field.
+  The Implement Command consumes this value for routing and rejects missing or
+  unknown values; never leave a placeholder or infer the type later.
 - **Content references, never duplicates.** Task files point at PRD/TechSpec
   sections by name; a task that restates the spec goes stale the first time the
   spec is amended. Link an adopted source at its post-adoption path in the
@@ -80,6 +81,23 @@ by each Task file. The preflight never moves either responsibility.
 - **Verification must be hermetic, portable, effect-proving, and Daemon-owned.** Every task's `## Verification` commands must be satisfiable in a fresh worktree using only repository state, declared config, and task-owned setup. Do not depend on untracked local files, prior Runs, interactive prompts, pushed branches, or ambient machine state unless the task explicitly creates that state. Use portable shell forms: prefer `grep` over `rg` in task gates, avoid `wc`-pipeline assertions that vary across platforms, and use repository build flags such as `go build -buildvcs=false ./...` when a build is required. A Task must prove its own effect with executable checks; the Run-level gate proves nothing else regressed. Do not add a whole-package suite command to each Task for regression coverage. Every Verification command must be able to fail when no work was done: a command that names a missing test or selects no cases is vacuous if it still exits zero. The Daemon runs these commands after the Agent turn and may send one failure-only Verification Feedback prompt; do not tell the Agent to run the authoritative gate itself.
 - **Commit and push stay out of task criteria.** The Daemon owns Task commits, Run integration, and any configured push. Never put commit, push, PR creation, or branch-publishing requirements in task Requirements, Subtasks, Acceptance Criteria, or Verification commands.
 
+### Author the QA gate decision
+
+Every active Spec authored under the QA Task contract must choose exactly one
+of these shapes during decomposition:
+
+- **Include the gate.** Add `qa: task_NN` to `_tasks.md` frontmatter, naming
+  one `task_NN.md` whose `type` is `qa`. Make that node terminal and make its
+  `needs` list cover every non-QA leaf so the gate cannot run before any branch
+  of the graph settles.
+- **Decline the gate.** Add `qa: declined` and a non-empty `qa_reason` to
+  `_tasks.md` frontmatter. Do not emit a `qa` Task when the gate is declined.
+
+A post-contract graph with neither declaration, both shapes, an unnamed `qa`
+Task, or a gate that is not terminal is a defect. Refuse to produce it. An
+absent declaration remains valid only for a legacy graph proven to predate the
+contract; leave that graph byte-identical.
+
 ### Task Type selection
 
 Choose the type from the Task's dominant delivered outcome, not from who will
@@ -91,7 +109,10 @@ implement it, the tool used, or configuration choices:
 - `infra` — build, CI/CD, packaging, deployment, environment, or operational infrastructure;
 - `docs` — documentation-only behavior or durable knowledge artifacts;
 - `test` — test harness, fixture, evaluation, or coverage work without a product behavior change;
-- `chore` — bounded maintenance that changes none of the preceding product surfaces.
+- `chore` — bounded maintenance that changes none of the preceding product surfaces;
+- `qa` — the unique authored terminal gate that executes `qa-gate` after every
+  non-QA leaf settles; never use it for implementation tests or an intermediate
+  checkpoint.
 
 When a vertical slice crosses types, use the type of its primary user-visible or
 operational outcome. If two outcomes are independently valuable or the dominant
@@ -102,7 +123,7 @@ do not encode multiple values and do not defer the classification.
 
 ### 1. Derive the breakdown
 
-Start from the TechSpec's Build Order (its dependency statements become graph edges). Map every PRD user story and core feature onto at least one task; an uncovered story is a hole to fix now.
+Start from the TechSpec's Build Order (its dependency statements become graph edges). Map every PRD user story and core feature onto at least one task; an uncovered story is a hole to fix now. Decide the QA gate once from the authored Spec and add either its terminal node or the reasoned decline to the breakdown.
 
 ### 2. Escalation check — decide autonomously, escalate by exception
 
@@ -120,7 +141,7 @@ Escalate with the specific blocking fact and a proposed resolution, never with a
 
 ### 3. Write the files
 
-From the templates in [references/task-template.md](references/task-template.md), write `_tasks.md` and every `task_NN.md` (numbered from `01` in topological order). Copy the derived Task Type into each task's `type` frontmatter and the `_tasks.md` projection table. Acceptance criteria must be independently verifiable — a criterion nobody can check is a wish, not a criterion. Include a `## Verification` section with exact, hermetic, portable commands that prove the task's effect in a fresh worktree; the Daemon runs them verbatim after Agent work. Add `## Context` only for task-specific instruction or interface paths that the standard Spec Context Bundle would not make obvious.
+From the templates in [references/task-template.md](references/task-template.md), write `_tasks.md` and every `task_NN.md` (numbered from `01` in topological order). Copy the derived Task Type into each task's `type` frontmatter and the `_tasks.md` projection table. For an included gate, name the `qa` Task with `qa:` in manifest frontmatter, place it last in topological order, and give it every non-QA leaf in `needs`; for a decline, write `qa: declined` with `qa_reason` and emit no `qa` Task. Acceptance criteria must be independently verifiable — a criterion nobody can check is a wish, not a criterion. Include a `## Verification` section with exact, hermetic, portable commands that prove the task's effect in a fresh worktree; the Daemon runs them verbatim after Agent work. Add `## Context` only for task-specific instruction or interface paths that the standard Spec Context Bundle would not make obvious.
 
 Durability applies here too: describe behavior and interfaces, not repo file paths (relative references within the spec folder are fine — the folder moves as a unit).
 
@@ -130,16 +151,20 @@ Before reporting, verify mechanically — parse, don't eyeball:
 
 - Every `graph.nodes[].file` exists and every task file has parseable frontmatter with `status: pending`.
 - Every task file has exactly one `type` value from `backend`, `frontend`,
-  `data`, `infra`, `docs`, `test`, or `chore`; the `_tasks.md` projection row
-  for that task contains the identical value.
+  `data`, `infra`, `docs`, `test`, `chore`, or `qa`; the `_tasks.md` projection
+  row for that task contains the identical value.
 - Every `needs` entry names an existing node id; no cycles (a topological order can be printed).
+- Every post-contract graph declares exactly one QA decision. An included gate
+  is the unique `qa` Task, has no dependents, and depends directly or
+  transitively on every non-QA leaf; a declined gate has a non-empty
+  `qa_reason` and no `qa` Task.
 - Every PRD user story appears in some task's References.
 
 Print the wave plan (wave 1 = no needs; wave N = needs met by earlier waves) as the execution preview.
 
 ### 5. Report
 
-Reply with the breakdown table (`id | title | type | complexity | needs`), a one-line rationale for the slicing, the file list, and the wave plan — and say that a change to any slice can be requested now. Name any escalation trigger you hit and how it was resolved.
+Reply with the breakdown table (`id | title | type | complexity | needs`), the authored QA decision and its reason when declined, a one-line rationale for the slicing, the file list, and the wave plan — and say that a change to any slice can be requested now. Name any escalation trigger you hit and how it was resolved.
 
 ## Anti-patterns
 
@@ -155,6 +180,9 @@ Reply with the breakdown table (`id | title | type | complexity | needs`), a one
 - Proceeding past a real escalation trigger because the loop is running — a missing tooling authorization or a Task that cannot be verified hermetically is a stop, not a judgement call.
 - Missing, placeholder, combined, or invented Task Types — classification is a
   required routing contract, not descriptive free text.
+- Leaving a post-contract graph without either an authored terminal `qa` Task
+  or `qa: declined` plus `qa_reason` — omission is a defect, not a per-run QA
+  choice.
 
 ## References
 
