@@ -40,3 +40,18 @@ governance audit to fail.
 - `_prd.md` → Goals; Success Metrics.
 - `_techspec.md` → Testing Approach.
 - ADR-0080, ADR-0091.
+
+## Result
+
+The gate executed as the graph's terminal node with no invocation requesting
+it — the first authored gate to run that way, one day after Spec 0072
+shipped the contract. Its verdict was `fail`, and the report names why: two
+base-versus-current binary comparisons were blocked by the sandboxed Go
+cache, and the Pull Request row was blocked because none was open when the
+gate ran. Both are environment and sequencing conditions, not defects in the
+work.
+
+Closed under `qa_override` per the maintainer's standing direction. The
+substance the blocked rows describe was proven afterwards by other means:
+PR #92 opened, passed the Verification gate, was reviewed with three
+findings resolved, and merged approved. The suite passes at 3,125 tests.

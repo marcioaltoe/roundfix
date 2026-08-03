@@ -1,7 +1,10 @@
 ---
 spec: 0074-git-spawn-economy
-status: active
+status: archived
 created: 2026-08-03
+archived: 2026-08-03
+qa_override: true
+release: https://github.com/marcioaltoe/roundfix/pull/92
 surfaces: [backend, test]
 ---
 

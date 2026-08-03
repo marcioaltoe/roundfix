@@ -9,7 +9,6 @@ archives.
 
 | # | Spec | Why here |
 | --- | --- | --- |
-| 3 | `0074-git-spawn-economy` | Measured, like 0071: the suite is spawn-bound (36% utilization, kernel time 3× user, 13,926 git spawns per run), and ~6k of those are production-issued — every real Run pays them against the user's repository. Test-side waste is already removed; deleting the twelve heaviest tests was measured to buy only 7–14s. The maintainer's <60s full-fresh target lands here. |
 | 4 | `0073-skill-versions-decoupled-from-the-binary` | Requested during the 0.0.3 release. Skill content is pinned by digest into the binary, so a skill edit changes what Roundfix claims — three failures in one session came from it. Compatibility becomes a declared minimum version instead, and the 0.3.1 release cut waits for it. |
 | 5 | `0075-typed-docs-backlog` | Maintainer-directed structure improvement (2026-08-03): the layout gives observations a home and intent none. Adds `docs/backlog/` with typed entries aligned with Conventional Commits (`feat`, `fix`, `perf`, `refactor`) to the Baseline's managed layout guide; small, docs-and-assets scoped, and every triage artifact filed after it lands in the right place. |
 | 6 | `0059-run-storage-compaction-and-global-sanitation` | Operational: the Run Database grows with every cycle and its pages are never reclaimed. |
