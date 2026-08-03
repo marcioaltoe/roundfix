@@ -40,6 +40,7 @@ type coverageComparison struct {
 }
 
 func TestCoverageEquivalence(t *testing.T) {
+	t.Parallel()
 	repoRoot := filepath.Clean(filepath.Join("..", ".."))
 	actual, err := collectCoverageRecord(repoRoot)
 	if err != nil {
@@ -137,35 +138,64 @@ func TestMarshalCoverageRecordIsDeterministic(t *testing.T) {
 	}
 }
 
+// collectCoverageRecord asks the toolchain for every test name in one pass.
+//
+// `go test -list` accepts a package pattern, so `./...` answers for the whole
+// repository at once. Asking package by package instead meant one `go test`
+// invocation per package — each compiling that package's test binary before
+// printing names it already knew — which cost this package roughly 30s of the
+// suite. One invocation costs under a second.
+//
+// The output interleaves: a package's test names print before its own
+// terminating `ok <pkg>` or `? <pkg>` line, so names accumulate until a
+// terminator names the package they belong to.
 func collectCoverageRecord(repoRoot string) (CoverageRecord, error) {
-	packageOutput, err := runGo(repoRoot, "list", "-buildvcs=false", "./...")
+	listOutput, err := runGo(repoRoot, "test", "-buildvcs=false", "-list", "^Test", "./...")
 	if err != nil {
-		return CoverageRecord{}, fmt.Errorf("list repository packages: %w", err)
+		return CoverageRecord{}, fmt.Errorf("list repository tests: %w", err)
 	}
-	packages := strings.Fields(packageOutput)
-	sort.Strings(packages)
 
-	record := CoverageRecord{Packages: make(map[string][]string, len(packages))}
-	for _, packagePath := range packages {
-		listOutput, err := runGo(
-			repoRoot,
-			"test",
-			"-buildvcs=false",
-			"-list",
-			"^Test",
-			packagePath,
-		)
-		if err != nil {
-			return CoverageRecord{}, fmt.Errorf("list tests for package %s: %w", packagePath, err)
+	record := CoverageRecord{Packages: map[string][]string{}}
+	var pending []string
+	for _, line := range strings.Split(listOutput, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
 		}
-		tests := listedTestNames(listOutput)
-		sort.Strings(tests)
-		record.Packages[packagePath] = tests
+		if packagePath, terminated := coveragePackageTerminator(line); terminated {
+			sort.Strings(pending)
+			record.Packages[packagePath] = pending
+			pending = nil
+			continue
+		}
+		if strings.HasPrefix(line, "Test") {
+			pending = append(pending, line)
+		}
+	}
+	if len(pending) > 0 {
+		return CoverageRecord{}, fmt.Errorf("listed tests with no terminating package line: %v", pending)
 	}
 	if err := validateCoverageRecord(record); err != nil {
 		return CoverageRecord{}, fmt.Errorf("validate collected coverage: %w", err)
 	}
 	return record, nil
+}
+
+// coveragePackageTerminator recognises the lines `go test -list` prints to
+// close out one package: `ok  <pkg> <elapsed>` when it has tests, and
+// `?  <pkg> [no test files]` when it has none.
+func coveragePackageTerminator(line string) (string, bool) {
+	for _, prefix := range []string{"ok ", "? ", "FAIL "} {
+		if !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			return "", false
+		}
+		return fields[1], true
+	}
+	return "", false
 }
 
 func runGo(repoRoot string, args ...string) (string, error) {

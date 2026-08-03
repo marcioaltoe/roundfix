@@ -15,6 +15,7 @@ import (
 )
 
 func TestFetchReviewsFiltersToUnresolvedCodeRabbitThreads(t *testing.T) {
+	t.Parallel()
 	submittedAt := time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)
 	client := Client{
 		GitHub: &fakeGitHubClient{
@@ -128,6 +129,7 @@ func TestFetchReviewsFiltersToUnresolvedCodeRabbitThreads(t *testing.T) {
 }
 
 func TestFetchReviewsAcceptsCodeRabbitAppLoginFromGraphQLThreads(t *testing.T) {
+	t.Parallel()
 	client := Client{
 		GitHub: &fakeGitHubClient{
 			comments: []ReviewComment{
@@ -172,6 +174,7 @@ func TestFetchReviewsAcceptsCodeRabbitAppLoginFromGraphQLThreads(t *testing.T) {
 }
 
 func TestFetchReviewsCanIncludeNitpicks(t *testing.T) {
+	t.Parallel()
 	client := Client{
 		GitHub: &fakeGitHubClient{
 			comments: []ReviewComment{
@@ -213,6 +216,7 @@ func TestFetchReviewsCanIncludeNitpicks(t *testing.T) {
 }
 
 func TestTitleFromBodyStripsCodeRabbitMarkup(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		body string
@@ -251,6 +255,7 @@ func TestTitleFromBodyStripsCodeRabbitMarkup(t *testing.T) {
 }
 
 func TestResolveIssuesResolvesUniqueReviewThreads(t *testing.T) {
+	t.Parallel()
 	gh := &fakeGitHubClient{}
 	client := Client{GitHub: gh}
 
@@ -274,6 +279,7 @@ func TestResolveIssuesResolvesUniqueReviewThreads(t *testing.T) {
 }
 
 func TestResolveIssueResolvesOneReviewThread(t *testing.T) {
+	t.Parallel()
 	gh := &fakeGitHubClient{}
 	client := Client{GitHub: gh}
 
@@ -292,6 +298,7 @@ func TestResolveIssueResolvesOneReviewThread(t *testing.T) {
 }
 
 func TestReplyToIssueUsesMarkerForIdempotency(t *testing.T) {
+	t.Parallel()
 	const marker = "<!-- roundfix:outcome run=run_1 issue=abc action=invalid -->"
 	tests := []struct {
 		name        string
@@ -360,6 +367,7 @@ func TestReplyToIssueUsesMarkerForIdempotency(t *testing.T) {
 }
 
 func TestGHClientWriteMutationsInvokeGHOnce(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		act      func(context.Context, GHClient) error
@@ -421,6 +429,7 @@ func TestGHClientWriteMutationsInvokeGHOnce(t *testing.T) {
 }
 
 func TestGHClientWriteMutationFailuresWrapCause(t *testing.T) {
+	t.Parallel()
 	cause := errors.New("gh failed")
 	tests := []struct {
 		name          string
@@ -465,6 +474,7 @@ func TestGHClientWriteMutationFailuresWrapCause(t *testing.T) {
 }
 
 func TestRoundfixCommentMarkerHelpers(t *testing.T) {
+	t.Parallel()
 	marker := RoundfixCommentMarker("run:run_123", "issue:abc")
 	if marker != "<!-- roundfix: run:run_123 issue:abc -->" {
 		t.Fatalf("unexpected marker %q", marker)
@@ -482,6 +492,7 @@ func TestRoundfixCommentMarkerHelpers(t *testing.T) {
 }
 
 func TestWatchStatusReportsReviewingFromPendingCodeRabbitCheck(t *testing.T) {
+	t.Parallel()
 	client := Client{
 		GitHub: &fakeGitHubClient{
 			checkRuns: []CheckRun{
@@ -503,6 +514,7 @@ func TestWatchStatusReportsReviewingFromPendingCodeRabbitCheck(t *testing.T) {
 }
 
 func TestWatchStatusReportsSettledFromCompletedCodeRabbitCheck(t *testing.T) {
+	t.Parallel()
 	client := Client{
 		GitHub: &fakeGitHubClient{
 			checkRuns: []CheckRun{
@@ -524,6 +536,7 @@ func TestWatchStatusReportsSettledFromCompletedCodeRabbitCheck(t *testing.T) {
 }
 
 func TestWatchStatusReportsSettledFromCodeRabbitCommitStatus(t *testing.T) {
+	t.Parallel()
 	client := Client{
 		GitHub: &fakeGitHubClient{
 			statuses: []CommitStatus{
@@ -545,6 +558,7 @@ func TestWatchStatusReportsSettledFromCodeRabbitCommitStatus(t *testing.T) {
 }
 
 func TestWatchStatusComparesCodeRabbitReviewCommitToCurrentHead(t *testing.T) {
+	t.Parallel()
 	t.Run("current head review is settled", func(t *testing.T) {
 		client := Client{
 			GitHub: &fakeGitHubClient{
@@ -586,6 +600,7 @@ func TestWatchStatusComparesCodeRabbitReviewCommitToCurrentHead(t *testing.T) {
 }
 
 func TestWatchStatusReportsPendingWithoutCodeRabbitSignal(t *testing.T) {
+	t.Parallel()
 	client := Client{
 		GitHub: &fakeGitHubClient{
 			checkRuns: []CheckRun{
@@ -610,6 +625,7 @@ func TestWatchStatusReportsPendingWithoutCodeRabbitSignal(t *testing.T) {
 }
 
 func TestEvidenceHierarchyPrecedence(t *testing.T) {
+	t.Parallel()
 	unresolvedThread := ReviewThread{
 		ID:         "thread-1",
 		IsResolved: false,
@@ -732,6 +748,7 @@ func TestEvidenceHierarchyPrecedence(t *testing.T) {
 }
 
 func TestEvidenceReviewingSkipsReviewAndThreadRequests(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		checkRuns []CheckRun
@@ -780,6 +797,7 @@ func TestEvidenceReviewingSkipsReviewAndThreadRequests(t *testing.T) {
 }
 
 func TestEvidenceExpectedHeadRejectsUnboundAndStaleSignals(t *testing.T) {
+	t.Parallel()
 	client := Client{GitHub: &fakeGitHubClient{
 		checkRuns: []CheckRun{
 			{DatabaseID: 51, Name: "CodeRabbit", AppName: "CodeRabbit", Status: "completed", Conclusion: "success"},
@@ -803,6 +821,7 @@ func TestEvidenceExpectedHeadRejectsUnboundAndStaleSignals(t *testing.T) {
 }
 
 func TestHeadCheckMapsGitHubCheckRunJSON(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		fixture string
@@ -890,6 +909,7 @@ func TestHeadCheckMapsGitHubCheckRunJSON(t *testing.T) {
 }
 
 func TestCheckRunOutputJSONMapping(t *testing.T) {
+	t.Parallel()
 	const sensitiveText = "authorization: Bearer secret-that-must-not-escape"
 	fixture := `{
 		"total_count": 1,
@@ -935,6 +955,7 @@ func TestCheckRunOutputJSONMapping(t *testing.T) {
 }
 
 func TestSkipSignalStructuredOutputRemainsAvailable(t *testing.T) {
+	t.Parallel()
 	fixture := `{
 		"check_runs": [{
 			"name": "CodeRabbit",
@@ -957,6 +978,7 @@ func TestSkipSignalStructuredOutputRemainsAvailable(t *testing.T) {
 }
 
 func TestSkipSignalDoesNotInferFromArbitrarySuccessfulText(t *testing.T) {
+	t.Parallel()
 	fixture := `{
 		"check_runs": [{
 			"name": "CodeRabbit",
@@ -979,6 +1001,7 @@ func TestSkipSignalDoesNotInferFromArbitrarySuccessfulText(t *testing.T) {
 }
 
 func TestTransientClassificationMatrix(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		err  error
@@ -1015,6 +1038,7 @@ func TestTransientClassificationMatrix(t *testing.T) {
 }
 
 func TestTransientPermanentFailureMatrix(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		err  error
@@ -1040,6 +1064,7 @@ func TestTransientPermanentFailureMatrix(t *testing.T) {
 }
 
 func TestTransientParentCancellationIsPermanent(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	client := Client{GitHub: &fakeGitHubClient{

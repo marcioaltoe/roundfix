@@ -16,6 +16,7 @@ import (
 )
 
 func TestCheckRepositoryMatchesRealRepository(t *testing.T) {
+	t.Parallel()
 	root, err := filepath.Abs("..")
 	if err != nil {
 		t.Fatalf("resolve real repository root: %v", err)
@@ -30,6 +31,7 @@ func TestCheckRepositoryMatchesRealRepository(t *testing.T) {
 }
 
 func TestCheckRepositoryHonorsPreCanceledContext(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		context func(*testing.T) context.Context
@@ -80,6 +82,7 @@ func TestCheckRepositoryHonorsPreCanceledContext(t *testing.T) {
 }
 
 func TestCheckRepositoryReportsReadyRequiredSetWithoutMutation(t *testing.T) {
+	t.Parallel()
 	root := writeReadyRepositoryFixture(t)
 	before := snapshotRepositoryFixture(t, root)
 
@@ -100,6 +103,7 @@ func TestCheckRepositoryReportsReadyRequiredSetWithoutMutation(t *testing.T) {
 }
 
 func TestCheckRepositoryWithExternalUsesExplicitRequirement(t *testing.T) {
+	t.Parallel()
 	root := writeReadyRepositoryFixture(t)
 	for _, name := range []string{"agentic-cli-design", "autoresearch", "bubbletea", "exa-web-search"} {
 		if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", name)); err != nil {
@@ -128,6 +132,7 @@ func TestCheckRepositoryWithExternalUsesExplicitRequirement(t *testing.T) {
 }
 
 func TestCheckRepositoryWithExternalAcceptsEmptyRequirement(t *testing.T) {
+	t.Parallel()
 	root := writeReadyRepositoryFixture(t)
 	if err := os.Remove(filepath.Join(root, "skills-lock.json")); err != nil {
 		t.Fatalf("remove irrelevant skills lock: %v", err)
@@ -154,6 +159,7 @@ func TestCheckRepositoryWithExternalAcceptsEmptyRequirement(t *testing.T) {
 }
 
 func TestCheckRepositoryMatchesExternalCompatibilityEntryPoint(t *testing.T) {
+	t.Parallel()
 	root := writeReadyRepositoryFixture(t)
 	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", "autoresearch")); err != nil {
 		t.Fatalf("remove external skill: %v", err)
@@ -173,6 +179,7 @@ func TestCheckRepositoryMatchesExternalCompatibilityEntryPoint(t *testing.T) {
 }
 
 func TestCheckRepositoryWithExternalKeepsOwnedValidation(t *testing.T) {
+	t.Parallel()
 	root := writeReadyRepositoryFixture(t)
 	if err := os.RemoveAll(filepath.Join(root, ".agents", "skills", "archive-spec")); err != nil {
 		t.Fatalf("remove owned skill: %v", err)
@@ -194,6 +201,7 @@ func TestCheckRepositoryWithExternalKeepsOwnedValidation(t *testing.T) {
 }
 
 func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		mutate func(*testing.T, string)
@@ -283,6 +291,7 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 }
 
 func TestCheckRepositoryClassifiesMissingSharedSkillDirectories(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		path string
@@ -318,6 +327,7 @@ func TestCheckRepositoryClassifiesMissingSharedSkillDirectories(t *testing.T) {
 }
 
 func TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries(t *testing.T) {
+	t.Parallel()
 	root := writeReadyRepositoryFixture(t)
 	writeSkillHashTestFile(t, filepath.Join(root, ".agents", "skills", "unrelated"), "SKILL.md", "unrelated\n")
 	lock := readRepositoryLockFixture(t, root)
@@ -334,6 +344,7 @@ func TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries(t *testing.T) {
 }
 
 func TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		write func(*testing.T, string)
@@ -424,6 +435,7 @@ func TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames(t *testing.T)
 }
 
 func TestCheckRepositoryWrapsFilesystemCauses(t *testing.T) {
+	t.Parallel()
 	root := filepath.Join(t.TempDir(), "missing")
 
 	_, err := CheckRepository(t.Context(), root)
@@ -443,6 +455,7 @@ func TestCheckRepositoryWrapsFilesystemCauses(t *testing.T) {
 }
 
 func TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		authority string
@@ -514,6 +527,7 @@ func TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets(t *testi
 }
 
 func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *testing.T) {
+	t.Parallel()
 	root := writeReadyRepositoryFixture(t)
 	ownedPath := filepath.Join(root, ".agents", "skills", "roundfix", "SKILL.md")
 	if err := os.Remove(ownedPath); err != nil {

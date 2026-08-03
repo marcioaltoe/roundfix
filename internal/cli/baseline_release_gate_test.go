@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 
 	"roundfix/internal/baseline"
@@ -507,20 +508,65 @@ func TestBaselineDocumentationContractExamples(t *testing.T) {
 	t.Run("Decision Documents parse", TestBaselineDecisionExamples)
 }
 
+// coldBuiltBinary compiles the Roundfix CLI once per package run, from an
+// empty build cache, and hands every caller the same path.
+//
+// The empty cache is deliberate: these tests exercise the binary a release
+// would ship, so it has to compile from scratch rather than inherit whatever
+// the developer's cache happens to hold. What was not deliberate was paying
+// that cold compile seven times. Seven callers each built the whole project
+// into their own t.TempDir() with their own empty GOCACHE — roughly 160s of
+// the package's 437s of serial work — and because they run in parallel they
+// saturated every core available. That is why the package took the same wall
+// clock on two cores as on twelve, and why raising -parallel changed nothing:
+// the package was not waiting on scheduling, it was compiling itself seven
+// times over.
+//
+// Callers only exec the binary, never modify it, so one copy serves them all.
+var coldBuiltBinary = struct {
+	once sync.Once
+	dir  string
+	path string
+	err  error
+}{}
+
 func buildBaselineReleaseBinary(t *testing.T) string {
 	t.Helper()
-	projectRoot, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatal(err)
+	coldBuiltBinary.once.Do(func() {
+		projectRoot, err := filepath.Abs(filepath.Join("..", ".."))
+		if err != nil {
+			coldBuiltBinary.err = err
+			return
+		}
+		dir, err := os.MkdirTemp("", "roundfix-cold-build")
+		if err != nil {
+			coldBuiltBinary.err = err
+			return
+		}
+		coldBuiltBinary.dir = dir
+		binary := filepath.Join(dir, "roundfix")
+		command := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
+		command.Dir = projectRoot
+		command.Env = append(os.Environ(), "GOCACHE="+filepath.Join(dir, "go-cache"))
+		if output, err := command.CombinedOutput(); err != nil {
+			coldBuiltBinary.err = fmt.Errorf("build Roundfix binary from an empty cache: %w\n%s", err, output)
+			return
+		}
+		coldBuiltBinary.path = binary
+	})
+	if coldBuiltBinary.err != nil {
+		t.Fatal(coldBuiltBinary.err)
 	}
-	binary := filepath.Join(t.TempDir(), "roundfix")
-	command := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
-	command.Dir = projectRoot
-	command.Env = append(os.Environ(), "GOCACHE="+filepath.Join(t.TempDir(), "go-cache"))
-	if output, err := command.CombinedOutput(); err != nil {
-		t.Fatalf("build release-gate Roundfix binary: %v\n%s", err, output)
+	return coldBuiltBinary.path
+}
+
+// removeColdBuiltBinary drops the shared build directory after the package's
+// tests finish. It is called from TestMain, because the directory outlives
+// every individual test that used it.
+func removeColdBuiltBinary() {
+	if coldBuiltBinary.dir != "" {
+		_ = os.RemoveAll(coldBuiltBinary.dir)
 	}
-	return binary
 }
 
 func baselineReleasePlan(

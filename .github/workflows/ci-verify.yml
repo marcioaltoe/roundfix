@@ -38,11 +38,18 @@ jobs:
 
       # The local gate lets Go's test result cache decide what to re-run, so an
       # implementation loop pays only for what it changed. CI is the tier that
-      # owes a verdict on the whole tree, so it forces a fresh run: -count=1
-      # disables the result cache and every package executes.
-      - name: Verify
+      # owes a verdict on the whole tree, so it forces a fresh run here:
+      # -count=1 disables the result cache and every package executes. The run
+      # is timed against the recorded budget in the same pass.
+      - name: Suite-time budget
         env:
           GOFLAGS: -count=1
+        run: make test-budget
+
+      # The rest of the gate — format, skills, build. Its test stage is
+      # answered by the fresh results the budget step just produced, so the
+      # suite executes exactly once per job.
+      - name: Verify
         run: make verify
 
   race:

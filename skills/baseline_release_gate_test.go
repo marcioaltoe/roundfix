@@ -8,6 +8,7 @@ package skills
 import "testing"
 
 func TestBaselineDocumentationContractThinSkill(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		run  func(*testing.T)

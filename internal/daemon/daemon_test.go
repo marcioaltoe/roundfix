@@ -13,6 +13,7 @@ import (
 )
 
 func TestExecVerifierRemovesSuccessfulOutputArtifact(t *testing.T) {
+	t.Parallel()
 	outputPath := filepath.Join(t.TempDir(), "runs", "run-test", "verification", "batch-001-attempt-1.log")
 	result, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
 		WorkDir:    t.TempDir(),
@@ -32,6 +33,7 @@ func TestExecVerifierRemovesSuccessfulOutputArtifact(t *testing.T) {
 }
 
 func TestExecVerifierRetainsFailedOutputAsTypedCommandError(t *testing.T) {
+	t.Parallel()
 	outputPath := filepath.Join(t.TempDir(), "runs", "run-test", "verification", "batch-001-attempt-1.log")
 	command := `printf '\163\164\144\157\165\164'; printf '\163\164\144\145\162\162' >&2; exit 7`
 	_, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
@@ -63,6 +65,7 @@ func TestExecVerifierRetainsFailedOutputAsTypedCommandError(t *testing.T) {
 }
 
 func TestExecVerifierTemporaryExit75PreservesDiagnosticChain(t *testing.T) {
+	t.Parallel()
 	outputPath := filepath.Join(t.TempDir(), "runs", "run-test", "verification", "batch-001-attempt-1.log")
 	command := `printf 'temporary stdout'; printf 'temporary stderr' >&2; exit 75`
 	_, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
@@ -99,6 +102,7 @@ func TestExecVerifierTemporaryExit75PreservesDiagnosticChain(t *testing.T) {
 }
 
 func TestExecVerifierExit1WithTimeoutTextRemainsDeterministic(t *testing.T) {
+	t.Parallel()
 	outputPath := filepath.Join(t.TempDir(), "verification.log")
 	command := `printf 'timeout waiting for listener on database port'; exit 1`
 	_, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
@@ -125,6 +129,7 @@ func TestExecVerifierExit1WithTimeoutTextRemainsDeterministic(t *testing.T) {
 }
 
 func TestExecVerifierTemporaryRetryDiagnosticPathsRemainDistinct(t *testing.T) {
+	t.Parallel()
 	artifactDir := t.TempDir()
 	initialPath := VerificationOutputPath(artifactDir, "run-test", 1, 1)
 	retryPath := VerificationRetryOutputPath(artifactDir, "run-test", 1, 1, 1)
@@ -166,6 +171,7 @@ func TestExecVerifierTemporaryRetryDiagnosticPathsRemainDistinct(t *testing.T) {
 }
 
 func TestExecVerifierClassifiesCancellationAsInfrastructureError(t *testing.T) {
+	t.Parallel()
 	outputPath := filepath.Join(t.TempDir(), "verification.log")
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -189,6 +195,7 @@ func TestExecVerifierClassifiesCancellationAsInfrastructureError(t *testing.T) {
 }
 
 func TestExecVerifierClassifiesProcessStartFailureAsInfrastructureError(t *testing.T) {
+	t.Parallel()
 	outputPath := filepath.Join(t.TempDir(), "verification.log")
 	_, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
 		WorkDir:    filepath.Join(t.TempDir(), "missing"),
@@ -209,6 +216,7 @@ func TestExecVerifierClassifiesProcessStartFailureAsInfrastructureError(t *testi
 }
 
 func TestExecVerifierClassifiesArtifactRetentionFailureAsInfrastructureError(t *testing.T) {
+	t.Parallel()
 	outputPath := filepath.Join(t.TempDir(), "verification.log")
 	if err := os.MkdirAll(outputPath, 0o755); err != nil {
 		t.Fatalf("create conflicting output path: %v", err)
@@ -233,6 +241,7 @@ func TestExecVerifierClassifiesArtifactRetentionFailureAsInfrastructureError(t *
 }
 
 func TestGitCommitterValidatesRequest(t *testing.T) {
+	t.Parallel()
 	err := GitCommitter{}.Commit(context.Background(), CommitRequest{})
 
 	if err == nil {
@@ -244,6 +253,7 @@ func TestGitCommitterValidatesRequest(t *testing.T) {
 }
 
 func TestGitCommitterExcludesProjectConfigFromBatchCommit(t *testing.T) {
+	t.Parallel()
 	repoDir := t.TempDir()
 	gittest.InitRepo(t, repoDir)
 	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
@@ -326,6 +336,7 @@ func TestGitCommitterStagesSelectedTrackedPathMatchedByGlobalIgnore(t *testing.T
 }
 
 func TestGitPusherValidatesRequest(t *testing.T) {
+	t.Parallel()
 	err := GitPusher{}.Push(context.Background(), PushRequest{})
 
 	if err == nil {
@@ -365,6 +376,7 @@ func mustWriteForTest(t *testing.T, path string, content string) {
 }
 
 func TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	repoDir := t.TempDir()
 	gittest.InitRepo(t, repoDir, "-b", "main")
@@ -453,6 +465,7 @@ func mustReadUnisolatedGitConfigForCanary(t *testing.T, key string) string {
 }
 
 func TestReviewArtifactsCommitMessage(t *testing.T) {
+	t.Parallel()
 	if got := ReviewArtifactsCommitMessage(1, "18"); got != "docs: review round 001 for pr 18" {
 		t.Fatalf("expected single-round message, got %q", got)
 	}

@@ -28,6 +28,7 @@ import (
 const taskCycleSlug = "0001-sample-feature"
 
 func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		taskType spec.TaskType
@@ -88,6 +89,7 @@ func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
 }
 
 func TestQACommitMessageDerivesUnscopedSubjectAndTrailer(t *testing.T) {
+	t.Parallel()
 	got := QACommitMessage("0003-dogfood-polish", "pass")
 	want := "docs: qa report for 0003-dogfood-polish (pass)\n\nRoundfix-Spec: 0003-dogfood-polish"
 
@@ -553,6 +555,7 @@ func qaReportForTest(verdict string) string {
 }
 
 func TestPerWorkAgentSessionMixedTaskTypesAndQA(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Backend work", taskType: string(spec.TaskTypeBackend)},
 		{id: "task_02", title: "Frontend work", taskType: string(spec.TaskTypeFrontend)},
@@ -603,6 +606,7 @@ func TestPerWorkAgentSessionMixedTaskTypesAndQA(t *testing.T) {
 }
 
 func TestAgentSelectionFallbackPublishesBeforeNextSession(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
 	runner := &selectionLifecycleRunner{
 		gitRoot:           fixture.gitRoot,
@@ -646,6 +650,7 @@ func TestAgentSelectionFallbackPublishesBeforeNextSession(t *testing.T) {
 }
 
 func TestCrossRuntimeFallbackUsesRuntimeFactory(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
 	seenSelections := []string{}
 	runner := &selectionLifecycleRunner{
@@ -674,6 +679,7 @@ func TestCrossRuntimeFallbackUsesRuntimeFactory(t *testing.T) {
 }
 
 func TestNoFallbackAfterAgentWorkStarted(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
 	runner := &selectionLifecycleRunner{
 		gitRoot:       fixture.gitRoot,
@@ -703,6 +709,7 @@ func TestNoFallbackAfterAgentWorkStarted(t *testing.T) {
 }
 
 func TestAgentSessionOwnerCleanup(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
 	runner := &selectionLifecycleRunner{
 		gitRoot: fixture.gitRoot,
@@ -744,6 +751,7 @@ func TestAgentSessionOwnerCleanup(t *testing.T) {
 }
 
 func TestAgentSessionOwnerCleanupClosesOnCancellation(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
 	runner := &selectionLifecycleRunner{
 		gitRoot:       fixture.gitRoot,
@@ -1535,6 +1543,7 @@ func noOpTaskCommitWarningEvents(t *testing.T, sink *captureEventSink) []runeven
 }
 
 func TestPublishNoOpTaskCommitWarningReturnsProgressWriteError(t *testing.T) {
+	t.Parallel()
 	engine := &Engine{deps: Dependencies{Progress: failingProgressWriter{err: errors.New("progress closed")}}}
 
 	err := engine.publishNoOpTaskCommitWarning(context.Background(), TaskPlan{RunID: "run_1"}, "task_01", 1, "spec-only")
@@ -1724,6 +1733,7 @@ func waitObservedGateEntry(t *testing.T, entered <-chan struct{}) {
 }
 
 func TestTaskCycleExclusiveRetryDrainsSharedAttemptsAndBlocksLaterShared(t *testing.T) {
+	t.Parallel()
 	gate := newVerificationGate(2)
 	releaseFirst, err := gate.Acquire(context.Background(), verificationShared)
 	if err != nil {
@@ -1787,6 +1797,7 @@ func TestTaskCycleExclusiveRetryDrainsSharedAttemptsAndBlocksLaterShared(t *test
 }
 
 func TestTaskCycleExclusiveRetryCancellationRestoresFullSharedCapacity(t *testing.T) {
+	t.Parallel()
 	gate := newVerificationGate(2)
 	releaseFirst, err := gate.Acquire(context.Background(), verificationShared)
 	if err != nil {
@@ -1835,6 +1846,7 @@ func TestTaskCycleExclusiveRetryCancellationRestoresFullSharedCapacity(t *testin
 // the fact the cancellation contract depends on: whether an attempt owns
 // capacity right away, or is queued and must start honoring Stop Requests.
 func TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts(t *testing.T) {
+	t.Parallel()
 	gate := newVerificationGate(1)
 	release, acquired := gate.TryAcquire(verificationShared)
 	if !acquired {
@@ -1877,6 +1889,7 @@ func TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts(t *testi
 }
 
 func TestTaskCycleValidatesPlan(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 
@@ -1891,6 +1904,7 @@ func TestTaskCycleValidatesPlan(t *testing.T) {
 }
 
 func TestTaskCyclePublishesCapacities(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 	plan := fixture.plan()
@@ -1916,6 +1930,7 @@ func TestTaskCyclePublishesCapacities(t *testing.T) {
 }
 
 func TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                 string
 		taskCapacity         int
@@ -1959,6 +1974,7 @@ func TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects(t *testing.T) {
 }
 
 func TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", verification: []string{"verify-task_01"}},
 		{id: "task_02", verification: []string{"verify-task_02"}},
@@ -2012,6 +2028,7 @@ func TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees
 }
 
 func TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", verification: []string{"verify-task_01"}},
 		{id: "task_02", verification: []string{"verify-task_02"}},
@@ -2063,6 +2080,7 @@ func TestTaskCycleVerificationCapacityTwoOverlapsReadyAttemptsWithoutPermitLoss(
 }
 
 func TestTaskCycleWaitingForVerificationPrecedesStartedWhenImmediatelyAvailable(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify-task_01"}}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 
@@ -2095,6 +2113,7 @@ func TestTaskCycleWaitingForVerificationPrecedesStartedWhenImmediatelyAvailable(
 }
 
 func TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", verification: []string{"verify-task_01"}},
 		{id: "task_02", verification: []string{"verify-task_02"}},
@@ -2224,6 +2243,7 @@ func assertVerificationFeedbackJournaled(t *testing.T, events []runevent.RunEven
 }
 
 func TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSettlement(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", verification: []string{"verify-task_01"}},
 		{id: "task_02", verification: []string{"verify-task_02"}},
@@ -2285,6 +2305,7 @@ func TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSe
 // Stop Request is durable Run-store state, so the queued attempt has to
 // read it rather than wait for a context that is never cancelled.
 func TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", verification: []string{"verify-task_01"}},
 		{id: "task_02", verification: []string{"verify-task_02"}},
@@ -2415,6 +2436,7 @@ func assertVerificationWaitingBeforeStarted(t *testing.T, events []runevent.RunE
 }
 
 func TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Do first independent work"},
 		{id: "task_02", title: "Do second independent work"},
@@ -2478,6 +2500,7 @@ func TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap(t *testing.T) {
 }
 
 func TestTaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Prepare first Task"},
 		{id: "task_02", title: "Prepare second Task"},
@@ -2547,6 +2570,7 @@ func TestTaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork(t *testing.T)
 }
 
 func TestTaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Fail bootstrap"},
 		{id: "task_02", title: "Keep running"},
@@ -2604,6 +2628,7 @@ func TestTaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks(t *testin
 }
 
 func TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrency(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Build prerequisite"},
 		{id: "task_03", title: "Fail independent prerequisite", verification: []string{"fail task_03"}},
@@ -2648,6 +2673,7 @@ func TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrenc
 }
 
 func TestTaskCycleIntegrationConflictSettlesTaskFailedAndKeepsTaskWorktree(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Write first independent change"},
 		{id: "task_02", title: "Collide during integration"},
@@ -2696,6 +2722,7 @@ func TestTaskCycleIntegrationConflictSettlesTaskFailedAndKeepsTaskWorktree(t *te
 }
 
 func TestTaskCycleStopRequestMidWaveDrainsRunningTasksAndStartsNothingNew(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Start first"},
 		{id: "task_02", title: "Start second"},
@@ -2752,6 +2779,7 @@ func TestTaskCycleStopRequestMidWaveDrainsRunningTasksAndStartsNothingNew(t *tes
 }
 
 func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Write the usage docs", taskType: "docs", verification: []string{"echo alpha", "echo beta"}},
 		{id: "task_02", title: "Add the backend behavior", needs: []string{"task_01"}, verification: []string{"echo gamma"}},
@@ -2869,6 +2897,7 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 }
 
 func TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession(t *testing.T) {
+	t.Parallel()
 	const repositoryVerification = "make verify"
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
 		id:           "task_01",
@@ -2947,6 +2976,7 @@ func TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession(t *testi
 }
 
 func TestTaskCycleRepositoryGatePreconditionPassesBeforeAgentAndPostVerification(t *testing.T) {
+	t.Parallel()
 	const repositoryVerification = "make verify"
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
 		id:           "task_01",
@@ -2980,6 +3010,7 @@ func TestTaskCycleRepositoryGatePreconditionPassesBeforeAgentAndPostVerification
 }
 
 func TestTaskCycleWithoutRepositoryGateSkipsPrecondition(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
 		id:           "task_01",
 		verification: []string{"focused check"},
@@ -3012,6 +3043,7 @@ func TestTaskCycleWithoutRepositoryGateSkipsPrecondition(t *testing.T) {
 }
 
 func TestTaskCycleRepositoryGatePreconditionDoesNotConsumeVerificationRepair(t *testing.T) {
+	t.Parallel()
 	const repositoryVerification = "make verify"
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
 		id:           "task_01",
@@ -3053,6 +3085,7 @@ func TestTaskCycleRepositoryGatePreconditionDoesNotConsumeVerificationRepair(t *
 }
 
 func TestVerifyTaskRejectsMissingRetryStateWithoutMutatingRun(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	engine := fixture.engine(
 		t,
@@ -3074,6 +3107,7 @@ func TestVerifyTaskRejectsMissingRetryStateWithoutMutatingRun(t *testing.T) {
 }
 
 func TestTaskCycleRewritesNormalizedStatusAfterAgentReload(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Normalize the task status"}})
 	runner := &taskFakeRunner{
 		calls:           fixture.calls,
@@ -3104,6 +3138,7 @@ func TestTaskCycleRewritesNormalizedStatusAfterAgentReload(t *testing.T) {
 }
 
 func TestTaskCycleDaemonStatusInProgressBeforeAgentAndStartEvent(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
 	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
@@ -3130,6 +3165,7 @@ func TestTaskCycleDaemonStatusInProgressBeforeAgentAndStartEvent(t *testing.T) {
 }
 
 func TestTaskCycleAgentStatusVariantsReachDaemonVerification(t *testing.T) {
+	t.Parallel()
 	statuses := []spec.Status{
 		spec.StatusPending,
 		spec.StatusInProgress,
@@ -3166,6 +3202,7 @@ func TestTaskCycleAgentStatusVariantsReachDaemonVerification(t *testing.T) {
 }
 
 func TestTaskCycleAgentStatusNormalizationPreservesResultThroughVerification(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	const resultEvidence = "\n## Result\n\n- Focused check passed and implementation is ready.\n"
 	runner := &taskFakeRunner{
@@ -3198,6 +3235,7 @@ func TestTaskCycleAgentStatusNormalizationPreservesResultThroughVerification(t *
 }
 
 func TestTaskCycleAgentStatusRepairHandoffReachesFinalVerification(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	runner := &taskFakeRunner{
 		calls:            fixture.calls,
@@ -3224,6 +3262,7 @@ func TestTaskCycleAgentStatusRepairHandoffReachesFinalVerification(t *testing.T)
 }
 
 func TestTaskCycleCommitsAfterTransportAnomalyAndPassingVerification(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Classify by parsed result"}})
 	fixture.worktree.snapshots = [][]string{nil, {"internal/agent/fix.go"}}
 	const anomaly = "acpx exited with exit code 1 after parsed session/prompt result\n--- acpx stderr tail ---\nMessage buffer exceeded 10485760 bytes"
@@ -3260,6 +3299,7 @@ func TestTaskCycleCommitsAfterTransportAnomalyAndPassingVerification(t *testing.
 }
 
 func TestTaskCycleTransportAnomalyStillLetsVerificationGateSettleFailure(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"make verify"}}})
 	const anomaly = "acpx exited with exit code 1 after parsed session/prompt result\n--- acpx stderr tail ---\nMessage buffer exceeded 10485760 bytes"
 	runner := &taskFakeRunner{
@@ -3296,6 +3336,7 @@ func TestTaskCycleTransportAnomalyStillLetsVerificationGateSettleFailure(t *test
 }
 
 func TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"echo first", "echo second"}}})
 	runner := &taskFakeRunner{
 		calls:        fixture.calls,
@@ -3355,6 +3396,7 @@ func TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence(t *
 }
 
 func TestTaskCycleRepairAgentErrorFailsTaskWithoutFinalVerification(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"make verify"}}})
 	runner := &taskFakeRunner{
 		calls:         fixture.calls,
@@ -3386,6 +3428,7 @@ func TestTaskCycleRepairAgentErrorFailsTaskWithoutFinalVerification(t *testing.T
 }
 
 func TestTaskCycleAgentStatusFailedReachesDaemonVerificationAndUnblocksDependent(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Agent writes failed"},
 		{id: "task_02", title: "Depends on authoritative settlement", needs: []string{"task_01"}},
@@ -3429,6 +3472,7 @@ func TestTaskCycleAgentStatusFailedReachesDaemonVerificationAndUnblocksDependent
 }
 
 func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", verification: []string{"echo t1"}},
 		{id: "task_02", needs: []string{"task_01"}, verification: []string{"echo t2"}},
@@ -3537,6 +3581,7 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 }
 
 func TestTaskCycleTemporaryVerificationFlowPassesExclusiveRetryWithoutAgentRepair(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
 	verifier := &taskFakeVerifier{calls: fixture.calls, temporaryOnCall: map[int]bool{1: true}}
@@ -3585,6 +3630,7 @@ func TestTaskCycleTemporaryVerificationFlowPassesExclusiveRetryWithoutAgentRepai
 }
 
 func TestTaskCycleDeterministicRetryUsesAgentRepairThenAttemptTwo(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
 	verifier := &taskFakeVerifier{
@@ -3616,6 +3662,7 @@ func TestTaskCycleDeterministicRetryUsesAgentRepairThenAttemptTwo(t *testing.T) 
 }
 
 func TestTaskCycleRetryBudgetExhaustsOnRepeatedTemporaryVerification(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
 	verifier := &taskFakeVerifier{calls: fixture.calls, temporaryOnCall: map[int]bool{1: true, 2: true}}
@@ -3649,6 +3696,7 @@ func TestTaskCycleRetryBudgetExhaustsOnRepeatedTemporaryVerification(t *testing.
 }
 
 func TestTaskCycleTemporaryVerificationAfterDeterministicRetryAndRepairDoesNotRetryAgain(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"verify task"}}})
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
 	verifier := &taskFakeVerifier{
@@ -3675,6 +3723,7 @@ func TestTaskCycleTemporaryVerificationAfterDeterministicRetryAndRepairDoesNotRe
 }
 
 func TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"echo first", "echo second", "echo third"}}})
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
 	verifier := &taskFakeVerifier{calls: fixture.calls, failOn: map[string]error{"echo second": errors.New("exit status 9")}}
@@ -3737,6 +3786,7 @@ func TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttemp
 }
 
 func TestTaskCycleDaemonStatusRemainsInProgressOnVerificationInfrastructureError(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	infraErr := errors.New("diagnostic artifact write failed")
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}
@@ -3773,6 +3823,7 @@ func TestTaskCycleDaemonStatusRemainsInProgressOnVerificationInfrastructureError
 }
 
 func TestTaskCycleDaemonStatusUnreadableAgentArtifactSettlesFailedWithoutVerification(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	runner := &taskFakeRunner{
 		calls:           fixture.calls,
@@ -3801,6 +3852,7 @@ func TestTaskCycleDaemonStatusUnreadableAgentArtifactSettlesFailedWithoutVerific
 }
 
 func TestTaskCycleSettlesForgottenAgentStatus(t *testing.T) {
+	t.Parallel()
 	t.Run("completed on passing verification", func(t *testing.T) {
 		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"echo alpha", "echo beta"}}})
 		runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
@@ -3855,6 +3907,7 @@ func TestTaskCycleSettlesForgottenAgentStatus(t *testing.T) {
 }
 
 func TestTaskCycleAgentFailureStartsNoVerificationAndSettlesFailed(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02"},
@@ -3898,6 +3951,7 @@ func TestTaskCycleAgentFailureStartsNoVerificationAndSettlesFailed(t *testing.T)
 }
 
 func TestTaskCycleModelNotAdvertisedFailureSettlesAndReportsReason(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Use the selected Agent Model"},
 	})
@@ -3938,6 +3992,7 @@ func TestTaskCycleModelNotAdvertisedFailureSettlesAndReportsReason(t *testing.T)
 }
 
 func TestTaskCycleSpecRootOnlyTaskCommitWarnsAndStillCommits(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Only settle the task file"}})
 	fixture.worktree.snapshots = [][]string{nil, nil}
 	runner := &taskFakeRunner{
@@ -3969,6 +4024,7 @@ func TestTaskCycleSpecRootOnlyTaskCommitWarnsAndStillCommits(t *testing.T) {
 }
 
 func TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	taskFile := taskFileRel(taskCycleSlug, "task_01")
 	// user-wip.txt and the task file are dirty before the Task starts: the
@@ -3995,6 +4051,7 @@ func TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile(t *testing.T) {
 }
 
 func TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -4018,6 +4075,7 @@ func TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing(t *testing.T) {
 }
 
 func TestTaskCycleStopRequestAfterTaskSettlementHaltsBeforeNextTask(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Build the core"},
 		{id: "task_02", title: "Wire the shell"},
@@ -4066,6 +4124,7 @@ func TestTaskCycleStopRequestAfterTaskSettlementHaltsBeforeNextTask(t *testing.T
 }
 
 func TestTaskCycleStopRequestBeforeQAStepSkipsQA(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
 	fixture.worktree.snapshots = [][]string{nil, {"src/feature.go"}, {"src/feature.go"}, {"src/feature.go", qaReportRelPathForTest()}}
 	runner := &taskFakeRunner{
@@ -4106,6 +4165,7 @@ func TestTaskCycleStopRequestBeforeQAStepSkipsQA(t *testing.T) {
 }
 
 func TestTaskCycleStopDuringAgentPreservesDaemonStatusAndHalts(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02"},
@@ -4141,6 +4201,7 @@ func TestTaskCycleStopDuringAgentPreservesDaemonStatusAndHalts(t *testing.T) {
 }
 
 func TestTaskCycleStopAfterAgentStatusAuthorshipPreservesResultInProgress(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	ctx, cancel := context.WithCancel(context.Background())
 	const resultEvidence = "\n## Result\n\n- Agent work is implementation-ready.\n"
@@ -4177,6 +4238,7 @@ func TestTaskCycleStopAfterAgentStatusAuthorshipPreservesResultInProgress(t *tes
 }
 
 func TestTaskCycleRerunsStaleTasksAndSkipsCompletedTasks(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", status: string(spec.StatusCompleted)},
 		{id: "task_02", status: string(spec.StatusInProgress), needs: []string{"task_01"}},
@@ -4220,6 +4282,7 @@ func TestTaskCycleRerunsStaleTasksAndSkipsCompletedTasks(t *testing.T) {
 }
 
 func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Write the usage docs", taskType: "docs", verification: []string{"true"}},
 		{id: "task_02", title: "Add the backend behavior", needs: []string{"task_01"}, verification: []string{"true"}},
@@ -4281,6 +4344,7 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 }
 
 func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		mode os.FileMode
@@ -4319,6 +4383,7 @@ func TestFilterStageablePathsDropsRegularFileWithAnyExecutePermission(t *testing
 }
 
 func TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
 	executablePath := "bin/roundfix"
 	regularPath := "src/agent-change.go"
@@ -4367,6 +4432,7 @@ func TestTaskCommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
 }
 
 func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
 	externalRoot := filepath.Join(t.TempDir(), "knowledge-specs")
 	writeSpecDirAtRootForTest(t, externalRoot, taskCycleSlug, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
@@ -4411,6 +4477,7 @@ func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *test
 }
 
 func TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "External artifact only"}})
 	externalRoot := fixture.useExternalSpecRoot(t, []taskSpecSeed{{id: "task_01", title: "External artifact only"}})
 	fixture.worktree.snapshots = [][]string{nil, nil}
@@ -4455,6 +4522,7 @@ func TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged(t
 }
 
 func TestQACommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	executablePath := "bin/qa-helper"
 	regularPath := "qa/evidence/observed.txt"
@@ -4499,6 +4567,7 @@ func TestQACommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
 }
 
 func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	externalRoot := fixture.useExternalSpecRoot(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	fixture.worktree.snapshots = [][]string{nil, nil}
@@ -4538,6 +4607,7 @@ func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
 }
 
 func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
+	t.Parallel()
 	reportRel := qaReportRelPathForTest()
 	tests := []struct {
 		name        string
@@ -4635,6 +4705,7 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 }
 
 func TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},
 		{id: "task_02", needs: []string{"task_01"}},
@@ -4672,6 +4743,7 @@ func TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted(t *testing.T) {
 }
 
 func TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", status: string(spec.StatusCompleted)},
 		{id: "task_02", status: string(spec.StatusCompleted), needs: []string{"task_01"}},
@@ -4720,6 +4792,7 @@ func TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted(t *testing.T) {
 // that is structurally never on the user's branch, so the prompt carries
 // both branch names and the user checkout as facts.
 func TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	fixture.github.output = `[{"number":40,"url":"https://github.com/owner/repo/pull/40"}]`
 	runner := &taskFakeRunner{
@@ -4764,6 +4837,7 @@ func TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch(t *testing.T) {
 }
 
 func TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		err  error
@@ -4810,6 +4884,7 @@ func TestTaskCycleQAPromptSurvivesPullRequestResolutionFailure(t *testing.T) {
 }
 
 func TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 	runner := &taskFakeRunner{
 		calls:    fixture.calls,
@@ -4856,6 +4931,7 @@ func TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch(t *testing.T) {
 // different route and asserts the gate never started: no QA prompt, no
 // daemon.qa event, and no QA Report commit.
 func TestTaskCycleQAStepRequiresEveryGraphTaskCompleted(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		seeds         []taskSpecSeed
@@ -4927,6 +5003,7 @@ func TestTaskCycleQAStepRequiresEveryGraphTaskCompleted(t *testing.T) {
 // through the scheduler's defensive pass. The gate stays shut instead of
 // crediting the Tasks that did run.
 func TestTaskCycleQAStepSkippedWhenATaskNeverBecomesReady(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
 	runner := &taskFakeRunner{
 		calls:        fixture.calls,
@@ -4954,6 +5031,7 @@ func TestTaskCycleQAStepSkippedWhenATaskNeverBecomesReady(t *testing.T) {
 // mid-wave ends the Run before the gate, so the QA step never starts even
 // though the Task Graph finished completed.
 func TestTaskCycleStopRequestMidWaveSkipsQAWithEveryTaskCompleted(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Start first"},
 		{id: "task_02", title: "Start second"},
@@ -5031,6 +5109,7 @@ func assertNoQAStep(t *testing.T, fixture *taskCycleFixture, qaPrompts []string,
 // answers for every Task in the Task Graph — never for the subset this Run
 // happened to execute.
 func TestAllTasksRunCompletedCoversEveryGraphTask(t *testing.T) {
+	t.Parallel()
 	tasks := []spec.Task{{ID: "task_01"}, {ID: "task_02"}, {ID: "task_03"}}
 	tests := []struct {
 		name     string
@@ -5079,6 +5158,7 @@ func TestAllTasksRunCompletedCoversEveryGraphTask(t *testing.T) {
 // initialTaskRunStatuses seeds Tasks an earlier Run completed, so the QA
 // gate can credit them, and re-runs every other status.
 func TestInitialTaskRunStatusesSeedsEarlierRunCompletions(t *testing.T) {
+	t.Parallel()
 	statuses := initialTaskRunStatuses([]spec.Task{
 		{ID: "task_01", Status: spec.StatusCompleted},
 		{ID: "task_02", Status: spec.StatusPending},

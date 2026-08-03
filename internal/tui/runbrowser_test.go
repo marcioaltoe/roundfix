@@ -107,6 +107,7 @@ func assertQuit(t *testing.T, cmd tea.Cmd) {
 }
 
 func TestRunBrowserDefaultShowsActiveRunsNewestFirst(t *testing.T) {
+	t.Parallel()
 	browser := newTestRunBrowser(t)
 
 	view := browserViewText(browser)
@@ -136,6 +137,7 @@ func TestRunBrowserDefaultShowsActiveRunsNewestFirst(t *testing.T) {
 }
 
 func TestRunBrowserToggleShowsAllAndDistinguishesActive(t *testing.T) {
+	t.Parallel()
 	browser := newTestRunBrowser(t)
 
 	browser, _ = pressBrowser(t, browser, "a")
@@ -173,6 +175,7 @@ func TestRunBrowserToggleShowsAllAndDistinguishesActive(t *testing.T) {
 }
 
 func TestRunBrowserUsesPerInstanceIdentityTokens(t *testing.T) {
+	t.Parallel()
 	active, all := browserTestRuns()
 	browser := NewRunBrowserWithTokens(active, all, ResolveTokens(false))
 	browser.now = browserTestNow
@@ -192,6 +195,7 @@ func TestRunBrowserUsesPerInstanceIdentityTokens(t *testing.T) {
 }
 
 func TestRunBrowserNavigationMovesAndClamps(t *testing.T) {
+	t.Parallel()
 	browser := newTestRunBrowser(t)
 
 	browser, _ = pressBrowser(t, browser, "up")
@@ -216,6 +220,7 @@ func TestRunBrowserNavigationMovesAndClamps(t *testing.T) {
 }
 
 func TestRunBrowserEnterReportsSelectedRunID(t *testing.T) {
+	t.Parallel()
 	browser := newTestRunBrowser(t)
 
 	browser, _ = pressBrowser(t, browser, "down")
@@ -232,6 +237,7 @@ func TestRunBrowserEnterReportsSelectedRunID(t *testing.T) {
 }
 
 func TestRunBrowserCancelKeysReportCancel(t *testing.T) {
+	t.Parallel()
 	for _, keystroke := range []string{"q", "esc", "ctrl+c"} {
 		t.Run(keystroke, func(t *testing.T) {
 			browser := newTestRunBrowser(t)
@@ -248,6 +254,7 @@ func TestRunBrowserCancelKeysReportCancel(t *testing.T) {
 }
 
 func TestRunBrowserEmptyStatesNameTheFilter(t *testing.T) {
+	t.Parallel()
 	_, all := browserTestRuns()
 	browser := NewRunBrowser(nil, all)
 	browser.now = browserTestNow
@@ -278,6 +285,7 @@ func TestRunBrowserEmptyStatesNameTheFilter(t *testing.T) {
 }
 
 func TestRunBrowserNarrowWidthDropsColumnsInOrder(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		width    int
@@ -329,6 +337,7 @@ func TestRunBrowserNarrowWidthDropsColumnsInOrder(t *testing.T) {
 }
 
 func TestRunBrowserSmallHeightKeepsCursorVisible(t *testing.T) {
+	t.Parallel()
 	browser := newTestRunBrowser(t)
 	browser, _ = pressBrowser(t, browser, "a")
 	browser, _ = browser.Update(tea.WindowSizeMsg{Width: 120, Height: 6})
@@ -349,6 +358,7 @@ func TestRunBrowserSmallHeightKeepsCursorVisible(t *testing.T) {
 }
 
 func TestRunBrowserProgramDelegatesToTheModel(t *testing.T) {
+	t.Parallel()
 	browser := newTestRunBrowser(t)
 	var program tea.Model = runBrowserProgram{browser: browser}
 
@@ -384,6 +394,7 @@ func (unexpectedBrowserModel) View() tea.View {
 }
 
 func TestBrowserOutcomeFromModelRejectsUnexpectedModel(t *testing.T) {
+	t.Parallel()
 	_, err := browserOutcomeFromModel(unexpectedBrowserModel{})
 
 	if err == nil {
@@ -395,6 +406,7 @@ func TestBrowserOutcomeFromModelRejectsUnexpectedModel(t *testing.T) {
 }
 
 func TestFormatRunRowSharedByBothSurfaces(t *testing.T) {
+	t.Parallel()
 	active, all := browserTestRuns()
 	now := browserTestNow
 

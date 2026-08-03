@@ -17,6 +17,7 @@ import (
 )
 
 func TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles(t *testing.T) {
+	t.Parallel()
 	workDir := t.TempDir()
 	writeBundleStandardFiles(t, workDir, filepath.Join(workDir, "docs", "specs"), taskCycleSlug)
 	task := spec.Task{
@@ -68,6 +69,7 @@ func TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFile
 }
 
 func TestAssembleTaskContextBundleSupportsExternalSpecRoot(t *testing.T) {
+	t.Parallel()
 	workDir := t.TempDir()
 	externalSpecsRoot := filepath.Join(t.TempDir(), "external-specs")
 	writeBundleStandardFiles(t, workDir, externalSpecsRoot, taskCycleSlug)
@@ -88,6 +90,7 @@ func TestAssembleTaskContextBundleSupportsExternalSpecRoot(t *testing.T) {
 }
 
 func TestPriorChangedFilesUseCurrentWorktreeHeadAndIgnoreSiblingBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	repoDir := t.TempDir()
 	gittest.InitRepo(t, repoDir, "-b", "main")
@@ -118,6 +121,7 @@ func TestPriorChangedFilesUseCurrentWorktreeHeadAndIgnoreSiblingBranch(t *testin
 }
 
 func TestTaskCyclePromptContainsBundleWithoutReferencedBodies(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Use context"}})
 	writePromptReferenceFiles(t, fixture.gitRoot, fixture.specsRoot)
 	taskContent := markdownForDaemonTest(`---
@@ -210,6 +214,7 @@ type: backend
 }
 
 func TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01", title: "Integrate first"},
 		{id: "task_03", title: "Independent sibling"},
@@ -290,6 +295,7 @@ func TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase(t *testing.T) {
 }
 
 func TestAssembleTaskContextBundleIsDeterministic(t *testing.T) {
+	t.Parallel()
 	workDir := t.TempDir()
 	writeBundleStandardFiles(t, workDir, filepath.Join(workDir, "docs", "specs"), taskCycleSlug)
 	plan := TaskPlan{

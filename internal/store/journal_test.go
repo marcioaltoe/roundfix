@@ -24,6 +24,7 @@ func sampleRunEvent(runID string, summary string) runevent.RunEvent {
 }
 
 func TestMigrationAddsJournalSchemaAndWALMode(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	store := openTestStore(t, ctx, homeDir)
@@ -57,6 +58,7 @@ func TestMigrationAddsJournalSchemaAndWALMode(t *testing.T) {
 }
 
 func TestAppendRunEventAllocatesMonotonicCursorsPerRun(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -102,6 +104,7 @@ func TestAppendRunEventAllocatesMonotonicCursorsPerRun(t *testing.T) {
 }
 
 func TestAppendRunEventToMissingRunFailsClearly(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -117,6 +120,7 @@ func TestAppendRunEventToMissingRunFailsClearly(t *testing.T) {
 }
 
 func TestPruneTerminalRunsDeletesOnlyEligibleJournalRows(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -314,6 +318,7 @@ WHERE id = ?`,
 }
 
 func TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
@@ -349,6 +354,7 @@ func TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing(t *testing.T) {
 }
 
 func TestRunEventsAfterCursorReturnsOnlyNewerAndRespectsLimit(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -388,6 +394,7 @@ func TestRunEventsAfterCursorReturnsOnlyNewerAndRespectsLimit(t *testing.T) {
 }
 
 func TestRunEventPayloadRoundTripsByteExact(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -430,6 +437,7 @@ func TestRunEventPayloadRoundTripsByteExact(t *testing.T) {
 }
 
 func TestReaderPagesEventsWhileWriterAppends(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	writer := openTestStore(t, ctx, homeDir)
@@ -490,6 +498,7 @@ func TestReaderPagesEventsWhileWriterAppends(t *testing.T) {
 }
 
 func TestDataVersionSignalsWriterCommitsToPollers(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	writer := openTestStore(t, ctx, homeDir)
@@ -522,6 +531,7 @@ func TestDataVersionSignalsWriterCommitsToPollers(t *testing.T) {
 }
 
 func TestRunEventsBeforeReturnsImmediatelyPrecedingEventsAscending(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -556,6 +566,7 @@ func TestRunEventsBeforeReturnsImmediatelyPrecedingEventsAscending(t *testing.T)
 }
 
 func TestRunEventsBeforeBoundaryCursors(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -596,6 +607,7 @@ func TestRunEventsBeforeBoundaryCursors(t *testing.T) {
 }
 
 func TestRunEventsBeforePagesComposeTailToHeadWithoutDuplicates(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, store)
@@ -639,6 +651,7 @@ func TestRunEventsBeforePagesComposeTailToHeadWithoutDuplicates(t *testing.T) {
 }
 
 func TestRunEventsBeforeOnReaderWhileWriterAppends(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	writer := openTestStore(t, ctx, homeDir)

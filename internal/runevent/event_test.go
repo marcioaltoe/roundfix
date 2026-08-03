@@ -11,6 +11,7 @@ import (
 )
 
 func TestSpecRunKindsUseDaemonNamespace(t *testing.T) {
+	t.Parallel()
 	if KindDaemonTask != "daemon.task" {
 		t.Fatalf("expected daemon.task kind, got %q", KindDaemonTask)
 	}
@@ -20,6 +21,7 @@ func TestSpecRunKindsUseDaemonNamespace(t *testing.T) {
 }
 
 func TestReviewStatusEventPayloadUsesStableEvidenceFields(t *testing.T) {
+	t.Parallel()
 	startedAt := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
 	payload := ReviewStatusPayload{
 		Phase:           "WaitingForReview",
@@ -62,6 +64,7 @@ func TestReviewStatusEventPayloadUsesStableEvidenceFields(t *testing.T) {
 }
 
 func TestReviewStatusEventPayloadOmitsZeroWaitTimestamps(t *testing.T) {
+	t.Parallel()
 	raw, err := json.Marshal(ReviewStatusPayload{
 		State:           "pending",
 		Kind:            "none",
@@ -79,6 +82,7 @@ func TestReviewStatusEventPayloadOmitsZeroWaitTimestamps(t *testing.T) {
 }
 
 func TestReviewRetryPayloadUsesBoundedEpisodeFields(t *testing.T) {
+	t.Parallel()
 	payload := RetryPayload{
 		Phase:     "started",
 		Operation: "discover Review Source evidence",
@@ -100,6 +104,7 @@ func TestReviewRetryPayloadUsesBoundedEpisodeFields(t *testing.T) {
 }
 
 func TestNotificationReceiptPayloadUsesRouteStatusAndCompletionTime(t *testing.T) {
+	t.Parallel()
 	completedAt := time.Date(2026, 7, 27, 12, 34, 56, 0, time.UTC)
 	payload := NotificationReceiptPayload{
 		Event:       "outcome_notification_failed",
@@ -127,6 +132,7 @@ func TestNotificationReceiptPayloadUsesRouteStatusAndCompletionTime(t *testing.T
 }
 
 func TestVerificationEventVocabulary(t *testing.T) {
+	t.Parallel()
 	if VerificationPhaseWaiting != "waiting" {
 		t.Fatalf("expected waiting phase, got %q", VerificationPhaseWaiting)
 	}
@@ -151,6 +157,7 @@ func TestVerificationEventVocabulary(t *testing.T) {
 }
 
 func TestWaitingForVerificationReplayProjectsAdditivePhase(t *testing.T) {
+	t.Parallel()
 	event := RunEvent{
 		RunID:       "run_123",
 		Batch:       3,
@@ -181,6 +188,7 @@ func TestWaitingForVerificationReplayProjectsAdditivePhase(t *testing.T) {
 }
 
 func TestVerificationTemporaryRetryExclusiveProjection(t *testing.T) {
+	t.Parallel()
 	retryAvailable := false
 	event := RunEvent{
 		RunID:       "run_123",
@@ -222,6 +230,7 @@ func TestVerificationTemporaryRetryExclusiveProjection(t *testing.T) {
 }
 
 func TestIsDaemonKindCoversSpecRunKindsAndSkipsUnknown(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		kind     Kind
@@ -248,6 +257,7 @@ func TestIsDaemonKindCoversSpecRunKindsAndSkipsUnknown(t *testing.T) {
 }
 
 func TestSourceFilterSinkDropsOnlyConfiguredSource(t *testing.T) {
+	t.Parallel()
 	next := &recordingSink{}
 	sink := NewSourceFilterSink(next, SourceAgent)
 	events := []RunEvent{
@@ -275,6 +285,7 @@ func TestSourceFilterSinkDropsOnlyConfiguredSource(t *testing.T) {
 }
 
 func TestSourceFilterSinkPropagatesWrappedSinkErrors(t *testing.T) {
+	t.Parallel()
 	next := &recordingSink{err: errors.New("writer failed")}
 	sink := NewSourceFilterSink(next, SourceAgent)
 
@@ -293,6 +304,7 @@ func TestSourceFilterSinkPropagatesWrappedSinkErrors(t *testing.T) {
 }
 
 func TestProjectStreamEventCoversStableCategoriesAndRedactsPayload(t *testing.T) {
+	t.Parallel()
 	at := time.Date(2026, 7, 10, 12, 0, 0, 123, time.UTC)
 	events := []RunEvent{
 		{
@@ -372,6 +384,7 @@ func TestProjectStreamEventCoversStableCategoriesAndRedactsPayload(t *testing.T)
 }
 
 func TestProjectStreamEventReviewSkippedOutcome(t *testing.T) {
+	t.Parallel()
 	event := RunEvent{
 		RunID:   "run_review_skipped",
 		Source:  SourceDaemon,
@@ -391,6 +404,7 @@ func TestProjectStreamEventReviewSkippedOutcome(t *testing.T) {
 }
 
 func TestProjectStreamEventOutcomeContextProjectsReviewIssuesEvidenceAndRecovery(t *testing.T) {
+	t.Parallel()
 	event := RunEvent{
 		RunID:   "run_context",
 		Source:  SourceDaemon,
@@ -449,6 +463,7 @@ func TestProjectStreamEventOutcomeContextProjectsReviewIssuesEvidenceAndRecovery
 }
 
 func TestProjectStreamEventReviewIssuesUnknownPreservesFalse(t *testing.T) {
+	t.Parallel()
 	record, ok, err := ProjectStreamEvent(10, RunEvent{
 		RunID:   "run_unknown",
 		Source:  SourceDaemon,
@@ -479,6 +494,7 @@ func TestProjectStreamEventReviewIssuesUnknownPreservesFalse(t *testing.T) {
 }
 
 func TestProjectStreamEventNormalizesLegacyVerificationEvents(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		summary string
@@ -530,6 +546,7 @@ func TestProjectStreamEventNormalizesLegacyVerificationEvents(t *testing.T) {
 }
 
 func TestProjectStreamEventRejectsNewVerificationPayloadWithoutAttempt(t *testing.T) {
+	t.Parallel()
 	_, _, err := ProjectStreamEvent(1, RunEvent{
 		RunID:   "run_123",
 		Batch:   1,
@@ -545,6 +562,7 @@ func TestProjectStreamEventRejectsNewVerificationPayloadWithoutAttempt(t *testin
 }
 
 func TestProjectStreamEventRejectsMalformedRelevantDaemonPayload(t *testing.T) {
+	t.Parallel()
 	_, _, err := ProjectStreamEvent(1, RunEvent{
 		RunID:   "run_123",
 		Batch:   1,
@@ -560,6 +578,7 @@ func TestProjectStreamEventRejectsMalformedRelevantDaemonPayload(t *testing.T) {
 }
 
 func TestProjectStreamEventPreservesContextForMalformedOptionalFields(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		kind    Kind
@@ -601,6 +620,7 @@ func TestProjectStreamEventPreservesContextForMalformedOptionalFields(t *testing
 }
 
 func TestParseStreamCategoryFilterValidatesAndDeduplicates(t *testing.T) {
+	t.Parallel()
 	filter, err := ParseStreamCategoryFilter("verification,outcome,verification")
 	if err != nil {
 		t.Fatalf("parse filter: %v", err)
@@ -619,6 +639,7 @@ func TestParseStreamCategoryFilterValidatesAndDeduplicates(t *testing.T) {
 }
 
 func TestAgentSelectionEventProjectsStablePayloadAndKeepsReasoningEmpty(t *testing.T) {
+	t.Parallel()
 	record, ok, err := ProjectStreamEvent(7, RunEvent{
 		RunID:   "run_123",
 		Batch:   2,
@@ -674,6 +695,7 @@ func TestAgentSelectionEventProjectsStablePayloadAndKeepsReasoningEmpty(t *testi
 }
 
 func TestAgentSelectionEventProjectsFallbackNotificationPayload(t *testing.T) {
+	t.Parallel()
 	record, ok, err := ProjectStreamEvent(8, RunEvent{
 		RunID:   "run_123",
 		Source:  SourceDaemon,
@@ -718,6 +740,7 @@ func TestAgentSelectionEventProjectsFallbackNotificationPayload(t *testing.T) {
 }
 
 func TestAgentSelectionStreamProjectsScopedLifecycleWithoutSensitivePayload(t *testing.T) {
+	t.Parallel()
 	record, ok, err := ProjectStreamEvent(9, RunEvent{
 		RunID:   "run_456",
 		Batch:   3,

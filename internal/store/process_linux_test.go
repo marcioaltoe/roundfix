@@ -8,6 +8,7 @@ import (
 )
 
 func TestParseProcStatStartTimeCountsFromLastClosingParenthesis(t *testing.T) {
+	t.Parallel()
 	stat := []byte("42 (worker ) pool) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 424242 20")
 
 	startTime, err := parseProcStatStartTime(stat)
@@ -20,6 +21,7 @@ func TestParseProcStatStartTimeCountsFromLastClosingParenthesis(t *testing.T) {
 }
 
 func TestParseProcStatStartTimeRejectsMissingField(t *testing.T) {
+	t.Parallel()
 	_, err := parseProcStatStartTime([]byte("42 (worker) S 1 2"))
 	if err == nil || !strings.Contains(err.Error(), "missing start time field") {
 		t.Fatalf("parse error = %v, want missing start time field", err)

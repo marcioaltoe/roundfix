@@ -60,11 +60,39 @@ fmt-check: ## Check Go formatting without changing files
 		exit 1; \
 	}
 
+# -parallel decides how many tests may overlap inside one package. Go defaults
+# it to GOMAXPROCS, which is right for CPU-bound tests and wrong for these:
+# they spend their time in temp directories, git subprocesses, and child
+# processes, so a core count leaves them queueing on an idle machine. On a
+# two-core runner internal/cli measured 129.3s at the default and 46.4s at 16;
+# the curve is flat past that, and on a twelve-core machine it changes nothing.
+GO_TEST_PARALLEL ?= 16
+
 test: ## Run Go tests
-	$(GO) test $(PKGS)
+	$(GO) test -parallel $(GO_TEST_PARALLEL) $(PKGS)
+
+# The full suite's wall clock on a fresh run, in seconds. Derived from what the
+# parallelised suite actually achieves on a GitHub runner, not from the old
+# baseline: on 2026-08-03 the CI suite measured ~195s, dominated by
+# internal/cli at 192.5s. The headroom absorbs runner variance while still
+# catching a real regression — re-serialising internal/cli would put the suite
+# near 470s on the same hardware. Change this deliberately, and say why.
+# See docs/specs/_archived/0071-verification-cost/baseline/2026-08-03-after.md.
+SUITE_BUDGET_SECONDS ?= 360
+
+test-budget: ## Run Go tests once and fail if the suite exceeds SUITE_BUDGET_SECONDS
+	@start=$$(date +%s); \
+	$(GO) test -count=1 -parallel $(GO_TEST_PARALLEL) $(PKGS) || exit $$?; \
+	elapsed=$$(( $$(date +%s) - start )); \
+	if [ "$$elapsed" -gt "$(SUITE_BUDGET_SECONDS)" ]; then \
+		echo "suite-time budget exceeded: the suite took $${elapsed}s against a budget of $(SUITE_BUDGET_SECONDS)s"; \
+		echo "the budget is SUITE_BUDGET_SECONDS in the Makefile; raise it deliberately or find the regression"; \
+		exit 1; \
+	fi; \
+	echo "suite-time budget: $${elapsed}s of $(SUITE_BUDGET_SECONDS)s"
 
 test-race: ## Run Go tests with the race detector
-	$(GO) test -race $(PKGS)
+	$(GO) test -race -parallel $(GO_TEST_PARALLEL) $(PKGS)
 
 DERIVED_DIGEST_PATHS := internal/baseline/assets/setups internal/baseline/testdata internal/baseline/assets/source-baselines internal/baseline/assets/formatter-fixtures internal/baseline/assets/profiles
 BASELINE_DIGEST_STEPS := \

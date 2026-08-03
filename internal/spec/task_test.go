@@ -9,6 +9,7 @@ import (
 )
 
 func TestSetStatusRewritesOnlyTheStatusValue(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		statusLine string
@@ -71,6 +72,7 @@ complexity: low
 }
 
 func TestSetStatusRejectsInvalidInput(t *testing.T) {
+	t.Parallel()
 	valid := md(`---
 task: task_01
 spec: demo
@@ -141,6 +143,7 @@ spec: demo
 }
 
 func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
+	t.Parallel()
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)
 	relFile := filepath.Join("demo", "task_01.md")
@@ -181,6 +184,7 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 }
 
 func TestReloadTaskNormalizesStatusValues(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		rawStatus      string
@@ -218,6 +222,7 @@ func TestReloadTaskNormalizesStatusValues(t *testing.T) {
 }
 
 func TestReloadTaskReportsBrokenAgentEdits(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		content string

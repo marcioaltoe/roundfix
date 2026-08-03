@@ -55,7 +55,9 @@ func TestMain(m *testing.M) {
 		}
 		os.Exit(code)
 	}
-	os.Exit(m.Run())
+	code := m.Run()
+	removeColdBuiltBinary()
+	os.Exit(code)
 }
 
 // implementSeed describes one task file for a test Spec directory. Zero

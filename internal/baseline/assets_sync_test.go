@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -208,6 +209,9 @@ func TestAssetsSyncProvenanceAndPreMutationRefusals(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Each case builds its own target repository and source
+			// checkout, so the refusal cases overlap instead of queueing.
+			t.Parallel()
 			targetRepo, assetRoot := newAssetsSyncTarget(t)
 			sourceDir, _ := newAssetsSyncSource(t, assetRoot)
 			tt.mutate(t, sourceDir)
@@ -379,23 +383,86 @@ func TestAssetsSyncCompatibilityMatchesMaintainedPythonContract(t *testing.T) {
 	}
 }
 
+// assetsSyncTemplate holds one built copy of each Assets Sync fixture.
+//
+// Building a fixture means copying the whole embedded asset tree and then
+// running git init, config, add, and commit over hundreds of files — around
+// seven subprocesses per call. Roughly a dozen tests each paid that, and the
+// four heaviest were 68s of this package's 271s of serial work.
+//
+// The fixtures are identical every time, so they are built once and each test
+// receives a directory copy, .git included. Copying a tree costs a fraction of
+// rebuilding a repository, and every test still owns a private copy it is free
+// to mutate.
+var assetsSyncTemplate struct {
+	once     sync.Once
+	root     string
+	revision string
+	err      error
+}
+
+func assetsSyncTemplateRoot(t *testing.T) (string, string) {
+	t.Helper()
+	assetsSyncTemplate.once.Do(func() {
+		root, err := os.MkdirTemp("", "assets-sync-template")
+		if err != nil {
+			assetsSyncTemplate.err = err
+			return
+		}
+		assetsSyncTemplate.root = root
+
+		repository := filepath.Join(root, "target")
+		assetRoot := filepath.Join(repository, "internal", "baseline", "assets")
+		copyAssetsSyncFS(t, embeddedAssets, assetRoot)
+		runAssetsSyncGit(t, repository, "init", "--quiet")
+		runAssetsSyncGit(t, repository, "config", "user.email", "fixture@example.com")
+		runAssetsSyncGit(t, repository, "config", "user.name", "Fixture")
+		runAssetsSyncGit(t, repository, "config", "commit.gpgsign", "false")
+		runAssetsSyncGit(t, repository, "add", ".")
+		runAssetsSyncGit(t, repository, "commit", "--quiet", "-m", "asset target")
+
+		checkout := filepath.Join(root, "source")
+		assetsSyncTemplate.revision = buildAssetsSyncSource(t, checkout, assetRoot)
+	})
+	if assetsSyncTemplate.err != nil {
+		t.Fatal(assetsSyncTemplate.err)
+	}
+	return assetsSyncTemplate.root, assetsSyncTemplate.revision
+}
+
+// removeAssetsSyncTemplate drops the shared fixture directory once the
+// package's tests are done with it.
+func removeAssetsSyncTemplate() {
+	if assetsSyncTemplate.root != "" {
+		_ = os.RemoveAll(assetsSyncTemplate.root)
+	}
+}
+
+func copyAssetsSyncDir(t *testing.T, source string, target string) {
+	t.Helper()
+	if err := os.CopyFS(target, os.DirFS(source)); err != nil {
+		t.Fatalf("copy fixture %s: %v", source, err)
+	}
+}
+
 func newAssetsSyncTarget(t *testing.T) (string, string) {
 	t.Helper()
+	root, _ := assetsSyncTemplateRoot(t)
 	repository := t.TempDir()
-	assetRoot := filepath.Join(repository, "internal", "baseline", "assets")
-	copyAssetsSyncFS(t, embeddedAssets, assetRoot)
-	runAssetsSyncGit(t, repository, "init", "--quiet")
-	runAssetsSyncGit(t, repository, "config", "user.email", "fixture@example.com")
-	runAssetsSyncGit(t, repository, "config", "user.name", "Fixture")
-	runAssetsSyncGit(t, repository, "config", "commit.gpgsign", "false")
-	runAssetsSyncGit(t, repository, "add", ".")
-	runAssetsSyncGit(t, repository, "commit", "--quiet", "-m", "asset target")
-	return repository, assetRoot
+	copyAssetsSyncDir(t, filepath.Join(root, "target"), repository)
+	return repository, filepath.Join(repository, "internal", "baseline", "assets")
 }
 
 func newAssetsSyncSource(t *testing.T, assetRoot string) (string, string) {
 	t.Helper()
+	root, revision := assetsSyncTemplateRoot(t)
 	checkout := t.TempDir()
+	copyAssetsSyncDir(t, filepath.Join(root, "source"), checkout)
+	return filepath.Join(checkout, "setups"), revision
+}
+
+func buildAssetsSyncSource(t *testing.T, checkout string, assetRoot string) string {
+	t.Helper()
 	sourceDir := filepath.Join(checkout, "setups")
 	if err := os.MkdirAll(sourceDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -445,8 +512,7 @@ func newAssetsSyncSource(t *testing.T, assetRoot string) (string, string) {
 	runAssetsSyncGit(t, checkout, "remote", "add", "origin", "https://github.com/example/skills.git")
 	runAssetsSyncGit(t, checkout, "add", ".")
 	runAssetsSyncGit(t, checkout, "commit", "--quiet", "-m", "canonical source")
-	revision := strings.TrimSpace(runAssetsSyncGit(t, checkout, "rev-parse", "HEAD"))
-	return sourceDir, revision
+	return strings.TrimSpace(runAssetsSyncGit(t, checkout, "rev-parse", "HEAD"))
 }
 
 func copyAssetsSyncFS(t *testing.T, source fs.FS, target string) {
@@ -552,4 +618,13 @@ func assetsSyncOwnedDigest(t *testing.T, snapshotPath string) string {
 	}
 	t.Fatal("setup-context-driven entry is missing")
 	return ""
+}
+
+// TestMain drops the shared Assets Sync fixture after the package's tests
+// finish. The template outlives every individual test that copies it, so no
+// single test can own its cleanup.
+func TestMain(m *testing.M) {
+	code := m.Run()
+	removeAssetsSyncTemplate()
+	os.Exit(code)
 }

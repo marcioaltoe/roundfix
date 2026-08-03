@@ -17,6 +17,7 @@ func ansi256(index string) string {
 }
 
 func TestResolveTokensStyledRendersDocumentedColors(t *testing.T) {
+	t.Parallel()
 	tokens := ResolveTokens(true)
 	tests := []struct {
 		name  string
@@ -47,6 +48,7 @@ func TestResolveTokensStyledRendersDocumentedColors(t *testing.T) {
 }
 
 func TestResolveTokensIdentityWithoutColor(t *testing.T) {
+	t.Parallel()
 	tokens := ResolveTokens(false)
 	tests := []struct {
 		name  string
@@ -73,6 +75,7 @@ func TestResolveTokensIdentityWithoutColor(t *testing.T) {
 }
 
 func TestResolveTokensBorderTokensKeepStructure(t *testing.T) {
+	t.Parallel()
 	styled := ResolveTokens(true)
 	identity := ResolveTokens(false)
 	tests := []struct {
@@ -104,6 +107,7 @@ func TestResolveTokensBorderTokensKeepStructure(t *testing.T) {
 }
 
 func TestEventSummaryRendersOneBoundedLine(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		summary string

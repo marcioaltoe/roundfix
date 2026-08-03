@@ -158,6 +158,7 @@ func TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot(t *testing.T) {
 }
 
 func TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit(t *testing.T) {
+	t.Parallel()
 	var output bytes.Buffer
 	command := "printf failure-tail; exit 7"
 
@@ -182,6 +183,7 @@ func TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit(t *testing.T) {
 }
 
 func TestRunBootstrapReturnsBootstrapErrorOnTimeout(t *testing.T) {
+	t.Parallel()
 	command := "sleep 1"
 
 	err := runBootstrap(context.Background(), t.TempDir(), BootstrapSpec{Command: command, Timeout: 10 * time.Millisecond}, io.Discard)
@@ -199,6 +201,7 @@ func TestRunBootstrapReturnsBootstrapErrorOnTimeout(t *testing.T) {
 }
 
 func TestRunBootstrapSkipsEmptyCommand(t *testing.T) {
+	t.Parallel()
 	var output bytes.Buffer
 
 	err := runBootstrap(context.Background(), t.TempDir(), BootstrapSpec{Timeout: time.Nanosecond}, &output)
@@ -212,6 +215,7 @@ func TestRunBootstrapSkipsEmptyCommand(t *testing.T) {
 }
 
 func TestDeriveRootPathUsesReadableUniqueRepoSlug(t *testing.T) {
+	t.Parallel()
 	location := t.TempDir()
 	parentOne := t.TempDir()
 	parentTwo := t.TempDir()
@@ -501,6 +505,7 @@ func TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches(t *testing.T) {
 }
 
 func TestListPendingRunWorkReportsAheadRunBranches(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, "base.txt"), "base\n")
@@ -568,6 +573,7 @@ func TestListPendingRunWorkReportsAheadRunBranches(t *testing.T) {
 }
 
 func TestIntegratePendingRunWorkFastForwardsBaseBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, "base.txt"), "base\n")
@@ -591,6 +597,7 @@ func TestIntegratePendingRunWorkFastForwardsBaseBranch(t *testing.T) {
 }
 
 func TestIntegratePendingRunWorkRefusesDivergedBranch(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, "base.txt"), "base\n")
@@ -901,6 +908,7 @@ func TestInspectTerminalRunConcurrentSafe(t *testing.T) {
 }
 
 func TestCountRetainedTerminalRunsBatchesGitInspectionByRepository(t *testing.T) {
+	t.Parallel()
 	root := canonicalPath(t.TempDir())
 	runner := &retainedTerminalGitRunner{
 		root:     root,
