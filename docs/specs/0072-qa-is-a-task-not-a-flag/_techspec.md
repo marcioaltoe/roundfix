@@ -42,12 +42,15 @@ new contract is the next one in the queue.
   typed blocked-row counts, produced unchanged; ADR-0088 records the flag's
   removal in favour of the authored node; ADR-0091 (this Spec) records the
   representation. Source: `docs/agents/domain.md`.
-- Tooling authority: applicable — express maintainer authorization of
-  2026-08-02 naming the owned skills, recorded at
-  `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`; bounded
-  files: `.agents/skills/write-tasks/**` and `.agents/skills/qa-gate/**`
-  with their `skills/` mirrors via `make skills-sync`. Deterministic digest
-  fallout is sanctioned by ADR-0081. Source:
+- Tooling authority: applicable — express maintainer authorization recorded
+  at `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md` and
+  its 2026-08-03 addenda; bounded files: `.agents/skills/write-tasks/**`,
+  `.agents/skills/qa-gate/**`, and `.agents/skills/roundfix/**` with their
+  `skills/` mirrors via `make skills-sync`; corrective regeneration bounded
+  to the sanctioned ADR-0081 paths (`internal/baseline/testdata/**`,
+  `docs/specs/0071-verification-cost/coverage-record.json`). The addendum
+  states the chronology: direction preceded every edit; the per-Spec
+  listing was recorded at close when the gate named its absence. Source:
   `docs/agents/agent-instructions.md`.
 
 ## System Architecture
