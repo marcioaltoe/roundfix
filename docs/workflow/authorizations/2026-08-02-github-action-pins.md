@@ -53,6 +53,13 @@ CodeRabbit raised two Major findings on the pin bump, both accepted:
   `secondbrain-sync.yml` checkout that pushes keeps its credentials, since
   disabling them there would break the sync.
 
+A third finding followed: disable the implicit dependency caches. The release
+job holds `id-token: write` and publishes, so a cache restored before the
+verification, build, and publish steps is a supply-chain surface. `cache: false`
+on `setup-go` and `package-manager-cache: false` on `setup-node`. Both input
+names were confirmed against the pinned revisions' own `action.yml` before use —
+`package-manager-cache` defaults to `true`, so leaving it unset was not neutral.
+
 This extends the authorized paths to `.github/workflows/ci-conventions.yml` and
 `.github/workflows/secondbrain-sync.yml`, which the pin change reaches.
 
