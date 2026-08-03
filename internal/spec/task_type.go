@@ -13,6 +13,7 @@ const (
 	TaskTypeDocs     TaskType = "docs"
 	TaskTypeTest     TaskType = "test"
 	TaskTypeChore    TaskType = "chore"
+	TaskTypeQA       TaskType = "qa"
 )
 
 // TaskType is the author-declared routing category stored in task frontmatter.
@@ -26,6 +27,7 @@ var canonicalTaskTypes = []TaskType{
 	TaskTypeDocs,
 	TaskTypeTest,
 	TaskTypeChore,
+	TaskTypeQA,
 }
 
 // TaskTypeError reports an invalid task frontmatter type value.
@@ -55,7 +57,7 @@ func ParseTaskType(taskPath string, raw string) (TaskType, error) {
 // AllowedTaskType reports whether taskType is one of the closed routing values.
 func AllowedTaskType(taskType TaskType) bool {
 	switch taskType {
-	case TaskTypeBackend, TaskTypeFrontend, TaskTypeData, TaskTypeInfra, TaskTypeDocs, TaskTypeTest, TaskTypeChore:
+	case TaskTypeBackend, TaskTypeFrontend, TaskTypeData, TaskTypeInfra, TaskTypeDocs, TaskTypeTest, TaskTypeChore, TaskTypeQA:
 		return true
 	default:
 		return false
