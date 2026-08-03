@@ -61,9 +61,18 @@ CLI package's 488 tests declare parallelism, and of the 281 still sequential
 just nine retain a real blocker.
 
 So tasks 08 and 09 are what move the number now. task_08 finishes the
-declaration the prefactor made possible; task_09 tiers the gate, which is only
-safe because it also creates the Pull Request workflow that runs the full
-suite — today nothing does, outside the release.
+declaration the prefactor made possible.
+
+**Measurement corrected task_09 too.** It was written to strip the heavy
+end-to-end journeys out of the local gate. After task_08, a second consecutive
+`make verify` costs 5.1s: Go's test result cache re-runs only the packages
+whose compiled output changed, and the prefactors in tasks 02 and 04 removed
+the `t.Setenv` and `t.Chdir` calls that made that cache untrustworthy. A gate
+that already costs seconds has nothing to gain from losing tests, so task_09
+kept the local test set whole and moved the tier boundary onto the cache
+instead: local trusts it, CI refuses it with `-count=1`. The Pull Request
+workflow it adds closes a real hole — until now nothing ran the suite before a
+merge, only the release workflow on a tag.
 
 task_01 changes no behavior and lands first. It records which test functions
 the suite executes, so "coverage is unchanged" becomes an assertion instead of

@@ -8031,8 +8031,12 @@ func TestRunResolveNoInputProfileProofFailureReportsRemediation(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+// Sequential: this is the only test that drives the detached-child branch, and
+// that branch mutates process-global state — it hands production code a raw
+// file descriptor number and newDetachChildFromEnv unsets two environment
+// variables. Go refuses t.Parallel() next to t.Setenv for exactly this reason,
+// but cannot see the mutation when it lives in production code.
 func TestRunResolveDetachedChildReportsProfileProofFailure(t *testing.T) {
-	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{
