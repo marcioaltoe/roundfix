@@ -13,15 +13,16 @@ archives.
 | 2 | `0072-qa-is-a-task-not-a-flag` | Follows 0071. The gate is a flag on the invocation, so a graph that grows after it reported leaves no trace — three closings on 0057 read as three normal cycles. Authoring it into the graph changes every Spec after it. |
 | 3 | `0074-git-spawn-economy` | Measured, like 0071: the suite is spawn-bound (36% utilization, kernel time 3× user, 13,926 git spawns per run), and ~6k of those are production-issued — every real Run pays them against the user's repository. Test-side waste is already removed; deleting the twelve heaviest tests was measured to buy only 7–14s. The maintainer's <60s full-fresh target lands here. |
 | 4 | `0073-skill-versions-decoupled-from-the-binary` | Requested during the 0.0.3 release. Skill content is pinned by digest into the binary, so a skill edit changes what Roundfix claims — three failures in one session came from it. Compatibility becomes a declared minimum version instead, and the 0.3.1 release cut waits for it. |
-| 5 | `0059-run-storage-compaction-and-global-sanitation` | Operational: the Run Database grows with every cycle and its pages are never reclaimed. |
-| 6 | `0064-spec-artifact-consistency-gate` | Highest leverage per unit of work. Half of this repository's QA findings were artifact contradictions catchable in seconds; every Spec after this one costs less. |
-| 7 | `0063-qa-cycle-economics` | Largest throughput win. A cold gate costs 148s against 5s warm, and one stale assertion hides every behavioral finding for a whole cycle. |
-| 8 | `0065-loop-order-and-verification-honesty` | The loop states two contradictory orders, and a Task can settle `completed` having done nothing. |
-| 9 | `0070-declared-unreachable-acceptance` | Follows 0065. A Spec whose acceptance no hermetic Verification can reach cannot archive without `qa_override`, which spends the mechanism reserved for failed evidence on a Spec that has none. |
-| 10 | `0066-run-teardown-reclaims-what-it-created` | Failed cycles leave Run Branches that block review Runs, and adapter children that outlive their Run by days. |
-| 11 | `0068-spec-close-audit` | Pairs with 0066. A Spec cycle leaves branches and worktrees nobody audits, and an unmerged Pull Request lets delivered work stay invisible on the default branch. |
-| 12 | `0069-review-run-targets-its-pull-request` | Pairs with 0068. A Review Run resolves its branch from the checkout instead of from the Pull Request it names, and the mismatch check runs after the Review Source query rather than at Preflight. |
-| 13 | `0067-derived-artifact-regeneration-boundary` | Smallest of the group. Recurs on every owned-skill edit, but has a known manual workaround. |
+| 5 | `0075-typed-docs-backlog` | Maintainer-directed structure improvement (2026-08-03): the layout gives observations a home and intent none. Adds `docs/backlog/` with typed entries (`idea`, `fix`) to the Baseline's managed layout guide; small, docs-and-assets scoped, and every triage artifact filed after it lands in the right place. |
+| 6 | `0059-run-storage-compaction-and-global-sanitation` | Operational: the Run Database grows with every cycle and its pages are never reclaimed. |
+| 7 | `0064-spec-artifact-consistency-gate` | Highest leverage per unit of work. Half of this repository's QA findings were artifact contradictions catchable in seconds; every Spec after this one costs less. |
+| 8 | `0063-qa-cycle-economics` | Largest throughput win. A cold gate costs 148s against 5s warm, and one stale assertion hides every behavioral finding for a whole cycle. |
+| 9 | `0065-loop-order-and-verification-honesty` | The loop states two contradictory orders, and a Task can settle `completed` having done nothing. |
+| 10 | `0070-declared-unreachable-acceptance` | Follows 0065. A Spec whose acceptance no hermetic Verification can reach cannot archive without `qa_override`, which spends the mechanism reserved for failed evidence on a Spec that has none. |
+| 11 | `0066-run-teardown-reclaims-what-it-created` | Failed cycles leave Run Branches that block review Runs, and adapter children that outlive their Run by days. |
+| 12 | `0068-spec-close-audit` | Pairs with 0066. A Spec cycle leaves branches and worktrees nobody audits, and an unmerged Pull Request lets delivered work stay invisible on the default branch. |
+| 13 | `0069-review-run-targets-its-pull-request` | Pairs with 0068. A Review Run resolves its branch from the checkout instead of from the Pull Request it names, and the mismatch check runs after the Review Source query rather than at Preflight. |
+| 14 | `0067-derived-artifact-regeneration-boundary` | Smallest of the group. Recurs on every owned-skill edit, but has a known manual workaround. |
 
 ## Why this order
 
