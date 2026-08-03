@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0074-git-spawn-economy
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -55,3 +55,44 @@ cannot be trimmed get named, not hidden.
 
 - `_prd.md` → Goals 3; Success Metrics.
 - `_techspec.md` → Build Order 6.
+
+## Result
+
+Published `baseline/after.md` beside the committed baseline. The report leads
+with the missed-target verdict, quotes the successful before and after
+full-suite measurements, includes every per-subcommand and attribution delta,
+adds isolated deltas for `internal/baseline` and `internal/agent`, names the
+remaining package floors, and records the three rejected alternatives.
+
+Focused implementation evidence:
+
+- The successful retry of the committed census procedure ran the fresh suite
+  with `TEST_STATUS=0`, recorded 10,528 Git invocations, and reported zero
+  malformed records. The first attempt was discarded after an intermittent
+  `internal/agent` failure; the report records that limitation and follow-up.
+- The separate committed timing procedure exited 0 and reported `real 83.38`,
+  `user 121.55`, and `sys 262.24` seconds. The report compares those values
+  with the committed `78.45 / 127.76 / 268.46` baseline and states that the
+  60-second target was missed by 23.38 seconds.
+- Supplemental fresh-cache package runs exited 0 at both
+  `dbdad8ac1b8a2335ab88c65a0a47f50d86ef6c4e` and
+  `a9d0097c590412dafd173fbcb4deaf1923bcae3a`: `internal/baseline` real time
+  changed from 44.58s to 44.38s, and `internal/agent` changed from 11.15s to
+  10.10s.
+- `rtk git -c core.fsmonitor=false diff --check` exited 0. A focused
+  `rtk git -c core.fsmonitor=false status --short` listed only this Task file
+  and the new `baseline/after.md` report.
+
+Acceptance-criterion evidence:
+
+1. `baseline/after.md` sits beside `baseline/README.md` and quotes both
+   measurements from the exact procedure recorded there, including revision
+   and same-machine environment evidence.
+2. The report's opening paragraph states `83.38` seconds against the
+   under-60-second target and gives the 23.38-second miss before any detailed
+   tables.
+3. The focused status inspection listed no path outside
+   `docs/specs/0074-git-spawn-economy/`.
+
+The commands under `## Verification` were not run; the Daemon owns that
+Verification and the terminal Task status.

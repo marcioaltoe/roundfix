@@ -22,6 +22,8 @@ import (
 )
 
 func TestSessionRefForRunNamesRoundfixSession(t *testing.T) {
+	t.Parallel()
+
 	session := SessionRefForRun(" run-123 ", " /repo ")
 	if session.Name != "roundfix-run-123" {
 		t.Fatalf("expected roundfix session name, got %q", session.Name)
@@ -35,6 +37,8 @@ func TestSessionRefForRunNamesRoundfixSession(t *testing.T) {
 }
 
 func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
+	t.Parallel()
+
 	runtime, err := RuntimeFor(RuntimeOptions{
 		Agent:            "codex",
 		CommandOverride:  "custom-acp",
@@ -70,6 +74,8 @@ func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 }
 
 func TestRuntimeForCodexUsesACPAdapter(t *testing.T) {
+	t.Parallel()
+
 	runtime, err := RuntimeFor(RuntimeOptions{Agent: "codex"})
 	if err != nil {
 		t.Fatalf("runtime for codex: %v", err)
@@ -90,6 +96,8 @@ func TestRuntimeForCodexUsesACPAdapter(t *testing.T) {
 }
 
 func TestRuntimeForCodexFullAccessOptIn(t *testing.T) {
+	t.Parallel()
+
 	runtime, err := RuntimeFor(RuntimeOptions{Agent: "codex", EnableFullAccess: true})
 	if err != nil {
 		t.Fatalf("runtime for codex: %v", err)
@@ -101,6 +109,8 @@ func TestRuntimeForCodexFullAccessOptIn(t *testing.T) {
 }
 
 func TestModelCatalogsExposeOrderedPickerData(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		runtime string
@@ -141,12 +151,16 @@ func TestModelCatalogsExposeOrderedPickerData(t *testing.T) {
 }
 
 func TestModelCatalogLeavesOpenCodeWithoutBuiltInChoices(t *testing.T) {
+	t.Parallel()
+
 	if got := ModelCatalog("opencode"); len(got) != 0 {
 		t.Fatalf("expected no OpenCode Model Catalog, got %#v", got)
 	}
 }
 
 func TestBuildPromptIncludesAssignedFilesAndForbiddenActions(t *testing.T) {
+	t.Parallel()
+
 	prompt := BuildPrompt(PromptRequest{
 		RunID:        "run_test",
 		Agent:        "codex",
@@ -203,6 +217,8 @@ func TestBuildPromptIncludesAssignedFilesAndForbiddenActions(t *testing.T) {
 }
 
 func TestBuildVerificationRepairPromptIncludesPathFailureAndNoOutputBody(t *testing.T) {
+	t.Parallel()
+
 	prompt, err := BuildVerificationRepairPrompt("task_02", VerificationFeedback{
 		Command:        "rtk go test ./internal/daemon",
 		DiagnosticPath: "/repo/.roundfix/runs/run_123/verification/batch-001-attempt-1.log",
@@ -241,6 +257,8 @@ func TestBuildVerificationRepairPromptIncludesPathFailureAndNoOutputBody(t *test
 }
 
 func TestBuildVerificationRepairPromptValidatesRequiredFields(t *testing.T) {
+	t.Parallel()
+
 	base := VerificationFeedback{
 		Command:        "make verify",
 		DiagnosticPath: "/tmp/verification.log",
@@ -274,6 +292,8 @@ func TestBuildVerificationRepairPromptValidatesRequiredFields(t *testing.T) {
 }
 
 func TestStreamUpdateFromACPPreservesToolBlocks(t *testing.T) {
+	t.Parallel()
+
 	title := "rtk git diff"
 	payload := json.RawMessage(`{"sessionUpdate":"tool_call_update","toolCallId":"call_123","title":"` + title + `","status":"completed","rawInput":{"command":"rtk git diff"},"content":[{"content":{"type":"text","text":"completed"}},{"diff":{"path":"apps/api/server.go"}},{"terminal":{"terminalId":"term_001"}}],"rawOutput":{"aggregated_output":"ok"}}`)
 	update, err := streamUpdateFromSessionUpdate(payload)
@@ -310,6 +330,8 @@ func TestStreamUpdateFromACPPreservesToolBlocks(t *testing.T) {
 }
 
 func TestConsoleTextCompactsMeasuredReadEditFixtureAndPreservesPayload(t *testing.T) {
+	t.Parallel()
+
 	req := ExecuteRequest{RunID: "run_compact", Batch: rounds.Batch{Number: 1}}
 	rendered := strings.Builder{}
 	const reads = 330
@@ -380,6 +402,8 @@ func TestConsoleTextCompactsMeasuredReadEditFixtureAndPreservesPayload(t *testin
 }
 
 func TestStreamUpdateFromACPReadEditMetadata(t *testing.T) {
+	t.Parallel()
+
 	readPayload := compactReadPayload("internal/app/server.go", "one\ntwo\nthree\nfour\n")
 	readUpdate, ok, err := streamUpdateFromSessionUpdatePayload(readPayload)
 	if err != nil || !ok {
@@ -415,6 +439,8 @@ func TestStreamUpdateFromACPReadEditMetadata(t *testing.T) {
 }
 
 func TestConsoleTextFallsBackToBoundedToolMarkerForIncompleteMetadata(t *testing.T) {
+	t.Parallel()
+
 	payload := []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"read_1","kind":"read","title":"read","status":"completed","rawInput":{"path":"internal/app/secret.go"},"rawOutput":{"aggregated_output":"secret file body\nsecond secret line\n"}}}`)
 	update, ok, err := streamUpdateFromSessionUpdatePayload(payload)
 	if err != nil || !ok {
@@ -434,6 +460,8 @@ func TestConsoleTextFallsBackToBoundedToolMarkerForIncompleteMetadata(t *testing
 }
 
 func TestSettleAssignedIssues(t *testing.T) {
+	t.Parallel()
+
 	const reason = "Agent left issue unsettled after Batch"
 	tests := []struct {
 		name        string
@@ -480,6 +508,8 @@ func TestSettleAssignedIssues(t *testing.T) {
 }
 
 func TestSettleAssignedIssuesStopsOnCanceledContext(t *testing.T) {
+	t.Parallel()
+
 	artifactDir := t.TempDir()
 	result := persistTestRound(t, artifactDir)
 	if err := rounds.SetIssueStatus(result.IssuePaths[0], rounds.StatusPending, "", ""); err != nil {
@@ -507,6 +537,8 @@ func TestSettleAssignedIssuesStopsOnCanceledContext(t *testing.T) {
 }
 
 func TestMarkBatchFailed(t *testing.T) {
+	t.Parallel()
+
 	const reason = "Agent failed: runtime crashed"
 	artifactDir := t.TempDir()
 	result := persistTestRound(t, artifactDir)
@@ -533,6 +565,8 @@ func TestMarkBatchFailed(t *testing.T) {
 }
 
 func TestLogPathIncludesRunAndBatch(t *testing.T) {
+	t.Parallel()
+
 	got := LogPath("/repo/.roundfix", "run_test", 3)
 	want := filepath.Join("/repo/.roundfix", "runs", "run_test", "agent", "batch-003.log")
 	if got != want {
@@ -642,6 +676,8 @@ func readFile(t *testing.T, path string) string {
 }
 
 func TestWriterSinkRendersConsoleTextContract(t *testing.T) {
+	t.Parallel()
+
 	payload := compactEditPayload("apps/api/server.go", "old\n", "new\nnewer\n")
 
 	var buffer strings.Builder
@@ -670,6 +706,8 @@ func TestWriterSinkRendersConsoleTextContract(t *testing.T) {
 }
 
 func TestConsoleDisplaySinkDeduplicatesToolSummaries(t *testing.T) {
+	t.Parallel()
+
 	const path = "internal/app/server.go"
 	const line = "edit internal/app/server.go (+1/-1)\n"
 
@@ -817,6 +855,8 @@ func TestConsoleDisplaySinkDeduplicatesToolSummaries(t *testing.T) {
 }
 
 func TestConsoleDisplaySinkReleasesTerminalToolStateAfterProcessing(t *testing.T) {
+	t.Parallel()
+
 	const path = "internal/app/server.go"
 	const line = "edit internal/app/server.go (+1/-1)\n"
 	terminalStates := []string{"completed", "failed", "stopped"}
@@ -853,6 +893,8 @@ func TestConsoleDisplaySinkReleasesTerminalToolStateAfterProcessing(t *testing.T
 }
 
 func TestConsoleDisplaySinkClearsSessionStateAfterTerminalStatus(t *testing.T) {
+	t.Parallel()
+
 	const firstLine = "edit internal/app/server.go (+1/-1)\n"
 	const secondLine = "edit internal/app/worker.go (+1/-1)\n"
 	var buffer strings.Builder
@@ -889,6 +931,8 @@ func TestConsoleDisplaySinkClearsSessionStateAfterTerminalStatus(t *testing.T) {
 }
 
 func TestConsoleDisplaySinkSerializesConcurrentPublish(t *testing.T) {
+	t.Parallel()
+
 	writer := newBlockingSerialWriter()
 	sink := NewConsoleDisplaySink(writer)
 	first := toolLifecycleEvent(
@@ -937,6 +981,8 @@ func TestConsoleDisplaySinkSerializesConcurrentPublish(t *testing.T) {
 }
 
 func TestConsoleDisplaySinkDoesNotAdvanceStateWhenWriteFails(t *testing.T) {
+	t.Parallel()
+
 	const line = "edit internal/app/server.go (+1/-1)\n"
 	event := toolLifecycleEvent(
 		runevent.KindAgentToolUpdated,

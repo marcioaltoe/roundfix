@@ -482,11 +482,13 @@ func TestParseSessionConfigOptionsRejectsInvalidEvidence(t *testing.T) {
 }
 
 func TestCapabilityEvidenceAcquisitionFailureIsBounded(t *testing.T) {
+	t.Parallel()
+
 	harness := newFakeACPXHarness(t)
 	privatePath := "/Users/example/.codex/models_cache.json"
 	secret := "API_TOKEN=do-not-report"
-	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set model": 2}))
-	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{
+	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set model": 2}))
+	harness.setEnv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{
 		"set model": privatePath + "\n" + secret + "\n" + strings.Repeat("raw-adapter-output", 1000),
 	}))
 
@@ -549,8 +551,10 @@ func TestCapabilityEvidenceIsBounded(t *testing.T) {
 }
 
 func TestCapabilityAcquisitionDoesNotReadPrivateRuntimeState(t *testing.T) {
+	t.Parallel()
+
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
+	harness.setEnv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
 		"set model": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5"}, "reasoning_effort", "high", []string{"low", "medium", "high", "xhigh", "max", "ultra"}),
 	}))
 
@@ -558,8 +562,8 @@ func TestCapabilityAcquisitionDoesNotReadPrivateRuntimeState(t *testing.T) {
 	if err := os.WriteFile(guard, []byte("guard"), 0o600); err != nil {
 		t.Fatalf("write private-state guard: %v", err)
 	}
-	t.Setenv("HOME", guard)
-	t.Setenv("XDG_CONFIG_HOME", guard)
+	harness.setEnv("HOME", guard)
+	harness.setEnv("XDG_CONFIG_HOME", guard)
 
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol"}
 	got, err := harness.runner.AcquireSelectionCapabilities(context.Background(), CapabilityAcquisitionRequest{

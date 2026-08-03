@@ -17,14 +17,24 @@ var assetsSyncGitHubRemote = regexp.MustCompile(
 	`^(?:https://github\.com/|git@github\.com:|ssh://git@github\.com/)([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?$`,
 )
 
+type assetsSyncSourceGitRunner func(context.Context, ...string) ([]byte, error)
+
 func inspectAssetsSyncCheckout(
 	ctx context.Context,
 	sourceDir string,
 ) (assetsSyncCheckout, error) {
-	rootOutput, err := runAssetsSyncSourceGit(
+	return inspectAssetsSyncCheckoutWithRunner(ctx, sourceDir, runAssetsSyncSourceGit)
+}
+
+func inspectAssetsSyncCheckoutWithRunner(
+	ctx context.Context,
+	sourceDir string,
+	gitRunner assetsSyncSourceGitRunner,
+) (assetsSyncCheckout, error) {
+	resolutionOutput, err := gitRunner(
 		ctx,
 		"-C", sourceDir,
-		"rev-parse", "--show-toplevel",
+		"rev-parse", "--show-toplevel", "--verify", "HEAD^{commit}",
 	)
 	if err != nil {
 		return assetsSyncCheckout{}, assetsSyncError(
@@ -38,22 +48,21 @@ func inspectAssetsSyncCheckout(
 			err,
 		)
 	}
-	root, err := filepath.Abs(strings.TrimSpace(string(rootOutput)))
+	resolutionLines := strings.Split(strings.TrimSpace(string(resolutionOutput)), "\n")
+	if len(resolutionLines) != 2 {
+		return assetsSyncCheckout{}, assetsSyncCheckoutError(
+			sourceDir,
+			fmt.Errorf("git rev-parse returned %d resolution lines, want 2", len(resolutionLines)),
+		)
+	}
+	root, err := filepath.Abs(strings.TrimSpace(resolutionLines[0]))
 	if err != nil {
 		return assetsSyncCheckout{}, err
 	}
 	if resolved, resolveErr := filepath.EvalSymlinks(root); resolveErr == nil {
 		root = resolved
 	}
-	revisionOutput, err := runAssetsSyncSourceGit(
-		ctx,
-		"-C", root,
-		"rev-parse", "--verify", "HEAD^{commit}",
-	)
-	if err != nil {
-		return assetsSyncCheckout{}, assetsSyncCheckoutError(sourceDir, err)
-	}
-	revision := strings.TrimSpace(string(revisionOutput))
+	revision := strings.TrimSpace(resolutionLines[1])
 	if !immutableGitID.MatchString(revision) {
 		return assetsSyncCheckout{}, assetsSyncError(
 			AssetsSyncInvalid,
@@ -66,7 +75,7 @@ func inspectAssetsSyncCheckout(
 			errors.New("source revision is not immutable"),
 		)
 	}
-	status, err := runAssetsSyncSourceGit(
+	status, err := gitRunner(
 		ctx,
 		"-C", root,
 		"status", "--porcelain=v1", "--untracked-files=all",
@@ -86,7 +95,7 @@ func inspectAssetsSyncCheckout(
 			errors.New("source checkout is dirty"),
 		)
 	}
-	remote, err := runAssetsSyncSourceGit(
+	remote, err := gitRunner(
 		ctx,
 		"-C", root,
 		"remote", "get-url", "origin",
@@ -268,8 +277,24 @@ func assetsSyncCommittedTreeDigest(
 	ctx context.Context,
 	checkoutRoot, revision, sourcePath string,
 ) (string, error) {
-	output, err := runAssetsSyncSourceGit(
+	return assetsSyncCommittedTreeDigestWithRunner(
 		ctx,
+		checkoutRoot,
+		revision,
+		sourcePath,
+		execBatchObjectGitRunner{},
+	)
+}
+
+func assetsSyncCommittedTreeDigestWithRunner(
+	ctx context.Context,
+	checkoutRoot, revision, sourcePath string,
+	gitRunner batchObjectGitRunner,
+) (string, error) {
+	output, err := gitRunner.Run(
+		ctx,
+		"-c",
+		"core.fsmonitor=false",
 		"-C",
 		checkoutRoot,
 		"ls-tree",
@@ -284,7 +309,11 @@ func assetsSyncCommittedTreeDigest(
 		return "", err
 	}
 	prefix := []byte(sourcePath + "/")
-	files := []restoreFile{}
+	type treeEntry struct {
+		relative string
+		object   string
+	}
+	entries := []treeEntry{}
 	for _, raw := range bytes.Split(output, []byte{0}) {
 		if len(raw) == 0 {
 			continue
@@ -305,21 +334,34 @@ func assetsSyncCommittedTreeDigest(
 			(string(parts[0]) != "100644" && string(parts[0]) != "100755") {
 			return "", fmt.Errorf("Git tree entry is not a regular file: %s", relative)
 		}
-		content, err := runAssetsSyncSourceGit(
-			ctx,
-			"-C",
-			checkoutRoot,
-			"cat-file",
-			"blob",
-			string(parts[2]),
-		)
+		entries = append(entries, treeEntry{relative: relative, object: string(parts[2])})
+	}
+	if len(entries) == 0 {
+		return "", fmt.Errorf("Git commit has no regular files under %s", sourcePath)
+	}
+	reader, err := gitRunner.OpenBatch(
+		ctx,
+		"-c",
+		"core.fsmonitor=false",
+		"-C",
+		checkoutRoot,
+	)
+	if err != nil {
+		return "", err
+	}
+	files := make([]restoreFile, 0, len(entries))
+	for _, entry := range entries {
+		content, err := reader.Read(entry.object)
 		if err != nil {
+			if closeErr := reader.Close(); closeErr != nil {
+				err = errors.Join(err, closeErr)
+			}
 			return "", err
 		}
-		files = append(files, restoreFile{Path: relative, Content: content})
+		files = append(files, restoreFile{Path: entry.relative, Content: content})
 	}
-	if len(files) == 0 {
-		return "", fmt.Errorf("Git commit has no regular files under %s", sourcePath)
+	if err := reader.Close(); err != nil {
+		return "", err
 	}
 	return portableRestoreDigest(files), nil
 }

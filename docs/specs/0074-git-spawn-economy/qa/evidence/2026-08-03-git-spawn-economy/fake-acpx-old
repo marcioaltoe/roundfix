@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+
+printf 'acpx 0.1.0\n'

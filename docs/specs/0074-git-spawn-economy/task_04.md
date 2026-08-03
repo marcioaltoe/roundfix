@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0074-git-spawn-economy
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -38,18 +38,18 @@ across mutations (ADR-0090).
 
 ## Subtasks
 
-- [ ] Combine the resolution queries in `repository.go`.
-- [ ] Combine the sequence in `assets_sync_git.go`.
-- [ ] Pin the positional output parsing with a test.
-- [ ] Prove the error cases still distinguish.
+- [x] Combine the resolution queries in `repository.go`.
+- [x] Combine the sequence in `assets_sync_git.go`.
+- [x] Pin the positional output parsing with a test.
+- [x] Prove the error cases still distinguish.
 
 ## Acceptance Criteria
 
-- [ ] One resolution costs measurably fewer spawns, proven by a test
+- [x] One resolution costs measurably fewer spawns, proven by a test
       counting invocations through the package's runner seam.
-- [ ] Combined-output parsing has a test pinning the order.
-- [ ] All existing resolution and error-case tests pass unmodified.
-- [ ] `git status --porcelain` shows no path outside `internal/baseline/`
+- [x] Combined-output parsing has a test pinning the order.
+- [x] All existing resolution and error-case tests pass unmodified.
+- [x] `git status --porcelain` shows no path outside `internal/baseline/`
       and this task file.
 
 ## Verification
@@ -64,3 +64,48 @@ across mutations (ADR-0090).
 - `_techspec.md` → Implementation Design (the combined rev-parse sketch);
   Risks (combined output is order-dependent).
 - ADR-0090.
+
+## Result
+
+Implementation:
+
+- Repository identity now reads the worktree root, object format, and verified
+  HEAD through one line-ordered `rev-parse`; `rev-list` remains the separate
+  root-commit query that Git cannot combine with it.
+- Assets-sync checkout inspection now reads its root and verified HEAD through
+  one `rev-parse`, while status and origin remain fresh reads after resolution.
+- Combined resolution values are parsed positionally. Repository-resolution
+  failure handling retains distinct missing-HEAD, non-repository, and unknown
+  object-format errors.
+
+Focused checks:
+
+- Pre-change signal: the focused runner-seam test failed with `unexpected Git
+  command` because production still issued separate `rev-parse` calls.
+- `rtk proxy env GOCACHE=$PWD/.gocache go test ./internal/baseline -count=1 -run
+  '^(TestRepositoryInspectionUsesNarrowReadOnlyGitCommands|TestRepositoryInspectionParsesCombinedResolutionPositionally|TestRepositoryInspectionCombinedResolutionErrorsRemainDistinct|TestInspectAssetsSyncCheckoutCombinesResolutionQueries)$'
+  -v` — pass.
+- `rtk proxy env GOCACHE=$PWD/.gocache go test ./internal/baseline -count=1 -run
+  '^(TestRepositoryIdentityEquivalentClones|TestRepositoryIdentityRequiresCommittedGitWorktree|TestAssetsSyncProvenanceAndPreMutationRefusals)$'
+  -v` — pass against real Git repositories.
+- `git diff --check` — pass.
+- `git -c core.fsmonitor=false status --porcelain` — only this task file and
+  four paths under `internal/baseline/` are modified.
+
+Acceptance evidence:
+
+1. `TestRepositoryInspectionUsesNarrowReadOnlyGitCommands` pins two Git calls
+   per successful identity resolution instead of four; the first call combines
+   all three `rev-parse` facts. `TestInspectAssetsSyncCheckoutCombinesResolutionQueries`
+   pins one resolution call before the independent status and origin reads.
+2. `TestRepositoryInspectionParsesCombinedResolutionPositionally` swaps the
+   object-format and HEAD lines and proves the second line owns the format
+   position.
+3. The focused real-Git checks above pass the existing clone, missing-HEAD,
+   non-repository, and assets-sync refusal coverage without weakening those
+   tests. The new table test asserts exact outer errors for missing HEAD,
+   non-repository input, and an unknown object format.
+4. The scoped status inspection lists no path outside `internal/baseline/` and
+   `docs/specs/0074-git-spawn-economy/task_04.md`.
+
+The Daemon-owned `## Verification` commands were not run in this Agent turn.

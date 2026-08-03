@@ -1,0 +1,48 @@
+#!/bin/sh
+set -eu
+
+: "${GIT_CENSUS_LOG:?set GIT_CENSUS_LOG to the invocation log path}"
+: "${GIT_CENSUS_REAL:?set GIT_CENSUS_REAL to the real git executable}"
+
+find_subcommand() {
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+		-C | -c | --config-env | --git-dir | --work-tree | --namespace | --super-prefix)
+			shift
+			if [ "$#" -eq 0 ]; then
+				printf '%s\n' malformed-global-option
+				return
+			fi
+			shift
+			;;
+		--config-env=* | --git-dir=* | --work-tree=* | --namespace=* | --super-prefix=* | --exec-path=*)
+			shift
+			;;
+		--bare | --no-replace-objects | --literal-pathspecs | --glob-pathspecs | --noglob-pathspecs | --icase-pathspecs | --no-optional-locks | --no-pager | --paginate)
+			shift
+			;;
+		--help | --version | --exec-path)
+			printf '%s\n' "$1"
+			return
+			;;
+		-*)
+			shift
+			;;
+		*)
+			printf '%s\n' "$1"
+			return
+			;;
+		esac
+	done
+	printf '%s\n' unknown
+}
+
+subcommand=$(find_subcommand "$@")
+
+# Each invocation appends one short record. The working directory is evidence
+# for later inspection, but it cannot distinguish fixture setup from Roundfix
+# behavior because both execute inside the same Go test process and temporary
+# repositories.
+printf '%s\t%s\n' "$subcommand" "$PWD" >>"$GIT_CENSUS_LOG"
+
+exec "$GIT_CENSUS_REAL" "$@"

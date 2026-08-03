@@ -16,12 +16,14 @@ import (
 )
 
 func TestSealedACPXPromptReturnsMessageAndClosesSession(t *testing.T) {
+	t.Parallel()
+
 	harness := newFakeACPXHarness(t)
 	workDir := newPrivateEmptyDirectory(t)
 	promptPath := filepath.Join(harness.gitRoot, "sealed-prompt")
-	t.Setenv(fakeACPXPromptPath, promptPath)
-	t.Setenv(fakeACPXStdoutCall, sealedSelectionFixtures(t, "gpt-5.5", "xhigh"))
-	t.Setenv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
+	harness.setEnv(fakeACPXPromptPath, promptPath)
+	harness.setEnv(fakeACPXStdoutCall, sealedSelectionFixtures(t, "gpt-5.5", "xhigh"))
+	harness.setEnv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
 		"prompt": acpxUpdateLine(
 			`{"sessionId":"sealed","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"{\"ok\":true}"}}}`,
 		) + acpxPromptResponseLine("end_turn"),
@@ -47,6 +49,8 @@ func TestSealedACPXPromptReturnsMessageAndClosesSession(t *testing.T) {
 }
 
 func TestSealedPromptStreamIgnoresNonTerminalJSONRPCResults(t *testing.T) {
+	t.Parallel()
+
 	stream := `{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1}}` + "\n" +
 		`{"jsonrpc":"2.0","id":2,"result":{"sessionId":"sealed"}}` + "\n" +
 		acpxUpdateLine(
@@ -64,11 +68,13 @@ func TestSealedPromptStreamIgnoresNonTerminalJSONRPCResults(t *testing.T) {
 }
 
 func TestSealedACPXPromptDiscardsLargeThoughtStreamIncrementally(t *testing.T) {
+	t.Parallel()
+
 	harness := newFakeACPXHarness(t)
 	workDir := newPrivateEmptyDirectory(t)
-	t.Setenv(fakeACPXStdoutCall, sealedSelectionFixtures(t, "gpt-5.5", "xhigh"))
-	t.Setenv(fakeACPXThoughtLen, strconv.Itoa(sealedACPStreamMaxBytes+1))
-	t.Setenv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
+	harness.setEnv(fakeACPXStdoutCall, sealedSelectionFixtures(t, "gpt-5.5", "xhigh"))
+	harness.setEnv(fakeACPXThoughtLen, strconv.Itoa(sealedACPStreamMaxBytes+1))
+	harness.setEnv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
 		"prompt": acpxUpdateLine(
 			`{"sessionId":"sealed","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"{\"ok\":true}"}}}`,
 		) + acpxPromptResponseLine("end_turn"),
@@ -91,10 +97,12 @@ func TestSealedACPXPromptDiscardsLargeThoughtStreamIncrementally(t *testing.T) {
 }
 
 func TestSealedACPXPromptRejectsToolUseAndClosesSession(t *testing.T) {
+	t.Parallel()
+
 	harness := newFakeACPXHarness(t)
 	workDir := newPrivateEmptyDirectory(t)
-	t.Setenv(fakeACPXStdoutCall, sealedSelectionFixtures(t, "gpt-5.5", "xhigh"))
-	t.Setenv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
+	harness.setEnv(fakeACPXStdoutCall, sealedSelectionFixtures(t, "gpt-5.5", "xhigh"))
+	harness.setEnv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
 		"prompt": acpxUpdateLine(
 			`{"sessionId":"sealed","update":{"sessionUpdate":"tool_call","toolCallId":"tool-1","kind":"read","title":"read","status":"pending"}}`,
 		) + acpxPromptResponseLine("end_turn"),
@@ -114,16 +122,18 @@ func TestSealedACPXPromptRejectsToolUseAndClosesSession(t *testing.T) {
 }
 
 func TestSealedACPXPromptCancellationCancelsAndClosesSession(t *testing.T) {
+	t.Parallel()
+
 	harness := newFakeACPXHarness(t)
 	workDir := newPrivateEmptyDirectory(t)
 	started := filepath.Join(harness.gitRoot, "sealed-started")
 	canceled := filepath.Join(harness.gitRoot, "sealed-canceled")
 	closed := filepath.Join(harness.gitRoot, "sealed-closed")
-	t.Setenv(fakeACPXStarted, started)
-	t.Setenv(fakeACPXCanceled, canceled)
-	t.Setenv(fakeACPXClosed, closed)
-	t.Setenv(fakeACPXBlock, "1")
-	t.Setenv(fakeACPXStdoutCall, sealedSelectionFixtures(t, "gpt-5.5", "xhigh"))
+	harness.setEnv(fakeACPXStarted, started)
+	harness.setEnv(fakeACPXCanceled, canceled)
+	harness.setEnv(fakeACPXClosed, closed)
+	harness.setEnv(fakeACPXBlock, "1")
+	harness.setEnv(fakeACPXStdoutCall, sealedSelectionFixtures(t, "gpt-5.5", "xhigh"))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	result := make(chan error, 1)

@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0074-git-spawn-economy
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -61,3 +61,44 @@ not the baseline.
 - `_prd.md` → Problem (the census that motivates the Spec).
 - `_techspec.md` → Build Order 1; Testing Approach (the census, before and
   after, with the same shim).
+
+## Result
+
+Implemented the reproducible baseline under `baseline/`: an executable PATH
+shim, a command-shape attribution parser, the exact census and timing
+commands, the measured per-subcommand table, and the attribution limits.
+
+Focused implementation evidence:
+
+- `rtk proxy sh -n docs/specs/0074-git-spawn-economy/baseline/git-census-shim`
+  exited 0.
+- `rtk proxy awk -f docs/specs/0074-git-spawn-economy/baseline/attribution.awk /dev/null`
+  exited 0 and emitted zero for every bucket.
+- `rtk proxy test -x docs/specs/0074-git-spawn-economy/baseline/git-census-shim`
+  exited 0.
+- The first manual census attempt used a narrowed PATH and failed because
+  `rustfmt` was unavailable. Its output and counts were discarded. A fresh
+  replacement run preserved the caller PATH and exited 0.
+- The replacement census command recorded 12,099 invocations with zero
+  malformed records. Its subcommand parser attributed 7,405 as
+  production-read-shaped, 2,736 as fixture-setup-shaped, and 1,958 as
+  ambiguous or other.
+- The separate fresh timing command exited 0 and reported `real 78.45`,
+  `user 127.76`, and `sys 268.46` seconds.
+- `rtk git -c core.fsmonitor=false diff --check` exited 0 after the final
+  documentation update.
+
+Acceptance-criterion evidence:
+
+1. `baseline/README.md` records the successful census total, every
+   per-subcommand count, command-shape attribution, and wall/user/sys output;
+   `git-census-shim` and `attribution.awk` record the executable procedure.
+2. The baseline uses only outputs from the fresh census and timing runs on
+   commit `dbdad8ac1b8a2335ab88c65a0a47f50d86ef6c4e`; it does not copy the
+   design-time census figures.
+3. `rtk git -c core.fsmonitor=false status --short` showed changes only in
+   this Task file and its `baseline/` directory after the final documentation
+   update.
+
+The Task's authored `## Verification` commands were not run; the Daemon owns
+that Verification and the terminal Task status.

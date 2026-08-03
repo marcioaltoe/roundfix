@@ -128,6 +128,7 @@ func ClaudeAdapterCommand() string {
 // this into Runner after Agent Session lifecycle is available.
 type ACPXRunner struct {
 	Command           string
+	Environment       []string
 	Now               func() time.Time
 	warnf             func(string, ...any)
 	cancelClock       cancellationClock
@@ -551,10 +552,14 @@ func (runner ACPXRunner) Probe(ctx context.Context, req ProbeRequest) error {
 }
 
 func CheckAdapter(ctx context.Context, runtime RuntimeSpec) (AdapterEvidence, error) {
+	return checkAdapter(ctx, runtime, os.Environ())
+}
+
+func checkAdapter(ctx context.Context, runtime RuntimeSpec, environment []string) (AdapterEvidence, error) {
 	if err := ctx.Err(); err != nil {
 		return AdapterEvidence{}, err
 	}
-	invocation, err := resolveAdapterInvocation(runtime)
+	invocation, err := resolveAdapterInvocation(runtime, environment)
 	if err != nil {
 		return AdapterEvidence{}, err
 	}
@@ -576,14 +581,18 @@ func CheckAdapter(ctx context.Context, runtime RuntimeSpec) (AdapterEvidence, er
 	if !hasLineageContract {
 		return evidence, nil
 	}
-	return inspectAdapter(ctx, invocation, contract)
+	return inspectAdapter(ctx, invocation, contract, environment)
 }
 
 // resolveAdapterCommand returns the adapter command acpx will spawn for the
 // selected runtime: stdio overrides first, then acpx's agents map, then
 // Roundfix's built-in defaults.
 func resolveAdapterCommand(runtime RuntimeSpec) (string, error) {
-	invocation, err := resolveAdapterInvocation(runtime)
+	return resolveAdapterCommandWithEnv(runtime, os.Environ())
+}
+
+func resolveAdapterCommandWithEnv(runtime RuntimeSpec, environment []string) (string, error) {
+	invocation, err := resolveAdapterInvocation(runtime, environment)
 	if err != nil {
 		return "", err
 	}
@@ -605,14 +614,14 @@ func (invocation adapterInvocation) display() string {
 	return strings.Join(invocation.argv, " ")
 }
 
-func resolveAdapterInvocation(runtime RuntimeSpec) (adapterInvocation, error) {
+func resolveAdapterInvocation(runtime RuntimeSpec, environment []string) (adapterInvocation, error) {
 	if runtime.Protocol == ProtocolStdio {
 		if invocation := newAdapterInvocation(runtime.Command, nil); len(invocation.argv) > 0 {
 			return invocation, nil
 		}
 	}
 	runtimeID := strings.TrimSpace(runtime.ID)
-	if invocation, ok := configuredAdapterInvocation(runtimeID); ok {
+	if invocation, ok := configuredAdapterInvocation(runtimeID, environment); ok {
 		return invocation, nil
 	}
 	if command, ok := defaultAdapterCommands[runtimeID]; ok {
@@ -621,8 +630,8 @@ func resolveAdapterInvocation(runtime RuntimeSpec) (adapterInvocation, error) {
 	return adapterInvocation{}, fmt.Errorf("unsupported Agent %q; supported values: codex, claude, opencode", runtimeID)
 }
 
-func configuredAdapterInvocation(runtimeID string) (adapterInvocation, bool) {
-	path, err := acpxConfigPath()
+func configuredAdapterInvocation(runtimeID string, environment []string) (adapterInvocation, bool) {
+	path, err := acpxConfigPath(environment)
 	if err != nil {
 		return adapterInvocation{}, false
 	}
@@ -647,10 +656,13 @@ func configuredAdapterInvocation(runtimeID string) (adapterInvocation, bool) {
 	return invocation, len(invocation.argv) > 0
 }
 
-func acpxConfigPath() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
+func acpxConfigPath(environment []string) (string, error) {
+	homeDir := environmentValue(environment, "HOME")
+	if homeDir == "" {
+		homeDir = environmentValue(environment, "USERPROFILE")
+	}
+	if homeDir == "" {
+		return "", errors.New("explicit environment does not define HOME or USERPROFILE")
 	}
 	return filepath.Join(homeDir, ".acpx", "config.json"), nil
 }
@@ -696,12 +708,13 @@ func adapterInstallCommand(command string) string {
 	return "install " + command + " and ensure it is on PATH"
 }
 
-func inspectAdapter(ctx context.Context, invocation adapterInvocation, contract adapterLineageContract) (AdapterEvidence, error) {
+func inspectAdapter(ctx context.Context, invocation adapterInvocation, contract adapterLineageContract, environment []string) (AdapterEvidence, error) {
 	evidence := AdapterEvidence{Command: invocation.display()}
 	resolvedPackage := resolveAdapterPackage(invocation, contract)
 	args := append([]string(nil), invocation.argv[1:]...)
 	args = append(args, "--version")
 	cmd := exec.CommandContext(ctx, invocation.executable(), args...)
+	cmd.Env = append([]string(nil), environment...)
 	var stdout boundedAdapterOutput
 	cmd.Stdout = &stdout
 	cmd.Stderr = io.Discard
@@ -935,6 +948,7 @@ func (runner ACPXRunner) probeACPX(ctx context.Context) error {
 		return err
 	}
 	cmd := exec.CommandContext(ctx, command, "--version")
+	cmd.Env = runner.baseEnv()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -1225,7 +1239,7 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 	if runner.sessionEnsured(sessionName) {
 		return nil
 	}
-	adapter, err := CheckAdapter(ctx, req.Runtime)
+	adapter, err := checkAdapter(ctx, req.Runtime, runner.baseEnv())
 	if err != nil {
 		return err
 	}
@@ -1326,7 +1340,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 		return result, err
 	}
 	cmd := exec.Command(runner.command(), args...)
-	cmd.Env = acpxCommandEnv(codexEnv)
+	cmd.Env = runner.commandEnv(codexEnv)
 	cmd.Dir = req.GitRoot
 	cmd.Stdin = strings.NewReader(req.Prompt)
 	stdout, err := cmd.StdoutPipe()
@@ -1462,7 +1476,14 @@ func (runner *ACPXRunner) codexEnvForSession(ctx context.Context, runtime Runtim
 		}
 	}
 	unlock()
-	resolution, err := runner.codexSpawn.resolve(ctx)
+	dependencies := runner.codexSpawn
+	if dependencies.getenv == nil {
+		environment := runner.baseEnv()
+		dependencies.getenv = func(key string) string {
+			return environmentValue(environment, key)
+		}
+	}
+	resolution, err := dependencies.resolve(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1542,7 +1563,7 @@ func (runner ACPXRunner) runACPXCommandWithEnv(ctx context.Context, args []strin
 
 func (runner ACPXRunner) runACPXCommandOutputWithEnv(ctx context.Context, args []string, env []string) (string, error) {
 	cmd := exec.CommandContext(ctx, runner.command(), args...)
-	cmd.Env = acpxCommandEnv(env)
+	cmd.Env = runner.commandEnv(env)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout

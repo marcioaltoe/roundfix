@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0074-git-spawn-economy
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -71,3 +71,37 @@ which fail on any content drift.
 - `_techspec.md` → Implementation Design (Interfaces); Integration Points
   (the batch framing); Risks (framing bugs corrupt content silently).
 - ADR-0090.
+
+## Result
+
+Implemented one private `git cat-file --batch` reader for each skills-restore
+tree read. The reader keeps one child process open, sends object names in tree
+order, parses the size-prefixed response, consumes the trailing newline, and
+waits for the child on every exit path. Skills restore now maps batch start,
+read, missing-object, truncated-stream, and close failures through
+`SkillsRestoreExecution` with `source.read-failed`.
+
+Focused implementation evidence by acceptance criterion:
+
+1. One batch process for N files: the package runner-seam test
+   `TestSkillsRestoreReadsManyFilesThroughOneBatchProcess` restored three
+   objects, observed one `OpenBatch` call, one `ls-tree` call, and one reader
+   close. The focused command
+   `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/baseline -count=1 -run '^TestSkillsRestore(Read|Batch)'`
+   passed 4 cases.
+2. Existing skills-restore characterization: the five pre-existing top-level
+   tests ran without edits via
+   `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/baseline -count=1 -run '^TestSkillsRestore(OfflinePreviewApplyAndIdempotence|ProvenanceAndPreMutationRefusals|StalePlanDoesNotMutate|RollbackRestoresSkillAndLockPreimage|CompatibilityMatchesMaintainedPythonShape)$'`
+   and passed 14 cases including subtests.
+3. Required framing cases:
+   `GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/baseline -count=1 -run '^TestBatchObjectReader(ReturnsMultipleObjectsInRequestOrder|ReportsMissingObject|ReturnsZeroByteBlob|PreservesFramingDelimitersInContent|ReportsProcessDeathMidStream)$'`
+   passed all 5 cases. The restore failure table separately confirmed that a
+   missing object and mid-stream death both retain the
+   `SkillsRestoreExecution` / `source.read-failed` surface.
+4. Changed-path scope: `git -c core.fsmonitor=false status --porcelain`
+   listed only this task file plus `internal/baseline/skills_restore_git.go`
+   and `internal/baseline/skills_restore_git_test.go`; `git diff --check`
+   exited 0.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.

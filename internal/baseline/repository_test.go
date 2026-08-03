@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -485,13 +486,86 @@ func TestRepositoryInspectionUsesNarrowReadOnlyGitCommands(t *testing.T) {
 		t.Fatalf("inspect with recording Git runner: %v", err)
 	}
 	want := [][]string{
-		{"rev-parse", "--show-toplevel"},
-		{"rev-parse", "--verify", "HEAD^{commit}"},
-		{"rev-parse", "--show-object-format"},
+		{"rev-parse", "--show-toplevel", "--show-object-format", "--verify", "HEAD^{commit}"},
 		{"rev-list", "--max-parents=0", "HEAD"},
 	}
 	if !reflect.DeepEqual(runner.calls, want) {
 		t.Fatalf("Git calls = %v, want narrow read-only commands %v", runner.calls, want)
+	}
+}
+
+func TestRepositoryInspectionParsesCombinedResolutionPositionally(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	head := strings.Repeat("a", 40)
+	runner := inspectionGitRunnerFunc(func(_ context.Context, _ string, args ...string) (string, error) {
+		switch strings.Join(args, "\x00") {
+		case "rev-parse\x00--show-toplevel\x00--show-object-format\x00--verify\x00HEAD^{commit}":
+			return strings.Join([]string{root, head, "sha1"}, "\n"), nil
+		default:
+			return "", errors.New("unexpected Git command")
+		}
+	})
+
+	_, err := InspectRepository(context.Background(), root, runner)
+	want := fmt.Sprintf("detect Git object format: unsupported format %q", head)
+	if err == nil || err.Error() != want {
+		t.Fatalf("InspectRepository error = %v, want %q", err, want)
+	}
+}
+
+func TestRepositoryInspectionCombinedResolutionErrorsRemainDistinct(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	head := strings.Repeat("a", 40)
+	combinedCommand := "rev-parse\x00--show-toplevel\x00--show-object-format\x00--verify\x00HEAD^{commit}"
+	tests := []struct {
+		name   string
+		runner GitRunner
+		want   string
+	}{
+		{
+			name: "non-repository directory",
+			runner: inspectionGitRunnerFunc(func(_ context.Context, _ string, args ...string) (string, error) {
+				if strings.Join(args, "\x00") == "rev-parse\x00--show-toplevel" {
+					return "", errors.New("not a repository")
+				}
+				return "", errors.New("combined resolution failed")
+			}),
+			want: "detect Git worktree root: not a repository",
+		},
+		{
+			name: "missing HEAD",
+			runner: inspectionGitRunnerFunc(func(_ context.Context, _ string, args ...string) (string, error) {
+				if strings.Join(args, "\x00") == "rev-parse\x00--show-toplevel" {
+					return root, nil
+				}
+				return "", errors.New("HEAD is missing")
+			}),
+			want: "Baseline repository requires at least one commit: HEAD is missing",
+		},
+		{
+			name: "unknown object format",
+			runner: inspectionGitRunnerFunc(func(_ context.Context, _ string, args ...string) (string, error) {
+				if strings.Join(args, "\x00") != combinedCommand {
+					return "", errors.New("unexpected Git command")
+				}
+				return strings.Join([]string{root, "unknown", head}, "\n"), nil
+			}),
+			want: "detect Git object format: unsupported format \"unknown\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, err := InspectRepository(context.Background(), root, tt.runner)
+			if err == nil || err.Error() != tt.want {
+				t.Fatalf("InspectRepository error = %v, want %q", err, tt.want)
+			}
+		})
 	}
 }
 
@@ -529,15 +603,17 @@ type recordingInspectionGitRunner struct {
 	calls [][]string
 }
 
+type inspectionGitRunnerFunc func(context.Context, string, ...string) (string, error)
+
+func (run inspectionGitRunnerFunc) RunGit(ctx context.Context, workDir string, args ...string) (string, error) {
+	return run(ctx, workDir, args...)
+}
+
 func (runner *recordingInspectionGitRunner) RunGit(_ context.Context, _ string, args ...string) (string, error) {
 	runner.calls = append(runner.calls, append([]string(nil), args...))
 	switch strings.Join(args, "\x00") {
-	case "rev-parse\x00--show-toplevel":
-		return runner.root, nil
-	case "rev-parse\x00--verify\x00HEAD^{commit}":
-		return runner.head, nil
-	case "rev-parse\x00--show-object-format":
-		return "sha1", nil
+	case "rev-parse\x00--show-toplevel\x00--show-object-format\x00--verify\x00HEAD^{commit}":
+		return strings.Join([]string{runner.root, "sha1", runner.head}, "\n"), nil
 	case "rev-list\x00--max-parents=0\x00HEAD":
 		return runner.head, nil
 	default:
