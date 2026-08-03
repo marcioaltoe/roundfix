@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0071-verification-cost
-status: pending
+status: completed
 type: docs
 complexity: low
 ---

@@ -1070,9 +1070,18 @@ func runImplementCommandAsync(t *testing.T, ctx context.Context, args ...string)
 	return resultCh
 }
 
+// implementWaitBudget bounds every "this eventually happened" wait in the
+// Implement tests. It is deliberately far longer than the work needs: a
+// passing wait returns the moment its condition holds and pays none of it,
+// while a stuck one still fails. These tests orchestrate real child processes
+// and assert concurrency semantics, so they need CPU to make progress — and
+// they now run alongside hundreds of parallel siblings. A tight budget here
+// measures how loaded the machine is, not whether the code works.
+const implementWaitBudget = 90 * time.Second
+
 func waitImplementCommandResult(t *testing.T, resultCh <-chan implementCommandResult) implementCommandResult {
 	t.Helper()
-	timer := time.NewTimer(20 * time.Second)
+	timer := time.NewTimer(implementWaitBudget)
 	defer timer.Stop()
 	select {
 	case result := <-resultCh:
@@ -1131,7 +1140,7 @@ func (probe *implementAgentOverlapProbe) maxObservedActive() int {
 func waitImplementAgentStarts(t *testing.T, probe *implementAgentOverlapProbe, count int) []string {
 	t.Helper()
 	started := make([]string, 0, count)
-	timer := time.NewTimer(10 * time.Second)
+	timer := time.NewTimer(implementWaitBudget)
 	defer timer.Stop()
 	for len(started) < count {
 		select {
@@ -1256,7 +1265,7 @@ func implementVerificationEvidenceFromEvents(t *testing.T, events []store.Journa
 
 func waitForImplementJournal(t *testing.T, homeDir string, runID string, condition func([]store.JournalEvent) bool) []store.JournalEvent {
 	t.Helper()
-	timer := time.NewTimer(10 * time.Second)
+	timer := time.NewTimer(implementWaitBudget)
 	defer timer.Stop()
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
@@ -1457,7 +1466,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		t.Fatalf("kill caller process group: %v", err)
 	}
 	_, _ = waitProcessForTest(cmd, 2*time.Second)
-	waitForFile(t, promptStarted, 60*time.Second)
+	waitForFile(t, promptStarted, implementWaitBudget)
 
 	var attachStdout bytes.Buffer
 	var attachStderr bytes.Buffer
@@ -2137,7 +2146,7 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 	if firstTask == secondTask {
 		secondTask = "task_02"
 	}
-	waitForFile(t, startedPaths[firstTask], 10*time.Second)
+	waitForFile(t, startedPaths[firstTask], implementWaitBudget)
 	if _, err := os.Stat(startedPaths[secondTask]); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected %s to remain queued before capacity release, stat error %v", secondTask, err)
 	}
@@ -2152,7 +2161,7 @@ func TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow(t *testin
 		}
 		return started == 2
 	})
-	waitForFile(t, startedPaths[secondTask], 10*time.Second)
+	waitForFile(t, startedPaths[secondTask], implementWaitBudget)
 	releaseImplementNamedPipe(t, releasePaths[secondTask])
 
 	result := waitImplementCommandResult(t, resultCh)
@@ -2560,7 +2569,7 @@ func TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks(t *te
 	if activeTask == queuedTask {
 		queuedTask = "task_02"
 	}
-	waitForFile(t, startedPaths[activeTask], 10*time.Second)
+	waitForFile(t, startedPaths[activeTask], implementWaitBudget)
 	if _, err := os.Stat(startedPaths[queuedTask]); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected queued Task %s to start no child process, stat error %v", queuedTask, err)
 	}
