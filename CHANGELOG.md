@@ -2,10 +2,59 @@
 
 All notable changes to Roundfix are documented in this file.
 
-## [0.0.3] - 2026-08-02
+## [0.3.1] - 2026-08-03
+
+Version 0.3.1 supersedes the 0.0.3 tag, which never published: its release
+failed on the npm dist-tag and no coordinate reached the registry. The
+platform packages already carried 0.3.0 from an earlier versioning era, so
+0.3.1 is the first version above every published coordinate and the first
+consistent release across the launcher and all five platform packages.
+Everything the unpublished 0.0.3 section described ships here for the first
+time, together with the work that followed it.
+
+### Known issues
+
+- Skill content is pinned by digest into the binary, so editing a shipped
+  skill changes what Roundfix claims about itself. Compatibility becomes a
+  per-skill declared minimum version in a later release; until then, keep
+  skill edits and binary releases together.
+
+### Breaking
+
+- **Removed the `--qa` parameter from the Implement Command.** The QA gate is
+  now authored into a Spec's Task Graph as a terminal `qa` Task, declared at
+  decomposition with `qa: task_NN` in the manifest — or declined once with
+  `qa: declined` and a reason. What runs is what the graph says. Passing
+  `--qa` is an unknown-flag error whose message names the contract. Task
+  Graphs authored before this contract keep working unchanged, and appending
+  work after a gate has reported now invalidates that result at the next
+  load, naming the inserted Tasks instead of quietly starting a second cycle.
+  Interactive Input no longer asks about QA.
+
+### Performance
+
+- Cut the implementation loop's verification cost by 97%: an unchanged tree
+  now completes the local gate in about 5 seconds against 142. The change was
+  structural — code under test takes its environment and working directory as
+  arguments instead of mutating the process, which both unblocked parallel
+  execution (1 → 479 declarations in the CLI package) and made Go's test
+  result cache trustworthy.
+- Cut the full fresh suite by roughly a third, and removed work rather than
+  coverage: the CLI package compiled the whole project seven times per run
+  from empty caches, the coverage harness invoked the toolchain once per
+  package instead of once, and eleven packages declared no parallelism at
+  all. No test was deleted, skipped, or weakened.
+- Reduced git subprocesses in production paths by roughly 13%: object reads
+  that spawned one process per file now stream through a single batch
+  process, and repository resolution asks its several questions in one
+  invocation. Every Run pays these against the user's own repository.
 
 ### Added
 
+- Added a Pull Request verification workflow. Until now no workflow ran the
+  test suite before a merge — only the release workflow, on a tag push. CI
+  forces a fresh run so its verdict never rests on a cache entry from another
+  commit, while the local gate lets the cache decide what to re-run.
 - Added npm Trusted Publishing: the release workflow authenticates publication
   through GitHub Actions OIDC instead of a long-lived repository token, on a
   Node 24 runtime with an asserted npm floor. A bounded per-coordinate token
@@ -92,6 +141,14 @@ All notable changes to Roundfix are documented in this file.
   is no longer asked for skills its stack has no reason to hold.
 - Fixed the autonomous loop requesting the QA gate before the surfaces its
   acceptance observes exist.
+- Fixed the npm dist-tag being applied implicitly, which failed publication
+  when a platform package already carried a higher version than the one being
+  released.
+- Fixed a Verification command starting after its Run's context was cancelled:
+  capacity could be granted in the same instant the cancellation landed, so a
+  Run that was tearing down could still spawn one more child process.
+- Fixed the detached-child code path mutating process-global state while its
+  test ran in parallel.
 
 ## [0.0.2] - 2026-07-29
 
