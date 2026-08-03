@@ -26,7 +26,8 @@ baseline so its checked-in guide carries the new contract.
 ## Project Constraints
 
 - Identifier strategy: applicable — Backlog Entry and its type values
-  (`idea`, `fix`) join the `CONTEXT.md` glossary and are used verbatim in
+  (`feat`, `fix`, `perf`, `refactor` — the Conventional Commits intent
+  vocabulary) join the `CONTEXT.md` glossary and are used verbatim in
   every clause. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable. Source:
   `docs/agents/agent-instructions.md`.
@@ -46,7 +47,7 @@ flowchart TD
     B --> C[template.guide.docs-layout renders artifact.rules]
     C --> D[docs/agents/docs-layout.md in every adopting repository]
     B --> E[make baseline-digests: catalog, setups, corpus - ADR-0081]
-    F[CONTEXT.md glossary: Backlog Entry, idea, fix] --> D
+    F[CONTEXT.md glossary: Backlog Entry + the four types] --> D
 ```
 
 ## Implementation Design
@@ -57,7 +58,7 @@ Frontmatter, mirroring the findings contract's shape:
 
 ```markdown
 ---
-type: idea            # idea | fix
+type: feat            # feat | fix | perf | refactor
 status: open          # open | promoted | declined
 created: 2026-08-03
 spec: null            # spec slug when status: promoted
@@ -68,7 +69,7 @@ reason: null          # required when status: declined
 Body template per type, embedded copyable in the guide:
 
 ```markdown
-# <Title — the intent in one line>          # type: idea
+# <Title — the intent in one line>          # type: feat
 ## Opportunity   — what could exist and for whom
 ## Value         — why it would matter; the hypothesis
 ## Shape         — the rough form of a solution, explicitly non-binding
@@ -78,6 +79,16 @@ Body template per type, embedded copyable in the guide:
 ## Where         — surface, command, or package, as known
 ## Expected      — the behavior that should replace it
 ## Evidence      — finding link when one exists; "none yet" is honest
+
+# <Title — the cost in one line>            # type: perf
+## Slow          — what is slow, for whom, in which operation
+## Measured      — the number that says so, and how it was taken
+## Target        — the number that would settle it
+
+# <Title — the tangle in one line>          # type: refactor
+## Tangled       — what resists change, duplicated or coupled where
+## Cost          — what it makes slow, risky, or wrong to touch
+## Shape         — the structure that would replace it, non-binding
 ```
 
 ### The boundary clause
@@ -85,8 +96,11 @@ Body template per type, embedded copyable in the guide:
 One clause states both directions: a finding records what happened
 (evidence, immutable, never a commitment); a backlog entry records what to
 do next (intent, typed, never evidence). A finding may spawn an entry; an
-entry needs no finding. The backlog `idea` is upstream raw material the
-spec pipeline may consume — never the `write-idea` artifact itself.
+entry needs no finding. A `feat` entry is upstream raw material the spec
+pipeline may consume — never the `write-idea` artifact itself. The type
+vocabulary is the Conventional Commits vocabulary the repository already
+enforces on PR titles, so one word carries the intent from backlog entry to
+Spec to commit; `refactor` is the canonical token, never an abbreviation.
 
 ### Data Models
 
@@ -151,10 +165,11 @@ by the guide's contract, exactly as findings work today.
 - **The corpus is a characterization gate.** Re-recording it is sanctioned
   but must be reviewed: only layout content and digests may move. Anything
   else moving means the edit leaked.
-- **Vocabulary drift.** `idea` now names two things in the wider method
-  (backlog type; write-idea pipeline artifact). The glossary entry and the
-  boundary clause carry the distinction; the folder name `backlog` was
-  chosen precisely so the *directory* never carries the ambiguity.
+- **Vocabulary drift.** Averted by construction: aligning the type set
+  with Conventional Commits removed the `idea` collision with the
+  `write-idea` artifact entirely — `feat` names the entry, `write-idea`
+  names the pipeline stage. The one residual trap is abbreviation:
+  `refactor`, never `refact`, and the contract says so.
 - **Scope discipline.** No skill edits, no migration of existing findings,
   no binary changes — three tempting adjacencies, all out of scope by PRD.
 
@@ -163,7 +178,9 @@ by the guide's contract, exactly as findings work today.
 - The contract lives in module clauses, not in static template prose,
   because clauses are the unit adopting repositories receive and the unit
   the corpus characterizes. (ADR-0092 records the product decision.)
-- Two types now; extension is a contract change with a corpus re-record,
-  never an informal addition.
+- Four types now — the Conventional Commits intent vocabulary (`feat`,
+  `fix`, `perf`, `refactor`); extension is a contract change with a corpus
+  re-record, never an informal addition, and a new type must be a
+  Conventional Commits type that expresses intent.
 - Findings deprecation into the backlog is explicitly deferred and will be
   its own Spec if it happens.
