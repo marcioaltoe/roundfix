@@ -5,6 +5,7 @@
 package baseline
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -107,7 +108,7 @@ func TestBatchObjectReaderPreservesFramingDelimitersInContent(t *testing.T) {
 func TestBatchObjectReaderReportsProcessDeathMidStream(t *testing.T) {
 	t.Parallel()
 
-	command := exec.Command(os.Args[0], "-test.run=^TestBatchObjectReaderProcessHelper$")
+	command := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^TestBatchObjectReaderProcessHelper$")
 	command.Env = append(os.Environ(), "ROUNDFIX_BATCH_OBJECT_HELPER=die-mid-stream")
 	reader, err := startBatchObjectReader(command)
 	if err != nil {
@@ -119,6 +120,64 @@ func TestBatchObjectReaderReportsProcessDeathMidStream(t *testing.T) {
 	if err := reader.Close(); err == nil {
 		t.Fatal("mid-stream process death returned no process error")
 	}
+}
+
+func TestBatchObjectReaderRejectsOversizedObjectsAndPoisonsProtocolFailures(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		reply   string
+		wantErr string
+	}{
+		{name: "header read failure", wantErr: "read batch object header"},
+		{name: "malformed header", reply: "malformed\n", wantErr: "malformed batch object header"},
+		{
+			name:    "oversized object",
+			reply:   fmt.Sprintf("%s blob %d\n", batchObjectDeathFixture, restoreMaxBytes+1),
+			wantErr: "exceeds the read limit",
+		},
+		{
+			name:    "short content",
+			reply:   fmt.Sprintf("%s blob 6\nabc", batchObjectDeathFixture),
+			wantErr: "read batch object content",
+		},
+		{
+			name:    "invalid terminator",
+			reply:   fmt.Sprintf("%s blob 3\nabcX", batchObjectDeathFixture),
+			wantErr: "invalid batch object terminator",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			stdin := &batchObjectWriteCloser{}
+			reader := &batchObjectReader{
+				stdin:    stdin,
+				stdout:   bufio.NewReader(strings.NewReader(test.reply)),
+				maxBytes: restoreMaxBytes,
+			}
+			if _, err := reader.Read(batchObjectDeathFixture); err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Fatalf("first read error = %v, want diagnostic containing %q", err, test.wantErr)
+			}
+			if _, err := reader.Read(batchObjectDeathFixture); err == nil || !strings.Contains(err.Error(), "desynchronized") {
+				t.Fatalf("second read error = %v, want desynchronized-reader diagnostic", err)
+			}
+			if got, want := stdin.String(), batchObjectDeathFixture+"\n"; got != want {
+				t.Fatalf("batch object requests after protocol failure = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+type batchObjectWriteCloser struct {
+	bytes.Buffer
+}
+
+func (*batchObjectWriteCloser) Close() error {
+	return nil
 }
 
 func TestBatchObjectReaderProcessHelper(t *testing.T) {

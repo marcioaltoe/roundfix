@@ -43,6 +43,8 @@ type batchObjectReader struct {
 	stdout   *bufio.Reader
 	cmd      *exec.Cmd
 	stderr   *bytes.Buffer
+	maxBytes int64
+	broken   bool
 	closed   bool
 	closeErr error
 }
@@ -72,10 +74,11 @@ func startBatchObjectReader(command *exec.Cmd) (*batchObjectReader, error) {
 		return nil, errors.Join(fmt.Errorf("start batch object process: %w", err), stdinErr, stdoutErr)
 	}
 	return &batchObjectReader{
-		stdin:  stdin,
-		stdout: bufio.NewReader(stdout),
-		cmd:    command,
-		stderr: stderr,
+		stdin:    stdin,
+		stdout:   bufio.NewReader(stdout),
+		cmd:      command,
+		stderr:   stderr,
+		maxBytes: restoreMaxBytes,
 	}, nil
 }
 
@@ -83,14 +86,19 @@ func (reader *batchObjectReader) Read(object string) ([]byte, error) {
 	if reader.closed {
 		return nil, errors.New("batch object reader is closed")
 	}
+	if reader.broken {
+		return nil, errors.New("batch object reader is desynchronized")
+	}
 	if object == "" || strings.ContainsAny(object, "\r\n") {
 		return nil, fmt.Errorf("invalid batch object name %q", object)
 	}
 	if _, err := fmt.Fprintln(reader.stdin, object); err != nil {
+		reader.broken = true
 		return nil, fmt.Errorf("write batch object request: %w", err)
 	}
 	header, err := reader.stdout.ReadString('\n')
 	if err != nil {
+		reader.broken = true
 		return nil, fmt.Errorf("read batch object header: %w", err)
 	}
 	fields := strings.Fields(strings.TrimSuffix(header, "\n"))
@@ -98,24 +106,39 @@ func (reader *batchObjectReader) Read(object string) ([]byte, error) {
 		return nil, fmt.Errorf("batch object %s is missing", object)
 	}
 	if len(fields) != 3 {
+		reader.broken = true
 		return nil, fmt.Errorf("malformed batch object header %q", strings.TrimSuffix(header, "\n"))
 	}
 	if fields[1] != "blob" {
+		reader.broken = true
 		return nil, fmt.Errorf("batch object %s has type %s, want blob", object, fields[1])
 	}
-	size, err := strconv.ParseInt(fields[2], 10, strconv.IntSize)
+	size, err := strconv.ParseInt(fields[2], 10, 64)
 	if err != nil || size < 0 {
+		reader.broken = true
 		return nil, fmt.Errorf("invalid batch object size %q", fields[2])
+	}
+	if reader.maxBytes > 0 && size > reader.maxBytes {
+		reader.broken = true
+		return nil, fmt.Errorf(
+			"batch object %s size %d exceeds the read limit %d",
+			object,
+			size,
+			reader.maxBytes,
+		)
 	}
 	content := make([]byte, int(size))
 	if _, err := io.ReadFull(reader.stdout, content); err != nil {
+		reader.broken = true
 		return nil, fmt.Errorf("read batch object content: %w", err)
 	}
 	terminator, err := reader.stdout.ReadByte()
 	if err != nil {
+		reader.broken = true
 		return nil, fmt.Errorf("read batch object terminator: %w", err)
 	}
 	if terminator != '\n' {
+		reader.broken = true
 		return nil, fmt.Errorf("invalid batch object terminator %#x", terminator)
 	}
 	return content, nil

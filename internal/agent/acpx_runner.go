@@ -659,11 +659,10 @@ func configuredAdapterInvocation(runtimeID string, environment []string) (adapte
 func acpxConfigPath(environment []string) (string, error) {
 	homeDir := environmentValue(environment, "HOME")
 	if homeDir == "" {
-		var err error
-		homeDir, err = os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
+		homeDir = environmentValue(environment, "USERPROFILE")
+	}
+	if homeDir == "" {
+		return "", errors.New("explicit environment does not define HOME or USERPROFILE")
 	}
 	return filepath.Join(homeDir, ".acpx", "config.json"), nil
 }

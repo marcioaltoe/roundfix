@@ -215,6 +215,56 @@ func TestResolveAdapterCommandUsesConfigFallbacksAndOverrides(t *testing.T) {
 	}
 }
 
+func TestACPXConfigPathUsesOnlyTheExplicitEnvironment(t *testing.T) {
+	t.Parallel()
+
+	homeDir := t.TempDir()
+	profileDir := t.TempDir()
+	tests := []struct {
+		name        string
+		environment []string
+		wantHome    string
+		wantErr     string
+	}{
+		{
+			name:        "HOME takes precedence",
+			environment: environmentForBase(nil, "HOME="+homeDir, "USERPROFILE="+profileDir),
+			wantHome:    homeDir,
+		},
+		{
+			name:        "USERPROFILE supplies the home",
+			environment: environmentForBase(nil, "USERPROFILE="+profileDir),
+			wantHome:    profileDir,
+		},
+		{
+			name:        "missing explicit home",
+			environment: environmentForBase(nil, "PATH="+os.Getenv("PATH")),
+			wantErr:     "HOME or USERPROFILE",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := acpxConfigPath(test.environment)
+			if test.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+					t.Fatalf("acpx config path error = %v, want diagnostic containing %q", err, test.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolve acpx config path: %v", err)
+			}
+			want := filepath.Join(test.wantHome, ".acpx", "config.json")
+			if got != want {
+				t.Fatalf("acpx config path = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
 func TestCheckAdapterProvesOfficialCodexPackageAndVersion(t *testing.T) {
 	t.Parallel()
 
