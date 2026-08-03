@@ -21,9 +21,15 @@ graph:
     - id: task_06
       file: task_06.md
       needs: [task_03, task_04]
+    - id: task_08
+      file: task_08.md
+      needs: [task_03]
+    - id: task_09
+      file: task_09.md
+      needs: [task_08]
     - id: task_07
       file: task_07.md
-      needs: [task_03, task_04, task_06]
+      needs: [task_03, task_04, task_06, task_08, task_09]
 ---
 
 # Tasks — Verification cost
@@ -36,19 +42,28 @@ graph:
 | task_04 | Free the Baseline package from process state      | backend | high       | task_01                   |
 | task_05 | Stop charging every Task for the whole suite      | docs    | medium     | task_01                   |
 | task_06 | Assert a suite-time budget                        | infra   | medium     | task_03, task_04          |
-| task_07 | Publish the before-and-after                      | docs    | low        | task_03, task_04, task_06 |
+| task_08 | Finish declaring parallelism in the CLI package   | test    | high       | task_03                   |
+| task_09 | Split the gate into a fast local and full CI tier | infra   | high       | task_08                   |
+| task_07 | Publish the before-and-after                      | docs    | low        | task_03, task_04, task_06, task_08, task_09 |
 
 Waves: 1 → task_01 · 2 → task_02, task_04, task_05 · 3 → task_03 · 4 → task_06 ·
-5 → task_07
+5 → task_08 · 6 → task_09 · 7 → task_07
 
 Wave 2 fans out because its three Tasks touch disjoint files: the CLI package,
 the Baseline package, and the Task files plus the authoring skill.
 
-**Only tasks 02 and 03 can move the headline number.** The baseline shows
-packages already overlap under `go test ./...`, so the suite can never finish
-faster than its slowest package, and `internal/cli` alone is 113.2s of 136.9s.
-task_04 reduces the sum and helps a single-package run; it cannot move the
-floor.
+**Measurement corrected which Tasks move the headline.** The Spec assumed
+sequential execution was the cost and parallelism the lever. After tasks 02–05,
+`internal/baseline` improved 40% while `internal/cli` got 27% *worse* and the
+suite went from 136.9s to 168.5s. The eight heaviest end-to-end journeys
+complete in 31.7s together — they were never the bottleneck. Only 207 of the
+CLI package's 488 tests declare parallelism, and of the 281 still sequential
+just nine retain a real blocker.
+
+So tasks 08 and 09 are what move the number now. task_08 finishes the
+declaration the prefactor made possible; task_09 tiers the gate, which is only
+safe because it also creates the Pull Request workflow that runs the full
+suite — today nothing does, outside the release.
 
 task_01 changes no behavior and lands first. It records which test functions
 the suite executes, so "coverage is unchanged" becomes an assertion instead of
