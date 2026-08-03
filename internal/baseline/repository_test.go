@@ -21,6 +21,8 @@ import (
 )
 
 func TestInventoryWalkIgnoresTransientErrorsInsideExcludedTrees(t *testing.T) {
+	t.Parallel()
+
 	builder := &inventoryBuilder{}
 	if err := builder.walk(".git/objects/maintenance.lock", nil, fs.ErrNotExist); err != nil {
 		t.Fatalf("walk ignored transient Git path: %v", err)
@@ -39,6 +41,8 @@ func TestInventoryWalkIgnoresTransientErrorsInsideExcludedTrees(t *testing.T) {
 }
 
 func TestRepositoryIdentityEquivalentClones(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "README.md", "seed\n")
 	commitInspectionRepository(t, repo, "seed")
@@ -66,6 +70,8 @@ func TestRepositoryIdentityEquivalentClones(t *testing.T) {
 }
 
 func TestRepositoryIdentityAcceptsDetachedDirtyWithoutUpstream(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "README.md", "seed\n")
 	commitInspectionRepository(t, repo, "seed")
@@ -87,6 +93,8 @@ func TestRepositoryIdentityAcceptsDetachedDirtyWithoutUpstream(t *testing.T) {
 }
 
 func TestRepositoryIdentityRequiresCommittedGitWorktree(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		root func(*testing.T) string
@@ -114,6 +122,8 @@ func TestRepositoryIdentityRequiresCommittedGitWorktree(t *testing.T) {
 }
 
 func TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "README.md", "seed\n")
 	writeInspectionFile(t, repo, "AGENTS.md", "root policy\n")
@@ -161,6 +171,8 @@ func TestBoundedInventoryIncludesAllCarriersAndIgnoresUnboundedPaths(t *testing.
 }
 
 func TestInstructionAliasRetainsOneSourceEvidence(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "policy/shared.md", "shared policy\n")
 	if err := os.Symlink("policy/shared.md", filepath.Join(repo, "AGENTS.md")); err != nil {
@@ -197,6 +209,8 @@ func TestInstructionAliasRetainsOneSourceEvidence(t *testing.T) {
 }
 
 func TestInstructionAliasRetainsDirectSourcePreimageIdentity(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "AGENTS.md", "shared policy\n")
 	if err := os.Symlink("AGENTS.md", filepath.Join(repo, "CLAUDE.md")); err != nil {
@@ -221,6 +235,8 @@ func TestInstructionAliasRetainsDirectSourcePreimageIdentity(t *testing.T) {
 }
 
 func TestInstructionAliasUnsafeTargetsBlock(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name  string
 		setup func(*testing.T, string)
@@ -284,6 +300,8 @@ func TestInstructionAliasUnsafeTargetsBlock(t *testing.T) {
 }
 
 func TestInstructionAliasUnreadableTargetBlocks(t *testing.T) {
+	t.Parallel()
+
 	if os.Geteuid() == 0 {
 		t.Skip("root can read mode-000 fixtures")
 	}
@@ -307,6 +325,8 @@ func TestInstructionAliasUnreadableTargetBlocks(t *testing.T) {
 }
 
 func TestRepositoryInspectionNoMutation(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "AGENTS.md", "root policy\n")
 	writeInspectionFile(t, repo, "nested/CLAUDE.md", "nested policy\n")
@@ -385,7 +405,13 @@ func runInspectionCommand(t *testing.T, dir, name string, args ...string) {
 	}
 	command := exec.Command(name, args...)
 	command.Dir = dir
-	command.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "GIT_OPTIONAL_LOCKS=0")
+	command.Env = append(
+		os.Environ(),
+		"GIT_CONFIG_NOSYSTEM=1",
+		"GIT_OPTIONAL_LOCKS=0",
+		"GIT_AUTHOR_DATE=2000-01-01T00:00:00Z",
+		"GIT_COMMITTER_DATE=2000-01-01T00:00:00Z",
+	)
 	output, err := command.CombinedOutput()
 	if err != nil {
 		t.Fatalf("run %s %s: %v\n%s", name, strings.Join(args, " "), err, output)
@@ -438,6 +464,8 @@ func snapshotInspectionTree(t *testing.T, root string) []inspectionTreeEntry {
 }
 
 func TestRepositoryInspectionHonorsCancellation(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	_, err := InspectRepository(ctx, t.TempDir(), nil)
@@ -447,6 +475,8 @@ func TestRepositoryInspectionHonorsCancellation(t *testing.T) {
 }
 
 func TestRepositoryInspectionUsesNarrowReadOnlyGitCommands(t *testing.T) {
+	t.Parallel()
+
 	root := t.TempDir()
 	runner := &recordingInspectionGitRunner{
 		root: root,
@@ -467,6 +497,8 @@ func TestRepositoryInspectionUsesNarrowReadOnlyGitCommands(t *testing.T) {
 }
 
 func TestRepositorySnapshotDigestChangesWithBoundedBytesOnly(t *testing.T) {
+	t.Parallel()
+
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "AGENTS.md", "one\n")
 	commitInspectionRepository(t, repo, "seed")

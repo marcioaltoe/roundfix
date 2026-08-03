@@ -32,6 +32,7 @@ const (
 	executableProbeReasonLinkCycle     = "link-cycle"
 	executableProbeReasonLinkDepth     = "link-depth-exceeded"
 	executableProbeReasonNotExecutable = "not-executable"
+	executableProbeReasonRelativePath  = "search-directory-not-absolute"
 )
 
 // ErrNoResolvableProfile names a capability re-check that cannot select a
@@ -212,6 +213,7 @@ type ProfileAlignmentRequest struct {
 	Profile                  *ResolvedProfile
 	RemediationProfileID     string
 	VerificationRoleMappings map[string]string
+	ExecutableDirectories    []string
 }
 
 // ProfileAlignment is the deterministic, read-only result consumed by later
@@ -232,8 +234,9 @@ type ProfileAlignment struct {
 // Baseline Profile. When ProfileID is empty, the current Setup Manifest owns
 // selection. Decisions are intentionally not an input to this operation.
 type CapabilityRecheckRequest struct {
-	Repository string
-	ProfileID  string
+	Repository            string
+	ProfileID             string
+	ExecutableDirectories []string
 }
 
 // CapabilityRecheckProfile identifies the exact Profile evaluated by a
@@ -390,6 +393,7 @@ func ResolveProfileAlignment(
 		root,
 		profile,
 		remediationProfileID,
+		request.ExecutableDirectories,
 		catalog,
 	)
 	if err != nil {
@@ -468,7 +472,14 @@ func RecheckCapabilities(
 	if err != nil {
 		return CapabilityRecheckResult{}, err
 	}
-	evaluation, err := evaluateProfileCapabilities(ctx, root, profile, profile.ID, catalog)
+	evaluation, err := evaluateProfileCapabilities(
+		ctx,
+		root,
+		profile,
+		profile.ID,
+		request.ExecutableDirectories,
+		catalog,
+	)
 	if err != nil {
 		return CapabilityRecheckResult{}, err
 	}
@@ -529,13 +540,19 @@ func evaluateProfileCapabilities(
 	root *os.Root,
 	profile ResolvedProfile,
 	remediationProfileID string,
+	executableDirectories []string,
 	catalog *Catalog,
 ) (profileCapabilityEvaluation, error) {
 	capabilities, err := resolvedProfileCapabilities(profile, catalog)
 	if err != nil {
 		return profileCapabilityEvaluation{}, err
 	}
-	outcomes, postgres, err := evaluateRepositoryCapabilities(ctx, root, capabilities)
+	outcomes, postgres, err := evaluateRepositoryCapabilities(
+		ctx,
+		root,
+		capabilities,
+		executableDirectories,
+	)
 	if err != nil {
 		return profileCapabilityEvaluation{}, err
 	}
@@ -792,6 +809,7 @@ func evaluateRepositoryCapabilities(
 	ctx context.Context,
 	root *os.Root,
 	capabilities []RepositoryCapability,
+	executableDirectories []string,
 ) ([]CapabilityOutcome, PostgreSQLEvidence, error) {
 	outcomes := make([]CapabilityOutcome, 0, len(capabilities))
 	postgres := PostgreSQLEvidence{}
@@ -804,7 +822,7 @@ func evaluateRepositoryCapabilities(
 		if capability.ID == "capability.stack.postgresql" {
 			outcome, postgres, err = evaluatePostgreSQLCapability(root, capability)
 		} else {
-			evidence := collectCapabilityEvidence(root, capability)
+			evidence := collectCapabilityEvidence(root, capability, executableDirectories)
 			outcome = evaluateCapability(capability, evidence)
 		}
 		if err != nil {
@@ -815,14 +833,18 @@ func evaluateRepositoryCapabilities(
 	return outcomes, postgres, nil
 }
 
-func collectCapabilityEvidence(root *os.Root, capability RepositoryCapability) []CapabilityEvidence {
+func collectCapabilityEvidence(
+	root *os.Root,
+	capability RepositoryCapability,
+	executableDirectories []string,
+) []CapabilityEvidence {
 	switch capability.EvidenceKind {
 	case CapabilityEvidenceDeclaredFile:
 		return collectDeclaredFileEvidence(root, capability)
 	case CapabilityEvidenceInstalledSkill:
 		return []CapabilityEvidence{collectInstalledSkillEvidence(root, capability)}
 	case CapabilityEvidenceExecutable:
-		return []CapabilityEvidence{collectExecutableEvidence(capability)}
+		return []CapabilityEvidence{collectExecutableEvidence(capability, executableDirectories)}
 	default:
 		return []CapabilityEvidence{invalidCapabilityEvidence(capability.EvidenceKind, "unsupported capability evidence kind")}
 	}
@@ -901,12 +923,15 @@ func collectInstalledSkillEvidence(root *os.Root, capability RepositoryCapabilit
 	}
 }
 
-func collectExecutableEvidence(capability RepositoryCapability) CapabilityEvidence {
+func collectExecutableEvidence(
+	capability RepositoryCapability,
+	executableDirectories []string,
+) CapabilityEvidence {
 	executable, ok := capability.Probe["executable"].(string)
 	if !ok || !identifierIsSafe(executable) {
 		return invalidCapabilityEvidence(capability.EvidenceKind, "executable probe is invalid")
 	}
-	result := resolveExecutableCandidate(executable)
+	result := resolveExecutableCandidate(executable, executableDirectories)
 	if result.Reason == executableProbeReasonNotFound {
 		evidence := absentCapabilityEvidence(capability.EvidenceKind)
 		evidence.Detail = result.Reason
@@ -932,11 +957,18 @@ func collectExecutableEvidence(capability RepositoryCapability) CapabilityEviden
 }
 
 // resolveExecutableCandidate inspects PATH candidates without executing them.
-func resolveExecutableCandidate(name string) executableProbeResult {
+func resolveExecutableCandidate(name string, executableDirectories []string) executableProbeResult {
 	var firstFailure executableProbeResult
-	for _, directory := range filepath.SplitList(os.Getenv("PATH")) {
-		if directory == "" {
-			directory = "."
+	for _, directory := range executableDirectories {
+		if !filepath.IsAbs(directory) {
+			result := executableProbeResult{
+				Candidate: filepath.Clean(filepath.Join(directory, name)),
+				Reason:    executableProbeReasonRelativePath,
+			}
+			if firstFailure.Candidate == "" {
+				firstFailure = result
+			}
+			continue
 		}
 		result, exists := inspectExecutableCandidate(filepath.Join(directory, name))
 		if !exists {
@@ -956,10 +988,6 @@ func resolveExecutableCandidate(name string) executableProbeResult {
 }
 
 func inspectExecutableCandidate(candidate string) (executableProbeResult, bool) {
-	absolute, err := filepath.Abs(candidate)
-	if err == nil {
-		candidate = absolute
-	}
 	candidate = filepath.Clean(candidate)
 	result := executableProbeResult{Candidate: candidate}
 	info, err := os.Lstat(candidate)

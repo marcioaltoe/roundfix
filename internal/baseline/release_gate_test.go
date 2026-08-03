@@ -8,6 +8,8 @@ package baseline
 import "testing"
 
 func TestProjectDecisionJourneyEngine(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		run  func(*testing.T)
@@ -26,6 +28,8 @@ func TestProjectDecisionJourneyEngine(t *testing.T) {
 }
 
 func TestToolingAuthorizationJourneyCoreClause(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		run  func(*testing.T)
@@ -40,6 +44,8 @@ func TestToolingAuthorizationJourneyCoreClause(t *testing.T) {
 }
 
 func TestBaselineReleaseGate(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		run  func(*testing.T)
@@ -66,6 +72,8 @@ func TestBaselineReleaseGate(t *testing.T) {
 }
 
 func TestBaselineFindingRegressions(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		run  func(*testing.T)

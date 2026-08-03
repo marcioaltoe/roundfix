@@ -17,6 +17,8 @@ import (
 )
 
 func TestSkillsRestoreOfflinePreviewApplyAndIdempotence(t *testing.T) {
+	t.Parallel()
+
 	repo, source, dependencies := newSkillsRestoreFixture(t, map[string]map[string]string{
 		"agentic-cli-design": {
 			"SKILL.md":            "# restored\n",
@@ -134,6 +136,8 @@ func TestSkillsRestoreOfflinePreviewApplyAndIdempotence(t *testing.T) {
 }
 
 func TestSkillsRestoreProvenanceAndPreMutationRefusals(t *testing.T) {
+	t.Parallel()
+
 	t.Run("groups exact provenance", func(t *testing.T) {
 		repo, source, dependencies := newSkillsRestoreFixture(t, map[string]map[string]string{
 			"agentic-cli-design": {"SKILL.md": "# agentic\n"},
@@ -244,6 +248,8 @@ func TestSkillsRestoreProvenanceAndPreMutationRefusals(t *testing.T) {
 }
 
 func TestSkillsRestoreStalePlanDoesNotMutate(t *testing.T) {
+	t.Parallel()
+
 	repo, source, dependencies := newSkillsRestoreFixture(t, map[string]map[string]string{
 		"agentic-cli-design": {"SKILL.md": "# restored\n"},
 	})
@@ -270,6 +276,8 @@ func TestSkillsRestoreStalePlanDoesNotMutate(t *testing.T) {
 }
 
 func TestSkillsRestoreRollbackRestoresSkillAndLockPreimage(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name  string
 		phase transactionPhase
@@ -337,6 +345,8 @@ func TestSkillsRestoreRollbackRestoresSkillAndLockPreimage(t *testing.T) {
 }
 
 func TestSkillsRestoreCompatibilityMatchesMaintainedPythonShape(t *testing.T) {
+	t.Parallel()
+
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
 		t.Fatal(err)

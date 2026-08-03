@@ -37,11 +37,12 @@ const (
 
 // PlanRequest is the complete normalized non-interactive planning input.
 type PlanRequest struct {
-	Repository   string
-	ProfileID    string
-	ProfileDraft *ProfileDraftInput
-	Decisions    []DecisionValue
-	Preservation RootPreservationRequest
+	Repository            string
+	ProfileID             string
+	ProfileDraft          *ProfileDraftInput
+	Decisions             []DecisionValue
+	Preservation          RootPreservationRequest
+	ExecutableDirectories []string
 }
 
 // ProfileDraftInput binds one strict repository-owned Profile draft to the
@@ -340,10 +341,11 @@ func buildPlanWithCatalog(
 		remediationProfileID = request.ProfileDraft.SourceProfileID
 	}
 	alignment, err := ResolveProfileAlignment(ctx, initial.Root, ProfileAlignmentRequest{
-		ProfileID:            profile.ID,
-		Decisions:            profileAlignmentDecisions(profile, decisions),
-		Profile:              &profile,
-		RemediationProfileID: remediationProfileID,
+		ProfileID:             profile.ID,
+		Decisions:             profileAlignmentDecisions(profile, decisions),
+		Profile:               &profile,
+		RemediationProfileID:  remediationProfileID,
+		ExecutableDirectories: request.ExecutableDirectories,
 	}, catalog)
 	if err != nil {
 		return PlanOutcome{}, err

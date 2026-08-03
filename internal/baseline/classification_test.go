@@ -18,6 +18,8 @@ import (
 )
 
 func TestSealedClassificationSnapshotIsCanonicalAndBounded(t *testing.T) {
+	t.Parallel()
+
 	source := classificationTestSource()
 	first, err := NewAnalysisSnapshot(source)
 	if err != nil {
@@ -62,6 +64,8 @@ func TestSealedClassificationSnapshotIsCanonicalAndBounded(t *testing.T) {
 }
 
 func TestClassificationSnapshotMakesExactTextAvailableToSealedAnalysis(t *testing.T) {
+	t.Parallel()
+
 	snapshot := classificationTestSnapshot(t)
 	canonical, err := snapshot.CanonicalBytes()
 	if err != nil {
@@ -80,6 +84,8 @@ func TestClassificationSnapshotMakesExactTextAvailableToSealedAnalysis(t *testin
 }
 
 func TestClassificationProposalDerivesByteEvidenceLocally(t *testing.T) {
+	t.Parallel()
+
 	snapshot := classificationTestSnapshot(t)
 	entry := snapshot.Entries[0]
 	destination := snapshot.Destinations[1]
@@ -115,6 +121,8 @@ func TestClassificationProposalDerivesByteEvidenceLocally(t *testing.T) {
 }
 
 func TestSemanticRuleDistributionAdmitsOnlyActiveSemanticOwners(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {
@@ -191,6 +199,8 @@ func TestSemanticRuleDistributionAdmitsOnlyActiveSemanticOwners(t *testing.T) {
 }
 
 func TestProposalValidationRejectsIncompleteOrUntrustedOutput(t *testing.T) {
+	t.Parallel()
+
 	snapshot := classificationTestSnapshot(t)
 	valid := classificationTestProposal(t, snapshot)
 	validJSON, err := json.Marshal(valid)
@@ -292,6 +302,8 @@ func TestProposalValidationRejectsIncompleteOrUntrustedOutput(t *testing.T) {
 }
 
 func TestManualClassificationFallbackReturnsCompleteDestinations(t *testing.T) {
+	t.Parallel()
+
 	snapshot := classificationTestSnapshot(t)
 	proposal, err := ManualClassificationProposal(snapshot)
 	if err != nil {
@@ -323,6 +335,8 @@ func TestManualClassificationFallbackReturnsCompleteDestinations(t *testing.T) {
 }
 
 func TestSealedClassificationEquivalentProposalsProduceSamePlanDigest(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	writeInspectionFile(t, repo, "AGENTS.md", "keep this repository rule\n")
 	commitInspectionRepository(t, repo, "add root instructions")
@@ -509,7 +523,7 @@ func TestCarrierClassification(t *testing.T) {
 		t.Parallel()
 
 		repo := newBaselinePlanCharacterizationRepository(t, true, true, true)
-		request := baselinePlanCharacterizationRequest(repo)
+		request := baselinePlanCharacterizationRequest(repo, baselinePlanCharacterizationBin(t))
 		initial, err := BuildPlan(context.Background(), request)
 		if err != nil {
 			t.Fatal(err)

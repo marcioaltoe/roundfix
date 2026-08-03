@@ -38,11 +38,11 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return exitOK
 	}
 	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		return runBaselineHumanCommand(ctx, args, stdout, stderr)
+		return runBaselineHumanCommand(ctx, args, stdout, stderr, environment)
 	}
 	switch args[0] {
 	case "plan":
-		return runBaselinePlanCommand(ctx, args[1:], stdout, stderr)
+		return runBaselinePlanCommand(ctx, args[1:], stdout, stderr, environment)
 	case "apply":
 		return runBaselineApplyCommand(ctx, args[1:], stdout, stderr)
 	case "capabilities":
@@ -56,7 +56,7 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 			)
 			return exitPreflight
 		}
-		return runBaselineCapabilitiesCheckCommand(ctx, args[2:], stdout, stderr)
+		return runBaselineCapabilitiesCheckCommand(ctx, args[2:], stdout, stderr, environment)
 	case "profile":
 		return runBaselineProfileCommand(args[1:], stdout, stderr, environment)
 	case "skills":
@@ -106,6 +106,7 @@ func runBaselineCapabilitiesCheckCommand(
 	args []string,
 	stdout io.Writer,
 	stderr io.Writer,
+	environment commandEnvironment,
 ) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline capabilities check"))
@@ -117,9 +118,15 @@ func runBaselineCapabilitiesCheckCommand(
 		printBaselineCapabilitiesCheckFailure(err, jsonOutput, stdout, stderr)
 		return exitPreflight
 	}
+	executableDirectories, err := environment.executableDirectories("resolve Baseline executable search path")
+	if err != nil {
+		printBaselineCapabilitiesCheckFailure(err, jsonOutput, stdout, stderr)
+		return exitPreflight
+	}
 	result, err := baseline.RecheckCapabilities(ctx, baseline.CapabilityRecheckRequest{
-		Repository: request.repo,
-		ProfileID:  request.profile,
+		Repository:            request.repo,
+		ProfileID:             request.profile,
+		ExecutableDirectories: executableDirectories,
 	})
 	if err != nil {
 		printBaselineCapabilitiesCheckFailure(err, jsonOutput, stdout, stderr)
@@ -234,13 +241,24 @@ func baselineCapabilitiesCheckJSONRequested(args []string) bool {
 	return false
 }
 
-func runBaselinePlanCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runBaselinePlanCommand(
+	ctx context.Context,
+	args []string,
+	stdout io.Writer,
+	stderr io.Writer,
+	environment commandEnvironment,
+) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline plan"))
 		return exitOK
 	}
 	req, err := parseBaselinePlanCommand(args)
 	jsonOutput := req.format == "json" || baselinePlanJSONRequested(args)
+	if err != nil {
+		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
+		return exitPreflight
+	}
+	executableDirectories, err := environment.executableDirectories("resolve Baseline executable search path")
 	if err != nil {
 		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
 		return exitPreflight
@@ -275,11 +293,12 @@ func runBaselinePlanCommand(ctx context.Context, args []string, stdout, stderr i
 		profileDraft = &input
 	}
 	outcome, err := baseline.BuildPlan(ctx, baseline.PlanRequest{
-		Repository:   req.repo,
-		ProfileID:    req.profile,
-		ProfileDraft: profileDraft,
-		Decisions:    decisionInput,
-		Preservation: preservation,
+		Repository:            req.repo,
+		ProfileID:             req.profile,
+		ProfileDraft:          profileDraft,
+		Decisions:             decisionInput,
+		Preservation:          preservation,
+		ExecutableDirectories: executableDirectories,
 	})
 	if err != nil {
 		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)

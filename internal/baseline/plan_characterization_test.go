@@ -46,10 +46,14 @@ type baselinePlanCharacterizationShape struct {
 
 type baselinePlanCharacterizationCase struct {
 	name  string
-	build func(*testing.T) (string, PlanRequest, baselinePlanCharacterizationShape)
+	build func(*testing.T, string) (string, PlanRequest, baselinePlanCharacterizationShape)
 }
 
 func TestBaselinePlanCharacterization(t *testing.T) {
+	// Sequential: can rewrite shared plan goldens when the update flag is enabled.
+	if !*updateBaselinePlanCharacterization {
+		t.Parallel()
+	}
 	characterizationBin := baselinePlanCharacterizationBin(t)
 	gitPath, err := exec.LookPath("git")
 	if err != nil {
@@ -58,10 +62,6 @@ func TestBaselinePlanCharacterization(t *testing.T) {
 	if err := os.Symlink(gitPath, filepath.Join(characterizationBin, "git")); err != nil {
 		t.Fatalf("expose git in controlled characterization PATH: %v", err)
 	}
-	t.Setenv("PATH", characterizationBin)
-	t.Setenv("GIT_AUTHOR_DATE", "2000-01-01T00:00:00Z")
-	t.Setenv("GIT_COMMITTER_DATE", "2000-01-01T00:00:00Z")
-
 	cases := []baselinePlanCharacterizationCase{
 		{name: "clean-adoption", build: buildCleanAdoptionCharacterization},
 		{name: "idempotent-replan-after-verified-apply", build: buildIdempotentReplanCharacterization},
@@ -71,7 +71,7 @@ func TestBaselinePlanCharacterization(t *testing.T) {
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
-			repository, request, fixture := test.build(t)
+			repository, request, fixture := test.build(t, characterizationBin)
 			catalog, err := LoadEmbeddedCatalog()
 			if err != nil {
 				t.Fatalf("%s: load embedded catalog: %v", test.name, err)
@@ -88,9 +88,10 @@ func TestBaselinePlanCharacterization(t *testing.T) {
 				t.Fatalf("%s: unresolved characterization decisions: %v", test.name, missing)
 			}
 			alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
-				ProfileID: request.ProfileID,
-				Decisions: profileAlignmentDecisions(profile, decisions),
-				Profile:   &profile,
+				ProfileID:             request.ProfileID,
+				Decisions:             profileAlignmentDecisions(profile, decisions),
+				Profile:               &profile,
+				ExecutableDirectories: request.ExecutableDirectories,
 			}, catalog)
 			if err != nil {
 				t.Fatalf("%s: resolve profile alignment: %v", test.name, err)
@@ -130,6 +131,8 @@ func TestBaselinePlanCharacterization(t *testing.T) {
 }
 
 func TestBaselinePlanCharacterizationDiffNamesShapeAndField(t *testing.T) {
+	t.Parallel()
+
 	want := []byte("{\n  \"outcome\": {\n    \"Result\": {\n      \"state\": \"ready\"\n    }\n  }\n}\n")
 	got := []byte("{\n  \"outcome\": {\n    \"Result\": {\n      \"state\": \"action_required\"\n    }\n  }\n}\n")
 	err := compareBaselinePlanCharacterization("clean-adoption", want, got)
@@ -142,18 +145,24 @@ func TestBaselinePlanCharacterizationDiffNamesShapeAndField(t *testing.T) {
 	}
 }
 
-func buildCleanAdoptionCharacterization(t *testing.T) (string, PlanRequest, baselinePlanCharacterizationShape) {
+func buildCleanAdoptionCharacterization(
+	t *testing.T,
+	executableDirectory string,
+) (string, PlanRequest, baselinePlanCharacterizationShape) {
 	t.Helper()
 	repository := newBaselinePlanCharacterizationRepository(t, true, true, true)
-	return repository, baselinePlanCharacterizationRequest(repository), baselinePlanCharacterizationShape{
+	return repository, baselinePlanCharacterizationRequest(repository, executableDirectory), baselinePlanCharacterizationShape{
 		ProfileID: "go-cli-tui",
 	}
 }
 
-func buildIdempotentReplanCharacterization(t *testing.T) (string, PlanRequest, baselinePlanCharacterizationShape) {
+func buildIdempotentReplanCharacterization(
+	t *testing.T,
+	executableDirectory string,
+) (string, PlanRequest, baselinePlanCharacterizationShape) {
 	t.Helper()
 	repository := newBaselinePlanCharacterizationRepository(t, true, true, true)
-	request := baselinePlanCharacterizationRequest(repository)
+	request := baselinePlanCharacterizationRequest(repository, executableDirectory)
 	outcome, err := BuildPlan(context.Background(), request)
 	if err != nil {
 		t.Fatalf("build pre-apply characterization plan: %v", err)
@@ -174,26 +183,35 @@ func buildIdempotentReplanCharacterization(t *testing.T) (string, PlanRequest, b
 	}
 }
 
-func buildBlockingCapabilitiesCharacterization(t *testing.T) (string, PlanRequest, baselinePlanCharacterizationShape) {
+func buildBlockingCapabilitiesCharacterization(
+	t *testing.T,
+	executableDirectory string,
+) (string, PlanRequest, baselinePlanCharacterizationShape) {
 	t.Helper()
 	repository := newBaselinePlanCharacterizationRepository(t, false, true, true)
-	return repository, baselinePlanCharacterizationRequest(repository), baselinePlanCharacterizationShape{
+	return repository, baselinePlanCharacterizationRequest(repository, executableDirectory), baselinePlanCharacterizationShape{
 		ProfileID: "go-cli-tui",
 	}
 }
 
-func buildAdvisoryDivergencesCharacterization(t *testing.T) (string, PlanRequest, baselinePlanCharacterizationShape) {
+func buildAdvisoryDivergencesCharacterization(
+	t *testing.T,
+	executableDirectory string,
+) (string, PlanRequest, baselinePlanCharacterizationShape) {
 	t.Helper()
 	repository := newBaselinePlanCharacterizationRepository(t, true, true, false)
-	return repository, baselinePlanCharacterizationRequest(repository), baselinePlanCharacterizationShape{
+	return repository, baselinePlanCharacterizationRequest(repository, executableDirectory), baselinePlanCharacterizationShape{
 		ProfileID: "go-cli-tui",
 	}
 }
 
-func buildSameBaselineDigestDriftCharacterization(t *testing.T) (string, PlanRequest, baselinePlanCharacterizationShape) {
+func buildSameBaselineDigestDriftCharacterization(
+	t *testing.T,
+	executableDirectory string,
+) (string, PlanRequest, baselinePlanCharacterizationShape) {
 	t.Helper()
 	repository := newBaselinePlanCharacterizationRepository(t, true, true, true)
-	request := baselinePlanCharacterizationRequest(repository)
+	request := baselinePlanCharacterizationRequest(repository, executableDirectory)
 	outcome, err := BuildPlan(context.Background(), request)
 	if err != nil {
 		t.Fatalf("build digest-drift fixture plan: %v", err)
@@ -238,12 +256,13 @@ func buildSameBaselineDigestDriftCharacterization(t *testing.T) (string, PlanReq
 	}
 }
 
-func baselinePlanCharacterizationRequest(repository string) PlanRequest {
+func baselinePlanCharacterizationRequest(repository, executableDirectory string) PlanRequest {
 	return PlanRequest{
-		Repository:   repository,
-		ProfileID:    "go-cli-tui",
-		Decisions:    planTestDecisions(),
-		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+		Repository:            repository,
+		ProfileID:             "go-cli-tui",
+		Decisions:             planTestDecisions(),
+		Preservation:          RootPreservationRequest{Mode: PreservationModeGreenfield},
+		ExecutableDirectories: []string{executableDirectory},
 	}
 }
 

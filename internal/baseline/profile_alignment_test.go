@@ -20,6 +20,8 @@ import (
 )
 
 func TestProfileAlignmentResolvesExactlyOneProfile(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 
@@ -71,19 +73,30 @@ func TestProfileAlignmentResolvesExactlyOneProfile(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("relative search directory is rejected without reading the process working directory", func(t *testing.T) {
+		result := resolveExecutableCandidate("probe", []string{"relative-bin"})
+		if result.Candidate != filepath.Join("relative-bin", "probe") ||
+			result.Reason != executableProbeReasonRelativePath {
+			t.Fatalf("relative executable directory result = %+v", result)
+		}
+	})
 }
 
 func TestCapabilityRecheckMatchesFullPlan(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
-	t.Setenv("PATH", t.TempDir())
+	executableDirectories := []string{t.TempDir()}
 
 	fullPlanAlignment, err := ResolveProfileAlignment(
 		context.Background(),
 		repository,
 		ProfileAlignmentRequest{
-			ProfileID: "standard-typescript-monorepo",
-			Decisions: standardTypeScriptDecisions("make verify"),
+			ProfileID:             "standard-typescript-monorepo",
+			Decisions:             standardTypeScriptDecisions("make verify"),
+			ExecutableDirectories: executableDirectories,
 		},
 		catalog,
 	)
@@ -92,8 +105,9 @@ func TestCapabilityRecheckMatchesFullPlan(t *testing.T) {
 	}
 
 	recheck, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
-		Repository: repository,
-		ProfileID:  "standard-typescript-monorepo",
+		Repository:            repository,
+		ProfileID:             "standard-typescript-monorepo",
+		ExecutableDirectories: executableDirectories,
 	})
 	if err != nil {
 		t.Fatalf("re-check capabilities: %v", err)
@@ -123,6 +137,8 @@ func TestCapabilityRecheckMatchesFullPlan(t *testing.T) {
 }
 
 func TestCapabilityRecheck(t *testing.T) {
+	t.Parallel()
+
 	t.Run("names a missing Profile", func(t *testing.T) {
 		repository := t.TempDir()
 		_, err := RecheckCapabilities(context.Background(), CapabilityRecheckRequest{
@@ -212,6 +228,8 @@ func TestCapabilityRecheck(t *testing.T) {
 }
 
 func TestRequiredDivergencePreventsReadyPlan(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
@@ -246,14 +264,17 @@ func TestRequiredDivergencePreventsReadyPlan(t *testing.T) {
 }
 
 func TestDivergenceCarriesProbeEvidence(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
-	t.Setenv("PATH", t.TempDir())
+	executableDirectories := []string{t.TempDir()}
 
 	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
-		ProfileID: "standard-typescript-monorepo",
-		Decisions: standardTypeScriptDecisions("make verify"),
+		ProfileID:             "standard-typescript-monorepo",
+		Decisions:             standardTypeScriptDecisions("make verify"),
+		ExecutableDirectories: executableDirectories,
 	}, catalog)
 	if err != nil {
 		t.Fatalf("resolve alignment with capability divergences: %v", err)
@@ -315,6 +336,8 @@ func TestDivergenceCarriesProbeEvidence(t *testing.T) {
 }
 
 func TestProfileAlignmentAdvisoryDivergenceNeverBlocksOrInfersPolicy(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 
@@ -340,6 +363,8 @@ func TestProfileAlignmentAdvisoryDivergenceNeverBlocksOrInfersPolicy(t *testing.
 }
 
 func TestProfileAlignmentCapabilityEvidenceRanking(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name        string
 		requirement CapabilityRequirement
@@ -400,6 +425,8 @@ func TestProfileAlignmentCapabilityEvidenceRanking(t *testing.T) {
 }
 
 func TestHTTPRouteCandidatesContainFactsWithoutNormativeClause(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	writeProfileAlignmentFile(t, repository, "packages/backend/src/infra/controllers/http/app.ts", `
@@ -454,6 +481,8 @@ app.route("/auth", auth)
 }
 
 func TestHTTPRouteCandidateLimitIgnoresUnrelatedSourceFiles(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	for index := range maxHTTPSourceFiles + 1 {
@@ -484,6 +513,8 @@ func TestHTTPRouteCandidateLimitIgnoresUnrelatedSourceFiles(t *testing.T) {
 }
 
 func TestHTTPRouteCandidateLimitRejectsTooManyRelevantSources(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	for index := range maxHTTPSourceFiles + 1 {
@@ -505,6 +536,8 @@ func TestHTTPRouteCandidateLimitRejectsTooManyRelevantSources(t *testing.T) {
 }
 
 func TestPostgreSQLEvidenceSeparatesImplementationAndContract(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	if err := os.Remove(filepath.Join(repository, "DATABASE.md")); err != nil {
@@ -551,6 +584,8 @@ func TestPostgreSQLEvidenceSeparatesImplementationAndContract(t *testing.T) {
 }
 
 func TestExecutableVerificationCommandRequiresLocalDeclaration(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(true, false))
@@ -604,6 +639,8 @@ func TestExecutableVerificationCommandRequiresLocalDeclaration(t *testing.T) {
 }
 
 func TestPortableVerificationRoleMapping(t *testing.T) {
+	t.Parallel()
+
 	const (
 		role                = "workspace"
 		portableCommand     = "bun run verify"
@@ -706,6 +743,8 @@ func TestPortableVerificationRoleMapping(t *testing.T) {
 }
 
 func TestProfileAlignmentDiscoversDeclaredRepositoryFormatter(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(true, false))
@@ -731,6 +770,8 @@ func TestProfileAlignmentDiscoversDeclaredRepositoryFormatter(t *testing.T) {
 }
 
 func TestProfileAlignmentEquivalentNormalizedDecisions(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	interactive := standardTypeScriptDecisions("make verify")
@@ -765,6 +806,8 @@ func TestProfileAlignmentEquivalentNormalizedDecisions(t *testing.T) {
 }
 
 func TestExecutableCandidateResolution(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name         string
 		arrange      func(*testing.T, string, string) string
@@ -894,9 +937,8 @@ func TestExecutableCandidateResolution(t *testing.T) {
 			bin := t.TempDir()
 			const name = "probe"
 			wantCandidate := tt.arrange(t, bin, name)
-			t.Setenv("PATH", bin)
 
-			result := resolveExecutableCandidate(name)
+			result := resolveExecutableCandidate(name, []string{bin})
 
 			if result.Candidate != wantCandidate ||
 				result.Resolved != tt.wantResolved(bin, name) ||
@@ -909,6 +951,8 @@ func TestExecutableCandidateResolution(t *testing.T) {
 }
 
 func TestExecutableCandidateNeverExecutes(t *testing.T) {
+	t.Parallel()
+
 	bin := t.TempDir()
 	marker := filepath.Join(t.TempDir(), "executed")
 	target := filepath.Join(bin, "target")
@@ -917,12 +961,10 @@ func TestExecutableCandidateNeverExecutes(t *testing.T) {
 	if err := os.Symlink(filepath.Base(target), filepath.Join(bin, "probe")); err != nil {
 		t.Fatalf("create executable probe symlink: %v", err)
 	}
-	t.Setenv("PATH", bin)
-
 	evidence := collectExecutableEvidence(RepositoryCapability{
 		EvidenceKind: CapabilityEvidenceExecutable,
 		Probe:        map[string]any{"executable": "probe"},
-	})
+	}, []string{bin})
 
 	if evidence.Status != CapabilityEvidencePresent || evidence.SourcePath != filepath.ToSlash(filepath.Join(bin, "probe")) {
 		t.Fatalf("collectExecutableEvidence(probe) = %+v", evidence)
@@ -933,6 +975,8 @@ func TestExecutableCandidateNeverExecutes(t *testing.T) {
 }
 
 func TestExecutableEvidenceDistinguishesFailureFromAbsence(t *testing.T) {
+	t.Parallel()
+
 	const name = "probe"
 	capability := RepositoryCapability{
 		EvidenceKind: CapabilityEvidenceExecutable,
@@ -945,9 +989,8 @@ func TestExecutableEvidenceDistinguishesFailureFromAbsence(t *testing.T) {
 		if err := os.Symlink("missing-target", candidate); err != nil {
 			t.Fatalf("create broken executable symlink: %v", err)
 		}
-		t.Setenv("PATH", bin)
 
-		evidence := collectExecutableEvidence(capability)
+		evidence := collectExecutableEvidence(capability, []string{bin})
 
 		if evidence.Status != CapabilityEvidenceInvalid ||
 			evidence.SourcePath != filepath.ToSlash(candidate) ||
@@ -957,9 +1000,7 @@ func TestExecutableEvidenceDistinguishesFailureFromAbsence(t *testing.T) {
 	})
 
 	t.Run("absent candidate", func(t *testing.T) {
-		t.Setenv("PATH", t.TempDir())
-
-		evidence := collectExecutableEvidence(capability)
+		evidence := collectExecutableEvidence(capability, []string{t.TempDir()})
 
 		if evidence.Status != CapabilityEvidenceAbsent || evidence.SourcePath != "" || evidence.Detail != executableProbeReasonNotFound {
 			t.Fatalf("absent executable evidence = %+v", evidence)
@@ -968,6 +1009,8 @@ func TestExecutableEvidenceDistinguishesFailureFromAbsence(t *testing.T) {
 }
 
 func TestCapabilityAuditNoExecution(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	bin := t.TempDir()
@@ -975,12 +1018,11 @@ func TestCapabilityAuditNoExecution(t *testing.T) {
 	for _, name := range []string{"docker", "rg", "rtk"} {
 		writeProfileAlignmentExecutable(t, bin, name, "#!/bin/sh\nprintf executed > \""+marker+"\"\n")
 	}
-	t.Setenv("PATH", bin)
-
 	before := snapshotInspectionTree(t, repository)
 	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
-		ProfileID: "standard-typescript-monorepo",
-		Decisions: standardTypeScriptDecisions("make verify"),
+		ProfileID:             "standard-typescript-monorepo",
+		Decisions:             standardTypeScriptDecisions("make verify"),
+		ExecutableDirectories: []string{bin},
 	}, catalog)
 	if err != nil {
 		t.Fatalf("resolve command-free capability audit: %v", err)
@@ -998,6 +1040,8 @@ func TestCapabilityAuditNoExecution(t *testing.T) {
 }
 
 func TestProfileDivergenceResolution(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	writeProfileAlignmentFile(
@@ -1086,6 +1130,8 @@ func TestProfileDivergenceResolution(t *testing.T) {
 }
 
 func TestUniversalCapabilityRemediation(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	if err := os.Remove(filepath.Join(repository, ".agents", "skills", "context7", "SKILL.md")); err != nil {
@@ -1122,17 +1168,20 @@ func TestUniversalCapabilityRemediation(t *testing.T) {
 }
 
 func TestDivergenceRendersProbe(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
 	if err := os.Remove(filepath.Join(repository, "packages", "frontend", "package.json")); err != nil {
 		t.Fatalf("remove declared-file fixture: %v", err)
 	}
-	t.Setenv("PATH", t.TempDir())
+	emptyExecutableDirectory := t.TempDir()
 
 	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
-		ProfileID: "standard-typescript-monorepo",
-		Decisions: standardTypeScriptDecisions("make verify"),
+		ProfileID:             "standard-typescript-monorepo",
+		Decisions:             standardTypeScriptDecisions("make verify"),
+		ExecutableDirectories: []string{emptyExecutableDirectory},
 	}, catalog)
 	if err != nil {
 		t.Fatalf("resolve divergence rendering fixture: %v", err)
@@ -1167,8 +1216,9 @@ func TestDivergenceRendersProbe(t *testing.T) {
 	withoutShadcn := strings.Replace(typeScriptPackageJSON(false, true), `"shadcn":"latest",`, "", 1)
 	writeProfileAlignmentFile(t, repository, "package.json", withoutShadcn)
 	alignment, err = ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
-		ProfileID: "standard-typescript-monorepo",
-		Decisions: standardTypeScriptDecisions("make verify"),
+		ProfileID:             "standard-typescript-monorepo",
+		Decisions:             standardTypeScriptDecisions("make verify"),
+		ExecutableDirectories: []string{emptyExecutableDirectory},
 	}, catalog)
 	if err != nil {
 		t.Fatalf("resolve decision-free cascade fixture: %v", err)
@@ -1184,10 +1234,10 @@ func TestDivergenceRendersProbe(t *testing.T) {
 
 	bin := t.TempDir()
 	writeProfileAlignmentFile(t, bin, "docker", "not executable")
-	t.Setenv("PATH", bin)
 	alignment, err = ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
-		ProfileID: "standard-typescript-monorepo",
-		Decisions: standardTypeScriptDecisions("make verify"),
+		ProfileID:             "standard-typescript-monorepo",
+		Decisions:             standardTypeScriptDecisions("make verify"),
+		ExecutableDirectories: []string{bin},
 	}, catalog)
 	if err != nil {
 		t.Fatalf("resolve rejected executable fixture: %v", err)
@@ -1204,6 +1254,8 @@ func TestDivergenceRendersProbe(t *testing.T) {
 }
 
 func TestCapabilityTextRendersProbe(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
@@ -1216,11 +1268,10 @@ func TestCapabilityTextRendersProbe(t *testing.T) {
 	if err := os.Symlink("missing-rtk-target", candidate); err != nil {
 		t.Fatalf("create broken rtk candidate: %v", err)
 	}
-	t.Setenv("PATH", bin)
-
 	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
-		ProfileID: "standard-typescript-monorepo",
-		Decisions: standardTypeScriptDecisions("make verify"),
+		ProfileID:             "standard-typescript-monorepo",
+		Decisions:             standardTypeScriptDecisions("make verify"),
+		ExecutableDirectories: []string{bin},
 	}, catalog)
 	if err != nil {
 		t.Fatalf("resolve rejected executable fixture: %v", err)
@@ -1239,10 +1290,11 @@ func TestCapabilityTextRendersProbe(t *testing.T) {
 		t.Errorf("rejected rtk candidate incorrectly recommends installation:\n%s", rendered)
 	}
 
-	t.Setenv("PATH", t.TempDir())
+	emptyExecutableDirectory := t.TempDir()
 	alignment, err = ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
-		ProfileID: "standard-typescript-monorepo",
-		Decisions: standardTypeScriptDecisions("make verify"),
+		ProfileID:             "standard-typescript-monorepo",
+		Decisions:             standardTypeScriptDecisions("make verify"),
+		ExecutableDirectories: []string{emptyExecutableDirectory},
 	}, catalog)
 	if err != nil {
 		t.Fatalf("resolve absent executable fixture: %v", err)
@@ -1259,6 +1311,8 @@ func TestCapabilityTextRendersProbe(t *testing.T) {
 }
 
 func TestCapabilityTextAndJSONAgree(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	bin := t.TempDir()
@@ -1266,11 +1320,10 @@ func TestCapabilityTextAndJSONAgree(t *testing.T) {
 	if err := os.Symlink("missing-rtk-target", candidate); err != nil {
 		t.Fatalf("create broken rtk candidate: %v", err)
 	}
-	t.Setenv("PATH", bin)
-
 	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
-		ProfileID: "standard-typescript-monorepo",
-		Decisions: standardTypeScriptDecisions("make verify"),
+		ProfileID:             "standard-typescript-monorepo",
+		Decisions:             standardTypeScriptDecisions("make verify"),
+		ExecutableDirectories: []string{bin},
 	}, catalog)
 	if err != nil {
 		t.Fatalf("resolve text and JSON fixture: %v", err)
@@ -1299,14 +1352,17 @@ func TestCapabilityTextAndJSONAgree(t *testing.T) {
 }
 
 func TestDivergenceGroupsByRequirement(t *testing.T) {
+	t.Parallel()
+
 	catalog := loadProfileAlignmentCatalog(t)
 	repository := newAlignedTypeScriptRepository(t)
 	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(false, true))
-	t.Setenv("PATH", t.TempDir())
+	emptyExecutableDirectory := t.TempDir()
 
 	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
-		ProfileID: "standard-typescript-monorepo",
-		Decisions: standardTypeScriptDecisions("make verify"),
+		ProfileID:             "standard-typescript-monorepo",
+		Decisions:             standardTypeScriptDecisions("make verify"),
+		ExecutableDirectories: []string{emptyExecutableDirectory},
 	}, catalog)
 	if err != nil {
 		t.Fatalf("resolve grouped divergences: %v", err)

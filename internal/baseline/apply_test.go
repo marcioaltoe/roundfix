@@ -19,6 +19,8 @@ import (
 )
 
 func TestApplyCanonicalizesLegacyRepositoryRules(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	const rules = "# Repository rules\n\nKeep the repository boundary explicit.\n"
 	writeInspectionFile(t, repo, legacyRepositoryPath, rules)
@@ -49,6 +51,8 @@ func TestApplyCanonicalizesLegacyRepositoryRules(t *testing.T) {
 }
 
 func TestRepositoryRuleBlockPreservesRepositoryEditAndEmptyReapply(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	rule := []byte("Keep CLI diagnostics on stderr for this repository.\n")
 	writeInspectionFile(t, repo, legacyRepositoryPath, string(rule))
@@ -120,6 +124,8 @@ func TestRepositoryRuleBlockPreservesRepositoryEditAndEmptyReapply(t *testing.T)
 }
 
 func TestRepositoryRuleBlockRollbackRestoresSemanticGuide(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	const rule = "Keep repository CLI output stable.\n"
 	writeInspectionFile(t, repo, legacyRepositoryRulesPath, rule)
@@ -148,6 +154,8 @@ func TestRepositoryRuleBlockRollbackRestoresSemanticGuide(t *testing.T) {
 }
 
 func TestApplyExactDigest(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	plan := buildTestPlan(t, repo)
 	before := snapshotVisibleTree(t, repo)
@@ -173,6 +181,8 @@ func TestApplyExactDigest(t *testing.T) {
 }
 
 func TestResultStatusMatrix(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	plan := buildTestPlan(t, repo)
 
@@ -255,6 +265,8 @@ func TestResultStatusMatrix(t *testing.T) {
 }
 
 func TestCompletionLanguageRequiresRetention(t *testing.T) {
+	t.Parallel()
+
 	t.Run("retention and idempotence without approved postimages", func(t *testing.T) {
 		plan := planWithVerifiedRetention(t, buildTestPlan(t, newPlanRepository(t)))
 		plan.Postimages = nil
@@ -340,6 +352,8 @@ func planWithVerifiedRetention(t *testing.T, plan PlanDocument) PlanDocument {
 }
 
 func TestApplyStalePreimage(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		path     string
@@ -378,6 +392,8 @@ func TestApplyStalePreimage(t *testing.T) {
 }
 
 func TestApplyCrossClone(t *testing.T) {
+	t.Parallel()
+
 	source := newPlanRepository(t)
 	writeTransactionFile(t, source, "AGENTS.md", "repository policy\n", 0o644)
 	commitInspectionRepository(t, source, "add root carrier")
@@ -402,6 +418,8 @@ func TestApplyCrossClone(t *testing.T) {
 }
 
 func TestImmutableRootBackup(t *testing.T) {
+	t.Parallel()
+
 	const original = "repository policy\n"
 	for _, existing := range []bool{false, true} {
 		name := "creates exclusive backup"
@@ -444,6 +462,8 @@ func TestImmutableRootBackup(t *testing.T) {
 }
 
 func TestManagedRootFreshPlan(t *testing.T) {
+	t.Parallel()
+
 	const managed = `<!-- setup-context-driven:begin id=root.core version=0.0.1 -->
 managed root guidance
 <!-- setup-context-driven:end id=root.core -->
@@ -503,6 +523,8 @@ managed root guidance
 }
 
 func TestApplyPostimageFailureRollsBack(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	plan := buildTestPlan(t, repo)
 	before := snapshotVisibleTree(t, repo)
@@ -527,6 +549,8 @@ func TestApplyPostimageFailureRollsBack(t *testing.T) {
 }
 
 func TestProfileAdaptationApplyVerifiesProfileAndManifest(t *testing.T) {
+	t.Parallel()
+
 	repo := newBackendProfileRepository(t, true)
 	request, _ := backendProfileDraftPlanRequest(t, repo)
 	outcome, err := BuildPlan(context.Background(), request)
@@ -573,6 +597,8 @@ func TestProfileAdaptationApplyVerifiesProfileAndManifest(t *testing.T) {
 }
 
 func TestProfileDraftRollbackRestoresMissingProfile(t *testing.T) {
+	t.Parallel()
+
 	repo := newBackendProfileRepository(t, true)
 	request, _ := backendProfileDraftPlanRequest(t, repo)
 	outcome, err := BuildPlan(context.Background(), request)
@@ -603,6 +629,8 @@ func TestProfileDraftRollbackRestoresMissingProfile(t *testing.T) {
 }
 
 func TestProfileDraftStaleTargetProducesNoMutation(t *testing.T) {
+	t.Parallel()
+
 	repo := newBackendProfileRepository(t, true)
 	request, _ := backendProfileDraftPlanRequest(t, repo)
 	outcome, err := BuildPlan(context.Background(), request)
@@ -626,6 +654,8 @@ func TestProfileDraftStaleTargetProducesNoMutation(t *testing.T) {
 }
 
 func TestBaselineVerification(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	plan := buildTestPlan(t, repo)
 	marker := filepath.Join(repo, "verification-command-ran")
@@ -673,6 +703,8 @@ func TestBaselineVerification(t *testing.T) {
 }
 
 func TestEmptyReapply(t *testing.T) {
+	t.Parallel()
+
 	repo := newPlanRepository(t)
 	const policy = "repository policy\n"
 	writeTransactionFile(t, repo, "AGENTS.md", policy, 0o644)

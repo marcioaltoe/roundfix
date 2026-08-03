@@ -196,6 +196,7 @@ type commandEnvironment struct {
 	colorMode      string
 	noColor        string
 	codexPath      string
+	executablePath string
 	branchActor    string
 }
 
@@ -223,6 +224,7 @@ func commandEnvironmentFromProcess() commandEnvironment {
 		colorMode:      os.Getenv("ROUNDFIX_COLOR"),
 		noColor:        os.Getenv("NO_COLOR"),
 		codexPath:      os.Getenv("CODEX_PATH"),
+		executablePath: os.Getenv("PATH"),
 		branchActor:    branchActor,
 	}
 }
@@ -270,6 +272,23 @@ func (environment commandEnvironment) resolveWorkDir(operation string) (string, 
 		return "", fmt.Errorf("%s: %w", operation, environment.workDirErr)
 	}
 	return environment.workDir, nil
+}
+
+func (environment commandEnvironment) executableDirectories(operation string) ([]string, error) {
+	workDir, err := environment.resolveWorkDir(operation)
+	if err != nil {
+		return nil, err
+	}
+	directories := filepath.SplitList(environment.executablePath)
+	for index, directory := range directories {
+		if directory == "" {
+			directory = workDir
+		} else if !filepath.IsAbs(directory) {
+			directory = filepath.Join(workDir, directory)
+		}
+		directories[index] = filepath.Clean(directory)
+	}
+	return directories, nil
 }
 
 func Run(args []string, stdout, stderr io.Writer) int {

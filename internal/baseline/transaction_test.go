@@ -19,6 +19,8 @@ import (
 )
 
 func TestTransactionStagesBeforeMutation(t *testing.T) {
+	t.Parallel()
+
 	repo, plan := newTransactionRepository(t)
 	before := snapshotVisibleTree(t, repo)
 
@@ -40,6 +42,8 @@ func TestTransactionStagesBeforeMutation(t *testing.T) {
 }
 
 func TestTransactionRollback(t *testing.T) {
+	t.Parallel()
+
 	repo, plan := newTransactionRepository(t)
 	before := snapshotVisibleTree(t, repo)
 
@@ -56,6 +60,8 @@ func TestTransactionRollback(t *testing.T) {
 }
 
 func TestTransactionRecovery(t *testing.T) {
+	t.Parallel()
+
 	repo, plan := newTransactionRepository(t)
 	before := snapshotVisibleTree(t, repo)
 
@@ -82,6 +88,8 @@ func TestTransactionRecovery(t *testing.T) {
 }
 
 func TestTransactionLock(t *testing.T) {
+	t.Parallel()
+
 	repo, plan := newTransactionRepository(t)
 	first := beginTestTransaction(t, repo, plan)
 	defer func() {
@@ -97,6 +105,8 @@ func TestTransactionLock(t *testing.T) {
 }
 
 func TestTransactionRejectsStalePreimage(t *testing.T) {
+	t.Parallel()
+
 	t.Run("unsafe path", func(t *testing.T) {
 		repo, plan := newTransactionRepository(t)
 		plan.Postimages[0].Path = "../escape"
@@ -166,6 +176,8 @@ func TestTransactionRejectsStalePreimage(t *testing.T) {
 }
 
 func TestTransactionFailureMatrix(t *testing.T) {
+	t.Parallel()
+
 	templateRepo, templatePlan := newTransactionRepository(t)
 	points := []transactionFaultPoint{
 		{Phase: transactionPhaseJournaled},
