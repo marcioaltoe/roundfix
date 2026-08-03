@@ -72,6 +72,16 @@ type implementSeed struct {
 	verification []string
 }
 
+func implementQAGateSeed(status string, needs ...string) implementSeed {
+	return implementSeed{
+		id:       "task_qa",
+		title:    "Run the QA gate",
+		taskType: string(spec.TaskTypeQA),
+		status:   status,
+		needs:    needs,
+	}
+}
+
 func gitImplement(t *testing.T, dir string, args ...string) {
 	t.Helper()
 	cmdArgs := append(gitConfigArgsForTest(), args...)
@@ -547,14 +557,35 @@ func writeImplementSpec(t *testing.T, repoDir string, slug string, seeds []imple
 	writeImplementSpecAtRoot(t, filepath.Join(repoDir, "docs", "specs"), slug, seeds)
 }
 
+func declareImplementQADeclined(t *testing.T, repoDir string, reason string) {
+	t.Helper()
+	manifestPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_tasks.md")
+	manifest := mustRead(t, manifestPath)
+	manifest = strings.Replace(manifest, "schema: spec-tasks/v1\n", "schema: spec-tasks/v1\nqa: declined\nqa_reason: "+reason+"\n", 1)
+	mustWrite(t, manifestPath, manifest)
+	gitImplement(t, repoDir, "add", filepath.Join("docs", "specs", implementTestSlug, "_tasks.md"))
+	gitImplement(t, repoDir, "commit", "-m", "declare QA declined")
+}
+
 func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds []implementSeed) {
 	t.Helper()
 	specDir := filepath.Join(specsRoot, slug)
 	mustMkdir(t, specDir)
 	mustWrite(t, filepath.Join(specDir, "_prd.md"), "---\nstatus: active\n---\n\n# PRD\n")
 
+	var qaTaskID string
+	for _, seed := range seeds {
+		if seed.taskType == string(spec.TaskTypeQA) {
+			qaTaskID = seed.id
+			break
+		}
+	}
 	var manifest strings.Builder
-	manifest.WriteString("---\nschema: spec-tasks/v1\ngraph:\n  nodes:\n")
+	manifest.WriteString("---\nschema: spec-tasks/v1\n")
+	if qaTaskID != "" {
+		manifest.WriteString("qa: " + qaTaskID + "\n")
+	}
+	manifest.WriteString("graph:\n  nodes:\n")
 	for _, seed := range seeds {
 		manifest.WriteString(fmt.Sprintf("    - id: %s\n      file: %s.md\n", seed.id, seed.id))
 		if len(seed.needs) > 0 {
@@ -1316,7 +1347,6 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 	}
 	want := map[string]bool{
 		"--spec":              true,
-		"--qa":                true,
 		"--agent":             true,
 		"--model":             true,
 		"--reasoning-effort":  true,
@@ -1341,6 +1371,26 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 	for flagName := range got {
 		if !want[flagName] {
 			t.Fatalf("help lists unimplemented flag %s:\n%s", flagName, stdout.String())
+		}
+	}
+}
+
+func TestRunImplementRemovedQAFlagExplainsTaskGraph(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected preflight exit %d, got %d", exitPreflight, code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	for _, want := range []string{`unknown flag "--qa"`, "gate is declared in the Spec's Task Graph"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected removed-flag remediation %q, got %q", want, stderr.String())
 		}
 	}
 }
@@ -1692,6 +1742,7 @@ func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
 	})
 	_, externalRoot := newExternalSpecsRoot(t, implementTestSlug, []implementSeed{
 		{id: "task_01", title: "Build from external root"},
+		implementQAGateSeed("", "task_01"),
 	})
 	configureExternalSpecsRoot(t, repoDir, externalRoot)
 	runner := &implementFakeRunner{
@@ -1703,7 +1754,7 @@ func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean exit, got %d (stderr %q stdout %q)", code, stderr.String(), stdout.String())
@@ -1774,37 +1825,42 @@ func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.
 	}
 }
 
-func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
+func TestRunImplementInteractiveInputDoesNotChooseQAGate(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name        string
-		args        []string
-		input       string
-		qaReport    string
+		gate        bool
+		inputQA     bool
 		wantQACalls int
 	}{
-		{name: "scripted yes produces QA Run", args: []string{"implement"}, input: "1\ncodex\ngpt-5.6-sol\nhigh\ny\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
-		{name: "empty input produces non-QA Run", args: []string{"implement"}, input: "1\ncodex\ngpt-5.6-sol\nhigh\n\n", wantQACalls: 0},
-		{name: "qa flag preset keeps QA on with enter", args: []string{"implement", "--qa"}, input: "1\ncodex\ngpt-5.6-sol\nhigh\n\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
+		{name: "input cannot add a gate absent from the graph", inputQA: true, wantQACalls: 0},
+		{name: "input cannot remove a gate declared by the graph", gate: true, wantQACalls: 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, repoDir := newImplementWorkspace(t, []implementSeed{
+			seeds := []implementSeed{
 				{id: "task_01", title: "Build the widget core"},
-			})
+			}
+			if tt.gate {
+				seeds = append(seeds, implementQAGateSeed("", "task_01"))
+			}
+			_, repoDir := newImplementWorkspace(t, seeds)
 			runner := &implementFakeRunner{
 				gitRoot:      repoDir,
 				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
-				qaReport:     tt.qaReport,
+				qaReport:     implementQAReport("pass"),
 			}
 			withImplementCollaborators(t, runner)
-			withInteractiveInput(t, func(ctx context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
-				return roundtui.CollectInput(ctx, req, strings.NewReader(tt.input), io.Discard)
+			withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
+				values := req.Values
+				values.Spec = implementTestSlug
+				values.QA = tt.inputQA
+				return values, nil
 			})
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := runCLIContext(t, context.Background(), tt.args, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"implement"}, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -1820,7 +1876,7 @@ func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
 	}
 }
 
-func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
+func TestRunImplementInteractiveInputPersistsAgentButNotSpec(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
@@ -1828,7 +1884,6 @@ func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
-		qaReport:     implementQAReport("pass"),
 	}
 	configureImplementClaudeReasoning(t, repoDir)
 	withImplementCollaborators(t, runner)
@@ -1836,7 +1891,6 @@ func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
 		values := req.Values
 		values.Spec = implementTestSlug
 		values.Agent = "claude"
-		values.QA = true
 		return values, nil
 	})
 	var stdout bytes.Buffer
@@ -1850,8 +1904,8 @@ func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
 	}
 
 	// A second explicit Interactive Input reopens the flow. The configured
-	// Agent remains the suggestion, while the Spec and QA choice are not
-	// remembered because each Run's target is an explicit choice.
+	// Agent remains the suggestion, while the Spec is not remembered because
+	// each Run's target is an explicit choice.
 	gitImplement(t, repoDir, "add", "-A")
 	gitImplement(t, repoDir, "commit", "-m", "keep first run")
 	var secondReq roundtui.InputRequest
@@ -1871,12 +1925,6 @@ func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
 	}
 	if secondReq.Values.Spec != "" {
 		t.Fatalf("expected the spec slug not remembered across invocations, got %q", secondReq.Values.Spec)
-	}
-	if secondReq.Values.QA {
-		t.Fatal("expected the QA choice not remembered across invocations")
-	}
-	if !strings.Contains(secondCollected.String(), "QA gate [y/N]:") {
-		t.Fatalf("expected the second invocation to show the default QA prompt, got:\n%s", secondCollected.String())
 	}
 }
 
@@ -2971,12 +3019,14 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 		wantPushes      int
 		wantStdout      []string
 		verificationErr error
+		graphQA         bool
 	}{
 		{
 			name:           "clean qa pass with key pushes",
 			enableAutoPush: true,
 			configUpstream: true,
-			args:           []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"},
+			args:           []string{"implement", "--spec", implementTestSlug, "--no-input"},
+			graphQA:        true,
 			runner: func(repoDir string) *implementFakeRunner {
 				return &implementFakeRunner{
 					gitRoot:      repoDir,
@@ -2989,7 +3039,7 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			wantPushes: 1,
 			wantStdout: []string{
 				"qa pass — " + implementQAReportRelPath() + "\n",
-				"Clean: all 1 Task(s) completed.\n",
+				"Clean: all 2 Task(s) completed.\n",
 				"pushed origin/ma/widget-flow\n",
 			},
 		},
@@ -3045,7 +3095,8 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			name:           "qa fail does not push",
 			enableAutoPush: true,
 			configUpstream: true,
-			args:           []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"},
+			args:           []string{"implement", "--spec", implementTestSlug, "--no-input"},
+			graphQA:        true,
 			runner: func(repoDir string) *implementFakeRunner {
 				return &implementFakeRunner{
 					gitRoot:      repoDir,
@@ -3056,14 +3107,18 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			wantCode:   1,
 			wantState:  store.StateUnresolved,
 			wantPushes: 0,
-			wantStdout: []string{"qa fail — " + implementQAReportRelPath() + "\n", "Unresolved: 1 completed, 0 failed, 0 skipped, 0 pending.\n"},
+			wantStdout: []string{"qa fail — " + implementQAReportRelPath() + "\n", "Unresolved: 1 completed, 1 failed, 0 skipped, 0 pending.\n"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+			seeds := []implementSeed{
 				{id: "task_01", title: "Build the widget core"},
-			})
+			}
+			if tt.graphQA {
+				seeds = append(seeds, implementQAGateSeed("", "task_01"))
+			}
+			homeDir, repoDir := newImplementWorkspace(t, seeds)
 			if tt.enableAutoPush {
 				configureImplementAutoPush(t, repoDir, true)
 			}
@@ -4552,6 +4607,57 @@ func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestRunImplementSettledQAGateReportsWithoutRun(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget backend", status: string(spec.StatusCompleted)},
+		implementQAGateSeed(string(spec.StatusCompleted), "task_01"),
+	})
+	runner := &implementFakeRunner{gitRoot: repoDir}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "task_qa completed — Run the QA gate\n") ||
+		!strings.Contains(stdout.String(), "All 2 Task(s) already completed; no Run was created.\n") {
+		t.Fatalf("expected settled gate no-op report, got:\n%s", stdout.String())
+	}
+	if runner.calls != 0 {
+		t.Fatalf("expected no Agent invocation, got %d", runner.calls)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunImplementDeclinedQAGateReportsWithoutRun(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Write the widget guide", status: string(spec.StatusCompleted)},
+	})
+	declareImplementQADeclined(t, repoDir, "no behavioral surface")
+	runner := &implementFakeRunner{gitRoot: repoDir}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "All 1 Task(s) already completed; no Run was created.\n") {
+		t.Fatalf("expected declined gate no-op report, got:\n%s", stdout.String())
+	}
+	if runner.calls != 0 {
+		t.Fatalf("expected no Agent invocation, got %d", runner.calls)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestImplementTaskStatusFailureEndsUnresolvedAndKeepsWorktree(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
@@ -4773,19 +4879,20 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 		wantCode    int
 		wantVerdict string
 		wantState   string
-		wantCommit  bool
+		hasReport   bool
 		wantDetail  string
 	}{
-		{name: "pass", report: implementQAReport("pass"), wantCode: 0, wantVerdict: "pass", wantState: store.StateClean, wantCommit: true, wantDetail: reportRel},
-		{name: "partial", report: implementQAReport("partial"), wantCode: 1, wantVerdict: "partial", wantState: store.StateUnresolved, wantCommit: true, wantDetail: reportRel},
-		{name: "fail", report: implementQAReport("fail"), wantCode: 1, wantVerdict: "fail", wantState: store.StateUnresolved, wantCommit: true, wantDetail: reportRel},
-		{name: "missing report", report: "", wantCode: 1, wantVerdict: "missing", wantState: store.StateUnresolved, wantCommit: false, wantDetail: "no QA Report found"},
-		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantCode: 1, wantVerdict: "unreadable", wantState: store.StateUnresolved, wantCommit: true, wantDetail: reportRel},
+		{name: "pass", report: implementQAReport("pass"), wantCode: 0, wantVerdict: "pass", wantState: store.StateClean, hasReport: true, wantDetail: reportRel},
+		{name: "partial", report: implementQAReport("partial"), wantCode: 1, wantVerdict: "partial", wantState: store.StateUnresolved, hasReport: true, wantDetail: reportRel},
+		{name: "fail", report: implementQAReport("fail"), wantCode: 1, wantVerdict: "fail", wantState: store.StateUnresolved, hasReport: true, wantDetail: reportRel},
+		{name: "missing report", report: "", wantCode: 1, wantVerdict: "missing", wantState: store.StateUnresolved, wantDetail: "no QA Report found"},
+		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantCode: 1, wantVerdict: "unreadable", wantState: store.StateUnresolved, hasReport: true, wantDetail: reportRel},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 				{id: "task_01", title: "Build the widget core"},
+				implementQAGateSeed("", "task_01"),
 			})
 			runner := &implementFakeRunner{
 				gitRoot:      repoDir,
@@ -4796,16 +4903,19 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
 			}
-			outcomeLine := "Unresolved: 1 completed, 0 failed, 0 skipped, 0 pending.\n"
+			gateLine := "task_qa failed — Run the QA gate\n"
+			outcomeLine := "Unresolved: 1 completed, 1 failed, 0 skipped, 0 pending.\n"
 			if tt.wantState == store.StateClean {
-				outcomeLine = "Clean: all 1 Task(s) completed.\n"
+				gateLine = "task_qa completed — Run the QA gate\n"
+				outcomeLine = "Clean: all 2 Task(s) completed.\n"
 			}
 			expected := "task_01 completed — Build the widget core\n" +
+				gateLine +
 				"qa " + tt.wantVerdict + " — " + tt.wantDetail + "\n" +
 				outcomeLine
 			if stdout.String() != expected {
@@ -4814,18 +4924,12 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			if runner.qaCalls != 1 {
 				t.Fatalf("expected one QA Agent invocation, got %d", runner.qaCalls)
 			}
-			wantCommits := 1
-			if tt.wantCommit {
-				wantCommits = 2
+			if committer.calls != 2 {
+				t.Fatalf("expected the settled QA Task committed separately, got %d commit(s) (%v)", committer.calls, committer.messages)
 			}
-			if committer.calls != wantCommits {
-				t.Fatalf("expected %d commit(s), got %d (%v)", wantCommits, committer.calls, committer.messages)
-			}
-			if tt.wantCommit {
-				wantMessage := "docs: qa report for " + implementTestSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + implementTestSlug
-				if committer.messages[len(committer.messages)-1] != wantMessage {
-					t.Fatalf("expected the QA Report in its own commit %q, got %v", wantMessage, committer.messages)
-				}
+			wantMessage := "docs: qa report for " + implementTestSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + implementTestSlug
+			if committer.messages[len(committer.messages)-1] != wantMessage {
+				t.Fatalf("expected the settled QA artifacts in their own commit %q, got %v", wantMessage, committer.messages)
 			}
 			runID := implementRunIDFromStderr(t, stderr.String())
 			run := implementRunFromStore(t, homeDir, runID)
@@ -4839,7 +4943,7 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			if !strings.Contains(string(event.Payload), fmt.Sprintf("%q", tt.wantVerdict)) {
 				t.Fatalf("expected the verdict in the daemon.qa payload, got %s", event.Payload)
 			}
-			if tt.wantCommit && !strings.Contains(string(event.Payload), reportRel) {
+			if tt.hasReport && !strings.Contains(string(event.Payload), reportRel) {
 				t.Fatalf("expected the report path in the daemon.qa payload, got %s", event.Payload)
 			}
 			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
@@ -4852,6 +4956,7 @@ func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", verification: []string{"fail-task-01"}},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
+		implementQAGateSeed("", "task_02"),
 	})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
@@ -4863,7 +4968,7 @@ func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
@@ -4873,7 +4978,8 @@ func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
 		"  reason: Verification failed: command \"fail-task-01\" exited with exit status 7; diagnostics: ",
 		"task_02 skipped — Wire the widget API\n",
 		"  reason: needs not completed: task_01\n",
-		"Unresolved: 0 completed, 1 failed, 1 skipped, 0 pending.\n",
+		"task_qa skipped — Run the QA gate\n",
+		"Unresolved: 0 completed, 1 failed, 2 skipped, 0 pending.\n",
 	} {
 		if !strings.Contains(stdout.String(), expected) {
 			t.Fatalf("expected no-QA report to contain %q, got:\n%s", expected, stdout.String())
@@ -4907,6 +5013,7 @@ func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
 			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 				{id: "task_01", title: "Write the widget guide", status: string(spec.StatusCompleted)},
 				{id: "task_02", title: "Build the widget backend", status: string(spec.StatusCompleted), needs: []string{"task_01"}},
+				implementQAGateSeed("", "task_02"),
 			})
 			runner := &implementFakeRunner{
 				gitRoot:  repoDir,
@@ -4916,17 +5023,20 @@ func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
 			}
-			outcomeLine := "Unresolved: 2 completed, 0 failed, 0 skipped, 0 pending.\n"
+			gateLine := "task_qa failed — Run the QA gate\n"
+			outcomeLine := "Unresolved: 2 completed, 1 failed, 0 skipped, 0 pending.\n"
 			if tt.wantState == store.StateClean {
-				outcomeLine = "Clean: all 2 Task(s) completed.\n"
+				gateLine = "task_qa completed — Run the QA gate\n"
+				outcomeLine = "Clean: all 3 Task(s) completed.\n"
 			}
 			expected := "task_01 completed — Write the widget guide\n" +
 				"task_02 completed — Build the widget backend\n" +
+				gateLine +
 				"qa " + tt.verdict + " — " + implementQAReportRelPath() + "\n" +
 				outcomeLine
 			if stdout.String() != expected {
@@ -4952,6 +5062,7 @@ func TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Write the widget guide", status: string(spec.StatusCompleted)},
+		implementQAGateSeed("", "task_01"),
 	})
 	runner := &implementFakeRunner{
 		gitRoot:  repoDir,
@@ -4961,7 +5072,7 @@ func TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected a clean QA-only Run, got %d (stderr %q)", code, stderr.String())
@@ -4991,6 +5102,7 @@ func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Guide docs", taskType: "docs"},
 		{id: "task_02", title: "Build core", needs: []string{"task_01"}},
+		implementQAGateSeed("", "task_02"),
 	})
 	runner := &implementFakeRunner{
 		gitRoot: repoDir,
@@ -5003,7 +5115,7 @@ func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
 	withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	if code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr); code != 0 {
+	if code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("seed implement run failed: %d stderr=%q", code, stderr.String())
 	}
 	runID := implementRunIDFromStderr(t, stderr.String())
@@ -5029,6 +5141,7 @@ func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
 		"Tasks",
 		"task_01 completed — Guide docs",
 		"task_02 completed — Build core",
+		"task_qa completed — Run the QA gate",
 		"Task task_01 settled completed.",
 		"QA verdict pass for Spec " + implementTestSlug + ".",
 		"Run " + runID + " reached Clean; timeline replayed read-only.",
@@ -5089,6 +5202,7 @@ func TestAgentSelectionProfilesMacro(t *testing.T) {
 		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 			{id: "task_backend", title: "Build backend API", taskType: "backend"},
 			{id: "task_frontend", title: "Build frontend view", taskType: "frontend"},
+			implementQAGateSeed("", "task_backend", "task_frontend"),
 		})
 		sentinels := seedMacroRuntimeOwnedFiles(t, homeDir)
 		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -5127,7 +5241,7 @@ func TestAgentSelectionProfilesMacro(t *testing.T) {
 
 		env := fake.env()
 		env["ROUNDFIX_FAKE_ACPX_FAIL_PREPARE_MODEL"] = "macro-frontend-preferred"
-		stdout, stderr, code = runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", env, "implement", "--spec", implementTestSlug, "--qa", "--no-input")
+		stdout, stderr, code = runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", env, "implement", "--spec", implementTestSlug, "--no-input")
 		if code != exitOK {
 			t.Fatalf("implement macro failed: code=%d stdout=%q stderr=%q", code, stdout, stderr)
 		}
@@ -5135,8 +5249,9 @@ func TestAgentSelectionProfilesMacro(t *testing.T) {
 		for _, expected := range []string{
 			"task_backend completed — Build backend API",
 			"task_frontend completed — Build frontend view",
+			"task_qa completed — Run the QA gate",
 			"qa pass — docs/specs/0001-widget-flow/qa/qa-report-2026-01-01.md",
-			"Clean: all 2 Task(s) completed.",
+			"Clean: all 3 Task(s) completed.",
 		} {
 			if !strings.Contains(stdout, expected) {
 				t.Fatalf("implement stdout missing %q:\n%s", expected, stdout)

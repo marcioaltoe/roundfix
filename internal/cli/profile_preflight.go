@@ -19,11 +19,11 @@ type profileOperationalPreflightResult struct {
 	Err      error                       `json:"-"`
 }
 
-func implementProfileCategories(graph *spec.Graph, includeQA bool) []roundconfig.WorkCategory {
+func implementProfileCategories(graph *spec.Graph) []roundconfig.WorkCategory {
 	present := map[roundconfig.WorkCategory]bool{}
 	if graph != nil {
 		for _, task := range graph.Tasks {
-			if task.Status == spec.StatusCompleted {
+			if task.Status == spec.StatusCompleted || task.Type == spec.TaskTypeQA {
 				continue
 			}
 			present[workCategoryForTaskType(task.Type)] = true
@@ -36,7 +36,7 @@ func implementProfileCategories(graph *spec.Graph, includeQA bool) []roundconfig
 			categories = append(categories, category)
 		}
 	}
-	if includeQA {
+	if graph != nil && graph.QATaskID != "" {
 		categories = append(categories, roundconfig.CategoryQA)
 	}
 	return categories

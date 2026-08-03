@@ -115,8 +115,11 @@ type TaskContextRef struct {
 // Graph is a validated Task Graph with Tasks in deterministic topological
 // order (Kahn's algorithm, manifest node order as tiebreak).
 type Graph struct {
-	Spec  Spec
-	Tasks []Task
+	Spec       Spec
+	Tasks      []Task
+	QATaskID   string
+	QADeclined bool
+	QAReason   string
 }
 
 type manifestNode struct {
@@ -126,10 +129,54 @@ type manifestNode struct {
 }
 
 type manifestFrontmatter struct {
-	Schema string `yaml:"schema"`
-	Graph  struct {
+	Schema   string                 `yaml:"schema"`
+	QA       manifestOptionalString `yaml:"qa"`
+	QAReason manifestOptionalString `yaml:"qa_reason"`
+	Graph    struct {
 		Nodes []manifestNode `yaml:"nodes"`
 	} `yaml:"graph"`
+}
+
+func (manifest *manifestFrontmatter) UnmarshalYAML(node *yaml.Node) error {
+	type plainManifest manifestFrontmatter
+	var decoded plainManifest
+	if err := node.Decode(&decoded); err != nil {
+		return fmt.Errorf("decode manifest frontmatter: %w", err)
+	}
+	*manifest = manifestFrontmatter(decoded)
+	for index := 0; index+1 < len(node.Content); index += 2 {
+		switch node.Content[index].Value {
+		case "qa":
+			manifest.QA.Present = true
+		case "qa_reason":
+			manifest.QAReason.Present = true
+		}
+	}
+	return nil
+}
+
+type manifestOptionalString struct {
+	Value   string
+	Present bool
+}
+
+func (value *manifestOptionalString) UnmarshalYAML(node *yaml.Node) error {
+	value.Present = true
+	if node.Kind == yaml.ScalarNode && node.Tag == "!!null" {
+		return nil
+	}
+	if node.Kind != yaml.ScalarNode || node.Tag != "!!str" {
+		return fmt.Errorf("must be a string")
+	}
+	value.Value = node.Value
+	return nil
+}
+
+type qaDeclaration struct {
+	Present  bool
+	TaskID   string
+	Declined bool
+	Reason   string
 }
 
 // ListActive discovers the Specs eligible for the Implement Command:
@@ -202,7 +249,7 @@ func Load(specsRoot string, slug string) (*Graph, error) {
 	}
 
 	manifestPath := filepath.Join(dir, "_tasks.md")
-	nodes, projections, hasProjections, err := loadManifestNodes(manifestPath)
+	nodes, projections, hasProjections, qa, err := loadManifestNodes(manifestPath)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +286,16 @@ func Load(specsRoot string, slug string) (*Graph, error) {
 		}
 		tasks = append(tasks, task)
 	}
-	return &Graph{Spec: Spec{Slug: slug, Dir: dir}, Tasks: tasks}, nil
+	if err := validateQAGate(manifestPath, nodes, tasks, qa); err != nil {
+		return nil, fmt.Errorf("validate qa gate: %w", err)
+	}
+	return &Graph{
+		Spec:       Spec{Slug: slug, Dir: dir},
+		Tasks:      tasks,
+		QATaskID:   qa.TaskID,
+		QADeclined: qa.Declined,
+		QAReason:   qa.Reason,
+	}, nil
 }
 
 func specDisplayDir(specsRoot string, slug string) string {
@@ -296,60 +352,202 @@ func prdStatus(content []byte) (string, error) {
 	return prd.Status, nil
 }
 
-func loadManifestNodes(manifestPath string) ([]manifestNode, map[string]TaskType, bool, error) {
+func loadManifestNodes(manifestPath string) ([]manifestNode, map[string]TaskType, bool, qaDeclaration, error) {
 	content, err := os.ReadFile(manifestPath)
 	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil, false, ManifestError{Path: manifestPath, Reason: "file does not exist; run the write-tasks workflow to create the Task Graph"}
+		return nil, nil, false, qaDeclaration{}, ManifestError{Path: manifestPath, Reason: "file does not exist; run the write-tasks workflow to create the Task Graph"}
 	}
 	if err != nil {
-		return nil, nil, false, fmt.Errorf("read Task Graph manifest %q: %w", manifestPath, err)
+		return nil, nil, false, qaDeclaration{}, fmt.Errorf("read Task Graph manifest %q: %w", manifestPath, err)
 	}
 	frontmatterBytes, body, err := splitFrontmatter(content)
 	if err != nil {
-		return nil, nil, false, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
+		return nil, nil, false, qaDeclaration{}, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
 	}
 	var manifest manifestFrontmatter
 	if err := yaml.Unmarshal(frontmatterBytes, &manifest); err != nil {
-		return nil, nil, false, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
+		return nil, nil, false, qaDeclaration{}, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
 	}
 	if manifest.Schema != manifestSchema {
-		return nil, nil, false, ManifestSchemaError{Path: manifestPath, Schema: manifest.Schema}
+		return nil, nil, false, qaDeclaration{}, ManifestSchemaError{Path: manifestPath, Schema: manifest.Schema}
+	}
+	qa, err := parseQADeclaration(manifestPath, manifest)
+	if err != nil {
+		return nil, nil, false, qaDeclaration{}, err
 	}
 	nodes := manifest.Graph.Nodes
 	if len(nodes) == 0 {
-		return nil, nil, false, ManifestError{Path: manifestPath, Reason: "graph has no nodes"}
+		return nil, nil, false, qaDeclaration{}, ManifestError{Path: manifestPath, Reason: "graph has no nodes"}
 	}
 
 	known := make(map[string]bool, len(nodes))
 	for index, node := range nodes {
 		if node.ID == "" || node.File == "" {
-			return nil, nil, false, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("graph node %d is missing id or file", index+1)}
+			return nil, nil, false, qaDeclaration{}, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("graph node %d is missing id or file", index+1)}
 		}
 		if known[node.ID] {
-			return nil, nil, false, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("duplicate Task id %q", node.ID)}
+			return nil, nil, false, qaDeclaration{}, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("duplicate Task id %q", node.ID)}
 		}
 		known[node.ID] = true
 	}
 	for _, node := range nodes {
 		for _, need := range node.Needs {
 			if !known[need] {
-				return nil, nil, false, UnknownNeedError{TaskID: node.ID, Need: need}
+				return nil, nil, false, qaDeclaration{}, UnknownNeedError{TaskID: node.ID, Need: need}
 			}
 		}
 	}
 	projections, hasProjections, err := parseTaskTypeProjections(manifestPath, body)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, false, qaDeclaration{}, err
 	}
 	for taskID := range projections {
 		if !known[taskID] {
-			return nil, nil, false, ManifestError{
+			return nil, nil, false, qaDeclaration{}, ManifestError{
 				Path:   manifestPath,
 				Reason: fmt.Sprintf("projection table row names unknown Task %q; remove it or add a matching graph node", taskID),
 			}
 		}
 	}
-	return nodes, projections, hasProjections, nil
+	return nodes, projections, hasProjections, qa, nil
+}
+
+func parseQADeclaration(manifestPath string, manifest manifestFrontmatter) (qaDeclaration, error) {
+	if !manifest.QA.Present {
+		if manifest.QAReason.Present {
+			return qaDeclaration{}, QAGateError{ManifestPath: manifestPath, Reason: "qa_reason requires a qa: declaration"}
+		}
+		return qaDeclaration{}, nil
+	}
+
+	qa := strings.TrimSpace(manifest.QA.Value)
+	if qa == "" {
+		return qaDeclaration{}, QAGateError{ManifestPath: manifestPath, Reason: "qa: must name a Task id or be declined"}
+	}
+	reason := strings.TrimSpace(manifest.QAReason.Value)
+	if qa == "declined" {
+		if !manifest.QAReason.Present || reason == "" {
+			return qaDeclaration{}, QAGateError{ManifestPath: manifestPath, Reason: "qa: declined requires a non-empty qa_reason"}
+		}
+		return qaDeclaration{Present: true, Declined: true, Reason: reason}, nil
+	}
+	if manifest.QAReason.Present {
+		return qaDeclaration{}, QAGateError{ManifestPath: manifestPath, Reason: "qa_reason is allowed only with qa: declined"}
+	}
+	return qaDeclaration{Present: true, TaskID: qa}, nil
+}
+
+func validateQAGate(manifestPath string, nodes []manifestNode, tasks []Task, qa qaDeclaration) error {
+	taskByID := make(map[string]Task, len(tasks))
+	var qaTaskIDs []string
+	for _, task := range tasks {
+		taskByID[task.ID] = task
+		if task.Type == TaskTypeQA {
+			qaTaskIDs = append(qaTaskIDs, task.ID)
+		}
+	}
+
+	if !qa.Present {
+		if len(qaTaskIDs) > 0 {
+			return QAGateError{
+				ManifestPath: manifestPath,
+				Reason:       fmt.Sprintf("Task %q has type %q but the manifest has no qa: declaration", qaTaskIDs[0], TaskTypeQA),
+			}
+		}
+		return nil
+	}
+	if qa.Declined {
+		if len(qaTaskIDs) > 0 {
+			return QAGateError{
+				ManifestPath: manifestPath,
+				Reason:       fmt.Sprintf("qa: declined cannot be combined with QA Task %q", qaTaskIDs[0]),
+			}
+		}
+		return nil
+	}
+
+	gate, ok := taskByID[qa.TaskID]
+	if !ok {
+		return QAGateError{ManifestPath: manifestPath, Reason: fmt.Sprintf("qa: names Task %q, which is not a Task Graph node", qa.TaskID)}
+	}
+	if gate.Type != TaskTypeQA {
+		return QAGateError{
+			ManifestPath: manifestPath,
+			Reason:       fmt.Sprintf("qa: names Task %q with type %q; expected %q", qa.TaskID, gate.Type, TaskTypeQA),
+		}
+	}
+	if len(qaTaskIDs) != 1 {
+		return QAGateError{
+			ManifestPath: manifestPath,
+			Reason:       fmt.Sprintf("qa: names Task %q, but QA Tasks must be unique; found: %s", qa.TaskID, strings.Join(qaTaskIDs, ", ")),
+		}
+	}
+
+	nodeByID := make(map[string]manifestNode, len(nodes))
+	var gateDependents []string
+	for _, node := range nodes {
+		nodeByID[node.ID] = node
+		for _, need := range node.Needs {
+			if need == qa.TaskID {
+				gateDependents = append(gateDependents, node.ID)
+			}
+		}
+	}
+	if len(gateDependents) > 0 {
+		return QAGateError{
+			ManifestPath: manifestPath,
+			Reason:       fmt.Sprintf("QA Task %q is not terminal; these Tasks depend on it: %s", qa.TaskID, strings.Join(gateDependents, ", ")),
+		}
+	}
+
+	dependencyClosure := make(map[string]bool, len(nodes))
+	stack := append([]string(nil), nodeByID[qa.TaskID].Needs...)
+	for len(stack) > 0 {
+		last := len(stack) - 1
+		id := stack[last]
+		stack = stack[:last]
+		if dependencyClosure[id] {
+			continue
+		}
+		dependencyClosure[id] = true
+		stack = append(stack, nodeByID[id].Needs...)
+	}
+
+	hasNonGateDependent := make(map[string]bool, len(nodes))
+	for _, node := range nodes {
+		if node.ID == qa.TaskID {
+			continue
+		}
+		for _, need := range node.Needs {
+			hasNonGateDependent[need] = true
+		}
+	}
+	var uncoveredLeaves []string
+	for _, node := range nodes {
+		if node.ID != qa.TaskID && !hasNonGateDependent[node.ID] && !dependencyClosure[node.ID] {
+			uncoveredLeaves = append(uncoveredLeaves, node.ID)
+		}
+	}
+	if len(uncoveredLeaves) > 0 {
+		return QAGateError{
+			ManifestPath: manifestPath,
+			Reason:       fmt.Sprintf("QA Task %q does not depend on every leaf; uncovered Tasks: %s", qa.TaskID, strings.Join(uncoveredLeaves, ", ")),
+		}
+	}
+
+	if gate.Status != StatusCompleted && gate.Status != StatusFailed {
+		return nil
+	}
+	var staleDependencies []string
+	for _, node := range nodes {
+		if dependencyClosure[node.ID] && taskByID[node.ID].Status != StatusCompleted {
+			staleDependencies = append(staleDependencies, node.ID)
+		}
+	}
+	if len(staleDependencies) > 0 {
+		return StaleGateError{QATaskID: qa.TaskID, TaskIDs: staleDependencies}
+	}
+	return nil
 }
 
 func parseTaskTypeProjections(manifestPath string, body []byte) (map[string]TaskType, bool, error) {

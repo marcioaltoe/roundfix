@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0072-qa-is-a-task-not-a-flag
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -69,3 +69,61 @@ ADR-0081.
 - `_prd.md` → Core Feature 1; Goals (declared when authored; declining
   recorded once).
 - `_techspec.md` → Build Order 4; Project Constraints (Tooling authority).
+
+## Result
+
+### Implementation
+
+- `write-tasks` now requires every post-contract decomposition to choose
+  exactly one authored QA shape: a manifest-named terminal `qa` Task covering
+  every non-QA leaf, or `qa: declined` with a non-empty `qa_reason`. It refuses
+  a graph with neither or conflicting shapes while preserving proven legacy
+  graphs byte-identically.
+- The task artifact reference now projects an included `qa: task_04` node and
+  `type: qa` task row, shows its leaf dependencies, and gives the alternative
+  reasoned-decline frontmatter.
+- `qa-gate` now runs only from the unique authored terminal `qa` Task named by
+  the manifest. Its scope preflight checks that node and its completed
+  dependencies instead of presenting the gate as a per-Run request after the
+  graph.
+- Regenerated the two shipped skill mirrors with `make skills-sync`, then ran
+  the ADR-0081 sanctioned digest regeneration. The command updated the three
+  setup pins, catalog digest and normalized snapshot, and the parity-corpus
+  fixture and manifest.
+
+### Focused checks
+
+- Red signal: pre-change inspection showed that `write-tasks` allowed only
+  implementation Task Types and had no include-or-decline rule, while the
+  `qa-gate` description said to use it after the last Task or when asked.
+- `rtk make skills-sync` exited 0.
+- `rtk make baseline-digests` exited 0, reported all six regeneration and
+  strict-validation test invocations passing, and returned
+  `{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":true}`.
+- A focused `rtk awk` contract scan over the three canonical documents exited
+  0 and reported `write_tasks_decline=1 terminal=1 refusal=1
+  template_include=1 template_decline=1 qa_gate_authored=1
+  old_request_form=0`.
+- `rtk /usr/bin/diff -r .agents/skills/write-tasks skills/write-tasks` and
+  `rtk /usr/bin/diff -r .agents/skills/qa-gate skills/qa-gate` both exited 0.
+- `rtk git diff --check` exited 0.
+- `rtk git diff --name-only` listed only the two canonical skills, their
+  mirrors, the seven ADR-0081 derived paths, and this Task file.
+- The Task's declared `## Verification` commands were not run; they remain
+  Daemon-owned.
+
+### Acceptance criteria evidence
+
+1. The canonical `write-tasks` skill and its task template name the
+   exactly-one-of-two rule, both manifest forms, the unique `type: qa` node,
+   terminal placement, and coverage of every non-QA leaf; the focused contract
+   scan found every required clause.
+2. The canonical `qa-gate` description and scope preflight name the authored
+   terminal node, and the focused scan found neither former per-Run trigger
+   phrase.
+3. Both focused recursive directory comparisons exited 0 after
+   `make skills-sync`. The authoritative `make skills-sync-check` command is
+   reserved for Daemon Verification and was not run in this Agent turn.
+4. The post-regeneration changed-path inspection contains no path outside the
+   authorized canonical skills and mirrors, ADR-0081 deterministic fallout,
+   and this Task file.

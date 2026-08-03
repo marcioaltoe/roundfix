@@ -85,3 +85,31 @@ it, so the workflow is a precondition of the split, not an extra.
 Recorded here rather than assumed silently, following the 2026-08-02 addendum's
 precedent: the maintainer directed the outcome and this is the only durable
 path to it.
+
+## Addendum — 2026-08-03 — Spec 0072 and the owned skill pair
+
+The QA gate's own report on Spec 0072 found the gap this file has caught
+once before: the Spec's Tooling authority row cites this grant, but this
+grant did not list 0072. The 0071 precedent stands — a Spec citing an
+authorization it is not named in has no authorization — so the listing is
+recorded here rather than assumed.
+
+The maintainer directed the outcome explicitly (2026-08-02): the QA gate
+must stop being a per-run parameter and become a Task authored at Spec
+creation — "deve ser uma task ao final de todas as tasks se for definido
+que deve ser executado na criação do spec... não teremos mais parametros
+de qa no run". That direction reaches the two owned skills that author and
+execute the gate.
+
+- **0072** — `.agents/skills/write-tasks/**` and `.agents/skills/qa-gate/**`
+  with their `skills/` mirrors via `make skills-sync`, for the authored-gate
+  decision rule and the gate's authored-node contract. Deterministic digest
+  fallout is sanctioned by ADR-0081.
+
+At close (2026-08-03) the maintainer additionally directed: "Lembre-se de
+atualizar as skills com a mudança do spec e comandos." The CLI reference
+skill still taught the deleted flag in six places, so the direction reaches:
+
+- **0072, close** — `.agents/skills/roundfix/**` with its `skills/` mirror,
+  for every `--qa` reference and the authored-gate command guidance. The one
+  remaining `--qa` mention documents the unknown-flag remediation itself.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -104,15 +105,19 @@ func manifestFixture(schema string, nodes string) string {
 }
 
 func manifestFixtureWithBody(schema string, nodes string, body string) string {
+	return manifestFixtureWithQA(schema, "", nodes, body)
+}
+
+func manifestFixtureWithQA(schema string, declaration string, nodes string, body string) string {
 	return fmt.Sprintf(`---
 schema: %s
 spec: demo
-graph:
+%sgraph:
   nodes:
 %s---
 
 # Tasks — Demo
-%s`, schema, nodes, body)
+%s`, schema, declaration, nodes, body)
 }
 
 const diamondNodes = `    - id: task_04
@@ -237,7 +242,7 @@ func TestTaskTypeCanonicalValuesLoadThroughTaskGraph(t *testing.T) {
 	t.Parallel()
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)
-	taskTypes := []string{"backend", "frontend", "data", "infra", "docs", "test", "chore"}
+	taskTypes := []string{"backend", "frontend", "data", "infra", "docs", "test", "chore", "qa"}
 	files := map[string]string{"_prd.md": prdFixture("active")}
 	var nodes strings.Builder
 	var table strings.Builder
@@ -245,11 +250,17 @@ func TestTaskTypeCanonicalValuesLoadThroughTaskGraph(t *testing.T) {
 	table.WriteString("| ------- | ------- | ------- | ---------- | ----- |\n")
 	for index, taskType := range taskTypes {
 		id := fmt.Sprintf("task_%02d", index+1)
-		nodes.WriteString(fmt.Sprintf("    - id: %s\n      file: %s.md\n      needs: []\n", id, id))
-		table.WriteString(fmt.Sprintf("| %s | Fixture | %s | low | — |\n", id, taskType))
+		needs := "[]"
+		projectedNeeds := "—"
+		if taskType == "qa" {
+			needs = "[task_01, task_02, task_03, task_04, task_05, task_06, task_07]"
+			projectedNeeds = "task_01, task_02, task_03, task_04, task_05, task_06, task_07"
+		}
+		nodes.WriteString(fmt.Sprintf("    - id: %s\n      file: %s.md\n      needs: %s\n", id, id, needs))
+		table.WriteString(fmt.Sprintf("| %s | Fixture | %s | low | %s |\n", id, taskType, projectedNeeds))
 		files[id+".md"] = taskFixture(id, "Fixture", "pending", taskType, defaultVerificationSection)
 	}
-	files["_tasks.md"] = manifestFixtureWithBody("spec-tasks/v1", nodes.String(), table.String())
+	files["_tasks.md"] = manifestFixtureWithQA("spec-tasks/v1", "qa: task_08\n", nodes.String(), table.String())
 	writeSpecDir(t, specsRoot, "demo", files)
 
 	graph, err := Load(specsRoot, "demo")
@@ -334,7 +345,7 @@ func TestTaskTypeRejectsInvalidFrontmatterValues(t *testing.T) {
 			for _, want := range []string{
 				wantPath,
 				fmt.Sprintf("%q", tt.wantValue),
-				"backend, frontend, data, infra, docs, test, chore",
+				"backend, frontend, data, infra, docs, test, chore, qa",
 				"frontmatter",
 				"type",
 			} {
@@ -343,6 +354,351 @@ func TestTaskTypeRejectsInvalidFrontmatterValues(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLoadQAGateContract(t *testing.T) {
+	t.Parallel()
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
+		"_prd.md": prdFixture("active"),
+		"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa: task_03\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: [task_01]
+    - id: task_03
+      file: task_03.md
+      needs: [task_02]
+`, `
+| id      | title   | type    | complexity | needs   |
+| ------- | ------- | ------- | ---------- | ------- |
+| task_01 | Prepare | backend | low        | —       |
+| task_02 | Build   | backend | low        | task_01 |
+| task_03 | QA      | qa      | low        | task_02 |
+`),
+		"task_01.md": taskFixture("task_01", "Prepare", "completed", "backend", defaultVerificationSection),
+		"task_02.md": taskFixture("task_02", "Build", "completed", "backend", defaultVerificationSection),
+		"task_03.md": taskFixture("task_03", "QA", "pending", "qa", defaultVerificationSection),
+	})
+
+	graph, err := Load(specsRoot, "demo")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if graph.QATaskID != "task_03" {
+		t.Fatalf("QATaskID = %q, want %q", graph.QATaskID, "task_03")
+	}
+	if graph.QADeclined {
+		t.Fatal("QADeclined = true, want false")
+	}
+	if graph.QAReason != "" {
+		t.Fatalf("QAReason = %q, want empty", graph.QAReason)
+	}
+}
+
+func TestLoadQADeclinedContract(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name        string
+		declaration string
+		wantReason  string
+		wantError   string
+	}{
+		{
+			name:        "reason recorded",
+			declaration: "qa: declined\nqa_reason: no behavioral surface\n",
+			wantReason:  "no behavioral surface",
+		},
+		{
+			name:        "reason required",
+			declaration: "qa: declined\n",
+			wantError:   "qa_reason",
+		},
+		{
+			name:        "reason cannot be empty",
+			declaration: "qa: declined\nqa_reason:\n",
+			wantError:   "qa_reason",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			writeSpecDir(t, specsRoot, "demo", map[string]string{
+				"_prd.md": prdFixture("active"),
+				"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", tt.declaration, `    - id: task_01
+      file: task_01.md
+      needs: []
+`, ""),
+				"task_01.md": taskFixture("task_01", "Docs", "pending", "docs", defaultVerificationSection),
+			})
+
+			graph, err := Load(specsRoot, "demo")
+			if tt.wantError != "" {
+				if err == nil {
+					t.Fatal("Load succeeded, want QA declaration error")
+				}
+				if !strings.Contains(err.Error(), tt.wantError) {
+					t.Fatalf("error %q does not contain %q", err, tt.wantError)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if graph.QATaskID != "" || !graph.QADeclined || graph.QAReason != tt.wantReason {
+				t.Fatalf("QA declaration = (%q, %t, %q), want (%q, %t, %q)", graph.QATaskID, graph.QADeclined, graph.QAReason, "", true, tt.wantReason)
+			}
+		})
+	}
+}
+
+func TestLoadRejectsExplicitNullQAReasonWithoutDeclaration(t *testing.T) {
+	t.Parallel()
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
+		"_prd.md": prdFixture("active"),
+		"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa_reason:\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+`, ""),
+		"task_01.md": taskFixture("task_01", "Docs", "pending", "docs", defaultVerificationSection),
+	})
+
+	_, err := Load(specsRoot, "demo")
+	var gateErr QAGateError
+	if !errors.As(err, &gateErr) {
+		t.Fatalf("Load error = %T %v, want QAGateError", err, err)
+	}
+	if !strings.Contains(gateErr.Reason, "qa_reason requires a qa: declaration") {
+		t.Fatalf("QAGateError reason = %q", gateErr.Reason)
+	}
+}
+
+func TestLoadWrapsManifestDecodeErrors(t *testing.T) {
+	t.Parallel()
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
+		"_prd.md": prdFixture("active"),
+		"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa: [task_01]\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+`, ""),
+		"task_01.md": taskFixture("task_01", "Docs", "pending", "docs", defaultVerificationSection),
+	})
+
+	_, err := Load(specsRoot, "demo")
+
+	if err == nil {
+		t.Fatal("Load succeeded, want manifest decode error")
+	}
+	var manifestErr ManifestError
+	if !errors.As(err, &manifestErr) {
+		t.Fatalf("Load error = %T %v, want ManifestError", err, err)
+	}
+	if !strings.Contains(err.Error(), "decode manifest frontmatter") {
+		t.Fatalf("Load error = %v, want manifest decode context", err)
+	}
+}
+
+func TestLoadRejectsInvalidQAGateShape(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name        string
+		declaration string
+		nodes       string
+		tasks       map[string]string
+		wantTask    string
+	}{
+		{
+			name: "qa type without declaration",
+			nodes: `    - id: task_01
+      file: task_01.md
+      needs: []
+`,
+			tasks: map[string]string{
+				"task_01.md": taskFixture("task_01", "QA", "pending", "qa", defaultVerificationSection),
+			},
+			wantTask: "task_01",
+		},
+		{
+			name:        "declaration names another type",
+			declaration: "qa: task_01\n",
+			nodes: `    - id: task_01
+      file: task_01.md
+      needs: []
+`,
+			tasks: map[string]string{
+				"task_01.md": taskFixture("task_01", "Build", "pending", "backend", defaultVerificationSection),
+			},
+			wantTask: "task_01",
+		},
+		{
+			name:        "declined graph has gate node",
+			declaration: "qa: declined\nqa_reason: no behavioral surface\n",
+			nodes: `    - id: task_01
+      file: task_01.md
+      needs: []
+`,
+			tasks: map[string]string{
+				"task_01.md": taskFixture("task_01", "QA", "pending", "qa", defaultVerificationSection),
+			},
+			wantTask: "task_01",
+		},
+		{
+			name:        "gate must be unique",
+			declaration: "qa: task_03\n",
+			nodes: `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_03
+      file: task_03.md
+      needs: [task_01]
+    - id: task_04
+      file: task_04.md
+      needs: [task_01]
+`,
+			tasks: map[string]string{
+				"task_01.md": taskFixture("task_01", "Build", "completed", "backend", defaultVerificationSection),
+				"task_03.md": taskFixture("task_03", "QA", "pending", "qa", defaultVerificationSection),
+				"task_04.md": taskFixture("task_04", "Other QA", "pending", "qa", defaultVerificationSection),
+			},
+			wantTask: "task_04",
+		},
+		{
+			name:        "gate is not terminal",
+			declaration: "qa: task_02\n",
+			nodes: `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: [task_01]
+    - id: task_03
+      file: task_03.md
+      needs: [task_02]
+`,
+			tasks: map[string]string{
+				"task_01.md": taskFixture("task_01", "Build", "completed", "backend", defaultVerificationSection),
+				"task_02.md": taskFixture("task_02", "QA", "pending", "qa", defaultVerificationSection),
+				"task_03.md": taskFixture("task_03", "Append", "pending", "backend", defaultVerificationSection),
+			},
+			wantTask: "task_03",
+		},
+		{
+			name:        "gate does not cover leaf",
+			declaration: "qa: task_03\n",
+			nodes: `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: []
+    - id: task_03
+      file: task_03.md
+      needs: [task_01]
+`,
+			tasks: map[string]string{
+				"task_01.md": taskFixture("task_01", "Build A", "completed", "backend", defaultVerificationSection),
+				"task_02.md": taskFixture("task_02", "Build B", "pending", "backend", defaultVerificationSection),
+				"task_03.md": taskFixture("task_03", "QA", "pending", "qa", defaultVerificationSection),
+			},
+			wantTask: "task_02",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			files := map[string]string{
+				"_prd.md":   prdFixture("active"),
+				"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", tt.declaration, tt.nodes, ""),
+			}
+			for name, content := range tt.tasks {
+				files[name] = content
+			}
+			writeSpecDir(t, specsRoot, "demo", files)
+
+			_, err := Load(specsRoot, "demo")
+			if err == nil {
+				t.Fatal("Load succeeded, want QA gate validation error")
+			}
+			var gateErr QAGateError
+			if !errors.As(err, &gateErr) {
+				t.Fatalf("error = %v, want QAGateError", err)
+			}
+			if !strings.Contains(err.Error(), "validate qa gate") {
+				t.Fatalf("error %q does not identify QA gate validation", err)
+			}
+			if !strings.Contains(err.Error(), tt.wantTask) {
+				t.Fatalf("error %q does not name %q", err, tt.wantTask)
+			}
+		})
+	}
+}
+
+func TestLoadInvalidatesSettledQAGateAfterTaskAppend(t *testing.T) {
+	t.Parallel()
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	specDir := filepath.Join(specsRoot, "demo")
+	files := map[string]string{
+		"_prd.md": prdFixture("active"),
+		"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa: task_03\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: [task_01]
+    - id: task_03
+      file: task_03.md
+      needs: [task_02]
+`, ""),
+		"task_01.md": taskFixture("task_01", "Prepare", "completed", "backend", defaultVerificationSection),
+		"task_02.md": taskFixture("task_02", "Build", "completed", "backend", defaultVerificationSection),
+		"task_03.md": taskFixture("task_03", "QA", "completed", "qa", defaultVerificationSection),
+	}
+	writeSpecDir(t, specsRoot, "demo", files)
+	if _, err := Load(specsRoot, "demo"); err != nil {
+		t.Fatalf("Load before append: %v", err)
+	}
+
+	writeFile(t, filepath.Join(specDir, "_tasks.md"), manifestFixtureWithQA("spec-tasks/v1", "qa: task_03\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: [task_01]
+    - id: task_04
+      file: task_04.md
+      needs: [task_02]
+    - id: task_03
+      file: task_03.md
+      needs: [task_04]
+`, ""))
+	writeFile(t, filepath.Join(specDir, "task_04.md"), taskFixture("task_04", "Correct", "pending", "backend", defaultVerificationSection))
+
+	_, err := Load(specsRoot, "demo")
+	if err == nil {
+		t.Fatal("Load after append succeeded, want stale gate error")
+	}
+	var stale StaleGateError
+	if !errors.As(err, &stale) {
+		t.Fatalf("error = %v, want StaleGateError", err)
+	}
+	if stale.QATaskID != "task_03" || len(stale.TaskIDs) != 1 || stale.TaskIDs[0] != "task_04" {
+		t.Fatalf("StaleGateError = %+v, want task_03 invalidated by task_04", stale)
+	}
+	for _, want := range []string{"task_04", "gate result is invalidated"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q does not contain %q", err, want)
+		}
 	}
 }
 
@@ -899,6 +1255,77 @@ func TestLoadUsesExplicitExternalSpecRoot(t *testing.T) {
 	}
 	if len(active) != 1 || active[0].Dir != filepath.Join(specsRoot, "demo") {
 		t.Fatalf("ListActive = %+v, want demo from external Spec Root", active)
+	}
+}
+
+func TestQAGateLegacyArchivedManifestsLoadUnchanged(t *testing.T) {
+	t.Parallel()
+	_, testFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller could not locate the repository")
+	}
+	archivedRoot := filepath.Join(filepath.Dir(testFile), "..", "..", "docs", "specs", "_archived")
+	tempSpecsRoot := defaultSpecsRoot(t.TempDir())
+	entries, err := os.ReadDir(archivedRoot)
+	if err != nil {
+		t.Fatalf("read archived Spec root: %v", err)
+	}
+
+	manifestCount := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		manifestPath := filepath.Join(archivedRoot, entry.Name(), "_tasks.md")
+		before, err := os.ReadFile(manifestPath)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			t.Fatalf("read archived manifest %q: %v", entry.Name(), err)
+		}
+		manifestCount++
+		nodes, _, _, _, err := loadManifestNodes(manifestPath)
+		if err != nil {
+			t.Fatalf("parse archived manifest %q: %v", entry.Name(), err)
+		}
+		files := map[string]string{
+			"_prd.md":   prdFixture("active"),
+			"_tasks.md": string(before),
+		}
+		for _, node := range nodes {
+			content, err := os.ReadFile(filepath.Join(archivedRoot, entry.Name(), node.File))
+			if err != nil {
+				t.Fatalf("read archived Task %q from Spec %q: %v", node.ID, entry.Name(), err)
+			}
+			files[node.File] = string(content)
+		}
+		writeSpecDir(t, tempSpecsRoot, entry.Name(), files)
+
+		graph, err := Load(tempSpecsRoot, entry.Name())
+		if err != nil {
+			t.Fatalf("Load archived Spec %q: %v", entry.Name(), err)
+		}
+		if graph.QATaskID != "" || graph.QADeclined || graph.QAReason != "" {
+			t.Fatalf("archived Spec %q gained QA declaration state: (%q, %t, %q)", entry.Name(), graph.QATaskID, graph.QADeclined, graph.QAReason)
+		}
+		for _, task := range graph.Tasks {
+			if task.Type == TaskTypeQA {
+				t.Fatalf("archived Spec %q unexpectedly has QA Task %q", entry.Name(), task.ID)
+			}
+		}
+
+		copiedManifest := filepath.Join(tempSpecsRoot, entry.Name(), "_tasks.md")
+		after, err := os.ReadFile(copiedManifest)
+		if err != nil {
+			t.Fatalf("re-read loaded manifest %q: %v", entry.Name(), err)
+		}
+		if string(after) != string(before) {
+			t.Fatalf("Load changed archived manifest %q", entry.Name())
+		}
+	}
+	if manifestCount == 0 {
+		t.Fatal("no archived Task Graph manifests found")
 	}
 }
 

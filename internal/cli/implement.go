@@ -39,8 +39,6 @@ profiles. A one-Run override requires --agent, --model, and --reasoning-effort t
 
 Options:
   --spec               Spec slug under docs/specs/
-  --qa                 End the Run with the qa-gate step once every Task is
-                       completed; only a pass verdict lets the Run end Clean
   --agent              Agent runtime. Supported: codex, claude, opencode
   --model              Agent model override
   --reasoning-effort   Default reasoning effort override
@@ -137,9 +135,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
-	if countNonCompletedTasks(graph.Tasks) == 0 && !req.qa {
-		// With --qa, an all-completed graph is not a no-op: the Run
-		// consists of the qa-gate step only (ADR 0015).
+	if countNonCompletedTasks(graph.Tasks) == 0 {
 		counts := printImplementTaskLines(stdout, graphSpecsRoot, graph, true)
 		fmt.Fprintf(stdout, "All %d Task(s) already completed; no Run was created.\n", counts.total())
 		return exitOK
@@ -152,7 +148,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 
-	categories := implementProfileCategories(graph, req.qa)
+	categories := implementProfileCategories(graph)
 	collaborators := commandDependenciesForContext(ctx).newEngineCollaborators()
 	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loadedConfig.Config, categories, gitState.Root, collaborators.runner, stderr)
 	if err != nil {
@@ -284,7 +280,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 
 	// The Spec's target branch comes off the Run record, not from git in the
 	// Run Worktree: the Run Worktree is checked out on the Run Branch.
-	cycleResult, err := executeImplementCycle(ctx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, req.qa, implementCapacities{
+	cycleResult, err := executeImplementCycle(ctx, gitState, run.LocalBranch, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, implementCapacities{
 		task:         loadedConfig.Config.Worktree.Concurrency,
 		verification: loadedConfig.Config.Verification.Concurrency,
 	}, loadedConfig.Config.Defaults.Verification, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
@@ -560,7 +556,6 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	fs := flag.NewFlagSet("implement", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&req.spec, "spec", "", "Spec slug under docs/specs/")
-	fs.BoolVar(&req.qa, "qa", false, "End the Run with the qa-gate step once every Task is completed")
 	fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 	fs.StringVar(&req.model, "model", req.model, "Agent model override")
 	fs.StringVar(&req.reasoningEffort, "reasoning-effort", req.reasoningEffort, "Default reasoning effort override")
@@ -571,6 +566,9 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	fs.BoolVar(&req.interactive, "interactive", false, "Open Interactive Input before starting")
 	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening Interactive Input")
 	if err := fs.Parse(args); err != nil {
+		if err.Error() == "flag provided but not defined: -qa" {
+			return req, validationError{message: `unknown flag "--qa": the gate is declared in the Spec's Task Graph; author the terminal QA Task there, then re-run implement`}
+		}
 		return req, validationError{message: err.Error()}
 	}
 	if remaining := fs.Args(); len(remaining) > 0 {
@@ -635,7 +633,7 @@ type implementCapacities struct {
 	verification int
 }
 
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, qa bool, capacities implementCapacities, repositoryVerification string, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, targetBranch string, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, capacities implementCapacities, repositoryVerification string, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -681,7 +679,6 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, tar
 		Runtime:                 runtime,
 		AgentSelections:         agentSelections,
 		RuntimeFactory:          runtimeFactory,
-		QA:                      qa,
 		Concurrency:             capacities.task,
 		VerificationConcurrency: capacities.verification,
 		RepositoryVerification:  repositoryVerification,

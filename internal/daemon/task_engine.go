@@ -212,7 +212,6 @@ type TaskPlan struct {
 	Runtime                 agent.RuntimeSpec
 	AgentSelections         AgentSelectionProfiles
 	RuntimeFactory          AgentRuntimeFactory
-	QA                      bool
 	Concurrency             int
 	VerificationConcurrency int
 	RepositoryVerification  string
@@ -269,9 +268,14 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	if err := validateTaskPlan(plan); err != nil {
 		return TaskCycleResult{}, err
 	}
+	taskPlan, qaTask, err := taskPlanWithoutQAGate(plan)
+	if err != nil {
+		return TaskCycleResult{}, err
+	}
 	taskCapacity := plan.Concurrency
 	verificationCapacity := plan.VerificationConcurrency
 	plan.verificationGate = newVerificationGate(verificationCapacity)
+	taskPlan.verificationGate = plan.verificationGate
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonStatus,
 		fmt.Sprintf("Task cycle started with Task Capacity %d and Verification Capacity %d.", taskCapacity, verificationCapacity),
 		map[string]any{
@@ -284,26 +288,30 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	); err != nil {
 		return TaskCycleResult{}, err
 	}
-	statuses := initialTaskRunStatuses(plan.Tasks)
-	result, ordinal, err := engine.runTaskScheduler(ctx, plan, statuses)
+	statuses := initialTaskRunStatuses(taskPlan.Tasks)
+	result, ordinal, err := engine.runTaskScheduler(ctx, taskPlan, statuses)
 	if err != nil {
 		return result, err
 	}
-	// QA step (ADR 0015): the qa-gate runs only when plan.QA is set and
-	// every Task in the Task Graph — including Tasks completed by earlier
-	// Runs — ended completed; any failed, skipped, or pending Task leaves
-	// the outcome to the Task results alone.
-	if plan.QA && allTasksRunCompleted(plan.Tasks, statuses) {
+	// QA step (ADR 0015, ADR 0091): a declared qa Task routes through the
+	// existing gate only after its graph dependencies have all completed.
+	// A blocked gate never enters the scheduler, so it stays pending and
+	// resumable instead of being reported skipped.
+	if qaTask != nil && qaTask.Status != spec.StatusCompleted && taskNeedsCompleted(*qaTask, statuses) {
 		if err := engine.stopIfRequested(ctx, plan.RunID, ordinal+1); err != nil {
 			return result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
 		}
 		ordinal++
-		verdict, reportPath, err := engine.runQAGate(ctx, plan, ordinal)
+		verdict, reportPath, err := engine.runQAGate(ctx, plan, *qaTask, ordinal)
 		if err != nil {
 			return result, err
 		}
 		result.QAVerdict = verdict
 		result.QAReportPath = reportPath
+	} else if qaTask != nil && qaTask.Status != spec.StatusCompleted {
+		if _, err := fmt.Fprintf(engine.deps.Progress, "QA Task %s withheld; unmet dependencies: %s\n", qaTask.ID, strings.Join(uncompletedTaskNeeds(*qaTask, statuses), ", ")); err != nil {
+			return result, fmt.Errorf("write withheld QA task progress: %w", err)
+		}
 	}
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonOutcome,
 		fmt.Sprintf("Task cycle finished: %d completed, %d failed, %d skipped.", result.Completed, result.Failed, result.Skipped),
@@ -312,6 +320,24 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 		return result, err
 	}
 	return result, nil
+}
+
+func taskPlanWithoutQAGate(plan TaskPlan) (TaskPlan, *spec.Task, error) {
+	taskPlan := plan
+	taskPlan.Tasks = make([]spec.Task, 0, len(plan.Tasks))
+	var qaTask *spec.Task
+	for _, task := range plan.Tasks {
+		if task.Type != spec.TaskTypeQA {
+			taskPlan.Tasks = append(taskPlan.Tasks, task)
+			continue
+		}
+		if qaTask != nil {
+			return TaskPlan{}, nil, fmt.Errorf("task cycle: multiple QA gate Tasks %q and %q cannot be routed", qaTask.ID, task.ID)
+		}
+		taskCopy := task
+		qaTask = &taskCopy
+	}
+	return taskPlan, qaTask, nil
 }
 
 type taskRunStatus string
@@ -444,6 +470,13 @@ func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statu
 }
 
 func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, usesTaskWorktree bool) taskWorkerResult {
+	if task.Type == spec.TaskTypeQA {
+		return taskWorkerResult{
+			task:    task,
+			ordinal: ordinal,
+			err:     fmt.Errorf("refuse to schedule QA gate Task %q as Agent work", task.ID),
+		}
+	}
 	taskPlan := plan
 	var taskRef runworktree.TaskRef
 	if usesTaskWorktree {
@@ -635,6 +668,16 @@ func taskNeedsCompleted(task spec.Task, statuses map[string]taskRunStatus) bool 
 		}
 	}
 	return true
+}
+
+func uncompletedTaskNeeds(task spec.Task, statuses map[string]taskRunStatus) []string {
+	var uncompleted []string
+	for _, need := range task.Needs {
+		if statuses[need] != taskRunCompleted {
+			uncompleted = append(uncompleted, need)
+		}
+	}
+	return uncompleted
 }
 
 func (engine *Engine) skipBlockedTasks(ctx context.Context, plan TaskPlan, statuses map[string]taskRunStatus, result *TaskCycleResult) (bool, error) {
@@ -1512,11 +1555,12 @@ func lowerFirstRune(value string) string {
 // Agent with the QA prompt, verdict settling from the newest QA Report
 // frontmatter, the daemon.qa Run Event, and the QA Report commit — created
 // either way, pass or fail, while a missing report commits nothing
-// (ADR 0015). It returns the settled verdict and the report path relative
-// to the working tree; the returned error is reserved for Stop Requests
-// and infrastructure failures. Unlike a Task, the QA step has no per-item
-// settlement to fall back on, so a non-stop Agent failure halts the cycle.
-func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int) (verdict string, reportPath string, err error) {
+// (ADR 0015). The qa Task settles from that verdict before the report commit,
+// so its task file rides with the report. It returns the settled verdict and
+// the report path relative to the working tree; the returned error is reserved
+// for Stop Requests and infrastructure failures. A non-stop Agent failure
+// produces no verdict to settle and halts the cycle.
+func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.Task, ordinal int) (verdict string, reportPath string, err error) {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
 			return "", "", fmt.Errorf("publish stop event for run %q before the QA step: %w", plan.RunID, errors.Join(err, publishErr))
@@ -1590,11 +1634,16 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 		return "", "", fmt.Errorf("publish QA event for run %q: %w", plan.RunID, err)
 	}
 	fmt.Fprintf(engine.deps.Progress, "QA verdict: %s\n", verdict)
-	if reportPath == "" {
-		// A missing report means nothing to commit (ADR 0015).
-		return verdict, reportPath, nil
+	qaStatus := spec.StatusFailed
+	qaReason := fmt.Sprintf("QA verdict %s", verdict)
+	if verdict == spec.VerdictPass {
+		qaStatus = spec.StatusCompleted
+		qaReason = ""
 	}
-	if err := engine.commitQAReport(ctx, plan, ordinal, before, verdict, reportPath); err != nil {
+	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
+		return "", "", err
+	}
+	if err := engine.commitQAReport(ctx, plan, ordinal, before, verdict, reportPath, qaTask); err != nil {
 		return "", "", err
 	}
 	return verdict, reportPath, nil
@@ -1675,7 +1724,9 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string) {
 	case err == nil:
 		verdict = value
 	case errors.Is(err, spec.ErrNoQAReport):
-		verdict = qaVerdictMissing
+		// QAVerdict already searched the report directory. Preserve that
+		// proven absence instead of repeating the same filesystem scan below.
+		return qaVerdictMissing, ""
 	default:
 		fmt.Fprintf(engine.deps.Progress, "QA Report verdict unreadable: %v\n", err)
 		verdict = qaVerdictUnreadable
@@ -1691,9 +1742,10 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string) {
 }
 
 // commitQAReport creates the QA Report commit from the QA step's snapshot
-// diff with the report ensured, so the report and its evidence always ride
-// in their own commit, separate from every Task commit (ADR 0015).
-func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal int, before []string, verdict string, reportPath string) error {
+// diff with the report and qa Task file ensured, so the report, its evidence,
+// and gate settlement always ride in their own commit, separate from every
+// implementation Task commit (ADR 0015, ADR 0091).
+func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal int, before []string, verdict string, reportPath string, qaTask spec.Task) error {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
 			return fmt.Errorf("publish stop event for run %q before the QA Report commit: %w", plan.RunID, errors.Join(err, publishErr))
@@ -1704,7 +1756,13 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	if err != nil {
 		return err
 	}
-	changed := ensureCommitPath(diffSnapshots(before, after), reportPath)
+	changed := diffSnapshots(before, after)
+	if strings.TrimSpace(reportPath) != "" {
+		changed = ensureCommitPath(changed, reportPath)
+	}
+	if strings.TrimSpace(qaTask.File) != "" {
+		changed = ensureCommitPath(changed, artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, qaTask.File)))
+	}
 	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
 	for _, drop := range dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan.RunID, ordinal, "", "QA Report", drop); err != nil {
@@ -1757,15 +1815,6 @@ func ensureCommitPath(changed []string, path string) []string {
 func allTasksCompleted(tasks []spec.Task, statuses map[string]spec.Status) bool {
 	for _, task := range tasks {
 		if statuses[task.ID] != spec.StatusCompleted {
-			return false
-		}
-	}
-	return true
-}
-
-func allTasksRunCompleted(tasks []spec.Task, statuses map[string]taskRunStatus) bool {
-	for _, task := range tasks {
-		if statuses[task.ID] != taskRunCompleted {
 			return false
 		}
 	}

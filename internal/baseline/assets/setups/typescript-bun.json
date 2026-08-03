@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/typescript-bun.txt"
   },
-  "digest": "55a9193e8cf1570a82eb5549171ee37d0318bc93f837c5589dc47ab87b5771bb",
+  "digest": "913122fda9cddffacd4382782b4a626188924cdbce2a97c1557a82e5f5f466e4",
   "skills": [
     {
       "name": "find-rules",
@@ -264,7 +264,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f"
+      "contentDigest": "effe546bb0d662ba9fea2b0b01b752e933ea0c165655789d25433d9d7ff14483"
     },
     {
       "name": "ai-sdk",
@@ -786,7 +786,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "ddff158c403b8565fec292b0f8f9b7faf6cc263a1b06cec7b6f180173d284dbf"
+      "contentDigest": "1461fd9c9c92fc5d40603e2cdc9efcd5746590afe53d5ff4c10168fc28023d69"
     },
     {
       "name": "review",
@@ -1027,7 +1027,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "a6be91a3469b7ce24f85969858811e645030f5c578357640287236599644d2c9"
+      "contentDigest": "86288822406895a70fd90e8427a076430ae9aed12b2afce50ef63dbaa90b3ddc"
     },
     {
       "name": "the-fool",

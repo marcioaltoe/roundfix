@@ -117,6 +117,27 @@ func (err TaskTypeProjectionError) Error() string {
 	return fmt.Sprintf("Task %q Type projection in %q is %q but task file %q frontmatter type is %q; update the _tasks.md projection type to match the task frontmatter", err.TaskID, err.ManifestPath, err.ManifestType, err.TaskPath, err.FileType)
 }
 
+// QAGateError reports an invalid QA declaration or gate shape in a Task Graph.
+type QAGateError struct {
+	ManifestPath string
+	Reason       string
+}
+
+func (err QAGateError) Error() string {
+	return fmt.Sprintf("Task Graph QA gate in manifest %q: %s", err.ManifestPath, err.Reason)
+}
+
+// StaleGateError reports a settled QA gate above dependencies that are not
+// completed, so the recorded gate result no longer describes the graph.
+type StaleGateError struct {
+	QATaskID string
+	TaskIDs  []string
+}
+
+func (err StaleGateError) Error() string {
+	return fmt.Sprintf("QA gate result is invalidated for Task %q because these dependencies are not completed: %s", err.QATaskID, strings.Join(err.TaskIDs, ", "))
+}
+
 // TaskContextError reports an invalid Task-authored ## Context entry.
 type TaskContextError struct {
 	Kind   string

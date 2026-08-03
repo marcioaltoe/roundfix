@@ -22,15 +22,15 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "84953779bc09f45c59d57d9cd8a6f0ce83f438b25f5d4d89a1015c8d24415157",
+      "digest": "c34639a2db112e8de54052ba3552fd75a7c1ccd478cc41e293e49550c5c91e20",
       "id": "go-cli"
     },
     {
-      "digest": "5baaef1ed5c3df703275a385af0cd428ef6caca226bbf30ae06f9944ec74d09d",
+      "digest": "07d3997919ee657b0e939a027c5b06ecb1f7ba56bf81eae0cc821bf7955b89d7",
       "id": "rust-cli"
     },
     {
-      "digest": "7f06cd934682214b6eb3718f4a7aa6aa60490d5d4857334b8f52503d34568dcc",
+      "digest": "5595c6aefde6868d7a4c7295055dd14bb357052c35c87c6ed623667203d8da6a",
       "id": "typescript-bun"
     }
   ],
@@ -53,7 +53,7 @@
             ]
           }
         ],
-        "digest": "84953779bc09f45c59d57d9cd8a6f0ce83f438b25f5d4d89a1015c8d24415157",
+        "digest": "c34639a2db112e8de54052ba3552fd75a7c1ccd478cc41e293e49550c5c91e20",
         "id": "go-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -220,7 +220,7 @@
             }
           },
           {
-            "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f",
+            "contentDigest": "effe546bb0d662ba9fea2b0b01b752e933ea0c165655789d25433d9d7ff14483",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -366,7 +366,7 @@
             }
           },
           {
-            "contentDigest": "ddff158c403b8565fec292b0f8f9b7faf6cc263a1b06cec7b6f180173d284dbf",
+            "contentDigest": "1461fd9c9c92fc5d40603e2cdc9efcd5746590afe53d5ff4c10168fc28023d69",
             "name": "qa-gate",
             "path": "skills/06-review-repair/qa-gate",
             "source": {
@@ -475,7 +475,7 @@
             ]
           }
         ],
-        "digest": "5baaef1ed5c3df703275a385af0cd428ef6caca226bbf30ae06f9944ec74d09d",
+        "digest": "07d3997919ee657b0e939a027c5b06ecb1f7ba56bf81eae0cc821bf7955b89d7",
         "id": "rust-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -631,7 +631,7 @@
             }
           },
           {
-            "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f",
+            "contentDigest": "effe546bb0d662ba9fea2b0b01b752e933ea0c165655789d25433d9d7ff14483",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -733,7 +733,7 @@
             }
           },
           {
-            "contentDigest": "ddff158c403b8565fec292b0f8f9b7faf6cc263a1b06cec7b6f180173d284dbf",
+            "contentDigest": "1461fd9c9c92fc5d40603e2cdc9efcd5746590afe53d5ff4c10168fc28023d69",
             "name": "qa-gate",
             "path": "skills/06-review-repair/qa-gate",
             "source": {
@@ -920,7 +920,7 @@
             ]
           }
         ],
-        "digest": "7f06cd934682214b6eb3718f4a7aa6aa60490d5d4857334b8f52503d34568dcc",
+        "digest": "5595c6aefde6868d7a4c7295055dd14bb357052c35c87c6ed623667203d8da6a",
         "id": "typescript-bun",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -1172,7 +1172,7 @@
             }
           },
           {
-            "contentDigest": "71c31572bb3e19901d0cef5d4149706a44e33ea13a51c65deb4974610783351f",
+            "contentDigest": "effe546bb0d662ba9fea2b0b01b752e933ea0c165655789d25433d9d7ff14483",
             "name": "write-tasks",
             "path": "skills/04-issue-decomposition/write-tasks",
             "source": {
@@ -1694,7 +1694,7 @@
             "treeDigest": "7583a30883e595e493871c70cc6d1c76e92d2cc69059f338d65e0da7ec70226b"
           },
           {
-            "contentDigest": "ddff158c403b8565fec292b0f8f9b7faf6cc263a1b06cec7b6f180173d284dbf",
+            "contentDigest": "1461fd9c9c92fc5d40603e2cdc9efcd5746590afe53d5ff4c10168fc28023d69",
             "name": "qa-gate",
             "path": "skills/06-review-repair/qa-gate",
             "source": {
@@ -1935,7 +1935,7 @@
             "treeDigest": "cc7137c53d51fea605c0be017cf6eecdb72add7405e5c3c9f327dbc26d4572fa"
           },
           {
-            "contentDigest": "a6be91a3469b7ce24f85969858811e645030f5c578357640287236599644d2c9",
+            "contentDigest": "86288822406895a70fd90e8427a076430ae9aed12b2afce50ef63dbaa90b3ddc",
             "name": "roundfix",
             "path": "skills/06-review-repair/roundfix",
             "source": {
@@ -2051,7 +2051,7 @@
   "plannedByteSequence": [
     {
       "action": "refresh",
-      "afterIdentity": "sha256:877f7ae6313097b38549b8300b3e30e17170fa5ff108c17ae1d33b5e3444d707",
+      "afterIdentity": "sha256:994a789533435eb45b79999403cbcc889f5f9f937d8a5792a711420013821eff",
       "beforeIdentity": "sha256:568bd03f373a84df2fbbfa7de31fb8f0ed33d5d43af0909113a495556a3d4fac",
       "managedId": "setup-snapshot.go-cli",
       "ordinal": 0,
@@ -2059,7 +2059,7 @@
     },
     {
       "action": "refresh",
-      "afterIdentity": "sha256:b05f1d82454f5512e550799c0310d5aa11d5aeec6b1ecfbf48dc94e7dbca8e34",
+      "afterIdentity": "sha256:a89cc5015fc926c81b5774255b67944bb6f361d33bb7fbe08d819ad023971517",
       "beforeIdentity": "sha256:99372890e74ceb6721c022ec6499c35163359d6c412005dd9a934b2a61e6ff06",
       "managedId": "setup-snapshot.rust-cli",
       "ordinal": 1,
@@ -2067,7 +2067,7 @@
     },
     {
       "action": "refresh",
-      "afterIdentity": "sha256:2242c9f4f50cc13d77b6b4bc20e38d35685c54175ca20a96b05cda2a487775e1",
+      "afterIdentity": "sha256:33ab52a83944dab5d274f9aedfdbe34d26890b452d7647bf4a2fe0848eb390cb",
       "beforeIdentity": "sha256:5adbc15b8d556d9b796c486d4641d11b29c5bff0a2835edc950c806134324eb9",
       "managedId": "setup-snapshot.typescript-bun",
       "ordinal": 2,
@@ -2076,21 +2076,21 @@
   ],
   "postState": [
     {
-      "identity": "sha256:877f7ae6313097b38549b8300b3e30e17170fa5ff108c17ae1d33b5e3444d707",
+      "identity": "sha256:994a789533435eb45b79999403cbcc889f5f9f937d8a5792a711420013821eff",
       "kind": "file",
       "mode": 384,
       "path": "go-cli.json",
-      "size": 14730
+      "size": 14099
     },
     {
-      "identity": "sha256:b05f1d82454f5512e550799c0310d5aa11d5aeec6b1ecfbf48dc94e7dbca8e34",
+      "identity": "sha256:a89cc5015fc926c81b5774255b67944bb6f361d33bb7fbe08d819ad023971517",
       "kind": "file",
       "mode": 384,
       "path": "rust-cli.json",
-      "size": 13019
+      "size": 12388
     },
     {
-      "identity": "sha256:2242c9f4f50cc13d77b6b4bc20e38d35685c54175ca20a96b05cda2a487775e1",
+      "identity": "sha256:33ab52a83944dab5d274f9aedfdbe34d26890b452d7647bf4a2fe0848eb390cb",
       "kind": "file",
       "mode": 384,
       "path": "typescript-bun.json",

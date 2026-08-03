@@ -42,12 +42,18 @@ reported.
   typed blocked-row counts, which a QA Task must produce unchanged; ADR-0088
   records removing the flag in favour of the authored node. Source:
   `docs/agents/domain.md`.
-- Tooling authority: applicable — express maintainer authorization: on
-  2026-08-02 the maintainer authorized tooling adjustment naming the `Makefile`
-  and the owned skills, recorded at
-  `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`; bounded
-  files: the owned skill pair, since `write-tasks` and the QA gate skill both
-  change. Deterministic digest fallout is sanctioned by ADR-0081. Source:
+- Tooling authority: applicable — express maintainer authorization recorded
+  at `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md` with
+  its 2026-08-03 addenda. Bounded files: `.agents/skills/write-tasks/**`,
+  `.agents/skills/qa-gate/**`, and — per the close-time direction quoted in
+  the addendum — `.agents/skills/roundfix/**`, each with its `skills/`
+  mirror via `make skills-sync`. Corrective regeneration at close touched
+  the sanctioned ADR-0081 paths only: `internal/baseline/testdata/**`
+  goldens and `docs/specs/0071-verification-cost/coverage-record.json`.
+  Chronology, stated honestly: the maintainer's direction preceded every
+  protected edit; the per-Spec listing in the grant was recorded at close
+  after the gate's first report named its absence — recorded rather than
+  assumed, per this repository's own precedent. Source:
   `docs/agents/agent-instructions.md`.
 
 ## Goals

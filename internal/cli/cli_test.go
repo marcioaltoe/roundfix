@@ -2239,8 +2239,9 @@ func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.
 	graph := &spec.Graph{Tasks: []spec.Task{
 		{ID: "task_frontend", Status: spec.StatusPending, Type: spec.TaskTypeFrontend},
 		{ID: "task_backend", Status: spec.StatusPending, Type: spec.TaskTypeBackend},
-	}}
-	categories := implementProfileCategories(graph, true)
+		{ID: "task_qa", Status: spec.StatusPending, Type: spec.TaskTypeQA},
+	}, QATaskID: "task_qa"}
+	categories := implementProfileCategories(graph)
 
 	result, err := runProfileOperationalPreflight(context.Background(), commandRequest{name: "implement"}, roundconfig.Builtin(), categories, "/workspace", runner, &stderr)
 
@@ -2281,13 +2282,50 @@ func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.
 	assertProofReferences(t, reviewResult.Proofs[1], []string{"review/fallback"})
 }
 
+func TestImplementProfileCategoriesDerivesQAFromGraphDeclaration(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name  string
+		graph *spec.Graph
+		want  []roundconfig.WorkCategory
+	}{
+		{
+			name: "declared gate resolves QA category",
+			graph: &spec.Graph{
+				Tasks: []spec.Task{
+					{ID: "task_backend", Status: spec.StatusPending, Type: spec.TaskTypeBackend},
+					{ID: "task_qa", Status: spec.StatusPending, Type: spec.TaskTypeQA},
+				},
+				QATaskID: "task_qa",
+			},
+			want: []roundconfig.WorkCategory{roundconfig.CategoryBackend, roundconfig.CategoryQA},
+		},
+		{
+			name: "legacy graph does not resolve QA category",
+			graph: &spec.Graph{Tasks: []spec.Task{
+				{ID: "task_backend", Status: spec.StatusPending, Type: spec.TaskTypeBackend},
+			}},
+			want: []roundconfig.WorkCategory{roundconfig.CategoryBackend},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := implementProfileCategories(tt.graph); !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("implementProfileCategories() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWarns(t *testing.T) {
 	t.Parallel()
 	runner := &fakeAgentRunner{}
 	var stderr bytes.Buffer
 	graph := &spec.Graph{Tasks: []spec.Task{
 		{ID: "task_backend", Status: spec.StatusPending, Type: spec.TaskTypeBackend},
-	}}
+		{ID: "task_qa", Status: spec.StatusPending, Type: spec.TaskTypeQA},
+	}, QATaskID: "task_qa"}
 	req := commandRequest{
 		name:               "implement",
 		agent:              "codex",
@@ -2297,7 +2335,7 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 		reasoningEffort:    "high",
 		reasoningEffortSet: true,
 	}
-	categories := implementProfileCategories(graph, true)
+	categories := implementProfileCategories(graph)
 
 	result, err := runProfileOperationalPreflight(context.Background(), req, roundconfig.Builtin(), categories, "/workspace", runner, &stderr)
 

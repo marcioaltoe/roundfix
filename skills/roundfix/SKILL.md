@@ -436,7 +436,7 @@ or provide a complete one-Run Preferred Selection override:
 ```bash
 roundfix watch --source coderabbit --pr 123 --until-clean
 roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort high --no-input
-roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort xhigh --qa --detach
+roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort xhigh --detach
 ```
 
 `--agent`, `--model`, and `--reasoning-effort` are all-or-none. A partial subset
@@ -453,7 +453,8 @@ Before an operational Run mutates state, Roundfix validates Task Types, resolves
 the relevant profiles, deduplicates exact preferred/fallback tuples, proves
 them sequentially through disposable sessions, and closes those sessions.
 `fetch` remains Agent-free. `resolve` and `watch` use only `review`; `implement`
-uses the Task categories and adds `qa` only when requested.
+derives its categories, including `qa`, from Task Graph metadata and accepts no
+per-run QA selection.
 
 After Run creation, automatic fallback is notification-first and pre-prompt
 only. If selection start fails before the first prompt, Roundfix records the
@@ -1250,9 +1251,14 @@ outcome and never opens pull requests (ADR-0021).
 2. Flags:
    - `--spec` — Spec slug under the resolved Spec Root (`docs/specs/` by
      default).
-   - `--qa` — end the Run with the qa-gate step once every Task is completed;
-     only a `pass` verdict lets the Run end Clean. Any other verdict — or a
-     missing or unreadable QA Report — ends the Run Unresolved.
+   - There is no QA parameter. The gate is authored into the Task Graph:
+     the manifest's `qa: task_NN` names a terminal `type: qa` Task depending
+     on every leaf, or `qa: declined` records the reasoned decline. The
+     Daemon runs an authored gate after the last Task settles; only a `pass`
+     verdict lets the Run end Clean, and any other verdict — or a missing or
+     unreadable QA Report — ends the Run Unresolved. Passing `--qa` is an
+     unknown-flag error whose remediation names this contract. A reasoned
+     `qa: declined` declaration creates no QA Task and executes no gate.
    - `--agent` — Agent runtime. Supported: `codex`, `claude`, `opencode`.
    - `--model` — Agent Model override.
    - `--reasoning-effort` — Default Reasoning Effort override.
@@ -1273,14 +1279,17 @@ outcome and never opens pull requests (ADR-0021).
      two spaces followed by `reason: <one line>`. Verification failure reasons name the failed
      command and exit status and point to diagnostics. Completed Task lines do
      not gain an extra line.
-   - With `--qa`, one verdict line after the Task lines:
+   - When the graph authors a gate, one verdict line after the Task lines:
      `qa <verdict> — <report path>`; a missing report prints
      `qa missing — no QA Report found`.
    - One outcome line: `Clean: all N Task(s) completed.`,
      `Unresolved: X completed, Y failed, Z skipped, W pending.`,
      `IntegrationPending: X completed, Y failed, Z skipped, W pending; integrate with git merge --ff-only roundfix/run-<id>`,
-     or — when every Task is already completed and `--qa` is absent —
+     or — when every Task is already completed and the graph has no unsettled
+     gate, including a `qa: declined` declaration —
      `All N Task(s) already completed; no Run was created.`
+     An all-completed graph whose authored gate is still unsettled is not a
+     no-op: the Run starts and executes the gate.
    - When `implement.auto_push: true` and the Run ends Clean with an upstream
      branch, one final line follows the outcome: `pushed <remote>/<branch>`.
      A tested example is `pushed origin/ma/widget-flow`.
@@ -1347,11 +1356,11 @@ outcome and never opens pull requests (ADR-0021).
    from the resolved Spec Root under an `Active Specs:` picker that accepts a
    number or a slug, and the Agent field suggests the remembered Agent. Agent
    selection then asks for Agent Model and Default Reasoning Effort using the
-   selected runtime's effective configuration as the default. The final
-   `QA gate [y/N]` field enables the qa-gate step for that Run; when `--qa`
-   was passed, the prompt is `QA gate [Y/n]` and Enter keeps QA on. The Agent
-   is remembered across runs; the Spec slug, selection overrides, and QA choice
-   never are. `--no-input` fails instead of opening Interactive Input.
+   selected runtime's effective configuration as the default. Interactive
+   Input asks nothing about QA: the gate is an authoring decision recorded in
+   the Task Graph, not a per-run choice. The Agent is remembered across runs;
+   the Spec slug and selection overrides never are. `--no-input` fails
+   instead of opening Interactive Input.
 
 7. Discover spec Runs with the bounded `roundfix runs list` or open the Run
    Browser with `roundfix attach` when the Run ID was not captured. Follow
@@ -1550,18 +1559,20 @@ Per Spec, in order:
    roundfix implement --spec <slug> --detach
    ```
 
-4. **Request QA once, at the very end.** Only when the graph closes and every
-   Task is expected to settle in that Run:
+4. **The gate runs itself, once, at the very end.** It is authored into the
+   graph at decomposition as the terminal `qa` Task, so no invocation
+   requests it: the Daemon executes it when the last Task settles, and an
+   all-completed graph whose gate is unsettled starts a Run that is just the
+   gate:
 
    ```bash
-   roundfix implement --spec <slug> --qa --detach
+   roundfix implement --spec <slug> --detach
    ```
 
-   The Daemon already gates QA on every Task reaching `completed`, so the cost
-   is not the flag — it is re-requesting the gate after each corrective Task,
-   which turns discovery into a serial chain of full gate cycles. When a gate
-   returns several findings, close them together and request the gate once
-   more. More than two corrective Tasks generated by QA findings means the
+   Appending a Task after the gate has reported invalidates that result at
+   the next load — the insertion is named, never silent. When a gate returns
+   several findings, close them together and let the gate re-run once. More
+   than two corrective Tasks generated by QA findings means the
    decomposition needs re-examining, not a third patch.
 
 5. **Archive and publish.** On `verdict: pass`, `roundfix archive <slug>` on the

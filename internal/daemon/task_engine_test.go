@@ -111,6 +111,8 @@ type taskSpecSeed struct {
 }
 
 type taskCycleFixture struct {
+	t           *testing.T
+	seeds       []taskSpecSeed
 	store       *store.Store
 	run         store.Run
 	gitRoot     string
@@ -171,6 +173,8 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 
 	calls := []string{}
 	return &taskCycleFixture{
+		t:           t,
+		seeds:       append([]taskSpecSeed(nil), seeds...),
 		store:       runStore,
 		run:         run,
 		gitRoot:     gitRoot,
@@ -206,9 +210,31 @@ func (fixture *taskCycleFixture) plan() TaskPlan {
 }
 
 func (fixture *taskCycleFixture) qaPlan() TaskPlan {
-	plan := fixture.plan()
-	plan.QA = true
-	return plan
+	fixture.t.Helper()
+	seeds, gateID := taskSeedsWithQAGate(fixture.seeds)
+	writeSpecDirAtRootForTestWithQA(fixture.t, fixture.specsRoot, taskCycleSlug, seeds, qaDeclarationForTest{taskID: gateID})
+	fixture.seeds = seeds
+	fixture.reloadGraph()
+	return fixture.plan()
+}
+
+func (fixture *taskCycleFixture) declinedQAPlan() TaskPlan {
+	fixture.t.Helper()
+	writeSpecDirAtRootForTestWithQA(fixture.t, fixture.specsRoot, taskCycleSlug, fixture.seeds, qaDeclarationForTest{
+		declined: true,
+		reason:   "this fixture has no behavioral surface",
+	})
+	fixture.reloadGraph()
+	return fixture.plan()
+}
+
+func (fixture *taskCycleFixture) reloadGraph() {
+	fixture.t.Helper()
+	graph, err := spec.Load(fixture.specsRoot, taskCycleSlug)
+	if err != nil {
+		fixture.t.Fatalf("reload spec: %v", err)
+	}
+	fixture.graph = graph
 }
 
 func (fixture *taskCycleFixture) useExternalSpecRoot(t *testing.T, seeds []taskSpecSeed) string {
@@ -221,6 +247,7 @@ func (fixture *taskCycleFixture) useExternalSpecRoot(t *testing.T, seeds []taskS
 	}
 	fixture.specsRoot = specsRoot
 	fixture.graph = graph
+	fixture.seeds = append([]taskSpecSeed(nil), seeds...)
 	return specsRoot
 }
 
@@ -261,6 +288,16 @@ func writeSpecDirForTest(t *testing.T, gitRoot string, slug string, seeds []task
 }
 
 func writeSpecDirAtRootForTest(t *testing.T, specsRoot string, slug string, seeds []taskSpecSeed) {
+	writeSpecDirAtRootForTestWithQA(t, specsRoot, slug, seeds, qaDeclarationForTest{})
+}
+
+type qaDeclarationForTest struct {
+	taskID   string
+	declined bool
+	reason   string
+}
+
+func writeSpecDirAtRootForTestWithQA(t *testing.T, specsRoot string, slug string, seeds []taskSpecSeed, qa qaDeclarationForTest) {
 	t.Helper()
 	specDir := filepath.Join(specsRoot, slug)
 	if err := os.MkdirAll(specDir, 0o755); err != nil {
@@ -269,7 +306,14 @@ func writeSpecDirAtRootForTest(t *testing.T, specsRoot string, slug string, seed
 	mustWriteForTest(t, filepath.Join(specDir, "_prd.md"), "---\nstatus: active\n---\n\n# PRD\n")
 
 	var manifest strings.Builder
-	manifest.WriteString("---\nschema: spec-tasks/v1\ngraph:\n  nodes:\n")
+	manifest.WriteString("---\nschema: spec-tasks/v1\n")
+	switch {
+	case qa.taskID != "":
+		manifest.WriteString("qa: " + qa.taskID + "\n")
+	case qa.declined:
+		manifest.WriteString("qa: declined\nqa_reason: " + qa.reason + "\n")
+	}
+	manifest.WriteString("graph:\n  nodes:\n")
 	for _, seed := range seeds {
 		manifest.WriteString(fmt.Sprintf("    - id: %s\n      file: %s.md\n", seed.id, seed.id))
 		if len(seed.needs) > 0 {
@@ -303,6 +347,48 @@ func writeSpecDirAtRootForTest(t *testing.T, specsRoot string, slug string, seed
 		}
 		mustWriteForTest(t, filepath.Join(specDir, seed.id+".md"), body.String())
 	}
+}
+
+func taskSeedsWithQAGate(seeds []taskSpecSeed) ([]taskSpecSeed, string) {
+	for _, seed := range seeds {
+		if seed.taskType == string(spec.TaskTypeQA) {
+			return append([]taskSpecSeed(nil), seeds...), seed.id
+		}
+	}
+
+	used := make(map[string]bool, len(seeds))
+	needed := make(map[string]bool, len(seeds))
+	for _, seed := range seeds {
+		used[seed.id] = true
+		for _, need := range seed.needs {
+			needed[need] = true
+		}
+	}
+	gateID := ""
+	for ordinal := 1; ordinal < 100; ordinal++ {
+		candidate := fmt.Sprintf("task_%02d", ordinal)
+		if !used[candidate] {
+			gateID = candidate
+			break
+		}
+	}
+	if gateID == "" {
+		panic("test fixture has no available Task id for the QA gate")
+	}
+	leaves := make([]string, 0, len(seeds))
+	for _, seed := range seeds {
+		if !needed[seed.id] {
+			leaves = append(leaves, seed.id)
+		}
+	}
+	withGate := append([]taskSpecSeed(nil), seeds...)
+	withGate = append(withGate, taskSpecSeed{
+		id:       gateID,
+		title:    "Run the QA gate",
+		taskType: string(spec.TaskTypeQA),
+		needs:    leaves,
+	})
+	return withGate, gateID
 }
 
 func taskPathFor(gitRoot string, slug string, id string) string {
@@ -4538,7 +4624,7 @@ func TestQACommitDropsExecutableFileAndCommitsRemainingPaths(t *testing.T) {
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
 
-	err := engine.commitQAReport(context.Background(), fixture.plan(), 2, nil, spec.VerdictPass, reportPath)
+	err := engine.commitQAReport(context.Background(), fixture.plan(), 2, nil, spec.VerdictPass, reportPath, spec.Task{})
 
 	if err != nil {
 		t.Fatalf("commitQAReport: %v", err)
@@ -4590,14 +4676,24 @@ func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
 		t.Fatalf("expected no commit for an external QA Report, got %v", committer.messages)
 	}
 	dropped := droppedStageEvents(t, fixture.sink)
-	if len(dropped) != 1 {
-		t.Fatalf("expected one dropped QA report event, got %+v", dropped)
+	if len(dropped) != 2 {
+		t.Fatalf("expected the external QA report and Task status dropped from staging, got %+v", dropped)
 	}
-	if got := eventPayloadString(t, dropped[0], "reason"); got != "external to repository" {
-		t.Fatalf("expected external reason, got %q", got)
+	wantDropped := []string{
+		taskPathInSpecRootFor(externalRoot, taskCycleSlug, fixture.graph.QATaskID),
+		wantReportPath,
 	}
-	if got := eventPayloadString(t, dropped[0], "path"); got != wantReportPath {
-		t.Fatalf("expected dropped QA path %q, got %q", wantReportPath, got)
+	sort.Strings(wantDropped)
+	gotDropped := make([]string, 0, len(dropped))
+	for _, event := range dropped {
+		if got := eventPayloadString(t, event, "reason"); got != "external to repository" {
+			t.Fatalf("expected external reason, got %q", got)
+		}
+		gotDropped = append(gotDropped, eventPayloadString(t, event, "path"))
+	}
+	sort.Strings(gotDropped)
+	if !slices.Equal(gotDropped, wantDropped) {
+		t.Fatalf("expected dropped QA paths %v, got %v", wantDropped, gotDropped)
 	}
 	if !strings.Contains(fixture.progress.String(), "roundfix: QA Report "+wantReportPath+" kept outside the repository; omitted from the commit\n") {
 		t.Fatalf("expected external QA progress warning, got %q", fixture.progress.String())
@@ -4611,20 +4707,24 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 		name        string
 		report      string
 		wantVerdict string
-		wantCommit  bool
+		wantStatus  spec.Status
 	}{
-		{name: "pass", report: qaReportForTest(spec.VerdictPass), wantVerdict: spec.VerdictPass, wantCommit: true},
-		{name: "partial", report: qaReportForTest(spec.VerdictPartial), wantVerdict: spec.VerdictPartial, wantCommit: true},
-		{name: "fail", report: qaReportForTest(spec.VerdictFail), wantVerdict: spec.VerdictFail, wantCommit: true},
-		{name: "missing report", report: "", wantVerdict: "missing", wantCommit: false},
-		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantVerdict: "unreadable", wantCommit: true},
+		{name: "pass", report: qaReportForTest(spec.VerdictPass), wantVerdict: spec.VerdictPass, wantStatus: spec.StatusCompleted},
+		{name: "partial", report: qaReportForTest(spec.VerdictPartial), wantVerdict: spec.VerdictPartial, wantStatus: spec.StatusFailed},
+		{name: "fail", report: qaReportForTest(spec.VerdictFail), wantVerdict: spec.VerdictFail, wantStatus: spec.StatusFailed},
+		{name: "missing report", report: "", wantVerdict: "missing", wantStatus: spec.StatusFailed},
+		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantVerdict: "unreadable", wantStatus: spec.StatusFailed},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
 			// Snapshot script: task_01 before/after, then the QA step
 			// before/after — only the QA Report is new in the QA diff.
-			fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}, {"src/one.go"}, {"src/one.go", reportRel}}
+			qaSnapshot := []string{"src/one.go", reportRel}
+			if tt.report == "" {
+				qaSnapshot = []string{"src/one.go"}
+			}
+			fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}, {"src/one.go"}, qaSnapshot}
 			runner := &taskFakeRunner{
 				calls:        fixture.calls,
 				gitRoot:      fixture.gitRoot,
@@ -4646,6 +4746,9 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 			}
 			if result.QAVerdict != tt.wantVerdict {
 				t.Fatalf("expected QA verdict %q, got %q", tt.wantVerdict, result.QAVerdict)
+			}
+			if got := taskStatusOnDisk(t, fixture.gitRoot, fixture.graph.QATaskID); got != string(tt.wantStatus) {
+				t.Fatalf("expected QA Task %s settled %s, got %s", fixture.graph.QATaskID, tt.wantStatus, got)
 			}
 			wantReportPath := reportRel
 			if tt.report == "" {
@@ -4680,19 +4783,20 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 			if !strings.Contains(payload, fmt.Sprintf("%q", tt.wantVerdict)) || !strings.Contains(payload, wantReportPath) {
 				t.Fatalf("expected daemon.qa payload with verdict and report path, got %s", payload)
 			}
-			if tt.wantCommit {
-				if len(committer.messages) != 2 {
-					t.Fatalf("expected the QA Report committed in its own commit, got %v", committer.messages)
-				}
-				wantMessage := "docs: qa report for " + taskCycleSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + taskCycleSlug
-				if committer.messages[1] != wantMessage {
-					t.Fatalf("expected QA commit message %q, got %q", wantMessage, committer.messages[1])
-				}
-				if got := strings.Join(committer.paths[1], "|"); got != reportRel {
-					t.Fatalf("expected only the QA step's changes in the QA commit, got %q", got)
-				}
-			} else if len(committer.messages) != 1 {
-				t.Fatalf("expected no QA commit for a missing report, got %v", committer.messages)
+			if len(committer.messages) != 2 {
+				t.Fatalf("expected the settled QA Task committed in its own commit, got %v", committer.messages)
+			}
+			wantMessage := "docs: qa report for " + taskCycleSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + taskCycleSlug
+			if committer.messages[1] != wantMessage {
+				t.Fatalf("expected QA commit message %q, got %q", wantMessage, committer.messages[1])
+			}
+			wantPaths := []string{taskFileRel(taskCycleSlug, fixture.graph.QATaskID)}
+			if tt.report != "" {
+				wantPaths = append(wantPaths, reportRel)
+			}
+			sort.Strings(wantPaths)
+			if got := strings.Join(committer.paths[1], "|"); got != strings.Join(wantPaths, "|") {
+				t.Fatalf("expected the QA artifact paths %v, got %q", wantPaths, got)
 			}
 			kinds := fixture.sink.kinds()
 			if kinds[len(kinds)-1] != runevent.KindDaemonOutcome {
@@ -4718,7 +4822,9 @@ func TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted(t *testing.T) {
 	verifier := &taskFakeVerifier{calls: fixture.calls, failOn: map[string]error{"true": errors.New("gate broke")}}
 	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
 
-	result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+	plan := fixture.qaPlan()
+	gateID := fixture.graph.QATaskID
+	result, err := engine.TaskCycle(context.Background(), plan)
 
 	if err != nil {
 		t.Fatalf("task cycle: %v", err)
@@ -4732,11 +4838,101 @@ func TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted(t *testing.T) {
 	if result.QAVerdict != "" || result.QAReportPath != "" {
 		t.Fatalf("expected no QA verdict when the step is skipped, got %+v", result)
 	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, gateID); got != string(spec.StatusPending) {
+		t.Fatalf("expected withheld QA Task %s to remain pending, got %s", gateID, got)
+	}
+	if _, reported := taskOutcomeByID(result.Outcomes, gateID); reported {
+		t.Fatalf("expected withheld QA Task %s to remain unreported, got %+v", gateID, result.Outcomes)
+	}
 	if events := taskEventsOfKind(fixture.sink, runevent.KindDaemonQA); len(events) != 0 {
 		t.Fatalf("expected no daemon.qa event when the step is skipped, got %+v", events)
 	}
+	if progress := fixture.progress.String(); !strings.Contains(progress, "QA Task "+gateID+" withheld; unmet dependencies: task_02\n") {
+		t.Fatalf("expected withheld-gate progress naming task_02, got %q", progress)
+	}
 	if len(committer.messages) != 0 {
 		t.Fatalf("expected no commits, got %v", committer.messages)
+	}
+}
+
+func TestTaskCycleReturnsWithheldQATaskProgressWriteError(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	engine := fixture.engine(t, &taskFakeRunner{}, &taskFakeVerifier{}, &engineFakeCommitter{}, fixture.worktree)
+	progressErr := errors.New("progress closed")
+	engine.deps.Progress = failingProgressWriter{err: progressErr}
+	plan := fixture.qaPlan()
+	qaTask := plan.Tasks[len(plan.Tasks)-1]
+	qaTask.Needs = []string{"task_missing"}
+	plan.Tasks = []spec.Task{qaTask}
+
+	_, err := engine.TaskCycle(context.Background(), plan)
+
+	if err == nil {
+		t.Fatal("TaskCycle succeeded, want withheld QA Task progress write error")
+	}
+	if !errors.Is(err, progressErr) {
+		t.Fatalf("TaskCycle error = %v, want wrapped progress error", err)
+	}
+	if !strings.Contains(err.Error(), "write withheld QA task progress") {
+		t.Fatalf("TaskCycle error = %v, want withheld QA task progress context", err)
+	}
+}
+
+func TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		plan func(*taskCycleFixture) TaskPlan
+	}{
+		{
+			name: "legacy graph",
+			plan: func(fixture *taskCycleFixture) TaskPlan { return fixture.plan() },
+		},
+		{
+			name: "declined graph",
+			plan: func(fixture *taskCycleFixture) TaskPlan { return fixture.declinedQAPlan() },
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+			runner := &taskFakeRunner{
+				calls:    fixture.calls,
+				gitRoot:  fixture.gitRoot,
+				qaReport: qaReportForTest(spec.VerdictPass),
+			}
+			engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+			result, err := engine.TaskCycle(context.Background(), tt.plan(fixture))
+
+			if err != nil {
+				t.Fatalf("task cycle: %v", err)
+			}
+			assertNoQAStep(t, fixture, runner.qaPrompts, nil, result)
+		})
+	}
+}
+
+func TestTaskSchedulerRefusesQATaskAsAgentWork(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	qaTask := spec.Task{ID: "task_77", Type: spec.TaskTypeQA}
+
+	workerResult := engine.executeTaskWorker(context.Background(), plan, qaTask, 1, false)
+
+	if workerResult.err == nil {
+		t.Fatal("expected QA Task Agent scheduling refusal")
+	}
+	for _, want := range []string{qaTask.ID, "QA gate", "Agent work"} {
+		if !strings.Contains(workerResult.err.Error(), want) {
+			t.Fatalf("expected scheduling error to contain %q, got %v", want, workerResult.err)
+		}
+	}
+	if len(*fixture.calls) != 0 {
+		t.Fatalf("expected refusal before Agent work, got calls %v", *fixture.calls)
 	}
 }
 
@@ -5013,6 +5209,11 @@ func TestTaskCycleQAStepSkippedWhenATaskNeverBecomesReady(t *testing.T) {
 	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
 	plan := fixture.qaPlan()
 	plan.Tasks = append(append([]spec.Task(nil), plan.Tasks...), spec.Task{ID: "task_99", Needs: []string{"task_absent"}})
+	for index := range plan.Tasks {
+		if plan.Tasks[index].Type == spec.TaskTypeQA {
+			plan.Tasks[index].Needs = append(plan.Tasks[index].Needs, "task_99")
+		}
+	}
 
 	result, err := engine.TaskCycle(context.Background(), plan)
 
@@ -5103,19 +5304,18 @@ func assertNoQAStep(t *testing.T, fixture *taskCycleFixture, qaPrompts []string,
 	}
 }
 
-// allTasksRunCompleted is the whole guarantee behind the QA step, so it
-// answers for every Task in the Task Graph — never for the subset this Run
-// happened to execute.
-func TestAllTasksRunCompletedCoversEveryGraphTask(t *testing.T) {
+// The graph's terminal-coverage validation makes these the complete gate
+// dependencies; the Daemon only needs to withhold while one remains unsettled.
+func TestTaskNeedsCompletedCoversEveryGateDependency(t *testing.T) {
 	t.Parallel()
-	tasks := []spec.Task{{ID: "task_01"}, {ID: "task_02"}, {ID: "task_03"}}
+	qaTask := spec.Task{ID: "task_03", Type: spec.TaskTypeQA, Needs: []string{"task_01", "task_02"}}
 	tests := []struct {
 		name     string
 		statuses map[string]taskRunStatus
 		want     bool
 	}{
 		{
-			name:     "every graph Task completed",
+			name:     "every gate dependency completed",
 			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunCompleted, "task_03": taskRunCompleted},
 			want:     true,
 		},
@@ -5136,18 +5336,19 @@ func TestAllTasksRunCompletedCoversEveryGraphTask(t *testing.T) {
 			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunSkipped, "task_03": taskRunCompleted},
 		},
 		{
-			name:     "one graph Task missing from the status map",
-			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunCompleted},
+			name:     "one gate dependency missing from the status map",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted},
 		},
 		{
-			name:     "a completed status outside the graph never stands in for a graph Task",
-			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunCompleted, "task_04": taskRunCompleted},
+			name:     "unrelated status does not block completed dependencies",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunCompleted, "task_04": taskRunFailed},
+			want:     true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := allTasksRunCompleted(tasks, tt.statuses); got != tt.want {
-				t.Fatalf("allTasksRunCompleted = %v, want %v", got, tt.want)
+			if got := taskNeedsCompleted(qaTask, tt.statuses); got != tt.want {
+				t.Fatalf("taskNeedsCompleted = %v, want %v", got, tt.want)
 			}
 		})
 	}

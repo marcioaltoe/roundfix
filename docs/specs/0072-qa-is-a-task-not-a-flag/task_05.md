@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0072-qa-is-a-task-not-a-flag
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -69,3 +69,61 @@ repeated work, never weaken a check.
   gate checks does not change).
 - `_techspec.md` → Build Order 5; Coverage Map (maintainer-requested
   performance slice).
+
+## Result
+
+### Implementation
+
+- Added `gate-cost-2026-08-03.md` with a measured end-to-end attribution from
+  the latest complete representative QA journal, the same-worktree fixture
+  procedure, the before-and-after, and the current measurement limitation.
+- Removed one repeated filesystem scan on the missing-report settlement path.
+  `spec.QAVerdict` has already proven `spec.ErrNoQAReport`, so the Daemon now
+  returns the existing `missing` verdict and empty report path immediately.
+- Left pass, partial, fail, unreadable-report, typed blocked-row validation,
+  snapshots, artifact filtering, report commits, and every existing gate test
+  unchanged.
+
+### Acceptance evidence
+
+- Attribution artifact: `gate-cost-2026-08-03.md` records a measured
+  625.710-second representative cycle and attributes Agent startup, static
+  verification, other Agent work, verdict/report settlement, and the report
+  commit with exact journal boundaries.
+- Trim and delta: the artifact ties the missing-report trim to the 1.221-second
+  settlement row. Ten-sample focused benchmarks measured the missing-report
+  settlement median at 3,771 ns/op and 1,697 B/op with 16 allocations before,
+  then 1,905 ns/op and 848 B/op with 8 allocations after. The complete warm
+  gate fixture measured 0.48s before and 0.49s after, correctly reporting no
+  material cycle-level change rather than hiding timing noise.
+- Output compatibility: the existing
+  `TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport` passed after the
+  last Go edit across pass, partial, fail, missing, and unreadable verdicts.
+  No test, fixture, golden output, report schema, verdict value, or typed-count
+  assertion was edited. The Daemon-owned gate suites remain to run.
+- Dominant untrimmable cost: the artifact names 468.669 seconds of Agent
+  inference and live QA work, 74.90% of the representative cycle, and explains
+  why shortening it inside this slice would change what the gate observes or
+  violate the separate QA-session contract.
+- Scope: the final changed-path inspection contains only
+  `internal/daemon/task_engine.go`, this Task's gate-cost artifact, and this
+  task file. The task file's pre-existing `pending` to `in_progress` status
+  change remains Daemon-owned.
+
+### Focused checks
+
+- The same-worktree production gate fixture command passed after the final Go
+  edit using the task-local `GOCACHE`; all five existing verdict cases passed.
+- `git diff --check` exited 0 after the final edits.
+- A fresh cost-measurement-only `make verify` attempt stopped after 77.06s in
+  pre-existing `TestCoverageEquivalence` and baseline characterization drift
+  owned by earlier Spec 0072 Tasks. Task 05 did not edit or regenerate those
+  paths. This failed measurement is recorded in the attribution and is not
+  presented as passing verification.
+
+### Follow-up
+
+- A post-Spec-0071 real QA Agent cycle is still needed to replace the latest
+  complete end-to-end journal measurement. The current Run cannot supply that
+  until earlier-Task verification drift is settled and the authored QA Task
+  runs under Daemon ownership.
