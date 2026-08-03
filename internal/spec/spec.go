@@ -137,6 +137,24 @@ type manifestFrontmatter struct {
 	} `yaml:"graph"`
 }
 
+func (manifest *manifestFrontmatter) UnmarshalYAML(node *yaml.Node) error {
+	type plainManifest manifestFrontmatter
+	var decoded plainManifest
+	if err := node.Decode(&decoded); err != nil {
+		return err
+	}
+	*manifest = manifestFrontmatter(decoded)
+	for index := 0; index+1 < len(node.Content); index += 2 {
+		switch node.Content[index].Value {
+		case "qa":
+			manifest.QA.Present = true
+		case "qa_reason":
+			manifest.QAReason.Present = true
+		}
+	}
+	return nil
+}
+
 type manifestOptionalString struct {
 	Value   string
 	Present bool

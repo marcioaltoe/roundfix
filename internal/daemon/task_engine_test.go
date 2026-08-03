@@ -210,6 +210,7 @@ func (fixture *taskCycleFixture) plan() TaskPlan {
 }
 
 func (fixture *taskCycleFixture) qaPlan() TaskPlan {
+	fixture.t.Helper()
 	seeds, gateID := taskSeedsWithQAGate(fixture.seeds)
 	writeSpecDirAtRootForTestWithQA(fixture.t, fixture.specsRoot, taskCycleSlug, seeds, qaDeclarationForTest{taskID: gateID})
 	fixture.seeds = seeds
@@ -218,6 +219,7 @@ func (fixture *taskCycleFixture) qaPlan() TaskPlan {
 }
 
 func (fixture *taskCycleFixture) declinedQAPlan() TaskPlan {
+	fixture.t.Helper()
 	writeSpecDirAtRootForTestWithQA(fixture.t, fixture.specsRoot, taskCycleSlug, fixture.seeds, qaDeclarationForTest{
 		declined: true,
 		reason:   "this fixture has no behavioral surface",
@@ -4706,20 +4708,23 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 		report      string
 		wantVerdict string
 		wantStatus  spec.Status
-		wantCommit  bool
 	}{
-		{name: "pass", report: qaReportForTest(spec.VerdictPass), wantVerdict: spec.VerdictPass, wantStatus: spec.StatusCompleted, wantCommit: true},
-		{name: "partial", report: qaReportForTest(spec.VerdictPartial), wantVerdict: spec.VerdictPartial, wantStatus: spec.StatusFailed, wantCommit: true},
-		{name: "fail", report: qaReportForTest(spec.VerdictFail), wantVerdict: spec.VerdictFail, wantStatus: spec.StatusFailed, wantCommit: true},
-		{name: "missing report", report: "", wantVerdict: "missing", wantStatus: spec.StatusFailed, wantCommit: false},
-		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantVerdict: "unreadable", wantStatus: spec.StatusFailed, wantCommit: true},
+		{name: "pass", report: qaReportForTest(spec.VerdictPass), wantVerdict: spec.VerdictPass, wantStatus: spec.StatusCompleted},
+		{name: "partial", report: qaReportForTest(spec.VerdictPartial), wantVerdict: spec.VerdictPartial, wantStatus: spec.StatusFailed},
+		{name: "fail", report: qaReportForTest(spec.VerdictFail), wantVerdict: spec.VerdictFail, wantStatus: spec.StatusFailed},
+		{name: "missing report", report: "", wantVerdict: "missing", wantStatus: spec.StatusFailed},
+		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantVerdict: "unreadable", wantStatus: spec.StatusFailed},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
 			// Snapshot script: task_01 before/after, then the QA step
 			// before/after — only the QA Report is new in the QA diff.
-			fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}, {"src/one.go"}, {"src/one.go", reportRel}}
+			qaSnapshot := []string{"src/one.go", reportRel}
+			if tt.report == "" {
+				qaSnapshot = []string{"src/one.go"}
+			}
+			fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}, {"src/one.go"}, qaSnapshot}
 			runner := &taskFakeRunner{
 				calls:        fixture.calls,
 				gitRoot:      fixture.gitRoot,
@@ -4778,21 +4783,20 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 			if !strings.Contains(payload, fmt.Sprintf("%q", tt.wantVerdict)) || !strings.Contains(payload, wantReportPath) {
 				t.Fatalf("expected daemon.qa payload with verdict and report path, got %s", payload)
 			}
-			if tt.wantCommit {
-				if len(committer.messages) != 2 {
-					t.Fatalf("expected the QA Report committed in its own commit, got %v", committer.messages)
-				}
-				wantMessage := "docs: qa report for " + taskCycleSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + taskCycleSlug
-				if committer.messages[1] != wantMessage {
-					t.Fatalf("expected QA commit message %q, got %q", wantMessage, committer.messages[1])
-				}
-				wantPaths := []string{reportRel, taskFileRel(taskCycleSlug, fixture.graph.QATaskID)}
-				sort.Strings(wantPaths)
-				if got := strings.Join(committer.paths[1], "|"); got != strings.Join(wantPaths, "|") {
-					t.Fatalf("expected the QA report and gate Task status in the QA commit, got %q", got)
-				}
-			} else if len(committer.messages) != 1 {
-				t.Fatalf("expected no QA commit for a missing report, got %v", committer.messages)
+			if len(committer.messages) != 2 {
+				t.Fatalf("expected the settled QA Task committed in its own commit, got %v", committer.messages)
+			}
+			wantMessage := "docs: qa report for " + taskCycleSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + taskCycleSlug
+			if committer.messages[1] != wantMessage {
+				t.Fatalf("expected QA commit message %q, got %q", wantMessage, committer.messages[1])
+			}
+			wantPaths := []string{taskFileRel(taskCycleSlug, fixture.graph.QATaskID)}
+			if tt.report != "" {
+				wantPaths = append(wantPaths, reportRel)
+			}
+			sort.Strings(wantPaths)
+			if got := strings.Join(committer.paths[1], "|"); got != strings.Join(wantPaths, "|") {
+				t.Fatalf("expected the QA artifact paths %v, got %q", wantPaths, got)
 			}
 			kinds := fixture.sink.kinds()
 			if kinds[len(kinds)-1] != runevent.KindDaemonOutcome {
@@ -4843,6 +4847,9 @@ func TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted(t *testing.T) {
 	if events := taskEventsOfKind(fixture.sink, runevent.KindDaemonQA); len(events) != 0 {
 		t.Fatalf("expected no daemon.qa event when the step is skipped, got %+v", events)
 	}
+	if progress := fixture.progress.String(); !strings.Contains(progress, "QA Task "+gateID+" withheld; unmet dependencies: task_02\n") {
+		t.Fatalf("expected withheld-gate progress naming task_02, got %q", progress)
+	}
 	if len(committer.messages) != 0 {
 		t.Fatalf("expected no commits, got %v", committer.messages)
 	}
@@ -4872,10 +4879,7 @@ func TestTaskCycleDeclinedAndLegacyGraphsIgnoreQARequestState(t *testing.T) {
 				qaReport: qaReportForTest(spec.VerdictPass),
 			}
 			engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
-			plan := tt.plan(fixture)
-			plan.QA = true // Legacy request state must no longer control the gate.
-
-			result, err := engine.TaskCycle(context.Background(), plan)
+			result, err := engine.TaskCycle(context.Background(), tt.plan(fixture))
 
 			if err != nil {
 				t.Fatalf("task cycle: %v", err)

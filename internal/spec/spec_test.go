@@ -456,6 +456,29 @@ func TestLoadQADeclinedContract(t *testing.T) {
 	}
 }
 
+func TestLoadRejectsExplicitNullQAReasonWithoutDeclaration(t *testing.T) {
+	t.Parallel()
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
+		"_prd.md": prdFixture("active"),
+		"_tasks.md": manifestFixtureWithQA("spec-tasks/v1", "qa_reason:\n", `    - id: task_01
+      file: task_01.md
+      needs: []
+`, ""),
+		"task_01.md": taskFixture("task_01", "Docs", "pending", "docs", defaultVerificationSection),
+	})
+
+	_, err := Load(specsRoot, "demo")
+	var gateErr QAGateError
+	if !errors.As(err, &gateErr) {
+		t.Fatalf("Load error = %T %v, want QAGateError", err, err)
+	}
+	if !strings.Contains(gateErr.Reason, "qa_reason requires a qa: declaration") {
+		t.Fatalf("QAGateError reason = %q", gateErr.Reason)
+	}
+}
+
 func TestLoadRejectsInvalidQAGateShape(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -1262,9 +1285,10 @@ func TestQAGateLegacyArchivedManifestsLoadUnchanged(t *testing.T) {
 			}
 		}
 
-		after, err := os.ReadFile(manifestPath)
+		copiedManifest := filepath.Join(tempSpecsRoot, entry.Name(), "_tasks.md")
+		after, err := os.ReadFile(copiedManifest)
 		if err != nil {
-			t.Fatalf("re-read archived manifest %q: %v", entry.Name(), err)
+			t.Fatalf("re-read loaded manifest %q: %v", entry.Name(), err)
 		}
 		if string(after) != string(before) {
 			t.Fatalf("Load changed archived manifest %q", entry.Name())

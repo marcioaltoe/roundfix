@@ -212,7 +212,6 @@ type TaskPlan struct {
 	Runtime                 agent.RuntimeSpec
 	AgentSelections         AgentSelectionProfiles
 	RuntimeFactory          AgentRuntimeFactory
-	QA                      bool // Legacy request state; TaskCycle derives the gate from the graph Tasks.
 	Concurrency             int
 	VerificationConcurrency int
 	RepositoryVerification  string
@@ -309,6 +308,8 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 		}
 		result.QAVerdict = verdict
 		result.QAReportPath = reportPath
+	} else if qaTask != nil && qaTask.Status != spec.StatusCompleted {
+		fmt.Fprintf(engine.deps.Progress, "QA Task %s withheld; unmet dependencies: %s\n", qaTask.ID, strings.Join(uncompletedTaskNeeds(*qaTask, statuses), ", "))
 	}
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonOutcome,
 		fmt.Sprintf("Task cycle finished: %d completed, %d failed, %d skipped.", result.Completed, result.Failed, result.Skipped),
@@ -665,6 +666,16 @@ func taskNeedsCompleted(task spec.Task, statuses map[string]taskRunStatus) bool 
 		}
 	}
 	return true
+}
+
+func uncompletedTaskNeeds(task spec.Task, statuses map[string]taskRunStatus) []string {
+	var uncompleted []string
+	for _, need := range task.Needs {
+		if statuses[need] != taskRunCompleted {
+			uncompleted = append(uncompleted, need)
+		}
+	}
+	return uncompleted
 }
 
 func (engine *Engine) skipBlockedTasks(ctx context.Context, plan TaskPlan, statuses map[string]taskRunStatus, result *TaskCycleResult) (bool, error) {
@@ -1630,10 +1641,6 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err := engine.settleTask(ctx, plan, qaTask, ordinal, qaStatus, qaReason); err != nil {
 		return "", "", err
 	}
-	if reportPath == "" {
-		// A missing report means nothing to commit (ADR 0015).
-		return verdict, reportPath, nil
-	}
 	if err := engine.commitQAReport(ctx, plan, ordinal, before, verdict, reportPath, qaTask); err != nil {
 		return "", "", err
 	}
@@ -1747,7 +1754,10 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	if err != nil {
 		return err
 	}
-	changed := ensureCommitPath(diffSnapshots(before, after), reportPath)
+	changed := diffSnapshots(before, after)
+	if strings.TrimSpace(reportPath) != "" {
+		changed = ensureCommitPath(changed, reportPath)
+	}
 	if strings.TrimSpace(qaTask.File) != "" {
 		changed = ensureCommitPath(changed, artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, qaTask.File)))
 	}

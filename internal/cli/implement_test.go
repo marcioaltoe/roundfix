@@ -4879,14 +4879,14 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 		wantCode    int
 		wantVerdict string
 		wantState   string
-		wantCommit  bool
+		hasReport   bool
 		wantDetail  string
 	}{
-		{name: "pass", report: implementQAReport("pass"), wantCode: 0, wantVerdict: "pass", wantState: store.StateClean, wantCommit: true, wantDetail: reportRel},
-		{name: "partial", report: implementQAReport("partial"), wantCode: 1, wantVerdict: "partial", wantState: store.StateUnresolved, wantCommit: true, wantDetail: reportRel},
-		{name: "fail", report: implementQAReport("fail"), wantCode: 1, wantVerdict: "fail", wantState: store.StateUnresolved, wantCommit: true, wantDetail: reportRel},
-		{name: "missing report", report: "", wantCode: 1, wantVerdict: "missing", wantState: store.StateUnresolved, wantCommit: false, wantDetail: "no QA Report found"},
-		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantCode: 1, wantVerdict: "unreadable", wantState: store.StateUnresolved, wantCommit: true, wantDetail: reportRel},
+		{name: "pass", report: implementQAReport("pass"), wantCode: 0, wantVerdict: "pass", wantState: store.StateClean, hasReport: true, wantDetail: reportRel},
+		{name: "partial", report: implementQAReport("partial"), wantCode: 1, wantVerdict: "partial", wantState: store.StateUnresolved, hasReport: true, wantDetail: reportRel},
+		{name: "fail", report: implementQAReport("fail"), wantCode: 1, wantVerdict: "fail", wantState: store.StateUnresolved, hasReport: true, wantDetail: reportRel},
+		{name: "missing report", report: "", wantCode: 1, wantVerdict: "missing", wantState: store.StateUnresolved, wantDetail: "no QA Report found"},
+		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantCode: 1, wantVerdict: "unreadable", wantState: store.StateUnresolved, hasReport: true, wantDetail: reportRel},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -4924,18 +4924,12 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			if runner.qaCalls != 1 {
 				t.Fatalf("expected one QA Agent invocation, got %d", runner.qaCalls)
 			}
-			wantCommits := 1
-			if tt.wantCommit {
-				wantCommits = 2
+			if committer.calls != 2 {
+				t.Fatalf("expected the settled QA Task committed separately, got %d commit(s) (%v)", committer.calls, committer.messages)
 			}
-			if committer.calls != wantCommits {
-				t.Fatalf("expected %d commit(s), got %d (%v)", wantCommits, committer.calls, committer.messages)
-			}
-			if tt.wantCommit {
-				wantMessage := "docs: qa report for " + implementTestSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + implementTestSlug
-				if committer.messages[len(committer.messages)-1] != wantMessage {
-					t.Fatalf("expected the QA Report in its own commit %q, got %v", wantMessage, committer.messages)
-				}
+			wantMessage := "docs: qa report for " + implementTestSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + implementTestSlug
+			if committer.messages[len(committer.messages)-1] != wantMessage {
+				t.Fatalf("expected the settled QA artifacts in their own commit %q, got %v", wantMessage, committer.messages)
 			}
 			runID := implementRunIDFromStderr(t, stderr.String())
 			run := implementRunFromStore(t, homeDir, runID)
@@ -4949,7 +4943,7 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			if !strings.Contains(string(event.Payload), fmt.Sprintf("%q", tt.wantVerdict)) {
 				t.Fatalf("expected the verdict in the daemon.qa payload, got %s", event.Payload)
 			}
-			if tt.wantCommit && !strings.Contains(string(event.Payload), reportRel) {
+			if tt.hasReport && !strings.Contains(string(event.Payload), reportRel) {
 				t.Fatalf("expected the report path in the daemon.qa payload, got %s", event.Payload)
 			}
 			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
