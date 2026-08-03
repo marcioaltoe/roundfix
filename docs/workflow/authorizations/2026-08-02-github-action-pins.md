@@ -69,3 +69,29 @@ GitHub Actions cannot be exercised locally. These pins are proven only by the
 next workflow run. The release path retains its bounded token fallback
 (ADR-0084), so a failure in the publish stage is recoverable rather than
 partial.
+
+
+## Addendum — explicit dist-tag
+
+The first real OIDC release failed on its first coordinate with:
+
+```text
+npm error Cannot implicitly apply the "latest" tag because previously published
+version 0.3.0 is higher than the new version 0.0.3.
+```
+
+The platform packages still carry `0.1.0`, `0.2.0`, and `0.3.0` from before the
+version reset, and npm 11 — the floor Trusted Publishing requires — refuses to
+apply `latest` implicitly when a higher version exists. The 0.0.2 release
+predates that npm version and did not hit it.
+
+Publication now passes `--tag latest` on both the OIDC attempt and the bounded
+fallback retry. The maintainer authorized the release; this is the fix that
+makes it complete.
+
+- `.github/workflows/release.yml` — explicit dist-tag on both publish paths.
+
+Nothing was published by the failed run. The failure was correctly classified
+`publish:` rather than `identity:`, so the bounded token fallback was not spent
+on a non-authentication error — the behavior Spec 0057's QA-002 repair
+introduced, exercised here for the first time in a real release.
