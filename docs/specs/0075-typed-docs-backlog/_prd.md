@@ -22,8 +22,8 @@ CONTEXT-driven layout. Deliberately named `docs/backlog/` rather than
 `docs/ideas/`, because intent comes in more than one shape — a feature idea
 today, a fix tomorrow, other kinds later — and a typed backlog can absorb
 them all, opening a path to eventually deprecating `docs/findings/` into it.
-The backlog `idea` is explicitly **not** the `write-idea` artifact: it is
-upstream raw material — almost a feature backlog — that the spec pipeline
+A backlog `feat` entry is explicitly **not** the `write-idea` artifact: it
+is upstream raw material — almost a feature backlog — that the spec pipeline
 may later consume.
 
 This is a Baseline product change, not a repository-local one: the layout
@@ -33,8 +33,11 @@ backlog must be defined where the layout is defined.
 ## Project Constraints
 
 - Identifier strategy: applicable — project-owned vocabulary is created:
-  the Backlog Entry and its type values (`idea`, `fix`), added to the
-  `CONTEXT.md` glossary and used verbatim in the layout contract. Source:
+  the Backlog Entry and its type values (`feat`, `fix`, `perf`,
+  `refactor`), deliberately aligned with the Conventional Commits types this
+  repository already enforces on commit messages and PR titles, added to
+  the `CONTEXT.md` glossary and used verbatim in the layout contract.
+  `refactor` is the canonical token, never an abbreviation. Source:
   `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — documentation layout and
   Baseline asset content only. Source: `docs/agents/agent-instructions.md`.
@@ -68,12 +71,17 @@ backlog must be defined where the layout is defined.
 1. The one-job-per-directory clause gains `docs/backlog/` for typed intent
    entries; the guide explains what belongs there and what does not.
 2. A Backlog Operational Contract in the guide: dated filenames
-   (`YYYY-MM-DD-slug.md`), frontmatter with `type` (`idea` | `fix`),
-   `status` (`open` | `promoted` | `declined`), `created`, plus `spec` when
-   promoted and `reason` when declined.
-3. One body template per type: `idea` (opportunity, value, shape of a
-   solution) and `fix` (symptom, where, expected behavior, evidence
-   pointer — a finding link when one exists).
+   (`YYYY-MM-DD-slug.md`), frontmatter with `type`
+   (`feat` | `fix` | `perf` | `refactor`), `status`
+   (`open` | `promoted` | `declined`), `created`, plus `spec` when
+   promoted and `reason` when declined. The type vocabulary is the
+   Conventional Commits vocabulary, so one word carries the intent from
+   backlog entry to Spec to commit to PR title.
+3. One body template per type: `feat` (opportunity, value, shape of a
+   solution), `fix` (symptom, where, expected behavior, evidence pointer —
+   a finding link when one exists), `perf` (what is slow, the measurement
+   that says so, the target), and `refactor` (what is tangled, what it
+   costs, the desired shape).
 4. The finding-versus-backlog boundary stated in both directions: a
    finding may spawn a backlog entry; a backlog entry needs no finding; an
    entry is never evidence and a finding is never a commitment.
@@ -82,11 +90,12 @@ backlog must be defined where the layout is defined.
    `references/`, leaving the backlog; git history is the trail. An empty
    backlog is not the goal — an *honest* one is.
 6. The `CONTEXT.md` glossary defines Backlog Entry and its types, and
-   distinguishes the backlog `idea` from the `write-idea` pipeline
-   artifact.
-7. The type set is deliberately open: new types (and the eventual
-   deprecation of `docs/findings/` into a backlog type) are future
-   decisions this structure can absorb without reshaping.
+   distinguishes a `feat` entry from the `write-idea` pipeline artifact.
+7. The type set is deliberately open, and extension follows the same
+   rule that seeded it: a new type must be a Conventional Commits type
+   that expresses intent. The eventual deprecation of `docs/findings/`
+   into a backlog type stays a future decision this structure can absorb
+   without reshaping.
 
 ## Non-Goals / Out of Scope
 
@@ -114,8 +123,13 @@ backlog must be defined where the layout is defined.
   name must not have to change when the second shape arrives. (ADR-0092)
 - Findings stay observations and stay put; the deprecation path into the
   backlog is explicitly future work.
-- The backlog `idea` is upstream of `write-idea`, never its output.
-- Two types now, `idea` and `fix`; the contract is open to more.
+- The type vocabulary is the Conventional Commits vocabulary — one word
+  from intent to PR title. Chosen by the maintainer (2026-08-03) from his
+  own usage: findings kept absorbing problem reports that were really
+  `fix` intent.
+- A `feat` entry is upstream of `write-idea`, never its output.
+- Four types now — `feat`, `fix`, `perf`, `refactor`; the contract is open
+  to more.
 
 ## Open Questions
 
