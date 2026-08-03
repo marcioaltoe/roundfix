@@ -255,7 +255,7 @@ func (runner *recordingRestoreObjectGitRunner) Run(
 func (runner *recordingRestoreObjectGitRunner) OpenBatch(
 	_ context.Context,
 	_ ...string,
-) (restoreBatchObjectReader, error) {
+) (batchObjectContentReader, error) {
 	runner.batchStarts++
 	return runner.reader, nil
 }

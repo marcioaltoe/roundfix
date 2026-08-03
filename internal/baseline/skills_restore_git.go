@@ -15,26 +15,26 @@ import (
 	"strings"
 )
 
-type restoreBatchObjectReader interface {
+type batchObjectContentReader interface {
 	Read(string) ([]byte, error)
 	Close() error
 }
 
-type restoreObjectGitRunner interface {
+type batchObjectGitRunner interface {
 	Run(context.Context, ...string) ([]byte, error)
-	OpenBatch(context.Context, ...string) (restoreBatchObjectReader, error)
+	OpenBatch(context.Context, ...string) (batchObjectContentReader, error)
 }
 
-type execRestoreObjectGitRunner struct{}
+type execBatchObjectGitRunner struct{}
 
-func (execRestoreObjectGitRunner) Run(ctx context.Context, args ...string) ([]byte, error) {
+func (execBatchObjectGitRunner) Run(ctx context.Context, args ...string) ([]byte, error) {
 	return runRestoreGit(ctx, args...)
 }
 
-func (execRestoreObjectGitRunner) OpenBatch(
+func (execBatchObjectGitRunner) OpenBatch(
 	ctx context.Context,
 	args ...string,
-) (restoreBatchObjectReader, error) {
+) (batchObjectContentReader, error) {
 	return newBatchObjectReader(ctx, args...)
 }
 
@@ -210,7 +210,7 @@ func acquireRestoreGroup(
 	}
 
 	result := make(map[string][]restoreFile, len(contracts))
-	gitRunner := execRestoreObjectGitRunner{}
+	gitRunner := execBatchObjectGitRunner{}
 	for _, contract := range contracts {
 		files, err := readRestoreGitTree(ctx, objectStore, contract, gitRunner)
 		if err != nil {
@@ -225,7 +225,7 @@ func readRestoreGitTree(
 	ctx context.Context,
 	objectStore string,
 	contract restoreSkillContract,
-	gitRunner restoreObjectGitRunner,
+	gitRunner batchObjectGitRunner,
 ) ([]restoreFile, error) {
 	output, err := gitRunner.Run(
 		ctx,

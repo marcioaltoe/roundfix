@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -18,6 +19,141 @@ import (
 	"sync"
 	"testing"
 )
+
+func TestAssetsSyncCommittedTreeDigestReadsManyFilesThroughOneBatchProcess(t *testing.T) {
+	t.Parallel()
+
+	const sourcePath = "skills/example"
+	contents := map[string][]byte{
+		"first-object":  []byte("first\n"),
+		"second-object": []byte("second\n"),
+		"third-object":  []byte("third\n"),
+	}
+	runner := &recordingAssetsSyncObjectGitRunner{
+		tree: restoreTreeFixture(sourcePath, []restoreTreeFixtureEntry{
+			{path: "first.txt", object: "first-object"},
+			{path: "second.txt", object: "second-object"},
+			{path: "third.txt", object: "third-object"},
+		}),
+		reader: &recordingBatchObjectReader{contents: contents},
+	}
+	want := portableRestoreDigest([]restoreFile{
+		{Path: "first.txt", Content: contents["first-object"]},
+		{Path: "second.txt", Content: contents["second-object"]},
+		{Path: "third.txt", Content: contents["third-object"]},
+	})
+
+	got, err := assetsSyncCommittedTreeDigestWithRunner(
+		t.Context(),
+		"source.git",
+		strings.Repeat("a", 40),
+		sourcePath,
+		runner,
+	)
+	if err != nil {
+		t.Fatalf("committed tree digest: %v", err)
+	}
+	if got != want {
+		t.Fatalf("committed tree digest = %s, want %s", got, want)
+	}
+	if runner.batchStarts != 1 {
+		t.Fatalf("batch process starts = %d, want 1", runner.batchStarts)
+	}
+	if runner.runCalls != 1 {
+		t.Fatalf("non-batch Git calls = %d, want one ls-tree call", runner.runCalls)
+	}
+	if runner.reader.closeCalls != 1 {
+		t.Fatalf("batch process closes = %d, want 1", runner.reader.closeCalls)
+	}
+	if wantReads := []string{"first-object", "second-object", "third-object"}; !reflect.DeepEqual(runner.reader.reads, wantReads) {
+		t.Fatalf("batch object requests = %v, want %v", runner.reader.reads, wantReads)
+	}
+}
+
+func TestAssetsSyncCommittedTreeDigestKeepsTreeAndReadErrors(t *testing.T) {
+	t.Parallel()
+
+	const sourcePath = "skills/example"
+	readErr := errors.New("existing Git blob read failure")
+	tests := []struct {
+		name    string
+		tree    []byte
+		readErr error
+		want    string
+	}{
+		{
+			name: "unsafe path",
+			tree: []byte(fmt.Sprintf(
+				"100644 blob object\t%s/../escape%c",
+				sourcePath,
+				byte(0),
+			)),
+			want: `Git tree entry has unsafe path "../escape"`,
+		},
+		{
+			name: "non-blob entry",
+			tree: []byte(fmt.Sprintf(
+				"040000 tree object\t%s/nested%c",
+				sourcePath,
+				byte(0),
+			)),
+			want: "Git tree entry is not a regular file: nested",
+		},
+		{
+			name:    "read failure",
+			tree:    restoreTreeFixture(sourcePath, []restoreTreeFixtureEntry{{path: "SKILL.md", object: "object"}}),
+			readErr: readErr,
+			want:    readErr.Error(),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			runner := &recordingAssetsSyncObjectGitRunner{
+				tree:   test.tree,
+				reader: &recordingBatchObjectReader{readErr: test.readErr},
+			}
+			_, err := assetsSyncCommittedTreeDigestWithRunner(
+				t.Context(),
+				"source.git",
+				strings.Repeat("a", 40),
+				sourcePath,
+				runner,
+			)
+			if err == nil || err.Error() != test.want {
+				t.Fatalf("committed tree error = %v, want %q", err, test.want)
+			}
+			if test.readErr != nil && !errors.Is(err, test.readErr) {
+				t.Fatalf("committed tree error = %v, want wrapped %v", err, test.readErr)
+			}
+		})
+	}
+}
+
+type recordingAssetsSyncObjectGitRunner struct {
+	tree        []byte
+	runCalls    int
+	batchStarts int
+	reader      *recordingBatchObjectReader
+}
+
+func (runner *recordingAssetsSyncObjectGitRunner) Run(
+	_ context.Context,
+	_ ...string,
+) ([]byte, error) {
+	runner.runCalls++
+	return runner.tree, nil
+}
+
+func (runner *recordingAssetsSyncObjectGitRunner) OpenBatch(
+	_ context.Context,
+	_ ...string,
+) (batchObjectContentReader, error) {
+	runner.batchStarts++
+	return runner.reader, nil
+}
 
 func TestAssetsSyncCheckIsReadOnlyAndReportsDrift(t *testing.T) {
 	t.Parallel()
