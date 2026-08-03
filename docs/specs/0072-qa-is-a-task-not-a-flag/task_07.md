@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0072-qa-is-a-task-not-a-flag
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
