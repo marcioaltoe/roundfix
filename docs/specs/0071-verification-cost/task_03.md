@@ -56,7 +56,6 @@ defects to fix, not reasons to revert.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/cli -count=1` — expected: exit 0.
 - `go test ./internal/cli -count=2` — expected: exit 0; no state leaks between
   overlapping repeated tests.
 - `go test ./internal/cli -race -count=1` — expected: exit 0; no data race.

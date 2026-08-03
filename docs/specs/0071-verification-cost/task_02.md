@@ -59,8 +59,6 @@ boundary. No test declares parallelism yet — that is the next slice.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/cli -count=1` — expected: exit 0; behavior is unchanged
-  while still sequential.
 - `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1 -v | grep -q -- "--- PASS: TestCoverageEquivalence"`
   — expected: exit 0; no test disappeared.
 - `go vet ./internal/cli` — expected: exit 0.

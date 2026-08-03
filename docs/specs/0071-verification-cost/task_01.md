@@ -59,7 +59,6 @@ against, and it only works if it lands first.
 - `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1 -v | grep -q -- "--- PASS: TestCoverageEquivalence"`
   — expected: exit 0 on a second consecutive run, proving the comparison is
   stable and self-recording is gated.
-- `go test ./internal/spec -count=1` — expected: exit 0.
 
 ## References
 

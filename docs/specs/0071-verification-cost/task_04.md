@@ -58,7 +58,6 @@ floor, which the CLI package sets.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/baseline -count=1` — expected: exit 0.
 - `go test ./internal/baseline -count=2` — expected: exit 0.
 - `go test ./internal/baseline -race -count=1` — expected: exit 0.
 - `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1 -v | grep -q -- "--- PASS: TestCoverageEquivalence"`

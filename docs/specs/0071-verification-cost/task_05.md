@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0071-verification-cost
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -77,3 +77,53 @@ them from coming back.
 - `_prd.md` → Core Features 3 and 4; Goals (verification proportional to what
   changed).
 - `_techspec.md` → Build Order 5; Project Constraints: Tooling authority.
+
+## Result
+
+### Implementation
+
+- Removed only the redundant single-run package suite from the Verification of
+  active Tasks 01 through 04. Their build, coverage-equivalence, repeated-run,
+  race, vet, and scope checks remain unchanged.
+- Updated both copies of the Task-authoring skill with the rules that a Task
+  must prove its own effect, the Run-level gate proves nothing else regressed,
+  and every Verification command must be able to fail when no work was done.
+- Ran the ADR-0081-sanctioned digest regeneration after changing the
+  Roundfix-owned skill. It updated seven derived Baseline digest artifacts
+  under `internal/baseline/`.
+
+### Focused-check evidence
+
+- A focused `rtk rg` scan of active Task files found no remaining bare
+  `go test ./internal/<package> -count=1` Verification line (no matches).
+- A Verification-block scan across every active Task file exited 0; each block
+  retains a command naming a test or asserting a specific effect. Tasks 01
+  through 04 retain `TestCoverageEquivalence`, repeated-run, race, grep, or vet
+  checks as applicable.
+- `rtk rg` found `prove its own effect`, `Run-level gate proves nothing else
+  regressed`, and `able to fail when no work was done` in both skill copies.
+- `rtk go test ./skills -run '^TestAuthorialSkillSync$' -count=1 -v` exited 0;
+  RTK reported 18 passing cases.
+- `rtk git diff --no-index -- .agents/skills/write-tasks skills/write-tasks`
+  exited 0 with no output; the owned skill pair is identical.
+- `rtk git -c core.fsmonitor=false status --short docs/specs/_archived` exited
+  0 with no output; archived Specs have no worktree changes.
+- `rtk make baseline-digests` exited 0 and regenerated the seven derived files
+  named above. The authored tooling change remains limited to the owned skill
+  pair; the additional paths are deterministic ADR-0081 fallout.
+
+### Acceptance criteria evidence
+
+- No active Task Verification carries the redundant single-run package suite:
+  supported by the no-match active-tree scan.
+- Every active Task retains an effect-specific check: supported by the
+  Verification-block scan and the retained Task 01 through 04 checks.
+- Both Task-authoring rules are present: supported by the exact-text scan of
+  both skill copies.
+- Archived Specs are byte-untouched in the worktree: supported by the scoped
+  status inspection.
+- Authored paths are confined to active Spec Task files, this Result, and the
+  owned skill pair. `internal/baseline/` also contains only the deterministic
+  digest fallout produced by the repository-sanctioned regeneration command.
+
+The Task's declared Verification commands were not rerun in this Agent turn.
