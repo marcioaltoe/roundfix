@@ -1,7 +1,10 @@
 ---
 spec: 0071-verification-cost
-status: active
+status: archived
 created: 2026-08-02
+archived: 2026-08-03
+qa_override: true
+release: https://github.com/marcioaltoe/roundfix/pull/81
 surfaces: [test, backend, infra, docs]
 ---
 
