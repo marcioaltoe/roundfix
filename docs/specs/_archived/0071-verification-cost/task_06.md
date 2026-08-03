@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0071-verification-cost
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -68,3 +68,16 @@ fails at the moment it is introduced.
 - `_prd.md` → Core Features 5; Success Metrics (a deliberately slow test trips
   the budget).
 - `_techspec.md` → Build Order 6; Project Constraints: Tooling authority.
+
+## Result
+
+Delivered in PR #82 and then reshaped by maintainer direction. The
+`make test-budget` target runs the suite fresh and fails past
+`SUITE_BUDGET_SECONDS` (default 360, derived from the CI runner's measured
+~195s, not the stale local baseline) — proven both ways: it passed at 97s of
+360, and tripped naming the measured time and the budget when forced to 1.
+The CI wiring the Task imagined was deliberately removed at close: the
+maintainer judged the extra CI step redundant with the verify job, so the
+budget remains a manual, deliberate tool. Recorded here rather than left
+pending, because the acceptance's substance — a budget that exists, passes,
+and trips — shipped and was proven.
