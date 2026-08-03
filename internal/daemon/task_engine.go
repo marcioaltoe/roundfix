@@ -1715,7 +1715,9 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string) {
 	case err == nil:
 		verdict = value
 	case errors.Is(err, spec.ErrNoQAReport):
-		verdict = qaVerdictMissing
+		// QAVerdict already searched the report directory. Preserve that
+		// proven absence instead of repeating the same filesystem scan below.
+		return qaVerdictMissing, ""
 	default:
 		fmt.Fprintf(engine.deps.Progress, "QA Report verdict unreadable: %v\n", err)
 		verdict = qaVerdictUnreadable
