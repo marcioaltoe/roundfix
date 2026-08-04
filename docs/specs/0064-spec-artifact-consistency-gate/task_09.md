@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0064-spec-artifact-consistency-gate
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
