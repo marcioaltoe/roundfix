@@ -100,6 +100,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 		for _, code := range detectorCodes {
 			addSkip(&result, code, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
 		}
+		for _, code := range citationCoverageDetectorCodes {
+			addSkip(&result, code, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_prd.md")))
+		}
 		return result, nil
 	}
 
@@ -119,6 +122,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 
 	for artifactIndex := range artifacts {
 		detectConstraintRows(&result, repoRoot, slug, artifacts, artifactIndex)
+	}
+	if err := detectCitationCoverageAndReferences(&result, specsRoot, repoRoot, slug, specDir, present); err != nil {
+		return result, err
 	}
 	return result, nil
 }

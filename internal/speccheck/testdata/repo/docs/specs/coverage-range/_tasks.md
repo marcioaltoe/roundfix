@@ -1,0 +1,11 @@
+---
+schema: spec-tasks/v1
+spec: coverage-range
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+---
+
+# Coverage-range fixture Task Graph
