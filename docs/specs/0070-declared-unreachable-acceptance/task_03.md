@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0070-declared-unreachable-acceptance
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -89,3 +89,78 @@ must now accept.
 - `_prd.md` → Core Features 3, 4, 5 and 6; Decisions; Success Metrics 2 and 4.
 - `_techspec.md` → API Contracts; Build Order 3; Risks & Considerations.
 - ADR-0080.
+
+## Result
+
+Implemented the archive exception for a `partial` QA Report whose blocked rows
+are exclusively declared unreachable. The archive precondition still accepts
+`pass` through its existing path, still refuses `fail`, and now rejects partial
+reports with count-bearing diagnostics for finding-blocked,
+environment-blocked, or declaration-shortfall states. An accepted declared
+case stamps every author-supplied `satisfied-by` action into `_prd.md`
+frontmatter as `unproven` before moving the Spec.
+
+Acceptance evidence:
+
+- Declared-only acceptance and stamp:
+  `TestRunArchiveDeclaredUnreachableContract/declared-only_partial_report_archives`
+  moved the Spec and compared the parsed `unproven` sequence with both
+  satisfying actions. The `surplus_declarations_still_cover_declared_rows`
+  case also archived when declarations outnumbered declared rows.
+- Finding refusal:
+  `TestRunArchiveDeclaredUnreachableContract/finding-blocked_partial_report_refuses`
+  kept the Spec active and required stderr to name
+  `rows_blocked_finding is 2`.
+- Environment refusal:
+  `TestRunArchiveDeclaredUnreachableContract/environment-blocked_partial_report_refuses`
+  kept the Spec active and required stderr to name
+  `rows_blocked_environment is 3`.
+- Declaration shortfall:
+  `TestRunArchiveDeclaredUnreachableContract/declaration_shortfall_refuses`
+  required the diagnostic to name declared count 3, declaration count 1, and
+  shortfall 2.
+- Fail compatibility:
+  `TestRunArchiveDeclaredUnreachableContract/failing_report_refuses_exactly_as_before`
+  retained the existing `newest QA Report verdict is "fail"; expected "pass"`
+  refusal.
+- Pass compatibility:
+  `TestRunArchiveDeclaredUnreachableContract/passing_report_remains_unchanged`
+  archived a Spec that carried a declaration and observed no `unproven`
+  frontmatter. The pre-existing pass case with
+  `rows_blocked_environment: 3` also remained green, preserving the command's
+  existing pass behavior rather than tightening it as part of this Task.
+- QA override compatibility:
+  `TestArchivedQAOverrideCorpusIncludesFailedSpec` found the real archived
+  `0057-baseline-capability-evidence-and-retention` Spec with
+  `qa_override: true` and newest verdict `fail`. The archive-spec contract
+  remains byte-unchanged and still states that the override reaches failed or
+  missing QA evidence only.
+- Archived corpus compatibility:
+  `TestArchivedPassCorpusRemainsArchiveEligible` checked all 50 archived Specs
+  whose newest report is `pass`; every Task remained completed, the new archive
+  precondition accepted every Spec, and none gained an `unproven` action.
+
+Focused checks:
+
+- Before implementation,
+  `rtk sh -c 'GOCACHE=/private/tmp/roundfix-task-03-gocache rtk go test ./internal/cli ./internal/spec -run "^Test(RunArchiveDeclaredUnreachableContract|ArchivedPassCorpusRemainsArchiveEligible)$" -count=1'`
+  reported the legacy signal: the pass and fail rows passed, while the declared
+  acceptance and three count-specific refusals failed; the corpus test also
+  lacked the new precondition function.
+- After the final implementation and test edits,
+  `rtk sh -c 'GOCACHE=/private/tmp/roundfix-task-03-gocache rtk go test ./internal/cli -run "^TestRunArchive" -count=1'`
+  passed 17 tests in one package.
+- `rtk sh -c 'GOCACHE=/private/tmp/roundfix-task-03-gocache rtk go test ./internal/spec -run "^Test(ArchivedPassCorpusRemainsArchiveEligible|ArchivedQAOverrideCorpusIncludesFailedSpec|UnreachableReadsDeclaredAcceptance|ReadQAReportBlockedCounts)$" -count=1'`
+  passed 7 tests in one package.
+- The two exact archived-corpus tests passed with verbose evidence: 50 pass
+  Specs checked and the failed QA-override Spec named above found.
+- `rtk git diff --check` passed.
+
+Follow-up: the repository-owned Roundfix Skill still describes the Archive
+Command as pass-only. Updating `.agents/skills/roundfix/SKILL.md` and its mirror
+is protected-tooling work outside this Task and outside the Spec's bounded
+tooling authorization; route that synchronization through an expressly
+authorized follow-up before Pull Request delivery.
+
+The commands under `## Verification` were not run; the Daemon owns them and
+Task settlement.

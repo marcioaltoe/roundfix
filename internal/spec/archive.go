@@ -26,7 +26,8 @@ type ArchiveResult struct {
 }
 
 // Archive verifies completion and QA evidence, stamps archive metadata in the
-// PRD frontmatter, and moves the Spec under <Spec Root>/_archived/.
+// PRD frontmatter, and moves the Spec under <Spec Root>/_archived/. A partial
+// QA Report is eligible only when its blocked rows are declared unreachable.
 func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	graph, err := Load(req.SpecsRoot, req.Slug)
 	if err != nil {
@@ -37,15 +38,16 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 			return ArchiveResult{}, fmt.Errorf("Task %q is %q; archive requires every Task to be %q", task.ID, task.Status, StatusCompleted)
 		}
 	}
-	verdict, err := QAVerdict(graph.Spec.Dir)
+	report, err := ReadQAReport(graph.Spec.Dir)
 	if err != nil {
 		if errors.Is(err, ErrNoQAReport) {
 			return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", err)
 		}
 		return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", err)
 	}
-	if verdict != VerdictPass {
-		return ArchiveResult{}, fmt.Errorf("no passing QA verdict: newest QA Report verdict is %q; expected %q", verdict, VerdictPass)
+	unproven, err := archiveUnprovenActions(graph.Spec.Dir, report)
+	if err != nil {
+		return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", err)
 	}
 
 	archiveRoot := filepath.Join(req.SpecsRoot, archivedDirName)
@@ -58,7 +60,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 
 	archivedOn := archiveDate(req.ArchivedAt)
 	prdPath := filepath.Join(graph.Spec.Dir, "_prd.md")
-	if err := stampArchiveMetadata(prdPath, req.Slug, archivedOn); err != nil {
+	if err := stampArchiveMetadata(prdPath, req.Slug, archivedOn, unproven); err != nil {
 		return ArchiveResult{}, err
 	}
 	if err := os.MkdirAll(archiveRoot, 0o755); err != nil {
@@ -74,6 +76,48 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	}, nil
 }
 
+func archiveUnprovenActions(specDir string, report QAReport) ([]string, error) {
+	if report.Verdict == VerdictPass {
+		return nil, nil
+	}
+	if report.Verdict != VerdictPartial {
+		return nil, fmt.Errorf("newest QA Report verdict is %q; expected %q", report.Verdict, VerdictPass)
+	}
+	if report.RowsBlockedFinding > 0 {
+		return nil, fmt.Errorf("rows_blocked_finding is %d; expected 0", report.RowsBlockedFinding)
+	}
+	if report.RowsBlockedEnvironment > 0 {
+		return nil, fmt.Errorf("rows_blocked_environment is %d; expected 0", report.RowsBlockedEnvironment)
+	}
+	if report.RowsBlockedDeclared == 0 {
+		return nil, fmt.Errorf("newest QA Report verdict is %q; expected %q", report.Verdict, VerdictPass)
+	}
+
+	declarations, err := Unreachable(specDir)
+	if err != nil {
+		return nil, fmt.Errorf("read unreachable acceptance declarations: %w", err)
+	}
+	if report.RowsBlockedDeclared > len(declarations) {
+		plural := ""
+		if len(declarations) != 1 {
+			plural = "s"
+		}
+		return nil, fmt.Errorf(
+			"rows_blocked_declared is %d, but Spec declares %d unreachable acceptance%s; shortfall is %d",
+			report.RowsBlockedDeclared,
+			len(declarations),
+			plural,
+			report.RowsBlockedDeclared-len(declarations),
+		)
+	}
+
+	actions := make([]string, 0, len(declarations))
+	for _, declaration := range declarations {
+		actions = append(actions, declaration.SatisfiedBy)
+	}
+	return actions, nil
+}
+
 func archiveDate(value time.Time) string {
 	if value.IsZero() {
 		value = time.Now()
@@ -81,7 +125,7 @@ func archiveDate(value time.Time) string {
 	return value.Format("2006-01-02")
 }
 
-func stampArchiveMetadata(prdPath string, slug string, archivedOn string) error {
+func stampArchiveMetadata(prdPath string, slug string, archivedOn string, unproven []string) error {
 	content, err := os.ReadFile(prdPath)
 	if err != nil {
 		return fmt.Errorf("read Spec PRD %q: %w", prdPath, err)
@@ -101,6 +145,9 @@ func stampArchiveMetadata(prdPath string, slug string, archivedOn string) error 
 	setArchiveFrontmatterValue(mapping, "status", "archived")
 	setArchiveFrontmatterValue(mapping, "archived", archivedOn)
 	setArchiveFrontmatterValue(mapping, "source_slug", slug)
+	if len(unproven) > 0 {
+		setArchiveFrontmatterNode(mapping, "unproven", archiveSequenceNode(unproven))
+	}
 
 	var encoded bytes.Buffer
 	encoder := yaml.NewEncoder(&encoded)
@@ -130,15 +177,27 @@ func archiveFrontmatterMapping(document *yaml.Node) *yaml.Node {
 }
 
 func setArchiveFrontmatterValue(mapping *yaml.Node, key string, value string) {
+	setArchiveFrontmatterNode(mapping, key, archiveScalarNode(value))
+}
+
+func setArchiveFrontmatterNode(mapping *yaml.Node, key string, value *yaml.Node) {
 	for index := 0; index+1 < len(mapping.Content); index += 2 {
 		if mapping.Content[index].Value == key {
-			mapping.Content[index+1] = archiveScalarNode(value)
+			mapping.Content[index+1] = value
 			return
 		}
 	}
-	mapping.Content = append(mapping.Content, archiveScalarNode(key), archiveScalarNode(value))
+	mapping.Content = append(mapping.Content, archiveScalarNode(key), value)
 }
 
 func archiveScalarNode(value string) *yaml.Node {
 	return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value}
+}
+
+func archiveSequenceNode(values []string) *yaml.Node {
+	node := &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq"}
+	for _, value := range values {
+		node.Content = append(node.Content, archiveScalarNode(value))
+	}
+	return node
 }

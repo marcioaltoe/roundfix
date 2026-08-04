@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 
 	"roundfix/internal/spec"
 )
@@ -50,6 +53,148 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 		}
 	}
 	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunArchiveDeclaredUnreachableContract(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name               string
+		verdict            string
+		blockedDeclared    int
+		blockedFinding     int
+		blockedEnvironment int
+		declarations       []string
+		wantUnproven       []string
+		wantStderr         []string
+	}{
+		{
+			name:         "passing report remains unchanged",
+			verdict:      spec.VerdictPass,
+			declarations: []string{"a maintainer publishes the tagged release"},
+		},
+		{
+			name:            "declared-only partial report archives",
+			verdict:         spec.VerdictPartial,
+			blockedDeclared: 2,
+			declarations: []string{
+				"a maintainer publishes the tagged release",
+				"a maintainer records the production identity exchange",
+			},
+			wantUnproven: []string{
+				"a maintainer publishes the tagged release",
+				"a maintainer records the production identity exchange",
+			},
+		},
+		{
+			name:            "surplus declarations still cover declared rows",
+			verdict:         spec.VerdictPartial,
+			blockedDeclared: 1,
+			declarations: []string{
+				"a maintainer publishes the tagged release",
+				"a maintainer records the production identity exchange",
+			},
+			wantUnproven: []string{
+				"a maintainer publishes the tagged release",
+				"a maintainer records the production identity exchange",
+			},
+		},
+		{
+			name:            "finding-blocked partial report refuses",
+			verdict:         spec.VerdictPartial,
+			blockedDeclared: 1,
+			blockedFinding:  2,
+			declarations:    []string{"a maintainer publishes the tagged release"},
+			wantStderr:      []string{"rows_blocked_finding is 2", "expected 0"},
+		},
+		{
+			name:               "environment-blocked partial report refuses",
+			verdict:            spec.VerdictPartial,
+			blockedDeclared:    1,
+			blockedEnvironment: 3,
+			declarations:       []string{"a maintainer publishes the tagged release"},
+			wantStderr:         []string{"rows_blocked_environment is 3", "expected 0"},
+		},
+		{
+			name:            "declaration shortfall refuses",
+			verdict:         spec.VerdictPartial,
+			blockedDeclared: 3,
+			declarations:    []string{"a maintainer publishes the tagged release"},
+			wantStderr: []string{
+				"rows_blocked_declared is 3",
+				"Spec declares 1 unreachable acceptance",
+				"shortfall is 2",
+			},
+		},
+		{
+			name:    "failing report refuses exactly as before",
+			verdict: spec.VerdictFail,
+			wantStderr: []string{
+				"no passing QA verdict",
+				"newest QA Report verdict is \"fail\"",
+				"expected \"pass\"",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+				{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},
+			})
+			if len(tt.declarations) > 0 {
+				appendArchiveUnreachableDeclarations(t, repoDir, tt.declarations)
+			}
+			writeArchiveQAReport(t, repoDir, tt.verdict,
+				fmt.Sprintf("rows_blocked_declared: %d", tt.blockedDeclared),
+				fmt.Sprintf("rows_blocked_finding: %d", tt.blockedFinding),
+				fmt.Sprintf("rows_blocked_environment: %d", tt.blockedEnvironment),
+			)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+
+			activeDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug)
+			archivedDir := filepath.Join(repoDir, "docs", "specs", "_archived", implementTestSlug)
+			if len(tt.wantStderr) > 0 {
+				if code != exitPreflight {
+					t.Fatalf("expected archive refusal exit %d, got %d stderr=%q stdout=%q", exitPreflight, code, stderr.String(), stdout.String())
+				}
+				if stdout.String() != "" {
+					t.Fatalf("expected refusal stdout empty, got %q", stdout.String())
+				}
+				for _, want := range tt.wantStderr {
+					if !strings.Contains(stderr.String(), want) {
+						t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+					}
+				}
+				assertPathExists(t, activeDir)
+				assertPathMissing(t, archivedDir)
+				assertNoRunDatabase(t, homeDir)
+				return
+			}
+
+			if code != exitOK {
+				t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+			}
+			if stderr.String() != "" {
+				t.Fatalf("expected archive stderr empty, got %q", stderr.String())
+			}
+			assertPathMissing(t, activeDir)
+			assertPathExists(t, archivedDir)
+			prdPath := filepath.Join(archivedDir, "_prd.md")
+			gotUnproven := readArchivedUnproven(t, prdPath)
+			if len(gotUnproven) != len(tt.wantUnproven) {
+				t.Fatalf("archived PRD unproven = %q, want %q", gotUnproven, tt.wantUnproven)
+			}
+			for index := range tt.wantUnproven {
+				if gotUnproven[index] != tt.wantUnproven[index] {
+					t.Fatalf("archived PRD unproven[%d] = %q, want %q", index, gotUnproven[index], tt.wantUnproven[index])
+				}
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
 }
 
 func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
@@ -217,6 +362,7 @@ func TestRunArchiveHelp(t *testing.T) {
 	for _, want := range []string{
 		"Usage:",
 		"roundfix archive <slug>",
+		"covered only by declared Unreachable Acceptance",
 		"archive creates no Run and",
 		"never pushes",
 	} {
@@ -233,6 +379,38 @@ func writeArchiveQAReport(t *testing.T, repoDir string, verdict string, extraFro
 	fields := append([]string{"verdict: " + verdict}, extraFrontmatter...)
 	report := "---\n" + strings.Join(fields, "\n") + "\n---\n\n# QA Report\n"
 	mustWrite(t, reportPath, report)
+}
+
+func appendArchiveUnreachableDeclarations(t *testing.T, repoDir string, actions []string) {
+	t.Helper()
+	prdPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_prd.md")
+	var section strings.Builder
+	section.WriteString("\n## Unreachable Acceptance\n")
+	for index, action := range actions {
+		section.WriteString(fmt.Sprintf("\n- criterion: acceptance criterion %d\n  reason: no hermetic Verification can reach it\n  satisfied-by: %s\n", index+1, action))
+	}
+	mustWrite(t, prdPath, mustRead(t, prdPath)+section.String())
+}
+
+func readArchivedUnproven(t *testing.T, prdPath string) []string {
+	t.Helper()
+	content := mustRead(t, prdPath)
+	const opening = "---\n"
+	if !strings.HasPrefix(content, opening) {
+		t.Fatalf("archived PRD %q has no frontmatter", prdPath)
+	}
+	rest := content[len(opening):]
+	end := strings.Index(rest, "\n---")
+	if end < 0 {
+		t.Fatalf("archived PRD %q has no frontmatter closing marker", prdPath)
+	}
+	var frontmatter struct {
+		Unproven []string `yaml:"unproven"`
+	}
+	if err := yaml.Unmarshal([]byte(rest[:end]), &frontmatter); err != nil {
+		t.Fatalf("parse archived PRD %q frontmatter: %v", prdPath, err)
+	}
+	return frontmatter.Unproven
 }
 
 func assertPathExists(t *testing.T, path string) {
