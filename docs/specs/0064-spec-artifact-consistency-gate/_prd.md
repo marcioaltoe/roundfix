@@ -35,9 +35,10 @@ contradictions in seconds, before a Run exists.
 - Active ADR obligations: applicable — ADR-0080 owns QA verdict semantics, and
   nothing here may weaken or duplicate a verdict; this gate reports before QA
   rather than inside it. ADR-0088 and ADR-0091 own the authored QA gate as a
-  typed Task node, under which this Spec's own graph is authored. ADR-0093 and
-  ADR-0094 are minted by this Spec and govern its detection boundary and its
-  presence-awareness. ADR-0039, ADR-0049, ADR-0055, ADR-0084, and ADR-0086 are
+  typed Task node, under which this Spec's own graph is authored. ADR-0089
+  governs the budget proof's execution conditions after the 2026-08-03 gate's
+  F-001. ADR-0093 and ADR-0094 are minted by this Spec and govern its detection
+  boundary and its presence-awareness. ADR-0039, ADR-0049, ADR-0055, ADR-0084, and ADR-0086 are
   characterization-corpus inputs only; this Spec replays their written
   relationships without changing their product contracts. ADR-0040 and
   ADR-0079 are relation-only candidates from those inputs; their reasoning and

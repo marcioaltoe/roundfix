@@ -262,7 +262,20 @@ tests; no new seam is needed. Three tiers:
    red first when a detector over-reaches.
 
 A budget assertion keeps Core Feature 1 honest: the full corpus sweep completes
-well inside a second, measured in the test rather than claimed in prose.
+well inside a second, measured rather than claimed in prose.
+
+**The budget is proven under controlled conditions, not inside the contended
+sweep.** The first authoring of this section said only "measured in the test",
+and the QA gate's F-001 is what that omission cost: a wall-clock assertion
+inside `go test -parallel 16 ./...` measures the runner's load, not the
+product. The same sweep measured 0.64 s alone and 3.0–4.0 s under the suite.
+The limit is correct and does not move; the measurement's execution conditions
+are what must be declared. The golden per-code counts are deterministic and
+stay in the ordinary suite; the duration proof runs as its own serial gate
+step, takes its execution conditions explicitly per ADR-0089, and fails the
+gate like any other check. A budget proved under contention is the same defect
+class this repository fixed in three packages during Spec 0071 and recorded
+again on 2026-08-03 for the attach reader.
 
 ## Build Order
 
