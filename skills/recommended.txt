@@ -16,6 +16,7 @@ golang-testing
 grill-with-docs
 grilling
 handoff
+knowledge-workspace
 no-workarounds
 review
 systematic-debugging
