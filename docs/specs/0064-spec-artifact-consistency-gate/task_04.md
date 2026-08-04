@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0064-spec-artifact-consistency-gate
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -86,3 +86,60 @@ prints a real report.
 - `_prd.md` → Core Feature 1; Decisions.
 - `_techspec.md` → API Contracts; Build Order 5.
 - ADR-0093.
+
+## Result
+
+### Implementation
+
+- Added the read-only `spec check` command family with interspersed
+  `--format text|json` and `--strict` parsing, explicit single-/multi-Spec
+  selection, duplicate-slug suppression, and all-active discovery through the
+  configured Spec Root.
+- Reused the checker-owned text and JSON renderers. The command buffers all
+  per-Spec results before writing stdout, emits one JSON object per line, keeps
+  diagnostics on stderr, promotes gap severities under strict mode, and returns
+  exit `0`, `1`, or `2` under the authored contract.
+- Added the command to top-level usage and the command list without changing
+  the `implement` command path.
+- Added fixture-repository command tests at the public `Run` boundary for text,
+  JSON, strict promotion, explicit and all-active selection, unknown slugs,
+  unreadable Spec Roots, help, and the `implement` non-precondition.
+
+### Focused checks
+
+- Red signal before command wiring:
+  `rtk proxy env GOCACHE=... GOFLAGS=-buildvcs=false go test ./internal/cli -count=1 -run '^TestRunSpecCheckCleanText$'`
+  failed with exit `2` and `unknown command "spec"`.
+- After implementation:
+  `rtk proxy env GOCACHE=... GOFLAGS=-buildvcs=false go test ./internal/cli -count=1 -run '^(TestRunSpecCheck|TestRunImplementHasNoSpecCheckPrecondition)'`
+  exited `0` (`ok roundfix/internal/cli`).
+- `rtk git -c core.fsmonitor=false diff --check` exited `0`; final status listed
+  only `task_04.md`, `internal/cli/cli.go`, `internal/cli/implement_test.go`,
+  `internal/cli/spec_check.go`, and `internal/cli/spec_check_test.go`.
+- The commands under `## Verification` were not run; the Daemon owns them.
+
+### Acceptance evidence
+
+- Clean Spec exits `0` and prints a clean report:
+  `TestRunSpecCheckCleanText`.
+- Error finding exits `1` and prints its code, both `path:line` locations, and
+  fix: `TestRunSpecCheckErrorText`.
+- Gap-only output exits `0`, then renders the promoted severity and exits `1`
+  with `--strict`: `TestRunSpecCheckGapStrictPromotion`.
+- JSON emits one parseable `roundfix-speccheck/v1` object per requested Spec:
+  `TestRunSpecCheckJSONWritesOneObjectPerSpec`.
+- Unknown slug exits `2`, names the slug on stderr, and leaves stdout empty:
+  `TestRunSpecCheckUnknownSlugIsUsageError`.
+- No-slug selection reports every active fixture Spec:
+  `TestRunSpecCheckWithoutSlugChecksEveryActiveSpec`.
+- Top-level usage, command list, and command-specific help expose `spec check`:
+  `TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList`.
+- `implement` still executes a Spec whose checker result contains an error,
+  proving no consistency precondition was added:
+  `TestRunImplementHasNoSpecCheckPrecondition`.
+- An unreadable configured Spec Root exits `2`, names the root on stderr, and
+  leaves stdout empty: `TestRunSpecCheckUnreadableRootIsUsageError`.
+
+### Follow-ups
+
+None discovered within Task 04's slice.

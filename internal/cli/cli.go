@@ -50,6 +50,7 @@ Usage:
   roundfix reconcile [run-id] [--apply] [--format <text|json>]
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
+  roundfix spec check [<slug> ...] [--format <text|json>] [--strict]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -84,6 +85,7 @@ Commands:
   settle     Verify and commit all current worktree changes for one failed Task
   reconcile  Inspect or release proven terminal spec Run worktrees
   release    Plan the next release version without mutating repository or release state
+  spec       Check Spec artifact consistency
   baseline   Plan, apply, and validate a Context-Driven Baseline
   profiles   Show Agent Selection Profiles and advisory recommendations
   archive    Archive a completed Spec
@@ -484,6 +486,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runReconcileCommand(ctx, args[1:], stdout, stderr, environment)
 	case "release":
 		return runReleaseCommand(ctx, args[1:], stdout, stderr, environment)
+	case "spec":
+		return runSpecCommand(ctx, args[1:], stdout, stderr, environment)
 	case "baseline":
 		return runBaselineCommand(ctx, args[1:], stdout, stderr, environment)
 	case "profiles":
@@ -5272,6 +5276,8 @@ Options:
 `
 	case "archive":
 		return archiveUsage
+	case "spec check":
+		return specCheckUsage
 	case "stop":
 		return `Usage:
   roundfix stop <run-id>
