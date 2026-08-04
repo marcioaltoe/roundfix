@@ -19,6 +19,12 @@ var updateDerivedDigests = flag.Bool("update", false, "regenerate derived digest
 
 const baselineDigestRegenerationHint = "run 'make baseline-digests'"
 
+// upstreamManagedSkillTreeDigest pins the tree of every upstream-managed skill
+// declared in skills-lock.json. It moves only when that declared set changes on
+// purpose; three tests read this one constant so a legitimate change edits one
+// line instead of three.
+const upstreamManagedSkillTreeDigest = "c6d857ac719caf3d1f334f378bdada4e4e89cbc0795b7771c781d0511cb7c9cd"
+
 type baselineDigestTargetResult struct {
 	SchemaVersion *int    `json:"schemaVersion"`
 	Type          *string `json:"type"`
@@ -457,9 +463,8 @@ func TestAuthorialSkillSync(t *testing.T) {
 	if err := json.Unmarshal(lockBytes, &lock); err != nil {
 		t.Fatalf("decode skills lock: %v", err)
 	}
-	const wantUpstreamDigest = "876f00517ff19ff6c7775f95ddce3ccd51f12def9c028d58dd1c1696790fd186"
-	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != wantUpstreamDigest {
-		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
+	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != upstreamManagedSkillTreeDigest {
+		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, upstreamManagedSkillTreeDigest)
 	}
 }
 
@@ -892,9 +897,8 @@ func TestAuthoringConstraintOwnership(t *testing.T) {
 		})
 	}
 
-	const wantUpstreamDigest = "876f00517ff19ff6c7775f95ddce3ccd51f12def9c028d58dd1c1696790fd186"
-	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != wantUpstreamDigest {
-		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
+	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != upstreamManagedSkillTreeDigest {
+		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, upstreamManagedSkillTreeDigest)
 	}
 }
 
@@ -932,9 +936,8 @@ func TestUpstreamADRFormatUnchanged(t *testing.T) {
 		_, _ = upstreamDigest.Write([]byte(name))
 		_, _ = upstreamDigest.Write([]byte(folderDigest))
 	}
-	const wantUpstreamDigest = "876f00517ff19ff6c7775f95ddce3ccd51f12def9c028d58dd1c1696790fd186"
-	if got := hex.EncodeToString(upstreamDigest.Sum(nil)); got != wantUpstreamDigest {
-		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
+	if got := hex.EncodeToString(upstreamDigest.Sum(nil)); got != upstreamManagedSkillTreeDigest {
+		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, upstreamManagedSkillTreeDigest)
 	}
 
 	const wantADRFormatSHA256 = "f1f36cd3f8d3b6474ddd5855da4e233bfc4ae1a1c5024909ccf11871819a41b2"
