@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -70,6 +71,12 @@ func TestQAVerdictValidatesBlockedCounts(t *testing.T) {
 			wantError:        "rows_blocked_finding must be zero when verdict is \"pass\"",
 		},
 		{
+			name:             "declared-blocked pass is unreadable",
+			verdict:          VerdictPass,
+			extraFrontmatter: []string{"rows_blocked_declared: 3"},
+			wantError:        "rows_blocked_declared must be zero when verdict is \"pass\"",
+		},
+		{
 			name:             "finding-blocked partial remains readable",
 			verdict:          VerdictPartial,
 			extraFrontmatter: []string{"rows_blocked_finding: 1"},
@@ -130,6 +137,104 @@ func TestQAVerdictValidatesBlockedCounts(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), tt.wantError) {
 				t.Errorf("error %q does not contain %q", err, tt.wantError)
+			}
+		})
+	}
+}
+
+func TestReadQAReportBlockedCounts(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name                   string
+		fixture                string
+		wantVerdict            string
+		wantBlockedEnvironment int
+		wantBlockedFinding     int
+		wantBlockedDeclared    int
+	}{
+		{
+			name:        "absent declared count defaults to zero",
+			fixture:     "absent",
+			wantVerdict: VerdictPass,
+		},
+		{
+			name:        "explicit zero declared count remains zero",
+			fixture:     "zero",
+			wantVerdict: VerdictPass,
+		},
+		{
+			name:                   "positive declared count is independent",
+			fixture:                "positive",
+			wantVerdict:            VerdictPartial,
+			wantBlockedEnvironment: 1,
+			wantBlockedFinding:     2,
+			wantBlockedDeclared:    3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			report, err := ReadQAReport(filepath.Join("testdata", "qa-blocked-counts", tt.fixture))
+			if err != nil {
+				t.Fatalf("ReadQAReport: %v", err)
+			}
+			if report.Verdict != tt.wantVerdict {
+				t.Errorf("Verdict = %q, want %q", report.Verdict, tt.wantVerdict)
+			}
+			if report.RowsBlockedEnvironment != tt.wantBlockedEnvironment {
+				t.Errorf("RowsBlockedEnvironment = %d, want %d", report.RowsBlockedEnvironment, tt.wantBlockedEnvironment)
+			}
+			if report.RowsBlockedFinding != tt.wantBlockedFinding {
+				t.Errorf("RowsBlockedFinding = %d, want %d", report.RowsBlockedFinding, tt.wantBlockedFinding)
+			}
+			if report.RowsBlockedDeclared != tt.wantBlockedDeclared {
+				t.Errorf("RowsBlockedDeclared = %d, want %d", report.RowsBlockedDeclared, tt.wantBlockedDeclared)
+			}
+		})
+	}
+}
+
+func TestReadQAReportRejectsInvalidDeclaredCount(t *testing.T) {
+	t.Parallel()
+	for _, fixture := range []string{"negative", "non-integer"} {
+		t.Run(fixture, func(t *testing.T) {
+			_, err := ReadQAReport(filepath.Join("testdata", "qa-blocked-counts", fixture))
+			var reportErr QAReportError
+			if !errors.As(err, &reportErr) {
+				t.Fatalf("error = %v, want QAReportError", err)
+			}
+			if !strings.Contains(err.Error(), "rows_blocked_declared") {
+				t.Errorf("error %q does not name rows_blocked_declared", err)
+			}
+		})
+	}
+}
+
+func TestArchivedQAReportCorpusRemainsReadable(t *testing.T) {
+	t.Parallel()
+	_, testFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller could not locate the repository")
+	}
+	pattern := filepath.Join(filepath.Dir(testFile), "..", "..", "docs", "specs", "_archived", "*", "qa", "qa-report-*.md")
+	reports, err := filepath.Glob(pattern)
+	if err != nil {
+		t.Fatalf("find archived QA Reports: %v", err)
+	}
+	if len(reports) == 0 {
+		t.Fatal("archived QA Report corpus is empty")
+	}
+	seen := make(map[string]struct{})
+	for _, reportPath := range reports {
+		specDir := filepath.Dir(filepath.Dir(reportPath))
+		if _, ok := seen[specDir]; ok {
+			continue
+		}
+		seen[specDir] = struct{}{}
+		testSpecDir := specDir
+		t.Run(filepath.Base(testSpecDir), func(t *testing.T) {
+			if _, err := ReadQAReport(testSpecDir); err != nil {
+				t.Fatalf("ReadQAReport(%q): %v", testSpecDir, err)
 			}
 		})
 	}

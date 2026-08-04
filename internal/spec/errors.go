@@ -27,6 +27,18 @@ func (err InactiveSpecError) Error() string {
 	return fmt.Sprintf("Spec %q is not active: _prd.md frontmatter status is %q; expected %q", err.Slug, err.Status, prdStatusActive)
 }
 
+// UnreachableDeclarationError reports a declaration that omits one of its
+// author-supplied fields.
+type UnreachableDeclarationError struct {
+	Path  string
+	Line  int
+	Field string
+}
+
+func (err UnreachableDeclarationError) Error() string {
+	return fmt.Sprintf("unreachable acceptance declaration in %q at line %d is missing %s", err.Path, err.Line, err.Field)
+}
+
 // ManifestError reports a Task Graph manifest that is missing or fails to
 // parse or validate, naming the failed check.
 type ManifestError struct {

@@ -22,6 +22,15 @@ const (
 // ErrNoQAReport reports that the Spec has no qa/qa-report-*.md yet.
 var ErrNoQAReport = errors.New("no QA Report found")
 
+// QAReport is the validated verdict metadata callers need from a QA Report.
+// Each blocked-row cause remains independent; absent counts are zero.
+type QAReport struct {
+	Verdict                string
+	RowsBlockedEnvironment int
+	RowsBlockedFinding     int
+	RowsBlockedDeclared    int
+}
+
 // NewestQAReport returns the path of the newest qa/qa-report-*.md in the
 // Spec directory. Report names are qa-report-YYYY-MM-DD.md for the first run
 // of a date and qa-report-YYYY-MM-DD-NN.md for same-date reruns, so recency
@@ -154,49 +163,80 @@ func isDigits(value string) bool {
 // as ErrNoQAReport; unreadable or inconsistent metadata surfaces as
 // QAReportError.
 func QAVerdict(specDir string) (string, error) {
-	newest, err := NewestQAReport(specDir)
+	report, err := ReadQAReport(specDir)
 	if err != nil {
 		return "", err
 	}
+	return report.Verdict, nil
+}
 
-	content, err := os.ReadFile(newest)
+// ReadQAReport reads and validates the verdict and typed blocked-row counts
+// from the newest qa/qa-report-*.md in the Spec directory.
+func ReadQAReport(specDir string) (QAReport, error) {
+	newest, err := NewestQAReport(specDir)
 	if err != nil {
-		return "", QAReportError{Path: newest, Err: err}
+		return QAReport{}, err
+	}
+	return readQAReport(newest)
+}
+
+func readQAReport(path string) (QAReport, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return QAReport{}, QAReportError{Path: path, Err: err}
 	}
 	frontmatterBytes, _, err := splitFrontmatter(content)
 	if err != nil {
-		return "", QAReportError{Path: newest, Err: err}
+		return QAReport{}, QAReportError{Path: path, Err: err}
 	}
-	var report struct {
+	var frontmatter struct {
 		Verdict                string    `yaml:"verdict"`
 		RowsBlockedEnvironment yaml.Node `yaml:"rows_blocked_environment"`
 		RowsBlockedFinding     yaml.Node `yaml:"rows_blocked_finding"`
+		RowsBlockedDeclared    yaml.Node `yaml:"rows_blocked_declared"`
 	}
-	if err := yaml.Unmarshal(frontmatterBytes, &report); err != nil {
-		return "", QAReportError{Path: newest, Err: err}
+	if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
+		return QAReport{}, QAReportError{Path: path, Err: err}
 	}
-	if _, err := qaBlockedCount(report.RowsBlockedEnvironment, "rows_blocked_environment"); err != nil {
-		return "", QAReportError{Path: newest, Err: err}
-	}
-	rowsBlockedFinding, err := qaBlockedCount(report.RowsBlockedFinding, "rows_blocked_finding")
+	rowsBlockedEnvironment, err := qaBlockedCount(frontmatter.RowsBlockedEnvironment, "rows_blocked_environment")
 	if err != nil {
-		return "", QAReportError{Path: newest, Err: err}
+		return QAReport{}, QAReportError{Path: path, Err: err}
+	}
+	rowsBlockedFinding, err := qaBlockedCount(frontmatter.RowsBlockedFinding, "rows_blocked_finding")
+	if err != nil {
+		return QAReport{}, QAReportError{Path: path, Err: err}
+	}
+	rowsBlockedDeclared, err := qaBlockedCount(frontmatter.RowsBlockedDeclared, "rows_blocked_declared")
+	if err != nil {
+		return QAReport{}, QAReportError{Path: path, Err: err}
+	}
+	report := QAReport{
+		Verdict:                frontmatter.Verdict,
+		RowsBlockedEnvironment: rowsBlockedEnvironment,
+		RowsBlockedFinding:     rowsBlockedFinding,
+		RowsBlockedDeclared:    rowsBlockedDeclared,
 	}
 	switch report.Verdict {
 	case VerdictPass:
-		if rowsBlockedFinding > 0 {
-			return "", QAReportError{
-				Path: newest,
+		if report.RowsBlockedFinding > 0 {
+			return QAReport{}, QAReportError{
+				Path: path,
 				Err:  fmt.Errorf("rows_blocked_finding must be zero when verdict is %q", VerdictPass),
 			}
 		}
-		return report.Verdict, nil
+		if report.RowsBlockedDeclared > 0 {
+			return QAReport{}, QAReportError{
+				Path: path,
+				Err:  fmt.Errorf("rows_blocked_declared must be zero when verdict is %q", VerdictPass),
+			}
+		}
+		return report, nil
 	case VerdictFail, VerdictPartial:
-		return report.Verdict, nil
+		return report, nil
 	case "":
-		return "", QAReportError{Path: newest, Err: errors.New("frontmatter has no verdict field")}
+		return QAReport{}, QAReportError{Path: path, Err: errors.New("frontmatter has no verdict field")}
 	default:
-		return "", QAReportError{Path: newest, Err: fmt.Errorf("unsupported verdict %q", report.Verdict)}
+		return QAReport{}, QAReportError{Path: path, Err: fmt.Errorf("unsupported verdict %q", report.Verdict)}
 	}
 }
 

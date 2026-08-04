@@ -122,6 +122,20 @@ type Graph struct {
 	QAReason   string
 }
 
+// UnreachableDeclaration is one acceptance the Spec's author declared beyond
+// the reach of any hermetic Verification before the gate ran.
+type UnreachableDeclaration struct {
+	Criterion   string
+	Reason      string
+	SatisfiedBy string
+	Line        int
+}
+
+type unreachableDeclarationBuilder struct {
+	declaration UnreachableDeclaration
+	activeField string
+}
+
 type manifestNode struct {
 	ID    string   `yaml:"id"`
 	File  string   `yaml:"file"`
@@ -177,6 +191,134 @@ type qaDeclaration struct {
 	TaskID   string
 	Declined bool
 	Reason   string
+}
+
+// Unreachable reads declarations from the Spec PRD's optional
+// ## Unreachable Acceptance section. A Spec with no such section returns no
+// declarations and no error.
+func Unreachable(specDir string) ([]UnreachableDeclaration, error) {
+	prdPath := filepath.Join(specDir, "_prd.md")
+	content, err := os.ReadFile(prdPath)
+	if err != nil {
+		return nil, fmt.Errorf("read Spec PRD %q: %w", prdPath, err)
+	}
+	return parseUnreachableDeclarations(content, prdPath)
+}
+
+func parseUnreachableDeclarations(content []byte, prdPath string) ([]UnreachableDeclaration, error) {
+	var declarations []UnreachableDeclaration
+	var current *unreachableDeclarationBuilder
+	inSection := false
+	flush := func() error {
+		if current == nil {
+			return nil
+		}
+		declaration, err := current.finish(prdPath)
+		if err != nil {
+			return err
+		}
+		declarations = append(declarations, declaration)
+		current = nil
+		return nil
+	}
+
+	for index, line := range strings.Split(string(content), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "# ") || strings.HasPrefix(trimmed, "## ") {
+			if inSection {
+				if err := flush(); err != nil {
+					return nil, err
+				}
+			}
+			inSection = strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")) == "Unreachable Acceptance"
+			continue
+		}
+		if !inSection {
+			continue
+		}
+
+		if strings.HasPrefix(line, "- ") {
+			if err := flush(); err != nil {
+				return nil, err
+			}
+			current = &unreachableDeclarationBuilder{
+				declaration: UnreachableDeclaration{Line: index + 1},
+			}
+			current.readField(strings.TrimSpace(strings.TrimPrefix(line, "- ")))
+			continue
+		}
+		if current == nil || trimmed == "" {
+			continue
+		}
+		if current.readField(trimmed) {
+			continue
+		}
+		if strings.HasPrefix(line, "  ") || strings.HasPrefix(line, "\t") {
+			current.appendContinuation(trimmed)
+		}
+	}
+	if err := flush(); err != nil {
+		return nil, err
+	}
+	return declarations, nil
+}
+
+func (builder *unreachableDeclarationBuilder) readField(line string) bool {
+	label, value, ok := strings.Cut(line, ":")
+	if !ok {
+		return false
+	}
+	field := strings.TrimSpace(label)
+	switch field {
+	case "criterion":
+		builder.declaration.Criterion = strings.TrimSpace(value)
+	case "reason":
+		builder.declaration.Reason = strings.TrimSpace(value)
+	case "satisfied-by":
+		builder.declaration.SatisfiedBy = strings.TrimSpace(value)
+	default:
+		return false
+	}
+	builder.activeField = field
+	return true
+}
+
+func (builder *unreachableDeclarationBuilder) appendContinuation(line string) {
+	appendValue := func(value *string) {
+		if *value == "" {
+			*value = line
+			return
+		}
+		*value += " " + line
+	}
+	switch builder.activeField {
+	case "criterion":
+		appendValue(&builder.declaration.Criterion)
+	case "reason":
+		appendValue(&builder.declaration.Reason)
+	case "satisfied-by":
+		appendValue(&builder.declaration.SatisfiedBy)
+	}
+}
+
+func (builder *unreachableDeclarationBuilder) finish(prdPath string) (UnreachableDeclaration, error) {
+	missing := ""
+	switch {
+	case builder.declaration.Criterion == "":
+		missing = "criterion"
+	case builder.declaration.Reason == "":
+		missing = "reason"
+	case builder.declaration.SatisfiedBy == "":
+		missing = "satisfied-by"
+	}
+	if missing != "" {
+		return UnreachableDeclaration{}, UnreachableDeclarationError{
+			Path:  prdPath,
+			Line:  builder.declaration.Line,
+			Field: missing,
+		}
+	}
+	return builder.declaration, nil
 }
 
 // ListActive discovers the Specs eligible for the Implement Command:

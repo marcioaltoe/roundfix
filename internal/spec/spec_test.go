@@ -74,6 +74,89 @@ Fixture task.
 %s`, id, status, taskType, number, title, tail))
 }
 
+func TestUnreachableReadsDeclaredAcceptance(t *testing.T) {
+	t.Parallel()
+	specDir := filepath.Join("testdata", "unreachable", "present")
+
+	declarations, err := Unreachable(specDir)
+	if err != nil {
+		t.Fatalf("Unreachable: %v", err)
+	}
+	want := []UnreachableDeclaration{
+		{
+			Criterion:   "Success Metric 1 — a real tagged release publishes all six coordinates",
+			Reason:      "publishing is an irreversible act against a live registry",
+			SatisfiedBy: "a maintainer publishes a tagged release and records the run",
+			Line:        10,
+		},
+		{
+			Criterion:   "Goal 3 — prove the production identity binding",
+			Reason:      "the hermetic gate has no production identity",
+			SatisfiedBy: "a maintainer observes the live trusted-publisher exchange",
+			Line:        15,
+		},
+	}
+	if len(declarations) != len(want) {
+		t.Fatalf("Unreachable returned %d declarations, want one per fixture entry (%d): %+v", len(declarations), len(want), declarations)
+	}
+	for index := range want {
+		if declarations[index] != want[index] {
+			t.Errorf("declaration[%d] = %+v, want %+v", index, declarations[index], want[index])
+		}
+	}
+}
+
+func TestUnreachableWithoutSectionReturnsNothing(t *testing.T) {
+	t.Parallel()
+
+	declarations, err := Unreachable(filepath.Join("testdata", "unreachable", "absent"))
+	if err != nil {
+		t.Fatalf("Unreachable: %v", err)
+	}
+	if len(declarations) != 0 {
+		t.Fatalf("Unreachable = %+v, want no declarations", declarations)
+	}
+}
+
+func TestUnreachableRejectsMalformedDeclaration(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name  string
+		field string
+	}{
+		{name: "missing criterion", field: "criterion"},
+		{name: "missing reason", field: "reason"},
+		{name: "missing satisfied-by", field: "satisfied-by"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			fixture := strings.ReplaceAll(tt.name, " ", "-")
+			specDir := filepath.Join("testdata", "unreachable", fixture)
+			prdPath := filepath.Join(specDir, "_prd.md")
+
+			declarations, err := Unreachable(specDir)
+			if err == nil {
+				t.Fatalf("Unreachable = %+v, want malformed declaration error", declarations)
+			}
+			var declarationErr UnreachableDeclarationError
+			if !errors.As(err, &declarationErr) {
+				t.Fatalf("error = %T %v, want UnreachableDeclarationError", err, err)
+			}
+			if declarationErr.Path != prdPath || declarationErr.Line != 10 || declarationErr.Field != tt.field {
+				t.Errorf("error = %+v, want path %q, line 10, field %q", declarationErr, prdPath, tt.field)
+			}
+			if !strings.Contains(err.Error(), prdPath) || !strings.Contains(err.Error(), "line 10") {
+				t.Errorf("error text = %q, want file %q and line 10", err, prdPath)
+			}
+			if !strings.HasPrefix(err.Error(), "unreachable acceptance declaration") {
+				t.Errorf("error text = %q, want lowercase prefix", err)
+			}
+		})
+	}
+}
+
 func TestNormalizeStatus(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

@@ -19,9 +19,12 @@ graph:
     - id: task_05
       file: task_05.md
       needs: [task_03, task_04]
+    - id: task_07
+      file: task_07.md
+      needs: [task_05]
     - id: task_06
       file: task_06.md
-      needs: [task_05]
+      needs: [task_07]
 ---
 
 # Tasks — Declared unreachable acceptance
@@ -33,10 +36,11 @@ graph:
 | task_03 | Archive the declared case and refuse the rest      | backend | high       | task_01, task_02 |
 | task_04 | Teach the gate to match and to scope its blocking  | chore   | high       | task_01          |
 | task_05 | Replay Spec 0058 and hold the corpus unchanged     | test    | medium     | task_03, task_04 |
-| task_06 | Run the final QA gate                              | qa      | high       | task_05          |
+| task_07 | Teach the Archive Command's real contract           | docs    | medium     | task_05          |
+| task_06 | Run the final QA gate                              | qa      | high       | task_07          |
 
 Waves: 1 → task_01 · 2 → task_02, task_04 · 3 → task_03 · 4 → task_05 ·
-5 → task_06
+5 → task_07 · 6 → task_06
 
 Wave 2 fans out because the gate contract and the typed count read the same
 declaration and share nothing else: one is a skill prompt, the other is a
@@ -56,3 +60,21 @@ The QA gate is authored as task_06 and depends on task_05, the graph's only
 non-QA leaf, which transitively covers every other node. Core Feature 7 has no
 code to test it — its correctness lives in a skill prompt — so the gate is where
 its behaviour is observed, and task_06 says so.
+
+## Corrective Task from the 2026-08-04 gate
+
+The gate reported one finding and it blocked exactly one row — QA-16 — while
+all sixteen runtime acceptance rows ran and passed independently. That is Core
+Feature 7 working inside this Spec's own gate: the same shape of finding
+suppressed fifteen of twenty-four rows on Spec 0072 and thirteen of fifteen on
+Spec 0064 earlier the same day.
+
+F-001 is real: the Archive Command's operator documentation and the canonical
+Roundfix Skill still teach the pass-only contract this Spec widened, while the
+built help and the real archive journey are already correct. task_07 corrects
+them. Its skill paths are authorized by the 2026-08-04 close addendum that
+names Spec 0070; the qa-gate grant above deliberately did not reach them.
+
+One corrective Task, within the ceiling `docs/agents/autonomous-work.md` sets.
+task_06 returns to pending because a gate whose dependency closure grew is
+invalid by construction.
