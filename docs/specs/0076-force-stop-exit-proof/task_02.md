@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0076-force-stop-exit-proof
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -78,3 +78,60 @@ This slice reorders the handshake and makes the proof assert causation.
 - `_prd.md` → Core Features 2, 3, and 4; Decisions.
 - `_techspec.md` → Interfaces; Build Order 2 and 3; Testing Approach.
 - ADR-0089.
+
+## Result
+
+### Implementation
+
+- `startOwnerProcessHelper` now consumes and validates the helper's `ready`
+  line before starting the `cmd.Wait` goroutine. Cleanup waits synchronously
+  when readiness fails before that goroutine starts, so every child is still
+  reaped without letting `Wait` close a pipe the scanner needs.
+- `TestOwnerProcessControllerForceKillExitProof` now consumes the helper's wait
+  result and requires a signaled `syscall.WaitStatus` whose signal is
+  `SIGKILL`. A clean early exit fails with
+  `exited prematurely before controller force-kill escalation` instead of
+  satisfying the proof.
+- `TerminateAndWait` and all production symbols remain unchanged.
+
+### Focused checks
+
+- Before the assertion change, a deliberate `return` immediately after the
+  helper's `ready` line left
+  `rtk proxy env GOCACHE=<worktree>/.gocache GOFLAGS=-buildvcs=false go test ./internal/store -run '^TestOwnerProcessControllerForceKillExitProof$' -count=1 -v`
+  green. This reproduced the false-positive defect; the mutation was reverted
+  before implementation.
+- With the new assertion, the same deliberate premature return made that
+  focused command exit 1 at
+  `owner process ... exited prematurely before controller force-kill escalation: <nil>`.
+  The mutation was reverted in the same check, and the identical command then
+  exited 0 with the force-kill proof passing.
+- `rtk proxy env GOCACHE=<worktree>/.gocache GOFLAGS=-buildvcs=false go test ./internal/store -run '^TestOwnerProcessController(GracefulExitProof|ForceKillExitProof)$' -count=20`
+  exited 0. All 20 parent/helper repetitions completed without `file already
+  closed`, a child runtime fatal exit, or another failure.
+- `rtk proxy env GOCACHE=<worktree>/.gocache GOFLAGS=-buildvcs=false go test -race ./internal/store -run '^TestOwnerProcessControllerForceKillExitProof$' -count=1`
+  exited 0 after the goroutine-ordering change.
+- `rtk gofmt -w internal/store/process_unix_test.go` completed without output.
+
+### Acceptance evidence
+
+- Closed-pipe ordering: diff inspection places readiness scanning before the
+  `cmd.Wait` goroutine, and the focused 20-repeat parent/helper check passed
+  without `file already closed`. The authored 50-repeat command remains for
+  Daemon Verification.
+- Escalation causation: the force-kill proof now requires the child process's
+  observed exit signal to equal `SIGKILL`; its focused positive and race checks
+  passed.
+- Premature-exit diagnostic: the deliberate clean helper exit failed the proof
+  with a diagnostic containing `exited prematurely`.
+- Mutation sensitivity: the deliberate premature exit was observed passing
+  before the regression, failing after it, and passing again after the helper
+  mutation was reverted.
+- Repeated parent/helper behavior: 20 focused repetitions passed without a
+  closed-pipe failure or child fatal exit. The acceptance criterion's exact
+  `-count=50` evidence remains Daemon-owned Verification and is not claimed
+  here.
+- Production scope: diff inspection shows the only `internal/store` change is
+  `internal/store/process_unix_test.go`; no production file was modified.
+
+The Daemon-owned `## Verification` commands were not run in this Agent turn.

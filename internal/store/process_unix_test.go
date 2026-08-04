@@ -62,7 +62,7 @@ func TestOwnerProcessControllerForceKillExitProof(t *testing.T) {
 		t.Fatalf("force-kill owner process: %v", err)
 	}
 
-	assertOwnerProcessExited(t, pid, wait)
+	assertOwnerProcessForceKilled(t, pid, wait)
 }
 
 func TestOwnerProcessControllerRejectsUnprovenCurrentProcess(t *testing.T) {
@@ -571,13 +571,14 @@ func startOwnerProcessHelper(t *testing.T, mode string) (int, <-chan error) {
 		t.Fatalf("start owner process helper: %v", err)
 	}
 	wait := make(chan error, 1)
-	go func() {
-		wait <- cmd.Wait()
-		close(wait)
-	}()
+	waitStarted := false
 	t.Cleanup(func() {
 		if ProcessAlive(cmd.Process.Pid) {
 			_ = cmd.Process.Kill()
+		}
+		if !waitStarted {
+			_ = cmd.Wait()
+			return
 		}
 		select {
 		case <-wait:
@@ -591,6 +592,11 @@ func startOwnerProcessHelper(t *testing.T, mode string) (int, <-chan error) {
 	if scanner.Text() != "ready" {
 		t.Fatalf("owner process helper readiness = %q, want ready", scanner.Text())
 	}
+	waitStarted = true
+	go func() {
+		wait <- cmd.Wait()
+		close(wait)
+	}()
 	return cmd.Process.Pid, wait
 }
 
@@ -603,5 +609,25 @@ func assertOwnerProcessExited(t *testing.T, pid int, wait <-chan error) {
 	}
 	if ProcessAlive(pid) {
 		t.Fatalf("owner process %d remained alive after exit proof", pid)
+	}
+}
+
+func assertOwnerProcessForceKilled(t *testing.T, pid int, wait <-chan error) {
+	t.Helper()
+	select {
+	case err := <-wait:
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
+			t.Fatalf("owner process %d exited prematurely before controller force-kill escalation: %v", pid, err)
+		}
+		status, ok := exitErr.ProcessState.Sys().(syscall.WaitStatus)
+		if !ok || !status.Signaled() || status.Signal() != syscall.SIGKILL {
+			t.Fatalf("owner process %d exit = %v, want controller force-kill signal %v", pid, err, syscall.SIGKILL)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("owner process %d did not exit after controller force-kill escalation", pid)
+	}
+	if ProcessAlive(pid) {
+		t.Fatalf("owner process %d remained alive after controller force-kill escalation", pid)
 	}
 }
