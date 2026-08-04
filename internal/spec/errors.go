@@ -36,7 +36,7 @@ type UnreachableDeclarationError struct {
 }
 
 func (err UnreachableDeclarationError) Error() string {
-	return fmt.Sprintf("Unreachable Acceptance declaration in %q at line %d is missing %s", err.Path, err.Line, err.Field)
+	return fmt.Sprintf("unreachable acceptance declaration in %q at line %d is missing %s", err.Path, err.Line, err.Field)
 }
 
 // ManifestError reports a Task Graph manifest that is missing or fails to

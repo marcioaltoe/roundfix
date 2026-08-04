@@ -150,6 +150,9 @@ func TestUnreachableRejectsMalformedDeclaration(t *testing.T) {
 			if !strings.Contains(err.Error(), prdPath) || !strings.Contains(err.Error(), "line 10") {
 				t.Errorf("error text = %q, want file %q and line 10", err, prdPath)
 			}
+			if !strings.HasPrefix(err.Error(), "unreachable acceptance declaration") {
+				t.Errorf("error text = %q, want lowercase prefix", err)
+			}
 		})
 	}
 }

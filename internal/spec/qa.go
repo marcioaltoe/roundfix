@@ -224,6 +224,12 @@ func readQAReport(path string) (QAReport, error) {
 				Err:  fmt.Errorf("rows_blocked_finding must be zero when verdict is %q", VerdictPass),
 			}
 		}
+		if report.RowsBlockedDeclared > 0 {
+			return QAReport{}, QAReportError{
+				Path: path,
+				Err:  fmt.Errorf("rows_blocked_declared must be zero when verdict is %q", VerdictPass),
+			}
+		}
 		return report, nil
 	case VerdictFail, VerdictPartial:
 		return report, nil

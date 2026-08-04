@@ -71,10 +71,10 @@ func TestQAVerdictValidatesBlockedCounts(t *testing.T) {
 			wantError:        "rows_blocked_finding must be zero when verdict is \"pass\"",
 		},
 		{
-			name:             "declared-blocked pass does not change finding validation",
+			name:             "declared-blocked pass is unreadable",
 			verdict:          VerdictPass,
 			extraFrontmatter: []string{"rows_blocked_declared: 3"},
-			wantVerdict:      VerdictPass,
+			wantError:        "rows_blocked_declared must be zero when verdict is \"pass\"",
 		},
 		{
 			name:             "finding-blocked partial remains readable",
