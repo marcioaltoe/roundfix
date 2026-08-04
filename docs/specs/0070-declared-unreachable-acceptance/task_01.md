@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0070-declared-unreachable-acceptance
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -74,3 +74,43 @@ absent section is not an error.
 - `_prd.md` → Core Feature 1; Goals; Decisions.
 - `_techspec.md` → Interfaces; Build Order 1.
 - ADR-0080.
+
+## Result
+
+Implemented the PRD declaration reader as the new `spec.Unreachable` API. It
+returns author-supplied criterion, reason, satisfying action, and 1-based
+declaration line; accepts an absent section; preserves wrapped field text; and
+returns `UnreachableDeclarationError` with `_prd.md` path, line, and missing
+field instead of dropping malformed entries.
+
+Acceptance evidence:
+
+- Two declarations: `TestUnreachableReadsDeclaredAcceptance` reads the
+  `present` fixture and compares both complete values and declaration lines 10
+  and 15. Its explicit length assertion requires one result per fixture entry.
+- Absent section: `TestUnreachableWithoutSectionReturnsNothing` reads the
+  `absent` fixture and observes zero declarations with no error.
+- Missing reason: the `missing reason` case in
+  `TestUnreachableRejectsMalformedDeclaration` observes a typed error whose
+  fields and text name the fixture `_prd.md` and line 10.
+- Missing satisfying action: the `missing satisfied-by` case observes the same
+  typed path-and-line contract for the absent action. The companion `missing
+  criterion` case covers the third malformed shape required by the Task.
+- No silent drop: the present-fixture count assertion and all three malformed
+  cases require either one returned declaration per entry or a typed error.
+- Existing behavior: the pre-existing `TestNormalizeStatus` suite passed after
+  the implementation. The complete `internal/spec` regression command remains
+  for Daemon-owned Verification and was not run in this Agent turn.
+
+Focused checks:
+
+- Before implementation,
+  `rtk sh -c 'GOCACHE=/private/tmp/roundfix-task-01-gocache rtk go test ./internal/spec -run "^TestUnreachable" -count=1'`
+  failed to compile because the new API and error type did not exist.
+- After the final edit, the same focused command passed: 6 tests in 1 package.
+- `rtk sh -c 'GOCACHE=/private/tmp/roundfix-task-01-gocache rtk go test ./internal/spec -run "^TestNormalizeStatus$" -count=1'`
+  passed: 11 tests in 1 package.
+- `rtk git diff --check` passed.
+
+No follow-up work was discovered inside this Task's slice. The commands under
+`## Verification` were not run; the Daemon owns them and Task settlement.
