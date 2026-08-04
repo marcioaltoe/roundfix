@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0070-declared-unreachable-acceptance
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -74,3 +74,61 @@ identically. A widened gate is only safe if the widening is measured.
 - `_prd.md` → Success Metrics 1, 2, 3 and 4; Decisions.
 - `_techspec.md` → Testing Approach; Build Order 5.
 - ADR-0080.
+
+## Result
+
+Added a Spec 0058 replay over the real archived artifact tree. The test copies
+that tree into a temporary Spec Root, removes the historical `qa_override`,
+adds the Spec-0070 declaration overlay, and supplies a newer typed QA Report
+whose only unmet row is the real tagged OIDC release. The replay invokes the
+real Archive boundary and parses the resulting PRD frontmatter.
+
+Acceptance evidence:
+
+- Archive without override and stamped release action:
+  `TestSpec0058ReplayArchivesDeclaredUnreachableRelease` required a `partial`
+  report with one declared-only blocked row, archived without `qa_override`,
+  first compared the copied source QA Report byte-for-byte, and then compared
+  `unproven` with `a maintainer publishes a tagged release and records the
+  run`.
+- Explicit provenance:
+  `TestSpec0058ReplayRecordsFixtureProvenance` required the fixture to name
+  `docs/specs/_archived/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-04.md`,
+  state that the original PRD had no declaration section, and state that Spec
+  0070 added the declaration overlay.
+- Wrongly declared row:
+  `TestSpec0058ReplayReportsWronglyDeclaredReachableRow` read a replay report
+  that records a `wrongly-declared-row finding`, required verdict `fail`, and
+  proved Archive refused while leaving the active Spec in place.
+- Unmatched blocked row:
+  `TestSpec0058ReplayRefusesUnmatchedBlockedRow` omitted the declaration while
+  retaining `rows_blocked_declared: 1`; Archive refused and named the count,
+  zero declarations, and shortfall one.
+- Archived corpus eligibility:
+  the existing `TestArchivedPassCorpusRemainsArchiveEligible` reran against
+  the full archived pass corpus and continued to accept every prior archive
+  precondition with no unproven action.
+- Archived corpus immutability:
+  the accepted replay hashes every file under `docs/specs/_archived/` before
+  and after archiving the temporary copy and requires byte-identical maps.
+  `rtk git status --short -- docs/specs/_archived` also reported no changed
+  path after the implementation.
+
+Focused checks:
+
+- Before implementation,
+  `rtk rg -n "Spec0058Replay|archive-replay-0058" internal/spec` returned no
+  matches, establishing that the historical replay and provenance fixture did
+  not exist.
+- The first focused replay run exercised all four new tests; three passed and
+  the provenance assertion exposed a wrapped fixture sentence. After fixing
+  that fixture text,
+  `rtk sh -c 'GOCACHE=/private/tmp/roundfix-task-05-gocache rtk go test ./internal/spec -run "^TestSpec0058Replay" -count=1'`
+  passed all four replay tests.
+- After the final replay assertion,
+  `rtk sh -c 'GOCACHE=/private/tmp/roundfix-task-05-gocache rtk go test ./internal/spec -run "^Test(Spec0058Replay.*|ArchivedPassCorpusRemainsArchiveEligible|ArchivedQAOverrideCorpusIncludesFailedSpec)$" -count=1'`
+  passed all six focused replay and corpus tests.
+- `rtk git diff --check` passed.
+
+No follow-up was discovered. The commands under `## Verification` were not
+run; the Daemon owns them and Task settlement.
