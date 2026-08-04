@@ -597,9 +597,19 @@ roundfix archive <slug>
 ```
 
 Non-interactive; creates no Run and never pushes. Verifies every Task is
-`completed` and the newest QA Report has `verdict: pass`, then stamps
-`_prd.md` and moves `<specs.root>/<slug>/` to `<specs.root>/_archived/<slug>/`.
-Refusals exit `2` naming the first unmet condition.
+`completed` and accepts either `verdict: pass` or a declared-only `partial`
+verdict. Declared-only means every unmet row is declared unreachable and fully
+covered by the Spec's `## Unreachable Acceptance` declarations. For that case,
+archive stamps the declarations' `satisfied-by` actions under `unproven` in
+`_prd.md`, so the archived record names what was never verified. It then moves
+`<specs.root>/<slug>/` to `<specs.root>/_archived/<slug>/`.
+
+Every other refusal is unchanged: a finding-blocked row, an
+environment-blocked row, a declared count not covered by the Spec's
+declarations, or `verdict: fail` exits `2` and names the first unmet condition.
+`qa_override` keeps its existing meaning for explicitly authorized archival of
+genuinely failed or missing evidence; declared unreachability does not use or
+weaken that override.
 
 ### reconcile
 
