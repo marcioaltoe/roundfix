@@ -47,10 +47,10 @@ none of its four cases. Evidence:
 - Tooling authority: applicable — express maintainer authorization: on 2026-08-02 the maintainer
   authorized tooling adjustment for the queued Specs, recorded at
   `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`; bounded
-  files: the owned skill pair. Delivering the loop-order correction through the
-  Baseline module would additionally need
-  `internal/baseline/assets/modules/autonomous-work.json`, which this grant does
-  not clearly reach and must be confirmed before decomposition. Deterministic
+  files: the owned skill pair. The Baseline module asset
+  `internal/baseline/assets/modules/autonomous-work.json`, which that grant
+  deferred, was confirmed on 2026-08-04 and is recorded at
+  `docs/workflow/authorizations/2026-08-04-queue-tail-tooling.md`. Deterministic
   digest fallout is sanctioned by ADR-0081. Source:
   `docs/agents/agent-instructions.md`.
 

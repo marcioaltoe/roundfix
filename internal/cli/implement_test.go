@@ -1111,6 +1111,31 @@ func runImplementCommandAsync(t *testing.T, ctx context.Context, args ...string)
 // measures how loaded the machine is, not whether the code works.
 const implementWaitBudget = 90 * time.Second
 
+// detachStartupBudget bounds the wait for a detached caller's first stdout
+// line, which it prints once the Run exists. It follows implementWaitBudget's
+// reasoning and pays nothing when the child is prompt: the timer is read only
+// on failure. The literal it replaced was 5s, which the full parallel sweep
+// exceeded at 6.21s while the same test passed 20/20 focused runs in under a
+// second — the budget was reporting machine load, not a defect. See
+// docs/findings/2026-08-03-a-200ms-attach-budget-fails-under-ci-load.md.
+const detachStartupBudget = 30 * time.Second
+
+// attachDetachBudget bounds one attach invocation against an Active Run. It is
+// not free the way the budgets above are: attach exits its follow loop when
+// this context expires, so the value is roughly what the test costs.
+//
+// It is also doing two jobs, which is the defect the finding above records.
+// store.OpenReader must stat the file, open SQLite against a live writer, ping
+// it, and read the migration version inside this same deadline, and only the
+// follow-loop bound is what the assertion is about. The literal it replaced was
+// 200ms; under CI load the open alone exceeded that and surfaced as
+// "context deadline exceeded" nowhere near the behaviour under test.
+//
+// Widening it buys margin, it does not separate the concerns. The real fix is a
+// deadline per concern, which lives in attach's own path; the finding stays open
+// until that lands. Keep this modest so the cost stays a fraction of one test.
+const attachDetachBudget = 2 * time.Second
+
 func waitImplementCommandResult(t *testing.T, resultCh <-chan implementCommandResult) implementCommandResult {
 	t.Helper()
 	timer := time.NewTimer(implementWaitBudget)
@@ -1508,7 +1533,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		t.Fatalf("start detach caller: %v", err)
 	}
 
-	firstLine := readLineWithTimeout(t, bufio.NewReader(stdoutPipe), 5*time.Second)
+	firstLine := readLineWithTimeout(t, bufio.NewReader(stdoutPipe), detachStartupBudget)
 	runID, ok := strings.CutPrefix(strings.TrimSpace(firstLine), "Run ID: ")
 	if !ok || strings.TrimSpace(runID) == "" {
 		t.Fatalf("expected first detach line with Run id, got %q stderr=%q", firstLine, stderr.String())
@@ -1521,7 +1546,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 
 	var attachStdout bytes.Buffer
 	var attachStderr bytes.Buffer
-	attachCtx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	attachCtx, cancel := context.WithTimeout(context.Background(), attachDetachBudget)
 	attachCode := runCLIContext(t, attachCtx, []string{"attach", runID}, &attachStdout, &attachStderr)
 	cancel()
 	if attachCode != exitOK {

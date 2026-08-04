@@ -50,12 +50,15 @@ schedule.
   content pin must preserve; ADR-0085 keeps a regeneration run ungated by the
   pins it rewrites while every other load stays strict. Source:
   `docs/agents/domain.md`.
-- Tooling authority: applicable — express maintainer authorization has not yet
-  been recorded for this Spec; bounded files: `Makefile` and the owned skill
-  pair. Setup snapshot and profile assets under `internal/baseline/assets/**`
-  are product assets rather than protected tooling. Implementation must stop
-  until a maintainer authorization record names Spec 0073 and these exact
-  protected paths. Source: `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — express maintainer authorization: on
+  2026-08-04 the maintainer authorized the queue-tail tooling boundaries,
+  recorded at `docs/workflow/authorizations/2026-08-04-queue-tail-tooling.md`,
+  which names Spec 0073; bounded files: `Makefile` and, for any member of
+  `OWNED_SKILLS`, `.agents/skills/<owned-skill>/**` with its
+  `skills/<owned-skill>/**` mirror. Setup snapshot and profile assets under
+  `internal/baseline/assets/**` are product assets rather than protected
+  tooling. Deterministic digest fallout is sanctioned by ADR-0081. Source:
+  `docs/agents/agent-instructions.md`.
 
 ## Which skills the contract covers
 
