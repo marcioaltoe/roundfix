@@ -53,8 +53,10 @@ already inherits the ambient cache.
   `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0080 owns verdict semantics and the
   typed blocked-row counts this Spec consumes; nothing here may make a verdict
-  more permissive than the evidence it summarizes. Source:
-  `docs/agents/domain.md`.
+  more permissive than the evidence it summarizes. ADR-0091 owns the authored
+  QA gate Task whose report carries those rows. ADR-0093 is relation-only: its
+  Spec Consistency Check citation boundary does not govern QA evidence or the
+  archive boundary. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized; the work is product code, CLI surface, and documentation.
   Source: `docs/agents/agent-instructions.md`.

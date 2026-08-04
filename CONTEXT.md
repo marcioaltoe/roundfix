@@ -378,6 +378,14 @@ _Avoid_: Release Command, publish command, cut-release command
 The support command that diagnoses a repository and machine's readiness for Roundfix Runs — minimum-supported acpx, Adapter Readiness, Agent Selection Profile Readiness, Repository Skill Set, and codex runtime hygiene. It reports the detected acpx version against the minimum, gives each check a next action, and mutates nothing. It evaluates Repository Skill Set readiness after, and independently from, Agent Selection Profile Readiness; unlike the Doctor Command, the Setup Command prepares the machine.
 _Avoid_: Health check run, setup run, environment wizard
 
+**Spec Consistency Check**:
+The read-only, pre-Run support command that compares a Spec's written citations, declarations, and cross-references. It reports consistency findings and never edits artifacts or emits a QA verdict.
+_Avoid_: QA gate, Spec validator, inference engine
+
+**Consistency Finding Severity**:
+Each Spec Consistency Check finding is an `error` when the check locates both sides of a contradiction, or a `gap` when it surfaces a candidate it cannot settle. The `SC-*` diagnostic codes are stable and never renumbered once shipped.
+_Avoid_: QA verdict, priority, confidence
+
 **Archive Command**:
 The support command that archives a completed Spec: it verifies every Task is completed and QA passed, stamps archive metadata, and moves the Spec folder to the archived spec root. Refuses a Spec with incomplete Tasks or no passing QA verdict.
 _Avoid_: Move command, retire run, cleanup command

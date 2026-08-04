@@ -34,7 +34,9 @@ Review Source has been queried and the Agent Session has started.
   a Pull Request's head branch uses the existing forge access path and adds no
   new credential or endpoint. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0052 protects terminal completion,
-  so a refusal must never leave a Run in a state that cannot settle. Source:
+  so a refusal must never leave a Run in a state that cannot settle. ADR-0053
+  is relation-only here: its Run Worktree reconciliation contract belongs to
+  spec Runs, while this Spec changes review Run target validation. Source:
   `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized; the work is product code, CLI surface, and documentation.

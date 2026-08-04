@@ -33,7 +33,9 @@ not where a reader would look for it. The maintainer found all four by running
   `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0052 protects terminal completion,
   so no audit path may touch an Active Run or a live writer; the audit reports
-  and never reclaims on its own. Source: `docs/agents/domain.md`.
+  and never reclaims on its own. ADR-0053 governs proof-based Run Worktree
+  reconciliation, whose missing-target case this Spec resolves by content.
+  Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized; the work is product code, CLI surface, and documentation.
   Source: `docs/agents/agent-instructions.md`.

@@ -28,6 +28,7 @@ import (
 	"roundfix/internal/gittest"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
+	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	runworktree "roundfix/internal/worktree"
@@ -2056,6 +2057,46 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 		t.Fatalf("successful identity capture printed a PID-only warning: %q", stderr.String())
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementHasNoSpecCheckPrecondition(t *testing.T) {
+	t.Parallel()
+	withImplementOwnerIdentity(t, "test-owner-identity")
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget backend", verification: []string{"echo backend-check"}},
+	})
+	checkResult, err := speccheck.Check(filepath.Join(repoDir, "docs", "specs"), repoDir, implementTestSlug)
+	if err != nil {
+		t.Fatalf("prove inconsistent implement fixture: %v", err)
+	}
+	hasError := false
+	for _, finding := range checkResult.Findings {
+		if finding.Severity == speccheck.SeverityError {
+			hasError = true
+			break
+		}
+	}
+	if !hasError {
+		t.Fatalf("implement fixture findings = %#v, want at least one consistency error", checkResult.Findings)
+	}
+	runner := &implementFakeRunner{
+		gitRoot: repoDir,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+		},
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("implement with consistency errors exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if runner.calls != 1 {
+		t.Fatalf("implement Agent calls = %d, want 1 to prove no consistency precondition", runner.calls)
+	}
 }
 
 func TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture(t *testing.T) {

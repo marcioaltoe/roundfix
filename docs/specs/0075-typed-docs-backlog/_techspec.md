@@ -29,8 +29,9 @@ baseline so its checked-in guide carries the new contract.
   (`feat`, `fix`, `perf`, `refactor` — the Conventional Commits intent
   vocabulary) join the `CONTEXT.md` glossary and are used verbatim in
   every clause. Source: `docs/agents/domain.md`.
-- Authentication and HTTP: not applicable. Source:
-  `docs/agents/agent-instructions.md`.
+- Authentication and HTTP: not applicable — this Spec changes local
+  documentation layout and Baseline asset content, opens no transport, and
+  handles no credential. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0081 (digest fallout of the
   authorized asset edit); ADR-0092 (this Spec); the knowledge-flow
   principle (guides never reference backlog content). Source:

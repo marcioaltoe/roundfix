@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0064-spec-artifact-consistency-gate
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -92,3 +92,56 @@ topically relevant, which is what keeps it deterministic and sub-second.
 - `_prd.md` → Core Features 2, 4, and 5; Goals.
 - `_techspec.md` → Data Models; API Contracts; Build Order 3.
 - ADR-0093, ADR-0094.
+
+## Result
+
+### Implementation
+
+- Added the accepted/legacy-active ADR corpus reader with ADR number, title,
+  body citations, and citation lines. Direct Spec citations now report
+  `SC-ADR-UNLISTED` errors against the PRD Active ADR obligations row, while
+  the deterministic depth-one citation closure reports each unlisted accepted
+  candidate once as an `SC-ADR-RELATED` gap.
+- Added PRD User Story/Core Feature extraction, Coverage Map and Task
+  `## References` matching for singular, list, and ASCII/Unicode range forms,
+  and Task Graph loading through `internal/spec.Load`.
+- Added Task Context and adopted-source index resolution. Missing declarations
+  report `SC-REF-UNRESOLVED` with the declaring line and unresolved path;
+  missing TechSpec, Task Graph, reference index, or ADR corpus inputs are
+  recorded in `Skipped`.
+- Added fixture ADRs and Spec folders for clean, dirty, inactive, range,
+  missing-artifact, Task Context, and adopted-source index cases.
+
+### Focused checks
+
+- Red signal: `rtk zsh -c 'GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260803T233822Z_3ffcad0ced4ba246/.gocache GOFLAGS=-buildvcs=false go test ./internal/speccheck -run "^TestCheckADRUnlisted$" -count=1'`
+  failed before implementation because the new diagnostic constants did not
+  exist.
+- `rtk zsh -c 'GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260803T233822Z_3ffcad0ced4ba246/.gocache GOFLAGS=-buildvcs=false go test ./internal/speccheck -run "^(TestCheck|TestRender)" -count=1'`
+  exited 0 after the last implementation edit.
+- `rtk zsh -c 'GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260803T233822Z_3ffcad0ced4ba246/.gocache GOFLAGS=-buildvcs=false go vet ./internal/speccheck'`
+  exited 0.
+- `rtk gofmt -d internal/speccheck/citations.go internal/speccheck/citations_test.go internal/speccheck/constraints.go`
+  produced no diff.
+- The authored `## Verification` commands were not run; the Daemon owns them.
+
+### Acceptance-criterion evidence
+
+1. `TestCheckADRUnlisted` asserts one `SC-ADR-UNLISTED` error whose locations
+   include both the TechSpec citation and PRD Active ADR row.
+2. `TestCheckADRClosureDepthOne` asserts the accepted ADR that cites two listed
+   ADRs appears once as `SC-ADR-RELATED` with severity `gap`.
+3. `TestCheckADRClosureDepthOne` also asserts neither listed ADR is the related
+   candidate; the proposed ADR fixture is excluded from the accepted corpus.
+4. `TestCheckCoverageUnmapped` asserts exactly four Core Feature findings when
+   Stories but no Core Features are mapped.
+5. `TestCheckCoverageRange` asserts ASCII and Unicode collective ranges cover
+   every PRD unit without a mapping or Task-coverage finding.
+6. `TestCheckCoverageUntasked` asserts Core Feature 4 is the sole unit absent
+   from all loaded Task references.
+7. `TestCheckReferenceUnresolved` asserts the missing Task Context path and its
+   declaring Task line; `TestCheckReferenceIndexUnresolved` covers the adopted
+   source index form.
+8. `TestCheckCoverageUntaskedSkippedWithoutTaskGraph` asserts no untasked
+   finding and a recorded `_tasks.md` skip. The absent-TechSpec and absent-ADR
+   corpus cases have matching focused skip tests.

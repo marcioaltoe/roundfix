@@ -36,7 +36,6 @@ Spec owns the database and artifact halves.
   must refuse while an Active Run or writer can exist; the Spec 0014
   retention contract's promise never to delete `runs` rows or Active Run
   locks is preserved unless this Spec's policy explicitly bounds a table.
-<<<<<<< Updated upstream
   ADR-0053 is relation-only here: terminal Run Worktree reconciliation is
   owned by Spec 0038 and remains out of scope. Source:
   `docs/agents/domain.md`.
@@ -44,17 +43,6 @@ Spec owns the database and artifact halves.
   2026-08-04 the maintainer authorized the queue-tail tooling boundaries,
   recorded at `docs/workflow/authorizations/2026-08-04-queue-tail-tooling.md`,
   which names Spec 0059 and authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
-||||||| Stash base
-  Source: `docs/agents/domain.md`.
-- Tooling authority: applicable — on 2026-07-28, the maintainer expressly
-  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
-=======
-  Source: `docs/agents/domain.md`.
-- Tooling authority: applicable — express maintainer authorization: on
-  2026-08-04 the maintainer authorized the queue-tail tooling boundaries,
-  recorded at `docs/workflow/authorizations/2026-08-04-queue-tail-tooling.md`,
-  which names Spec 0059 and authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
->>>>>>> Stashed changes
   `skills/roundfix/SKILL.md`, plus the deterministic Skill-digest fallout in
   exactly `internal/baseline/assets/setups/typescript-bun.json`,
   `internal/baseline/testdata/catalog.digest`,

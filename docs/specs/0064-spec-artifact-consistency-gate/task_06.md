@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0064-spec-artifact-consistency-gate
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -33,16 +33,16 @@ resolve its terms in one place.
 
 ## Subtasks
 
-- [ ] Add the Spec Consistency Check entry.
-- [ ] Add the severity entries.
-- [ ] Record the diagnostic-code stability rule.
+- [x] Add the Spec Consistency Check entry.
+- [x] Add the severity entries.
+- [x] Record the diagnostic-code stability rule.
 
 ## Acceptance Criteria
 
-- [ ] The glossary defines Spec Consistency Check with an `_Avoid_` line.
-- [ ] The glossary defines both severities with their distinct meanings.
-- [ ] The glossary states the `SC-*` codes are stable once shipped.
-- [ ] No pre-existing glossary entry is modified.
+- [x] The glossary defines Spec Consistency Check with an `_Avoid_` line.
+- [x] The glossary defines both severities with their distinct meanings.
+- [x] The glossary states the `SC-*` codes are stable once shipped.
+- [x] No pre-existing glossary entry is modified.
 
 ## Verification
 
@@ -63,3 +63,29 @@ resolve its terms in one place.
 - `_prd.md` → Project Constraints (identifier strategy).
 - `_techspec.md` → Project Constraints; Integration Points; Build Order 8.
 - `docs/agents/domain.md`.
+
+## Result
+
+Implemented the two glossary entries beside the existing support-command
+terms. Spec Consistency Check now names the read-only, pre-Run,
+citation-based boundary and excludes artifact mutation and QA verdicts;
+Consistency Finding Severity distinguishes a located contradiction (`error`)
+from an unsettled candidate (`gap`) and records the stability rule for shipped
+`SC-*` diagnostic codes.
+
+Focused checks:
+
+- Pre-change `rtk grep -n "Spec Consistency Check|Consistency Finding Severity|SC-" CONTEXT.md` returned no matches, establishing that the vocabulary was absent before this slice.
+- `rtk proxy sed -n '372,398p' CONTEXT.md` showed both new bold-term entries, each with its definition and `_Avoid_` line, between Doctor Command and Archive Command.
+- `rtk git diff -- CONTEXT.md` reported eight insertions and no deletions, so no pre-existing glossary entry changed.
+- The focused banned-pattern scan over `CONTEXT.md` returned no matches for the tech-writer skill's prohibited filler vocabulary.
+
+Acceptance evidence:
+
+- Spec Consistency Check is defined as a read-only, pre-Run support command that compares written citations, declarations, and cross-references, never edits artifacts, and never emits a QA verdict; the entry includes `_Avoid_`.
+- Consistency Finding Severity defines `error` as a contradiction with both sides located and `gap` as a surfaced candidate the check cannot settle; the entry includes `_Avoid_`.
+- The severity entry states that each `SC-*` diagnostic code is stable and never renumbered once shipped.
+- The focused diff contains only the two new entries, with no deletion or replacement of existing glossary text.
+
+Not run: the commands under `## Verification`; the Roundfix Daemon owns that
+verification and Task settlement.
