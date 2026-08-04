@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0076-force-stop-exit-proof
-status: failed
+status: pending
 type: qa
 complexity: medium
 ---
