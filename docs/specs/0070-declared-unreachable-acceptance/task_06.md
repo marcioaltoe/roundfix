@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0070-declared-unreachable-acceptance
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
