@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0064-spec-artifact-consistency-gate
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -85,3 +85,70 @@ claiming a provenance it does not have is the defect class this Spec removes.
 - `_prd.md` → Success Metrics; Core Features 2, 4, and 6.
 - `_techspec.md` → Testing Approach; Build Order 6.
 - ADR-0093, ADR-0094.
+
+## Result
+
+### Implementation
+
+- Added four report-authored replay Spec folders for 0058 QA-001, 0058
+  QA-004, 0056 F-001, and 0056 F-002. Each folder carries the PRD/TechSpec or
+  emitted/documented vocabulary needed to reproduce only its named artifact
+  shape.
+- Added one provenance README per replay. Each names the original QA report,
+  states that the shape was authored from that report's Expected and Actual,
+  and records that it was not recovered from Git because the pre-remediation
+  Run Branches no longer exist and the archived copy is post-fix.
+- Added package-level replay tests through `speccheck.Check`. They assert the
+  exact diagnostic code, finding subject, and `path:line` locations; the
+  vocabulary replay also holds the five-emitted/four-documented shape, and the
+  ADR replay holds both listed citations behind the related-ADR candidate.
+- Added a whole-repository corpus sweep and checked-in JSON golden with every
+  diagnostic code counted separately for active and archived Specs. The
+  failure message prints the replacement JSON and requires an intentional
+  detector change before updating the golden.
+- Rehosted archived Specs under a temporary active Spec Root during the test
+  so the existing Task Graph loader can inspect legacy manifests. The helper
+  preserves source files through links or copies and changes only temporary
+  PRD status bytes; repository archives remain untouched.
+
+### Focused checks
+
+- Initial corpus characterization with an empty golden failed as intended and
+  printed the active and archived per-code counts that were then reviewed and
+  recorded.
+- `rtk proxy env GOCACHE=<worktree>/.gocache GOFLAGS=-buildvcs=false go test
+  ./internal/speccheck -count=1 -run '^TestCheckReplay' -v` exited `0`; all
+  four report replays, the provenance test, and its four fixture subtests
+  passed.
+- `rtk proxy env GOCACHE=<worktree>/.gocache GOFLAGS=-buildvcs=false go test
+  ./internal/speccheck -count=1 -run '^TestCheckCorpusGoldenAndBudget$' -v`
+  exited `0`; the golden comparison passed and the test's measured sweep
+  remained below its asserted one-second limit.
+- `rtk git -c core.fsmonitor=false diff --check` exited `0`; final changed-path
+  inspection found no path under `docs/specs/_archived/`.
+- The commands under `## Verification` were not run; the Daemon owns them.
+
+### Acceptance evidence
+
+- `TestCheckReplay0058QA001FromReport`,
+  `TestCheckReplay0058QA004FromReport`,
+  `TestCheckReplay0056F001FromReport`, and
+  `TestCheckReplay0056F002FromReport` each embed the source QA report path and
+  assert the exact named code and locations.
+- `TestCheckReplayReadmeProvenance` reads every fixture README and requires its
+  QA report path, `authored from the report`, and `not recovered from Git`.
+- `TestCheckCorpusGoldenAndBudget` compares all observed per-code counts with
+  `testdata/corpus-golden.json` and prints a deliberate update path when any
+  count moves.
+- The golden has independent `active` and `archived` maps, including explicit
+  zeroes, so later active-Spec remediation cannot hide archive movement.
+- `TestCheckCorpusGoldenAndBudget` measures only the complete detector sweep
+  after archived-corpus preparation and fails at one second or more.
+- Final status and changed-path inspection list only Task 05's task artifact,
+  replay fixtures, fixture ADR corpus additions, characterization test, and
+  golden; no archived Spec file changed.
+
+### Follow-ups
+
+Active-Spec error remediation and the zero-error active-corpus assertion remain
+owned by the later Task identified in the TechSpec Build Order.

@@ -1,0 +1,7 @@
+# Replay provenance
+
+Source report: `docs/specs/_archived/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-07-31.md`.
+
+This fixture shape was authored from the report's Expected and Actual. It was
+not recovered from Git because the pre-remediation artifacts lived on Run
+Branches that no longer exist and the archived copy is post-fix.
