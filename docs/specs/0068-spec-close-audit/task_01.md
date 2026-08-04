@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0068-spec-close-audit
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -71,3 +71,32 @@ only one that can lose work if it is wrong.
 - `_prd.md` → Core Feature 3; Goals; Success Metric 2.
 - `_techspec.md` → Build Order 1; Risks & Considerations.
 - ADR-0052, ADR-0053.
+
+## Result
+
+Implemented the missing-target reconciliation path without changing the
+existing Active Run, dirty-worktree, invalid-metadata, or unresolvable-ref
+guards. A valid recorded target branch that is confirmed absent now resolves
+the repository's default branch, compares the Run Branch tree to that default
+head, and records the comparison evidence in the bounded reason field.
+Default-only files are allowed; Run-only files, differing shared files, and
+comparison failures preserve the Run as `unintegrated`.
+
+Focused checks:
+
+- `GOCACHE=/private/tmp/roundfix-task01-gocache rtk go test ./internal/worktree -count=1 -run '^TestInspectTerminalRun(SafeWhenTargetDeletedAfterSquashMerge|UnintegratedWhenDeletedTargetHasRunOnlyFile|UnintegratedWhenDeletedTargetHasDifferentSharedFile|ActiveRunDoesNotInspectDeletedTargetContent)$'` — before the production edit, the three deleted-target cases failed as `unknown` and the Active Run guard passed; after the edit, all four passed.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache rtk go test ./internal/worktree -count=1 -run '^(TestInspectTerminalRun|TestApplyTerminalRun)'` — exit 0 after the final test edit; 51 tests and subtests passed.
+- The first focused test attempt without the task-scoped `GOCACHE` was blocked before compilation because the sandbox denied writes to the default Go cache; rerunning with `/private/tmp/roundfix-task01-gocache` removed that environment blocker.
+- `rtk gofmt -w internal/worktree/worktree.go internal/worktree/worktree_test.go` — exit 0 after the final production edit; `rtk gofmt -w internal/worktree/worktree_test.go` — exit 0 after the final test edit.
+- `rtk git -c core.fsmonitor=false diff --check` — exit 0 after the Result update.
+
+Acceptance evidence:
+
+- Deleted target after squash merge: `TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge` creates a non-ancestral squash commit, advances the default branch with a default-only file, deletes the recorded target, and resolves `safe` with the default head as evidence.
+- Run-only content: `TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile` resolves `unintegrated` and asserts that the reason reports one Run-only file.
+- Deciding reason: the safe, Run-only, differing-shared-file, and injected-comparison-failure fixtures assert that the reason names the default branch and the content evidence that decided preservation or reclamation.
+- Active Run: `TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent` asserts the fixture is unchanged, only repository-root validation ran, and no Git mutation was attempted.
+- Existing refusals: the focused `TestInspectTerminalRun*` and `TestApplyTerminalRun*` selection passed without changing existing test assertions; it includes dirty, invalid-target, ambiguous-ref, missing-Run-Branch, stale-evidence, and unsafe-apply cases. `TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved` additionally pins the existing `unknown` refusal when the default branch cannot be resolved.
+
+The commands under `## Verification` were not run; the Daemon owns that gate
+and task settlement.
