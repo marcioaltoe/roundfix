@@ -1,9 +1,12 @@
 ---
 spec: 0064-spec-artifact-consistency-gate
-status: active
+status: archived
 created: 2026-08-01
 surfaces: [backend, cli, docs]
+archived: "2026-08-04"
+source_slug: 0064-spec-artifact-consistency-gate
 ---
+
 
 # Spec artifact consistency gate
 
