@@ -19,7 +19,14 @@ Validate the assembled feature against the promises in its spec by exercising th
 2. **Proof beyond optimistic state.** A pass requires the expected observable, an independent confirmation through a fresh load or another public read path, persistence across refresh/restart when relevant, and captured evidence.
 3. **Resumable evidence.** Create the dated report with every row `pending` before the first check. Update it after each row so an interrupted run resumes from disk instead of repeating completed work.
 4. **One honest verdict.** Every planned row ends as `pass`, `fail`, `blocked`, or `skipped`; the report closes with zero `pending` rows.
-5. **Typed blocked causes.** Record an unreachable row as `blocked (environment: <cause>)` and count it in `rows_blocked_environment`; record a row stopped by a finding as `blocked (finding: <id>)` and count it in `rows_blocked_finding`. Environment-blocked rows do not by themselves prevent `pass`; finding-blocked rows do.
+5. **Typed blocked causes.** Record a row that is unreachable for a proved
+   environmental cause as `blocked (environment: <cause>)` and count it in
+   `rows_blocked_environment`; record a row stopped by a finding as `blocked
+   (finding: <id> — waits on <named failure>)` and count it in
+   `rows_blocked_finding`; record a row that is unreachable for the reason in
+   a matching, pre-run Spec declaration as `blocked (declared: <criterion>)`
+   and count it in `rows_blocked_declared`. Keep the three causes separate:
+   never fold one into another to make the report or verdict look cleaner.
 
 ## 1. Resolve scope and preconditions
 
@@ -66,7 +73,16 @@ defect; do not run the gate outside that node.
   only when the authored QA Task explicitly limits its scope; mark its scope
   and final verdict `partial`.
 - Identify the PRD's declared surfaces, user stories, core features, acceptance criteria, user-experience states, and Non-Goals.
-- Read each task's `## Result`. Credit a task-level criterion only when it points to named, reproducible evidence and the current static gate passes. Spend live QA effort on assembled user journeys, cross-task seams, persistence, failure behavior, and scope creep.
+- Read every entry under the PRD's `## Unreachable Acceptance` section before
+  the run. Treat each declaration as an author's claim to test, not as proof
+  and not as permission to omit the row. The gate may match a blocked row only
+  to one of these pre-run declarations; it must never declare unreachability
+  itself or infer a declaration from a failed attempt.
+- Read each task's `## Result`. Credit a task-level criterion only when it
+  points to named, reproducible evidence and the static checks it depends on
+  pass. An unrelated static failure does not invalidate that evidence. Spend
+  live QA effort on assembled user journeys, cross-task seams, persistence,
+  failure behavior, and scope creep.
 - On a rerun, start with previously failed or blocked rows, then run the remaining matrix against the current build.
 
 The scope is complete when every promise and explicit exclusion in the spec maps to a planned row or a documented reason for exclusion.
@@ -116,10 +132,20 @@ Run the repository's full verification pipeline, `make verify`, and record the e
 
 When a command fails, diagnose its source before continuing:
 
-- **Code-caused:** record the failure and stop. Flow QA on a broken build hides the first blocker.
+- **Code-caused:** record a finding and trace the failed check to the matrix
+  rows whose entry point, observable, or evidence depends on what failed.
+  Block only those implicated rows as `blocked (finding: <id> — waits on
+  <named failing check>)`; continue every unimplicated row whose result
+  remains valid. A failure may block the whole matrix only when every row
+  genuinely depends on it, such as a build failure that leaves no runnable
+  artifact; record that dependency on each row instead of asserting it once
+  for the matrix.
 - **Environment-caused:** prove the constraint with the error or an unchanged-base reproduction, record affected rows as `blocked (environment: <cause>)`, continue checks that remain valid, and apply the typed blocked-cause verdict rule in section 6.
 
-The static gate is complete when it passes or every environment-caused block has concrete proof and an explicit unblocking requirement.
+The static gate is complete when it passes or every failure is classified,
+every implicated row names the check it waits on, every environment-caused
+block has concrete proof and an explicit unblocking requirement, and the
+remaining rows are identified as safe to run.
 
 ## 4. Exercise real flows
 
@@ -132,6 +158,19 @@ For each matrix row, repeat this loop:
 3. Confirm the result through a fresh load, restart, deep link, second public endpoint/command, or another user-visible read path.
 4. Capture evidence at the goal state and every divergence. Store screenshots and focused artifacts under `qa/evidence/<YYYY-MM-DD>-<run-slug>/`; keep exact commands and concise outputs in the report.
 5. Update the row immediately. A stall, dead control, infinite spinner, or vanished state is a finding, not a reason to work around the product.
+
+When a row cannot reach its expected observable, compare the row and the
+proved cause with the pre-run declarations. Use `blocked (declared:
+<criterion>)` only when the row matches a declared criterion and the observed
+constraint matches that declaration's reason. A different circumstance stays
+environment-blocked or finding-blocked under its actual cause. A blocked row
+with no matching declaration keeps its existing cause and remains blocking
+under the existing verdict rules.
+
+If the gate can reach a declared row, run it normally and report the
+declaration as a wrongly-declared-row finding. Do not accept, ignore, or remove
+the declaration merely because the journey passes: the reachable journey is
+evidence that the Spec's claim was wrong, and that finding prevents `pass`.
 
 ### Surface protocol
 
@@ -164,8 +203,13 @@ Assign each row exactly one terminal status:
 - `blocked (environment: <cause>)`: the gate environment makes the journey
   unreachable; include the proof, exact unblocking action, and equivalent
   observed or supervised evidence when available;
-- `blocked (finding: <id>)`: a finding prevents the journey from reaching the
-  expected observable; link the finding and affected evidence;
+- `blocked (finding: <id> — waits on <named failure>)`: a finding prevents the
+  journey from reaching the expected observable; name the failed check or
+  behavior the row waits on, then link the finding and affected evidence;
+- `blocked (declared: <criterion>)`: the row is unreachable for the reason in
+  the matching pre-run Spec declaration; link the declaration, the proof that
+  the gate could not reach it, and the named human action that would satisfy
+  it;
 - `skipped`: allowed only for an explicitly partial gate or a risk-based cut; state why and what remains unverified.
 
 Classify each finding by user impact:
@@ -193,6 +237,7 @@ status: in-progress # in-progress | closed
 verdict: pending # pending | pass | fail | partial
 rows_blocked_environment: 0
 rows_blocked_finding: 0
+rows_blocked_declared: 0
 surfaces: [frontend, backend]
 ---
 
@@ -215,7 +260,7 @@ surfaces: [frontend, backend]
 <!-- Proof, unblocking action, and uncovered scope. Omit only when empty. -->
 
 ## Coverage
-<!-- Stories and criteria passed/total; rows_blocked_environment and rows_blocked_finding; probes and frontend sweeps attempted; Non-Goals checked. -->
+<!-- Stories and criteria passed/total; rows_blocked_environment, rows_blocked_finding, and rows_blocked_declared; probes and frontend sweeps attempted; Non-Goals checked. -->
 
 ## Final verdict
 <!-- Written last: one actionable sentence, plus counts by status and impact tier. -->
@@ -223,19 +268,21 @@ surfaces: [frontend, backend]
 
 Close with `status: closed` and apply the verdict mechanically:
 
-- `fail` when any row failed;
-- `partial` when none failed but any row is finding-blocked or skipped, the
-  authored QA Task defines a partial run, or an environment-blocked row lacks
-  equivalent observed or supervised evidence;
+- `fail` when any row failed or the gate found a wrongly declared row;
+- `partial` when none failed and no declaration was wrong, but any row is
+  declared-blocked, finding-blocked, or skipped, the authored QA Task defines
+  a partial run, or an environment-blocked row lacks equivalent observed or
+  supervised evidence;
 - `pass` when every runnable row passed, every environment-blocked row records
   its cause and equivalent observed or supervised evidence, no row is
-  finding-blocked or skipped, and all evidence paths resolve. A nonzero
+  declared-blocked, finding-blocked, or skipped, no declaration was wrong, and
+  all evidence paths resolve. A nonzero
   `rows_blocked_environment` count does not by itself prevent `pass`; a nonzero
-  `rows_blocked_finding` count does.
+  `rows_blocked_finding` or `rows_blocked_declared` count does.
 
-Set `rows_blocked_environment` and `rows_blocked_finding` to the exact number
-of rows with each blocked cause. Keep both keys in every closed report,
-including when either count is zero.
+Set `rows_blocked_environment`, `rows_blocked_finding`, and
+`rows_blocked_declared` to the exact number of rows with each blocked cause.
+Keep all three keys in every closed report, including when any count is zero.
 
 The gate permits PR preparation only on `pass`. On `fail` or `partial`, state what must change or be verified before rerunning. In a daemon-assigned Roundfix QA step, write the report but never commit or push; the daemon owns the QA report commit. Daemon-assigned steps may also run sandboxed: when an operation outside the workspace fails with a permission error (writes to `$HOME`, network, nested tool state), classify it immediately as environment-caused, mark the affected row `blocked (environment: <error>)`, and move on — never retry-loop a sandbox denial — noting in the environment record which checks need a full-access session.
 
@@ -243,6 +290,16 @@ The gate permits PR preparation only on `pass`. On `fail` or `partial`, state wh
 
 - A UI says "Saved", but the record disappears after refresh: `fail`, `Data-Loss`; the optimistic message is not proof.
 - The full suite passes, but real OAuth needs a human-controlled account and no equivalent supervised evidence exists: affected rows `blocked (environment: human-controlled account)`, overall `partial`, with exact human verification steps.
+- The Spec declares that publishing a real release is unreachable, and the
+  gate proves that its hermetic environment cannot perform that irreversible
+  action: the matching row is `blocked (declared: publish the real release)`,
+  `rows_blocked_declared` is incremented, and the verdict is `partial`.
+- The Spec declares a journey unreachable, but the gate can exercise it: run
+  the journey, record a wrongly-declared-row finding, and return `fail` even if
+  the journey's product behavior passes.
+- A governance check fails but does not affect the runnable application's
+  behavior: block only the governance rows that wait on that named check and
+  continue the functional journeys.
 - The prompt names an Open Pull Request and read-only observation proves approval, Merge-Ready acceptance, and review-artifact ancestry: pass those Pull Request journeys without commit, push, or Pull Request mutation authority.
 - A task Result names a passing unit test, while the assembled browser journey also persists after refresh with screenshots: credit the task criterion and pass the user-story row from live evidence.
 
