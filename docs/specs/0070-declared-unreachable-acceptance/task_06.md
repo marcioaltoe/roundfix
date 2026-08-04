@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0070-declared-unreachable-acceptance
-status: failed
+status: pending
 type: qa
 complexity: high
 ---
@@ -21,7 +21,7 @@ where that behaviour is observed, and observing it is part of the acceptance.
 
 ## Requirements
 
-1. MUST run only after task_05 settles `completed`.
+1. MUST run only after task_07 settles `completed`.
 2. MUST exercise the archive boundary as an operator does — a declared case, a
    finding-blocked case, an environment-blocked case, and an unmatched
    declaration — rather than by reading tests.
@@ -35,7 +35,7 @@ where that behaviour is observed, and observing it is part of the acceptance.
 
 ## Acceptance Criteria
 
-- [ ] The gate runs only after task_05 settles `completed`.
+- [ ] The gate runs only after task_07 settles `completed`.
 - [ ] A dated QA report lands under `qa/` with a machine-readable verdict and
       all three typed blocked-row counts.
 - [ ] The report records the observed archive outcome for the declared,
