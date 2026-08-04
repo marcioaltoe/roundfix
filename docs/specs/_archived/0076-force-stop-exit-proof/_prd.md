@@ -1,9 +1,12 @@
 ---
 spec: 0076-force-stop-exit-proof
-status: active
+status: archived
 created: 2026-08-04
 surfaces: [backend]
+archived: "2026-08-04"
+source_slug: 0076-force-stop-exit-proof
 ---
+
 
 # Force Stop exit proof
 
