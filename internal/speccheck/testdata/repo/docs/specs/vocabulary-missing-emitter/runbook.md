@@ -1,0 +1,4 @@
+# Failure prefixes
+
+- `prepare:`
+- `verify:`

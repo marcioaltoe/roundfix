@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0064-spec-artifact-consistency-gate
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -78,3 +78,51 @@ block's exact shape.
 - `_techspec.md` → Data Models; API Contracts; Build Order 4; Risks &
   Considerations.
 - ADR-0094.
+
+## Result
+
+Implemented the optional `## Vocabulary Contract` parser and
+`SC-VOCABULARY-UNDOCUMENTED` detector. Each list entry declares `emits`,
+`pattern`, and `documented-in`; the detector compiles the pattern with Go's
+RE2 engine, extracts full matches with their first emitting line, deduplicates
+repeated tokens, compares them literally with the documenting file, and emits
+located `error` findings for undocumented tokens, invalid patterns, and
+unreadable paths. Specs without the section record the detector as skipped.
+Every finding's fix includes the copyable declaration block.
+
+Focused checks:
+
+- Pre-change signal: `GOCACHE="$PWD/.gocache" GOFLAGS=-buildvcs=false rtk go
+  test ./internal/speccheck -run '^TestCheckVocabulary'` exited 1 because the
+  diagnostic constant and detector did not exist.
+- Formatting: `rtk gofmt -w` over the changed Go implementation, test, and
+  fixture source files exited 0.
+- Post-change: `GOCACHE="$PWD/.gocache" GOFLAGS=-buildvcs=false rtk go test
+  ./internal/speccheck -run '^(TestCheckVocabulary|TestCheckCleanFixture)'`
+  exited 0 and reported 10 passing tests.
+- `rtk git diff --check` exited 0; a trailing-whitespace scan over the new
+  implementation, test, and fixture trees found no matches.
+- The commands under `## Verification` were not run; the Daemon owns them.
+
+Acceptance evidence:
+
+1. `TestCheckVocabularyUndocumented` exercises five emitted tokens against
+   four documented tokens and asserts one finding naming `publish:` plus both
+   file locations.
+2. `TestCheckVocabularySatisfied` asserts that documentation containing all
+   five selected tokens produces no vocabulary finding.
+3. `TestCheckVocabularyDeduplicatesRepeatedToken` emits `publish:` three times
+   and asserts one finding.
+4. `TestCheckVocabularyInvalidPatternReturnsFinding` proves an invalid RE2
+   returns a result with a finding at the pattern declaration line.
+5. `TestCheckVocabularyAbsentContractIsSkipped` proves an absent contract
+   produces no finding and records the detector skip.
+6. `TestCheckVocabularyFixTeachesDeclarationShape` asserts the exact copyable
+   block and its `emits`, `pattern`, and `documented-in` field names.
+
+Additional requirement evidence:
+
+- `TestCheckVocabularyUnreadablePathsReturnFindings` covers both missing
+  emitting and documenting files as located findings.
+- The missing-token fixture carries two entries, so the result also exercises
+  repeated contract parsing rather than only the first entry.

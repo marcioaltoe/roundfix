@@ -119,6 +119,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 			addSkip(&result, code, artifactDisplayPath(repoRoot, techSpecPath))
 		}
 	}
+	if err := detectVocabularyContract(&result, repoRoot, techSpecPath, present); err != nil {
+		return result, err
+	}
 
 	for artifactIndex := range artifacts {
 		detectConstraintRows(&result, repoRoot, slug, artifacts, artifactIndex)
