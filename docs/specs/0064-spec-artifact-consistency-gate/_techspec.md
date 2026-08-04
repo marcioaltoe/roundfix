@@ -47,8 +47,10 @@ nine of the ten active Specs legitimately carry a PRD alone.
 - Active ADR obligations: applicable — ADR-0080 owns QA verdict semantics and
   this check emits no verdict and never substitutes for the gate; ADR-0088 and
   ADR-0091 own the authored QA gate as a typed Task node, and this Spec's own
-  graph is authored under them; ADR-0093 and ADR-0094 are minted by this Spec
-  and govern its detection boundary and presence-awareness. ADR-0039,
+  graph is authored under them; ADR-0089 governs the corpus budget proof's
+  execution conditions, which take their environment explicitly rather than
+  inheriting the contended package sweep; ADR-0093 and ADR-0094 are minted by
+  this Spec and govern its detection boundary and presence-awareness. ADR-0039,
   ADR-0049, ADR-0055, ADR-0084, and ADR-0086 are characterization-corpus
   inputs only; this Spec replays their written relationships without changing
   their product contracts. ADR-0040 and ADR-0079 are relation-only candidates
