@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/fs"
@@ -28,6 +29,7 @@ const (
 	replay0058QA004 = "replay-0058-qa-004"
 	replay0056F001  = "replay-0056-f-001"
 	replay0056F002  = "replay-0056-f-002"
+	corpusBudget    = time.Second
 )
 
 func TestCheckReplay0058QA001FromReport(t *testing.T) {
@@ -158,23 +160,17 @@ func TestCheckReplayReadmeProvenance(t *testing.T) {
 	}
 }
 
-func TestCheckCorpusGoldenAndBudget(t *testing.T) {
+func TestCheckCorpusGolden(t *testing.T) {
 	repoRoot := characterizationRepositoryRoot(t)
 	activeRoot := filepath.Join(repoRoot, "docs", "specs")
 	archivedRoot := materializeArchivedCorpus(t, filepath.Join(activeRoot, "_archived"))
 	want := readCorpusGolden(t)
 
-	started := time.Now()
 	got := corpusGolden{
 		Schema:   want.Schema,
 		Update:   want.Update,
 		Active:   sweepCorpus(t, activeRoot, repoRoot),
 		Archived: sweepCorpus(t, archivedRoot, repoRoot),
-	}
-	elapsed := time.Since(started)
-
-	if elapsed >= time.Second {
-		t.Errorf("full Spec corpus sweep took %s, want under 1s", elapsed)
 	}
 	if !reflect.DeepEqual(got, want) {
 		actual, err := json.MarshalIndent(got, "", "  ")
@@ -182,6 +178,42 @@ func TestCheckCorpusGoldenAndBudget(t *testing.T) {
 			t.Fatalf("render actual corpus counts: %v", err)
 		}
 		t.Errorf("Spec corpus finding counts changed; inspect the detector change, then deliberately update testdata/corpus-golden.json:\n%s", actual)
+	}
+}
+
+func TestCheckCorpusBudget(t *testing.T) {
+	if !dedicatedCorpusBudgetRun() {
+		t.Skip("wall-clock budget requires a dedicated run: go test ./internal/speccheck -run '^TestCheckCorpusBudget$'")
+	}
+
+	repoRoot := characterizationRepositoryRoot(t)
+	activeRoot := filepath.Join(repoRoot, "docs", "specs")
+	archivedRoot := materializeArchivedCorpus(t, filepath.Join(activeRoot, "_archived"))
+
+	started := time.Now()
+	sweepCorpus(t, activeRoot, repoRoot)
+	sweepCorpus(t, archivedRoot, repoRoot)
+	elapsed := time.Since(started)
+	t.Logf("full Spec corpus sweep completed in %s (budget %s)", elapsed, corpusBudget)
+
+	if elapsed >= corpusBudget {
+		t.Errorf("full Spec corpus sweep took %s, want under %s", elapsed, corpusBudget)
+	}
+}
+
+func dedicatedCorpusBudgetRun() bool {
+	// An ordinary package sweep shares the machine with other packages and
+	// cannot make a meaningful wall-clock assertion. Accept only the dedicated
+	// selectors used by this Task's focused check and the serial gate step.
+	run := flag.Lookup("test.run")
+	if run == nil {
+		return false
+	}
+	switch run.Value.String() {
+	case "Budget", "^TestCheckCorpusBudget$":
+		return true
+	default:
+		return false
 	}
 }
 

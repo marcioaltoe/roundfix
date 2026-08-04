@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0064-spec-artifact-consistency-gate
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -49,10 +49,10 @@ limit or hide the failing exit.
 
 ## Subtasks
 
-- [ ] Split the golden-count assertion from the duration assertion.
-- [ ] Give the budget test its explicit execution conditions.
-- [ ] Prove the budget test fails when the limit is exceeded.
-- [ ] Confirm the ordinary suite no longer carries a wall-clock assertion.
+- [x] Split the golden-count assertion from the duration assertion.
+- [x] Give the budget test its explicit execution conditions.
+- [x] Prove the budget test fails when the limit is exceeded.
+- [x] Confirm the ordinary suite no longer carries a wall-clock assertion.
 
 ## Acceptance Criteria
 
@@ -95,3 +95,56 @@ limit or hide the failing exit.
 - `_techspec.md` → Testing Approach (budget execution conditions).
 - `qa/qa-report-2026-08-03.md` → F-001; rows Q-11 and Q-15.
 - ADR-0089.
+
+## Result
+
+### Implementation
+
+- Split `TestCheckCorpusGoldenAndBudget` into an ordinary
+  `TestCheckCorpusGolden` count comparison and an opt-in
+  `TestCheckCorpusBudget` duration proof.
+- Kept the limit at `time.Second`. The budget test accepts only the dedicated
+  `Budget` and `^TestCheckCorpusBudget$` selectors; every broader package run
+  skips before materializing or timing the corpus and explains the required
+  invocation.
+- Kept the detector calls, corpus roots, archived-corpus materialization, and
+  golden comparison unchanged. Added a focused timing log while retaining the
+  non-zero assertion on an exceeded limit.
+
+### Focused checks
+
+- `GOCACHE="$PWD/.gocache" GOFLAGS=-buildvcs=false rtk proxy go test ./internal/speccheck -count=1 -run '^TestCheckCorpusBudget$' -v`
+  — exit 0 after the final edit; measured the active and archived sweep at
+  `309.29275ms` against the unchanged `1s` budget.
+- Temporary mutation check: changed only `corpusBudget` from `time.Second` to
+  `time.Nanosecond`, ran the same dedicated command, and observed exit 1 with
+  `full Spec corpus sweep took 321.8035ms, want under 1ns`; restored
+  `time.Second` immediately, then reran the preceding command successfully.
+- `GOCACHE="$PWD/.gocache" GOFLAGS=-buildvcs=false rtk proxy go test ./internal/speccheck -count=1 -parallel=16 -run '^(TestCheckCorpusGolden|TestCheckCorpusBudget|TestCheckActiveCorpusHasNoErrors)$' -v`
+  — exit 0; the golden and active-corpus tests passed, while the budget test
+  explicitly skipped before timing because this was not a dedicated selector.
+- `rtk zsh -c 'if rtk rg -n "TestCheckCorpusGoldenAndBudget|want under 1s" --glob "*_test.go" .; then exit 1; fi'`
+  — exit 0; the repository-wide test-file check found neither the conflated
+  test nor its ordinary-suite wall-clock diagnostic.
+- `rtk git -c core.fsmonitor=false diff --quiet HEAD -- Makefile` — exit 0;
+  `Makefile` is unchanged.
+
+### Acceptance-criterion evidence
+
+1. The golden-count test passed in the focused `-parallel=16` package subset
+   with the checked-in golden unchanged. The Daemon-owned full parallel sweep
+   remains the authoritative criterion check.
+2. The repository-wide absence check exited 0, and the focused ordinary-run
+   output proves the remaining budget test skips before any wall-clock work.
+3. The dedicated budget test swept both corpus roots and passed at
+   `309.29275ms < 1s` after the final edit.
+4. The temporary `1ns` limit made that same dedicated sweep exit 1; restoring
+   the unchanged `1s` limit made it pass again.
+5. The relevant `internal/speccheck` subset passed with `-parallel=16`. The
+   complete package command is declared Verification and was not run here.
+6. The focused Git check proves `Makefile` has no diff.
+
+### Follow-up
+
+- task_11 owns wiring the dedicated `^TestCheckCorpusBudget$` invocation into
+  the serial gate step; this Task intentionally did not edit `Makefile`.
