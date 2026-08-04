@@ -1,9 +1,12 @@
 ---
 spec: 0070-declared-unreachable-acceptance
-status: active
+status: archived
 created: 2026-08-02
 surfaces: [backend, cli, docs]
+archived: "2026-08-04"
+source_slug: 0070-declared-unreachable-acceptance
 ---
+
 
 # Declared unreachable acceptance
 
