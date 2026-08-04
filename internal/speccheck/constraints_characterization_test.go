@@ -1,7 +1,7 @@
 // Suite: Spec Consistency Check characterization corpus
-// Invariant: report-authored regressions and repository-wide finding counts remain observable through the public Check API.
+// Invariant: report-authored regressions and repository-wide findings remain observable, while active Specs carry no errors.
 // Boundary IN: public speccheck API, replay fixtures, and every active and archived repository Spec
-// Boundary OUT: CLI rendering, exit-code policy, and active-Spec remediation owned by later Tasks
+// Boundary OUT: CLI rendering and exit-code policy
 package speccheck_test
 
 import (
@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
 
@@ -181,6 +182,31 @@ func TestCheckCorpusGoldenAndBudget(t *testing.T) {
 			t.Fatalf("render actual corpus counts: %v", err)
 		}
 		t.Errorf("Spec corpus finding counts changed; inspect the detector change, then deliberately update testdata/corpus-golden.json:\n%s", actual)
+	}
+}
+
+func TestCheckActiveCorpusHasNoErrors(t *testing.T) {
+	repoRoot := characterizationRepositoryRoot(t)
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	active, err := spec.ListActive(specsRoot)
+	if err != nil {
+		t.Fatalf("list active Specs: %v", err)
+	}
+
+	for _, activeSpec := range active {
+		result, err := speccheck.Check(specsRoot, repoRoot, activeSpec.Slug)
+		if err != nil {
+			t.Errorf("%s: check active Spec: %v", activeSpec.Slug, err)
+			continue
+		}
+		for _, finding := range result.Findings {
+			switch finding.Severity {
+			case speccheck.SeverityError:
+				t.Errorf("%s: %s: %s", activeSpec.Slug, finding.Code, finding.Summary)
+			case speccheck.SeverityGap:
+				t.Logf("%s: %s gap remains visible: %s", activeSpec.Slug, finding.Code, finding.Summary)
+			}
+		}
 	}
 }
 

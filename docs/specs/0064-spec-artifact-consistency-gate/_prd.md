@@ -37,11 +37,16 @@ contradictions in seconds, before a Run exists.
   rather than inside it. ADR-0088 and ADR-0091 own the authored QA gate as a
   typed Task node, under which this Spec's own graph is authored. ADR-0093 and
   ADR-0094 are minted by this Spec and govern its detection boundary and its
-  presence-awareness. Source: `docs/agents/domain.md`.
+  presence-awareness. ADR-0039, ADR-0049, ADR-0055, ADR-0084, and ADR-0086 are
+  characterization-corpus inputs only; this Spec replays their written
+  relationships without changing their product contracts. ADR-0040 and
+  ADR-0079 are relation-only candidates from those inputs; their reasoning and
+  model-identifier policies do not govern the Spec Consistency Check. Source:
+  `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: on 2026-08-02
   the maintainer authorized tooling adjustment for the queued Specs, recorded at
   `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`; bounded files:
-  `Makefile`, plus the owned skill pair if the check ships as a skill. Deterministic digest fallout is sanctioned by ADR-0081. Source:
+  `Makefile`, plus the owned skill pair if the check ships as a skill. Source:
   `docs/agents/agent-instructions.md`.
 
 ## Goals

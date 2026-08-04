@@ -41,7 +41,9 @@ and its teardown reclaims neither reliably.
   so no reclamation may touch an Active Run or a live writer; ADR-0044 relies
   on the process-gone signal to reclaim orphaned locks, and any change to
   process termination must preserve how that signal is distinguished from a
-  host that cannot answer. Source: `docs/agents/domain.md`.
+  host that cannot answer. ADR-0053 governs proof-based Run Worktree
+  reconciliation, which this Spec extends to accumulated failed-cycle Run
+  Branches. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is
   proposed or authorized; the work is product code, CLI surface, and
   documentation. Source: `docs/agents/agent-instructions.md`.
