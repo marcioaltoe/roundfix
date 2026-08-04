@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0076-force-stop-exit-proof
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -68,3 +68,48 @@ Verifiable on its own: run the helper binary alone and watch it live.
 - `_prd.md` → Core Feature 1; Goals.
 - `_techspec.md` → Interfaces; Build Order 1; Risks & Considerations.
 - ADR-0089.
+
+## Result
+
+### Implementation
+
+- The `ignore` helper now registers `SIGUSR1` with `signal.Notify`, keeps
+  ignoring `SIGTERM`, and blocks on the registered signal channel without a
+  sleep, timer, or deadline. A liveness probe emits `alive` and returns to the
+  same signal-backed block.
+- `TestOwnerProcessHelperIgnoreModeStaysAlive` launches the helper binary by
+  itself, consumes `ready`, sends `SIGTERM`, waits for the signal-backed
+  liveness acknowledgement, asserts that the process has not exited, and
+  rejects `fatal error` or `all goroutines are asleep` in captured stderr.
+
+### Focused checks
+
+- Before the helper change,
+  `rtk proxy env GOCACHE=<worktree>/.gocache GOFLAGS=-buildvcs=false go test ./internal/store -count=1 -run '^TestOwnerProcessHelperIgnoreModeStaysAlive$' -v`
+  failed at `owner process helper did not acknowledge liveness`, establishing
+  the regression signal.
+- After the helper change, the same focused test passed.
+- `rtk proxy env GOCACHE=<worktree>/.gocache GOFLAGS=-buildvcs=false go test ./internal/store -count=1 -run '^TestOwnerProcessControllerForceKillExitProof$' -v`
+  passed, exercising the existing controller escalation against the
+  signal-ignoring helper.
+- The first focused-test attempt used the default Go cache and stopped before
+  compilation because the sandbox denied access to
+  `/Users/marcio/Library/Caches/go-build`; the repository-local cache resolved
+  that environment-only failure.
+
+### Acceptance evidence
+
+- Readiness and continued liveness: the focused liveness test consumed
+  `ready`, received `alive` after its probe, observed no exit, and passed.
+- No runtime fatal output: the focused liveness test captured stderr after
+  reaping the helper and rejected both forbidden diagnostics; it passed.
+- `SIGTERM` remains ignored: the liveness acknowledgement arrived only after
+  the test sent `SIGTERM`, and the existing force-kill proof passed.
+- Production scope: final status inspection listed only this Task file and
+  `internal/store/process_unix_test.go`; no production file under
+  `internal/store` changed.
+- No wall-clock block: diff inspection shows the `ignore` branch uses
+  `signal.Notify` plus a channel range and introduces no sleep, timer, or
+  deadline.
+
+The Daemon-owned `## Verification` commands were not run in this Agent turn.

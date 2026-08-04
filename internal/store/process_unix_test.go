@@ -4,6 +4,7 @@ package store
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -453,6 +454,82 @@ func TestOwnerProcessIdentityFailsForAbsentProcess(t *testing.T) {
 	}
 }
 
+func TestOwnerProcessHelperIgnoreModeStaysAlive(t *testing.T) {
+	cmd := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
+	cmd.Env = append(os.Environ(), "ROUNDFIX_OWNER_PROCESS_HELPER=ignore")
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatalf("open owner process helper stdout: %v", err)
+	}
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start owner process helper: %v", err)
+	}
+
+	wait := make(chan error, 1)
+	waitStarted := false
+	waited := false
+	t.Cleanup(func() {
+		_ = cmd.Process.Kill()
+		if waitStarted {
+			if !waited {
+				<-wait
+			}
+			return
+		}
+		_ = cmd.Wait()
+	})
+
+	scanner := bufio.NewScanner(stdout)
+	if !scanner.Scan() {
+		t.Fatalf("owner process helper did not become ready: %v", scanner.Err())
+	}
+	if scanner.Text() != "ready" {
+		t.Fatalf("owner process helper readiness = %q, want ready", scanner.Text())
+	}
+
+	waitStarted = true
+	go func() {
+		wait <- cmd.Wait()
+	}()
+	select {
+	case err := <-wait:
+		waited = true
+		t.Fatalf("owner process helper exited after readiness: %v", err)
+	default:
+	}
+
+	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+		t.Fatalf("signal owner process helper with SIGTERM: %v", err)
+	}
+	if err := cmd.Process.Signal(syscall.SIGUSR1); err != nil {
+		t.Fatalf("signal owner process helper liveness probe: %v", err)
+	}
+	if !scanner.Scan() {
+		t.Fatalf("owner process helper did not acknowledge liveness: %v", scanner.Err())
+	}
+	if scanner.Text() != "alive" {
+		t.Fatalf("owner process helper liveness = %q, want alive", scanner.Text())
+	}
+	select {
+	case err := <-wait:
+		waited = true
+		t.Fatalf("owner process helper exited after SIGTERM: %v", err)
+	default:
+	}
+
+	if err := cmd.Process.Kill(); err != nil {
+		t.Fatalf("kill owner process helper: %v", err)
+	}
+	<-wait
+	waited = true
+	output := stderr.String()
+	if strings.Contains(output, "fatal error") || strings.Contains(output, "all goroutines are asleep") {
+		t.Fatalf("owner process helper emitted a runtime fatal error: %s", output)
+	}
+}
+
 func TestOwnerProcessHelper(t *testing.T) {
 	t.Parallel()
 	mode := os.Getenv("ROUNDFIX_OWNER_PROCESS_HELPER")
@@ -469,8 +546,13 @@ func TestOwnerProcessHelper(t *testing.T) {
 	case "ignore":
 		signal.Ignore(syscall.SIGTERM)
 		defer signal.Reset(syscall.SIGTERM)
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, syscall.SIGUSR1)
+		defer signal.Stop(signals)
 		fmt.Fprintln(os.Stdout, "ready")
-		select {}
+		for range signals {
+			fmt.Fprintln(os.Stdout, "alive")
+		}
 	default:
 		t.Fatalf("unknown owner process helper mode %q", mode)
 	}
