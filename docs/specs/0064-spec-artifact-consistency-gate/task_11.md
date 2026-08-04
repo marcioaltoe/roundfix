@@ -1,7 +1,7 @@
 ---
 task: task_11
 spec: 0064-spec-artifact-consistency-gate
-status: pending
+status: completed
 type: infra
 complexity: low
 ---
@@ -73,3 +73,54 @@ tooling-authority audit that the QA gate performs against each Task commit.
 - `_techspec.md` → Testing Approach; Integration Points.
 - `qa/qa-report-2026-08-03.md` → F-001 required repair.
 - `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`.
+
+## Result
+
+### Implementation
+
+- Added the `spec-budget` target with a `##` help description. Its only recipe
+  command runs the dedicated `^TestCheckCorpusBudget$` selector with a fresh
+  test result and `-parallel=1`; it has no pipeline or output filter that can
+  replace the test process's exit status.
+- Added `spec-budget` to `.PHONY` and placed it immediately after `test` in the
+  `verify` prerequisites, before the remaining skill, build, and Spec checks.
+
+### Focused checks
+
+- `rtk make spec-budget` — exit 0 after the Makefile edit; RTK reported one
+  passed test in `internal/speccheck`, with no skipped test.
+- Isolated negative probe under
+  `/private/tmp/roundfix-task11-budget.vzk8et/repo`: copied the current
+  Makefile into an archive of `HEAD`, changed the copied `corpusBudget` from
+  `time.Second` to `time.Nanosecond`, and ran `rtk make spec-budget`. Make
+  exited 2; `TestCheckCorpusBudget` reported a `299.879208ms` sweep against
+  `1ns` and failed. Restored `time.Second`, reran the target with exit 0, and
+  used `rtk cmp` to prove the restored copied test matched the worktree test
+  byte-for-byte. The temporary directory was then removed.
+- `rtk make -n verify` — exit 0; the dry run printed the ordinary parallel
+  test command, then the dedicated serial budget command, then the remaining
+  skill, build, and Spec-check commands. This inspected the gate order without
+  running the declared Verification.
+- `rtk rg -n "^\\.PHONY:.*spec-budget|^verify:.*spec-budget|^spec-budget:.*##|TestCheckCorpusBudget" Makefile`
+  — exit 0; matched the phony declaration, `verify` prerequisite, help-style
+  target declaration, and anchored test selector.
+- `rtk git -c core.fsmonitor=false diff --name-only` — exit 0; listed only
+  `Makefile` and this assigned Task file. `rtk git diff --check` also exited 0.
+
+### Acceptance-criterion evidence
+
+1. The focused target exited 0 and reported one passed test rather than a
+   skip, proving that it selected and executed the sweep-budget proof.
+2. The isolated `1ns` probe made the same target exit 2 with the exceeded
+   budget diagnostic. Restoring `time.Second` made it exit 0, and `cmp`
+   confirmed that the temporary test mutation was fully reverted.
+3. `verify` names `spec-budget` immediately after `test`; the dry run confirms
+   that order. The target contains one unpiped command, and the negative probe
+   confirms its non-zero test status propagates through Make.
+4. The focused source check found `spec-budget` in `.PHONY` and found its `##`
+   help description. The Daemon-owned `make help` Verification remains the
+   authoritative rendered-help check.
+5. `make verify` is a declared Verification command and was not run in this
+   Daemon-assigned turn.
+6. The changed-path postflight listed only the authorized `Makefile`, plus
+   this assigned Task file for required evidence.

@@ -28,7 +28,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify spec-check fmt fmt-check test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-sync-check
+.PHONY: help bootstrap verify spec-check spec-budget fmt fmt-check test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -48,10 +48,13 @@ deps: ## Download, tidy, and verify Go modules
 
 ##@ Quality & Testing
 
-verify: fmt-check test skills-sync-check skills-check build spec-check ## Run the required local verification gate
+verify: fmt-check test spec-budget skills-sync-check skills-check build spec-check ## Run the required local verification gate
 
 spec-check: ## Check Spec artifact consistency
 	$(BIN) spec check
+
+spec-budget: ## Prove the Spec corpus sweep stays within its budget
+	$(GO) test -count=1 -parallel=1 ./internal/speccheck -run '^TestCheckCorpusBudget$$'
 
 fmt: ## Format Go files
 	$(GOFMT) -w $(GO_FILES)
