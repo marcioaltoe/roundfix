@@ -129,6 +129,37 @@ before and after — and passed immediately.
 
 ## Waiting on a decision
 
+0. **Is the parity corpus frozen, or is `baseline-digests` wrong?** This is the
+   one blocking decision, and Spec 0067 is stopped on it.
+
+   Spec 0067's PRD asserts in four places that
+   `internal/baseline/testdata/parity-corpus/` is frozen — Core Feature 3,
+   Success Metric 3, a Non-Goal, and a Decision that reads *"Frozen stays
+   frozen; legibility is the deliverable, not regenerability."*
+
+   Its gate proved that is false. `make baseline-digests` rewrites
+   `parity-corpus/v1/fixtures/asset-sync.json` and `manifest.json`. This was
+   confirmed independently: the same two files moved while running the
+   regeneration chain by hand for Spec 0070 earlier the same night.
+
+   The two readings have opposite fixes:
+
+   - **The PRD is wrong about the current state.** The corpus was never frozen,
+     the record should say `sanctioned`, and the PRD's Decision needs amending.
+   - **`baseline-digests` is wrong.** It rewrites a corpus that should be
+     frozen, and that is a real regeneration defect the Spec should fix.
+
+   Corrective `task_06` made the record state what is measurably true and
+   deliberately did **not** decide which reading is right — freezing the corpus
+   for real would change what the sanctioned command rewrites, which is a
+   product decision rather than a derivation. The gate then correctly failed on
+   the remaining contradiction between the honest record and the PRD.
+
+   **Spec 0067 stands complete except for this.** Tasks 01, 02, 03, 04 and 06
+   all settled `completed`; F-001 is fixed and one sanctioned run now leaves
+   `make verify` green. The work is pushed to `ma/spec-0067-implementation` and
+   is unmerged only because the gate refuses on a question the maintainer owns.
+
 1. **Spec 0073's close wants a release.** A release is irreversible and
    outward-facing; it was deliberately left for the maintainer. 0073 can be
    authored and run up to that point.
