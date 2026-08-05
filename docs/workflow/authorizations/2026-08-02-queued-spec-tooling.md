@@ -113,3 +113,27 @@ skill still taught the deleted flag in six places, so the direction reaches:
 - **0072, close** — `.agents/skills/roundfix/**` with its `skills/` mirror,
   for every `--qa` reference and the authored-gate command guidance. The one
   remaining `--qa` mention documents the unknown-flag remediation itself.
+
+## Addendum — 2026-08-05 — Baseline module assets are product content
+
+The "Not covered by this grant" section above says of
+`internal/baseline/assets/modules/autonomous-work.json` that it is "a Baseline
+module asset, not a skill, so this grant does not obviously reach it." That
+wording has since been read as implying module assets are protected tooling
+needing a grant. On 2026-08-05 the maintainer settled it: **they are not.**
+
+A Baseline module asset is product content — it is what Roundfix ships to
+adopting repositories, not configuration of this repository's own linter,
+formatter, typechecker, test runner, build tool, or package manager. It falls
+outside the universal Normative Clause on tooling authority, exactly as Spec
+0073's PRD already classified setup snapshot and profile assets under
+`internal/baseline/assets/**`.
+
+The 2026-08-02 addendum that recorded `go.json` remains correct as a record of
+what was directed; it was not, and should not be read as, evidence that a grant
+was required.
+
+A Spec editing only Baseline module assets records
+`Tooling authority: not applicable` and needs no grant. Editing an owned skill
+under `.agents/skills/` or a protected tooling file such as `Makefile` still
+does.
