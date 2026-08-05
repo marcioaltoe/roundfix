@@ -1,9 +1,12 @@
 ---
 spec: 0067-derived-artifact-regeneration-boundary
-status: active
+status: archived
 created: 2026-08-01
 surfaces: [backend, infra, docs]
+archived: "2026-08-05"
+source_slug: 0067-derived-artifact-regeneration-boundary
 ---
+
 
 # Derived artifact regeneration boundary
 
