@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0066-run-teardown-reclaims-what-it-created
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -71,3 +71,42 @@ preserved.
 - `_prd.md` → Core Feature 3; Success Metric 2.
 - `_techspec.md` → Interfaces; Build Order 2.
 - ADR-0052, ADR-0053.
+
+## Result
+
+### Implementation
+
+- Added target-scoped Run Branch set classification in `internal/worktree`.
+  The classifier uses Run metadata to attribute branches and protect Active
+  Runs, selects the branch with the newest QA Report as current evidence, and
+  reuses `supersedingQAReport` for every releasable decision.
+- Added a real-Git four-cycle fixture plus negative fixtures for another
+  target, unintegrated implementation work, malformed supersession evidence,
+  and an Active Run branch. Preserved branches carry bounded reasons.
+
+### Focused checks
+
+- Pre-change signal: the focused branch-set tests failed to compile because
+  `ClassifyRunBranchSet` and `BranchSetClassification` did not exist.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-spec0066-go-cache go test ./internal/worktree -run '^(TestClassifyRunBranchSet.*|TestInspectTerminalRunClassifiesSupersededQAReport)$' -count=1`
+  — passed (`ok roundfix/internal/worktree`).
+- The commands under `## Verification` were not run; the Daemon owns them.
+
+### Acceptance criterion evidence
+
+- Four failed cycles: `TestClassifyRunBranchSetFourFailedCycles` observes the
+  newest branch as `Current` and the other three as `Releasable`.
+- Unintegrated implementation work:
+  `TestClassifyRunBranchSetPreservesUnintegratedImplementationWork` observes
+  the valuable-work branch only in `Preserved`, with a reason.
+- Unprovable supersession:
+  `TestClassifyRunBranchSetPreservesBranchWithoutSupersededProof` observes a
+  QA-path commit that violates the Daemon QA-commit contract preserved with a
+  reason.
+- Active Run guard: `TestClassifyRunBranchSetPreservesActiveRunBranch` injects
+  `store.StateActive` into an otherwise releasable older branch and observes
+  it preserved, never releasable.
+- Existing single-branch behavior:
+  `TestInspectTerminalRunClassifiesSupersededQAReport` passed unchanged in the
+  focused check. The Daemon-owned full `internal/worktree` suite remains the
+  terminal regression check.

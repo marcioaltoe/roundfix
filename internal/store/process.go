@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 )
@@ -44,6 +45,17 @@ type OwnerProcessControl struct {
 	pollInterval         time.Duration
 	processAbsent        func(int) (bool, error)
 	processStartIdentity func(context.Context, int) (string, error)
+	ownedProcesses       func(int, string) ([]int, error)
+	signalProcess        func(int, bool) error
+}
+
+// TerminationOutcome records whether one owned process was observed absent.
+// Reason is empty when Proven is true and explains why absence could not be
+// proven otherwise.
+type TerminationOutcome struct {
+	PID    int
+	Proven bool
+	Reason string
 }
 
 func NewOwnerProcessController() *OwnerProcessControl {
@@ -61,6 +73,8 @@ func newOwnerProcessController(gracePeriod, stopWindow, pollInterval time.Durati
 		pollInterval:         pollInterval,
 		processAbsent:        processAbsent,
 		processStartIdentity: processStartIdentity,
+		ownedProcesses:       processTreePIDs,
+		signalProcess:        signalOwnerProcess,
 	}
 }
 
@@ -134,7 +148,7 @@ func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid
 	stopCtx, cancel := context.WithTimeout(ctx, controller.stopWindow)
 	defer cancel()
 
-	gracefulErr := signalOwnerProcess(pid, false)
+	gracefulErr := controller.signalProcess(pid, false)
 	switch {
 	case errors.Is(gracefulErr, errOwnerProcessAlreadyAbsent):
 		return nil
@@ -151,7 +165,7 @@ func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid
 		return ownerProcessControlError(pid, "send graceful termination", gracefulErr)
 	}
 
-	if err := signalOwnerProcess(pid, true); err != nil {
+	if err := controller.signalProcess(pid, true); err != nil {
 		if errors.Is(err, errOwnerProcessAlreadyAbsent) {
 			return nil
 		}
@@ -165,6 +179,224 @@ func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid
 		return ownerProcessControlError(pid, "prove exit after force kill", context.DeadlineExceeded)
 	}
 	return nil
+}
+
+// InspectTree proves the recorded owner without signalling it, then returns
+// the live processes the platform still attributes to that owner. A host that
+// cannot prove ownership, enumerate the tree, or observe liveness returns an
+// error instead of an incomplete reclaimable set.
+func (controller *OwnerProcessControl) InspectTree(
+	ctx context.Context,
+	pid int,
+	recordedIdentity string,
+) ([]int, error) {
+	ownerAbsent, err := controller.proveOwner(ctx, pid, recordedIdentity)
+	if err != nil {
+		return nil, err
+	}
+	owned, err := controller.ownedProcesses(pid, recordedIdentity)
+	if err != nil {
+		return nil, ownerProcessControlError(pid, "enumerate owned process tree", err)
+	}
+
+	live := make([]int, 0, len(owned))
+	for _, ownedPID := range normalizeProcessTree(pid, owned) {
+		if ownedPID == pid && ownerAbsent {
+			continue
+		}
+		absent, err := controller.processAbsent(ownedPID)
+		if err != nil {
+			return nil, ownerProcessControlError(ownedPID, "inspect owned process liveness", err)
+		}
+		if !absent {
+			live = append(live, ownedPID)
+		}
+	}
+	return live, nil
+}
+
+// TerminateTreeAndWait proves the recorded owner before signalling any
+// process, then terminates every process the platform can still attribute to
+// that owner. It reports proof of absence per PID; a process whose absence
+// cannot be observed remains explicitly unproven in its outcome.
+func (controller *OwnerProcessControl) TerminateTreeAndWait(
+	ctx context.Context,
+	pid int,
+	recordedIdentity string,
+) ([]TerminationOutcome, error) {
+	ownerAbsent, err := controller.proveOwner(ctx, pid, recordedIdentity)
+	if err != nil {
+		return nil, err
+	}
+
+	outcomes := make([]TerminationOutcome, 0, 1)
+	seen := make(map[int]struct{})
+	if ownerAbsent {
+		seen[pid] = struct{}{}
+		outcomes = append(outcomes, TerminationOutcome{PID: pid, Proven: true})
+	}
+
+	for {
+		if err := ctx.Err(); err != nil {
+			return outcomes, ownerProcessControlError(pid, "terminate owned process tree", err)
+		}
+		owned, err := controller.ownedProcesses(pid, recordedIdentity)
+		if err != nil {
+			treeErr := ownerProcessControlError(pid, "enumerate owned process tree", err)
+			if _, ownerRecorded := seen[pid]; !ownerRecorded {
+				seen[pid] = struct{}{}
+				outcomes = append(outcomes, unprovenTerminationOutcome(pid, treeErr))
+			}
+			return outcomes, treeErr
+		}
+		owned = normalizeProcessTree(pid, owned)
+
+		discovered := 0
+		for _, ownedPID := range owned {
+			if _, ok := seen[ownedPID]; ok {
+				continue
+			}
+			seen[ownedPID] = struct{}{}
+			discovered++
+
+			identity, absent, identityErr := controller.ownedProcessIdentity(ctx, pid, ownedPID, recordedIdentity)
+			if identityErr != nil {
+				outcomes = append(outcomes, unprovenTerminationOutcome(ownedPID, identityErr))
+				continue
+			}
+			if absent {
+				outcomes = append(outcomes, TerminationOutcome{PID: ownedPID, Proven: true})
+				continue
+			}
+			if err := controller.TerminateAndWait(ctx, ownedPID, identity); err != nil {
+				outcomes = append(outcomes, unprovenTerminationOutcome(ownedPID, err))
+				continue
+			}
+			outcomes = append(outcomes, TerminationOutcome{PID: ownedPID, Proven: true})
+		}
+		if discovered == 0 {
+			return outcomes, nil
+		}
+	}
+}
+
+func (controller *OwnerProcessControl) ownedProcessIdentity(
+	ctx context.Context,
+	ownerPID int,
+	pid int,
+	recordedOwnerIdentity string,
+) (string, bool, error) {
+	if pid == ownerPID {
+		return recordedOwnerIdentity, false, nil
+	}
+	identity, err := controller.processStartIdentity(ctx, pid)
+	if err == nil {
+		return identity, false, nil
+	}
+	if errors.Is(err, ErrOwnerProcessUnsupported) {
+		return "", false, nil
+	}
+	absent, absentErr := controller.processAbsent(pid)
+	if absentErr == nil && absent {
+		return "", true, nil
+	}
+	if absentErr != nil {
+		return "", false, fmt.Errorf("read owned process identity: %w; prove absence after identity read: %v", err, absentErr)
+	}
+	return "", false, fmt.Errorf("read owned process identity: %w", err)
+}
+
+func normalizeProcessTree(ownerPID int, pids []int) []int {
+	unique := make(map[int]struct{}, len(pids)+1)
+	unique[ownerPID] = struct{}{}
+	for _, pid := range pids {
+		if pid > 0 {
+			unique[pid] = struct{}{}
+		}
+	}
+	result := make([]int, 0, len(unique))
+	for pid := range unique {
+		if pid != ownerPID {
+			result = append(result, pid)
+		}
+	}
+	slices.Sort(result)
+	return append([]int{ownerPID}, result...)
+}
+
+func unprovenTerminationOutcome(pid int, err error) TerminationOutcome {
+	return TerminationOutcome{PID: pid, Reason: err.Error()}
+}
+
+type processParent struct {
+	pid       int
+	parentPID int
+}
+
+type processParentWithStart struct {
+	pid       int
+	parentPID int
+	started   uint64
+}
+
+func descendantProcessPIDs(ownerPID int, processes []processParent) []int {
+	owned := map[int]struct{}{ownerPID: {}}
+	for {
+		added := false
+		for _, process := range processes {
+			if _, ok := owned[process.pid]; ok {
+				continue
+			}
+			if _, ok := owned[process.parentPID]; !ok {
+				continue
+			}
+			owned[process.pid] = struct{}{}
+			added = true
+		}
+		if !added {
+			break
+		}
+	}
+	result := make([]int, 0, len(owned))
+	for pid := range owned {
+		result = append(result, pid)
+	}
+	return result
+}
+
+// descendantProcessPIDsAfterStart accepts only parent-child links whose child
+// was created no earlier than its claimed parent. This prevents a stale parent
+// PID left by process reuse from attributing an older, unrelated process tree
+// to the Run owner.
+func descendantProcessPIDsAfterStart(
+	ownerPID int,
+	ownerStarted uint64,
+	processes []processParentWithStart,
+) []int {
+	owned := map[int]uint64{ownerPID: ownerStarted}
+	for {
+		added := false
+		for _, process := range processes {
+			if _, ok := owned[process.pid]; ok {
+				continue
+			}
+			parentStarted, ok := owned[process.parentPID]
+			if !ok || process.started < parentStarted {
+				continue
+			}
+			owned[process.pid] = process.started
+			added = true
+		}
+		if !added {
+			break
+		}
+	}
+	result := make([]int, 0, len(owned))
+	for pid := range owned {
+		result = append(result, pid)
+	}
+	slices.Sort(result)
+	return result
 }
 
 func (controller *OwnerProcessControl) waitForAbsence(ctx context.Context, pid int, window time.Duration) (bool, error) {

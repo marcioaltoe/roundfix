@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0066-run-teardown-reclaims-what-it-created
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
