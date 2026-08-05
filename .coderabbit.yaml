@@ -16,11 +16,18 @@ reviews:
     # Files excluded from review, grouped by type
     # =====================================================================
 
-    # ----- Agent / skill / tooling configs (NOT code) -----
-    - "!.agents/**"
+    # ----- Agent / tooling configs (NOT code) -----
+    # .agents/skills/** is deliberately absent: skills are the CLI's public
+    # contract in this repository, and a pull request that changes CLI
+    # behaviour must ship the skill update with it, so that update is exactly
+    # what needs reviewing. It is allowlisted below.
     - "!.claude/**"
     - "!.compozy/**"
     - "!.cursor/**"
+
+    # ----- Generated skill mirror (byte-identical to .agents/skills) -----
+    # Markdown only: skills/ also holds Go source, which stays reviewable.
+    - "!skills/**/*.md"
 
     # ----- IDE / editor / OS noise -----
     - "!.vscode/**"
@@ -169,8 +176,12 @@ reviews:
     - "**/README.md"
     - "README.md"
 
+    # ----- Skill definitions (the CLI's public contract) -----
+    - ".agents/skills/**/*.md"
+
     # ----- Repository configuration -----
     - ".coderabbit.yaml"
+    - ".roundfixrc.yml"
 
 knowledge_base:
   code_guidelines:
@@ -204,6 +215,6 @@ knowledge_base:
       - "DATABASE.md"
       - "**/DATABASE.md"
 
-      # ----- Skill definitions (read as rules, never reviewed — excluded in path_filters) -----
+      # ----- Skill definitions (read as rules, and reviewed: see path_filters) -----
       - ".agents/skills/**/*.md"
       - ".claude/skills/**/*.md"

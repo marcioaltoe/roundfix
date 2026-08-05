@@ -1,14 +1,20 @@
-# Roundfix Project Config — authoritative for this repository's testing.
-#
-# Load order is builtin default -> User Config (~/.roundfix/config.yml) -> this
-# Project Config, applied as a per-key overlay. Every value set here overrides
-# the machine-global User Config, so this file pins reproducible behavior for
-# this repo regardless of the developer's global settings.
+# Roundfix config.
+# User Config: ~/.roundfix/config.yml
+# Project Config: <repo>/.roundfixrc.yml
 
 defaults:
+  # Keep false. Setting it true is accepted by config validation and then rejected
+  # by the codex adapter at session creation — `session/set_mode "full-access"`
+  # answers ACP -32602 Invalid params — which fails every Task in the Run before
+  # any Agent work starts. Measured on codex-acp 1.1.9, 2026-08-04.
+  agent_full_access: false
+  # Verification command for review Batches; Spec Tasks use their task file commands.
+  # `make verify` is the complete gate here: fmt-check, the Go suite,
+  # `roundfix skills check`, the build, and `roundfix spec check`.
   verification: make verify
+  # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
+  artifact_dir: ""
   auto_commit: true
-
 profiles:
   general:
     preferred:
@@ -31,8 +37,6 @@ profiles:
   frontend:
     preferred:
       runtime: claude
-      # "opus" is the canonical id; the adapter advertises it as "opus[1m]",
-      # which Roundfix rejects verbatim. See the 2026-07-27 adapter finding.
       model: opus
       reasoning_effort: xhigh
     fallbacks:
@@ -57,35 +61,61 @@ profiles:
       - runtime: codex
         model: gpt-5.6-terra
         reasoning_effort: xhigh
-
+specs:
+  # Directory holding Spec folders; relative paths resolve against the repository root.
+  root: "docs/specs"
+worktree:
+  # Parent directory; Roundfix always appends <repo-slug>/<run-id>.
+  location: "~/.roundfix/worktrees"
+  # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.
+  concurrency: 3
+  # Repository-relative untracked files copied into each Run Worktree.
+  # Empty copies no files.
+  copy: []
+  # Command run once after copy before Agent work; empty disables bootstrap.
+  # Empty here on purpose: this is a Go repository with no package manifest at
+  # the root, and a non-zero bootstrap exit fails the whole Run before any
+  # Agent work starts.
+  bootstrap: ""
+  # Maximum time allowed for each worktree bootstrap command.
+  bootstrap_timeout: 10m
+store:
+  # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
+  journal_retention: 336h
 review_source:
   name: coderabbit
+  # Roundfix publishes the review request after a Round's Final Push. Required
+  # here: .coderabbit.yaml disables automatic review, so with this false the
+  # Preflight coherence check refuses watch and resolve — a Run would wait for
+  # a review nobody asks for.
   request_review: true
-  include_nitpicks: true
-
+  # false excludes CodeRabbit findings whose severity is nitpick.
+  include_nitpicks: false
 watch:
   until_clean: true
   max_rounds: 2
   poll_interval: 30s
   review_timeout: 30m
+  check_grace_period: 5m
   quiet_period: 30s
-  auto_push: true # pushes the PR head only after no Unresolved Review Issues remain
+  # auto_push runs only after no Unresolved Review Issues remain.
+  auto_push: true
+  # Leave empty to use the branch upstream detected by Preflight Validation.
   push_remote: ""
   push_branch: ""
-
+implement:
+  # auto_push runs only after a Clean spec Run and never creates pull requests.
+  auto_push: false
+notify:
+  # false disables notifications entirely.
+  enabled: true
+  # Shell command run on terminal outcome; empty uses the native desktop notification.
+  command: ""
 budget:
   enabled: true
-  # 2h is not enough for 10+-task spec Runs (docs/findings/2026-07-07, incident 5).
-  max_run_duration: 8h
-
+  max_run_duration: 2h
 resolve:
+  # Review Issues handed to one Agent Batch. Raised from 3 on 2026-08-05: the
+  # 0012 review resolved 22 issues and the 0015 review 28, so a batch of 3 spent
+  # most of the Run on Batch turnover rather than on the fixes.
   batch_size: 20
-
-implement:
-  auto_push: false # spec Runs never push; the branch is pushed manually as a PR
-
-worktree:
-  # Sequential for now: mitigates R4-3 (concurrent Tasks that edit the same file
-  # conflict at the serialized cherry-pick integration). Raise to 2 once
-  # integration performs a 3-way merge instead of a plain cherry-pick.
-  concurrency: 1
