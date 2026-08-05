@@ -69,6 +69,43 @@ type PullRequest struct {
 	BaseRepository string
 	HeadBranch     string
 	HeadRepository string
+	HeadSHA        string
+}
+
+// TargetMismatch reports a checkout that does not match the Open Pull Request
+// the Run names.
+type TargetMismatch struct {
+	PRNumber       string
+	ExpectedBranch string
+	ExpectedSHA    string
+	FoundBranch    string
+	FoundSHA       string
+}
+
+func (mismatch TargetMismatch) Error() string {
+	return fmt.Sprintf(
+		"Open Pull Request #%s targets PR Head Branch %q at revision %q, but the checkout branch %q is at revision %q",
+		mismatch.PRNumber,
+		mismatch.ExpectedBranch,
+		displayRevision(mismatch.ExpectedSHA),
+		mismatch.FoundBranch,
+		displayRevision(mismatch.FoundSHA),
+	)
+}
+
+func (mismatch TargetMismatch) NextAction() string {
+	return "git switch -- " + shellQuote(mismatch.ExpectedBranch)
+}
+
+func displayRevision(revision string) string {
+	if revision = strings.TrimSpace(revision); revision != "" {
+		return revision
+	}
+	return "<unknown>"
+}
+
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
 }
 
 type PushPlan struct {
@@ -151,7 +188,7 @@ func (resolver GHPullRequestResolver) ResolvePullRequest(ctx context.Context, wo
 	if runner == nil {
 		runner = ExecGHRunner{}
 	}
-	output, err := runner.RunGH(ctx, workDir, "pr", "view", number, "--json", "number,state,url,headRefName,headRepository")
+	output, err := runner.RunGH(ctx, workDir, "pr", "view", number, "--json", "number,state,url,headRefName,headRefOid,headRepository")
 	if err != nil {
 		return PullRequest{}, err
 	}
@@ -161,6 +198,7 @@ func (resolver GHPullRequestResolver) ResolvePullRequest(ctx context.Context, wo
 		State          string `json:"state"`
 		URL            string `json:"url"`
 		HeadRefName    string `json:"headRefName"`
+		HeadRefOID     string `json:"headRefOid"`
 		HeadRepository struct {
 			NameWithOwner string `json:"nameWithOwner"`
 		} `json:"headRepository"`
@@ -182,6 +220,7 @@ func (resolver GHPullRequestResolver) ResolvePullRequest(ctx context.Context, wo
 		BaseRepository: baseRepository,
 		HeadBranch:     raw.HeadRefName,
 		HeadRepository: raw.HeadRepository.NameWithOwner,
+		HeadSHA:        raw.HeadRefOID,
 	}, nil
 }
 
@@ -232,6 +271,9 @@ func Run(ctx context.Context, req Request) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	if err := validatePullRequestTarget(ctx, gitRunner, gitState, pullRequest); err != nil {
+		return Result{}, err
+	}
 
 	pushPlan, err := BuildPushPlan(PushPlanRequest{
 		Command:    req.Command,
@@ -250,6 +292,40 @@ func Run(ctx context.Context, req Request) (Result, error) {
 		PullRequest: pullRequest,
 		PushPlan:    pushPlan,
 	}, nil
+}
+
+func validatePullRequestTarget(ctx context.Context, gitRunner GitRunner, gitState GitState, pullRequest PullRequest) error {
+	baseRepository := strings.TrimSpace(pullRequest.BaseRepository)
+	headRepository := strings.TrimSpace(pullRequest.HeadRepository)
+	if baseRepository != "" && headRepository != "" && !strings.EqualFold(baseRepository, headRepository) {
+		return fmt.Errorf(
+			"Open Pull Request #%s has a fork head: Base Repository %q differs from Head Repository %q; fork Pull Requests are out of scope",
+			pullRequest.Number,
+			baseRepository,
+			headRepository,
+		)
+	}
+
+	expectedBranch := strings.TrimSpace(pullRequest.HeadBranch)
+	foundBranch := strings.TrimSpace(gitState.Branch)
+	if expectedBranch == foundBranch {
+		return nil
+	}
+
+	expectedSHA := strings.TrimSpace(pullRequest.HeadSHA)
+	if expectedSHA == "" {
+		resolved, err := gitRunner.RunGit(ctx, gitState.Root, "rev-parse", "--verify", "refs/heads/"+expectedBranch)
+		if err == nil {
+			expectedSHA = strings.TrimSpace(resolved)
+		}
+	}
+	return TargetMismatch{
+		PRNumber:       pullRequest.Number,
+		ExpectedBranch: expectedBranch,
+		ExpectedSHA:    expectedSHA,
+		FoundBranch:    foundBranch,
+		FoundSHA:       strings.TrimSpace(gitState.HEAD),
+	}
 }
 
 type codeRabbitReviewSettings struct {

@@ -5578,6 +5578,13 @@ func printPreflightFailure(name string, err error, stderr io.Writer) {
 	fmt.Fprintf(stderr, "%s\n", style.cyan("Reason:"))
 	fmt.Fprintf(stderr, "  %v\n\n", err)
 	printPreflightNoSideEffects(stderr, style)
+	var actionable interface{ NextAction() string }
+	if errors.As(err, &actionable) {
+		if nextAction := strings.TrimSpace(actionable.NextAction()); nextAction != "" {
+			fmt.Fprintf(stderr, "%s\n", style.cyan("Next action:"))
+			fmt.Fprintf(stderr, "  %s\n\n", nextAction)
+		}
+	}
 	fmt.Fprintf(stderr, "%s\n", style.cyan("Usage:"))
 	fmt.Fprintf(stderr, "  Run '%s %s --help' for usage.\n", app.Name, name)
 }

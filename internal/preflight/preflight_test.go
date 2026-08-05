@@ -131,14 +131,194 @@ func TestRunResolvesPullRequestThroughInjectedResolver(t *testing.T) {
 	}
 }
 
+func TestRunValidatesPullRequestTargetResolutionShapes(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name                   string
+		git                    fakeGitRunner
+		resolver               PullRequestResolver
+		explicitBaseRepository string
+		explicitHeadBranch     string
+		explicitHeadRepository string
+		wantMismatch           *TargetMismatch
+	}{
+		{
+			name: "resolved matching PR Head Branch runs",
+			git:  cleanGitRunner(""),
+			resolver: &fakePullRequestResolver{pr: PullRequest{
+				Number:         "123",
+				State:          "OPEN",
+				BaseRepository: "owner/project",
+				HeadBranch:     "feature/review",
+				HeadRepository: "owner/project",
+				HeadSHA:        "remote-head",
+			}},
+		},
+		{
+			name: "resolved differing PR Head Branch refuses",
+			git:  cleanGitRunner(""),
+			resolver: &fakePullRequestResolver{pr: PullRequest{
+				Number:         "123",
+				State:          "OPEN",
+				BaseRepository: "owner/project",
+				HeadBranch:     "other/review",
+				HeadRepository: "owner/project",
+				HeadSHA:        "remote-head",
+			}},
+			wantMismatch: &TargetMismatch{
+				PRNumber:       "123",
+				ExpectedBranch: "other/review",
+				ExpectedSHA:    "remote-head",
+				FoundBranch:    "feature/review",
+				FoundSHA:       "abc123",
+			},
+		},
+		{
+			name:                   "explicit matching PR Head Branch runs",
+			git:                    cleanGitRunner(""),
+			resolver:               failingPullRequestResolver{},
+			explicitHeadBranch:     "feature/review",
+			explicitHeadRepository: "owner/project",
+		},
+		{
+			name: "explicit differing PR Head Branch refuses",
+			git: fakeGitRunner{
+				outputs: map[string]string{
+					gitKey("rev-parse", "--show-toplevel"):                        "/repo",
+					gitKey("branch", "--show-current"):                            "feature/review",
+					gitKey("rev-parse", "HEAD"):                                   "abc123",
+					gitKey("status", "--porcelain=v1", "-z"):                      "",
+					gitKey("rev-parse", "--verify", "refs/heads/explicit/review"): "explicit-head",
+				},
+				errors: map[string]error{
+					gitKey("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): errors.New("no upstream"),
+				},
+			},
+			resolver:               failingPullRequestResolver{},
+			explicitBaseRepository: "owner/project",
+			explicitHeadBranch:     "explicit/review",
+			explicitHeadRepository: "owner/project",
+			wantMismatch: &TargetMismatch{
+				PRNumber:       "123",
+				ExpectedBranch: "explicit/review",
+				ExpectedSHA:    "explicit-head",
+				FoundBranch:    "feature/review",
+				FoundSHA:       "abc123",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Run(context.Background(), Request{
+				Command:                CommandFetch,
+				WorkDir:                "/repo",
+				PRNumber:               "123",
+				ExplicitBaseRepository: tt.explicitBaseRepository,
+				ExplicitHeadBranch:     tt.explicitHeadBranch,
+				ExplicitHeadRepository: tt.explicitHeadRepository,
+				GitRunner:              tt.git,
+				PullRequestResolver:    tt.resolver,
+			})
+			if tt.wantMismatch == nil {
+				if err != nil {
+					t.Fatalf("expected matching target to run, got %v", err)
+				}
+				return
+			}
+			var mismatch TargetMismatch
+			if !errors.As(err, &mismatch) {
+				t.Fatalf("expected TargetMismatch, got %T: %v", err, err)
+			}
+			if mismatch != *tt.wantMismatch {
+				t.Fatalf("mismatch = %+v, want %+v", mismatch, *tt.wantMismatch)
+			}
+			for _, want := range []string{
+				"Open Pull Request #123",
+				tt.wantMismatch.ExpectedBranch,
+				tt.wantMismatch.ExpectedSHA,
+				tt.wantMismatch.FoundBranch,
+				tt.wantMismatch.FoundSHA,
+			} {
+				if !strings.Contains(err.Error(), want) {
+					t.Fatalf("expected mismatch to contain %q, got %q", want, err.Error())
+				}
+			}
+			if want := "git switch -- '" + tt.wantMismatch.ExpectedBranch + "'"; mismatch.NextAction() != want {
+				t.Fatalf("next action = %q, want %q", mismatch.NextAction(), want)
+			}
+		})
+	}
+}
+
+func TestRunRefusesForkHeadBeforeBranchMismatch(t *testing.T) {
+	_, err := Run(context.Background(), Request{
+		Command:                CommandFetch,
+		WorkDir:                "/repo",
+		PRNumber:               "123",
+		ExplicitBaseRepository: "owner/base",
+		ExplicitHeadBranch:     "other/review",
+		ExplicitHeadRepository: "contributor/fork",
+		GitRunner:              cleanGitRunner(""),
+		PullRequestResolver:    failingPullRequestResolver{},
+	})
+
+	if err == nil {
+		t.Fatal("expected fork head to refuse")
+	}
+	for _, want := range []string{"Open Pull Request #123", "fork", "owner/base", "contributor/fork", "out of scope"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("expected fork refusal to contain %q, got %q", want, err.Error())
+		}
+	}
+	var mismatch TargetMismatch
+	if errors.As(err, &mismatch) {
+		t.Fatalf("fork refusal must not be reported as a branch mismatch: %+v", mismatch)
+	}
+}
+
+func TestRunRefusesTargetMismatchForEveryReviewCommand(t *testing.T) {
+	t.Parallel()
+	var wantError string
+	for _, command := range []string{CommandFetch, CommandResolve, CommandWatch} {
+		t.Run(command, func(t *testing.T) {
+			_, err := Run(context.Background(), Request{
+				Command:       command,
+				WorkDir:       "/repo",
+				PRNumber:      "123",
+				RequestReview: true,
+				GitRunner:     cleanGitRunner(""),
+				PullRequestResolver: &fakePullRequestResolver{pr: PullRequest{
+					Number:         "123",
+					State:          "OPEN",
+					BaseRepository: "owner/project",
+					HeadBranch:     "other/review",
+					HeadRepository: "owner/project",
+					HeadSHA:        "remote-head",
+				}},
+			})
+			if err == nil {
+				t.Fatal("expected target mismatch")
+			}
+			if wantError == "" {
+				wantError = err.Error()
+			}
+			if err.Error() != wantError {
+				t.Fatalf("refusal = %q, want identical %q", err.Error(), wantError)
+			}
+		})
+	}
+}
+
 func TestGHPullRequestResolverUsesSupportedFieldsAndParsesBaseRepositoryFromURL(t *testing.T) {
 	runner := &fakeGHRunner{
 		outputs: map[string]string{
-			ghKey("pr", "view", "20", "--json", "number,state,url,headRefName,headRepository"): `{
+			ghKey("pr", "view", "20", "--json", "number,state,url,headRefName,headRefOid,headRepository"): `{
 				"number": 20,
 				"state": "OPEN",
 				"url": "https://github.com/owner/base/pull/20",
 				"headRefName": "feature/review",
+				"headRefOid": "remote-head",
 				"headRepository": {"nameWithOwner": "contributor/fork"}
 			}`,
 		},
@@ -154,6 +334,9 @@ func TestGHPullRequestResolverUsesSupportedFieldsAndParsesBaseRepositoryFromURL(
 	}
 	if pr.HeadRepository != "contributor/fork" {
 		t.Fatalf("expected Head Repository from gh JSON, got %q", pr.HeadRepository)
+	}
+	if pr.HeadSHA != "remote-head" {
+		t.Fatalf("expected PR head revision from gh JSON, got %q", pr.HeadSHA)
 	}
 	if len(runner.calls) != 1 {
 		t.Fatalf("expected one gh call, got %#v", runner.calls)

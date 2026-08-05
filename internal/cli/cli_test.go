@@ -9138,6 +9138,84 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 	}
 }
 
+func TestReviewCommandsRefuseTargetMismatchWithoutSideEffects(t *testing.T) {
+	for _, command := range []string{"fetch", "resolve", "watch"} {
+		t.Run(command, func(t *testing.T) {
+			homeDir, repoDir := withReviewGitWorkspace(t)
+			enableReviewRequestsForTest(t, repoDir)
+			gitImplement(t, repoDir, "checkout", "-b", "other/review")
+
+			agentRunner := &fakeAgentRunner{}
+			committer := &fakeCommitter{}
+			resolver := &fakeSourceResolver{}
+			pusher := &fakePusher{}
+			verifier := &fakeVerifier{}
+			fetchCalls := 0
+			withAgentRunner(t, agentRunner)
+			withCommitter(t, committer)
+			withSourceResolver(t, resolver)
+			withPusher(t, pusher)
+			withVerifier(t, verifier)
+			withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+				fetchCalls++
+				return nil, errors.New("Review Source must not be queried after target refusal")
+			})
+
+			beforeHEAD := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+			beforeStatus := gitImplementOutput(t, repoDir, "status", "--porcelain=v1", "--untracked-files=all")
+			args := []string{
+				command,
+				"--pr", "123",
+				"--base-repo", "owner/project",
+				"--head-repo", "owner/project",
+				"--head-branch", "feature/review",
+				"--no-input",
+			}
+			if command != "resolve" {
+				args = append(args, "--source", "coderabbit")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLI(t, args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("target mismatch exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("target mismatch wrote stdout: %q", stdout.String())
+			}
+			for _, want := range []string{
+				"Open Pull Request #123",
+				fmt.Sprintf("PR Head Branch %q at revision %q", "feature/review", beforeHEAD),
+				fmt.Sprintf("checkout branch %q is at revision %q", "other/review", beforeHEAD),
+				"Next action:",
+				"git switch -- 'feature/review'",
+				"Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.",
+			} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("expected target refusal to contain %q, got %q", want, stderr.String())
+				}
+			}
+			assertNoRunDatabase(t, homeDir)
+			if fetchCalls != 0 || resolver.calls != 0 {
+				t.Fatalf("Review Source calls after refusal: fetch=%d resolve=%d", fetchCalls, resolver.calls)
+			}
+			if agentRunner.calls != 0 || len(agentRunner.probeRequests) != 0 {
+				t.Fatalf("Agent Session activity after refusal: runs=%d probes=%d", agentRunner.calls, len(agentRunner.probeRequests))
+			}
+			if verifier.calls != 0 || committer.calls != 0 || pusher.calls != 0 {
+				t.Fatalf("writes after refusal: verification=%d commits=%d pushes=%d", verifier.calls, committer.calls, pusher.calls)
+			}
+			afterHEAD := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+			afterStatus := gitImplementOutput(t, repoDir, "status", "--porcelain=v1", "--untracked-files=all")
+			if afterHEAD != beforeHEAD || afterStatus != beforeStatus {
+				t.Fatalf("Git state changed after refusal: HEAD %q -> %q, status %q -> %q", beforeHEAD, afterHEAD, beforeStatus, afterStatus)
+			}
+		})
+	}
+}
+
 func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
 	// Sequential: mutates the process-wide ROUNDFIX_TUI setting required by dispatch.
 	tests := []struct {

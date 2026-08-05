@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0069-review-run-targets-its-pull-request
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -79,3 +79,52 @@ promises no side effects on refusal.
 - `_prd.md` → Core Features 1, 2 and 5; Success Metric 1.
 - `_techspec.md` → Interfaces; Build Order 1.
 - ADR-0052.
+
+## Result
+
+Implemented the Preflight target guard after Open Pull Request resolution and
+before push planning. The resolved Pull Request now carries its `headRefOid`;
+`TargetMismatch` carries the Pull Request number, both branches, both
+revisions, and a shell-safe `git switch` next action. Preflight refuses fork
+heads before branch comparison, and the CLI renders typed next actions through
+the existing exit-2 refusal path.
+
+Focused checks:
+
+- Red signal: `GOCACHE=<repo>/.gocache rtk go test ./internal/preflight -count=1 -run TestRunValidatesPullRequestTargetResolutionShapes` failed to build before implementation because `TargetMismatch` and `PullRequest.HeadSHA` did not exist.
+- `GOCACHE=<repo>/.gocache rtk go test ./internal/preflight -count=1` — exit 0; 50 tests passed.
+- `GOCACHE=<repo>/.gocache rtk go test ./internal/cli -count=1 -run 'TestReviewCommandsRefuseTargetMismatchWithoutSideEffects|TestRunOperationalCommandRejectsInvalidInput|TestRunOperationalCommandAcceptsMVPFlags'` — exit 0; 18 tests passed.
+
+Acceptance evidence:
+
+- A matching checkout remains accepted: the resolved and explicit matching
+  rows in `TestRunValidatesPullRequestTargetResolutionShapes` passed, and the
+  unchanged operational command acceptance cases remained green.
+- A differing checkout returns `TargetMismatch` with Open Pull Request `#123`,
+  expected and found branches, and expected and found revisions; the real CLI
+  cases asserted exit `2` and the same diagnostic for all three commands.
+- The CLI refusal includes `git switch -- '<PR Head Branch>'` under `Next
+  action:`; the branch is shell-quoted and no checkout is performed.
+- Refusal side effects are asserted in
+  `TestReviewCommandsRefuseTargetMismatchWithoutSideEffects`: no Run Database,
+  zero Review Source fetch/resolve calls, zero Agent run/probe calls, zero
+  verification/commit/push calls, and unchanged Git HEAD and porcelain status.
+- The explicit-resolution mismatch row and the real CLI cases supply
+  `--head-branch` and `--head-repo`; all refused rather than treating the flags
+  as user intent to bypass comparison.
+- `TestRunRefusesForkHeadBeforeBranchMismatch` passed with distinct Base and
+  Head Repositories, asserted the fork and both repositories in the message,
+  and asserted that the error is not `TargetMismatch`.
+- `TestRunRefusesTargetMismatchForEveryReviewCommand` and the real CLI table
+  both passed for `fetch`, `resolve`, and `watch` with identical refusal
+  behavior.
+
+Not run: the commands under this Task's `## Verification`; the Daemon owns
+those checks and terminal settlement.
+
+Follow-up discovered: operational command startup already creates and
+write-checks the configured Artifact Directory before `preflight.Run`. This
+slice leaves that configuration-validation contract unchanged; if “writes
+nothing” is intended to prohibit even that existing startup check, it requires
+a separate config/CLI Task outside Task 01's enumerated Run, Review Source,
+Agent Session, commit, and push refusal boundary.
