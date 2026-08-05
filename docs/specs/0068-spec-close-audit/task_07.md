@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0068-spec-close-audit
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
