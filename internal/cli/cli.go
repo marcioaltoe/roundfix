@@ -3226,6 +3226,9 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printAgentCheckoutChangesNotice(stderr)
 	}
 	if result.Outcome == store.StateTimedOut {
+		if result.Evidence.State == reviewsource.EvidencePending && result.Evidence.Kind != reviewsource.EvidenceKindNone {
+			fmt.Fprintln(stderr, result.TerminalReason)
+		}
 		fmt.Fprintf(stderr, "Review Source timed out. To request another CodeRabbit review manually, comment: %s\n", result.ManualReviewCommand)
 	}
 	if result.Outcome == store.StateCleanUnverified {
@@ -4650,6 +4653,7 @@ func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string,
 		ReviewIssuesKnown: terminal.ReviewIssuesKnown,
 		ConsoleLog:        terminal.ConsoleLog,
 		AttachCommand:     terminal.AttachCommand,
+		EvidenceState:     string(terminal.Evidence.State),
 		EvidenceKind:      string(terminal.Evidence.Kind),
 		EvidenceHeadSHA:   terminalEvidenceHead(terminal.Evidence),
 		VerifiedHeadSHA:   terminal.VerifiedHeadSHA,

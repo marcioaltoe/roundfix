@@ -60,6 +60,7 @@ type StreamRecord struct {
 	ReviewIssuesKnown   *bool          `json:"review_issues_known,omitempty"`
 	ConsoleLog          string         `json:"console_log,omitempty"`
 	AttachCommand       string         `json:"attach_command,omitempty"`
+	EvidenceState       string         `json:"evidence_state,omitempty"`
 	EvidenceKind        string         `json:"evidence_kind,omitempty"`
 	EvidenceHeadSHA     string         `json:"evidence_head_sha,omitempty"`
 	VerifiedHeadSHA     string         `json:"verified_head_sha,omitempty"`
@@ -277,6 +278,10 @@ func projectOutcomeRecord(record *StreamRecord, fields map[string]json.RawMessag
 		return err
 	}
 	record.AttachCommand, err = readOptionalString(fields, event, "attach_command")
+	if err != nil {
+		return err
+	}
+	record.EvidenceState, err = readOptionalString(fields, event, "evidence_state")
 	if err != nil {
 		return err
 	}
