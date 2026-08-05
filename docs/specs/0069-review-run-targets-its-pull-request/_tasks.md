@@ -13,9 +13,12 @@ graph:
     - id: task_03
       file: task_03.md
       needs: [task_02]
+    - id: task_05
+      file: task_05.md
+      needs: [task_03]
     - id: task_04
       file: task_04.md
-      needs: [task_03]
+      needs: [task_05]
 ---
 
 # Tasks — A Review Run targets its Pull Request
@@ -25,9 +28,16 @@ graph:
 | task_01 | Compare the checkout against its Pull Request   | backend | medium     | —       |
 | task_02 | Keep the target while the Run writes            | backend | high       | task_01 |
 | task_03 | Synchronise the Roundfix Skill                  | chore   | low        | task_02 |
-| task_04 | Run the final QA gate                           | qa      | medium     | task_03 |
+| task_05 | Make the refusal's no-side-effects claim true    | backend | low        | task_03 |
+| task_04 | Run the final QA gate                           | qa      | medium     | task_05 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_05 · 5 → task_04
+
+task_05 was appended on 2026-08-05 after the gate reported `fail`, to close
+F-001 from `qa/qa-report-2026-08-05.md`: the Preflight refusal created the
+Artifact Directory while printing that it had created nothing. Naming the
+insertion here is what invalidates that report — the gate re-runs against the
+corrected build.
 
 A chain. task_01 closes the failure that costs a round — a Run acting on the
 wrong branch — and it closes it alone, because `preflight.Run` already holds
@@ -46,5 +56,5 @@ for CLI-contract synchronisation, whose covered list names Spec 0069. The PRD's
 tooling-authority row was corrected from `not applicable` in the same authoring
 pass.
 
-The QA gate is authored as task_04 and depends on task_03, the graph's only
+The QA gate is authored as task_04 and depends on task_05, the graph's only
 non-QA leaf.

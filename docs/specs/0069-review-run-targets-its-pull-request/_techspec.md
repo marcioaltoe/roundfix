@@ -58,8 +58,9 @@ TechSpec builds the guard rather than moving one.
   interruption, never a review verdict. ADR-0053 is relation-only — its Run
   Worktree reconciliation contract governs spec Runs. Source:
   `docs/agents/domain.md`.
-- Tooling authority: applicable — the PRD records this row as not applicable,
-  which authoring disproved: this Spec changes CLI behaviour (a new Preflight
+- Tooling authority: applicable — the PRD carried `not applicable` until
+  authoring disproved it and corrected the row in the same pass, so the two
+  artifacts now agree: this Spec changes CLI behaviour (a new Preflight
   refusal and a new terminal outcome), and the repository HARD RULE requires
   such a Pull Request to ship the Roundfix Skill update with it. Express
   maintainer authorization: the 2026-08-04 standing grant for Roundfix Skill

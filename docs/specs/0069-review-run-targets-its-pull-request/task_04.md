@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0069-review-run-targets-its-pull-request
-status: failed
+status: pending
 type: qa
 complexity: medium
 ---
