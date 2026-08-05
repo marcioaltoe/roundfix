@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0078-roundfix-asks-for-the-review
-status: pending
+status: completed
 type: chore
 complexity: low
 ---
@@ -79,3 +79,29 @@ so manual mode and the asking arrive in the same change.
 
 - `_prd.md` → Decisions; Success Metric 3.
 - `_techspec.md` → Build Order 4; Risks & Considerations.
+
+## Result
+
+Configured this repository for the manual Review Source flow. CodeRabbit now
+disables automatic review and retains the explicit `coderabbit:review`
+description keyword. Project Config now asks for each post-push review and
+sets Max Rounds to `2`.
+
+Focused evidence:
+
+- Manual-review configuration: `rtk git diff -- .coderabbit.yaml` showed only
+  the required three-line `reviews.auto_review` insertion, with
+  `enabled: false` and `description_keyword: "coderabbit:review"` as the first
+  entry under `reviews:`.
+- Project Config: the focused Preflight probe loaded the repository's actual
+  `.roundfixrc.yml` through `config.Load` and reported
+  `request_review=true max_rounds=2`.
+- Preflight coherence: the same probe passed the loaded request value and this
+  repository root to `preflight.Run` for `watch`; it exited `0` and reported
+  `preflight=ok`.
+- Go-source scope: no Go source was edited. The probe source and binary lived
+  under `/tmp/roundfix-task04.eaopGG`, outside the repository.
+
+The failed Daemon diagnostic was inspected before repair. No command from
+this Task's `## Verification` section was rerun; the Daemon owns the final
+configured Verification sequence.

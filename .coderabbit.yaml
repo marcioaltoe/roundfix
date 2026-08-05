@@ -13,6 +13,9 @@ knowledge_base:
       - ".agents/skills/**/*.md"
 
 reviews:
+  auto_review:
+    enabled: false
+    description_keyword: "coderabbit:review"
   request_changes_workflow: true
   high_level_summary: true
   poem: false
