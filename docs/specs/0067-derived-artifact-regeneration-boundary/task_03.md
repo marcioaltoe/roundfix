@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0067-derived-artifact-regeneration-boundary
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -73,3 +73,70 @@ This is the authorized tooling Task. Its bounded file is exactly `Makefile`.
 - `_techspec.md` → API Contracts; Build Order 3.
 - `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`.
 - ADR-0081, ADR-0085.
+
+## Result
+
+### Implementation
+
+- Appended the diagnostic characterization corpus to
+  `BASELINE_DIGEST_STEPS` after every pre-existing entry. The new tuple carries
+  the ownership record's anchored test selector and dedicated
+  `-update-catalog-diagnostics` flag.
+- Extended the step parser with an optional third field. Existing two-field
+  tuples still receive `-update`; only the new diagnostic tuple supplies its
+  dedicated flag.
+- Left the post-regeneration `TestCatalogCompatibility` invocation unchanged,
+  so the update steps use regeneration mode and the closing load remains
+  strict.
+
+### Verification feedback repair
+
+- The Attempt 1 diagnostic artifact was present but empty. The Daemon reported
+  that `grep -q "CatalogDiagnostic" Makefile` exited 1.
+- Inspection confirmed the root cause: `BASELINE_DIGEST_STEPS` ended at
+  `TestCatalogCompatibility` and contained no diagnostic characterization
+  step. The added tuple repairs that omission rather than weakening the check.
+
+### Focused checks
+
+- `rtk make -n baseline-digests` exited 0. Its dry run expanded the new tuple
+  to `go test ./internal/baseline -run
+  '^TestCatalogDiagnosticCharacterization$' -update-catalog-diagnostics
+  -count=1`, while showing the five original tuples first and in their prior
+  order. This did not execute the declared regeneration command.
+- `rtk go test ./internal/baseline -run
+  '^TestCatalogDiagnosticCharacterization$' -update-catalog-diagnostics
+  -count=1` exited 0 with two passing tests.
+- `rtk go test ./internal/baseline -run '^TestCatalogCompatibility$'
+  -count=1` exited 0 with one passing test, separately exercising the strict
+  load after the regeneration-mode check.
+- `rtk go test ./internal/baseline -run
+  '^TestDeclaredStepRegenerationAndFrozenBoundaries$' -count=1 -v` exited 0
+  with seven passing tests. The temporary-repository fixture exercised the
+  changed sanctioned-command loop and restored its derived tree.
+- `rtk git -c core.fsmonitor=false diff --exit-code --
+  internal/baseline/testdata internal/baseline/assets skills .agents/skills`
+  exited 0 with no output; focused checks changed no digest, corpus, or Skill
+  content.
+- `rtk git -c core.fsmonitor=false diff --check` exited 0.
+
+### Acceptance evidence
+
+1. The Make dry run shows the diagnostic characterization selector in
+   `BASELINE_DIGEST_STEPS` with the ownership record's exact dedicated flag.
+2. The existing temporary-repository regeneration fixture passed through the
+   changed sanctioned loop. The Task's declared `Regression|SanctionedCoverage`
+   selector still lists only the unrelated pre-existing
+   `TestBaselineFindingRegressions`; adding or renaming a Go regression test is
+   outside this Task's exact `Makefile` mutation allowlist and remains a
+   follow-up for the Spec owner.
+3. The Makefile diff adds the diagnostic tuple after the unchanged five-entry
+   sequence; the dry run confirms their execution order is unchanged.
+4. The dedicated update-mode characterization check and the separate strict
+   compatibility check both passed. The strict invocation remains after the
+   regeneration loop and carries no update flag.
+5. Changed-path inspection lists only `Makefile` and this assigned Task file.
+   No derived artifact changed.
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+that gate and terminal settlement.
