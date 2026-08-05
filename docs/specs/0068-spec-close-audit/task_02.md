@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0068-spec-close-audit
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -79,3 +79,57 @@ Verifiable on its own through fixture repositories, one per kind.
   the Decisions require.
 - `_techspec.md` → Interfaces; Build Order 2.
 - ADR-0052.
+
+## Result
+
+Implemented the read-only `internal/specaudit` package. `Audit` resolves every
+Run for the requested repository and Spec through `store.OpenReader`, enumerates
+local branches and worktrees with optional Git locks disabled, discovers
+Spec-authored branch tips through the `Roundfix-Spec` trailer, and returns a
+stable survivor list with one evidence string per classification. Reclaiming is
+represented only by shell-safe command strings on `residue` survivors.
+
+Focused checks run during implementation (the declared `## Verification`
+commands remain Daemon-owned and were not run):
+
+- Red signal: `rtk env GOCACHE=/private/tmp/roundfix-specaudit-gocache go test
+  ./internal/specaudit -run '^TestAuditClassifiesPullRequestBranch$' -count=1`
+  failed because the new package models and `Audit` did not exist.
+- `rtk env GOCACHE=/private/tmp/roundfix-specaudit-gocache go test
+  ./internal/specaudit -run
+  '^TestAudit(ClassifiesPullRequestBranch|ClassifiesPendingBranch|ClassifiesResidueBranch|PreservesUnmatchedWorktree|PreservesActiveRunSurvivors)$'
+  -count=1 -v` passed all five real Git and Run Database fixtures.
+- `rtk env GOCACHE=/private/tmp/roundfix-specaudit-gocache go vet
+  ./internal/specaudit` exited 0.
+- `rtk env GOCACHE=/private/tmp/roundfix-specaudit-gocache go list -f
+  '{{join .Imports " "}}' ./internal/specaudit` reported only `bytes context
+  errors fmt os/exec path/filepath roundfix/internal/store sort strconv
+  strings`; no transport package is imported.
+- `rtk rg -n 'net/http|os\.(Create|WriteFile|RemoveAll)'
+  internal/specaudit -g '*.go' -g '!*_test.go'` returned no matches (ripgrep's
+  no-match exit status is 1).
+
+Acceptance evidence:
+
+1. `TestAuditClassifiesPullRequestBranch` passed and asserted
+   `KindPullRequest` with evidence containing `Pull Request #42` from the
+   Spec-associated Run.
+2. `TestAuditClassifiesPendingBranch` passed and asserted `KindPending` with
+   evidence naming the one commit and branch-only file not represented on the
+   default branch.
+3. `TestAuditClassifiesResidueBranch` passed against a squash-merged branch,
+   asserted content-based `KindResidue`, and matched the exact command
+   `git branch -d -- 'ma/spec-close-residue'` without executing it.
+4. `TestAuditPreservesUnmatchedWorktree` passed and asserted `KindPreserved`
+   with `no matching Run` evidence even though the worktree's branch had Pull
+   Request evidence; its reclaim string stayed empty.
+5. `TestAuditPreservesActiveRunSurvivors` passed for both the injected Active
+   Run branch and worktree. Both evidence strings name the Active Run ID,
+   neither survivor is `residue`, and neither carries a reclaim command.
+6. Every classification fixture calls `assertEverySurvivorHasEvidence`; all
+   five fixtures passed with no empty evidence string.
+7. The focused direct-import and forbidden-call sweeps above found no network
+   transport or file-writing API in production package files. The broader
+   repository-wide absence command remains for Daemon Verification.
+
+Follow-ups: none discovered inside this Task's slice.
