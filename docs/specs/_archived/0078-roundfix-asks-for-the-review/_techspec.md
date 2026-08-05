@@ -133,9 +133,9 @@ Preflight Validation for `resolve` and `watch` reads the repository's
 `.coderabbit.yaml` and decides one predicate:
 
 ```text
-pushTriggersReview = auto_review.enabled != false
-                     AND auto_review.auto_incremental_review != false
-                     AND auto_review.auto_pause_after_reviewed_commits == 0
+pushTriggersReview = reviews.auto_review.enabled != false
+                     AND reviews.auto_review.auto_incremental_review != false
+                     AND reviews.auto_review.auto_pause_after_reviewed_commits == 0
 ```
 
 An absent or unreadable file means the Review Source defaults apply. Because

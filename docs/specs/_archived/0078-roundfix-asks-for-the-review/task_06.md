@@ -44,10 +44,11 @@ that it consumes exactly what the configuration says it will.
 
 ## Verification
 
-- `ls docs/specs/_archived/0078-roundfix-asks-for-the-review/qa/ | grep -q "qa-report-"`
-  — expected: exit 0; a dated QA report exists.
-- `grep -l "verdict:" docs/specs/_archived/0078-roundfix-asks-for-the-review/qa/qa-report-*.md | grep -q qa-report`
-  — expected: exit 0; the report carries a machine-readable verdict.
+- `test -f docs/specs/_archived/0078-roundfix-asks-for-the-review/qa/qa-report-2026-08-05.md`
+  — expected: exit 0; this Spec's dated QA report exists.
+- `grep -q '^spec: 0078-roundfix-asks-for-the-review$' docs/specs/_archived/0078-roundfix-asks-for-the-review/qa/qa-report-2026-08-05.md && grep -Eq '^verdict: (pass|partial|fail)$' docs/specs/_archived/0078-roundfix-asks-for-the-review/qa/qa-report-2026-08-05.md && grep -Eq '^rows_blocked_environment: [0-9]+$' docs/specs/_archived/0078-roundfix-asks-for-the-review/qa/qa-report-2026-08-05.md && grep -Eq '^rows_blocked_finding: [0-9]+$' docs/specs/_archived/0078-roundfix-asks-for-the-review/qa/qa-report-2026-08-05.md`
+  — expected: exit 0; the same report carries this Spec's machine-readable
+  verdict and typed blocked-row counts.
 
 ## References
 

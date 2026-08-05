@@ -24,10 +24,11 @@ provable with no requester in existence.
    `review_source.request_command` (string, default `@coderabbitai review`),
    with Project Config over User Config over built-in precedence.
 2. MUST derive `pushTriggersReview` from the repository's `.coderabbit.yaml` as
-   `auto_review.enabled != false AND auto_review.auto_incremental_review != false
-   AND auto_review.auto_pause_after_reviewed_commits == 0`, treating an absent
-   or unreadable file as Review Source defaults, including the finite-pause
-   default of `5`.
+   `reviews.auto_review.enabled != false AND
+   reviews.auto_review.auto_incremental_review != false AND
+   reviews.auto_review.auto_pause_after_reviewed_commits == 0`, treating an
+   absent or unreadable file as Review Source defaults, including the
+   finite-pause default of `5`.
 3. MUST refuse `resolve` and `watch` in Preflight Validation when
    `pushTriggersReview` equals `request_review`, exiting `2` before any Agent
    Session, Review Source mutation, commit, or push.
@@ -71,7 +72,7 @@ provable with no requester in existence.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/preflight ./internal/config -count=1 -run 'Review|Request|Coheren|Config'`
+- `go test ./internal/preflight ./internal/config -list 'Review|Request|Coheren|Config' | grep '^Test' > /dev/null && go test ./internal/preflight ./internal/config -count=1 -run 'Review|Request|Coheren|Config'`
   — expected: exit 0; the refusal tests ran and passed.
 - `go test ./internal/preflight ./internal/config ./internal/cli -count=1`
   — expected: exit 0.

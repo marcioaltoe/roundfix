@@ -70,7 +70,7 @@ is the authorized tooling Task.
 - `make verify` — expected: exit 0.
 - `git diff --quiet HEAD -- '*.go'`
   — expected: exit 0; no Go source changed.
-- `git diff --quiet HEAD -- . ':(exclude).agents/skills/roundfix/**' ':(exclude)skills/roundfix/**' ':(exclude)docs/specs/0078-roundfix-asks-for-the-review/task_05.md' ':(exclude)internal/baseline/assets/setups/**' ':(exclude)internal/baseline/assets/source-baselines/**' ':(exclude)internal/baseline/assets/formatter-fixtures/**' ':(exclude)internal/baseline/assets/profiles/**' ':(exclude)internal/baseline/testdata/**'`
+- `git diff --quiet HEAD -- . ':(exclude).agents/skills/roundfix/**' ':(exclude)skills/roundfix/**' ':(exclude)docs/specs/_archived/0078-roundfix-asks-for-the-review/task_05.md' ':(exclude)internal/baseline/assets/setups/**' ':(exclude)internal/baseline/assets/source-baselines/**' ':(exclude)internal/baseline/assets/formatter-fixtures/**' ':(exclude)internal/baseline/assets/profiles/**' ':(exclude)internal/baseline/testdata/**'`
   — expected: exit 0; only the bounded paths changed.
 
 ## References

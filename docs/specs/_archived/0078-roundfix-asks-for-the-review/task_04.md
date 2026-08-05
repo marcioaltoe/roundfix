@@ -64,10 +64,9 @@ so manual mode and the asking arrive in the same change.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `grep -q 'enabled: false' .coderabbit.yaml && grep -q 'description_keyword: "coderabbit:review"' .coderabbit.yaml`
-  — expected: exit 0; manual review is committed with a non-empty keyword.
-- `grep -q 'request_review: true' .roundfixrc.yml && grep -q 'max_rounds: 2' .roundfixrc.yml`
-  — expected: exit 0; the repository asks, capped at two Rounds.
+- `rtk ruby -e 'require "yaml"; def load_unique(path); stream = Psych.parse_stream(File.read(path)); raise "#{path}: expected one YAML document" unless stream.children.length == 1; check = nil; check = ->(node) { if node.is_a?(Psych::Nodes::Mapping); keys = node.children.each_slice(2).map { |key, _| key.value }; raise "#{path}: duplicate key" unless keys.uniq == keys; end; Array(node.children).each { |child| check.call(child) }; }; check.call(stream); YAML.safe_load(File.read(path), aliases: false); end; coderabbit = load_unique(".coderabbit.yaml"); roundfix = load_unique(".roundfixrc.yml"); raise ".coderabbit.yaml: reviews.auto_review.enabled" unless coderabbit.dig("reviews", "auto_review", "enabled") == false; raise ".coderabbit.yaml: reviews.auto_review.description_keyword" unless coderabbit.dig("reviews", "auto_review", "description_keyword") == "coderabbit:review"; raise ".roundfixrc.yml: review_source.request_review" unless roundfix.dig("review_source", "request_review") == true; raise ".roundfixrc.yml: watch.max_rounds" unless roundfix.dig("watch", "max_rounds") == 2'`
+  — expected: exit 0; both files are single duplicate-free YAML documents and
+  the required nested values match the repository contract.
 - `go run -buildvcs=false ./cmd/roundfix doctor > /dev/null` — expected: exit 0;
   the repository's effective configuration loads and validates.
 - `git diff --quiet HEAD -- '*.go'`

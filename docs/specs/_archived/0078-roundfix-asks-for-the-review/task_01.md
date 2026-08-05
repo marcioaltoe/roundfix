@@ -69,7 +69,7 @@ This Task wires to nothing. It must be provable with no call site.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/reviewsource/... -count=1 -run 'Request|Marker|Idempot'`
+- `go test ./internal/reviewsource/... -list 'Request|Marker|Idempot' | grep '^Test' > /dev/null && go test ./internal/reviewsource/... -count=1 -run 'Request|Marker|Idempot'`
   — expected: exit 0; the request tests ran and passed.
 - `go test ./internal/reviewsource/... ./internal/runevent -count=1` — expected:
   exit 0.

@@ -66,7 +66,7 @@ under ADR-0036 and is not worth a review of its own.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/watch -count=1 -run 'Request|Round|Seam|Artifact'`
+- `go test ./internal/watch -list 'Request|Round|Seam|Artifact' | grep '^Test' > /dev/null && go test ./internal/watch -count=1 -run 'Request|Round|Seam|Artifact'`
   — expected: exit 0; the seam tests ran and passed.
 - `go test ./internal/watch ./internal/cli -count=1` — expected: exit 0.
 - `go test -parallel 16 ./...`
