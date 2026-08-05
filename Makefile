@@ -106,7 +106,9 @@ BASELINE_DIGEST_STEPS := \
 	./skills:TestAuthorialSkillSync \
 	./internal/baseline:TestFormatterComposition \
 	./internal/baseline:TestBaselineCompatibilityCorpus \
-	./internal/baseline:TestCatalogCompatibility
+	./internal/baseline:TestCatalogCompatibility \
+	./internal/baseline:^TestCatalogDiagnosticCharacterization$$:-update-catalog-diagnostics \
+	./internal/baseline:TestBaselinePlanCharacterization:-update-baseline-plan-characterization
 
 baseline-digests: ## Regenerate derived Baseline digest artifacts
 	@raw=""; snapshot=""; \
@@ -124,7 +126,7 @@ baseline-digests: ## Regenerate derived Baseline digest artifacts
 	sort "$$raw" > "$$snapshot" || exit $$?; \
 	err_code="regeneration_failed"; err_retryable="false"; \
 	err_next="Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests."; \
-	for step in $(BASELINE_DIGEST_STEPS); do package=$${step%%:*}; test_name=$${step#*:}; err_stage="$$package:$$test_name"; $(GO) test "$$package" -run "$$test_name" -update -count=1 >&2 || { status=$$?; printf 'baseline-digests: regeneration failed at %s:%s\n' "$$package" "$$test_name" >&2; exit "$$status"; }; done; \
+	for step in $(BASELINE_DIGEST_STEPS); do package=$${step%%:*}; test_spec=$${step#*:}; test_name=$${test_spec%%:*}; update_flag=$${test_spec#*:}; if [ "$$update_flag" = "$$test_spec" ]; then update_flag=-update; fi; err_stage="$$package:$$test_name"; $(GO) test "$$package" -run "$$test_name" "$$update_flag" -count=1 >&2 || { status=$$?; printf 'baseline-digests: regeneration failed at %s:%s\n' "$$package" "$$test_name" >&2; exit "$$status"; }; done; \
 	err_code="artifact_scan_failed"; err_stage="post-scan"; \
 	err_next="Verify every path in DERIVED_DIGEST_PATHS exists and is readable, then rerun make baseline-digests."; \
 	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + > "$$raw" || exit $$?; \

@@ -1,0 +1,4 @@
+owner: sanctioned
+reason: >-
+  The sanctioned make baseline-digests command regenerates the formatter
+  composition fixtures in this directory.

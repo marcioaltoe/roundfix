@@ -1,0 +1,4 @@
+owner: sanctioned
+reason: >-
+  The sanctioned make baseline-digests command regenerates the maintained
+  Source Baseline index, manifests, accounting, and corpus in this directory.

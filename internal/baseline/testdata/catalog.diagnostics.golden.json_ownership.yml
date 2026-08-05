@@ -1,0 +1,4 @@
+owner: sanctioned
+reason: >-
+  The sanctioned make baseline-digests command includes this diagnostic
+  characterization corpus with its dedicated update flag.

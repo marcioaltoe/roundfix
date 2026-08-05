@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0067-derived-artifact-regeneration-boundary
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -58,3 +58,58 @@ when a gate stayed red.
 
 - `_prd.md` → Core Feature 5; Success Metric 2.
 - `_techspec.md` → Testing Approach; Build Order 2.
+
+## Result
+
+### Implementation
+
+- Extended the canonical derived-ownership suite with an isolated temporary
+  repository fixture. The test resolves every `dedicated` record, perturbs all
+  regular artifacts it governs, executes the record's exact shell command, and
+  requires every claimed byte to return to its pre-perturbation value while all
+  other derived bytes remain unchanged.
+- Added negative declared-command fixtures for a nonexistent command, a valid
+  command carrying a deliberately wrong Go test flag, and a successful command
+  that leaves the perturbed artifacts unchanged. Each case must produce the
+  corresponding execution or unchanged-artifact failure.
+- Added one perturbation probe for every `sanctioned` and `frozen` record. The
+  sanctioned command must restore all sanctioned probes, while every frozen
+  probe must remain perturbed; dedicated steps also leave frozen probes
+  untouched.
+- The exercise helper restores the complete temporary derived tree after every
+  command, including command failures, before the next subtest runs.
+
+### Focused checks
+
+- Red signal before implementation:
+  `rtk rg -n 'TestDeclaredStepRegenerationAndFrozenBoundaries|runDeclaredRegenerationStep' internal/baseline`
+  exited 1 because no declared-step execution test existed.
+- After implementation,
+  `rtk proxy env GOCACHE=/Users/marcio/.roundfix/worktrees/wt67run-dee297f2/run_20260805T050602Z_bfee71697528c7d7/.gocache go test ./internal/baseline -run '^TestDeclaredStepRegenerationAndFrozenBoundaries$' -count=1 -v`
+  exited 0. Both real dedicated commands, all three negative command fixtures,
+  and the sanctioned/frozen boundary subtest passed.
+- `rtk proxy env GOCACHE=/Users/marcio/.roundfix/worktrees/wt67run-dee297f2/run_20260805T050602Z_bfee71697528c7d7/.gocache go vet ./internal/baseline`
+  exited 0.
+- `rtk git diff --name-only -- internal/baseline/testdata internal/baseline/assets`
+  exited 0 with no output; the focused run changed no repository artifact.
+
+### Acceptance evidence
+
+1. `dedicated/*` subtests derive their artifact sets from the validated
+   ownership resolution, run each exact declared command, and passed only after
+   every deliberately perturbed claimed artifact returned byte-for-byte.
+2. `failure/command does not exist`, `failure/declared flag is wrong`, and
+   `failure/command leaves artifacts unchanged` passed by observing the three
+   required failure modes. The wrong-flag case is read back from a temporary
+   `_ownership.yml` before execution.
+3. The sanctioned-command subtest perturbs one probe for each frozen record and
+   passed only because `make baseline-digests` left all three perturbed bytes
+   untouched.
+4. The same subtest perturbs one probe for every sanctioned record and passed
+   only because one `make baseline-digests` invocation restored all five.
+5. Every command path defers full fixture restoration and the test asserts the
+   clean snapshot after each subtest. The repository derived-tree diff remained
+   empty after the focused run.
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+that gate and terminal settlement.

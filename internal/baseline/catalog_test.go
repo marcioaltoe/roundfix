@@ -32,8 +32,6 @@ var updateCatalogDiagnosticCharacterization = flag.Bool(
 	"regenerate the catalog diagnostic characterization corpus",
 )
 
-const baselineDigestRegenerationHint = "run 'make baseline-digests'"
-
 const catalogDiagnosticGoldenPath = "testdata/catalog.diagnostics.golden.json"
 
 func TestEmbeddedCatalog(t *testing.T) {
