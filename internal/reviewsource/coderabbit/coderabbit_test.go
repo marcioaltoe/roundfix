@@ -544,7 +544,7 @@ func TestWatchStatusReportsSettledFromCodeRabbitCommitStatus(t *testing.T) {
 	client := Client{
 		GitHub: &fakeGitHubClient{
 			statuses: []CommitStatus{
-				{Context: "coderabbitai", State: "success"},
+				{Context: "coderabbitai", State: "success", Description: "Review completed"},
 			},
 		},
 	}
@@ -662,7 +662,7 @@ func TestEvidenceHierarchyPrecedence(t *testing.T) {
 				},
 				{DatabaseID: 42, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "in_progress"},
 			},
-			statuses:   []CommitStatus{{Context: "coderabbitai", State: "success"}},
+			statuses:   []CommitStatus{{Context: "coderabbitai", State: "success", Description: "Review completed"}},
 			wantState:  reviewsource.EvidenceSkipped,
 			wantKind:   reviewsource.EvidenceKindCheckRun,
 			wantReason: "Review skipped because this pull request contains too many files.",
@@ -672,7 +672,7 @@ func TestEvidenceHierarchyPrecedence(t *testing.T) {
 			checkRuns: []CheckRun{
 				{DatabaseID: 43, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "in_progress"},
 			},
-			statuses:  []CommitStatus{{Context: "coderabbitai", State: "success"}},
+			statuses:  []CommitStatus{{Context: "coderabbitai", State: "success", Description: "Review completed"}},
 			wantState: reviewsource.EvidenceReviewing,
 			wantKind:  reviewsource.EvidenceKindCheckRun,
 		},
@@ -692,6 +692,46 @@ func TestEvidenceHierarchyPrecedence(t *testing.T) {
 			threads:   []ReviewThread{unresolvedThread},
 			wantState: reviewsource.EvidenceReviewed,
 			wantKind:  reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "unrecognised successful check stays pending",
+			checkRuns: []CheckRun{
+				{
+					DatabaseID:  46,
+					Name:        "Unrecognised review signal",
+					AppName:     "CodeRabbit",
+					HeadSHA:     "abc123",
+					Status:      "completed",
+					Conclusion:  "success",
+					OutputTitle: "Unknown outcome",
+				},
+			},
+			wantState: reviewsource.EvidencePending,
+			wantKind:  reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "unrecognised successful check output stays pending",
+			checkRuns: []CheckRun{
+				{
+					DatabaseID:  47,
+					Name:        "CodeRabbit",
+					AppName:     "CodeRabbit",
+					HeadSHA:     "abc123",
+					Status:      "completed",
+					Conclusion:  "success",
+					OutputTitle: "Unknown outcome",
+				},
+			},
+			wantState: reviewsource.EvidencePending,
+			wantKind:  reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "pull request 107 rate limited status stays pending",
+			statuses: []CommitStatus{
+				{Context: "CodeRabbit", State: "success", Description: "Review rate limited"},
+			},
+			wantState: reviewsource.EvidencePending,
+			wantKind:  reviewsource.EvidenceKindCommitStatus,
 		},
 		{
 			name: "current approval verifies with no unresolved threads",
@@ -821,6 +861,62 @@ func TestEvidenceExpectedHeadRejectsUnboundAndStaleSignals(t *testing.T) {
 	}
 	if evidence.ExpectedHeadSHA != "abc123" || evidence.ObservedHeadSHA != "oldsha" {
 		t.Fatalf("expected stale-head detail, got %#v", evidence)
+	}
+}
+
+func TestEvidenceRecordedCommitStatusCorpus(t *testing.T) {
+	tests := []struct {
+		name     string
+		headSHA  string
+		fixture  string
+		want     reviewsource.EvidenceState
+		wantKind reviewsource.EvidenceKind
+	}{
+		{
+			name:    "completed review remains verified",
+			headSHA: "b050769c03fa756c86d340d23be9c837cf694e6b",
+			fixture: `{
+				"state": "success",
+				"statuses": [{
+					"state": "success",
+					"description": "Review completed",
+					"context": "CodeRabbit"
+				}]
+			}`,
+			want:     reviewsource.EvidenceVerified,
+			wantKind: reviewsource.EvidenceKindCommitStatus,
+		},
+		{
+			name:    "pull request 107 rate limit stays pending",
+			headSHA: "c6c14bece33bddf153c81c16029a97537f94d7c9",
+			fixture: `{
+				"state": "success",
+				"statuses": [{
+					"state": "success",
+					"description": "Review rate limited",
+					"context": "CodeRabbit"
+				}]
+			}`,
+			want:     reviewsource.EvidencePending,
+			wantKind: reviewsource.EvidenceKindCommitStatus,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withRunGH(t, func(context.Context, ...string) ([]byte, error) {
+				return []byte(tt.fixture), nil
+			})
+
+			statuses, err := (GHClient{}).CommitStatuses(context.Background(), "marcioaltoe/roundfix", tt.headSHA)
+			if err != nil {
+				t.Fatalf("map recorded commit status: %v", err)
+			}
+			evidence := classifyEvidence(tt.headSHA, nil, statuses, nil, nil)
+			if evidence.State != tt.want || evidence.Kind != tt.wantKind {
+				t.Fatalf("evidence = %#v, want state %q kind %q", evidence, tt.want, tt.wantKind)
+			}
+		})
 	}
 }
 

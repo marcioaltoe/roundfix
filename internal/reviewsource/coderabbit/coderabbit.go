@@ -79,8 +79,9 @@ type CheckRun struct {
 }
 
 type CommitStatus struct {
-	Context string
-	State   string
+	Context     string
+	State       string
+	Description string
 }
 
 type PullRequestReview struct {
@@ -478,8 +479,9 @@ func (client GHClient) CommitStatuses(ctx context.Context, repo string, headSHA 
 	}
 	var raw struct {
 		Statuses []struct {
-			Context string `json:"context"`
-			State   string `json:"state"`
+			Context     string `json:"context"`
+			State       string `json:"state"`
+			Description string `json:"description"`
 		} `json:"statuses"`
 	}
 	if err := json.Unmarshal(output, &raw); err != nil {
@@ -488,8 +490,9 @@ func (client GHClient) CommitStatuses(ctx context.Context, repo string, headSHA 
 	statuses := make([]CommitStatus, 0, len(raw.Statuses))
 	for _, status := range raw.Statuses {
 		statuses = append(statuses, CommitStatus{
-			Context: status.Context,
-			State:   status.State,
+			Context:     status.Context,
+			State:       status.State,
+			Description: status.Description,
 		})
 	}
 	return statuses, nil
@@ -666,12 +669,12 @@ func classifyEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []C
 	}
 
 	for _, run := range checkRuns {
-		if currentHeadCheckRun(expectedHeadSHA, run) && normalized(run.Conclusion) == "success" {
+		if currentHeadCheckRun(expectedHeadSHA, run) && reviewCompleted(run) {
 			return checkRunEvidence(expectedHeadSHA, run, settledEvidenceState(unresolvedThreads), "", unresolvedThreads)
 		}
 	}
 	for _, status := range statuses {
-		if isCodeRabbitSignal(status.Context) && normalized(status.State) == "success" {
+		if reviewStatusCompleted(status) {
 			return commitStatusEvidence(expectedHeadSHA, status, settledEvidenceState(unresolvedThreads), unresolvedThreads)
 		}
 	}
@@ -697,12 +700,22 @@ func classifyEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []C
 			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceFailed, "", unresolvedThreads)
 		}
 		if status == "completed" || conclusion != "" {
-			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceReviewed, "", unresolvedThreads)
+			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidencePending, "", unresolvedThreads)
 		}
 	}
 	for _, status := range statuses {
 		if isCodeRabbitSignal(status.Context) && isFailedSignal(normalized(status.State)) {
 			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceFailed, unresolvedThreads)
+		}
+	}
+	for _, run := range checkRuns {
+		if currentHeadCheckRun(expectedHeadSHA, run) {
+			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidencePending, "", unresolvedThreads)
+		}
+	}
+	for _, status := range statuses {
+		if isCodeRabbitSignal(status.Context) {
+			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidencePending, unresolvedThreads)
 		}
 	}
 
@@ -794,6 +807,23 @@ func currentHeadReview(expectedHeadSHA string, review PullRequestReview) bool {
 	return isCodeRabbitSignal(review.Author) && review.CommitSHA == expectedHeadSHA
 }
 
+func reviewCompleted(run CheckRun) bool {
+	if normalized(run.Status) != "completed" || normalized(run.Conclusion) != "success" {
+		return false
+	}
+	if title := normalized(run.OutputTitle); title != "" {
+		return title == "review completed"
+	}
+	name := normalized(run.Name)
+	return name == "coderabbit" || name == "review completed"
+}
+
+func reviewStatusCompleted(status CommitStatus) bool {
+	return isCodeRabbitSignal(status.Context) &&
+		normalized(status.State) == "success" &&
+		normalized(status.Description) == "review completed"
+}
+
 func structuredSkipReason(run CheckRun) (string, bool) {
 	title := normalized(run.OutputTitle)
 	if title != "review skipped" && !strings.HasPrefix(title, "review skipped:") {
@@ -825,6 +855,9 @@ func checkRunEvidence(expectedHeadSHA string, run CheckRun, state reviewsource.E
 func commitStatusEvidence(expectedHeadSHA string, status CommitStatus, state reviewsource.EvidenceState, unresolvedThreads int) reviewsource.Evidence {
 	conclusion := normalized(status.State)
 	detail := fmt.Sprintf("CodeRabbit commit status %q is %s for the expected head", status.Context, firstNonEmpty(conclusion, "unknown"))
+	if description := strings.TrimSpace(status.Description); description != "" {
+		detail = fmt.Sprintf("%s: %s", detail, description)
+	}
 	if unresolvedThreads > 0 {
 		detail = fmt.Sprintf("%s; %d unresolved CodeRabbit thread(s) remain", detail, unresolvedThreads)
 	}

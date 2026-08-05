@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0077-a-green-check-is-not-a-review
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -82,3 +82,49 @@ refusal shapes the next Task has not learned yet.
 - `_prd.md` → Core Features 2 and 5; Goals; Success Metrics 3 and 5.
 - `_techspec.md` → Interfaces; Build Order 1; Risks & Considerations.
 - ADR-0054.
+
+## Result
+
+Implementation:
+
+- Retained the CodeRabbit commit-status description so classification can
+  distinguish the positive `Review completed` shape from other green statuses.
+- Added positive completion predicates for recognised check-run and commit-status
+  shapes. Only those predicates and a current-head CodeRabbit approval can reach
+  `settledEvidenceState`.
+- Routed every other current-head CodeRabbit signal to `pending` after preserving
+  explicit skip, reviewing, approval, and failure precedence.
+- Added a recorded-status corpus for a completed review and Pull Request #107's
+  `Review rate limited` status, plus default-deny check-run cases.
+
+Focused checks:
+
+- `rtk env GOCACHE=<worktree>/.gocache go test ./internal/reviewsource/coderabbit -count=1`
+  — exit 0; the complete CodeRabbit package suite passed.
+- `rtk env GOCACHE=<worktree>/.gocache go test ./internal/reviewsource/coderabbit -count=1 -run '^(TestEvidenceHierarchyPrecedence|TestEvidenceRecordedCommitStatusCorpus|TestEvidenceExpectedHeadRejectsUnboundAndStaleSignals)$'`
+  — exit 0; the focused classification, recorded-payload, and stale-head tests
+  passed after the last implementation edit.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0.
+
+Acceptance evidence:
+
+1. `TestEvidenceHierarchyPrecedence/unrecognised successful check stays pending`
+   and `/unrecognised successful check output stays pending` assert that neither a
+   green unknown name nor unknown output can verify the expected head.
+2. `TestEvidenceRecordedCommitStatusCorpus/pull request 107 rate limit stays pending`
+   maps the recorded `CodeRabbit` / `success` / `Review rate limited` payload and
+   asserts `pending`; the hierarchy table asserts the same state and evidence kind.
+3. The unchanged `successful check verifies with no unresolved threads` case and
+   the recorded `Review completed` corpus case both assert `verified`.
+4. The unchanged `successful check is reviewed with unresolved thread` case
+   asserts `reviewed`.
+5. The complete package suite passed, including the existing CodeRabbit evidence
+   corpus and its verified outcomes.
+6. `TestEvidenceExpectedHeadRejectsUnboundAndStaleSignals` passed with a recognised
+   completed check and approval recorded against the earlier head; the current head
+   remained `pending`.
+
+Declared `## Verification` commands were not run; the Daemon owns them.
+
+Follow-ups: task_02 owns refusal-specific recognition and task_03 owns operator
+diagnostics. Neither is included in this diff.
