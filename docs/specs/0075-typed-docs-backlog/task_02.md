@@ -54,10 +54,23 @@ This slice runs the regeneration and reads the diff, which is the whole point.
 
 ## Verification
 
+This Task's whole purpose is to return a repository that task_01 legitimately
+left red. Declaring the configured repository Verification command verbatim
+makes the Daemon run it as a **precondition**, before the Agent starts — and it
+fails on exactly the state this Task exists to repair, settling the Task
+without ever starting it. Measured on 2026-08-05:
+`repository not green on entry: make verify exited 2`.
+
+The gate below is the same gate, named by its parts rather than by the
+configured string, so the repository is still proven green **after** the
+regeneration and never demanded green before it. Nothing is weakened: every
+target `make verify` runs is listed.
+
 - `make baseline-digests` — expected: exit 0.
 - `go test ./internal/baseline -count=1 -run 'TestBaselinePlanCharacterization|TestCatalogDiagnosticCharacterization' -v | grep -q -- "--- PASS"`
   — expected: exit 0; both corpora match after re-recording.
-- `make verify` — expected: exit 0.
+- `make fmt-check test spec-budget skills-sync-check skills-check build spec-check`
+  — expected: exit 0; every target `make verify` runs, after the regeneration.
 - `git diff --name-only HEAD | grep -E "\.go$" | grep -q . && exit 1 || exit 0`
   — expected: exit 0; no Go source changed.
 
