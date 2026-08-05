@@ -1,9 +1,12 @@
 ---
 spec: 0077-a-green-check-is-not-a-review
-status: active
+status: archived
 created: 2026-08-05
 surfaces: [backend, cli]
+archived: "2026-08-05"
+source_slug: 0077-a-green-check-is-not-a-review
 ---
+
 
 # A green check is not a review
 

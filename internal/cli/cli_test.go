@@ -400,7 +400,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "accepted Review Source Evidence", "CodeRabbit APPROVED review", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "accepted Review Source Evidence", "only check-or-status route to a verified head", "recognised review-completed current-head CodeRabbit check or commit status", "current-head CodeRabbit APPROVED review", "unrecognised signal resolves to pending", "green check is not evidence that a review ran", "explicit Review Source refusal resolves to skipped", "will not merge that head or clear it for merge", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
@@ -1233,12 +1233,13 @@ func TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides(t *testing
 	for _, name := range []string{"resolve", "watch", "implement"} {
 		t.Run(name, func(t *testing.T) {
 			got := commandUsage(name)
+			normalized := strings.Join(strings.Fields(got), " ")
 			for _, want := range []string{
 				"Omit all Agent Selection flags",
 				"--agent <agent> --model <model> --reasoning-effort <effort>",
 				"requires --agent, --model, and --reasoning-effort together",
 			} {
-				if !strings.Contains(got, want) {
+				if !strings.Contains(normalized, want) {
 					t.Fatalf("%s help missing %q:\n%s", name, want, got)
 				}
 			}
@@ -6653,6 +6654,8 @@ func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testin
 	})
 	committer := &fakeCommitter{}
 	withCommitter(t, committer)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
 	cleanupCalls := 0
 	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		cleanupCalls++
@@ -6691,6 +6694,9 @@ func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testin
 	if committer.calls != 0 {
 		t.Fatalf("Review Skipped review-artifact commits = %d, want 0", committer.calls)
 	}
+	if pusher.calls != 0 {
+		t.Fatalf("Review Skipped Final Push calls = %d, want 0", pusher.calls)
+	}
 	if _, err := os.Stat(defaultReviewRootForRepo(repoDir, "123")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("Review Skipped artifact root exists or is unreadable: %v", err)
 	}
@@ -6711,6 +6717,7 @@ func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testin
 		outcome.NextAction == "" ||
 		outcome.ReviewIssuesKnown == nil ||
 		*outcome.ReviewIssuesKnown ||
+		outcome.EvidenceState != string(reviewsource.EvidenceSkipped) ||
 		outcome.EvidenceKind != string(reviewsource.EvidenceKindCheckRun) {
 		t.Fatalf("Review Skipped outcome payload = %#v", outcome)
 	}
@@ -6730,6 +6737,75 @@ func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testin
 	}
 	if len(active) != 0 || len(all) != 1 || all[0].ID != runID || all[0].State != store.StateReviewSkipped {
 		t.Fatalf("Run Browser listings active=%#v all=%#v", active, all)
+	}
+}
+
+func TestRunWatchUnrecognisedGreenSignalDiagnosesAndDoesNotPush(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+watch:
+  poll_interval: 1ns
+  review_timeout: 2ns
+  quiet_period: 1ns
+`)
+	detail := "CodeRabbit check output title Unknown outcome is not recognised"
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		return reviewsource.Evidence{
+			State:           reviewsource.EvidencePending,
+			Kind:            reviewsource.EvidenceKindCheckRun,
+			Identity:        "check_run:107",
+			ExpectedHeadSHA: req.ExpectedHeadSHA,
+			ObservedHeadSHA: req.ExpectedHeadSHA,
+			Conclusion:      "success",
+			Detail:          detail,
+		}, nil
+	})
+	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+		t.Fatal("unrecognised green signal must not fetch Review Source issues")
+		return nil, nil
+	})
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{
+		"watch", "--source", "coderabbit", "--pr", "123",
+		"--until-clean", "--max-rounds", "6", "--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("unrecognised green signal exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	for _, want := range []string{"signal was not recognised", detail, "reached TimedOut"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("unrecognised green signal diagnostic missing %q: %q", want, stderr.String())
+		}
+	}
+	if pusher.calls != 0 {
+		t.Fatalf("unrecognised green signal Final Push calls = %d, want 0", pusher.calls)
+	}
+
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	var outcome runevent.OutcomePayload
+	foundOutcome := false
+	for _, journaled := range events {
+		if journaled.Event.Kind != runevent.KindDaemonOutcome {
+			continue
+		}
+		if err := json.Unmarshal(journaled.Event.Payload, &outcome); err != nil {
+			t.Fatalf("decode unrecognised green signal outcome: %v", err)
+		}
+		foundOutcome = true
+	}
+	if !foundOutcome ||
+		outcome.State != store.StateTimedOut ||
+		outcome.EvidenceState != string(reviewsource.EvidencePending) ||
+		!strings.Contains(outcome.Reason, "signal was not recognised") ||
+		!strings.Contains(outcome.Reason, detail) {
+		t.Fatalf("unrecognised green signal outcome payload = %#v", outcome)
 	}
 }
 
@@ -6887,6 +6963,7 @@ func TestRunWatchReviewIssuesKnownAfterFetchedZero(t *testing.T) {
 	if !found ||
 		outcome.ReviewIssuesKnown == nil ||
 		!*outcome.ReviewIssuesKnown ||
+		outcome.EvidenceState != string(reviewsource.EvidenceVerified) ||
 		outcome.EvidenceKind != string(reviewsource.EvidenceKindReviewApproval) ||
 		outcome.EvidenceHeadSHA != "abc123" ||
 		outcome.VerifiedHeadSHA != "abc123" {
@@ -6964,7 +7041,8 @@ func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T
 			}
 		}
 	}
-	if outcome.EvidenceKind != string(reviewsource.EvidenceKindArtifactOnlyDescendant) ||
+	if outcome.EvidenceState != string(reviewsource.EvidenceVerified) ||
+		outcome.EvidenceKind != string(reviewsource.EvidenceKindArtifactOnlyDescendant) ||
 		outcome.EvidenceHeadSHA != currentHead ||
 		outcome.VerifiedHeadSHA != parentHead {
 		t.Fatalf("inherited outcome = %#v", outcome)

@@ -1049,11 +1049,18 @@ Review Source Evidence is bound to the expected head. `pending` means no usable
 expected-head signal exists; `reviewing` means a current-head CodeRabbit check
 or status is still in progress; `reviewed` means CodeRabbit produced a
 current-head result that does not prove Merge-Ready; and `verified` requires a
-successful current-head CodeRabbit check or commit status, or a current-head
-CodeRabbit `APPROVED` review, with zero unresolved CodeRabbit threads. A stale
-signal never verifies the expected head. `skipped` requires an explicit
-structured current-head skip, and `failed` records an explicit current-head
-Review Source failure.
+recognised review-completed current-head CodeRabbit check or commit status, or
+a current-head CodeRabbit `APPROVED` review, with zero unresolved CodeRabbit
+threads. A stale signal never verifies the expected head. An explicit Review
+Source refusal resolves to `skipped` evidence and never verifies a head;
+`watch --until-clean` will not merge that head or clear it for merge. An
+unrecognised signal resolves to `pending`, even when its check conclusion is
+success: a green check is not evidence that a review ran. `failed` records an
+explicit current-head Review Source failure.
+
+A refusal is not a transient Review Source failure. Roundfix does not
+automatically retrigger the review or retry a refused head; the follow-on work
+owns that policy.
 
 Roundfix retries only typed transient Review Source failures: a context
 deadline not caused by Run cancellation, temporary DNS failure, connection

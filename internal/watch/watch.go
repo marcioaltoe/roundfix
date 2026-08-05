@@ -100,15 +100,16 @@ func (fn ArtifactPublishFunc) PublishArtifacts(ctx context.Context, req Artifact
 }
 
 type Result struct {
-	Outcome             string
-	Rounds              int
-	Remaining           int
-	ManualReviewCommand string
-	ReviewIssuesKnown   bool
-	TerminalReason      string
-	NextAction          string
-	Evidence            reviewsource.Evidence
-	VerifiedHeadSHA     string
+	Outcome                    string
+	Rounds                     int
+	Remaining                  int
+	ManualReviewCommand        string
+	ReviewIssuesKnown          bool
+	TerminalReason             string
+	TerminalReasonIsDiagnostic bool
+	NextAction                 string
+	Evidence                   reviewsource.Evidence
+	VerifiedHeadSHA            string
 }
 
 type StatusSource interface {
@@ -278,11 +279,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (result Result, re
 		}
 		status := settledWait.status
 		if status.State != StatusSettled {
-			return Result{
-				Outcome:             store.StateTimedOut,
-				Rounds:              round - 1,
-				ManualReviewCommand: "@coderabbitai review",
-			}, nil
+			return resultForTimedOut(round-1, settledWait.evidence), nil
 		}
 		if settledWait.evidence.State == reviewsource.EvidenceSkipped {
 			return resultForReviewSkipped(round-1, settledWait.evidence), nil
@@ -347,11 +344,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (result Result, re
 				return Result{Outcome: store.StateCleanUnverified, Rounds: round}, nil
 			}
 			if confirm.timedOut {
-				return Result{
-					Outcome:             store.StateTimedOut,
-					Rounds:              round,
-					ManualReviewCommand: "@coderabbitai review",
-				}, nil
+				return resultForTimedOut(round, confirm.evidence), nil
 			}
 			if round == req.MaxRounds {
 				return Result{Outcome: store.StateMaxRoundsReached, Rounds: round}, nil
@@ -391,11 +384,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (result Result, re
 				return Result{Outcome: store.StateCleanUnverified, Rounds: round}, nil
 			}
 			if confirm.timedOut {
-				return Result{
-					Outcome:             store.StateTimedOut,
-					Rounds:              round,
-					ManualReviewCommand: "@coderabbitai review",
-				}, nil
+				return resultForTimedOut(round, confirm.evidence), nil
 			}
 			if round == req.MaxRounds {
 				return Result{Outcome: store.StateMaxRoundsReached, Rounds: round}, nil
@@ -538,6 +527,29 @@ func resultForReviewSkipped(rounds int, evidence reviewsource.Evidence) Result {
 		NextAction:     reviewSkippedNextAction,
 		Evidence:       evidence,
 	}
+}
+
+func resultForTimedOut(rounds int, evidence reviewsource.Evidence) Result {
+	terminalReason := unrecognisedEvidenceReason(evidence)
+	return Result{
+		Outcome:                    store.StateTimedOut,
+		Rounds:                     rounds,
+		ManualReviewCommand:        "@coderabbitai review",
+		TerminalReason:             terminalReason,
+		TerminalReasonIsDiagnostic: terminalReason != "",
+		Evidence:                   evidence,
+	}
+}
+
+func unrecognisedEvidenceReason(evidence reviewsource.Evidence) string {
+	if evidence.State != reviewsource.EvidencePending || evidence.Kind == reviewsource.EvidenceKindNone {
+		return ""
+	}
+	detail := strings.TrimSpace(evidence.Detail)
+	if detail == "" {
+		return "Review Source signal was not recognised."
+	}
+	return reviewsource.BoundEvidenceDetail("Review Source signal was not recognised: " + detail)
 }
 
 type confirmResult struct {

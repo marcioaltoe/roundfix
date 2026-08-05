@@ -391,15 +391,38 @@ func TestProjectStreamEventReviewSkippedOutcome(t *testing.T) {
 		Kind:    KindDaemonOutcome,
 		Summary: "Run reached ReviewSkipped.",
 		Time:    time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
-		Payload: []byte(`{"state":"ReviewSkipped","remaining":0,"reason":"pull request is too large","next_action":"split the pull request"}`),
+		Payload: []byte(`{"state":"ReviewSkipped","remaining":0,"reason":"pull request is too large","next_action":"split the pull request","evidence_state":"skipped"}`),
 	}
 
 	record, ok, err := ProjectStreamEvent(7, event, StreamCategoryFilter{StreamCategoryOutcome: {}})
 	if err != nil {
 		t.Fatalf("project Review Skipped outcome: %v", err)
 	}
-	if !ok || record.Category != StreamCategoryOutcome || record.Outcome != "ReviewSkipped" {
+	if !ok || record.Category != StreamCategoryOutcome || record.Outcome != "ReviewSkipped" ||
+		record.EvidenceState != "skipped" || record.Reason != "pull request is too large" {
 		t.Fatalf("Review Skipped stream record = %#v, ok=%v", record, ok)
+	}
+}
+
+func TestProjectStreamEventPendingUnrecognisedOutcome(t *testing.T) {
+	t.Parallel()
+	event := RunEvent{
+		RunID:   "run_pending_unrecognised",
+		Source:  SourceDaemon,
+		Kind:    KindDaemonOutcome,
+		Summary: "Run reached TimedOut.",
+		Time:    time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{"state":"TimedOut","remaining":0,"reason":"Review Source signal was not recognised: unknown output title","evidence_state":"pending"}`),
+	}
+
+	record, ok, err := ProjectStreamEvent(8, event, StreamCategoryFilter{StreamCategoryOutcome: {}})
+	if err != nil {
+		t.Fatalf("project unrecognised pending outcome: %v", err)
+	}
+	if !ok || record.Category != StreamCategoryOutcome || record.Outcome != "TimedOut" ||
+		record.EvidenceState != "pending" ||
+		record.Reason != "Review Source signal was not recognised: unknown output title" {
+		t.Fatalf("unrecognised pending stream record = %#v, ok=%v", record, ok)
 	}
 }
 
@@ -419,6 +442,7 @@ func TestProjectStreamEventOutcomeContextProjectsReviewIssuesEvidenceAndRecovery
 			"review_issues_known":true,
 			"console_log":"/tmp/run_context/console.log",
 			"attach_command":"roundfix attach run_context",
+			"evidence_state":"pending",
 			"evidence_kind":"review_approval",
 			"evidence_head_sha":"abc123",
 			"verified_head_sha":"abc123",
@@ -438,6 +462,7 @@ func TestProjectStreamEventOutcomeContextProjectsReviewIssuesEvidenceAndRecovery
 		record.NextAction == "" ||
 		record.ConsoleLog != "/tmp/run_context/console.log" ||
 		record.AttachCommand != "roundfix attach run_context" ||
+		record.EvidenceState != "pending" ||
 		record.EvidenceKind != "review_approval" ||
 		record.EvidenceHeadSHA != "abc123" ||
 		record.VerifiedHeadSHA != "abc123" {

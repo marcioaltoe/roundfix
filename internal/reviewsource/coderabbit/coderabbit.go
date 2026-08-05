@@ -1,12 +1,14 @@
 package coderabbit
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os/exec"
 	"strconv"
@@ -32,6 +34,7 @@ var _ reviewsource.EvidenceSource = Client{}
 
 type GitHubClient interface {
 	ReviewComments(ctx context.Context, repo string, prNumber string) ([]ReviewComment, error)
+	IssueComments(ctx context.Context, repo string, prNumber string) ([]IssueComment, error)
 	ReviewThreads(ctx context.Context, repo string, prNumber string) ([]ReviewThread, error)
 	CheckRuns(ctx context.Context, repo string, headSHA string) ([]CheckRun, error)
 	CommitStatuses(ctx context.Context, repo string, headSHA string) ([]CommitStatus, error)
@@ -50,6 +53,12 @@ type ReviewComment struct {
 	Author                  string
 	SourceReviewID          string
 	SourceReviewSubmittedAt time.Time
+}
+
+type IssueComment struct {
+	DatabaseID int64
+	Body       string
+	Author     string
 }
 
 type ReviewThread struct {
@@ -79,8 +88,9 @@ type CheckRun struct {
 }
 
 type CommitStatus struct {
-	Context string
-	State   string
+	Context     string
+	State       string
+	Description string
 }
 
 type PullRequestReview struct {
@@ -276,6 +286,16 @@ func (client Client) Evidence(ctx context.Context, req reviewsource.EvidenceRequ
 	if err != nil {
 		return reviewsource.Evidence{}, reviewSourceAccessError(ctx, "fetch CodeRabbit commit statuses", err)
 	}
+	var comments []IssueComment
+	if refusalCommentsRequired(req.ExpectedHeadSHA, checkRuns, statuses) {
+		comments, err = gh.IssueComments(ctx, req.BaseRepository, req.PRNumber)
+		if err != nil {
+			return reviewsource.Evidence{}, reviewSourceAccessError(ctx, "fetch CodeRabbit issue comments", err)
+		}
+	}
+	if evidence, refused := refusalEvidence(req.ExpectedHeadSHA, checkRuns, statuses, comments, 0); refused {
+		return evidence, nil
+	}
 	if evidence, reviewing := reviewingEvidence(req.ExpectedHeadSHA, checkRuns, statuses); reviewing {
 		return evidence, nil
 	}
@@ -292,20 +312,13 @@ func (client Client) Evidence(ctx context.Context, req reviewsource.EvidenceRequ
 
 func reviewingEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []CommitStatus) (reviewsource.Evidence, bool) {
 	for _, run := range checkRuns {
-		if currentHeadCheckRun(expectedHeadSHA, run) {
-			if _, skipped := structuredSkipReason(run); skipped {
-				return reviewsource.Evidence{}, false
-			}
-		}
-	}
-	for _, run := range checkRuns {
 		if currentHeadCheckRun(expectedHeadSHA, run) && isPendingSignal(normalized(run.Status)) {
 			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceReviewing, "", 0), true
 		}
 	}
 	for _, status := range statuses {
 		if isCodeRabbitSignal(status.Context) && isPendingSignal(normalized(status.State)) {
-			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceReviewing, 0), true
+			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceReviewing, "", 0), true
 		}
 	}
 	return reviewsource.Evidence{}, false
@@ -359,6 +372,43 @@ func (client GHClient) ReviewComments(ctx context.Context, repo string, prNumber
 		})
 	}
 	return comments, nil
+}
+
+func (client GHClient) IssueComments(ctx context.Context, repo string, prNumber string) ([]IssueComment, error) {
+	output, err := runGH(ctx, "api", "--paginate", fmt.Sprintf("repos/%s/issues/%s/comments", repo, prNumber))
+	if err != nil {
+		return nil, err
+	}
+	type rawIssueComment struct {
+		ID   int64  `json:"id"`
+		Body string `json:"body"`
+		User struct {
+			Login string `json:"login"`
+		} `json:"user"`
+	}
+	decoder := json.NewDecoder(bytes.NewReader(output))
+	var comments []IssueComment
+	pages := 0
+	for {
+		var raw []rawIssueComment
+		if err := decoder.Decode(&raw); err != nil {
+			if errors.Is(err, io.EOF) && pages > 0 {
+				return comments, nil
+			}
+			if errors.Is(err, io.EOF) {
+				err = io.ErrUnexpectedEOF
+			}
+			return nil, fmt.Errorf("parse pull request issue comments: %w", err)
+		}
+		pages++
+		for _, comment := range raw {
+			comments = append(comments, IssueComment{
+				DatabaseID: comment.ID,
+				Body:       comment.Body,
+				Author:     comment.User.Login,
+			})
+		}
+	}
 }
 
 func (client GHClient) ReviewThreads(ctx context.Context, repo string, prNumber string) ([]ReviewThread, error) {
@@ -478,8 +528,9 @@ func (client GHClient) CommitStatuses(ctx context.Context, repo string, headSHA 
 	}
 	var raw struct {
 		Statuses []struct {
-			Context string `json:"context"`
-			State   string `json:"state"`
+			Context     string `json:"context"`
+			State       string `json:"state"`
+			Description string `json:"description"`
 		} `json:"statuses"`
 	}
 	if err := json.Unmarshal(output, &raw); err != nil {
@@ -488,8 +539,9 @@ func (client GHClient) CommitStatuses(ctx context.Context, repo string, headSHA 
 	statuses := make([]CommitStatus, 0, len(raw.Statuses))
 	for _, status := range raw.Statuses {
 		statuses = append(statuses, CommitStatus{
-			Context: status.Context,
-			State:   status.State,
+			Context:     status.Context,
+			State:       status.State,
+			Description: status.Description,
 		})
 	}
 	return statuses, nil
@@ -640,16 +692,6 @@ func (client GHClient) reviewThreadsPage(ctx context.Context, owner string, name
 func classifyEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []CommitStatus, reviews []PullRequestReview, threads []ReviewThread) reviewsource.Evidence {
 	unresolvedThreads := unresolvedCodeRabbitThreadCount(threads)
 
-	// Structured skip is authoritative and must win over every other signal.
-	for _, run := range checkRuns {
-		if !currentHeadCheckRun(expectedHeadSHA, run) {
-			continue
-		}
-		if reason, ok := structuredSkipReason(run); ok {
-			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceSkipped, reason, unresolvedThreads)
-		}
-	}
-
 	for _, run := range checkRuns {
 		if !currentHeadCheckRun(expectedHeadSHA, run) {
 			continue
@@ -661,18 +703,18 @@ func classifyEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []C
 	}
 	for _, status := range statuses {
 		if isCodeRabbitSignal(status.Context) && isPendingSignal(normalized(status.State)) {
-			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceReviewing, unresolvedThreads)
+			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceReviewing, "", unresolvedThreads)
 		}
 	}
 
 	for _, run := range checkRuns {
-		if currentHeadCheckRun(expectedHeadSHA, run) && normalized(run.Conclusion) == "success" {
+		if currentHeadCheckRun(expectedHeadSHA, run) && reviewCompleted(run) {
 			return checkRunEvidence(expectedHeadSHA, run, settledEvidenceState(unresolvedThreads), "", unresolvedThreads)
 		}
 	}
 	for _, status := range statuses {
-		if isCodeRabbitSignal(status.Context) && normalized(status.State) == "success" {
-			return commitStatusEvidence(expectedHeadSHA, status, settledEvidenceState(unresolvedThreads), unresolvedThreads)
+		if reviewStatusCompleted(status) {
+			return commitStatusEvidence(expectedHeadSHA, status, settledEvidenceState(unresolvedThreads), "", unresolvedThreads)
 		}
 	}
 
@@ -697,12 +739,22 @@ func classifyEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []C
 			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceFailed, "", unresolvedThreads)
 		}
 		if status == "completed" || conclusion != "" {
-			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceReviewed, "", unresolvedThreads)
+			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidencePending, "", unresolvedThreads)
 		}
 	}
 	for _, status := range statuses {
 		if isCodeRabbitSignal(status.Context) && isFailedSignal(normalized(status.State)) {
-			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceFailed, unresolvedThreads)
+			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceFailed, "", unresolvedThreads)
+		}
+	}
+	for _, run := range checkRuns {
+		if currentHeadCheckRun(expectedHeadSHA, run) {
+			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidencePending, "", unresolvedThreads)
+		}
+	}
+	for _, status := range statuses {
+		if isCodeRabbitSignal(status.Context) {
+			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidencePending, "", unresolvedThreads)
 		}
 	}
 
@@ -794,6 +846,105 @@ func currentHeadReview(expectedHeadSHA string, review PullRequestReview) bool {
 	return isCodeRabbitSignal(review.Author) && review.CommitSHA == expectedHeadSHA
 }
 
+func reviewCompleted(run CheckRun) bool {
+	if normalized(run.Status) != "completed" || normalized(run.Conclusion) != "success" {
+		return false
+	}
+	if title := normalized(run.OutputTitle); title != "" {
+		return title == "review completed"
+	}
+	name := normalized(run.Name)
+	return name == "coderabbit" || name == "review completed"
+}
+
+func reviewStatusCompleted(status CommitStatus) bool {
+	return isCodeRabbitSignal(status.Context) &&
+		normalized(status.State) == "success" &&
+		normalized(status.Description) == "review completed"
+}
+
+func refusalEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []CommitStatus, comments []IssueComment, unresolvedThreads int) (reviewsource.Evidence, bool) {
+	for _, run := range checkRuns {
+		if !currentHeadCheckRun(expectedHeadSHA, run) {
+			continue
+		}
+		if reason, ok := refusalReason(run, comments); ok {
+			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceSkipped, reason, unresolvedThreads), true
+		}
+	}
+	for _, status := range statuses {
+		if reason, ok := commitStatusRefusalReason(status, comments); ok {
+			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceSkipped, reason, unresolvedThreads), true
+		}
+	}
+	return reviewsource.Evidence{}, false
+}
+
+func refusalReason(run CheckRun, comments []IssueComment) (string, bool) {
+	if reason, ok := structuredSkipReason(run); ok {
+		return reason, true
+	}
+	if !rateLimitRefusalSignal(run.Name, run.OutputTitle) {
+		return "", false
+	}
+	return rateLimitCommentReason(comments)
+}
+
+func commitStatusRefusalReason(status CommitStatus, comments []IssueComment) (string, bool) {
+	if !isCodeRabbitSignal(status.Context) || !rateLimitRefusalSignal(status.Description) {
+		return "", false
+	}
+	return rateLimitCommentReason(comments)
+}
+
+func refusalCommentsRequired(expectedHeadSHA string, checkRuns []CheckRun, statuses []CommitStatus) bool {
+	for _, run := range checkRuns {
+		if currentHeadCheckRun(expectedHeadSHA, run) && rateLimitRefusalSignal(run.Name, run.OutputTitle) {
+			return true
+		}
+	}
+	for _, status := range statuses {
+		if isCodeRabbitSignal(status.Context) && rateLimitRefusalSignal(status.Description) {
+			return true
+		}
+	}
+	return false
+}
+
+func rateLimitRefusalSignal(values ...string) bool {
+	for _, value := range values {
+		switch normalized(value) {
+		case "review rate limited", "review limit reached":
+			return true
+		}
+	}
+	return false
+}
+
+func rateLimitCommentReason(comments []IssueComment) (string, bool) {
+	const marker = "auto-generated comment: rate limited by coderabbit.ai"
+	for index := len(comments) - 1; index >= 0; index-- {
+		comment := comments[index]
+		if !isCodeRabbitAuthor(comment.Author) || !strings.Contains(normalized(comment.Body), marker) {
+			continue
+		}
+		for _, line := range strings.Split(comment.Body, "\n") {
+			line = strings.TrimSpace(line)
+			for strings.HasPrefix(line, ">") {
+				line = strings.TrimSpace(strings.TrimPrefix(line, ">"))
+			}
+			if !strings.HasPrefix(line, "## ") {
+				continue
+			}
+			reason := strings.TrimSpace(strings.TrimPrefix(line, "## "))
+			if reason != "" {
+				return reviewsource.BoundEvidenceDetail(reason), true
+			}
+		}
+	}
+	return "", false
+}
+
 func structuredSkipReason(run CheckRun) (string, bool) {
 	title := normalized(run.OutputTitle)
 	if title != "review skipped" && !strings.HasPrefix(title, "review skipped:") {
@@ -810,6 +961,9 @@ func checkRunEvidence(expectedHeadSHA string, run CheckRun, state reviewsource.E
 	if unresolvedThreads > 0 {
 		detail = fmt.Sprintf("%s; %d unresolved CodeRabbit thread(s) remain", detail, unresolvedThreads)
 	}
+	if state == reviewsource.EvidenceSkipped && reason != "" {
+		detail = reason
+	}
 	return reviewsource.Evidence{
 		State:           state,
 		Kind:            reviewsource.EvidenceKindCheckRun,
@@ -822,11 +976,17 @@ func checkRunEvidence(expectedHeadSHA string, run CheckRun, state reviewsource.E
 	}
 }
 
-func commitStatusEvidence(expectedHeadSHA string, status CommitStatus, state reviewsource.EvidenceState, unresolvedThreads int) reviewsource.Evidence {
+func commitStatusEvidence(expectedHeadSHA string, status CommitStatus, state reviewsource.EvidenceState, reason string, unresolvedThreads int) reviewsource.Evidence {
 	conclusion := normalized(status.State)
 	detail := fmt.Sprintf("CodeRabbit commit status %q is %s for the expected head", status.Context, firstNonEmpty(conclusion, "unknown"))
+	if description := strings.TrimSpace(status.Description); description != "" {
+		detail = fmt.Sprintf("%s: %s", detail, description)
+	}
 	if unresolvedThreads > 0 {
 		detail = fmt.Sprintf("%s; %d unresolved CodeRabbit thread(s) remain", detail, unresolvedThreads)
+	}
+	if state == reviewsource.EvidenceSkipped && reason != "" {
+		detail = reason
 	}
 	return reviewsource.Evidence{
 		State:           state,
@@ -836,6 +996,7 @@ func commitStatusEvidence(expectedHeadSHA string, status CommitStatus, state rev
 		ObservedHeadSHA: expectedHeadSHA,
 		Conclusion:      conclusion,
 		Detail:          reviewsource.BoundEvidenceDetail(detail),
+		Reason:          reason,
 	}
 }
 

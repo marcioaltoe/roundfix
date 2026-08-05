@@ -226,6 +226,9 @@ func TestRunTransientReviewEvidenceExhaustsReviewTimeout(t *testing.T) {
 	if result.Outcome != store.StateTimedOut {
 		t.Fatalf("transient timeout outcome = %q, want TimedOut", result.Outcome)
 	}
+	if result.TerminalReasonIsDiagnostic {
+		t.Fatal("transient timeout terminal reason must not be an Evidence diagnostic")
+	}
 	if len(source.requests) != 2 {
 		t.Fatalf("Review Source calls = %d, want no call at the timeout boundary", len(source.requests))
 	}
@@ -551,6 +554,49 @@ func TestRunReviewSkippedStopsBeforeFetch(t *testing.T) {
 	}
 	if len(source.requests) != 1 {
 		t.Fatalf("Review Skipped Evidence calls = %d, want 1", len(source.requests))
+	}
+}
+
+func TestRunUnrecognisedPendingEvidenceStopsBeforeFetchWithDiagnostic(t *testing.T) {
+	t.Parallel()
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	evidence := reviewsource.Evidence{
+		State:           reviewsource.EvidencePending,
+		Kind:            reviewsource.EvidenceKindCheckRun,
+		Identity:        "check_run:107",
+		ExpectedHeadSHA: "abc123",
+		ObservedHeadSHA: "abc123",
+		Conclusion:      "success",
+		Detail:          "CodeRabbit check output title is not recognised",
+	}
+	source := &fakeReviewEvidenceSource{evidence: evidence}
+	fetcher := &fakeFetcher{}
+	resolver := &fakeResolver{}
+
+	result, err := Run(context.Background(), validRequest(), Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        fetcher,
+		Resolver:       resolver,
+		Clock:          clock,
+		Sleeper:        &fakeSleeper{clock: clock},
+	})
+	if err != nil {
+		t.Fatalf("watch unrecognised Evidence: %v", err)
+	}
+	if result.Outcome != store.StateTimedOut || result.Rounds != 0 {
+		t.Fatalf("unrecognised Evidence result = %+v", result)
+	}
+	if result.TerminalReason != "Review Source signal was not recognised: "+evidence.Detail {
+		t.Fatalf("terminal reason = %q", result.TerminalReason)
+	}
+	if !result.TerminalReasonIsDiagnostic {
+		t.Fatal("unrecognised Evidence terminal reason must be marked diagnostic")
+	}
+	if result.Evidence != evidence {
+		t.Fatalf("terminal Evidence = %#v, want %#v", result.Evidence, evidence)
+	}
+	if fetcher.calls != 0 || resolver.calls != 0 {
+		t.Fatalf("unrecognised Evidence reached later work: fetch=%d resolve=%d", fetcher.calls, resolver.calls)
 	}
 }
 
