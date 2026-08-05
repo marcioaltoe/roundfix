@@ -38,8 +38,22 @@ This slice runs the regeneration and reads the diff, which is the whole point.
 3. MUST fail the Task if any path moved that layout content does not explain.
    A leaked edit is the failure this Task exists to catch.
 4. MUST leave `make verify` green after one regeneration pass.
-5. MUST NOT hand-edit any derived artifact. Every change comes from a
-   regeneration command.
+5. MUST NOT hand-edit any derived artifact **except** to create the Source
+   Baseline manifest rows for clauses task_01 introduced. The regenerator
+   maintains those rows and never creates them, and says so itself:
+
+   ```text
+   catalog.sourceBaseline.required-clause.missing:
+     baseline.standard-typescript-monorepo-0.0.1:
+     clause.context.backlog-01-operational-contract;
+     the regenerator maintains manifest rows but never creates them,
+     so add this row first
+   ```
+
+   Creating the row is the only action that unblocks the regeneration, so a
+   blanket prohibition forbids the one step this Task exists to perform.
+   Everything else still comes from a regeneration command, and every created
+   row MUST be listed in the Result with the clause that required it.
 
 ## Subtasks
 
