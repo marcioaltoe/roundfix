@@ -29,7 +29,11 @@ This slice runs the regeneration and reads the diff, which is the whole point.
      -run TestCatalogDiagnosticCharacterization -update-catalog-diagnostics
    ```
 
-2. MUST inspect the resulting diff and record, in the Task Result, every path
+2. MUST run `make baseline-digests` a second time after both re-records,
+   because `BASELINE_DIGEST_STEPS` regenerates the maintained Source Baseline
+   fixture before the catalog digests it derives from, so a single pass leaves
+   that fixture stale.
+3. MUST inspect the resulting diff and record, in the Task Result, every path
    that moved and why layout content explains it.
 3. MUST fail the Task if any path moved that layout content does not explain.
    A leaked edit is the failure this Task exists to catch.
@@ -69,6 +73,14 @@ target `make verify` runs is listed.
 - `make baseline-digests` — expected: exit 0.
 - `go test ./internal/baseline -count=1 -run 'TestBaselinePlanCharacterization|TestCatalogDiagnosticCharacterization' -v | grep -q -- "--- PASS"`
   — expected: exit 0; both corpora match after re-recording.
+- `make baseline-digests` — expected: exit 0. The second pass is load-bearing,
+  not a retry: `BASELINE_DIGEST_STEPS` regenerates
+  `TestReadoptionCompatibilityMaintainedFixture` as its **first** step, before
+  the catalog digests that fixture derives from, so one pass leaves it stale
+  against what the later steps just wrote. Measured on 2026-08-05:
+  `TestReadoptionCompatibilityMaintainedFixture` failed the full gate after a
+  single pass, with `maintained Source Baseline counts = identity 106 entries
+  106 accounting 51`.
 - `make fmt-check test spec-budget skills-sync-check skills-check build spec-check`
   — expected: exit 0; every target `make verify` runs, after the regeneration.
 - `git diff --name-only HEAD | grep -E "\.go$" | grep -q . && exit 1 || exit 0`
