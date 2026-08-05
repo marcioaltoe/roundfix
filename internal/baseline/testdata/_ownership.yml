@@ -1,0 +1,5 @@
+owner: sanctioned
+reason: >-
+  The sanctioned make baseline-digests command regenerates the catalog digest
+  and normalized catalog snapshot stored directly in this directory; nested
+  corpora and file sidecars override this record at their own paths.
