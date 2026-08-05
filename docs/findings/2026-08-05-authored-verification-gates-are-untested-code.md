@@ -135,3 +135,44 @@ surviving until the operator chooses.
 Rounds burned on evidence waits, nitpick deadlock). Together the two findings sketch the same
 theme from both sides: the pipeline's own control surfaces — gates, sweeps, waits — need the
 scrutiny the pipeline applies to product code.
+
+## Addendum — 2026-08-05 — two archive-path contract gaps (spec 0002 endgame)
+
+7. **The Daemon settles a declared-partial gate `failed`; Archive requires `completed`.** The
+   final QA report closed `verdict: partial`, zero findings, with the unmet rows covered by the
+   Spec's `## Unreachable Acceptance` declarations — the exact shape Archive documents as
+   eligible ("an archive-eligible partial Report can still leave the Run Unresolved; that
+   outcome does not prevent Archive"). But the Daemon settles any non-`pass` gate as `failed`,
+   and Archive's first preflight check demands every Task `completed` — so the documented
+   eligible state is unreachable without the operator hand-editing the Daemon-owned gate status.
+   Suggested behavior: the Daemon settles an archive-eligible declared-partial gate `completed`
+   (journaling the verdict), or Archive's task-status check accepts the gate Task in `failed`
+   when the newest report is archive-eligible.
+8. **Declaration matching is left to gate-agent judgment, and Archive counts the label.** With a
+   declaration covering "rows requiring loopback PostgreSQL inside the QA sandbox", the gate
+   still labeled the repository-verification row `blocked (environment: …)` — after itself
+   re-running the same command green outside the sandbox on the same build — and Archive then
+   refused on `rows_blocked_environment is 1; expected 0`. The operator's only recourse was
+   sharpening the declaration text to name the row class and prescribe the label, then
+   re-running the whole gate for accounting. Suggested behavior: when a blocked row's blocker
+   matches a Spec declaration, the gate classifies it `declared` (environment is the fallback
+   for undeclared blockers), or Archive treats environment-blocked rows whose blocker text
+   matches a declaration as declared.
+
+Related SQLITE_BUSY note: one Task batch in the same spec died with
+`publish Run Events: begin Run Event append: database is locked (5) (SQLITE_BUSY)` — an Agent
+batch failure with no work defect; a bounded retry on Run-Event appends would absorb it.
+
+## Addendum — 2026-08-05 — closing a failed gate needs a hand-edit the docs do not name (spec 0077)
+
+9. **Appending the corrective Task leaves the graph unloadable until the operator rewrites the
+   Daemon-owned gate status.** The documented recovery from a `fail` verdict is to append a
+   corrective Task, and `StaleGateError` is the mechanism that makes the insertion loud rather
+   than silent. But it is raised from `loadTaskGraph`, so between authoring `task_06` and
+   resetting `task_05`, every command that loads the Spec — `spec check`, `implement`
+   preflight — refuses with `QA gate result is invalidated`. The only way through is editing
+   `status: failed` back to `status: pending` in a Task file whose status the Daemon otherwise
+   owns exclusively, and no document names that edit as the operator's next step. The error
+   text states the problem and not the action. Suggested behavior: `StaleGateError` carries a
+   `next:` line naming the reset, or the loader treats a settled gate above uncompleted
+   dependencies as `pending` and journals the invalidation instead of refusing the load.
