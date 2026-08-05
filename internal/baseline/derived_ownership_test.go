@@ -6,10 +6,16 @@
 package baseline
 
 import (
+	"bytes"
+	"context"
+	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -157,6 +163,115 @@ func TestDerivedOwnershipValidationPreservesWholeTree(t *testing.T) {
 	}
 }
 
+func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
+	// Sequential: child commands deliberately rewrite one shared fixture.
+	repository := newDerivedRegenerationFixture(t)
+	baselineRoot := filepath.Join(repository, "internal", "baseline")
+	fileSystem := os.DirFS(baselineRoot)
+	roots := derivedDigestScanRoots(t)
+	records, err := readDerivedOwnershipRecords(fileSystem, roots)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := validateDerivedOwnership(fileSystem, roots)
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifactsByRecord := derivedArtifactsByRecord(t, fileSystem, roots, resolved)
+	clean := snapshotDerivedTreeAt(t, baselineRoot, roots)
+	cacheRoot := filepath.Join(repository, ".gocache")
+
+	sanctioned := declaredSanctionedProbes(t, records)
+	frozen := declaredFrozenProbes(t, records)
+
+	recordPaths := make([]string, 0, len(records))
+	for recordPath := range records {
+		recordPaths = append(recordPaths, recordPath)
+	}
+	sort.Strings(recordPaths)
+	var dedicatedRecordPath string
+	for _, recordPath := range recordPaths {
+		record := records[recordPath]
+		if record.Owner != derivedOwnerDedicated {
+			continue
+		}
+		if dedicatedRecordPath == "" {
+			dedicatedRecordPath = recordPath
+		}
+		artifacts := artifactsByRecord[recordPath]
+		if len(artifacts) == 0 {
+			t.Fatalf("dedicated ownership record %q governs no artifacts", recordPath)
+		}
+		t.Run("dedicated/"+strings.ReplaceAll(recordPath, "/", "_"), func(t *testing.T) {
+			rewrite := probesForPaths(artifacts, "dedicated")
+			err := exerciseDeclaredRegenerationStep(
+				t.Context(), repository, baselineRoot, cacheRoot, roots, clean,
+				record.Command, rewrite, frozen,
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertDerivedFixtureRestored(t, baselineRoot, roots, clean)
+		})
+	}
+	if dedicatedRecordPath == "" {
+		t.Fatal("ownership manifest declares no dedicated regeneration step")
+	}
+
+	validDedicated := records[dedicatedRecordPath]
+	negativeCases := []struct {
+		name      string
+		command   string
+		wantError string
+	}{
+		{
+			name:      "command does not exist",
+			command:   "roundfix-declared-step-command-does-not-exist",
+			wantError: "run declared command",
+		},
+		{
+			name:      "declared flag is wrong",
+			command:   validDedicated.Command + " -roundfix-deliberately-wrong-flag",
+			wantError: "run declared command",
+		},
+		{
+			name:      "command leaves artifacts unchanged",
+			command:   "go version",
+			wantError: "unchanged after deliberate perturbation",
+		},
+	}
+	for _, test := range negativeCases {
+		t.Run("failure/"+test.name, func(t *testing.T) {
+			writeDedicatedCommandFixture(t, baselineRoot, dedicatedRecordPath, test.command)
+			record, err := readDerivedOwnershipRecord(fileSystem, dedicatedRecordPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = exerciseDeclaredRegenerationStep(
+				t.Context(), repository, baselineRoot, cacheRoot, roots, clean,
+				record.Command,
+				probesForPaths(artifactsByRecord[dedicatedRecordPath], "dedicated"),
+				nil,
+			)
+			if err == nil || !strings.Contains(err.Error(), test.wantError) {
+				t.Fatalf("declared-step error = %v, want %q", err, test.wantError)
+			}
+			assertDerivedFixtureRestored(t, baselineRoot, roots, clean)
+		})
+	}
+
+	t.Run("sanctioned command rewrites sanctioned and preserves frozen", func(t *testing.T) {
+		err := exerciseDeclaredRegenerationStep(
+			t.Context(), repository, baselineRoot, cacheRoot, roots, clean,
+			"make baseline-digests", sanctioned, frozen,
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assertDerivedFixtureRestored(t, baselineRoot, roots, clean)
+	})
+}
+
 func derivedDigestScanRoots(t *testing.T) []string {
 	t.Helper()
 
@@ -188,28 +303,476 @@ func derivedDigestScanRoots(t *testing.T) []string {
 	return nil
 }
 
-func snapshotDerivedTree(t *testing.T, roots []string) map[string]string {
+type derivedArtifactSnapshot struct {
+	content []byte
+	mode    fs.FileMode
+}
+
+type derivedArtifactProbe struct {
+	path    string
+	owner   string
+	perturb func([]byte) ([]byte, error)
+}
+
+func snapshotDerivedTree(t *testing.T, roots []string) map[string]derivedArtifactSnapshot {
+	t.Helper()
+	return snapshotDerivedTreeAt(t, ".", roots)
+}
+
+func snapshotDerivedTreeAt(
+	t *testing.T,
+	baselineRoot string,
+	roots []string,
+) map[string]derivedArtifactSnapshot {
 	t.Helper()
 
-	snapshot := make(map[string]string)
-	fileSystem := os.DirFS(".")
+	snapshot, err := readDerivedTreeSnapshot(baselineRoot, roots)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return snapshot
+}
+
+func readDerivedTreeSnapshot(
+	baselineRoot string,
+	roots []string,
+) (map[string]derivedArtifactSnapshot, error) {
+	snapshot := make(map[string]derivedArtifactSnapshot)
+	fileSystem := os.DirFS(baselineRoot)
 	for _, root := range roots {
 		if err := fs.WalkDir(fileSystem, root, func(filePath string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
-				return walkErr
+				return fmt.Errorf("walk derived tree %q: %w", filePath, walkErr)
 			}
 			if entry.IsDir() {
 				return nil
 			}
 			content, err := fs.ReadFile(fileSystem, filePath)
 			if err != nil {
-				return err
+				return fmt.Errorf("read derived artifact %q: %w", filePath, err)
 			}
-			snapshot[path.Clean(filePath)] = string(content)
+			info, err := entry.Info()
+			if err != nil {
+				return fmt.Errorf("stat derived artifact %q: %w", filePath, err)
+			}
+			snapshot[path.Clean(filePath)] = derivedArtifactSnapshot{
+				content: append([]byte(nil), content...),
+				mode:    info.Mode().Perm(),
+			}
 			return nil
 		}); err != nil {
-			t.Fatalf("snapshot derived tree %q: %v", root, err)
+			return nil, fmt.Errorf("snapshot derived tree %q: %w", root, err)
 		}
 	}
-	return snapshot
+	return snapshot, nil
+}
+
+func newDerivedRegenerationFixture(t *testing.T) string {
+	t.Helper()
+
+	sourceRoot := filepath.Clean(filepath.Join("..", ".."))
+	fixtureRoot := t.TempDir()
+	for _, directory := range []string{".agents", "internal", "skills"} {
+		if err := os.CopyFS(
+			filepath.Join(fixtureRoot, directory),
+			os.DirFS(filepath.Join(sourceRoot, directory)),
+		); err != nil {
+			t.Fatalf("copy regeneration fixture directory %s: %v", directory, err)
+		}
+	}
+	for _, fileName := range []string{"Makefile", "go.mod", "go.sum", "skills-lock.json"} {
+		sourcePath := filepath.Join(sourceRoot, fileName)
+		content, err := os.ReadFile(sourcePath)
+		if err != nil {
+			t.Fatalf("read regeneration fixture file %s: %v", fileName, err)
+		}
+		info, err := os.Stat(sourcePath)
+		if err != nil {
+			t.Fatalf("stat regeneration fixture file %s: %v", fileName, err)
+		}
+		if err := os.WriteFile(filepath.Join(fixtureRoot, fileName), content, info.Mode().Perm()); err != nil {
+			t.Fatalf("copy regeneration fixture file %s: %v", fileName, err)
+		}
+	}
+	return fixtureRoot
+}
+
+func derivedArtifactsByRecord(
+	t *testing.T,
+	fileSystem fs.FS,
+	roots []string,
+	resolved map[string]derivedOwnershipRecord,
+) map[string][]string {
+	t.Helper()
+
+	artifacts := make(map[string][]string)
+	for artifactPath := range resolved {
+		info, err := fs.Stat(fileSystem, artifactPath)
+		if err != nil {
+			t.Fatalf("stat resolved derived path %q: %v", artifactPath, err)
+		}
+		if !info.Mode().IsRegular() {
+			continue
+		}
+		var recordPaths []string
+		for _, root := range roots {
+			if !pathWithinDerivedScanRoot(artifactPath, root) {
+				continue
+			}
+			recordPaths, err = resolveDerivedOwnershipRecordPaths(
+				fileSystem, root, artifactPath, false,
+			)
+			if err != nil {
+				t.Fatalf("resolve ownership for %q: %v", artifactPath, err)
+			}
+			break
+		}
+		if len(recordPaths) != 1 {
+			t.Fatalf("resolved artifact %q has ownership records %v", artifactPath, recordPaths)
+		}
+		artifacts[recordPaths[0]] = append(artifacts[recordPaths[0]], artifactPath)
+	}
+	for recordPath := range artifacts {
+		sort.Strings(artifacts[recordPath])
+	}
+	return artifacts
+}
+
+func declaredSanctionedProbes(
+	t *testing.T,
+	records map[string]derivedOwnershipRecord,
+) []derivedArtifactProbe {
+	t.Helper()
+
+	probes := map[string]derivedArtifactProbe{
+		"assets/setups/_ownership.yml": {
+			path: "assets/setups/go-cli.json", owner: "sanctioned",
+		},
+		"assets/source-baselines/_ownership.yml": {
+			path:  "assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json",
+			owner: "sanctioned",
+		},
+		"assets/formatter-fixtures/_ownership.yml": {
+			path:  "assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md",
+			owner: "sanctioned",
+		},
+		"assets/profiles/_ownership.yml": {
+			path:  "assets/profiles/standard-typescript-monorepo.json",
+			owner: "sanctioned", perturb: perturbFormatterGoldenDigest,
+		},
+		"testdata/_ownership.yml": {
+			path: "testdata/catalog.digest", owner: "sanctioned",
+		},
+	}
+	return probesForDeclaredOwner(t, records, derivedOwnerSanctioned, probes)
+}
+
+func declaredFrozenProbes(
+	t *testing.T,
+	records map[string]derivedOwnershipRecord,
+) []derivedArtifactProbe {
+	t.Helper()
+
+	probes := map[string]derivedArtifactProbe{
+		"testdata/parity-corpus/_ownership.yml": {
+			path: "testdata/parity-corpus/v1/matrix.json", owner: "frozen",
+		},
+		"testdata/legacy-v2/_ownership.yml": {
+			path: "testdata/legacy-v2/assets/coverage.json", owner: "frozen",
+		},
+		"testdata/adr-lifecycle/_ownership.yml": {
+			path: "testdata/adr-lifecycle/accepted.md", owner: "frozen",
+		},
+	}
+	return probesForDeclaredOwner(t, records, derivedOwnerFrozen, probes)
+}
+
+func probesForDeclaredOwner(
+	t *testing.T,
+	records map[string]derivedOwnershipRecord,
+	owner derivedOwnershipOwner,
+	probes map[string]derivedArtifactProbe,
+) []derivedArtifactProbe {
+	t.Helper()
+
+	paths := make([]string, 0, len(probes))
+	for recordPath, record := range records {
+		if record.Owner != owner {
+			continue
+		}
+		if _, ok := probes[recordPath]; !ok {
+			t.Fatalf("%s ownership record %q has no regeneration probe", owner, recordPath)
+		}
+		paths = append(paths, recordPath)
+	}
+	if len(paths) != len(probes) {
+		t.Fatalf("%s regeneration probes = %d, ownership records = %d", owner, len(probes), len(paths))
+	}
+	sort.Strings(paths)
+	result := make([]derivedArtifactProbe, 0, len(paths))
+	for _, recordPath := range paths {
+		result = append(result, probes[recordPath])
+	}
+	return result
+}
+
+func probesForPaths(paths []string, owner string) []derivedArtifactProbe {
+	probes := make([]derivedArtifactProbe, 0, len(paths))
+	for _, artifactPath := range paths {
+		probes = append(probes, derivedArtifactProbe{path: artifactPath, owner: owner})
+	}
+	return probes
+}
+
+func cloneDerivedProbes(probes []derivedArtifactProbe) []derivedArtifactProbe {
+	return append([]derivedArtifactProbe(nil), probes...)
+}
+
+func exerciseDeclaredRegenerationStep(
+	ctx context.Context,
+	repository string,
+	baselineRoot string,
+	cacheRoot string,
+	roots []string,
+	restoreTo map[string]derivedArtifactSnapshot,
+	command string,
+	rewrite []derivedArtifactProbe,
+	untouched []derivedArtifactProbe,
+) (resultErr error) {
+	before, err := readDerivedTreeSnapshot(baselineRoot, roots)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := restoreDerivedTree(baselineRoot, roots, restoreTo); resultErr == nil && err != nil {
+			resultErr = err
+		}
+	}()
+
+	allProbes := append(cloneDerivedProbes(rewrite), untouched...)
+	if err := perturbDerivedArtifacts(baselineRoot, before, allProbes); err != nil {
+		return err
+	}
+	perturbed, err := readDerivedTreeSnapshot(baselineRoot, roots)
+	if err != nil {
+		return err
+	}
+	if err := runDeclaredRegenerationStep(ctx, repository, cacheRoot, command); err != nil {
+		return err
+	}
+	after, err := readDerivedTreeSnapshot(baselineRoot, roots)
+	if err != nil {
+		return err
+	}
+	for _, probe := range rewrite {
+		got, ok := after[probe.path]
+		if !ok {
+			return fmt.Errorf("declared command %q removed claimed artifact %q", command, probe.path)
+		}
+		if bytes.Equal(got.content, perturbed[probe.path].content) {
+			return fmt.Errorf(
+				"declared command %q left artifact %q unchanged after deliberate perturbation",
+				command, probe.path,
+			)
+		}
+		if !reflect.DeepEqual(got, before[probe.path]) {
+			return fmt.Errorf(
+				"declared command %q did not restore claimed artifact %q: %s",
+				command,
+				probe.path,
+				firstDerivedContentDifference(before[probe.path].content, got.content),
+			)
+		}
+	}
+	for _, probe := range untouched {
+		if !reflect.DeepEqual(after[probe.path], perturbed[probe.path]) {
+			return fmt.Errorf(
+				"declared command %q rewrote %s artifact %q outside its ownership",
+				command, probe.owner, probe.path,
+			)
+		}
+	}
+	expected := cloneDerivedSnapshot(before)
+	for _, probe := range untouched {
+		expected[probe.path] = perturbed[probe.path]
+	}
+	if !reflect.DeepEqual(after, expected) {
+		return fmt.Errorf("declared command %q changed artifacts outside its declared ownership", command)
+	}
+	return nil
+}
+
+func runDeclaredRegenerationStep(
+	ctx context.Context,
+	repository string,
+	cacheRoot string,
+	command string,
+) error {
+	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	cmd.Dir = repository
+	cmd.Env = append(os.Environ(), "GOCACHE="+cacheRoot, "GOFLAGS=-buildvcs=false")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("run declared command %q: %w\n%s", command, err, output)
+	}
+	return nil
+}
+
+func perturbDerivedArtifacts(
+	baselineRoot string,
+	before map[string]derivedArtifactSnapshot,
+	probes []derivedArtifactProbe,
+) error {
+	seen := make(map[string]struct{}, len(probes))
+	for _, probe := range probes {
+		if _, duplicate := seen[probe.path]; duplicate {
+			return fmt.Errorf("artifact %q has more than one regeneration probe", probe.path)
+		}
+		seen[probe.path] = struct{}{}
+		snapshot, ok := before[probe.path]
+		if !ok {
+			return fmt.Errorf("regeneration probe artifact %q is absent", probe.path)
+		}
+		perturb := probe.perturb
+		if perturb == nil {
+			perturb = appendHarmlessWhitespace
+		}
+		content, err := perturb(snapshot.content)
+		if err != nil {
+			return fmt.Errorf("perturb artifact %q: %w", probe.path, err)
+		}
+		if bytes.Equal(content, snapshot.content) {
+			return fmt.Errorf("perturbation left artifact %q unchanged", probe.path)
+		}
+		if err := os.WriteFile(
+			filepath.Join(baselineRoot, filepath.FromSlash(probe.path)),
+			content,
+			snapshot.mode,
+		); err != nil {
+			return fmt.Errorf("write perturbed artifact %q: %w", probe.path, err)
+		}
+	}
+	return nil
+}
+
+func appendHarmlessWhitespace(content []byte) ([]byte, error) {
+	return append(append([]byte(nil), content...), ' ', '\n'), nil
+}
+
+func firstDerivedContentDifference(want []byte, got []byte) string {
+	limit := min(len(want), len(got))
+	index := 0
+	for index < limit && want[index] == got[index] {
+		index++
+	}
+	contextEnd := min(index+80, limit)
+	return fmt.Sprintf(
+		"first byte %d, want length %d and %q, got length %d and %q",
+		index,
+		len(want),
+		want[index:contextEnd],
+		len(got),
+		got[index:contextEnd],
+	)
+}
+
+func perturbFormatterGoldenDigest(content []byte) ([]byte, error) {
+	const prefix = `"goldenDigest": "`
+	start := bytes.Index(content, []byte(prefix))
+	if start == -1 {
+		return nil, fmt.Errorf("goldenDigest field is absent")
+	}
+	start += len(prefix)
+	endOffset := bytes.IndexByte(content[start:], '"')
+	if endOffset <= 0 {
+		return nil, fmt.Errorf("goldenDigest value is malformed")
+	}
+	result := append([]byte(nil), content...)
+	replacement := byte('0')
+	if bytes.Count(result[start:start+endOffset], []byte{'0'}) == endOffset {
+		replacement = '1'
+	}
+	for index := start; index < start+endOffset; index++ {
+		result[index] = replacement
+	}
+	return result, nil
+}
+
+func writeDedicatedCommandFixture(
+	t *testing.T,
+	baselineRoot string,
+	recordPath string,
+	command string,
+) {
+	t.Helper()
+
+	content := "owner: dedicated\ncommand: >-\n  " +
+		strings.ReplaceAll(command, "\n", "\n  ") +
+		"\nreason: deliberately invalid declared-step fixture\n"
+	if err := os.WriteFile(
+		filepath.Join(baselineRoot, filepath.FromSlash(recordPath)),
+		[]byte(content),
+		0o644,
+	); err != nil {
+		t.Fatalf("write declared-step fixture %q: %v", recordPath, err)
+	}
+}
+
+func restoreDerivedTree(
+	baselineRoot string,
+	roots []string,
+	snapshot map[string]derivedArtifactSnapshot,
+) error {
+	current, err := readDerivedTreeSnapshot(baselineRoot, roots)
+	if err != nil {
+		return err
+	}
+	for artifactPath := range current {
+		if _, existed := snapshot[artifactPath]; existed {
+			continue
+		}
+		if err := os.Remove(filepath.Join(baselineRoot, filepath.FromSlash(artifactPath))); err != nil {
+			return fmt.Errorf("remove generated fixture artifact %q: %w", artifactPath, err)
+		}
+	}
+	paths := make([]string, 0, len(snapshot))
+	for artifactPath := range snapshot {
+		paths = append(paths, artifactPath)
+	}
+	sort.Strings(paths)
+	for _, artifactPath := range paths {
+		artifact := snapshot[artifactPath]
+		fullPath := filepath.Join(baselineRoot, filepath.FromSlash(artifactPath))
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+			return fmt.Errorf("restore fixture directory for %q: %w", artifactPath, err)
+		}
+		if err := os.WriteFile(fullPath, artifact.content, artifact.mode); err != nil {
+			return fmt.Errorf("restore fixture artifact %q: %w", artifactPath, err)
+		}
+	}
+	return nil
+}
+
+func cloneDerivedSnapshot(
+	snapshot map[string]derivedArtifactSnapshot,
+) map[string]derivedArtifactSnapshot {
+	clone := make(map[string]derivedArtifactSnapshot, len(snapshot))
+	for artifactPath, artifact := range snapshot {
+		clone[artifactPath] = artifact
+	}
+	return clone
+}
+
+func assertDerivedFixtureRestored(
+	t *testing.T,
+	baselineRoot string,
+	roots []string,
+	want map[string]derivedArtifactSnapshot,
+) {
+	t.Helper()
+
+	got := snapshotDerivedTreeAt(t, baselineRoot, roots)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatal("declared-step test did not restore the derived fixture")
+	}
 }
