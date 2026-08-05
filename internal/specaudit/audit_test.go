@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -101,43 +102,144 @@ func TestAuditClassifiesResidueBranch(t *testing.T) {
 	assertEverySurvivorHasEvidence(t, result)
 }
 
-func TestAuditPreservesUnmatchedWorktree(t *testing.T) {
+func TestAuditClassifiesPushedAndMergedScratchWorktreeAsResidue(t *testing.T) {
 	t.Parallel()
 	fixture := newAuditFixture(t)
-	branch := "ma/spec-close-scratch"
+	branch, worktreePath := fixture.addPushedScratchWorktree("merged")
+	fixture.mergeBranchContent(branch)
+
+	result := fixture.audit()
+	survivor := requireSurvivor(t, result, worktreePath, true)
+	if survivor.Kind != KindResidue {
+		t.Fatalf("scratch worktree kind = %q, want %q", survivor.Kind, KindResidue)
+	}
+	wantReclaim := "git worktree remove -- " + shellQuote(worktreePath) +
+		" && git branch -D -- " + shellQuote(branch)
+	if survivor.Reclaim != wantReclaim {
+		t.Fatalf("scratch worktree reclaim = %q, want %q", survivor.Reclaim, wantReclaim)
+	}
+	branchSurvivor := requireSurvivor(t, result, branch, false)
+	if branchSurvivor.Reclaim != wantReclaim {
+		t.Fatalf("checked-out branch reclaim = %q, want ordered worktree reclaim %q", branchSurvivor.Reclaim, wantReclaim)
+	}
+	if !strings.Contains(survivor.Evidence, "pushed to") ||
+		!strings.Contains(survivor.Evidence, "content is fully represented") {
+		t.Fatalf("scratch worktree evidence = %q, want push and content integration proof", survivor.Evidence)
+	}
+	assertEverySurvivorHasEvidence(t, result)
+}
+
+func TestAuditScratchWorktreeReclaimCommandRuns(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	branch, worktreePath := fixture.addPushedScratchWorktree("reclaim")
+	fixture.mergeBranchContent(branch)
+	survivor := requireSurvivor(t, fixture.audit(), worktreePath, true)
+
+	command := exec.Command("sh", "-c", survivor.Reclaim)
+	command.Dir = fixture.repoDir
+	command.Env = gittest.IsolatedEnv()
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("run scratch worktree reclaim %q: %v\n%s", survivor.Reclaim, err, output)
+	}
+	if _, err := os.Stat(worktreePath); !os.IsNotExist(err) {
+		t.Fatalf("reclaimed worktree stat error = %v, want not exists", err)
+	}
+	if branches := fixture.git("branch", "--list", branch); branches != "" {
+		t.Fatalf("local scratch branch still exists after reclaim: %q", branches)
+	}
+}
+
+func TestAuditPreservesUnpushedScratchWorktree(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	branch := "ma/spec-close-scratch-unpushed"
 	worktreePath := fixture.addWorktree(branch, "scratch.txt")
-	fixture.createRun(store.CreateRunRequest{
-		Kind:           store.KindFetch,
-		HeadRepository: "owner/repository",
-		HeadBranch:     branch,
-		BaseRepository: "owner/repository",
-		PRNumber:       "43",
-		GitRoot:        fixture.repoDir,
-		LocalBranch:    branch,
-		HeadSHA:        fixture.git("rev-parse", branch),
-		ArtifactDir:    filepath.Join(fixture.homeDir, "artifacts"),
-		SpecSlug:       auditFixtureSlug,
-	}, store.StateClean)
+	fixture.mergeBranchContent(branch)
 
 	result := fixture.audit()
 	survivor := requireSurvivor(t, result, worktreePath, true)
 	if survivor.Kind != KindPreserved {
 		t.Fatalf("worktree kind = %q, want %q", survivor.Kind, KindPreserved)
 	}
-	if !strings.Contains(survivor.Evidence, "no matching Run") {
-		t.Fatalf("worktree evidence = %q, want missing Run evidence", survivor.Evidence)
+	if !strings.Contains(survivor.Evidence, "no matching Run") ||
+		!strings.Contains(survivor.Evidence, "unpushed") {
+		t.Fatalf("worktree evidence = %q, want missing Run and unpushed evidence", survivor.Evidence)
 	}
 	if survivor.Reclaim != "" {
 		t.Fatalf("preserved worktree reclaim = %q, want empty", survivor.Reclaim)
 	}
+	branchSurvivor := requireSurvivor(t, result, branch, false)
+	if branchSurvivor.Kind != KindPreserved || branchSurvivor.Reclaim != "" {
+		t.Fatalf("checked-out unpushed branch = %#v, want preserved without reclaim", branchSurvivor)
+	}
 	assertEverySurvivorHasEvidence(t, result)
+}
+
+func TestAuditPreservesUnmergedScratchWorktree(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	_, worktreePath := fixture.addPushedScratchWorktree("unmerged")
+
+	survivor := requireSurvivor(t, fixture.audit(), worktreePath, true)
+	if survivor.Kind != KindPreserved {
+		t.Fatalf("unmerged scratch worktree kind = %q, want %q", survivor.Kind, KindPreserved)
+	}
+	if !strings.Contains(survivor.Evidence, "not represented") {
+		t.Fatalf("unmerged scratch worktree evidence = %q, want unintegrated content evidence", survivor.Evidence)
+	}
+	if survivor.Reclaim != "" {
+		t.Fatalf("unmerged scratch worktree reclaim = %q, want empty", survivor.Reclaim)
+	}
+}
+
+func TestAuditPreservesIndeterminateScratchWorktree(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	branch := "ma/spec-close-scratch-indeterminate"
+	worktreePath := fixture.addWorktree(branch, "indeterminate.txt")
+	if err := os.RemoveAll(worktreePath); err != nil {
+		t.Fatalf("remove fixture worktree directory: %v", err)
+	}
+
+	survivor := requireSurvivor(t, fixture.audit(), worktreePath, true)
+	if survivor.Kind != KindPreserved {
+		t.Fatalf("indeterminate scratch worktree kind = %q, want %q", survivor.Kind, KindPreserved)
+	}
+	if !strings.Contains(survivor.Evidence, "could not be inspected") {
+		t.Fatalf("indeterminate scratch worktree evidence = %q, want inspection failure", survivor.Evidence)
+	}
+	if survivor.Reclaim != "" {
+		t.Fatalf("indeterminate scratch worktree reclaim = %q, want empty", survivor.Reclaim)
+	}
+}
+
+func TestAuditScratchWorktreeGitStateUnchanged(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	branch, worktreePath := fixture.addPushedScratchWorktree("read-only")
+	fixture.mergeBranchContent(branch)
+	before := snapshotGitState(t, fixture.repoDir)
+
+	fixture.audit()
+
+	after := snapshotGitState(t, fixture.repoDir)
+	if !reflect.DeepEqual(after, before) {
+		t.Fatalf("Git state changed during scratch worktree audit\nbefore: %#v\nafter:  %#v", before, after)
+	}
+	if _, err := os.Stat(worktreePath); err != nil {
+		t.Fatalf("scratch worktree was removed during audit: %v", err)
+	}
+	if branches := fixture.git("branch", "--list", branch); branches == "" {
+		t.Fatalf("scratch branch %q was deleted during audit", branch)
+	}
 }
 
 func TestAuditPreservesActiveRunSurvivors(t *testing.T) {
 	t.Parallel()
 	fixture := newAuditFixture(t)
-	branch := "ma/spec-close-active"
-	worktreePath := fixture.addWorktree(branch, "active.txt")
+	branch, worktreePath := fixture.addPushedScratchWorktree("active")
+	fixture.mergeBranchContent(branch)
 	run := fixture.createImplementRun(branch, worktreePath, store.StateActive)
 
 	result := fixture.audit()
@@ -445,6 +547,24 @@ func (fixture *auditFixture) addWorktreeAt(branch, worktreePath, filename string
 		fixture.t.Fatalf("resolve fixture worktree path: %v", err)
 	}
 	return resolved
+}
+
+func (fixture *auditFixture) addPushedScratchWorktree(name string) (string, string) {
+	fixture.t.Helper()
+	remoteDir := filepath.Join(filepath.Dir(fixture.repoDir), "remote.git")
+	gittest.InitRepo(fixture.t, remoteDir, "--bare")
+	fixture.git("remote", "add", "origin", remoteDir)
+	fixture.git("push", "origin", "main")
+	branch := "ma/spec-close-scratch-" + name
+	worktreePath := fixture.addWorktree(branch, name+".txt")
+	fixture.git("push", "origin", branch)
+	return branch, worktreePath
+}
+
+func (fixture *auditFixture) mergeBranchContent(branch string) {
+	fixture.t.Helper()
+	fixture.git("merge", "--squash", branch)
+	fixture.git("commit", "-m", "feat: merge "+branch+" fixture")
 }
 
 func (fixture *auditFixture) replayMotivatingSession() auditSessionReplay {

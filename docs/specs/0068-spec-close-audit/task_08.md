@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0068-spec-close-audit
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -85,3 +85,57 @@ the distinction.
 - `_prd.md` → Core Feature 4; Decisions.
 - `_techspec.md` → Interfaces; Risks & Considerations.
 - `qa/qa-report-2026-08-04.md` → F-001 and its required repair.
+
+## Result
+
+Implemented proof-based classification for Run-less scratch worktrees. The
+audit now requires a clean worktree, a same-named remote ref that contains the
+local branch tip, and content fully represented on the default branch before
+it reports `residue`. A missing or failed proof reports `preserved`. The
+Active Run guard executes before the scratch classifier.
+
+For proven residue, both the worktree and checked-out local branch carry one
+shell-safe operator command that removes the worktree before force-deleting
+the local branch. The forced branch deletion is offered only after the push
+and content proofs, so it also works for squash-merged content that Git cannot
+delete with ancestry-based `branch -d`. The audit never executes the command.
+
+Focused checks run during implementation (the declared `## Verification`
+commands remain Daemon-owned and were not run):
+
+- Red signal: `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test
+  ./internal/specaudit -run
+  '^TestAuditClassifiesPushedAndMergedScratchWorktreeAsResidue$' -count=1`
+  failed because the worktree classified `preserved`, not `residue`.
+- The same focused command passed after the classifier change.
+- `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test
+  ./internal/specaudit -run
+  '^TestAudit(ClassifiesPushedAndMergedScratchWorktreeAsResidue|ScratchWorktreeReclaimCommandRuns|PreservesUnpushedScratchWorktree|PreservesUnmergedScratchWorktree|PreservesIndeterminateScratchWorktree|ScratchWorktreeGitStateUnchanged|PreservesActiveRunSurvivors)$'
+  -count=1 -v` passed all seven real-Git fixtures.
+- `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test
+  ./internal/specaudit -count=1` exited 0.
+- `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go vet
+  ./internal/specaudit` and `rtk git diff --check` exited 0.
+
+Acceptance evidence:
+
+1. `TestAuditClassifiesPushedAndMergedScratchWorktreeAsResidue` passed and
+   asserted `KindResidue`, push evidence, content-integration evidence, and the
+   same ordered reclaim command on the worktree and its checked-out branch.
+2. `TestAuditScratchWorktreeReclaimCommandRuns` passed after executing the
+   emitted command in a disposable fixture; the worktree and local branch were
+   both absent afterward.
+3. `TestAuditPreservesUnpushedScratchWorktree` passed with `KindPreserved`,
+   unpushed evidence, and no reclaim command.
+4. `TestAuditPreservesUnmergedScratchWorktree` passed for a pushed branch whose
+   content was not represented on the default branch; it stayed `preserved`
+   with no reclaim command. `TestAuditPreservesIndeterminateScratchWorktree`
+   also passed when Git could not inspect the registered worktree.
+5. `TestAuditPreservesActiveRunSurvivors` passed with a pushed-and-merged
+   branch and worktree owned by an Active Run; both remained non-residue and
+   carried no reclaim command.
+6. `TestAuditScratchWorktreeGitStateUnchanged` passed after comparing the
+   fixture's Git metadata byte-for-byte before and after the audit and
+   asserting that the worktree and local branch still existed.
+
+Follow-ups: none discovered inside this Task's slice.

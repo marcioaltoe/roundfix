@@ -94,6 +94,7 @@ type branchRef struct {
 type auditInputs struct {
 	runsByWorktree  map[string]store.Run
 	runsByRunBranch map[string]store.Run
+	remoteRefs      map[string][]string
 	associated      map[string]bool
 	active          map[string]store.Run
 	pullRequests    map[string]store.Run
@@ -209,6 +210,9 @@ func audit(
 	inputs.defaultRef = defaultRef
 	inputs.defaultName = defaultName
 	for _, branch := range branches {
+		if branch.RemoteBranch != "" {
+			inputs.remoteRefs[branch.RemoteBranch] = append(inputs.remoteRefs[branch.RemoteBranch], branch.Name)
+		}
 		if defaultBranches[branch.Name] || branchAssociated(branch, inputs.associated) {
 			continue
 		}
@@ -226,12 +230,17 @@ func audit(
 		Survivors:   []Survivor{},
 		Undelivered: []Undelivered{},
 	}
+	localBranchSurvivors := make(map[string]int)
 	for _, branch := range branches {
 		if defaultBranches[branch.Name] || !branchAssociated(branch, inputs.associated) {
 			continue
 		}
 		result.Survivors = append(result.Survivors, classifyBranch(ctx, runner, repoRoot, branch, inputs))
+		if branch.Remote == "" {
+			localBranchSurvivors[branch.Name] = len(result.Survivors) - 1
+		}
 	}
+	scratchWorktreeSurvivors := make(map[string][]int)
 	for _, candidate := range worktrees {
 		matchingRun, hasMatchingRun := matchingWorktreeRun(candidate, inputs)
 		if !hasMatchingRun && !inputs.associated[candidate.Branch] {
@@ -241,7 +250,14 @@ func audit(
 			result.Survivors,
 			classifyWorktree(ctx, runner, repoRoot, candidate, matchingRun, hasMatchingRun, inputs),
 		)
+		if !hasMatchingRun && candidate.Branch != "" {
+			scratchWorktreeSurvivors[candidate.Branch] = append(
+				scratchWorktreeSurvivors[candidate.Branch],
+				len(result.Survivors)-1,
+			)
+		}
 	}
+	coordinateScratchReclaims(result.Survivors, localBranchSurvivors, scratchWorktreeSurvivors)
 	sort.Slice(result.Survivors, func(left, right int) bool {
 		if result.Survivors[left].IsWorktree != result.Survivors[right].IsWorktree {
 			return !result.Survivors[left].IsWorktree
@@ -572,6 +588,7 @@ func indexRuns(runs []store.Run) auditInputs {
 	inputs := auditInputs{
 		runsByWorktree:  make(map[string]store.Run),
 		runsByRunBranch: make(map[string]store.Run),
+		remoteRefs:      make(map[string][]string),
 		associated:      make(map[string]bool),
 		active:          make(map[string]store.Run),
 		pullRequests:    make(map[string]store.Run),
@@ -647,6 +664,56 @@ func classifyBranch(
 	return classification
 }
 
+func coordinateScratchReclaims(
+	survivors []Survivor,
+	localBranchSurvivors map[string]int,
+	scratchWorktreeSurvivors map[string][]int,
+) {
+	for branch, worktreeIndexes := range scratchWorktreeSurvivors {
+		branchIndex, branchExists := localBranchSurvivors[branch]
+		if !branchExists || survivors[branchIndex].Kind != KindResidue {
+			continue
+		}
+		if len(worktreeIndexes) != 1 {
+			survivors[branchIndex].Kind = KindPreserved
+			survivors[branchIndex].Evidence = fmt.Sprintf(
+				"branch %q is checked out in %d Run-less worktrees; it is preserved",
+				branch,
+				len(worktreeIndexes),
+			)
+			survivors[branchIndex].Reclaim = ""
+			for _, worktreeIndex := range worktreeIndexes {
+				if survivors[worktreeIndex].Kind != KindResidue {
+					continue
+				}
+				survivors[worktreeIndex].Kind = KindPreserved
+				survivors[worktreeIndex].Evidence = fmt.Sprintf(
+					"worktree %q shares branch %q with another Run-less worktree; it is preserved",
+					survivors[worktreeIndex].Name,
+					branch,
+				)
+				survivors[worktreeIndex].Reclaim = ""
+			}
+			continue
+		}
+		worktreeIndex := worktreeIndexes[0]
+		if survivors[worktreeIndex].Kind != KindResidue {
+			survivors[branchIndex].Kind = KindPreserved
+			survivors[branchIndex].Evidence = fmt.Sprintf(
+				"branch %q is checked out in preserved Run-less worktree %q; it is preserved",
+				branch,
+				survivors[worktreeIndex].Name,
+			)
+			survivors[branchIndex].Reclaim = ""
+			continue
+		}
+		reclaim := "git worktree remove -- " + shellQuote(survivors[worktreeIndex].Name) +
+			" && git branch -D -- " + shellQuote(branch)
+		survivors[branchIndex].Reclaim = reclaim
+		survivors[worktreeIndex].Reclaim = reclaim
+	}
+}
+
 func branchAssociated(branch branchRef, associated map[string]bool) bool {
 	return associated[branch.Name] || (branch.RemoteBranch != "" && associated[branch.RemoteBranch])
 }
@@ -671,13 +738,11 @@ func classifyWorktree(
 	hasMatchingRun bool,
 	inputs auditInputs,
 ) Survivor {
+	if activeRun, exists := inputs.active[candidate.Branch]; exists {
+		return activeRunSurvivor(candidate.Path, true, activeRun)
+	}
 	if !hasMatchingRun {
-		return Survivor{
-			Name:       candidate.Path,
-			IsWorktree: true,
-			Kind:       KindPreserved,
-			Evidence:   fmt.Sprintf("worktree %q has no matching Run in the Run Database", candidate.Path),
-		}
+		return classifyScratchWorktree(ctx, runner, repoRoot, candidate, inputs)
 	}
 	if pullRequestRun, exists := inputs.pullRequests[candidate.Branch]; exists {
 		return pullRequestSurvivor(candidate.Path, true, pullRequestRun)
@@ -713,6 +778,119 @@ func classifyWorktree(
 		classification.Reclaim = "git worktree remove -- " + shellQuote(candidate.Path)
 	}
 	return classification
+}
+
+func classifyScratchWorktree(
+	ctx context.Context,
+	runner gitRunner,
+	repoRoot string,
+	candidate worktree,
+	inputs auditInputs,
+) Survivor {
+	preserved := func(evidence string) Survivor {
+		return Survivor{
+			Name:       candidate.Path,
+			IsWorktree: true,
+			Kind:       KindPreserved,
+			Evidence:   evidence,
+		}
+	}
+	if candidate.Branch == "" {
+		return preserved(fmt.Sprintf(
+			"worktree %q has no matching Run and no local branch; it is preserved",
+			candidate.Path,
+		))
+	}
+	dirty, evidence, err := worktreeChanges(ctx, runner, candidate.Path)
+	if err != nil {
+		return preserved(fmt.Sprintf(
+			"worktree %q has no matching Run, could not be inspected, and is preserved: %v",
+			candidate.Path,
+			err,
+		))
+	}
+	if dirty {
+		return preserved(fmt.Sprintf(
+			"worktree %q has no matching Run and is preserved: %s",
+			candidate.Path,
+			evidence,
+		))
+	}
+	remoteRef, err := pushedRemoteRef(
+		ctx,
+		runner,
+		repoRoot,
+		candidate.Branch,
+		inputs.remoteRefs[candidate.Branch],
+	)
+	if err != nil {
+		return preserved(fmt.Sprintf(
+			"worktree %q has no matching Run, branch push state could not be determined, and it is preserved: %v",
+			candidate.Path,
+			err,
+		))
+	}
+	if remoteRef == "" {
+		return preserved(fmt.Sprintf(
+			"worktree %q has no matching Run and branch %q is unpushed; it is preserved",
+			candidate.Path,
+			candidate.Branch,
+		))
+	}
+	integration := classifyGitRef(
+		ctx,
+		runner,
+		repoRoot,
+		candidate.Branch,
+		inputs.defaultRef,
+		inputs.defaultName,
+	)
+	if integration.Kind != KindResidue {
+		return preserved(fmt.Sprintf(
+			"worktree %q has no matching Run and branch %q is pushed to %q, but %s; it is preserved",
+			candidate.Path,
+			candidate.Branch,
+			remoteRef,
+			integration.Evidence,
+		))
+	}
+	return Survivor{
+		Name:       candidate.Path,
+		IsWorktree: true,
+		Kind:       KindResidue,
+		Evidence: fmt.Sprintf(
+			"worktree %q has no matching Run; branch %q is pushed to %q and %s",
+			candidate.Path,
+			candidate.Branch,
+			remoteRef,
+			integration.Evidence,
+		),
+		Reclaim: "git worktree remove -- " + shellQuote(candidate.Path) +
+			" && git branch -D -- " + shellQuote(candidate.Branch),
+	}
+}
+
+func pushedRemoteRef(
+	ctx context.Context,
+	runner gitRunner,
+	repoRoot string,
+	branch string,
+	remoteRefs []string,
+) (string, error) {
+	var inspectErr error
+	for _, remoteRef := range remoteRefs {
+		uniqueCommits, err := countUniqueCommits(ctx, runner, repoRoot, branch, remoteRef)
+		if err != nil {
+			if inspectErr == nil {
+				inspectErr = fmt.Errorf("compare branch %q with remote ref %q: %w", branch, remoteRef, err)
+			}
+			continue
+		}
+		if uniqueCommits == 0 {
+			return remoteRef, nil
+		}
+	}
+	return "", inspectErr
 }
 
 func pullRequestSurvivor(name string, isWorktree bool, run store.Run) Survivor {
