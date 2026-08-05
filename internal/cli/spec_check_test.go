@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"roundfix/internal/gittest"
+	"roundfix/internal/specaudit"
 	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 )
@@ -281,7 +282,7 @@ func TestRunSpecAuditResidueText(t *testing.T) {
 	for _, want := range []string{
 		"residue branch " + branch,
 		"evidence: survivor content is fully represented",
-		"reclaim: git branch -d -- '" + branch + "'",
+		"reclaim: git branch -D -- '" + branch + "'",
 	} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Errorf("stdout does not contain %q:\n%s", want, stdout.String())
@@ -343,8 +344,11 @@ func TestRunSpecAuditJSONWritesOneObject(t *testing.T) {
 	}
 	decoder := json.NewDecoder(strings.NewReader(stdout.String()))
 	var document struct {
-		Schema string `json:"schema"`
-		Slug   string `json:"slug"`
+		Schema        string `json:"schema"`
+		SchemaVersion string `json:"schemaVersion"`
+		Type          string `json:"type"`
+		OK            bool   `json:"ok"`
+		Slug          string `json:"slug"`
 	}
 	if err := decoder.Decode(&document); err != nil {
 		t.Fatalf("stdout is not JSON: %v; stdout=%q", err, stdout.String())
@@ -352,16 +356,44 @@ func TestRunSpecAuditJSONWritesOneObject(t *testing.T) {
 	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		t.Fatalf("stdout contains more than one JSON object: %v; stdout=%q", err, stdout.String())
 	}
-	if document.Schema != specAuditSchemaVersion || document.Slug != specAuditFixtureSlug {
+	if document.Schema != specAuditSchemaVersion ||
+		document.SchemaVersion != specAuditSchemaVersion ||
+		document.Type != specAuditDocumentType ||
+		!document.OK ||
+		document.Slug != specAuditFixtureSlug {
 		t.Fatalf(
-			"document = %#v, want schema %q slug %q",
+			"document = %#v, want schema %q type %q ok true slug %q",
 			document,
 			specAuditSchemaVersion,
+			specAuditDocumentType,
 			specAuditFixtureSlug,
 		)
 	}
 	if stderr.String() != "" {
 		t.Fatalf("stderr = %q, want no diagnostics", stderr.String())
+	}
+}
+
+func TestRenderSpecAuditJSONReportsAttention(t *testing.T) {
+	t.Parallel()
+	data, err := renderSpecAuditJSON(specaudit.Result{
+		Slug: specAuditFixtureSlug,
+		Survivors: []specaudit.Survivor{{
+			Name: "ma/spec-audit-residue",
+			Kind: specaudit.KindResidue,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render Spec audit JSON: %v", err)
+	}
+	var document struct {
+		OK bool `json:"ok"`
+	}
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("decode Spec audit JSON: %v", err)
+	}
+	if document.OK {
+		t.Fatal("attention-requiring Spec audit JSON ok = true, want false")
 	}
 }
 

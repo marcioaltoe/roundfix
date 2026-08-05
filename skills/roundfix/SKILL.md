@@ -638,7 +638,7 @@ Every survivor has one of four kinds:
 | `pull-request` | The survivor backs an open Pull Request. |
 | `pending` | The survivor holds unintegrated work. |
 | `residue` | Git evidence says the survivor is safe to reclaim; the report includes the exact reclaim command. |
-| `preserved` | The audit could not classify the survivor, so it must remain intact. |
+| `preserved` | The survivor must remain intact: an Active Run owns it, its state is unpushed or shared, or the audit could not classify it. |
 
 The audit reports and never reclaims: it does not change Git state, the Run
 Database, or Spec artifacts. A reclaim command in the report is an operator

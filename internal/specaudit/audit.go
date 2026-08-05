@@ -652,13 +652,24 @@ func classifyBranch(
 	if run, exists := branchRun(branch, inputs.active); exists {
 		return activeRunSurvivor(branch.Name, false, run)
 	}
-	classification := classifyGitRef(ctx, runner, repoRoot, branch.Name, inputs.defaultRef, inputs.defaultName)
+	classification, contentOnly := classifyGitRef(
+		ctx,
+		runner,
+		repoRoot,
+		branch.Name,
+		inputs.defaultRef,
+		inputs.defaultName,
+	)
 	classification.Name = branch.Name
 	if classification.Kind == KindResidue {
 		if branch.Remote != "" {
 			classification.Reclaim = "git push --delete " + shellQuote(branch.Remote) + " " + shellQuote(branch.RemoteBranch)
 		} else {
-			classification.Reclaim = "git branch -d -- " + shellQuote(branch.Name)
+			deleteFlag := "-d"
+			if contentOnly {
+				deleteFlag = "-D"
+			}
+			classification.Reclaim = "git branch " + deleteFlag + " -- " + shellQuote(branch.Name)
 		}
 	}
 	return classification
@@ -771,7 +782,7 @@ func classifyWorktree(
 	if ref == "" {
 		ref = candidate.Head
 	}
-	classification := classifyGitRef(ctx, runner, repoRoot, ref, inputs.defaultRef, inputs.defaultName)
+	classification, _ := classifyGitRef(ctx, runner, repoRoot, ref, inputs.defaultRef, inputs.defaultName)
 	classification.Name = candidate.Path
 	classification.IsWorktree = true
 	if classification.Kind == KindResidue {
@@ -837,7 +848,7 @@ func classifyScratchWorktree(
 			candidate.Branch,
 		))
 	}
-	integration := classifyGitRef(
+	integration, _ := classifyGitRef(
 		ctx,
 		runner,
 		repoRoot,
@@ -927,19 +938,19 @@ func classifyGitRef(
 	ref string,
 	defaultRef string,
 	defaultName string,
-) Survivor {
+) (Survivor, bool) {
 	if defaultRef == "" {
 		return Survivor{
 			Kind:     KindPreserved,
 			Evidence: "default branch could not be resolved; survivor is preserved",
-		}
+		}, false
 	}
 	uniqueCommits, err := countUniqueCommits(ctx, runner, repoRoot, ref, defaultRef)
 	if err != nil {
 		return Survivor{
 			Kind:     KindPreserved,
 			Evidence: fmt.Sprintf("integration could not be inspected against default branch %q: %v", defaultName, err),
-		}
+		}, false
 	}
 	if uniqueCommits == 0 {
 		return Survivor{
@@ -948,14 +959,14 @@ func classifyGitRef(
 				"survivor is reachable from default branch %q",
 				defaultName,
 			),
-		}
+		}, false
 	}
 	runOnly, differingShared, err := compareContent(ctx, runner, repoRoot, ref, defaultRef)
 	if err != nil {
 		return Survivor{
 			Kind:     KindPreserved,
 			Evidence: fmt.Sprintf("content could not be compared with default branch %q: %v", defaultName, err),
-		}
+		}, false
 	}
 	if runOnly == 0 && differingShared == 0 {
 		return Survivor{
@@ -964,7 +975,7 @@ func classifyGitRef(
 				"survivor content is fully represented on default branch %q",
 				defaultName,
 			),
-		}
+		}, true
 	}
 	return Survivor{
 		Kind: KindPending,
@@ -978,7 +989,7 @@ func classifyGitRef(
 			differingShared,
 			pluralSuffix(differingShared),
 		),
-	}
+	}, false
 }
 
 func countUniqueCommits(

@@ -633,7 +633,7 @@ func inspectDeletedTargetRunByContent(
 	}
 	result.TargetHead = defaultHead
 
-	runOnly, differingShared, proven := compareRunContentToDefault(
+	runOnly, differingShared, retainedRunDeletions, proven := compareRunContentToDefault(
 		ctx,
 		runner,
 		gitRoot,
@@ -648,7 +648,7 @@ func inspectDeletedTargetRunByContent(
 		))
 		return result
 	}
-	if runOnly != 0 || differingShared != 0 {
+	if runOnly != 0 || differingShared != 0 || retainedRunDeletions != 0 {
 		var evidence []string
 		if runOnly != 0 {
 			evidence = append(evidence, fmt.Sprintf("%d Run-only file%s", runOnly, pluralSuffix(runOnly)))
@@ -658,6 +658,13 @@ func inspectDeletedTargetRunByContent(
 				"%d differing shared file%s",
 				differingShared,
 				pluralSuffix(differingShared),
+			))
+		}
+		if retainedRunDeletions != 0 {
+			evidence = append(evidence, fmt.Sprintf(
+				"%d Run-deleted file%s retained by default",
+				retainedRunDeletions,
+				pluralSuffix(retainedRunDeletions),
 			))
 		}
 		result.State = ReconciliationUnintegrated
@@ -690,7 +697,7 @@ func compareRunContentToDefault(
 	gitRoot string,
 	runHead string,
 	defaultHead string,
-) (runOnly int, differingShared int, proven bool) {
+) (runOnly int, differingShared int, retainedRunDeletions int, proven bool) {
 	runOnlyOutput, err := runner.Run(
 		ctx,
 		gitRoot,
@@ -704,7 +711,7 @@ func compareRunContentToDefault(
 		"--",
 	)
 	if err != nil {
-		return 0, 0, false
+		return 0, 0, 0, false
 	}
 	differingSharedOutput, err := runner.Run(
 		ctx,
@@ -719,9 +726,51 @@ func compareRunContentToDefault(
 		"--",
 	)
 	if err != nil {
-		return 0, 0, false
+		return 0, 0, 0, false
 	}
-	return len(nonEmptyNULTerms(runOnlyOutput)), len(nonEmptyNULTerms(differingSharedOutput)), true
+	mergeBaseOutput, err := runner.Run(ctx, gitRoot, "merge-base", runHead, defaultHead)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	mergeBase := strings.TrimSpace(mergeBaseOutput)
+	if mergeBase == "" {
+		return 0, 0, 0, false
+	}
+	runDeletedOutput, err := runner.Run(
+		ctx,
+		gitRoot,
+		"diff",
+		"--name-only",
+		"-z",
+		"--no-renames",
+		"--diff-filter=D",
+		mergeBase,
+		runHead,
+		"--",
+	)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	runDeleted := nonEmptyNULTerms(runDeletedOutput)
+	if len(runDeleted) != 0 {
+		defaultTreeOutput, err := runner.Run(ctx, gitRoot, "ls-tree", "-r", "--name-only", "-z", defaultHead)
+		if err != nil {
+			return 0, 0, 0, false
+		}
+		defaultPaths := make(map[string]struct{})
+		for _, path := range nonEmptyNULTerms(defaultTreeOutput) {
+			defaultPaths[path] = struct{}{}
+		}
+		for _, path := range runDeleted {
+			if _, retained := defaultPaths[path]; retained {
+				retainedRunDeletions++
+			}
+		}
+	}
+	return len(nonEmptyNULTerms(runOnlyOutput)),
+		len(nonEmptyNULTerms(differingSharedOutput)),
+		retainedRunDeletions,
+		true
 }
 
 func pluralSuffix(count int) string {

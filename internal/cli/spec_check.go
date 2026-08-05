@@ -62,6 +62,7 @@ const (
 	specCheckFormatText    = "text"
 	specCheckFormatJSON    = "json"
 	specAuditSchemaVersion = "roundfix-specaudit/v1"
+	specAuditDocumentType  = "spec.audit"
 )
 
 type specCheckRequest struct {
@@ -76,10 +77,13 @@ type specAuditRequest struct {
 }
 
 type specAuditDocument struct {
-	Schema      string                  `json:"schema"`
-	Slug        string                  `json:"slug"`
-	Survivors   []specaudit.Survivor    `json:"survivors"`
-	Undelivered []specaudit.Undelivered `json:"undelivered"`
+	Schema        string                  `json:"schema"`
+	SchemaVersion string                  `json:"schemaVersion"`
+	Type          string                  `json:"type"`
+	OK            bool                    `json:"ok"`
+	Slug          string                  `json:"slug"`
+	Survivors     []specaudit.Survivor    `json:"survivors"`
+	Undelivered   []specaudit.Undelivered `json:"undelivered"`
 }
 
 func runSpecCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -385,10 +389,13 @@ func renderSpecAuditText(result specaudit.Result) string {
 
 func renderSpecAuditJSON(result specaudit.Result) ([]byte, error) {
 	document := specAuditDocument{
-		Schema:      specAuditSchemaVersion,
-		Slug:        result.Slug,
-		Survivors:   result.Survivors,
-		Undelivered: result.Undelivered,
+		Schema:        specAuditSchemaVersion,
+		SchemaVersion: specAuditSchemaVersion,
+		Type:          specAuditDocumentType,
+		OK:            !specAuditNeedsAttention(result),
+		Slug:          result.Slug,
+		Survivors:     result.Survivors,
+		Undelivered:   result.Undelivered,
 	}
 	data, err := json.Marshal(document)
 	if err != nil {

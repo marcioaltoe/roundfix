@@ -6,6 +6,7 @@ package specaudit
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -92,12 +93,21 @@ func TestAuditClassifiesResidueBranch(t *testing.T) {
 	if survivor.Kind != KindResidue {
 		t.Fatalf("branch kind = %q, want %q", survivor.Kind, KindResidue)
 	}
-	wantReclaim := "git branch -d -- 'ma/spec-close-residue'"
+	wantReclaim := "git branch -D -- 'ma/spec-close-residue'"
 	if survivor.Reclaim != wantReclaim {
 		t.Fatalf("branch reclaim = %q, want %q", survivor.Reclaim, wantReclaim)
 	}
 	if !strings.Contains(survivor.Evidence, "content is fully represented") {
 		t.Fatalf("branch evidence = %q, want content integration proof", survivor.Evidence)
+	}
+	command := exec.Command("sh", "-c", survivor.Reclaim)
+	command.Dir = fixture.repoDir
+	command.Env = gittest.IsolatedEnv()
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("run residue branch reclaim %q: %v\n%s", survivor.Reclaim, err, output)
+	}
+	if branches := fixture.git("branch", "--list", branch); branches != "" {
+		t.Fatalf("local residue branch still exists after reclaim: %q", branches)
 	}
 	assertEverySurvivorHasEvidence(t, result)
 }
@@ -142,7 +152,7 @@ func TestAuditScratchWorktreeReclaimCommandRuns(t *testing.T) {
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("run scratch worktree reclaim %q: %v\n%s", survivor.Reclaim, err, output)
 	}
-	if _, err := os.Stat(worktreePath); !os.IsNotExist(err) {
+	if _, err := os.Stat(worktreePath); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("reclaimed worktree stat error = %v, want not exists", err)
 	}
 	if branches := fixture.git("branch", "--list", branch); branches != "" {
@@ -250,16 +260,18 @@ func TestAuditPreservesActiveRunSurvivors(t *testing.T) {
 		{name: branch},
 		{name: worktreePath, isWorktree: true},
 	} {
-		survivor := requireSurvivor(t, result, target.name, target.isWorktree)
-		if survivor.Kind == KindResidue {
-			t.Fatalf("Active Run survivor %q classified as residue", target.name)
-		}
-		if !strings.Contains(survivor.Evidence, "Active Run "+run.ID) {
-			t.Fatalf("Active Run survivor evidence = %q, want Run %s", survivor.Evidence, run.ID)
-		}
-		if survivor.Reclaim != "" {
-			t.Fatalf("Active Run survivor reclaim = %q, want empty", survivor.Reclaim)
-		}
+		t.Run(target.name, func(t *testing.T) {
+			survivor := requireSurvivor(t, result, target.name, target.isWorktree)
+			if survivor.Kind == KindResidue {
+				t.Fatalf("Active Run survivor %q classified as residue", target.name)
+			}
+			if !strings.Contains(survivor.Evidence, "Active Run "+run.ID) {
+				t.Fatalf("Active Run survivor evidence = %q, want Run %s", survivor.Evidence, run.ID)
+			}
+			if survivor.Reclaim != "" {
+				t.Fatalf("Active Run survivor reclaim = %q, want empty", survivor.Reclaim)
+			}
+		})
 	}
 	assertEverySurvivorHasEvidence(t, result)
 }

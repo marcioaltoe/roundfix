@@ -30,7 +30,7 @@
       "id": "rust-cli"
     },
     {
-      "digest": "3d4b8666715799eff6bfb7df9230619839be6c1bb7ce21befc832ae58fc8d680",
+      "digest": "d5230324915e3c8ddc055b99646858fe59074b1d0a1f7d1b186a2237d8780f6d",
       "id": "typescript-bun"
     }
   ],
@@ -920,7 +920,7 @@
             ]
           }
         ],
-        "digest": "3d4b8666715799eff6bfb7df9230619839be6c1bb7ce21befc832ae58fc8d680",
+        "digest": "d5230324915e3c8ddc055b99646858fe59074b1d0a1f7d1b186a2237d8780f6d",
         "id": "typescript-bun",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -1935,7 +1935,7 @@
             "treeDigest": "cc7137c53d51fea605c0be017cf6eecdb72add7405e5c3c9f327dbc26d4572fa"
           },
           {
-            "contentDigest": "d60b6076b4925bc15fb559905b4c7e0dc3accfb5f1652cb1bbf4263165a7c561",
+            "contentDigest": "265327ab2f80e5336fb677478012667ed6e473591618fe21083d84adccc5804f",
             "name": "roundfix",
             "path": "skills/06-review-repair/roundfix",
             "source": {
