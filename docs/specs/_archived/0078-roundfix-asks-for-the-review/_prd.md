@@ -1,9 +1,12 @@
 ---
 spec: 0078-roundfix-asks-for-the-review
-status: active
+status: archived
 created: 2026-08-05
 surfaces: [backend, cli]
+archived: "2026-08-05"
+source_slug: 0078-roundfix-asks-for-the-review
 ---
+
 
 # Roundfix asks for the review
 
