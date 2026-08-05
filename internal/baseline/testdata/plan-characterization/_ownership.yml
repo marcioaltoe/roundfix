@@ -1,7 +1,4 @@
-owner: dedicated
-command: >-
-  go test ./internal/baseline -count=1 -run TestBaselinePlanCharacterization
-  -update-baseline-plan-characterization
+owner: sanctioned
 reason: >-
-  Not in BASELINE_DIGEST_STEPS; the sanctioned command reports no changes
-  while this plan characterization corpus is stale.
+  The sanctioned make baseline-digests command includes the plan
+  characterization step with its dedicated update flag.

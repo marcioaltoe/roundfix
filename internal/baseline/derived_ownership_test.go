@@ -1,7 +1,7 @@
 // Suite: derived artifact ownership
-// Invariant: every path in the Makefile's derived scan resolves to exactly one validated ownership record and truthful remediation.
-// Boundary IN: DERIVED_DIGEST_PATHS, ownership YAML, read-only path resolution, and remediation diagnostics.
-// Boundary OUT: executing dedicated commands and widening BASELINE_DIGEST_STEPS.
+// Invariant: every path in the Makefile's derived scan resolves to exactly one ownership record that matches measured regeneration behavior.
+// Boundary IN: DERIVED_DIGEST_PATHS, ownership YAML, regeneration commands, path resolution, and remediation diagnostics.
+// Boundary OUT: product decisions about which artifacts should be regenerated.
 
 package baseline
 
@@ -138,18 +138,18 @@ func TestDerivedOwnershipRemediationDiagnostics(t *testing.T) {
 			owner:      derivedOwnerSanctioned,
 		},
 		{
-			name:       "dedicated plan characterization",
+			name:       "sanctioned plan characterization",
 			scanRoot:   "testdata",
 			artifact:   "testdata/plan-characterization/clean-adoption.golden.json",
 			recordPath: "testdata/plan-characterization/_ownership.yml",
-			owner:      derivedOwnerDedicated,
+			owner:      derivedOwnerSanctioned,
 		},
 		{
-			name:       "frozen parity corpus",
+			name:       "sanctioned parity corpus",
 			scanRoot:   "testdata",
 			artifact:   "testdata/parity-corpus/v1/matrix.json",
 			recordPath: "testdata/parity-corpus/_ownership.yml",
-			owner:      derivedOwnerFrozen,
+			owner:      derivedOwnerSanctioned,
 		},
 	}
 	for _, test := range tests {
@@ -192,6 +192,31 @@ func TestDerivedOwnershipRemediationDiagnostics(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("dedicated fixture", func(t *testing.T) {
+		t.Parallel()
+
+		const (
+			recordPath = "derived/_ownership.yml"
+			command    = "go test ./internal/baseline -run TestFixture -update-fixture"
+		)
+		fixture := fstest.MapFS{
+			recordPath: &fstest.MapFile{Data: []byte(
+				"owner: dedicated\ncommand: " + command + "\nreason: fixture\n",
+			)},
+			"derived/artifact.txt": &fstest.MapFile{Data: []byte("artifact\n")},
+		}
+		got, err := derivedArtifactRemediation(fixture, "derived", "derived/artifact.txt")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(got, command) || !strings.Contains(got, recordPath) {
+			t.Fatalf("dedicated remediation = %q, want command %q and record %q", got, command, recordPath)
+		}
+		if strings.Contains(got, baselineDigestRegenerationHint) {
+			t.Fatalf("dedicated remediation = %q, must not suggest sanctioned command", got)
+		}
+	})
 }
 
 func TestDerivedOwnershipRemediationRejectsUnownedArtifact(t *testing.T) {
@@ -228,23 +253,21 @@ func TestDerivedOwnershipDeclaresKnownBoundaries(t *testing.T) {
 	}
 
 	parity := resolved["testdata/parity-corpus"]
-	if parity.Owner != derivedOwnerFrozen ||
+	if parity.Owner != derivedOwnerSanctioned ||
 		!strings.Contains(parity.Reason, "2026-07-30") ||
-		!strings.Contains(parity.Reason, "tried") ||
-		!strings.Contains(parity.Reason, "reverted") {
-		t.Fatalf("parity corpus ownership = %+v, want frozen with the 2026-07-30 tried-and-reverted reason", parity)
+		!strings.Contains(parity.Reason, "rewrites") ||
+		!strings.Contains(parity.Reason, "maintainer decision") {
+		t.Fatalf("parity corpus ownership = %+v, want sanctioned with measured rewrites and the unresolved maintainer decision", parity)
 	}
 
-	const planCommand = "go test ./internal/baseline -count=1 -run TestBaselinePlanCharacterization -update-baseline-plan-characterization"
 	plan := resolved["testdata/plan-characterization"]
-	if plan.Owner != derivedOwnerDedicated || plan.Command != planCommand {
-		t.Fatalf("plan characterization ownership = %+v, want dedicated command %q", plan, planCommand)
+	if plan.Owner != derivedOwnerSanctioned || !strings.Contains(plan.Reason, "make baseline-digests") {
+		t.Fatalf("plan characterization ownership = %+v, want sanctioned command coverage", plan)
 	}
 
-	const diagnosticsCommand = "go test ./internal/baseline -run '^TestCatalogDiagnosticCharacterization$' -update-catalog-diagnostics -count=1"
 	diagnostics := resolved["testdata/catalog.diagnostics.golden.json"]
-	if diagnostics.Owner != derivedOwnerDedicated || diagnostics.Command != diagnosticsCommand {
-		t.Fatalf("catalog diagnostic ownership = %+v, want dedicated command %q", diagnostics, diagnosticsCommand)
+	if diagnostics.Owner != derivedOwnerSanctioned || !strings.Contains(diagnostics.Reason, "make baseline-digests") {
+		t.Fatalf("catalog diagnostic ownership = %+v, want sanctioned command coverage", diagnostics)
 	}
 }
 
@@ -259,6 +282,98 @@ func TestDerivedOwnershipValidationPreservesWholeTree(t *testing.T) {
 	after := snapshotDerivedTree(t, roots)
 	if !reflect.DeepEqual(after, before) {
 		t.Fatal("ownership validation changed the derived tree")
+	}
+}
+
+func TestMeasuredSanctionedOwnershipMatchesRecords(t *testing.T) {
+	// Sequential: child commands rewrite one isolated repository fixture.
+	repository := newDerivedRegenerationFixture(t)
+	baselineRoot := filepath.Join(repository, "internal", "baseline")
+	fileSystem := os.DirFS(baselineRoot)
+	roots := derivedDigestScanRoots(t)
+	records, err := readDerivedOwnershipRecords(fileSystem, roots)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolved, err := validateDerivedOwnership(fileSystem, roots)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cacheRoot := filepath.Join(repository, ".gocache")
+	clean := snapshotDerivedTreeAt(t, baselineRoot, roots)
+	sanctionedProbes := declaredSanctionedProbes(t, records)
+	if err := exerciseDeclaredRegenerationStep(
+		t.Context(), repository, baselineRoot, cacheRoot, roots, clean,
+		"make baseline-digests", sanctionedProbes, nil,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	measured := make(map[string]struct{})
+	for _, probe := range sanctionedProbes {
+		recordPath := derivedRecordPathForArtifact(t, fileSystem, roots, resolved, probe.path)
+		measured[recordPath] = struct{}{}
+	}
+
+	skillPath := filepath.Join(repository, ".agents", "skills", "qa-gate", "SKILL.md")
+	skill, err := os.ReadFile(skillPath)
+	if err != nil {
+		t.Fatalf("read owned Skill fixture: %v", err)
+	}
+	skill = append(skill, []byte("\n<!-- derived ownership measurement fixture -->\n")...)
+	if err := os.WriteFile(skillPath, skill, 0o644); err != nil {
+		t.Fatalf("edit owned Skill fixture: %v", err)
+	}
+
+	if err := runDeclaredRegenerationStep(t.Context(), repository, cacheRoot, "make skills-sync"); err != nil {
+		t.Fatal(err)
+	}
+	before := snapshotDerivedTreeAt(t, baselineRoot, roots)
+	if err := runDeclaredRegenerationStep(t.Context(), repository, cacheRoot, "make baseline-digests"); err != nil {
+		t.Fatal(err)
+	}
+	after := snapshotDerivedTreeAt(t, baselineRoot, roots)
+
+	for artifactPath, afterArtifact := range after {
+		beforeArtifact, existed := before[artifactPath]
+		if existed && reflect.DeepEqual(afterArtifact, beforeArtifact) {
+			continue
+		}
+		recordPath := derivedRecordPathForArtifact(t, fileSystem, roots, resolved, artifactPath)
+		measured[recordPath] = struct{}{}
+	}
+	for artifactPath := range before {
+		if _, exists := after[artifactPath]; exists {
+			continue
+		}
+		recordPath := derivedRecordPathForArtifact(t, fileSystem, roots, resolved, artifactPath)
+		measured[recordPath] = struct{}{}
+	}
+
+	for recordPath, record := range records {
+		_, rewritten := measured[recordPath]
+		if got, want := record.Owner == derivedOwnerSanctioned, rewritten; got != want {
+			t.Errorf(
+				"ownership record %q owner = %q, measured sanctioned rewrite = %t",
+				recordPath,
+				record.Owner,
+				rewritten,
+			)
+		}
+	}
+
+	secondOutput, err := runDeclaredRegenerationStepOutput(
+		t.Context(), repository, cacheRoot, "make baseline-digests",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(secondOutput, []byte(`"changed":false`)) {
+		t.Fatalf("second sanctioned run output = %q, want changed:false", secondOutput)
+	}
+	second := snapshotDerivedTreeAt(t, baselineRoot, roots)
+	if !reflect.DeepEqual(second, after) {
+		t.Fatal("second sanctioned run changed the derived tree")
 	}
 }
 
@@ -289,6 +404,7 @@ func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
 	}
 	sort.Strings(recordPaths)
 	var dedicatedRecordPath string
+	var dedicatedCommand string
 	for _, recordPath := range recordPaths {
 		record := records[recordPath]
 		if record.Owner != derivedOwnerDedicated {
@@ -296,6 +412,7 @@ func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
 		}
 		if dedicatedRecordPath == "" {
 			dedicatedRecordPath = recordPath
+			dedicatedCommand = record.Command
 		}
 		artifacts := artifactsByRecord[recordPath]
 		if len(artifacts) == 0 {
@@ -314,10 +431,26 @@ func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
 		})
 	}
 	if dedicatedRecordPath == "" {
-		t.Fatal("ownership manifest declares no dedicated regeneration step")
+		const planCommand = "go test ./internal/baseline -count=1 -run TestBaselinePlanCharacterization -update-baseline-plan-characterization"
+		dedicatedRecordPath = "testdata/plan-characterization/_ownership.yml"
+		dedicatedCommand = planCommand
+		artifacts := artifactsByRecord[dedicatedRecordPath]
+		if len(artifacts) == 0 {
+			t.Fatalf("synthetic dedicated ownership record %q governs no artifacts", dedicatedRecordPath)
+		}
+		t.Run("dedicated/synthetic_plan_characterization", func(t *testing.T) {
+			writeDedicatedCommandFixture(t, baselineRoot, dedicatedRecordPath, dedicatedCommand)
+			err := exerciseDeclaredRegenerationStep(
+				t.Context(), repository, baselineRoot, cacheRoot, roots, clean,
+				dedicatedCommand, probesForPaths(artifacts, "dedicated"), frozen,
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertDerivedFixtureRestored(t, baselineRoot, roots, clean)
+		})
 	}
 
-	validDedicated := records[dedicatedRecordPath]
 	negativeCases := []struct {
 		name      string
 		command   string
@@ -330,7 +463,7 @@ func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
 		},
 		{
 			name:      "declared flag is wrong",
-			command:   validDedicated.Command + " -roundfix-deliberately-wrong-flag",
+			command:   dedicatedCommand + " -roundfix-deliberately-wrong-flag",
 			wantError: "run declared command",
 		},
 		{
@@ -366,6 +499,34 @@ func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
 		)
 		if err != nil {
 			t.Fatal(err)
+		}
+		assertDerivedFixtureRestored(t, baselineRoot, roots, clean)
+	})
+
+	t.Run("frozen declaration rejects rewritten directory", func(t *testing.T) {
+		const (
+			recordPath   = "testdata/catalog.diagnostics.golden.json_ownership.yml"
+			artifactPath = "testdata/catalog.diagnostics.golden.json"
+		)
+		content := []byte("owner: frozen\nreason: deliberately frozen rewrite fixture\n")
+		if err := os.WriteFile(
+			filepath.Join(baselineRoot, filepath.FromSlash(recordPath)),
+			content,
+			0o644,
+		); err != nil {
+			t.Fatalf("write frozen ownership fixture %q: %v", recordPath, err)
+		}
+		record, err := readDerivedOwnershipRecord(fileSystem, recordPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = exerciseDeclaredRegenerationStep(
+			t.Context(), repository, baselineRoot, cacheRoot, roots, clean,
+			"make baseline-digests", nil,
+			[]derivedArtifactProbe{{path: artifactPath, owner: string(record.Owner)}},
+		)
+		if err == nil || !strings.Contains(err.Error(), "rewrote frozen artifact") {
+			t.Fatalf("frozen rewrite error = %v, want rewritten frozen artifact failure", err)
 		}
 		assertDerivedFixtureRestored(t, baselineRoot, roots, clean)
 	})
@@ -537,6 +698,37 @@ func derivedArtifactsByRecord(
 	return artifacts
 }
 
+func derivedRecordPathForArtifact(
+	t *testing.T,
+	fileSystem fs.FS,
+	roots []string,
+	resolved map[string]derivedOwnershipRecord,
+	artifactPath string,
+) string {
+	t.Helper()
+
+	if _, ok := resolved[artifactPath]; !ok {
+		t.Fatalf("changed derived artifact %q has no resolved ownership", artifactPath)
+	}
+	for _, root := range roots {
+		if !pathWithinDerivedScanRoot(artifactPath, root) {
+			continue
+		}
+		recordPaths, err := resolveDerivedOwnershipRecordPaths(
+			fileSystem, root, artifactPath, false,
+		)
+		if err != nil {
+			t.Fatalf("resolve ownership for changed artifact %q: %v", artifactPath, err)
+		}
+		if len(recordPaths) != 1 {
+			t.Fatalf("changed artifact %q has ownership records %v", artifactPath, recordPaths)
+		}
+		return recordPaths[0]
+	}
+	t.Fatalf("changed derived artifact %q is outside the derived scan", artifactPath)
+	return ""
+}
+
 func declaredSanctionedProbes(
 	t *testing.T,
 	records map[string]derivedOwnershipRecord,
@@ -562,6 +754,15 @@ func declaredSanctionedProbes(
 		"testdata/_ownership.yml": {
 			path: "testdata/catalog.digest", owner: "sanctioned",
 		},
+		"testdata/catalog.diagnostics.golden.json_ownership.yml": {
+			path: "testdata/catalog.diagnostics.golden.json", owner: "sanctioned",
+		},
+		"testdata/parity-corpus/_ownership.yml": {
+			path: "testdata/parity-corpus/v1/fixtures/asset-sync.json", owner: "sanctioned",
+		},
+		"testdata/plan-characterization/_ownership.yml": {
+			path: "testdata/plan-characterization/clean-adoption.golden.json", owner: "sanctioned",
+		},
 	}
 	return probesForDeclaredOwner(t, records, derivedOwnerSanctioned, probes)
 }
@@ -573,9 +774,6 @@ func declaredFrozenProbes(
 	t.Helper()
 
 	probes := map[string]derivedArtifactProbe{
-		"testdata/parity-corpus/_ownership.yml": {
-			path: "testdata/parity-corpus/v1/matrix.json", owner: "frozen",
-		},
 		"testdata/legacy-v2/_ownership.yml": {
 			path: "testdata/legacy-v2/assets/coverage.json", owner: "frozen",
 		},
@@ -707,14 +905,24 @@ func runDeclaredRegenerationStep(
 	cacheRoot string,
 	command string,
 ) error {
+	_, err := runDeclaredRegenerationStepOutput(ctx, repository, cacheRoot, command)
+	return err
+}
+
+func runDeclaredRegenerationStepOutput(
+	ctx context.Context,
+	repository string,
+	cacheRoot string,
+	command string,
+) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	cmd.Dir = repository
 	cmd.Env = append(os.Environ(), "GOCACHE="+cacheRoot, "GOFLAGS=-buildvcs=false")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("run declared command %q: %w\n%s", command, err, output)
+		return output, fmt.Errorf("run declared command %q: %w\n%s", command, err, output)
 	}
-	return nil
+	return output, nil
 }
 
 func perturbDerivedArtifacts(

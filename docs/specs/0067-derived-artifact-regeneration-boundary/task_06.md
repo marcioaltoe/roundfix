@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0067-derived-artifact-regeneration-boundary
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -97,3 +97,77 @@ true and does not decide whether that state is desirable — see Requirement 6.
 - `qa/qa-report-2026-08-05.md` → F-001 and F-002.
 - `docs/workflow/authorizations/2026-08-02-queued-spec-tooling.md`.
 - ADR-0081, ADR-0085.
+
+## Result
+
+### Implementation
+
+- Added the plan-characterization updater to `BASELINE_DIGEST_STEPS` with the
+  invocation declared by its former dedicated record. Existing steps and their
+  order remain unchanged.
+- Measured a real owned-Skill edit, `make skills-sync`, and the sanctioned
+  command inside an isolated repository fixture. The catalog-diagnostic,
+  parity-corpus, and plan-characterization records now report `sanctioned`,
+  matching the directories that run rewrites. The parity reason names the two
+  measured generated artifacts and retains the unresolved maintainer decision
+  about whether the corpus should instead become frozen.
+- Extended the canonical ownership suite to compare every record with measured
+  sanctioned behavior. Existing sanctioned records are independently
+  perturbed and restored; the owned-Skill journey detects additional rewrites
+  instead of trusting record labels.
+- Preserved coverage for the `dedicated` owner type with synthetic records now
+  that no repository record uses it. Added a frozen-record fixture around an
+  artifact the sanctioned command rewrites; the subtest passes only when the
+  declared-step assertion reports `rewrote frozen artifact`.
+
+### Focused checks
+
+- Red signal: `rtk env GOCACHE=<worktree>/.gocache go test
+  ./internal/baseline -count=1 -run
+  '^TestMeasuredSanctionedOwnershipMatchesRecords$' -v` reached the new test
+  and exited 1. It reported the catalog-diagnostic record as `dedicated` and
+  the parity record as `frozen` while measuring sanctioned rewrites for both.
+- After implementation, the same focused measurement command exited 0. It
+  also asserted that a second sanctioned run emitted `"changed":false` and
+  left the derived snapshot byte-identical.
+- `rtk env GOCACHE=<worktree>/.gocache go test ./internal/baseline -count=1
+  -run
+  '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestDerivedOwnershipRemediationDiagnostics|TestDerivedOwnershipDeclaresKnownBoundaries)$'
+  -v` exited 0. The measured-owner, synthetic dedicated, sanctioned/frozen
+  boundary, remediation, and known-record checks passed; the frozen negative
+  fixture observed the required internal failure.
+- `rtk env GOCACHE=<worktree>/.gocache go test ./internal/baseline -count=1`
+  exited 0 (`ok roundfix/internal/baseline`, 110.570s).
+- `rtk git -c core.fsmonitor=false diff --check` exited 0.
+- `rtk git -c core.fsmonitor=false diff --quiet HEAD --
+  internal/baseline/assets internal/baseline/testdata
+  ':(exclude)**/_ownership.yml' ':(exclude)**/*_ownership.yml'` exited 0; no
+  digest value or derived artifact content changed.
+
+### Acceptance evidence
+
+1. The fixture performs an owned-Skill edit, syncs its mirror, and observes one
+   sanctioned run rewriting the plan-characterization corpus together with the
+   other measured sanctioned records. The Daemon-owned `make verify` assertion
+   remains pending declared Verification.
+2. The same fixture runs the sanctioned command a second time, requires
+   `"changed":false`, and compares byte snapshots. The Daemon-owned follow-up
+   `make verify` remains pending declared Verification.
+3. `TestMeasuredSanctionedOwnershipMatchesRecords` compares all records with
+   observed command behavior and passed after the record corrections.
+4. `frozen declaration rejects rewritten directory` declares a rewritten
+   diagnostic corpus frozen and passes only after observing the declared-step
+   failure `rewrote frozen artifact`.
+5. The artifact-only diff check exited 0; this Task changed ownership metadata,
+   tests, and the bounded step list without changing a digest value or derived
+   artifact content.
+
+### Follow-up
+
+- The sanctioned command still rewrites two generated files under the parity
+  corpus, as Requirement 6 requires. The maintainer still owns the product
+  decision whether to keep that measured behavior or make the corpus genuinely
+  frozen in a later Spec.
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+that gate and terminal status settlement.

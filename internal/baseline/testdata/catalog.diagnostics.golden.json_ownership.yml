@@ -1,7 +1,4 @@
-owner: dedicated
-command: >-
-  go test ./internal/baseline -run '^TestCatalogDiagnosticCharacterization$'
-  -update-catalog-diagnostics -count=1
+owner: sanctioned
 reason: >-
-  Not in BASELINE_DIGEST_STEPS; this diagnostic characterization corpus uses a
-  dedicated flag whose name differs from TestCatalogDiagnosticCharacterization.
+  The sanctioned make baseline-digests command includes this diagnostic
+  characterization corpus with its dedicated update flag.

@@ -107,7 +107,8 @@ BASELINE_DIGEST_STEPS := \
 	./internal/baseline:TestFormatterComposition \
 	./internal/baseline:TestBaselineCompatibilityCorpus \
 	./internal/baseline:TestCatalogCompatibility \
-	./internal/baseline:^TestCatalogDiagnosticCharacterization$$:-update-catalog-diagnostics
+	./internal/baseline:^TestCatalogDiagnosticCharacterization$$:-update-catalog-diagnostics \
+	./internal/baseline:TestBaselinePlanCharacterization:-update-baseline-plan-characterization
 
 baseline-digests: ## Regenerate derived Baseline digest artifacts
 	@raw=""; snapshot=""; \
