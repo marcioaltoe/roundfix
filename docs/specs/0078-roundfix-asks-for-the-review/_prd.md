@@ -14,18 +14,21 @@ opens many Pull Requests a day, and every automatic review it never wanted —
 an archive Pull Request carrying `+4/-1`, a rebase, a changelog fix — spends
 from the same bucket as the reviews that matter.
 
-The maintainer's answer is to stop reviewing by default and start asking. As of
-2026-08-05 `.coderabbit.yaml` carries:
+The maintainer's answer is to stop reviewing by default and start asking. The
+configuration decided on 2026-08-05, which task_04 commits:
 
 ```yaml
 reviews:
   auto_review:
     enabled: false
-    description_keyword: "@review"
+    description_keyword: "coderabbit:review"
 ```
 
-A Pull Request is reviewed when its body says `@review`, and never otherwise.
-That makes consumption intentional, and it breaks the autonomous loop.
+A Pull Request is reviewed when its body says `coderabbit:review`, and never
+otherwise. The keyword is written explicitly because the Review Source schema
+defaults it to the empty string, and `enabled: false` with an empty keyword
+reviews nothing at all. That makes consumption intentional, and it breaks the
+autonomous loop.
 
 `watch --until-clean` pushes a round's fixes and then waits for Review Source
 Evidence bound to the new head. With automatic review off, no review runs, no

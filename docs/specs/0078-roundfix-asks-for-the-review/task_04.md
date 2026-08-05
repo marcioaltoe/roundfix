@@ -27,11 +27,13 @@ so manual mode and the asking arrive in the same change.
    reviews:
      auto_review:
        enabled: false
-       description_keyword: "@review"
+       description_keyword: "coderabbit:review"
    ```
 
    Every other key in that file stays byte-identical; this Task adds three
-   lines and changes nothing else.
+   lines and changes nothing else. The keyword MUST be written explicitly: the
+   Review Source schema defaults `description_keyword` to the empty string, and
+   `enabled: false` with an empty keyword reviews nothing at all, silently.
 2. MUST set `review_source.request_review: true` in `.roundfixrc.yml`, so this
    repository asks for the review its Review Source no longer starts.
 3. MUST lower `watch.max_rounds` from `3` to `2` in `.roundfixrc.yml`, capping a
@@ -47,7 +49,8 @@ so manual mode and the asking arrive in the same change.
 
 ## Acceptance Criteria
 
-- [ ] `.coderabbit.yaml` carries manual review with the `@review` keyword.
+- [ ] `.coderabbit.yaml` carries manual review with the `coderabbit:review`
+      keyword, written explicitly rather than left to the empty default.
 - [ ] `.roundfixrc.yml` enables the request and caps rounds at `2`.
 - [ ] The repository's own configuration pair passes task_03's Preflight
       predicate, proven by a command rather than by inspection.
@@ -61,8 +64,8 @@ so manual mode and the asking arrive in the same change.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `grep -q 'enabled: false' .coderabbit.yaml && grep -q 'description_keyword: "@review"' .coderabbit.yaml`
-  — expected: exit 0; manual review is committed.
+- `grep -q 'enabled: false' .coderabbit.yaml && grep -q 'description_keyword: "coderabbit:review"' .coderabbit.yaml`
+  — expected: exit 0; manual review is committed with a non-empty keyword.
 - `grep -q 'request_review: true' .roundfixrc.yml && grep -q 'max_rounds: 2' .roundfixrc.yml`
   — expected: exit 0; the repository asks, capped at two Rounds.
 - `go run -buildvcs=false ./cmd/roundfix doctor > /dev/null` — expected: exit 0;
