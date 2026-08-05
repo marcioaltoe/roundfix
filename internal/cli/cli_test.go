@@ -9236,6 +9236,7 @@ func TestReviewCommandsRefuseTargetMismatchWithoutSideEffects(t *testing.T) {
 			homeDir, repoDir := withReviewGitWorkspace(t)
 			enableReviewRequestsForTest(t, repoDir)
 			gitImplement(t, repoDir, "checkout", "-b", "other/review")
+			artifactDir := filepath.Join(t.TempDir(), "artifacts")
 
 			agentRunner := &fakeAgentRunner{}
 			committer := &fakeCommitter{}
@@ -9258,6 +9259,7 @@ func TestReviewCommandsRefuseTargetMismatchWithoutSideEffects(t *testing.T) {
 			args := []string{
 				command,
 				"--pr", "123",
+				"--artifact-dir", artifactDir,
 				"--base-repo", "owner/project",
 				"--head-repo", "owner/project",
 				"--head-branch", "feature/review",
@@ -9290,6 +9292,9 @@ func TestReviewCommandsRefuseTargetMismatchWithoutSideEffects(t *testing.T) {
 				}
 			}
 			assertNoRunDatabase(t, homeDir)
+			if _, err := os.Stat(artifactDir); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("Artifact Directory exists after refusal: stat error = %v", err)
+			}
 			if fetchCalls != 0 || resolver.calls != 0 {
 				t.Fatalf("Review Source calls after refusal: fetch=%d resolve=%d", fetchCalls, resolver.calls)
 			}
@@ -9303,6 +9308,145 @@ func TestReviewCommandsRefuseTargetMismatchWithoutSideEffects(t *testing.T) {
 			afterStatus := gitImplementOutput(t, repoDir, "status", "--porcelain=v1", "--untracked-files=all")
 			if afterHEAD != beforeHEAD || afterStatus != beforeStatus {
 				t.Fatalf("Git state changed after refusal: HEAD %q -> %q, status %q -> %q", beforeHEAD, afterHEAD, beforeStatus, afterStatus)
+			}
+		})
+	}
+}
+
+func TestReviewCommandsRefuseWithoutCreatingArtifactDirectory(t *testing.T) {
+	tests := []struct {
+		name               string
+		command            string
+		defaultArtifactDir bool
+		setup              func(*testing.T, string, string)
+	}{
+		{
+			name:    "fetch shared Preflight",
+			command: "fetch",
+			setup: func(t *testing.T, _ string, _ string) {
+				withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
+					return preflight.Result{}, errors.New("inspect Git refusal")
+				})
+			},
+		},
+		{
+			name:    "resolve shared Preflight",
+			command: "resolve",
+			setup: func(t *testing.T, _ string, _ string) {
+				withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
+					return preflight.Result{}, errors.New("Pull Request resolution refusal")
+				})
+			},
+		},
+		{
+			name:    "watch shared Preflight",
+			command: "watch",
+			setup: func(t *testing.T, _ string, _ string) {
+				withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
+					return preflight.Result{}, errors.New("push-plan refusal")
+				})
+			},
+		},
+		{
+			name:    "fetch Branch Integrity Preflight",
+			command: "fetch",
+			setup: func(t *testing.T, _ string, repoDir string) {
+				withSuccessfulPreflight(t, repoDir)
+				updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+					dependencies.listPendingRunWork = func(context.Context, string, string) ([]runworktree.PendingRunWork, error) {
+						return nil, errors.New("Branch Integrity refusal")
+					}
+				})
+			},
+		},
+		{
+			name:    "resolve missing Compatible Artifacts",
+			command: "resolve",
+			setup: func(t *testing.T, _ string, repoDir string) {
+				withSuccessfulPreflight(t, repoDir)
+			},
+		},
+		{
+			name:               "resolve Agent Selection Preflight",
+			command:            "resolve",
+			defaultArtifactDir: true,
+			setup: func(t *testing.T, _ string, repoDir string) {
+				withSuccessfulPreflight(t, repoDir)
+				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+				withAgentRunner(t, &fakeAgentRunner{probeErr: errors.New("Agent Selection refusal")})
+			},
+		},
+		{
+			name:    "watch Agent Selection Preflight",
+			command: "watch",
+			setup: func(t *testing.T, _ string, repoDir string) {
+				withSuccessfulPreflight(t, repoDir)
+				withAgentRunner(t, &fakeAgentRunner{probeErr: errors.New("Agent Selection refusal")})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			artifactDir := filepath.Join(t.TempDir(), "artifacts")
+			tt.setup(t, homeDir, repoDir)
+			args := []string{tt.command, "--pr", "123", "--no-input"}
+			if tt.defaultArtifactDir {
+				artifactDir = builtinArtifactDirForRepo(t, repoDir)
+			} else {
+				args = append(args, "--artifact-dir", artifactDir)
+			}
+			if tt.command != "resolve" {
+				args = append(args, "--source", "coderabbit")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLI(t, args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("refusal exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if !strings.Contains(stderr.String(), "Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.") {
+				t.Fatalf("refusal message changed: %q", stderr.String())
+			}
+			if _, err := os.Stat(artifactDir); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("Artifact Directory exists after refusal: stat error = %v", err)
+			}
+		})
+	}
+}
+
+func TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses(t *testing.T) {
+	for _, command := range []string{"fetch", "resolve", "watch"} {
+		t.Run(command, func(t *testing.T) {
+			_, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			artifactDir := filepath.Join(t.TempDir(), "artifacts")
+			args := []string{command, "--pr", "123", "--artifact-dir", artifactDir, "--no-input"}
+			if command == "resolve" {
+				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+				artifactDir = builtinArtifactDirForRepo(t, repoDir)
+				args = []string{command, "--pr", "123", "--no-input"}
+			}
+			if command != "resolve" {
+				args = append(args, "--source", "coderabbit")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLI(t, args, &stdout, &stderr)
+
+			if code == exitPreflight {
+				t.Fatalf("Preflight unexpectedly refused: stderr=%q", stderr.String())
+			}
+			info, err := os.Stat(artifactDir)
+			if err != nil {
+				t.Fatalf("stat Artifact Directory after Run start: %v", err)
+			}
+			if !info.IsDir() {
+				t.Fatalf("Artifact Directory path is not a directory: mode=%s", info.Mode())
 			}
 		})
 	}

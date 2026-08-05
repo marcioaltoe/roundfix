@@ -1692,7 +1692,7 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	}
 
 	explicitArtifactDir := strings.TrimSpace(req.artifactDir) != ""
-	artifactDir, err := roundconfig.ValidateArtifactDirectory(req.artifactDir, loadedConfig.GitRoot, loadedConfig.HomeDir)
+	artifactDir, err := resolveArtifactDirectoryForPreflight(req.artifactDir, loadedConfig.GitRoot, loadedConfig.HomeDir)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
@@ -1750,6 +1750,24 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	}
 	fmt.Fprintln(stderr, "Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.")
 	return exitRunFailed
+}
+
+func resolveArtifactDirectoryForPreflight(artifactDir string, gitRoot string, homeDir string) (string, error) {
+	resolved, err := roundconfig.ResolveArtifactDirectory(artifactDir, gitRoot, homeDir)
+	if err != nil {
+		return "", err
+	}
+	info, err := os.Stat(resolved)
+	if errors.Is(err, os.ErrNotExist) {
+		return resolved, nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("stat Artifact Directory %q: %w", resolved, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("Artifact Directory %q is not a directory", resolved)
+	}
+	return resolved, nil
 }
 
 type branchIntegrityReport struct {
@@ -2449,6 +2467,11 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
 	}
+	if err := ensureReviewRunArtifactDirectory(req, loaded, preflightResult); err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
+	}
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		markRunFailed(ctx, runStore, run.ID)
 		printRunFailure(req.name, err, stderr)
@@ -2590,6 +2613,11 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
+	}
+	if err := ensureReviewRunArtifactDirectory(req, loaded, preflightResult); err != nil {
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
@@ -3068,6 +3096,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
 	}
+	if err := ensureReviewRunArtifactDirectory(req, loaded, preflightResult); err != nil {
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
+	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printRunFailure(req.name, err, stderr)
@@ -3309,6 +3342,11 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 		ReasoningEffort: runtime.ReasoningEffort,
 	}
 	return createReviewRun(ctx, runStore, req, createReq, stderr)
+}
+
+func ensureReviewRunArtifactDirectory(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result) error {
+	_, err := roundconfig.ValidateArtifactDirectory(req.artifactDir, preflightResult.Git.Root, loaded.HomeDir)
+	return err
 }
 
 func reviewRunTargetGuard(ctx context.Context, run store.Run) *watch.TargetGuard {

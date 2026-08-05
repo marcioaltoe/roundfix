@@ -141,12 +141,23 @@ func (child *detachChild) reportRunCreated(runID string, artifactDir string) err
 }
 
 func runDetachedCommand(args []string, req commandRequest, loaded roundconfig.Loaded, stdout, stderr io.Writer, baseEnv []string, workDir string, timeouts detachPhaseTimeouts) int {
-	artifactDir, err := roundconfig.ValidateArtifactDirectory(req.artifactDir, loaded.GitRoot, loaded.HomeDir)
-	if err != nil {
-		printPreflightFailure(req.name, err, stderr)
-		return exitPreflight
+	var tempFile *os.File
+	var err error
+	if req.name == "resolve" || req.name == "watch" {
+		artifactDir, resolveErr := resolveArtifactDirectoryForPreflight(req.artifactDir, loaded.GitRoot, loaded.HomeDir)
+		if resolveErr != nil {
+			printPreflightFailure(req.name, resolveErr, stderr)
+			return exitPreflight
+		}
+		tempFile, err = createDetachedReviewConsoleTemp(artifactDir)
+	} else {
+		artifactDir, validateErr := roundconfig.ValidateArtifactDirectory(req.artifactDir, loaded.GitRoot, loaded.HomeDir)
+		if validateErr != nil {
+			printPreflightFailure(req.name, validateErr, stderr)
+			return exitPreflight
+		}
+		tempFile, err = createDetachedConsoleTemp(artifactDir)
 	}
-	tempFile, err := createDetachedConsoleTemp(artifactDir)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
@@ -228,6 +239,32 @@ func runDetachedCommand(args []string, req commandRequest, loaded roundconfig.Lo
 	}
 	printDetachedReport(stdout, created.handshake.runID, created.handshake.consoleLog)
 	return exitOK
+}
+
+func createDetachedReviewConsoleTemp(artifactDir string) (*os.File, error) {
+	dir := filepath.Clean(artifactDir)
+	for {
+		info, err := os.Stat(dir)
+		if err == nil {
+			if !info.IsDir() {
+				return nil, fmt.Errorf("Detached Run console ancestor %q is not a directory", dir)
+			}
+			break
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("stat Detached Run console ancestor %q: %w", dir, err)
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return nil, fmt.Errorf("find existing Detached Run console ancestor for %q", artifactDir)
+		}
+		dir = parent
+	}
+	file, err := os.CreateTemp(dir, ".roundfix-detach-*.log")
+	if err != nil {
+		return nil, fmt.Errorf("create Detached Run console log: %w", err)
+	}
+	return file, nil
 }
 
 func createDetachedConsoleTemp(artifactDir string) (*os.File, error) {

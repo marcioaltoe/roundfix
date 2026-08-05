@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0069-review-run-targets-its-pull-request
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -74,3 +74,55 @@ The claim is the contract. Make it true rather than narrowing it.
 - `qa/qa-report-2026-08-05.md` → F-001.
 - `_prd.md` → Core Feature 2; Goal 1.
 - `_techspec.md` → API Contracts.
+
+## Result
+
+### Implementation
+
+- Review commands now resolve and inspect the configured Artifact Directory
+  without creating it before Preflight. Existing non-directory paths still
+  refuse before a Run starts.
+- `fetch`, `resolve`, and `watch` create and write-check the Artifact Directory
+  only after command-specific Preflight, Run creation, and Branch Integrity
+  bypass audit publication have succeeded.
+- Detached `resolve` and `watch` keep their temporary console log in the
+  nearest existing ancestor of the configured Artifact Directory. A refusal
+  removes that temporary file; a created Run moves it on the same filesystem
+  into the Run's console-log path.
+
+### Focused checks
+
+- Red reproduction before the production change:
+  `rtk go test ./internal/cli -run '^TestReviewCommandsRefuseTargetMismatchWithoutSideEffects$' -count=1`
+  failed for `fetch`, `resolve`, and `watch` because `os.Stat` found the
+  Artifact Directory after exit `2`.
+- After the final edit:
+  `rtk go test ./internal/cli -run '^(TestReviewCommandsRefuseTargetMismatchWithoutSideEffects|TestReviewCommandsRefuseWithoutCreatingArtifactDirectory|TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses|TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent|TestRunOperationalCommandRejectsInvalidConfigAndArtifactDirectory|TestRunOperationalCommandAppliesConfigAndCLIArtifactDirPrecedence|TestRunReviewCommandsRefuseDirtyTrackedCheckout|TestRunResolveSelectionPreflightRejectionReportsTupleAndCreatesNoRun|TestRunWatchSelectionPreflightFailureCreatesNoRun|TestRunFetchRejectsDuplicateActiveRun|TestRunDetachedCommand.*)$' -count=1`
+  passed 36 tests.
+- `rtk git diff --check` passed.
+- The Task's declared `## Verification` commands were not run; the Daemon owns
+  them.
+
+### Acceptance evidence
+
+- **Target mismatch leaves an absent directory absent:**
+  `TestReviewCommandsRefuseTargetMismatchWithoutSideEffects` inspects the
+  filesystem with `os.Stat` and passed for `fetch`, `resolve`, and `watch`.
+- **Every other Preflight refusal leaves it absent:**
+  `TestReviewCommandsRefuseWithoutCreatingArtifactDirectory` passed across
+  shared Preflight failures, Branch Integrity refusal, missing Compatible
+  Artifacts, and Agent Selection Preflight refusal. The production creation
+  call now occurs after the last refusal return in each command. Detached
+  `resolve` and `watch` also passed an assertion that the directory and
+  temporary filesystem entry remain absent after refusal.
+- **Message and exit code remain unchanged:** the refusal tests assert exit
+  `2` and the exact existing
+  `Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.`
+  sentence; all passed.
+- **Passing Preflight still creates the directory:**
+  `TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses` passed for
+  all three commands, and the existing artifact-directory precedence tests
+  remained green.
+- **Command parity:** the refusal and positive filesystem assertions are
+  table-driven over `fetch`, `resolve`, and `watch`; detached parity is covered
+  for the two commands that support detached review Runs.
