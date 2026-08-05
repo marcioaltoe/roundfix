@@ -599,6 +599,30 @@ func TestListPendingRunWorkReportsAheadRunBranches(t *testing.T) {
 	}
 }
 
+func TestRunIDFromBranchName(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		branch string
+		wantID string
+		wantOK bool
+	}{
+		{name: "canonical", branch: BranchName("run-123"), wantID: "run-123", wantOK: true},
+		{name: "surrounding whitespace", branch: "  " + BranchName("run-123") + "  ", wantID: "run-123", wantOK: true},
+		{name: "foreign branch", branch: "ma/spec-0066", wantOK: false},
+		{name: "empty Run ID", branch: BranchName(""), wantOK: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			gotID, gotOK := RunIDFromBranchName(tt.branch)
+			if gotID != tt.wantID || gotOK != tt.wantOK {
+				t.Fatalf("RunIDFromBranchName(%q) = (%q, %v), want (%q, %v)", tt.branch, gotID, gotOK, tt.wantID, tt.wantOK)
+			}
+		})
+	}
+}
+
 func TestIntegratePendingRunWorkFastForwardsBaseBranch(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -1332,6 +1356,277 @@ func TestInspectTerminalRunClassifiesSupersededQAReport(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestClassifyRunBranchSetFourFailedCycles(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+		"qa-report-2026-07-30.md",
+		"qa-report-2026-07-31.md",
+	)
+
+	result, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+
+	if result.Current != fixture.refs[3].Branch {
+		t.Fatalf("current Run Branch = %q, want %q", result.Current, fixture.refs[3].Branch)
+	}
+	wantReport := qaReportTestPath(slug, "qa-report-2026-07-31.md", false)
+	if result.CurrentReport != wantReport {
+		t.Fatalf("current QA Report = %q, want %q", result.CurrentReport, wantReport)
+	}
+	wantReleasable := []string{fixture.refs[0].Branch, fixture.refs[1].Branch, fixture.refs[2].Branch}
+	if !slices.Equal(result.Releasable, wantReleasable) {
+		t.Fatalf("releasable Run Branches = %v, want %v", result.Releasable, wantReleasable)
+	}
+	for _, branch := range wantReleasable {
+		if result.ReleasableProofs[branch] != wantReport {
+			t.Fatalf("releasable proof for %q = %q, want %q", branch, result.ReleasableProofs[branch], wantReport)
+		}
+	}
+	if len(result.Preserved) != 0 || len(result.PreservedReasons) != 0 {
+		t.Fatalf("preserved Run Branches = %v reasons=%v, want none", result.Preserved, result.PreservedReasons)
+	}
+}
+
+func TestClassifyRunBranchSetUsesOnlyOneTarget(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+		"qa-report-2026-07-30.md",
+	)
+	fixture.runs[2].LocalBranch = "ma/other-target"
+
+	result, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+
+	if result.Current != fixture.refs[1].Branch {
+		t.Fatalf("current Run Branch = %q, want same-target branch %q", result.Current, fixture.refs[1].Branch)
+	}
+	if !slices.Equal(result.Releasable, []string{fixture.refs[0].Branch}) {
+		t.Fatalf("releasable Run Branches = %v, want only same-target branch %q", result.Releasable, fixture.refs[0].Branch)
+	}
+	other := fixture.refs[2].Branch
+	if result.Current == other || slices.Contains(result.Releasable, other) || slices.Contains(result.Preserved, other) {
+		t.Fatalf("other target Run Branch %q must not enter classification: %#v", other, result)
+	}
+}
+
+func TestClassifyRunBranchSetPreservesUnintegratedImplementationWork(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	commitWorktreeFile(t, fixture.refs[0].Path, "valuable.txt", "preserve\n", "feat: valuable work")
+
+	result, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+
+	assertPreservedRunBranch(t, result, fixture.refs[0].Branch, "not proven superseded")
+	if slices.Contains(result.Releasable, fixture.refs[0].Branch) {
+		t.Fatalf("unintegrated implementation branch %q must not be releasable", fixture.refs[0].Branch)
+	}
+}
+
+func TestClassifyRunBranchSetPreservesBranchWithoutSupersededProof(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug, "", "qa-report-2026-07-29.md")
+	commitWorktreeFile(
+		t,
+		fixture.refs[0].Path,
+		qaReportTestPath(slug, "qa-report-2026-07-28.md", false),
+		"QA report\n",
+		"docs: malformed QA report",
+	)
+
+	result, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+
+	assertPreservedRunBranch(t, result, fixture.refs[0].Branch, "not proven superseded")
+}
+
+func TestClassifyRunBranchSetPreservesActiveRunBranch(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	fixture.runs[0].State = store.StateActive
+
+	result, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+
+	assertPreservedRunBranch(t, result, fixture.refs[0].Branch, "Active Run")
+	if slices.Contains(result.Releasable, fixture.refs[0].Branch) {
+		t.Fatalf("Active Run Branch %q must not be releasable", fixture.refs[0].Branch)
+	}
+}
+
+func TestApplyRunBranchCandidateRevalidatesProofAndCleanWorktree(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	classification, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+	candidate := fixture.refs[0]
+	if err := ApplyRunBranchCandidate(context.Background(), classification, candidate.Branch); err != nil {
+		t.Fatalf("apply Run Branch candidate: %v", err)
+	}
+	assertPathRemoved(t, candidate.Path)
+	assertBranchRemoved(t, fixture.repoDir, candidate.Branch)
+	assertPathExists(t, fixture.refs[1].Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.refs[1].Branch)
+}
+
+func TestApplyRunBranchCandidatePreservesStaleSupersedingProof(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	classification, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+	candidate := fixture.refs[0]
+	commitWorktreeFile(
+		t,
+		fixture.repoDir,
+		qaReportTestPath(slug, "qa-report-2026-07-30.md", false),
+		"newer passing report\n",
+		"docs: newer QA report",
+	)
+
+	err = ApplyRunBranchCandidate(context.Background(), classification, candidate.Branch)
+
+	if err == nil || !strings.Contains(err.Error(), "superseding proof is stale") {
+		t.Fatalf("stale superseding proof error = %v, want preservation refusal", err)
+	}
+	assertPathExists(t, candidate.Path)
+	assertRunBranchExists(t, fixture.repoDir, candidate.Branch)
+}
+
+func TestApplyRunBranchCandidateRejectsUninspectedBranch(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	classification, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+
+	err = ApplyRunBranchCandidate(context.Background(), classification, fixture.refs[1].Branch)
+
+	if err == nil || !strings.Contains(err.Error(), "was not inspected as releasable") {
+		t.Fatalf("uninspected Run Branch apply error = %v, want refusal", err)
+	}
+	assertPathExists(t, fixture.refs[1].Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.refs[1].Branch)
+}
+
+func TestApplyRunBranchCandidatePreservesNewlyDirtyWorktree(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	classification, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+	candidate := fixture.refs[0]
+	mustWriteWorktreeTest(t, filepath.Join(candidate.Path, "new-dirt.txt"), "preserve me\n")
+
+	err = ApplyRunBranchCandidate(context.Background(), classification, candidate.Branch)
+
+	if err == nil || !strings.Contains(err.Error(), "worktree classification changed") {
+		t.Fatalf("newly dirty Run Branch apply error = %v, want preservation refusal", err)
+	}
+	assertPathExists(t, candidate.Path)
+	assertRunBranchExists(t, fixture.repoDir, candidate.Branch)
 }
 
 func TestApplyTerminalRunSuperseded(t *testing.T) {
@@ -2073,6 +2368,13 @@ type terminalRunFixture struct {
 	run store.Run
 }
 
+type runBranchSetFixture struct {
+	repoDir      string
+	targetBranch string
+	refs         []Ref
+	runs         []store.Run
+}
+
 type storedTerminalRunFixture struct {
 	repoDir  string
 	ref      Ref
@@ -2152,6 +2454,61 @@ func newTerminalRunFixture(t *testing.T, runID string) terminalRunFixture {
 			WorkDir:     canonicalPath(fixture.ref.Path),
 			SpecSlug:    "0038-terminal-run-worktree-reconciliation",
 		},
+	}
+}
+
+func newRunBranchSetFixture(t *testing.T, slug string, reports ...string) runBranchSetFixture {
+	t.Helper()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	repoDir := canonicalPath(initWorktreeRepo(t))
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "shared.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "shared.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
+
+	fixture := runBranchSetFixture{
+		repoDir:      repoDir,
+		targetBranch: "main",
+		refs:         make([]Ref, 0, len(reports)),
+		runs:         make([]store.Run, 0, len(reports)),
+	}
+	for index, report := range reports {
+		runID := fmt.Sprintf("branch-set-%02d", index+1)
+		ref, err := Create(ctx, CreateOptions{
+			UserRoot: repoDir,
+			Location: filepath.Join(homeDir, ".roundfix", "worktrees"),
+			RunID:    runID,
+			HeadSHA:  headSHA,
+		})
+		if err != nil {
+			t.Fatalf("create Run Worktree %s: %v", runID, err)
+		}
+		if report != "" {
+			commitQAReport(t, ref.Path, slug, report, false, "fail")
+		}
+		fixture.refs = append(fixture.refs, ref)
+		fixture.runs = append(fixture.runs, store.Run{
+			ID:          runID,
+			Kind:        store.KindImplement,
+			State:       store.StateUnresolved,
+			GitRoot:     canonicalPath(repoDir),
+			LocalBranch: fixture.targetBranch,
+			WorkDir:     canonicalPath(ref.Path),
+			SpecSlug:    slug,
+		})
+	}
+	return fixture
+}
+
+func assertPreservedRunBranch(t *testing.T, result BranchSetClassification, branch string, reasonFragment string) {
+	t.Helper()
+	if !slices.Contains(result.Preserved, branch) {
+		t.Fatalf("preserved Run Branches = %v, want %q", result.Preserved, branch)
+	}
+	reason := result.PreservedReasons[branch]
+	if !strings.Contains(reason, reasonFragment) {
+		t.Fatalf("preserved reason for %q = %q, want fragment %q", branch, reason, reasonFragment)
 	}
 }
 

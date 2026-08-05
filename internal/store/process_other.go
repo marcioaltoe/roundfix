@@ -15,3 +15,7 @@ func signalOwnerProcess(_ int, _ bool) error {
 func processStartIdentity(_ context.Context, _ int) (string, error) {
 	return "", ErrOwnerProcessUnsupported
 }
+
+func processTreePIDs(_ int, _ string) ([]int, error) {
+	return nil, ErrOwnerProcessUnsupported
+}

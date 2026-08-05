@@ -4,6 +4,7 @@ package store
 
 import (
 	"os/exec"
+	"reflect"
 	"syscall"
 	"testing"
 )
@@ -45,5 +46,28 @@ func TestProcessAliveReportsExitedUnreapedChildDead(t *testing.T) {
 
 	if ProcessAlive(cmd.Process.Pid) {
 		t.Fatalf("expected exited unreaped child pid %d to report dead", cmd.Process.Pid)
+	}
+}
+
+func TestWindowsProcessTreeRejectsStaleParentLinks(t *testing.T) {
+	t.Parallel()
+	got := descendantProcessPIDsAfterStart(500, 200, []processParentWithStart{
+		{pid: 700, parentPID: 500, started: 100},
+		{pid: 800, parentPID: 500, started: 250},
+	})
+	want := []int{500, 800}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("creation-bounded Windows descendants = %v, want %v", got, want)
+	}
+}
+
+func TestWindowsProcessStartParsesRecordedIdentity(t *testing.T) {
+	t.Parallel()
+	got, ok := windowsProcessStart("windows:12345")
+	if !ok || got != 12345 {
+		t.Fatalf("parsed Windows process start = (%d, %v), want (12345, true)", got, ok)
+	}
+	if _, ok := windowsProcessStart("linux:12345"); ok {
+		t.Fatal("foreign process identity parsed as Windows creation time")
 	}
 }

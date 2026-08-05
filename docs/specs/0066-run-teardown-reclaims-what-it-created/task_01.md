@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0066-run-teardown-reclaims-what-it-created
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -74,3 +74,65 @@ per process, so an unprovable termination is visible rather than silent.
 - `_prd.md` → Core Features 1 and 2; Goals; Success Metric 1.
 - `_techspec.md` → Interfaces; Build Order 1; Risks & Considerations.
 - ADR-0044, ADR-0052.
+
+## Result
+
+### Implementation
+
+- Added `TerminateTreeAndWait`, which proves the recorded Run owner before any
+  signal, discovers only processes attributable to that owner, captures a live
+  identity for each descendant where the host supports it, and rescans after
+  termination so a descendant discovered during teardown is not omitted.
+- Added one `TerminationOutcome` per discovered PID. Proven absence has an empty
+  reason; identity, signal, or absence-observation failures remain unproven and
+  retain the diagnostic reason.
+- Bounded Unix ownership by the dedicated Run session when present, with a
+  parent walk only for a live non-session owner. Linux reads `/proc`; macOS
+  queries the owner's process group and retains only members of its session.
+  Windows walks the process snapshot's recorded parent links. Unsupported hosts
+  fail closed.
+- Kept `ProveOwner` and `TerminateAndWait` as the identity and termination
+  authorities. A proven owner-identity mismatch still stops before discovery or
+  signalling, and the legacy empty-identity behavior is unchanged.
+- Extended the real Unix helper fixture with an owner session, an exited middle
+  process, and a reparented grandchild. Added distinct coverage for proven
+  per-PID outcomes, an unrelated survivor, and an unobservable-absence result.
+
+### Focused checks
+
+- Red pre-change signal:
+  `GOCACHE=<worktree>/.gocache go test ./internal/store -count=1 -run '^TestOwnerProcessControllerTerminateTree'`
+  failed to compile because `TerminateTreeAndWait`, `ownedProcesses`, and
+  `signalProcess` did not exist.
+- `GOCACHE=<worktree>/.gocache go test ./internal/store -count=1 -run '^TestOwnerProcessController' -v -timeout=30s`
+  passed. This ran the new tree cases and the existing graceful, force-kill,
+  identity-match, identity-mismatch, legacy-identity, and absence cases.
+- `GOCACHE=<worktree>/.gocache GOOS=linux GOARCH=amd64 go test -c ./internal/store -o /private/tmp/roundfix-store-linux.test`
+  passed.
+- `GOCACHE=<worktree>/.gocache GOOS=windows GOARCH=amd64 go test -c ./internal/store -o /private/tmp/roundfix-store-windows.test.exe`
+  passed.
+- `git diff --check` passed.
+
+### Acceptance evidence
+
+- Outliving grandchild: `TestOwnerProcessControllerTerminateTreeProvesOutlivingGrandchildGone`
+  passed after the middle process exited; both the owner and reparented
+  grandchild were observed absent.
+- Proven outcome per process: the same fixture asserted exactly one outcome for
+  each owned PID, with `Proven=true` and an empty reason.
+- Unprovable absence: `TestOwnerProcessControllerTerminateTreeReportsUnprovenAbsence`
+  passed and asserted `Proven=false`, a non-empty host diagnostic, and no
+  terminated-success representation.
+- Unrelated process safety: `TestOwnerProcessControllerTerminateTreeLeavesUnrelatedProcessRunning`
+  passed and observed the unrelated helper still alive after tree termination.
+- Identity mismatch refusal: the focused controller suite passed both
+  `TestOwnerProcessControllerRefusesMismatchedOwnerIdentity` and
+  `TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity`.
+- Existing `internal/store` behavior: the focused existing owner-process suite
+  passed unchanged. The full package and repository checks remain with Daemon
+  Verification.
+
+### Daemon verification
+
+The commands under `## Verification` were intentionally not run in this Agent
+turn. The Daemon owns those checks and the terminal Task status.

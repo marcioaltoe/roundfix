@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0066-run-teardown-reclaims-what-it-created
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -70,3 +70,66 @@ break**: every other refusal it makes today it still makes.
 - `_prd.md` → Core Feature 4; Decisions (declared break); Success Metric 2.
 - `_techspec.md` → API Contracts; Build Order 3.
 - ADR-0052.
+
+## Result
+
+### Implementation
+
+- Branch Integrity Preflight now groups target-bound Implement Run Branches by
+  Spec and consumes `ClassifyRunBranchSet`. It disregards only a proven failed
+  QA set: the current-evidence branch when older branches are releasable, plus
+  each branch classified `Releasable`.
+- Each disregarded branch emits a stderr diagnostic with its branch, worktree,
+  ahead count, and the current or target QA Report that proves the decision.
+  The decision path performs no Git mutation; branch reclamation remains owned
+  by task_04.
+- Classification errors, `Preserved` branches, unintegrated implementation
+  work, and Active spec Run Branches remain blocking even when Git reports
+  them fast-forwardable. The existing Active review Run guard and explicit
+  bypass/audit path are unchanged.
+
+### Focused checks
+
+- Pre-change signal:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-spec0066-task03-cache go test ./internal/cli -run '^TestBranchIntegrityPreflightWatchDisregardsFourFailedQACycles$' -count=1`
+  — failed because all four failed-cycle branches were listed as pending Run
+  Branch work and `watch` exited 2.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-spec0066-task03-cache go test ./internal/cli -run 'BranchIntegrity' -count=1`
+  — passed (`ok roundfix/internal/cli`).
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-spec0066-task03-cache go test ./internal/worktree -run '^TestClassifyRunBranchSet' -count=1`
+  — passed (`ok roundfix/internal/worktree`).
+- The commands under `## Verification` were not run; the Daemon owns them.
+
+### Acceptance criterion evidence
+
+- Four failed cycles and no hand-deleted ref:
+  `TestBranchIntegrityPreflightWatchDisregardsFourFailedQACycles` creates four
+  real Run Branches and terminal failed QA Runs, then observes `watch` proceed
+  without calling the integration seam.
+- Visible proof per branch: the same test matches one diagnostic line per Run
+  Branch. The newest names its current QA Report; each older branch names that
+  report as its superseding proof.
+- Unintegrated implementation work:
+  `TestBranchIntegrityPreflightClassifiesPendingRunBranches/task_work`
+  supplies a fast-forwardable `Preserved` implementation branch and observes
+  exit 2 with no integration.
+- Unclassifiable work:
+  `TestBranchIntegrityPreflightClassifiesPendingRunBranches/unclassifiable_branch`
+  makes set classification fail and observes the branch preserved as a
+  blocking integration candidate.
+- Another Run bound to the branch:
+  `TestBranchIntegrityPreflightRefusesActiveImplementRunBranch`,
+  `TestBranchIntegrityPreflightRejectsActiveRunForReviewCommands`, and
+  `TestBranchIntegrityRejectsLocklessBypassRun` passed in the focused suite.
+- No branch modification: the four-cycle test compares the complete
+  `for-each-ref` name/object snapshot before and after `watch`; the snapshots
+  are identical.
+- Explicit bypass and audit comment:
+  `TestBranchIntegrityBypassPublishesAuditBeforeFetch` and
+  `TestBranchIntegrityBypassAuditsActiveRunAndProceeds` passed unchanged; the
+  bypass and audit-rendering functions were not edited.
+
+### Follow-up
+
+- Applying reclamation to the now-disregarded branches remains task_04's
+  surface and is intentionally absent from this diff.

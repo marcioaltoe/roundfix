@@ -12,11 +12,15 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 func TestProcessAliveReportsCurrentProcessAlive(t *testing.T) {
@@ -63,6 +67,198 @@ func TestOwnerProcessControllerForceKillExitProof(t *testing.T) {
 	}
 
 	assertOwnerProcessForceKilled(t, pid, wait)
+}
+
+func TestOwnerProcessControllerInspectTreeReportsOnlyLiveOwnedProcesses(t *testing.T) {
+	t.Parallel()
+	const ownerPID = 7101
+	const childPID = 7102
+	const exitedPID = 7103
+	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller.processAbsent = func(pid int) (bool, error) {
+		return pid == exitedPID, nil
+	}
+	controller.ownedProcesses = func(pid int, identity string) ([]int, error) {
+		if pid != ownerPID {
+			t.Fatalf("owned process root = %d, want %d", pid, ownerPID)
+		}
+		if identity != "" {
+			t.Fatalf("owned process identity = %q, want empty legacy identity", identity)
+		}
+		return []int{childPID, exitedPID, ownerPID}, nil
+	}
+
+	got, err := controller.InspectTree(t.Context(), ownerPID, "")
+
+	if err != nil {
+		t.Fatalf("inspect owner process tree: %v", err)
+	}
+	want := []int{ownerPID, childPID}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("live owned processes = %v, want %v", got, want)
+	}
+}
+
+func TestOwnerProcessControllerInspectTreeFindsOutlivingGrandchild(t *testing.T) {
+	t.Parallel()
+	ownerPID, grandchildPID, wait := startOwnerProcessTreeHelper(t)
+	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+
+	got, err := controller.InspectTree(t.Context(), ownerPID, "")
+	if err != nil {
+		t.Fatalf("inspect real owner process tree: %v", err)
+	}
+	want := []int{ownerPID, grandchildPID}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("live real process tree = %v, want %v", got, want)
+	}
+	if _, err := controller.TerminateTreeAndWait(t.Context(), ownerPID, ""); err != nil {
+		t.Fatalf("terminate inspected real process tree: %v", err)
+	}
+	assertOwnerProcessExited(t, ownerPID, wait)
+}
+
+func TestOwnerProcessControllerTerminateTreeProvesOutlivingGrandchildGone(t *testing.T) {
+	t.Parallel()
+	ownerPID, grandchildPID, wait := startOwnerProcessTreeHelper(t)
+	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+
+	outcomes, err := controller.TerminateTreeAndWait(t.Context(), ownerPID, "")
+	if err != nil {
+		t.Fatalf("terminate owner process tree: %v", err)
+	}
+
+	wantPIDs := map[int]bool{ownerPID: false, grandchildPID: false}
+	for _, outcome := range outcomes {
+		if _, ok := wantPIDs[outcome.PID]; !ok {
+			t.Fatalf("termination outcome for unowned process %d: %#v", outcome.PID, outcome)
+		}
+		if !outcome.Proven || outcome.Reason != "" {
+			t.Fatalf("termination outcome for process %d = %#v, want proven absence", outcome.PID, outcome)
+		}
+		wantPIDs[outcome.PID] = true
+	}
+	for pid, observed := range wantPIDs {
+		if !observed {
+			t.Fatalf("missing termination outcome for process %d: %#v", pid, outcomes)
+		}
+		if ProcessAlive(pid) {
+			t.Fatalf("owned process %d remained alive after tree termination", pid)
+		}
+	}
+	assertOwnerProcessExited(t, ownerPID, wait)
+}
+
+func TestOwnerProcessControllerTerminateTreeLeavesUnrelatedProcessRunning(t *testing.T) {
+	t.Parallel()
+	ownerPID, _, wait := startOwnerProcessTreeHelper(t)
+	unrelatedPID, _ := startOwnerProcessHelper(t, "graceful")
+	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+
+	if _, err := controller.TerminateTreeAndWait(t.Context(), ownerPID, ""); err != nil {
+		t.Fatalf("terminate owner process tree: %v", err)
+	}
+
+	assertOwnerProcessExited(t, ownerPID, wait)
+	if !ProcessAlive(unrelatedPID) {
+		t.Fatalf("tree termination signalled unrelated process %d", unrelatedPID)
+	}
+}
+
+func TestOwnerProcessControllerTerminateTreeReportsUnprovenAbsence(t *testing.T) {
+	t.Parallel()
+	const pid = 424242
+	hostErr := errors.New("host process table unavailable")
+	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	absenceReads := 0
+	controller.processAbsent = func(gotPID int) (bool, error) {
+		if gotPID != pid {
+			t.Fatalf("absence read pid = %d, want %d", gotPID, pid)
+		}
+		absenceReads++
+		if absenceReads <= 2 {
+			return false, nil
+		}
+		return false, hostErr
+	}
+	controller.ownedProcesses = func(gotPID int, _ string) ([]int, error) {
+		if gotPID != pid {
+			t.Fatalf("owned process root = %d, want %d", gotPID, pid)
+		}
+		return []int{pid}, nil
+	}
+	signalCalls := 0
+	controller.signalProcess = func(gotPID int, force bool) error {
+		if gotPID != pid || force {
+			t.Fatalf("signal = (%d, force=%v), want (%d, force=false)", gotPID, force, pid)
+		}
+		signalCalls++
+		return nil
+	}
+
+	outcomes, err := controller.TerminateTreeAndWait(t.Context(), pid, "")
+	if err != nil {
+		t.Fatalf("terminate process with unobservable absence: %v", err)
+	}
+
+	if signalCalls != 1 {
+		t.Fatalf("signal calls = %d, want 1", signalCalls)
+	}
+	if len(outcomes) != 1 {
+		t.Fatalf("termination outcomes = %#v, want one", outcomes)
+	}
+	outcome := outcomes[0]
+	if outcome.PID != pid || outcome.Proven || strings.TrimSpace(outcome.Reason) == "" {
+		t.Fatalf("termination outcome = %#v, want unproven with non-empty reason", outcome)
+	}
+	if !strings.Contains(outcome.Reason, hostErr.Error()) {
+		t.Fatalf("termination reason = %q, want host diagnostic %q", outcome.Reason, hostErr)
+	}
+}
+
+func TestOwnerProcessControllerTerminateTreeStopsRediscoveryWhenContextCanceled(t *testing.T) {
+	t.Parallel()
+	const pid = 424243
+	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller.processAbsent = func(gotPID int) (bool, error) {
+		if gotPID != pid {
+			t.Fatalf("absence read pid = %d, want %d", gotPID, pid)
+		}
+		return true, nil
+	}
+	enumerations := 0
+	controller.ownedProcesses = func(int, string) ([]int, error) {
+		enumerations++
+		return nil, errors.New("process enumeration must not run after cancellation")
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	outcomes, err := controller.TerminateTreeAndWait(ctx, pid, "")
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("termination error = %v, want context.Canceled", err)
+	}
+	if enumerations != 0 {
+		t.Fatalf("process tree enumerations = %d, want 0", enumerations)
+	}
+	if len(outcomes) != 1 || outcomes[0].PID != pid || !outcomes[0].Proven {
+		t.Fatalf("termination outcomes = %#v, want proven absent owner", outcomes)
+	}
+}
+
+func TestDescendantProcessPIDsAfterStartRejectsStaleParentLinks(t *testing.T) {
+	t.Parallel()
+	got := descendantProcessPIDsAfterStart(500, 200, []processParentWithStart{
+		{pid: 700, parentPID: 500, started: 100},
+		{pid: 701, parentPID: 700, started: 150},
+		{pid: 800, parentPID: 500, started: 250},
+		{pid: 801, parentPID: 800, started: 300},
+	})
+	want := []int{500, 800, 801}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("creation-bounded descendants = %v, want %v", got, want)
+	}
 }
 
 func TestOwnerProcessControllerRejectsUnprovenCurrentProcess(t *testing.T) {
@@ -553,6 +749,50 @@ func TestOwnerProcessHelper(t *testing.T) {
 		for range signals {
 			fmt.Fprintln(os.Stdout, "alive")
 		}
+	case "tree-root":
+		middle := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
+		middle.Env = ownerProcessHelperEnv("tree-middle")
+		output, err := middle.Output()
+		if err != nil {
+			t.Fatalf("start outliving grandchild: %v", err)
+		}
+		outputScanner := bufio.NewScanner(bytes.NewReader(output))
+		if !outputScanner.Scan() {
+			t.Fatalf("outliving grandchild omitted its pid: %v", outputScanner.Err())
+		}
+		grandchildPID, err := strconv.Atoi(strings.TrimSpace(outputScanner.Text()))
+		if err != nil {
+			t.Fatalf("parse outliving grandchild pid %q: %v", output, err)
+		}
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, syscall.SIGTERM)
+		defer signal.Stop(signals)
+		fmt.Fprintf(os.Stdout, "%d\nready\n", grandchildPID)
+		<-signals
+	case "tree-middle":
+		grandchild := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
+		grandchild.Env = ownerProcessHelperEnv("tree-grandchild")
+		stdout, err := grandchild.StdoutPipe()
+		if err != nil {
+			t.Fatalf("open grandchild stdout: %v", err)
+		}
+		if err := grandchild.Start(); err != nil {
+			t.Fatalf("start grandchild: %v", err)
+		}
+		scanner := bufio.NewScanner(stdout)
+		if !scanner.Scan() || scanner.Text() != "ready" {
+			t.Fatalf("grandchild readiness = %q, error = %v", scanner.Text(), scanner.Err())
+		}
+		fmt.Fprintln(os.Stdout, grandchild.Process.Pid)
+		if err := grandchild.Process.Release(); err != nil {
+			t.Fatalf("release grandchild: %v", err)
+		}
+	case "tree-grandchild":
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, syscall.SIGTERM)
+		defer signal.Stop(signals)
+		fmt.Fprintln(os.Stdout, "ready")
+		<-signals
 	default:
 		t.Fatalf("unknown owner process helper mode %q", mode)
 	}
@@ -561,7 +801,7 @@ func TestOwnerProcessHelper(t *testing.T) {
 func startOwnerProcessHelper(t *testing.T, mode string) (int, <-chan error) {
 	t.Helper()
 	cmd := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
-	cmd.Env = append(os.Environ(), "ROUNDFIX_OWNER_PROCESS_HELPER="+mode)
+	cmd.Env = ownerProcessHelperEnv(mode)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		t.Fatalf("open owner process helper stdout: %v", err)
@@ -598,6 +838,69 @@ func startOwnerProcessHelper(t *testing.T, mode string) (int, <-chan error) {
 		close(wait)
 	}()
 	return cmd.Process.Pid, wait
+}
+
+func startOwnerProcessTreeHelper(t *testing.T) (int, int, <-chan error) {
+	t.Helper()
+	cmd := exec.Command(os.Args[0], "-test.run=^TestOwnerProcessHelper$")
+	cmd.Env = ownerProcessHelperEnv("tree-root")
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatalf("open owner process tree stdout: %v", err)
+	}
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start owner process tree: %v", err)
+	}
+	if sessionID, err := unix.Getsid(cmd.Process.Pid); err != nil || sessionID != cmd.Process.Pid {
+		t.Fatalf("owner process tree session = %d, error = %v, want %d", sessionID, err, cmd.Process.Pid)
+	}
+	if groupID, err := unix.Getpgid(cmd.Process.Pid); err != nil || groupID != cmd.Process.Pid {
+		t.Fatalf("owner process tree group = %d, error = %v, want %d", groupID, err, cmd.Process.Pid)
+	}
+	wait := make(chan error, 1)
+	waitStarted := false
+	t.Cleanup(func() {
+		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		if !waitStarted {
+			_ = cmd.Wait()
+			return
+		}
+		select {
+		case <-wait:
+		case <-time.After(2 * time.Second):
+		}
+	})
+	scanner := bufio.NewScanner(stdout)
+	if !scanner.Scan() {
+		t.Fatalf("owner process tree omitted grandchild pid: %v", scanner.Err())
+	}
+	grandchildPID, err := strconv.Atoi(scanner.Text())
+	if err != nil {
+		t.Fatalf("parse owner process tree grandchild pid %q: %v", scanner.Text(), err)
+	}
+	if !scanner.Scan() || scanner.Text() != "ready" {
+		t.Fatalf("owner process tree readiness = %q, error = %v", scanner.Text(), scanner.Err())
+	}
+	waitStarted = true
+	go func() {
+		wait <- cmd.Wait()
+		close(wait)
+	}()
+	return cmd.Process.Pid, grandchildPID, wait
+}
+
+func ownerProcessHelperEnv(mode string) []string {
+	const key = "ROUNDFIX_OWNER_PROCESS_HELPER"
+	env := make([]string, 0, len(os.Environ())+1)
+	for _, entry := range os.Environ() {
+		name, _, _ := strings.Cut(entry, "=")
+		if name != key {
+			env = append(env, entry)
+		}
+	}
+	return append(env, key+"="+mode)
 }
 
 func assertOwnerProcessExited(t *testing.T, pid int, wait <-chan error) {
