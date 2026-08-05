@@ -60,11 +60,12 @@ profiles:
 
 review_source:
   name: coderabbit
+  request_review: true
   include_nitpicks: true
 
 watch:
   until_clean: true
-  max_rounds: 3
+  max_rounds: 2
   poll_interval: 30s
   review_timeout: 30m
   quiet_period: 30s
