@@ -1,9 +1,12 @@
 ---
 spec: 0066-run-teardown-reclaims-what-it-created
-status: active
+status: archived
 created: 2026-08-01
 surfaces: [backend, cli, docs]
+archived: "2026-08-05"
+source_slug: 0066-run-teardown-reclaims-what-it-created
 ---
+
 
 # Run teardown reclaims what it created
 
