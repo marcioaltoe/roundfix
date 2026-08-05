@@ -159,6 +159,7 @@ var watchReviewEvidence = defaultWatchReviewEvidence
 var watchHeadSHA = defaultWatchHeadSHA
 var listPendingRunWork = runworktree.ListPendingRunWork
 var supersedingQAReport = runworktree.SupersedingQAReport
+var classifyRunBranchSet = runworktree.ClassifyRunBranchSet
 var integratePendingRunWork = runworktree.IntegratePendingRunWork
 var refreshBranchIntegrityHead = defaultRefreshBranchIntegrityHead
 var commentOnPullRequest = defaultCommentOnPullRequest
@@ -213,6 +214,7 @@ type commandDependencies struct {
 	watchHeadSHA                    func(context.Context, string) (string, error)
 	listPendingRunWork              func(context.Context, string, string) ([]runworktree.PendingRunWork, error)
 	supersedingQAReport             func(context.Context, string, string, string, string) (string, bool)
+	classifyRunBranchSet            func(context.Context, string, string, string, []store.Run) (runworktree.BranchSetClassification, error)
 	integratePendingRunWork         func(context.Context, string, string, string) error
 	refreshBranchIntegrityHead      func(context.Context, preflight.Result) (preflight.Result, error)
 	commentOnPullRequest            func(context.Context, string, string, int, string) error
@@ -268,6 +270,7 @@ func defaultCommandDependencies() commandDependencies {
 		watchHeadSHA:                    watchHeadSHA,
 		listPendingRunWork:              listPendingRunWork,
 		supersedingQAReport:             supersedingQAReport,
+		classifyRunBranchSet:            classifyRunBranchSet,
 		integratePendingRunWork:         integratePendingRunWork,
 		refreshBranchIntegrityHead:      refreshBranchIntegrityHead,
 		commentOnPullRequest:            commentOnPullRequest,
@@ -1743,8 +1746,15 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 type branchIntegrityReport struct {
 	Pending             []runworktree.PendingRunWork
 	SupersededQAReports []runworktree.PendingRunWork
+	Disregarded         []branchIntegrityDisregardedWork
+	Preserved           []runworktree.PendingRunWork
 	Integrated          []runworktree.PendingRunWork
 	ActiveRun           *store.Run
+}
+
+type branchIntegrityDisregardedWork struct {
+	runworktree.PendingRunWork
+	Proof string
 }
 
 type branchIntegrityPendingError struct {
@@ -1867,23 +1877,34 @@ func runBranchIntegrityPreflight(ctx context.Context, req commandRequest, loaded
 			return report, preflightResult, closeErr
 		}
 	}
-	if len(report.Pending) == 0 && len(report.SupersededQAReports) == 0 {
+	for _, disregarded := range report.Disregarded {
+		fmt.Fprintf(
+			stderr,
+			"Branch Integrity Preflight: disregarded branch=%s worktree=%s ahead_commits=%d proof=%s; Git ref left unchanged.\n",
+			disregarded.Branch,
+			branchIntegrityWorktreePath(disregarded.WorktreePath),
+			disregarded.AheadCommits,
+			disregarded.Proof,
+		)
+	}
+	actionable := branchIntegrityActionablePending(report.Pending, report.Disregarded)
+	if len(actionable) == 0 {
 		return report, preflightResult, nil
 	}
 	var blocked []runworktree.PendingRunWork
-	for _, pending := range report.Pending {
-		if !pending.FastForward {
+	for _, pending := range actionable {
+		if !pending.FastForward || branchIntegrityContainsPending(report.Preserved, pending.Branch) {
 			blocked = append(blocked, pending)
 		}
 	}
-	if len(blocked) > 0 || len(report.SupersededQAReports) > 0 {
+	if len(blocked) > 0 {
 		return report, preflightResult, branchIntegrityPendingError{
 			HeadBranch:          preflightResult.PullRequest.HeadBranch,
 			Pending:             blocked,
 			SupersededQAReports: report.SupersededQAReports,
 		}
 	}
-	integrationPlan, err := branchIntegrityIntegrationPlan(ctx, preflightResult.Git.Root, preflightResult.PullRequest.HeadBranch, report.Pending)
+	integrationPlan, err := branchIntegrityIntegrationPlan(ctx, preflightResult.Git.Root, preflightResult.PullRequest.HeadBranch, actionable)
 	if err != nil {
 		return report, preflightResult, err
 	}
@@ -1900,6 +1921,38 @@ func runBranchIntegrityPreflight(ctx context.Context, req commandRequest, loaded
 		return report, preflightResult, err
 	}
 	return report, updated, nil
+}
+
+func branchIntegrityActionablePending(
+	pending []runworktree.PendingRunWork,
+	disregarded []branchIntegrityDisregardedWork,
+) []runworktree.PendingRunWork {
+	actionable := make([]runworktree.PendingRunWork, 0, len(pending))
+	for _, work := range pending {
+		if branchIntegrityContainsDisregarded(disregarded, work.Branch) {
+			continue
+		}
+		actionable = append(actionable, work)
+	}
+	return actionable
+}
+
+func branchIntegrityContainsDisregarded(disregarded []branchIntegrityDisregardedWork, branch string) bool {
+	for _, work := range disregarded {
+		if work.Branch == branch {
+			return true
+		}
+	}
+	return false
+}
+
+func branchIntegrityContainsPending(pending []runworktree.PendingRunWork, branch string) bool {
+	for _, work := range pending {
+		if work.Branch == branch {
+			return true
+		}
+	}
+	return false
 }
 
 func requireCleanTrackedReviewTree(ctx context.Context, commandName string, preflightResult preflight.Result) error {
@@ -1989,7 +2042,7 @@ func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult
 	defer func() {
 		_ = runStore.Close()
 	}()
-	report.Pending, report.SupersededQAReports, err = filterPendingRunWorkByTarget(
+	report.Pending, report.SupersededQAReports, report.Disregarded, report.Preserved, err = filterPendingRunWorkByTarget(
 		ctx,
 		runStore,
 		pending,
@@ -2024,38 +2077,168 @@ func filterPendingRunWorkByTarget(
 	gitRoot string,
 	targetHead string,
 	headBranch string,
-) ([]runworktree.PendingRunWork, []runworktree.PendingRunWork, error) {
+) ([]runworktree.PendingRunWork, []runworktree.PendingRunWork, []branchIntegrityDisregardedWork, []runworktree.PendingRunWork, error) {
 	headBranch = strings.TrimSpace(headBranch)
 	filtered := make([]runworktree.PendingRunWork, 0, len(pending))
 	supersededQAReports := make([]runworktree.PendingRunWork, 0, len(pending))
+	disregarded := make([]branchIntegrityDisregardedWork, 0, len(pending))
+	preserved := make([]runworktree.PendingRunWork, 0, len(pending))
+	preservedBranches := make(map[string]struct{}, len(pending))
+	preserve := func(work runworktree.PendingRunWork) {
+		if _, exists := preservedBranches[work.Branch]; exists {
+			return
+		}
+		preservedBranches[work.Branch] = struct{}{}
+		preserved = append(preserved, work)
+	}
+	runs, err := runStore.ListRuns(ctx, store.ListRunsQuery{GitRoot: gitRoot, States: store.StatesAll})
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("list Runs for Branch Integrity Preflight: %w", err)
+	}
+	runsByID := make(map[string]store.Run, len(runs))
+	for _, run := range runs {
+		runsByID[run.ID] = run
+	}
+	type classifiedSpec struct {
+		branches []runworktree.PendingRunWork
+	}
+	bySpec := make(map[string]*classifiedSpec)
 	for _, work := range pending {
 		runID := strings.TrimPrefix(work.Branch, "roundfix/run-")
 		if runID == work.Branch || strings.TrimSpace(runID) == "" {
 			filtered = append(filtered, work)
 			continue
 		}
-		row, found, err := runStore.Run(ctx, runID)
-		if err != nil {
-			return nil, nil, fmt.Errorf("attribute pending Run Branch %s: %w", work.Branch, err)
-		}
+		row, found := runsByID[runID]
 		if found && strings.TrimSpace(row.LocalBranch) != headBranch && strings.TrimSpace(row.HeadBranch) != headBranch {
 			continue
 		}
-		if found && row.Kind == store.KindImplement {
-			// Unprovable supersession keeps the existing task-work behavior
-			// instead of excluding the branch from integration. The full proof
-			// is required, not just the QA-report-only probe: without a newer
-			// target-side report this branch is unintegrated, and offering
-			// `roundfix reconcile --apply` would name a release that the
-			// classifier refuses.
-			if _, proven := commandDependenciesForContext(ctx).supersedingQAReport(ctx, gitRoot, targetHead, work.Branch, row.SpecSlug); proven {
-				supersededQAReports = append(supersededQAReports, work)
-				continue
+		filtered = append(filtered, work)
+		if !found || row.Kind != store.KindImplement {
+			continue
+		}
+		if !store.IsTerminalState(row.State) {
+			preserve(work)
+		}
+		slug := strings.TrimSpace(row.SpecSlug)
+		if slug == "" {
+			preserve(work)
+			continue
+		}
+		group := bySpec[slug]
+		if group == nil {
+			group = &classifiedSpec{}
+			bySpec[slug] = group
+		}
+		group.branches = append(group.branches, work)
+	}
+
+	for slug, group := range bySpec {
+		classification, classifyErr := commandDependenciesForContext(ctx).classifyRunBranchSet(
+			ctx,
+			gitRoot,
+			headBranch,
+			slug,
+			runs,
+		)
+		if classifyErr != nil {
+			for _, work := range group.branches {
+				preserve(work)
+			}
+			continue
+		}
+		classified := make(map[string]struct{})
+		for _, branch := range classification.Preserved {
+			classified[branch] = struct{}{}
+			if work, ok := branchIntegrityPendingByBranch(group.branches, branch); ok {
+				preserve(work)
 			}
 		}
-		filtered = append(filtered, work)
+		if classification.Current != "" {
+			classified[classification.Current] = struct{}{}
+		}
+		if len(classification.Releasable) > 0 && classification.Current != "" {
+			if work, ok := branchIntegrityPendingByBranch(group.branches, classification.Current); ok {
+				_, alreadyPreserved := preservedBranches[work.Branch]
+				if !alreadyPreserved {
+					if strings.TrimSpace(classification.CurrentReport) == "" {
+						preserve(work)
+					} else {
+						disregarded = append(disregarded, branchIntegrityDisregardedWork{
+							PendingRunWork: work,
+							Proof:          fmt.Sprintf("current QA Report %q classifies the failed-cycle set", classification.CurrentReport),
+						})
+					}
+				}
+			}
+		}
+		for _, branch := range classification.Releasable {
+			classified[branch] = struct{}{}
+			work, ok := branchIntegrityPendingByBranch(group.branches, branch)
+			if !ok {
+				continue
+			}
+			if _, mustPreserve := preservedBranches[work.Branch]; mustPreserve {
+				continue
+			}
+			proofReport := strings.TrimSpace(classification.CurrentReport)
+			proofPrefix := "superseded by current QA Report"
+			if proofReport == "" {
+				proofPrefix = "superseded by target QA Report"
+				var proven bool
+				proofReport, proven = commandDependenciesForContext(ctx).supersedingQAReport(ctx, gitRoot, targetHead, branch, slug)
+				if !proven || strings.TrimSpace(proofReport) == "" {
+					preserve(work)
+					continue
+				}
+			}
+			disregarded = append(disregarded, branchIntegrityDisregardedWork{
+				PendingRunWork: work,
+				Proof:          fmt.Sprintf("%s %q", proofPrefix, proofReport),
+			})
+			supersededQAReports = append(supersededQAReports, work)
+		}
+		for _, work := range group.branches {
+			if _, ok := classified[work.Branch]; ok {
+				continue
+			}
+			preserve(work)
+		}
 	}
-	return filtered, supersededQAReports, nil
+	filtered = branchIntegrityWithoutPending(filtered, supersededQAReports)
+	sort.Slice(disregarded, func(i, j int) bool {
+		return disregarded[i].Branch < disregarded[j].Branch
+	})
+	sort.Slice(supersededQAReports, func(i, j int) bool {
+		return supersededQAReports[i].Branch < supersededQAReports[j].Branch
+	})
+	sort.Slice(preserved, func(i, j int) bool {
+		return preserved[i].Branch < preserved[j].Branch
+	})
+	return filtered, supersededQAReports, disregarded, preserved, nil
+}
+
+func branchIntegrityPendingByBranch(pending []runworktree.PendingRunWork, branch string) (runworktree.PendingRunWork, bool) {
+	for _, work := range pending {
+		if work.Branch == branch {
+			return work, true
+		}
+	}
+	return runworktree.PendingRunWork{}, false
+}
+
+func branchIntegrityWithoutPending(
+	pending []runworktree.PendingRunWork,
+	removed []runworktree.PendingRunWork,
+) []runworktree.PendingRunWork {
+	kept := make([]runworktree.PendingRunWork, 0, len(pending))
+	for _, work := range pending {
+		if branchIntegrityContainsPending(removed, work.Branch) {
+			continue
+		}
+		kept = append(kept, work)
+	}
+	return kept
 }
 
 func defaultRefreshBranchIntegrityHead(ctx context.Context, preflightResult preflight.Result) (preflight.Result, error) {

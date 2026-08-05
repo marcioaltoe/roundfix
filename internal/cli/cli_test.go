@@ -9024,30 +9024,53 @@ func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
 	tests := []struct {
 		name             string
 		probeResult      bool
-		probeErr         error
+		classification   func(string) (runworktree.BranchSetClassification, error)
 		wantCode         int
 		wantIntegrations int
-		wantGuidance     bool
+		wantDiagnostic   string
 	}{
 		{
-			name:         "superseded QA report",
-			probeResult:  true,
-			wantCode:     exitPreflight,
-			wantGuidance: true,
+			name:        "superseded QA report",
+			probeResult: true,
+			classification: func(branch string) (runworktree.BranchSetClassification, error) {
+				return runworktree.BranchSetClassification{Releasable: []string{branch}}, nil
+			},
+			wantCode:       exitOK,
+			wantDiagnostic: "proof=superseded by target QA Report",
 		},
 		{
-			name:             "task work",
-			wantCode:         exitOK,
-			wantIntegrations: 1,
+			name: "task work",
+			classification: func(branch string) (runworktree.BranchSetClassification, error) {
+				return runworktree.BranchSetClassification{
+					Preserved:        []string{branch},
+					PreservedReasons: map[string]string{branch: "unintegrated implementation work"},
+				}, nil
+			},
+			wantCode:       exitPreflight,
+			wantDiagnostic: "integration_command=",
 		},
 		{
 			// QA-report-only is not supersession: without a newer
 			// target-side report the classifier calls this branch
 			// unintegrated, so preflight must not offer a release
 			// reconcile would refuse.
-			name:             "QA report only without a newer target report",
+			name: "QA report only without a newer target report",
+			classification: func(branch string) (runworktree.BranchSetClassification, error) {
+				return runworktree.BranchSetClassification{
+					Current:       branch,
+					CurrentReport: "docs/specs/0053-qa-gate/qa/qa-report-2026-07-30-01.md",
+				}, nil
+			},
 			wantCode:         exitOK,
 			wantIntegrations: 1,
+		},
+		{
+			name: "unclassifiable branch",
+			classification: func(string) (runworktree.BranchSetClassification, error) {
+				return runworktree.BranchSetClassification{}, errors.New("classification unavailable")
+			},
+			wantCode:       exitPreflight,
+			wantDiagnostic: "integration_command=",
 		},
 	}
 
@@ -9073,6 +9096,9 @@ func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
 				}
 				return "docs/specs/0053-qa-gate/qa/qa-report-2026-07-30-01.md", true
 			})
+			withClassifyRunBranchSet(t, func(_ context.Context, _ string, _ string, _ string, _ []store.Run) (runworktree.BranchSetClassification, error) {
+				return test.classification(branch)
+			})
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
@@ -9084,12 +9110,11 @@ func TestBranchIntegrityPreflightClassifiesPendingRunBranches(t *testing.T) {
 			if len(recorder.integrations) != test.wantIntegrations {
 				t.Fatalf("expected %d integrations, got %#v", test.wantIntegrations, recorder.integrations)
 			}
-			guidance := "superseded QA report — release with: roundfix reconcile --apply"
-			if strings.Contains(stderr.String(), guidance) != test.wantGuidance {
-				t.Fatalf("expected guidance present=%t, got stderr=%q", test.wantGuidance, stderr.String())
+			if test.wantDiagnostic != "" && !strings.Contains(stderr.String(), test.wantDiagnostic) {
+				t.Fatalf("expected diagnostic %q, got stderr=%q", test.wantDiagnostic, stderr.String())
 			}
-			if test.wantGuidance && strings.Contains(stderr.String(), branchIntegrityIntegrationCommand(branch)) {
-				t.Fatalf("QA-report-only branch must not receive an integration command, got stderr=%q", stderr.String())
+			if test.probeResult && strings.Contains(stderr.String(), branchIntegrityIntegrationCommand(branch)) {
+				t.Fatalf("superseded QA branch must not receive an integration command, got stderr=%q", stderr.String())
 			}
 		})
 	}
@@ -9122,6 +9147,19 @@ func TestBranchIntegrityPreflightListsTaskWorkAndSupersededQAReportSeparately(t 
 			return "", false
 		}
 		return "docs/specs/0053-qa-gate/qa/qa-report-2026-07-30-01.md", true
+	})
+	withClassifyRunBranchSet(t, func(_ context.Context, _ string, _ string, slug string, _ []store.Run) (runworktree.BranchSetClassification, error) {
+		switch slug {
+		case "0053-task-work":
+			return runworktree.BranchSetClassification{
+				Preserved:        []string{taskBranch},
+				PreservedReasons: map[string]string{taskBranch: "unintegrated implementation work"},
+			}, nil
+		case "0053-qa-report":
+			return runworktree.BranchSetClassification{Releasable: []string{qaBranch}}, nil
+		default:
+			return runworktree.BranchSetClassification{}, fmt.Errorf("unexpected Spec slug %q", slug)
+		}
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -11530,6 +11568,16 @@ func withSupersedingQAReport(
 	t.Helper()
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
 		dependencies.supersedingQAReport = fn
+	})
+}
+
+func withClassifyRunBranchSet(
+	t *testing.T,
+	fn func(context.Context, string, string, string, []store.Run) (runworktree.BranchSetClassification, error),
+) {
+	t.Helper()
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.classifyRunBranchSet = fn
 	})
 }
 
