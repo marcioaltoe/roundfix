@@ -23,9 +23,12 @@ Verifiable on its own through fixture repositories, one per kind.
    its Runs from the Run Database rather than requiring the caller to know them.
 2. MUST classify each survivor as `pull-request`, `pending`, `residue`, or
    `preserved`, and MUST attach the evidence string that produced it.
-3. MUST classify a worktree with no matching Run as `preserved`, never as
-   residue. Scratch worktrees live outside the Run Database, and assuming
-   residue there is how work gets deleted.
+3. MUST classify a worktree with no matching Run as `preserved` **unless** its
+   branch is pushed and its content is merged into the default branch, in which
+   case it classifies `residue`. Scratch worktrees live outside the Run
+   Database, so assuming residue there is how work gets deleted — but a
+   worktree whose work provably survives on the default branch is the case
+   Core Feature 4 exists for, and preserving it forever is the other failure.
 4. MUST attach the exact reclaim command to a `residue` survivor and MUST NOT
    execute it. The audit reports; the operator reclaims.
 5. MUST NOT touch, lock, or reclaim anything, and MUST never classify a branch
