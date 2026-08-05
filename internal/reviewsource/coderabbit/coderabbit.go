@@ -1,12 +1,14 @@
 package coderabbit
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os/exec"
 	"strconv"
@@ -305,7 +307,7 @@ func (client Client) Evidence(ctx context.Context, req reviewsource.EvidenceRequ
 	if err != nil {
 		return reviewsource.Evidence{}, reviewSourceAccessError(ctx, "fetch CodeRabbit review threads", err)
 	}
-	return classifyEvidence(req.ExpectedHeadSHA, checkRuns, statuses, comments, reviews, threads), nil
+	return classifyEvidence(req.ExpectedHeadSHA, checkRuns, statuses, reviews, threads), nil
 }
 
 func reviewingEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []CommitStatus) (reviewsource.Evidence, bool) {
@@ -377,25 +379,36 @@ func (client GHClient) IssueComments(ctx context.Context, repo string, prNumber 
 	if err != nil {
 		return nil, err
 	}
-	var raw []struct {
+	type rawIssueComment struct {
 		ID   int64  `json:"id"`
 		Body string `json:"body"`
 		User struct {
 			Login string `json:"login"`
 		} `json:"user"`
 	}
-	if err := json.Unmarshal(output, &raw); err != nil {
-		return nil, fmt.Errorf("parse pull request issue comments: %w", err)
+	decoder := json.NewDecoder(bytes.NewReader(output))
+	var comments []IssueComment
+	pages := 0
+	for {
+		var raw []rawIssueComment
+		if err := decoder.Decode(&raw); err != nil {
+			if errors.Is(err, io.EOF) && pages > 0 {
+				return comments, nil
+			}
+			if errors.Is(err, io.EOF) {
+				err = io.ErrUnexpectedEOF
+			}
+			return nil, fmt.Errorf("parse pull request issue comments: %w", err)
+		}
+		pages++
+		for _, comment := range raw {
+			comments = append(comments, IssueComment{
+				DatabaseID: comment.ID,
+				Body:       comment.Body,
+				Author:     comment.User.Login,
+			})
+		}
 	}
-	comments := make([]IssueComment, 0, len(raw))
-	for _, comment := range raw {
-		comments = append(comments, IssueComment{
-			DatabaseID: comment.ID,
-			Body:       comment.Body,
-			Author:     comment.User.Login,
-		})
-	}
-	return comments, nil
 }
 
 func (client GHClient) ReviewThreads(ctx context.Context, repo string, prNumber string) ([]ReviewThread, error) {
@@ -676,12 +689,8 @@ func (client GHClient) reviewThreadsPage(ctx context.Context, owner string, name
 	}, nil
 }
 
-func classifyEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []CommitStatus, comments []IssueComment, reviews []PullRequestReview, threads []ReviewThread) reviewsource.Evidence {
+func classifyEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []CommitStatus, reviews []PullRequestReview, threads []ReviewThread) reviewsource.Evidence {
 	unresolvedThreads := unresolvedCodeRabbitThreadCount(threads)
-
-	if evidence, refused := refusalEvidence(expectedHeadSHA, checkRuns, statuses, comments, unresolvedThreads); refused {
-		return evidence
-	}
 
 	for _, run := range checkRuns {
 		if !currentHeadCheckRun(expectedHeadSHA, run) {
@@ -914,13 +923,16 @@ func rateLimitRefusalSignal(values ...string) bool {
 
 func rateLimitCommentReason(comments []IssueComment) (string, bool) {
 	const marker = "auto-generated comment: rate limited by coderabbit.ai"
-	for _, comment := range comments {
+	for index := len(comments) - 1; index >= 0; index-- {
+		comment := comments[index]
 		if !isCodeRabbitAuthor(comment.Author) || !strings.Contains(normalized(comment.Body), marker) {
 			continue
 		}
 		for _, line := range strings.Split(comment.Body, "\n") {
 			line = strings.TrimSpace(line)
-			line = strings.TrimSpace(strings.TrimPrefix(line, ">"))
+			for strings.HasPrefix(line, ">") {
+				line = strings.TrimSpace(strings.TrimPrefix(line, ">"))
+			}
 			if !strings.HasPrefix(line, "## ") {
 				continue
 			}

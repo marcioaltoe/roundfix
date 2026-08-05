@@ -226,6 +226,9 @@ func TestRunTransientReviewEvidenceExhaustsReviewTimeout(t *testing.T) {
 	if result.Outcome != store.StateTimedOut {
 		t.Fatalf("transient timeout outcome = %q, want TimedOut", result.Outcome)
 	}
+	if result.TerminalReasonIsDiagnostic {
+		t.Fatal("transient timeout terminal reason must not be an Evidence diagnostic")
+	}
 	if len(source.requests) != 2 {
 		t.Fatalf("Review Source calls = %d, want no call at the timeout boundary", len(source.requests))
 	}
@@ -585,6 +588,9 @@ func TestRunUnrecognisedPendingEvidenceStopsBeforeFetchWithDiagnostic(t *testing
 	}
 	if result.TerminalReason != "Review Source signal was not recognised: "+evidence.Detail {
 		t.Fatalf("terminal reason = %q", result.TerminalReason)
+	}
+	if !result.TerminalReasonIsDiagnostic {
+		t.Fatal("unrecognised Evidence terminal reason must be marked diagnostic")
 	}
 	if result.Evidence != evidence {
 		t.Fatalf("terminal Evidence = %#v, want %#v", result.Evidence, evidence)

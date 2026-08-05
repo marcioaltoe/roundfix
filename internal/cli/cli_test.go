@@ -400,7 +400,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "accepted Review Source Evidence", "only check-or-status route to a verified head", "recognised review-completed current-head CodeRabbit check or commit status", "current-head CodeRabbit APPROVED review", "unrecognised signal resolves pending", "green check is not evidence that a review ran", "explicit Review Source refusal resolves skipped", "will not merge that head or clear it for merge", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "accepted Review Source Evidence", "only check-or-status route to a verified head", "recognised review-completed current-head CodeRabbit check or commit status", "current-head CodeRabbit APPROVED review", "unrecognised signal resolves to pending", "green check is not evidence that a review ran", "explicit Review Source refusal resolves to skipped", "will not merge that head or clear it for merge", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
@@ -1233,12 +1233,13 @@ func TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides(t *testing
 	for _, name := range []string{"resolve", "watch", "implement"} {
 		t.Run(name, func(t *testing.T) {
 			got := commandUsage(name)
+			normalized := strings.Join(strings.Fields(got), " ")
 			for _, want := range []string{
 				"Omit all Agent Selection flags",
 				"--agent <agent> --model <model> --reasoning-effort <effort>",
 				"requires --agent, --model, and --reasoning-effort together",
 			} {
-				if !strings.Contains(got, want) {
+				if !strings.Contains(normalized, want) {
 					t.Fatalf("%s help missing %q:\n%s", name, want, got)
 				}
 			}
@@ -6789,6 +6790,7 @@ watch:
 
 	_, events := journaledRunEvents(t, homeDir, stderr.String())
 	var outcome runevent.OutcomePayload
+	foundOutcome := false
 	for _, journaled := range events {
 		if journaled.Event.Kind != runevent.KindDaemonOutcome {
 			continue
@@ -6796,8 +6798,10 @@ watch:
 		if err := json.Unmarshal(journaled.Event.Payload, &outcome); err != nil {
 			t.Fatalf("decode unrecognised green signal outcome: %v", err)
 		}
+		foundOutcome = true
 	}
-	if outcome.State != store.StateTimedOut ||
+	if !foundOutcome ||
+		outcome.State != store.StateTimedOut ||
 		outcome.EvidenceState != string(reviewsource.EvidencePending) ||
 		!strings.Contains(outcome.Reason, "signal was not recognised") ||
 		!strings.Contains(outcome.Reason, detail) {

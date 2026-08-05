@@ -726,14 +726,6 @@ func TestEvidenceHierarchyPrecedence(t *testing.T) {
 			wantKind:  reviewsource.EvidenceKindCheckRun,
 		},
 		{
-			name: "pull request 107 rate limited status stays pending",
-			statuses: []CommitStatus{
-				{Context: "CodeRabbit", State: "success", Description: "Review rate limited"},
-			},
-			wantState: reviewsource.EvidencePending,
-			wantKind:  reviewsource.EvidenceKindCommitStatus,
-		},
-		{
 			name: "current approval verifies with no unresolved threads",
 			reviews: []PullRequestReview{
 				{DatabaseID: 9001, Author: coderabbitBotLogin, State: "APPROVED", CommitSHA: "abc123"},
@@ -817,6 +809,21 @@ func TestEvidenceRefusalClassTable(t *testing.T) {
 			statuses:   []CommitStatus{{Context: "CodeRabbit", State: "success", Description: "Review Rate Limited"}},
 			comments:   []IssueComment{{Author: coderabbitBotLogin, Body: rateLimitComment}},
 			wantReason: "Review limit reached",
+		},
+		{
+			name:     "latest rate limit reason",
+			statuses: []CommitStatus{{Context: "CodeRabbit", State: "success", Description: "Review rate limited"}},
+			comments: []IssueComment{
+				{Author: coderabbitBotLogin, Body: "<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->\n\n> ## Earlier review limit"},
+				{Author: coderabbitBotLogin, Body: "<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->\n\n> ## Current review limit"},
+			},
+			wantReason: "Current review limit",
+		},
+		{
+			name:       "nested blockquote rate limit reason",
+			statuses:   []CommitStatus{{Context: "CodeRabbit", State: "success", Description: "Review rate limited"}},
+			comments:   []IssueComment{{Author: coderabbitBotLogin, Body: "<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->\n\n> > ## Nested review limit"}},
+			wantReason: "Nested review limit",
 		},
 		{
 			name: "path filter skip",
@@ -1071,7 +1078,15 @@ func TestEvidenceRecordedCommitStatusCorpus(t *testing.T) {
 			if err != nil {
 				t.Fatalf("map recorded commit status: %v", err)
 			}
-			evidence := classifyEvidence(tt.headSHA, nil, statuses, tt.comments, nil, nil)
+			client := Client{GitHub: &fakeGitHubClient{statuses: statuses, issues: tt.comments}}
+			evidence, err := client.Evidence(context.Background(), reviewsource.EvidenceRequest{
+				BaseRepository:  "marcioaltoe/roundfix",
+				PRNumber:        "107",
+				ExpectedHeadSHA: tt.headSHA,
+			})
+			if err != nil {
+				t.Fatalf("classify recorded commit status: %v", err)
+			}
 			if evidence.State != tt.want || evidence.Kind != tt.wantKind {
 				t.Fatalf("evidence = %#v, want state %q kind %q", evidence, tt.want, tt.wantKind)
 			}
@@ -1220,7 +1235,7 @@ func TestCheckRunOutputJSONMapping(t *testing.T) {
 func TestIssueCommentsMapGitHubRateLimitCommentJSON(t *testing.T) {
 	fixture := `[{
 		"id": 5182301262,
-		"body": "<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->\\n\\n> ## Review limit reached",
+		"body": "<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->\n\n> ## Review limit reached",
 		"user": {"login": "coderabbitai[bot]"}
 	}]`
 	var calls [][]string
@@ -1240,12 +1255,45 @@ func TestIssueCommentsMapGitHubRateLimitCommentJSON(t *testing.T) {
 		!strings.Contains(comments[0].Body, "Review limit reached") {
 		t.Fatalf("issue comment = %#v, want recorded CodeRabbit refusal", comments[0])
 	}
+	if !strings.Contains(comments[0].Body, "\n\n> ## Review limit reached") {
+		t.Fatalf("issue comment body = %q, want decoded newlines", comments[0].Body)
+	}
 	if len(calls) != 1 {
 		t.Fatalf("gh calls = %#v, want one issue-comment request", calls)
 	}
 	assertStringSlicesEqual(t, calls[0], []string{
 		"api", "--paginate", "repos/marcioaltoe/roundfix/issues/107/comments",
 	})
+}
+
+func TestIssueCommentsMapPaginatedGitHubJSON(t *testing.T) {
+	fixture := `[{"id":1,"body":"first","user":{"login":"coderabbitai[bot]"}}]
+[{"id":2,"body":"second","user":{"login":"maintainer"}}]`
+	withRunGH(t, func(context.Context, ...string) ([]byte, error) {
+		return []byte(fixture), nil
+	})
+
+	comments, err := (GHClient{}).IssueComments(context.Background(), "marcioaltoe/roundfix", "107")
+	if err != nil {
+		t.Fatalf("map paginated issue comments: %v", err)
+	}
+	if len(comments) != 2 || comments[0].DatabaseID != 1 || comments[1].DatabaseID != 2 ||
+		comments[0].Body != "first" || comments[1].Author != "maintainer" {
+		t.Fatalf("paginated issue comments = %#v, want both pages in order", comments)
+	}
+}
+
+func TestIssueCommentsRejectMalformedPaginatedGitHubJSON(t *testing.T) {
+	fixture := `[{"id":1,"body":"first","user":{"login":"coderabbitai[bot]"}}]
+[{`
+	withRunGH(t, func(context.Context, ...string) ([]byte, error) {
+		return []byte(fixture), nil
+	})
+
+	_, err := (GHClient{}).IssueComments(context.Background(), "marcioaltoe/roundfix", "107")
+	if err == nil || !strings.Contains(err.Error(), "parse pull request issue comments") {
+		t.Fatalf("malformed paginated issue comments error = %v, want parse failure", err)
+	}
 }
 
 func TestSkipSignalStructuredOutputRemainsAvailable(t *testing.T) {

@@ -100,15 +100,16 @@ func (fn ArtifactPublishFunc) PublishArtifacts(ctx context.Context, req Artifact
 }
 
 type Result struct {
-	Outcome             string
-	Rounds              int
-	Remaining           int
-	ManualReviewCommand string
-	ReviewIssuesKnown   bool
-	TerminalReason      string
-	NextAction          string
-	Evidence            reviewsource.Evidence
-	VerifiedHeadSHA     string
+	Outcome                    string
+	Rounds                     int
+	Remaining                  int
+	ManualReviewCommand        string
+	ReviewIssuesKnown          bool
+	TerminalReason             string
+	TerminalReasonIsDiagnostic bool
+	NextAction                 string
+	Evidence                   reviewsource.Evidence
+	VerifiedHeadSHA            string
 }
 
 type StatusSource interface {
@@ -529,12 +530,14 @@ func resultForReviewSkipped(rounds int, evidence reviewsource.Evidence) Result {
 }
 
 func resultForTimedOut(rounds int, evidence reviewsource.Evidence) Result {
+	terminalReason := unrecognisedEvidenceReason(evidence)
 	return Result{
-		Outcome:             store.StateTimedOut,
-		Rounds:              rounds,
-		ManualReviewCommand: "@coderabbitai review",
-		TerminalReason:      unrecognisedEvidenceReason(evidence),
-		Evidence:            evidence,
+		Outcome:                    store.StateTimedOut,
+		Rounds:                     rounds,
+		ManualReviewCommand:        "@coderabbitai review",
+		TerminalReason:             terminalReason,
+		TerminalReasonIsDiagnostic: terminalReason != "",
+		Evidence:                   evidence,
 	}
 }
 
