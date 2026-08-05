@@ -60,6 +60,84 @@ func TestDerivedOwnershipRejectsMultipleRecords(t *testing.T) {
 	}
 }
 
+func TestDerivedOwnershipExceptionOverridesDirectory(t *testing.T) {
+	t.Parallel()
+
+	fixture := fstest.MapFS{
+		"derived/_ownership.yml": &fstest.MapFile{Data: []byte(
+			"owner: frozen\n" +
+				"reason: frozen fixture\n" +
+				"exceptions:\n" +
+				"  - path: nested/generated.json\n" +
+				"    owner: sanctioned\n",
+		)},
+		"derived/nested/_ownership.yml": &fstest.MapFile{Data: []byte(
+			"owner: frozen\nreason: nested frozen fixture\n",
+		)},
+		"derived/nested/generated.json": &fstest.MapFile{Data: []byte("generated\n")},
+		"derived/nested/frozen.json":    &fstest.MapFile{Data: []byte("frozen\n")},
+	}
+
+	resolved, err := validateDerivedOwnership(fixture, []string{"derived"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := resolved["derived/nested/generated.json"].Owner; got != derivedOwnerSanctioned {
+		t.Fatalf("exception owner = %q, want %q", got, derivedOwnerSanctioned)
+	}
+	if got := resolved["derived/nested/frozen.json"].Owner; got != derivedOwnerFrozen {
+		t.Fatalf("directory owner = %q, want %q", got, derivedOwnerFrozen)
+	}
+}
+
+func TestDerivedOwnershipRejectsDuplicateExceptions(t *testing.T) {
+	t.Parallel()
+
+	fixture := fstest.MapFS{
+		"derived/_ownership.yml": &fstest.MapFile{Data: []byte(
+			"owner: frozen\n" +
+				"reason: frozen fixture\n" +
+				"exceptions:\n" +
+				"  - path: nested/artifact.json\n" +
+				"    owner: sanctioned\n",
+		)},
+		"derived/nested/_ownership.yml": &fstest.MapFile{Data: []byte(
+			"owner: frozen\n" +
+				"reason: nested frozen fixture\n" +
+				"exceptions:\n" +
+				"  - path: artifact.json\n" +
+				"    owner: sanctioned\n",
+		)},
+		"derived/nested/artifact.json": &fstest.MapFile{Data: []byte("artifact\n")},
+	}
+
+	_, err := validateDerivedOwnership(fixture, []string{"derived"})
+	if err == nil || !strings.Contains(err.Error(), "more than one ownership exception") {
+		t.Fatalf("duplicate exception error = %v, want more than one ownership exception", err)
+	}
+}
+
+func TestDerivedOwnershipRejectsExceptionOutsideRecordDirectory(t *testing.T) {
+	t.Parallel()
+
+	fixture := fstest.MapFS{
+		"derived/owned/_ownership.yml": &fstest.MapFile{Data: []byte(
+			"owner: frozen\n" +
+				"reason: frozen fixture\n" +
+				"exceptions:\n" +
+				"  - path: ../outside.json\n" +
+				"    owner: sanctioned\n",
+		)},
+		"derived/owned/artifact.json": &fstest.MapFile{Data: []byte("artifact\n")},
+		"derived/outside.json":        &fstest.MapFile{Data: []byte("outside\n")},
+	}
+
+	_, err := validateDerivedOwnership(fixture, []string{"derived/owned"})
+	if err == nil || !strings.Contains(err.Error(), "outside record directory") {
+		t.Fatalf("escaping exception error = %v, want outside record directory", err)
+	}
+}
+
 func TestDerivedOwnershipValidatesRecords(t *testing.T) {
 	t.Parallel()
 
@@ -122,6 +200,10 @@ func TestDerivedOwnershipValidatesRecords(t *testing.T) {
 
 func TestDerivedOwnershipRemediationDiagnostics(t *testing.T) {
 	t.Parallel()
+	resolved, err := validateDerivedOwnership(os.DirFS("."), derivedDigestScanRoots(t))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		name       string
@@ -145,23 +227,34 @@ func TestDerivedOwnershipRemediationDiagnostics(t *testing.T) {
 			owner:      derivedOwnerSanctioned,
 		},
 		{
-			name:       "sanctioned parity corpus",
+			name:       "sanctioned parity exception",
+			scanRoot:   "testdata",
+			artifact:   "testdata/parity-corpus/v1/fixtures/asset-sync.json",
+			recordPath: "testdata/parity-corpus/_ownership.yml",
+			owner:      derivedOwnerSanctioned,
+		},
+		{
+			name:       "frozen parity path",
 			scanRoot:   "testdata",
 			artifact:   "testdata/parity-corpus/v1/matrix.json",
 			recordPath: "testdata/parity-corpus/_ownership.yml",
-			owner:      derivedOwnerSanctioned,
+			owner:      derivedOwnerFrozen,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			record, err := readDerivedOwnershipRecord(os.DirFS("."), test.recordPath)
+			declaredRecord, err := readDerivedOwnershipRecord(os.DirFS("."), test.recordPath)
 			if err != nil {
 				t.Fatal(err)
 			}
+			record, ok := resolved[test.artifact]
+			if !ok {
+				t.Fatalf("derived artifact %q has no resolved ownership", test.artifact)
+			}
 			if record.Owner != test.owner {
-				t.Fatalf("ownership record %q owner = %q, want %q", test.recordPath, record.Owner, test.owner)
+				t.Fatalf("derived artifact %q owner = %q, want %q", test.artifact, record.Owner, test.owner)
 			}
 			got, err := derivedArtifactRemediation(os.DirFS("."), test.scanRoot, test.artifact)
 			if err != nil {
@@ -174,17 +267,17 @@ func TestDerivedOwnershipRemediationDiagnostics(t *testing.T) {
 					t.Fatalf("sanctioned remediation = %q, want unchanged %q", got, baselineDigestRegenerationHint)
 				}
 			case derivedOwnerDedicated:
-				if !strings.Contains(got, record.Command) || !strings.Contains(got, test.recordPath) {
-					t.Fatalf("dedicated remediation = %q, want command %q and record %q", got, record.Command, test.recordPath)
+				if !strings.Contains(got, declaredRecord.Command) || !strings.Contains(got, test.recordPath) {
+					t.Fatalf("dedicated remediation = %q, want command %q and record %q", got, declaredRecord.Command, test.recordPath)
 				}
 				if strings.Contains(got, baselineDigestRegenerationHint) {
 					t.Fatalf("dedicated remediation = %q, must not suggest sanctioned command", got)
 				}
 			case derivedOwnerFrozen:
 				if !strings.Contains(got, "nothing regenerates this artifact") ||
-					!strings.Contains(got, record.Reason) ||
+					!strings.Contains(got, declaredRecord.Reason) ||
 					!strings.Contains(got, test.recordPath) {
-					t.Fatalf("frozen remediation = %q, want no regenerator, reason %q, and record %q", got, record.Reason, test.recordPath)
+					t.Fatalf("frozen remediation = %q, want no regenerator, reason %q, and record %q", got, declaredRecord.Reason, test.recordPath)
 				}
 				if strings.Contains(got, baselineDigestRegenerationHint) {
 					t.Fatalf("frozen remediation = %q, must not suggest sanctioned command", got)
@@ -252,12 +345,46 @@ func TestDerivedOwnershipDeclaresKnownBoundaries(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	parity := resolved["testdata/parity-corpus"]
-	if parity.Owner != derivedOwnerSanctioned ||
-		!strings.Contains(parity.Reason, "2026-07-30") ||
-		!strings.Contains(parity.Reason, "rewrites") ||
-		!strings.Contains(parity.Reason, "maintainer decision") {
-		t.Fatalf("parity corpus ownership = %+v, want sanctioned with measured rewrites and the unresolved maintainer decision", parity)
+	const parityRecordPath = "testdata/parity-corpus/_ownership.yml"
+	parity, err := readDerivedOwnershipRecord(os.DirFS("."), parityRecordPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parity.Owner != derivedOwnerFrozen || !strings.Contains(parity.Reason, "2026-07-30") {
+		t.Fatalf("parity corpus ownership = %+v, want frozen with the retained corpus decision", parity)
+	}
+	parityExceptions := map[string]derivedOwnershipOwner{
+		"v1/manifest.json":            derivedOwnerSanctioned,
+		"v1/fixtures/asset-sync.json": derivedOwnerSanctioned,
+	}
+	if len(parity.Exceptions) != len(parityExceptions) {
+		t.Fatalf("parity corpus exceptions = %+v, want exactly %v", parity.Exceptions, parityExceptions)
+	}
+	for _, exception := range parity.Exceptions {
+		if owner, ok := parityExceptions[exception.Path]; !ok || owner != exception.Owner {
+			t.Fatalf("parity corpus exception = %+v, want exactly %v", exception, parityExceptions)
+		}
+	}
+
+	for artifactPath, record := range resolved {
+		if !strings.HasPrefix(artifactPath, "testdata/parity-corpus/") {
+			continue
+		}
+		info, err := fs.Stat(os.DirFS("."), artifactPath)
+		if err != nil {
+			t.Fatalf("stat parity corpus path %q: %v", artifactPath, err)
+		}
+		if !info.Mode().IsRegular() {
+			continue
+		}
+		relativePath := strings.TrimPrefix(artifactPath, "testdata/parity-corpus/")
+		want := derivedOwnerFrozen
+		if exceptionOwner, ok := parityExceptions[relativePath]; ok {
+			want = exceptionOwner
+		}
+		if record.Owner != want {
+			t.Errorf("parity corpus path %q owner = %q, want %q", relativePath, record.Owner, want)
+		}
 	}
 
 	plan := resolved["testdata/plan-characterization"]
@@ -301,7 +428,7 @@ func TestMeasuredSanctionedOwnershipMatchesRecords(t *testing.T) {
 	}
 	cacheRoot := filepath.Join(repository, ".gocache")
 	clean := snapshotDerivedTreeAt(t, baselineRoot, roots)
-	sanctionedProbes := declaredSanctionedProbes(t, records)
+	sanctionedProbes := declaredSanctionedProbes(t, fileSystem, roots, records, resolved)
 	if err := exerciseDeclaredRegenerationStep(
 		t.Context(), repository, baselineRoot, cacheRoot, roots, clean,
 		"make baseline-digests", sanctionedProbes, nil,
@@ -311,8 +438,7 @@ func TestMeasuredSanctionedOwnershipMatchesRecords(t *testing.T) {
 
 	measured := make(map[string]struct{})
 	for _, probe := range sanctionedProbes {
-		recordPath := derivedRecordPathForArtifact(t, fileSystem, roots, resolved, probe.path)
-		measured[recordPath] = struct{}{}
+		measured[probe.path] = struct{}{}
 	}
 
 	skillPath := filepath.Join(repository, ".agents", "skills", "qa-gate", "SKILL.md")
@@ -339,26 +465,23 @@ func TestMeasuredSanctionedOwnershipMatchesRecords(t *testing.T) {
 		if existed && reflect.DeepEqual(afterArtifact, beforeArtifact) {
 			continue
 		}
-		recordPath := derivedRecordPathForArtifact(t, fileSystem, roots, resolved, artifactPath)
-		measured[recordPath] = struct{}{}
+		measured[artifactPath] = struct{}{}
 	}
 	for artifactPath := range before {
 		if _, exists := after[artifactPath]; exists {
 			continue
 		}
-		recordPath := derivedRecordPathForArtifact(t, fileSystem, roots, resolved, artifactPath)
-		measured[recordPath] = struct{}{}
+		measured[artifactPath] = struct{}{}
 	}
 
-	for recordPath, record := range records {
-		_, rewritten := measured[recordPath]
-		if got, want := record.Owner == derivedOwnerSanctioned, rewritten; got != want {
-			t.Errorf(
-				"ownership record %q owner = %q, measured sanctioned rewrite = %t",
-				recordPath,
-				record.Owner,
-				rewritten,
-			)
+	for artifactPath := range measured {
+		record, ok := resolved[artifactPath]
+		if !ok {
+			t.Errorf("measured sanctioned rewrite %q has no resolved ownership", artifactPath)
+			continue
+		}
+		if record.Owner != derivedOwnerSanctioned {
+			t.Errorf("measured sanctioned rewrite %q resolves to owner %q", artifactPath, record.Owner)
 		}
 	}
 
@@ -391,12 +514,12 @@ func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	artifactsByRecord := derivedArtifactsByRecord(t, fileSystem, roots, resolved)
+	artifactsByRecord := derivedArtifactsByRecord(t, fileSystem, roots, records, resolved)
 	clean := snapshotDerivedTreeAt(t, baselineRoot, roots)
 	cacheRoot := filepath.Join(repository, ".gocache")
 
-	sanctioned := declaredSanctionedProbes(t, records)
-	frozen := declaredFrozenProbes(t, records)
+	sanctioned := declaredSanctionedProbes(t, fileSystem, roots, records, resolved)
+	frozen := declaredFrozenProbes(t, fileSystem, roots, records, resolved)
 
 	recordPaths := make([]string, 0, len(records))
 	for recordPath := range records {
@@ -407,16 +530,17 @@ func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
 	var dedicatedCommand string
 	for _, recordPath := range recordPaths {
 		record := records[recordPath]
-		if record.Owner != derivedOwnerDedicated {
+		artifacts := filterDerivedArtifactsByOwner(
+			artifactsByRecord[recordPath],
+			resolved,
+			derivedOwnerDedicated,
+		)
+		if len(artifacts) == 0 {
 			continue
 		}
 		if dedicatedRecordPath == "" {
 			dedicatedRecordPath = recordPath
 			dedicatedCommand = record.Command
-		}
-		artifacts := artifactsByRecord[recordPath]
-		if len(artifacts) == 0 {
-			t.Fatalf("dedicated ownership record %q governs no artifacts", recordPath)
 		}
 		t.Run("dedicated/"+strings.ReplaceAll(recordPath, "/", "_"), func(t *testing.T) {
 			rewrite := probesForPaths(artifacts, "dedicated")
@@ -503,7 +627,7 @@ func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
 		assertDerivedFixtureRestored(t, baselineRoot, roots, clean)
 	})
 
-	t.Run("frozen declaration rejects rewritten directory", func(t *testing.T) {
+	t.Run("frozen resolved path rejects rewrite", func(t *testing.T) {
 		const (
 			recordPath   = "testdata/catalog.diagnostics.golden.json_ownership.yml"
 			artifactPath = "testdata/catalog.diagnostics.golden.json"
@@ -516,9 +640,16 @@ func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
 		); err != nil {
 			t.Fatalf("write frozen ownership fixture %q: %v", recordPath, err)
 		}
-		record, err := readDerivedOwnershipRecord(fileSystem, recordPath)
+		fixtureResolved, err := validateDerivedOwnership(fileSystem, roots)
 		if err != nil {
 			t.Fatal(err)
+		}
+		record, ok := fixtureResolved[artifactPath]
+		if !ok {
+			t.Fatalf("frozen fixture artifact %q has no resolved ownership", artifactPath)
+		}
+		if record.Owner != derivedOwnerFrozen {
+			t.Fatalf("frozen fixture artifact %q owner = %q", artifactPath, record.Owner)
 		}
 		err = exerciseDeclaredRegenerationStep(
 			t.Context(), repository, baselineRoot, cacheRoot, roots, clean,
@@ -661,11 +792,16 @@ func derivedArtifactsByRecord(
 	t *testing.T,
 	fileSystem fs.FS,
 	roots []string,
+	records map[string]derivedOwnershipRecord,
 	resolved map[string]derivedOwnershipRecord,
 ) map[string][]string {
 	t.Helper()
 
 	artifacts := make(map[string][]string)
+	exceptionClaims, err := derivedOwnershipExceptionClaims(records)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for artifactPath := range resolved {
 		info, err := fs.Stat(fileSystem, artifactPath)
 		if err != nil {
@@ -690,7 +826,16 @@ func derivedArtifactsByRecord(
 		if len(recordPaths) != 1 {
 			t.Fatalf("resolved artifact %q has ownership records %v", artifactPath, recordPaths)
 		}
-		artifacts[recordPaths[0]] = append(artifacts[recordPaths[0]], artifactPath)
+		recordPath, _, _, err := resolveDerivedOwnershipRecord(
+			records,
+			exceptionClaims,
+			recordPaths[0],
+			artifactPath,
+		)
+		if err != nil {
+			t.Fatalf("resolve ownership record for %q: %v", artifactPath, err)
+		}
+		artifacts[recordPath] = append(artifacts[recordPath], artifactPath)
 	}
 	for recordPath := range artifacts {
 		sort.Strings(artifacts[recordPath])
@@ -702,6 +847,7 @@ func derivedRecordPathForArtifact(
 	t *testing.T,
 	fileSystem fs.FS,
 	roots []string,
+	records map[string]derivedOwnershipRecord,
 	resolved map[string]derivedOwnershipRecord,
 	artifactPath string,
 ) string {
@@ -709,6 +855,10 @@ func derivedRecordPathForArtifact(
 
 	if _, ok := resolved[artifactPath]; !ok {
 		t.Fatalf("changed derived artifact %q has no resolved ownership", artifactPath)
+	}
+	exceptionClaims, err := derivedOwnershipExceptionClaims(records)
+	if err != nil {
+		t.Fatal(err)
 	}
 	for _, root := range roots {
 		if !pathWithinDerivedScanRoot(artifactPath, root) {
@@ -723,7 +873,16 @@ func derivedRecordPathForArtifact(
 		if len(recordPaths) != 1 {
 			t.Fatalf("changed artifact %q has ownership records %v", artifactPath, recordPaths)
 		}
-		return recordPaths[0]
+		recordPath, _, _, err := resolveDerivedOwnershipRecord(
+			records,
+			exceptionClaims,
+			recordPaths[0],
+			artifactPath,
+		)
+		if err != nil {
+			t.Fatalf("resolve ownership record for changed artifact %q: %v", artifactPath, err)
+		}
+		return recordPath
 	}
 	t.Fatalf("changed derived artifact %q is outside the derived scan", artifactPath)
 	return ""
@@ -731,7 +890,10 @@ func derivedRecordPathForArtifact(
 
 func declaredSanctionedProbes(
 	t *testing.T,
+	fileSystem fs.FS,
+	roots []string,
 	records map[string]derivedOwnershipRecord,
+	resolved map[string]derivedOwnershipRecord,
 ) []derivedArtifactProbe {
 	t.Helper()
 
@@ -757,19 +919,27 @@ func declaredSanctionedProbes(
 		"testdata/catalog.diagnostics.golden.json_ownership.yml": {
 			path: "testdata/catalog.diagnostics.golden.json", owner: "sanctioned",
 		},
-		"testdata/parity-corpus/_ownership.yml": {
+		"testdata/parity-corpus/_ownership.yml#v1/manifest.json": {
+			path: "testdata/parity-corpus/v1/manifest.json", owner: "sanctioned",
+		},
+		"testdata/parity-corpus/_ownership.yml#v1/fixtures/asset-sync.json": {
 			path: "testdata/parity-corpus/v1/fixtures/asset-sync.json", owner: "sanctioned",
 		},
 		"testdata/plan-characterization/_ownership.yml": {
 			path: "testdata/plan-characterization/clean-adoption.golden.json", owner: "sanctioned",
 		},
 	}
-	return probesForDeclaredOwner(t, records, derivedOwnerSanctioned, probes)
+	return probesForDeclaredOwner(
+		t, fileSystem, roots, records, resolved, derivedOwnerSanctioned, probes,
+	)
 }
 
 func declaredFrozenProbes(
 	t *testing.T,
+	fileSystem fs.FS,
+	roots []string,
 	records map[string]derivedOwnershipRecord,
+	resolved map[string]derivedOwnershipRecord,
 ) []derivedArtifactProbe {
 	t.Helper()
 
@@ -780,37 +950,93 @@ func declaredFrozenProbes(
 		"testdata/adr-lifecycle/_ownership.yml": {
 			path: "testdata/adr-lifecycle/accepted.md", owner: "frozen",
 		},
+		"testdata/parity-corpus/_ownership.yml": {
+			path: "testdata/parity-corpus/v1/matrix.json", owner: "frozen",
+		},
 	}
-	return probesForDeclaredOwner(t, records, derivedOwnerFrozen, probes)
+	return probesForDeclaredOwner(
+		t, fileSystem, roots, records, resolved, derivedOwnerFrozen, probes,
+	)
 }
 
 func probesForDeclaredOwner(
 	t *testing.T,
+	fileSystem fs.FS,
+	roots []string,
 	records map[string]derivedOwnershipRecord,
+	resolved map[string]derivedOwnershipRecord,
 	owner derivedOwnershipOwner,
 	probes map[string]derivedArtifactProbe,
 ) []derivedArtifactProbe {
 	t.Helper()
 
-	paths := make([]string, 0, len(probes))
+	declarations := make(map[string]string)
 	for recordPath, record := range records {
-		if record.Owner != owner {
-			continue
+		if record.Owner == owner {
+			declarations[recordPath] = recordPath
 		}
-		if _, ok := probes[recordPath]; !ok {
-			t.Fatalf("%s ownership record %q has no regeneration probe", owner, recordPath)
+		for _, exception := range record.Exceptions {
+			if exception.Owner != owner {
+				continue
+			}
+			declarationKey := recordPath + "#" + exception.Path
+			declarations[declarationKey] = recordPath
 		}
-		paths = append(paths, recordPath)
 	}
-	if len(paths) != len(probes) {
-		t.Fatalf("%s regeneration probes = %d, ownership records = %d", owner, len(probes), len(paths))
+
+	keys := make([]string, 0, len(declarations))
+	for declarationKey, recordPath := range declarations {
+		probe, ok := probes[declarationKey]
+		if !ok {
+			t.Fatalf("%s ownership declaration %q has no regeneration probe", owner, declarationKey)
+		}
+		resolvedRecord, ok := resolved[probe.path]
+		if !ok {
+			t.Fatalf("%s regeneration probe %q has no resolved ownership", owner, probe.path)
+		}
+		if resolvedRecord.Owner != owner {
+			t.Fatalf("%s regeneration probe %q resolves to owner %q", owner, probe.path, resolvedRecord.Owner)
+		}
+		if got := derivedRecordPathForArtifact(t, fileSystem, roots, records, resolved, probe.path); got != recordPath {
+			t.Fatalf("%s regeneration probe %q resolves through record %q, want %q", owner, probe.path, got, recordPath)
+		}
+		if separator := strings.IndexByte(declarationKey, '#'); separator >= 0 {
+			exceptionPath, err := derivedOwnershipExceptionPath(
+				recordPath,
+				declarationKey[separator+1:],
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if probe.path != exceptionPath {
+				t.Fatalf("%s exception probe path = %q, want %q", owner, probe.path, exceptionPath)
+			}
+		}
+		keys = append(keys, declarationKey)
 	}
-	sort.Strings(paths)
-	result := make([]derivedArtifactProbe, 0, len(paths))
-	for _, recordPath := range paths {
-		result = append(result, probes[recordPath])
+	if len(declarations) != len(probes) {
+		t.Fatalf("%s regeneration probes = %d, ownership declarations = %d", owner, len(probes), len(declarations))
+	}
+	sort.Strings(keys)
+	result := make([]derivedArtifactProbe, 0, len(keys))
+	for _, declarationKey := range keys {
+		result = append(result, probes[declarationKey])
 	}
 	return result
+}
+
+func filterDerivedArtifactsByOwner(
+	artifactPaths []string,
+	resolved map[string]derivedOwnershipRecord,
+	owner derivedOwnershipOwner,
+) []string {
+	filtered := make([]string, 0, len(artifactPaths))
+	for _, artifactPath := range artifactPaths {
+		if resolved[artifactPath].Owner == owner {
+			filtered = append(filtered, artifactPath)
+		}
+	}
+	return filtered
 }
 
 func probesForPaths(paths []string, owner string) []derivedArtifactProbe {

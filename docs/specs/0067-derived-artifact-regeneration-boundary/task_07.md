@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0067-derived-artifact-regeneration-boundary
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -88,3 +88,60 @@ files are declared as what they measurably are.
 - `_prd.md` → Core Features 1, 3 and 5; Decisions ("frozen stays frozen").
 - `_techspec.md` → Interfaces; Risks & Considerations ("a manifest can lie").
 - `qa/qa-report-2026-08-05-02.md` → F-002.
+
+## Result
+
+### Implementation
+
+- Ownership records now accept strict `exceptions` entries with a relative
+  path and owner. Validation rejects invalid owners, missing paths, escaping
+  paths, duplicate claims across records, unused exceptions, and dedicated
+  exceptions without a command.
+- Ownership resolution applies an exact exception before a directory record,
+  including when a nearer directory record exists. Remediation, measured
+  sanctioned ownership, declared-step probes, and frozen probes use the
+  resolved path owner.
+- The parity record is frozen with exactly two sanctioned exceptions:
+  `v1/manifest.json` and `v1/fixtures/asset-sync.json`. No regeneration command
+  changed.
+
+### Acceptance evidence
+
+1. `TestDerivedOwnershipDeclaresKnownBoundaries` reads the real parity record,
+   requires exactly the two sanctioned exceptions, and checks every other
+   regular path under the corpus resolves frozen. It passed in the focused
+   ownership command below.
+2. `TestDeclaredStepRegenerationAndFrozenBoundaries/frozen_resolved_path_rejects_rewrite`
+   resolves a fixture frozen, runs the command that rewrites it, and observes
+   the required `rewrote frozen artifact` failure. The parent focused test
+   passed.
+3. The same declared-step test perturbs both parity exception paths and proves
+   `make baseline-digests` restores them as sanctioned declarations. The
+   parent focused test passed.
+4. `TestDerivedOwnershipRejectsDuplicateExceptions` declares the same path in
+   two records and observes the required multiple-exception rejection. It
+   passed in the focused ownership command.
+5. `TestDerivedOwnershipRejectsExceptionOutsideRecordDirectory` declares
+   `../outside.json` and observes the required outside-directory rejection. It
+   passed in the focused ownership command.
+6. Daemon-owned Verification remains pending. This Agent did not run the
+   declared `make skills-sync`, `make baseline-digests`, or `make verify`
+   commands.
+7. `rtk git diff --exit-code -- internal/baseline/testdata/parity-corpus/v1`
+   exited 0. `rtk git diff --name-only -- internal/baseline/testdata` listed
+   only `internal/baseline/testdata/parity-corpus/_ownership.yml`; no digest or
+   artifact content changed.
+
+### Focused checks
+
+- Red signal: the exception regression command initially failed because the
+  strict YAML decoder reported `field exceptions not found`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache GOFLAGS=-buildvcs=false go test ./internal/baseline -count=1 -run '^TestDerivedOwnership'`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache GOFLAGS=-buildvcs=false go test ./internal/baseline -count=1 -run '^Test(DeclaredStepRegenerationAndFrozenBoundaries|MeasuredSanctionedOwnershipMatchesRecords)$'`
+  — passed in 62.091s against isolated repository fixtures.
+- `rtk git diff --check` — passed.
+
+### Follow-ups
+
+None discovered within this Task's slice.

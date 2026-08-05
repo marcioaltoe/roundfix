@@ -28,9 +28,20 @@ const (
 )
 
 type derivedOwnershipRecord struct {
-	Owner   derivedOwnershipOwner `yaml:"owner"`
-	Command string                `yaml:"command,omitempty"`
-	Reason  string                `yaml:"reason"`
+	Owner      derivedOwnershipOwner       `yaml:"owner"`
+	Command    string                      `yaml:"command,omitempty"`
+	Reason     string                      `yaml:"reason"`
+	Exceptions []derivedOwnershipException `yaml:"exceptions,omitempty"`
+}
+
+type derivedOwnershipException struct {
+	Path  string                `yaml:"path"`
+	Owner derivedOwnershipOwner `yaml:"owner"`
+}
+
+type derivedOwnershipExceptionClaim struct {
+	RecordPath string
+	Owner      derivedOwnershipOwner
 }
 
 func validateDerivedOwnership(
@@ -41,9 +52,14 @@ func validateDerivedOwnership(
 	if err != nil {
 		return nil, err
 	}
+	exceptionClaims, err := derivedOwnershipExceptionClaims(records)
+	if err != nil {
+		return nil, err
+	}
 
 	resolved := make(map[string]derivedOwnershipRecord)
 	usedRecords := make(map[string]struct{}, len(records))
+	usedExceptions := make(map[string]struct{})
 	for _, scanRoot := range scanRoots {
 		scanRoot = path.Clean(scanRoot)
 		rootInfo, err := fs.Stat(fileSystem, scanRoot)
@@ -84,8 +100,20 @@ func validateDerivedOwnership(
 			if len(recordPaths) != 1 {
 				return derivedOwnershipResolutionError(artifactPath, recordPaths)
 			}
-			resolved[artifactPath] = records[recordPaths[0]]
-			usedRecords[recordPaths[0]] = struct{}{}
+			recordPath, record, exceptionPath, err := resolveDerivedOwnershipRecord(
+				records,
+				exceptionClaims,
+				recordPaths[0],
+				artifactPath,
+			)
+			if err != nil {
+				return err
+			}
+			resolved[artifactPath] = record
+			usedRecords[recordPath] = struct{}{}
+			if exceptionPath != "" {
+				usedExceptions[exceptionPath] = struct{}{}
+			}
 			return nil
 		})
 		if err != nil {
@@ -96,6 +124,19 @@ func validateDerivedOwnership(
 	for recordPath := range records {
 		if _, used := usedRecords[recordPath]; !used {
 			return nil, fmt.Errorf("ownership record %q governs no derived path", recordPath)
+		}
+		for _, exception := range records[recordPath].Exceptions {
+			exceptionPath, err := derivedOwnershipExceptionPath(recordPath, exception.Path)
+			if err != nil {
+				return nil, err
+			}
+			if _, used := usedExceptions[exceptionPath]; !used {
+				return nil, fmt.Errorf(
+					"ownership exception %q in record %q governs no derived path",
+					exception.Path,
+					recordPath,
+				)
+			}
 		}
 	}
 	return resolved, nil
@@ -129,6 +170,9 @@ func readDerivedOwnershipRecords(
 			return nil, fmt.Errorf("read ownership records under %q: %w", scanRoot, err)
 		}
 	}
+	if _, err := derivedOwnershipExceptionClaims(records); err != nil {
+		return nil, err
+	}
 	return records, nil
 }
 
@@ -154,17 +198,18 @@ func readDerivedOwnershipRecord(fileSystem fs.FS, recordPath string) (derivedOwn
 
 	record.Command = strings.TrimSpace(record.Command)
 	record.Reason = strings.TrimSpace(record.Reason)
-	if err := record.validate(); err != nil {
+	for index := range record.Exceptions {
+		record.Exceptions[index].Path = strings.TrimSpace(record.Exceptions[index].Path)
+	}
+	if err := record.validate(recordPath); err != nil {
 		return derivedOwnershipRecord{}, fmt.Errorf("validate ownership record %q: %w", recordPath, err)
 	}
 	return record, nil
 }
 
-func (record derivedOwnershipRecord) validate() error {
-	switch record.Owner {
-	case derivedOwnerSanctioned, derivedOwnerDedicated, derivedOwnerFrozen:
-	default:
-		return fmt.Errorf("owner %q is not sanctioned, dedicated, or frozen", record.Owner)
+func (record derivedOwnershipRecord) validate(recordPath string) error {
+	if err := validateDerivedOwnershipOwner(record.Owner); err != nil {
+		return err
 	}
 	if record.Reason == "" {
 		return fmt.Errorf("reason is required")
@@ -172,7 +217,111 @@ func (record derivedOwnershipRecord) validate() error {
 	if record.Owner == derivedOwnerDedicated && record.Command == "" {
 		return fmt.Errorf("command is required for dedicated ownership")
 	}
+
+	seenExceptions := make(map[string]struct{}, len(record.Exceptions))
+	for _, exception := range record.Exceptions {
+		if err := validateDerivedOwnershipOwner(exception.Owner); err != nil {
+			return fmt.Errorf("exception path %q: %w", exception.Path, err)
+		}
+		if exception.Owner == derivedOwnerDedicated && record.Command == "" {
+			return fmt.Errorf(
+				"command is required for dedicated ownership exception %q",
+				exception.Path,
+			)
+		}
+		exceptionPath, err := derivedOwnershipExceptionPath(recordPath, exception.Path)
+		if err != nil {
+			return err
+		}
+		if _, duplicate := seenExceptions[exceptionPath]; duplicate {
+			return fmt.Errorf(
+				"derived path %q resolves to more than one ownership exception",
+				exceptionPath,
+			)
+		}
+		seenExceptions[exceptionPath] = struct{}{}
+	}
 	return nil
+}
+
+func validateDerivedOwnershipOwner(owner derivedOwnershipOwner) error {
+	switch owner {
+	case derivedOwnerSanctioned, derivedOwnerDedicated, derivedOwnerFrozen:
+		return nil
+	default:
+		return fmt.Errorf("owner %q is not sanctioned, dedicated, or frozen", owner)
+	}
+}
+
+func derivedOwnershipExceptionClaims(
+	records map[string]derivedOwnershipRecord,
+) (map[string]derivedOwnershipExceptionClaim, error) {
+	claims := make(map[string]derivedOwnershipExceptionClaim)
+	for recordPath, record := range records {
+		for _, exception := range record.Exceptions {
+			exceptionPath, err := derivedOwnershipExceptionPath(recordPath, exception.Path)
+			if err != nil {
+				return nil, err
+			}
+			if priorClaim, duplicate := claims[exceptionPath]; duplicate {
+				return nil, fmt.Errorf(
+					"derived path %q resolves to more than one ownership exception from %q and %q",
+					exceptionPath,
+					priorClaim.RecordPath,
+					recordPath,
+				)
+			}
+			claims[exceptionPath] = derivedOwnershipExceptionClaim{
+				RecordPath: recordPath,
+				Owner:      exception.Owner,
+			}
+		}
+	}
+	return claims, nil
+}
+
+func derivedOwnershipExceptionPath(recordPath string, exceptionPath string) (string, error) {
+	if exceptionPath == "" {
+		return "", fmt.Errorf("exception path is required")
+	}
+	if path.IsAbs(exceptionPath) {
+		return "", fmt.Errorf("exception path %q is outside record directory", exceptionPath)
+	}
+
+	recordDirectory := path.Dir(recordPath)
+	resolvedPath := path.Join(recordDirectory, path.Clean(exceptionPath))
+	if resolvedPath == recordDirectory || !pathWithinDerivedScanRoot(resolvedPath, recordDirectory) {
+		return "", fmt.Errorf("exception path %q is outside record directory %q", exceptionPath, recordDirectory)
+	}
+	return resolvedPath, nil
+}
+
+func resolveDerivedOwnershipRecord(
+	records map[string]derivedOwnershipRecord,
+	exceptionClaims map[string]derivedOwnershipExceptionClaim,
+	baseRecordPath string,
+	artifactPath string,
+) (string, derivedOwnershipRecord, string, error) {
+	claim, ok := exceptionClaims[artifactPath]
+	if !ok {
+		return baseRecordPath, records[baseRecordPath], "", nil
+	}
+	if claim.RecordPath != baseRecordPath && isDerivedOwnershipSidecar(baseRecordPath, artifactPath) {
+		return "", derivedOwnershipRecord{}, "", fmt.Errorf(
+			"derived path %q resolves to more than one ownership record: %s, %s",
+			artifactPath,
+			baseRecordPath,
+			claim.RecordPath,
+		)
+	}
+	record := records[claim.RecordPath]
+	record.Owner = claim.Owner
+	return claim.RecordPath, record, artifactPath, nil
+}
+
+func isDerivedOwnershipSidecar(recordPath string, artifactPath string) bool {
+	return recordPath == artifactPath+derivedOwnershipYML ||
+		recordPath == artifactPath+derivedOwnershipYAML
 }
 
 func resolveDerivedOwnershipRecordPaths(
@@ -285,10 +434,22 @@ func derivedArtifactRemediation(
 		return "", derivedOwnershipResolutionError(artifactPath, recordPaths)
 	}
 
-	recordPath := recordPaths[0]
-	record, err := readDerivedOwnershipRecord(fileSystem, recordPath)
+	records, err := readDerivedOwnershipRecords(fileSystem, []string{scanRoot})
 	if err != nil {
 		return "", err
+	}
+	exceptionClaims, err := derivedOwnershipExceptionClaims(records)
+	if err != nil {
+		return "", err
+	}
+	recordPath, record, _, err := resolveDerivedOwnershipRecord(
+		records,
+		exceptionClaims,
+		recordPaths[0],
+		artifactPath,
+	)
+	if err != nil {
+		return "", fmt.Errorf("resolve ownership for derived artifact %q: %w", artifactPath, err)
 	}
 	switch record.Owner {
 	case derivedOwnerSanctioned:
