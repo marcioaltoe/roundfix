@@ -167,6 +167,18 @@ type RunWorktreeReconciliation struct {
 	evidence *terminalRunReconciliationEvidence
 }
 
+// BranchSetClassification classifies the Run Branches attributed to one
+// target. Current holds the branch with the newest QA evidence. Releasable
+// holds only terminal branches proven superseded by the target or Current.
+// Every Preserved branch has an entry in PreservedReasons.
+type BranchSetClassification struct {
+	Current          string
+	CurrentReport    string
+	Releasable       []string
+	Preserved        []string
+	PreservedReasons map[string]string
+}
+
 func InspectTerminalRun(ctx context.Context, run store.Run) (RunWorktreeReconciliation, error) {
 	return inspectTerminalRun(ctx, execGitRunner{}, run)
 }
@@ -275,6 +287,199 @@ func listRunBranches(ctx context.Context, runner gitRunner, gitRoot string) (map
 		}
 	}
 	return branches, nil
+}
+
+// ClassifyRunBranchSet classifies existing Run Branches attributed by runs to
+// one target. Run metadata is required because Git topology cannot identify a
+// branch's target or prove that its Run is terminal.
+func ClassifyRunBranchSet(
+	ctx context.Context,
+	gitRoot string,
+	targetBranch string,
+	specSlug string,
+	runs []store.Run,
+) (BranchSetClassification, error) {
+	return classifyRunBranchSet(ctx, execGitRunner{}, gitRoot, targetBranch, specSlug, runs)
+}
+
+type runBranchSetCandidate struct {
+	branch string
+	head   string
+	report string
+	active bool
+}
+
+func classifyRunBranchSet(
+	ctx context.Context,
+	runner gitRunner,
+	gitRoot string,
+	targetBranch string,
+	specSlug string,
+	runs []store.Run,
+) (BranchSetClassification, error) {
+	result := BranchSetClassification{}
+	preserve := func(branch string, reason string) {
+		if result.PreservedReasons == nil {
+			result.PreservedReasons = make(map[string]string)
+		}
+		if _, preserved := result.PreservedReasons[branch]; preserved {
+			return
+		}
+		result.Preserved = append(result.Preserved, branch)
+		result.PreservedReasons[branch] = boundedReconciliationReason(reason)
+	}
+
+	root, err := recordedGitRoot(ctx, runner, gitRoot)
+	if err != nil {
+		return result, fmt.Errorf("classify Run Branch set: %w", err)
+	}
+	targetBranch = strings.TrimSpace(targetBranch)
+	if targetBranch == "" || !validLocalBranch(ctx, runner, root, targetBranch) {
+		return result, errors.New("classify Run Branch set: target branch is missing or invalid")
+	}
+	specSlug = strings.TrimSpace(specSlug)
+	cleanSlug, err := cleanPathSegment(specSlug)
+	if err != nil || cleanSlug != specSlug {
+		return result, errors.New("classify Run Branch set: Spec slug is missing or invalid")
+	}
+	targetHead, err := resolveUnambiguousLocalBranch(ctx, runner, root, targetBranch)
+	if err != nil {
+		return result, fmt.Errorf("classify Run Branch set: resolve target branch %q: %w", targetBranch, err)
+	}
+	if targetHead == "" {
+		return result, fmt.Errorf("classify Run Branch set: resolve target branch %q: empty Git object ID", targetBranch)
+	}
+	branches, err := listRunBranches(ctx, runner, root)
+	if err != nil {
+		return result, fmt.Errorf("classify Run Branch set: %w", err)
+	}
+
+	targetReport, err := newestQAReportAtHead(ctx, runner, root, targetHead, specSlug)
+	if err != nil && !errors.Is(err, spec.ErrNoQAReport) {
+		return result, fmt.Errorf("classify Run Branch set: inspect target QA Reports: %w", err)
+	}
+	if errors.Is(err, spec.ErrNoQAReport) {
+		targetReport = ""
+	}
+
+	seen := make(map[string]struct{})
+	candidates := make([]runBranchSetCandidate, 0, len(runs))
+	for _, run := range runs {
+		if run.Kind != store.KindImplement ||
+			strings.TrimSpace(run.LocalBranch) != targetBranch ||
+			strings.TrimSpace(run.SpecSlug) != specSlug ||
+			!samePath(run.GitRoot, root) {
+			continue
+		}
+		branch := BranchName(run.ID)
+		if !branches[branch] {
+			continue
+		}
+		if _, duplicate := seen[branch]; duplicate {
+			continue
+		}
+		seen[branch] = struct{}{}
+
+		active := !store.IsTerminalState(run.State)
+		head, resolveErr := resolveUnambiguousLocalBranch(ctx, runner, root, branch)
+		if resolveErr != nil || head == "" {
+			if active {
+				preserve(branch, fmt.Sprintf("Run Branch belongs to Active Run %q", run.ID))
+			} else {
+				preserve(branch, reconciliationReasonRunBranch)
+			}
+			continue
+		}
+		if !active {
+			if _, proven := supersedingQAReport(ctx, runner, root, targetHead, head, specSlug); proven {
+				result.Releasable = append(result.Releasable, branch)
+				continue
+			}
+		}
+		report, reportErr := newestQAReportAtHead(ctx, runner, root, head, specSlug)
+		if reportErr != nil {
+			if active {
+				preserve(branch, fmt.Sprintf("Run Branch belongs to Active Run %q", run.ID))
+			} else if errors.Is(reportErr, spec.ErrNoQAReport) {
+				preserve(branch, "Run Branch does not carry QA Report evidence")
+			} else {
+				preserve(branch, "Run Branch QA Report evidence could not be inspected")
+			}
+			continue
+		}
+		if targetReport != "" {
+			newest, newestErr := spec.NewestQAReportFromPaths([]string{targetReport, report})
+			if newestErr != nil || newest != report || report == targetReport {
+				if active {
+					preserve(branch, fmt.Sprintf("Run Branch belongs to Active Run %q", run.ID))
+				} else {
+					preserve(branch, "Run Branch does not carry newer QA Report evidence than the target branch")
+				}
+				continue
+			}
+		}
+		candidates = append(candidates, runBranchSetCandidate{
+			branch: branch,
+			head:   head,
+			report: report,
+			active: active,
+		})
+	}
+
+	if len(candidates) != 0 {
+		reports := make([]string, 0, len(candidates))
+		for _, candidate := range candidates {
+			reports = append(reports, candidate.report)
+		}
+		currentReport, newestErr := spec.NewestQAReportFromPaths(reports)
+		if newestErr != nil {
+			for _, candidate := range candidates {
+				preserve(candidate.branch, "Run Branch current QA Report evidence could not be determined")
+			}
+		} else {
+			currentIndex := -1
+			for index, candidate := range candidates {
+				if candidate.report != currentReport {
+					continue
+				}
+				if currentIndex != -1 {
+					currentIndex = -2
+					break
+				}
+				currentIndex = index
+			}
+			if currentIndex < 0 {
+				for _, candidate := range candidates {
+					preserve(candidate.branch, "Run Branch current QA Report evidence is not unique")
+				}
+			} else {
+				current := candidates[currentIndex]
+				result.Current = current.branch
+				result.CurrentReport = current.report
+				for index, candidate := range candidates {
+					if index == currentIndex {
+						continue
+					}
+					if candidate.active {
+						preserve(candidate.branch, "Run Branch belongs to an Active Run")
+						continue
+					}
+					if _, proven := supersedingQAReport(ctx, runner, root, current.head, candidate.head, specSlug); proven {
+						result.Releasable = append(result.Releasable, candidate.branch)
+						continue
+					}
+					preserve(candidate.branch, fmt.Sprintf(
+						"Run Branch is not proven superseded by current evidence on %q",
+						current.branch,
+					))
+				}
+			}
+		}
+	}
+
+	sort.Strings(result.Releasable)
+	sort.Strings(result.Preserved)
+	return result, nil
 }
 
 // QAReportOnlyBranch reports whether targetHead..runHead contains at least one
