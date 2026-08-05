@@ -575,7 +575,8 @@ and never block the Run.
 ## Run Worktree reconciliation
 
 Use the Reconcile Command to inspect retained terminal spec Run Worktrees and
-Run Branches. Always run a dry-run before applying cleanup:
+Run Branches, plus live process trees still owned by terminal Runs. Dry-run
+remains the default; always inspect it before applying cleanup:
 
 ```bash
 roundfix reconcile <run-id>
@@ -595,6 +596,21 @@ repository. The report classifies every selected Run into one of six states:
 | `unknown` | Metadata or Git evidence cannot prove another state. Preserve every identified Run Worktree and Run Branch. |
 | `released` | Both the Run Worktree and Run Branch are absent. No cleanup is needed. |
 
+The same report can add two debris candidate kinds beside those legacy Run
+Worktree classifications:
+
+- A `process` candidate is proven when a terminal Run with a proven recorded
+  owner identity still owns an inspected live process tree. Its report names
+  the Run outcome, owner PID, every inspected process ID, and that ownership
+  proof.
+- A `runBranch` candidate is proven when set classification for one target
+  branch and Spec shows that the Run Branch is superseded by a named current
+  or target QA Report, and its registered Run Worktree was inspected clean.
+
+Ambiguous ownership, identity, Git, active-Run, or cleanliness evidence goes
+to `preservedCandidates` with a refusal reason instead of becoming a cleanup
+candidate.
+
 After reviewing the dry-run, apply cleanup explicitly:
 
 ```bash
@@ -603,12 +619,17 @@ roundfix reconcile --apply
 ```
 
 `--apply` is the only mutation switch. Roundfix acts only on entries classified
-`safe` or `superseded` during that invocation. It rechecks their metadata,
+`safe` or `superseded`, or on proven process and Run Branch candidates, during
+that invocation. It rechecks metadata, process ownership and identity,
 worktree cleanliness, heads, ancestry, QA-report-only commit shape, and
-superseding target report as applicable before mutation, and records the
-superseding report when it releases `superseded` work. It preserves
-`unintegrated`, `dirty`, and `unknown` work, and treats `released` as an
-idempotent no-op. There is no force bypass.
+superseding reports as applicable before mutation. It records the superseding
+report when it releases superseded work. It preserves `unintegrated`, `dirty`,
+and `unknown` work, and treats `released` as an idempotent no-op. There is no
+force bypass.
+
+Process termination succeeds only when Roundfix proves every reported process
+absent. An unprovable termination is reported with its reason and is never
+treated as success; silence from the host does not mean the process stopped.
 
 Never substitute manual Git deletion for this supported workflow. Do not run
 `git worktree remove`, delete the Run Branch, or remove a recorded worktree
@@ -991,10 +1012,11 @@ comment, code change, commit, or push for `fetch`, `resolve`, and `watch`.
 
 - The preflight enumerates pending `roundfix/run-*` Run Branch work and kept
   worktrees bound to the PR Head Branch. Fast-forwardable work is integrated
-  automatically and journaled before the review Run continues, except a branch
-  proven to contain only QA-report commits. A QA-report-only branch is never
-  integrated automatically; preflight names it as a superseded QA report and
-  directs the operator to `roundfix reconcile --apply`.
+  automatically and journaled before the review Run continues. A failed-cycle
+  set proven from its QA Reports is never integrated automatically: preflight
+  reports the current evidence branch and each branch proven superseded by it,
+  leaves their Git refs unchanged, and disregards them so the review Run can
+  proceed. Reclaim them separately with `roundfix reconcile --apply`.
 - Non-fast-forward pending work refuses the command with exit `2`, names each
   pending Run Branch and worktree, and prints the recovery command
   `git merge --ff-only <branch>`.
@@ -1011,6 +1033,11 @@ comment, code change, commit, or push for `fetch`, `resolve`, and `watch`.
   allowed because Batch commits stage only paths changed since the Batch
   snapshot. After a failed Batch, dirty tracked files in the checkout are
   Agent work by construction.
+
+This is the only Branch Integrity Preflight relaxation: proven-superseded QA
+Run Branch work no longer blocks a review Run. Non-fast-forward or ambiguous
+pending work, preserved branch-set evidence, another Active Run, a dirty
+tracked review checkout, and every other existing refusal still block.
 
 Review Runs have no Integration Pending outcome. They either mutate the user's
 checkout directly, stop before side effects through Preflight Validation, or
