@@ -22,7 +22,99 @@ superseded_by: null # null or ADR-NNNN
 
 - **mandatory**: Treat a legacy ADR without lifecycle frontmatter as active unless its body explicitly marks it inactive. Do not rewrite existing ADRs solely to adopt lifecycle metadata.
 
-- **mandatory**: Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers.
+- **mandatory**: Name backlog entries `YYYY-MM-DD-<kebab-slug>.md`. Use this complete copyable Backlog Operational Contract:
+
+```markdown
+---
+type: feat # feat | fix | perf | refactor
+status: open # open | promoted | declined
+created: YYYY-MM-DD
+spec: null # Spec slug when status: promoted
+reason: null # required when status: declined
+---
+```
+
+For `type: feat`, use:
+
+```markdown
+# <Title — the intent in one line>
+
+## Opportunity
+
+<What could exist and for whom.>
+
+## Value
+
+<Why it would matter; the hypothesis.>
+
+## Shape
+
+<The rough form of a solution, explicitly non-binding.>
+```
+
+For `type: fix`, use:
+
+```markdown
+# <Title — the defect in one line>
+
+## Symptom
+
+<What misbehaves, as a user or operator sees it.>
+
+## Where
+
+<The surface, command, or package, as known.>
+
+## Expected
+
+<The behavior that should replace it.>
+
+## Evidence
+
+<A finding link when one exists; `none yet` is honest.>
+```
+
+For `type: perf`, use:
+
+```markdown
+# <Title — the cost in one line>
+
+## Slow
+
+<What is slow, for whom, and in which operation.>
+
+## Measured
+
+<The number that says so and how it was measured.>
+
+## Target
+
+<The number that would settle it.>
+```
+
+For `type: refactor`, use:
+
+```markdown
+# <Title — the tangle in one line>
+
+## Tangled
+
+<What resists change, and where it is duplicated or coupled.>
+
+## Cost
+
+<What it makes slow, risky, or wrong to touch.>
+
+## Shape
+
+<The structure that would replace it, explicitly non-binding.>
+```
+
+Keep `open` entries in `docs/backlog/`. When a Spec adopts an entry, set `status: promoted` and `spec` to that Spec's slug, then move the entry to `docs/specs/<slug>/references/`; git history remains the discovery trail. Set `status: declined` only with a non-null `reason`. The current type set is open: a new type must be a Conventional Commits type that expresses intent. Adding a type is a contract change that requires a corpus re-record, never an informal addition. Use `refactor` as the canonical token, never an abbreviation.
+
+- **mandatory**: Keep evidence and intent distinct in both directions: a finding records what happened and is never a commitment; it is evidence-backed, immutable history. A backlog entry records what to do next and is never evidence. A finding may spawn a backlog entry; a backlog entry needs no finding. A `feat` entry is upstream raw material that the spec pipeline may consume, never the `write-idea` artifact itself.
+
+- **mandatory**: Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers.
 
 - **mandatory**: Durable knowledge flows upstream only: the project glossary (`CONTEXT.md`) and the agent guides reference accepted ADRs and never reference `docs/specs/` or `docs/findings/` content. Findings are dated reports that become Specs, not reference material; a document meant as durable project reference belongs in `docs/references/`.
 

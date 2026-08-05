@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0075-typed-docs-backlog
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -105,3 +105,105 @@ target `make verify` runs is listed.
 - `_prd.md` → Success Metrics.
 - `_techspec.md` → Testing Approach; Build Order 2; Risks & Considerations.
 - ADR-0081.
+
+## Result
+
+The maintained Source Baseline now carries task_01's two backlog clauses, and
+the complete derived corpus has been re-recorded in two focused regeneration
+waves. The repair adds no Go source and changes no surface outside layout
+content, Source Baseline accounting, and their derived digests.
+
+### Bootstrap
+
+- Added the canonical marker-delimited Source Baseline content for
+  `clause.context.backlog-01-operational-contract` and its manifest row.
+- Added the canonical marker-delimited Source Baseline content for
+  `clause.context.backlog-02-finding-boundary` and its manifest row.
+- Updated the existing `clause.context.docs-one-job-per-directory` Source
+  Baseline content with `docs/backlog/`, matching task_01's module guidance.
+- The three Source Baseline entries are byte-identical to their corresponding
+  `internal/baseline/assets/modules/context-workflow.json` guidance; focused
+  `diff -u` comparisons exited 0 for all three.
+- The manifest-row bootstrap used temporary span and digest values only until
+  `TestReadoptionCompatibilityMaintainedFixture -update` calculated them from
+  the source bytes. A focused search confirmed no temporary all-zero digest
+  remains.
+
+### Focused evidence
+
+- The first Daemon Verification attempt stopped at
+  `TestReadoptionCompatibilityMaintainedFixture` because the two required
+  Source Baseline entries did not yet exist. The diagnostic named both clause
+  IDs and the manifest-row bootstrap action.
+- Two focused regeneration waves ran the individual `BASELINE_DIGEST_STEPS` in
+  Makefile order without rerunning the declared `make baseline-digests`
+  Verification command. Both waves exited 0 for
+  `TestReadoptionCompatibilityMaintainedFixture -update`,
+  `TestAuthorialSkillSync -update`, `TestFormatterComposition -update`,
+  `TestBaselineCompatibilityCorpus -update`, `TestCatalogCompatibility
+  -update`, `TestCatalogDiagnosticCharacterization
+  -update-catalog-diagnostics`, and `TestBaselinePlanCharacterization
+  -update-baseline-plan-characterization`.
+- The two characterization re-record commands required by this Task each
+  exited 0 in both waves.
+- Focused strict check
+  `go test ./internal/baseline -count=1 -run
+  'TestReadoptionCompatibilityMaintainedFixture|TestCatalogCompatibility|TestFormatterComposition'`
+  exited 0 after the last mutation.
+- `rtk git diff --check` exited 0 after the last mutation.
+
+### Declared break list
+
+- `internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/docs-layout.md`
+  — regenerated guide content adds the backlog operational contract, the
+  finding boundary, and `docs/backlog/` to the directory-purpose clause.
+- `internal/baseline/assets/profiles/standard-typescript-monorepo.json` — the
+  regenerated docs-layout golden changes the selected formatter golden digest.
+- `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/baseline.json`
+  — the two clauses move the entry count from 104 to 106 and regenerate the
+  corpus and manifest digests.
+- `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/docs-layout.md`
+  — canonical Source Baseline layout content adds the two marker-delimited
+  backlog clauses and updates the directory-purpose clause.
+- `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json`
+  — adds the two required clause rows; regeneration calculates their spans and
+  digests and shifts later docs-layout spans without changing their digests.
+- `internal/baseline/assets/source-baselines/index.json` — adds both clause IDs,
+  moves the entry count to 106, and regenerates the Source Baseline corpus and
+  manifest digests.
+- `internal/baseline/testdata/catalog.diagnostics.golden.json` — the formatter
+  golden-digest mismatch characterization follows the regenerated expected and
+  actual layout digests.
+- `internal/baseline/testdata/catalog.digest` — regenerated catalog digest for
+  the changed module, formatter golden, profile pin, and Source Baseline.
+- `internal/baseline/testdata/catalog.normalized.json` — normalized catalog
+  records the changed layout bytes and digests, Source Baseline accounting, and
+  profile pin.
+- `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`
+  — re-records only catalog, layout-content, managed-file identity, and plan
+  digest fallout.
+- `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`
+  — re-records only catalog, layout-content, managed-file identity, and plan
+  digest fallout.
+- `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`
+  — re-records only catalog, layout-content, byte-count, managed-file identity,
+  and plan digest fallout.
+- `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`
+  — re-records only catalog, layout-content, byte-count, managed-file identity,
+  and plan digest fallout.
+- `docs/specs/0075-typed-docs-backlog/task_02.md` — the Daemon-owned status
+  transition was pre-existing; this Task adds the required Result and declared
+  break evidence.
+
+### Acceptance-criterion evidence
+
+- `make verify` was not run in this Agent repair turn; the Daemon owns the
+  declared Verification sequence.
+- Every moved path is listed above. Full diff inspection found only backlog
+  layout content, Source Baseline rows/accounting, and their digest or
+  characterization fallout.
+- No path moved outside those declared categories; no Go source changed.
+- The only bootstrap-authored Source Baseline material is the canonical layout
+  content and the two manifest rows named above. Every span, digest, index,
+  formatter fixture, catalog artifact, diagnostic fixture, and plan
+  characterization change traces to the focused update tests named above.
