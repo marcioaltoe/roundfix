@@ -45,7 +45,11 @@ backlog must be defined where the layout is defined.
   deterministic digest fallout of the authorized asset edit; ADR-0092
   (created by this Spec) records the backlog decision. The knowledge-flow
   principle stands: `CONTEXT.md` and guides never reference backlog
-  content, which is downstream and deletable. Source:
+  content, which is downstream and deletable. ADR-0080 owns QA verdict
+  semantics and ADR-0091 owns the authored QA gate as a typed Task node,
+  under which this Spec's own graph is authored. ADR-0093 surfaces as a
+  relation candidate because it cites ADR-0080; it does not apply — it
+  governs the Spec Consistency Check's detection boundary. Source:
   `docs/agents/domain.md`.
 - Tooling authority: not applicable — no Makefile, workflow, skill, or pin
   changes; the surface is Baseline module assets, the generated guide, and
