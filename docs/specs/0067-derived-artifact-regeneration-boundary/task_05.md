@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0067-derived-artifact-regeneration-boundary
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
