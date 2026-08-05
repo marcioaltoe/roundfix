@@ -5,8 +5,12 @@ package store
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"syscall"
+	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 const (
@@ -70,4 +74,34 @@ func signalOwnerProcess(pid int, force bool) error {
 // identity token and keep the legacy PID-only owner proof.
 func processStartIdentity(_ context.Context, _ int) (string, error) {
 	return "", ErrOwnerProcessUnsupported
+}
+
+func processTreePIDs(ownerPID int) ([]int, error) {
+	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
+	if err != nil {
+		return nil, fmt.Errorf("read process table: %w", err)
+	}
+	defer func() {
+		_ = windows.CloseHandle(snapshot)
+	}()
+
+	entry := windows.ProcessEntry32{Size: uint32(unsafe.Sizeof(windows.ProcessEntry32{}))}
+	if err := windows.Process32First(snapshot, &entry); err != nil {
+		return nil, fmt.Errorf("read first process table entry: %w", err)
+	}
+	parents := make([]processParent, 0)
+	for {
+		parents = append(parents, processParent{
+			pid:       int(entry.ProcessID),
+			parentPID: int(entry.ParentProcessID),
+		})
+		err := windows.Process32Next(snapshot, &entry)
+		if errors.Is(err, windows.ERROR_NO_MORE_FILES) {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("read process table entry: %w", err)
+		}
+	}
+	return descendantProcessPIDs(ownerPID, parents), nil
 }
