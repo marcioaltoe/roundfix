@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0068-spec-close-audit
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
@@ -10,13 +10,12 @@ complexity: high
 
 ## Overview
 
-The authored terminal gate. The Daemon executes `qa-gate` as this node once
-both non-QA leaves settle, producing the dated report, verdict, and typed
+The authored terminal gate. The Daemon executes `qa-gate` as this node once task_08 settles, producing the dated report, verdict, and typed
 blocked-row counts per ADR-0080.
 
 ## Requirements
 
-1. MUST run only after task_05 and task_06 settle `completed`.
+1. MUST run only after task_08 settles `completed`.
 2. MUST exercise the audit as an operator does — against a real Spec in this
    repository and against fixtures for each survivor kind — rather than by
    reading tests.
@@ -29,7 +28,7 @@ blocked-row counts per ADR-0080.
 
 ## Acceptance Criteria
 
-- [ ] The gate runs only after both leaves settle `completed`.
+- [ ] The gate runs only after task_08 settles `completed`.
 - [ ] A dated QA report lands under `qa/` with a machine-readable verdict and
       typed blocked-row counts.
 - [ ] The report records Git state unchanged across an audit run.

@@ -615,6 +615,39 @@ Never substitute manual Git deletion for this supported workflow. Do not run
 directory by hand. The Reconcile Command owns safety proof, evidence recording,
 the guarded Integration Pending transition, and cleanup.
 
+## Spec close audit
+
+Use the read-only Spec Audit Command after merge and sync to inspect one active
+or archived Spec by slug:
+
+```bash
+roundfix spec audit <slug>
+roundfix spec audit <slug> --format json
+```
+
+The `<slug>` argument is required. `--format text` is the default and reports
+surviving branches and worktrees with their classification evidence, residue
+reclaim commands, and any undelivered artifacts with the branch that holds
+them. `--format json` emits one `roundfix-specaudit/v1` object with the same
+result.
+
+Every survivor has one of four kinds:
+
+| Kind | Meaning |
+| --- | --- |
+| `pull-request` | The survivor backs an open Pull Request. |
+| `pending` | The survivor holds unintegrated work. |
+| `residue` | Git evidence says the survivor is safe to reclaim; the report includes the exact reclaim command. |
+| `preserved` | The survivor must remain intact: an Active Run owns it, its state is unpushed or shared, or the audit could not classify it. |
+
+The audit reports and never reclaims: it does not change Git state, the Run
+Database, or Spec artifacts. A reclaim command in the report is an operator
+action, not an action the audit performs.
+
+Exit `0` means no residue or undelivered work was found. Exit `1` means residue
+or undelivered work was found, or the audit could not run. Exit `2` means a
+usage error or an unknown Spec slug.
+
 ## Stopping Runs
 
 Use `roundfix stop` for a graceful stop. Every selector keeps its existing

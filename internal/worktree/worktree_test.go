@@ -913,6 +913,36 @@ func TestInspectTerminalRunSafe(t *testing.T) {
 	}
 }
 
+func TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "reconcile-safe-deleted-target")
+	fixture.run.LocalBranch = "ma/reconcile-safe-deleted-target"
+	runHead := fixture.commitRunChange(t, "shared.txt", "squash-merged\n")
+	gitWorktreeTest(t, fixture.repoDir, "branch", fixture.run.LocalBranch, fixture.ref.Branch)
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--squash", fixture.run.LocalBranch)
+	gitWorktreeTest(t, fixture.repoDir, "commit", "-m", "squash merge deleted target")
+	commitWorktreeFile(t, fixture.repoDir, "default-only.txt", "newer default work\n", "advance default branch")
+	defaultHead := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main"))
+	gitWorktreeTest(t, fixture.repoDir, "branch", "-D", fixture.run.LocalBranch)
+
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+
+	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationSafe)
+	if result.RunHead != runHead || result.TargetHead != defaultHead {
+		t.Fatalf("expected Run head %s and default head %s, got Run=%q target=%q", runHead, defaultHead, result.RunHead, result.TargetHead)
+	}
+	if runHead == defaultHead {
+		t.Fatalf("expected squash merge to replace Run commit %s with a different default-branch commit", runHead)
+	}
+	if !strings.Contains(result.Reason, `default branch "main"`) || !strings.Contains(result.Reason, "fully represented") {
+		t.Fatalf("expected safe reason to name the deciding content evidence, got %q", result.Reason)
+	}
+}
+
 func TestInspectTerminalRunConcurrentSafe(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -990,6 +1020,113 @@ func TestInspectTerminalRunUnintegrated(t *testing.T) {
 	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationUnintegrated)
 	if result.RunHead != runHead || result.TargetHead != targetHead {
 		t.Fatalf("expected Run head %s and target head %s, got Run=%q target=%q", runHead, targetHead, result.RunHead, result.TargetHead)
+	}
+}
+
+func TestInspectTerminalRunUnintegratedWhenDeletedTargetHasRunOnlyFile(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "reconcile-unintegrated-deleted-target-run-only")
+	fixture.run.LocalBranch = "ma/reconcile-unintegrated-deleted-target-run-only"
+	fixture.commitRunChange(t, "shared.txt", "represented\n")
+	runHead := fixture.commitRunChange(t, "run-only.txt", "preserve me\n")
+	gitWorktreeTest(t, fixture.repoDir, "branch", fixture.run.LocalBranch, fixture.ref.Branch)
+	mustWriteWorktreeTest(t, filepath.Join(fixture.repoDir, "shared.txt"), "represented\n")
+	gitWorktreeTest(t, fixture.repoDir, "add", "shared.txt")
+	gitWorktreeTest(t, fixture.repoDir, "commit", "-m", "partial squash content")
+	defaultHead := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main"))
+	gitWorktreeTest(t, fixture.repoDir, "branch", "-D", fixture.run.LocalBranch)
+
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+
+	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationUnintegrated)
+	if result.RunHead != runHead || result.TargetHead != defaultHead {
+		t.Fatalf("expected Run head %s and default head %s, got Run=%q target=%q", runHead, defaultHead, result.RunHead, result.TargetHead)
+	}
+	if !strings.Contains(result.Reason, `default branch "main"`) || !strings.Contains(result.Reason, "1 Run-only file") {
+		t.Fatalf("expected unintegrated reason to name the deciding Run-only evidence, got %q", result.Reason)
+	}
+}
+
+func TestInspectTerminalRunUnintegratedWhenDeletedTargetHasDifferentSharedFile(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "reconcile-unintegrated-deleted-target-shared")
+	fixture.run.LocalBranch = "ma/reconcile-unintegrated-deleted-target-shared"
+	runHead := fixture.commitRunChange(t, "shared.txt", "Run content\n")
+	gitWorktreeTest(t, fixture.repoDir, "branch", fixture.run.LocalBranch, fixture.ref.Branch)
+	mustWriteWorktreeTest(t, filepath.Join(fixture.repoDir, "shared.txt"), "default content\n")
+	gitWorktreeTest(t, fixture.repoDir, "add", "shared.txt")
+	gitWorktreeTest(t, fixture.repoDir, "commit", "-m", "different squash content")
+	defaultHead := strings.TrimSpace(gitWorktreeTest(t, fixture.repoDir, "rev-parse", "main"))
+	gitWorktreeTest(t, fixture.repoDir, "branch", "-D", fixture.run.LocalBranch)
+
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+
+	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationUnintegrated)
+	if result.RunHead != runHead || result.TargetHead != defaultHead {
+		t.Fatalf("expected Run head %s and default head %s, got Run=%q target=%q", runHead, defaultHead, result.RunHead, result.TargetHead)
+	}
+	if !strings.Contains(result.Reason, `default branch "main"`) || !strings.Contains(result.Reason, "1 differing shared file") {
+		t.Fatalf("expected unintegrated reason to name the deciding shared-file evidence, got %q", result.Reason)
+	}
+}
+
+func TestInspectTerminalRunUnintegratedWhenDeletedTargetRetainsRunDeletedFile(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "reconcile-unintegrated-deleted-target-retained-deletion")
+	fixture.run.LocalBranch = "ma/reconcile-unintegrated-deleted-target-retained-deletion"
+	gitWorktreeTest(t, fixture.ref.Path, "rm", "run.txt")
+	gitWorktreeTest(t, fixture.ref.Path, "commit", "-m", "delete tracked Run file")
+	runHead := strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", "HEAD"))
+	gitWorktreeTest(t, fixture.repoDir, "branch", fixture.run.LocalBranch, fixture.ref.Branch)
+	defaultHead := commitWorktreeFile(t, fixture.repoDir, "default-only.txt", "newer default work\n", "advance default branch")
+	gitWorktreeTest(t, fixture.repoDir, "branch", "-D", fixture.run.LocalBranch)
+
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+
+	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationUnintegrated)
+	if result.RunHead != runHead || result.TargetHead != defaultHead {
+		t.Fatalf("expected Run head %s and default head %s, got Run=%q target=%q", runHead, defaultHead, result.RunHead, result.TargetHead)
+	}
+	if !strings.Contains(result.Reason, `default branch "main"`) ||
+		!strings.Contains(result.Reason, "1 Run-deleted file retained by default") {
+		t.Fatalf("expected unintegrated reason to name the retained Run deletion, got %q", result.Reason)
+	}
+}
+
+func TestInspectTerminalRunUnintegratedWhenDeletedTargetContentComparisonFails(t *testing.T) {
+	t.Parallel()
+	fixture := newTerminalRunFixture(t, "reconcile-unintegrated-deleted-target-comparison")
+	fixture.run.LocalBranch = "ma/reconcile-unintegrated-deleted-target-comparison"
+	runner := &recordingGitRunner{
+		delegate: execGitRunner{},
+		fail: func(_ string, args []string) error {
+			if len(args) != 0 && args[0] == "diff" {
+				return errors.New("injected content comparison failure")
+			}
+			return nil
+		},
+	}
+
+	result, err := inspectTerminalRun(context.Background(), runner, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+
+	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationUnintegrated)
+	if !strings.Contains(result.Reason, "could not prove integration") || !strings.Contains(result.Reason, `default branch "main"`) {
+		t.Fatalf("expected comparison failure reason to preserve ambiguous Run content, got %q", result.Reason)
 	}
 }
 
@@ -1327,6 +1464,52 @@ func TestInspectTerminalRunUnknownMissingTarget(t *testing.T) {
 	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationUnknown)
 	if result.RunHead != runHead || result.TargetHead != "" {
 		t.Fatalf("expected only Run head %s to resolve, got Run=%q target=%q", runHead, result.RunHead, result.TargetHead)
+	}
+}
+
+func TestInspectTerminalRunUnknownWhenDeletedTargetDefaultBranchCannotBeResolved(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "reconcile-unknown-deleted-target-default")
+	fixture.run.LocalBranch = "ma/reconcile-unknown-deleted-target-default"
+	gitWorktreeTest(t, fixture.repoDir, "checkout", "--detach")
+
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+
+	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationUnknown)
+	if result.TargetHead != "" {
+		t.Fatalf("expected unresolved default branch to leave target head empty, got %q", result.TargetHead)
+	}
+	if result.Reason != reconciliationReasonTargetBranch {
+		t.Fatalf("expected existing unresolvable-target refusal, got %q", result.Reason)
+	}
+}
+
+func TestInspectTerminalRunActiveRunDoesNotInspectDeletedTargetContent(t *testing.T) {
+	t.Parallel()
+	fixture := newTerminalRunFixture(t, "reconcile-active-deleted-target")
+	fixture.run.State = store.StateActive
+	fixture.run.LocalBranch = "ma/reconcile-active-deleted-target"
+	before := fixture.run
+	runner := &recordingGitRunner{delegate: execGitRunner{}}
+
+	result, err := inspectTerminalRun(context.Background(), runner, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect Active Run: %v", err)
+	}
+
+	assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationUnknown)
+	if fixture.run != before {
+		t.Fatalf("expected Active Run fixture to remain untouched, before=%#v after=%#v", before, fixture.run)
+	}
+	if len(runner.calls) != 1 || !slices.Equal(runner.calls[0], []string{"rev-parse", "--show-toplevel"}) {
+		t.Fatalf("expected Active Run guard before reconciliation Git inspection, got calls %v", runner.calls)
+	}
+	if len(runner.mutations) != 0 {
+		t.Fatalf("expected Active Run guard to perform no Git mutations, got %v", runner.mutations)
 	}
 }
 

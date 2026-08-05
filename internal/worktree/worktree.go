@@ -18,6 +18,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
 )
@@ -508,9 +509,13 @@ func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (R
 		result.RunHead, runHeadErr = resolveUnambiguousLocalBranch(ctx, runner, gitRoot, result.Branch)
 	}
 	targetMetadataValid := validLocalBranch(ctx, runner, gitRoot, result.TargetBranch)
+	targetBranchPresent := false
 	var targetHeadErr error
 	if targetMetadataValid {
-		result.TargetHead, targetHeadErr = resolveUnambiguousLocalBranch(ctx, runner, gitRoot, result.TargetBranch)
+		targetBranchPresent, targetHeadErr = localBranchExists(ctx, runner, gitRoot, result.TargetBranch)
+		if targetHeadErr == nil && targetBranchPresent {
+			result.TargetHead, targetHeadErr = resolveUnambiguousLocalBranch(ctx, runner, gitRoot, result.TargetBranch)
+		}
 	}
 
 	if worktreePresent {
@@ -538,7 +543,22 @@ func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (R
 		result.Reason = reconciliationReasonTargetMetadata
 		return result, nil
 	}
-	if targetHeadErr != nil || result.TargetHead == "" {
+	if targetHeadErr != nil {
+		result.Reason = reconciliationReasonTargetBranch
+		return result, nil
+	}
+	if !targetBranchPresent {
+		return inspectDeletedTargetRunByContent(
+			ctx,
+			runner,
+			run,
+			gitRoot,
+			result,
+			worktreePresent,
+			runBranchPresent,
+		), nil
+	}
+	if result.TargetHead == "" {
 		result.Reason = reconciliationReasonTargetBranch
 		return result, nil
 	}
@@ -577,6 +597,189 @@ func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (R
 	return result, nil
 }
 
+type preflightGitRunner struct {
+	runner gitRunner
+}
+
+func (adapter preflightGitRunner) RunGit(ctx context.Context, workDir string, args ...string) (string, error) {
+	return adapter.runner.Run(ctx, workDir, args...)
+}
+
+func inspectDeletedTargetRunByContent(
+	ctx context.Context,
+	runner gitRunner,
+	run store.Run,
+	gitRoot string,
+	result RunWorktreeReconciliation,
+	worktreePresent bool,
+	runBranchPresent bool,
+) RunWorktreeReconciliation {
+	currentBranchOutput, currentBranchErr := runner.Run(ctx, gitRoot, "symbolic-ref", "--quiet", "--short", "HEAD")
+	currentBranch := ""
+	if currentBranchErr == nil {
+		currentBranch = strings.TrimSpace(currentBranchOutput)
+	}
+	defaultBranch := preflight.DetectDefaultBranch(ctx, gitRoot, currentBranch, preflightGitRunner{runner: runner})
+	if defaultBranch.Source == preflight.DefaultBranchUndetermined ||
+		!validLocalBranch(ctx, runner, gitRoot, defaultBranch.Name) {
+		result.Reason = reconciliationReasonTargetBranch
+		return result
+	}
+
+	defaultHead, err := resolveUnambiguousLocalBranch(ctx, runner, gitRoot, defaultBranch.Name)
+	if err != nil || defaultHead == "" {
+		result.Reason = reconciliationReasonTargetBranch
+		return result
+	}
+	result.TargetHead = defaultHead
+
+	runOnly, differingShared, retainedRunDeletions, proven := compareRunContentToDefault(
+		ctx,
+		runner,
+		gitRoot,
+		result.RunHead,
+		defaultHead,
+	)
+	if !proven {
+		result.State = ReconciliationUnintegrated
+		result.Reason = boundedReconciliationReason(fmt.Sprintf(
+			"Run Branch content comparison could not prove integration against default branch %q",
+			defaultBranch.Name,
+		))
+		return result
+	}
+	if runOnly != 0 || differingShared != 0 || retainedRunDeletions != 0 {
+		var evidence []string
+		if runOnly != 0 {
+			evidence = append(evidence, fmt.Sprintf("%d Run-only file%s", runOnly, pluralSuffix(runOnly)))
+		}
+		if differingShared != 0 {
+			evidence = append(evidence, fmt.Sprintf(
+				"%d differing shared file%s",
+				differingShared,
+				pluralSuffix(differingShared),
+			))
+		}
+		if retainedRunDeletions != 0 {
+			evidence = append(evidence, fmt.Sprintf(
+				"%d Run-deleted file%s retained by default",
+				retainedRunDeletions,
+				pluralSuffix(retainedRunDeletions),
+			))
+		}
+		result.State = ReconciliationUnintegrated
+		result.Reason = boundedReconciliationReason(fmt.Sprintf(
+			"Run Branch content is not fully represented: %s against default branch %q",
+			strings.Join(evidence, ", "),
+			defaultBranch.Name,
+		))
+		return result
+	}
+
+	result.State = ReconciliationSafe
+	result.Reason = boundedReconciliationReason(fmt.Sprintf(
+		"Run Branch content is fully represented on default branch %q",
+		defaultBranch.Name,
+	))
+	result.evidence = newTerminalRunReconciliationEvidence(
+		run,
+		gitRoot,
+		result,
+		worktreePresent,
+		runBranchPresent,
+	)
+	return result
+}
+
+func compareRunContentToDefault(
+	ctx context.Context,
+	runner gitRunner,
+	gitRoot string,
+	runHead string,
+	defaultHead string,
+) (runOnly int, differingShared int, retainedRunDeletions int, proven bool) {
+	runOnlyOutput, err := runner.Run(
+		ctx,
+		gitRoot,
+		"diff",
+		"--name-only",
+		"-z",
+		"--no-renames",
+		"--diff-filter=D",
+		runHead,
+		defaultHead,
+		"--",
+	)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	differingSharedOutput, err := runner.Run(
+		ctx,
+		gitRoot,
+		"diff",
+		"--name-only",
+		"-z",
+		"--no-renames",
+		"--diff-filter=MT",
+		runHead,
+		defaultHead,
+		"--",
+	)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	mergeBaseOutput, err := runner.Run(ctx, gitRoot, "merge-base", runHead, defaultHead)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	mergeBase := strings.TrimSpace(mergeBaseOutput)
+	if mergeBase == "" {
+		return 0, 0, 0, false
+	}
+	runDeletedOutput, err := runner.Run(
+		ctx,
+		gitRoot,
+		"diff",
+		"--name-only",
+		"-z",
+		"--no-renames",
+		"--diff-filter=D",
+		mergeBase,
+		runHead,
+		"--",
+	)
+	if err != nil {
+		return 0, 0, 0, false
+	}
+	runDeleted := nonEmptyNULTerms(runDeletedOutput)
+	if len(runDeleted) != 0 {
+		defaultTreeOutput, err := runner.Run(ctx, gitRoot, "ls-tree", "-r", "--name-only", "-z", defaultHead)
+		if err != nil {
+			return 0, 0, 0, false
+		}
+		defaultPaths := make(map[string]struct{})
+		for _, path := range nonEmptyNULTerms(defaultTreeOutput) {
+			defaultPaths[path] = struct{}{}
+		}
+		for _, path := range runDeleted {
+			if _, retained := defaultPaths[path]; retained {
+				retainedRunDeletions++
+			}
+		}
+	}
+	return len(nonEmptyNULTerms(runOnlyOutput)),
+		len(nonEmptyNULTerms(differingSharedOutput)),
+		retainedRunDeletions,
+		true
+}
+
+func pluralSuffix(count int) string {
+	if count == 1 {
+		return ""
+	}
+	return "s"
+}
+
 func supersededReconciliationReason(report string) string {
 	reason := reconciliationReasonSupersededPrefix + strings.Map(func(char rune) rune {
 		if char == '\r' || char == '\n' {
@@ -584,6 +787,10 @@ func supersededReconciliationReason(report string) string {
 		}
 		return char
 	}, report)
+	return boundedReconciliationReason(reason)
+}
+
+func boundedReconciliationReason(reason string) string {
 	if len(reason) <= reconciliationReasonMaxBytes {
 		return reason
 	}
