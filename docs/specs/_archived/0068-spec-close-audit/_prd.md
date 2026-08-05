@@ -1,9 +1,12 @@
 ---
 spec: 0068-spec-close-audit
-status: active
+status: archived
 created: 2026-08-02
 surfaces: [backend, cli, docs]
+archived: "2026-08-04"
+source_slug: 0068-spec-close-audit
 ---
+
 
 # Spec close audit
 
