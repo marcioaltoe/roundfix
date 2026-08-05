@@ -791,6 +791,129 @@ func TestEvidenceHierarchyPrecedence(t *testing.T) {
 	}
 }
 
+func TestEvidenceRefusalClassTable(t *testing.T) {
+	t.Parallel()
+	const rateLimitComment = `<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->
+
+> [!WARNING]
+> ## Review limit reached
+>
+> You’ve reached a temporary PR review limit under our Fair Usage Limits Policy.`
+	tests := []struct {
+		name       string
+		checkRuns  []CheckRun
+		statuses   []CommitStatus
+		comments   []IssueComment
+		wantReason string
+	}{
+		{
+			name:       "rate limit",
+			statuses:   []CommitStatus{{Context: "CodeRabbit", State: "success", Description: "Review rate limited"}},
+			comments:   []IssueComment{{Author: coderabbitBotLogin, Body: rateLimitComment}},
+			wantReason: "Review limit reached",
+		},
+		{
+			name:       "rate limit title case",
+			statuses:   []CommitStatus{{Context: "CodeRabbit", State: "success", Description: "Review Rate Limited"}},
+			comments:   []IssueComment{{Author: coderabbitBotLogin, Body: rateLimitComment}},
+			wantReason: "Review limit reached",
+		},
+		{
+			name: "path filter skip",
+			checkRuns: []CheckRun{{
+				DatabaseID:    61,
+				Name:          "CodeRabbit",
+				AppName:       "CodeRabbit",
+				HeadSHA:       "abc123",
+				Status:        "completed",
+				Conclusion:    "success",
+				OutputTitle:   "Review skipped",
+				OutputSummary: "Review skipped because all files are excluded by path filters.",
+			}},
+			wantReason: "Review skipped because all files are excluded by path filters.",
+		},
+		{
+			name: "path filter skip title case",
+			checkRuns: []CheckRun{{
+				DatabaseID:    62,
+				Name:          "CodeRabbit",
+				AppName:       "CodeRabbit",
+				HeadSHA:       "abc123",
+				Status:        "completed",
+				Conclusion:    "success",
+				OutputTitle:   "Review Skipped",
+				OutputSummary: "Review skipped because all files are excluded by path filters.",
+			}},
+			wantReason: "Review skipped because all files are excluded by path filters.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := Client{GitHub: &fakeGitHubClient{
+				checkRuns: tt.checkRuns,
+				statuses:  tt.statuses,
+				issues:    tt.comments,
+			}}
+
+			evidence, err := client.Evidence(context.Background(), evidenceRequest())
+			if err != nil {
+				t.Fatalf("classify refusal evidence: %v", err)
+			}
+			if evidence.State != reviewsource.EvidenceSkipped {
+				t.Fatalf("refusal evidence = %#v, want state %q", evidence, reviewsource.EvidenceSkipped)
+			}
+			if evidence.Reason != tt.wantReason {
+				t.Fatalf("reason = %q, want %q", evidence.Reason, tt.wantReason)
+			}
+			if evidence.Detail != tt.wantReason {
+				t.Fatalf("detail = %q, want verbatim refusal reason %q", evidence.Detail, tt.wantReason)
+			}
+		})
+	}
+}
+
+func TestEvidenceRefusalReasonIsBoundedVerbatim(t *testing.T) {
+	t.Parallel()
+	reason := "Review skipped: " + strings.Repeat("path-filter reason ", reviewsource.MaxEvidenceDetailLength)
+	client := Client{GitHub: &fakeGitHubClient{
+		checkRuns: []CheckRun{{
+			DatabaseID:    63,
+			Name:          "CodeRabbit",
+			AppName:       "CodeRabbit",
+			HeadSHA:       "abc123",
+			Status:        "completed",
+			Conclusion:    "success",
+			OutputTitle:   "Review skipped",
+			OutputSummary: reason,
+		}},
+	}}
+
+	evidence, err := client.Evidence(context.Background(), evidenceRequest())
+	if err != nil {
+		t.Fatalf("classify bounded refusal evidence: %v", err)
+	}
+	want := reviewsource.BoundEvidenceDetail(reason)
+	if evidence.Reason != want || evidence.Detail != want {
+		t.Fatalf("bounded refusal evidence = %#v, want reason and detail %q", evidence, want)
+	}
+}
+
+func TestEvidenceRateLimitWithoutAuthoritativeCommentStaysPending(t *testing.T) {
+	t.Parallel()
+	client := Client{GitHub: &fakeGitHubClient{
+		statuses: []CommitStatus{{Context: "CodeRabbit", State: "success", Description: "Review rate limited"}},
+	}}
+
+	evidence, err := client.Evidence(context.Background(), evidenceRequest())
+	if err != nil {
+		t.Fatalf("classify rate-limit status without comment: %v", err)
+	}
+	if evidence.State != reviewsource.EvidencePending || evidence.Kind != reviewsource.EvidenceKindCommitStatus {
+		t.Fatalf("green rate-limit status without authoritative comment = %#v, want pending commit status", evidence)
+	}
+}
+
 func TestEvidenceReviewingSkipsReviewAndThreadRequests(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -864,11 +987,39 @@ func TestEvidenceExpectedHeadRejectsUnboundAndStaleSignals(t *testing.T) {
 	}
 }
 
+func TestEvidenceRefusalForStaleHeadDoesNotSettleCurrentHead(t *testing.T) {
+	t.Parallel()
+	client := Client{GitHub: &fakeGitHubClient{
+		checkRuns: []CheckRun{{
+			DatabaseID:    53,
+			Name:          "CodeRabbit",
+			AppName:       "CodeRabbit",
+			HeadSHA:       "oldsha",
+			Status:        "completed",
+			Conclusion:    "success",
+			OutputTitle:   "Review skipped",
+			OutputSummary: "Review skipped because all files are excluded by path filters.",
+		}},
+	}}
+
+	evidence, err := client.Evidence(context.Background(), evidenceRequest())
+	if err != nil {
+		t.Fatalf("classify stale refusal evidence: %v", err)
+	}
+	if evidence.State != reviewsource.EvidencePending || evidence.Kind != reviewsource.EvidenceKindNone {
+		t.Fatalf("stale refusal settled expected head: %#v", evidence)
+	}
+	if evidence.ExpectedHeadSHA != "abc123" || evidence.ObservedHeadSHA != "oldsha" {
+		t.Fatalf("expected stale-head detail, got %#v", evidence)
+	}
+}
+
 func TestEvidenceRecordedCommitStatusCorpus(t *testing.T) {
 	tests := []struct {
 		name     string
 		headSHA  string
 		fixture  string
+		comments []IssueComment
 		want     reviewsource.EvidenceState
 		wantKind reviewsource.EvidenceKind
 	}{
@@ -887,7 +1038,7 @@ func TestEvidenceRecordedCommitStatusCorpus(t *testing.T) {
 			wantKind: reviewsource.EvidenceKindCommitStatus,
 		},
 		{
-			name:    "pull request 107 rate limit stays pending",
+			name:    "pull request 107 rate limit is skipped",
 			headSHA: "c6c14bece33bddf153c81c16029a97537f94d7c9",
 			fixture: `{
 				"state": "success",
@@ -897,7 +1048,15 @@ func TestEvidenceRecordedCommitStatusCorpus(t *testing.T) {
 					"context": "CodeRabbit"
 				}]
 			}`,
-			want:     reviewsource.EvidencePending,
+			comments: []IssueComment{{
+				Author: coderabbitBotLogin,
+				Body: `<!-- This is an auto-generated comment: summarize by coderabbit.ai -->
+<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->
+
+> [!WARNING]
+> ## Review limit reached`,
+			}},
+			want:     reviewsource.EvidenceSkipped,
 			wantKind: reviewsource.EvidenceKindCommitStatus,
 		},
 	}
@@ -912,9 +1071,13 @@ func TestEvidenceRecordedCommitStatusCorpus(t *testing.T) {
 			if err != nil {
 				t.Fatalf("map recorded commit status: %v", err)
 			}
-			evidence := classifyEvidence(tt.headSHA, nil, statuses, nil, nil)
+			evidence := classifyEvidence(tt.headSHA, nil, statuses, tt.comments, nil, nil)
 			if evidence.State != tt.want || evidence.Kind != tt.wantKind {
 				t.Fatalf("evidence = %#v, want state %q kind %q", evidence, tt.want, tt.wantKind)
+			}
+			if tt.want == reviewsource.EvidenceSkipped &&
+				(evidence.Reason != "Review limit reached" || evidence.Detail != "Review limit reached") {
+				t.Fatalf("refusal evidence = %#v, want verbatim rate-limit reason", evidence)
 			}
 		})
 	}
@@ -1052,6 +1215,37 @@ func TestCheckRunOutputJSONMapping(t *testing.T) {
 	if strings.Contains(string(encoded), sensitiveText) {
 		t.Fatalf("check run retained raw output text: %s", encoded)
 	}
+}
+
+func TestIssueCommentsMapGitHubRateLimitCommentJSON(t *testing.T) {
+	fixture := `[{
+		"id": 5182301262,
+		"body": "<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->\\n\\n> ## Review limit reached",
+		"user": {"login": "coderabbitai[bot]"}
+	}]`
+	var calls [][]string
+	withRunGH(t, func(_ context.Context, args ...string) ([]byte, error) {
+		calls = append(calls, append([]string(nil), args...))
+		return []byte(fixture), nil
+	})
+
+	comments, err := (GHClient{}).IssueComments(context.Background(), "marcioaltoe/roundfix", "107")
+	if err != nil {
+		t.Fatalf("map issue comments: %v", err)
+	}
+	if len(comments) != 1 {
+		t.Fatalf("issue comment count = %d, want 1", len(comments))
+	}
+	if comments[0].DatabaseID != 5182301262 || comments[0].Author != coderabbitBotLogin ||
+		!strings.Contains(comments[0].Body, "Review limit reached") {
+		t.Fatalf("issue comment = %#v, want recorded CodeRabbit refusal", comments[0])
+	}
+	if len(calls) != 1 {
+		t.Fatalf("gh calls = %#v, want one issue-comment request", calls)
+	}
+	assertStringSlicesEqual(t, calls[0], []string{
+		"api", "--paginate", "repos/marcioaltoe/roundfix/issues/107/comments",
+	})
 }
 
 func TestSkipSignalStructuredOutputRemainsAvailable(t *testing.T) {
@@ -1199,6 +1393,7 @@ func evidenceRequest() reviewsource.EvidenceRequest {
 
 type fakeGitHubClient struct {
 	comments          []ReviewComment
+	issues            []IssueComment
 	threads           []ReviewThread
 	checkRuns         []CheckRun
 	checkRunsErr      error
@@ -1214,6 +1409,10 @@ type fakeGitHubClient struct {
 
 func (client fakeGitHubClient) ReviewComments(context.Context, string, string) ([]ReviewComment, error) {
 	return client.comments, nil
+}
+
+func (client fakeGitHubClient) IssueComments(context.Context, string, string) ([]IssueComment, error) {
+	return client.issues, nil
 }
 
 func (client fakeGitHubClient) ReviewThreads(context.Context, string, string) ([]ReviewThread, error) {

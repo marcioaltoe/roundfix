@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0077-a-green-check-is-not-a-review
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -72,3 +72,63 @@ with the reason preserved. It explains the stall; it does not create it.
 - `_prd.md` → Core Features 1, 3 and 5; Success Metrics 1, 2 and 4.
 - `_techspec.md` → Interfaces; Build Order 2.
 - ADR-0054.
+
+## Result
+
+Implementation:
+
+- Added refusal-first classification for the documented CodeRabbit shapes. A
+  structured `Review skipped` check preserves its bounded output reason, while a
+  rate-limit status resolves only when CodeRabbit's authoritative rate-limit
+  comment marker supplies the refusal reason.
+- Added bounded GitHub issue-comment ingestion only for current-head
+  rate-limit-shaped signals. The green status without that authoritative comment
+  remains `pending`, preserving task_01's closed default.
+- Made skipped evidence detail equal the bounded source reason and retained the
+  same reason in `Evidence.Reason` for both check-run and commit-status refusals.
+- Added the refusal class table, the recorded Pull Request #107 status/comment
+  replay, the negative missing-comment case, and stale-head isolation at the
+  existing CodeRabbit classifier seam.
+
+Focused checks:
+
+- Before implementation,
+  `rtk env GOCACHE=<worktree>/.gocache go test ./internal/reviewsource/coderabbit -count=1 -run '^TestEvidenceRefusal'`
+  exited 1 because `IssueComment` and the comment-aware classifier did not exist.
+- `rtk env GOCACHE=<worktree>/.gocache go test ./internal/reviewsource/coderabbit -count=1`
+  — exit 0; the complete CodeRabbit package suite passed after implementation.
+- `rtk env GOCACHE=<worktree>/.gocache go test ./internal/reviewsource/coderabbit -count=1 -run '^(TestEvidenceHierarchyPrecedence|TestEvidenceRefusalClassTable|TestEvidenceRefusalReasonIsBoundedVerbatim|TestEvidenceRateLimitWithoutAuthoritativeCommentStaysPending|TestEvidenceExpectedHeadRejectsUnboundAndStaleSignals|TestEvidenceRefusalForStaleHeadDoesNotSettleCurrentHead|TestEvidenceRecordedCommitStatusCorpus|TestIssueCommentsMapGitHubRateLimitCommentJSON)$'`
+  — exit 0 after the last implementation edit.
+- `rtk proxy git -c core.fsmonitor=false diff --check` — exit 0 after the last
+  implementation edit.
+- Public Pull Request #107 inspection confirmed the recorded head
+  `c6c14bece33bddf153c81c16029a97537f94d7c9`, commit status
+  `CodeRabbit` / `success` / `Review rate limited`, CodeRabbit rate-limit comment
+  marker, and `Review limit reached` heading used by the replay.
+
+Acceptance evidence:
+
+1. `TestEvidenceRecordedCommitStatusCorpus/pull_request_107_rate_limit_is_skipped`
+   replays the recorded green status and authoritative comment as `skipped`; both
+   `Evidence.Reason` and `Evidence.Detail` equal `Review limit reached`.
+2. `TestEvidenceRefusalClassTable/path_filter_skip` preserves the existing
+   structured path-filter refusal as `skipped`.
+3. `TestEvidenceRefusalClassTable` covers lower/title-case variants for both the
+   rate-limit and path-filter classes in one table, with identical states and
+   reasons.
+4. The class table asserts the source reason verbatim in `Evidence.Detail`, and
+   `TestEvidenceRefusalReasonIsBoundedVerbatim` asserts the existing detail bound.
+5. `TestEvidenceRefusalForStaleHeadDoesNotSettleCurrentHead` keeps an earlier-head
+   refusal `pending` with no accepted evidence kind and records the old observed
+   head.
+6. The complete package suite passed with task_01's completion/default-deny and
+   recorded corpus coverage; the new negative missing-comment case stays
+   `pending`, and refusal recognition adds only `skipped` outcomes.
+7. Diff inspection found no retry, re-request, backoff, capacity wait, or other
+   follow-on policy; the changes are limited to signal ingestion,
+   classification, and tests.
+
+Declared `## Verification` commands were not run; the Daemon owns them.
+
+Follow-ups: retry and re-request policy remains deferred to the follow-on Spec;
+no part of it is included in this diff.
