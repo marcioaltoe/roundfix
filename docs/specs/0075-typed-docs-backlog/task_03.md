@@ -48,7 +48,12 @@ verbatim — which is also the cheapest proof the template is usable.
 - `grep -q "docs/backlog" docs/agents/docs-layout.md` — expected: exit 0.
 - `ls docs/backlog/*.md | grep -q .` — expected: exit 0; the directory holds an
   entry.
-- `head -8 docs/backlog/*.md | grep -qE "^type: (feat|fix|perf|refactor)$"`
+- `head -8 docs/backlog/*.md | grep -qE "^type: (feat|fix|perf|refactor)( +#.*)?$"`
+  — the optional trailing comment is not laxity: the template this Spec adopts
+  documents the enum inline, as `type: perf # feat | fix | perf | refactor`, so
+  an end-anchored pattern rejects the very shape the contract defines. The
+  value is still pinned to the four members at the start of the line. Measured
+  on 2026-08-05: the original pattern failed against a conforming file.
   — expected: exit 0; the entry's type is one of the four.
 - `git diff --name-only HEAD -- docs/findings | grep -q . && exit 1 || exit 0`
   — expected: exit 0; no finding moved.
