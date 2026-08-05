@@ -13,12 +13,16 @@ complexity: medium
 The gate's remaining F-002 is not a wrong premise on either side. It is a model
 that is too coarse.
 
-`internal/baseline/testdata/parity-corpus/` holds fifteen files. The sanctioned
-command rewrites exactly two of them — `v1/manifest.json` and
-`v1/fixtures/asset-sync.json`. The other thirteen, including `blobs.json` and
+`internal/baseline/testdata/parity-corpus/` holds seventeen artifacts. The
+sanctioned command rewrites exactly two of them — `v1/manifest.json` and
+`v1/fixtures/asset-sync.json`. The other fifteen, including `blobs.json` and
 `matrix.json`, it never touches. A single directory-level `owner` is therefore
 false about whichever part it does not describe: `frozen` lies about two files,
-`sanctioned` lies about thirteen.
+`sanctioned` lies about fifteen.
+
+The counts here are `git ls-tree -r` over the directory, excluding the
+ownership record itself. An earlier draft said fifteen and thirteen; those came
+from a truncated listing and the gate caught them.
 
 The maintainer settled this on 2026-08-05: the record gains per-path
 exceptions. The PRD's frozen premise stands for the corpus, and the two derived

@@ -80,7 +80,7 @@ invalid by construction.
 ## Second corrective Task, from the maintainer's decision
 
 The gate's remaining F-002 was neither side being wrong. The parity directory
-holds fifteen files and the sanctioned command rewrites exactly two, so a
+holds seventeen artifacts and the sanctioned command rewrites exactly two, so a
 directory-level owner is false about whichever part it does not describe.
 
 The maintainer settled it on 2026-08-05: records gain per-path exceptions. The
