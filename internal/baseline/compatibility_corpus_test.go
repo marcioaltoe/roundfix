@@ -420,6 +420,10 @@ func assertBaselineCompatibilityArtifacts(t *testing.T, manifest baselineCompati
 		data := readBaselineCompatibilityFile(t, artifact.Path)
 		sum := sha256.Sum256(data)
 		if len(data) != artifact.Bytes || hex.EncodeToString(sum[:]) != artifact.SHA256 {
+			remediation := requireDerivedArtifactRemediation(
+				t,
+				path.Join(baselineCompatibilityRoot, artifact.Path),
+			)
 			t.Fatalf(
 				"artifact %q identity = bytes:%d sha256:%x, want bytes:%d sha256:%s; %s",
 				artifact.Path,
@@ -427,7 +431,7 @@ func assertBaselineCompatibilityArtifacts(t *testing.T, manifest baselineCompati
 				sum,
 				artifact.Bytes,
 				artifact.SHA256,
-				baselineDigestRegenerationHint,
+				remediation,
 			)
 		}
 	}

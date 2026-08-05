@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0067-derived-artifact-regeneration-boundary
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -56,3 +56,56 @@ ownership record and name the actual human action.
 
 - `_prd.md` → Core Feature 4; Goals.
 - `_techspec.md` → API Contracts; Build Order 4.
+
+## Result
+
+### Implementation
+
+- Added ownership-backed remediation lookup for derived artifacts. The lookup
+  resolves and reads the governing `_ownership.yml`, then formats one action
+  for its declared `sanctioned`, `dedicated`, or `frozen` owner.
+- Kept the sanctioned remediation text `run 'make baseline-digests'` unchanged.
+  Dedicated remediation now includes the record's exact `command` and path;
+  frozen remediation says that nothing regenerates the artifact and includes
+  the record's reason and path.
+- Routed stale plan-characterization failures and frozen parity-corpus identity
+  failures through the ownership-backed remediation. The Makefile and ownership
+  records remain unchanged in this slice.
+
+### Focused checks
+
+- Before the implementation, `rtk env
+  GOCACHE=/Users/marcio/.roundfix/worktrees/wt67run-dee297f2/run_20260805T050602Z_bfee71697528c7d7/.gocache
+  go test ./internal/baseline -count=1 -run
+  '^TestDerivedOwnershipRemediationDiagnostics$'` exited 1 because
+  `derivedArtifactRemediation` was undefined. This was the red starting signal.
+- After the final code edit, `rtk env
+  GOCACHE=/Users/marcio/.roundfix/worktrees/wt67run-dee297f2/run_20260805T050602Z_bfee71697528c7d7/.gocache
+  go test ./internal/baseline -count=1 -run
+  '^(TestBaselinePlanCharacterization|TestBaselineCompatibilityCorpus|TestDerivedOwnershipRemediation.*)$'`
+  exited 0 (`ok roundfix/internal/baseline`, 1.831s). This exercised the two
+  changed failure-owning suites plus owner-class and unowned-artifact
+  remediation checks.
+- `rtk git -c core.fsmonitor=false diff --check` exited 0 with no output.
+
+### Acceptance evidence
+
+1. `TestDerivedOwnershipRemediationDiagnostics/dedicated_plan_characterization`
+   reads the repository's dedicated record and asserts that remediation contains
+   both its exact `command` and
+   `testdata/plan-characterization/_ownership.yml`. The stale-golden failure
+   now uses that lookup.
+2. `TestDerivedOwnershipRemediationDiagnostics/sanctioned_setup` asserts exact
+   equality with the pre-existing `run 'make baseline-digests'` diagnostic;
+   the existing sanctioned call sites continue to read that same constant.
+3. `TestDerivedOwnershipRemediationDiagnostics/frozen_parity_corpus` asserts
+   that remediation says `nothing regenerates this artifact` and contains both
+   `testdata/parity-corpus/_ownership.yml` and its recorded reason. The parity
+   identity failure now emits that result instead of the sanctioned command.
+4. The owner-class table rejects the sanctioned command for `dedicated` and
+   `frozen`, requires exact sanctioned text for `sanctioned`, and
+   `TestDerivedOwnershipRemediationRejectsUnownedArtifact` proves an
+   unclassified artifact receives no guessed action.
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+that gate and terminal status settlement.

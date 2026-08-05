@@ -1,7 +1,7 @@
 // Suite: derived artifact ownership
-// Invariant: every path in the Makefile's derived scan resolves to exactly one validated ownership record.
-// Boundary IN: DERIVED_DIGEST_PATHS, ownership YAML, and read-only path resolution.
-// Boundary OUT: executing dedicated commands, widening BASELINE_DIGEST_STEPS, and remediation diagnostics.
+// Invariant: every path in the Makefile's derived scan resolves to exactly one validated ownership record and truthful remediation.
+// Boundary IN: DERIVED_DIGEST_PATHS, ownership YAML, read-only path resolution, and remediation diagnostics.
+// Boundary OUT: executing dedicated commands and widening BASELINE_DIGEST_STEPS.
 
 package baseline
 
@@ -118,6 +118,105 @@ func TestDerivedOwnershipValidatesRecords(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDerivedOwnershipRemediationDiagnostics(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		scanRoot   string
+		artifact   string
+		recordPath string
+		owner      derivedOwnershipOwner
+	}{
+		{
+			name:       "sanctioned setup",
+			scanRoot:   "assets/setups",
+			artifact:   "assets/setups/go-cli.json",
+			recordPath: "assets/setups/_ownership.yml",
+			owner:      derivedOwnerSanctioned,
+		},
+		{
+			name:       "dedicated plan characterization",
+			scanRoot:   "testdata",
+			artifact:   "testdata/plan-characterization/clean-adoption.golden.json",
+			recordPath: "testdata/plan-characterization/_ownership.yml",
+			owner:      derivedOwnerDedicated,
+		},
+		{
+			name:       "frozen parity corpus",
+			scanRoot:   "testdata",
+			artifact:   "testdata/parity-corpus/v1/matrix.json",
+			recordPath: "testdata/parity-corpus/_ownership.yml",
+			owner:      derivedOwnerFrozen,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			record, err := readDerivedOwnershipRecord(os.DirFS("."), test.recordPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if record.Owner != test.owner {
+				t.Fatalf("ownership record %q owner = %q, want %q", test.recordPath, record.Owner, test.owner)
+			}
+			got, err := derivedArtifactRemediation(os.DirFS("."), test.scanRoot, test.artifact)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			switch test.owner {
+			case derivedOwnerSanctioned:
+				if got != baselineDigestRegenerationHint {
+					t.Fatalf("sanctioned remediation = %q, want unchanged %q", got, baselineDigestRegenerationHint)
+				}
+			case derivedOwnerDedicated:
+				if !strings.Contains(got, record.Command) || !strings.Contains(got, test.recordPath) {
+					t.Fatalf("dedicated remediation = %q, want command %q and record %q", got, record.Command, test.recordPath)
+				}
+				if strings.Contains(got, baselineDigestRegenerationHint) {
+					t.Fatalf("dedicated remediation = %q, must not suggest sanctioned command", got)
+				}
+			case derivedOwnerFrozen:
+				if !strings.Contains(got, "nothing regenerates this artifact") ||
+					!strings.Contains(got, record.Reason) ||
+					!strings.Contains(got, test.recordPath) {
+					t.Fatalf("frozen remediation = %q, want no regenerator, reason %q, and record %q", got, record.Reason, test.recordPath)
+				}
+				if strings.Contains(got, baselineDigestRegenerationHint) {
+					t.Fatalf("frozen remediation = %q, must not suggest sanctioned command", got)
+				}
+			}
+		})
+	}
+}
+
+func TestDerivedOwnershipRemediationRejectsUnownedArtifact(t *testing.T) {
+	t.Parallel()
+
+	fixture := fstest.MapFS{
+		"derived/artifact.txt": &fstest.MapFile{Data: []byte("artifact\n")},
+	}
+	remediation, err := derivedArtifactRemediation(fixture, "derived", "derived/artifact.txt")
+	if err == nil || !strings.Contains(err.Error(), "zero ownership records") {
+		t.Fatalf("unowned remediation error = %v, want zero ownership records", err)
+	}
+	if remediation != "" {
+		t.Fatalf("unowned remediation = %q, want no guessed action", remediation)
+	}
+}
+
+func requireDerivedArtifactRemediation(t *testing.T, artifactPath string) string {
+	t.Helper()
+
+	remediation, err := derivedArtifactRemediation(os.DirFS("."), "testdata", artifactPath)
+	if err != nil {
+		t.Fatalf("read remediation for derived artifact %q: %v", artifactPath, err)
+	}
+	return remediation
 }
 
 func TestDerivedOwnershipDeclaresKnownBoundaries(t *testing.T) {

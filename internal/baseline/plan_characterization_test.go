@@ -116,15 +116,18 @@ func TestBaselinePlanCharacterization(t *testing.T) {
 			}
 			expected, err := os.ReadFile(goldenPath)
 			if err != nil {
+				remediation := requireDerivedArtifactRemediation(t, filepath.ToSlash(goldenPath))
 				t.Fatalf(
-					"shape %q: read golden %s: %v; regenerate deliberately with -update-baseline-plan-characterization",
+					"shape %q: read golden %s: %v; %s",
 					test.name,
 					goldenPath,
 					err,
+					remediation,
 				)
 			}
 			if err := compareBaselinePlanCharacterization(test.name, expected, actual); err != nil {
-				t.Fatal(err)
+				remediation := requireDerivedArtifactRemediation(t, filepath.ToSlash(goldenPath))
+				t.Fatalf("%v\n%s", err, remediation)
 			}
 		})
 	}
@@ -354,7 +357,7 @@ func compareBaselinePlanCharacterization(shape string, expected, actual []byte) 
 		gotValue = string(actual)
 	}
 	return fmt.Errorf(
-		"shape %q changed at %s:\n- want %s\n+ got  %s\nregenerate deliberately with -update-baseline-plan-characterization",
+		"shape %q changed at %s:\n- want %s\n+ got  %s",
 		shape,
 		path,
 		formatBaselinePlanCharacterizationValue(wantValue),

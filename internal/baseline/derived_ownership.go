@@ -15,6 +15,8 @@ import (
 const (
 	derivedOwnershipYML  = "_ownership.yml"
 	derivedOwnershipYAML = "_ownership.yaml"
+
+	baselineDigestRegenerationHint = "run 'make baseline-digests'"
 )
 
 type derivedOwnershipOwner string
@@ -253,4 +255,57 @@ func derivedOwnershipResolutionError(artifactPath string, recordPaths []string) 
 		artifactPath,
 		strings.Join(recordPaths, ", "),
 	)
+}
+
+func derivedArtifactRemediation(
+	fileSystem fs.FS,
+	scanRoot string,
+	artifactPath string,
+) (string, error) {
+	scanRoot = path.Clean(scanRoot)
+	artifactPath = path.Clean(artifactPath)
+	if !pathWithinDerivedScanRoot(artifactPath, scanRoot) {
+		return "", fmt.Errorf(
+			"derived artifact %q is outside scan root %q",
+			artifactPath,
+			scanRoot,
+		)
+	}
+
+	recordPaths, err := resolveDerivedOwnershipRecordPaths(
+		fileSystem,
+		scanRoot,
+		artifactPath,
+		false,
+	)
+	if err != nil {
+		return "", fmt.Errorf("resolve ownership for derived artifact %q: %w", artifactPath, err)
+	}
+	if len(recordPaths) != 1 {
+		return "", derivedOwnershipResolutionError(artifactPath, recordPaths)
+	}
+
+	recordPath := recordPaths[0]
+	record, err := readDerivedOwnershipRecord(fileSystem, recordPath)
+	if err != nil {
+		return "", err
+	}
+	switch record.Owner {
+	case derivedOwnerSanctioned:
+		return baselineDigestRegenerationHint, nil
+	case derivedOwnerDedicated:
+		return fmt.Sprintf(
+			"run the exact command declared by ownership record %q: %s",
+			recordPath,
+			record.Command,
+		), nil
+	case derivedOwnerFrozen:
+		return fmt.Sprintf(
+			"nothing regenerates this artifact; ownership record %q records why: %s",
+			recordPath,
+			record.Reason,
+		), nil
+	default:
+		return "", fmt.Errorf("ownership record %q has unsupported owner %q", recordPath, record.Owner)
+	}
 }
