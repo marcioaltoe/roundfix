@@ -45,7 +45,10 @@ const (
 type Request struct {
 	RunID            string
 	PRNumber         string
+	BaseRepository   string
 	HeadSHA          string
+	RequestReview    bool
+	ReviewCommand    string
 	UntilClean       bool
 	MaxRounds        int
 	PollInterval     time.Duration
@@ -213,15 +216,16 @@ func (realSleeper) Sleep(ctx context.Context, duration time.Duration) error {
 }
 
 type Dependencies struct {
-	StopRequests   StopRequestSource
-	ReviewEvidence ReviewEvidenceSource
-	Artifacts      ArtifactPublisher
-	StatusSource   StatusSource
-	Fetcher        Fetcher
-	Resolver       Resolver
-	CheckSource    CheckSource
-	Clock          Clock
-	Sleeper        Sleeper
+	StopRequests    StopRequestSource
+	ReviewEvidence  ReviewEvidenceSource
+	ReviewRequester reviewsource.ReviewRequester
+	Artifacts       ArtifactPublisher
+	StatusSource    StatusSource
+	Fetcher         Fetcher
+	Resolver        Resolver
+	CheckSource     CheckSource
+	Clock           Clock
+	Sleeper         Sleeper
 	// Sink receives watch-loop Run Events: review status waits, quiet
 	// periods, fetch results, and merge-readiness checks. Nil means
 	// events are discarded.
@@ -359,6 +363,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (result Result, re
 		if resolved.Outcome != "" {
 			return Result{Outcome: resolved.Outcome, Rounds: round, Remaining: resolved.Remaining}, nil
 		}
+		if err := requestReviewForResolvedHead(ctx, req, deps.ReviewRequester, currentHeadSHA, resolved.HeadSHA); err != nil {
+			return Result{Outcome: store.StateFailed, Rounds: round, Remaining: resolved.Remaining}, err
+		}
 		if resolved.HeadSHA != "" {
 			currentHeadSHA = resolved.HeadSHA
 		}
@@ -404,6 +411,23 @@ func Run(ctx context.Context, req Request, deps Dependencies) (result Result, re
 		}
 	}
 	return Result{Outcome: store.StateMaxRoundsReached, Rounds: req.MaxRounds}, nil
+}
+
+func requestReviewForResolvedHead(ctx context.Context, req Request, requester reviewsource.ReviewRequester, currentHeadSHA string, resolvedHeadSHA string) error {
+	resolvedHeadSHA = strings.TrimSpace(resolvedHeadSHA)
+	if !req.RequestReview || requester == nil || resolvedHeadSHA == "" || resolvedHeadSHA == strings.TrimSpace(currentHeadSHA) {
+		return nil
+	}
+	if _, err := requester.RequestReview(ctx, reviewsource.ReviewRequest{
+		RunID:          req.RunID,
+		BaseRepository: req.BaseRepository,
+		PRNumber:       req.PRNumber,
+		HeadSHA:        resolvedHeadSHA,
+		Command:        req.ReviewCommand,
+	}); err != nil {
+		return fmt.Errorf("request Review Source review for pushed head: %w", err)
+	}
+	return nil
 }
 
 type settledWaitResult struct {

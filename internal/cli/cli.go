@@ -158,6 +158,7 @@ var newOutcomeNotifier = roundnotify.New
 var newEngineCollaborators = defaultEngineCollaborators
 var watchReviewEvidence = defaultWatchReviewEvidence
 var watchHeadSHA = defaultWatchHeadSHA
+var newReviewRequester = defaultNewReviewRequester
 var listPendingRunWork = runworktree.ListPendingRunWork
 var supersedingQAReport = runworktree.SupersedingQAReport
 var classifyRunBranchSet = runworktree.ClassifyRunBranchSet
@@ -214,6 +215,7 @@ type commandDependencies struct {
 	newEngineCollaborators          func() engineCollaborators
 	watchReviewEvidence             func(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error)
 	watchHeadSHA                    func(context.Context, string) (string, error)
+	newReviewRequester              func(runevent.Sink) reviewsource.ReviewRequester
 	listPendingRunWork              func(context.Context, string, string) ([]runworktree.PendingRunWork, error)
 	supersedingQAReport             func(context.Context, string, string, string, string) (string, bool)
 	classifyRunBranchSet            func(context.Context, string, string, string, []store.Run) (runworktree.BranchSetClassification, error)
@@ -271,6 +273,7 @@ func defaultCommandDependencies() commandDependencies {
 		newEngineCollaborators:          newEngineCollaborators,
 		watchReviewEvidence:             watchReviewEvidence,
 		watchHeadSHA:                    watchHeadSHA,
+		newReviewRequester:              newReviewRequester,
 		listPendingRunWork:              listPendingRunWork,
 		supersedingQAReport:             supersedingQAReport,
 		classifyRunBranchSet:            classifyRunBranchSet,
@@ -2936,8 +2939,14 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 			return resolveBatchResult{}, err
 		}
 	}
-	if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, preflightResult.Git.Root, commitCreated || reviewCommit.CommitSHA != "", ui.progress); err != nil {
+	pushed, err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, preflightResult.Git.Root, commitCreated || reviewCommit.CommitSHA != "", ui.progress)
+	if err != nil {
 		return resolveBatchResult{}, err
+	}
+	if req.name == "resolve" && pushed {
+		if err := maybeRequestReview(ctx, req, loaded, preflightResult, runID, ui.sink); err != nil {
+			return resolveBatchResult{}, err
+		}
 	}
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
 }
@@ -3084,10 +3093,17 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	defer ui.Close()
 
 	watchReportIssues := []rounds.Issue{}
+	var requester reviewsource.ReviewRequester
+	if loaded.Config.ReviewSource.RequestReview {
+		requester = commandDependenciesForContext(ctx).newReviewRequester(store.JournalSink{Store: runStore})
+	}
 	result, err := watch.Run(ctx, watch.Request{
 		RunID:            run.ID,
 		PRNumber:         preflightResult.PullRequest.Number,
+		BaseRepository:   preflightResult.PullRequest.BaseRepository,
 		HeadSHA:          preflightResult.Git.HEAD,
+		RequestReview:    loaded.Config.ReviewSource.RequestReview,
+		ReviewCommand:    loaded.Config.ReviewSource.RequestCommand,
 		UntilClean:       req.untilClean,
 		MaxRounds:        req.maxRounds,
 		PollInterval:     loaded.Config.Watch.PollInterval,
@@ -3097,7 +3113,8 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		BudgetEnabled:    loaded.Config.Budget.Enabled,
 		MaxRunDuration:   loaded.Config.Budget.MaxRunDuration,
 	}, watch.Dependencies{
-		StopRequests: runStore,
+		StopRequests:    runStore,
+		ReviewRequester: requester,
 		ReviewEvidence: watch.ReviewEvidenceFunc(func(ctx context.Context, evidenceReq watch.ReviewEvidenceRequest) (reviewsource.Evidence, error) {
 			return commandDependenciesForContext(ctx).watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
 				Source:          req.source,
@@ -3127,7 +3144,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			if err != nil {
 				return watch.ArtifactPublication{}, err
 			}
-			if err := maybeRunFinalPush(ctx, engine, ui.sink, run.ID, loaded, preflightResult, preflightResult.Git.Root, true, ui.progress); err != nil {
+			if _, err := maybeRunFinalPush(ctx, engine, ui.sink, run.ID, loaded, preflightResult, preflightResult.Git.Root, true, ui.progress); err != nil {
 				return watch.ArtifactPublication{}, err
 			}
 			evidence, inherited, err := inheritReviewArtifactEvidence(ctx, reviewArtifactEvidenceRequest{
@@ -4190,6 +4207,34 @@ func defaultWatchReviewEvidence(ctx context.Context, req reviewsource.EvidenceRe
 	return coderabbit.Client{}.Evidence(ctx, req)
 }
 
+func defaultNewReviewRequester(sink runevent.Sink) reviewsource.ReviewRequester {
+	return coderabbit.Client{Sink: sink}
+}
+
+func maybeRequestReview(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, sink runevent.Sink) error {
+	if !loaded.Config.ReviewSource.RequestReview {
+		return nil
+	}
+	requester := commandDependenciesForContext(ctx).newReviewRequester(sink)
+	if requester == nil {
+		return nil
+	}
+	headSHA, err := commandDependenciesForContext(ctx).watchHeadSHA(ctx, preflightResult.Git.Root)
+	if err != nil {
+		return fmt.Errorf("detect pushed head for Review Source request: %w", err)
+	}
+	if _, err := requester.RequestReview(ctx, reviewsource.ReviewRequest{
+		RunID:          runID,
+		BaseRepository: preflightResult.PullRequest.BaseRepository,
+		PRNumber:       preflightResult.PullRequest.Number,
+		HeadSHA:        headSHA,
+		Command:        loaded.Config.ReviewSource.RequestCommand,
+	}); err != nil {
+		return fmt.Errorf("request Review Source review for pushed head: %w", err)
+	}
+	return nil
+}
+
 func defaultWatchHeadSHA(ctx context.Context, gitRoot string) (string, error) {
 	head, err := preflight.ExecGitRunner{}.RunGit(ctx, gitRoot, "rev-parse", "HEAD")
 	if err != nil {
@@ -4476,24 +4521,24 @@ func publishReviewArtifactCommitDecision(ctx context.Context, sink runevent.Sink
 	})
 }
 
-func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent.Sink, runID string, loaded roundconfig.Loaded, preflightResult preflight.Result, workDir string, batchCommitCreated bool, stderr io.Writer) error {
+func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent.Sink, runID string, loaded roundconfig.Loaded, preflightResult preflight.Result, workDir string, batchCommitCreated bool, stderr io.Writer) (bool, error) {
 	if !preflightResult.PushPlan.Enabled {
 		fmt.Fprintln(stderr, "Final Push skipped: auto-push disabled or no push target configured.")
 		publishPushDecision(ctx, sink, runID, "skipped", "Final Push skipped: auto-push disabled or no push target configured.", 0)
-		return nil
+		return false, nil
 	}
 	if preflightResult.PushPlan.Force {
-		return errors.New("Final Push rejected: force-push is not allowed in the MVP")
+		return false, errors.New("Final Push rejected: force-push is not allowed in the MVP")
 	}
 	if !loaded.Config.Defaults.AutoCommit {
 		fmt.Fprintln(stderr, "Final Push skipped: auto-commit disabled.")
 		publishPushDecision(ctx, sink, runID, "skipped", "Final Push skipped: auto-commit disabled.", 0)
-		return nil
+		return false, nil
 	}
 	if preflightResult.Git.UnpushedCommits == 0 && !batchCommitCreated {
 		fmt.Fprintln(stderr, "Final Push skipped: no local commits are waiting for the PR Head Branch.")
 		publishPushDecision(ctx, sink, runID, "skipped", "Final Push skipped: no local commits are waiting for the PR Head Branch.", 0)
-		return nil
+		return false, nil
 	}
 	if err := engine.FinalPush(ctx, daemon.FinalPushRequest{
 		RunID:   runID,
@@ -4501,10 +4546,10 @@ func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent
 		Remote:  preflightResult.PushPlan.Remote,
 		Branch:  preflightResult.PushPlan.Branch,
 	}); err != nil {
-		return err
+		return false, err
 	}
 	fmt.Fprintf(stderr, "Final Push completed: git push %s HEAD:%s\n", preflightResult.PushPlan.Remote, preflightResult.PushPlan.Branch)
-	return nil
+	return true, nil
 }
 
 func markRunFailed(ctx context.Context, runStore *store.Store, runID string) {

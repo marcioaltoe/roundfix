@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0078-roundfix-asks-for-the-review
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -79,3 +79,62 @@ under ADR-0036 and is not worth a review of its own.
 - `_prd.md` → Core Features 1, 3, 5 and 6; Success Metrics 1, 2 and 4.
 - `_techspec.md` → System Architecture; Build Order 2.
 - ADR-0036, ADR-0054.
+
+## Result
+
+### Implementation
+
+- Added the optional Review Source requester to the watch dependencies and
+  configured request metadata to the watch request. A changed, non-empty head
+  returned by `Resolve` now produces one request before either post-Resolve
+  Evidence path; a nil requester or disabled configuration preserves the
+  existing flow.
+- Made Final Push report whether it actually pushed. Standalone `resolve`
+  requests the pushed head only after that positive result; `fetch` has no
+  requester call path.
+- Kept artifact publication downstream of the fix-head request. The
+  artifact-only descendant continues to inherit its parent's Evidence without
+  producing another request.
+
+### Acceptance evidence
+
+- A Round that pushes requests exactly once for its pushed head:
+  `TestRunRequestsReviewForResolvedHeadBeforeMergeReadyEvidence` passed and
+  asserted the request payload plus the order `Resolve → request → Evidence`.
+- An artifact-only docs commit produces no second request:
+  `TestRunArtifactCommitDoesNotProduceSecondReviewRequest` passed with one
+  request for `def456`, followed by inherited artifact Evidence for
+  `artifact789`.
+- A Round without a new pushed head requests nothing:
+  `TestRunDoesNotRequestReviewWithoutNewResolvedHead` passed for empty and
+  unchanged heads, and
+  `TestRunResolveDoesNotRequestReviewWhenFinalPushIsSkipped` passed with zero
+  pushes and zero requests.
+- `resolve` requests after its Final Push:
+  `TestRunResolveRequestsReviewAfterFinalPush` passed, asserted one Final Push,
+  one request, the pushed `HEAD`, and rejected request-before-push ordering.
+- `fetch` requests nothing:
+  `TestRunFetchNeverRequestsReviewWhenEnabled` passed with asking enabled and
+  zero requester calls.
+- A refused request keeps Spec 0077 classification and stops further asking:
+  `TestRunRequestsReviewBeforeNextRoundWaitAndStopsOnRefusal` passed with
+  `Review Skipped`, the source refusal reason, and one request in the Run.
+- Disabled configuration preserves existing behavior, including a nil
+  requester: `TestRunRequestReviewDisabledPreservesNilRequesterControlFlow`
+  passed, along with focused pre-existing watch, resolve, fetch, artifact
+  inheritance, and Review Skipped tests.
+
+### Focused checks
+
+- `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260805T180435Z_2151ad16c01390e5/.gocache go test ./internal/watch ./internal/cli -run 'TestRun(RequestsReview|ArtifactCommit|DoesNotRequestReview|RequestReviewDisabled|ResolveRequestsReview|FetchNeverRequestsReview)' -count=1`
+  — passed.
+- `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260805T180435Z_2151ad16c01390e5/.gocache go test ./internal/cli -run 'TestRunResolve(RequestsReviewAfterFinalPush|DoesNotRequestReviewWhenFinalPushIsSkipped)|TestRunFetchNeverRequestsReviewWhenEnabled' -count=1`
+  — passed after the final CLI test edit.
+- `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260805T180435Z_2151ad16c01390e5/.gocache go test ./internal/watch -run 'TestRun(WaitsFetchesResolvesToClean|ReentersFetchWhenHeadCheckFails|ReviewSkippedDuringMergeReadyPreservesTerminalEvidence|DoesNotConfirmMergeReadinessWithoutUntilClean)' -count=1`
+  — passed.
+- `rtk env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260805T180435Z_2151ad16c01390e5/.gocache go test ./internal/cli -run 'TestRun(ResolvePushRunsFromUserCheckoutWithoutRunWorktree|WatchArtifactEvidenceInheritedWithoutCurrentHeadPolling|WatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup|FetchWritesReviewArtifactsUnderSpeclessRoot)|TestWatchSkipsFinalPushWhenAutoPushDisabled' -count=1`
+  — passed.
+- `rtk git diff --check` — passed.
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+that gate and terminal settlement.

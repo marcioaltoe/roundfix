@@ -6272,6 +6272,109 @@ func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
 	}
 }
 
+func TestRunResolveRequestsReviewAfterFinalPush(t *testing.T) {
+	t.Parallel()
+	_, repoDir := withReviewGitWorkspace(t)
+	enableReviewRequestsForTest(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	withRealReviewPreflight(t, repoDir, true)
+	source := &fakeSourceResolver{}
+	withSourceResolver(t, source)
+	pushed := false
+	pusher := &checkingPusher{check: func(daemon.PushRequest) error {
+		pushed = true
+		return nil
+	}}
+	withPusher(t, pusher)
+	requester := &recordingReviewRequester{onRequest: func(reviewsource.ReviewRequest) error {
+		if !pushed {
+			return errors.New("review requested before Final Push")
+		}
+		return nil
+	}}
+	withReviewRequester(t, requester)
+	runner := &fakeAgentRunner{onRun: func(req agent.ExecuteRequest) error {
+		return os.WriteFile(filepath.Join(req.GitRoot, "agent.txt"), []byte("agent work\n"), 0o644)
+	}}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("resolve request exit = %d, want 0; stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if pusher.calls != 1 {
+		t.Fatalf("Final Push calls = %d, want 1", pusher.calls)
+	}
+	if len(requester.requests) != 1 {
+		t.Fatalf("resolve review requests = %d, want exactly one", len(requester.requests))
+	}
+	wantHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	want := reviewsource.ReviewRequest{
+		RunID:          reviewRunIDFromStderr(t, stderr.String()),
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		HeadSHA:        wantHead,
+		Command:        "@review-source review",
+	}
+	if requester.requests[0] != want {
+		t.Fatalf("resolve review request = %#v, want %#v", requester.requests[0], want)
+	}
+}
+
+func TestRunResolveDoesNotRequestReviewWhenFinalPushIsSkipped(t *testing.T) {
+	t.Parallel()
+	_, repoDir := withReviewGitWorkspace(t)
+	enableReviewRequestsForTest(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	withRealReviewPreflight(t, repoDir, false)
+	withSourceResolver(t, &fakeSourceResolver{})
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+	requester := &recordingReviewRequester{}
+	withReviewRequester(t, requester)
+	withAgentRunner(t, &fakeAgentRunner{onRun: func(req agent.ExecuteRequest) error {
+		return os.WriteFile(filepath.Join(req.GitRoot, "agent.txt"), []byte("agent work\n"), 0o644)
+	}})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("resolve without Final Push exit = %d, want 0; stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if pusher.calls != 0 {
+		t.Fatalf("Final Push calls = %d, want none", pusher.calls)
+	}
+	if len(requester.requests) != 0 {
+		t.Fatalf("review requests without Final Push = %#v, want none", requester.requests)
+	}
+}
+
+func TestRunFetchNeverRequestsReviewWhenEnabled(t *testing.T) {
+	t.Parallel()
+	_, repoDir := withReviewGitWorkspace(t)
+	enableReviewRequestsForTest(t, repoDir)
+	withRealReviewPreflight(t, repoDir, true)
+	withFetchReviewItems(t, nil)
+	requester := &recordingReviewRequester{}
+	withReviewRequester(t, requester)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"fetch", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("fetch with asking enabled exit = %d, want 0; stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if len(requester.requests) != 0 {
+		t.Fatalf("fetch review requests = %#v, want none", requester.requests)
+	}
+}
+
 func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withReviewGitWorkspace(t)
@@ -11973,6 +12076,23 @@ watch:
 	return homeDir, resolved
 }
 
+func enableReviewRequestsForTest(t *testing.T, repoDir string) {
+	t.Helper()
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+defaults:
+  verification: test -f agent.txt
+review_source:
+  request_review: true
+  request_command: "@review-source review"
+watch:
+  poll_interval: 1s
+  review_timeout: 5s
+  quiet_period: 1ms
+`)
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure manual review requests")
+}
+
 func withRealReviewPreflight(t *testing.T, repoDir string, pushEnabled bool) {
 	t.Helper()
 	withPreflight(t, func(ctx context.Context, req commandRequest, _ roundconfig.Loaded) (preflight.Result, error) {
@@ -12454,6 +12574,30 @@ func withWatchEvidence(t *testing.T, fn func(context.Context, reviewsource.Evide
 	t.Helper()
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
 		dependencies.watchReviewEvidence = fn
+	})
+}
+
+type recordingReviewRequester struct {
+	requests  []reviewsource.ReviewRequest
+	onRequest func(reviewsource.ReviewRequest) error
+}
+
+func (requester *recordingReviewRequester) RequestReview(_ context.Context, req reviewsource.ReviewRequest) (reviewsource.ReviewRequestOutcome, error) {
+	requester.requests = append(requester.requests, req)
+	if requester.onRequest != nil {
+		if err := requester.onRequest(req); err != nil {
+			return reviewsource.ReviewRequestOutcome{}, err
+		}
+	}
+	return reviewsource.ReviewRequestOutcome{Published: true}, nil
+}
+
+func withReviewRequester(t *testing.T, requester reviewsource.ReviewRequester) {
+	t.Helper()
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.newReviewRequester = func(runevent.Sink) reviewsource.ReviewRequester {
+			return requester
+		}
 	})
 }
 
