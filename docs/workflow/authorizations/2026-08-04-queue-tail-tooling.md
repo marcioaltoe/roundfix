@@ -187,8 +187,25 @@ must be named here so the citation is checkable — `SC-TOOLING-UNAUTHORIZED`
 refuses a Spec that cites a record not naming it, which is the defect that cost
 Spec 0072 four gate executions.
 
-Named to date: **0059, 0066, 0068, 0069, 0073, 0077**.
+Named to date: **0059, 0066, 0068, 0069, 0073, 0077, 0078**.
 
 Adding a Spec to this list is not a new grant. It records that an existing,
 purpose-bounded authorization reaches it, and the boundary is unchanged: only
 edits keeping the Skill's documented contract equal to the shipped CLI.
+
+## Addendum — 2026-08-05 — Spec 0078 named under the standing grant
+
+Spec 0078 makes `watch` and `resolve` request the review the Review Source no
+longer starts on its own. That changes CLI behaviour — a new Review Source
+mutation, its configuration, and the Preflight Validation that refuses an
+incoherent pair — so the HARD RULE requires the Skill to ship with it.
+
+The maintainer authorized it on 2026-08-05, in the session that decided the
+manual-review flow:
+
+> Sim — skill + mirror
+
+The boundary is the standing grant's, unchanged: only edits keeping the Skill's
+documented contract equal to the shipped CLI. Deterministic digest fallout is
+sanctioned by ADR-0081, and the two characterization corpora above still need
+their explicit re-record.
