@@ -7,12 +7,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
+	roundconfig "roundfix/internal/config"
 	"roundfix/internal/store"
 )
 
@@ -92,6 +95,19 @@ type auditInputs struct {
 	defaultName     string
 }
 
+type deliveryTree struct {
+	repoRoot     string
+	artifactRoot string
+	defaultRef   string
+	defaultName  string
+	branches     []string
+}
+
+type artifactClaim struct {
+	path string
+	tree deliveryTree
+}
+
 // Audit reads local Git state and the Run Database. It mutates nothing.
 func Audit(ctx context.Context, repoRoot, homeDir, slug string) (result Result, err error) {
 	repoRoot = strings.TrimSpace(repoRoot)
@@ -105,6 +121,18 @@ func Audit(ctx context.Context, repoRoot, homeDir, slug string) (result Result, 
 	}
 	if slug == "" {
 		return Result{}, errors.New("audit Spec survivors: Spec slug is required")
+	}
+	loaded, err := roundconfig.Load(roundconfig.LoadOptions{
+		HomeDir: homeDir,
+		WorkDir: repoRoot,
+		Stderr:  io.Discard,
+	})
+	if err != nil {
+		return Result{}, fmt.Errorf("audit Spec delivery: load configuration: %w", err)
+	}
+	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loaded, repoRoot)
+	if err != nil {
+		return Result{}, fmt.Errorf("audit Spec delivery: %w", err)
 	}
 
 	reader, err := store.OpenReader(ctx, homeDir)
@@ -132,13 +160,14 @@ func Audit(ctx context.Context, repoRoot, homeDir, slug string) (result Result, 
 	}
 
 	runner := execGitRunner{}
-	return audit(ctx, runner, repoRoot, slug, specRuns)
+	return audit(ctx, runner, repoRoot, resolvedSpecsRoot.Path, slug, specRuns)
 }
 
 func audit(
 	ctx context.Context,
 	runner gitRunner,
 	repoRoot string,
+	specsRoot string,
 	slug string,
 	runs []store.Run,
 ) (Result, error) {
@@ -153,6 +182,20 @@ func audit(
 	defaultRef, defaultName, err := defaultBranch(ctx, runner, repoRoot)
 	if err != nil {
 		return Result{}, fmt.Errorf("audit Spec survivors: resolve default branch: %w", err)
+	}
+	deliveryBranches, err := listDeliveryBranches(ctx, runner, repoRoot)
+	if err != nil {
+		return Result{}, fmt.Errorf("audit Spec delivery: enumerate branches: %w", err)
+	}
+	codeTree := deliveryTree{
+		repoRoot:    cleanPath(repoRoot),
+		defaultRef:  defaultRef,
+		defaultName: defaultName,
+		branches:    deliveryBranches,
+	}
+	specTree, err := resolveSpecDeliveryTree(ctx, runner, specsRoot, codeTree)
+	if err != nil {
+		return Result{}, fmt.Errorf("audit Spec delivery: resolve Spec Root tree: %w", err)
 	}
 
 	inputs := indexRuns(runs)
@@ -198,7 +241,324 @@ func audit(
 		}
 		return result.Survivors[left].Name < result.Survivors[right].Name
 	})
+	claimed, err := claimedArtifacts(
+		ctx,
+		runner,
+		slug,
+		codeTree,
+		specTree,
+	)
+	if err != nil {
+		return Result{}, fmt.Errorf("audit Spec delivery: resolve claimed artifacts: %w", err)
+	}
+	result.Undelivered, err = findUndeliveredArtifacts(
+		ctx,
+		runner,
+		claimed,
+	)
+	if err != nil {
+		return Result{}, fmt.Errorf("audit Spec delivery: %w", err)
+	}
 	return result, nil
+}
+
+func claimedArtifacts(
+	ctx context.Context,
+	runner gitRunner,
+	slug string,
+	codeTree deliveryTree,
+	specTree deliveryTree,
+) ([]artifactClaim, error) {
+	activeSpec := filepath.ToSlash(filepath.Join(specTree.artifactRoot, slug))
+	archivedSpec := filepath.ToSlash(filepath.Join(specTree.artifactRoot, "_archived", slug))
+
+	archiveClaimed, err := artifactClaimed(ctx, runner, specTree, archivedSpec)
+	if err != nil {
+		return nil, err
+	}
+	specArtifact := activeSpec
+	if archiveClaimed {
+		specArtifact = archivedSpec
+	}
+
+	taskArtifacts, err := taskCommitArtifacts(ctx, runner, codeTree.repoRoot, slug)
+	if err != nil {
+		return nil, err
+	}
+	claimed := map[string]artifactClaim{
+		specTree.repoRoot + "\x00" + specArtifact: {path: specArtifact, tree: specTree},
+	}
+	for _, artifact := range taskArtifacts {
+		if archiveClaimed && codeTree.repoRoot == specTree.repoRoot &&
+			(artifact == activeSpec || strings.HasPrefix(artifact, activeSpec+"/")) {
+			artifact = archivedSpec + strings.TrimPrefix(artifact, activeSpec)
+		}
+		claimed[codeTree.repoRoot+"\x00"+artifact] = artifactClaim{path: artifact, tree: codeTree}
+	}
+	artifacts := make([]artifactClaim, 0, len(claimed))
+	for _, artifact := range claimed {
+		artifacts = append(artifacts, artifact)
+	}
+	sort.Slice(artifacts, func(left, right int) bool {
+		if artifacts[left].path == artifacts[right].path {
+			return artifacts[left].tree.repoRoot < artifacts[right].tree.repoRoot
+		}
+		return artifacts[left].path < artifacts[right].path
+	})
+	return artifacts, nil
+}
+
+func artifactClaimed(
+	ctx context.Context,
+	runner gitRunner,
+	tree deliveryTree,
+	artifact string,
+) (bool, error) {
+	if _, err := os.Stat(filepath.Join(tree.repoRoot, filepath.FromSlash(artifact))); err == nil {
+		return true, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return false, fmt.Errorf("stat claimed artifact %q: %w", artifact, err)
+	}
+	if tree.defaultRef != "" {
+		exists, err := treeHasArtifact(ctx, runner, tree.repoRoot, tree.defaultRef, artifact)
+		if err != nil {
+			return false, err
+		}
+		if exists {
+			return true, nil
+		}
+	}
+	for _, branch := range tree.branches {
+		exists, err := treeHasArtifact(ctx, runner, tree.repoRoot, branch, artifact)
+		if err != nil {
+			return false, err
+		}
+		if exists {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func taskCommitArtifacts(
+	ctx context.Context,
+	runner gitRunner,
+	repoRoot string,
+	slug string,
+) ([]string, error) {
+	output, err := runner.Run(
+		ctx,
+		repoRoot,
+		"log",
+		"--all",
+		"--reverse",
+		"--topo-order",
+		"--format=%H",
+		"--fixed-strings",
+		"--grep=Roundfix-Spec: "+slug,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list Task commits: %w", err)
+	}
+	artifacts := map[string]bool{}
+	for _, commit := range nonEmptyLines(output) {
+		isTask, err := isTaskCommit(ctx, runner, repoRoot, commit, slug)
+		if err != nil {
+			return nil, err
+		}
+		if !isTask {
+			continue
+		}
+		changes, err := taskCommitChanges(ctx, runner, repoRoot, commit)
+		if err != nil {
+			return nil, err
+		}
+		for _, change := range changes {
+			if change.deleted {
+				delete(artifacts, change.path)
+				continue
+			}
+			artifacts[change.path] = true
+		}
+	}
+	paths := make([]string, 0, len(artifacts))
+	for path := range artifacts {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	return paths, nil
+}
+
+func isTaskCommit(
+	ctx context.Context,
+	runner gitRunner,
+	repoRoot string,
+	commit string,
+	slug string,
+) (bool, error) {
+	output, err := runner.Run(
+		ctx,
+		repoRoot,
+		"log",
+		"-1",
+		"--format=%(trailers:key=Roundfix-Spec,valueonly)%x00%(trailers:key=Roundfix-Task,valueonly)",
+		commit,
+		"--",
+	)
+	if err != nil {
+		return false, fmt.Errorf("inspect Task commit %q: %w", commit, err)
+	}
+	specValues, taskValues, ok := strings.Cut(output, "\x00")
+	if !ok {
+		return false, fmt.Errorf("inspect Task commit %q: missing trailer delimiter", commit)
+	}
+	specMatches := false
+	for _, candidate := range nonEmptyLines(specValues) {
+		if candidate == slug {
+			specMatches = true
+			break
+		}
+	}
+	return specMatches && len(nonEmptyLines(taskValues)) > 0, nil
+}
+
+type taskCommitChange struct {
+	path    string
+	deleted bool
+}
+
+func taskCommitChanges(
+	ctx context.Context,
+	runner gitRunner,
+	repoRoot string,
+	commit string,
+) ([]taskCommitChange, error) {
+	output, err := runner.Run(
+		ctx,
+		repoRoot,
+		"diff-tree",
+		"--root",
+		"--no-commit-id",
+		"--name-status",
+		"--no-renames",
+		"-r",
+		"-z",
+		commit,
+		"--",
+	)
+	if err != nil {
+		return nil, fmt.Errorf("read Task commit %q artifacts: %w", commit, err)
+	}
+	fields := strings.Split(output, "\x00")
+	changes := make([]taskCommitChange, 0, len(fields)/2)
+	for index := 0; index+1 < len(fields); index += 2 {
+		status := strings.TrimSpace(fields[index])
+		path, err := cleanGitArtifactPath(fields[index+1])
+		if err != nil {
+			return nil, fmt.Errorf("read Task commit %q artifacts: %w", commit, err)
+		}
+		if status == "" || path == "" {
+			continue
+		}
+		changes = append(changes, taskCommitChange{path: path, deleted: status == "D"})
+	}
+	return changes, nil
+}
+
+func cleanGitArtifactPath(path string) (string, error) {
+	if path == "" {
+		return "", nil
+	}
+	if filepath.IsAbs(path) {
+		return "", fmt.Errorf("Git returned absolute artifact path %q", path)
+	}
+	clean := filepath.Clean(path)
+	if clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("Git returned artifact path outside the repository %q", path)
+	}
+	return filepath.ToSlash(clean), nil
+}
+
+func findUndeliveredArtifacts(
+	ctx context.Context,
+	runner gitRunner,
+	claimed []artifactClaim,
+) ([]Undelivered, error) {
+	undelivered := []Undelivered{}
+	for _, claim := range claimed {
+		delivered := false
+		if claim.tree.defaultRef != "" {
+			var err error
+			delivered, err = treeHasArtifact(
+				ctx,
+				runner,
+				claim.tree.repoRoot,
+				claim.tree.defaultRef,
+				claim.path,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("inspect default branch artifact %q: %w", claim.path, err)
+			}
+		}
+		if delivered {
+			continue
+		}
+		heldBy, err := holdingBranch(
+			ctx,
+			runner,
+			claim.tree.repoRoot,
+			claim.path,
+			claim.tree.defaultName,
+			claim.tree.branches,
+		)
+		if err != nil {
+			return nil, err
+		}
+		undelivered = append(undelivered, Undelivered{Artifact: claim.path, HeldBy: heldBy})
+	}
+	return undelivered, nil
+}
+
+func holdingBranch(
+	ctx context.Context,
+	runner gitRunner,
+	repoRoot string,
+	artifact string,
+	defaultName string,
+	branches []string,
+) (string, error) {
+	for _, branch := range branches {
+		if branch == defaultName {
+			continue
+		}
+		exists, err := treeHasArtifact(ctx, runner, repoRoot, branch, artifact)
+		if err != nil {
+			return "", fmt.Errorf("inspect branch %q for artifact %q: %w", branch, artifact, err)
+		}
+		if exists {
+			return branch, nil
+		}
+	}
+	return "", nil
+}
+
+func treeHasArtifact(
+	ctx context.Context,
+	runner gitRunner,
+	repoRoot string,
+	ref string,
+	artifact string,
+) (bool, error) {
+	output, err := runner.Run(ctx, repoRoot, "ls-tree", "-z", "--name-only", ref, "--", artifact)
+	if err != nil {
+		return false, fmt.Errorf("read tree %q artifact %q: %w", ref, artifact, err)
+	}
+	for _, candidate := range strings.Split(output, "\x00") {
+		if candidate == artifact {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func indexRuns(runs []store.Run) auditInputs {
@@ -483,6 +843,68 @@ func listBranches(ctx context.Context, runner gitRunner, repoRoot string) ([]str
 	branches := nonEmptyLines(output)
 	sort.Strings(branches)
 	return branches, nil
+}
+
+func listDeliveryBranches(ctx context.Context, runner gitRunner, repoRoot string) ([]string, error) {
+	output, err := runner.Run(
+		ctx,
+		repoRoot,
+		"for-each-ref",
+		"--format=%(refname:short)",
+		"refs/heads",
+		"refs/remotes",
+	)
+	if err != nil {
+		return nil, err
+	}
+	branches := nonEmptyLines(output)
+	sort.Strings(branches)
+	return branches, nil
+}
+
+func resolveSpecDeliveryTree(
+	ctx context.Context,
+	runner gitRunner,
+	specsRoot string,
+	codeTree deliveryTree,
+) (deliveryTree, error) {
+	rootOutput, err := runner.Run(ctx, specsRoot, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return deliveryTree{}, fmt.Errorf("resolve Spec Root Git repository: %w", err)
+	}
+	specRepoRoot := cleanPath(rootOutput)
+	resolvedSpecsRoot := cleanPath(specsRoot)
+	relative, err := filepath.Rel(specRepoRoot, resolvedSpecsRoot)
+	if err != nil {
+		return deliveryTree{}, fmt.Errorf("make Spec Root repository-relative: %w", err)
+	}
+	if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.IsAbs(relative) {
+		return deliveryTree{}, fmt.Errorf("Spec Root %q is outside its Git repository %q", specsRoot, specRepoRoot)
+	}
+	artifactRoot := ""
+	if relative != "." {
+		artifactRoot = filepath.ToSlash(relative)
+	}
+	if specRepoRoot == cleanPath(codeTree.repoRoot) {
+		codeTree.repoRoot = specRepoRoot
+		codeTree.artifactRoot = artifactRoot
+		return codeTree, nil
+	}
+	defaultRef, defaultName, err := defaultBranch(ctx, runner, specRepoRoot)
+	if err != nil {
+		return deliveryTree{}, fmt.Errorf("resolve Spec Root default branch: %w", err)
+	}
+	branches, err := listDeliveryBranches(ctx, runner, specRepoRoot)
+	if err != nil {
+		return deliveryTree{}, fmt.Errorf("enumerate Spec Root branches: %w", err)
+	}
+	return deliveryTree{
+		repoRoot:     specRepoRoot,
+		artifactRoot: artifactRoot,
+		defaultRef:   defaultRef,
+		defaultName:  defaultName,
+		branches:     branches,
+	}, nil
 }
 
 func listWorktrees(ctx context.Context, runner gitRunner, repoRoot string) ([]worktree, error) {

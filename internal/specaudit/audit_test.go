@@ -1,13 +1,15 @@
-// Suite: Spec survivor classification
-// Invariant: every surviving Spec branch and worktree is classified from local evidence without mutation.
+// Suite: Spec close audit
+// Invariant: every Spec survivor and claimed artifact is reported from committed local Git evidence without mutation.
 // Boundary IN: disposable Git repositories and the real read-only Run Database.
-// Boundary OUT: CLI rendering and delivery verification, owned by later Spec 0068 tasks.
+// Boundary OUT: CLI rendering, owned by a later Spec 0068 task.
 package specaudit
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -158,12 +160,151 @@ func TestAuditPreservesActiveRunSurvivors(t *testing.T) {
 	assertEverySurvivorHasEvidence(t, result)
 }
 
+func TestAuditReportsUndeliveredArchiveHeldByBranch(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	activeDir := filepath.Join(fixture.repoDir, "docs", "specs", auditFixtureSlug)
+	writeAuditFixtureFile(t, filepath.Join(activeDir, "_prd.md"), "spec: active\n")
+	fixture.git("add", filepath.ToSlash(filepath.Join("docs", "specs", auditFixtureSlug)))
+	fixture.git("commit", "-m", "docs: add active Spec fixture")
+
+	branch := "ma/spec-close-archive"
+	fixture.git("switch", "-c", branch)
+	archivedPath := filepath.ToSlash(filepath.Join("docs", "specs", "_archived", auditFixtureSlug))
+	if err := os.MkdirAll(filepath.Dir(filepath.Join(fixture.repoDir, archivedPath)), 0o755); err != nil {
+		t.Fatalf("create archived Spec fixture root: %v", err)
+	}
+	fixture.git("mv", filepath.ToSlash(filepath.Join("docs", "specs", auditFixtureSlug)), archivedPath)
+	fixture.git(
+		"commit",
+		"-m", "docs: archive Spec fixture",
+		"-m", "Roundfix-Spec: "+auditFixtureSlug,
+	)
+	fixture.git("switch", "main")
+
+	result := fixture.audit()
+	want := Undelivered{Artifact: archivedPath, HeldBy: branch}
+	if !reflect.DeepEqual(result.Undelivered, []Undelivered{want}) {
+		t.Fatalf("undelivered = %#v, want %#v", result.Undelivered, []Undelivered{want})
+	}
+}
+
+func TestAuditReportsNothingWhenClaimedArtifactsAreDelivered(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	specPath := filepath.ToSlash(filepath.Join("docs", "specs", auditFixtureSlug))
+	writeAuditFixtureFile(t, filepath.Join(fixture.repoDir, specPath, "_prd.md"), "spec: active\n")
+	writeAuditFixtureFile(t, filepath.Join(fixture.repoDir, "internal", "delivered.go"), "package internal\n")
+	fixture.git("add", specPath, "internal/delivered.go")
+	fixture.git(
+		"commit",
+		"-m", "feat: deliver claimed artifacts",
+		"-m", "Roundfix-Spec: "+auditFixtureSlug+"\nRoundfix-Task: task_01",
+	)
+
+	result := fixture.audit()
+	if len(result.Undelivered) != 0 {
+		t.Fatalf("undelivered = %#v, want none", result.Undelivered)
+	}
+}
+
+func TestAuditReportsUncommittedWorkingCopyArtifactAsUndelivered(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	specPath := filepath.ToSlash(filepath.Join("docs", "specs", auditFixtureSlug))
+	writeAuditFixtureFile(t, filepath.Join(fixture.repoDir, specPath, "_prd.md"), "spec: active\n")
+
+	result := fixture.audit()
+	want := Undelivered{Artifact: specPath}
+	if !reflect.DeepEqual(result.Undelivered, []Undelivered{want}) {
+		t.Fatalf("undelivered = %#v, want %#v", result.Undelivered, []Undelivered{want})
+	}
+}
+
+func TestAuditReportsUndeliveredArtifactWithNoHoldingBranch(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	specPath := filepath.ToSlash(filepath.Join("docs", "specs", auditFixtureSlug))
+	writeAuditFixtureFile(t, filepath.Join(fixture.repoDir, specPath, "_prd.md"), "spec: active\n")
+	fixture.git("add", specPath)
+	fixture.git("commit", "-m", "docs: add active Spec fixture")
+	branch := "ma/spec-close-nowhere"
+	fixture.git("switch", "-c", branch)
+	writeAuditFixtureFile(t, filepath.Join(fixture.repoDir, "nowhere.txt"), "claimed then removed\n")
+	fixture.git("add", "nowhere.txt")
+	fixture.git(
+		"commit",
+		"-m", "feat: add nowhere fixture",
+		"-m", "Roundfix-Spec: "+auditFixtureSlug+"\nRoundfix-Task: task_01",
+	)
+	fixture.git("rm", "nowhere.txt")
+	fixture.git("commit", "-m", "chore: remove nowhere fixture")
+	fixture.git("switch", "main")
+
+	result := fixture.audit()
+	want := Undelivered{Artifact: "nowhere.txt"}
+	if !reflect.DeepEqual(result.Undelivered, []Undelivered{want}) {
+		t.Fatalf("undelivered = %#v, want %#v", result.Undelivered, []Undelivered{want})
+	}
+}
+
+func TestAuditDeliveryCheckLeavesGitStateByteIdentical(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	branch := "ma/spec-close-read-only"
+	fixture.commitBranch(branch, "read-only.txt")
+	before := snapshotGitState(t, fixture.repoDir)
+
+	fixture.audit()
+
+	after := snapshotGitState(t, fixture.repoDir)
+	if !reflect.DeepEqual(after, before) {
+		t.Fatalf("Git state changed during audit\nbefore: %#v\nafter:  %#v", before, after)
+	}
+}
+
+func TestAuditUsesConfiguredExternalSpecRootTree(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	externalRepo := filepath.Join(filepath.Dir(fixture.repoDir), "knowledge")
+	externalSpecsRoot := filepath.Join(externalRepo, "specs")
+	gittest.InitRepo(t, externalRepo, "-b", "main")
+	activePath := filepath.ToSlash(filepath.Join("specs", auditFixtureSlug))
+	writeAuditFixtureFile(t, filepath.Join(externalRepo, activePath, "_prd.md"), "spec: active\n")
+	gittest.Run(t, externalRepo, "add", activePath)
+	gittest.Run(t, externalRepo, "commit", "-m", "docs: add external Spec fixture")
+
+	branch := "ma/spec-close-external-archive"
+	gittest.Run(t, externalRepo, "switch", "-c", branch)
+	archivedPath := filepath.ToSlash(filepath.Join("specs", "_archived", auditFixtureSlug))
+	if err := os.MkdirAll(filepath.Dir(filepath.Join(externalRepo, archivedPath)), 0o755); err != nil {
+		t.Fatalf("create external archived Spec root: %v", err)
+	}
+	gittest.Run(t, externalRepo, "mv", activePath, archivedPath)
+	gittest.Run(t, externalRepo, "commit", "-m", "docs: archive external Spec fixture")
+	gittest.Run(t, externalRepo, "switch", "main")
+
+	writeAuditFixtureFile(
+		t,
+		filepath.Join(fixture.repoDir, ".roundfixrc.yml"),
+		fmt.Sprintf("specs:\n  root: %q\n", externalSpecsRoot),
+	)
+	result := fixture.audit()
+	want := Undelivered{Artifact: archivedPath, HeldBy: branch}
+	if !reflect.DeepEqual(result.Undelivered, []Undelivered{want}) {
+		t.Fatalf("undelivered = %#v, want configured external Spec artifact %#v", result.Undelivered, []Undelivered{want})
+	}
+}
+
 func newAuditFixture(t *testing.T) *auditFixture {
 	t.Helper()
 	root := t.TempDir()
 	repoDir := filepath.Join(root, "repository")
 	homeDir := filepath.Join(root, "home")
 	gittest.InitRepo(t, repoDir, "-b", "main")
+	if err := os.MkdirAll(filepath.Join(repoDir, "docs", "specs"), 0o755); err != nil {
+		t.Fatalf("create fixture Spec Root: %v", err)
+	}
 	writeAuditFixtureFile(t, filepath.Join(repoDir, "README.md"), "fixture\n")
 	gittest.Run(t, repoDir, "add", "README.md")
 	gittest.Run(t, repoDir, "commit", "-m", "chore: initialize fixture")
@@ -263,9 +404,39 @@ func (fixture *auditFixture) git(args ...string) string {
 
 func writeAuditFixtureFile(t *testing.T, path, content string) {
 	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("create fixture directory for %s: %v", path, err)
+	}
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write fixture file %s: %v", path, err)
 	}
+}
+
+func snapshotGitState(t *testing.T, repoDir string) map[string]string {
+	t.Helper()
+	gitDir := filepath.Join(repoDir, ".git")
+	snapshot := map[string]string{}
+	if err := filepath.Walk(gitDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		relative, err := filepath.Rel(gitDir, path)
+		if err != nil {
+			return err
+		}
+		snapshot[filepath.ToSlash(relative)] = string(content)
+		return nil
+	}); err != nil {
+		t.Fatalf("snapshot Git state: %v", err)
+	}
+	return snapshot
 }
 
 func requireSurvivor(t *testing.T, result Result, name string, isWorktree bool) Survivor {

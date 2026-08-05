@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0068-spec-close-audit
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -62,3 +62,58 @@ branch and names the branch holding anything absent.
 
 - `_prd.md` → Core Feature 2; Goals; Success Metric 3.
 - `_techspec.md` → Data Models; Build Order 3.
+
+## Result
+
+Implemented delivery verification in `internal/specaudit`. The audit resolves
+the configured active or archived Spec Root, including an external Spec Root
+owned by another Git repository, and treats that repository's committed
+default tree as the delivery source of truth. It derives implementation claims
+from commits carrying matching `Roundfix-Spec` and `Roundfix-Task` trailers,
+maps archived Task artifacts to their archived paths, and reports each absent
+artifact with the first deterministic local or remote-tracking branch whose
+tip contains it. An artifact on no branch keeps an empty `HeldBy` value.
+
+Focused checks:
+
+- Red signal: `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test
+  ./internal/specaudit -count=1 -run
+  '^TestAuditReportsUndeliveredArchiveHeldByBranch$' -v` failed after fixture
+  setup was corrected because `Undelivered` was empty instead of naming
+  `ma/spec-close-archive`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test
+  ./internal/specaudit -count=1 -run
+  '^TestAudit(ClassifiesPullRequestBranch|ClassifiesPendingBranch|ClassifiesResidueBranch|PreservesUnmatchedWorktree|PreservesActiveRunSurvivors|ReportsUndeliveredArchiveHeldByBranch|ReportsNothingWhenClaimedArtifactsAreDelivered|ReportsUncommittedWorkingCopyArtifactAsUndelivered|ReportsUndeliveredArtifactWithNoHoldingBranch|DeliveryCheckLeavesGitStateByteIdentical|UsesConfiguredExternalSpecRootTree)$'
+  -v` — exit 0; all eleven selected survivor and delivery fixtures passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go vet
+  ./internal/specaudit` — exit 0.
+- `rtk gofmt -w internal/specaudit/audit.go
+  internal/specaudit/audit_test.go` — exit 0 before the final focused run.
+- `rtk git -c core.fsmonitor=false diff --check` — exit 0 before this Result
+  update.
+
+Acceptance evidence:
+
+1. `TestAuditReportsUndeliveredArchiveHeldByBranch` leaves the active folder on
+   `main`, archives it only on `ma/spec-close-archive`, and asserts the archived
+   path is undelivered with that holding branch.
+2. `TestAuditReportsNothingWhenClaimedArtifactsAreDelivered` commits both the
+   Spec folder and a Task-recorded implementation file on `main` and asserts an
+   empty delivery report.
+3. `TestAuditReportsUncommittedWorkingCopyArtifactAsUndelivered` creates the
+   Spec only in the working copy and asserts it remains undelivered with no
+   holder, proving the working tree is not delivery evidence.
+4. `TestAuditReportsUndeliveredArtifactWithNoHoldingBranch` records a file in a
+   Task commit, removes it from every branch tip, and asserts an empty holder
+   rather than a guessed branch.
+5. `TestAuditDeliveryCheckLeavesGitStateByteIdentical` snapshots every byte
+   under `.git` before and after the audit and compares the snapshots equal.
+   The production Git runner continues to use `--no-optional-locks`; the new
+   delivery path contains no fetch, pull, or write operation.
+
+`TestAuditUsesConfiguredExternalSpecRootTree` additionally proves that Spec
+folder delivery follows `specs.root` and the external repository's default
+tree instead of hard-coding `docs/specs` in the code repository.
+
+The commands under `## Verification` were not run; the Daemon owns those
+commands and Task settlement.
