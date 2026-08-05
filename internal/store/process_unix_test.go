@@ -78,9 +78,12 @@ func TestOwnerProcessControllerInspectTreeReportsOnlyLiveOwnedProcesses(t *testi
 	controller.processAbsent = func(pid int) (bool, error) {
 		return pid == exitedPID, nil
 	}
-	controller.ownedProcesses = func(pid int) ([]int, error) {
+	controller.ownedProcesses = func(pid int, identity string) ([]int, error) {
 		if pid != ownerPID {
 			t.Fatalf("owned process root = %d, want %d", pid, ownerPID)
+		}
+		if identity != "" {
+			t.Fatalf("owned process identity = %q, want empty legacy identity", identity)
 		}
 		return []int{childPID, exitedPID, ownerPID}, nil
 	}
@@ -178,7 +181,7 @@ func TestOwnerProcessControllerTerminateTreeReportsUnprovenAbsence(t *testing.T)
 		}
 		return false, hostErr
 	}
-	controller.ownedProcesses = func(gotPID int) ([]int, error) {
+	controller.ownedProcesses = func(gotPID int, _ string) ([]int, error) {
 		if gotPID != pid {
 			t.Fatalf("owned process root = %d, want %d", gotPID, pid)
 		}
@@ -210,6 +213,51 @@ func TestOwnerProcessControllerTerminateTreeReportsUnprovenAbsence(t *testing.T)
 	}
 	if !strings.Contains(outcome.Reason, hostErr.Error()) {
 		t.Fatalf("termination reason = %q, want host diagnostic %q", outcome.Reason, hostErr)
+	}
+}
+
+func TestOwnerProcessControllerTerminateTreeStopsRediscoveryWhenContextCanceled(t *testing.T) {
+	t.Parallel()
+	const pid = 424243
+	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller.processAbsent = func(gotPID int) (bool, error) {
+		if gotPID != pid {
+			t.Fatalf("absence read pid = %d, want %d", gotPID, pid)
+		}
+		return true, nil
+	}
+	enumerations := 0
+	controller.ownedProcesses = func(int, string) ([]int, error) {
+		enumerations++
+		return nil, errors.New("process enumeration must not run after cancellation")
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	outcomes, err := controller.TerminateTreeAndWait(ctx, pid, "")
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("termination error = %v, want context.Canceled", err)
+	}
+	if enumerations != 0 {
+		t.Fatalf("process tree enumerations = %d, want 0", enumerations)
+	}
+	if len(outcomes) != 1 || outcomes[0].PID != pid || !outcomes[0].Proven {
+		t.Fatalf("termination outcomes = %#v, want proven absent owner", outcomes)
+	}
+}
+
+func TestDescendantProcessPIDsAfterStartRejectsStaleParentLinks(t *testing.T) {
+	t.Parallel()
+	got := descendantProcessPIDsAfterStart(500, 200, []processParentWithStart{
+		{pid: 700, parentPID: 500, started: 100},
+		{pid: 701, parentPID: 700, started: 150},
+		{pid: 800, parentPID: 500, started: 250},
+		{pid: 801, parentPID: 800, started: 300},
+	})
+	want := []int{500, 800, 801}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("creation-bounded descendants = %v, want %v", got, want)
 	}
 }
 

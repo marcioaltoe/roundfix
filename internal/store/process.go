@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 )
@@ -45,7 +45,7 @@ type OwnerProcessControl struct {
 	pollInterval         time.Duration
 	processAbsent        func(int) (bool, error)
 	processStartIdentity func(context.Context, int) (string, error)
-	ownedProcesses       func(int) ([]int, error)
+	ownedProcesses       func(int, string) ([]int, error)
 	signalProcess        func(int, bool) error
 }
 
@@ -194,7 +194,7 @@ func (controller *OwnerProcessControl) InspectTree(
 	if err != nil {
 		return nil, err
 	}
-	owned, err := controller.ownedProcesses(pid)
+	owned, err := controller.ownedProcesses(pid, recordedIdentity)
 	if err != nil {
 		return nil, ownerProcessControlError(pid, "enumerate owned process tree", err)
 	}
@@ -237,7 +237,10 @@ func (controller *OwnerProcessControl) TerminateTreeAndWait(
 	}
 
 	for {
-		owned, err := controller.ownedProcesses(pid)
+		if err := ctx.Err(); err != nil {
+			return outcomes, ownerProcessControlError(pid, "terminate owned process tree", err)
+		}
+		owned, err := controller.ownedProcesses(pid, recordedIdentity)
 		if err != nil {
 			treeErr := ownerProcessControlError(pid, "enumerate owned process tree", err)
 			if _, ownerRecorded := seen[pid]; !ownerRecorded {
@@ -317,7 +320,7 @@ func normalizeProcessTree(ownerPID int, pids []int) []int {
 			result = append(result, pid)
 		}
 	}
-	sort.Ints(result)
+	slices.Sort(result)
 	return append([]int{ownerPID}, result...)
 }
 
@@ -328,6 +331,12 @@ func unprovenTerminationOutcome(pid int, err error) TerminationOutcome {
 type processParent struct {
 	pid       int
 	parentPID int
+}
+
+type processParentWithStart struct {
+	pid       int
+	parentPID int
+	started   uint64
 }
 
 func descendantProcessPIDs(ownerPID int, processes []processParent) []int {
@@ -352,6 +361,41 @@ func descendantProcessPIDs(ownerPID int, processes []processParent) []int {
 	for pid := range owned {
 		result = append(result, pid)
 	}
+	return result
+}
+
+// descendantProcessPIDsAfterStart accepts only parent-child links whose child
+// was created no earlier than its claimed parent. This prevents a stale parent
+// PID left by process reuse from attributing an older, unrelated process tree
+// to the Run owner.
+func descendantProcessPIDsAfterStart(
+	ownerPID int,
+	ownerStarted uint64,
+	processes []processParentWithStart,
+) []int {
+	owned := map[int]uint64{ownerPID: ownerStarted}
+	for {
+		added := false
+		for _, process := range processes {
+			if _, ok := owned[process.pid]; ok {
+				continue
+			}
+			parentStarted, ok := owned[process.parentPID]
+			if !ok || process.started < parentStarted {
+				continue
+			}
+			owned[process.pid] = process.started
+			added = true
+		}
+		if !added {
+			break
+		}
+	}
+	result := make([]int, 0, len(owned))
+	for pid := range owned {
+		result = append(result, pid)
+	}
+	slices.Sort(result)
 	return result
 }
 

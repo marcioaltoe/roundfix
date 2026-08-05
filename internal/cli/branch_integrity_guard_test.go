@@ -15,25 +15,28 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
-// A failed-QA branch set carries review evidence, not implementation work.
-// Branch Integrity must let watch consume that evidence without rewriting any
-// ref; reclamation remains reconcile's responsibility.
-func TestBranchIntegrityPreflightWatchDisregardsFourFailedQACycles(t *testing.T) {
+// A failed-QA branch set keeps only its newest evidence branch actionable.
+// Branch Integrity integrates that current branch normally while leaving the
+// proven-superseded branch refs for reconcile to reclaim.
+func TestBranchIntegrityPreflightWatchDisregardsOnlySupersededFailedQACycles(t *testing.T) {
 	t.Parallel()
 	const slug = "0066-run-teardown-reclaims-what-it-created"
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withRealReviewPreflight(t, repoDir, true)
 	branches, reports := createBranchIntegrityFailedQACycles(t, homeDir, repoDir, slug, 4)
+	currentBranch := branches[len(branches)-1]
+	currentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", currentBranch))
+	integrated := make([]string, 0, 1)
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
 		dependencies.listPendingRunWork = runworktree.ListPendingRunWork
 		dependencies.supersedingQAReport = runworktree.SupersedingQAReport
-		dependencies.integratePendingRunWork = func(_ context.Context, _ string, _ string, branch string) error {
-			t.Fatalf("preflight must not integrate disregarded QA branch %q", branch)
-			return nil
+		dependencies.integratePendingRunWork = func(ctx context.Context, root string, baseBranch string, branch string) error {
+			integrated = append(integrated, branch)
+			return runworktree.IntegratePendingRunWork(ctx, root, baseBranch, branch)
 		}
 	})
-	refsBefore := gitImplementOutput(t, repoDir, "for-each-ref", "--format=%(refname)=%(objectname)")
+	runRefsBefore := gitImplementOutput(t, repoDir, "for-each-ref", "--format=%(refname)=%(objectname)", "refs/heads/roundfix/run-")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -44,24 +47,29 @@ func TestBranchIntegrityPreflightWatchDisregardsFourFailedQACycles(t *testing.T)
 	if code != exitOK {
 		t.Fatalf("expected watch to proceed past four failed QA cycles, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	refsAfter := gitImplementOutput(t, repoDir, "for-each-ref", "--format=%(refname)=%(objectname)")
-	if refsAfter != refsBefore {
-		t.Fatalf("Git refs changed during Branch Integrity Preflight\nbefore:\n%s\nafter:\n%s", refsBefore, refsAfter)
+	runRefsAfter := gitImplementOutput(t, repoDir, "for-each-ref", "--format=%(refname)=%(objectname)", "refs/heads/roundfix/run-")
+	if runRefsAfter != runRefsBefore {
+		t.Fatalf("Run Branch refs changed during Branch Integrity Preflight\nbefore:\n%s\nafter:\n%s", runRefsBefore, runRefsAfter)
 	}
-	for index, branch := range branches {
+	if len(integrated) != 1 || integrated[0] != currentBranch {
+		t.Fatalf("integrated branches = %#v, want only current evidence branch %q", integrated, currentBranch)
+	}
+	if targetHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "feature/review")); targetHead != currentHead {
+		t.Fatalf("target branch head = %q, want current evidence head %q", targetHead, currentHead)
+	}
+	for _, branch := range branches[:len(branches)-1] {
 		line := branchIntegrityDiagnosticLine(stderr.String(), branch)
 		if line == "" {
 			t.Fatalf("expected disregard diagnostic for %q, got %q", branch, stderr.String())
 		}
-		proof := "proof=superseded by current QA Report"
-		if index == len(branches)-1 {
-			proof = "proof=current QA Report"
-		}
-		for _, want := range []string{proof, reports[len(reports)-1], "Git ref left unchanged"} {
+		for _, want := range []string{"proof=superseded by current QA Report", reports[len(reports)-1], "Git ref left unchanged"} {
 			if !strings.Contains(line, want) {
 				t.Fatalf("expected diagnostic for %q to contain %q, got %q", branch, want, line)
 			}
 		}
+	}
+	if line := branchIntegrityDiagnosticLine(stderr.String(), currentBranch); line != "" {
+		t.Fatalf("current evidence branch %q was disregarded: %q", currentBranch, line)
 	}
 }
 

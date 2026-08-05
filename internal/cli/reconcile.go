@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"roundfix/internal/app"
@@ -460,7 +461,7 @@ func inspectReconcileRunBranches(
 			}
 			branch := runworktree.BranchName(run.ID)
 			if active {
-				if branch == classification.Current || containsReconcileString(classification.Preserved, branch) {
+				if branch == classification.Current || slices.Contains(classification.Preserved, branch) {
 					report.PreservedCandidates = append(report.PreservedCandidates, reconcileDebrisResult{
 						Kind:          "runBranch",
 						RunID:         run.ID,
@@ -479,7 +480,7 @@ func inspectReconcileRunBranches(
 				existingClassifications[run.ID] == string(runworktree.ReconciliationReleased) {
 				continue
 			}
-			if containsReconcileString(classification.Releasable, branch) {
+			if slices.Contains(classification.Releasable, branch) {
 				if existingClassifications[run.ID] != string(runworktree.ReconciliationUnintegrated) {
 					report.PreservedCandidates = append(report.PreservedCandidates, reconcileDebrisResult{
 						Kind:          "runBranch",
@@ -568,15 +569,6 @@ func reconcileRunIDs(runs []store.Run) map[string]bool {
 	return ids
 }
 
-func containsReconcileString(values []string, want string) bool {
-	for _, value := range values {
-		if value == want {
-			return true
-		}
-	}
-	return false
-}
-
 func debrisCandidateAction(apply bool) string {
 	if apply {
 		return "reclaim after fresh proof"
@@ -623,6 +615,7 @@ func applyReconcileReport(
 	opts reconcileOptions,
 	report *reconcileReport,
 ) {
+	applyReconcileProcesses(ctx, report)
 	applyReconcileWorktrees(ctx, homeDir, opts, report)
 	for index := range report.RunBranchCandidates {
 		candidate := &report.RunBranchCandidates[index]
@@ -638,6 +631,9 @@ func applyReconcileReport(
 		report.DebrisSummary.RunBranchesApplied++
 	}
 
+}
+
+func applyReconcileProcesses(ctx context.Context, report *reconcileReport) {
 	controller := commandDependenciesForContext(ctx).reconcileProcesses
 	for index := range report.ProcessCandidates {
 		candidate := &report.ProcessCandidates[index]

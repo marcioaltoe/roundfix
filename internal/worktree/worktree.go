@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -505,7 +506,7 @@ func classifyRunBranchSet(
 		targetBranch: targetBranch,
 		specSlug:     specSlug,
 		runs:         cloneRuns(runs),
-		releasable:   cloneStringMap(result.ReleasableProofs),
+		releasable:   maps.Clone(result.ReleasableProofs),
 	}
 	return result, nil
 }
@@ -579,17 +580,6 @@ func cloneRuns(runs []store.Run) []store.Run {
 			completedAt := *cloned[index].CompletedAt
 			cloned[index].CompletedAt = &completedAt
 		}
-	}
-	return cloned
-}
-
-func cloneStringMap(values map[string]string) map[string]string {
-	if values == nil {
-		return nil
-	}
-	cloned := make(map[string]string, len(values))
-	for key, value := range values {
-		cloned[key] = value
 	}
 	return cloned
 }
@@ -1894,6 +1884,17 @@ func pruneReleasedRunTaskRefs(ctx context.Context, runner gitRunner, userRoot st
 
 func BranchName(runID string) string {
 	return runBranchPrefix + strings.TrimSpace(runID)
+}
+
+// RunIDFromBranchName returns the Run ID encoded by the canonical Run Branch
+// naming contract. An empty Run ID is not a valid Run Branch.
+func RunIDFromBranchName(branch string) (string, bool) {
+	runID, ok := strings.CutPrefix(strings.TrimSpace(branch), runBranchPrefix)
+	if !ok {
+		return "", false
+	}
+	runID = strings.TrimSpace(runID)
+	return runID, runID != ""
 }
 
 func TaskBranchName(runID string, taskID string) string {

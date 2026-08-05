@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"syscall"
 	"unsafe"
 
@@ -70,13 +72,15 @@ func signalOwnerProcess(pid int, force bool) error {
 	return nil
 }
 
-// processStartIdentity is unsupported on Windows: Runs created here record no
-// identity token and keep the legacy PID-only owner proof.
-func processStartIdentity(_ context.Context, _ int) (string, error) {
-	return "", ErrOwnerProcessUnsupported
+func processStartIdentity(_ context.Context, pid int) (string, error) {
+	started, err := processCreationTime(pid)
+	if err != nil {
+		return "", fmt.Errorf("read start time for process %d: %w", pid, err)
+	}
+	return fmt.Sprintf("windows:%d", started), nil
 }
 
-func processTreePIDs(ownerPID int) ([]int, error) {
+func processTreePIDs(ownerPID int, recordedIdentity string) ([]int, error) {
 	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
 		return nil, fmt.Errorf("read process table: %w", err)
@@ -103,5 +107,60 @@ func processTreePIDs(ownerPID int) ([]int, error) {
 			return nil, fmt.Errorf("read process table entry: %w", err)
 		}
 	}
-	return descendantProcessPIDs(ownerPID, parents), nil
+
+	ownerStarted, comparable := windowsProcessStart(recordedIdentity)
+	if !comparable {
+		ownerStarted, err = processCreationTime(ownerPID)
+		if err != nil {
+			return nil, fmt.Errorf("read owner process creation time: %w", err)
+		}
+	}
+	candidates := descendantProcessPIDs(ownerPID, parents)
+	started := make([]processParentWithStart, 0, len(candidates)-1)
+	parentsByPID := make(map[int]int, len(parents))
+	for _, process := range parents {
+		parentsByPID[process.pid] = process.parentPID
+	}
+	for _, pid := range candidates {
+		if pid == ownerPID {
+			continue
+		}
+		created, creationErr := processCreationTime(pid)
+		if errors.Is(creationErr, errorInvalidParameter) {
+			continue
+		}
+		if creationErr != nil {
+			return nil, fmt.Errorf("read process %d creation time: %w", pid, creationErr)
+		}
+		started = append(started, processParentWithStart{
+			pid:       pid,
+			parentPID: parentsByPID[pid],
+			started:   created,
+		})
+	}
+	return descendantProcessPIDsAfterStart(ownerPID, ownerStarted, started), nil
+}
+
+func processCreationTime(pid int) (uint64, error) {
+	handle, err := windows.OpenProcess(processQueryLimitedInformation, false, uint32(pid))
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		_ = windows.CloseHandle(handle)
+	}()
+	var created, exited, kernel, user windows.Filetime
+	if err := windows.GetProcessTimes(handle, &created, &exited, &kernel, &user); err != nil {
+		return 0, err
+	}
+	return uint64(created.HighDateTime)<<32 | uint64(created.LowDateTime), nil
+}
+
+func windowsProcessStart(identity string) (uint64, bool) {
+	value, ok := strings.CutPrefix(strings.TrimSpace(identity), "windows:")
+	if !ok || value == "" {
+		return 0, false
+	}
+	started, err := strconv.ParseUint(value, 10, 64)
+	return started, err == nil
 }

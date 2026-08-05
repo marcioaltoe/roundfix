@@ -599,6 +599,30 @@ func TestListPendingRunWorkReportsAheadRunBranches(t *testing.T) {
 	}
 }
 
+func TestRunIDFromBranchName(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		branch string
+		wantID string
+		wantOK bool
+	}{
+		{name: "canonical", branch: BranchName("run-123"), wantID: "run-123", wantOK: true},
+		{name: "surrounding whitespace", branch: "  " + BranchName("run-123") + "  ", wantID: "run-123", wantOK: true},
+		{name: "foreign branch", branch: "ma/spec-0066", wantOK: false},
+		{name: "empty Run ID", branch: BranchName(""), wantOK: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			gotID, gotOK := RunIDFromBranchName(tt.branch)
+			if gotID != tt.wantID || gotOK != tt.wantOK {
+				t.Fatalf("RunIDFromBranchName(%q) = (%q, %v), want (%q, %v)", tt.branch, gotID, gotOK, tt.wantID, tt.wantOK)
+			}
+		})
+	}
+}
+
 func TestIntegratePendingRunWorkFastForwardsBaseBranch(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -1512,6 +1536,41 @@ func TestApplyRunBranchCandidateRevalidatesProofAndCleanWorktree(t *testing.T) {
 	assertBranchRemoved(t, fixture.repoDir, candidate.Branch)
 	assertPathExists(t, fixture.refs[1].Path)
 	assertRunBranchExists(t, fixture.repoDir, fixture.refs[1].Branch)
+}
+
+func TestApplyRunBranchCandidatePreservesStaleSupersedingProof(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	classification, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+	candidate := fixture.refs[0]
+	commitWorktreeFile(
+		t,
+		fixture.repoDir,
+		qaReportTestPath(slug, "qa-report-2026-07-30.md", false),
+		"newer passing report\n",
+		"docs: newer QA report",
+	)
+
+	err = ApplyRunBranchCandidate(context.Background(), classification, candidate.Branch)
+
+	if err == nil || !strings.Contains(err.Error(), "superseding proof is stale") {
+		t.Fatalf("stale superseding proof error = %v, want preservation refusal", err)
+	}
+	assertPathExists(t, candidate.Path)
+	assertRunBranchExists(t, fixture.repoDir, candidate.Branch)
 }
 
 func TestApplyRunBranchCandidateRejectsUninspectedBranch(t *testing.T) {

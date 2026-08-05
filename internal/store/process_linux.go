@@ -40,7 +40,7 @@ func parseProcStatStartTime(stat []byte) (string, error) {
 	return startTime, nil
 }
 
-func processTreePIDs(ownerPID int) ([]int, error) {
+func processTreePIDs(ownerPID int, _ string) ([]int, error) {
 	entries, err := os.ReadDir("/proc")
 	if err != nil {
 		return nil, fmt.Errorf("read process table: %w", err)

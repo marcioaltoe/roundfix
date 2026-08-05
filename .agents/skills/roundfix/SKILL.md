@@ -1012,11 +1012,12 @@ comment, code change, commit, or push for `fetch`, `resolve`, and `watch`.
 
 - The preflight enumerates pending `roundfix/run-*` Run Branch work and kept
   worktrees bound to the PR Head Branch. Fast-forwardable work is integrated
-  automatically and journaled before the review Run continues. A failed-cycle
-  set proven from its QA Reports is never integrated automatically: preflight
-  reports the current evidence branch and each branch proven superseded by it,
-  leaves their Git refs unchanged, and disregards them so the review Run can
-  proceed. Reclaim them separately with `roundfix reconcile --apply`.
+  automatically and journaled before the review Run continues. For a
+  failed-cycle set proven from its QA Reports, preflight disregards only the
+  branches proven superseded by the current evidence branch and leaves those
+  superseded Git refs unchanged. The current evidence branch remains subject
+  to normal automatic integration or refusal. Reclaim superseded branches
+  separately with `roundfix reconcile --apply`.
 - Non-fast-forward pending work refuses the command with exit `2`, names each
   pending Run Branch and worktree, and prints the recovery command
   `git merge --ff-only <branch>`.

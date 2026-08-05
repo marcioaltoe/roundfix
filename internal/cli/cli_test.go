@@ -720,11 +720,23 @@ func TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches(t *testing.
 	assertReconcileDebrisCandidate(t, dryReport.RunBranchCandidates, "runBranch", newer.ID, newerRef.Branch, 0, nil)
 	assertReconcilePreservedCandidate(t, dryReport.PreservedCandidates, "process", active.ID, "Active Run")
 	assertReconcilePreservedCandidate(t, dryReport.PreservedCandidates, "runBranch", active.ID, "Active Run")
+	if !reflect.DeepEqual(processes.inspectedIdentities, []string{"test:4242"}) {
+		t.Fatalf("process inspection identities = %v, want [test:4242]", processes.inspectedIdentities)
+	}
 	if got := readReconcileBytes(t, store.DatabasePath(homeDir)); !bytes.Equal(got, beforeDatabase) {
 		t.Fatal("debris dry-run changed the Run Database")
 	}
 	if got := reconcileGitSurface(t, repoDir); got != beforeGit {
 		t.Fatalf("debris dry-run changed Git state\nbefore:\n%s\nafter:\n%s", beforeGit, got)
+	}
+	processes.beforeTerminate = func(pid int) {
+		if pid != 4242 {
+			t.Fatalf("termination root = %d, want 4242", pid)
+		}
+		assertReconcilePathState(t, olderRef.Path, true)
+		assertReconcileBranchState(t, repoDir, olderRef.Branch, true)
+		assertReconcilePathState(t, newerRef.Path, true)
+		assertReconcileBranchState(t, repoDir, newerRef.Branch, true)
 	}
 
 	var applyStdout bytes.Buffer
@@ -748,6 +760,14 @@ func TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches(t *testing.
 	}
 	if len(processes.terminated) != 1 || processes.terminated[0] != 4242 {
 		t.Fatalf("terminated process roots = %v, want [4242]", processes.terminated)
+	}
+	if !reflect.DeepEqual(processes.terminatedIdentities, []string{"test:4242"}) {
+		t.Fatalf("process termination identities = %v, want [test:4242]", processes.terminatedIdentities)
+	}
+	for _, identity := range processes.inspectedIdentities {
+		if identity != "test:4242" {
+			t.Fatalf("process inspection identity = %q, want test:4242", identity)
+		}
 	}
 	assertReconcilePathState(t, olderRef.Path, false)
 	assertReconcileBranchState(t, repoDir, olderRef.Branch, false)
@@ -773,6 +793,54 @@ func TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches(t *testing.
 	}
 	if got := reconcileGitSurface(t, repoDir); got != afterFirstGit {
 		t.Fatalf("second debris apply changed Git state\nbefore:\n%s\nafter:\n%s", afterFirstGit, got)
+	}
+}
+
+func TestRunReconcileApplyPreservesProcessWhenTerminationIsUnproven(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir, _ := newReconcileWorkspace(t)
+	run := createReconcileMetadataRun(t, homeDir, store.CreateRunRequest{
+		Kind:          store.KindImplement,
+		GitRoot:       repoDir,
+		LocalBranch:   "ma/widget-flow",
+		HeadSHA:       strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")),
+		SpecSlug:      "reconcile-process-spec",
+		Agent:         "codex",
+		OwnerPID:      4242,
+		OwnerIdentity: "test:4242",
+	}, store.StateFailed)
+	processes := &reconcileProcessControllerStub{
+		live: map[int][]int{4242: {4242}},
+		terminationOutcomes: map[int][]store.TerminationOutcome{
+			4242: {{PID: 4242, Reason: "host did not prove absence"}},
+		},
+	}
+	withReconcileProcessController(t, processes)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"reconcile", "--apply", "--format=json"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("unproven process apply exit = %d, want %d stderr=%q stdout=%q", code, exitRunFailed, stderr.String(), stdout.String())
+	}
+	var report reconcileReport
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatalf("decode unproven process report: %v\n%s", err, stdout.String())
+	}
+	if len(report.ProcessCandidates) != 1 {
+		t.Fatalf("process candidates = %+v, want one", report.ProcessCandidates)
+	}
+	candidate := report.ProcessCandidates[0]
+	if candidate.RunID != run.ID || candidate.Action != "preserve" ||
+		!strings.Contains(candidate.RefusalReason, "host did not prove absence") {
+		t.Fatalf("unproven process candidate = %+v, want preserved diagnostic", candidate)
+	}
+	if report.DebrisSummary.ProcessesApplied != 0 || report.Summary.OperationalFailures != 1 {
+		t.Fatalf("unproven process summary = debris %+v summary %+v", report.DebrisSummary, report.Summary)
+	}
+	if !reflect.DeepEqual(processes.live[4242], []int{4242}) {
+		t.Fatalf("unproven process tree was removed from controller state: %+v", processes.live)
 	}
 }
 
@@ -11458,20 +11526,32 @@ func commitReconcileQAReport(t *testing.T, workDir, slug, reportName, verdict st
 }
 
 type reconcileProcessControllerStub struct {
-	live       map[int][]int
-	terminated []int
+	live                 map[int][]int
+	terminated           []int
+	inspectedIdentities  []string
+	terminatedIdentities []string
+	terminationOutcomes  map[int][]store.TerminationOutcome
+	beforeTerminate      func(int)
 }
 
-func (controller *reconcileProcessControllerStub) InspectTree(_ context.Context, pid int, _ string) ([]int, error) {
+func (controller *reconcileProcessControllerStub) InspectTree(_ context.Context, pid int, identity string) ([]int, error) {
+	controller.inspectedIdentities = append(controller.inspectedIdentities, identity)
 	return append([]int(nil), controller.live[pid]...), nil
 }
 
 func (controller *reconcileProcessControllerStub) TerminateTreeAndWait(
 	_ context.Context,
 	pid int,
-	_ string,
+	identity string,
 ) ([]store.TerminationOutcome, error) {
 	controller.terminated = append(controller.terminated, pid)
+	controller.terminatedIdentities = append(controller.terminatedIdentities, identity)
+	if controller.beforeTerminate != nil {
+		controller.beforeTerminate(pid)
+	}
+	if outcomes, configured := controller.terminationOutcomes[pid]; configured {
+		return append([]store.TerminationOutcome(nil), outcomes...), nil
+	}
 	pids := controller.live[pid]
 	outcomes := make([]store.TerminationOutcome, 0, len(pids))
 	for _, ownedPID := range pids {

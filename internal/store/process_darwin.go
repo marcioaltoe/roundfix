@@ -27,7 +27,7 @@ func processStartIdentity(_ context.Context, pid int) (string, error) {
 	return fmt.Sprintf("darwin:%d.%d", started.Sec, started.Usec), nil
 }
 
-func processTreePIDs(ownerPID int) ([]int, error) {
+func processTreePIDs(ownerPID int, _ string) ([]int, error) {
 	group, err := unix.SysctlKinfoProcSlice("kern.proc.pgrp", ownerPID)
 	if err != nil {
 		return nil, fmt.Errorf("read owner process group: %w", err)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -39,7 +40,11 @@ func main() {
 	if err != nil {
 		fatalf("open Run Database: %v", err)
 	}
-	defer runStore.Close()
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			fatalf("close Run Database: %v", err)
+		}
+	}()
 
 	report := fixtureReport{Terminal: make([]fixtureRun, 0, 4)}
 	for index := 1; index <= 4; index++ {
@@ -119,11 +124,14 @@ func createRun(
 func git(dir string, args ...string) string {
 	command := exec.Command("git", args...)
 	command.Dir = dir
-	output, err := command.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+	err := command.Run()
 	if err != nil {
-		fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output)
+		fatalf("git %s: %v\n%s", strings.Join(args, " "), err, stderr.String())
 	}
-	return string(output)
+	return stdout.String()
 }
 
 func fatalf(format string, args ...any) {

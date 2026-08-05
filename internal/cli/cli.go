@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1941,21 +1942,15 @@ func branchIntegrityActionablePending(
 }
 
 func branchIntegrityContainsDisregarded(disregarded []branchIntegrityDisregardedWork, branch string) bool {
-	for _, work := range disregarded {
-		if work.Branch == branch {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(disregarded, func(work branchIntegrityDisregardedWork) bool {
+		return work.Branch == branch
+	})
 }
 
 func branchIntegrityContainsPending(pending []runworktree.PendingRunWork, branch string) bool {
-	for _, work := range pending {
-		if work.Branch == branch {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(pending, func(work runworktree.PendingRunWork) bool {
+		return work.Branch == branch
+	})
 }
 
 func requireCleanTrackedReviewTree(ctx context.Context, commandName string, preflightResult preflight.Result) error {
@@ -2107,8 +2102,8 @@ func filterPendingRunWorkByTarget(
 	}
 	bySpec := make(map[string]*classifiedSpec)
 	for _, work := range pending {
-		runID := strings.TrimPrefix(work.Branch, "roundfix/run-")
-		if runID == work.Branch || strings.TrimSpace(runID) == "" {
+		runID, runBranch := runworktree.RunIDFromBranchName(work.Branch)
+		if !runBranch {
 			filtered = append(filtered, work)
 			continue
 		}
@@ -2159,21 +2154,6 @@ func filterPendingRunWorkByTarget(
 		}
 		if classification.Current != "" {
 			classified[classification.Current] = struct{}{}
-		}
-		if len(classification.Releasable) > 0 && classification.Current != "" {
-			if work, ok := branchIntegrityPendingByBranch(group.branches, classification.Current); ok {
-				_, alreadyPreserved := preservedBranches[work.Branch]
-				if !alreadyPreserved {
-					if strings.TrimSpace(classification.CurrentReport) == "" {
-						preserve(work)
-					} else {
-						disregarded = append(disregarded, branchIntegrityDisregardedWork{
-							PendingRunWork: work,
-							Proof:          fmt.Sprintf("current QA Report %q classifies the failed-cycle set", classification.CurrentReport),
-						})
-					}
-				}
-			}
 		}
 		for _, branch := range classification.Releasable {
 			classified[branch] = struct{}{}
@@ -2236,7 +2216,9 @@ func branchIntegrityWithoutPending(
 ) []runworktree.PendingRunWork {
 	kept := make([]runworktree.PendingRunWork, 0, len(pending))
 	for _, work := range pending {
-		if branchIntegrityContainsPending(removed, work.Branch) {
+		if slices.ContainsFunc(removed, func(removedWork runworktree.PendingRunWork) bool {
+			return removedWork.Branch == work.Branch
+		}) {
 			continue
 		}
 		kept = append(kept, work)
