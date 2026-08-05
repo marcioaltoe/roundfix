@@ -70,6 +70,25 @@ type EvidenceSource interface {
 	Evidence(context.Context, EvidenceRequest) (Evidence, error)
 }
 
+// ReviewRequester publishes one Review Source request for a pushed head.
+// It never waits for, infers, or returns Evidence: asking is not an answer.
+type ReviewRequester interface {
+	RequestReview(context.Context, ReviewRequest) (ReviewRequestOutcome, error)
+}
+
+type ReviewRequest struct {
+	RunID          string
+	BaseRepository string
+	PRNumber       string
+	HeadSHA        string
+	Command        string
+}
+
+type ReviewRequestOutcome struct {
+	Published bool
+	Marker    string
+}
+
 // BoundEvidenceDetail truncates Review Source-authored text on a rune boundary.
 func BoundEvidenceDetail(detail string) string {
 	if len(detail) <= MaxEvidenceDetailLength {
