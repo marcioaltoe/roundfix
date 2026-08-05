@@ -179,3 +179,16 @@ go test ./internal/baseline -count=1 \
 
 The flag names are recorded verbatim because they do not match their test names
 and have been guessed wrong. Spec 0067 owns fixing that gap.
+
+### Specs covered by the standing CLI-synchronisation grant
+
+The grant above is bounded by purpose rather than by Spec, but a Spec citing it
+must be named here so the citation is checkable — `SC-TOOLING-UNAUTHORIZED`
+refuses a Spec that cites a record not naming it, which is the defect that cost
+Spec 0072 four gate executions.
+
+Named to date: **0059, 0066, 0068, 0069, 0073, 0077**.
+
+Adding a Spec to this list is not a new grant. It records that an existing,
+purpose-bounded authorization reaches it, and the boundary is unchanged: only
+edits keeping the Skill's documented contract equal to the shipped CLI.
