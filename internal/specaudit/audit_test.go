@@ -19,6 +19,8 @@ import (
 
 const auditFixtureSlug = "0068-spec-close-audit"
 
+const auditSessionReplayFindingPath = "docs/findings/2026-08-02-a-spec-cycle-leaves-branches-and-worktrees-nobody-audits.md"
+
 type auditFixture struct {
 	t       *testing.T
 	ctx     context.Context
@@ -160,6 +162,72 @@ func TestAuditPreservesActiveRunSurvivors(t *testing.T) {
 	assertEverySurvivorHasEvidence(t, result)
 }
 
+func TestAuditReplaysMotivatingSessionResidue(t *testing.T) {
+	t.Parallel()
+	fixture := newAuditFixture(t)
+	replay := fixture.replayMotivatingSession()
+
+	if replay.findingPath != auditSessionReplayFindingPath {
+		t.Fatalf("replay finding path = %q, want %q", replay.findingPath, auditSessionReplayFindingPath)
+	}
+
+	result := fixture.audit()
+	for _, survivor := range result.Survivors {
+		if survivor.Name == "origin/HEAD" || survivor.Name == "origin/main" {
+			t.Fatalf("default branch alias reported as survivor: %#v", survivor)
+		}
+	}
+	for _, path := range replay.scratchWorktrees {
+		survivor := requireSurvivor(t, result, path, true)
+		if survivor.Kind != KindPreserved {
+			t.Fatalf("scratch worktree %q kind = %q, want %q", path, survivor.Kind, KindPreserved)
+		}
+		if !strings.Contains(survivor.Evidence, "no matching Run") {
+			t.Fatalf("scratch worktree %q evidence = %q, want missing Run evidence", path, survivor.Evidence)
+		}
+		if survivor.Reclaim != "" {
+			t.Fatalf("scratch worktree %q reclaim = %q, want empty", path, survivor.Reclaim)
+		}
+	}
+
+	orphaned := requireSurvivor(t, result, replay.orphanedRunWorktree, true)
+	if orphaned.Kind != KindResidue {
+		t.Fatalf("orphaned Run Worktree kind = %q, want %q", orphaned.Kind, KindResidue)
+	}
+	if !strings.Contains(orphaned.Evidence, "content is fully represented") {
+		t.Fatalf("orphaned Run Worktree evidence = %q, want content integration proof", orphaned.Evidence)
+	}
+	if orphaned.Reclaim == "" {
+		t.Fatal("orphaned Run Worktree has no reclaim command")
+	}
+
+	backup := requireSurvivor(t, result, replay.remoteBackupBranch, false)
+	if backup.Kind != KindResidue {
+		t.Fatalf("remote backup branch kind = %q, want %q", backup.Kind, KindResidue)
+	}
+	if !strings.Contains(backup.Evidence, "reachable from default branch") {
+		t.Fatalf("remote backup branch evidence = %q, want reachability proof", backup.Evidence)
+	}
+	wantBackupReclaim := "git push --delete 'origin' 'roundfix/run-run_20260731T195234Z_backup'"
+	if backup.Reclaim != wantBackupReclaim {
+		t.Fatalf("remote backup branch reclaim = %q, want %q", backup.Reclaim, wantBackupReclaim)
+	}
+
+	for _, pullRequest := range replay.pullRequests {
+		survivor := requireSurvivor(t, result, pullRequest.branch, false)
+		if survivor.Kind != KindPullRequest {
+			t.Fatalf("Pull Request branch %q kind = %q, want %q", pullRequest.branch, survivor.Kind, KindPullRequest)
+		}
+		if !strings.Contains(survivor.Evidence, "Pull Request #"+pullRequest.number) {
+			t.Fatalf("Pull Request branch %q evidence = %q, want Pull Request #%s", pullRequest.branch, survivor.Evidence, pullRequest.number)
+		}
+		if survivor.Reclaim != "" {
+			t.Fatalf("Pull Request branch %q reclaim = %q, want empty", pullRequest.branch, survivor.Reclaim)
+		}
+	}
+	assertEverySurvivorHasEvidence(t, result)
+}
+
 func TestAuditReportsUndeliveredArchiveHeldByBranch(t *testing.T) {
 	t.Parallel()
 	fixture := newAuditFixture(t)
@@ -296,6 +364,19 @@ func TestAuditUsesConfiguredExternalSpecRootTree(t *testing.T) {
 	}
 }
 
+type auditSessionReplay struct {
+	findingPath         string
+	scratchWorktrees    []string
+	orphanedRunWorktree string
+	remoteBackupBranch  string
+	pullRequests        []auditReplayPullRequest
+}
+
+type auditReplayPullRequest struct {
+	branch string
+	number string
+}
+
 func newAuditFixture(t *testing.T) *auditFixture {
 	t.Helper()
 	root := t.TempDir()
@@ -344,6 +425,11 @@ func (fixture *auditFixture) commitBranch(branch, filename string) {
 func (fixture *auditFixture) addWorktree(branch, filename string) string {
 	fixture.t.Helper()
 	worktreePath := filepath.Join(filepath.Dir(fixture.repoDir), strings.ReplaceAll(branch, "/", "-"))
+	return fixture.addWorktreeAt(branch, worktreePath, filename)
+}
+
+func (fixture *auditFixture) addWorktreeAt(branch, worktreePath, filename string) string {
+	fixture.t.Helper()
 	fixture.git("worktree", "add", "-b", branch, worktreePath, "main")
 	writeAuditFixtureFile(fixture.t, filepath.Join(worktreePath, filename), branch+"\n")
 	gittest.Run(fixture.t, worktreePath, "add", filename)
@@ -359,6 +445,72 @@ func (fixture *auditFixture) addWorktree(branch, filename string) string {
 		fixture.t.Fatalf("resolve fixture worktree path: %v", err)
 	}
 	return resolved
+}
+
+func (fixture *auditFixture) replayMotivatingSession() auditSessionReplay {
+	fixture.t.Helper()
+
+	scratchWorktrees := []string{
+		fixture.addWorktree("ma/archive-0058", "archive-scratch.txt"),
+		fixture.addWorktree("ma/spec-queue-from-findings", "queue-scratch.txt"),
+	}
+
+	targetBranch := "ma/npm-trusted-publishing-and-release-preflight"
+	fixture.git("branch", targetBranch, "main")
+	orphanedRunWorktree := filepath.Join(filepath.Dir(fixture.repoDir), "orphaned-run-worktree")
+	run := fixture.createImplementRun(targetBranch, orphanedRunWorktree, store.StateClean)
+	runBranch := store.RunBranchPrefix + run.ID
+	orphanedRunWorktree = fixture.addWorktreeAt(runBranch, orphanedRunWorktree, "squash-merged.txt")
+	fixture.git("merge", "--squash", runBranch)
+	fixture.git("commit", "-m", "feat: squash merge orphaned Run fixture")
+	fixture.git("branch", "-D", targetBranch)
+
+	remoteDir := filepath.Join(filepath.Dir(fixture.repoDir), "remote.git")
+	gittest.InitRepo(fixture.t, remoteDir, "--bare")
+	fixture.git("remote", "add", "origin", remoteDir)
+	remoteBackupBranch := "roundfix/run-run_20260731T195234Z_backup"
+	fixture.commitBranch(remoteBackupBranch, "remote-backup.txt")
+	fixture.git("merge", "--ff-only", remoteBackupBranch)
+	fixture.git("push", "origin", remoteBackupBranch)
+	fixture.git("branch", "-D", remoteBackupBranch)
+	writeAuditFixtureFile(fixture.t, filepath.Join(fixture.repoDir, "after-backup.txt"), "newer default work\n")
+	fixture.git("add", "after-backup.txt")
+	fixture.git(
+		"commit",
+		"-m", "feat: advance default after backup",
+		"-m", "Roundfix-Spec: "+auditFixtureSlug,
+	)
+	fixture.git("push", "origin", "main")
+	gittest.Run(fixture.t, remoteDir, "symbolic-ref", "HEAD", "refs/heads/main")
+	fixture.git("remote", "set-head", "origin", "-a")
+
+	pullRequests := []auditReplayPullRequest{
+		{branch: "ma/archive-0058-pr", number: "58"},
+		{branch: "ma/spec-queue-pr", number: "68"},
+	}
+	for _, pullRequest := range pullRequests {
+		fixture.commitBranch(pullRequest.branch, pullRequest.number+".txt")
+		fixture.createRun(store.CreateRunRequest{
+			Kind:           store.KindFetch,
+			HeadRepository: "owner/repository",
+			HeadBranch:     pullRequest.branch,
+			BaseRepository: "owner/repository",
+			PRNumber:       pullRequest.number,
+			GitRoot:        fixture.repoDir,
+			LocalBranch:    pullRequest.branch,
+			HeadSHA:        fixture.git("rev-parse", pullRequest.branch),
+			ArtifactDir:    filepath.Join(fixture.homeDir, "artifacts", pullRequest.number),
+			SpecSlug:       auditFixtureSlug,
+		}, store.StateClean)
+	}
+
+	return auditSessionReplay{
+		findingPath:         auditSessionReplayFindingPath,
+		scratchWorktrees:    scratchWorktrees,
+		orphanedRunWorktree: orphanedRunWorktree,
+		remoteBackupBranch:  "origin/" + remoteBackupBranch,
+		pullRequests:        pullRequests,
+	}
 }
 
 func (fixture *auditFixture) createImplementRun(branch, workDir, state string) store.Run {

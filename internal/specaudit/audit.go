@@ -85,6 +85,12 @@ type worktree struct {
 	Branch string
 }
 
+type branchRef struct {
+	Name         string
+	Remote       string
+	RemoteBranch string
+}
+
 type auditInputs struct {
 	runsByWorktree  map[string]store.Run
 	runsByRunBranch map[string]store.Run
@@ -183,6 +189,7 @@ func audit(
 	if err != nil {
 		return Result{}, fmt.Errorf("audit Spec survivors: resolve default branch: %w", err)
 	}
+	defaultBranches := defaultBranchAliases(ctx, runner, repoRoot, defaultRef, defaultName, branches)
 	deliveryBranches, err := listDeliveryBranches(ctx, runner, repoRoot)
 	if err != nil {
 		return Result{}, fmt.Errorf("audit Spec delivery: enumerate branches: %w", err)
@@ -202,15 +209,15 @@ func audit(
 	inputs.defaultRef = defaultRef
 	inputs.defaultName = defaultName
 	for _, branch := range branches {
-		if branch == defaultName || inputs.associated[branch] {
+		if defaultBranches[branch.Name] || branchAssociated(branch, inputs.associated) {
 			continue
 		}
-		belongs, err := branchTipBelongsToSpec(ctx, runner, repoRoot, branch, slug)
+		belongs, err := branchTipBelongsToSpec(ctx, runner, repoRoot, branch.Name, slug)
 		if err != nil {
-			return Result{}, fmt.Errorf("audit Spec survivors: inspect branch %q provenance: %w", branch, err)
+			return Result{}, fmt.Errorf("audit Spec survivors: inspect branch %q provenance: %w", branch.Name, err)
 		}
 		if belongs {
-			inputs.associated[branch] = true
+			inputs.associated[branch.Name] = true
 		}
 	}
 
@@ -220,7 +227,7 @@ func audit(
 		Undelivered: []Undelivered{},
 	}
 	for _, branch := range branches {
-		if branch == defaultName || !inputs.associated[branch] {
+		if defaultBranches[branch.Name] || !branchAssociated(branch, inputs.associated) {
 			continue
 		}
 		result.Survivors = append(result.Survivors, classifyBranch(ctx, runner, repoRoot, branch, inputs))
@@ -619,21 +626,40 @@ func classifyBranch(
 	ctx context.Context,
 	runner gitRunner,
 	repoRoot string,
-	branch string,
+	branch branchRef,
 	inputs auditInputs,
 ) Survivor {
-	if run, exists := inputs.pullRequests[branch]; exists {
-		return pullRequestSurvivor(branch, false, run)
+	if run, exists := branchRun(branch, inputs.pullRequests); exists {
+		return pullRequestSurvivor(branch.Name, false, run)
 	}
-	if run, exists := inputs.active[branch]; exists {
-		return activeRunSurvivor(branch, false, run)
+	if run, exists := branchRun(branch, inputs.active); exists {
+		return activeRunSurvivor(branch.Name, false, run)
 	}
-	classification := classifyGitRef(ctx, runner, repoRoot, branch, inputs.defaultRef, inputs.defaultName)
-	classification.Name = branch
+	classification := classifyGitRef(ctx, runner, repoRoot, branch.Name, inputs.defaultRef, inputs.defaultName)
+	classification.Name = branch.Name
 	if classification.Kind == KindResidue {
-		classification.Reclaim = "git branch -d -- " + shellQuote(branch)
+		if branch.Remote != "" {
+			classification.Reclaim = "git push --delete " + shellQuote(branch.Remote) + " " + shellQuote(branch.RemoteBranch)
+		} else {
+			classification.Reclaim = "git branch -d -- " + shellQuote(branch.Name)
+		}
 	}
 	return classification
+}
+
+func branchAssociated(branch branchRef, associated map[string]bool) bool {
+	return associated[branch.Name] || (branch.RemoteBranch != "" && associated[branch.RemoteBranch])
+}
+
+func branchRun(branch branchRef, runs map[string]store.Run) (store.Run, bool) {
+	if run, exists := runs[branch.Name]; exists {
+		return run, true
+	}
+	if branch.RemoteBranch != "" {
+		run, exists := runs[branch.RemoteBranch]
+		return run, exists
+	}
+	return store.Run{}, false
 }
 
 func classifyWorktree(
@@ -835,14 +861,66 @@ func compareContent(
 	return countNULTerms(runOnlyOutput), countNULTerms(differingOutput), nil
 }
 
-func listBranches(ctx context.Context, runner gitRunner, repoRoot string) ([]string, error) {
-	output, err := runner.Run(ctx, repoRoot, "for-each-ref", "--format=%(refname:short)", "refs/heads")
+func listBranches(ctx context.Context, runner gitRunner, repoRoot string) ([]branchRef, error) {
+	output, err := runner.Run(
+		ctx,
+		repoRoot,
+		"for-each-ref",
+		"--format=%(refname)",
+		"refs/heads",
+		"refs/remotes",
+	)
 	if err != nil {
 		return nil, err
 	}
-	branches := nonEmptyLines(output)
-	sort.Strings(branches)
+	branches := make([]branchRef, 0)
+	for _, ref := range nonEmptyLines(output) {
+		switch {
+		case strings.HasPrefix(ref, "refs/heads/"):
+			branches = append(branches, branchRef{Name: strings.TrimPrefix(ref, "refs/heads/")})
+		case strings.HasPrefix(ref, "refs/remotes/"):
+			name := strings.TrimPrefix(ref, "refs/remotes/")
+			remote, remoteName, found := strings.Cut(name, "/")
+			if !found || remoteName == "HEAD" {
+				continue
+			}
+			branches = append(branches, branchRef{
+				Name:         name,
+				Remote:       remote,
+				RemoteBranch: remoteName,
+			})
+		}
+	}
+	sort.Slice(branches, func(left, right int) bool {
+		return branches[left].Name < branches[right].Name
+	})
 	return branches, nil
+}
+
+func defaultBranchAliases(
+	ctx context.Context,
+	runner gitRunner,
+	repoRoot string,
+	defaultRef string,
+	defaultName string,
+	branches []branchRef,
+) map[string]bool {
+	aliases := map[string]bool{defaultName: true}
+	if !strings.HasSuffix(defaultRef, "/HEAD") {
+		return aliases
+	}
+	target, err := runner.Run(ctx, repoRoot, "symbolic-ref", "--quiet", "--short", defaultRef)
+	if err != nil {
+		return aliases
+	}
+	target = strings.TrimSpace(target)
+	aliases[target] = true
+	for _, branch := range branches {
+		if branch.Name == target && branch.RemoteBranch != "" {
+			aliases[branch.RemoteBranch] = true
+		}
+	}
+	return aliases
 }
 
 func listDeliveryBranches(ctx context.Context, runner gitRunner, repoRoot string) ([]string, error) {
