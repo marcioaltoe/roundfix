@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0077-a-green-check-is-not-a-review
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---
