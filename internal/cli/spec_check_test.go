@@ -1,19 +1,23 @@
-// Suite: Spec Consistency Check command
-// Invariant: the CLI selects the requested Specs and exposes checker results through stable streams and exit codes.
-// Boundary IN: public Run dispatch, configured Spec Root resolution, active-Spec discovery, and speccheck renderers
-// Boundary OUT: detector correctness, which internal/speccheck tests own
+// Suite: Spec commands
+// Invariant: the CLI exposes Spec checks and close audits through stable streams, schemas, and exit codes.
+// Boundary IN: public Run dispatch, configured Spec Root resolution, command renderers, and real Git and Run Database fixtures
+// Boundary OUT: checker and audit classification correctness, owned by internal/speccheck and internal/specaudit
 package cli
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"roundfix/internal/gittest"
 	"roundfix/internal/speccheck"
+	"roundfix/internal/store"
 )
 
 func TestRunSpecCheckCleanText(t *testing.T) {
@@ -226,6 +230,261 @@ func TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList(t *testing.T) {
 	if stderr.String() != "" {
 		t.Fatalf("help stderr = %q, want empty", stderr.String())
 	}
+}
+
+func TestRunSpecAuditCleanText(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newSpecAuditWorkspace(t)
+	archiveSpecAuditFixture(t, repoDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"spec", "audit", specAuditFixtureSlug}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("spec audit exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	want := "Spec audit " + specAuditFixtureSlug + "\nNo residue or undelivered work.\n"
+	if stdout.String() != want {
+		t.Fatalf("stdout = %q, want clean report %q", stdout.String(), want)
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want no diagnostics", stderr.String())
+	}
+}
+
+func TestRunSpecAuditResidueText(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newSpecAuditWorkspace(t)
+	const branch = "ma/spec-audit-residue"
+	gitImplement(t, repoDir, "checkout", "-b", branch)
+	mustWrite(t, filepath.Join(repoDir, "residue.txt"), "residue\n")
+	gitImplement(t, repoDir, "add", "residue.txt")
+	gitImplement(
+		t,
+		repoDir,
+		"commit",
+		"-m", "feat: add residue fixture",
+		"-m", "Roundfix-Spec: "+specAuditFixtureSlug,
+	)
+	gitImplement(t, repoDir, "checkout", "main")
+	gitImplement(t, repoDir, "merge", "--squash", branch)
+	gitImplement(t, repoDir, "commit", "-m", "feat: merge residue fixture")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"spec", "audit", specAuditFixtureSlug}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("spec audit exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	for _, want := range []string{
+		"residue branch " + branch,
+		"evidence: survivor content is fully represented",
+		"reclaim: git branch -d -- '" + branch + "'",
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("stdout does not contain %q:\n%s", want, stdout.String())
+		}
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want no diagnostics", stderr.String())
+	}
+}
+
+func TestRunSpecAuditUndeliveredTextNamesHoldingBranch(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newSpecAuditWorkspace(t)
+	const branch = "ma/spec-audit-archive"
+	gitImplement(t, repoDir, "checkout", "-b", branch)
+	archivedPath := filepath.ToSlash(filepath.Join("docs", "specs", "_archived", specAuditFixtureSlug))
+	if err := os.MkdirAll(filepath.Dir(filepath.Join(repoDir, archivedPath)), 0o755); err != nil {
+		t.Fatalf("create archived Spec parent: %v", err)
+	}
+	gitImplement(t, repoDir, "mv", filepath.ToSlash(filepath.Join("docs", "specs", specAuditFixtureSlug)), archivedPath)
+	gitImplement(
+		t,
+		repoDir,
+		"commit",
+		"-m", "docs: archive Spec audit fixture",
+		"-m", "Roundfix-Spec: "+specAuditFixtureSlug,
+	)
+	gitImplement(t, repoDir, "checkout", "main")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"spec", "audit", specAuditFixtureSlug}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("spec audit exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	for _, want := range []string{archivedPath, "held by: " + branch} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("stdout does not contain %q:\n%s", want, stdout.String())
+		}
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want no diagnostics", stderr.String())
+	}
+}
+
+func TestRunSpecAuditJSONWritesOneObject(t *testing.T) {
+	t.Parallel()
+	_, _ = newSpecAuditWorkspace(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{
+		"spec", "audit", specAuditFixtureSlug, "--format", "json",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("spec audit exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	decoder := json.NewDecoder(strings.NewReader(stdout.String()))
+	var document struct {
+		Schema string `json:"schema"`
+		Slug   string `json:"slug"`
+	}
+	if err := decoder.Decode(&document); err != nil {
+		t.Fatalf("stdout is not JSON: %v; stdout=%q", err, stdout.String())
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		t.Fatalf("stdout contains more than one JSON object: %v; stdout=%q", err, stdout.String())
+	}
+	if document.Schema != specAuditSchemaVersion || document.Slug != specAuditFixtureSlug {
+		t.Fatalf(
+			"document = %#v, want schema %q slug %q",
+			document,
+			specAuditSchemaVersion,
+			specAuditFixtureSlug,
+		)
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want no diagnostics", stderr.String())
+	}
+}
+
+func TestRunSpecAuditUnknownSlugIsUsageError(t *testing.T) {
+	t.Parallel()
+	_, _ = newSpecAuditWorkspace(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{
+		"spec", "audit", "no-such-slug", "--format", "json",
+	}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("unknown slug exit = %d, want %d", code, exitPreflight)
+	}
+	if stdout.String() != "" {
+		t.Fatalf("stdout = %q, want no partial JSON", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "no-such-slug") {
+		t.Fatalf("stderr does not name unknown slug: %q", stderr.String())
+	}
+}
+
+func TestRunSpecAuditHelpAppearsInUsageAndCommandList(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"--help"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("top-level help exit = %d, want %d", code, exitOK)
+	}
+	for _, want := range []string{
+		"roundfix spec audit <slug> [--format <text|json>]",
+		"spec       Check Spec artifact consistency; audit Spec delivery",
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("top-level help does not contain %q:\n%s", want, stdout.String())
+		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = runCLIContext(t, context.Background(), []string{"spec", "audit", "--help"}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("spec audit help exit = %d, want %d", code, exitOK)
+	}
+	for _, want := range []string{"--format", "0  no residue", "1  residue or undelivered work", "2  usage error or unknown Spec slug"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("spec audit help does not contain %q:\n%s", want, stdout.String())
+		}
+	}
+	if stderr.String() != "" {
+		t.Fatalf("help stderr = %q, want empty", stderr.String())
+	}
+}
+
+func TestRunSpecAuditPreservesSpecCheckBehavior(t *testing.T) {
+	t.Parallel()
+	_, _ = newSpecCheckWorkspace(t, "clean")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"spec", "check", "clean"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("spec check exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings.\n") {
+		t.Fatalf("spec check stdout = %q, want unchanged clean report prefix", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "[error]") || strings.Contains(stdout.String(), "[gap]") {
+		t.Fatalf("spec check clean stdout contains a finding:\n%s", stdout.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("spec check stderr = %q, want empty", stderr.String())
+	}
+}
+
+const specAuditFixtureSlug = "0068-spec-close-audit"
+
+func newSpecAuditWorkspace(t *testing.T) (string, string) {
+	t.Helper()
+	homeDir := t.TempDir()
+	repoDir := t.TempDir()
+	gittest.InitRepo(t, repoDir, "--initial-branch=main")
+	gittest.AppendConfig(t, repoDir, "[user]\n\tname = Roundfix Test\n\temail = roundfix-test@example.com\n[commit]\n\tgpgsign = false\n")
+	if err := os.MkdirAll(filepath.Join(repoDir, "docs", "specs", specAuditFixtureSlug), 0o755); err != nil {
+		t.Fatalf("create fixture Spec directory: %v", err)
+	}
+	mustWrite(
+		t,
+		filepath.Join(repoDir, "docs", "specs", specAuditFixtureSlug, "_prd.md"),
+		"---\nspec: "+specAuditFixtureSlug+"\nstatus: active\n---\n",
+	)
+	gitImplement(t, repoDir, "add", "-A")
+	gitImplement(t, repoDir, "commit", "-m", "docs: seed Spec audit fixture")
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open fixture Run Database: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close fixture Run Database: %v", err)
+	}
+	resolved, err := filepath.EvalSymlinks(repoDir)
+	if err != nil {
+		t.Fatalf("resolve repo dir: %v", err)
+	}
+	setCommandEnvironmentForTest(t, homeDir, resolved)
+	return homeDir, resolved
+}
+
+func archiveSpecAuditFixture(t *testing.T, repoDir string) {
+	t.Helper()
+	activePath := filepath.ToSlash(filepath.Join("docs", "specs", specAuditFixtureSlug))
+	archivedPath := filepath.ToSlash(filepath.Join("docs", "specs", "_archived", specAuditFixtureSlug))
+	if err := os.MkdirAll(filepath.Dir(filepath.Join(repoDir, archivedPath)), 0o755); err != nil {
+		t.Fatalf("create archived Spec parent: %v", err)
+	}
+	gitImplement(t, repoDir, "mv", activePath, archivedPath)
+	gitImplement(t, repoDir, "commit", "-m", "docs: archive Spec audit fixture")
 }
 
 func newSpecCheckWorkspace(t *testing.T, slugs ...string) (string, string) {

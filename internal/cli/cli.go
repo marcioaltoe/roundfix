@@ -51,6 +51,7 @@ Usage:
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
   roundfix spec check [<slug> ...] [--format <text|json>] [--strict]
+  roundfix spec audit <slug> [--format <text|json>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -85,7 +86,7 @@ Commands:
   settle     Verify and commit all current worktree changes for one failed Task
   reconcile  Inspect or release proven terminal spec Run worktrees
   release    Plan the next release version without mutating repository or release state
-  spec       Check Spec artifact consistency
+  spec       Check Spec artifact consistency; audit Spec delivery
   baseline   Plan, apply, and validate a Context-Driven Baseline
   profiles   Show Agent Selection Profiles and advisory recommendations
   archive    Archive a completed Spec
@@ -5278,6 +5279,8 @@ Options:
 		return archiveUsage
 	case "spec check":
 		return specCheckUsage
+	case "spec audit":
+		return specAuditUsage
 	case "stop":
 		return `Usage:
   roundfix stop <run-id>
