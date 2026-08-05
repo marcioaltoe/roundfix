@@ -35,13 +35,17 @@ type derivedOwnershipRecord struct {
 }
 
 type derivedOwnershipException struct {
-	Path  string                `yaml:"path"`
-	Owner derivedOwnershipOwner `yaml:"owner"`
+	Path    string                `yaml:"path"`
+	Owner   derivedOwnershipOwner `yaml:"owner"`
+	Command string                `yaml:"command,omitempty"`
+	Reason  string                `yaml:"reason,omitempty"`
 }
 
 type derivedOwnershipExceptionClaim struct {
 	RecordPath string
 	Owner      derivedOwnershipOwner
+	Command    string
+	Reason     string
 }
 
 func validateDerivedOwnership(
@@ -170,9 +174,6 @@ func readDerivedOwnershipRecords(
 			return nil, fmt.Errorf("read ownership records under %q: %w", scanRoot, err)
 		}
 	}
-	if _, err := derivedOwnershipExceptionClaims(records); err != nil {
-		return nil, err
-	}
 	return records, nil
 }
 
@@ -189,7 +190,7 @@ func readDerivedOwnershipRecord(fileSystem fs.FS, recordPath string) (derivedOwn
 		return derivedOwnershipRecord{}, fmt.Errorf("decode ownership record %q: %w", recordPath, err)
 	}
 	var extra any
-	if err := decoder.Decode(&extra); err != io.EOF {
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
 		if err == nil {
 			return derivedOwnershipRecord{}, fmt.Errorf("decode ownership record %q: multiple YAML documents", recordPath)
 		}
@@ -200,6 +201,8 @@ func readDerivedOwnershipRecord(fileSystem fs.FS, recordPath string) (derivedOwn
 	record.Reason = strings.TrimSpace(record.Reason)
 	for index := range record.Exceptions {
 		record.Exceptions[index].Path = strings.TrimSpace(record.Exceptions[index].Path)
+		record.Exceptions[index].Command = strings.TrimSpace(record.Exceptions[index].Command)
+		record.Exceptions[index].Reason = strings.TrimSpace(record.Exceptions[index].Reason)
 	}
 	if err := record.validate(recordPath); err != nil {
 		return derivedOwnershipRecord{}, fmt.Errorf("validate ownership record %q: %w", recordPath, err)
@@ -212,10 +215,10 @@ func (record derivedOwnershipRecord) validate(recordPath string) error {
 		return err
 	}
 	if record.Reason == "" {
-		return fmt.Errorf("reason is required")
+		return errors.New("reason is required")
 	}
 	if record.Owner == derivedOwnerDedicated && record.Command == "" {
-		return fmt.Errorf("command is required for dedicated ownership")
+		return errors.New("command is required for dedicated ownership")
 	}
 
 	seenExceptions := make(map[string]struct{}, len(record.Exceptions))
@@ -223,9 +226,15 @@ func (record derivedOwnershipRecord) validate(recordPath string) error {
 		if err := validateDerivedOwnershipOwner(exception.Owner); err != nil {
 			return fmt.Errorf("exception path %q: %w", exception.Path, err)
 		}
-		if exception.Owner == derivedOwnerDedicated && record.Command == "" {
+		if exception.Owner == derivedOwnerDedicated && exception.Command == "" {
 			return fmt.Errorf(
 				"command is required for dedicated ownership exception %q",
+				exception.Path,
+			)
+		}
+		if exception.Owner == derivedOwnerFrozen && exception.Reason == "" {
+			return fmt.Errorf(
+				"reason is required for frozen ownership exception %q",
 				exception.Path,
 			)
 		}
@@ -274,6 +283,8 @@ func derivedOwnershipExceptionClaims(
 			claims[exceptionPath] = derivedOwnershipExceptionClaim{
 				RecordPath: recordPath,
 				Owner:      exception.Owner,
+				Command:    exception.Command,
+				Reason:     exception.Reason,
 			}
 		}
 	}
@@ -282,7 +293,7 @@ func derivedOwnershipExceptionClaims(
 
 func derivedOwnershipExceptionPath(recordPath string, exceptionPath string) (string, error) {
 	if exceptionPath == "" {
-		return "", fmt.Errorf("exception path is required")
+		return "", errors.New("exception path is required")
 	}
 	if path.IsAbs(exceptionPath) {
 		return "", fmt.Errorf("exception path %q is outside record directory", exceptionPath)
@@ -316,6 +327,8 @@ func resolveDerivedOwnershipRecord(
 	}
 	record := records[claim.RecordPath]
 	record.Owner = claim.Owner
+	record.Command = claim.Command
+	record.Reason = claim.Reason
 	return claim.RecordPath, record, artifactPath, nil
 }
 

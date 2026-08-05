@@ -8,6 +8,7 @@ package baseline
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -175,6 +176,25 @@ func TestDerivedOwnershipValidatesRecords(t *testing.T) {
 			record:    "owner: dedicated\nreason: missing exact invocation\n",
 			wantError: "command is required for dedicated ownership",
 		},
+		{
+			name: "frozen exception missing reason",
+			record: "owner: sanctioned\n" +
+				"reason: parent sanctioned reason\n" +
+				"exceptions:\n" +
+				"  - path: artifact.txt\n" +
+				"    owner: frozen\n",
+			wantError: "reason is required for frozen ownership exception",
+		},
+		{
+			name: "dedicated exception missing command",
+			record: "owner: sanctioned\n" +
+				"command: go test ./internal/baseline -run TestParent\n" +
+				"reason: parent sanctioned reason\n" +
+				"exceptions:\n" +
+				"  - path: artifact.txt\n" +
+				"    owner: dedicated\n",
+			wantError: "command is required for dedicated ownership exception",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -310,6 +330,60 @@ func TestDerivedOwnershipRemediationDiagnostics(t *testing.T) {
 			t.Fatalf("dedicated remediation = %q, must not suggest sanctioned command", got)
 		}
 	})
+}
+
+func TestDerivedOwnershipExceptionUsesOwnRemediationMetadata(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		exception   string
+		want        string
+		parentValue string
+	}{
+		{
+			name: "frozen exception uses its reason",
+			exception: "    owner: frozen\n" +
+				"    reason: exception frozen reason\n",
+			want:        "exception frozen reason",
+			parentValue: "parent sanctioned reason",
+		},
+		{
+			name: "dedicated exception uses its command",
+			exception: "    owner: dedicated\n" +
+				"    command: go test ./internal/baseline -run TestException -update-exception\n",
+			want:        "go test ./internal/baseline -run TestException -update-exception",
+			parentValue: "go test ./internal/baseline -run TestParent -update-parent",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			fixture := fstest.MapFS{
+				"derived/_ownership.yml": &fstest.MapFile{Data: []byte(
+					"owner: sanctioned\n" +
+						"command: go test ./internal/baseline -run TestParent -update-parent\n" +
+						"reason: parent sanctioned reason\n" +
+						"exceptions:\n" +
+						"  - path: artifact.txt\n" +
+						test.exception,
+				)},
+				"derived/artifact.txt": &fstest.MapFile{Data: []byte("artifact\n")},
+			}
+
+			got, err := derivedArtifactRemediation(fixture, "derived", "derived/artifact.txt")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(got, test.want) {
+				t.Fatalf("exception remediation = %q, want exception metadata %q", got, test.want)
+			}
+			if strings.Contains(got, test.parentValue) {
+				t.Fatalf("exception remediation = %q, must not inherit parent metadata %q", got, test.parentValue)
+			}
+		})
+	}
 }
 
 func TestDerivedOwnershipRemediationRejectsUnownedArtifact(t *testing.T) {
@@ -1213,12 +1287,12 @@ func perturbFormatterGoldenDigest(content []byte) ([]byte, error) {
 	const prefix = `"goldenDigest": "`
 	start := bytes.Index(content, []byte(prefix))
 	if start == -1 {
-		return nil, fmt.Errorf("goldenDigest field is absent")
+		return nil, errors.New("goldenDigest field is absent")
 	}
 	start += len(prefix)
 	endOffset := bytes.IndexByte(content[start:], '"')
 	if endOffset <= 0 {
-		return nil, fmt.Errorf("goldenDigest value is malformed")
+		return nil, errors.New("goldenDigest value is malformed")
 	}
 	result := append([]byte(nil), content...)
 	replacement := byte('0')
