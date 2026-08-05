@@ -5077,10 +5077,13 @@ Behavior:
   Runs Branch Integrity Preflight and clean tracked checkout validation before
   Agent work. Watch executes in the user's checkout and creates no Run
   Worktree. With --until-clean, Clean requires accepted Review Source Evidence
-  on the pushed head — a successful CodeRabbit check or commit status, or a
-  CodeRabbit APPROVED review — with zero unresolved CodeRabbit threads; if no
-  such Evidence appears within the grace period, watch ends CleanUnverified and
-  exits 3. Omit all Agent Selection flags
+  on the pushed head. The only check-or-status route to a verified head is a
+  recognised review-completed current-head CodeRabbit check or commit status;
+  a current-head CodeRabbit APPROVED review is also accepted, with zero
+  unresolved CodeRabbit threads. An unrecognised signal resolves pending even
+  when its check conclusion is success: a green check is not evidence that a review ran.
+  An explicit Review Source refusal resolves skipped; watch will not merge that head or clear it for merge. If no accepted Evidence appears
+  within the grace period, watch ends CleanUnverified and exits 3. Omit all Agent Selection flags
   to use the review profile. A one-Run override requires --agent, --model, and --reasoning-effort together.
 
 Options:

@@ -400,7 +400,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "accepted Review Source Evidence", "CodeRabbit APPROVED review", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "accepted Review Source Evidence", "only check-or-status route to a verified head", "recognised review-completed current-head CodeRabbit check or commit status", "current-head CodeRabbit APPROVED review", "unrecognised signal resolves pending", "green check is not evidence that a review ran", "explicit Review Source refusal resolves skipped", "will not merge that head or clear it for merge", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
