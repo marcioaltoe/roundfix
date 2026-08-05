@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0069-review-run-targets-its-pull-request
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -86,3 +86,57 @@ environmental reason, and they had to be redone from scratch.
 - `_prd.md` → Core Features 3 and 4; Success Metrics 2, 3 and 4.
 - `_techspec.md` → Disproven premise; Build Order 2.
 - ADR-0052, ADR-0036.
+
+## Result
+
+Implemented a Git-backed target guard anchored by the Run's recorded PR Head
+Branch and Preflight revision. The guard re-reads the checkout without moving
+it before each Batch starts, immediately before every Batch commit, before the
+ADR-0036 review artifact commit, and before Final Push. Successful Roundfix
+commits advance the guard's expected revision while retaining the recorded PR
+Head Branch.
+
+Added `CheckoutMoved` as a distinct terminal Run outcome. Resolve and watch
+settle it through `Store.CompleteRun`, release the Active Run lock, journal the
+normal terminal outcome, report the mismatch and recovery action, and avoid
+classifying the interruption as `Failed`.
+
+### Focused checks
+
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/watch -count=1` — passed, 51 tests.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/daemon -count=1` — passed, 175 tests.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/store -count=1` — passed, 185 tests.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/watch -count=1 -run 'TestRunCheckoutMoved|TestTargetGuard'` — passed, 6 tests.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/daemon -count=1 -run 'TestFinalPushCheckoutMoved|TestResolveCycleCheckoutMoved'` — passed, 3 tests.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/store -count=1 -run 'TestCompleteRunAcceptsCheckoutMoved|TestCreateReviewRunRecordsTarget'` — passed, 2 tests.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/cli -count=1 -run 'TestRunWatchCheckoutMovedBeforeFinalPush|TestRunWatchArtifactEvidenceInherited|TestRunResolveCheckoutMoved|TestRunOperationalCommandAcceptsMVPFlags|TestRunResolveCommitsOnUserBranchWithoutRunBranch|TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree'` — passed, 9 tests.
+- `rtk git diff --check` — passed with no whitespace errors after the Result update.
+
+### Verification feedback repair
+
+The Daemon's first combined watch/CLI/store verification exposed
+`TestBranchIntegrityPreflightWatchDisregardsOnlySupersededFailedQACycles`.
+The test composed the real Git Preflight and checkout reader with a synthetic
+Branch Integrity refresh left behind by `withSuccessfulPreflight`; after the
+fast-forward integration, the Run therefore recorded `integrated-head` while
+the write guard correctly observed the actual Git revision.
+
+`withRealReviewPreflight` now restores the production
+`defaultRefreshBranchIntegrityHead` dependency along with the real Git checkout
+reader, keeping the Preflight anchor and every later guard read on the same Git
+source of truth.
+
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/cli -count=1 -run '^TestBranchIntegrityPreflightWatchDisregardsOnlySupersededFailedQACycles$'` — reproduced the reported failure before the repair, then passed after the repair (1 test).
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test ./internal/cli -count=1 -run '^(TestBranchIntegrityPreflight|TestRunResolveCheckoutMoved|TestRunWatchCheckoutMoved|TestRunWatchArtifactEvidenceInherited)'` — passed, 21 tests covering the repaired Branch Integrity fixture and the Task's CLI interruption/artifact paths.
+
+### Acceptance evidence
+
+- Checkout moved before a Batch commit: `TestResolveCycleCheckoutMovedAtBatchCommitCommitsNothing` observes the second boundary check fail and asserts zero committer calls.
+- Checkout moved before the review artifact commit: `TestRunCheckoutMovedBeforeReviewArtifactCommitInterrupts` reaches `CheckoutMoved` and asserts the artifact publisher was never called.
+- Checkout moved before Final Push: `TestRunWatchCheckoutMovedBeforeFinalPushInterruptsAndPushesNothing` reaches the persisted `CheckoutMoved` outcome and asserts zero pusher calls.
+- Distinct terminal outcome: `TestCompleteRunAcceptsCheckoutMovedAsTerminal` proves compare-and-set completion, timestamping, and Active Run lock release; the watch tests assert the outcome is not `Failed`.
+- Review Issues remain unsettled: `TestResolveCycleCheckoutMovedBeforeBatchLeavesReviewIssuesUnsettled` and `TestRunResolveCheckoutMovedBeforeBatchInterruptsWithIssueUnsettled` assert no failed, resolved, or invalid status is written.
+- Artifact commit targets the PR Head Branch: `TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling` reads `feature/review` with Git and asserts its ref equals the created review artifact commit.
+- Unmoved checkout behavior: the focused CLI run includes the existing operational resolve/watch flow, user-branch commit flow, user-checkout push flow, and artifact Evidence inheritance flow unchanged.
+
+The commands under `## Verification` were not run; they remain Daemon-owned.

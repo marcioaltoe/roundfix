@@ -290,6 +290,7 @@ func TestListRunsStateFilterAndLimit(t *testing.T) {
 		StateBudgetExceeded,
 		StateTimedOut,
 		StateFailed,
+		StateCheckoutMoved,
 		StateIntegrationPending,
 		StateUnresolved,
 	}
@@ -674,6 +675,49 @@ func TestCompleteRunAcceptsUnresolvedAsTerminal(t *testing.T) {
 	}
 	if found {
 		t.Fatal("expected Unresolved Run to release the Active Run lock")
+	}
+}
+
+func TestCompleteRunAcceptsCheckoutMovedAsTerminal(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, StateCheckoutMoved)
+	if err != nil {
+		t.Fatalf("complete CheckoutMoved Run: %v", err)
+	}
+	if !completed.Transitioned || completed.State != StateCheckoutMoved || completed.CompletedAt == nil {
+		t.Fatalf("completed CheckoutMoved Run = %+v", completed)
+	}
+	if _, found, err := runStore.ActiveRun(ctx, run.HeadRepository, run.HeadBranch); err != nil {
+		t.Fatalf("read Active Run after CheckoutMoved: %v", err)
+	} else if found {
+		t.Fatal("CheckoutMoved must release the Active Run lock")
+	}
+}
+
+func TestCreateReviewRunRecordsTargetBranchAndRevision(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+	req := sampleCreateRunRequest()
+	req.HeadBranch = "feature/review"
+	req.HeadSHA = "abc123"
+
+	run, err := runStore.CreateRun(ctx, req)
+
+	if err != nil {
+		t.Fatalf("create Review Run: %v", err)
+	}
+	if run.HeadBranch != req.HeadBranch || run.HeadSHA != req.HeadSHA {
+		t.Fatalf("recorded target = %s@%s, want %s@%s", run.HeadBranch, run.HeadSHA, req.HeadBranch, req.HeadSHA)
 	}
 }
 
