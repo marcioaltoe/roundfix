@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0067-derived-artifact-regeneration-boundary
-status: failed
+status: pending
 type: qa
 complexity: medium
 ---
@@ -11,12 +11,12 @@ complexity: medium
 ## Overview
 
 The authored terminal gate. The Daemon executes `qa-gate` as this node once
-task_06 settles `completed`, producing the dated report, verdict, and typed
+task_07 settles `completed`, producing the dated report, verdict, and typed
 blocked-row counts per ADR-0080.
 
 ## Requirements
 
-1. MUST run only after task_06 settles `completed`.
+1. MUST run only after task_07 settles `completed`.
 2. MUST reproduce the 2026-08-01 failure directly: edit an owned skill, run the
    sanctioned command once, and observe `make verify` green.
 3. MUST verify the exhaustiveness test fails on an artifact added without a
@@ -26,7 +26,7 @@ blocked-row counts per ADR-0080.
 
 ## Acceptance Criteria
 
-- [ ] The gate runs only after task_06 settles `completed`.
+- [ ] The gate runs only after task_07 settles `completed`.
 - [ ] A dated QA report lands under `qa/` with a machine-readable verdict and
       typed blocked-row counts.
 - [ ] The report records the owned-skill-edit journey observed end to end.

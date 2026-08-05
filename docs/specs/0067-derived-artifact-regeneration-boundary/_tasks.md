@@ -19,9 +19,12 @@ graph:
     - id: task_06
       file: task_06.md
       needs: [task_04]
+    - id: task_07
+      file: task_07.md
+      needs: [task_06]
     - id: task_05
       file: task_05.md
-      needs: [task_06]
+      needs: [task_07]
 ---
 
 # Tasks — Derived artifact regeneration boundary
@@ -33,9 +36,10 @@ graph:
 | task_03 | Make the sanctioned command cover what it claims    | infra   | medium     | task_01          |
 | task_04 | Say what a human must do when the command cannot    | backend | low        | task_02, task_03 |
 | task_06 | Make every record state what is measurably true      | backend | medium     | task_04          |
-| task_05 | Run the final QA gate                               | qa      | medium     | task_06          |
+| task_07 | Let a record carry per-path exceptions               | backend | medium     | task_06          |
+| task_05 | Run the final QA gate                               | qa      | medium     | task_07          |
 
-Waves: 1 → task_01 · 2 → task_02, task_03 · 3 → task_04 · 4 → task_06 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02, task_03 · 3 → task_04 · 4 → task_06 · 5 → task_07 · 6 → task_05
 
 task_01 leads because exhaustiveness is what stops the next occurrence. Three
 artifacts have already inherited this ambiguity, and a fourth instance happened
@@ -72,3 +76,19 @@ rewrites, which is a product decision the maintainer owns.
 One corrective Task, within the ceiling `docs/agents/autonomous-work.md` sets.
 task_05 returns to pending because a gate whose dependency closure grew is
 invalid by construction.
+
+## Second corrective Task, from the maintainer's decision
+
+The gate's remaining F-002 was neither side being wrong. The parity directory
+holds fifteen files and the sanctioned command rewrites exactly two, so a
+directory-level owner is false about whichever part it does not describe.
+
+The maintainer settled it on 2026-08-05: records gain per-path exceptions. The
+PRD's frozen premise stands for the corpus, and the two derived files are
+declared as what they measurably are. task_07 delivers that, and makes the
+frozen assertion evaluate per resolved path — the granularity at which it can
+actually fail.
+
+This is the second corrective Task, which is the ceiling
+`docs/agents/autonomous-work.md` sets. A third would mean the decomposition is
+wrong rather than the code.
