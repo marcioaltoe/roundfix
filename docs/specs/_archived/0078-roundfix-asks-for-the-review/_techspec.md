@@ -135,14 +135,17 @@ Preflight Validation for `resolve` and `watch` reads the repository's
 ```text
 pushTriggersReview = auto_review.enabled != false
                      AND auto_review.auto_incremental_review != false
+                     AND auto_review.auto_pause_after_reviewed_commits == 0
 ```
 
-An absent or unreadable file means the Review Source defaults apply, so
-`pushTriggersReview` is true. The refusal is the equality:
+An absent or unreadable file means the Review Source defaults apply. Because
+CodeRabbit defaults `auto_pause_after_reviewed_commits` to `5`,
+`pushTriggersReview` is false unless the repository explicitly disables the
+finite pause with `0`. The refusal is the equality:
 
 | `pushTriggersReview` | `request_review` | Result |
 | --- | --- | --- |
-| true | false | ok — today's behaviour, unchanged |
+| true | false | ok — automatic reviews remain available after every push |
 | false | true | ok — the manual flow this Spec ships |
 | false | false | **refused** — the Run would wait for a review nobody asks for |
 | true | true | **refused** — every Round would buy a second review |
@@ -151,6 +154,14 @@ An absent or unreadable file means the Review Source defaults apply, so
 
 ## Coverage Map
 
+- Goal 1 (an unattended pushed Round requests its review) → the
+  `ReviewRequester` seam in `watch.Run` and the equivalent post-push call in
+  `resolve`.
+- Goal 2 (bounded, predictable review consumption) → the per-head comment
+  marker, one request inside each Round, and the existing Max Rounds cap.
+- Goal 3 (refuse a stranded loop before it starts) →
+  `validateReviewRequestCoherence` and the four-row Preflight predicate.
+- The PRD defines no separate User Stories section.
 - Core Feature 1 (request after Final Push) → the `ReviewRequester` call at the
   `resolved.HeadSHA` seam in `watch.Run`, and the equivalent after `resolve`'s
   push.
@@ -194,12 +205,14 @@ new seam is needed.
 - **Idempotency.** A comment list already carrying the marker for the same head
   publishes nothing and reports `Published: false`.
 - **The refusal table.** All four rows of the Preflight predicate asserted
-  directly, including the absent-file default.
+  directly, including the absent-file default and explicit finite- and
+  zero-pause settings.
 - **`fetch` publishes nothing**, asserted rather than assumed.
 - **A refused request** leaves the Spec 0077 classification untouched: the Run
   ends Review Skipped naming the refusal, and no second request follows.
-- **Non-regression.** With `request_review` false — the built-in default — every
-  existing watch, resolve, and fetch test passes unchanged.
+- **Non-regression.** With `request_review` false — the built-in default —
+  `resolve` and `watch` proceed only when `.coderabbit.yaml` disables the
+  finite automatic-review pause; `fetch` remains exempt.
 
 ## Build Order
 

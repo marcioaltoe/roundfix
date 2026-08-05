@@ -1,10 +1,14 @@
-# Authoritative repository Verification
+# Repository Verification attempts
+
+The latest exact full-gate attempt is the final-worktree rerun below, which
+exited `2`. The earlier exit `0` remains complete acceptance evidence for the
+same build, but this artifact does not describe the gate as currently passing.
 
 Command: `rtk make verify`
 
 Build: `bdf6ff8d4d680188a97986ee1340ab9ff052a499` plus the in-progress QA report.
 
-Initial result: exit `0`.
+Earlier complete result: exit `0`.
 
 - Go test sweep: 3,452 tests passed across 26 packages.
 - Isolated Spec corpus budget: 1 test passed.

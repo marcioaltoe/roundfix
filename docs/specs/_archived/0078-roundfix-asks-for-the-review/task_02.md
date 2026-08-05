@@ -66,12 +66,12 @@ under ADR-0036 and is not worth a review of its own.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/watch -count=1 -run 'Request|Round|Seam|Artifact' -v | grep -q -- "--- PASS"`
+- `go test ./internal/watch -count=1 -run 'Request|Round|Seam|Artifact'`
   — expected: exit 0; the seam tests ran and passed.
 - `go test ./internal/watch ./internal/cli -count=1` — expected: exit 0.
-- `go test -parallel 16 ./... 2>&1 | grep -q "^FAIL" && exit 1 || exit 0`
+- `go test -parallel 16 ./...`
   — expected: exit 0.
-- `git diff --name-only HEAD | grep -qE "^(\.coderabbit\.yaml|\.roundfixrc\.yml)$" && exit 1 || exit 0`
+- `git diff --quiet HEAD -- .coderabbit.yaml .roundfixrc.yml`
   — expected: exit 0; turning the flow on is task_04's scope.
 
 ## References

@@ -179,7 +179,7 @@ batch failure with no work defect; a bounded retry on Run-Event appends would ab
 
 ## Addendum — 2026-08-05 — two more classes from the spec-0003 run
 
-9. **Always-green commands defeat a red-only lint.** `bun --cwd <dir> run test` (space form)
+1. **Always-green commands defeat a red-only lint.** `bun --cwd <dir> run test` (space form)
    prints the script list and exits 0 without running anything — the correct form is
    `--cwd=<dir>`. Every authored suite gate across three specs used the vacuous form; the
    red-pre-work lint missed it because the class is *always green*, not never-green. The lint
@@ -187,7 +187,7 @@ batch failure with no work defect; a bounded retry on Run-Event appends would ab
    execution — test counts in output — or intentionally break an input and require red), not
    only red-for-the-right-reason proofs for artifact greps. The roundfix skill itself documents
    this exact bun pitfall for agents; gate authoring needs the same rule.
-10. **The Daemon's staging list can name files deleted during the turn.** task_04's agent
+2. **The Daemon's staging list can name files deleted during the turn.** task_04's agent
     created `components/.gitkeep`, later replaced it with the real component and removed it;
     the Daemon's `git add -f -- <paths>` still listed the .gitkeep and exited 128
     (`pathspec did not match`), failing the whole Run *after* the task settled completed — the

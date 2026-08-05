@@ -112,25 +112,25 @@ func ReviewRequestMarker(headSHA string) string {
 
 func (client Client) RequestReview(ctx context.Context, req reviewsource.ReviewRequest) (reviewsource.ReviewRequestOutcome, error) {
 	if err := ctx.Err(); err != nil {
-		return reviewsource.ReviewRequestOutcome{}, err
+		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("request coderabbit review: %w", err)
 	}
 	if strings.TrimSpace(req.BaseRepository) == "" {
-		return reviewsource.ReviewRequestOutcome{}, errors.New("CodeRabbit review request requires base repository metadata")
+		return reviewsource.ReviewRequestOutcome{}, errors.New("coderabbit review request requires base repository metadata")
 	}
 	prNumber, err := strconv.Atoi(strings.TrimSpace(req.PRNumber))
 	if err != nil {
-		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("CodeRabbit review request requires numeric Open Pull Request metadata: %w", err)
+		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("coderabbit review request requires numeric Open Pull Request metadata: %w", err)
 	}
 	if prNumber <= 0 {
-		return reviewsource.ReviewRequestOutcome{}, errors.New("CodeRabbit review request requires positive Open Pull Request metadata")
+		return reviewsource.ReviewRequestOutcome{}, errors.New("coderabbit review request requires positive Open Pull Request metadata")
 	}
 	headSHA := strings.TrimSpace(req.HeadSHA)
 	if headSHA == "" {
-		return reviewsource.ReviewRequestOutcome{}, errors.New("CodeRabbit review request requires head metadata")
+		return reviewsource.ReviewRequestOutcome{}, errors.New("coderabbit review request requires head metadata")
 	}
 	command := strings.TrimSpace(req.Command)
 	if command == "" {
-		return reviewsource.ReviewRequestOutcome{}, errors.New("CodeRabbit review request requires command")
+		return reviewsource.ReviewRequestOutcome{}, errors.New("coderabbit review request requires command")
 	}
 
 	gh := client.GitHub
@@ -140,7 +140,7 @@ func (client Client) RequestReview(ctx context.Context, req reviewsource.ReviewR
 	marker := ReviewRequestMarker(headSHA)
 	comments, err := gh.IssueComments(ctx, req.BaseRepository, req.PRNumber)
 	if err != nil {
-		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("list pull request comments before CodeRabbit review request: %w", err)
+		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("list pull request comments before coderabbit review request: %w", err)
 	}
 	for _, comment := range comments {
 		if !isRoundfixReviewRequestComment(comment, marker) {
@@ -154,7 +154,7 @@ func (client Client) RequestReview(ctx context.Context, req reviewsource.ReviewR
 	}
 
 	if err := gh.CommentOnPullRequest(ctx, req.BaseRepository, prNumber, RoundfixCommentBody(command, marker)); err != nil {
-		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("publish CodeRabbit review request: %w", err)
+		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("publish coderabbit review request: %w", err)
 	}
 	outcome := reviewsource.ReviewRequestOutcome{Published: true, Marker: marker}
 	if err := client.publishReviewRequestEvent(ctx, req.RunID, headSHA, command, true); err != nil {

@@ -21,7 +21,8 @@ const (
 	CommandResolve = "resolve"
 	CommandWatch   = "watch"
 
-	codeRabbitConfigName = ".coderabbit.yaml"
+	codeRabbitConfigName                           = ".coderabbit.yaml"
+	defaultCodeRabbitAutoPauseAfterReviewedCommits = 5
 )
 
 type Request struct {
@@ -217,7 +218,7 @@ func Run(ctx context.Context, req Request) (Result, error) {
 		return Result{}, err
 	}
 	if err := validateReviewRequestCoherence(req.Command, gitState.Root, req.RequestReview); err != nil {
-		return Result{}, err
+		return Result{}, fmt.Errorf("validate review request coherence: %w", err)
 	}
 
 	pullRequest, err := ResolvePullRequest(ctx, ResolvePullRequestRequest{
@@ -252,18 +253,19 @@ func Run(ctx context.Context, req Request) (Result, error) {
 }
 
 type codeRabbitReviewSettings struct {
-	Path                  string
-	AutoReviewEnabled     bool
-	AutoIncrementalReview bool
-	PushTriggersReview    bool
+	Path                          string
+	AutoReviewEnabled             bool
+	AutoIncrementalReview         bool
+	AutoPauseAfterReviewedCommits int
+	PushTriggersReview            bool
 }
 
 func inspectCodeRabbitReviewSettings(gitRoot string) codeRabbitReviewSettings {
 	settings := codeRabbitReviewSettings{
-		Path:                  filepath.Join(gitRoot, codeRabbitConfigName),
-		AutoReviewEnabled:     true,
-		AutoIncrementalReview: true,
-		PushTriggersReview:    true,
+		Path:                          filepath.Join(gitRoot, codeRabbitConfigName),
+		AutoReviewEnabled:             true,
+		AutoIncrementalReview:         true,
+		AutoPauseAfterReviewedCommits: defaultCodeRabbitAutoPauseAfterReviewedCommits,
 	}
 	content, err := os.ReadFile(settings.Path)
 	if err != nil {
@@ -272,8 +274,9 @@ func inspectCodeRabbitReviewSettings(gitRoot string) codeRabbitReviewSettings {
 	var document struct {
 		Reviews struct {
 			AutoReview struct {
-				Enabled               *bool `yaml:"enabled"`
-				AutoIncrementalReview *bool `yaml:"auto_incremental_review"`
+				Enabled                       *bool `yaml:"enabled"`
+				AutoIncrementalReview         *bool `yaml:"auto_incremental_review"`
+				AutoPauseAfterReviewedCommits *int  `yaml:"auto_pause_after_reviewed_commits"`
 			} `yaml:"auto_review"`
 		} `yaml:"reviews"`
 	}
@@ -286,7 +289,10 @@ func inspectCodeRabbitReviewSettings(gitRoot string) codeRabbitReviewSettings {
 	if document.Reviews.AutoReview.AutoIncrementalReview != nil {
 		settings.AutoIncrementalReview = *document.Reviews.AutoReview.AutoIncrementalReview
 	}
-	settings.PushTriggersReview = settings.AutoReviewEnabled && settings.AutoIncrementalReview
+	if document.Reviews.AutoReview.AutoPauseAfterReviewedCommits != nil {
+		settings.AutoPauseAfterReviewedCommits = *document.Reviews.AutoReview.AutoPauseAfterReviewedCommits
+	}
+	settings.PushTriggersReview = settings.AutoReviewEnabled && settings.AutoIncrementalReview && settings.AutoPauseAfterReviewedCommits == 0
 	return settings
 }
 
@@ -306,10 +312,11 @@ func validateReviewRequestCoherence(command string, gitRoot string, requestRevie
 		nextAction = "set review_source.request_review to false in Project Config"
 	}
 	return fmt.Errorf(
-		"review request configuration is incoherent: %q reads auto_review.enabled=%t and auto_review.auto_incremental_review=%t, so pushTriggersReview=%t equals review_source.request_review=%t and %s; next action: %s",
+		"review request configuration is incoherent: %q reads auto_review.enabled=%t, auto_review.auto_incremental_review=%t, and auto_review.auto_pause_after_reviewed_commits=%d, so pushTriggersReview=%t equals review_source.request_review=%t and %s; next action: %s",
 		settings.Path,
 		settings.AutoReviewEnabled,
 		settings.AutoIncrementalReview,
+		settings.AutoPauseAfterReviewedCommits,
 		settings.PushTriggersReview,
 		requestReview,
 		detail,

@@ -8969,12 +8969,13 @@ resolve:
 func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name      string
-		inner     agent.Runner
-		pusherErr error
-		wantCode  int
-		wantState string
-		closeErr  error
+		name       string
+		inner      agent.Runner
+		pusherErr  error
+		wantCode   int
+		wantState  string
+		wantStderr string
+		closeErr   error
 	}{
 		{
 			name:      "clean",
@@ -8990,11 +8991,12 @@ func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 			wantState: store.StateUnresolved,
 		},
 		{
-			name:      "failed",
-			inner:     &fakeAgentRunner{},
-			pusherErr: errors.New("push failed"),
-			wantCode:  1,
-			wantState: store.StateFailed,
+			name:       "failed",
+			inner:      &fakeAgentRunner{},
+			pusherErr:  errors.New("push failed"),
+			wantCode:   1,
+			wantState:  store.StateFailed,
+			wantStderr: "final push: push failed",
 		},
 		{
 			name:      "stopped",
@@ -9024,6 +9026,9 @@ func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
+			}
+			if tt.wantStderr != "" && !strings.Contains(stderr.String(), tt.wantStderr) {
+				t.Fatalf("stderr = %q, want substring %q", stderr.String(), tt.wantStderr)
 			}
 			runID, _ := journaledRunEvents(t, homeDir, stderr.String())
 			run := runFromStore(t, homeDir, runID)
@@ -11173,6 +11178,13 @@ watch:
   poll_interval: 1s
   review_timeout: 5s
   quiet_period: 1ms
+`)
+	mustWrite(t, filepath.Join(repoDir, ".coderabbit.yaml"), `
+reviews:
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 0
 `)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

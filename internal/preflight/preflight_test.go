@@ -70,6 +70,7 @@ func TestRunResolvesExplicitPullRequestAndBuildsNonForcePushPlan(t *testing.T) {
 		ExplicitHeadRepository: "owner/project",
 		AutoCommit:             true,
 		AutoPush:               true,
+		RequestReview:          true,
 		GitRunner:              cleanGitRunner("origin/feature/review"),
 		PullRequestResolver:    failingPullRequestResolver{},
 	})
@@ -176,6 +177,7 @@ func TestRunRejectsMissingUpstreamWhenAutoPushCanRun(t *testing.T) {
 		ExplicitHeadRepository: "owner/project",
 		AutoCommit:             true,
 		AutoPush:               true,
+		RequestReview:          true,
 		GitRunner:              cleanGitRunner(""),
 	})
 
@@ -190,19 +192,43 @@ func TestRunRejectsMissingUpstreamWhenAutoPushCanRun(t *testing.T) {
 func TestRunEnforcesReviewRequestCoherence(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name                  string
-		command               string
-		requestReview         bool
-		autoReviewEnabled     bool
-		autoIncrementalReview bool
-		writeCodeRabbitConfig bool
-		wantError             string
-		wantNextAction        string
+		name                          string
+		command                       string
+		requestReview                 bool
+		autoReviewEnabled             bool
+		autoIncrementalReview         bool
+		autoPauseAfterReviewedCommits *int
+		writeCodeRabbitConfig         bool
+		wantPushTriggersReview        bool
+		wantError                     string
+		wantNextAction                string
 	}{
 		{
-			name:                  "resolve runs with Review Source defaults and asking disabled",
+			name:                  "resolve refuses finite Review Source defaults without asking",
 			command:               CommandResolve,
-			writeCodeRabbitConfig: false,
+			autoReviewEnabled:     true,
+			autoIncrementalReview: true,
+			wantError:             "would strand the Run waiting for a review nobody requests",
+			wantNextAction:        "set review_source.request_review to true in Project Config",
+		},
+		{
+			name:                          "resolve runs when zero pause keeps automatic reviews available",
+			command:                       CommandResolve,
+			autoReviewEnabled:             true,
+			autoIncrementalReview:         true,
+			autoPauseAfterReviewedCommits: intPointer(0),
+			writeCodeRabbitConfig:         true,
+			wantPushTriggersReview:        true,
+		},
+		{
+			name:                          "resolve refuses an explicit finite pause without asking",
+			command:                       CommandResolve,
+			autoReviewEnabled:             true,
+			autoIncrementalReview:         true,
+			autoPauseAfterReviewedCommits: intPointer(2),
+			writeCodeRabbitConfig:         true,
+			wantError:                     "would strand the Run waiting for a review nobody requests",
+			wantNextAction:                "set review_source.request_review to true in Project Config",
 		},
 		{
 			name:                  "resolve runs when pushes do not trigger reviews and asking is enabled",
@@ -220,14 +246,16 @@ func TestRunEnforcesReviewRequestCoherence(t *testing.T) {
 			wantNextAction:        "set review_source.request_review to true in Project Config",
 		},
 		{
-			name:                  "resolve refuses duplicate reviews",
-			command:               CommandResolve,
-			requestReview:         true,
-			autoReviewEnabled:     true,
-			autoIncrementalReview: true,
-			writeCodeRabbitConfig: true,
-			wantError:             "would request a duplicate review after every push",
-			wantNextAction:        "set review_source.request_review to false in Project Config",
+			name:                          "resolve refuses duplicate reviews",
+			command:                       CommandResolve,
+			requestReview:                 true,
+			autoReviewEnabled:             true,
+			autoIncrementalReview:         true,
+			autoPauseAfterReviewedCommits: intPointer(0),
+			writeCodeRabbitConfig:         true,
+			wantPushTriggersReview:        true,
+			wantError:                     "would request a duplicate review after every push",
+			wantNextAction:                "set review_source.request_review to false in Project Config",
 		},
 		{
 			name:                  "watch refuses a stranded Run",
@@ -238,14 +266,16 @@ func TestRunEnforcesReviewRequestCoherence(t *testing.T) {
 			wantNextAction:        "set review_source.request_review to true in Project Config",
 		},
 		{
-			name:                  "watch refuses duplicate reviews",
-			command:               CommandWatch,
-			requestReview:         true,
-			autoReviewEnabled:     true,
-			autoIncrementalReview: true,
-			writeCodeRabbitConfig: true,
-			wantError:             "would request a duplicate review after every push",
-			wantNextAction:        "set review_source.request_review to false in Project Config",
+			name:                          "watch refuses duplicate reviews",
+			command:                       CommandWatch,
+			requestReview:                 true,
+			autoReviewEnabled:             true,
+			autoIncrementalReview:         true,
+			autoPauseAfterReviewedCommits: intPointer(0),
+			writeCodeRabbitConfig:         true,
+			wantPushTriggersReview:        true,
+			wantError:                     "would request a duplicate review after every push",
+			wantNextAction:                "set review_source.request_review to false in Project Config",
 		},
 	}
 
@@ -254,6 +284,9 @@ func TestRunEnforcesReviewRequestCoherence(t *testing.T) {
 			repo := t.TempDir()
 			if tt.writeCodeRabbitConfig {
 				content := fmt.Sprintf("reviews:\n  auto_review:\n    enabled: %t\n    auto_incremental_review: %t\n", tt.autoReviewEnabled, tt.autoIncrementalReview)
+				if tt.autoPauseAfterReviewedCommits != nil {
+					content += fmt.Sprintf("    auto_pause_after_reviewed_commits: %d\n", *tt.autoPauseAfterReviewedCommits)
+				}
 				if err := os.WriteFile(filepath.Join(repo, codeRabbitConfigName), []byte(content), 0o644); err != nil {
 					t.Fatalf("write CodeRabbit config: %v", err)
 				}
@@ -281,7 +314,8 @@ func TestRunEnforcesReviewRequestCoherence(t *testing.T) {
 				filepath.Join(repo, codeRabbitConfigName),
 				fmt.Sprintf("auto_review.enabled=%t", tt.autoReviewEnabled),
 				fmt.Sprintf("auto_review.auto_incremental_review=%t", tt.autoIncrementalReview),
-				fmt.Sprintf("pushTriggersReview=%t", tt.autoReviewEnabled && tt.autoIncrementalReview),
+				fmt.Sprintf("auto_review.auto_pause_after_reviewed_commits=%d", valueOrDefault(tt.autoPauseAfterReviewedCommits, defaultCodeRabbitAutoPauseAfterReviewedCommits)),
+				fmt.Sprintf("pushTriggersReview=%t", tt.wantPushTriggersReview),
 				fmt.Sprintf("review_source.request_review=%t", tt.requestReview),
 				tt.wantError,
 				tt.wantNextAction,
@@ -346,24 +380,36 @@ func TestRunTreatsUnreadableCodeRabbitConfigAsDefaults(t *testing.T) {
 		PRNumber:               "123",
 		ExplicitHeadBranch:     "feature/review",
 		ExplicitHeadRepository: "owner/project",
-		RequestReview:          true,
+		RequestReview:          false,
 		GitRunner:              cleanGitRunnerAt(repo, ""),
 	})
 
 	if err == nil {
-		t.Fatal("expected Review Source defaults plus asking to refuse duplicate reviews")
+		t.Fatal("expected finite Review Source defaults without asking to refuse a stranded Run")
 	}
 	for _, want := range []string{
 		configPath,
 		"auto_review.enabled=true",
 		"auto_review.auto_incremental_review=true",
-		"pushTriggersReview=true",
-		"review_source.request_review=true",
+		"auto_review.auto_pause_after_reviewed_commits=5",
+		"pushTriggersReview=false",
+		"review_source.request_review=false",
 	} {
 		if !strings.Contains(err.Error(), want) {
 			t.Fatalf("expected unreadable-file refusal to contain %q, got %q", want, err.Error())
 		}
 	}
+}
+
+func intPointer(value int) *int {
+	return &value
+}
+
+func valueOrDefault(value *int, fallback int) int {
+	if value == nil {
+		return fallback
+	}
+	return *value
 }
 
 func TestResolvePullRequestRejectsClosedMetadata(t *testing.T) {

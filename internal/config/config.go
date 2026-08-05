@@ -1185,6 +1185,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
 	stripDeprecatedConfigKeys(&document, warnings)
+	if value, found := yamlValueAtPath(&document, []string{"review_source", "request_review"}); found && value.Tag == "!!null" {
+		return fmt.Errorf("parse config %q: review_source.request_review must be boolean: cannot unmarshal null value", label)
+	}
 	hasProfiles := configHasProfilesSection(&document)
 	hasLegacyRuntimeDefaults := configHasLegacyRuntimeDefaults(&document)
 	if hasProfiles && hasLegacyRuntimeDefaults {
@@ -1253,6 +1256,33 @@ func removeYAMLPath(node *yaml.Node, path []string) bool {
 		index += 2
 	}
 	return removed
+}
+
+func yamlValueAtPath(node *yaml.Node, path []string) (*yaml.Node, bool) {
+	if node == nil || len(path) == 0 {
+		return nil, false
+	}
+	if node.Kind == yaml.DocumentNode {
+		if len(node.Content) == 0 {
+			return nil, false
+		}
+		return yamlValueAtPath(node.Content[0], path)
+	}
+	if node.Kind != yaml.MappingNode {
+		return nil, false
+	}
+	for index := 0; index+1 < len(node.Content); index += 2 {
+		key := node.Content[index]
+		value := node.Content[index+1]
+		if key.Value != path[0] {
+			continue
+		}
+		if len(path) == 1 {
+			return value, true
+		}
+		return yamlValueAtPath(value, path[1:])
+	}
+	return nil, false
 }
 
 func encodeYAMLNode(node *yaml.Node) ([]byte, error) {

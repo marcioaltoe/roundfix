@@ -24,17 +24,19 @@ provable with no requester in existence.
    `review_source.request_command` (string, default `@coderabbitai review`),
    with Project Config over User Config over built-in precedence.
 2. MUST derive `pushTriggersReview` from the repository's `.coderabbit.yaml` as
-   `auto_review.enabled != false AND auto_review.auto_incremental_review != false`,
-   treating an absent or unreadable file as Review Source defaults, so the
-   value is true.
+   `auto_review.enabled != false AND auto_review.auto_incremental_review != false
+   AND auto_review.auto_pause_after_reviewed_commits == 0`, treating an absent
+   or unreadable file as Review Source defaults, including the finite-pause
+   default of `5`.
 3. MUST refuse `resolve` and `watch` in Preflight Validation when
    `pushTriggersReview` equals `request_review`, exiting `2` before any Agent
    Session, Review Source mutation, commit, or push.
 4. MUST name, in the refusal, the file read, the values it read, and the
    deterministic next action for each of the two refused rows.
 5. MUST exempt `fetch`, which publishes nothing and pushes nothing.
-6. MUST keep every existing Run working unchanged under the built-in default,
-   where `request_review` is false and the Review Source defaults apply.
+6. MUST reject the built-in `request_review=false` setting when the Review
+   Source's default finite pause applies; the operator must either enable
+   Roundfix requests or explicitly configure zero-pause automatic reviews.
 7. MUST NOT write, repair, or generate `.coderabbit.yaml`; Roundfix reads it and
    refuses, and volume control outside this repository's code is a maintainer
    decision.
@@ -49,15 +51,15 @@ provable with no requester in existence.
 
 ## Acceptance Criteria
 
-- [ ] `pushTriggersReview` true with `request_review` false runs, unchanged
-      from today.
+- [ ] `pushTriggersReview` true with `request_review` false runs when
+      `auto_pause_after_reviewed_commits` is explicitly `0`.
 - [ ] `pushTriggersReview` false with `request_review` true runs.
 - [ ] `pushTriggersReview` false with `request_review` false refuses with exit
       `2`, naming the stall.
 - [ ] `pushTriggersReview` true with `request_review` true refuses with exit
       `2`, naming the duplicate review.
-- [ ] An absent `.coderabbit.yaml` is treated as Review Source defaults, so the
-      built-in configuration still runs.
+- [ ] An absent `.coderabbit.yaml` is treated as Review Source defaults, so
+      built-in `request_review=false` refuses the potentially stranded Run.
 - [ ] `fetch` runs in every one of the four combinations.
 - [ ] Each refusal names the file, the values read, and one next action.
 
@@ -69,13 +71,13 @@ provable with no requester in existence.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/preflight ./internal/config -count=1 -run 'Review|Request|Coheren|Config' -v | grep -q -- "--- PASS"`
+- `go test ./internal/preflight ./internal/config -count=1 -run 'Review|Request|Coheren|Config'`
   — expected: exit 0; the refusal tests ran and passed.
 - `go test ./internal/preflight ./internal/config ./internal/cli -count=1`
   — expected: exit 0.
-- `go test -parallel 16 ./... 2>&1 | grep -q "^FAIL" && exit 1 || exit 0`
+- `go test -parallel 16 ./...`
   — expected: exit 0.
-- `git diff --name-only HEAD | grep -q "^\.coderabbit\.yaml$" && exit 1 || exit 0`
+- `git diff --quiet HEAD -- .coderabbit.yaml`
   — expected: exit 0; this Task reads that file and never writes it.
 
 ## References
@@ -94,9 +96,11 @@ provable with no requester in existence.
   `request_command`.
 - Added read-only `.coderabbit.yaml` inspection under the Git root. Both
   `reviews.auto_review.enabled` and
-  `reviews.auto_review.auto_incremental_review` default to `true`; an absent,
-  unreadable, or unparseable file therefore resolves to Review Source
-  defaults. Roundfix does not create or modify the file.
+  `reviews.auto_review.auto_incremental_review` default to `true`, while
+  `reviews.auto_review.auto_pause_after_reviewed_commits` defaults to `5`.
+  Automatic reviews therefore count as available after every push only when
+  the pause is explicitly disabled with `0`. Roundfix does not create or
+  modify the file.
 - Added the equality refusal to operational Preflight Validation after Git
   inspection and before Open Pull Request resolution or push planning.
   `resolve` and `watch` now reject both the stranded and duplicate-review rows;
@@ -124,8 +128,9 @@ provable with no requester in existence.
 
 ### Acceptance evidence
 
-1. `TestRunEnforcesReviewRequestCoherence/resolve_runs_with_Review_Source_defaults_and_asking_disabled`
-   passes with `pushTriggersReview=true` and `request_review=false`.
+1. The explicit zero-pause row passes with `pushTriggersReview=true` and
+   `request_review=false`; the default finite-pause row does not masquerade as
+   automatic coverage for every pushed head.
 2. `TestRunEnforcesReviewRequestCoherence/resolve_runs_when_pushes_do_not_trigger_reviews_and_asking_is_enabled`
    passes with `pushTriggersReview=false` and `request_review=true`.
 3. The `resolve` and `watch` stranded-Run rows both reject
@@ -135,15 +140,15 @@ provable with no requester in existence.
 4. The `resolve` and `watch` duplicate-review rows both reject
    `pushTriggersReview=true` with `request_review=true`. The CLI boundary test
    observes exit `2`, no stdout, and no Run Database creation.
-5. The absent-file row proceeds under the built-in configuration, and the
-   unreadable-file test resolves both CodeRabbit values to `true` before
-   refusing the otherwise duplicate request.
+5. The absent- and unreadable-file rows resolve the two booleans to `true` and
+   the finite pause to its default `5`, producing `pushTriggersReview=false`.
 6. `TestRunExemptsFetchFromReviewRequestCoherence` passes all four predicate
    combinations.
 7. Both refusal rows assert the absolute `.coderabbit.yaml` path, the resolved
-   `auto_review.enabled` and `auto_incremental_review` values,
-   `pushTriggersReview`, `review_source.request_review`, and one row-specific
-   Project Config next action.
+   `auto_review.enabled`, `auto_incremental_review`, and
+   `auto_pause_after_reviewed_commits` values, `pushTriggersReview`,
+   `review_source.request_review`, and one row-specific Project Config next
+   action.
 
 ### Follow-ups
 

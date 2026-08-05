@@ -12,7 +12,10 @@ retry/backoff/capacity mechanism, Review Issue fingerprinting change, thread
 resolution change, QA-verdict change, or new persisted schema. The requester
 interface has no Evidence input or output. `fetch` has no requester call site.
 
-Fresh regression evidence is the authoritative `rtk make verify` result plus
-the disabled-request watch test, no-op resolve test, fetch read-only test,
-request failure/no-retry tests, and 45 passing Run Event tests. No out-of-scope
-behavior was observed.
+Fresh regression evidence includes the earlier complete `rtk make verify`
+pass, the disabled-request watch test, no-op resolve test, fetch read-only
+test, request failure/no-retry tests, and 45 passing Run Event tests. The
+[Verification attempt record](make-verify.md) identifies the later full-gate
+exit `2` as the latest exact attempt and its focused environment
+classification; this scope sweep does not claim a current passing full gate.
+No out-of-scope behavior was observed.

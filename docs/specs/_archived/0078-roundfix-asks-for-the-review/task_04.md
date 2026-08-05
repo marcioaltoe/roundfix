@@ -70,9 +70,9 @@ so manual mode and the asking arrive in the same change.
   — expected: exit 0; the repository asks, capped at two Rounds.
 - `go run -buildvcs=false ./cmd/roundfix doctor > /dev/null` — expected: exit 0;
   the repository's effective configuration loads and validates.
-- `git diff --name-only HEAD | grep -E "\.go$" | grep -q . && exit 1 || exit 0`
+- `git diff --quiet HEAD -- '*.go'`
   — expected: exit 0; no Go source changed.
-- `go test -parallel 16 ./... 2>&1 | grep -q "^FAIL" && exit 1 || exit 0`
+- `go test -parallel 16 ./...`
   — expected: exit 0.
 
 ## References

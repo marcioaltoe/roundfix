@@ -44,9 +44,9 @@ that it consumes exactly what the configuration says it will.
 
 ## Verification
 
-- `ls docs/specs/0078-roundfix-asks-for-the-review/qa/ | grep -q "qa-report-"`
+- `ls docs/specs/_archived/0078-roundfix-asks-for-the-review/qa/ | grep -q "qa-report-"`
   — expected: exit 0; a dated QA report exists.
-- `grep -l "verdict:" docs/specs/0078-roundfix-asks-for-the-review/qa/qa-report-*.md | grep -q qa-report`
+- `grep -l "verdict:" docs/specs/_archived/0078-roundfix-asks-for-the-review/qa/qa-report-*.md | grep -q qa-report`
   — expected: exit 0; the report carries a machine-readable verdict.
 
 ## References

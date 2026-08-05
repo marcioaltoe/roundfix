@@ -186,6 +186,9 @@ func TestClientRequestReviewPublishFailureReturnsErrorWithoutEvent(t *testing.T)
 	if !errors.Is(err, cause) {
 		t.Fatalf("error = %v, want wrapped publish cause", err)
 	}
+	if !strings.HasPrefix(err.Error(), "publish coderabbit review request: ") {
+		t.Fatalf("error = %q, want lowercase publish operation context", err)
+	}
 	if len(sink.events) != 0 {
 		t.Fatalf("events = %#v, want none after publish failure", sink.events)
 	}
@@ -209,11 +212,29 @@ func TestClientRequestReviewListFailureReturnsWithoutRetry(t *testing.T) {
 	if !errors.Is(err, cause) {
 		t.Fatalf("error = %v, want wrapped list cause", err)
 	}
+	if !strings.HasPrefix(err.Error(), "list pull request comments before coderabbit review request: ") {
+		t.Fatalf("error = %q, want lowercase list operation context", err)
+	}
 	if gh.issueCalls != 1 {
 		t.Fatalf("issue comment list calls = %d, want one without retry", gh.issueCalls)
 	}
 	if len(gh.prComments) != 0 || len(sink.events) != 0 {
 		t.Fatalf("posts = %#v events = %#v, want no side effects after list failure", gh.prComments, sink.events)
+	}
+}
+
+func TestClientRequestReviewWrapsCanceledContext(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := (Client{}).RequestReview(ctx, reviewsource.ReviewRequest{})
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want wrapped context cancellation", err)
+	}
+	if !strings.HasPrefix(err.Error(), "request coderabbit review: ") {
+		t.Fatalf("error = %q, want lowercase operation context", err)
 	}
 }
 

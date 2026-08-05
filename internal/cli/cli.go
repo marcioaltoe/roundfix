@@ -4528,7 +4528,7 @@ func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent
 		return false, nil
 	}
 	if preflightResult.PushPlan.Force {
-		return false, errors.New("Final Push rejected: force-push is not allowed in the MVP")
+		return false, errors.New("final push rejected: force-push is not allowed in the MVP")
 	}
 	if !loaded.Config.Defaults.AutoCommit {
 		fmt.Fprintln(stderr, "Final Push skipped: auto-commit disabled.")
@@ -4546,7 +4546,7 @@ func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent
 		Remote:  preflightResult.PushPlan.Remote,
 		Branch:  preflightResult.PushPlan.Branch,
 	}); err != nil {
-		return false, err
+		return false, fmt.Errorf("final push: %w", err)
 	}
 	fmt.Fprintf(stderr, "Final Push completed: git push %s HEAD:%s\n", preflightResult.PushPlan.Remote, preflightResult.PushPlan.Branch)
 	return true, nil

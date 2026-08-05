@@ -1837,6 +1837,22 @@ func TestLoadRejectsNonBooleanReviewRequest(t *testing.T) {
 	}
 }
 
+func TestLoadRejectsProjectNullReviewRequestInsteadOfInheritingUserValue(t *testing.T) {
+	t.Parallel()
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), "review_source:\n  request_review: true\n")
+	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), "review_source:\n  request_review: null\n")
+
+	_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+
+	if err == nil || !strings.Contains(err.Error(), "review_source.request_review must be boolean") {
+		t.Fatalf("expected project null request_review rejection, got %v", err)
+	}
+}
+
 func TestLoadAppliesReviewSourceIncludeNitpicksHierarchy(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

@@ -354,10 +354,12 @@ ends the Run; Roundfix does not retry the request, back off, or wait for review
 capacity.
 
 Preflight Validation for `watch` and `resolve` reads `.coderabbit.yaml` and
-defines `pushTriggersReview` as both `auto_review.enabled` and
-`auto_review.auto_incremental_review` being enabled; absent, unreadable, or
-omitted values use the Review Source defaults and count as enabled. Preflight
-exits `2` for either incoherent pair:
+defines `pushTriggersReview` as `auto_review.enabled` and
+`auto_review.auto_incremental_review` being enabled with
+`auto_review.auto_pause_after_reviewed_commits: 0`. A finite pause cannot
+guarantee a review for every pushed head. Absent, unreadable, or omitted values
+use the Review Source defaults, including the finite pause default of `5`.
+Preflight exits `2` for either incoherent pair:
 
 - `pushTriggersReview=false` with `review_source.request_review=false` would
   strand the Run waiting for a review nobody requests; set
@@ -366,7 +368,7 @@ exits `2` for either incoherent pair:
   request a duplicate review after every push; set
   `review_source.request_review` to `false` in Project Config.
 
-The refusal names both `.coderabbit.yaml` values and
+The refusal names all three `.coderabbit.yaml` values and
 `review_source.request_review`, plus the Project Config change that repairs
 the pair. `fetch` is exempt because it neither pushes nor requests a review.
 

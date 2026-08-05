@@ -68,9 +68,9 @@ is the authorized tooling Task.
 - `make skills-sync-check` — expected: exit 0; the mirror matches.
 - `go run -buildvcs=false ./cmd/roundfix skills check` — expected: exit 0.
 - `make verify` — expected: exit 0.
-- `git diff --name-only HEAD | grep -E "\.go$" | grep -q . && exit 1 || exit 0`
+- `git diff --quiet HEAD -- '*.go'`
   — expected: exit 0; no Go source changed.
-- `git diff --name-only HEAD | grep -vE "^(\.agents/skills/roundfix/|skills/roundfix/|docs/specs/0078-roundfix-asks-for-the-review/task_05\.md$|internal/baseline/(assets/(setups|source-baselines|formatter-fixtures|profiles)|testdata)/)" | grep -q . && exit 1 || exit 0`
+- `git diff --quiet HEAD -- . ':(exclude).agents/skills/roundfix/**' ':(exclude)skills/roundfix/**' ':(exclude)docs/specs/0078-roundfix-asks-for-the-review/task_05.md' ':(exclude)internal/baseline/assets/setups/**' ':(exclude)internal/baseline/assets/source-baselines/**' ':(exclude)internal/baseline/assets/formatter-fixtures/**' ':(exclude)internal/baseline/assets/profiles/**' ':(exclude)internal/baseline/testdata/**'`
   — expected: exit 0; only the bounded paths changed.
 
 ## References
