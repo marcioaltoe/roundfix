@@ -176,3 +176,22 @@ batch failure with no work defect; a bounded retry on Run-Event appends would ab
    text states the problem and not the action. Suggested behavior: `StaleGateError` carries a
    `next:` line naming the reset, or the loader treats a settled gate above uncompleted
    dependencies as `pending` and journals the invalidation instead of refusing the load.
+
+## Addendum — 2026-08-05 — two more classes from the spec-0003 run
+
+1. **Always-green commands defeat a red-only lint.** `bun --cwd <dir> run test` (space form)
+   prints the script list and exits 0 without running anything — the correct form is
+   `--cwd=<dir>`. Every authored suite gate across three specs used the vacuous form; the
+   red-pre-work lint missed it because the class is *always green*, not never-green. The lint
+   needs a **fail-ability proof** for suite commands (run them and require evidence of real
+   execution — test counts in output — or intentionally break an input and require red), not
+   only red-for-the-right-reason proofs for artifact greps. The roundfix skill itself documents
+   this exact bun pitfall for agents; gate authoring needs the same rule.
+2. **The Daemon's staging list can name files deleted during the turn.** task_04's agent
+    created `components/.gitkeep`, later replaced it with the real component and removed it;
+    the Daemon's `git add -f -- <paths>` still listed the .gitkeep and exited 128
+    (`pathspec did not match`), failing the whole Run *after* the task settled completed — the
+    0001-night post-settlement failure shape again, via a different door. Suggested behavior:
+    build the staging list from the tree at commit time (or pass `--ignore-errors` / filter
+    non-existent paths), and settle the task `failed` (recoverable) instead of failing the Run
+    when the commit cannot be created.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -688,6 +689,230 @@ func TestRunWaitsFetchesResolvesToClean(t *testing.T) {
 	}
 	if resolver.calls != 1 {
 		t.Fatalf("expected one resolve, got %d", resolver.calls)
+	}
+}
+
+func TestRunRequestsReviewForResolvedHeadBeforeMergeReadyEvidence(t *testing.T) {
+	t.Parallel()
+	req := validRequest()
+	req.BaseRepository = "owner/project"
+	req.RequestReview = true
+	req.ReviewCommand = "@coderabbitai review"
+	clock := &fakeClock{now: time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)}
+	order := []string{}
+	requester := &fakeReviewRequester{onRequest: func(req reviewsource.ReviewRequest) {
+		order = append(order, "request:"+req.HeadSHA)
+	}}
+	source := ReviewEvidenceFunc(func(_ context.Context, evidenceReq ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+		order = append(order, "evidence:"+evidenceReq.ExpectedHeadSHA)
+		if evidenceReq.ExpectedHeadSHA == req.HeadSHA {
+			return evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA), nil
+		}
+		return evidenceForHead(reviewsource.EvidenceVerified, reviewsource.EvidenceKindCheckRun, evidenceReq.ExpectedHeadSHA), nil
+	})
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence:  source,
+		ReviewRequester: requester,
+		Fetcher:         &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}},
+		Resolver:        &fakeResolver{results: []ResolveResult{{Remaining: 0, Progress: true, HeadSHA: "def456"}}},
+		Clock:           clock,
+		Sleeper:         &fakeSleeper{clock: clock},
+	})
+	if err != nil {
+		t.Fatalf("watch request seam: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("request seam outcome = %q, want Clean", result.Outcome)
+	}
+	if len(requester.requests) != 1 {
+		t.Fatalf("review requests = %d, want exactly one", len(requester.requests))
+	}
+	wantRequest := reviewsource.ReviewRequest{
+		RunID:          req.RunID,
+		BaseRepository: req.BaseRepository,
+		PRNumber:       req.PRNumber,
+		HeadSHA:        "def456",
+		Command:        req.ReviewCommand,
+	}
+	if requester.requests[0] != wantRequest {
+		t.Fatalf("review request = %#v, want %#v", requester.requests[0], wantRequest)
+	}
+	wantOrder := []string{"evidence:abc123", "request:def456", "evidence:def456"}
+	if !reflect.DeepEqual(order, wantOrder) {
+		t.Fatalf("request seam order = %#v, want %#v", order, wantOrder)
+	}
+}
+
+func TestRunRequestsReviewBeforeNextRoundWaitAndStopsOnRefusal(t *testing.T) {
+	t.Parallel()
+	req := validRequest()
+	req.BaseRepository = "owner/project"
+	req.RequestReview = true
+	req.ReviewCommand = "@coderabbitai review"
+	req.MaxRounds = 2
+	clock := &fakeClock{now: time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)}
+	order := []string{}
+	requester := &fakeReviewRequester{onRequest: func(req reviewsource.ReviewRequest) {
+		order = append(order, "request:"+req.HeadSHA)
+	}}
+	const refusal = "Review Source quota was exhausted"
+	source := ReviewEvidenceFunc(func(_ context.Context, evidenceReq ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+		order = append(order, "evidence:"+evidenceReq.ExpectedHeadSHA)
+		if evidenceReq.ExpectedHeadSHA == req.HeadSHA {
+			return evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA), nil
+		}
+		return reviewsource.Evidence{
+			State:           reviewsource.EvidenceSkipped,
+			Kind:            reviewsource.EvidenceKindCheckRun,
+			ExpectedHeadSHA: evidenceReq.ExpectedHeadSHA,
+			ObservedHeadSHA: evidenceReq.ExpectedHeadSHA,
+			Reason:          refusal,
+		}, nil
+	})
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence:  source,
+		ReviewRequester: requester,
+		Fetcher:         &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}},
+		Resolver:        &fakeResolver{results: []ResolveResult{{Remaining: 1, Progress: true, HeadSHA: "def456"}}},
+		Clock:           clock,
+		Sleeper:         &fakeSleeper{clock: clock},
+	})
+	if err != nil {
+		t.Fatalf("watch request refusal: %v", err)
+	}
+	if result.Outcome != store.StateReviewSkipped || result.TerminalReason != refusal {
+		t.Fatalf("request refusal result = %+v", result)
+	}
+	if len(requester.requests) != 1 {
+		t.Fatalf("review requests after refusal = %d, want exactly one", len(requester.requests))
+	}
+	wantOrder := []string{"evidence:abc123", "request:def456", "evidence:def456"}
+	if !reflect.DeepEqual(order, wantOrder) {
+		t.Fatalf("request refusal order = %#v, want %#v", order, wantOrder)
+	}
+}
+
+func TestRunArtifactCommitDoesNotProduceSecondReviewRequest(t *testing.T) {
+	t.Parallel()
+	req := validRequest()
+	req.BaseRepository = "owner/project"
+	req.RequestReview = true
+	req.ReviewCommand = "@coderabbitai review"
+	clock := &fakeClock{now: time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)}
+	order := []string{}
+	requester := &fakeReviewRequester{onRequest: func(req reviewsource.ReviewRequest) {
+		order = append(order, "request:"+req.HeadSHA)
+	}}
+	source := ReviewEvidenceFunc(func(_ context.Context, evidenceReq ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+		order = append(order, "evidence:"+evidenceReq.ExpectedHeadSHA)
+		if evidenceReq.ExpectedHeadSHA == req.HeadSHA {
+			return evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA), nil
+		}
+		return evidenceForHead(reviewsource.EvidenceVerified, reviewsource.EvidenceKindCheckRun, evidenceReq.ExpectedHeadSHA), nil
+	})
+	artifacts := ArtifactPublishFunc(func(_ context.Context, publishReq ArtifactPublishRequest) (ArtifactPublication, error) {
+		order = append(order, "artifact:"+publishReq.ParentHeadSHA)
+		return ArtifactPublication{
+			Commit: reviewsource.ArtifactCommit{CommitSHA: "artifact789", ParentSHA: publishReq.ParentHeadSHA},
+			Evidence: reviewsource.Evidence{
+				State:           reviewsource.EvidenceVerified,
+				Kind:            reviewsource.EvidenceKindArtifactOnlyDescendant,
+				ExpectedHeadSHA: "artifact789",
+				ObservedHeadSHA: "artifact789",
+				ParentHeadSHA:   publishReq.ParentHeadSHA,
+			},
+		}, nil
+	})
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence:  source,
+		ReviewRequester: requester,
+		Artifacts:       artifacts,
+		Fetcher:         &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}},
+		Resolver:        &fakeResolver{results: []ResolveResult{{Remaining: 0, Progress: true, HeadSHA: "def456"}}},
+		Clock:           clock,
+		Sleeper:         &fakeSleeper{clock: clock},
+	})
+	if err != nil {
+		t.Fatalf("watch artifact request boundary: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("artifact request outcome = %q, want Clean", result.Outcome)
+	}
+	if len(requester.requests) != 1 || requester.requests[0].HeadSHA != "def456" {
+		t.Fatalf("artifact flow review requests = %#v, want one for fix head", requester.requests)
+	}
+	wantOrder := []string{"evidence:abc123", "request:def456", "evidence:def456", "artifact:def456"}
+	if !reflect.DeepEqual(order, wantOrder) {
+		t.Fatalf("artifact request order = %#v, want %#v", order, wantOrder)
+	}
+}
+
+func TestRunDoesNotRequestReviewWithoutNewResolvedHead(t *testing.T) {
+	t.Parallel()
+	for _, testCase := range []struct {
+		name    string
+		headSHA string
+	}{
+		{name: "empty head", headSHA: ""},
+		{name: "unchanged head", headSHA: "abc123"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			req := validRequest()
+			req.BaseRepository = "owner/project"
+			req.RequestReview = true
+			req.ReviewCommand = "@coderabbitai review"
+			clock := &fakeClock{now: time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)}
+			requester := &fakeReviewRequester{}
+			source := &fakeReviewEvidenceSource{results: []reviewEvidenceResult{
+				{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+				{evidence: evidenceForHead(reviewsource.EvidenceVerified, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+			}}
+
+			result, err := Run(context.Background(), req, Dependencies{
+				ReviewEvidence:  source,
+				ReviewRequester: requester,
+				Fetcher:         &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}},
+				Resolver:        &fakeResolver{results: []ResolveResult{{Remaining: 0, Progress: true, HeadSHA: testCase.headSHA}}},
+				Clock:           clock,
+				Sleeper:         &fakeSleeper{clock: clock},
+			})
+			if err != nil {
+				t.Fatalf("watch unchanged head: %v", err)
+			}
+			if result.Outcome != store.StateClean {
+				t.Fatalf("unchanged head outcome = %q, want Clean", result.Outcome)
+			}
+			if len(requester.requests) != 0 {
+				t.Fatalf("review requests = %#v, want none", requester.requests)
+			}
+		})
+	}
+}
+
+func TestRunRequestReviewDisabledPreservesNilRequesterControlFlow(t *testing.T) {
+	t.Parallel()
+	req := validRequest()
+	clock := &fakeClock{now: time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)}
+	source := &fakeReviewEvidenceSource{results: []reviewEvidenceResult{
+		{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+		{evidence: evidenceForHead(reviewsource.EvidenceVerified, reviewsource.EvidenceKindCheckRun, "def456")},
+	}}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}},
+		Resolver:       &fakeResolver{results: []ResolveResult{{Remaining: 0, Progress: true, HeadSHA: "def456"}}},
+		Clock:          clock,
+		Sleeper:        &fakeSleeper{clock: clock},
+	})
+	if err != nil {
+		t.Fatalf("disabled review request control flow: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("disabled review request outcome = %q, want Clean", result.Outcome)
 	}
 }
 
@@ -1682,4 +1907,21 @@ func (resolver *fakeResolver) Resolve(context.Context) (ResolveResult, error) {
 		resolver.results = resolver.results[1:]
 	}
 	return result, nil
+}
+
+type fakeReviewRequester struct {
+	err       error
+	requests  []reviewsource.ReviewRequest
+	onRequest func(reviewsource.ReviewRequest)
+}
+
+func (requester *fakeReviewRequester) RequestReview(_ context.Context, req reviewsource.ReviewRequest) (reviewsource.ReviewRequestOutcome, error) {
+	requester.requests = append(requester.requests, req)
+	if requester.onRequest != nil {
+		requester.onRequest(req)
+	}
+	if requester.err != nil {
+		return reviewsource.ReviewRequestOutcome{}, requester.err
+	}
+	return reviewsource.ReviewRequestOutcome{Published: true}, nil
 }

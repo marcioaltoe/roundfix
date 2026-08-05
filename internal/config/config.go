@@ -20,6 +20,7 @@ const (
 	userConfigRelPath               = ".roundfix/config.yml"
 	projectConfigName               = ".roundfixrc.yml"
 	defaultReviewSource             = "coderabbit"
+	defaultReviewRequestCommand     = "@coderabbitai review"
 	defaultAgent                    = "codex"
 	defaultCodexModel               = "gpt-5.5"
 	defaultCodexReasoningEffort     = "xhigh"
@@ -97,6 +98,8 @@ func (runtimes Runtimes) DefaultsFor(runtime string) (RuntimeDefaults, bool) {
 type ReviewSource struct {
 	Name            string
 	IncludeNitpicks bool
+	RequestReview   bool
+	RequestCommand  string
 }
 
 type Watch struct {
@@ -243,8 +246,26 @@ type runtimesOverlay struct {
 }
 
 type reviewSourceOverlay struct {
-	Name            *string `yaml:"name"`
-	IncludeNitpicks *bool   `yaml:"include_nitpicks"`
+	Name            *string             `yaml:"name"`
+	IncludeNitpicks *bool               `yaml:"include_nitpicks"`
+	RequestReview   *requestReviewValue `yaml:"request_review"`
+	RequestCommand  *string             `yaml:"request_command"`
+}
+
+type requestReviewValue struct {
+	value bool
+}
+
+func (value *requestReviewValue) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.ScalarNode || node.Tag != "!!bool" {
+		return errors.New("review_source.request_review must be boolean: cannot unmarshal non-boolean value")
+	}
+	var raw bool
+	if err := node.Decode(&raw); err != nil {
+		return fmt.Errorf("review_source.request_review must be boolean: %w", err)
+	}
+	value.value = raw
+	return nil
 }
 
 type watchOverlay struct {
@@ -555,6 +576,8 @@ func Builtin() Config {
 		ReviewSource: ReviewSource{
 			Name:            defaultReviewSource,
 			IncludeNitpicks: false,
+			RequestReview:   false,
+			RequestCommand:  defaultReviewRequestCommand,
 		},
 		Watch: Watch{
 			UntilClean:       true,
@@ -786,6 +809,9 @@ review_source:
   name: %s
   # false excludes CodeRabbit findings whose severity is nitpick.
   include_nitpicks: %t
+  # true asks the Review Source to review each pushed Round head.
+  request_review: %t
+  request_command: %q
 
 watch:
   until_clean: %t
@@ -828,6 +854,8 @@ resolve:
 		formatConfigDuration(config.Store.JournalRetention),
 		config.ReviewSource.Name,
 		config.ReviewSource.IncludeNitpicks,
+		config.ReviewSource.RequestReview,
+		config.ReviewSource.RequestCommand,
 		config.Watch.UntilClean,
 		config.Watch.MaxRounds,
 		formatConfigDuration(config.Watch.PollInterval),
@@ -856,6 +884,9 @@ func Validate(config Config) error {
 	}
 	if config.ReviewSource.Name != defaultReviewSource {
 		return fmt.Errorf("review_source.name %q is invalid; supported value: coderabbit", config.ReviewSource.Name)
+	}
+	if strings.TrimSpace(config.ReviewSource.RequestCommand) == "" {
+		return errors.New("review_source.request_command must not be empty")
 	}
 	if config.Watch.MaxRounds < 1 {
 		return errors.New("watch.max_rounds must be greater than 0")
@@ -1154,6 +1185,9 @@ func applyConfigContent(config *Config, label string, content []byte, warnings *
 		return fmt.Errorf("parse config %q: %w", label, err)
 	}
 	stripDeprecatedConfigKeys(&document, warnings)
+	if value, found := yamlValueAtPath(&document, []string{"review_source", "request_review"}); found && value.Tag == "!!null" {
+		return fmt.Errorf("parse config %q: review_source.request_review must be boolean: cannot unmarshal null value", label)
+	}
 	hasProfiles := configHasProfilesSection(&document)
 	hasLegacyRuntimeDefaults := configHasLegacyRuntimeDefaults(&document)
 	if hasProfiles && hasLegacyRuntimeDefaults {
@@ -1224,6 +1258,33 @@ func removeYAMLPath(node *yaml.Node, path []string) bool {
 	return removed
 }
 
+func yamlValueAtPath(node *yaml.Node, path []string) (*yaml.Node, bool) {
+	if node == nil || len(path) == 0 {
+		return nil, false
+	}
+	if node.Kind == yaml.DocumentNode {
+		if len(node.Content) == 0 {
+			return nil, false
+		}
+		return yamlValueAtPath(node.Content[0], path)
+	}
+	if node.Kind != yaml.MappingNode {
+		return nil, false
+	}
+	for index := 0; index+1 < len(node.Content); index += 2 {
+		key := node.Content[index]
+		value := node.Content[index+1]
+		if key.Value != path[0] {
+			continue
+		}
+		if len(path) == 1 {
+			return value, true
+		}
+		return yamlValueAtPath(value, path[1:])
+	}
+	return nil, false
+}
+
 func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
 	var buffer bytes.Buffer
 	encoder := yaml.NewEncoder(&buffer)
@@ -1271,6 +1332,12 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		}
 		if overlay.ReviewSource.IncludeNitpicks != nil {
 			config.ReviewSource.IncludeNitpicks = *overlay.ReviewSource.IncludeNitpicks
+		}
+		if overlay.ReviewSource.RequestReview != nil {
+			config.ReviewSource.RequestReview = overlay.ReviewSource.RequestReview.value
+		}
+		if overlay.ReviewSource.RequestCommand != nil {
+			config.ReviewSource.RequestCommand = *overlay.ReviewSource.RequestCommand
 		}
 	}
 	if overlay.Watch != nil {

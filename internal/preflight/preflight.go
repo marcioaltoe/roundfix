@@ -7,16 +7,22 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
 	CommandFetch   = "fetch"
 	CommandResolve = "resolve"
 	CommandWatch   = "watch"
+
+	codeRabbitConfigName                           = ".coderabbit.yaml"
+	defaultCodeRabbitAutoPauseAfterReviewedCommits = 5
 )
 
 type Request struct {
@@ -31,6 +37,7 @@ type Request struct {
 	AutoPush               bool
 	PushRemote             string
 	PushBranch             string
+	RequestReview          bool
 	GitRunner              GitRunner
 	PullRequestResolver    PullRequestResolver
 }
@@ -210,6 +217,9 @@ func Run(ctx context.Context, req Request) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	if err := validateReviewRequestCoherence(req.Command, gitState.Root, req.RequestReview); err != nil {
+		return Result{}, fmt.Errorf("validate review request coherence: %w", err)
+	}
 
 	pullRequest, err := ResolvePullRequest(ctx, ResolvePullRequestRequest{
 		Number:                 req.PRNumber,
@@ -240,6 +250,78 @@ func Run(ctx context.Context, req Request) (Result, error) {
 		PullRequest: pullRequest,
 		PushPlan:    pushPlan,
 	}, nil
+}
+
+type codeRabbitReviewSettings struct {
+	Path                          string
+	AutoReviewEnabled             bool
+	AutoIncrementalReview         bool
+	AutoPauseAfterReviewedCommits int
+	PushTriggersReview            bool
+}
+
+func inspectCodeRabbitReviewSettings(gitRoot string) codeRabbitReviewSettings {
+	settings := codeRabbitReviewSettings{
+		Path:                          filepath.Join(gitRoot, codeRabbitConfigName),
+		AutoReviewEnabled:             true,
+		AutoIncrementalReview:         true,
+		AutoPauseAfterReviewedCommits: defaultCodeRabbitAutoPauseAfterReviewedCommits,
+	}
+	content, err := os.ReadFile(settings.Path)
+	if err != nil {
+		return settings
+	}
+	var document struct {
+		Reviews struct {
+			AutoReview struct {
+				Enabled                       *bool `yaml:"enabled"`
+				AutoIncrementalReview         *bool `yaml:"auto_incremental_review"`
+				AutoPauseAfterReviewedCommits *int  `yaml:"auto_pause_after_reviewed_commits"`
+			} `yaml:"auto_review"`
+		} `yaml:"reviews"`
+	}
+	if err := yaml.Unmarshal(content, &document); err != nil {
+		return settings
+	}
+	if document.Reviews.AutoReview.Enabled != nil {
+		settings.AutoReviewEnabled = *document.Reviews.AutoReview.Enabled
+	}
+	if document.Reviews.AutoReview.AutoIncrementalReview != nil {
+		settings.AutoIncrementalReview = *document.Reviews.AutoReview.AutoIncrementalReview
+	}
+	if document.Reviews.AutoReview.AutoPauseAfterReviewedCommits != nil {
+		settings.AutoPauseAfterReviewedCommits = *document.Reviews.AutoReview.AutoPauseAfterReviewedCommits
+	}
+	settings.PushTriggersReview = settings.AutoReviewEnabled && settings.AutoIncrementalReview && settings.AutoPauseAfterReviewedCommits == 0
+	return settings
+}
+
+func validateReviewRequestCoherence(command string, gitRoot string, requestReview bool) error {
+	if command != CommandResolve && command != CommandWatch {
+		return nil
+	}
+	settings := inspectCodeRabbitReviewSettings(gitRoot)
+	if settings.PushTriggersReview != requestReview {
+		return nil
+	}
+
+	detail := "would strand the Run waiting for a review nobody requests"
+	nextAction := "set review_source.request_review to true in Project Config"
+	if requestReview {
+		detail = "would request a duplicate review after every push"
+		nextAction = "set review_source.request_review to false in Project Config"
+	}
+	return fmt.Errorf(
+		"review request configuration is incoherent: %q reads auto_review.enabled=%t, auto_review.auto_incremental_review=%t, and auto_review.auto_pause_after_reviewed_commits=%d, so pushTriggersReview=%t equals review_source.request_review=%t and %s; next action: %s",
+		settings.Path,
+		settings.AutoReviewEnabled,
+		settings.AutoIncrementalReview,
+		settings.AutoPauseAfterReviewedCommits,
+		settings.PushTriggersReview,
+		requestReview,
+		detail,
+		nextAction,
+	)
 }
 
 func InspectGit(ctx context.Context, workDir string, runner GitRunner) (GitState, error) {

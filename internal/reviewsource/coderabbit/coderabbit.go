@@ -18,6 +18,7 @@ import (
 	"unicode"
 
 	"roundfix/internal/reviewsource"
+	"roundfix/internal/runevent"
 	"roundfix/internal/watch"
 )
 
@@ -28,9 +29,11 @@ const (
 
 type Client struct {
 	GitHub GitHubClient
+	Sink   runevent.Sink
 }
 
 var _ reviewsource.EvidenceSource = Client{}
+var _ reviewsource.ReviewRequester = Client{}
 
 type GitHubClient interface {
 	ReviewComments(ctx context.Context, repo string, prNumber string) ([]ReviewComment, error)
@@ -99,6 +102,102 @@ type PullRequestReview struct {
 	State       string
 	CommitSHA   string
 	SubmittedAt time.Time
+}
+
+// ReviewRequestMarker returns the stable per-head marker used to deduplicate
+// Roundfix review requests on an Open Pull Request.
+func ReviewRequestMarker(headSHA string) string {
+	return "<!-- roundfix:review-request head=" + strings.TrimSpace(headSHA) + " -->"
+}
+
+func (client Client) RequestReview(ctx context.Context, req reviewsource.ReviewRequest) (reviewsource.ReviewRequestOutcome, error) {
+	if err := ctx.Err(); err != nil {
+		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("request coderabbit review: %w", err)
+	}
+	if strings.TrimSpace(req.BaseRepository) == "" {
+		return reviewsource.ReviewRequestOutcome{}, errors.New("coderabbit review request requires base repository metadata")
+	}
+	prNumber, err := strconv.Atoi(strings.TrimSpace(req.PRNumber))
+	if err != nil {
+		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("coderabbit review request requires numeric Open Pull Request metadata: %w", err)
+	}
+	if prNumber <= 0 {
+		return reviewsource.ReviewRequestOutcome{}, errors.New("coderabbit review request requires positive Open Pull Request metadata")
+	}
+	headSHA := strings.TrimSpace(req.HeadSHA)
+	if headSHA == "" {
+		return reviewsource.ReviewRequestOutcome{}, errors.New("coderabbit review request requires head metadata")
+	}
+	command := strings.TrimSpace(req.Command)
+	if command == "" {
+		return reviewsource.ReviewRequestOutcome{}, errors.New("coderabbit review request requires command")
+	}
+
+	gh := client.GitHub
+	if gh == nil {
+		gh = GHClient{}
+	}
+	marker := ReviewRequestMarker(headSHA)
+	comments, err := gh.IssueComments(ctx, req.BaseRepository, req.PRNumber)
+	if err != nil {
+		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("list pull request comments before coderabbit review request: %w", err)
+	}
+	for _, comment := range comments {
+		if !isRoundfixReviewRequestComment(comment, marker) {
+			continue
+		}
+		outcome := reviewsource.ReviewRequestOutcome{Marker: marker}
+		if err := client.publishReviewRequestEvent(ctx, req.RunID, headSHA, command, false); err != nil {
+			return reviewsource.ReviewRequestOutcome{}, err
+		}
+		return outcome, nil
+	}
+
+	if err := gh.CommentOnPullRequest(ctx, req.BaseRepository, prNumber, RoundfixCommentBody(command, marker)); err != nil {
+		return reviewsource.ReviewRequestOutcome{}, fmt.Errorf("publish coderabbit review request: %w", err)
+	}
+	outcome := reviewsource.ReviewRequestOutcome{Published: true, Marker: marker}
+	if err := client.publishReviewRequestEvent(ctx, req.RunID, headSHA, command, true); err != nil {
+		return reviewsource.ReviewRequestOutcome{}, err
+	}
+	return outcome, nil
+}
+
+func (client Client) publishReviewRequestEvent(ctx context.Context, runID string, headSHA string, command string, published bool) error {
+	outcome := runevent.ReviewRequestDeduplicated
+	summary := "review request deduplicated"
+	if published {
+		outcome = runevent.ReviewRequestPublished
+		summary = "review request published"
+	}
+	payload, err := json.Marshal(runevent.ReviewRequestPayload{
+		HeadSHA: headSHA,
+		Command: command,
+		Outcome: outcome,
+	})
+	if err != nil {
+		return fmt.Errorf("encode review request Run Event: %w", err)
+	}
+	sink := client.Sink
+	if sink == nil {
+		sink = runevent.Discard
+	}
+	if err := sink.Publish(ctx, runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceReviewSource,
+		Kind:    runevent.KindReviewSourceRequest,
+		Summary: summary,
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	}); err != nil {
+		return fmt.Errorf("record review request Run Event: %w", err)
+	}
+	return nil
+}
+
+func isRoundfixReviewRequestComment(comment IssueComment, marker string) bool {
+	author := strings.TrimSpace(comment.Author)
+	return author != "" && !isCodeRabbitAuthor(author) && HasRoundfixCommentMarker(marker, comment.Body)
 }
 
 func (client Client) FetchReviews(ctx context.Context, req reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {

@@ -25,13 +25,14 @@ const (
 type Kind string
 
 const (
-	KindAgentMessage     Kind = "agent.message"
-	KindAgentThought     Kind = "agent.thought"
-	KindAgentToolStarted Kind = "agent.tool_started"
-	KindAgentToolUpdated Kind = "agent.tool_updated"
-	KindAgentPlan        Kind = "agent.plan"
-	KindAgentStatus      Kind = "agent.status"
-	KindAgentRaw         Kind = "agent.raw"
+	KindAgentMessage        Kind = "agent.message"
+	KindAgentThought        Kind = "agent.thought"
+	KindAgentToolStarted    Kind = "agent.tool_started"
+	KindAgentToolUpdated    Kind = "agent.tool_updated"
+	KindAgentPlan           Kind = "agent.plan"
+	KindAgentStatus         Kind = "agent.status"
+	KindAgentRaw            Kind = "agent.raw"
+	KindReviewSourceRequest Kind = "review_source.request"
 
 	// Daemon kinds cover the orchestration loop: every user-meaningful
 	// state transition appends one of these with a small payload of IDs
@@ -59,6 +60,13 @@ const (
 	// Task id rides in the existing ReviewIssue Work Item field.
 	KindDaemonTask Kind = "daemon.task"
 	KindDaemonQA   Kind = "daemon.qa"
+)
+
+type ReviewRequestOutcome string
+
+const (
+	ReviewRequestPublished    ReviewRequestOutcome = "published"
+	ReviewRequestDeduplicated ReviewRequestOutcome = "deduplicated"
 )
 
 // VerificationPhase names the daemon.verification payload phase. The
@@ -153,6 +161,13 @@ type ReviewStatusPayload struct {
 	Conclusion      string    `json:"conclusion,omitempty"`
 	Detail          string    `json:"detail,omitempty"`
 	Reason          string    `json:"reason,omitempty"`
+}
+
+// ReviewRequestPayload is the stable review_source.request payload.
+type ReviewRequestPayload struct {
+	HeadSHA string               `json:"head_sha"`
+	Command string               `json:"command"`
+	Outcome ReviewRequestOutcome `json:"outcome"`
 }
 
 // RetryPayload is the stable daemon.retry payload for one bounded Review
