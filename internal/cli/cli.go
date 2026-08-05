@@ -4120,6 +4120,7 @@ func defaultRunCommandPreflight(ctx context.Context, req commandRequest, loaded 
 		AutoPush:               loaded.Config.Watch.AutoPush,
 		PushRemote:             loaded.Config.Watch.PushRemote,
 		PushBranch:             loaded.Config.Watch.PushBranch,
+		RequestReview:          loaded.Config.ReviewSource.RequestReview,
 	})
 }
 

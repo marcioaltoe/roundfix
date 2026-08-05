@@ -1,3 +1,7 @@
+// Suite: Roundfix CLI public contract
+// Invariant: each command preserves its documented parsing, streams, exit codes, and side-effect boundaries.
+// Boundary IN: public Run entry points and injected command collaborators.
+// Boundary OUT: command-owned package internals, which retain their focused package suites.
 package cli
 
 import (
@@ -11052,6 +11056,51 @@ func TestRunPreflightFailureLeavesBufferOutputPlainByDefault(t *testing.T) {
 	if !strings.Contains(stderr.String(), "Preflight failed") || !strings.Contains(stderr.String(), "plain preflight failure") {
 		t.Fatalf("expected formatted preflight failure, got %q", stderr.String())
 	}
+}
+
+func TestRunResolveReviewRequestCoherenceRefusalExitsTwoBeforeRunCreation(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := withReviewGitWorkspace(t)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+defaults:
+  verification: test -f agent.txt
+review_source:
+  request_review: true
+watch:
+  poll_interval: 1s
+  review_timeout: 5s
+  quiet_period: 1ms
+`)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{
+		"resolve",
+		"--pr", "123",
+		"--head-repo", "owner/project",
+		"--head-branch", "feature/review",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("review request coherence exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	for _, want := range []string{
+		"Preflight failed",
+		filepath.Join(repoDir, ".coderabbit.yaml"),
+		"pushTriggersReview=true",
+		"review_source.request_review=true",
+		"would request a duplicate review after every push",
+		"set review_source.request_review to false in Project Config",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected refusal to contain %q, got %q", want, stderr.String())
+		}
+	}
+	assertNoRunDatabase(t, homeDir)
 }
 
 func TestRunPreflightFailureColorsOutputWhenForced(t *testing.T) {

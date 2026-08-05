@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0078-roundfix-asks-for-the-review
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -82,3 +82,69 @@ provable with no requester in existence.
 
 - `_prd.md` → Core Features 3 and 4; Success Metric 3.
 - `_techspec.md` → API Contracts; Build Order 3.
+
+## Result
+
+### Implementation
+
+- Added the two layered Review Source settings. The built-in configuration
+  keeps requests disabled and uses `@coderabbitai review`; User Config and
+  Project Config override both values in that order. Configuration loading
+  rejects a non-boolean `request_review`, and validation rejects a blank
+  `request_command`.
+- Added read-only `.coderabbit.yaml` inspection under the Git root. Both
+  `reviews.auto_review.enabled` and
+  `reviews.auto_review.auto_incremental_review` default to `true`; an absent,
+  unreadable, or unparseable file therefore resolves to Review Source
+  defaults. Roundfix does not create or modify the file.
+- Added the equality refusal to operational Preflight Validation after Git
+  inspection and before Open Pull Request resolution or push planning.
+  `resolve` and `watch` now reject both the stranded and duplicate-review rows;
+  `fetch` bypasses the check. The CLI passes the effective `request_review`
+  value into Preflight and maps the refusal to its existing exit `2` contract.
+
+### Focused checks
+
+- Pre-change signal:
+  `GOCACHE=$PWD/.gocache rtk go test ./internal/config ./internal/preflight -count=1 -run 'Test(BuiltinReviewRequestDefaults|LoadAppliesReviewRequestHierarchy|ValidateRejectsEmptyReviewRequestCommand|RunEnforcesReviewRequestCoherence|RunExemptsFetchFromReviewRequestCoherence|RunTreatsUnreadableCodeRabbitConfigAsDefaults)$'`
+  failed because the new configuration fields and Preflight input did not
+  exist.
+- Task-specific post-edit check:
+  `GOCACHE=$PWD/.gocache rtk go test ./internal/config ./internal/preflight ./internal/cli -count=1 -run 'Test(BuiltinReviewRequestDefaults|LoadAppliesReviewRequestHierarchy|ValidateRejectsEmptyReviewRequestCommand|LoadRejectsNonBooleanReviewRequest|RunEnforcesReviewRequestCoherence|RunExemptsFetchFromReviewRequestCoherence|RunTreatsUnreadableCodeRabbitConfigAsDefaults|RunResolveReviewRequestCoherenceRefusalExitsTwoBeforeRunCreation)$'`
+  passed 21 tests across three packages.
+- `GOCACHE=$PWD/.gocache rtk go test ./internal/config -count=1` passed
+  169 tests.
+- `GOCACHE=$PWD/.gocache rtk go test ./internal/preflight -count=1` passed
+  38 tests.
+- `GOCACHE=$PWD/.gocache rtk go test ./internal/cli -count=1` passed 966
+  tests.
+- `rtk git diff --check` exited `0` with no diagnostics.
+- The Task's declared `## Verification` commands were not run; the Daemon owns
+  them.
+
+### Acceptance evidence
+
+1. `TestRunEnforcesReviewRequestCoherence/resolve_runs_with_Review_Source_defaults_and_asking_disabled`
+   passes with `pushTriggersReview=true` and `request_review=false`.
+2. `TestRunEnforcesReviewRequestCoherence/resolve_runs_when_pushes_do_not_trigger_reviews_and_asking_is_enabled`
+   passes with `pushTriggersReview=false` and `request_review=true`.
+3. The `resolve` and `watch` stranded-Run rows both reject
+   `pushTriggersReview=false` with `request_review=false`, naming the wait for
+   a review nobody requests and directing the operator to enable
+   `review_source.request_review` in Project Config.
+4. The `resolve` and `watch` duplicate-review rows both reject
+   `pushTriggersReview=true` with `request_review=true`. The CLI boundary test
+   observes exit `2`, no stdout, and no Run Database creation.
+5. The absent-file row proceeds under the built-in configuration, and the
+   unreadable-file test resolves both CodeRabbit values to `true` before
+   refusing the otherwise duplicate request.
+6. `TestRunExemptsFetchFromReviewRequestCoherence` passes all four predicate
+   combinations.
+7. Both refusal rows assert the absolute `.coderabbit.yaml` path, the resolved
+   `auto_review.enabled` and `auto_incremental_review` values,
+   `pushTriggersReview`, `review_source.request_review`, and one row-specific
+   Project Config next action.
+
+### Follow-ups
+
+None for this Task slice.

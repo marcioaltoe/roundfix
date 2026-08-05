@@ -1,8 +1,13 @@
+// Suite: operational Preflight Validation
+// Invariant: review Runs refuse unsafe state before any Run-side mutation can begin.
+// Boundary IN: Git state, Open Pull Request metadata, push planning, and review-request coherence.
+// Boundary OUT: CLI exit-code rendering and Run execution, owned by internal/cli.
 package preflight
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -182,6 +187,185 @@ func TestRunRejectsMissingUpstreamWhenAutoPushCanRun(t *testing.T) {
 	}
 }
 
+func TestRunEnforcesReviewRequestCoherence(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name                  string
+		command               string
+		requestReview         bool
+		autoReviewEnabled     bool
+		autoIncrementalReview bool
+		writeCodeRabbitConfig bool
+		wantError             string
+		wantNextAction        string
+	}{
+		{
+			name:                  "resolve runs with Review Source defaults and asking disabled",
+			command:               CommandResolve,
+			writeCodeRabbitConfig: false,
+		},
+		{
+			name:                  "resolve runs when pushes do not trigger reviews and asking is enabled",
+			command:               CommandResolve,
+			requestReview:         true,
+			autoReviewEnabled:     false,
+			writeCodeRabbitConfig: true,
+		},
+		{
+			name:                  "resolve refuses a stranded Run",
+			command:               CommandResolve,
+			autoReviewEnabled:     false,
+			writeCodeRabbitConfig: true,
+			wantError:             "would strand the Run waiting for a review nobody requests",
+			wantNextAction:        "set review_source.request_review to true in Project Config",
+		},
+		{
+			name:                  "resolve refuses duplicate reviews",
+			command:               CommandResolve,
+			requestReview:         true,
+			autoReviewEnabled:     true,
+			autoIncrementalReview: true,
+			writeCodeRabbitConfig: true,
+			wantError:             "would request a duplicate review after every push",
+			wantNextAction:        "set review_source.request_review to false in Project Config",
+		},
+		{
+			name:                  "watch refuses a stranded Run",
+			command:               CommandWatch,
+			autoReviewEnabled:     false,
+			writeCodeRabbitConfig: true,
+			wantError:             "would strand the Run waiting for a review nobody requests",
+			wantNextAction:        "set review_source.request_review to true in Project Config",
+		},
+		{
+			name:                  "watch refuses duplicate reviews",
+			command:               CommandWatch,
+			requestReview:         true,
+			autoReviewEnabled:     true,
+			autoIncrementalReview: true,
+			writeCodeRabbitConfig: true,
+			wantError:             "would request a duplicate review after every push",
+			wantNextAction:        "set review_source.request_review to false in Project Config",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := t.TempDir()
+			if tt.writeCodeRabbitConfig {
+				content := fmt.Sprintf("reviews:\n  auto_review:\n    enabled: %t\n    auto_incremental_review: %t\n", tt.autoReviewEnabled, tt.autoIncrementalReview)
+				if err := os.WriteFile(filepath.Join(repo, codeRabbitConfigName), []byte(content), 0o644); err != nil {
+					t.Fatalf("write CodeRabbit config: %v", err)
+				}
+			}
+
+			_, err := Run(context.Background(), Request{
+				Command:                tt.command,
+				WorkDir:                repo,
+				PRNumber:               "123",
+				ExplicitHeadBranch:     "feature/review",
+				ExplicitHeadRepository: "owner/project",
+				RequestReview:          tt.requestReview,
+				GitRunner:              cleanGitRunnerAt(repo, ""),
+			})
+			if tt.wantError == "" {
+				if err != nil {
+					t.Fatalf("expected coherent review settings, got %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatal("expected incoherent review settings to fail")
+			}
+			for _, want := range []string{
+				filepath.Join(repo, codeRabbitConfigName),
+				fmt.Sprintf("auto_review.enabled=%t", tt.autoReviewEnabled),
+				fmt.Sprintf("auto_review.auto_incremental_review=%t", tt.autoIncrementalReview),
+				fmt.Sprintf("pushTriggersReview=%t", tt.autoReviewEnabled && tt.autoIncrementalReview),
+				fmt.Sprintf("review_source.request_review=%t", tt.requestReview),
+				tt.wantError,
+				tt.wantNextAction,
+			} {
+				if !strings.Contains(err.Error(), want) {
+					t.Fatalf("expected refusal to contain %q, got %q", want, err.Error())
+				}
+			}
+		})
+	}
+}
+
+func TestRunExemptsFetchFromReviewRequestCoherence(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name                  string
+		requestReview         bool
+		autoReviewEnabled     bool
+		autoIncrementalReview bool
+	}{
+		{name: "push review on and asking off", autoReviewEnabled: true, autoIncrementalReview: true},
+		{name: "push review off and asking on", requestReview: true},
+		{name: "push review off and asking off"},
+		{name: "push review on and asking on", requestReview: true, autoReviewEnabled: true, autoIncrementalReview: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := t.TempDir()
+			content := fmt.Sprintf("reviews:\n  auto_review:\n    enabled: %t\n    auto_incremental_review: %t\n", tt.autoReviewEnabled, tt.autoIncrementalReview)
+			if err := os.WriteFile(filepath.Join(repo, codeRabbitConfigName), []byte(content), 0o644); err != nil {
+				t.Fatalf("write CodeRabbit config: %v", err)
+			}
+
+			_, err := Run(context.Background(), Request{
+				Command:                CommandFetch,
+				WorkDir:                repo,
+				PRNumber:               "123",
+				ExplicitHeadBranch:     "feature/review",
+				ExplicitHeadRepository: "owner/project",
+				RequestReview:          tt.requestReview,
+				GitRunner:              cleanGitRunnerAt(repo, ""),
+			})
+			if err != nil {
+				t.Fatalf("fetch must ignore review request coherence: %v", err)
+			}
+		})
+	}
+}
+
+func TestRunTreatsUnreadableCodeRabbitConfigAsDefaults(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	configPath := filepath.Join(repo, codeRabbitConfigName)
+	if err := os.Mkdir(configPath, 0o755); err != nil {
+		t.Fatalf("create unreadable CodeRabbit config path: %v", err)
+	}
+
+	_, err := Run(context.Background(), Request{
+		Command:                CommandResolve,
+		WorkDir:                repo,
+		PRNumber:               "123",
+		ExplicitHeadBranch:     "feature/review",
+		ExplicitHeadRepository: "owner/project",
+		RequestReview:          true,
+		GitRunner:              cleanGitRunnerAt(repo, ""),
+	})
+
+	if err == nil {
+		t.Fatal("expected Review Source defaults plus asking to refuse duplicate reviews")
+	}
+	for _, want := range []string{
+		configPath,
+		"auto_review.enabled=true",
+		"auto_review.auto_incremental_review=true",
+		"pushTriggersReview=true",
+		"review_source.request_review=true",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("expected unreadable-file refusal to contain %q, got %q", want, err.Error())
+		}
+	}
+}
+
 func TestResolvePullRequestRejectsClosedMetadata(t *testing.T) {
 	_, err := ResolvePullRequest(context.Background(), ResolvePullRequestRequest{
 		Number:  "123",
@@ -260,9 +444,13 @@ func (resolver failingPullRequestResolver) ResolvePullRequest(context.Context, s
 }
 
 func cleanGitRunner(upstream string) fakeGitRunner {
+	return cleanGitRunnerAt("/repo", upstream)
+}
+
+func cleanGitRunnerAt(root string, upstream string) fakeGitRunner {
 	runner := fakeGitRunner{
 		outputs: map[string]string{
-			gitKey("rev-parse", "--show-toplevel"):   "/repo",
+			gitKey("rev-parse", "--show-toplevel"):   root,
 			gitKey("branch", "--show-current"):       "feature/review",
 			gitKey("rev-parse", "HEAD"):              "abc123",
 			gitKey("status", "--porcelain=v1", "-z"): "",
