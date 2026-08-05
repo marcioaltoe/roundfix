@@ -56,8 +56,8 @@ the distinction.
 - [ ] A scratch worktree whose branch is unpushed classifies `preserved`.
 - [ ] A scratch worktree whose content is unmerged classifies `preserved`.
 - [ ] A worktree belonging to an Active Run is never `residue`.
-- [ ] The audit still mutates nothing, proven by Git state identical before and
-      after.
+- [ ] The audit still mutates nothing, proven by a named test asserting a
+      fixture's Git state is byte-identical before and after an audit run.
 
 ## Context
 
@@ -73,8 +73,12 @@ the distinction.
   — expected: exit 0.
 - `go test -parallel 16 ./... 2>&1 | grep -q "^FAIL" && exit 1 || exit 0`
   — expected: exit 0.
-- `if grep -rn "os.RemoveAll\|worktree remove" internal/specaudit --include="*.go" | grep -v "_test.go" | grep -v "fmt.Sprintf\|const \|reclaim" | grep -q .; then exit 1; fi`
-  — expected: exit 0; the reclaim stays a string, never a call.
+- `go test ./internal/specaudit -count=1 -run 'MutatesNothing|GitStateUnchanged' -v | grep -q -- "--- PASS"`
+  — expected: exit 0; a fixture's Git state is byte-identical before and after
+  an audit, which proves the reclaim was not executed. This replaces an earlier
+  negative `grep` over the package source: that check rejected a correctly
+  named string constant, and a behavioural assertion proves the property the
+  grep was only approximating.
 
 ## References
 
