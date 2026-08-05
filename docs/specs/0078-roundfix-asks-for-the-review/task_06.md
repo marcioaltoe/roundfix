@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0078-roundfix-asks-for-the-review
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
