@@ -181,6 +181,40 @@ func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid
 	return nil
 }
 
+// InspectTree proves the recorded owner without signalling it, then returns
+// the live processes the platform still attributes to that owner. A host that
+// cannot prove ownership, enumerate the tree, or observe liveness returns an
+// error instead of an incomplete reclaimable set.
+func (controller *OwnerProcessControl) InspectTree(
+	ctx context.Context,
+	pid int,
+	recordedIdentity string,
+) ([]int, error) {
+	ownerAbsent, err := controller.proveOwner(ctx, pid, recordedIdentity)
+	if err != nil {
+		return nil, err
+	}
+	owned, err := controller.ownedProcesses(pid)
+	if err != nil {
+		return nil, ownerProcessControlError(pid, "enumerate owned process tree", err)
+	}
+
+	live := make([]int, 0, len(owned))
+	for _, ownedPID := range normalizeProcessTree(pid, owned) {
+		if ownedPID == pid && ownerAbsent {
+			continue
+		}
+		absent, err := controller.processAbsent(ownedPID)
+		if err != nil {
+			return nil, ownerProcessControlError(ownedPID, "inspect owned process liveness", err)
+		}
+		if !absent {
+			live = append(live, ownedPID)
+		}
+	}
+	return live, nil
+}
+
 // TerminateTreeAndWait proves the recorded owner before signalling any
 // process, then terminates every process the platform can still attribute to
 // that owner. It reports proof of absence per PID; a process whose absence

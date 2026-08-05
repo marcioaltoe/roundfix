@@ -1366,6 +1366,11 @@ func TestClassifyRunBranchSetFourFailedCycles(t *testing.T) {
 	if !slices.Equal(result.Releasable, wantReleasable) {
 		t.Fatalf("releasable Run Branches = %v, want %v", result.Releasable, wantReleasable)
 	}
+	for _, branch := range wantReleasable {
+		if result.ReleasableProofs[branch] != wantReport {
+			t.Fatalf("releasable proof for %q = %q, want %q", branch, result.ReleasableProofs[branch], wantReport)
+		}
+	}
 	if len(result.Preserved) != 0 || len(result.PreservedReasons) != 0 {
 		t.Fatalf("preserved Run Branches = %v reasons=%v, want none", result.Preserved, result.PreservedReasons)
 	}
@@ -1480,6 +1485,89 @@ func TestClassifyRunBranchSetPreservesActiveRunBranch(t *testing.T) {
 	if slices.Contains(result.Releasable, fixture.refs[0].Branch) {
 		t.Fatalf("Active Run Branch %q must not be releasable", fixture.refs[0].Branch)
 	}
+}
+
+func TestApplyRunBranchCandidateRevalidatesProofAndCleanWorktree(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	classification, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+	candidate := fixture.refs[0]
+	if err := ApplyRunBranchCandidate(context.Background(), classification, candidate.Branch); err != nil {
+		t.Fatalf("apply Run Branch candidate: %v", err)
+	}
+	assertPathRemoved(t, candidate.Path)
+	assertBranchRemoved(t, fixture.repoDir, candidate.Branch)
+	assertPathExists(t, fixture.refs[1].Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.refs[1].Branch)
+}
+
+func TestApplyRunBranchCandidateRejectsUninspectedBranch(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	classification, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+
+	err = ApplyRunBranchCandidate(context.Background(), classification, fixture.refs[1].Branch)
+
+	if err == nil || !strings.Contains(err.Error(), "was not inspected as releasable") {
+		t.Fatalf("uninspected Run Branch apply error = %v, want refusal", err)
+	}
+	assertPathExists(t, fixture.refs[1].Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.refs[1].Branch)
+}
+
+func TestApplyRunBranchCandidatePreservesNewlyDirtyWorktree(t *testing.T) {
+	t.Parallel()
+	const slug = "0066-run-teardown-reclaims-what-it-created"
+	fixture := newRunBranchSetFixture(t, slug,
+		"qa-report-2026-07-28.md",
+		"qa-report-2026-07-29.md",
+	)
+	classification, err := ClassifyRunBranchSet(
+		context.Background(),
+		fixture.repoDir,
+		fixture.targetBranch,
+		slug,
+		fixture.runs,
+	)
+	if err != nil {
+		t.Fatalf("classify Run Branch set: %v", err)
+	}
+	candidate := fixture.refs[0]
+	mustWriteWorktreeTest(t, filepath.Join(candidate.Path, "new-dirt.txt"), "preserve me\n")
+
+	err = ApplyRunBranchCandidate(context.Background(), classification, candidate.Branch)
+
+	if err == nil || !strings.Contains(err.Error(), "worktree classification changed") {
+		t.Fatalf("newly dirty Run Branch apply error = %v, want preservation refusal", err)
+	}
+	assertPathExists(t, candidate.Path)
+	assertRunBranchExists(t, fixture.repoDir, candidate.Branch)
 }
 
 func TestApplyTerminalRunSuperseded(t *testing.T) {

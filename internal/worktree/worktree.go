@@ -175,8 +175,19 @@ type BranchSetClassification struct {
 	Current          string
 	CurrentReport    string
 	Releasable       []string
+	ReleasableProofs map[string]string
 	Preserved        []string
 	PreservedReasons map[string]string
+
+	evidence *branchSetClassificationEvidence
+}
+
+type branchSetClassificationEvidence struct {
+	gitRoot      string
+	targetBranch string
+	specSlug     string
+	runs         []store.Run
+	releasable   map[string]string
 }
 
 func InspectTerminalRun(ctx context.Context, run store.Run) (RunWorktreeReconciliation, error) {
@@ -318,6 +329,16 @@ func classifyRunBranchSet(
 	runs []store.Run,
 ) (BranchSetClassification, error) {
 	result := BranchSetClassification{}
+	release := func(branch string, report string) {
+		if result.ReleasableProofs == nil {
+			result.ReleasableProofs = make(map[string]string)
+		}
+		if _, releasable := result.ReleasableProofs[branch]; releasable {
+			return
+		}
+		result.Releasable = append(result.Releasable, branch)
+		result.ReleasableProofs[branch] = report
+	}
 	preserve := func(branch string, reason string) {
 		if result.PreservedReasons == nil {
 			result.PreservedReasons = make(map[string]string)
@@ -391,8 +412,8 @@ func classifyRunBranchSet(
 			continue
 		}
 		if !active {
-			if _, proven := supersedingQAReport(ctx, runner, root, targetHead, head, specSlug); proven {
-				result.Releasable = append(result.Releasable, branch)
+			if report, proven := supersedingQAReport(ctx, runner, root, targetHead, head, specSlug); proven {
+				release(branch, report)
 				continue
 			}
 		}
@@ -464,8 +485,8 @@ func classifyRunBranchSet(
 						preserve(candidate.branch, "Run Branch belongs to an Active Run")
 						continue
 					}
-					if _, proven := supersedingQAReport(ctx, runner, root, current.head, candidate.head, specSlug); proven {
-						result.Releasable = append(result.Releasable, candidate.branch)
+					if report, proven := supersedingQAReport(ctx, runner, root, current.head, candidate.head, specSlug); proven {
+						release(candidate.branch, report)
 						continue
 					}
 					preserve(candidate.branch, fmt.Sprintf(
@@ -479,7 +500,98 @@ func classifyRunBranchSet(
 
 	sort.Strings(result.Releasable)
 	sort.Strings(result.Preserved)
+	result.evidence = &branchSetClassificationEvidence{
+		gitRoot:      root,
+		targetBranch: targetBranch,
+		specSlug:     specSlug,
+		runs:         cloneRuns(runs),
+		releasable:   cloneStringMap(result.ReleasableProofs),
+	}
 	return result, nil
+}
+
+// ApplyRunBranchCandidate removes one Run Branch that a prior set
+// classification proved releasable. It accepts only a candidate carried by
+// that inspected classification, repeats the set proof, and re-inspects the
+// candidate's registered worktree before removing either Git surface.
+func ApplyRunBranchCandidate(ctx context.Context, inspected BranchSetClassification, branch string) error {
+	evidence := inspected.evidence
+	if evidence == nil {
+		return errors.New("apply Run Branch candidate: classification was not produced by inspection")
+	}
+	proof, inspectedCandidate := evidence.releasable[branch]
+	if !inspectedCandidate || proof == "" {
+		return fmt.Errorf("apply Run Branch candidate %q: branch was not inspected as releasable", branch)
+	}
+
+	fresh, err := ClassifyRunBranchSet(
+		ctx,
+		evidence.gitRoot,
+		evidence.targetBranch,
+		evidence.specSlug,
+		evidence.runs,
+	)
+	if err != nil {
+		return fmt.Errorf("revalidate Run Branch candidate %q: %w", branch, err)
+	}
+	if fresh.ReleasableProofs[branch] != proof {
+		return fmt.Errorf("apply Run Branch candidate %q: superseding proof is stale", branch)
+	}
+
+	run, found := runForBranch(evidence.runs, branch)
+	if !found || !store.IsTerminalState(run.State) {
+		return fmt.Errorf("apply Run Branch candidate %q: terminal Run metadata is unavailable", branch)
+	}
+	terminal, err := InspectTerminalRun(ctx, run)
+	if err != nil {
+		return fmt.Errorf("revalidate Run Branch candidate %q worktree: %w", branch, err)
+	}
+	if terminal.State == ReconciliationReleased {
+		return nil
+	}
+	if terminal.State != ReconciliationUnintegrated {
+		return fmt.Errorf(
+			"apply Run Branch candidate %q: worktree classification changed to %q and must be preserved",
+			branch,
+			terminal.State,
+		)
+	}
+	return cleanupTerminalRun(ctx, execGitRunner{}, terminal)
+}
+
+func runForBranch(runs []store.Run, branch string) (store.Run, bool) {
+	for _, run := range runs {
+		if BranchName(run.ID) == branch {
+			return run, true
+		}
+	}
+	return store.Run{}, false
+}
+
+func cloneRuns(runs []store.Run) []store.Run {
+	cloned := append([]store.Run(nil), runs...)
+	for index := range cloned {
+		if cloned[index].OwnerPID != nil {
+			pid := *cloned[index].OwnerPID
+			cloned[index].OwnerPID = &pid
+		}
+		if cloned[index].CompletedAt != nil {
+			completedAt := *cloned[index].CompletedAt
+			cloned[index].CompletedAt = &completedAt
+		}
+	}
+	return cloned
+}
+
+func cloneStringMap(values map[string]string) map[string]string {
+	if values == nil {
+		return nil
+	}
+	cloned := make(map[string]string, len(values))
+	for key, value := range values {
+		cloned[key] = value
+	}
+	return cloned
 }
 
 // QAReportOnlyBranch reports whether targetHead..runHead contains at least one
@@ -791,6 +903,13 @@ func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (R
 			}
 			result.State = ReconciliationUnintegrated
 			result.Reason = reconciliationReasonUnintegrated
+			result.evidence = newTerminalRunReconciliationEvidence(
+				run,
+				gitRoot,
+				result,
+				worktreePresent,
+				runBranchPresent,
+			)
 			return result, nil
 		}
 		result.Reason = reconciliationReasonAncestry

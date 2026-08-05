@@ -549,6 +549,63 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 	if stderr.Len() != 0 {
 		t.Fatalf("JSON dry-run stderr = %q, want empty", stderr.String())
 	}
+	var rawReport map[string]json.RawMessage
+	if err := json.Unmarshal(stdout.Bytes(), &rawReport); err != nil {
+		t.Fatalf("decode raw reconciliation JSON: %v\n%s", err, stdout.String())
+	}
+	assertJSONFieldNames(t, rawReport, []string{
+		"applyCommand",
+		"debrisSummary",
+		"mode",
+		"preservedCandidates",
+		"processCandidates",
+		"repository",
+		"results",
+		"runBranchCandidates",
+		"runs",
+		"schemaVersion",
+		"summary",
+	})
+	if !bytes.Equal(rawReport["runs"], rawReport["results"]) {
+		t.Fatalf("additive runs view changed legacy results: runs=%s results=%s", rawReport["runs"], rawReport["results"])
+	}
+	var rawResults []map[string]json.RawMessage
+	if err := json.Unmarshal(rawReport["results"], &rawResults); err != nil {
+		t.Fatalf("decode raw reconciliation results: %v", err)
+	}
+	if len(rawResults) != 1 {
+		t.Fatalf("raw JSON results = %d, want 1", len(rawResults))
+	}
+	assertJSONFieldNames(t, rawResults[0], []string{
+		"action",
+		"classification",
+		"evidence",
+		"outcome",
+		"refusalReason",
+		"runBranch",
+		"runHead",
+		"runId",
+		"supersedingReport",
+		"targetBranch",
+		"targetHead",
+		"worktree",
+	})
+	var rawSummary map[string]json.RawMessage
+	if err := json.Unmarshal(rawReport["summary"], &rawSummary); err != nil {
+		t.Fatalf("decode raw reconciliation summary: %v", err)
+	}
+	assertJSONFieldNames(t, rawSummary, []string{
+		"applied",
+		"dirty",
+		"operationalFailures",
+		"preserved",
+		"released",
+		"safe",
+		"superseded",
+		"total",
+		"unintegrated",
+		"unknown",
+	})
 	var report reconcileReport
 	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
 		t.Fatalf("decode reconciliation JSON: %v\n%s", err, stdout.String())
@@ -561,6 +618,9 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 	}
 	if len(report.Results) != 1 {
 		t.Fatalf("JSON results = %d, want 1: %+v", len(report.Results), report.Results)
+	}
+	if !reflect.DeepEqual(report.Runs, report.Results) {
+		t.Fatalf("JSON runs view differs from legacy results: runs=%+v results=%+v", report.Runs, report.Results)
 	}
 	result := report.Results[0]
 	if result.RunID != run.ID ||
@@ -580,6 +640,168 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 		report.Summary.Applied != 0 || report.Summary.OperationalFailures != 0 {
 		t.Fatalf("unexpected JSON summary: %+v", report.Summary)
 	}
+}
+
+func TestRunReconcileEmptyJSONNamesRunsCollection(t *testing.T) {
+	t.Parallel()
+	_, _, _ = newReconcileWorkspace(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t,
+		context.Background(),
+		[]string{"reconcile", "--format=json"},
+		&stdout,
+		&stderr)
+
+	if code != exitOK {
+		t.Fatalf("empty JSON dry-run exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	var rawReport map[string]json.RawMessage
+	if err := json.Unmarshal(stdout.Bytes(), &rawReport); err != nil {
+		t.Fatalf("decode empty reconciliation JSON: %v\n%s", err, stdout.String())
+	}
+	rawRuns, found := rawReport["runs"]
+	if !found {
+		t.Fatalf("empty reconciliation JSON does not name its Runs collection: %s", stdout.String())
+	}
+	var runs []reconcileResult
+	if err := json.Unmarshal(rawRuns, &runs); err != nil {
+		t.Fatalf("decode empty Runs collection: %v", err)
+	}
+	if len(runs) != 0 {
+		t.Fatalf("empty Runs collection = %+v, want empty", runs)
+	}
+}
+
+func TestRunReconcileOffersAndAppliesOwnedProcessTreesAndRunBranches(t *testing.T) {
+	t.Parallel()
+	const slug = "reconcile-spec"
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	older, olderRef := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
+	newer, newerRef := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
+	commitReconcileQAReport(t, olderRef.Path, slug, "qa-report-2026-07-28.md", "fail")
+	commitReconcileQAReport(t, newerRef.Path, slug, "qa-report-2026-07-29.md", "fail")
+	active, activeRef := createActiveReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", slug, 5252)
+	commitReconcileQAReport(t, activeRef.Path, slug, "qa-report-2026-07-30.md", "pending")
+	processRun := createReconcileMetadataRun(t, homeDir, store.CreateRunRequest{
+		Kind:          store.KindImplement,
+		GitRoot:       repoDir,
+		LocalBranch:   "ma/widget-flow",
+		HeadSHA:       strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")),
+		SpecSlug:      "reconcile-process-spec",
+		Agent:         "codex",
+		OwnerPID:      4242,
+		OwnerIdentity: "test:4242",
+	}, store.StateFailed)
+	processes := &reconcileProcessControllerStub{
+		live: map[int][]int{4242: {4242, 4243}},
+	}
+	withReconcileProcessController(t, processes)
+	beforeDatabase := readReconcileBytes(t, store.DatabasePath(homeDir))
+	beforeGit := reconcileGitSurface(t, repoDir)
+	var dryStdout bytes.Buffer
+	var dryStderr bytes.Buffer
+
+	dryCode := runCLIContext(t, context.Background(), []string{"reconcile", "--format=json"}, &dryStdout, &dryStderr)
+
+	if dryCode != exitOK {
+		t.Fatalf("debris dry-run exit = %d, want 0 stderr=%q stdout=%q", dryCode, dryStderr.String(), dryStdout.String())
+	}
+	if dryStderr.Len() != 0 {
+		t.Fatalf("debris dry-run stderr = %q, want empty", dryStderr.String())
+	}
+	var dryReport reconcileReport
+	if err := json.Unmarshal(dryStdout.Bytes(), &dryReport); err != nil {
+		t.Fatalf("decode debris dry-run JSON: %v\n%s", err, dryStdout.String())
+	}
+	assertReconcileDebrisCandidate(t, dryReport.ProcessCandidates, "process", processRun.ID, "", 4242, []int{4242, 4243})
+	assertReconcileDebrisCandidate(t, dryReport.RunBranchCandidates, "runBranch", older.ID, olderRef.Branch, 0, nil)
+	assertReconcileDebrisCandidate(t, dryReport.RunBranchCandidates, "runBranch", newer.ID, newerRef.Branch, 0, nil)
+	assertReconcilePreservedCandidate(t, dryReport.PreservedCandidates, "process", active.ID, "Active Run")
+	assertReconcilePreservedCandidate(t, dryReport.PreservedCandidates, "runBranch", active.ID, "Active Run")
+	if got := readReconcileBytes(t, store.DatabasePath(homeDir)); !bytes.Equal(got, beforeDatabase) {
+		t.Fatal("debris dry-run changed the Run Database")
+	}
+	if got := reconcileGitSurface(t, repoDir); got != beforeGit {
+		t.Fatalf("debris dry-run changed Git state\nbefore:\n%s\nafter:\n%s", beforeGit, got)
+	}
+
+	var applyStdout bytes.Buffer
+	var applyStderr bytes.Buffer
+	applyCode := runCLIContext(t, context.Background(), []string{"reconcile", "--apply", "--format=json"}, &applyStdout, &applyStderr)
+	if applyCode != exitOK {
+		t.Fatalf("debris apply exit = %d, want 0 stderr=%q stdout=%q", applyCode, applyStderr.String(), applyStdout.String())
+	}
+	if applyStderr.Len() != 0 {
+		t.Fatalf("debris apply stderr = %q, want empty", applyStderr.String())
+	}
+	var applyReport reconcileReport
+	if err := json.Unmarshal(applyStdout.Bytes(), &applyReport); err != nil {
+		t.Fatalf("decode debris apply JSON: %v\n%s", err, applyStdout.String())
+	}
+	if !reflect.DeepEqual(applyReport.Runs, applyReport.Results) {
+		t.Fatalf("apply runs view differs from legacy results: runs=%+v results=%+v", applyReport.Runs, applyReport.Results)
+	}
+	if applyReport.DebrisSummary.ProcessesApplied != 1 || applyReport.DebrisSummary.RunBranchesApplied != 2 {
+		t.Fatalf("debris apply summary = %+v, want one process tree and two Run Branches applied", applyReport.DebrisSummary)
+	}
+	if len(processes.terminated) != 1 || processes.terminated[0] != 4242 {
+		t.Fatalf("terminated process roots = %v, want [4242]", processes.terminated)
+	}
+	assertReconcilePathState(t, olderRef.Path, false)
+	assertReconcileBranchState(t, repoDir, olderRef.Branch, false)
+	assertReconcilePathState(t, newerRef.Path, false)
+	assertReconcileBranchState(t, repoDir, newerRef.Branch, false)
+	assertReconcilePathState(t, activeRef.Path, true)
+	assertReconcileBranchState(t, repoDir, activeRef.Branch, true)
+
+	afterFirstGit := reconcileGitSurface(t, repoDir)
+	var secondStdout bytes.Buffer
+	var secondStderr bytes.Buffer
+	secondCode := runCLIContext(t, context.Background(), []string{"reconcile", "--apply", "--format=json"}, &secondStdout, &secondStderr)
+	if secondCode != exitOK {
+		t.Fatalf("second debris apply exit = %d, want 0 stderr=%q stdout=%q", secondCode, secondStderr.String(), secondStdout.String())
+	}
+	var secondReport reconcileReport
+	if err := json.Unmarshal(secondStdout.Bytes(), &secondReport); err != nil {
+		t.Fatalf("decode second debris apply JSON: %v", err)
+	}
+	if len(secondReport.ProcessCandidates) != 0 || len(secondReport.RunBranchCandidates) != 0 ||
+		secondReport.DebrisSummary.ProcessesApplied != 0 || secondReport.DebrisSummary.RunBranchesApplied != 0 {
+		t.Fatalf("second debris apply was not a no-op: %+v", secondReport)
+	}
+	if got := reconcileGitSurface(t, repoDir); got != afterFirstGit {
+		t.Fatalf("second debris apply changed Git state\nbefore:\n%s\nafter:\n%s", afterFirstGit, got)
+	}
+}
+
+func TestRunReconcileReportsAmbiguousDebrisPreserved(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	run, ref := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
+	mustWrite(t, filepath.Join(ref.Path, "valuable.txt"), "preserve\n")
+	gitImplement(t, ref.Path, "add", "valuable.txt")
+	gitImplement(t, ref.Path, "commit", "-m", "feat: valuable work")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"reconcile", "--format=json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("ambiguous debris dry-run exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	var report reconcileReport
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatalf("decode ambiguous debris JSON: %v", err)
+	}
+	assertReconcilePreservedCandidate(t, report.PreservedCandidates, "process", run.ID, "unproven")
+	assertReconcilePreservedCandidate(t, report.PreservedCandidates, "runBranch", run.ID, "QA Report evidence")
+	if len(report.ProcessCandidates) != 0 || len(report.RunBranchCandidates) != 0 {
+		t.Fatalf("ambiguous debris was offered: processes=%+v branches=%+v", report.ProcessCandidates, report.RunBranchCandidates)
+	}
+	assertReconcilePathState(t, ref.Path, true)
+	assertReconcileBranchState(t, repoDir, ref.Branch, true)
 }
 
 func TestRunReconcileSupersededJSONAndApply(t *testing.T) {
@@ -11165,6 +11387,161 @@ func createReconcileMetadataRun(
 		t.Fatalf("complete reconciliation metadata Run %s: %v", terminalState, err)
 	}
 	return completed.Run
+}
+
+func createActiveReconcileRun(
+	t *testing.T,
+	homeDir string,
+	repoDir string,
+	location string,
+	targetBranch string,
+	slug string,
+	ownerPID int,
+) (store.Run, runworktree.Ref) {
+	t.Helper()
+	ctx := context.Background()
+	head := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Active reconciliation Run Database: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close Active reconciliation Run Database: %v", err)
+		}
+	}()
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: targetBranch,
+		HeadSHA:     head,
+		SpecSlug:    slug,
+		Agent:       "codex",
+		OwnerPID:    ownerPID,
+	})
+	if err != nil {
+		t.Fatalf("create Active reconciliation Run: %v", err)
+	}
+	ref, err := runworktree.Create(ctx, runworktree.CreateOptions{
+		UserRoot: repoDir,
+		Location: location,
+		RunID:    run.ID,
+		HeadSHA:  head,
+	})
+	if err != nil {
+		t.Fatalf("create Active reconciliation Run Worktree: %v", err)
+	}
+	ref.Path, err = filepath.EvalSymlinks(ref.Path)
+	if err != nil {
+		t.Fatalf("resolve Active reconciliation Run Worktree path: %v", err)
+	}
+	run, err = runStore.SetRunWorkDir(ctx, run.ID, ref.Path)
+	if err != nil {
+		t.Fatalf("record Active reconciliation Run Worktree: %v", err)
+	}
+	return run, ref
+}
+
+func commitReconcileQAReport(t *testing.T, workDir, slug, reportName, verdict string) {
+	t.Helper()
+	path := filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa", reportName))
+	mustMkdir(t, filepath.Dir(filepath.Join(workDir, filepath.FromSlash(path))))
+	mustWrite(t, filepath.Join(workDir, filepath.FromSlash(path)), "QA report\n")
+	gitImplement(t, workDir, "add", path)
+	gitImplement(
+		t,
+		workDir,
+		"commit",
+		"-m",
+		fmt.Sprintf("docs: qa report for %s (%s)\n\nRoundfix-Spec: %s", slug, verdict, slug),
+	)
+}
+
+type reconcileProcessControllerStub struct {
+	live       map[int][]int
+	terminated []int
+}
+
+func (controller *reconcileProcessControllerStub) InspectTree(_ context.Context, pid int, _ string) ([]int, error) {
+	return append([]int(nil), controller.live[pid]...), nil
+}
+
+func (controller *reconcileProcessControllerStub) TerminateTreeAndWait(
+	_ context.Context,
+	pid int,
+	_ string,
+) ([]store.TerminationOutcome, error) {
+	controller.terminated = append(controller.terminated, pid)
+	pids := controller.live[pid]
+	outcomes := make([]store.TerminationOutcome, 0, len(pids))
+	for _, ownedPID := range pids {
+		outcomes = append(outcomes, store.TerminationOutcome{PID: ownedPID, Proven: true})
+	}
+	delete(controller.live, pid)
+	return outcomes, nil
+}
+
+func withReconcileProcessController(t *testing.T, controller reconcileProcessController) {
+	t.Helper()
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.reconcileProcesses = controller
+	})
+}
+
+func assertJSONFieldNames(t *testing.T, fields map[string]json.RawMessage, want []string) {
+	t.Helper()
+	if len(fields) != len(want) {
+		t.Fatalf("JSON fields = %v, want exactly %v", reflect.ValueOf(fields).MapKeys(), want)
+	}
+	for _, name := range want {
+		if _, ok := fields[name]; !ok {
+			t.Fatalf("JSON fields missing %q: %v", name, reflect.ValueOf(fields).MapKeys())
+		}
+	}
+}
+
+func assertReconcileDebrisCandidate(
+	t *testing.T,
+	candidates []reconcileDebrisResult,
+	kind string,
+	runID string,
+	branch string,
+	ownerPID int,
+	processIDs []int,
+) {
+	t.Helper()
+	for _, candidate := range candidates {
+		if candidate.Kind != kind || candidate.RunID != runID {
+			continue
+		}
+		if candidate.RunBranch != branch || candidate.OwnerPID != ownerPID ||
+			!reflect.DeepEqual(candidate.ProcessIDs, processIDs) || candidate.Proof == "" ||
+			candidate.Action != "would reclaim with --apply" || candidate.RefusalReason != "" {
+			t.Fatalf("unexpected %s candidate: %+v", kind, candidate)
+		}
+		if kind == "runBranch" && candidate.Worktree == "" {
+			t.Fatalf("Run Branch candidate omitted the clean registered worktree it will release: %+v", candidate)
+		}
+		return
+	}
+	t.Fatalf("missing %s candidate for Run %s: %+v", kind, runID, candidates)
+}
+
+func assertReconcilePreservedCandidate(
+	t *testing.T,
+	candidates []reconcileDebrisResult,
+	kind string,
+	runID string,
+	reasonFragment string,
+) {
+	t.Helper()
+	for _, candidate := range candidates {
+		if candidate.Kind == kind && candidate.RunID == runID && candidate.Action == "preserve" &&
+			strings.Contains(candidate.RefusalReason, reasonFragment) {
+			return
+		}
+	}
+	t.Fatalf("missing preserved %s candidate for Run %s with reason %q: %+v", kind, runID, reasonFragment, candidates)
 }
 
 func readReconcileBytes(t *testing.T, path string) []byte {

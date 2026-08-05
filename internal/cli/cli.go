@@ -177,6 +177,7 @@ var cancelStopAgentSession = defaultCancelStopAgentSession
 var listRoundfixAgentSessions = defaultListRoundfixAgentSessions
 var closeStopAgentSession = defaultCloseStopAgentSession
 var ownerProcesses OwnerProcessController = store.NewOwnerProcessController()
+var reconcileProcesses reconcileProcessController = store.NewOwnerProcessController()
 
 type validationError struct {
 	message string
@@ -232,6 +233,7 @@ type commandDependencies struct {
 	listRoundfixAgentSessions       func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error)
 	closeStopAgentSession           func(context.Context, agent.RuntimeSpec, agent.SessionRef) error
 	ownerProcesses                  OwnerProcessController
+	reconcileProcesses              reconcileProcessController
 	fallbackConfirmationInput       func() io.Reader
 	fallbackConfirmationAvailable   func(io.Writer) bool
 	runsListNow                     func() time.Time
@@ -288,6 +290,7 @@ func defaultCommandDependencies() commandDependencies {
 		listRoundfixAgentSessions:       listRoundfixAgentSessions,
 		closeStopAgentSession:           closeStopAgentSession,
 		ownerProcesses:                  ownerProcesses,
+		reconcileProcesses:              reconcileProcesses,
 		fallbackConfirmationInput:       fallbackConfirmationInput,
 		fallbackConfirmationAvailable:   fallbackConfirmationAvailable,
 		runsListNow:                     runsListNow,

@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -66,6 +67,52 @@ func TestOwnerProcessControllerForceKillExitProof(t *testing.T) {
 	}
 
 	assertOwnerProcessForceKilled(t, pid, wait)
+}
+
+func TestOwnerProcessControllerInspectTreeReportsOnlyLiveOwnedProcesses(t *testing.T) {
+	t.Parallel()
+	const ownerPID = 7101
+	const childPID = 7102
+	const exitedPID = 7103
+	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller.processAbsent = func(pid int) (bool, error) {
+		return pid == exitedPID, nil
+	}
+	controller.ownedProcesses = func(pid int) ([]int, error) {
+		if pid != ownerPID {
+			t.Fatalf("owned process root = %d, want %d", pid, ownerPID)
+		}
+		return []int{childPID, exitedPID, ownerPID}, nil
+	}
+
+	got, err := controller.InspectTree(t.Context(), ownerPID, "")
+
+	if err != nil {
+		t.Fatalf("inspect owner process tree: %v", err)
+	}
+	want := []int{ownerPID, childPID}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("live owned processes = %v, want %v", got, want)
+	}
+}
+
+func TestOwnerProcessControllerInspectTreeFindsOutlivingGrandchild(t *testing.T) {
+	t.Parallel()
+	ownerPID, grandchildPID, wait := startOwnerProcessTreeHelper(t)
+	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+
+	got, err := controller.InspectTree(t.Context(), ownerPID, "")
+	if err != nil {
+		t.Fatalf("inspect real owner process tree: %v", err)
+	}
+	want := []int{ownerPID, grandchildPID}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("live real process tree = %v, want %v", got, want)
+	}
+	if _, err := controller.TerminateTreeAndWait(t.Context(), ownerPID, ""); err != nil {
+		t.Fatalf("terminate inspected real process tree: %v", err)
+	}
+	assertOwnerProcessExited(t, ownerPID, wait)
 }
 
 func TestOwnerProcessControllerTerminateTreeProvesOutlivingGrandchildGone(t *testing.T) {
