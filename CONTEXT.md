@@ -44,6 +44,18 @@ _Avoid_: Ticket, job, to-do
 Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a named Spec, or `declined` with a reason; it is never evidence, just as a finding is never a commitment. Its types are the Conventional Commits intent vocabulary — `feat`, `fix`, `perf`, `refactor` — so one word carries intent from entry to Spec to commit; a `feat` entry is upstream raw material, never the `write-idea` artifact.
 _Avoid_: Finding, idea artifact, untyped suggestion
 
+**Inbox Entry**:
+A fleeting capture born committed in the Secondbrain's inbox under its destination's namespace. It carries its origin, destination, advisory type hint, and capture mode, and remains pending until Triage resolves it into exactly one Finding, one Backlog Entry, or one recorded discard.
+_Avoid_: Project inbox item, uncommitted note, draft artifact
+
+**Rollup**:
+A Finding of `rollup` kind that consolidates related Findings as declared members, supersedes those members, and licenses their archival.
+_Avoid_: Summary, digest, archive manifest
+
+**Triage**:
+The destination-project act that converts one pending Inbox Entry into its contract-true artifact, committed by the destination alone.
+_Avoid_: Capture, import, synchronization
+
 **Task Source**:
 The origin Roundfix reads Work Items from, such as a Review Source or a Spec's Task Graph.
 _Avoid_: Provider, backend, integration
