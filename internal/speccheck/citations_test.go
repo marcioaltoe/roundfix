@@ -96,15 +96,45 @@ func TestCheckLoopOrderDivergent(t *testing.T) {
 	}
 }
 
+// anyCheckableSpecSlug returns an active Spec slug, falling back to an
+// archived one. Repository-wide rules need some Spec to run against and do not
+// care which.
+func anyCheckableSpecSlug(t *testing.T, specsRoot string) string {
+	t.Helper()
+	for _, dir := range []string{specsRoot, filepath.Join(specsRoot, "_archived")} {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
+				continue
+			}
+			if _, err := os.Stat(filepath.Join(dir, entry.Name(), "_prd.md")); err != nil {
+				continue
+			}
+			if dir == specsRoot {
+				return entry.Name()
+			}
+			return filepath.Join("_archived", entry.Name())
+		}
+	}
+	t.Fatalf("no Spec with a _prd.md found under %s", specsRoot)
+	return ""
+}
+
 func TestCheckLoopOrderRepositoryAgrees(t *testing.T) {
 	t.Parallel()
 
 	repoRoot := characterizationRepositoryRoot(t)
-	result, err := speccheck.Check(
-		filepath.Join(repoRoot, "docs", "specs"),
-		repoRoot,
-		"0065-loop-order-and-verification-honesty",
-	)
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	// SC-LOOP-ORDER-DIVERGENT reads the repository's own order statements, so
+	// the Spec is only a vehicle for running the check. Naming one pins this
+	// test to a folder that archiving moves and that the repository's rules
+	// allow deleting outright — which is how it broke the moment Spec 0065
+	// archived itself.
+	slug := anyCheckableSpecSlug(t, specsRoot)
+	result, err := speccheck.Check(specsRoot, repoRoot, slug)
 	if err != nil {
 		t.Fatalf("Check(repository) error = %v", err)
 	}
