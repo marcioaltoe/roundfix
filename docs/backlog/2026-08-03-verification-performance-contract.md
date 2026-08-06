@@ -29,3 +29,12 @@ complete suite.
 Add a per-profile Baseline clause that requires a two-tier gate: local
 incremental verification completes within 10s on an unchanged tree and within
 60s after a typical change, while CI always runs a fresh, complete gate.
+
+## Related
+
+`2026-08-06-two-stage-qa-gate-economics.md` needs exactly this split from the
+other side: its mechanical stage is the fast tier, and its audit stage is what
+should never re-prove what the tier already proved. The two belong in one Spec.
+`2026-08-06-event-journal-payload-economics.md` is downstream of both — agent
+turns are what produce journal bytes — but lands on a disjoint surface and can
+ship on its own.
