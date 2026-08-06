@@ -93,6 +93,8 @@ The mechanical stage's result, consumed by the Daemon and handed to the prompt:
 type MechanicalResult struct {
     Findings []MechanicalFinding // every failure found, not the first
     Carried  []CarriedRow        // rows resolvable without observation
+    Blocked  []BlockedRow        // rows stopped by a named Finding
+    Skips    []MechanicalSkip    // detector plus absent input artifact
     Blocking bool                // at least one Finding blocks the audit
 }
 
@@ -106,6 +108,32 @@ type MechanicalFinding struct {
 }
 ```
 
+Report materialization rows:
+
+```go
+type BlockedRow struct {
+    ID          string
+    FindingCode string
+    WaitingOn   string
+}
+
+type MechanicalSkip struct {
+    Detector        string
+    MissingArtifact string
+}
+```
+
+`MechanicalStage` only computes this result. The Daemon-owned QA report
+materializer opens the collision-safe report path and writes it: Findings
+become finding sections, Carried rows retain their establishing report and
+head, Blocked rows use `blocked (finding: ...)`, and every Skip records the
+detector and missing artifact. When `Blocking` is true, the materializer closes
+a mechanical-stage-only report with `verdict: fail` and zero pending rows, then
+withholds the Agent Session. When it is false, the materialized rows and skips
+seed the report that the Agent completes. The stage never edits Markdown and
+never computes the verdict; the materializer applies ADR-0080's existing
+semantics to the typed result.
+
 Carry-forward, whose safety conditions are the whole point (ADR-0097):
 
 ```go
@@ -113,13 +141,34 @@ type CarriedRow struct {
     ID              string // row id in the current matrix
     EstablishedBy   string // report path that proved it
     EstablishedHead string // commit the proof was taken at
-    Inputs          []string
+    Inputs          []EvidenceInput
 }
+```
 
+Evidence inputs use a closed set of kinds:
+
+```go
+type EvidenceInputKind string
+
+const (
+    EvidenceRepositoryPath     EvidenceInputKind = "repository_path"
+    EvidenceExternalRepository EvidenceInputKind = "external_repository"
+    EvidenceLiveService        EvidenceInputKind = "live_service"
+    EvidenceElapsedTime        EvidenceInputKind = "elapsed_time"
+)
+
+type EvidenceInput struct {
+    Kind EvidenceInputKind
+    Ref  string // path or named observation boundary
+}
+```
+
+```go
 // Carriable reports whether a row may be carried. Every condition must hold:
-// prior status is pass; Inputs is non-empty; EstablishedHead is an ancestor of
-// head; no Input intersects changed(EstablishedHead, head); every cited
-// evidence path resolves with unchanged content.
+// prior status is pass; Inputs is non-empty and every Kind is repository_path;
+// EstablishedHead is an ancestor of head; no Input intersects
+// changed(EstablishedHead, head); every cited evidence path resolves with
+// unchanged content. Any mixed or non-repository input refuses carry-forward.
 func Carriable(prior ReportRow, head string, changed []string) bool
 ```
 
@@ -127,15 +176,18 @@ Row input declaration, added to the report's row format so a row can say what
 it depends on:
 
 ```markdown
-| R04 | … | evidence: qa/evidence/…/R04.txt | inputs: internal/inbox/**, docs/agents/docs-layout.md | pass |
+| R04 | … | evidence: qa/evidence/…/R04.txt | inputs: repository_path:internal/inbox/**, repository_path:docs/agents/docs-layout.md | pass |
 ```
 
 ### Data Models
 
 No database and no schema. Two file-contract additions: an `inputs:` field per
 report row, and a carried row's citation of the report and head that
-established it. Both are additive; a report without them behaves exactly as
-today, and a row without `inputs` is never carriable.
+established it. Each input declares one of `repository_path`,
+`external_repository`, `live_service`, or `elapsed_time`; only a non-empty list
+containing exclusively `repository_path` entries can carry. Both additions are
+additive; a report without them behaves exactly as today, and a row without
+`inputs` is never carriable.
 
 ### API Contracts
 
@@ -181,13 +233,15 @@ commands rather than tools.
 
 - Each mechanical detector lands with a red-then-green pair over a dedicated
   fixture carrier, never over live or archived Specs, plus a presence-aware
-  case proving the silent skip and the corpus non-regression assertion with
-  `TestCheckCorpusBudget` still green.
+  case proving the recorded detector and missing-artifact skip and the corpus
+  non-regression assertion with `TestCheckCorpusBudget` still green.
 - Carry-forward gets an adversarial suite rather than a happy path: a row that
   failed, a row with no declared inputs, a row whose input changed, a row whose
-  establishing head is not an ancestor, and a row whose cited evidence file
-  changed content must each refuse to carry. The happy path is one case among
-  six refusals, because the risk is entirely on the permissive side.
+  establishing head is not an ancestor, a row whose cited evidence file
+  changed content, and a row mixing an unchanged repository path with any
+  non-repository input must each refuse to carry. The happy path stays one case
+  beside the refusal-focused suite because the risk is entirely on the
+  permissive side.
 - The Daemon step is exercised through the existing verification-attempt seam,
   asserting that a blocking mechanical result withholds the Agent Session, that
   the single Verification repair is not consumed, and that Task status is never
@@ -202,11 +256,11 @@ commands rather than tools.
 
 ## Build Order
 
-1. **Detectors** — the mechanical rules in the consistency checker with carrier
-   fixtures: authorization bounded files against actual changed paths,
-   consequent-fix commit ordering, report structural shape, evidence-path
-   resolution. Inert: nothing calls them from the gate yet, so the repository
-   is never left red between steps.
+1. **Detectors and report materializer** — the mechanical rules in the
+   consistency checker with carrier fixtures, plus Daemon-owned materialization
+   of findings, blocked rows, carried rows, and recorded skips. Inert: nothing
+   calls them from the gate yet, so the repository is never left red between
+   steps.
 2. **Prompt context** (depends on: 1) — `BuildQAPrompt` carries the Spec
    Context Bundle and the previous report's identity, and its contract text
    names all three blocked-cause counts.
@@ -216,8 +270,8 @@ commands rather than tools.
 4. **Row inputs** (depends on: 2) — the report row format gains `inputs:`, and
    the skill instructs how a row declares them. Declaration only; nothing
    consumes it yet.
-5. **Carry-forward** (depends on: 3, 4) — the resolver, its six refusal cases,
-   and the carried-row citation in the report.
+5. **Carry-forward** (depends on: 3, 4) — the resolver, its refusal cases, and
+   the carried-row citation in the report.
 6. **Two-tier verification** (depends on: 1) — the per-profile clause in the
    Baseline modules with postimage adoption, plus this repository's own
    incremental target. Tooling task; its consequent fixture correction lands as
@@ -228,9 +282,9 @@ commands rather than tools.
 
 - **Carry-forward is the only mechanism here that can make something green
   wrongly.** Mitigation is structural: opt-in per row, fail closed on every
-  missing condition, and an adversarial test suite weighted six-to-one toward
-  refusal. A row that cannot express its inputs as repository paths always
-  re-observes.
+  missing condition, and an adversarial test suite weighted toward refusal. A
+  row with any non-repository input always re-observes, including a row that
+  also declares unchanged repository paths.
 - **Two homes for one rule.** A detector and the skill's prose can drift. The
   detectors are authored from the skill's own wording, and the skill points at
   the code as the authority for the facts it no longer performs by hand.

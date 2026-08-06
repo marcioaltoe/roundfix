@@ -14,7 +14,7 @@ after three new ADRs landed with the Spec 0080 and 0081 tech specs.
 
 The corpus characterization moved by exactly one number:
 
-```
+```text
 archived  SC-ADR-RELATED  35 -> 70
 ```
 

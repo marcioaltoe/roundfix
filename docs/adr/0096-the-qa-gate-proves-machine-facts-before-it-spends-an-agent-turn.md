@@ -15,6 +15,7 @@ inside it, never a command outside the graph, because a stage that could run
 independently would reintroduce the per-run choice ADR-0088 removed. Placing
 it with the Daemon follows ADR-0014, which already gives the Daemon ownership
 of Verification execution, and keeps its cost and failures visible without an
-Agent turn. Measured on Spec 0079, five gate rounds each cost about thirty
-minutes and each found one defect; two of the three were facts a Git read or an
-exit status already knew.
+Agent turn. Measured across Spec 0079's first three Runs, the first took 92
+minutes for seven Tasks plus the gate, and the two corrective Runs took 29 and
+30 minutes. Those Runs exposed three distinct defects; two were facts a Git
+read or an exit status already knew.

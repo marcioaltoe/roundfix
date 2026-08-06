@@ -64,9 +64,10 @@ cockpit re-reads the entire journal, payloads included, on every append. The
 - A reader pays for what it reads: nothing loads payload bytes it will
   discard, and nothing rescans from the beginning of a Run to render its
   latest line.
-- Retention asks who is still watching, not only how old the Run is — and if
-  that means shedding payloads, the decision is recorded against ADR-0008
-  rather than smuggled past it.
+- Journal Retention keeps its terminal-only, age-based contract, while the
+  eligibility query becomes bounded by the configured cutoff and stops holding
+  the write lock across a full-journal scan. No payload is shed inside the
+  retention window.
 - Parallel Runs on one machine stop being a contention story; the 30-second
   timeout stops being what makes them survivable.
 
@@ -107,10 +108,11 @@ cockpit re-reads the entire journal, payloads included, on every append. The
 4. **Reads project what they need.** A payload-free read path exists for the
    consumers that only use headers, and the live cockpit advances a forward
    cursor instead of rescanning a Run from its first event.
-5. **Retention gains a shape beyond age.** Terminal and non-terminal Runs may
-   retain differently, and the policy is expressed in terms of who is still
-   watching. Where the chosen shape touches payload durability, it arrives as
-   an explicit amendment to ADR-0008 with the lost capability named.
+5. **Retention semantics stay unchanged.** Only terminal Runs older than the
+   configured Journal Retention window remain eligible, and pruning still
+   removes their complete Run Event Journal. This Spec makes that eligibility
+   query cheap; it adds no second window, payload side table, payload shedding,
+   or new data-loss boundary.
 6. **Concurrency is a declared story, not a timeout.** The Spec states what
    guarantees hold for parallel Runs on one machine and proves them, whether
    through write batching, connection discipline, or a scoped database path.
@@ -125,10 +127,10 @@ Nothing about the operator's vocabulary changes: `roundfix events`,
 shapes, and stream schema. What changes is felt rather than read — Runs start
 without a pause proportional to history, six parallel Runs stop dying in their
 first Batch, and a long Run's cockpit stays responsive at hour three. The one
-place a user must see a difference is retention: if payloads become
-recoverable only within a window, `roundfix gc` and the lifecycle guide say so
-plainly, because a silent loss of the only durable copy of a Run's agent
-output would be the worst outcome this Spec could produce.
+retention contract does not change: `roundfix gc`, the configured Journal
+Retention window, and the lifecycle guide keep their current meaning. The
+query becomes cheaper without creating a new point at which the journal's only
+durable payload copy disappears.
 
 ## Non-Goals / Out of Scope
 
@@ -142,6 +144,8 @@ output would be the worst outcome this Spec could produce.
 - Editing this repository's `.roundfixrc.yml`; defaults ship in code.
 - Retro-compacting existing databases beyond what `roundfix gc compact`
   already does under its exclusive fence.
+- Changing Journal Retention semantics, adding a second retention window, or
+  shedding payloads from retained Runs.
 
 ## Success Metrics
 
@@ -169,22 +173,18 @@ output would be the worst outcome this Spec could produce.
 - ADR-0008 is treated as binding until explicitly amended. A design that keeps
   every payload and still wins on the paths above is preferred to one that
   buys speed by discarding the only durable copy.
+- The current terminal-only, age-based Journal Retention contract is preserved.
+  Payload shedding and a second retention window are rejected because neither
+  repairs the measured lock and write paths, and both create a new data-loss
+  boundary for the journal's only durable payload copy.
 - Daemon payloads are load-bearing and agent payloads are not, for the
   purposes of the `events` stream: the stream is daemon-only and requires
   those payload fields, while agent payloads serve human timeline rendering.
-  Any retention shape must honor that asymmetry rather than treat all payloads
-  alike.
+  This Spec records that asymmetry but does not use it to delete either payload
+  class.
 
 ## Open Questions
 
-- Whether payload shedding is needed at all once the lock and write-path costs
-  are fixed. Default: decide after the baseline measurement, not before.
-- If a second retention window is introduced, how it is expressed given Go
-  durations have no day unit and the existing key is a duration. Default:
-  reuse the duration form and document the idiom.
-- Whether concurrency is best served by write batching alone or also by a
-  scoped database path, which ADR-0004 would have to be revisited for.
-  Default: batching first, measured, before touching ADR-0004.
-- Whether the replay-idempotence probe that matches on payload equality needs
-  a different key before any payload rewrite becomes possible. Default: yes,
-  and it is a precondition for any such design.
+None. The TechSpec owns the writer-concurrency mechanism; this PRD fixes the
+product boundary at unchanged Journal Retention semantics and no payload
+shedding.

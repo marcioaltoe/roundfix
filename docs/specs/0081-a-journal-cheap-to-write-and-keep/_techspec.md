@@ -18,8 +18,10 @@ eligible; and the cockpit rescans a Run's entire journal, payloads included, on
 every append. Those two paths, not disk, are what the three-gigabyte
 measurement actually exposed. ADR-0008 stays untouched: payloads remain raw
 producer JSON, write-once and read-as-blob, and no design here rewrites,
-prunes, or compresses a payload. Whether retention should shed payloads at all
-is deferred behind a measurement, because the honest answer may be no.
+prunes, or compresses a payload. Journal Retention also stays terminal-only
+and age-based. A second retention window and payload shedding are rejected
+because they do not repair the measured lock or write paths and would create a
+new data-loss boundary for the journal's only durable payload copy.
 
 ## Project Constraints
 
@@ -37,7 +39,7 @@ is deferred behind a measurement, because the honest answer may be no.
   policy this design makes cheap to evaluate without changing its meaning.
   ADR-0009 keeps the cockpit reading the journal exclusively, so read-path
   changes affect live rendering. ADR-0004 keeps one machine-wide Run Database,
-  preserved here by decision and revisited only if measurement demands it.
+  preserved here by decision.
   ADR-0022 does not apply: Stop Requests travel through the Run Database as
   control state, and no Run state, Stop semantics, or their tables are touched.
   ADR-0027 owns how a renamed or removed config key degrades to a warning.
@@ -50,13 +52,16 @@ is deferred behind a measurement, because the honest answer may be no.
 ## System Architecture
 
 Three seams in `internal/store`, one in the TUI, one measurement harness. No
-new package, no second store, no schema migration unless the measurement
-demands one.
+new package, no second store, and no schema migration.
 
 - **The append path** (`appendRunEvent`, `AppendRunEvents`, `JournalSink`)
-  gains real batching: the existing plural entry point stops being called with
-  one-element slices, and the sink accumulates within a bounded window before
-  committing one transaction.
+  gains one Store-scoped writer: every sink handle publishes into the same
+  bounded batch, and one transaction commits that batch.
+- **Every Store write path** uses one machine-wide advisory writer lock keyed
+  by the Run Database path, one `sql.DB` connection per process, and one
+  immediate transaction at a time. The lock is acquired before `BeginTx` and
+  released only after commit or rollback, so Roundfix writers never race in
+  SQLite.
 - **The retention path** (`terminalRunPruneCandidates`, `PruneTerminalRuns`)
   gains a cutoff predicate in SQL and loses its full-table aggregate from
   inside the write transaction.
@@ -70,33 +75,75 @@ demands one.
 
 ```mermaid
 flowchart LR
-    A[agent stdout lines] --> B[sink accumulates a bounded batch]
-    B --> C[one immediate transaction per batch]
-    D[Run start] --> E[cutoff-bounded eligibility query]
-    E -->|outside the write transaction| F[prune only when rows exist]
-    G[cockpit poll] --> H[forward cursor, header projection]
+    A[agent stdout lines] --> B[Store-scoped writer accumulates one bounded batch]
+    B --> C[machine-wide writer lock]
+    C --> D[one immediate transaction per batch]
+    E[Run start] --> F[cutoff-bounded eligibility query]
+    F -->|outside the write transaction| G[prune only when rows exist]
+    H[cockpit poll] --> I[forward cursor, header projection]
 ```
 
 ## Implementation Design
 
 ### Interfaces
 
-The batching boundary, expressed where the sink already is:
+The batching boundary is Store-scoped rather than sink-scoped:
 
 ```go
-// JournalSink accumulates events and commits them in one immediate
-// transaction. A batch closes on size, on elapsed time, or on any event that
-// must be durable immediately (terminal outcomes, verification results).
-type JournalSink struct {
-    maxBatch  int
-    maxLinger time.Duration
-}
+const (
+    journalBatchSize = 128
+    journalMaxLinger = 100 * time.Millisecond
+)
 
-// Flush commits the pending batch. Publish returns only after the event is
-// either committed or accepted into the open batch; a failed flush fails the
-// Run exactly as a failed append does today.
-func (s *JournalSink) Flush(ctx context.Context) error
+// Every JournalSink returned by the Store shares its one JournalWriter.
+func (s *Store) JournalSink() runevent.Sink
+func (s *Store) FlushJournal(ctx context.Context) error
+func (s *Store) CloseJournal(ctx context.Context) error
 ```
+
+A batch closes at 128 events, 100 milliseconds after its first event, before a
+`daemon.outcome`, verification-verdict, or closed-session event, and on
+explicit flush for an error path, Agent teardown, terminal settlement, or
+process shutdown. The limits are internal constants, not configuration or CLI
+surface. `Publish` preserves call order. The write transaction allocates a
+contiguous cursor range per Run and removes events from the pending batch only
+after a successful commit.
+
+Begin, insert, and commit failures preserve the entire pending batch and return
+through the critical-sink error path. If commit returns an ambiguous result,
+the writer reads the assigned cursor range: an exact field-and-payload match
+settles the batch, no rows permits one retry with the same cursors, and a
+partial or different match fails as corruption. The existing `(run_id,
+cursor)` primary key makes that retry idempotent without a new identifier.
+
+The Run lifecycle owns the shared writer. It flushes before ending the Agent
+Session, publishes the closed-session event, then calls `CloseJournal` before
+terminal settlement. Only after Close succeeds does one Store operation commit
+the terminal state and `daemon.outcome` event in the same writer-locked
+transaction. Any Flush or Close error enters the existing Run-failure path
+rather than settling the requested outcome. Post-terminal notification
+receipts use immediate transactions and cannot enter the closed batch; the
+database connection closes after those receipts finish.
+
+Every writer transaction, not only journal appends, enters through the same
+Store helper:
+
+```go
+// withWriteTx serializes Roundfix processes before SQLite sees a writer.
+// Cursor allocation, inserts, state changes, and commit all hold the lock.
+func (s *Store) withWriteTx(
+    ctx context.Context,
+    fn func(*sql.Tx) error,
+) error
+```
+
+Each operational process opens one writer Store, and that Store keeps
+`SetMaxOpenConns(1)`; read-only Store values remain separate. Context
+cancellation or an advisory-lock failure returns to the caller. The existing
+`busy_timeout` remains defensive for an unknown non-Roundfix writer, but no
+Roundfix path relies on it for concurrency. Cursor allocation stays inside the
+locked transaction, so concurrent Runs preserve input order and monotonic
+per-Run cursors.
 
 Retention, with the predicate where the database can use it:
 
@@ -118,11 +165,11 @@ func (s *Store) RunEventHeadersAfter(ctx context.Context, runID string, cursor i
 
 ### Data Models
 
-No schema change is planned. If the measurement shows the payload column
-itself is the write-path cost — rather than the transaction and fsync around
-it — a payload side-table becomes a candidate, and in that case the durable
-lifecycle table in the run-database guide is updated in the same change, which
-its own test enforces.
+No schema change. Payload remains in `run_events`, and the existing durable
+table lifecycle entry stays unchanged. The only supported retention behavior
+is the existing Journal Retention contract: a terminal Run older than the
+configured window may have its complete journal pruned; no retained Run loses
+only its payload.
 
 ### API Contracts
 
@@ -135,22 +182,23 @@ every daemon payload field the stream requires.
 - Goal 1 / Story 1 → the cutoff-bounded eligibility query outside the write
   transaction.
 - Goal 2 / Story 2 → the batching sink and its flush boundaries.
-- Goal 3 / Story 3 → both of the above, proven by the parallel-Run scenario at
-  the pre-raise `busy_timeout`.
+- Goal 3 / Story 3 → the machine-wide writer lock, one-connection discipline,
+  and bounded transactions, proven by the parallel-Run scenario at the
+  pre-raise `busy_timeout`.
 - Goal 4 / Stories 4, 5 → the header projection and the cockpit's forward
   cursor, with the stream contract asserted unchanged.
-- Goal 5 / Story 6 → the measurement harness and the deferred retention-shape
-  decision, which may conclude that no payload is shed.
+- Goal 5 / Story 6 → the cutoff-bounded query and the explicit decision to
+  preserve terminal-only, age-based Journal Retention without payload shedding.
 - Core Feature 1 → the measurement harness and its committed baseline.
 - Core Feature 2 → the cutoff-bounded eligibility query outside the write
   transaction.
 - Core Feature 3 → the batching sink with its named flush boundaries.
 - Core Feature 4 → the header projection and the cockpit's forward cursor.
-- Core Feature 5 → the deferred retention-shape decision, gated on the
-  re-measurement.
+- Core Feature 5 → unchanged Journal Retention semantics and no new payload
+  loss boundary.
 - Core Feature 6 → the parallel-Run proof at the pre-raise timeout.
-- Core Feature 7 → the durable lifecycle table, updated only if a table
-  changes.
+- Core Feature 7 → the durable lifecycle table, confirmed unchanged because no
+  table changes.
 
 ## Integration Points
 
@@ -159,8 +207,7 @@ every daemon payload field the stream requires.
   requires daemon payload fields; the header projection is never used on that
   path.
 - **Reconcile's replay probe** matches on payload equality. Nothing here
-  rewrites a payload, so the probe keeps working; any future payload change
-  must re-key it first, and that ordering is recorded as a precondition.
+  rewrites a payload, so the probe keeps working unchanged.
 
 ## Testing Approach
 
@@ -169,8 +216,17 @@ every daemon payload field the stream requires.
   cites a before and after from the same harness. No claim ships as prose.
 - Batching is tested at the boundary, not by timing: a batch that reaches its
   size commits, a batch that reaches its linger commits, an event marked
-  immediate commits alone, and a failed flush fails the Run exactly as a failed
-  append does today. Ordering by cursor is asserted under concurrency.
+  immediate flushes prior events and commits, and a failed flush preserves the
+  whole batch and fails the Run exactly as a failed append does today. An
+  ambiguous-commit fixture proves exact-match reconciliation, same-cursor
+  retry, and mismatch refusal. Ordering by cursor is asserted under concurrency.
+- The lifecycle suite constructs several sink handles from one Store and proves
+  they share one batch. It then covers error, Agent teardown, terminal
+  settlement, and process shutdown, asserting that Flush and Close errors
+  propagate and that terminal state plus `daemon.outcome` commit atomically.
+- The writer-concurrency suite opens independent Store writers against one
+  database and proves that every write transaction serializes through the
+  machine-wide lock, cursors stay monotonic, and lock cancellation propagates.
 - The retention query gets a characterization test on a seeded journal proving
   that eligibility work is bounded by the candidate set rather than the table,
   and that no aggregate runs inside a write transaction.
@@ -185,21 +241,21 @@ every daemon payload field the stream requires.
 1. **Measurement harness and baseline** — event-write latency, lock-wait, and
    `SQLITE_BUSY` frequency against journal size and writer count, recorded as a
    committed artifact. Everything after cites it.
-2. **Retention query repair** (depends on: 1) — cutoff predicate in SQL,
+2. **Writer transaction discipline** (depends on: 1) — machine-wide advisory
+   lock, one connection per process, and one helper for every immediate write
+   transaction.
+3. **Retention query repair** (depends on: 1, 2) — cutoff predicate in SQL,
    eligibility work out of the write transaction, event count bounded or
    dropped from the hot path.
-3. **Batched appends** (depends on: 1) — the sink accumulates and commits per
-   batch with `synchronous` unchanged, with immediate-flush kinds named.
-4. **Header projection and forward cursor** (depends on: 1) — the payload-free
+4. **Store-scoped batched appends** (depends on: 1, 2) — shared writer,
+   count/linger/immediate boundaries, idempotent ambiguous-commit handling,
+   and Flush/Close integration with Agent teardown and terminal settlement.
+5. **Header projection and forward cursor** (depends on: 1) — the payload-free
    read path and the cockpit's cursor, with the consumer corpus asserted
    unchanged.
-5. **Parallel-Run proof** (depends on: 2, 3) — the scenario at the pre-raise
+6. **Parallel-Run proof** (depends on: 3, 4) — the scenario at the pre-raise
    timeout, measured against the step-1 baseline.
-6. **Retention shape decision** (depends on: 5) — with the write and lock costs
-   fixed and re-measured, decide whether any payload shedding is needed at all;
-   if it is, it arrives as an explicit ADR-0008 amendment naming the lost
-   capability, and the payload-equality replay probe is re-keyed first.
-7. **QA gate** (depends on: 6) — the authored terminal Task.
+7. **QA gate** (depends on: 5, 6) — the authored terminal Task.
 
 ## Risks & Considerations
 
@@ -207,26 +263,53 @@ every daemon payload field the stream requires.
   (ADR-0098). Terminal outcomes and verification results flush immediately, so
   the events a post-mortem needs most are never in a pending batch.
 - **Batching can reorder or stall.** Cursor allocation stays monotonic per Run,
-  and linger is bounded so a quiet Run's last line is not held indefinitely.
+  publisher order is retained in the pending batch, and linger is bounded so a
+  quiet Run's last line is not held indefinitely.
+- **Serialization trades peak write parallelism for a zero-busy contract among
+  Roundfix processes.** Transactions stay bounded and retention scans run
+  outside them, so the machine-wide lock covers only the writes SQLite already
+  serializes.
+- **A flush failure can change the requested terminal outcome to Failed.** That
+  is intentional: settling Clean while its only durable event copy remains in
+  memory would be false. Terminal state and outcome event commit atomically.
 - **The cockpit reads the journal for live Runs** (ADR-0009), so a read-path
   change is a live-rendering change; the consumer corpus test is what makes
   that safe.
-- **The measurement may disprove the premise.** If the lock and write repairs
-  remove the pain, step 6 concludes with no payload change, and the Spec ships
-  smaller than its title suggests. That is a success, not a shortfall.
+- **Retention still deletes data at its existing boundary.** When a terminal
+  Run becomes eligible, GC removes its complete Run Event Journal; before that
+  boundary this Spec sheds no payload. No new recovery loss is introduced.
 - **One machine-wide database stays** by decision. If the parallel-Run proof
-  still shows contention after steps 2 and 3, that result is the input to a
+  still shows contention after steps 3 and 4, that result is the input to a
   separate ADR-0004 conversation, not a scope expansion here.
 
 ## Decisions
 
 - Appends batch, with durability per batch and `synchronous` unchanged. See
   ADR-0098.
-- Measurement precedes every performance claim, and the retention-shape
-  decision waits behind it.
+- One machine-wide advisory writer lock serializes every Roundfix write
+  transaction; each process retains one writer connection, and cursor
+  allocation stays inside the transaction.
+- One JournalWriter belongs to each Store. Sink handles share it, and Flush,
+  terminal finalization, and Close are explicit error-returning lifecycle
+  operations.
+- Measurement precedes every performance claim, and the retention contract is
+  already settled: no payload shedding or second window ships.
 - ADR-0008 is binding: no payload is rewritten, pruned, or compressed in this
   Spec.
 - ADR-0004 stands; the single machine-wide database is preserved and the
   contention hypothesis is tested against the repaired paths first.
 - Header-only reads are added beside the existing full reads rather than
   replacing them, so no consumer changes shape.
+
+### Rejected alternatives
+
+- **Batching without writer serialization** reduces lock attempts but cannot
+  guarantee zero `SQLITE_BUSY` across independent Run processes.
+- **One writer goroutine per process** cannot coordinate the other processes
+  that open the same machine-wide Run Database.
+- **A database per Run** avoids contention by abandoning ADR-0004 and makes
+  machine-wide discovery and retention a cross-database problem.
+- **A payload side table, payload shedding, or a second retention window**
+  changes durability without repairing the measured transaction and scan
+  costs. It would make agent payloads unrecoverable before the existing Journal
+  Retention boundary, so it is outside this Spec.
