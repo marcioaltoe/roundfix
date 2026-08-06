@@ -1,3 +1,7 @@
+// Suite: layered Roundfix configuration
+// Invariant: built-in, User Config, and Project Config values resolve with strict validation.
+// Boundary IN: config defaults, YAML decoding, precedence, validation, and generated config text.
+// Boundary OUT: operational Preflight Validation, owned by internal/preflight/preflight_test.go.
 package config
 
 import (
@@ -1730,6 +1734,122 @@ func TestBuiltinReviewSourceExcludesNitpicks(t *testing.T) {
 	}
 	if !strings.Contains(DefaultConfigYAML(), "include_nitpicks: false") {
 		t.Fatalf("expected default config YAML to exclude nitpicks, got:\n%s", DefaultConfigYAML())
+	}
+}
+
+func TestBuiltinReviewRequestDefaults(t *testing.T) {
+	t.Parallel()
+	config := Builtin()
+
+	if config.ReviewSource.RequestReview {
+		t.Fatal("expected built-in review requests to be disabled")
+	}
+	if config.ReviewSource.RequestCommand != "@coderabbitai review" {
+		t.Fatalf("request command = %q, want %q", config.ReviewSource.RequestCommand, "@coderabbitai review")
+	}
+	generated := DefaultConfigYAML()
+	if !strings.Contains(generated, "request_review: false") {
+		t.Fatalf("expected default config YAML to disable review requests, got:\n%s", generated)
+	}
+	if !strings.Contains(generated, "request_command: \"@coderabbitai review\"") {
+		t.Fatalf("expected default config YAML to document the request command, got:\n%s", generated)
+	}
+}
+
+func TestLoadAppliesReviewRequestHierarchy(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name               string
+		userConfig         string
+		projectConfig      string
+		wantRequestReview  bool
+		wantRequestCommand string
+	}{
+		{
+			name:               "built-in request settings",
+			wantRequestCommand: "@coderabbitai review",
+		},
+		{
+			name:               "user config overrides built-in settings",
+			userConfig:         "review_source:\n  request_review: true\n  request_command: user review\n",
+			wantRequestReview:  true,
+			wantRequestCommand: "user review",
+		},
+		{
+			name:               "project config overrides user settings",
+			userConfig:         "review_source:\n  request_review: true\n  request_command: user review\n",
+			projectConfig:      "review_source:\n  request_review: false\n  request_command: project review\n",
+			wantRequestCommand: "project review",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			if tt.userConfig != "" {
+				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
+			}
+			if tt.projectConfig != "" {
+				mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.projectConfig)
+			}
+
+			loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+			if err != nil {
+				t.Fatalf("load config: %v", err)
+			}
+			if loaded.Config.ReviewSource.RequestReview != tt.wantRequestReview {
+				t.Fatalf("request_review = %t, want %t", loaded.Config.ReviewSource.RequestReview, tt.wantRequestReview)
+			}
+			if loaded.Config.ReviewSource.RequestCommand != tt.wantRequestCommand {
+				t.Fatalf("request_command = %q, want %q", loaded.Config.ReviewSource.RequestCommand, tt.wantRequestCommand)
+			}
+		})
+	}
+}
+
+func TestValidateRejectsEmptyReviewRequestCommand(t *testing.T) {
+	t.Parallel()
+	config := Builtin()
+	config.ReviewSource.RequestCommand = " \t"
+
+	err := Validate(config)
+
+	if err == nil || !strings.Contains(err.Error(), "review_source.request_command must not be empty") {
+		t.Fatalf("expected empty request command rejection, got %v", err)
+	}
+}
+
+func TestLoadRejectsNonBooleanReviewRequest(t *testing.T) {
+	t.Parallel()
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), "review_source:\n  request_review: \"true\"\n")
+
+	_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+
+	if err == nil || !strings.Contains(err.Error(), "request_review") || !strings.Contains(err.Error(), "cannot unmarshal") {
+		t.Fatalf("expected non-boolean request_review rejection, got %v", err)
+	}
+}
+
+func TestLoadRejectsProjectNullReviewRequestInsteadOfInheritingUserValue(t *testing.T) {
+	t.Parallel()
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), "review_source:\n  request_review: true\n")
+	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), "review_source:\n  request_review: null\n")
+
+	_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+
+	if err == nil || !strings.Contains(err.Error(), "review_source.request_review must be boolean") {
+		t.Fatalf("expected project null request_review rejection, got %v", err)
 	}
 }
 

@@ -1,33 +1,33 @@
-language: "en"
-early_access: true
-
-knowledge_base:
-  code_guidelines:
-    enabled: true
-    filePatterns:
-      - "AGENTS.md"
-      - "**/AGENTS.md"
-      - "CONTEXT.md"
-      - "docs/agents/**/*.md"
-      - "docs/adr/**/*.md"
-      - ".agents/skills/**/*.md"
+# Merge this file over the organization settings instead of replacing them.
+# Without it CodeRabbit uses only the highest-priority source, so every key the
+# organization sets and this file omits falls back to the schema default rather
+# than to the organization value.
+inheritance: true
 
 reviews:
-  request_changes_workflow: true
-  high_level_summary: true
-  poem: false
-  review_status: true
-  collapse_walkthrough: false
-  sequence_diagrams: true
+  auto_review:
+    enabled: false
+    description_keyword: "coderabbit:review"
+  # high_level_summary and sequence_diagrams are owned by the organization
+  # settings; declaring them here would override that choice.
   profile: "assertive"
-  related_prs: false
-  tools:
-    golangci-lint:
-      enabled: true
   path_filters:
-    # ----- Generated mirrors and local agent state -----
+    # =====================================================================
+    # Files excluded from review, grouped by type
+    # =====================================================================
+
+    # ----- Agent / tooling configs (NOT code) -----
+    # .agents/skills/** is deliberately absent: skills are the CLI's public
+    # contract in this repository, and a pull request that changes CLI
+    # behaviour must ship the skill update with it, so that update is exactly
+    # what needs reviewing. It is allowlisted below.
     - "!.claude/**"
-    - "!skills/**"
+    - "!.compozy/**"
+    - "!.cursor/**"
+
+    # ----- Generated skill mirror (byte-identical to .agents/skills) -----
+    # Markdown only: skills/ also holds Go source, which stays reviewable.
+    - "!skills/**/*.md"
 
     # ----- IDE / editor / OS noise -----
     - "!.vscode/**"
@@ -37,22 +37,73 @@ reviews:
     - "!**/*.swp"
     - "!**/*.sw?"
 
-    # ----- Build, release, log, and runtime artifacts -----
-    - "!bin/**"
-    - "!dist/**"
-    - "!tmp/**"
+    # ----- TypeScript / JavaScript build output -----
+    - "!**/build/**"
+    - "!**/dist/**"
+    - "!**/dist-ssr/**"
+    - "!**/node_modules/**"
+    - "!**/out/**"
+    - "!**/.next/**"
+    - "!**/.turbo/**"
     - "!**/.cache/**"
+    - "!**/.parcel-cache/**"
+    - "!**/.vercel/**"
+    - "!**/.mastra/**"
+    - "!**/storybook-static/**"
+    - "!**/*.tsbuildinfo"
+
+    # ----- Auto-generated code (Drizzle, TanStack Router, OpenAPI, TS) -----
+    - "!**/routeTree.gen.ts"
+    - "!**/generated/**"
+    - "!**/*generated*.ts"
+    - "!**/database/migrations/**"
+    - "!**/drizzle/**"
+    - "!**/openapi.json"
+    - "!**/openapi.yaml"
+    - "!**/next-env.d.ts"
+
+    # ----- Go -----
+    - "!**/vendor/**"
+
+    # ----- Rust -----
+    - "!**/target/debug/**"
+    - "!**/target/release/**"
+
+    # ----- Python -----
+    - "!**/.venv/**"
+    - "!**/venv/**"
+    - "!**/*.egg-info/**"
+    - "!**/__pycache__/**"
+    - "!**/.pytest_cache/**"
+    - "!**/.mypy_cache/**"
+    - "!**/.ruff_cache/**"
+    - "!**/.tox/**"
+
+    # ----- Lock / package manager noise -----
+    - "!**/bun.lockb"
+    - "!**/.pnp.*"
+    - "!**/.yarn/**"
+
+    # ----- Test coverage output -----
+    - "!**/coverage/**"
+    - "!**/.nyc_output/**"
+
+    # ----- Test fixtures -----
+    - "!**/fixtures/**"
+    - "!**/__fixtures__/**"
+
+    # ----- Logs / temp / runtime -----
     - "!**/logs/**"
     - "!**/*.log"
+    - "!**/*storybook.log"
     - "!**/.tmp/**"
+    - "!**/.eslintcache"
+
+    # ----- Local databases / runtime data -----
     - "!**/*.db"
     - "!**/*.db-shm"
     - "!**/*.db-wal"
-    - "!**/*.digest"
-    - "!**/*.sha256"
-    - "!**/*.png"
-    - "!**/*.jpeg"
-    - "!**/*.pdf"
+    - "!**/.storage/**"
 
     # ----- Secrets / env -----
     - "!**/.env"
@@ -61,30 +112,109 @@ reviews:
     - "!**/*.local"
     - "!**/*.pem"
 
-    # ----- Roundfix source, tests, contracts, docs, and configuration -----
+    # ----- One-off scripts -----
+    - "!scripts/**"
+
+    # =====================================================================
+    # Files reviewed (explicit allowlist), grouped by type
+    # =====================================================================
+
+    # ----- TypeScript / JavaScript -----
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.js"
+    - "**/*.jsx"
+    - "**/*.mjs"
+    - "**/*.cjs"
+
+    # ----- Styles / markup -----
+    - "**/*.css"
+    - "**/*.html"
+
+    # ----- SQL -----
+    - "**/*.sql"
+
+    # ----- Go -----
     - "**/*.go"
-    - "**/*.golden"
-    - "**/*.txt"
-    - "**/*.stdout"
-    - "**/*.stderr"
-    - "**/*.json"
-    - "**/*.jsonc"
-    - "**/*.yml"
-    - "**/*.yaml"
-    - "**/*.toml"
-    - ".github/**/*"
-    - ".agents/skills/**/*"
-    - ".coderabbit.yaml"
-    - ".roundfixrc.yml"
-    - ".gitignore"
-    - "AGENTS.md"
-    - "CHANGELOG.md"
-    - "CONTEXT.md"
-    - "LICENSE"
-    - "README.md"
+    - "**/go.mod"
     - "go.mod"
-    - "go.sum"
-    - "skills-lock.json"
-    - "cog.toml"
+
+    # ----- Rust -----
+    - "**/*.rs"
+    - "**/Cargo.toml"
+    - "Cargo.toml"
+
+    # ----- Python -----
+    - "**/*.py"
+    - "**/*.pyi"
+    - "**/pyproject.toml"
+    - "pyproject.toml"
+    - "**/requirements*.txt"
+    - "requirements*.txt"
+
+    # ----- Node / workspace manifests -----
+    - "**/package.json"
+    - "package.json"
+    - "**/tsconfig*.json"
+    - "tsconfig*.json"
+    - "turbo.json"
+
+    # ----- Build / container -----
     - "Makefile"
     - "**/Makefile"
+    - "Dockerfile"
+    - "**/Dockerfile"
+    - "docker-compose.yml"
+    - "docker-compose.*.yml"
+
+    # ----- CI -----
+    - ".github/**/*"
+
+    # ----- Documentation (Specs, ADRs, glossary, READMEs) -----
+    - "docs/**/*.md"
+    - "CONTEXT.md"
+    - "**/README.md"
+    - "README.md"
+
+    # ----- Skill definitions (the CLI's public contract) -----
+    - ".agents/skills/**/*.md"
+
+    # ----- Repository configuration -----
+    - ".coderabbit.yaml"
+    - ".roundfixrc.yml"
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      # ===================================================================
+      # Documents CodeRabbit reads as project rules, grouped by authority
+      # ===================================================================
+
+      # ----- Agent instructions (root pointers + the guides they route to) -----
+      - "AGENTS.md"
+      - "**/AGENTS.md"
+      - "CLAUDE.md"
+      - "**/CLAUDE.md"
+      - "docs/agents/**/*.md"
+      - "**/docs/agents/**/*.md"
+
+      # ----- Architecture decisions -----
+      - "docs/adr/**/*.md"
+      - "**/docs/adr/**/*.md"
+
+      # ----- Domain glossary -----
+      - "CONTEXT.md"
+      - "**/CONTEXT.md"
+
+      # ----- Design contract -----
+      - "DESIGN.md"
+      - "**/DESIGN.md"
+
+      # ----- Database contract -----
+      - "DATABASE.md"
+      - "**/DATABASE.md"
+
+      # ----- Skill definitions (read as rules, and reviewed: see path_filters) -----
+      - ".agents/skills/**/*.md"
+      - ".claude/skills/**/*.md"

@@ -11,8 +11,232 @@ import (
 	"time"
 
 	"roundfix/internal/reviewsource"
+	"roundfix/internal/runevent"
 	"roundfix/internal/watch"
 )
+
+func TestClientRequestReview(t *testing.T) {
+	t.Parallel()
+	const (
+		headSHA = "abc123"
+		command = "@coderabbitai review"
+	)
+	marker := ReviewRequestMarker(headSHA)
+	tests := []struct {
+		name          string
+		comments      []IssueComment
+		calls         int
+		wantPublished []bool
+	}{
+		{
+			name:          "publishes command and marker when absent",
+			calls:         1,
+			wantPublished: []bool{true},
+		},
+		{
+			name:          "same head called twice publishes once",
+			calls:         2,
+			wantPublished: []bool{true, false},
+		},
+		{
+			name: "different head marker does not suppress",
+			comments: []IssueComment{{
+				Author: "maintainer",
+				Body:   RoundfixCommentBody(command, ReviewRequestMarker("def456")),
+			}},
+			calls:         1,
+			wantPublished: []bool{true},
+		},
+		{
+			name: "command without marker does not suppress",
+			comments: []IssueComment{{
+				Author: "maintainer",
+				Body:   command,
+			}},
+			calls:         1,
+			wantPublished: []bool{true},
+		},
+		{
+			name: "marker embedded in prose does not suppress",
+			comments: []IssueComment{{
+				Author: "maintainer",
+				Body:   "quoted request " + marker,
+			}},
+			calls:         1,
+			wantPublished: []bool{true},
+		},
+		{
+			name: "Review Source authored marker does not suppress",
+			comments: []IssueComment{{
+				Author: coderabbitBotLogin,
+				Body:   RoundfixCommentBody(command, marker),
+			}},
+			calls:         1,
+			wantPublished: []bool{true},
+		},
+		{
+			name: "same head Roundfix marker deduplicates",
+			comments: []IssueComment{{
+				Author: "maintainer",
+				Body:   RoundfixCommentBody(command, marker),
+			}},
+			calls:         1,
+			wantPublished: []bool{false},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			gh := &fakeGitHubClient{issues: append([]IssueComment(nil), testCase.comments...)}
+			sink := &captureReviewRequestSink{}
+			client := Client{GitHub: gh, Sink: sink}
+
+			for call := 0; call < testCase.calls; call++ {
+				outcome, err := client.RequestReview(context.Background(), reviewsource.ReviewRequest{
+					RunID:          "run-0078",
+					BaseRepository: "owner/project",
+					PRNumber:       "123",
+					HeadSHA:        headSHA,
+					Command:        command,
+				})
+				if err != nil {
+					t.Fatalf("request review call %d: %v", call+1, err)
+				}
+				if outcome.Published != testCase.wantPublished[call] {
+					t.Fatalf("call %d Published = %t, want %t", call+1, outcome.Published, testCase.wantPublished[call])
+				}
+				if outcome.Marker != marker {
+					t.Fatalf("call %d marker = %q, want %q", call+1, outcome.Marker, marker)
+				}
+			}
+
+			wantPosts := 0
+			for _, published := range testCase.wantPublished {
+				if published {
+					wantPosts++
+				}
+			}
+			if len(gh.prComments) != wantPosts {
+				t.Fatalf("posted comments = %#v, want %d", gh.prComments, wantPosts)
+			}
+			for _, posted := range gh.prComments {
+				if posted.PRNumber != 123 || posted.Body != RoundfixCommentBody(command, marker) {
+					t.Fatalf("posted comment = %#v, want PR 123 command and same-head marker", posted)
+				}
+			}
+			if len(sink.events) != testCase.calls {
+				t.Fatalf("events = %#v, want %d", sink.events, testCase.calls)
+			}
+			for index, event := range sink.events {
+				assertReviewRequestEvent(t, event, headSHA, command, testCase.wantPublished[index])
+			}
+		})
+	}
+}
+
+func TestClientRequestReviewReadsAllIssueCommentPages(t *testing.T) {
+	const headSHA = "abc123"
+	marker := ReviewRequestMarker(headSHA)
+	fixture := `[{"id":1,"body":"first","user":{"login":"maintainer"}}]
+[{"id":2,"body":"<!-- roundfix:review-request head=abc123 -->","user":{"login":"maintainer"}}]`
+	var calls [][]string
+	withRunGH(t, func(_ context.Context, args ...string) ([]byte, error) {
+		calls = append(calls, append([]string(nil), args...))
+		return []byte(fixture), nil
+	})
+	sink := &captureReviewRequestSink{}
+	client := Client{GitHub: GHClient{}, Sink: sink}
+
+	outcome, err := client.RequestReview(context.Background(), reviewsource.ReviewRequest{
+		RunID:          "run-0078",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		HeadSHA:        headSHA,
+		Command:        "@coderabbitai review",
+	})
+	if err != nil {
+		t.Fatalf("request review: %v", err)
+	}
+	if outcome.Published || outcome.Marker != marker {
+		t.Fatalf("outcome = %+v, want deduplicated marker %q", outcome, marker)
+	}
+	if len(calls) != 1 {
+		t.Fatalf("gh calls = %#v, want only the paginated issue-comment lookup", calls)
+	}
+	assertStringSlicesEqual(t, calls[0], []string{
+		"api", "--paginate", "repos/owner/project/issues/123/comments",
+	})
+}
+
+func TestClientRequestReviewPublishFailureReturnsErrorWithoutEvent(t *testing.T) {
+	t.Parallel()
+	cause := errors.New("comment refused")
+	gh := &fakeGitHubClient{commentErr: cause}
+	sink := &captureReviewRequestSink{}
+	client := Client{GitHub: gh, Sink: sink}
+
+	_, err := client.RequestReview(context.Background(), reviewsource.ReviewRequest{
+		RunID:          "run-0078",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		HeadSHA:        "abc123",
+		Command:        "@coderabbitai review",
+	})
+
+	if !errors.Is(err, cause) {
+		t.Fatalf("error = %v, want wrapped publish cause", err)
+	}
+	if !strings.HasPrefix(err.Error(), "publish coderabbit review request: ") {
+		t.Fatalf("error = %q, want lowercase publish operation context", err)
+	}
+	if len(sink.events) != 0 {
+		t.Fatalf("events = %#v, want none after publish failure", sink.events)
+	}
+}
+
+func TestClientRequestReviewListFailureReturnsWithoutRetry(t *testing.T) {
+	t.Parallel()
+	cause := errors.New("comment list unavailable")
+	gh := &fakeGitHubClient{issueErr: cause}
+	sink := &captureReviewRequestSink{}
+	client := Client{GitHub: gh, Sink: sink}
+
+	_, err := client.RequestReview(context.Background(), reviewsource.ReviewRequest{
+		RunID:          "run-0078",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		HeadSHA:        "abc123",
+		Command:        "@coderabbitai review",
+	})
+
+	if !errors.Is(err, cause) {
+		t.Fatalf("error = %v, want wrapped list cause", err)
+	}
+	if !strings.HasPrefix(err.Error(), "list pull request comments before coderabbit review request: ") {
+		t.Fatalf("error = %q, want lowercase list operation context", err)
+	}
+	if gh.issueCalls != 1 {
+		t.Fatalf("issue comment list calls = %d, want one without retry", gh.issueCalls)
+	}
+	if len(gh.prComments) != 0 || len(sink.events) != 0 {
+		t.Fatalf("posts = %#v events = %#v, want no side effects after list failure", gh.prComments, sink.events)
+	}
+}
+
+func TestClientRequestReviewWrapsCanceledContext(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := (Client{}).RequestReview(ctx, reviewsource.ReviewRequest{})
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want wrapped context cancellation", err)
+	}
+	if !strings.HasPrefix(err.Error(), "request coderabbit review: ") {
+		t.Fatalf("error = %q, want lowercase operation context", err)
+	}
+}
 
 func TestFetchReviewsFiltersToUnresolvedCodeRabbitThreads(t *testing.T) {
 	t.Parallel()
@@ -1453,14 +1677,18 @@ type fakeGitHubClient struct {
 	commentRepository string
 	reviewCalls       *int
 	threadCalls       *int
+	commentErr        error
+	issueErr          error
+	issueCalls        int
 }
 
 func (client fakeGitHubClient) ReviewComments(context.Context, string, string) ([]ReviewComment, error) {
 	return client.comments, nil
 }
 
-func (client fakeGitHubClient) IssueComments(context.Context, string, string) ([]IssueComment, error) {
-	return client.issues, nil
+func (client *fakeGitHubClient) IssueComments(context.Context, string, string) ([]IssueComment, error) {
+	client.issueCalls++
+	return client.issues, client.issueErr
 }
 
 func (client fakeGitHubClient) ReviewThreads(context.Context, string, string) ([]ReviewThread, error) {
@@ -1506,9 +1734,40 @@ func (client *fakeGitHubClient) ReplyToReviewThread(_ context.Context, threadID 
 }
 
 func (client *fakeGitHubClient) CommentOnPullRequest(_ context.Context, repository string, prNumber int, body string) error {
+	if client.commentErr != nil {
+		return client.commentErr
+	}
 	client.commentRepository = repository
 	client.prComments = append(client.prComments, pullRequestCommentCall{PRNumber: prNumber, Body: body})
+	client.issues = append(client.issues, IssueComment{Body: body, Author: "maintainer"})
 	return nil
+}
+
+type captureReviewRequestSink struct {
+	events []runevent.RunEvent
+}
+
+func (sink *captureReviewRequestSink) Publish(_ context.Context, event runevent.RunEvent) error {
+	sink.events = append(sink.events, event)
+	return nil
+}
+
+func assertReviewRequestEvent(t *testing.T, event runevent.RunEvent, headSHA string, command string, published bool) {
+	t.Helper()
+	if event.RunID != "run-0078" || event.Source != runevent.SourceReviewSource || event.Kind != runevent.KindReviewSourceRequest {
+		t.Fatalf("event envelope = %+v, want review request event for run-0078", event)
+	}
+	var payload runevent.ReviewRequestPayload
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		t.Fatalf("decode review request event: %v", err)
+	}
+	wantOutcome := runevent.ReviewRequestDeduplicated
+	if published {
+		wantOutcome = runevent.ReviewRequestPublished
+	}
+	if payload.HeadSHA != headSHA || payload.Command != command || payload.Outcome != wantOutcome {
+		t.Fatalf("event payload = %+v, want head %q command %q outcome %q", payload, headSHA, command, wantOutcome)
+	}
 }
 
 func withRunGH(t *testing.T, runner func(context.Context, ...string) ([]byte, error)) {

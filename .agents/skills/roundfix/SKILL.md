@@ -340,6 +340,38 @@ validation.
 whose severity is `nitpick` do not become Review Issues unless User Config or
 Project Config explicitly sets the key to `true`.
 
+`review_source.request_review` defaults to `false`, and
+`review_source.request_command` defaults to `@coderabbitai review`. Project
+Config overrides User Config, which overrides these built-in defaults. When
+`request_review` is enabled, `watch` and `resolve` publish one idempotent
+review request for the pushed head after each Round's Final Push. `fetch`
+never publishes a review request.
+
+Publishing the request is not Review Source Evidence and does not advance the
+Round. `watch` and `resolve` still wait for Evidence bound to the pushed head.
+If the Review Source explicitly refuses the requested review, that refusal
+ends the Run; Roundfix does not retry the request, back off, or wait for review
+capacity.
+
+Preflight Validation for `watch` and `resolve` reads `.coderabbit.yaml` and
+defines `pushTriggersReview` as `auto_review.enabled` and
+`auto_review.auto_incremental_review` being enabled with
+`auto_review.auto_pause_after_reviewed_commits: 0`. A finite pause cannot
+guarantee a review for every pushed head. Absent, unreadable, or omitted values
+use the Review Source defaults, including the finite pause default of `5`.
+Preflight exits `2` for either incoherent pair:
+
+- `pushTriggersReview=false` with `review_source.request_review=false` would
+  strand the Run waiting for a review nobody requests; set
+  `review_source.request_review` to `true` in Project Config.
+- `pushTriggersReview=true` with `review_source.request_review=true` would
+  request a duplicate review after every push; set
+  `review_source.request_review` to `false` in Project Config.
+
+The refusal names all three `.coderabbit.yaml` values and
+`review_source.request_review`, plus the Project Config change that repairs
+the pair. `fetch` is exempt because it neither pushes nor requests a review.
+
 ## Agent selection
 
 Roundfix routes Agent work through Agent Selection Profiles. A profile is one
