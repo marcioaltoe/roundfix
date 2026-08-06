@@ -36,6 +36,7 @@ var (
 		CodeCoverageUnmapped,
 		CodeCoverageUntasked,
 		CodeReferenceUnresolved,
+		CodeVerifyWorkIndependent,
 	}
 	adrFilenamePattern    = regexp.MustCompile(`^([0-9]{4})-.*\.md$`)
 	adrCitationPattern    = regexp.MustCompile(`\bADR-([0-9]{4})\b`)
@@ -510,6 +511,19 @@ func detectTaskCoverageAndContextReferences(
 			addDeclaredReferences(references, line)
 		}
 		detectTaskContextReferences(result, repoRoot, taskPath, content, task.Context)
+		// Completed Tasks carry historical evidence whose authoring contract is
+		// not retroactively changed by a newly shipped detector.
+		if task.Status == spec.StatusCompleted {
+			continue
+		}
+		if finding, ok := WorkIndependentVerification(task); ok {
+			finding.Where[0] = Location{
+				Path: artifactDisplayPath(repoRoot, taskPath),
+				Line: sectionLineContaining(content, "Verification", task.Verification[0]),
+			}
+			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+			result.Findings = append(result.Findings, finding)
+		}
 	}
 
 	manifestDisplayPath := artifactDisplayPath(repoRoot, filepath.Join(graph.Spec.Dir, "_tasks.md"))

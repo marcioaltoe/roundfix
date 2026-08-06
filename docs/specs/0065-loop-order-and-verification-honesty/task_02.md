@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0065-loop-order-and-verification-honesty
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -75,3 +75,66 @@ ignore it, which is exactly how the defect happened.
 - `_prd.md` → Core Feature 3; Success Metric 2.
 - `_techspec.md` → Interfaces; Build Order 2; Risks & Considerations.
 - ADR-0093.
+
+## Result
+
+### Implementation
+
+- Added `SC-VERIFY-WORK-INDEPENDENT` to the existing Spec Consistency Check
+  finding surface. The finding points to the first declared Verification
+  command and tells the author to add a command that asserts the Task's own
+  effect.
+- The detector classifies only `spec.Task.Verification` commands. It refuses a
+  non-completed Task only when every declared command is a repository-wide
+  Make/Go gate or an explicit working-tree cleanliness check; any other
+  declared command keeps the Verification accepted.
+- Completed Tasks remain historical evidence and are not retroactively
+  reported by `Check`. The active-plus-archived corpus golden now includes the
+  new code with zero findings in both sets.
+- Added an authoring-time replay of Spec 0060 `task_03` with its exact
+  Verification commands, a table covering refusal and false-positive cases,
+  and text-rendering assertions for code, file, line, and fix output.
+- No loop-order statement or divergence rule changed in this slice.
+
+### Focused checks
+
+- Red signal: `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test
+  ./internal/speccheck -count=1 -run
+  '^TestCheckReplay0060Task03RefusesWorkIndependentVerification$'` — exit 1
+  before the detector existed; the replay returned no
+  `SC-VERIFY-WORK-INDEPENDENT` finding.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test
+  ./internal/speccheck -count=1 -run
+  '^(TestWorkIndependentVerificationRefusesOnlyWorkIndependentCommands|TestCheckReplay0060Task03RefusesWorkIndependentVerification)$'`
+  — exit 0 after implementation.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test
+  ./internal/speccheck -count=1 -run '^TestCheckCorpusGolden$'` — exit 0; the
+  active and archived finding counts remain unchanged and the new code is zero
+  in both maps.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test
+  ./internal/speccheck -count=1` — exit 0; the package suite passed. The budget
+  test intentionally skipped because this was not its dedicated invocation.
+- `rtk gofmt -l internal/speccheck/verification.go
+  internal/speccheck/verification_test.go internal/speccheck/citations.go
+  internal/speccheck/constraints_characterization_test.go` — exit 0 with no
+  output after the final code and test edits.
+- `rtk git diff --check` — exit 0 after the final Result update.
+- The commands under this Task's `## Verification` were not run. The Daemon
+  owns them, including the dedicated `TestCheckCorpusBudget` timing command.
+
+### Acceptance evidence
+
+- Only `make verify` plus `git status --porcelain` is refused: covered by the
+  `repository_gate_and_clean_tree` table case.
+- Spec 0060 `task_03` is refused as an authoring-time replay: covered by
+  `TestCheckReplay0060Task03RefusesWorkIndependentVerification`, including the
+  exact `task_03.md:44` location and rendered fix line.
+- A repository gate plus an effect assertion passes: covered by the
+  `repository_gate_plus_focused_effect_assertion` table case.
+- Effect-only commands pass: covered by the `only_effect_assertions` table
+  case. A repository-wide `go test` carrying a declared `-run` effect selector
+  is also accepted.
+- Every active and archived Spec checks with its prior finding counts: covered
+  by `TestCheckCorpusGolden` and the zero entries for the new code.
+- `TestCheckCorpusBudget` has not been run in this Agent turn because its exact
+  command is Daemon-owned Verification. No timing verdict is claimed here.
