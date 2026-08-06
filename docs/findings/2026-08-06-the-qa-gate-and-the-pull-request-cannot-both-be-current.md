@@ -29,6 +29,22 @@ Measured over one night driving three Specs on the `vortex` repository:
 **Eleven gate runs, three of which found a real defect.** Six of the remaining eight were this
 ordering, at roughly forty minutes each.
 
+## The stated order already says otherwise
+
+Spec `0065-loop-order-and-verification-honesty` shipped this as its first Core Feature:
+
+> The loop's order is stated once and consistently — implement the graph, open the Pull Request,
+> drive its review to Clean, then request QA.
+
+That order is right, and it is not what happens. An authored terminal `qa` Task is part of the
+graph, so **the Daemon executes it the moment the last non-QA Task settles** — which is before the
+Supervisor has opened the pull request, let alone driven its review to Clean. The gate cannot
+wait for a pull request that the loop opens after the graph closes.
+
+So the conflict is not between the gate and the Supervisor's discipline. It is between two
+shipped contracts: the stated loop order puts QA after review, and the authored-gate mechanism
+fires QA at graph close. Whichever the Supervisor obeys, the other is violated on the first pass.
+
 ## Root cause
 
 Two contracts are individually sound and jointly circular:
@@ -56,6 +72,10 @@ Any one of these breaks the loop:
    can pass on evidence rather than on timing.
 3. **Make the PR row non-terminal.** If pull request review state is reported rather than gating,
    the gate stops failing for a fact the gate itself cannot change.
+4. **Let the graph declare the gate as review-gated.** If `_tasks.md` could mark its `qa` Task as
+   waiting for a review-clean pull request instead of for the last leaf, the authored mechanism
+   would express the order Spec 0065 already states, and the Daemon would withhold the gate until
+   the Supervisor reports the pull request clean.
 
 The third is the smallest change and the least satisfying: it removes a real check. The first is
 the honest one, and it also fixes the related surprise that a failed gate strands completed Task
