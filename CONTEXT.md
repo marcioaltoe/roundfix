@@ -40,6 +40,10 @@ _Avoid_: Base repository, local checkout
 One unit of resolvable work that Roundfix picks up and drives to an outcome: a Review Issue today, a Task next.
 _Avoid_: Ticket, job, to-do
 
+**Backlog Entry**:
+Typed intent for what to do next, with a lifecycle of `open`, `promoted` to a named Spec, or `declined` with a reason; it is never evidence, just as a finding is never a commitment. Its types are the Conventional Commits intent vocabulary — `feat`, `fix`, `perf`, `refactor` — so one word carries intent from entry to Spec to commit; a `feat` entry is upstream raw material, never the `write-idea` artifact.
+_Avoid_: Finding, idea artifact, untyped suggestion
+
 **Task Source**:
 The origin Roundfix reads Work Items from, such as a Review Source or a Spec's Task Graph.
 _Avoid_: Provider, backend, integration

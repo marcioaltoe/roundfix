@@ -1,9 +1,12 @@
 ---
 spec: 0075-typed-docs-backlog
-status: active
+status: archived
 created: 2026-08-03
 surfaces: [backend, docs]
+archived: "2026-08-05"
+source_slug: 0075-typed-docs-backlog
 ---
+
 
 # A typed backlog for triage intent
 

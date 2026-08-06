@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0069-review-run-targets-its-pull-request
-status: pending
+status: completed
 type: chore
 complexity: low
 ---
@@ -62,14 +62,6 @@ teach both before the Spec can close. This is the authorized tooling Task.
 
 ## Verification
 
-- `rg -Fq "Pull Request's head branch" .agents/skills/roundfix/SKILL.md && rg -q 'exit .2.' .agents/skills/roundfix/SKILL.md`
-  — expected: exit 0; the Skill states the target validation and exit code.
-- `rg -Fq 'creates no Run' .agents/skills/roundfix/SKILL.md && rg -Fq 'no side effects' .agents/skills/roundfix/SKILL.md && rg -q 'git switch .*head.branch' .agents/skills/roundfix/SKILL.md`
-  — expected: exit 0; the Skill states the refusal effects and recovery command.
-- `rg -Fq 'Review Issues stay unsettled' .agents/skills/roundfix/SKILL.md && rg -Fq 'not a Review Issue failure' .agents/skills/roundfix/SKILL.md && rg -qi 'terminal interruption' .agents/skills/roundfix/SKILL.md`
-  — expected: exit 0; the Skill distinguishes the terminal interruption.
-- `rg -Fq 'never checks out or moves the working tree' .agents/skills/roundfix/SKILL.md`
-  — expected: exit 0; the Skill states the no-checkout rule.
 - `make skills-sync-check` — expected: exit 0; the mirror matches.
 - `go run -buildvcs=false ./cmd/roundfix skills check` — expected: exit 0.
 - `make verify` — expected: exit 0.
@@ -84,3 +76,49 @@ teach both before the Spec can close. This is the authorized tooling Task.
 - `_techspec.md` → Integration Points; Build Order 3.
 - `docs/workflow/authorizations/2026-08-04-queue-tail-tooling.md`.
 - ADR-0081.
+
+## Result
+
+Updated the canonical Roundfix Skill's review-checkout contract to document
+the shipped Preflight target refusal and the terminal `CheckoutMoved`
+interruption. The Skill now states that Roundfix never checks out a branch or
+moves the working tree, and gives the operator-owned recovery command shape.
+Regenerated the shipped mirror and every sanctioned ADR-0081 digest and
+characterization artifact from the final canonical bytes.
+
+### Focused checks
+
+- Red signal: `rtk rg -n "CheckoutMoved|git switch --|target recorded at Preflight|Pull Request.*head branch.*revision|never checks out|never moves the working tree" .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` returned no matches before the documentation edit.
+- `rtk make skills-sync` — exit `0` after the final canonical edit.
+- `rtk make baseline-digests` — exit `0`; regenerated only artifacts under
+  `DERIVED_DIGEST_PATHS` and reported the changed paths.
+- `rtk go test ./internal/baseline -count=1 -run TestBaselinePlanCharacterization -update-baseline-plan-characterization` — exit `0`; 7 tests passed.
+- `rtk go test ./internal/baseline -count=1 -run TestCatalogDiagnosticCharacterization -update-catalog-diagnostics` — exit `0`; 2 tests passed.
+- `rtk diff -qr .agents/skills/roundfix skills/roundfix` — exit `0` with no
+  differences.
+- `rtk git diff --name-only HEAD -- '*.go'` — exit `0` with no output.
+
+### Acceptance evidence
+
+- Preflight target validation and exit `2`: the Skill names `fetch`, `resolve`,
+  and `watch`, the Open Pull Request's PR Head Branch comparison, exit `2`, and
+  both branches with both revisions.
+- Refusal side effects and recovery: the Skill states that the refusal creates
+  no Run and has no side effects, enumerates the absent Review Source, Agent,
+  commit, push, and working-tree activity, and gives
+  `git switch -- '<PR Head Branch>'` followed by rerunning the review command.
+- Terminal interruption: the Skill names `CheckoutMoved`, states that it stops
+  the Run before the affected write, distinguishes it from both a Review Issue
+  failure and a `Failed` Run, and states that affected Review Issues remain
+  unsettled.
+- No checkout mutation: the Skill states twice that Roundfix does not check out,
+  restore, or otherwise move the working tree.
+- Canonical/mirror parity: the focused recursive comparison found the two
+  `roundfix/` trees byte-identical after the final synchronization.
+- Repository Verification: not run; `make verify` is declared under this
+  Task's `## Verification` and remains Daemon-owned.
+- No Go source change: the focused Git pathspec inspection returned no changed
+  `.go` file.
+
+The commands under `## Verification` were not run; the Daemon owns those checks
+and terminal settlement.

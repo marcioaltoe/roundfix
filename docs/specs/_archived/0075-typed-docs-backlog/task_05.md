@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0075-typed-docs-backlog
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---

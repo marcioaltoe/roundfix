@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
+	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/runevent"
 	"roundfix/internal/store"
@@ -175,6 +177,140 @@ func (fn ResolveFunc) Resolve(ctx context.Context) (ResolveResult, error) {
 	return fn(ctx)
 }
 
+// Checkout is the branch and revision observed in the user checkout at one
+// write boundary.
+type Checkout struct {
+	Branch   string
+	Revision string
+}
+
+// CheckoutReader re-reads the user checkout without moving it.
+type CheckoutReader interface {
+	ReadCheckout(context.Context, string) (Checkout, error)
+}
+
+type CheckoutReadFunc func(context.Context, string) (Checkout, error)
+
+func (fn CheckoutReadFunc) ReadCheckout(ctx context.Context, workDir string) (Checkout, error) {
+	return fn(ctx, workDir)
+}
+
+// GitCheckoutReader reads the current branch and revision through the same
+// Git inspection path used by Preflight.
+type GitCheckoutReader struct {
+	Runner preflight.GitRunner
+}
+
+func (reader GitCheckoutReader) ReadCheckout(ctx context.Context, workDir string) (Checkout, error) {
+	state, err := preflight.InspectGit(ctx, workDir, reader.Runner)
+	if err != nil {
+		return Checkout{}, fmt.Errorf("read checkout target: %w", err)
+	}
+	return Checkout{Branch: state.Branch, Revision: state.HEAD}, nil
+}
+
+// CheckoutMovedError reports a user checkout that no longer matches the
+// target recorded on the Run at Preflight.
+type CheckoutMovedError struct {
+	ExpectedBranch   string
+	ExpectedRevision string
+	FoundBranch      string
+	FoundRevision    string
+}
+
+func (moved CheckoutMovedError) Error() string {
+	return fmt.Sprintf(
+		"checkout moved: expected PR Head Branch %q at revision %q, found branch %q at revision %q",
+		moved.ExpectedBranch,
+		displayRevision(moved.ExpectedRevision),
+		moved.FoundBranch,
+		displayRevision(moved.FoundRevision),
+	)
+}
+
+func displayRevision(revision string) string {
+	if revision = strings.TrimSpace(revision); revision != "" {
+		return revision
+	}
+	return "<unknown>"
+}
+
+// WriteBoundaryGuard stops a Run before a commit or push when its checkout no
+// longer matches the recorded target.
+type WriteBoundaryGuard interface {
+	Check(context.Context) error
+}
+
+type WriteBoundaryGuardFunc func(context.Context) error
+
+func (fn WriteBoundaryGuardFunc) Check(ctx context.Context) error {
+	return fn(ctx)
+}
+
+type TargetGuard struct {
+	WorkDir   string
+	Target    Checkout
+	Checkouts CheckoutReader
+	mu        sync.Mutex
+}
+
+func (guard *TargetGuard) Check(ctx context.Context) error {
+	guard.mu.Lock()
+	defer guard.mu.Unlock()
+	return guard.checkLocked(ctx)
+}
+
+func (guard *TargetGuard) checkLocked(ctx context.Context) error {
+	reader := guard.Checkouts
+	if reader == nil {
+		reader = GitCheckoutReader{}
+	}
+	found, err := reader.ReadCheckout(ctx, guard.WorkDir)
+	if err != nil {
+		return err
+	}
+	expectedBranch := strings.TrimSpace(guard.Target.Branch)
+	expectedRevision := strings.TrimSpace(guard.Target.Revision)
+	foundBranch := strings.TrimSpace(found.Branch)
+	foundRevision := strings.TrimSpace(found.Revision)
+	if foundBranch == expectedBranch && foundRevision == expectedRevision {
+		return nil
+	}
+	return CheckoutMovedError{
+		ExpectedBranch:   expectedBranch,
+		ExpectedRevision: expectedRevision,
+		FoundBranch:      foundBranch,
+		FoundRevision:    foundRevision,
+	}
+}
+
+// RecordWriteBoundary advances the expected revision after a successful
+// Roundfix-owned commit while retaining the recorded PR Head Branch.
+func (guard *TargetGuard) RecordWriteBoundary(ctx context.Context) error {
+	guard.mu.Lock()
+	defer guard.mu.Unlock()
+	reader := guard.Checkouts
+	if reader == nil {
+		reader = GitCheckoutReader{}
+	}
+	found, err := reader.ReadCheckout(ctx, guard.WorkDir)
+	if err != nil {
+		return err
+	}
+	expectedBranch := strings.TrimSpace(guard.Target.Branch)
+	foundBranch := strings.TrimSpace(found.Branch)
+	if foundBranch != expectedBranch {
+		return CheckoutMovedError{
+			ExpectedBranch:   expectedBranch,
+			ExpectedRevision: guard.Target.Revision,
+			FoundBranch:      foundBranch,
+			FoundRevision:    found.Revision,
+		}
+	}
+	guard.Target.Revision = strings.TrimSpace(found.Revision)
+	return nil
+}
+
 type CheckSource interface {
 	Check(context.Context, string) (HeadCheckState, error)
 }
@@ -223,6 +359,7 @@ type Dependencies struct {
 	StatusSource    StatusSource
 	Fetcher         Fetcher
 	Resolver        Resolver
+	WriteGuard      WriteBoundaryGuard
 	CheckSource     CheckSource
 	Clock           Clock
 	Sleeper         Sleeper
@@ -358,7 +495,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (result Result, re
 
 		resolved, err := deps.Resolver.Resolve(ctx)
 		if err != nil {
-			return Result{Outcome: store.StateFailed, Rounds: round}, err
+			return resultForError(round, err), err
 		}
 		if resolved.Outcome != "" {
 			return Result{Outcome: resolved.Outcome, Rounds: round, Remaining: resolved.Remaining}, nil
@@ -619,6 +756,11 @@ func confirmMergeReadyWithArtifacts(
 			!acceptedVerifiedEvidenceForHead(confirm.evidence, headSHA) {
 			return confirm, verifiedHeadSHA, nil
 		}
+		if deps.WriteGuard != nil {
+			if err := deps.WriteGuard.Check(ctx); err != nil {
+				return confirmResult{}, "", fmt.Errorf("guard review artifact commit: %w", err)
+			}
+		}
 
 		publication, err := deps.Artifacts.PublishArtifacts(ctx, ArtifactPublishRequest{
 			Round:          round,
@@ -804,8 +946,12 @@ func observeStopRequest(ctx context.Context, source StopRequestSource, runID str
 
 func resultForError(rounds int, err error) Result {
 	outcome := store.StateFailed
-	if errors.Is(err, ErrStopRequested) {
+	var checkoutMoved CheckoutMovedError
+	switch {
+	case errors.Is(err, ErrStopRequested):
 		outcome = store.StateStopped
+	case errors.As(err, &checkoutMoved):
+		outcome = store.StateCheckoutMoved
 	}
 	return Result{Outcome: outcome, Rounds: rounds}
 }
@@ -854,6 +1000,8 @@ func terminalDefaults(outcome string) (string, string) {
 		return "The last Round settled no Review Issues.", "Review the remaining Review Issues and address them before starting another Run."
 	case store.StateStopped:
 		return "A Stop Request ended the Run.", "Inspect the preserved work before starting another Run."
+	case store.StateCheckoutMoved:
+		return "The checkout no longer matches the target recorded at Preflight.", "Restore the PR Head Branch checkout, then start another Run."
 	case store.StateFailed:
 		return "The watch Run failed before it could complete.", "Inspect the diagnostics, correct the failure, and start another Run."
 	default:

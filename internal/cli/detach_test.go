@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -148,6 +149,50 @@ func TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput(t *testing.
 		if !strings.Contains(stderr, want) {
 			t.Fatalf("expected child-exit diagnostic containing %q, got %q", want, stderr)
 		}
+	}
+}
+
+func TestRunDetachedReviewRefusalLeavesArtifactDirectoryAbsent(t *testing.T) {
+	t.Parallel()
+	for _, command := range []string{"resolve", "watch"} {
+		t.Run(command, func(t *testing.T) {
+			updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+				dependencies.detachTimeouts = detachPhaseTimeouts{
+					liveness:    time.Second,
+					runCreation: time.Second,
+				}
+			})
+			artifactParent := t.TempDir()
+			artifactDir := filepath.Join(artifactParent, "artifacts")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			environment := commandEnvironmentForTest(t)
+
+			code := runDetachedCommand(
+				[]string{command, "--detach"},
+				commandRequest{name: command, detach: true, artifactDir: artifactDir},
+				roundconfig.Loaded{GitRoot: t.TempDir(), HomeDir: t.TempDir()},
+				&stdout,
+				&stderr,
+				withEnvValue(environment.environ, detachTestChildModeEnv, detachTestChildExitTwoWithOutput),
+				t.TempDir(),
+				environment.dependencies.detachTimeouts,
+			)
+
+			if code != exitPreflight {
+				t.Fatalf("expected child refusal exit %d, got %d stdout=%q stderr=%q", exitPreflight, code, stdout.String(), stderr.String())
+			}
+			if _, err := os.Stat(artifactDir); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("Artifact Directory exists after detached refusal: stat error = %v", err)
+			}
+			entries, err := os.ReadDir(artifactParent)
+			if err != nil {
+				t.Fatalf("read Artifact Directory parent after refusal: %v", err)
+			}
+			if len(entries) != 0 {
+				t.Fatalf("detached refusal left filesystem entries: %v", entries)
+			}
+		})
 	}
 }
 

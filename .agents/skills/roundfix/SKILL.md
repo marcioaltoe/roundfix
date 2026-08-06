@@ -1071,6 +1071,28 @@ Agent. `resolve` and `watch` start the Agent from the same checkout, so a
 review fix is always a delta over the pull request branch that Final Push
 updates.
 
+Roundfix never checks out a branch or moves the working tree. Before any review
+Run starts, Preflight Validation resolves the Open Pull Request's PR Head
+Branch and validates the checkout against it. When the branches differ,
+`fetch`, `resolve`, and `watch` refuse with exit `2`; the diagnostic names the
+PR Head Branch and its revision and the checkout branch and its revision. The
+refusal creates no Run and has no side effects: Roundfix does not fetch Review
+Source issues, start an Agent, commit, push, or move the working tree.
+Recover by placing the checkout on the named PR Head Branch with the printed
+command shape, then rerun the review command:
+
+```bash
+git switch -- '<PR Head Branch>'
+```
+
+After a Run starts, Roundfix revalidates the recorded PR Head Branch and
+expected revision before each Batch and write boundary. If the checkout moves,
+the Run stops before that write and reaches the terminal `CheckoutMoved`
+outcome. This is an environmental interruption, not a Review Issue failure or
+a `Failed` Run: affected Review Issues stay unsettled so the unchanged work can
+be retried after the operator restores the PR Head Branch checkout. Roundfix
+does not restore or otherwise move the working tree itself.
+
 Branch Integrity Preflight runs before any fetch, Agent Session, Review Source
 comment, code change, commit, or push for `fetch`, `resolve`, and `watch`.
 

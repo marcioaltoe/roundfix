@@ -1,9 +1,12 @@
 ---
 spec: 0069-review-run-targets-its-pull-request
-status: active
+status: archived
 created: 2026-08-02
 surfaces: [backend, cli, docs]
+archived: "2026-08-05"
+source_slug: 0069-review-run-targets-its-pull-request
 ---
+
 
 # A Review Run targets its Pull Request
 

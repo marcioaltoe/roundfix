@@ -62,6 +62,8 @@
         "clause.context.adr-03-legacy-compatibility",
         "clause.context.docs-one-job-per-directory",
         "clause.context.docs-upstream-flow",
+        "clause.context.backlog-01-operational-contract",
+        "clause.context.backlog-02-finding-boundary",
         "clause.context.findings-01-frontmatter",
         "clause.context.findings-02-pending",
         "clause.context.findings-03-partial",
@@ -112,9 +114,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 104,
-      "corpusDigest": "6688a156afc1760f98e3fa80a2ff3aa600f370930adb06e991d22938bc67baaf",
-      "manifestDigest": "e92bda3a4a677b008be4065f4396aa77445eae972a4b55a902c9ca93c6f67f4c"
+      "entryCount": 106,
+      "corpusDigest": "80eaee8a0c25e85bc712600b43273b7cf581eb28477899b65648180aee45f4ca",
+      "manifestDigest": "232b37e31ec7d55262dba3f03575da6bca51ca9fa3f2295647abb5bb863eb29a"
     }
   ]
 }

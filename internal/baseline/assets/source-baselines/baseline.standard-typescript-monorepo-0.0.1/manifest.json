@@ -595,8 +595,8 @@
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
       "start": 4209,
-      "end": 4658,
-      "digest": "2279f06e04e34bfd5647d19c743a6e389f9236eb87677e66b80c6375768afc1d"
+      "end": 4727,
+      "digest": "efbb83ad71d697fa57116dbb5df855f6ca4a4df73f4d5ac8de699163c8d7aee8"
     },
     {
       "id": "clause.context.docs-upstream-flow",
@@ -605,9 +605,31 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 4800,
-      "end": 5130,
+      "start": 4869,
+      "end": 5199,
       "digest": "c94f140ee25de110d14a19b1ad7e80ff2e663517259b84e8a33261d7ce7b1a0f"
+    },
+    {
+      "id": "clause.context.backlog-01-operational-contract",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 5346,
+      "end": 7311,
+      "digest": "b5925cea7c49d10a70520efdd465473aa626ef8f28c2d28d1dac9b999b6a5a0b"
+    },
+    {
+      "id": "clause.context.backlog-02-finding-boundary",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 7467,
+      "end": 7872,
+      "digest": "a065cecf03300bef7418c72637beeb189c76f0681d180e37325a90cb3fd479c1"
     },
     {
       "id": "clause.context.findings-01-frontmatter",
@@ -616,8 +638,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 5269,
-      "end": 6197,
+      "start": 8020,
+      "end": 8948,
       "digest": "e110a213ed674d69e7fca8ec9079cd6cf2da833f68f9fd6e6ac227beb23d2f77"
     },
     {
@@ -627,8 +649,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 6337,
-      "end": 6407,
+      "start": 9088,
+      "end": 9158,
       "digest": "0d99156813f494d0b8a2d6395403eaad5385c00c19294ad845030c49f395a39b"
     },
     {
@@ -638,8 +660,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 6543,
-      "end": 6712,
+      "start": 9294,
+      "end": 9463,
       "digest": "4103cbc86cc981f2b06a452fd108041df2495ea5a155561617666e0dfd627f90"
     },
     {
@@ -649,8 +671,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 6849,
-      "end": 6943,
+      "start": 9600,
+      "end": 9694,
       "digest": "113d93416da3b170dd3933085ebbc206d7b224b0e8eabf58b8f652d7ad3ab25f"
     },
     {
@@ -660,8 +682,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 7077,
-      "end": 7191,
+      "start": 9828,
+      "end": 9942,
       "digest": "7e5c26885c289a99db7fc1b57993412aa0efca85b858394835423110d8b737ac"
     },
     {
@@ -671,8 +693,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 7332,
-      "end": 7468,
+      "start": 10083,
+      "end": 10219,
       "digest": "fe598da7ea176f88cc991791977de07d1494f0da10b2e0d3584ff7456ecc767c"
     },
     {
@@ -682,8 +704,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 7621,
-      "end": 7751,
+      "start": 10372,
+      "end": 10502,
       "digest": "becee1d41ae620ddf8856f8231d04d728b2869f784529d4851744a86f35c142b"
     },
     {
@@ -693,8 +715,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 7903,
-      "end": 8100,
+      "start": 10654,
+      "end": 10851,
       "digest": "6a6bbd20fad23dc9162a49bdc1b36f36950e55a01456d2d3f4132ac5b10a7ab5"
     },
     {
@@ -704,8 +726,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 8251,
-      "end": 8634,
+      "start": 11002,
+      "end": 11385,
       "digest": "437de61f4c3b444f6509517f1d8994432bb99adaf8edaf17394e611ec04e0dbc"
     },
     {
