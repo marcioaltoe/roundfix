@@ -45,6 +45,7 @@ const (
 	StateBudgetExceeded     = "BudgetExceeded"
 	StateTimedOut           = "TimedOut"
 	StateFailed             = "Failed"
+	StateCheckoutMoved      = "CheckoutMoved"
 	StateIntegrationPending = "IntegrationPending"
 	// StateUnresolved means the resolve work completed but Unresolved
 	// Review Issues remain, so Final Push stayed blocked. It is a deliberate
@@ -68,6 +69,7 @@ var terminalStates = []string{
 	StateBudgetExceeded,
 	StateTimedOut,
 	StateFailed,
+	StateCheckoutMoved,
 	StateIntegrationPending,
 	StateUnresolved,
 }

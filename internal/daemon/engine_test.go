@@ -306,6 +306,21 @@ type engineFakePusher struct {
 	remotes []string
 }
 
+type engineWriteGuard struct {
+	errors []error
+	calls  int
+}
+
+func (guard *engineWriteGuard) Check(context.Context) error {
+	guard.calls++
+	if len(guard.errors) == 0 {
+		return nil
+	}
+	err := guard.errors[0]
+	guard.errors = guard.errors[1:]
+	return err
+}
+
 func (pusher *engineFakePusher) Push(_ context.Context, req PushRequest) error {
 	*pusher.calls = append(*pusher.calls, "push")
 	pusher.remotes = append(pusher.remotes, req.Remote+" HEAD:"+req.Branch)
@@ -992,6 +1007,72 @@ func TestFinalPushIsASeparateExplicitOperation(t *testing.T) {
 	}
 	if state := runStateForTest(fixture.store, fixture.run.ID); state != store.StatePushing {
 		t.Fatalf("expected Pushing state during Final Push, got %q", state)
+	}
+}
+
+func TestFinalPushCheckoutMovedBoundaryPushesNothing(t *testing.T) {
+	t.Parallel()
+	fixture := newEngineFixture(t)
+	pusher := &engineFakePusher{calls: fixture.calls}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, &engineFakeCommitter{calls: fixture.calls}, pusher, &engineFakeSource{calls: fixture.calls})
+	engine.deps.WriteGuard = &engineWriteGuard{errors: []error{errors.New("checkout moved")}}
+
+	err := engine.FinalPush(context.Background(), FinalPushRequest{
+		RunID:   fixture.run.ID,
+		WorkDir: fixture.gitRoot,
+		Remote:  "origin",
+		Branch:  "feature/review",
+	})
+
+	if err == nil || !strings.Contains(err.Error(), "guard Final Push") {
+		t.Fatalf("Final Push movement error = %v", err)
+	}
+	if len(pusher.remotes) != 0 {
+		t.Fatalf("Final Push requests = %v, want none", pusher.remotes)
+	}
+	if state := runStateForTest(fixture.store, fixture.run.ID); state != store.StateActive {
+		t.Fatalf("Run state after guarded Final Push = %q, want Active", state)
+	}
+}
+
+func TestResolveCycleCheckoutMovedBeforeBatchLeavesReviewIssuesUnsettled(t *testing.T) {
+	t.Parallel()
+	fixture := newEngineFixture(t)
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+	engine.deps.WriteGuard = &engineWriteGuard{errors: []error{errors.New("checkout moved")}}
+
+	_, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err == nil || !strings.Contains(err.Error(), "guard Batch start") {
+		t.Fatalf("Batch movement error = %v", err)
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("Batch commits = %v, want none", committer.messages)
+	}
+	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse interrupted Review Issue: %v", parseErr)
+	}
+	if issue.Status == rounds.StatusFailed || issue.Status == rounds.StatusResolved || issue.Status == rounds.StatusInvalid {
+		t.Fatalf("interrupted Review Issue status = %q, want unsettled", issue.Status)
+	}
+}
+
+func TestResolveCycleCheckoutMovedAtBatchCommitCommitsNothing(t *testing.T) {
+	t.Parallel()
+	fixture := newEngineFixture(t)
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+	engine.deps.WriteGuard = &engineWriteGuard{errors: []error{nil, errors.New("checkout moved")}}
+
+	_, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err == nil || !strings.Contains(err.Error(), "guard Batch 001 commit") {
+		t.Fatalf("Batch commit movement error = %v", err)
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("Batch commits = %v, want none", committer.messages)
 	}
 }
 

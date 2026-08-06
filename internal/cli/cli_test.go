@@ -5296,6 +5296,43 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 	}
 }
 
+func TestRunResolveCheckoutMovedBeforeBatchInterruptsWithIssueUnsettled(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persisted := persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	committer := &fakeCommitter{}
+	withCommitter(t, committer)
+	pusher := &fakePusher{}
+	withPusher(t, pusher)
+	withCheckoutReader(t, watch.CheckoutReadFunc(func(context.Context, string) (watch.Checkout, error) {
+		return watch.Checkout{Branch: "feature/other", Revision: "def456"}, nil
+	}))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("moved before Batch exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if committer.calls != 0 || pusher.calls != 0 {
+		t.Fatalf("interrupted writes: commits=%d pushes=%d, want none", committer.calls, pusher.calls)
+	}
+	issue, err := rounds.ParseIssue(persisted.IssuePaths[0])
+	if err != nil {
+		t.Fatalf("parse interrupted Review Issue: %v", err)
+	}
+	if issue.Status == rounds.StatusFailed || issue.Status == rounds.StatusResolved || issue.Status == rounds.StatusInvalid {
+		t.Fatalf("interrupted Review Issue status = %q, want unsettled", issue.Status)
+	}
+	runID, _ := journaledRunEvents(t, homeDir, stderr.String())
+	run := runFromStore(t, homeDir, runID)
+	if run.State != store.StateCheckoutMoved || run.CompletedAt == nil {
+		t.Fatalf("interrupted Resolve Run = %+v", run)
+	}
+}
+
 func TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -7128,6 +7165,9 @@ func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T
 	if got := strings.TrimSpace(gitImplementOutput(t, repoDir, "show", "-s", "--format=%s", "HEAD")); got != daemon.ReviewArtifactsCommitMessage(1, "123") {
 		t.Fatalf("artifact commit subject = %q", got)
 	}
+	if branchHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "feature/review")); branchHead != currentHead {
+		t.Fatalf("PR Head Branch revision = %s, want review artifact commit %s", branchHead, currentHead)
+	}
 
 	_, events := journaledRunEvents(t, homeDir, stderr.String())
 	var outcome runevent.OutcomePayload
@@ -7158,6 +7198,58 @@ func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T
 		inherited.ObservedHeadSHA != currentHead ||
 		inherited.ParentHeadSHA != parentHead {
 		t.Fatalf("inherited Evidence payload = %#v", inherited)
+	}
+}
+
+func TestRunWatchCheckoutMovedBeforeFinalPushInterruptsAndPushesNothing(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := withReviewGitWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withRealReviewPreflight(t, repoDir, true)
+	withReviewSpecGitRunner(t, preflight.ExecGitRunner{})
+	withCommitter(t, daemon.GitCommitter{})
+	withFetchReviewItems(t, nil)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+
+	targetRevision := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	guardCalls := 0
+	withCheckoutReader(t, watch.CheckoutReadFunc(func(context.Context, string) (watch.Checkout, error) {
+		guardCalls++
+		if guardCalls < 4 {
+			return watch.Checkout{Branch: "feature/review", Revision: targetRevision}, nil
+		}
+		return watch.Checkout{Branch: "feature/other", Revision: "moved456"}, nil
+	}))
+	evidenceCalls := 0
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		evidenceCalls++
+		if evidenceCalls == 1 {
+			return reviewedEvidence(targetRevision), nil
+		}
+		return verifiedEvidence(req.ExpectedHeadSHA), nil
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, context.Background(), []string{
+		"watch", "--source", "coderabbit", "--pr", "123",
+		"--until-clean", "--max-rounds", "1", "--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("moved before Final Push exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if pusher.calls != 0 {
+		t.Fatalf("moved before Final Push calls = %d, want 0", pusher.calls)
+	}
+	if !strings.Contains(stderr.String(), store.StateCheckoutMoved) {
+		t.Fatalf("CheckoutMoved report missing from stderr: %q", stderr.String())
+	}
+	runID, _ := journaledRunEvents(t, homeDir, stderr.String())
+	run := runFromStore(t, homeDir, runID)
+	if run.State != store.StateCheckoutMoved || run.CompletedAt == nil {
+		t.Fatalf("interrupted Run = %+v", run)
 	}
 }
 
@@ -9134,6 +9226,228 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 				t.Fatalf("expected no side-effect confirmation, got %q", stderr.String())
 			}
 			assertNoRunDatabase(t, homeDir)
+		})
+	}
+}
+
+func TestReviewCommandsRefuseTargetMismatchWithoutSideEffects(t *testing.T) {
+	for _, command := range []string{"fetch", "resolve", "watch"} {
+		t.Run(command, func(t *testing.T) {
+			homeDir, repoDir := withReviewGitWorkspace(t)
+			enableReviewRequestsForTest(t, repoDir)
+			gitImplement(t, repoDir, "checkout", "-b", "other/review")
+			artifactDir := filepath.Join(t.TempDir(), "artifacts")
+
+			agentRunner := &fakeAgentRunner{}
+			committer := &fakeCommitter{}
+			resolver := &fakeSourceResolver{}
+			pusher := &fakePusher{}
+			verifier := &fakeVerifier{}
+			fetchCalls := 0
+			withAgentRunner(t, agentRunner)
+			withCommitter(t, committer)
+			withSourceResolver(t, resolver)
+			withPusher(t, pusher)
+			withVerifier(t, verifier)
+			withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+				fetchCalls++
+				return nil, errors.New("Review Source must not be queried after target refusal")
+			})
+
+			beforeHEAD := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+			beforeStatus := gitImplementOutput(t, repoDir, "status", "--porcelain=v1", "--untracked-files=all")
+			args := []string{
+				command,
+				"--pr", "123",
+				"--artifact-dir", artifactDir,
+				"--base-repo", "owner/project",
+				"--head-repo", "owner/project",
+				"--head-branch", "feature/review",
+				"--no-input",
+			}
+			if command != "resolve" {
+				args = append(args, "--source", "coderabbit")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLI(t, args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("target mismatch exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("target mismatch wrote stdout: %q", stdout.String())
+			}
+			for _, want := range []string{
+				"Open Pull Request #123",
+				fmt.Sprintf("PR Head Branch %q at revision %q", "feature/review", beforeHEAD),
+				fmt.Sprintf("checkout branch %q is at revision %q", "other/review", beforeHEAD),
+				"Next action:",
+				"git switch -- 'feature/review'",
+				"Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.",
+			} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("expected target refusal to contain %q, got %q", want, stderr.String())
+				}
+			}
+			assertNoRunDatabase(t, homeDir)
+			if _, err := os.Stat(artifactDir); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("Artifact Directory exists after refusal: stat error = %v", err)
+			}
+			if fetchCalls != 0 || resolver.calls != 0 {
+				t.Fatalf("Review Source calls after refusal: fetch=%d resolve=%d", fetchCalls, resolver.calls)
+			}
+			if agentRunner.calls != 0 || len(agentRunner.probeRequests) != 0 {
+				t.Fatalf("Agent Session activity after refusal: runs=%d probes=%d", agentRunner.calls, len(agentRunner.probeRequests))
+			}
+			if verifier.calls != 0 || committer.calls != 0 || pusher.calls != 0 {
+				t.Fatalf("writes after refusal: verification=%d commits=%d pushes=%d", verifier.calls, committer.calls, pusher.calls)
+			}
+			afterHEAD := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+			afterStatus := gitImplementOutput(t, repoDir, "status", "--porcelain=v1", "--untracked-files=all")
+			if afterHEAD != beforeHEAD || afterStatus != beforeStatus {
+				t.Fatalf("Git state changed after refusal: HEAD %q -> %q, status %q -> %q", beforeHEAD, afterHEAD, beforeStatus, afterStatus)
+			}
+		})
+	}
+}
+
+func TestReviewCommandsRefuseWithoutCreatingArtifactDirectory(t *testing.T) {
+	tests := []struct {
+		name               string
+		command            string
+		defaultArtifactDir bool
+		setup              func(*testing.T, string, string)
+	}{
+		{
+			name:    "fetch shared Preflight",
+			command: "fetch",
+			setup: func(t *testing.T, _ string, _ string) {
+				withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
+					return preflight.Result{}, errors.New("inspect Git refusal")
+				})
+			},
+		},
+		{
+			name:    "resolve shared Preflight",
+			command: "resolve",
+			setup: func(t *testing.T, _ string, _ string) {
+				withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
+					return preflight.Result{}, errors.New("Pull Request resolution refusal")
+				})
+			},
+		},
+		{
+			name:    "watch shared Preflight",
+			command: "watch",
+			setup: func(t *testing.T, _ string, _ string) {
+				withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
+					return preflight.Result{}, errors.New("push-plan refusal")
+				})
+			},
+		},
+		{
+			name:    "fetch Branch Integrity Preflight",
+			command: "fetch",
+			setup: func(t *testing.T, _ string, repoDir string) {
+				withSuccessfulPreflight(t, repoDir)
+				updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+					dependencies.listPendingRunWork = func(context.Context, string, string) ([]runworktree.PendingRunWork, error) {
+						return nil, errors.New("Branch Integrity refusal")
+					}
+				})
+			},
+		},
+		{
+			name:    "resolve missing Compatible Artifacts",
+			command: "resolve",
+			setup: func(t *testing.T, _ string, repoDir string) {
+				withSuccessfulPreflight(t, repoDir)
+			},
+		},
+		{
+			name:               "resolve Agent Selection Preflight",
+			command:            "resolve",
+			defaultArtifactDir: true,
+			setup: func(t *testing.T, _ string, repoDir string) {
+				withSuccessfulPreflight(t, repoDir)
+				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+				withAgentRunner(t, &fakeAgentRunner{probeErr: errors.New("Agent Selection refusal")})
+			},
+		},
+		{
+			name:    "watch Agent Selection Preflight",
+			command: "watch",
+			setup: func(t *testing.T, _ string, repoDir string) {
+				withSuccessfulPreflight(t, repoDir)
+				withAgentRunner(t, &fakeAgentRunner{probeErr: errors.New("Agent Selection refusal")})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			artifactDir := filepath.Join(t.TempDir(), "artifacts")
+			tt.setup(t, homeDir, repoDir)
+			args := []string{tt.command, "--pr", "123", "--no-input"}
+			if tt.defaultArtifactDir {
+				artifactDir = builtinArtifactDirForRepo(t, repoDir)
+			} else {
+				args = append(args, "--artifact-dir", artifactDir)
+			}
+			if tt.command != "resolve" {
+				args = append(args, "--source", "coderabbit")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLI(t, args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("refusal exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if !strings.Contains(stderr.String(), "Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.") {
+				t.Fatalf("refusal message changed: %q", stderr.String())
+			}
+			if _, err := os.Stat(artifactDir); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("Artifact Directory exists after refusal: stat error = %v", err)
+			}
+		})
+	}
+}
+
+func TestReviewCommandsCreateArtifactDirectoryAfterPreflightPasses(t *testing.T) {
+	for _, command := range []string{"fetch", "resolve", "watch"} {
+		t.Run(command, func(t *testing.T) {
+			_, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			artifactDir := filepath.Join(t.TempDir(), "artifacts")
+			args := []string{command, "--pr", "123", "--artifact-dir", artifactDir, "--no-input"}
+			if command == "resolve" {
+				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+				artifactDir = builtinArtifactDirForRepo(t, repoDir)
+				args = []string{command, "--pr", "123", "--no-input"}
+			}
+			if command != "resolve" {
+				args = append(args, "--source", "coderabbit")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLI(t, args, &stdout, &stderr)
+
+			if code == exitPreflight {
+				t.Fatalf("Preflight unexpectedly refused: stderr=%q", stderr.String())
+			}
+			info, err := os.Stat(artifactDir)
+			if err != nil {
+				t.Fatalf("stat Artifact Directory after Run start: %v", err)
+			}
+			if !info.IsDir() {
+				t.Fatalf("Artifact Directory path is not a directory: mode=%s", info.Mode())
+			}
 		})
 	}
 }
@@ -12107,6 +12421,10 @@ watch:
 
 func withRealReviewPreflight(t *testing.T, repoDir string, pushEnabled bool) {
 	t.Helper()
+	withCheckoutReader(t, watch.GitCheckoutReader{})
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.refreshBranchIntegrityHead = defaultRefreshBranchIntegrityHead
+	})
 	withPreflight(t, func(ctx context.Context, req commandRequest, _ roundconfig.Loaded) (preflight.Result, error) {
 		if req.pr == "" {
 			return preflight.Result{}, errors.New("missing pr in test preflight")
@@ -12133,6 +12451,13 @@ func withRealReviewPreflight(t *testing.T, repoDir string, pushEnabled bool) {
 				Command: []string{"git", "push", "origin", "HEAD:feature/review"},
 			},
 		}, nil
+	})
+}
+
+func withCheckoutReader(t *testing.T, reader watch.CheckoutReader) {
+	t.Helper()
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.checkoutReader = reader
 	})
 }
 
@@ -12169,6 +12494,9 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	withWatchHeadSHA(t, func(context.Context, string) (string, error) {
 		return "abc123", nil
 	})
+	withCheckoutReader(t, watch.CheckoutReadFunc(func(context.Context, string) (watch.Checkout, error) {
+		return watch.Checkout{Branch: "feature/review", Revision: "abc123"}, nil
+	}))
 	withChangedPaths(t, nil)
 	withReviewSpecGitRunner(t, &fakeReviewSpecGitRunner{})
 	withFetchReviewItems(t, []reviewsource.ReviewItem{

@@ -39,6 +39,16 @@ type RunStateStore interface {
 	StopRequested(ctx context.Context, runID string) (bool, error)
 }
 
+// WriteBoundaryGuard re-validates an Active review Run's recorded target
+// without moving the user checkout.
+type WriteBoundaryGuard interface {
+	Check(context.Context) error
+}
+
+type writeBoundaryRecorder interface {
+	RecordWriteBoundary(context.Context) error
+}
+
 // GHRunner executes GitHub CLI commands.
 type GHRunner interface {
 	RunGH(ctx context.Context, workDir string, args ...string) (string, error)
@@ -55,6 +65,7 @@ type Dependencies struct {
 	Pusher        Pusher
 	Source        ReviewSourceResolver
 	Runs          RunStateStore
+	WriteGuard    WriteBoundaryGuard
 	Worktree      WorktreeSnapshotter
 	TaskWorktrees TaskWorktreeManager
 	PriorChanges  PriorChangedResolver
@@ -528,6 +539,10 @@ func (engine *Engine) ResolveCycle(ctx context.Context, plan CyclePlan) (CycleRe
 		if err := engine.stopIfRequested(ctx, plan.RunID, batch.Number); err != nil {
 			return result, fmt.Errorf("stop run %q before Batch %03d: %w", plan.RunID, batch.Number, err)
 		}
+		if err := engine.guardWriteBoundary(ctx, "Batch start"); err != nil {
+			engine.reportPending(plan, index)
+			return result, err
+		}
 		outcome, remaining, err := engine.resolveBatch(ctx, plan, batch, index+1, len(plan.Batches))
 		if err != nil {
 			engine.reportPending(plan, index)
@@ -554,6 +569,9 @@ func (engine *Engine) ResolveCycle(ctx context.Context, plan CyclePlan) (CycleRe
 // caller, never per Batch or Round, preserving ADR 0001 semantics.
 func (engine *Engine) FinalPush(ctx context.Context, req FinalPushRequest) error {
 	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := engine.guardWriteBoundary(ctx, "Final Push"); err != nil {
 		return err
 	}
 	if strings.TrimSpace(req.RunID) != "" {
@@ -957,12 +975,20 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		return false, true, err
 	}
 	message := BatchCommitMessage(batch.Number)
+	if err := engine.guardWriteBoundary(ctx, fmt.Sprintf("Batch %03d commit", batch.Number)); err != nil {
+		return false, false, err
+	}
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.GitRoot,
 		Message: message,
 		Paths:   stageable,
 	}); err != nil {
 		return false, false, err
+	}
+	if recorder, ok := engine.deps.WriteGuard.(writeBoundaryRecorder); ok {
+		if err := recorder.RecordWriteBoundary(ctx); err != nil {
+			return false, false, fmt.Errorf("record Batch %03d commit target: %w", batch.Number, err)
+		}
 	}
 	fmt.Fprintf(engine.deps.Progress, "Batch commit created: %s\n", message)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonCommit,
@@ -972,6 +998,16 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		return false, false, err
 	}
 	return true, false, nil
+}
+
+func (engine *Engine) guardWriteBoundary(ctx context.Context, boundary string) error {
+	if engine.deps.WriteGuard == nil {
+		return nil
+	}
+	if err := engine.deps.WriteGuard.Check(ctx); err != nil {
+		return fmt.Errorf("guard %s: %w", boundary, err)
+	}
+	return nil
 }
 
 // diffSnapshots returns the paths dirty after the Batch that were not
