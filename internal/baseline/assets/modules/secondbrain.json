@@ -1,9 +1,9 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 3,
+  "version": 4,
   "kind": "knowledge-source",
-  "title": "Read-only Secondbrain guidance",
+  "title": "Secondbrain guidance",
   "dependsOn": [
     "context-workflow"
   ],
@@ -32,7 +32,7 @@
   "supportingGuides": [
     {
       "id": "guide.secondbrain",
-      "version": 3,
+      "version": 4,
       "path": "docs/agents/secondbrain.md",
       "template": "template.guide.secondbrain",
       "rules": [
@@ -68,16 +68,26 @@
     },
     {
       "id": "rule.secondbrain.read-only",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.secondbrain",
         "coverage.universal-safety"
       ],
       "clauses": [
         {
+          "id": "clause.secondbrain.inbox-write-permission",
+          "enforcement": "mandatory",
+          "guidance": "Sessions MAY create files under the Secondbrain's `inbox/**`; this is the only writable Secondbrain namespace. Every other Secondbrain path stays read-only."
+        },
+        {
+          "id": "clause.secondbrain.inbox-entry-contract",
+          "enforcement": "mandatory",
+          "guidance": "An Inbox Entry uses positional status: pending entries live at the destination namespace root under `inbox/<destination>/`, and resolved entries live under `inbox/<destination>/_triaged/`. Use this complete copyable contract:\n\n```yaml\n---\norigin: <project-that-observed>\ndestination: <project-that-triages>\ntype-hint: <finding-or-intent-hint>\ncreated_at: YYYY-MM-DD\ncapture: manual # manual | auto\n# added at triage time; exactly one:\nresolved_to: <repository-relative-artifact-path>\n# or discarded_reason: <reason>\n---\n```"
+        },
+        {
           "id": "clause.secondbrain.prohibit-writes",
           "enforcement": "prohibited",
-          "guidance": "Do not write to the Secondbrain. Do not edit raw/. Do not edit projects/*/mirror/. Never create, rename, move, or delete its files, and never copy code or generated artifacts from a mirror without a local source check."
+          "guidance": "Do not create, edit, rename, move, or delete any Secondbrain file outside `inbox/**`. Do not edit `raw/` or `projects/*/mirror/`, and never copy code or generated artifacts from a mirror without a local source check."
         }
       ]
     },

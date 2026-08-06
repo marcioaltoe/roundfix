@@ -160,6 +160,22 @@ updated_at: YYYY-MM-DD
 
 - **mandatory**: Update `updated_at` whenever status changes or an evidence addendum is appended; keep `created_at` as the document creation date.
 
+- **mandatory**: A Rollup is a Finding of `kind: rollup` that consolidates related Findings. It lives beside active Findings under `docs/findings/`, shares their lifecycle contract, and declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `docs/findings/_archived/`. Use this extension:
+
+```yaml
+kind: rollup
+members:
+  - YYYY-MM-DD-<finding-slug>.md
+```
+
+- **mandatory**: Use `docs/findings/_archived/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:
+
+```yaml
+absorbed_by: <rollup-basename-or-spec-slug>
+```
+
+- **mandatory**: Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the ADR-0092 boundary: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the Inbox Entry's provenance.
+
 <!-- setup-context-driven:end id=guide.docs-layout -->
 
 <!-- setup-context-driven:begin id=guide.spec-docs-layout version=0.0.1 -->

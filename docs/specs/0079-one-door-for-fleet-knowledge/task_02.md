@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0079-one-door-for-fleet-knowledge
-status: pending
+status: completed
 type: chore
 complexity: high
 ---
@@ -112,3 +112,93 @@ task_06's, after the pilot proves the door.
 - `_techspec.md` → Implementation Design (Interfaces); Testing Approach
   (module choreography); Build Order 1.
 - ADR-0095, ADR-0092, ADR-0081.
+
+## Result
+
+### Implementation
+
+- Versioned the context-workflow module, its docs-layout guide, and its layout
+  rule. Added separate clauses for `kind: rollup` plus resolvable `members:`,
+  the `docs/findings/_archived/` home plus required `absorbed_by:` license, and
+  the one-entry/one-outcome Triage contract with the ADR-0092 human-choice
+  boundary and minted-artifact provenance.
+- Versioned the secondbrain module, its guide, and the edited read-only rule.
+  Added the positional Inbox Entry contract with `origin:`, `destination:`,
+  `type-hint:`, `created_at:`, `capture: manual # manual | auto`, and exactly
+  one triage-time `resolved_to:` or `discarded_reason:`. Pending entries stay
+  at `inbox/<destination>/`; resolved entries move under `_triaged/`.
+- Replaced the blanket write prohibition with permission for sessions to
+  create only under `inbox/**`. Every other Secondbrain path remains read-only;
+  the module and guide secret-handling prohibitions remain byte-identical to
+  their `HEAD` preimages.
+- Bootstrapped five marker-delimited Source Baseline entries and manifest rows:
+  `clause.context.findings-08-rollup`,
+  `clause.context.findings-09-archive`,
+  `clause.context.inbox-01-triage`,
+  `clause.secondbrain.inbox-write-permission`, and
+  `clause.secondbrain.inbox-entry-contract`. Regeneration replaced every
+  temporary span and digest with values calculated from the source bytes.
+- Ran the required digest choreography after the final module correction. The
+  first `rtk make baseline-digests` pass exited 0 with `changed:true`; the
+  second exited 0 with `changed:false`. Adopted both regenerated managed blocks
+  into the local guides without changing their repository-authored content
+  except the now-permitted Secondbrain access statements.
+
+### Focused checks
+
+- Focused `jq -e` contract assertions over both modules exited 0. They checked
+  module/guide/rule versions, every required literal token, resolvable-member
+  and archival targets, positional status, the `manual | auto` capture enum,
+  the single triage result, the ADR-0092 boundary, provenance, and the exclusive
+  `inbox/**` permission.
+- Exact `cmp -s` checks showed that each adopted managed guide block is
+  byte-identical to its regenerated formatter golden. Five additional
+  `cmp -s` checks showed that every new Source Baseline marker span is
+  byte-identical to its canonical module guidance.
+- Exact `cmp -s` against `HEAD` showed the secondbrain module's
+  `rule.secondbrain.secret-safety` guidance is unchanged. A focused absence
+  check found no remaining `Do not write to the Secondbrain` blanket clause.
+- The forbidden-obligation scan found no inbox-first step, mandatory
+  session-end capture, mandatory research capture, or `must capture` clause in
+  the edited modules. No authorial skill or hook path changed.
+- `GOCACHE=/private/tmp/roundfix-task02-gocache rtk go test
+  ./internal/baseline -count=1 -run
+  "TestCatalogCompatibility|TestFormatterComposition"` passed both focused
+  tests. The first attempt with the environment's macOS Go cache did not reach
+  compilation because the sandbox denied that cache path; the task-scoped
+  cache retry is the behavioral evidence.
+- `rtk git diff --check` exited 0 after the guide adoption.
+
+### Acceptance-criterion evidence
+
+1. Both guide managed blocks match their regenerated goldens exactly. The
+   docs-layout block contains `kind: rollup`, `members:`, `_archived/`,
+   `absorbed_by:`, and the one-result Triage contract; the secondbrain block
+   contains every Inbox Entry field and `_triaged/` positional status.
+2. The secondbrain module, generated managed block, and repository-owned access
+   statements all make `inbox/**` the only writable namespace. Exact preimage
+   comparison proves the secret-safety clause is unchanged.
+3. The focused forbidden-obligation assertion exited 0, and diff inspection
+   found only permission and contract shapes. Inbox-first skill steps,
+   session-end capture obligations, and research-capture obligations remain
+   outside this diff.
+4. The final two-pass regeneration sequence exited 0 and ended with
+   `{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}`.
+5. The 20 changed paths are the two authorized modules, two authorized guides,
+   this Task file, two formatter goldens, one profile digest pin, five
+   Source Baseline corpus/manifest/index artifacts, three catalog
+   digest/normalization/diagnostic artifacts, and four plan-characterization
+   goldens. No path outside the authorization boundary or ADR-0081 fallout is
+   changed.
+
+### Follow-up
+
+- The focused non-update
+  `TestReadoptionCompatibilityMaintainedFixture` check reached the assertion
+  and failed because the regenerated Source Baseline now correctly has 111
+  entries while `internal/baseline/preservation_test.go` still pins 106. That
+  Go file is outside this tooling Task's exact authorization. The Go-owned
+  consistency-check slice must update the named expectation before the full
+  repository gate; this Task does not widen its diff to do so.
+- The Daemon-owned commands under `## Verification` were not run in this Agent
+  turn. Task status remains Daemon-owned.

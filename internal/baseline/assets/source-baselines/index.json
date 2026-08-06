@@ -65,12 +65,15 @@
         "clause.context.backlog-01-operational-contract",
         "clause.context.backlog-02-finding-boundary",
         "clause.context.findings-01-frontmatter",
+        "clause.context.findings-08-rollup",
+        "clause.context.findings-09-archive",
         "clause.context.findings-02-pending",
         "clause.context.findings-03-partial",
         "clause.context.findings-04-deferred",
         "clause.context.findings-05-done",
         "clause.context.findings-06-append-evidence",
         "clause.context.findings-07-update-timestamp",
+        "clause.context.inbox-01-triage",
         "clause.spec.keep-artifacts-in-spec-folder",
         "clause.spec.specs-are-downstream-artifacts",
         "clause.context.read-domain-contract",
@@ -91,6 +94,8 @@
         "contract.secondbrain.protocol",
         "clause.secondbrain.01-consult-triggers",
         "clause.secondbrain.02-query-order",
+        "clause.secondbrain.inbox-write-permission",
+        "clause.secondbrain.inbox-entry-contract",
         "clause.secondbrain.prohibit-writes",
         "clause.secondbrain.prohibit-secret-access",
         "clause.secondbrain.cite-used-files",
@@ -114,9 +119,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 106,
-      "corpusDigest": "80eaee8a0c25e85bc712600b43273b7cf581eb28477899b65648180aee45f4ca",
-      "manifestDigest": "232b37e31ec7d55262dba3f03575da6bca51ca9fa3f2295647abb5bb863eb29a"
+      "entryCount": 111,
+      "corpusDigest": "40f71adc8f6773da710d1bfd7018fb97e657f1a06c66e951bfdc4a2ab853f9e1",
+      "manifestDigest": "292248669cc0d24f34988a353dace3be47f0baad0355294a9213d4ef1775459e"
     }
   ]
 }
