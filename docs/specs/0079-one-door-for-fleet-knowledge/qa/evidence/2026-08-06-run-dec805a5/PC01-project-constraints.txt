@@ -1,0 +1,34 @@
+Project Constraint and protected-tooling audit
+build: 444d1b0e97404e4de61e692b656884820dcbd019
+
+Constraint accounting:
+- PRD and TechSpec both account for identifier strategy as not applicable, with docs/agents/domain.md.
+- PRD and TechSpec both account for authentication and HTTP as not applicable, with docs/agents/agent-instructions.md.
+- PRD and TechSpec both account for active ADRs 0080, 0081, 0091, 0092, 0093, 0094, and 0095.
+- PRD and TechSpec both identify tooling authority and cite docs/workflow/authorizations/2026-08-06-fleet-knowledge-door.md.
+
+Chronology (all merge-base ancestry checks exited 0):
+- authorization: 93e41d33 (2026-08-06 09:47 -0300)
+- Task 02 protected edit: 09a3560b (10:43)
+- Task 06 protected edit: dc5539fb (11:12)
+- Task 08 separate consequent correction: 6a551ea5 (12:04)
+- Task 09 protected edit: 444d1b0e (12:41)
+
+Task 02 diff-tree: 20 paths. The causal files are the two authorized modules and guides; the remaining baseline paths are generated fallout; task_02.md is the assigned Task file.
+Task 06 diff-tree: 24 paths. The causal files are the two authorized Skills, mirrors, modules, and guides; the remaining baseline paths are generated fallout; task_06.md is the assigned Task file.
+Task 08 diff-tree: task_08.md and internal/baseline/preservation_test.go only. It is a separate consequent correction after Tasks 02/06.
+Task 09 diff-tree: 21 paths. It combines the protected module/guide causes and generated baseline fallout with task_09.md and internal/baseline/preservation_test.go.
+
+Fresh regeneration proof:
+- `rtk make baseline-digests` exited 0.
+- It reported `changed:false` and "derived artifacts already match their canonical sources".
+- Post-command status contained only this QA report and its evidence.
+
+Blocking authorization-shape problem:
+- Commit 444d1b0e adds four clauses to the authorized protected modules and, in the same commit, hand-edits internal/baseline/preservation_test.go from maintainedSourceBaselineEntries 114 to 118.
+- The authorization's exact bounded paths do not include internal/baseline/preservation_test.go.
+- ADR-0081 covers pins rewritten by the sanctioned regeneration command; this declared test expectation is authored by hand and therefore is not deterministic digest fallout.
+- The protected-tooling choreography requires a consequent fix to land in a separate commit after the causing Task commit. Folding it into 444d1b0e makes the cause/fix ordering untraceable at the required commit boundary.
+
+Unblocking action:
+Re-author Task 09 as a protected-edit commit limited to its authorized causes and deterministic generated fallout, followed by a separate consequent-fix commit that moves the maintained Source Baseline expectation, with express authority if the maintainer intends that protected boundary to include the hand-authored expectation.

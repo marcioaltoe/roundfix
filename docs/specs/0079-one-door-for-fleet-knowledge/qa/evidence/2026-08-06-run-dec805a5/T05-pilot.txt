@@ -1,0 +1,8 @@
+Fresh Task 05 artifact audit:
+- pilot-report.md contains destination: secondbrain and destination: roundfix.
+- Capture commits are full hashes 93bd7b35b77a356a3d2d50989de93565b1e85dbb and e982c0137ad61b5cf82de0fa8f63b9c5c325412e.
+- capture_to_durability_seconds values are 50 and 24, both below 60.
+- The report records the qmd check result and exact resolved_to Backlog path.
+- docs/backlog/2026-08-06-atomic-inbox-capture-helper.md is type feat, status open, and cites the exact inbox/roundfix provenance.
+
+These in-repository artifacts satisfy Task 05 acceptance. Replaying the external user journey is separately blocked by F-003 and is not credited here.
