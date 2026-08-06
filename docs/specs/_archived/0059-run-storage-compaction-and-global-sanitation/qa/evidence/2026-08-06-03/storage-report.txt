@@ -1,0 +1,22 @@
+Build: 0c6c94f376d7fc66d6cbe9e6b6a4a667ac5f6c5a
+Entry point: built `bin/roundfix`, working directory `/private/tmp` outside Git.
+
+Two fresh `HOME=<storage-home> bin/roundfix storage report` processes exited 0
+with byte-identical output:
+
+- Database: file 53,248; table 53,248; free 0; grouped 53,248; difference 0;
+  tolerance 4,096 bytes with the one-SQLite-page reason.
+- Tables: `active_run_locks=1`, `interactive_defaults=0`,
+  `run_agent_selections=2`, `run_events=2`, `runs=7`, plus SQLite metadata.
+- Repositories: six recorded repository groups, including repository `c` as
+  missing.
+- States: Active 1 and Clean 6.
+- Artifact Roots: six groups, including the missing recorded root; measured
+  and grouped bytes both 53,504 with difference 0.
+
+A complete SHA-256 comparison around a third report proved identical bytes for
+the Run Database and selected Active, terminal, Review, overridden, and
+outside-Home artifacts. With an empty isolated Home, the command exited 0,
+reported no Run Database, and did not create `.roundfix`. Unexpected input
+exited 2 with `does not accept flags or arguments` and the no-side-effects
+contract.
