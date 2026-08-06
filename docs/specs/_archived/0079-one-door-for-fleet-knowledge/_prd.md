@@ -1,9 +1,18 @@
 ---
 spec: 0079-one-door-for-fleet-knowledge
-status: active
+status: archived
 created: 2026-08-06
 surfaces: [backend, docs]
+archived: "2026-08-06"
+source_slug: 0079-one-door-for-fleet-knowledge
+unproven:
+    - a fleet inventory taken after the window, showing zero pending entries older than fourteen days
+    - the pilot's recorded brain commits, their one-path change sets, and the destination checkout's clean status before triage, all read fresh from their commit objects by the gate
+    - the triaged entry carrying `resolved_to` in the brain and the typed Backlog Entry citing its inbox provenance in this repository
+    - the pending research digest with its cited sources and the recorded advisory qmd result from the pilot
+    - 'a supervised session close that commits a pending `capture: auto` draft, followed by an independent later read proving it was not self-triaged'
 ---
+
 
 # One door for fleet knowledge
 
