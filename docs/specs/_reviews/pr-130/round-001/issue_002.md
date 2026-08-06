@@ -3,8 +3,7 @@ source: coderabbit
 pr: "130"
 round: 1
 round_created_at: "2026-08-06T03:34:01Z"
-status: invalid
-terminal_reason: "The Waves omission is historical drift in archived Spec 0065, whose artifacts must remain byte-identical."
+status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/0065-loop-order-and-verification-honesty
 head_sha: 7d35358ba9f77ceeda86ec5c34d7c4485a7eb8f9
@@ -56,8 +55,11 @@ _Source: Coding guidelines_
 
 ## Triage
 
-- Decision: `INVALID`
-- Notes: The graph includes `task_07` before terminal `task_06`, while the
-  Waves prose omits it. That inconsistency is in archived Spec 0065, which the
-  repository forbids backfilling or rewriting after completion.
+- Decision: `VALID`
+- Notes: Concurrent external commit `f803cbda` updated the Waves summary to
+  `3 → task_05 · 4 → task_07 · 5 → task_06`, matching the graph's
+  `task_07` → `task_06` dependency. Current-tree inspection confirms the
+  inconsistency is resolved; this Batch preserves that external change.
+- Focused evidence: inspected the graph nodes, dependency list, and corrected
+  Waves line in the current `_tasks.md`; all three agree.
 - Daemon Verification: `make verify` not run; Daemon-owned.

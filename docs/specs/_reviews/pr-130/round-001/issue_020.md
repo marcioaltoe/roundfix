@@ -97,4 +97,9 @@ _Source: Coding guidelines_
   shape returned 0 for success with a PASS line, 7 for failure even with a
   PASS-like line, and 1 for success with no discovered PASS line; a direct
   simulated full-suite failure returned 7.
+- Focused evidence: `rtk env GOCACHE=/Users/marcio/dev/roundfix-b/.gocache
+  rtk go run -buildvcs=false ./cmd/roundfix spec check
+  0069-review-run-targets-its-pull-request` exited 0 with no findings. It
+  explicitly skipped the absent Vocabulary Contract and references index.
+- Focused evidence: `rtk git diff --check` exited 0.
 - Daemon Verification: `make verify` not run; Daemon-owned.

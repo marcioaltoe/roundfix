@@ -72,12 +72,11 @@ environmental reason, and they had to be redone from scratch.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/watch -count=1 -run 'Interrupt|Moved|Target|Boundary' -v | grep -q -- "--- PASS"`
+- `output="$(go test ./internal/watch -count=1 -run 'Interrupt|Moved|Target|Boundary' -v 2>&1)"; status=$?; printf '%s\n' "$output"; [ "$status" -eq 0 ] || exit "$status"; printf '%s\n' "$output" | grep -q -- "--- PASS"`
   — expected: exit 0; the interruption tests ran and passed.
 - `go test ./internal/watch ./internal/cli ./internal/store -count=1`
   — expected: exit 0.
-- `go test -parallel 16 ./... 2>&1 | grep -q "^FAIL" && exit 1 || exit 0`
-  — expected: exit 0.
+- `go test -parallel 16 ./...` — expected: exit 0.
 - `git diff --name-only HEAD | grep -E "^(\.agents|skills)/" | grep -q . && exit 1 || exit 0`
   — expected: exit 0; the Skill is task_03's bounded scope.
 

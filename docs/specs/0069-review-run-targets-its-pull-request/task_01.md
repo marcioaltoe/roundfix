@@ -66,11 +66,10 @@ promises no side effects on refusal.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exit 0.
-- `go test ./internal/preflight -count=1 -run 'Target|Mismatch|Branch' -v | grep -q -- "--- PASS"`
+- `output="$(go test ./internal/preflight -count=1 -run 'Target|Mismatch|Branch' -v 2>&1)"; status=$?; printf '%s\n' "$output"; [ "$status" -eq 0 ] || exit "$status"; printf '%s\n' "$output" | grep -q -- "--- PASS"`
   — expected: exit 0; the comparison tests ran and passed.
 - `go test ./internal/preflight ./internal/cli -count=1` — expected: exit 0.
-- `go test -parallel 16 ./... 2>&1 | grep -q "^FAIL" && exit 1 || exit 0`
-  — expected: exit 0.
+- `go test -parallel 16 ./...` — expected: exit 0.
 - `git diff --name-only HEAD | grep -E "^(\.agents|skills)/" | grep -q . && exit 1 || exit 0`
   — expected: exit 0; the Skill is task_03's bounded scope.
 
