@@ -1,0 +1,203 @@
+---
+spec: 0080-cheap-detectors-run-before-the-gate
+status: active
+created: 2026-08-06
+surfaces: [backend, docs, infra]
+---
+
+# Cheap detectors run before the gate
+
+The QA gate is the slowest step in the loop and the one every fleet project
+pays for, because Roundfix is the shared harness. It is a single agent audit
+that rebuilds its whole criterion matrix from scratch every round, so a
+one-line correction costs a full audit — measured on Spec 0079 as 92 minutes
+for the first Run and then 29 and 30 minutes for rounds whose only work was
+moving one declared constant. Inside those rounds the authoritative
+`make verify` runs cold and complete at about 90 seconds, when the same gate
+on an unchanged tree would cost 4.9 seconds.
+
+This Spec claims an idea that was deliberately parked. Spec 0063,
+`qa-cycle-economics`, archived unimplemented on 2026-08-03 after Spec 0071's
+measurements disproved half its premise, and its closing line reads: *"Running
+cheap detectors ahead of the gate is the one live idea neither Spec claims. It
+is left unclaimed here rather than carried as scope nobody owns."* This Spec
+takes ownership of exactly that, on evidence 0063 did not have.
+
+## Project Constraints
+
+- Identifier strategy: not applicable — no new project-owned Internal
+  Identifier is minted. The QA Report filename contract
+  (`qa-report-YYYY-MM-DD[-NN].md`) and the Task Graph node ids already exist
+  and are unchanged. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — the work is local process
+  execution, Git reads, and file I/O. The gate's existing read-only
+  `gh pr list` lookup is untouched. Source: `docs/agents/go.md`.
+- Active ADR obligations: applicable. ADR-0080 keeps sole ownership of QA
+  verdict semantics and the three typed blocked-cause counts; a mechanical
+  stage may compute them and may never redefine them or make any verdict more
+  permissive. ADR-0091 keeps the gate a terminal `qa` Task node with its
+  dependency and post-report invalidation rules, so no stage may become a
+  command outside the graph or start before every dependency settles.
+  ADR-0088 keeps the gate authored rather than requested per Run. ADR-0015
+  keeps the report commit, the unresolved outcome on any non-pass verdict, and
+  the missing-or-unreadable-verdict-is-fail rule. ADR-0093 and ADR-0094 bound
+  every mechanical detector to citation-checkable facts, deterministic and
+  hermetic, skipped rather than failed when an input artifact is absent, and
+  non-regressive against Specs that pass today. ADR-0014 keeps Verification
+  commands Daemon-owned. ADR-0081 sanctions digest fallout of the authorized
+  edits. Source: `docs/agents/domain.md`.
+- Tooling authority: applicable — express maintainer authorization granted
+  2026-08-06 in the write-prd authorization gate, recorded at
+  `docs/workflow/authorizations/2026-08-06-proof-cost.md`; bounded files:
+  `.agents/skills/qa-gate/**` with its `skills/qa-gate/**` mirror regenerated
+  by `make skills-sync`, `internal/baseline/assets/modules/core.json`,
+  `internal/baseline/assets/modules/spec-workflow.json`, the `docs/agents/`
+  guides carrying those modules' regenerated managed-block postimages as
+  adoption, and `Makefile` when the incremental tier needs its own target.
+  Deterministic digest fallout is sanctioned by ADR-0081. Changes to
+  `.github/**` are outside this grant and return for their own.
+  Source: `docs/agents/agent-instructions.md`.
+
+## Goals
+
+- A defect a machine can find is found by a machine, in seconds, before any
+  agent turn is spent: the gate never spends a round discovering something a
+  grep, a Git read, or an exit status already knew.
+- A gate round costs what it proves: re-auditing a graph whose evidence did
+  not move is not a full audit.
+- Local verification is fast enough to run often, while the complete fresh
+  judgement still happens once, where it belongs.
+- Every fleet repository inherits the same two-tier contract, so the harness
+  is fast everywhere and not only here.
+
+## User Stories
+
+1. As a session whose Task left the repository red, I want the failure named
+   within seconds of the Task commit rather than at the end of the graph, so
+   the repair costs one Task instead of one gate round.
+2. As the Daemon running a gate after a corrective Task, I want the rows whose
+   evidence did not change carried forward from the previous report instead of
+   re-observed, so the round costs proportional to what moved.
+3. As the QA gate agent, I want the mechanical facts — changed paths versus
+   the authorization, commit shape, report shape, evidence-path resolution —
+   already computed and handed to me, so my turns go to reading intent and
+   driving journeys.
+4. As the QA gate agent, I want the prompt to tell me what changed since the
+   last report, because today it receives no changed-file context at all and
+   cannot scope anything.
+5. As a maintainer of an adopting repository, I want a declared two-tier
+   verification contract, so the local loop stays fast and CI still judges the
+   complete tree from a fresh run.
+6. As a reviewer of a gate report, I want a carried-forward row to state which
+   report established it and why it is still true, so speed never buys a stale
+   pass.
+
+## Core Features
+
+1. **A mechanical stage runs before the agent.** It computes, deterministically
+   and hermetically, the facts the gate performs by hand today: the tooling
+   authorization's bounded files against each Task commit's actual changed
+   paths; the commit shape rules, including a consequent fix folded into or
+   ordered before its cause; the report's structural contract — no pending
+   row, terminal per-row status, blocked strings matching their typed cause,
+   the three counts equal to the actual row counts; and evidence-path
+   resolution. Failures name the row they block.
+2. **The mechanical stage fails fast.** When it finds a blocking fact, the gate
+   reports it without spending the audit, and the round costs seconds.
+3. **The stage is citation-only.** Every detector reads declarations and
+   compares them with observable repository facts; none infers intent, judges
+   prose, or evaluates whether a decision was correct. Absent input artifacts
+   skip rather than fail.
+4. **The gate learns what changed.** The QA prompt carries the changed-path
+   context every Task prompt already carries, plus the previous report's
+   identity, so scoping is possible at all.
+5. **Rows carry forward on unchanged evidence.** A row whose declared inputs
+   did not move since the report that established it is carried forward by
+   reference, naming that report and the evidence that still holds. Anything
+   whose inputs moved is re-observed. The carry-forward rule is explicit,
+   auditable, and never applies to a row that failed or was blocked.
+6. **Two-tier verification, declared as contract.** A Baseline clause every
+   adopting repository inherits: local verification is incremental and fast,
+   CI runs the complete gate fresh, and the clause states which tier answers
+   which question. Roundfix adopts it for its own gate.
+7. **The verdict contract is untouched.** The three typed blocked-cause counts,
+   the pass/partial/fail rules, the report naming and recency contract, the
+   report commit, and the unresolved outcome on any non-pass all keep exactly
+   the semantics ADR-0080, ADR-0015, and ADR-0091 define. The mechanical stage
+   computes; it never relaxes.
+8. **The prompt drift is repaired.** The gate's Go-side contract text names all
+   three blocked-cause counts, matching ADR-0080, the skill, and the report
+   reader, which today it does not.
+
+## User Experience
+
+The visible change is what a red round looks like. Today a defect a grep could
+have caught arrives after half an hour of audit, described in the language of
+blocked rows. After this Spec it arrives in seconds, naming the file, the rule,
+and the fix — the shape the consistency checks already use. The second visible
+change is the report itself: a carried-forward row reads as a citation to the
+round that proved it, so a reader can always see which evidence is fresh and
+which is inherited. An unchanged graph re-gated after a docs-only correction
+should read as a short report with most rows cited and a handful re-observed.
+
+## Non-Goals / Out of Scope
+
+- Changing verdict semantics, the typed counts, or making any verdict more
+  permissive — ADR-0080 owns them and Specs 0063 and 0070 already set the
+  standing rule.
+- Moving the gate out of the Task Graph, or letting a stage run before its
+  dependencies settle — ADR-0091 stands.
+- Replacing the agent audit. Reading intent against delivery, driving
+  journeys, and classifying impact stay with the model; this Spec only stops
+  paying agent turns for machine facts.
+- Judging prose contradictions mechanically — ADR-0093's boundary holds, and
+  undeclared prose contradictions remain QA's.
+- Reducing test suite runtime itself. Spec 0071 owns suite cost; this Spec
+  consumes its result.
+- CI workflow changes, which are outside the recorded authorization.
+- Journal size and lock contention — Spec 0081 owns them.
+
+## Success Metrics
+
+- Time to a blocking mechanical verdict: seconds, not a gate round; measured
+  as wall-clock from gate start to reported failure for a defect the
+  mechanical stage owns.
+- A re-gated round whose only change was a corrective Task costs materially
+  less than a first round, with the reduction attributable to carried-forward
+  rows.
+- Local verification on an unchanged tree stays within the two-tier clause's
+  declared budget, and the complete fresh gate still runs in CI.
+- Zero verdict regressions: for every Spec in the corpus, the mechanical stage
+  plus audit reaches the same or a stricter verdict than the audit alone.
+- Every mechanical detector reports a citation — file, line, and fix line —
+  for each failure it raises.
+
+## Decisions
+
+- The gate stays one Task node with two stages inside it, rather than becoming
+  a separate command. ADR-0091 requires the node, and a stage that could run
+  outside the graph would reintroduce the flag ADR-0088 removed.
+- The mechanical stage inherits the consistency-check boundary — deterministic,
+  hermetic, citation-only, skip-on-absent — because that boundary is what
+  makes a check safe to run everywhere.
+- Carry-forward is opt-in per row and evidence-driven, never time-driven: a row
+  is carried because its inputs did not move, never because it passed recently.
+- The two-tier verification contract ships as a Baseline clause, so adopting
+  repositories inherit it rather than each re-deriving it.
+
+## Open Questions
+
+- What exactly makes a row's inputs "moved": a commit range, a changed-path
+  intersection with declared inputs, or a digest over the row's cited
+  evidence. Default: changed-path intersection, because the primitives already
+  exist.
+- Whether the mechanical stage runs as its own step before the agent session
+  or as the agent's first mandated action. Default: its own step, so its cost
+  and its failures are Daemon-owned and visible without an agent turn.
+- Whether a mechanical failure should end the round immediately or annotate
+  the matrix and let the audit continue on unaffected rows. Default: end the
+  round, matching how the gate already refuses to replay flows after an
+  authorization-shape failure.
+- Whether the fast local tier belongs in the `Makefile` or in a Roundfix
+  command. Default: `Makefile`, since the grant covers it and adopting
+  repositories already run `make verify`.

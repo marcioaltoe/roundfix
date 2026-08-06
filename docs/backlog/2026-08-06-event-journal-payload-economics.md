@@ -1,8 +1,8 @@
 ---
 type: perf # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: promoted # open | promoted | declined
 created: 2026-08-06
-spec: null # Spec slug when status: promoted
+spec: 0081-a-journal-cheap-to-write-and-keep
 reason: null # required when status: declined
 ---
 
