@@ -1,0 +1,53 @@
+Build: 0c6c94f376d7fc66d6cbe9e6b6a4a667ac5f6c5a
+Entry point: built `bin/roundfix` with isolated Roundfix Homes.
+
+Preview and apply
+
+The scratch database had 3,035,136 bytes after inserting and deleting rows to
+leave reclaimable SQLite pages.
+
+`HOME=<compaction-home> bin/roundfix gc compact` exited 0:
+
+- Bytes before: 3,035,136
+- Bytes reclaimable: 2,981,888
+- Bytes after projected: 53,248
+
+The database remained 3,035,136 bytes after preview. After the Active Run was
+completed, `HOME=<compaction-home> bin/roundfix gc compact --apply` exited 0:
+
+- Bytes before: 3,035,136
+- Bytes reclaimed: 2,981,888
+- Bytes after: 53,248
+
+The resulting file measured 53,248 bytes. A fresh connection returned
+`PRAGMA quick_check=ok`; a fresh public preview reported 53,248 before, 0
+reclaimable, and 53,248 projected after.
+
+Safety refusals
+
+- With `run_active` present, built `gc compact --apply` exited 1 and named
+  `Active Run "run_active" in state "Active"`. The file size stayed
+  3,035,136 bytes.
+- With a separate SQLite writer holding `BEGIN IMMEDIATE`, built
+  `gc compact --apply` exited 1 and named `another Run Database connection can
+  be writing` plus `SQLITE_BUSY`. The file size stayed 53,248 bytes.
+- Current-build focused CLI tests passed the Active Run, other-writer, and
+  injected insufficient-capacity command paths, including the measured
+  `shortfall=1` refusal and unchanged database size.
+- Current-build store tests passed insufficient-capacity-before-mutation and
+  stale-preview-preserves-bytes, plus preview/result reconciliation and the
+  no-automatic-compaction retention case.
+
+Interruption and reopen
+
+A separate scratch database measured 1,651,716,096 bytes with 200,002 live
+Run Event rows and reclaimable pages. Built `gc compact --apply` was interrupted
+with `Ctrl-C` while running and exited 1. A fresh SQLite connection returned
+all 200,002 rows and `PRAGMA quick_check=ok`. A fresh built
+`roundfix storage report` reopened it and reconciled file/table/free bytes with
+a 4,096-byte difference, equal to the declared one-page tolerance.
+
+Focused commands exited 0:
+
+- `rtk env GOCACHE=<scratch> go test ./internal/store -count=1 -run '^Test(CompactionPreviewMatchesResultWithinDeclaredTolerance|CompactRefusesActiveRunAndPreservesDatabaseBytes|CompactRefusesAnotherWriterAndPreservesDatabaseBytes|CompactRefusesInsufficientTemporaryCapacityBeforeMutation|CompactRefusesStalePreviewAndPreservesDatabaseBytes|PruneTerminalRunsNeverVacuumsAllocatedPages)$' -v`
+- `rtk env GOCACHE=<scratch> go test ./internal/cli -count=1 -run '^TestRunGCCompact(PreviewsAndAppliesMeasuredBytes|PreviewReportsStorageMeasurementWhenWriterAdvances|RefusalsNameCause|RejectsUnsupportedInput)$' -v`

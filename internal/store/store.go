@@ -75,8 +75,9 @@ var terminalStates = []string{
 }
 
 type Store struct {
-	db  *sql.DB
-	now func() time.Time
+	db                *sql.DB
+	now               func() time.Time
+	temporaryCapacity func(path string) (int64, error)
 }
 
 type Run struct {
@@ -249,8 +250,9 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 	db.SetMaxOpenConns(1)
 
 	store := &Store{
-		db:  db,
-		now: func() time.Time { return time.Now().UTC() },
+		db:                db,
+		now:               func() time.Time { return time.Now().UTC() },
+		temporaryCapacity: availableTemporaryCapacity,
 	}
 	if err := store.migrate(ctx); err != nil {
 		_ = db.Close()
@@ -264,6 +266,18 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 // carry the supported schema version, otherwise a typed SchemaVersionError
 // names the migration remediation instead of failing on a later query.
 func OpenReader(ctx context.Context, homeDir string) (*Store, error) {
+	return openReader(ctx, homeDir, readerDSN)
+}
+
+// OpenStorageReader opens the Run Database as an immutable read-only file.
+// Unlike the live event reader, SQLite creates no WAL or shared-memory
+// sidecars for this connection, so measuring storage leaves the directory
+// byte-identical. It never migrates or checkpoints the database.
+func OpenStorageReader(ctx context.Context, homeDir string) (*Store, error) {
+	return openReader(ctx, homeDir, storageReaderDSN)
+}
+
+func openReader(ctx context.Context, homeDir string, dataSource func(string) string) (*Store, error) {
 	if strings.TrimSpace(homeDir) == "" {
 		return nil, errors.New("open Run Database reader: home directory is required")
 	}
@@ -272,14 +286,15 @@ func OpenReader(ctx context.Context, homeDir string) (*Store, error) {
 		return nil, fmt.Errorf("open Run Database reader %q: %w", path, err)
 	}
 
-	db, err := sql.Open("sqlite", readerDSN(path))
+	db, err := sql.Open("sqlite", dataSource(path))
 	if err != nil {
 		return nil, fmt.Errorf("open Run Database reader %q: %w", path, err)
 	}
 	db.SetMaxOpenConns(1)
 	store := &Store{
-		db:  db,
-		now: func() time.Time { return time.Now().UTC() },
+		db:                db,
+		now:               func() time.Time { return time.Now().UTC() },
+		temporaryCapacity: availableTemporaryCapacity,
 	}
 	if err := db.PingContext(ctx); err != nil {
 		_ = db.Close()
@@ -317,6 +332,10 @@ func readerDSN(path string) string {
 	return "file:" + path + "?mode=ro" +
 		fmt.Sprintf("&_pragma=busy_timeout(%d)", busyTimeoutMillis) +
 		"&_pragma=foreign_keys(1)"
+}
+
+func storageReaderDSN(path string) string {
+	return "file:" + path + "?mode=ro&immutable=1&_pragma=foreign_keys(1)"
 }
 
 func (store *Store) Close() error {

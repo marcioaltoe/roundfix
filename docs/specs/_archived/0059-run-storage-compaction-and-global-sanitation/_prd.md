@@ -1,9 +1,12 @@
 ---
 spec: 0059-run-storage-compaction-and-global-sanitation
-status: active
+status: archived
 created: 2026-07-28
 surfaces: [backend, cli, data, docs]
+archived: "2026-08-06"
+source_slug: 0059-run-storage-compaction-and-global-sanitation
 ---
+
 
 # Run storage compaction and global sanitation
 
@@ -37,7 +40,12 @@ Spec owns the database and artifact halves.
   retention contract's promise never to delete `runs` rows or Active Run
   locks is preserved unless this Spec's policy explicitly bounds a table.
   ADR-0053 is relation-only here: terminal Run Worktree reconciliation is
-  owned by Spec 0038 and remains out of scope. Source:
+  owned by Spec 0038 and remains out of scope. ADR-0080 owns QA verdict
+  semantics and ADR-0091 owns the authored QA gate as a typed Task node, under
+  which this Spec's graph is authored. ADR-0081 sanctions the deterministic
+  digest fallout of the authorized Skill synchronisation. ADR-0093 surfaces as
+  a relation candidate because it cites ADR-0080; it does not apply — it
+  governs the Spec Consistency Check's detection boundary. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: on
   2026-08-04 the maintainer authorized the queue-tail tooling boundaries,
@@ -48,6 +56,10 @@ Spec owns the database and artifact halves.
   `internal/baseline/testdata/catalog.digest`,
   `internal/baseline/testdata/catalog.normalized.json`,
   `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`, and
+  `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`,
+  `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`,
+  `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`,
+  `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`, and
   `internal/baseline/testdata/parity-corpus/v1/manifest.json`. No other
   protected tooling mutation is authorized. Source:
   `docs/agents/agent-instructions.md`.

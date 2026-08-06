@@ -1,0 +1,43 @@
+Build: bc44a3ac
+Fixture: storage-fixture.sql in isolated HOME, with durable Runs from six
+repository paths and six Artifact Roots.
+
+$ HOME=<isolated> ./bin/roundfix gc sanitize
+exit: 0
+mode: dry-run
+classifications: active, orphaned, missing, overridden, outside Roundfix Home,
+unsafe
+reclaimable: 2 directories, 144 bytes
+filesystem confirmation: eligible terminal, absent-Run, Active, recent,
+overridden, outside-Home, and Review Artifact files all still existed and
+retained their hashes.
+
+$ HOME=<isolated> ./bin/roundfix gc sanitize --apply
+exit: 0
+removed: run_old and run_absent directories
+reclaimed: 2 directories, 144 bytes
+preserved: Active Run directory, recent terminal Run directory, overridden
+root, outside-Home root, unsafe root, missing root, and Review Artifact
+filesystem confirmation: removed paths returned not-found; every preserved
+file retained its hash.
+database confirmation: Runs=7, Active Run locks=1, Run Events=2, Agent
+Selection records=2.
+
+$ HOME=<isolated> ./bin/roundfix gc sanitize --apply
+exit: 0
+removed: 0 directories
+reclaimed: 0 bytes
+filesystem confirmation: every preserved path still retained its hash.
+database confirmation: Runs=7, Active Run locks=1, Run Events=2, Agent
+Selection records=2; PRAGMA quick_check=ok.
+
+$ HOME=<isolated> ./bin/roundfix gc --dry-run
+exit: 0
+eligible terminal Runs: 5; Journal rows: 1; artifact bytes: 0.
+
+$ HOME=<isolated> ./bin/roundfix gc
+exit: 0
+Run rows considered: 5; Journal rows removed: 1; artifact bytes: 0.
+database confirmation: Runs=7, Active Run locks=1, Run Events=1, Agent
+Selection records=2; PRAGMA quick_check=ok. Active, recent, and Review Artifact
+hashes remained unchanged. Database file size remained 53,248 bytes.
