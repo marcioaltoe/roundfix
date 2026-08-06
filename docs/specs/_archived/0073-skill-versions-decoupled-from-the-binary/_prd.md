@@ -1,9 +1,14 @@
 ---
 spec: 0073-skill-versions-decoupled-from-the-binary
-status: active
+status: archived
 created: 2026-08-03
 surfaces: [backend, cli, docs]
+archived: "2026-08-06"
+source_slug: 0073-skill-versions-decoupled-from-the-binary
+unproven:
+    - a maintainer grant naming `skills-lock.json` for the three external Go Skills, followed by a bounded Task that records their provenance without creating any setup-snapshot entry
 ---
+
 
 # Skill versions decoupled from the binary
 
@@ -160,23 +165,17 @@ is this Spec's own work rather than a dependency on anyone else.
 
 ## Unreachable Acceptance
 
-- **Success Metric 7 — recorded provenance for the three external Go Skills.**
-  `golang-dependency-management`, `golang-safety`, and
-  `golang-structs-interfaces` carry no entry in `skills-lock.json`, which is
-  where every other external Skill records `source`, `sourceType`,
-  `skillPath`, and `computedHash`. Writing those entries changes a protected
-  lock and provenance file that this Spec's tooling authority does not reach:
-  the 2026-08-04 record bounds Spec 0073 to `Makefile` and owned-skill paths,
-  and explicitly keeps third-party Skills outside the grant.
-
-  A Task assigned this work on 2026-08-06 stopped at its Project Constraint
-  preflight and refused to widen its own boundary, which is the correct
-  behaviour. Reaching the metric needs a named maintainer grant for
-  `skills-lock.json` covering those three Skills; no such grant exists.
-
+- criterion: Success Metric 7 — the three Go skills added on 2026-08-02 carry
+  recorded provenance without a setup-snapshot entry
+  reason: recording it writes `skills-lock.json`, a protected lock and
+  provenance file outside this Spec's tooling authority; the 2026-08-04 record
+  bounds Spec 0073 to `Makefile` and owned-skill paths and explicitly keeps
+  third-party Skills outside the grant, and the Task assigned this work on
+  2026-08-06 stopped at its Project Constraint preflight rather than widen its
+  own boundary
   satisfied-by: a maintainer grant naming `skills-lock.json` for the three
   external Go Skills, followed by a bounded Task that records their provenance
-  without creating any setup-snapshot entry.
+  without creating any setup-snapshot entry
 
 ## Open Questions
 
