@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0059-run-storage-compaction-and-global-sanitation
-status: failed
+status: pending
 type: qa
 complexity: medium
 ---

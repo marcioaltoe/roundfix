@@ -67,6 +67,10 @@ So no Verification in this graph asserts a recorded number. Each asserts a
   `internal/baseline/testdata/catalog.digest`,
   `internal/baseline/testdata/catalog.normalized.json`,
   `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`, and
+  `internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json`,
+  `internal/baseline/testdata/plan-characterization/clean-adoption.golden.json`,
+  `internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json`,
+  `internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json`, and
   `internal/baseline/testdata/parity-corpus/v1/manifest.json`. No other
   protected tooling mutation is authorized. Source:
   `docs/agents/agent-instructions.md`.
