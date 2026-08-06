@@ -3,7 +3,7 @@ source: coderabbit
 pr: "130"
 round: 1
 round_created_at: "2026-08-06T03:34:01Z"
-status: pending
+status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/0065-loop-order-and-verification-honesty
 head_sha: 7d35358ba9f77ceeda86ec5c34d7c4485a7eb8f9
@@ -57,5 +57,15 @@ is returned.
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID`
+- Notes: `taskSectionLines` stopped only for level-one and level-two headings,
+  so a nested heading and its content were appended to the preceding numbered
+  requirement. It now ends the matched section at any valid ATX heading from
+  level one through six while preserving the exact `## <heading>` section
+  match.
+- Focused evidence: `rtk proxy env
+  GOCACHE=/Users/marcio/dev/roundfix-b/.gocache go test ./internal/spec -run
+  TestParseTaskDocumentDeclarations -count=1` exited 0 and excludes the nested
+  heading and its content while retaining the two declarations and source
+  lines.
+- Daemon Verification: `make verify` not run; Daemon-owned.

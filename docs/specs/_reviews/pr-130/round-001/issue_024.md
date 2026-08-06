@@ -3,7 +3,7 @@ source: coderabbit
 pr: "130"
 round: 1
 round_created_at: "2026-08-06T03:34:01Z"
-status: pending
+status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/0065-loop-order-and-verification-honesty
 head_sha: 7d35358ba9f77ceeda86ec5c34d7c4485a7eb8f9
@@ -56,5 +56,15 @@ Preserve the active Spec behavior and fallback selection order.
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID`
+- Notes: The archived fallback passed `_archived/<name>` where `Check` accepts
+  only one basename slug. Rather than couple a repository-wide invariant to
+  either active or archived Spec lifecycle state, the test now creates its own
+  minimal active carrier Spec in a temporary root and continues to check the
+  real repository's loop-order sources. This removes the invalid archived
+  input and the original active-Spec pinning failure together.
+- Focused evidence: `rtk proxy env
+  GOCACHE=/Users/marcio/dev/roundfix-b/.gocache go test ./internal/speccheck
+  -run 'Test(CheckLoopOrderRepositoryAgrees|CheckLoopOrderDivergent)$' -count=1`
+  exited 0 with the dedicated temporary carrier.
+- Daemon Verification: `make verify` not run; Daemon-owned.

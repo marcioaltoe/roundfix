@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -21,12 +22,18 @@ type taskFrontmatter struct {
 type taskDocument struct {
 	Frontmatter      taskFrontmatter
 	Title            string
+	TitleLine        int
 	StatusNormalized bool
 	Type             TaskType
 	Context          []TaskContextRef
-	Requirements     []string
-	RehearsalCases   []string
+	Requirements     []TaskDeclaration
+	RehearsalCases   []TaskDeclaration
 	Verification     []string
+}
+
+type taskMarkdownLine struct {
+	Text string
+	Line int
 }
 
 const maxTaskContextRefs = 50
@@ -49,12 +56,13 @@ func ReloadTask(specsRoot string, task *Task) error {
 		return MissingVerificationError{TaskID: task.ID, Path: path}
 	}
 	task.Title = document.Title
+	task.TitleLine = document.TitleLine
 	task.Status = Status(document.Frontmatter.Status)
 	task.StatusNormalized = document.StatusNormalized
 	task.Type = document.Type
 	task.Context = append([]TaskContextRef(nil), document.Context...)
-	task.Requirements = append([]string(nil), document.Requirements...)
-	task.RehearsalCases = append([]string(nil), document.RehearsalCases...)
+	task.Requirements = append([]TaskDeclaration(nil), document.Requirements...)
+	task.RehearsalCases = append([]TaskDeclaration(nil), document.RehearsalCases...)
 	task.Verification = document.Verification
 	return nil
 }
@@ -106,22 +114,25 @@ func parseTaskDocument(content []byte, taskPath string) (taskDocument, error) {
 	if err != nil {
 		return taskDocument{}, err
 	}
+	bodyLineOffset := bytes.Count(content[:len(content)-len(body)], []byte{'\n'})
+	title, titleLine := parseTaskTitle(body, bodyLineOffset)
 	return taskDocument{
 		Frontmatter:      frontmatter,
-		Title:            parseTaskTitle(body),
+		Title:            title,
+		TitleLine:        titleLine,
 		StatusNormalized: strings.TrimSpace(rawStatus) != normalizedStatus,
 		Type:             taskType,
 		Context:          contextRefs,
-		Requirements:     parseTaskRequirements(body),
-		RehearsalCases:   parseTaskSectionBullets(body, "Rehearsal Cases"),
+		Requirements:     parseTaskRequirements(body, bodyLineOffset),
+		RehearsalCases:   parseTaskSectionBullets(body, "Rehearsal Cases", bodyLineOffset),
 		Verification:     parseVerificationCommands(body),
 	}, nil
 }
 
 // parseTaskTitle extracts the title from the first level-one heading,
 // dropping the "Task NN:" prefix the task template mandates.
-func parseTaskTitle(body []byte) string {
-	for _, line := range strings.Split(string(body), "\n") {
+func parseTaskTitle(body []byte, lineOffset int) (string, int) {
+	for index, line := range strings.Split(string(body), "\n") {
 		line = strings.TrimSpace(line)
 		if !strings.HasPrefix(line, "# ") {
 			continue
@@ -129,54 +140,53 @@ func parseTaskTitle(body []byte) string {
 		title := strings.TrimSpace(strings.TrimPrefix(line, "# "))
 		if strings.HasPrefix(title, "Task ") {
 			if marker := strings.Index(title, ":"); marker >= 0 {
-				return strings.TrimSpace(title[marker+1:])
+				return strings.TrimSpace(title[marker+1:]), lineOffset + index + 1
 			}
 		}
-		return title
+		return title, lineOffset + index + 1
 	}
-	return ""
+	return "", 1
 }
 
 // parseTaskRequirements extracts numbered requirements and joins their
 // continuation lines without interpreting the requirement prose.
-func parseTaskRequirements(body []byte) []string {
-	var requirements []string
-	for _, line := range taskSectionLines(body, "Requirements") {
-		trimmed := strings.TrimSpace(line)
+func parseTaskRequirements(body []byte, lineOffset int) []TaskDeclaration {
+	var requirements []TaskDeclaration
+	for _, sourceLine := range taskSectionLines(body, "Requirements", lineOffset) {
+		trimmed := strings.TrimSpace(sourceLine.Text)
 		if trimmed == "" {
 			continue
 		}
 		if item, ok := numberedTaskItem(trimmed); ok {
-			requirements = append(requirements, item)
+			requirements = append(requirements, TaskDeclaration{Text: item, Line: sourceLine.Line})
 			continue
 		}
 		if len(requirements) > 0 {
-			requirements[len(requirements)-1] += " " + trimmed
+			requirements[len(requirements)-1].Text += " " + trimmed
 		}
 	}
 	return requirements
 }
 
-func parseTaskSectionBullets(body []byte, heading string) []string {
-	var entries []string
-	for _, line := range taskSectionLines(body, heading) {
-		trimmed := strings.TrimSpace(line)
+func parseTaskSectionBullets(body []byte, heading string, lineOffset int) []TaskDeclaration {
+	var entries []TaskDeclaration
+	for _, sourceLine := range taskSectionLines(body, heading, lineOffset) {
+		trimmed := strings.TrimSpace(sourceLine.Text)
 		if strings.HasPrefix(trimmed, "- ") {
-			entries = append(entries, strings.TrimSpace(strings.TrimPrefix(trimmed, "- ")))
+			entries = append(entries, TaskDeclaration{
+				Text: strings.TrimSpace(strings.TrimPrefix(trimmed, "- ")),
+				Line: sourceLine.Line,
+			})
 		}
 	}
 	return entries
 }
 
-func taskSectionLines(body []byte, heading string) []string {
-	var lines []string
+func taskSectionLines(body []byte, heading string, lineOffset int) []taskMarkdownLine {
+	var lines []taskMarkdownLine
 	inSection := false
-	for _, line := range strings.Split(string(body), "\n") {
+	for index, line := range strings.Split(string(body), "\n") {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "# ") {
-			inSection = false
-			continue
-		}
 		if strings.HasPrefix(trimmed, "## ") {
 			if inSection {
 				break
@@ -184,11 +194,22 @@ func taskSectionLines(body []byte, heading string) []string {
 			inSection = strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")) == heading
 			continue
 		}
+		if inSection && isTaskMarkdownHeading(trimmed) {
+			break
+		}
 		if inSection {
-			lines = append(lines, line)
+			lines = append(lines, taskMarkdownLine{Text: line, Line: lineOffset + index + 1})
 		}
 	}
 	return lines
+}
+
+func isTaskMarkdownHeading(line string) bool {
+	level := 0
+	for level < len(line) && level < 6 && line[level] == '#' {
+		level++
+	}
+	return level > 0 && (level == len(line) || line[level] == ' ' || line[level] == '\t')
 }
 
 func numberedTaskItem(line string) (string, bool) {

@@ -17,6 +17,7 @@ const (
 	loopOrderShippedClausePath   = "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"
 	loopOrderRepositoryGuidePath = "docs/agents/autonomous-work.md"
 	loopOrderBaselineModulePath  = "internal/baseline/assets/modules/autonomous-work.json"
+	loopOrderCarrierSlug         = "loop-order"
 )
 
 func TestCheckLoopOrderDivergent(t *testing.T) {
@@ -67,7 +68,7 @@ func TestCheckLoopOrderDivergent(t *testing.T) {
 				t.Fatalf("write divergent %s fixture: %v", tt.name, err)
 			}
 
-			result, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, "loop-order")
+			result, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, loopOrderCarrierSlug)
 			if err != nil {
 				t.Fatalf("Check(loop-order) error = %v", err)
 			}
@@ -96,45 +97,15 @@ func TestCheckLoopOrderDivergent(t *testing.T) {
 	}
 }
 
-// anyCheckableSpecSlug returns an active Spec slug, falling back to an
-// archived one. Repository-wide rules need some Spec to run against and do not
-// care which.
-func anyCheckableSpecSlug(t *testing.T, specsRoot string) string {
-	t.Helper()
-	for _, dir := range []string{specsRoot, filepath.Join(specsRoot, "_archived")} {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-		for _, entry := range entries {
-			if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
-				continue
-			}
-			if _, err := os.Stat(filepath.Join(dir, entry.Name(), "_prd.md")); err != nil {
-				continue
-			}
-			if dir == specsRoot {
-				return entry.Name()
-			}
-			return filepath.Join("_archived", entry.Name())
-		}
-	}
-	t.Fatalf("no Spec with a _prd.md found under %s", specsRoot)
-	return ""
-}
-
 func TestCheckLoopOrderRepositoryAgrees(t *testing.T) {
 	t.Parallel()
 
 	repoRoot := characterizationRepositoryRoot(t)
-	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	specsRoot := writeLoopOrderCarrier(t, t.TempDir())
 	// SC-LOOP-ORDER-DIVERGENT reads the repository's own order statements, so
-	// the Spec is only a vehicle for running the check. Naming one pins this
-	// test to a folder that archiving moves and that the repository's rules
-	// allow deleting outright — which is how it broke the moment Spec 0065
-	// archived itself.
-	slug := anyCheckableSpecSlug(t, specsRoot)
-	result, err := speccheck.Check(specsRoot, repoRoot, slug)
+	// a dedicated carrier keeps the check independent from active and archived
+	// repository Specs.
+	result, err := speccheck.Check(specsRoot, repoRoot, loopOrderCarrierSlug)
 	if err != nil {
 		t.Fatalf("Check(repository) error = %v", err)
 	}
@@ -167,15 +138,22 @@ func writeLoopOrderFixture(t *testing.T) string {
 		}
 	}
 
-	specDir := filepath.Join(targetRoot, "docs", "specs", "loop-order")
+	writeLoopOrderCarrier(t, targetRoot)
+	return targetRoot
+}
+
+func writeLoopOrderCarrier(t *testing.T, root string) string {
+	t.Helper()
+	specsRoot := filepath.Join(root, "docs", "specs")
+	specDir := filepath.Join(specsRoot, loopOrderCarrierSlug)
 	if err := os.MkdirAll(specDir, 0o755); err != nil {
 		t.Fatalf("create fixture Spec: %v", err)
 	}
-	const prd = "---\nspec: loop-order\nstatus: active\n---\n\n# Loop order\n"
+	const prd = "---\nspec: " + loopOrderCarrierSlug + "\nstatus: active\n---\n\n# Loop order\n"
 	if err := os.WriteFile(filepath.Join(specDir, "_prd.md"), []byte(prd), 0o644); err != nil {
 		t.Fatalf("write fixture PRD: %v", err)
 	}
-	return targetRoot
+	return specsRoot
 }
 
 func TestCheckADRUnlisted(t *testing.T) {

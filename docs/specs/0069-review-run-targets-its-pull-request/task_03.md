@@ -62,6 +62,14 @@ teach both before the Spec can close. This is the authorized tooling Task.
 
 ## Verification
 
+- `rg -Fq "Pull Request's head branch" .agents/skills/roundfix/SKILL.md && rg -q 'exit .2.' .agents/skills/roundfix/SKILL.md`
+  — expected: exit 0; the Skill states the target validation and exit code.
+- `rg -Fq 'creates no Run' .agents/skills/roundfix/SKILL.md && rg -Fq 'no side effects' .agents/skills/roundfix/SKILL.md && rg -q 'git switch .*head.branch' .agents/skills/roundfix/SKILL.md`
+  — expected: exit 0; the Skill states the refusal effects and recovery command.
+- `rg -Fq 'Review Issues stay unsettled' .agents/skills/roundfix/SKILL.md && rg -Fq 'not a Review Issue failure' .agents/skills/roundfix/SKILL.md && rg -qi 'terminal interruption' .agents/skills/roundfix/SKILL.md`
+  — expected: exit 0; the Skill distinguishes the terminal interruption.
+- `rg -Fq 'never checks out or moves the working tree' .agents/skills/roundfix/SKILL.md`
+  — expected: exit 0; the Skill states the no-checkout rule.
 - `make skills-sync-check` — expected: exit 0; the mirror matches.
 - `go run -buildvcs=false ./cmd/roundfix skills check` — expected: exit 0.
 - `make verify` — expected: exit 0.

@@ -24,9 +24,9 @@ var (
 )
 
 type declaredRequirementClause struct {
-	Requirement int
-	Forbidden   bool
-	Words       []string
+	Line      int
+	Forbidden bool
+	Words     []string
 }
 
 // ContradictoryRequirements reports one requirement forbidding a state that
@@ -51,8 +51,8 @@ func ContradictoryRequirements(task spec.Task) (Finding, bool) {
 				Severity: SeverityError,
 				Summary:  task.File + " declares MUST and MUST NOT requirements over named subject " + subject,
 				Where: []Location{
-					{Path: task.File, Line: needed.Requirement + 1},
-					{Path: task.File, Line: forbidden.Requirement + 1},
+					{Path: task.File, Line: needed.Line},
+					{Path: task.File, Line: forbidden.Line},
 				},
 				Fix: "Rewrite one requirement so the declared state of " + subject + " is consistent.",
 			}, true
@@ -67,21 +67,21 @@ func UndeclaredRehearsal(task spec.Task) (Finding, bool) {
 	if !declaresGateRehearsal(task.Title) {
 		return Finding{}, false
 	}
-	for _, entry := range task.RehearsalCases {
-		if !completeRehearsalCase(entry) {
-			return undeclaredRehearsalFinding(task), true
+	for _, declaration := range task.RehearsalCases {
+		if !completeRehearsalCase(declaration.Text) {
+			return undeclaredRehearsalFinding(task, declaration.Line), true
 		}
 	}
 	if len(task.RehearsalCases) == 0 {
-		return undeclaredRehearsalFinding(task), true
+		return undeclaredRehearsalFinding(task, task.TitleLine), true
 	}
 	return Finding{}, false
 }
 
-func declaredRequirementClauses(requirements []string) []declaredRequirementClause {
+func declaredRequirementClauses(requirements []spec.TaskDeclaration) []declaredRequirementClause {
 	var clauses []declaredRequirementClause
-	for requirementIndex, requirement := range requirements {
-		text := modalMentionPattern.ReplaceAllString(requirement, "declared modal pair")
+	for _, requirement := range requirements {
+		text := modalMentionPattern.ReplaceAllString(requirement.Text, "declared modal pair")
 		matches := requirementModalPattern.FindAllStringSubmatchIndex(text, -1)
 		for matchIndex, match := range matches {
 			end := len(text)
@@ -93,9 +93,9 @@ func declaredRequirementClauses(requirements []string) []declaredRequirementClau
 				continue
 			}
 			clauses = append(clauses, declaredRequirementClause{
-				Requirement: requirementIndex,
-				Forbidden:   match[2] >= 0,
-				Words:       significantRequirementWords(clauseText),
+				Line:      requirement.Line,
+				Forbidden: match[2] >= 0,
+				Words:     significantRequirementWords(clauseText),
 			})
 		}
 	}
@@ -186,12 +186,15 @@ func completeRehearsalCase(entry string) bool {
 	return caseText != "" && observationText != ""
 }
 
-func undeclaredRehearsalFinding(task spec.Task) Finding {
+func undeclaredRehearsalFinding(task spec.Task, line int) Finding {
+	if line < 1 {
+		line = 1
+	}
 	return Finding{
 		Code:     CodeRehearsalUndeclared,
 		Severity: SeverityError,
 		Summary:  task.File + " declares a gate rehearsal but has no complete Rehearsal Cases declaration",
-		Where:    []Location{{Path: task.File, Line: 1}},
+		Where:    []Location{{Path: task.File, Line: line}},
 		Fix:      "Add a ## Rehearsal Cases section with one `- Case: <case>; Observation: <observation>` entry for each case.",
 	}
 }

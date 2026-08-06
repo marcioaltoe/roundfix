@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -202,6 +203,10 @@ complexity: low
    the full rehearsal.
 2. MUST NOT keep the named gate enabled.
 
+### Notes
+
+This nested section is not part of the requirement declaration.
+
 ## Rehearsal Cases
 
 - Case: contradictory requirements; Observation: spec check reports the contradiction.
@@ -215,19 +220,22 @@ complexity: low
 		t.Fatalf("parseTaskDocument: %v", err)
 	}
 
-	wantRequirements := []string{
-		"MUST keep the named gate enabled across the full rehearsal.",
-		"MUST NOT keep the named gate enabled.",
+	wantRequirements := []TaskDeclaration{
+		{Text: "MUST keep the named gate enabled across the full rehearsal.", Line: 13},
+		{Text: "MUST NOT keep the named gate enabled.", Line: 15},
 	}
-	if strings.Join(document.Requirements, "\n") != strings.Join(wantRequirements, "\n") {
+	if !reflect.DeepEqual(document.Requirements, wantRequirements) {
 		t.Errorf("Requirements = %#v, want %#v", document.Requirements, wantRequirements)
 	}
-	wantCases := []string{
-		"Case: contradictory requirements; Observation: spec check reports the contradiction.",
-		"Case: declared cases; Observation: the focused test records the result.",
+	wantCases := []TaskDeclaration{
+		{Text: "Case: contradictory requirements; Observation: spec check reports the contradiction.", Line: 23},
+		{Text: "Case: declared cases; Observation: the focused test records the result.", Line: 24},
 	}
-	if strings.Join(document.RehearsalCases, "\n") != strings.Join(wantCases, "\n") {
+	if !reflect.DeepEqual(document.RehearsalCases, wantCases) {
 		t.Errorf("RehearsalCases = %#v, want %#v", document.RehearsalCases, wantCases)
+	}
+	if document.TitleLine != 9 {
+		t.Errorf("TitleLine = %d, want 9", document.TitleLine)
 	}
 }
 

@@ -3,7 +3,7 @@ source: coderabbit
 pr: "130"
 round: 1
 round_created_at: "2026-08-06T03:34:01Z"
-status: pending
+status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/0065-loop-order-and-verification-honesty
 head_sha: 7d35358ba9f77ceeda86ec5c34d7c4485a7eb8f9
@@ -57,5 +57,20 @@ text and replay behavior.
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `VALID`
+- Notes: The public `Check` path reparsed Markdown to repair the detector's
+  ordinal locations, but `ContradictoryRequirements` and
+  `UndeclaredRehearsal` themselves still returned unrelated lines. Task
+  declarations now retain their text and 1-based source line, Task titles retain
+  their source line for a missing rehearsal declaration, and the detectors use
+  that metadata directly. The redundant Markdown remapping was removed while
+  preserving replay locations.
+- Red evidence: `rtk proxy env
+  GOCACHE=/Users/marcio/dev/roundfix-b/.gocache go test ./internal/speccheck
+  -run TestCoherenceFindingsRetainDeclarationSourceLines -count=1` failed before
+  the fix with contradiction lines `2,1` instead of `13,15` and rehearsal line
+  `1` instead of `9`.
+- Focused evidence: `rtk proxy env
+  GOCACHE=/Users/marcio/dev/roundfix-b/.gocache go test ./internal/spec
+  ./internal/speccheck -count=1` exited 0 after the fix.
+- Daemon Verification: `make verify` not run; Daemon-owned.

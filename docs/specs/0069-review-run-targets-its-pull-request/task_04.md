@@ -43,10 +43,24 @@ that an environmental stop no longer reads as a defect.
 
 ## Verification
 
-- `ls docs/specs/0069-review-run-targets-its-pull-request/qa/ | grep -q "qa-report-"`
-  — expected: exit 0; a dated QA report exists.
-- `grep -l "verdict:" docs/specs/0069-review-run-targets-its-pull-request/qa/qa-report-*.md | grep -q qa-report`
-  — expected: exit 0; the report carries a machine-readable verdict.
+- `sh -c 'report=$(ls -1t docs/specs/0069-review-run-targets-its-pull-request/qa/qa-report-*.md 2>/dev/null | head -n 1); test -n "$report" && rg -q "^status: closed$" "$report" && rg -q "^verdict: pass$" "$report" && rg -q "^rows_blocked_environment: [0-9]+$" "$report" && rg -q "^rows_blocked_finding: [0-9]+$" "$report" && rg -q "^rows_blocked_declared: [0-9]+$" "$report" && ! rg -q "^\\| QA-[0-9]+ \\|.*\\| (pending|planned) \\|" "$report"'`
+  — expected: exit 0; the latest report is closed and passing, carries typed
+  blocked-row counts, and leaves no planned row pending.
+- `sh -c 'report=$(ls -1t docs/specs/0069-review-run-targets-its-pull-request/qa/qa-report-*.md 2>/dev/null | head -n 1); row=$(rg -i "^\\| QA-[0-9]+ \\| .*Preflight.*refus" "$report"); test -n "$row" && printf "%s\\n" "$row" | rg -q "\\| pass \\|" && printf "%s\\n" "$row" | rg -q "\\[[^]]+\\]\\([^)]*\\.md"'`
+  — expected: exit 0; a passing result row links evidence for the Preflight
+  refusal.
+- `sh -c 'report=$(ls -1t docs/specs/0069-review-run-targets-its-pull-request/qa/qa-report-*.md 2>/dev/null | head -n 1); row=$(rg -i "^\\| QA-[0-9]+ \\| .*(mid-Run.*interrupt|checkout.*moved.*interrupt)" "$report"); test -n "$row" && printf "%s\\n" "$row" | rg -q "\\| pass \\|" && printf "%s\\n" "$row" | rg -q "\\[[^]]+\\]\\([^)]*\\.md"'`
+  — expected: exit 0; a passing result row links evidence for the mid-Run
+  interruption.
+- `sh -c 'report=$(ls -1t docs/specs/0069-review-run-targets-its-pull-request/qa/qa-report-*.md 2>/dev/null | head -n 1); row=$(rg -i "^\\| QA-[0-9]+ \\| .*artifact commit.*head branch" "$report"); test -n "$row" && printf "%s\\n" "$row" | rg -q "\\| pass \\|" && printf "%s\\n" "$row" | rg -q "\\[[^]]+\\]\\([^)]*\\.md"'`
+  — expected: exit 0; a passing result row links Git evidence that artifact
+  commits landed on the head branch.
+- `sh -c 'report=$(ls -1t docs/specs/0069-review-run-targets-its-pull-request/qa/qa-report-*.md 2>/dev/null | head -n 1); row=$(rg -i "^\\| QA-[0-9]+ \\| .*(checkout.*match.*unchanged|matching checkout.*unchanged)" "$report"); test -n "$row" && printf "%s\\n" "$row" | rg -q "\\| pass \\|" && printf "%s\\n" "$row" | rg -q "\\[[^]]+\\]\\([^)]*\\.md"'`
+  — expected: exit 0; a passing result row links non-regression evidence for a
+  matching checkout.
+- `sh -c 'report=$(ls -1t docs/specs/0069-review-run-targets-its-pull-request/qa/qa-report-*.md 2>/dev/null | head -n 1); row=$(rg -i "^\\| QA-[0-9]+ \\| .*(working tree.*not moved|moved no working tree)" "$report"); test -n "$row" && printf "%s\\n" "$row" | rg -q "\\| pass \\|" && printf "%s\\n" "$row" | rg -q "\\[[^]]+\\]\\([^)]*\\.md"'`
+  — expected: exit 0; a passing result row links evidence that Roundfix moved
+  no working tree.
 
 ## References
 
