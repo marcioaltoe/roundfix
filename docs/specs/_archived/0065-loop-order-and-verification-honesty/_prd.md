@@ -1,9 +1,12 @@
 ---
 spec: 0065-loop-order-and-verification-honesty
-status: active
+status: archived
 created: 2026-08-01
 surfaces: [backend, docs]
+archived: "2026-08-05"
+source_slug: 0065-loop-order-and-verification-honesty
 ---
+
 
 # Loop order and verification honesty
 
