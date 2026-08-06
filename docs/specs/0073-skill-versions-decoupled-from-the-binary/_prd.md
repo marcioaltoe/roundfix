@@ -158,6 +158,26 @@ is this Spec's own work rather than a dependency on anyone else.
   applied today still validates, no archived artifact is rewritten, and every
   digest protecting something Roundfix owns stays.
 
+## Unreachable Acceptance
+
+- **Success Metric 7 — recorded provenance for the three external Go Skills.**
+  `golang-dependency-management`, `golang-safety`, and
+  `golang-structs-interfaces` carry no entry in `skills-lock.json`, which is
+  where every other external Skill records `source`, `sourceType`,
+  `skillPath`, and `computedHash`. Writing those entries changes a protected
+  lock and provenance file that this Spec's tooling authority does not reach:
+  the 2026-08-04 record bounds Spec 0073 to `Makefile` and owned-skill paths,
+  and explicitly keeps third-party Skills outside the grant.
+
+  A Task assigned this work on 2026-08-06 stopped at its Project Constraint
+  preflight and refused to widen its own boundary, which is the correct
+  behaviour. Reaching the metric needs a named maintainer grant for
+  `skills-lock.json` covering those three Skills; no such grant exists.
+
+  satisfied-by: a maintainer grant naming `skills-lock.json` for the three
+  external Go Skills, followed by a bounded Task that records their provenance
+  without creating any setup-snapshot entry.
+
 ## Open Questions
 
 None.

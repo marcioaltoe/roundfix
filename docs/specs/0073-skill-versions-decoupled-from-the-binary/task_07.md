@@ -39,20 +39,13 @@ requirement ever asked for it, so nothing delivered it — the same shape as Spe
    gate from inside a test.
 3. MUST NOT weaken what is proven. The claim is unchanged; only the instrument
    changes, from "the whole suite passes" to "these artifacts did not move".
-4. MUST record provenance for the three external Go Skills without creating a
-   setup-snapshot entry for any of them, since the PRD keeps third-party skills
-   outside the version contract.
-5. MUST record that provenance in `skills-lock.json`, which is where every
-   other external Skill already carries `source`, `sourceType`, `skillPath`,
-   and `computedHash`. `roundfix skills list` is the wrong surface and this
-   Task's first attempt asserted it by mistake: that command lists the skills
-   bundled in the binary, which an external Skill is not.
-6. MUST NOT hold those skills to an owned minimum.
-7. MUST leave every owned-skill readiness behaviour from task_02 and task_04
+4. MUST NOT record provenance for the three external Go Skills. That work
+   needs `skills-lock.json`, which this Spec's tooling authority does not
+   reach, and the Task assigned it on 2026-08-06 correctly refused to widen its
+   own boundary. The PRD now declares it under `## Unreachable Acceptance` with
+   the grant that would satisfy it.
+5. MUST leave every owned-skill readiness behaviour from task_02 and task_04
    unchanged, asserted over the existing tests.
-8. If the three Skills cannot be locked because their pinned source ref is not
-   resolvable from this checkout, MUST stop and record that blocker in the
-   Result rather than inventing a hash. The PRD records that exact obstacle.
 
 ## Subtasks
 
@@ -64,10 +57,8 @@ requirement ever asked for it, so nothing delivered it — the same shape as Spe
 - [ ] Editing an owned skill leaves every derived Baseline artifact and both
       characterization corpora byte-identical, asserted directly.
 - [ ] No test in this Spec invokes `make verify` from inside a test.
-- [ ] The three external Go Skills appear in `skills-lock.json` with their
-      source, source type, skill path, and computed hash.
-- [ ] None of the three appears in any setup snapshot.
-- [ ] None of the three is compared against an owned minimum.
+- [ ] None of the three external Go Skills is compared against an owned
+      minimum, which remains true without recording their provenance.
 - [ ] Owned-skill readiness behaviour is unchanged, asserted over the existing
       tests.
 
@@ -84,9 +75,9 @@ requirement ever asked for it, so nothing delivered it — the same shape as Spe
   — expected: exit 0; no test in this package invokes the repository gate.
 - `output="$(go test ./skills -count=1 -run 'OwnedSkillEdit|Provenance' -v 2>&1)"; status=$?; printf '%s\n' "$output"; [ "$status" -eq 0 ] || exit "$status"; printf '%s\n' "$output" | grep -q -- "--- PASS"`
   — expected: exit 0; the property and provenance tests ran and passed.
-- `python3 -c "import json,sys; d=json.load(open('skills-lock.json'))['skills']; sys.exit(0 if all(k in d for k in ('golang-dependency-management','golang-safety','golang-structs-interfaces')) else 1)"`
-  — expected: exit 0; all three carry recorded provenance where every other
-  external Skill carries it.
+- `git diff --name-only HEAD | grep -q "^skills-lock.json$" && exit 1 || exit 0`
+  — expected: exit 0; this Task does not touch the protected lock file it has
+  no authority over.
 - `go test ./skills ./internal/baseline -count=1` — expected: exit 0.
 - `make verify` — expected: exit 0.
 
