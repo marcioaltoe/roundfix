@@ -17,7 +17,7 @@ const Name = "roundfix"
 // Version is the Roundfix semantic version. Local builds keep this product
 // identity; the release workflow overrides it with the matching pushed tag via
 // -ldflags "-X roundfix/internal/app.Version=<version>".
-var Version = "0.3.1"
+var Version = "0.4.0"
 
 // BuildCommit and BuildTime identify a local build. The Makefile build and
 // install targets stamp them via -ldflags with the short commit SHA (plus
