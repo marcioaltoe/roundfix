@@ -25,12 +25,58 @@ import (
 )
 
 const (
-	replay0058QA001 = "replay-0058-qa-001"
-	replay0058QA004 = "replay-0058-qa-004"
-	replay0056F001  = "replay-0056-f-001"
-	replay0056F002  = "replay-0056-f-002"
-	corpusBudget    = time.Second
+	replay0058QA001  = "replay-0058-qa-001"
+	replay0058QA004  = "replay-0058-qa-004"
+	replay0056F001   = "replay-0056-f-001"
+	replay0056F002   = "replay-0056-f-002"
+	replay0060Task03 = "replay-0060-task-03"
+	corpusBudget     = time.Second
 )
+
+func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {
+	t.Parallel()
+
+	const findingPath = "docs/findings/2026-07-31-a-rehearsal-task-can-settle-completed-without-rehearsing.md"
+	result := checkFixture(t, replay0060Task03)
+	finding := requireReplayFinding(t, findingPath, result, "SC-VERIFY-WORK-INDEPENDENT", "cannot distinguish Task work from no work")
+	assertReplayLocations(t, findingPath, finding,
+		speccheck.Location{Path: "docs/specs/" + replay0060Task03 + "/task_03.md", Line: 44},
+	)
+	report := speccheck.RenderText(result)
+	for _, want := range []string{
+		"SC-VERIFY-WORK-INDEPENDENT",
+		"docs/specs/" + replay0060Task03 + "/task_03.md:44",
+		"fix: Add a declared Verification command that asserts this Task's own effect.",
+	} {
+		if !strings.Contains(report, want) {
+			t.Errorf("replay of %s: text finding does not contain %q:\n%s", findingPath, want, report)
+		}
+	}
+	provenance := readReplayFile(t, replay0060Task03, "README.md")
+	for _, want := range []string{findingPath, "exact Verification commands", "status is `pending`"} {
+		if !strings.Contains(provenance, want) {
+			t.Errorf("replay provenance does not contain %q:\n%s", want, provenance)
+		}
+	}
+}
+
+func TestCheckReplay0060Task03RefusesContradictoryRequirementsAndUndeclaredRehearsal(t *testing.T) {
+	t.Parallel()
+
+	const findingPath = "docs/findings/2026-07-31-a-rehearsal-task-can-settle-completed-without-rehearsing.md"
+	result := checkFixture(t, replay0060Task03)
+
+	contradiction := requireReplayFinding(t, findingPath, result, speccheck.CodeRequirementContradictory, "commit")
+	assertReplayLocations(t, findingPath, contradiction,
+		speccheck.Location{Path: "docs/specs/" + replay0060Task03 + "/task_03.md", Line: 13},
+		speccheck.Location{Path: "docs/specs/" + replay0060Task03 + "/task_03.md", Line: 15},
+	)
+
+	rehearsal := requireReplayFinding(t, findingPath, result, speccheck.CodeRehearsalUndeclared, "Rehearsal Cases")
+	assertReplayLocations(t, findingPath, rehearsal,
+		speccheck.Location{Path: "docs/specs/" + replay0060Task03 + "/task_03.md", Line: 9},
+	)
+}
 
 func TestCheckReplay0058QA001FromReport(t *testing.T) {
 	t.Parallel()
@@ -361,8 +407,12 @@ var corpusFindingCodes = []string{
 	speccheck.CodeADRRelated,
 	speccheck.CodeCoverageUnmapped,
 	speccheck.CodeCoverageUntasked,
+	speccheck.CodeLoopOrderDivergent,
 	speccheck.CodeReferenceUnresolved,
 	speccheck.CodeVocabularyUndocumented,
+	speccheck.CodeVerifyWorkIndependent,
+	speccheck.CodeRequirementContradictory,
+	speccheck.CodeRehearsalUndeclared,
 }
 
 func materializeArchivedCorpus(t *testing.T, sourceRoot string) string {

@@ -1,6 +1,7 @@
 package speccheck
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -27,6 +28,8 @@ const (
 	CodeCoverageUntasked = "SC-COVERAGE-UNTASKED"
 	// CodeReferenceUnresolved identifies a declared repository path that does not resolve.
 	CodeReferenceUnresolved = "SC-REF-UNRESOLVED"
+	// CodeLoopOrderDivergent identifies disagreeing declared Spec loop orders.
+	CodeLoopOrderDivergent = "SC-LOOP-ORDER-DIVERGENT"
 )
 
 var (
@@ -36,6 +39,9 @@ var (
 		CodeCoverageUnmapped,
 		CodeCoverageUntasked,
 		CodeReferenceUnresolved,
+		CodeVerifyWorkIndependent,
+		CodeRequirementContradictory,
+		CodeRehearsalUndeclared,
 	}
 	adrFilenamePattern    = regexp.MustCompile(`^([0-9]{4})-.*\.md$`)
 	adrCitationPattern    = regexp.MustCompile(`\bADR-([0-9]{4})\b`)
@@ -44,6 +50,179 @@ var (
 	storyRefPattern       = regexp.MustCompile(`(?i)\b(?:User )?(?:Story|Stories)\s+`)
 	numberedItemPattern   = regexp.MustCompile(`^\s*([0-9]+)\.\s+`)
 )
+
+const (
+	loopOrderShippedClausePath   = "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"
+	loopOrderRepositoryGuidePath = "docs/agents/autonomous-work.md"
+	loopOrderBaselineModulePath  = "internal/baseline/assets/modules/autonomous-work.json"
+	loopOrderClauseID            = "clause.autonomous.loop-01-qa-once"
+)
+
+type loopOrderSource struct {
+	name       string
+	path       string
+	marker     string
+	lineNeedle string
+	module     bool
+}
+
+type loopOrderDeclaration struct {
+	source    loopOrderSource
+	order     string
+	canonical string
+	line      int
+	found     bool
+}
+
+var loopOrderSources = []loopOrderSource{
+	{
+		name:       "shipped clause",
+		path:       loopOrderShippedClausePath,
+		marker:     "Follow one order per Spec:",
+		lineNeedle: "Follow one order per Spec:",
+	},
+	{
+		name:       "repository guide",
+		path:       loopOrderRepositoryGuidePath,
+		marker:     "follow one order:",
+		lineNeedle: "order: implement the graph",
+	},
+	{
+		name:       "Baseline module asset",
+		path:       loopOrderBaselineModulePath,
+		marker:     "Follow one order per Spec:",
+		lineNeedle: `"guidance": "Follow one order per Spec:`,
+		module:     true,
+	},
+}
+
+func detectLoopOrderConsistency(result *Result, repoRoot string) error {
+	declarations := make([]loopOrderDeclaration, 0, len(loopOrderSources))
+	missingSource := false
+	for _, source := range loopOrderSources {
+		declaration, present, err := readLoopOrderDeclaration(repoRoot, source)
+		if err != nil {
+			return err
+		}
+		if !present {
+			addSkip(result, CodeLoopOrderDivergent, source.path)
+			missingSource = true
+			continue
+		}
+		declarations = append(declarations, declaration)
+	}
+	if missingSource {
+		return nil
+	}
+
+	reference := declarations[0]
+	divergent := !reference.found
+	for _, declaration := range declarations[1:] {
+		if !declaration.found || declaration.canonical != reference.canonical {
+			divergent = true
+		}
+	}
+	if !divergent {
+		return nil
+	}
+
+	descriptions := make([]string, 0, len(declarations))
+	locations := make([]Location, 0, len(declarations))
+	for _, declaration := range declarations {
+		order := declaration.order
+		if !declaration.found {
+			order = "<declared order not found>"
+		}
+		descriptions = append(descriptions, fmt.Sprintf("%s declares %q", declaration.source.name, order))
+		locations = append(locations, Location{Path: declaration.source.path, Line: declaration.line})
+	}
+	result.Findings = append(result.Findings, Finding{
+		Code:     CodeLoopOrderDivergent,
+		Severity: SeverityError,
+		Summary:  "loop order sources disagree: " + strings.Join(descriptions, "; "),
+		Where:    locations,
+		Fix:      "Make the shipped clause, repository guide, and Baseline module asset declare the same ordered actions.",
+	})
+	return nil
+}
+
+func readLoopOrderDeclaration(repoRoot string, source loopOrderSource) (loopOrderDeclaration, bool, error) {
+	path := filepath.Join(filepath.Clean(repoRoot), filepath.FromSlash(source.path))
+	content, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return loopOrderDeclaration{}, false, nil
+	}
+	if err != nil {
+		return loopOrderDeclaration{}, false, fmt.Errorf("read loop order source %q: %w", path, err)
+	}
+
+	statement := string(content)
+	if source.module {
+		guidance, err := loopOrderModuleGuidance(content)
+		if err != nil {
+			return loopOrderDeclaration{}, false, fmt.Errorf("read loop order source %q: %w", path, err)
+		}
+		statement = guidance
+	}
+	order, found := declaredLoopOrder(statement, source.marker)
+	return loopOrderDeclaration{
+		source:    source,
+		order:     order,
+		canonical: canonicalLoopOrder(order),
+		line:      lineContainingText(content, source.lineNeedle),
+		found:     found,
+	}, true, nil
+}
+
+func loopOrderModuleGuidance(content []byte) (string, error) {
+	var module struct {
+		Rules []struct {
+			Clauses []struct {
+				ID       string `json:"id"`
+				Guidance string `json:"guidance"`
+			} `json:"clauses"`
+		} `json:"rules"`
+	}
+	if err := json.Unmarshal(content, &module); err != nil {
+		return "", fmt.Errorf("parse Baseline module JSON: %w", err)
+	}
+	for _, rule := range module.Rules {
+		for _, clause := range rule.Clauses {
+			if clause.ID == loopOrderClauseID {
+				return clause.Guidance, nil
+			}
+		}
+	}
+	return "", nil
+}
+
+func declaredLoopOrder(statement, marker string) (string, bool) {
+	normalized := strings.Join(strings.Fields(statement), " ")
+	markerIndex := strings.Index(strings.ToLower(normalized), strings.ToLower(marker))
+	if markerIndex < 0 {
+		return "", false
+	}
+	orderStart := markerIndex + len(marker)
+	remainder := strings.TrimSpace(normalized[orderStart:])
+	orderEnd := strings.Index(remainder, ".")
+	if orderEnd < 0 {
+		return "", false
+	}
+	order := strings.TrimSpace(remainder[:orderEnd])
+	return order, order != ""
+}
+
+func canonicalLoopOrder(order string) string {
+	return strings.ToLower(strings.Join(strings.Fields(order), " "))
+}
+
+func lineContainingText(content []byte, needle string) int {
+	index := strings.Index(string(content), needle)
+	if index < 0 {
+		return 1
+	}
+	return strings.Count(string(content[:index]), "\n") + 1
+}
 
 type adrRecord struct {
 	Number        string
@@ -510,6 +689,31 @@ func detectTaskCoverageAndContextReferences(
 			addDeclaredReferences(references, line)
 		}
 		detectTaskContextReferences(result, repoRoot, taskPath, content, task.Context)
+		// Completed Tasks carry historical evidence whose authoring contract is
+		// not retroactively changed by a newly shipped detector.
+		if task.Status == spec.StatusCompleted {
+			continue
+		}
+		if finding, ok := WorkIndependentVerification(task); ok {
+			finding.Where[0] = Location{
+				Path: artifactDisplayPath(repoRoot, taskPath),
+				Line: sectionLineContaining(content, "Verification", task.Verification[0]),
+			}
+			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+			result.Findings = append(result.Findings, finding)
+		}
+		if finding, ok := ContradictoryRequirements(task); ok {
+			for index := range finding.Where {
+				finding.Where[index].Path = artifactDisplayPath(repoRoot, taskPath)
+			}
+			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+			result.Findings = append(result.Findings, finding)
+		}
+		if finding, ok := UndeclaredRehearsal(task); ok {
+			finding.Where[0].Path = artifactDisplayPath(repoRoot, taskPath)
+			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+			result.Findings = append(result.Findings, finding)
+		}
 	}
 
 	manifestDisplayPath := artifactDisplayPath(repoRoot, filepath.Join(graph.Spec.Dir, "_tasks.md"))

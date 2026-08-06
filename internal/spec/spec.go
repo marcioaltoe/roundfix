@@ -89,12 +89,22 @@ type Task struct {
 	ID               string
 	File             string
 	Title            string
+	TitleLine        int
 	Needs            []string
 	Status           Status
 	StatusNormalized bool
 	Type             TaskType
 	Context          []TaskContextRef
+	Requirements     []TaskDeclaration
+	RehearsalCases   []TaskDeclaration
 	Verification     []string
+}
+
+// TaskDeclaration is one author-written Task declaration and its 1-based
+// Markdown source line.
+type TaskDeclaration struct {
+	Text string
+	Line int
 }
 
 // ContextKind classifies a Task-authored context path.
@@ -843,11 +853,14 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		ID:               node.ID,
 		File:             filepath.Join(slug, node.File),
 		Title:            document.Title,
+		TitleLine:        document.TitleLine,
 		Needs:            append([]string(nil), node.Needs...),
 		Status:           Status(document.Frontmatter.Status),
 		StatusNormalized: document.StatusNormalized,
 		Type:             document.Type,
 		Context:          append([]TaskContextRef(nil), document.Context...),
+		Requirements:     append([]TaskDeclaration(nil), document.Requirements...),
+		RehearsalCases:   append([]TaskDeclaration(nil), document.RehearsalCases...),
 		Verification:     document.Verification,
 	}, nil
 }
