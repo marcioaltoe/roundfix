@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0059-run-storage-compaction-and-global-sanitation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -72,3 +72,61 @@ costs a retry; a permission that is wrong costs the database.
 - `_prd.md` → Core Feature 1; User Stories 1 and 2; Success Metric 1.
 - `_techspec.md` → System Architecture; Build Order 2; Risks & Considerations.
 - ADR-0033, ADR-0052.
+
+## Result
+
+Implemented explicit Run Database preview and compaction in `internal/store`.
+Preview builds a temporary compact SQLite snapshot and reports measured bytes
+before, reclaimable, and projected after. Apply acquires SQLite exclusive
+locking mode with no lock wait, rejects any non-terminal Run, revalidates the
+preview fingerprint, checks the documented two-database temporary-capacity
+bound, then runs transactional `VACUUM` and checkpoints the result. Cancellation
+cannot skip restoration of the connection's normal locking mode and busy
+timeout.
+
+Focused checks run after the final implementation edits:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/store -run '^Test(CompactionPreviewMatchesResultWithinDeclaredTolerance|CompactRefusesActiveRunAndPreservesDatabaseBytes|CompactRefusesAnotherWriterAndPreservesDatabaseBytes|CompactRefusesInsufficientTemporaryCapacityBeforeMutation|CompactRefusesStalePreviewAndPreservesDatabaseBytes|PruneTerminalRunsNeverVacuumsAllocatedPages)$' -count=1 -v`
+  — passed (`6` real SQLite tests).
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/store -run '^TestPruneTerminalRuns' -count=1`
+  — passed the existing retention suite plus the no-automatic-compaction case.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/store -count=1`
+  — exited `0` for the complete store package.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go test -race ./internal/store -run '^Test(CompactionPreviewMatchesResultWithinDeclaredTolerance|CompactRefusesActiveRunAndPreservesDatabaseBytes|CompactRefusesAnotherWriterAndPreservesDatabaseBytes|CompactRefusesInsufficientTemporaryCapacityBeforeMutation|CompactRefusesStalePreviewAndPreservesDatabaseBytes|PruneTerminalRunsNeverVacuumsAllocatedPages)$' -count=1`
+  — exited `0` with the focused compaction and retention cases under the race
+  detector.
+- `rtk env GOOS=windows GOCACHE=/private/tmp/roundfix-task02-gocache go build ./internal/store`
+  and `rtk env GOOS=linux GOCACHE=/private/tmp/roundfix-task02-gocache go build ./internal/store`
+  — both exited `0`, covering the platform-specific capacity measurement.
+- `rtk env GOCACHE=/private/tmp/roundfix-task02-gocache go vet ./internal/store`
+  — exited `0`.
+- `rtk git -c core.fsmonitor=false diff --check` — exited `0`.
+
+Acceptance evidence:
+
+- Deterministic preview: `TestCompactionPreviewMatchesResultWithinDeclaredTolerance`
+  asserts all three byte fields are measured and that `after = before -
+  reclaimable`, without a recorded-size assertion.
+- Preview equals result: the same test compares measured reclaimed bytes with
+  preview reclaimable bytes and bounds the difference by the preview's declared
+  one-SQLite-page tolerance. It also checks the completion report against the
+  resulting database file and runs `PRAGMA quick_check`, which returns `ok`.
+- Active Run refusal: `TestCompactRefusesActiveRunAndPreservesDatabaseBytes`
+  injects an Active Run and asserts the typed refusal and diagnostic both name
+  that Run ID.
+- Refusal preserves bytes: the Active Run, second-writer, insufficient-capacity,
+  and stale-preview cases each compare the database file size immediately
+  before and after refusal and assert equality rather than a constant.
+- Capacity refusal: `TestCompactRefusesInsufficientTemporaryCapacityBeforeMutation`
+  injects one byte less than the measured requirement and asserts required,
+  available, and shortfall bytes in the typed error before the original
+  database changes.
+- No automatic compaction: `TestPruneTerminalRunsNeverVacuumsAllocatedPages`
+  proves a retention sweep deletes eligible journal rows while the database
+  file size stays unchanged and the freed pages remain on SQLite's freelist for
+  an explicit compaction.
+- Retention unchanged: every existing `TestPruneTerminalRuns*` case passes,
+  preserving ADR-0033's terminal cutoff, Run-row, Active Run, and lock behavior.
+
+The commands under `## Verification` were not run; the Daemon owns those
+commands and Task settlement.
