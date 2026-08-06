@@ -1,0 +1,22 @@
+S01 authoritative repository verification
+Build: 8c6f165345275616666802c0d0a5cc938c1db25e
+Command: rtk make verify
+Execution: unpiped from repository root
+Exit code: 0
+
+Observed output:
+- skipped docs/specs/_reviews: missing _prd.md
+- `rtk go test -parallel 16 ./...`: 3,587 passed in 26 packages
+- serial `TestCheckCorpusBudget`: 1 passed
+- four Skill contract tests: 4 passed
+- `roundfix skills check`: passed for the repository Skill set
+- `go build -buildvcs=false`: passed; the build metadata says
+  `8c6f1653-dirty` because the in-progress QA report/evidence is the only
+  current source-tree delta
+- `bin/roundfix spec check`: `Spec 0079-one-door-for-fleet-knowledge` and
+  `No findings.`
+- Presence-aware skip: `SC-VOCABULARY-UNDOCUMENTED` because this TechSpec has
+  no Vocabulary Contract section.
+
+Conclusion: the repository's authoritative full gate passed on the tested
+build with no test, format, Skill, build, or active Spec diagnostic failure.

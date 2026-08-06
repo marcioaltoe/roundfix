@@ -1,0 +1,60 @@
+Vocabulary, authorial Skills, Baseline corrections, and docs UX audit
+Build: 8c6f165345275616666802c0d0a5cc938c1db25e
+Result: PASS
+
+Task 01 vocabulary
+- `git diff-tree` for f1e3c3af contains only `CONTEXT.md` and task_01.md.
+- `git diff f1e3c3af^ f1e3c3af --numstat -- CONTEXT.md` reports
+  `12 0 CONTEXT.md`: the glossary change is purely additive.
+- Current `CONTEXT.md` contains Inbox Entry, Rollup, and Triage blocks; each is
+  immediately followed by its own `_Avoid_` line.
+
+Task 02 contracts and permission
+- PC01 records the exact authorized cause/fallout pathset and early grant.
+- Current modules and adopted guides contain the Rollup/member contract,
+  `_archived/`, `absorbed_by:`, positional `_triaged/` status, the copyable
+  entry fields, and the exclusive `inbox/**` write permission.
+- A product-file-only diff scan of Task 02 found none of the later obligations:
+  pending-inbox Skill steps, `capture: auto`, `never self-triaged`, substantive
+  research capture, or `must capture` language.
+- The Task Result's exact preimage check for secret-safety is reproducible and
+  the secret prohibitions remain present in the current module and guide.
+- The authoritative gate passed; the independent clean-archive regeneration
+  returned `changed:false`.
+
+Task 06 and User Story 4
+- Both canonical Skills place `Read the pending inbox` at process step 1,
+  before exploration.
+- `rtk cmp -s` exited 0 for both canonical/mirror pairs.
+- Current guides and modules carry the fleet-flow, `capture: auto`,
+  `never self-triaged`, and sourced-research obligations.
+- PC01 records Task 06's authorized cause/fallout pathset. Regeneration parity
+  and the authoritative full gate pass.
+
+Task 08 maintained expectation
+- `git diff-tree` for 6a551ea5 contains exactly task_08.md and
+  `internal/baseline/preservation_test.go`.
+- `GOCACHE=/private/tmp/roundfix-qa79-gocache rtk go test -count=1
+  ./internal/baseline -run
+  '^TestReadoptionCompatibilityMaintainedFixture$' -v` exited 0 with one
+  passing selected test.
+- Source inspection finds the independent declared value 118, accounting 51,
+  and the exact identity-to-entry, entry-to-declared-value, and accounting
+  comparisons without tolerance or skip.
+
+Task 09 and docs UX
+- PC01 proves the protected cause 82ef1ce4 and consequent correction 463723da
+  are separate, chronological, and exactly scoped.
+- The Task 09 module diff changes only version fields and adds four new clause
+  objects; prior Task 02/06 clause bodies do not appear as changed hunks.
+- Both canonical modules and both public guides contain the four exact operator
+  readings: `oldest first`, `empty inbox`, live-work `health`, and
+  `no open members` closure candidacy.
+- The public Secondbrain guide also carries a complete copyable Inbox Entry
+  contract with `resolved_to` or `discarded_reason`, and the docs-layout guide
+  carries the Rollup/archive/Triage contracts in project vocabulary.
+- The clean-archive digest regeneration reports `changed:false`; the named
+  maintained-fixture test and authoritative full gate pass.
+
+Conclusion
+- T01, T02, T06, T08, T09, US04, and D01 pass with current-build evidence.
