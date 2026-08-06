@@ -19,9 +19,12 @@ graph:
     - id: task_05
       file: task_05.md
       needs: [task_03, task_04]
+    - id: task_07
+      file: task_07.md
+      needs: [task_05]
     - id: task_06
       file: task_06.md
-      needs: [task_05]
+      needs: [task_07]
 ---
 
 # Tasks — Skill versions decoupled from the binary
@@ -33,10 +36,11 @@ graph:
 | task_03 | Stop gating compatibility on content            | backend | high       | task_02          |
 | task_04 | Make every surface use the one comparison       | backend | medium     | task_02          |
 | task_05 | Synchronise the Roundfix Skill                  | chore   | low        | task_03, task_04 |
-| task_06 | Run the final QA gate                           | qa      | medium     | task_05          |
+| task_07 | Assert the property directly, record provenance | backend | medium     | task_05          |
+| task_06 | Run the final QA gate                           | qa      | medium     | task_07          |
 
 Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · task_04 · 4 → task_05 ·
-5 → task_06
+5 → task_07 · 6 → task_06
 
 task_01 leads because it is inert. Skills gain a frontmatter field nothing
 reads yet, so the repository stays green while the identity exists for task_02
@@ -60,5 +64,12 @@ what it pinned.
 No acceptance in this graph asserts a recorded digest or a recorded version.
 Each asserts the comparison's outcome, which holds at any version.
 
-The QA gate is authored as task_06 and depends on task_05, the graph's only
+task_07 was appended on 2026-08-06 after the gate reported `fail`. F-001 is a
+harness defect: the Spec's headline property was proven by running the complete
+`make verify` nested inside a test, which made this Spec's acceptance hostage
+to every other test in the repository — it failed on an unrelated
+concurrency-sensitive test that passes in isolation. F-002 is a Success Metric
+with no Task requirement, the same shape as Spec 0059's F-001 in this session.
+
+The QA gate is authored as task_06 and depends on task_07, the graph's only
 non-QA leaf.
