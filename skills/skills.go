@@ -30,23 +30,23 @@ var skillNames = []string{
 	"archive-spec", "qa-gate", "evidence-gate",
 }
 
-const ownedSkillVersion = "0.0.2"
+const ownedSkillMinimumVersion = "0.0.2"
 
-var ownedSkillContract = map[string]string{
-	"roundfix":             ownedSkillVersion,
-	"write-idea":           ownedSkillVersion,
-	"write-prd":            ownedSkillVersion,
-	"write-techspec":       ownedSkillVersion,
-	"write-tasks":          ownedSkillVersion,
-	"setup-context-driven": ownedSkillVersion,
-	"implement-task":       ownedSkillVersion,
-	"implement-spec":       ownedSkillVersion,
-	"brainstorming":        ownedSkillVersion,
-	"council":              ownedSkillVersion,
-	"business-analyst":     ownedSkillVersion,
-	"archive-spec":         ownedSkillVersion,
-	"qa-gate":              ownedSkillVersion,
-	"evidence-gate":        ownedSkillVersion,
+var ownedSkillMinimumVersions = map[string]string{
+	"roundfix":             ownedSkillMinimumVersion,
+	"write-idea":           ownedSkillMinimumVersion,
+	"write-prd":            ownedSkillMinimumVersion,
+	"write-techspec":       ownedSkillMinimumVersion,
+	"write-tasks":          ownedSkillMinimumVersion,
+	"setup-context-driven": ownedSkillMinimumVersion,
+	"implement-task":       ownedSkillMinimumVersion,
+	"implement-spec":       ownedSkillMinimumVersion,
+	"brainstorming":        ownedSkillMinimumVersion,
+	"council":              ownedSkillMinimumVersion,
+	"business-analyst":     ownedSkillMinimumVersion,
+	"archive-spec":         ownedSkillMinimumVersion,
+	"qa-gate":              ownedSkillMinimumVersion,
+	"evidence-gate":        ownedSkillMinimumVersion,
 }
 
 type File struct {
@@ -209,11 +209,18 @@ func skillFolderHash(ctx context.Context, tree fs.FS, root string, displayRoot s
 }
 
 func Check() []Diagnostic {
+	return CheckReadiness().Diagnostics
+}
+
+// CheckReadiness validates the embedded owned bundle and preserves
+// unversioned as a non-blocking state distinct from both pass and failure.
+func CheckReadiness() BundleReadiness {
 	banned := []string{
 		"reference project",
 		"Reference Project",
 	}
 	var diagnostics []Diagnostic
+	var readiness []OwnedSkillReadiness
 	files, err := Files()
 	if err != nil {
 		diagnostics = append(diagnostics, Diagnostic{
@@ -221,7 +228,9 @@ func Check() []Diagnostic {
 			Message: fmt.Sprintf("read owned skill bundle: %v", err),
 		})
 	} else {
-		diagnostics = append(diagnostics, checkOwnedSkillBundle(skillNames, files)...)
+		owned := checkOwnedSkillReadiness(skillNames, files)
+		readiness = owned.Owned
+		diagnostics = append(diagnostics, owned.Diagnostics...)
 		diagnostics = append(diagnostics, checkThinSetupSkill(files)...)
 	}
 
@@ -300,7 +309,7 @@ func Check() []Diagnostic {
 	}
 
 	// Authorial workflow skills also keep their generic language and branding
-	// checks after the exact owned-set and version contract above.
+	// checks after the owned-set and minimum-version contract above.
 	for _, skill := range skillNames {
 		if skill == "roundfix" {
 			continue
@@ -331,7 +340,7 @@ func Check() []Diagnostic {
 		}
 		return diagnostics[i].Path < diagnostics[j].Path
 	})
-	return diagnostics
+	return BundleReadiness{Owned: readiness, Diagnostics: diagnostics}
 }
 
 func checkThinSetupSkill(files []File) []Diagnostic {
@@ -348,7 +357,12 @@ func checkThinSetupSkill(files []File) []Diagnostic {
 }
 
 func checkOwnedSkillBundle(names []string, files []File) []Diagnostic {
+	return checkOwnedSkillReadiness(names, files).Diagnostics
+}
+
+func checkOwnedSkillReadiness(names []string, files []File) BundleReadiness {
 	var diagnostics []Diagnostic
+	var readiness []OwnedSkillReadiness
 	declared := make(map[string]int, len(names))
 	for _, name := range names {
 		declared[name]++
@@ -358,14 +372,14 @@ func checkOwnedSkillBundle(names []string, files []File) []Diagnostic {
 				Message: fmt.Sprintf("duplicate owned skill %q", name),
 			})
 		}
-		if _, ok := ownedSkillContract[name]; !ok {
+		if _, ok := ownedSkillMinimumVersions[name]; !ok {
 			diagnostics = append(diagnostics, Diagnostic{
 				Path:    name,
 				Message: fmt.Sprintf("unexpected owned skill %q", name),
 			})
 		}
 	}
-	for name := range ownedSkillContract {
+	for name := range ownedSkillMinimumVersions {
 		if declared[name] == 0 {
 			diagnostics = append(diagnostics, Diagnostic{
 				Path:    name,
@@ -385,7 +399,7 @@ func checkOwnedSkillBundle(names []string, files []File) []Diagnostic {
 		}
 		filesByPath[file.Path] = file.Data
 	}
-	for name, version := range ownedSkillContract {
+	for name, minimum := range ownedSkillMinimumVersions {
 		path := name + "/SKILL.md"
 		data, ok := filesByPath[path]
 		if !ok {
@@ -409,21 +423,35 @@ func checkOwnedSkillBundle(names []string, files []File) []Diagnostic {
 				Message: fmt.Sprintf("frontmatter name %q does not match skill directory %q", metadata.Name, name),
 			})
 		}
-		if strings.TrimSpace(metadata.Metadata.Version) != version {
+		declaredVersion := strings.TrimSpace(metadata.Version)
+		state, err := Readiness(SkillVersion{Declared: declaredVersion, Source: path}, minimum)
+		item := OwnedSkillReadiness{
+			Skill:   name,
+			Minimum: minimum,
+			Found:   declaredVersion,
+			Source:  path,
+			State:   state,
+		}
+		if err != nil {
+			item.Detail = err.Error()
+		}
+		readiness = append(readiness, item)
+		if state == ReadinessBelow {
 			diagnostics = append(diagnostics, Diagnostic{
 				Path:    path,
-				Message: fmt.Sprintf("metadata.version must be %s", version),
+				Message: item.Diagnostic(),
 			})
 		}
 	}
-	return diagnostics
+	sort.Slice(readiness, func(i, j int) bool {
+		return readiness[i].Skill < readiness[j].Skill
+	})
+	return BundleReadiness{Owned: readiness, Diagnostics: diagnostics}
 }
 
 type skillFrontmatter struct {
-	Name     string `yaml:"name"`
-	Metadata struct {
-		Version string `yaml:"version"`
-	} `yaml:"metadata"`
+	Name    string `yaml:"name"`
+	Version string `yaml:"version"`
 }
 
 func parseSkillFrontmatter(text string) (skillFrontmatter, bool) {

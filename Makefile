@@ -28,7 +28,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify spec-check spec-budget fmt fmt-check test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-sync-check
+.PHONY: help bootstrap verify spec-check spec-budget fmt fmt-check test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -178,7 +178,19 @@ OWNED_SKILLS := roundfix write-idea write-prd write-techspec write-tasks setup-c
 skills-sync: ## Regenerate the embedded skills/ bundle from canonical .agents/skills/
 	@for s in $(OWNED_SKILLS); do rm -rf "skills/$$s"; cp -R ".agents/skills/$$s" "skills/$$s"; done
 
-skills-sync-check: ## Fail when the embedded bundle drifts from canonical .agents/skills/
+skills-version-check: ## Fail unless each owned skill declares exactly one version
+	@for s in $(OWNED_SKILLS); do \
+		for root in .agents/skills skills; do \
+			file="$$root/$$s/SKILL.md"; \
+			counts=$$(awk 'NR == 1 && $$0 == "---" { frontmatter = 1; next } frontmatter && $$0 == "---" { exit } frontmatter && $$0 ~ /^version:/ { keys++ } frontmatter && $$0 ~ /^version:[[:space:]]+[^[:space:]#]+([[:space:]]+#.*)?[[:space:]]*$$/ && $$0 !~ /^version:[[:space:]]+("")|('"'"''"'"')([[:space:]]+#.*)?[[:space:]]*$$/ { values++ } END { print keys + 0, values + 0 }' "$$file") || exit $$?; \
+			key_count=$${counts%% *}; value_count=$${counts##* }; \
+			if test "$$key_count" -ne 1 || test "$$value_count" -ne 1; then \
+				echo "$$file must declare exactly one non-empty top-level version (found $$key_count key(s), $$value_count value(s))"; exit 1; \
+			fi; \
+		done; \
+	done
+
+skills-sync-check: skills-version-check ## Fail when the embedded bundle drifts from canonical .agents/skills/
 	@for s in $(OWNED_SKILLS); do \
 		diff -r ".agents/skills/$$s" "skills/$$s" >/dev/null || { \
 			echo "skills/$$s drifts from .agents/skills/$$s; run 'make skills-sync'"; exit 1; }; \

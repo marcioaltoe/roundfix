@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/typescript-bun.txt"
   },
-  "digest": "04efc60b36759a9513cd989edb2834c70220c59b43992bf122e708dc7366b1d8",
+  "digest": "3d8031cb9766ea016b4af67e5b541c17de8f103616d4459dfca268f969a4b013",
   "skills": [
     {
       "name": "find-rules",
@@ -50,7 +50,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "4c2cd33e5e7dd5197ee798ff19ef05ec1dd8c141307b13810f518b8fe133897d"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "turborepo",
@@ -103,7 +103,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "d2c5e049ae763128257c4e551a3a975dec25b2d168d373c2b29f74d698917fe7"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "architectural-analysis",
@@ -255,7 +255,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "d3025451086d0fbcb3911ea0a01da30bfce67110f65cb8356c0fea8bdf32f2b4"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "write-tasks",
@@ -264,7 +264,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "5c980e462390960f221f0a63798353f9d58563a59e4ff944f8a05d087b5084fa"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "ai-sdk",
@@ -394,7 +394,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "1abd69c6a800980bfd68f263a5a8b7c0da95873c3208e10b917a2f2bd4789e0d"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "implement-task",
@@ -403,7 +403,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "74aea380d42cdb99c67b6bfc9ebb7cb9a836b34bdf04954dcaaa25fa0d105e8f"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "inngest",
@@ -786,7 +786,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "2eafab0897771975b14fa6a7d7c3c39fe56d89a203c4850aab8e5351ed68611a"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "review",
@@ -817,7 +817,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "607d63fbc30affef712791a5ccd78bcadfac2f61752e32ef239d0e5afa95acf6"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "wcag-audit-patterns",
@@ -848,7 +848,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "46a380abc591e109b64abefc392a1e86522c620410d3dace3a297433294e3266"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "conventional-commits",
@@ -923,7 +923,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "5591d0e294612a5363f88aec4bb90837f671eca040939229dfe5ed85e528e159"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "business-storyteller",
@@ -943,7 +943,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "41c29cecf63ec48a7e68a67f145f3ce4a05427c5975a63ff0d888d03fee98c02"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "council",
@@ -952,7 +952,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "826b2b23ee67d658e4184a6beb891aeb3686514b9dc309971e63828d47486c9f"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "exa-web-search",
@@ -1027,7 +1027,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "665207f9dd3ad7a3fce8aedee42ee481ad8c9081ed54217e8f9e44010ad3987b"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "the-fool",
@@ -1047,7 +1047,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "e6348bfd0193570e4361e94fd59e159f515f36ee1d8ae4e487327dd43f358880"
+      "minimumVersion": "0.0.2"
     },
     {
       "name": "triage",

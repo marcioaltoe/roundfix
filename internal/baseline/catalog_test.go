@@ -99,6 +99,115 @@ func TestEmbeddedCatalog(t *testing.T) {
 	}
 }
 
+func TestReadinessComparesDeclaredVersionToMinimum(t *testing.T) {
+	t.Parallel()
+
+	const (
+		minimum       = "1.2.3"
+		oneMinorNewer = "1.3.0"
+	)
+	tests := []struct {
+		name       string
+		declared   SkillVersion
+		wantState  ReadinessState
+		wantErr    error
+		forbidText string
+	}{
+		{
+			name:      "equal satisfies",
+			declared:  SkillVersion{Declared: minimum, Source: "fixture/SKILL.md"},
+			wantState: ReadinessSatisfies,
+		},
+		{
+			name:      "one minor above satisfies",
+			declared:  SkillVersion{Declared: oneMinorNewer, Source: "fixture/SKILL.md"},
+			wantState: ReadinessSatisfies,
+		},
+		{
+			name:      "below reports below",
+			declared:  SkillVersion{Declared: "1.2.2", Source: "fixture/SKILL.md"},
+			wantState: ReadinessBelow,
+		},
+		{
+			name:      "no declaration reports unversioned",
+			declared:  SkillVersion{Source: "fixture/SKILL.md"},
+			wantState: ReadinessUnversioned,
+		},
+		{
+			name:       "unreachable source reports unresolvable",
+			declared:   SkillVersion{},
+			wantState:  ReadinessUnversioned,
+			wantErr:    ErrSkillVersionUnresolvable,
+			forbidText: "missing",
+		},
+		{
+			name:      "malformed declaration reports unresolvable",
+			declared:  SkillVersion{Declared: "not-a-version", Source: "fixture/SKILL.md"},
+			wantState: ReadinessUnversioned,
+			wantErr:   ErrSkillVersionUnresolvable,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := Readiness(test.declared, minimum)
+			if got != test.wantState {
+				t.Fatalf("Readiness(%+v, %q) = %q, want %q", test.declared, minimum, got, test.wantState)
+			}
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("Readiness(%+v, %q) error = %v, want %v", test.declared, minimum, err, test.wantErr)
+			}
+			if test.forbidText != "" && strings.Contains(strings.ToLower(err.Error()), test.forbidText) {
+				t.Fatalf("Readiness(%+v, %q) error = %q, must not report %q", test.declared, minimum, err, test.forbidText)
+			}
+		})
+	}
+}
+
+func TestCatalogRejectsMissingOwnedSkillMinimum(t *testing.T) {
+	t.Parallel()
+
+	const assetPath = "setups/go-cli.json"
+	assets := cloneEmbeddedAssets(t)
+	asset := assets[assetPath]
+	var setup map[string]any
+	if err := json.Unmarshal(asset.Data, &setup); err != nil {
+		t.Fatal(err)
+	}
+	skills, ok := setup["skills"].([]any)
+	if !ok {
+		t.Fatalf("setup skills = %#v, want array", setup["skills"])
+	}
+	removed := false
+	for _, rawSkill := range skills {
+		skill, ok := rawSkill.(map[string]any)
+		if !ok {
+			t.Fatalf("setup skill = %#v, want object", rawSkill)
+		}
+		source, ok := skill["source"].(map[string]any)
+		if !ok || source["type"] != "repo" {
+			continue
+		}
+		delete(skill, "minimumVersion")
+		removed = true
+		break
+	}
+	if !removed {
+		t.Fatal("setup has no Roundfix-owned skill")
+	}
+	data, err := json.Marshal(setup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asset.Data = data
+	assets[assetPath] = asset
+
+	_, err = LoadCatalog(assets)
+	requireCatalogDiagnostic(t, err, "catalog.setup.skill.minimumVersion.invalid")
+}
+
 func TestCatalogRegenerationMode(t *testing.T) {
 	t.Parallel()
 
@@ -288,6 +397,38 @@ func TestCatalogDigest(t *testing.T) {
 	}
 	if !json.Valid(first.Normalized()) {
 		t.Fatal("Normalized() is not valid JSON")
+	}
+}
+
+func TestCatalogDigestExcludesOwnedSkillContent(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+	}
+
+	ownedEdit := cloneEmbeddedAssets(t)
+	replaceSetupSkillDigest(t, ownedEdit, "repo", "contentDigest", strings.Repeat("0", 64))
+	ownedCatalog, err := LoadCatalog(ownedEdit)
+	if err != nil {
+		t.Fatalf("LoadCatalog() after owned skill edit error = %v", err)
+	}
+	if got, want := ownedCatalog.Digest(), catalog.Digest(); got != want {
+		t.Fatalf("Digest() after owned skill edit = %q, want unchanged %q", got, want)
+	}
+	if !bytes.Equal(ownedCatalog.Normalized(), catalog.Normalized()) {
+		t.Fatal("Normalized() changed after an owned skill content edit")
+	}
+
+	externalEdit := cloneEmbeddedAssets(t)
+	replaceSetupSkillDigest(t, externalEdit, "github", "treeDigest", strings.Repeat("0", 64))
+	externalCatalog, err := LoadCatalog(externalEdit)
+	if err != nil {
+		t.Fatalf("LoadCatalog() after external source edit error = %v", err)
+	}
+	if externalCatalog.Digest() == catalog.Digest() {
+		t.Fatal("Digest() ignored an external skill source-tree change")
 	}
 }
 
@@ -1454,6 +1595,62 @@ func cloneEmbeddedAssets(t *testing.T) fstest.MapFS {
 		t.Fatalf("clone embedded assets: %v", err)
 	}
 	return assets
+}
+
+func replaceSetupSkillDigest(
+	t *testing.T,
+	assets fstest.MapFS,
+	sourceType string,
+	field string,
+	digest string,
+) {
+	t.Helper()
+
+	const assetPath = "setups/go-cli.json"
+	asset := assets[assetPath]
+	var setup map[string]any
+	if err := json.Unmarshal(asset.Data, &setup); err != nil {
+		t.Fatalf("decode %s: %v", assetPath, err)
+	}
+	skills, ok := setup["skills"].([]any)
+	if !ok {
+		t.Fatalf("%s skills = %#v, want array", assetPath, setup["skills"])
+	}
+	changed := false
+	for _, rawSkill := range skills {
+		skill, ok := rawSkill.(map[string]any)
+		if !ok {
+			t.Fatalf("%s skill = %#v, want object", assetPath, rawSkill)
+		}
+		source, ok := skill["source"].(map[string]any)
+		if !ok || source["type"] != sourceType {
+			continue
+		}
+		if current, _ := skill[field].(string); current == digest {
+			digest = strings.Repeat("1", 64)
+		}
+		skill[field] = digest
+		changed = true
+		break
+	}
+	if !changed {
+		t.Fatalf("%s has no %q skill", assetPath, sourceType)
+	}
+	payload := any(skills)
+	if bundles, exists := setup["activationBundles"]; exists {
+		payload = map[string]any{"activationBundles": bundles, "skills": skills}
+	}
+	setupDigest, err := canonicalSHA256(payload)
+	if err != nil {
+		t.Fatalf("compute %s digest: %v", assetPath, err)
+	}
+	setup["digest"] = setupDigest
+	data, err := json.MarshalIndent(setup, "", "  ")
+	if err != nil {
+		t.Fatalf("encode %s: %v", assetPath, err)
+	}
+	asset.Data = append(data, '\n')
+	assets[assetPath] = asset
 }
 
 func addFormatterGoldenDrift(t *testing.T, assets fstest.MapFS) {

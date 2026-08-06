@@ -318,7 +318,7 @@ func doctorProfileReadinessResult(readiness profileProofResult) CheckResult {
 }
 
 const (
-	ownedSkillsNextAction      = "roundfix skills install --target project"
+	ownedSkillsNextAction      = skills.OwnedSkillsUpgradeAction
 	externalSkillsNextAction   = "bunx skills experimental_install && bunx skills update -p -y"
 	baselineAdoptionNextAction = "roundfix baseline"
 	missingGitRootNextAction   = "run roundfix doctor from a Git repository"
@@ -365,7 +365,7 @@ func doctorMissingSetupManifestResult(readiness skills.RepositoryReadiness, chec
 }
 
 func doctorOwnedSkillRequirementFailed(readiness skills.RepositoryReadiness, checkErr error) bool {
-	if len(readiness.MissingOwned) > 0 || len(readiness.OutdatedOwned) > 0 {
+	if len(readiness.MissingOwned) > 0 || len(ownedSkillReadinessWithState(readiness, skills.ReadinessBelow)) > 0 {
 		return true
 	}
 	if checkErr == nil {
@@ -381,21 +381,27 @@ func doctorOwnedSkillRequirementFailed(readiness skills.RepositoryReadiness, che
 func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr error) CheckResult {
 	result := CheckResult{Name: HealthCheckSkills}
 	if checkErr == nil && readiness.Ready() {
+		unversioned := ownedSkillReadinessWithState(readiness, skills.ReadinessUnversioned)
 		result.Status = CheckStatusOK
+		if len(unversioned) > 0 {
+			result.Status = CheckStatusUnversioned
+		}
 		result.Detail = fmt.Sprintf(
 			"%d required: %d Roundfix-owned, %d external",
 			readiness.OwnedRequired+readiness.ExternalRequired,
 			readiness.OwnedRequired,
 			readiness.ExternalRequired,
 		)
+		if len(unversioned) > 0 {
+			result.Detail += "; unversioned: " + strings.Join(ownedSkillNames(unversioned), ", ")
+		}
 		return result
 	}
 
 	result.Status = CheckStatusFailed
 	missing := append([]string{}, readiness.MissingOwned...)
 	missing = append(missing, readiness.MissingExternal...)
-	outdated := append([]string{}, readiness.OutdatedOwned...)
-	outdated = append(outdated, readiness.OutdatedExternal...)
+	outdated := append([]string{}, readiness.OutdatedExternal...)
 	sort.Strings(missing)
 	sort.Strings(outdated)
 
@@ -406,13 +412,21 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
 	if len(outdated) > 0 {
 		details = append(details, "outdated: "+strings.Join(outdated, ", "))
 	}
+	below := ownedSkillReadinessWithState(readiness, skills.ReadinessBelow)
+	for _, owned := range below {
+		details = append(details, owned.ComparisonDetail())
+	}
+	unversioned := ownedSkillReadinessWithState(readiness, skills.ReadinessUnversioned)
+	if len(unversioned) > 0 {
+		details = append(details, "unversioned: "+strings.Join(ownedSkillNames(unversioned), ", "))
+	}
 	if checkErr != nil {
 		details = append(details, checkErr.Error())
 		result.Err = checkErr
 	}
 	result.Detail = strings.Join(details, "; ")
 
-	ownedFailure := len(readiness.MissingOwned) > 0 || len(readiness.OutdatedOwned) > 0
+	ownedFailure := len(readiness.MissingOwned) > 0 || len(below) > 0
 	externalFailure := len(readiness.MissingExternal) > 0 || len(readiness.OutdatedExternal) > 0
 	var readinessErr *skills.RepositoryReadinessError
 	if errors.As(checkErr, &readinessErr) {
@@ -444,6 +458,27 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
 	}
 	result.NextAction = strings.Join(next, " && ")
 	return result
+}
+
+func ownedSkillReadinessWithState(readiness skills.RepositoryReadiness, state skills.ReadinessState) []skills.OwnedSkillReadiness {
+	matched := make([]skills.OwnedSkillReadiness, 0, len(readiness.Owned))
+	for _, owned := range readiness.Owned {
+		if owned.State == state {
+			matched = append(matched, owned)
+		}
+	}
+	sort.Slice(matched, func(i, j int) bool {
+		return matched[i].Skill < matched[j].Skill
+	})
+	return matched
+}
+
+func ownedSkillNames(readiness []skills.OwnedSkillReadiness) []string {
+	names := make([]string, 0, len(readiness))
+	for _, owned := range readiness {
+		names = append(names, owned.Skill)
+	}
+	return names
 }
 
 // doctorExternalSkillNextActions renders one install command per external

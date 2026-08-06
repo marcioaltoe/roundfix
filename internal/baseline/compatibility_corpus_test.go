@@ -17,8 +17,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-
-	"roundfix/skills"
 )
 
 // Suite: Baseline compatibility corpus
@@ -289,7 +287,6 @@ func regenerateBaselineCompatibilitySetups(
 	if !ok {
 		t.Fatal("asset-sync fixture setups are not an array")
 	}
-	repoRoot := filepath.Clean(filepath.Join("..", ".."))
 	digests := make(map[string]string, len(rawSetups))
 	for _, rawSetup := range rawSetups {
 		setup, ok := rawSetup.(map[string]any)
@@ -317,14 +314,8 @@ func regenerateBaselineCompatibilitySetups(
 			if !ok || name == "" || source["name"] != "roundfix" {
 				t.Fatalf("asset-sync fixture setup %q has invalid repo skill", setupID)
 			}
-			digest, err := skills.SkillFolderHash(
-				t.Context(),
-				filepath.Join(repoRoot, ".agents", "skills", name),
-			)
-			if err != nil {
-				t.Fatalf("hash canonical skill %q: %v", name, err)
-			}
-			skill["contentDigest"] = digest
+			delete(skill, "treeDigest")
+			delete(skill, "contentDigest")
 		}
 		var digestPayload any = rawSkills
 		if bundles, exists := setup["activationBundles"]; exists {

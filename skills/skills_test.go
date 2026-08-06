@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -311,15 +312,16 @@ func TestOwnedSkillContractRejectsSetAndVersionDisagreement(t *testing.T) {
 			wantMatch: "duplicate owned skill",
 		},
 		{
-			name: "owned version disagreement",
+			name: "owned version below minimum",
 			mutate: func(names []string, files []File) ([]string, []File) {
 				mutated := append([]File(nil), files...)
+				below := skillVersionBelow(t, ownedSkillMinimumVersion)
 				for index := range mutated {
 					if mutated[index].Path == "roundfix/SKILL.md" {
 						mutated[index].Data = bytes.Replace(
 							mutated[index].Data,
-							[]byte("version: "+ownedSkillVersion),
-							[]byte("version: 9.9.9"),
+							[]byte("\nversion: "+ownedSkillMinimumVersion+"\n---"),
+							[]byte("\nversion: "+below+"\n---"),
 							1,
 						)
 						break
@@ -327,7 +329,7 @@ func TestOwnedSkillContractRejectsSetAndVersionDisagreement(t *testing.T) {
 				}
 				return names, mutated
 			},
-			wantMatch: "metadata.version",
+			wantMatch: "below minimum",
 		},
 	}
 
@@ -344,6 +346,88 @@ func TestOwnedSkillContractRejectsSetAndVersionDisagreement(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOwnedSkillBundleReadinessKeepsStatesDistinct(t *testing.T) {
+	t.Parallel()
+	files, err := Files()
+	if err != nil {
+		t.Fatalf("read skill files: %v", err)
+	}
+	minimum := ownedSkillMinimumVersions["roundfix"]
+	tests := []struct {
+		name            string
+		declared        string
+		removeVersion   bool
+		wantState       ReadinessState
+		wantDiagnostics int
+	}{
+		{name: "satisfies", declared: skillVersionAbove(t, minimum), wantState: ReadinessSatisfies},
+		{name: "below", declared: skillVersionBelow(t, minimum), wantState: ReadinessBelow, wantDiagnostics: 1},
+		{name: "unversioned", removeVersion: true, wantState: ReadinessUnversioned},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mutated := append([]File(nil), files...)
+			for index := range mutated {
+				if mutated[index].Path != "roundfix/SKILL.md" {
+					continue
+				}
+				replacement := "\nversion: " + test.declared + "\n---"
+				if test.removeVersion {
+					replacement = "\n---"
+				}
+				mutated[index].Data = bytes.Replace(
+					mutated[index].Data,
+					[]byte("\nversion: "+minimum+"\n---"),
+					[]byte(replacement),
+					1,
+				)
+				break
+			}
+
+			got := checkOwnedSkillReadiness(Names(), mutated)
+			var roundfixReadiness OwnedSkillReadiness
+			for _, owned := range got.Owned {
+				if owned.Skill == "roundfix" {
+					roundfixReadiness = owned
+					break
+				}
+			}
+			if roundfixReadiness.State != test.wantState {
+				t.Fatalf("roundfix state = %q, want %q: %#v", roundfixReadiness.State, test.wantState, got)
+			}
+			if len(got.Diagnostics) != test.wantDiagnostics {
+				t.Fatalf("diagnostics = %#v, want %d", got.Diagnostics, test.wantDiagnostics)
+			}
+			if test.wantState == ReadinessBelow {
+				for _, fact := range []string{"roundfix", minimum, test.declared, OwnedSkillsUpgradeAction} {
+					if !strings.Contains(got.Diagnostics[0].Message, fact) {
+						t.Errorf("below-minimum diagnostic %q does not contain %q", got.Diagnostics[0].Message, fact)
+					}
+				}
+			}
+		})
+	}
+}
+
+func skillVersionBelow(t *testing.T, minimum string) string {
+	t.Helper()
+	parsed, ok := parseSkillVersion(minimum)
+	if !ok || parsed[2] == 0 {
+		t.Fatalf("test minimum %q has no lower patch version", minimum)
+	}
+	return fmt.Sprintf("%d.%d.%d", parsed[0], parsed[1], parsed[2]-1)
+}
+
+func skillVersionAbove(t *testing.T, minimum string) string {
+	t.Helper()
+	parsed, ok := parseSkillVersion(minimum)
+	if !ok {
+		t.Fatalf("invalid test minimum %q", minimum)
+	}
+	return fmt.Sprintf("%d.%d.%d", parsed[0], parsed[1]+1, parsed[2])
 }
 
 func TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand(t *testing.T) {

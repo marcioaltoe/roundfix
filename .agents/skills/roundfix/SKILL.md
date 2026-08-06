@@ -7,6 +7,7 @@ metadata:
   version: 0.0.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
+version: 0.0.2
 ---
 
 # Roundfix
@@ -47,10 +48,25 @@ references plus one deterministic next action. Doctor has no separate legacy
 Roundfix knows the remediation.
 
 The blocking `skills:` line runs after, and independently from, `profiles:`.
-The running binary's embedded bundle is authoritative for Roundfix-owned
-skills. The required external set comes from the repository's Setup Manifest
-at `docs/agents/setup-context.json`: Doctor unions the `requiredSkills`
-declared by its selected modules, removes Roundfix-owned names, and checks each
+For each Roundfix-owned skill, the running binary declares a minimum version
+and compares it with the version declared by the installed `SKILL.md`.
+Readiness is this version comparison, not a content match. The three states are:
+
+- `satisfies` — the declared version is at or above the declared minimum, so
+  readiness passes.
+- `below minimum` — the declared version is below the minimum, so readiness
+  blocks. The failure names the skill, the minimum, the version found, and the
+  `roundfix skills install --target project` upgrade path.
+- `unversioned or unresolvable` — the skill has no comparable declaration or
+  its version source is unreachable. Doctor renders this state as
+  `unversioned`, distinct from both `satisfies` and `below minimum`; an
+  unreachable source is never reported as a missing skill.
+
+Roundfix never applies this owned-skill version comparison to third-party
+skills or holds them to a version Roundfix invented for them. The required
+external set comes from the repository's Setup Manifest at
+`docs/agents/setup-context.json`: Doctor unions the `requiredSkills` declared
+by its selected modules, removes Roundfix-owned names, and checks each
 remaining skill against its `computedHash` in `skills-lock.json`. The external
 count therefore follows the repository's selected modules instead of a fixed
 Roundfix development list.
@@ -302,9 +318,14 @@ roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill
 roundfix baseline assets sync --source-dir <canonical-setups> --check --format json
 ```
 
-Inside the Roundfix source repository, an expressly authorized edit to a
-Roundfix-owned Skill or Baseline module can change derived catalog pins.
-Regenerate those deterministic artifacts only with:
+Editing Roundfix-owned skill content no longer requires a Baseline digest or
+characterization-corpus regeneration step: compatibility readiness depends on
+the declared version comparison, not the skill bytes. Inside the Roundfix
+source repository, keep the canonical and embedded Skill copies synchronized
+with `make skills-sync`.
+
+An expressly authorized edit to a Baseline module can still change derived
+catalog pins. Regenerate those deterministic artifacts only with:
 
 ```bash
 make baseline-digests

@@ -3,9 +3,11 @@ package skills
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -417,7 +419,7 @@ func TestAuthorialSkillSync(t *testing.T) {
 	}
 	for _, setupPath := range setupPaths {
 		if *updateDerivedDigests {
-			regenerateBaselineSetupSnapshot(t, repoRoot, setupPath, knownOwned)
+			regenerateBaselineSetupSnapshot(t, setupPath, knownOwned)
 		}
 		t.Run(filepath.Base(setupPath), func(t *testing.T) {
 			var setup baselineSetupSnapshot
@@ -436,23 +438,8 @@ func TestAuthorialSkillSync(t *testing.T) {
 					t.Errorf("%s is repository-sourced but not owned by Roundfix", skill.Name)
 					continue
 				}
-				want, err := SkillFolderHash(
-					t.Context(),
-					filepath.Join(repoRoot, ".agents", "skills", skill.Name),
-				)
-				if err != nil {
-					t.Fatalf("hash canonical skill %s: %v", skill.Name, err)
-				}
-				if skill.ContentDigest != want {
-					t.Errorf(
-						"%s contentDigest = %q, want canonical %q; %s",
-						skill.Name,
-						skill.ContentDigest,
-						want,
-						baselineDigestRegenerationHint,
-					)
-				}
 			}
+			assertBaselineSetupHasNoOwnedContentPins(t, setupPath, knownOwned)
 		})
 	}
 
@@ -470,6 +457,8 @@ func TestAuthorialSkillSync(t *testing.T) {
 
 func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
 	t.Parallel()
+	const minimum = "1.2.3"
+
 	repoRoot := t.TempDir()
 	skillRoot := filepath.Join(repoRoot, ".agents", "skills", "roundfix")
 	if err := os.MkdirAll(skillRoot, 0o755); err != nil {
@@ -498,38 +487,190 @@ func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
 				Type: "repo",
 				Name: "roundfix",
 			},
-			ContentDigest: "stale",
 		}},
 	}
 	writeBaselineSetupFixture(t, setupPath, setup)
-	knownOwned := map[string]struct{}{"roundfix": {}}
-
-	regenerateBaselineSetupSnapshot(t, repoRoot, setupPath, knownOwned)
-	before := readBaselineSetupFixture(t, setupPath)
-	beforeSkillDigest, err := SkillFolderHash(t.Context(), skillRoot)
+	var setupDocument map[string]any
+	if err := json.Unmarshal(readBaselineSkillContractFile(t, setupPath), &setupDocument); err != nil {
+		t.Fatal(err)
+	}
+	setupSkills, ok := setupDocument["skills"].([]any)
+	if !ok || len(setupSkills) != 1 {
+		t.Fatalf("fixture skills = %#v, want one skill", setupDocument["skills"])
+	}
+	setupSkill, ok := setupSkills[0].(map[string]any)
+	if !ok {
+		t.Fatalf("fixture skill = %#v, want object", setupSkills[0])
+	}
+	setupSkill["minimumVersion"] = minimum
+	updatedSetup, err := json.MarshalIndent(setupDocument, "", "  ")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if before.Skills[0].ContentDigest != beforeSkillDigest ||
-		before.Digest != baselineSetupDigest(t, before.Skills, before.ActivationBundles) {
-		t.Fatalf("first regenerated setup has stale derived digests: %+v", before)
+	if err := os.WriteFile(setupPath, append(updatedSetup, '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	knownOwned := map[string]struct{}{"roundfix": {}}
+
+	regenerateBaselineSetupSnapshot(t, setupPath, knownOwned)
+	before := readBaselineSetupFixture(t, setupPath)
+	beforeBytes := readBaselineSkillContractFile(t, setupPath)
+	if before.Digest != baselineSetupDigest(t, before.Skills, before.ActivationBundles) {
+		t.Fatalf("first regenerated setup has a stale snapshot digest: %+v", before)
+	}
+	if got := baselineSetupMinimum(t, setupPath); got != minimum {
+		t.Fatalf("first regenerated minimum = %q, want preserved %q", got, minimum)
 	}
 
 	if err := os.WriteFile(skillPath, []byte("after\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	regenerateBaselineSetupSnapshot(t, repoRoot, setupPath, knownOwned)
+	regenerateBaselineSetupSnapshot(t, setupPath, knownOwned)
 	after := readBaselineSetupFixture(t, setupPath)
-	afterSkillDigest, err := SkillFolderHash(t.Context(), skillRoot)
+	if after.Digest != baselineSetupDigest(t, after.Skills, after.ActivationBundles) {
+		t.Fatalf("second regenerated setup has a stale snapshot digest: %+v", after)
+	}
+	if afterBytes := readBaselineSkillContractFile(t, setupPath); !bytes.Equal(afterBytes, beforeBytes) {
+		t.Fatal("canonical Skill edit changed the setup snapshot")
+	}
+	if got := baselineSetupMinimum(t, setupPath); got != minimum {
+		t.Fatalf("second regenerated minimum = %q, want preserved %q", got, minimum)
+	}
+}
+
+func TestCharacterizationCorporaDoNotRecordOwnedSkillDigests(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	corpusPaths := []string{
+		filepath.Join(repoRoot, "internal", "baseline", "testdata", "catalog.diagnostics.golden.json"),
+	}
+	planPaths, err := filepath.Glob(
+		filepath.Join(repoRoot, "internal", "baseline", "testdata", "plan-characterization", "*.golden.json"),
+	)
 	if err != nil {
+		t.Fatalf("list Baseline plan characterization corpus: %v", err)
+	}
+	if len(planPaths) == 0 {
+		t.Fatal("Baseline plan characterization corpus is missing")
+	}
+	corpusPaths = append(corpusPaths, planPaths...)
+
+	knownOwned := make(map[string]struct{}, len(Names()))
+	for _, skillName := range Names() {
+		knownOwned[skillName] = struct{}{}
+	}
+	for _, corpusPath := range corpusPaths {
+		var corpus any
+		if err := json.Unmarshal(readBaselineSkillContractFile(t, corpusPath), &corpus); err != nil {
+			t.Fatalf("decode characterization corpus %s: %v", corpusPath, err)
+		}
+		for _, violation := range ownedSkillDigestFields(corpus, knownOwned, "$") {
+			t.Errorf("%s %s", corpusPath, violation)
+		}
+	}
+
+	staleDigestFixture := map[string]any{
+		"skills": []any{map[string]any{
+			"name":          Names()[0],
+			"treeDigest":    strings.Repeat("a", 64),
+			"contentDigest": strings.Repeat("b", 64),
+		}},
+	}
+	if violations := ownedSkillDigestFields(staleDigestFixture, knownOwned, "$"); len(violations) != 2 {
+		t.Fatalf("stale owned-skill digest fixture produced %d violations, want 2: %v", len(violations), violations)
+	}
+}
+
+func ownedSkillDigestFields(value any, knownOwned map[string]struct{}, jsonPath string) []string {
+	var violations []string
+	switch value := value.(type) {
+	case []any:
+		for index, item := range value {
+			violations = append(violations, ownedSkillDigestFields(item, knownOwned, fmt.Sprintf("%s[%d]", jsonPath, index))...)
+		}
+	case map[string]any:
+		name, _ := value["name"].(string)
+		if _, owned := knownOwned[name]; owned {
+			for _, field := range []string{"treeDigest", "contentDigest"} {
+				if digest, exists := value[field]; exists && nonEmptyJSONValue(digest) {
+					violations = append(violations, fmt.Sprintf("records %s for owned skill %s at %s", field, name, jsonPath))
+				}
+			}
+		}
+		for key, item := range value {
+			violations = append(violations, ownedSkillDigestFields(item, knownOwned, jsonPath+"."+key)...)
+			if key != "content" {
+				continue
+			}
+			encoded, ok := item.(string)
+			if !ok {
+				continue
+			}
+			decoded, err := base64.StdEncoding.DecodeString(encoded)
+			if err != nil || !json.Valid(decoded) {
+				continue
+			}
+			var embedded any
+			if err := json.Unmarshal(decoded, &embedded); err != nil {
+				continue
+			}
+			violations = append(violations, ownedSkillDigestFields(embedded, knownOwned, jsonPath+".content(decoded)")...)
+		}
+	}
+	return violations
+}
+
+func nonEmptyJSONValue(value any) bool {
+	if value == nil {
+		return false
+	}
+	if text, ok := value.(string); ok {
+		return strings.TrimSpace(text) != ""
+	}
+	return true
+}
+
+func baselineSetupMinimum(t *testing.T, setupPath string) string {
+	t.Helper()
+	var setup struct {
+		Skills []struct {
+			MinimumVersion string `json:"minimumVersion"`
+		} `json:"skills"`
+	}
+	if err := json.Unmarshal(readBaselineSkillContractFile(t, setupPath), &setup); err != nil {
 		t.Fatal(err)
 	}
-	if after.Skills[0].ContentDigest != afterSkillDigest ||
-		after.Digest != baselineSetupDigest(t, after.Skills, after.ActivationBundles) {
-		t.Fatalf("second regenerated setup has stale derived digests: %+v", after)
+	return setup.Skills[0].MinimumVersion
+}
+
+func assertBaselineSetupHasNoOwnedContentPins(
+	t *testing.T,
+	setupPath string,
+	knownOwned map[string]struct{},
+) {
+	t.Helper()
+
+	var setup struct {
+		Skills []map[string]any `json:"skills"`
 	}
-	if after.Skills[0].ContentDigest == before.Skills[0].ContentDigest {
-		t.Fatal("canonical Skill edit did not change the regenerated content digest")
+	if err := json.Unmarshal(readBaselineSkillContractFile(t, setupPath), &setup); err != nil {
+		t.Fatal(err)
+	}
+	for _, skill := range setup.Skills {
+		source, ok := skill["source"].(map[string]any)
+		if !ok || source["type"] != "repo" {
+			continue
+		}
+		name, _ := skill["name"].(string)
+		if _, ok := knownOwned[name]; !ok {
+			continue
+		}
+		for _, field := range []string{"treeDigest", "contentDigest"} {
+			if _, exists := skill[field]; exists {
+				t.Errorf("%s repository-owned skill %s retains compatibility content pin %s", setupPath, name, field)
+			}
+		}
 	}
 }
 
@@ -1224,11 +1365,11 @@ type baselineSetupSource struct {
 }
 
 type baselineSetupSkill struct {
-	Name          string              `json:"name"`
-	Path          string              `json:"path"`
-	Source        baselineSetupSource `json:"source"`
-	TreeDigest    string              `json:"treeDigest,omitempty"`
-	ContentDigest string              `json:"contentDigest,omitempty"`
+	Name           string              `json:"name"`
+	Path           string              `json:"path"`
+	Source         baselineSetupSource `json:"source"`
+	MinimumVersion string              `json:"minimumVersion,omitempty"`
+	TreeDigest     string              `json:"treeDigest,omitempty"`
 }
 
 type baselineSetupBundle struct {
@@ -1238,7 +1379,6 @@ type baselineSetupBundle struct {
 
 func regenerateBaselineSetupSnapshot(
 	t *testing.T,
-	repoRoot string,
 	setupPath string,
 	knownOwned map[string]struct{},
 ) {
@@ -1263,14 +1403,6 @@ func regenerateBaselineSetupSnapshot(
 		if _, ok := knownOwned[skill.Name]; !ok {
 			t.Fatalf("%s is repository-sourced but not owned by Roundfix", skill.Name)
 		}
-		digest, err := SkillFolderHash(
-			t.Context(),
-			filepath.Join(repoRoot, ".agents", "skills", skill.Name),
-		)
-		if err != nil {
-			t.Fatalf("hash canonical skill %s: %v", skill.Name, err)
-		}
-		skill.ContentDigest = digest
 	}
 	setup.Digest = baselineSetupDigest(t, setup.Skills, setup.ActivationBundles)
 	updated, err := json.MarshalIndent(setup, "", "  ")
@@ -1342,6 +1474,58 @@ func baselineSetupDigest(
 	}
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
+}
+
+func copyTrackedRepository(t *testing.T, repoRoot string) string {
+	t.Helper()
+
+	command := exec.Command("git", "ls-files", "-z", "--cached")
+	command.Dir = repoRoot
+	output, err := command.Output()
+	if err != nil {
+		t.Fatalf("list tracked repository files: %v", err)
+	}
+	targetRoot := filepath.Join(t.TempDir(), "repository")
+	for _, rawRelative := range bytes.Split(output, []byte{0}) {
+		if len(rawRelative) == 0 {
+			continue
+		}
+		relative := filepath.FromSlash(string(rawRelative))
+		source := filepath.Join(repoRoot, relative)
+		target := filepath.Join(targetRoot, relative)
+		info, err := os.Lstat(source)
+		if err != nil {
+			t.Fatalf("inspect tracked file %s: %v", relative, err)
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			t.Fatalf("create tracked file parent %s: %v", relative, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			destination, err := os.Readlink(source)
+			if err != nil {
+				t.Fatalf("read tracked symlink %s: %v", relative, err)
+			}
+			if err := os.Symlink(destination, target); err != nil {
+				t.Fatalf("copy tracked symlink %s: %v", relative, err)
+			}
+			continue
+		}
+		data, err := os.ReadFile(source)
+		if err != nil {
+			t.Fatalf("read tracked file %s: %v", relative, err)
+		}
+		if err := os.WriteFile(target, data, info.Mode().Perm()); err != nil {
+			t.Fatalf("copy tracked file %s: %v", relative, err)
+		}
+	}
+	return targetRoot
+}
+
+func tailBytes(data []byte, limit int) []byte {
+	if len(data) <= limit {
+		return data
+	}
+	return data[len(data)-limit:]
 }
 
 func readBaselineSkillContractFile(t *testing.T, path string) []byte {

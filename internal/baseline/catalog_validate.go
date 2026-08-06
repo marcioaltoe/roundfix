@@ -10,6 +10,8 @@ import (
 	"path"
 	"regexp"
 	"strings"
+
+	roundskills "roundfix/skills"
 )
 
 var (
@@ -38,6 +40,29 @@ const (
 )
 
 const sourceBaselineManifestRowGuidance = "; the regenerator maintains manifest rows but never creates them, so add this row first"
+
+// ReadinessState is the outcome of comparing a skill's declared compatibility
+// identity with Roundfix's independently declared minimum.
+type ReadinessState = roundskills.ReadinessState
+
+const (
+	ReadinessSatisfies   = roundskills.ReadinessSatisfies
+	ReadinessBelow       = roundskills.ReadinessBelow
+	ReadinessUnversioned = roundskills.ReadinessUnversioned
+)
+
+// ErrSkillVersionUnresolvable distinguishes a source that cannot provide a
+// comparable declaration from a skill that is absent.
+var ErrSkillVersionUnresolvable = roundskills.ErrSkillVersionUnresolvable
+
+// SkillVersion is a skill's declared compatibility identity. Roundfix reads
+// it and never invents one.
+type SkillVersion = roundskills.SkillVersion
+
+// Readiness compares a declared version against Roundfix's declared minimum.
+func Readiness(declared SkillVersion, minimum string) (ReadinessState, error) {
+	return roundskills.Readiness(declared, minimum)
+}
 
 func (l *catalogLoader) validateTemplates(catalog *Catalog) {
 	for templateID, template := range catalog.templates {
@@ -1250,9 +1275,9 @@ func (l *catalogLoader) validateSetups(catalog *Catalog) {
 					l.add("catalog.setup.skill.treeDigest.invalid", setupID, name)
 				}
 			case "repo":
-				digest, ok := stringValue(skill, "contentDigest")
-				if !ok || !lowerSHA256.MatchString(digest) {
-					l.add("catalog.setup.skill.contentDigest.invalid", setupID, name)
+				minimum, ok := stringValue(skill, "minimumVersion")
+				if !ok || !roundskills.ValidVersion(minimum) {
+					l.add("catalog.setup.skill.minimumVersion.invalid", setupID, name)
 				}
 			default:
 				l.add("catalog.setup.skill.source.type.unknown", setupID, name)

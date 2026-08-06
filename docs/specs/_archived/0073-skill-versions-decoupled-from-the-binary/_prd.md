@@ -1,9 +1,14 @@
 ---
 spec: 0073-skill-versions-decoupled-from-the-binary
-status: active
+status: archived
 created: 2026-08-03
 surfaces: [backend, cli, docs]
+archived: "2026-08-06"
+source_slug: 0073-skill-versions-decoupled-from-the-binary
+unproven:
+    - a maintainer grant naming `skills-lock.json` for the three external Go Skills, followed by a bounded Task that records their provenance without creating any setup-snapshot entry
 ---
+
 
 # Skill versions decoupled from the binary
 
@@ -48,7 +53,11 @@ schedule.
 - Active ADR obligations: applicable — ADR-0081 keeps sanctioned digest
   regeneration a fallout of the authorized edit, which whatever replaces the
   content pin must preserve; ADR-0085 keeps a regeneration run ungated by the
-  pins it rewrites while every other load stays strict. Source:
+  pins it rewrites while every other load stays strict. ADR-0080 owns QA
+  verdict semantics and ADR-0091 owns the authored QA gate as a typed Task
+  node, under which this Spec's graph is authored. ADR-0093 surfaces as a
+  relation candidate because it cites ADR-0080; it does not apply — it governs
+  the Spec Consistency Check's detection boundary. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: on
   2026-08-04 the maintainer authorized the queue-tail tooling boundaries,
@@ -153,6 +162,20 @@ is this Spec's own work rather than a dependency on anyone else.
 - This Spec evolves the skill contract and never regresses it: a Baseline
   applied today still validates, no archived artifact is rewritten, and every
   digest protecting something Roundfix owns stays.
+
+## Unreachable Acceptance
+
+- criterion: Success Metric 7 — the three Go skills added on 2026-08-02 carry
+  recorded provenance without a setup-snapshot entry
+  reason: recording it writes `skills-lock.json`, a protected lock and
+  provenance file outside this Spec's tooling authority; the 2026-08-04 record
+  bounds Spec 0073 to `Makefile` and owned-skill paths and explicitly keeps
+  third-party Skills outside the grant, and the Task assigned this work on
+  2026-08-06 stopped at its Project Constraint preflight rather than widen its
+  own boundary
+  satisfied-by: a maintainer grant naming `skills-lock.json` for the three
+  external Go Skills, followed by a bounded Task that records their provenance
+  without creating any setup-snapshot entry
 
 ## Open Questions
 
