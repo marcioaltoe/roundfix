@@ -1,9 +1,12 @@
 ---
 spec: 0059-run-storage-compaction-and-global-sanitation
-status: active
+status: archived
 created: 2026-07-28
 surfaces: [backend, cli, data, docs]
+archived: "2026-08-06"
+source_slug: 0059-run-storage-compaction-and-global-sanitation
 ---
+
 
 # Run storage compaction and global sanitation
 
