@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0059-run-storage-compaction-and-global-sanitation
-status: pending
+status: completed
 type: chore
 complexity: low
 ---
@@ -76,3 +76,52 @@ tooling Task.
 - `_techspec.md` → Integration Points; Build Order 5.
 - `docs/workflow/authorizations/2026-08-04-queue-tail-tooling.md`.
 - ADR-0081.
+
+## Result
+
+Implementation stopped before changing the Roundfix Skill because the shipped
+CLI does not expose the compaction command this Task requires the Skill to
+teach. `internal/store` contains `PreviewCompaction` and `Compact`, but
+`internal/cli/gc.go` routes only per-repository GC and `gc sanitize`; its usage
+text likewise contains no compaction surface. Documenting
+`roundfix gc compact [--apply]` would therefore contradict Requirement 8 by
+describing behaviour that has not shipped, while adding that CLI route would
+change behaviour outside this documentation-only Task.
+
+Focused checks and inspections:
+
+- `rtk proxy rg -n 'PreviewCompaction|\\.Compact\\(|gc compact|compact \\[--apply\\]' . --glob '!docs/specs/**' --glob '!skills/**' --glob '!.agents/**'`
+  — found compaction only in `internal/store/journal.go` and its tests; no CLI
+  caller or command route exists.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go run -buildvcs=false ./cmd/roundfix gc --help`
+  — exited `0` and listed only `roundfix gc [--dry-run]` and
+  `roundfix gc sanitize [--apply]`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go run -buildvcs=false ./cmd/roundfix gc compact`
+  — the built CLI returned Preflight Validation reason
+  `unexpected argument "compact"` with its documented no-side-effects report.
+
+Acceptance evidence:
+
+- Compaction preview and three refusals: the store layer implements and tests
+  Active Run, other-writer, and insufficient-temporary-capacity refusals, but
+  no shipped CLI surface can be truthfully documented in the Skill.
+- Explicit-only compaction: the store test
+  `TestPruneTerminalRunsNeverVacuumsAllocatedPages` covers the invariant, but
+  the missing CLI surface blocks the requested operator workflow text.
+- Sanitation dry-run, six classifications, Review Artifact preservation, and
+  ambiguous-path preservation: shipped source and focused Task 03 evidence
+  support these claims, but no partial Skill edit was made while the compaction
+  contract is unresolved.
+- Read-only storage report: shipped source and focused Task 01 evidence support
+  `roundfix storage report`, including no flags and use outside Git, but no
+  partial Skill edit was made.
+- Mirror identity: not regenerated because changing the canonical Skill would
+  create a false CLI contract.
+- Repository Verification: not run; the Daemon owns every command under this
+  Task's `## Verification` section.
+- No Go source changed by this Task turn.
+
+Follow-up: add a bounded implementation Task for the promised explicit
+compaction CLI preview/apply route, or revise the Spec and this Task to state
+that compaction is a store-only API. Then rerun this Skill synchronization and
+its required regeneration chain.
