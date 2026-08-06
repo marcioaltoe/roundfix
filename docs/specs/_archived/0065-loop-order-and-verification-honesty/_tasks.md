@@ -40,7 +40,7 @@ graph:
 | task_06 | Run the final QA gate                           | qa      | medium     | task_07          |
 
 Waves: 1 → task_01 · task_02 · 2 → task_03 · task_04 · 3 → task_05 ·
-4 → task_06
+4 → task_07 · 5 → task_06
 
 task_04 depends on task_01 deliberately, and the dependency is not cosmetic.
 `SC-LOOP-ORDER-DIVERGENT` fails while the three statements disagree, and
