@@ -44,7 +44,14 @@ takes ownership of exactly that, on evidence 0063 did not have.
   every mechanical detector to citation-checkable facts, deterministic and
   hermetic, skipped rather than failed when an input artifact is absent, and
   non-regressive against Specs that pass today. ADR-0014 keeps Verification
-  commands Daemon-owned. ADR-0081 sanctions digest fallout of the authorized
+  commands Daemon-owned, and its neighbours hold with it: ADR-0057 keeps Task
+  status exclusively the Daemon's, so a mechanical stage may report and never
+  settle; ADR-0038 keeps the single Verification repair, which a fail-fast
+  stage must not consume a second time; ADR-0020 keeps a parsed prompt result
+  outranking a later nonzero exit, so a stage's exit status never overrides
+  delivered agent work; and ADR-0056 keeps Task Capacity separate from
+  Verification Capacity, which a stage running before the agent must respect
+  rather than borrow. ADR-0081 sanctions digest fallout of the authorized
   edits. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization granted
   2026-08-06 in the write-prd authorization gate, recorded at
