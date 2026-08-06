@@ -155,6 +155,7 @@ func TestRunGCHelp(t *testing.T) {
 	}
 	for _, want := range []string{
 		"roundfix gc [--dry-run]",
+		"roundfix gc compact [--apply]",
 		"--dry-run",
 		"Journal Retention",
 		"never deletes Run rows or Active Run locks",
@@ -165,6 +166,199 @@ func TestRunGCHelp(t *testing.T) {
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunGCCompactPreviewsAndAppliesMeasuredBytes(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir, _ := withCLIWorkspace(t)
+	seedGCCompactionFixture(t, ctx, homeDir)
+
+	databaseBefore := gcDatabaseFileSize(t, homeDir)
+	var previewStdout bytes.Buffer
+	var previewStderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"gc", "compact"}, &previewStdout, &previewStderr)
+	if code != exitOK {
+		t.Fatalf("expected gc compact preview exit 0, got %d stderr=%q stdout=%q", code, previewStderr.String(), previewStdout.String())
+	}
+	if previewStderr.Len() != 0 {
+		t.Fatalf("expected gc compact preview diagnostics to stay empty, got %q", previewStderr.String())
+	}
+	previewBefore := gcReportInt64(t, previewStdout.String(), "Bytes before")
+	previewReclaimable := gcReportInt64(t, previewStdout.String(), "Bytes reclaimable")
+	previewAfter := gcReportInt64(t, previewStdout.String(), "Bytes after (projected)")
+	if previewBefore != databaseBefore || previewAfter != previewBefore-previewReclaimable {
+		t.Fatalf("preview measurements do not reconcile with the Run Database: before=%d reclaimable=%d after=%d file=%d output=%q", previewBefore, previewReclaimable, previewAfter, databaseBefore, previewStdout.String())
+	}
+	if afterPreview := gcDatabaseFileSize(t, homeDir); afterPreview != databaseBefore {
+		t.Fatalf("gc compact preview changed Run Database bytes: before=%d after=%d", databaseBefore, afterPreview)
+	}
+
+	var applyStdout bytes.Buffer
+	var applyStderr bytes.Buffer
+	code = runCLIContext(t, ctx, []string{"gc", "compact", "--apply"}, &applyStdout, &applyStderr)
+	if code != exitOK {
+		t.Fatalf("expected gc compact --apply exit 0, got %d stderr=%q stdout=%q", code, applyStderr.String(), applyStdout.String())
+	}
+	if applyStderr.Len() != 0 {
+		t.Fatalf("expected gc compact --apply diagnostics to stay empty, got %q", applyStderr.String())
+	}
+	resultBefore := gcReportInt64(t, applyStdout.String(), "Bytes before")
+	resultReclaimed := gcReportInt64(t, applyStdout.String(), "Bytes reclaimed")
+	resultAfter := gcReportInt64(t, applyStdout.String(), "Bytes after")
+	if resultBefore != previewBefore || resultAfter != resultBefore-resultReclaimed {
+		t.Fatalf("compaction measurements do not reconcile with the preview: preview_before=%d result_before=%d reclaimed=%d after=%d output=%q", previewBefore, resultBefore, resultReclaimed, resultAfter, applyStdout.String())
+	}
+	if databaseAfter := gcDatabaseFileSize(t, homeDir); databaseAfter != resultAfter {
+		t.Fatalf("gc compact --apply reported %d bytes after, Run Database has %d", resultAfter, databaseAfter)
+	}
+}
+
+func TestRunGCCompactPreviewReportsStorageMeasurementWhenWriterAdvances(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir, _ := withCLIWorkspace(t)
+	seedGCCompactionFixture(t, ctx, homeDir)
+
+	dependencies := defaultGCDependencies()
+	dependencies.previewCompaction = func(context.Context, *store.Store) (store.CompactionPreview, error) {
+		return store.CompactionPreview{}, store.WriterPresentCompactionError{
+			Cause: errors.New("Run Database changed while the compact snapshot was measured"),
+		}
+	}
+	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
+		commandDependencies.gc = dependencies
+	})
+
+	databaseBefore := gcDatabaseFileSize(t, homeDir)
+	var previewStdout bytes.Buffer
+	var previewStderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"gc", "compact"}, &previewStdout, &previewStderr)
+	if code != exitOK {
+		t.Fatalf("expected live-writer preview exit 0, got %d stderr=%q stdout=%q", code, previewStderr.String(), previewStdout.String())
+	}
+	if previewStderr.Len() != 0 {
+		t.Fatalf("expected live-writer preview diagnostics to stay empty, got %q", previewStderr.String())
+	}
+	previewBefore := gcReportInt64(t, previewStdout.String(), "Bytes before")
+	previewReclaimable := gcReportInt64(t, previewStdout.String(), "Bytes reclaimable")
+	previewAfter := gcReportInt64(t, previewStdout.String(), "Bytes after (projected)")
+	if previewBefore != databaseBefore || previewAfter != previewBefore-previewReclaimable {
+		t.Fatalf("live-writer preview measurements do not reconcile: before=%d reclaimable=%d after=%d file=%d output=%q", previewBefore, previewReclaimable, previewAfter, databaseBefore, previewStdout.String())
+	}
+	if afterPreview := gcDatabaseFileSize(t, homeDir); afterPreview != databaseBefore {
+		t.Fatalf("live-writer preview changed Run Database bytes: before=%d after=%d", databaseBefore, afterPreview)
+	}
+
+	var applyStdout bytes.Buffer
+	var applyStderr bytes.Buffer
+	code = runCLIContext(t, ctx, []string{"gc", "compact", "--apply"}, &applyStdout, &applyStderr)
+	if code != exitRunFailed {
+		t.Fatalf("expected live-writer apply refusal exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, applyStderr.String(), applyStdout.String())
+	}
+	if !strings.Contains(applyStderr.String(), "another Run Database connection") {
+		t.Fatalf("expected live-writer apply refusal to name its cause, got %q", applyStderr.String())
+	}
+	if applyStdout.Len() != 0 {
+		t.Fatalf("expected live-writer apply refusal to produce no stdout, got %q", applyStdout.String())
+	}
+}
+
+func TestRunGCCompactRefusalsNameCause(t *testing.T) {
+	t.Run("Active Run", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		homeDir, _ := withCLIWorkspace(t)
+		seedGCCompactionFixture(t, ctx, homeDir)
+		runStore, err := store.Open(ctx, homeDir)
+		if err != nil {
+			t.Fatalf("open Run store for Active Run refusal: %v", err)
+		}
+		activeRun := createGCTestRun(t, ctx, runStore, t.TempDir(), "compact-active", 0)
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close Run store after Active Run seed: %v", err)
+		}
+
+		assertRunGCCompactRefusal(t, ctx, homeDir, "Active Run", activeRun.ID)
+	})
+
+	t.Run("another writer", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		homeDir, _ := withCLIWorkspace(t)
+		seedGCCompactionFixture(t, ctx, homeDir)
+		otherWriter, err := store.Open(ctx, homeDir)
+		if err != nil {
+			t.Fatalf("open competing Run Database writer: %v", err)
+		}
+		defer func() {
+			if err := otherWriter.Close(); err != nil {
+				t.Fatalf("close competing Run Database writer: %v", err)
+			}
+		}()
+
+		assertRunGCCompactRefusal(t, ctx, homeDir, "another Run Database connection")
+	})
+
+	t.Run("insufficient temporary capacity", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		homeDir, _ := withCLIWorkspace(t)
+		seedGCCompactionFixture(t, ctx, homeDir)
+		dependencies := defaultGCDependencies()
+		dependencies.compact = func(context.Context, *store.Store, store.CompactionPreview) (store.CompactionResult, error) {
+			return store.CompactionResult{}, store.CompactionCapacityError{
+				RequiredBytes:  10,
+				AvailableBytes: 9,
+				ShortfallBytes: 1,
+			}
+		}
+		updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
+			commandDependencies.gc = dependencies
+		})
+
+		assertRunGCCompactRefusal(t, ctx, homeDir, "insufficient temporary capacity", "shortfall=1")
+	})
+}
+
+func assertRunGCCompactRefusal(t *testing.T, ctx context.Context, homeDir string, contains ...string) {
+	t.Helper()
+	before := gcDatabaseFileSize(t, homeDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"gc", "compact", "--apply"}, &stdout, &stderr)
+	if code != exitRunFailed {
+		t.Fatalf("expected gc compact refusal exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, stderr.String(), stdout.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected refusal to produce no result output, got %q", stdout.String())
+	}
+	for _, want := range contains {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected refusal diagnostic to contain %q, got %q", want, stderr.String())
+		}
+	}
+	if after := gcDatabaseFileSize(t, homeDir); after != before {
+		t.Fatalf("gc compact refusal changed Run Database bytes: before=%d after=%d", before, after)
+	}
+}
+
+func TestRunGCCompactRejectsUnsupportedInput(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"gc", "compact", "--unexpected"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected unsupported gc compact input to exit %d, got %d", exitPreflight, code)
+	}
+	if !strings.Contains(stderr.String(), "flag provided but not defined: -unexpected") {
+		t.Fatalf("expected unsupported-input diagnostic, got %q", stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected unsupported input to produce no stdout, got %q", stdout.String())
 	}
 }
 
@@ -465,6 +659,50 @@ func gcReportCount(t *testing.T, output string, label string) int {
 	}
 	t.Fatalf("missing %s in output %q", label, output)
 	return 0
+}
+
+func gcReportInt64(t *testing.T, output string, label string) int64 {
+	t.Helper()
+	for _, line := range strings.Split(output, "\n") {
+		fields := strings.SplitN(strings.TrimSpace(line), ":", 2)
+		if len(fields) != 2 || fields[0] != label {
+			continue
+		}
+		value, err := strconv.ParseInt(strings.TrimSpace(fields[1]), 10, 64)
+		if err != nil {
+			t.Fatalf("parse %s from %q: %v", label, line, err)
+		}
+		return value
+	}
+	t.Fatalf("missing %s in output %q", label, output)
+	return 0
+}
+
+func seedGCCompactionFixture(t *testing.T, ctx context.Context, homeDir string) {
+	t.Helper()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run store for compaction fixture: %v", err)
+	}
+	run := createGCTestRun(t, ctx, runStore, t.TempDir(), "compact", 512)
+	if _, err := runStore.CompleteRun(ctx, run.ID, store.StateClean); err != nil {
+		t.Fatalf("complete compaction fixture Run: %v", err)
+	}
+	if _, err := runStore.PruneTerminalRuns(ctx, time.Now().UTC().Add(time.Hour)); err != nil {
+		t.Fatalf("prune compaction fixture Run Events: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run store after compaction fixture: %v", err)
+	}
+}
+
+func gcDatabaseFileSize(t *testing.T, homeDir string) int64 {
+	t.Helper()
+	info, err := os.Stat(store.DatabasePath(homeDir))
+	if err != nil {
+		t.Fatalf("stat Run Database: %v", err)
+	}
+	return info.Size()
 }
 
 type gcFixture struct {

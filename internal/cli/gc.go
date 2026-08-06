@@ -24,6 +24,8 @@ type gcDependencies struct {
 	openStore         func(context.Context, string) (*store.Store, error)
 	openStoreReader   func(context.Context, string) (*store.Store, error)
 	openStorageReader func(context.Context, string) (*store.Store, error)
+	previewCompaction func(context.Context, *store.Store) (store.CompactionPreview, error)
+	compact           func(context.Context, *store.Store, store.CompactionPreview) (store.CompactionResult, error)
 	now               func() time.Time
 }
 
@@ -33,13 +35,20 @@ func defaultGCDependencies() gcDependencies {
 		openStore:         store.Open,
 		openStoreReader:   store.OpenReader,
 		openStorageReader: store.OpenStorageReader,
-		now:               func() time.Time { return time.Now().UTC() },
+		previewCompaction: func(ctx context.Context, runStore *store.Store) (store.CompactionPreview, error) {
+			return runStore.PreviewCompaction(ctx)
+		},
+		compact: func(ctx context.Context, runStore *store.Store, preview store.CompactionPreview) (store.CompactionResult, error) {
+			return runStore.Compact(ctx, preview)
+		},
+		now: func() time.Time { return time.Now().UTC() },
 	}
 }
 
 type gcOptions struct {
 	dryRun   bool
 	sanitize bool
+	compact  bool
 	apply    bool
 }
 
@@ -96,6 +105,13 @@ type gcSanitationReport struct {
 	roots         []gcSanitationRootReport
 	directories   int
 	artifactBytes int64
+}
+
+type gcCompactionReport struct {
+	apply            bool
+	bytesBefore      int64
+	bytesReclaimable int64
+	bytesAfter       int64
 }
 
 type retentionPruneReport struct {
@@ -170,6 +186,16 @@ func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer, 
 	if err != nil {
 		printPreflightFailure("gc", err, stderr)
 		return exitPreflight
+	}
+
+	if opts.compact {
+		report, err := runGCCompaction(ctx, opts, loaded.HomeDir)
+		if err != nil {
+			fmt.Fprintf(stderr, "%s: gc compact failed: %v\n", app.Name, err)
+			return exitRunFailed
+		}
+		printGCCompactionReport(stdout, report)
+		return exitOK
 	}
 
 	if opts.sanitize {
@@ -312,6 +338,19 @@ func storageByteDifference(left int64, right int64) int64 {
 }
 
 func parseGCCommand(args []string) (gcOptions, error) {
+	if len(args) > 0 && args[0] == "compact" {
+		fs := flag.NewFlagSet("gc compact", flag.ContinueOnError)
+		fs.SetOutput(io.Discard)
+		apply := fs.Bool("apply", false, "Compact the Run Database after previewing the measured bytes")
+		if err := fs.Parse(args[1:]); err != nil {
+			return gcOptions{}, validationError{message: err.Error()}
+		}
+		if remaining := fs.Args(); len(remaining) > 0 {
+			return gcOptions{}, validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
+		}
+		return gcOptions{compact: true, apply: *apply}, nil
+	}
+
 	if len(args) > 0 && args[0] == "sanitize" {
 		fs := flag.NewFlagSet("gc sanitize", flag.ContinueOnError)
 		fs.SetOutput(io.Discard)
@@ -335,6 +374,80 @@ func parseGCCommand(args []string) (gcOptions, error) {
 		return gcOptions{}, validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
 	}
 	return gcOptions{dryRun: *dryRun}, nil
+}
+
+func runGCCompaction(ctx context.Context, opts gcOptions, homeDir string) (report gcCompactionReport, err error) {
+	report.apply = opts.apply
+	databaseExists, err := gcDatabaseExists(homeDir)
+	if err != nil || !databaseExists {
+		return report, err
+	}
+
+	dependencies := commandDependenciesForContext(ctx).gc
+	openStore := dependencies.openStoreReader
+	if opts.apply {
+		openStore = dependencies.openStore
+	}
+	runStore, err := openStore(ctx, homeDir)
+	if err != nil {
+		return gcCompactionReport{}, err
+	}
+	defer func() {
+		err = errors.Join(err, runStore.Close())
+	}()
+
+	preview, err := dependencies.previewCompaction(ctx, runStore)
+	if err != nil {
+		var writerPresent store.WriterPresentCompactionError
+		if !opts.apply && errors.As(err, &writerPresent) {
+			storageReport, reportErr := measureStorageReport(ctx, homeDir)
+			if reportErr != nil {
+				return gcCompactionReport{}, errors.Join(err, fmt.Errorf("measure live Run Database compaction preview: %w", reportErr))
+			}
+			if storageReport.DatabaseBytes < 0 || storageReport.DatabaseFreeBytes < 0 || storageReport.DatabaseFreeBytes > storageReport.DatabaseBytes {
+				return gcCompactionReport{}, fmt.Errorf(
+					"measure live Run Database compaction preview: invalid byte relation before=%d reclaimable=%d",
+					storageReport.DatabaseBytes,
+					storageReport.DatabaseFreeBytes,
+				)
+			}
+			return gcCompactionReport{
+				bytesBefore:      storageReport.DatabaseBytes,
+				bytesReclaimable: storageReport.DatabaseFreeBytes,
+				bytesAfter:       storageReport.DatabaseBytes - storageReport.DatabaseFreeBytes,
+			}, nil
+		}
+		return gcCompactionReport{}, err
+	}
+	report.bytesBefore = preview.BytesBefore
+	report.bytesReclaimable = preview.BytesReclaimable
+	report.bytesAfter = preview.BytesAfter
+	if !opts.apply {
+		return report, nil
+	}
+
+	result, err := dependencies.compact(ctx, runStore, preview)
+	if err != nil {
+		return gcCompactionReport{}, err
+	}
+	report.bytesBefore = result.BytesBefore
+	report.bytesReclaimable = result.BytesReclaimed
+	report.bytesAfter = result.BytesAfter
+	return report, nil
+}
+
+func printGCCompactionReport(stdout io.Writer, report gcCompactionReport) {
+	if report.apply {
+		fmt.Fprintln(stdout, "Run Database compaction complete")
+		fmt.Fprintf(stdout, "  Bytes before: %d\n", report.bytesBefore)
+		fmt.Fprintf(stdout, "  Bytes reclaimed: %d\n", report.bytesReclaimable)
+		fmt.Fprintf(stdout, "  Bytes after: %d\n", report.bytesAfter)
+		return
+	}
+	fmt.Fprintln(stdout, "Run Database compaction preview")
+	fmt.Fprintf(stdout, "  Bytes before: %d\n", report.bytesBefore)
+	fmt.Fprintf(stdout, "  Bytes reclaimable: %d\n", report.bytesReclaimable)
+	fmt.Fprintf(stdout, "  Bytes after (projected): %d\n", report.bytesAfter)
 }
 
 func runGCSanitation(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcSanitationReport, error) {

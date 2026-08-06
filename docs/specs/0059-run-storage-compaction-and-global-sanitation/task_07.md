@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0059-run-storage-compaction-and-global-sanitation
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -97,3 +97,129 @@ checks passed most easily on an untouched repository.
 - `_techspec.md` → API Contracts.
 - `docs/workflow/authorizations/2026-08-04-queue-tail-tooling.md`.
 - ADR-0081.
+
+## Result
+
+Implemented the missing `gc compact` command route over the existing store
+API. The bare command opens the existing Run Database read-only, prints bytes
+before, reclaimable, and projected after, and leaves a missing database
+missing while reporting zero measurements. When a concurrent writer advances
+the database during the exact snapshot measurement, the bare command falls
+back to the existing immutable storage-report measurements so preview remains
+read-only and available. `--apply` opens the writer, previews first, invokes
+guarded compaction with that preview, and prints the three measured result
+values. It never uses the reporting fallback, so runtime failures remain on
+stderr and preserve the store's named Active Run, competing-writer, and
+temporary-capacity causes.
+
+Updated `gc --help` and the canonical Roundfix Skill after the route existed.
+The Skill now documents `gc compact`, `gc sanitize`, and `storage report`, the
+three compaction refusals, the preview-before-apply flow, and the rule that
+retention sweeps never compact automatically. `make skills-sync` regenerated
+the mirror, and the ADR-0081 generator chain regenerated its derived digest
+and characterization fallout.
+
+The pre-change focused signal was:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test ./internal/cli -run '^TestRunGCCompact' -count=1`
+  — failed to compile because `gcDependencies` had no compaction route,
+  proving the new command tests were red before the production edit.
+
+Focused checks run before Verification feedback attempt 1:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test ./internal/cli -run '^TestRunGCCompact' -count=1 -v`
+  — passed the real SQLite preview/apply journey, real Active Run and
+  competing-writer refusals, isolated capacity refusal, and unsupported-input
+  case.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test ./internal/cli -count=1`
+  — exited `0` for the complete CLI package, including the existing
+  per-repository GC, sanitation, storage-report, and help suites.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go vet ./internal/cli`
+  — exited `0`.
+- `rtk make skills-sync` — exited `0` and regenerated the Roundfix Skill
+  mirror.
+- `rtk make baseline-digests` — exited `0` and reported
+  `baseline-digests: regenerated` for the catalog, parity, setup, and plan
+  characterization digest fallout.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test ./internal/baseline -count=1 -run '^TestBaselinePlanCharacterization$' -update-baseline-plan-characterization`
+  — exited `0`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test ./internal/baseline -count=1 -run '^TestCatalogDiagnosticCharacterization$' -update-catalog-diagnostics`
+  — exited `0`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-gocache go test ./internal/baseline -run '^Test(BaselinePlanCharacterization|CatalogDiagnosticCharacterization)$' -count=1`
+  — exited `0` against the regenerated corpora.
+- `rtk cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md`
+  — exited `0`; the canonical Skill and mirror are byte-identical.
+- `rtk git -c core.fsmonitor=false diff --check` — exited `0`.
+
+Acceptance evidence:
+
+- Preview: `TestRunGCCompactPreviewsAndAppliesMeasuredBytes` invokes the public
+  CLI runner against a real temporary Run Database, reconciles `after = before
+  - reclaimable`, and proves the preview leaves database bytes unchanged.
+- Apply: the same test invokes `gc compact --apply`, reconciles `after = before
+  - reclaimed`, and compares the reported after value with the resulting
+  database file size.
+- Refusals: `TestRunGCCompactRefusalsNameCause` reaches the real store guard for
+  an Active Run and another writer, routes the capacity guard through the
+  command's dependency boundary, asserts each named cause on stderr, and
+  compares database bytes before and after every refusal.
+- Help: `TestRunGCHelp` asserts that `roundfix gc compact [--apply]` appears in
+  `gc --help`; it passes in the complete CLI package check.
+- Existing behavior: the complete CLI package check retains passing
+  `TestRunGCDryRunListsEligibleRunsAndChangesNothing`,
+  `TestRunGCPrunesEligibleJournalsArtifactsAndOrphans`,
+  `TestRunGCSkipsWhenJournalRetentionIsZero`, and
+  `TestRunGCSanitizeClassifiesEveryRecordedRootAndMutatesOnlyProvenDirectories`.
+- Skill coverage: the reviewed canonical diff names `gc compact`, `gc
+  sanitize`, and `storage report`, including all requested guard and
+  explicit-only compaction language; the sanctioned generator chain exited
+  `0` after that edit.
+- Mirror equality: the byte comparison above exited `0` after the final Skill
+  edit and sync.
+
+Follow-up: Task 07 and its authorization note say the two characterization
+corpora sit outside `BASELINE_DIGEST_STEPS`, but the current Makefile includes
+both. Consequently `make baseline-digests` itself regenerated four
+`internal/baseline/testdata/plan-characterization/*.golden.json` files. Their
+diffs contain only catalog/manifest digest and derived identity changes from
+the authorized Skill edit, so they remain ADR-0081 deterministic fallout; no
+golden value was hand-edited.
+
+### Verification feedback attempt 1
+
+The retained diagnostic identified a competing-writer fingerprint change
+during the bare preview's exact snapshot measurement. That failure happened
+after the read-only snapshot was measured but before its private fingerprint
+could be accepted for a later apply. The repair keeps the exact store preview
+as the first path, uses immutable `storage report` measurements only for a bare
+preview invalidated by that typed writer condition, and leaves `--apply` on
+the original refusal path.
+
+Fresh feedback-repair evidence:
+
+- Before the repair,
+  `rtk env GOCACHE=/private/tmp/roundfix-task07-feedback-gocache go test ./internal/cli -run '^TestRunGCCompactPreviewReportsStorageMeasurementWhenWriterAdvances$' -count=1 -v`
+  reproduced exit `1` for the bare preview under an injected typed writer
+  invalidation.
+- After the repair, the same focused regression test exited `0`; it reconciles
+  all three fallback measurements, proves database bytes are unchanged, and
+  separately proves `--apply` still refuses and names the competing writer.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-feedback-gocache go test ./internal/cli -run '^(TestRunGCHelp|TestRunGCCompactPreviewsAndAppliesMeasuredBytes|TestRunGCCompactPreviewReportsStorageMeasurementWhenWriterAdvances|TestRunGCCompactRefusalsNameCause)$' -count=1 -v`
+  exited `0` for stable preview/apply, live-writer preview, all three guarded
+  apply refusals, and help discovery.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-feedback-gocache go vet ./internal/cli`
+  exited `0`.
+- `rtk make skills-sync` and `rtk make baseline-digests` both exited `0` after
+  the canonical Skill documented the fallback-versus-refusal distinction; the
+  latter ran its catalog-diagnostic and plan-characterization update steps.
+- `rtk cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` and
+  `rtk git -c core.fsmonitor=false diff --check` both exited `0` after the
+  feedback repair.
+
+The acceptance evidence above remains applicable, with the new live-writer
+regression adding direct evidence that the required bare preview exits `0`
+while the competing-writer refusal remains reachable from `--apply` before
+mutation.
+
+The commands under `## Verification` were not run; the Daemon owns those
+commands, Task status, settlement, and the Task commit.

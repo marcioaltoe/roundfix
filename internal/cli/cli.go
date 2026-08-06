@@ -5111,6 +5111,7 @@ Doctor is offline, read-only, and mutates nothing.
 	case "gc":
 		return `Usage:
   roundfix gc [--dry-run]
+  roundfix gc compact [--apply]
   roundfix gc sanitize [--apply]
 
 Prunes Run Event Journal rows for terminal Runs older than Journal Retention,
@@ -5122,9 +5123,12 @@ The sanitize subcommand discovers every recorded Artifact Root from the
 machine-wide Run Database, classifies it with durable and filesystem evidence,
 and preserves every ambiguous path. It is a dry-run unless --apply is explicit.
 
+The compact subcommand previews Run Database bytes before, reclaimable, and
+projected after. It changes the database only when --apply is explicit.
+
 Options:
   --dry-run  List the Runs, journal rows, and artifact bytes that would be pruned without changing anything
-  --apply    With sanitize, remove only proven retention-eligible or absent Run artifact directories
+  --apply    With compact, rebuild the Run Database; with sanitize, remove only proven retention-eligible or absent Run artifact directories
 `
 	case "storage":
 		return `Usage:
