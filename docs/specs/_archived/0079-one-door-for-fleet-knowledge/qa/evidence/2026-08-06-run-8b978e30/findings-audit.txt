@@ -1,0 +1,39 @@
+Fresh findings and Rollup audit
+Build: 8c6f165345275616666802c0d0a5cc938c1db25e
+Result: PASS
+
+Active-state observation
+- A filesystem/frontmatter audit reported:
+  `active=7 rollups=6 lifecycle_errors=0`.
+- Seven active Findings is below the PRD maximum of fifteen.
+- Every active Finding uses one of `pending`, `partial`, `deferred`, or `done`.
+- Six active Findings are Rollups. The seventh is an ordinary live Finding;
+  the contract does not require every active Finding to be a Rollup.
+
+Relation enforcement and behavior probes
+- The first direct focused Go command failed before compilation because
+  `go env GOCACHE` resolves to the sandbox-denied
+  `/Users/marcio/Library/Caches/go-build` path. This is an environment-only
+  command deviation, not product evidence.
+- The unchanged test selection with the task-scoped cache command
+  `GOCACHE=/private/tmp/roundfix-qa79-gocache rtk go test -count=1
+  ./internal/speccheck -run
+  'FindingLifecycle|RollupMember|ArchiveLicense' -v` exited 0 and reported
+  14 passing cases.
+- Those public report-surface suites cover red, green, and presence-aware
+  cases for lifecycle, Rollup member resolution, and archive licensing.
+- The independent full `rtk make verify` gate also passed the public
+  repository check with `No findings.`.
+
+Observation-body preservation
+- A fresh exact audit reopened every legacy Finding at pre-sweep commit
+  `ef498c53`, hashed from its first H1 through EOF, and compared that body with
+  the same basename under `docs/findings/_archived/`.
+- Result: `checked=65 mismatches=0 hash_errors=0`.
+
+Conclusion
+- R01 passes: active count 7, all lifecycle-valid.
+- US03 passes: the live Rollup/archive relation is accepted by the real public
+  check and the 14 focused behavior cases.
+- T03 passes: lifecycle, member, license, and exact 65-body preservation
+  criteria all have fresh evidence.

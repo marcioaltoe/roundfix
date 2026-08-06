@@ -1,0 +1,42 @@
+Build: 071d78f79edc6808a738be6bc5a565967ee1efac
+Result: pass
+
+Both _prd.md and _techspec.md contain all four Project Constraint categories:
+identifier strategy, authentication and HTTP, active ADR obligations, and
+tooling authority. Their sources resolve to docs/agents/domain.md and
+docs/agents/agent-instructions.md. The cited ADRs 0080, 0081, 0091, 0092,
+0093, 0094, and 0095 are present and accepted.
+
+Express authorization:
+- Record: docs/workflow/authorizations/2026-08-06-fleet-knowledge-door.md
+- Authorization commit: 93e41d33bae6c8d0448b57daaa5b454bc2a291b5
+- `git merge-base --is-ancestor` exited 0 from that commit to Task 02
+  (09a3560b...), Task 06 (dc5539fb...), and the later Task 09 cause
+  (82ef1ce4...).
+
+Actual committed path audit used `git diff-tree --no-commit-id --name-status
+-r` for every tooling cause and correction:
+- Task 02, 09a3560b: the two authorized modules and guide postimages, its Task
+  file, and baseline formatter/profile/source-corpus/catalog/plan fallout.
+- Task 06, dc5539fb: the two canonical authorized Skills and their mirrors,
+  the two modules and guides, its Task file, and the same deterministic
+  baseline fallout classes.
+- Task 08 correction, 6a551ea5: only task_08.md and
+  internal/baseline/preservation_test.go; it follows Task 06.
+- Task 09 cause, 82ef1ce4: the two modules and guides, its Task file, and
+  deterministic baseline fallout. It does not contain preservation_test.go.
+- Task 09 consequent correction, 463723da: only
+  internal/baseline/preservation_test.go. An ancestry check proves it follows
+  82ef1ce4.
+
+The task Results record the sanctioned regeneration commands and converged
+second passes (`changed:false`). Fresh current-build confirmation:
+- `rtk make verify`: exit 0.
+- `GOCACHE=/private/tmp/roundfix-qa-40ab-gocache go test -count=1
+  ./internal/baseline/...`: exit 0 in 127.297s.
+- The maintained fixture remains exact at 118 entries and 51 accounting rows;
+  its identity-to-entry assertion remains present.
+
+No authorization-shape, ordering, path-scope, or derived-pin problem was
+found. Current tracked product delta is empty; only this QA report and its
+evidence are untracked.

@@ -1,0 +1,72 @@
+PC01 Project Constraints and tooling-authority audit
+Build: 8c6f165345275616666802c0d0a5cc938c1db25e
+Result: PASS
+
+Constraint applicability
+- PRD and TechSpec both account for identifier strategy as not applicable,
+  citing docs/agents/domain.md: the file contracts use declared project names,
+  dates, slugs, and written pointers without minting an Internal Identifier.
+- PRD and TechSpec both account for authentication and HTTP as not applicable,
+  citing docs/agents/agent-instructions.md: the feature is local filesystem and
+  git behavior with no endpoint, credential, or transport.
+- PRD and TechSpec both account for active ADR obligations as applicable,
+  citing docs/agents/domain.md and naming ADR-0095, ADR-0092, ADR-0093,
+  ADR-0094, ADR-0081, ADR-0080, and ADR-0091.
+- PRD and TechSpec both account for tooling authority as applicable, citing
+  docs/agents/agent-instructions.md and the exact grant at
+  docs/workflow/authorizations/2026-08-06-fleet-knowledge-door.md.
+- All cited operative source paths exist in this build.
+
+Authorization chronology
+- Authorization commit: 93e41d33bae6c8d0448b57daaa5b454bc2a291b5
+  (2026-08-06T09:47:03-03:00).
+- `rtk git merge-base --is-ancestor 93e41d33 09a3560b` exited 0: the exact
+  grant predates Task 02 and therefore Tasks 06 and 09.
+- `rtk git merge-base --is-ancestor 82ef1ce4 463723da` exited 0: the Task 09
+  protected cause precedes its consequent correction.
+- `rtk git merge-base --is-ancestor 463723da 8c6f1653` exited 0: the repair is
+  in the tested build.
+
+Actual tooling commit scopes from `git -c core.fsmonitor=false diff-tree
+--no-commit-id --name-only -r <commit>`
+- Task 02, 09a3560b: the two authorized modules and guides, task_02.md, and
+  deterministic formatter, Source Baseline, profile, catalog, and plan
+  artifacts. No hand-authored correction path appears.
+- Task 06, dc5539fb: the two authorized Skills and mirrors, modules and guides,
+  task_06.md, and the same deterministic artifact classes. No hand-authored
+  correction path appears.
+- Task 09 cause, 82ef1ce4: the two authorized modules and guides, task_09.md,
+  and deterministic formatter, Source Baseline, profile, catalog, and plan
+  artifacts. `internal/baseline/preservation_test.go` is absent.
+- Consequent fix, 463723da: exactly
+  `internal/baseline/preservation_test.go`; its diff is one declared constant,
+  `maintainedSourceBaselineEntries = 114` to `118`, while accounting remains
+  `51`.
+- Gate reset, 8c6f1653: exactly task_07.md, which returns the Daemon-owned QA
+  node to pending after the repair.
+
+Task 09 cause inspection
+- The module and guide diff adds only the four promised operator clauses and
+  the required module/guide/rule version increments: `oldest first`,
+  `empty inbox`, live-work `health`, and `no open members` closure candidacy.
+- `rtk git diff 82ef1ce4^ 82ef1ce4 --
+  internal/baseline/preservation_test.go` produced no diff.
+- `rtk git diff 82ef1ce4 463723da --
+  internal/baseline/preservation_test.go` reported one insertion and one
+  deletion for the 114 to 118 correction.
+
+Regeneration parity
+- Tested a clean `git archive` of HEAD under
+  /private/tmp/roundfix-qa79.L8G8fw.
+- `rtk make baseline-digests` exited 0 and reported:
+  `baseline-digests: no changes; derived artifacts already match their
+  canonical sources`
+  and `{"schemaVersion":1,"type":"baseline-digests","ok":true,
+  "changed":false}`.
+
+Conclusion
+The Project Constraints are complete. Authorization is early and exact.
+Tasks 02, 06, and 09 contain only authorized causes plus reproducible
+deterministic fallout and their Task files. Task 09's hand-authored consequent
+fixture correction is separately traceable after the cause. No tooling-audit
+problem blocks flow QA.

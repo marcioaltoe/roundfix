@@ -1,0 +1,25 @@
+Row: D01
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+Result: fail (repeated F-002)
+
+PRD source observations:
+- _prd.md:147 promises a pending Triage queue ordered oldest first.
+- _prd.md:151 says an empty inbox is rest and an empty findings directory
+  after the sweep is health.
+- _prd.md:152 says a Rollup with no open members is a candidate for closure.
+
+Public-document search:
+Command: rtk grep -n -i -e 'oldest first' -e 'empty inbox' -e 'empty findings'
+  -e 'no open members' -e 'candidate for its own closure'
+  docs/agents/docs-layout.md docs/agents/secondbrain.md
+  .agents/skills/write-idea/SKILL.md .agents/skills/write-prd/SKILL.md
+  internal/baseline/assets/modules/context-workflow.json
+  internal/baseline/assets/modules/secondbrain.json
+
+Observed: none of the promised states or order appears on the fleet Inbox
+Entry, Triage, or Rollup contract surfaces. The sole nearby result is
+docs/agents/docs-layout.md:12, where `An empty inbox is the healthy state`
+describes the unrelated repository-local docs/_inbox/ directory.
+
+Independent confirmation: the same absence holds in both canonical Baseline
+modules, so the omission is not only a stale generated-guide copy.

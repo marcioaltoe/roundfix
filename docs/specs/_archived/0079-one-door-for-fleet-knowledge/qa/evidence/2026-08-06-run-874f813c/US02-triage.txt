@@ -1,0 +1,7 @@
+The real persisted cycle has exactly one typed Backlog Entry with pending-entry
+provenance and a matching triaged resolved_to pointer. No Finding was minted,
+preserving the ADR-0092 human intent/evidence choice.
+
+The QA user journey itself was not replayed after F-001 failed the mandatory
+tooling audit. Status is finding-blocked.
+

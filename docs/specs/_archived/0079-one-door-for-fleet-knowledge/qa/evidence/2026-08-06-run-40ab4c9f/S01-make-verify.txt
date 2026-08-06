@@ -1,0 +1,27 @@
+Command: rtk make verify
+Working directory: repository root
+Build: 071d78f79edc6808a738be6bc5a565967ee1efac
+Exit: 0
+
+Observed summary:
+
+skipped docs/specs/_reviews: missing _prd.md
+rtk go test -parallel 16 ./...
+Go test: 3587 passed in 26 packages
+rtk go test -count=1 -parallel=1 ./internal/speccheck -run '^TestCheckCorpusBudget$'
+Go test: 1 passed in 1 packages
+rtk go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+Go test: 4 passed in 1 packages
+rtk go run -buildvcs=false ./cmd/roundfix skills check
+Roundfix skill check passed for the selected repository skills, including qa-gate and evidence-gate.
+rtk go build -buildvcs=false ... -o bin/roundfix ./cmd/roundfix
+bin/roundfix spec check
+Spec 0079-one-door-for-fleet-knowledge
+No findings.
+Skipped: SC-VOCABULARY-UNDOCUMENTED because the TechSpec has no Vocabulary Contract section.
+
+The skip is the detector's declared presence-aware behavior; the full command exited 0.
+
+Final post-report rerun: `rtk make verify` exited 0 again after the report was
+closed and all evidence files were present. It repeated the same 3,587-test,
+serial-budget, Skill-test, Skill-check, build, and `No findings.` outcomes.

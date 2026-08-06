@@ -1,0 +1,8 @@
+Fresh Non-Goals audit at build 444d1b0e:
+- Built `roundfix --help` lists no inbox command.
+- Focused source search under cmd/ and internal/ found no inbox command dispatch, wiki graduation, or retention automation implementation.
+- Protected tooling path audits contain no mirror-export mechanics.
+- The pilot mints the existing `feat`/`open` Backlog Entry shape; no backlog type or lifecycle redefinition shipped.
+- No remote transport surface, Secondbrain wiki/raw migration, or brain-side retention automation is present in the repository changes.
+
+All seven PRD exclusions remain out of scope.

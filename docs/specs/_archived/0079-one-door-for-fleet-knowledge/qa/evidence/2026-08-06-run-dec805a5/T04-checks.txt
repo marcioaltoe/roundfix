@@ -1,0 +1,9 @@
+Fresh Task 04 static acceptance audit:
+- Test source declares TestCheckFindingLifecycle, TestCheckRollupMember, and TestCheckArchiveLicense.
+- The cases cover missing and unknown lifecycle, exact valid lifecycles, unresolved Rollup member, active/archived members, missing/unresolved archive license, all three license classes, and presence-aware absence for every artifact class.
+- Initial direct Go invocation was environment-denied at the macOS Go cache.
+- Equivalent command with GOCACHE=/private/tmp/roundfix-qa0079-gocache exited 0: 14 selected cases passed.
+- The authoritative `rtk make verify` separately passed the serial TestCheckCorpusBudget and the complete package corpus.
+- Fresh built `./bin/roundfix spec check` exited 0 with No findings for Spec 0079.
+
+The cache deviation changes only the build-cache location, not the selected tests, inputs, binary, or assertions.

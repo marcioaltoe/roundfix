@@ -1,0 +1,20 @@
+Row: S01
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+Command: rtk make verify
+Exit: 0
+
+Observed:
+- 3,587 Go tests passed across 26 packages.
+- TestCheckCorpusBudget passed in its required serial selector.
+- Four focused Skill contract tests passed.
+- roundfix skills check passed for all listed repository skills.
+- go build completed with BuildCommit=6a551ea5-dirty; the only dirty path at
+  build time was this QA rerun report.
+- bin/roundfix spec check reported `Spec 0079-one-door-for-fleet-knowledge`
+  and `No findings.`
+- SC-VOCABULARY-UNDOCUMENTED was recorded skipped because the TechSpec has no
+  Vocabulary Contract section; the command still exited 0.
+
+Independent confirmation: the gate itself built and invoked the public binary
+after the full package sweep. A separate fresh-process CLI confirmation is
+recorded by row B01.

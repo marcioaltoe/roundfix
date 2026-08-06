@@ -1,0 +1,25 @@
+Build: 071d78f79edc6808a738be6bc5a565967ee1efac
+Result: pass
+
+Production-like entry point:
+- Binary rebuilt by `rtk make verify` from the current build.
+- `rtk ./bin/roundfix spec check --help`: exit 0; documents read-only
+  behavior and exit codes 0/1/2.
+- `rtk ./bin/roundfix spec check`: exit 0, `No findings.`
+- The same command in a second fresh process: exit 0 with identical output.
+
+High-risk invalid and presence-aware probes:
+- Exact selection: `go test -count=1 ./internal/speccheck -run
+  'FindingLifecycle|RollupMember|ArchiveLicense' -v`.
+- The default macOS cache attempt failed before compilation with a sandbox
+  permission denial. The unchanged selection using the writable QA cache
+  exited 0.
+- Passing red cases: missing lifecycle, unknown lifecycle, unresolved Rollup
+  member, missing archive license, unresolved archive license.
+- Passing green cases: all exact lifecycle values, active/archived Rollup
+  members, and Rollup/active-Spec/archived-Spec licenses.
+- Passing presence-aware cases: no findings directory, no Rollups, and no
+  archive.
+
+The authoritative gate separately passed the serial TestCheckCorpusBudget,
+3,587 repository tests, build, and the current-repository CLI check.

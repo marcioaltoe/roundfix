@@ -216,6 +216,32 @@ updated_at: YYYY-MM-DD
 ```
 <!-- /source-baseline-entry: clause.context.findings-01-frontmatter -->
 
+<!-- source-baseline-entry: clause.context.findings-08-rollup -->
+A Rollup is a Finding of `kind: rollup` that consolidates related Findings. It lives beside active Findings under `docs/findings/`, shares their lifecycle contract, and declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `docs/findings/_archived/`. Use this extension:
+
+```yaml
+kind: rollup
+members:
+  - YYYY-MM-DD-<finding-slug>.md
+```
+<!-- /source-baseline-entry: clause.context.findings-08-rollup -->
+
+<!-- source-baseline-entry: clause.context.findings-09-archive -->
+Use `docs/findings/_archived/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:
+
+```yaml
+absorbed_by: <rollup-basename-or-spec-slug>
+```
+<!-- /source-baseline-entry: clause.context.findings-09-archive -->
+
+<!-- source-baseline-entry: clause.context.findings-10-live-work-health -->
+Read a findings directory holding only live work as `health`, not loss: Rollups and `docs/findings/_archived/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory.
+<!-- /source-baseline-entry: clause.context.findings-10-live-work-health -->
+
+<!-- source-baseline-entry: clause.context.findings-11-rollup-closure -->
+When a Rollup has `no open members`, review it as a candidate for its own closure and close it through the existing Finding lifecycle contract when its work is settled.
+<!-- /source-baseline-entry: clause.context.findings-11-rollup-closure -->
+
 <!-- source-baseline-entry: clause.context.findings-02-pending -->
 Use `pending` when the finding is new and has no implementation Spec.
 <!-- /source-baseline-entry: clause.context.findings-02-pending -->
@@ -239,6 +265,14 @@ Treat findings as immutable history: append evidence and routing links as dated 
 <!-- source-baseline-entry: clause.context.findings-07-update-timestamp -->
 Update `updated_at` whenever status changes or an evidence addendum is appended; keep `created_at` as the document creation date.
 <!-- /source-baseline-entry: clause.context.findings-07-update-timestamp -->
+
+<!-- source-baseline-entry: clause.context.inbox-01-triage -->
+Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the ADR-0092 boundary: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the Inbox Entry's provenance.
+<!-- /source-baseline-entry: clause.context.inbox-01-triage -->
+
+<!-- source-baseline-entry: clause.context.inbox-02-fleet-flow -->
+Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent.
+<!-- /source-baseline-entry: clause.context.inbox-02-fleet-flow -->
 
 <!-- source-baseline-entry: clause.spec.keep-artifacts-in-spec-folder -->
 Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `docs/specs/_archived/`.

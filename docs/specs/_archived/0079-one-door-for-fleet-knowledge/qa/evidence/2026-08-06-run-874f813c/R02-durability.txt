@@ -1,0 +1,13 @@
+Equivalent observed evidence from the real Secondbrain repository:
+
+- Commit 93bd7b35b77a356a3d2d50989de93565b1e85dbb adds only
+  inbox/secondbrain/2026-08-06-fleet-knowledge-door-research-digest.md.
+- Commit e982c0137ad61b5cf82de0fa8f63b9c5c325412e adds only
+  inbox/roundfix/2026-08-06-automate-inbox-capture-durability.md.
+- The pilot records capture_to_durability_seconds values 50 and 24,
+  respectively; both are below 60.
+- Fresh reads resolved both commit objects and current persisted artifacts.
+
+Result: Success Metric 2 passes from supervised timing plus independent commit
+and persistence confirmation.
+

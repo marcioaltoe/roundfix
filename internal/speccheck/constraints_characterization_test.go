@@ -36,7 +36,7 @@ const (
 func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {
 	t.Parallel()
 
-	const findingPath = "docs/findings/2026-07-31-a-rehearsal-task-can-settle-completed-without-rehearsing.md"
+	const findingPath = "docs/findings/_archived/2026-07-31-a-rehearsal-task-can-settle-completed-without-rehearsing.md"
 	result := checkFixture(t, replay0060Task03)
 	finding := requireReplayFinding(t, findingPath, result, "SC-VERIFY-WORK-INDEPENDENT", "cannot distinguish Task work from no work")
 	assertReplayLocations(t, findingPath, finding,
@@ -408,6 +408,9 @@ var corpusFindingCodes = []string{
 	speccheck.CodeCoverageUnmapped,
 	speccheck.CodeCoverageUntasked,
 	speccheck.CodeLoopOrderDivergent,
+	speccheck.CodeFindingLifecycle,
+	speccheck.CodeRollupMember,
+	speccheck.CodeArchiveLicense,
 	speccheck.CodeReferenceUnresolved,
 	speccheck.CodeVocabularyUndocumented,
 	speccheck.CodeVerifyWorkIndependent,

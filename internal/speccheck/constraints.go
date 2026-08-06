@@ -94,6 +94,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 	if err := detectLoopOrderConsistency(&result, repoRoot); err != nil {
 		return result, err
 	}
+	if err := detectFindingsConsistency(&result, repoRoot); err != nil {
+		return result, err
+	}
 
 	prd, present, err := readConstraintArtifact(repoRoot, filepath.Join(specDir, "_prd.md"))
 	if err != nil {

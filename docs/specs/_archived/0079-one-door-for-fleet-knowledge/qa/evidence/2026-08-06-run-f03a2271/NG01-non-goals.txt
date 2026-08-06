@@ -1,0 +1,16 @@
+Row: NG01
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+Result: pass
+
+- Fresh `rtk ./bin/roundfix --help` contains no inbox command.
+- Fresh `rtk ./bin/roundfix inbox` exits 2 with `unknown command "inbox"`.
+- The Spec implementation diff under `cmd/` and `internal/` contains only
+  Baseline contract assets/tests and `internal/speccheck`; no remote transport,
+  mirror-export, wiki-ingestion, retention-automation, or inbox CLI surface
+  changed.
+- ADR-0092 is byte-unchanged across the Spec, so the Backlog type boundary was
+  not redefined.
+- The pilot report explicitly leaves wiki ingestion, retention automation,
+  Finding creation, and capture CLI work unexercised and out of scope.
+- All observed Secondbrain changes are confined to `inbox/**`; no other brain
+  layer or mirror export path changed in the pilot commit pathsets.

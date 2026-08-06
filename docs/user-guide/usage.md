@@ -600,7 +600,7 @@ The full evidence and refusal rules trace to
 [ADR-0054](../adr/0054-review-source-evidence-determines-review-outcomes.md),
 [Spec 0039](../specs/_archived/0039-review-source-evidence-and-detached-outcomes/_prd.md),
 and the
-[detached-watch finding](../findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
+[detached-watch finding](../findings/_archived/2026-07-16-vortex-pr87-detached-watch-notification.md).
 
 ### Step by step
 

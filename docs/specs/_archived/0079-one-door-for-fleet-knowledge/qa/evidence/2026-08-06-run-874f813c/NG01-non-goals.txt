@@ -1,0 +1,14 @@
+Scope audit from authored-graph base ba2b47db through build 22291c2b:
+
+- No diff under cmd/roundfix or internal/cli: no inbox CLI shipped.
+- No go.mod/go.sum, review transport, GitHub, or app change: no remote
+  transport or new runtime capability shipped.
+- Product-code changes are limited to internal/speccheck; remaining changes are
+  docs, owned Skills/mirrors, Baseline sources/fallout, findings, and the pilot
+  Backlog Entry.
+- The three Secondbrain pilot commits touch only inbox paths.
+- No wiki graduation, mirror export change, backlog retyping, triaged-entry
+  retention automation, or non-inbox brain migration appears in the pathset.
+
+Result: all seven Non-Goals remain out of scope.
+

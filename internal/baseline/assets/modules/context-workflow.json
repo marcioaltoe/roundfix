@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 8,
+  "version": 11,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -218,7 +218,7 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 7,
+      "version": 10,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": [
@@ -255,7 +255,7 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 7,
+      "version": 10,
       "coverage": [
         "coverage.context-workflow"
       ],
@@ -301,6 +301,26 @@
           "guidance": "Use this complete copyable Findings Operational Contract:\n\n```markdown\n---\nstatus: pending # pending | partial | deferred | done\ncreated_at: YYYY-MM-DD\nupdated_at: YYYY-MM-DD\n---\n\n# <Area> — <short title> (YYYY-MM-DD)\n\n<Two to four sentences describing the session or investigation, the attempted outcome, and links to adjacent evidence.>\n\n## 1. <Finding title — symptom, not hypothesis>\n\n- Symptom / evidence: <observed behavior, command output, identifiers, and paths needed to reproduce>\n- Root cause: <proven cause, or `unknown` with what was ruled out>\n- Action / suggestion: <fix, mitigation, or route to a Spec, direct change, or upstream report>\n\n## 2. <Next finding>\n\n## What worked — keep\n\n<Optional evidence about behavior worth preserving.>\n\n## Addendum — YYYY-MM-DD — <short title>\n\n<Append new evidence, root-cause proof, status context, or routing links without rewriting the original observation.>\n```"
         },
         {
+          "id": "clause.context.findings-08-rollup",
+          "enforcement": "mandatory",
+          "guidance": "A Rollup is a Finding of `kind: rollup` that consolidates related Findings. It lives beside active Findings under `docs/findings/`, shares their lifecycle contract, and declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `docs/findings/_archived/`. Use this extension:\n\n```yaml\nkind: rollup\nmembers:\n  - YYYY-MM-DD-<finding-slug>.md\n```"
+        },
+        {
+          "id": "clause.context.findings-09-archive",
+          "enforcement": "mandatory",
+          "guidance": "Use `docs/findings/_archived/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:\n\n```yaml\nabsorbed_by: <rollup-basename-or-spec-slug>\n```"
+        },
+        {
+          "id": "clause.context.findings-10-live-work-health",
+          "enforcement": "mandatory",
+          "guidance": "Read a findings directory holding only live work as `health`, not loss: Rollups and `docs/findings/_archived/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory."
+        },
+        {
+          "id": "clause.context.findings-11-rollup-closure",
+          "enforcement": "mandatory",
+          "guidance": "When a Rollup has `no open members`, review it as a candidate for its own closure and close it through the existing Finding lifecycle contract when its work is settled."
+        },
+        {
           "id": "clause.context.findings-02-pending",
           "enforcement": "mandatory",
           "guidance": "Use `pending` when the finding is new and has no implementation Spec."
@@ -329,6 +349,16 @@
           "id": "clause.context.findings-07-update-timestamp",
           "enforcement": "mandatory",
           "guidance": "Update `updated_at` whenever status changes or an evidence addendum is appended; keep `created_at` as the document creation date."
+        },
+        {
+          "id": "clause.context.inbox-01-triage",
+          "enforcement": "mandatory",
+          "guidance": "Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the ADR-0092 boundary: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the Inbox Entry's provenance."
+        },
+        {
+          "id": "clause.context.inbox-02-fleet-flow",
+          "enforcement": "mandatory",
+          "guidance": "Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent."
         }
       ]
     }

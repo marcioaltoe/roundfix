@@ -1,0 +1,11 @@
+Equivalent observed and supervised evidence:
+
+- The two capture commit pathsets each add exactly one Secondbrain inbox path.
+- Neither capture commit contains a Roundfix or other project-checkout path.
+- The pilot records that
+  rtk git -c core.fsmonitor=false status --short --untracked-files=all
+  produced no paths in the destination checkout immediately before Triage.
+- The destination Backlog Entry and pilot report appear only after Triage.
+
+Result: Success Metric 5 passes for the pilot; no Run interference is recorded.
+

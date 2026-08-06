@@ -1,0 +1,11 @@
+Fresh checks on build 22291c2b:
+
+- rtk git diff --unified=0 f1e3c3af^ f1e3c3af -- CONTEXT.md
+  reported exactly 12 additions and zero deletions.
+- The only added blocks are Inbox Entry, Rollup, and Triage.
+- Each definition matches the requested contract shape and each is immediately
+  followed by an _Avoid_ line.
+
+Result: all Task 01 Acceptance Criteria pass; every pre-existing glossary byte
+is preserved because the commit diff is purely additive.
+

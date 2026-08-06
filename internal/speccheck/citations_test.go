@@ -1,5 +1,5 @@
-// Suite: Spec citation, coverage, reference, and loop-order consistency
-// Invariant: declared ADR, coverage, path, and loop-order sources report only their written inconsistencies.
+// Suite: Spec citation, coverage, reference, loop-order, and findings consistency
+// Invariant: declared ADR, coverage, path, loop-order, and findings sources report only their written inconsistencies.
 // Boundary IN: public speccheck API, fixture artifacts, accepted ADR corpus, and internal/spec loader
 // Boundary OUT: CLI exit-code policy and characterization corpus assigned to later Spec Tasks
 package speccheck_test
@@ -18,6 +18,7 @@ const (
 	loopOrderRepositoryGuidePath = "docs/agents/autonomous-work.md"
 	loopOrderBaselineModulePath  = "internal/baseline/assets/modules/autonomous-work.json"
 	loopOrderCarrierSlug         = "loop-order"
+	findingsCarrierSlug          = "findings"
 )
 
 func TestCheckLoopOrderDivergent(t *testing.T) {
@@ -154,6 +155,245 @@ func writeLoopOrderCarrier(t *testing.T, root string) string {
 		t.Fatalf("write fixture PRD: %v", err)
 	}
 	return specsRoot
+}
+
+func TestCheckFindingLifecycle(t *testing.T) {
+	t.Parallel()
+
+	t.Run("red missing lifecycle frontmatter", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		const findingPath = "docs/findings/2026-08-06-missing-lifecycle.md"
+		writeFindingsArtifact(t, repoRoot, findingPath, "# Missing lifecycle\n")
+
+		result := checkFindingsCarrier(t, repoRoot)
+		finding := requireRenderedFinding(t, result, speccheck.CodeFindingLifecycle, findingPath, 1)
+		if !strings.Contains(finding.Summary, "no lifecycle status") {
+			t.Fatalf("summary = %q, want missing lifecycle status", finding.Summary)
+		}
+	})
+
+	t.Run("red unknown lifecycle value", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		const findingPath = "docs/findings/2026-08-06-unknown-lifecycle.md"
+		writeFindingsArtifact(t, repoRoot, findingPath, "---\nstatus: blocked\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Unknown lifecycle\n")
+
+		result := checkFindingsCarrier(t, repoRoot)
+		finding := requireRenderedFinding(t, result, speccheck.CodeFindingLifecycle, findingPath, 2)
+		if !strings.Contains(finding.Summary, `"blocked"`) {
+			t.Fatalf("summary = %q, want offending value %q", finding.Summary, "blocked")
+		}
+	})
+
+	t.Run("green exact lifecycle values", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		for _, status := range []string{"pending", "partial", "deferred", "done"} {
+			path := "docs/findings/2026-08-06-" + status + ".md"
+			writeFindingsArtifact(t, repoRoot, path, "---\nstatus: "+status+"\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# "+status+"\n")
+		}
+
+		result := checkFindingsCarrier(t, repoRoot)
+		if findings := findingsWithCode(result, speccheck.CodeFindingLifecycle); len(findings) != 0 {
+			t.Fatalf("%s findings = %#v, want exact lifecycle values accepted", speccheck.CodeFindingLifecycle, findings)
+		}
+	})
+
+	t.Run("presence aware without findings directory", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		result := checkFindingsCarrier(t, repoRoot)
+		if findings := findingsWithCode(result, speccheck.CodeFindingLifecycle); len(findings) != 0 {
+			t.Fatalf("%s findings = %#v, want silent skip", speccheck.CodeFindingLifecycle, findings)
+		}
+		if !hasSkip(result, speccheck.CodeFindingLifecycle, "docs/findings") {
+			t.Fatalf("Skipped = %#v, want %s missing docs/findings", result.Skipped, speccheck.CodeFindingLifecycle)
+		}
+	})
+}
+
+func TestCheckRollupMember(t *testing.T) {
+	t.Parallel()
+
+	t.Run("red unresolved declared member", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		const rollupPath = "docs/findings/2026-08-06-rollup.md"
+		writeFindingsArtifact(t, repoRoot, rollupPath, "---\nstatus: pending\nkind: rollup\nmembers:\n  - missing-member.md\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Rollup\n")
+
+		result := checkFindingsCarrier(t, repoRoot)
+		finding := requireRenderedFinding(t, result, speccheck.CodeRollupMember, rollupPath, 5)
+		if !strings.Contains(finding.Summary, "missing-member.md") {
+			t.Fatalf("summary = %q, want unresolved member", finding.Summary)
+		}
+	})
+
+	t.Run("green active and archived members", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		const rollup = "2026-08-06-rollup.md"
+		writeFindingsArtifact(t, repoRoot, "docs/findings/"+rollup, "---\nstatus: pending\nkind: rollup\nmembers:\n  - 2026-08-06-active.md\n  - 2026-08-06-archived.md\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Rollup\n")
+		writeFindingsArtifact(t, repoRoot, "docs/findings/2026-08-06-active.md", "---\nstatus: deferred\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Active\n")
+		writeFindingsArtifact(t, repoRoot, "docs/findings/_archived/2026-08-06-archived.md", "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\nabsorbed_by: "+rollup+"\n---\n\n# Archived\n")
+
+		result := checkFindingsCarrier(t, repoRoot)
+		if findings := findingsWithCode(result, speccheck.CodeRollupMember); len(findings) != 0 {
+			t.Fatalf("%s findings = %#v, want active and archived members resolved", speccheck.CodeRollupMember, findings)
+		}
+	})
+
+	t.Run("presence aware without rollups", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		writeFindingsArtifact(t, repoRoot, "docs/findings/2026-08-06-ordinary.md", "---\nstatus: pending\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Ordinary finding\n")
+
+		result := checkFindingsCarrier(t, repoRoot)
+		if findings := findingsWithCode(result, speccheck.CodeRollupMember); len(findings) != 0 {
+			t.Fatalf("%s findings = %#v, want silent skip", speccheck.CodeRollupMember, findings)
+		}
+		if !hasSkip(result, speccheck.CodeRollupMember, "rollup") {
+			t.Fatalf("Skipped = %#v, want %s without rollups", result.Skipped, speccheck.CodeRollupMember)
+		}
+	})
+}
+
+func TestCheckArchiveLicense(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name        string
+		frontmatter string
+		wantSummary string
+		wantLine    int
+	}{
+		{
+			name:        "red missing license",
+			frontmatter: "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n",
+			wantSummary: "no absorbed_by license",
+			wantLine:    1,
+		},
+		{
+			name:        "red unresolved license",
+			frontmatter: "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\nabsorbed_by: missing-owner\n---\n",
+			wantSummary: `"missing-owner"`,
+			wantLine:    5,
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			repoRoot := writeFindingsCarrier(t)
+			const archivedPath = "docs/findings/_archived/2026-08-06-archived.md"
+			writeFindingsArtifact(t, repoRoot, archivedPath, tt.frontmatter+"\n# Archived\n")
+
+			result := checkFindingsCarrier(t, repoRoot)
+			finding := requireRenderedFinding(t, result, speccheck.CodeArchiveLicense, archivedPath, tt.wantLine)
+			if !strings.Contains(finding.Summary, tt.wantSummary) {
+				t.Fatalf("summary = %q, want %q", finding.Summary, tt.wantSummary)
+			}
+		})
+	}
+
+	t.Run("green rollup active Spec and archived Spec licenses", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		const rollup = "2026-08-06-rollup.md"
+		writeFindingsArtifact(t, repoRoot, "docs/findings/"+rollup, "---\nstatus: pending\nkind: rollup\nmembers:\n  - 2026-08-06-rollup-owned.md\n  - 2026-08-06-active-spec-owned.md\n  - 2026-08-06-archived-spec-owned.md\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Rollup\n")
+		writeFindingsArtifact(t, repoRoot, "docs/specs/_archived/archived-spec/_prd.md", "---\nspec: archived-spec\nstatus: archived\n---\n\n# Archived Spec\n")
+		for name, owner := range map[string]string{
+			"2026-08-06-rollup-owned.md":        rollup,
+			"2026-08-06-active-spec-owned.md":   findingsCarrierSlug,
+			"2026-08-06-archived-spec-owned.md": "archived-spec",
+		} {
+			writeFindingsArtifact(t, repoRoot, "docs/findings/_archived/"+name, "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\nabsorbed_by: "+owner+"\n---\n\n# Archived\n")
+		}
+
+		result := checkFindingsCarrier(t, repoRoot)
+		if findings := findingsWithCode(result, speccheck.CodeArchiveLicense); len(findings) != 0 {
+			t.Fatalf("%s findings = %#v, want all declared license classes resolved", speccheck.CodeArchiveLicense, findings)
+		}
+	})
+
+	t.Run("presence aware without archive", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeFindingsCarrier(t)
+		writeFindingsArtifact(t, repoRoot, "docs/findings/2026-08-06-ordinary.md", "---\nstatus: pending\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Ordinary finding\n")
+
+		result := checkFindingsCarrier(t, repoRoot)
+		if findings := findingsWithCode(result, speccheck.CodeArchiveLicense); len(findings) != 0 {
+			t.Fatalf("%s findings = %#v, want silent skip", speccheck.CodeArchiveLicense, findings)
+		}
+		if !hasSkip(result, speccheck.CodeArchiveLicense, "docs/findings/_archived") {
+			t.Fatalf("Skipped = %#v, want %s missing archive", result.Skipped, speccheck.CodeArchiveLicense)
+		}
+	})
+}
+
+func writeFindingsCarrier(t *testing.T) string {
+	t.Helper()
+
+	repoRoot := t.TempDir()
+	specDir := filepath.Join(repoRoot, "docs", "specs", findingsCarrierSlug)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatalf("create findings fixture carrier: %v", err)
+	}
+	return repoRoot
+}
+
+func writeFindingsArtifact(t *testing.T, repoRoot, relative, content string) {
+	t.Helper()
+
+	path := filepath.Join(repoRoot, filepath.FromSlash(relative))
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("create findings fixture directory for %q: %v", relative, err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write findings fixture %q: %v", relative, err)
+	}
+}
+
+func checkFindingsCarrier(t *testing.T, repoRoot string) speccheck.Result {
+	t.Helper()
+
+	result, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, findingsCarrierSlug)
+	if err != nil {
+		t.Fatalf("Check(findings carrier) error = %v", err)
+	}
+	return result
+}
+
+func requireRenderedFinding(t *testing.T, result speccheck.Result, code, path string, line int) speccheck.Finding {
+	t.Helper()
+
+	finding := requireFinding(t, result, code)
+	if finding.Severity != speccheck.SeverityError {
+		t.Fatalf("severity = %q, want %q", finding.Severity, speccheck.SeverityError)
+	}
+	if !hasExactLocation(finding, path, line) {
+		t.Fatalf("locations = %#v, want %s:%d", finding.Where, path, line)
+	}
+	if strings.TrimSpace(finding.Fix) == "" {
+		t.Fatal("finding has no concrete fix")
+	}
+	report := speccheck.RenderText(result)
+	if !strings.Contains(report, finding.Code+": "+finding.Summary) {
+		t.Fatalf("rendered report does not contain finding summary:\n%s", report)
+	}
+	if !strings.Contains(report, "  fix: "+finding.Fix) {
+		t.Fatalf("rendered report does not contain fix line:\n%s", report)
+	}
+	return finding
 }
 
 func TestCheckADRUnlisted(t *testing.T) {

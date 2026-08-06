@@ -1,0 +1,15 @@
+Environment block: a single QA snapshot cannot observe fourteen days of fleet
+operation, as Task 07 declares.
+
+Equivalent observed evidence:
+
+- Fresh Secondbrain inbox listing found one pending entry:
+  inbox/secondbrain/2026-08-06-fleet-knowledge-door-research-digest.md.
+- Its frontmatter says created_at: 2026-08-06, the gate date.
+- The only roundfix entry is positional-resolved under _triaged/ and is not
+  pending.
+
+No currently observable pending entry is older than fourteen days. Full proof
+requires a fleet session after the age window with the same pending-namespace
+inventory.
+

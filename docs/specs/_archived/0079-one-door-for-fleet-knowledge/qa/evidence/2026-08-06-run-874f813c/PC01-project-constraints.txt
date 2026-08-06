@@ -1,0 +1,26 @@
+Project Constraint audit: fail on missing consequent fix; all other audited shapes passed.
+
+- PRD and TechSpec each classify identifier strategy, authentication/HTTP,
+  active ADR obligations, and tooling authority with reasons and operative
+  docs/agents sources.
+- The exact authorization is commit 93e41d33 and path
+  docs/workflow/authorizations/2026-08-06-fleet-knowledge-door.md.
+- git merge-base --is-ancestor proved 93e41d33 precedes Task 02 commit
+  09a3560b and Task 06 commit dc5539fb; 09a3560b also precedes dc5539fb.
+- git diff-tree path inspection found only the authorized causes, each Task
+  file, canonical Skill mirrors for Task 06, and internal/baseline generated
+  fallout in the two tooling commits.
+- A fresh HEAD archive at /private/tmp/roundfix-0079-qa.JP54kJ ran
+  rtk make baseline-digests with exit 0 and changed:false, proving the derived
+  artifacts reproduce from their sanctioned canonical sources.
+- Task 02 added five Source Baseline entries (106 to 111) and explicitly
+  recorded the now-stale maintained expectation as follow-up. Task 06 added
+  three more (111 to 114). No later, separate consequent-fix commit updated
+  maintainedSourceBaselineEntries, which remains 106 at
+  internal/baseline/preservation_test.go:259. The authoritative gate therefore
+  fails at line 327 with actual identity/entries 114 and accounting 51.
+
+Required before rerun: land the missing consequent fix in its own authorized
+commit through the sanctioned maintained-fixture re-recording workflow, then
+rerun the full gate and QA.
+

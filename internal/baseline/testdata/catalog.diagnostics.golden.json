@@ -120,7 +120,7 @@
         {
           "code": "catalog.profile.formatter.goldenDigest.mismatch",
           "subject": "standard-typescript-monorepo",
-          "detail": "got 198a2147678283b2e89ff54294a5d9ae0d4eae37e4589824f5d87d952a7a689c, want 7f559fc153637f98974c4c547efdb1787bf4934122e8405303c93326e7004b86"
+          "detail": "got 6948e07d5e714cd4fbfd5baa93b651f1c101669d37b7527a168c08de7a98fffc, want 4f7171708643005ad158baf4a299814b00a4062c768033d0cd31a7d7a3b6878e"
         }
       ]
     },

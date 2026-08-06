@@ -1,0 +1,42 @@
+Backend/CLI assembled-flow and detector evidence
+Build: 8c6f165345275616666802c0d0a5cc938c1db25e
+Result: PASS
+
+Real CLI happy path and persistence
+- Entry point: the production-like `bin/roundfix` built by the authoritative
+  `rtk make verify` gate.
+- First fresh process: `rtk proxy ./bin/roundfix spec check` exited 0 and
+  reported `Spec 0079-one-door-for-fleet-knowledge` and `No findings.`.
+- Second independent fresh process: the same public command exited 0 with the
+  same report.
+- Both processes recorded only the expected presence-aware vocabulary skip
+  because the TechSpec has no Vocabulary Contract section.
+
+Invalid-input and recovery probes
+- Command: `GOCACHE=/private/tmp/roundfix-qa79-gocache rtk proxy go test
+  -count=1 ./internal/speccheck -run
+  'FindingLifecycle|RollupMember|ArchiveLicense' -v`.
+- Exit code: 0; all 14 selected cases passed.
+- Lifecycle red probes: missing lifecycle and unknown lifecycle value.
+- Lifecycle green/recovery probe: all exact contract values.
+- Rollup red probe: unresolved declared member.
+- Rollup green/recovery probe: active and archived members.
+- Archive red probes: missing and unresolved license.
+- Archive green/recovery probe: active Rollup, active Spec, and archived Spec
+  licenses.
+- Presence-aware empty/out-of-order probes: missing findings directory, no
+  Rollups, and missing archive. Each passed its silent-skip assertion.
+
+Environment deviation
+- The first identical focused selection using the inherited Go cache did not
+  compile because `go env GOCACHE` is
+  `/Users/marcio/Library/Caches/go-build`, which this sandbox cannot open.
+- The unchanged selection passed with a task-scoped cache, while the
+  authoritative Makefile gate passed independently. This command-only cache
+  denial does not block a row.
+
+Conclusion
+- B01 passes through two independent public CLI processes.
+- B02 and B03 pass their high-risk invalid and absent-artifact probes.
+- T04 passes its red/green, presence-aware, corpus/budget, and real-repository
+  criteria when combined with S01's authoritative gate evidence.

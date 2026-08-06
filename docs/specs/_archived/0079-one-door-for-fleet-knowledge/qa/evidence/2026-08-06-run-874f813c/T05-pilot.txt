@@ -1,0 +1,13 @@
+Fresh Task 05 acceptance audit:
+
+- pilot-report.md contains both destinations, both full brain commit values,
+  both durability values, qmd check result, and resolved_to.
+- Both external capture commits resolve with one inbox path each; the Triage
+  commit resolves as one rename under _triaged/.
+- The typed Backlog Entry exists, is feat/open, and cites the exact inbox path.
+- Durations are 50 and 24 seconds, both below one minute.
+- The external gate was open; the recorded qmd denial and authorized retry are
+  distinguished, and no missing artifact is presented as evidence.
+
+Result: all applicable Task 05 Acceptance Criteria pass.
+

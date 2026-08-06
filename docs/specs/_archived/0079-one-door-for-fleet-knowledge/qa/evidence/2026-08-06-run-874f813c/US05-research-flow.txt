@@ -1,0 +1,6 @@
+The real pilot supplies equivalent evidence: advisory qmd result, path and
+substantive review, sourced research digest, and durable brain commit.
+
+The QA user journey itself was not replayed after F-001 failed the mandatory
+tooling audit. Status is finding-blocked.
+

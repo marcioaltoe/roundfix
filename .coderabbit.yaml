@@ -172,6 +172,9 @@ reviews:
 
     # ----- Documentation (Specs, ADRs, glossary, READMEs) -----
     - "docs/**/*.md"
+    - "!docs/**/_reviews/**/*.md"
+    - "!docs/**/_archived/**/*.md"
+    - "!docs/**/archive/**/*.md"
     - "CONTEXT.md"
     - "**/README.md"
     - "README.md"

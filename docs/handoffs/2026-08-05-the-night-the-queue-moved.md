@@ -88,7 +88,7 @@ most of a matrix; after it shipped, a single finding blocked exactly one row:
 ## The pattern worth changing
 
 Recorded in full at
-`docs/findings/2026-08-05-an-absence-grep-rejects-the-work-it-was-written-to-protect.md`.
+`docs/findings/_archived/2026-08-05-an-absence-grep-rejects-the-work-it-was-written-to-protect.md`.
 
 Three Task Verifications failed in one night. **None failed on the work.** All
 three were hand-written `grep` invocations with exclusion filters, authored by

@@ -1,0 +1,20 @@
+Rows: T04, B02, B03
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+Result: pass
+
+The first direct focused invocation attempted the sandbox-denied macOS system
+Go cache. The unchanged probe was then run once with the repository-documented
+absolute worktree-local `GOCACHE`.
+
+Fresh selected cases, all passed:
+- lifecycle: missing frontmatter, unknown value, all four green values, and
+  missing-findings presence-aware skip;
+- Rollup member: unresolved declared member, active/archived green members,
+  and no-Rollup presence-aware skip;
+- archive license: missing and unresolved licenses, active Rollup/active
+  Spec/archived Spec green licenses, and no-archive presence-aware skip.
+
+The serial `TestCheckCorpusBudget` passed with a 922.645291 ms corpus sweep
+against its 1 s budget. Two independent built-binary runs reported `No
+findings.` for Spec 0079. The full `rtk make verify` run independently passed
+all 3,587 Go tests.

@@ -1,0 +1,7 @@
+Fresh Task 01 audit:
+- `git diff-tree -r f1e3c3af` names only CONTEXT.md and task_01.md.
+- Exact parent/current diff for CONTEXT.md is 12 insertions and 0 deletions.
+- The inserted blocks are Inbox Entry, Rollup, and Triage.
+- Each inserted block carries its own `_Avoid_:` line.
+
+This proves the three required shapes and exact preservation of every pre-existing glossary byte.

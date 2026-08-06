@@ -1,0 +1,68 @@
+Fleet-door pilot persistence and environment audit
+Build: 8c6f165345275616666802c0d0a5cc938c1db25e
+
+Public contract and current inventory
+- `/Users/marcio/dev/secondbrain/inbox/README.md` defines mirrored projects
+  plus `secondbrain` as valid destinations, positional pending/triaged state,
+  capture-time commits, one-result Triage, and the `capture: auto` output
+  contract.
+- `rtk rg --files inbox` in the Secondbrain returned exactly the contract
+  README, one pending research entry, and one triaged Roundfix entry.
+- The only pending entry is
+  `inbox/secondbrain/2026-08-06-fleet-knowledge-door-research-digest.md`, dated
+  2026-08-06. No older pending entry was observed.
+- `rtk rg -l '^capture: auto([[:space:]]|$)' inbox` exited 1 with no match.
+  The safe observable inbox therefore contains no automatic hook output.
+
+Research capture
+- Commit `93bd7b35b77a356a3d2d50989de93565b1e85dbb` resolves and changes exactly
+  `inbox/secondbrain/2026-08-06-fleet-knowledge-door-research-digest.md`.
+- Reopening that path from the commit reproduces `origin: roundfix`,
+  `destination: secondbrain`, `type-hint: research`, `capture: manual`, and
+  five cited sources.
+- The pilot records `capture_to_durability_seconds: 50`, below 60, and the
+  advisory qmd result that preceded creation. The same entry remains readable
+  at the pending path today.
+
+Cross-project capture and Triage
+- Commit `e982c0137ad61b5cf82de0fa8f63b9c5c325412e` resolves and changes exactly
+  `inbox/roundfix/2026-08-06-automate-inbox-capture-durability.md`.
+- Reopening it reproduces `origin: secondbrain`, `destination: roundfix`,
+  `type-hint: feat`, `capture: manual`. The pilot records
+  `capture_to_durability_seconds: 24`, below 60.
+- Commit `4aa955c3ec2c03ef5799ea0745bc8a8938ce6530` deletes that pending path and
+  adds the same basename under `inbox/roundfix/_triaged/` with
+  `resolved_to: docs/backlog/2026-08-06-atomic-inbox-capture-helper.md`.
+- The persistent Roundfix Backlog Entry exists, remains typed `feat` and
+  `open`, and cites the exact pending inbox path as provenance.
+- The pilot's pre-triage audit records a clean destination checkout. Fresh
+  commit pathsets independently confirm that each capture touched one
+  Secondbrain inbox path and no Roundfix checkout path.
+
+Row outcomes
+- R02 PASS: 50 seconds and 24 seconds, with both recorded commit objects.
+- R03 BLOCKED (environment: fourteen-day fleet-operation window; equivalent
+  current inventory observed): this same-day gate cannot observe fourteen days
+  of operation, but the current complete safe inventory has no overdue entry.
+- R04 PASS: all observed entries declare origin/destination; `roundfix` is a
+  mirrored project and `secondbrain` is the contract's explicit research
+  destination.
+- R05 PASS: capture commit pathsets contain only brain inbox paths; the pilot
+  independently recorded the destination checkout clean before Triage.
+- R06 PASS: the substantive-research pilot session has a persistent sourced
+  digest and recorded advisory qmd result.
+- R07 PASS: pending capture, positional move, one typed intent artifact,
+  provenance, and `resolved_to` persist across independent reads.
+- US01, US02, and US05 BLOCKED (environment: QA external gate is read-only;
+  equivalent pilot commit evidence observed): QA cannot create new external
+  commits, but all original end-to-end commit objects and destination state
+  were freshly reopened.
+- US06 BLOCKED (environment: maintainer-owned hook has no safe observed
+  output): the hook configuration is outside this repository and the safe
+  inbox contains no `capture: auto` entry. The local contract is not
+  equivalent behavioral proof. Unblock with a supervised session close plus a
+  later read showing a committed pending automatic draft that did not
+  self-triage.
+- T05 PASS: every required pilot token and relation remains independently
+  resolvable; neither duration missed the target and no external fact was
+  inferred from absence.

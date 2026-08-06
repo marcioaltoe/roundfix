@@ -1,0 +1,30 @@
+command: rtk make verify
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260806T152751Z_dec805a511582b29
+exit: 0
+build: 444d1b0e97404e4de61e692b656884820dcbd019
+
+Observed summary:
+- Go tests: 3,587 passed across 26 packages.
+- Corpus budget: 1 passed in internal/speccheck.
+- Skill contract selection: 4 passed.
+- Roundfix Skill check: passed for the 14 reported Skills.
+- Build: passed; bin/roundfix produced with BuildCommit 444d1b0e-dirty because the in-progress QA report is an intentional worktree delta.
+- Public command: bin/roundfix spec check exited 0 for Spec 0079 with "No findings."
+- Recorded skip: SC-VOCABULARY-UNDOCUMENTED because the TechSpec declares no Vocabulary Contract section.
+
+Exact filtered tail:
+skipped docs/specs/_reviews: missing _prd.md
+rtk go test -parallel 16 ./...
+Go test: 3587 passed in 26 packages
+rtk go test -count=1 -parallel=1 ./internal/speccheck -run '^TestCheckCorpusBudget$'
+Go test: 1 passed in 1 packages
+rtk go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+Go test: 4 passed in 1 packages
+rtk go run -buildvcs=false ./cmd/roundfix skills check
+Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, implement-spec, brainstorming, council, business-analyst, archive-spec, qa-gate, evidence-gate
+rtk go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=444d1b0e-dirty' -X 'roundfix/internal/app.BuildTime=2026-08-06 12:45:08 -0300'" -o bin/roundfix ./cmd/roundfix
+bin/roundfix spec check
+Spec 0079-one-door-for-fleet-knowledge
+No findings.
+Skipped:
+  SC-VOCABULARY-UNDOCUMENTED: missing docs/specs/0079-one-door-for-fleet-knowledge/_techspec.md Vocabulary Contract

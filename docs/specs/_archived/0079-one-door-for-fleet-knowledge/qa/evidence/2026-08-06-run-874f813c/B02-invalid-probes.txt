@@ -1,0 +1,14 @@
+Garbage-tour detector probes, build 22291c2b:
+
+- red_missing_lifecycle_frontmatter: pass
+- red_unknown_lifecycle_value: pass
+- red_unresolved_declared_member: pass
+- red_missing_license: pass
+- red_unresolved_license: pass
+- green_exact_lifecycle_values: pass
+- green_active_and_archived_members: pass
+- green_rollup_active_Spec_and_archived_Spec_licenses: pass
+
+Command exited 0; all named cases were selected and executed through the public
+Check report surface inside the dedicated fixture carrier.
+

@@ -1,0 +1,26 @@
+NG01 Non-Goals scope audit
+Build: 8c6f165345275616666802c0d0a5cc938c1db25e
+Result: PASS
+
+- Inbox CLI: `./bin/roundfix --help` exposes no inbox command, and a focused
+  case-insensitive `inbox` search under `cmd/roundfix` and `internal/cli`
+  returned no match.
+- Automated wiki graduation: no wiki ingestion command, worker, or Secondbrain
+  curated-layer writer appears in the Spec product commits; the pending
+  research entry remains queued for the brain's own contract.
+- Remote transport: the changed implementation surfaces are local files,
+  documentation, and repository checks; no HTTP endpoint or remote issue-form
+  transport was added.
+- Mirror mechanics: no mirror-export implementation path changed. The feature
+  relies on the existing mirror loop as declared.
+- Backlog boundary: ADR-0092 remains intact. The pilot mints one existing
+  `feat` Backlog Entry after an explicit human intent choice; no backlog type
+  or lifecycle contract was redefined.
+- Brain retention automation: `_triaged/` retention remains documented as
+  manual; no sweeper shipped.
+- Other brain-layer migration: the only external brain artifacts observed are
+  under `inbox/**`; no wiki, raw, or mirror corpus migration occurred.
+
+The complete changed-path inventory and public help were inspected. QA reports,
+evidence, Task files, generated Baseline fallout, the findings sweep, and an
+independent dated Finding do not create any excluded product surface.

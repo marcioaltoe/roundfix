@@ -1,0 +1,23 @@
+Build: 071d78f79edc6808a738be6bc5a565967ee1efac
+Result: pass
+
+Fresh active inventory contains 9 dated Finding files, below the limit of 15:
+six Rollups plus three current standalone Findings. `rg` found a valid
+`status: pending` on all nine.
+
+Fresh public confirmation:
+- `./bin/roundfix spec check`: exit 0, `No findings.`
+- A second fresh process returned the same result.
+- The focused lifecycle, Rollup-member, and archive-license red/green/presence
+  test selection passed every named subtest.
+
+Task 03's reproducible Result records `active=6 archived=65
+rollup_members=63 errors=0` at the sweep and an exact body audit of
+`checked=65 mismatches=0`. `git log 169899de..HEAD --
+docs/findings/_archived` returns no commits, proving none of those archived
+bodies changed after that exact audit. The three later standalone Findings do
+not change the Rollup/member/license relations.
+
+The current repository therefore has valid lifecycle coverage, resolvable
+bidirectional Rollup relations, resolvable archive licenses, and preserved
+legacy observation bodies.

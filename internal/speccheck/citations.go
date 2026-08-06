@@ -30,6 +30,12 @@ const (
 	CodeReferenceUnresolved = "SC-REF-UNRESOLVED"
 	// CodeLoopOrderDivergent identifies disagreeing declared Spec loop orders.
 	CodeLoopOrderDivergent = "SC-LOOP-ORDER-DIVERGENT"
+	// CodeFindingLifecycle identifies an active Finding without an allowed written lifecycle status.
+	CodeFindingLifecycle = "SC-FINDING-LIFECYCLE"
+	// CodeRollupMember identifies a declared Rollup member that resolves to no active or archived Finding.
+	CodeRollupMember = "SC-ROLLUP-MEMBER"
+	// CodeArchiveLicense identifies an archived Finding without a resolvable written absorbed_by pointer.
+	CodeArchiveLicense = "SC-ARCHIVE-LICENSE"
 )
 
 var (
@@ -43,12 +49,13 @@ var (
 		CodeRequirementContradictory,
 		CodeRehearsalUndeclared,
 	}
-	adrFilenamePattern    = regexp.MustCompile(`^([0-9]{4})-.*\.md$`)
-	adrCitationPattern    = regexp.MustCompile(`\bADR-([0-9]{4})\b`)
-	legacyInactivePattern = regexp.MustCompile(`(?im)^\s*(?:\*\*)?status(?:\*\*)?:\s*(?:proposed|rejected|deprecated|superseded)\b`)
-	featureRefPattern     = regexp.MustCompile(`(?i)\bCore Features?\s+`)
-	storyRefPattern       = regexp.MustCompile(`(?i)\b(?:User )?(?:Story|Stories)\s+`)
-	numberedItemPattern   = regexp.MustCompile(`^\s*([0-9]+)\.\s+`)
+	adrFilenamePattern     = regexp.MustCompile(`^([0-9]{4})-.*\.md$`)
+	findingFilenamePattern = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}-.+\.md$`)
+	adrCitationPattern     = regexp.MustCompile(`\bADR-([0-9]{4})\b`)
+	legacyInactivePattern  = regexp.MustCompile(`(?im)^\s*(?:\*\*)?status(?:\*\*)?:\s*(?:proposed|rejected|deprecated|superseded)\b`)
+	featureRefPattern      = regexp.MustCompile(`(?i)\bCore Features?\s+`)
+	storyRefPattern        = regexp.MustCompile(`(?i)\b(?:User )?(?:Story|Stories)\s+`)
+	numberedItemPattern    = regexp.MustCompile(`^\s*([0-9]+)\.\s+`)
 )
 
 const (
@@ -94,6 +101,298 @@ var loopOrderSources = []loopOrderSource{
 		lineNeedle: `"guidance": "Follow one order per Spec:`,
 		module:     true,
 	},
+}
+
+type findingFrontmatterValue struct {
+	value string
+	line  int
+}
+
+type findingFrontmatter struct {
+	status     findingFrontmatterValue
+	hasStatus  bool
+	kind       findingFrontmatterValue
+	hasKind    bool
+	members    []findingFrontmatterValue
+	absorbedBy findingFrontmatterValue
+	hasLicense bool
+}
+
+type findingDocument struct {
+	name        string
+	displayPath string
+	frontmatter findingFrontmatter
+}
+
+var validFindingLifecycle = map[string]bool{
+	"pending":  true,
+	"partial":  true,
+	"deferred": true,
+	"done":     true,
+}
+
+func detectFindingsConsistency(result *Result, repoRoot string) error {
+	const findingsPath = "docs/findings"
+	active, present, err := readFindingDocuments(repoRoot, findingsPath)
+	if err != nil {
+		return err
+	}
+	if !present {
+		addSkip(result, CodeFindingLifecycle, findingsPath)
+		addSkip(result, CodeRollupMember, findingsPath)
+		addSkip(result, CodeArchiveLicense, findingsPath)
+		return nil
+	}
+
+	if len(active) == 0 {
+		addSkip(result, CodeFindingLifecycle, findingsPath+" Finding")
+	} else {
+		detectFindingLifecycle(result, active)
+	}
+
+	const archivePath = "docs/findings/_archived"
+	archived, archivePresent, err := readFindingDocuments(repoRoot, archivePath)
+	if err != nil {
+		return err
+	}
+
+	activeNames := findingDocumentNames(active)
+	archivedNames := findingDocumentNames(archived)
+	rollups := findingRollups(active)
+	if len(rollups) == 0 {
+		addSkip(result, CodeRollupMember, findingsPath+" rollup")
+	} else {
+		detectRollupMembers(result, rollups, activeNames, archivedNames)
+	}
+
+	if !archivePresent || len(archived) == 0 {
+		addSkip(result, CodeArchiveLicense, archivePath)
+		return nil
+	}
+	activeSpecs, err := repositoryDirectoryNames(filepath.Join(filepath.Clean(repoRoot), "docs", "specs"), true)
+	if err != nil {
+		return err
+	}
+	archivedSpecs, err := repositoryDirectoryNames(filepath.Join(filepath.Clean(repoRoot), "docs", "specs", "_archived"), false)
+	if err != nil {
+		return err
+	}
+	detectArchiveLicenses(result, archived, findingDocumentNames(rollups), activeSpecs, archivedSpecs)
+	return nil
+}
+
+func readFindingDocuments(repoRoot, relativeDir string) ([]findingDocument, bool, error) {
+	directory := filepath.Join(filepath.Clean(repoRoot), filepath.FromSlash(relativeDir))
+	entries, err := os.ReadDir(directory)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("read Findings directory %q: %w", directory, err)
+	}
+
+	documents := make([]findingDocument, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() || !findingFilenamePattern.MatchString(entry.Name()) {
+			continue
+		}
+		path := filepath.Join(directory, entry.Name())
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return nil, false, fmt.Errorf("read Finding %q: %w", path, err)
+		}
+		frontmatter, err := parseFindingFrontmatter(content)
+		if err != nil {
+			return nil, false, fmt.Errorf("parse Finding %q: %w", path, err)
+		}
+		documents = append(documents, findingDocument{
+			name:        entry.Name(),
+			displayPath: artifactDisplayPath(repoRoot, path),
+			frontmatter: frontmatter,
+		})
+	}
+	return documents, true, nil
+}
+
+func parseFindingFrontmatter(content []byte) (findingFrontmatter, error) {
+	const opening = "---\n"
+	text := string(content)
+	if !strings.HasPrefix(text, opening) {
+		return findingFrontmatter{}, nil
+	}
+	rest := text[len(opening):]
+	end := strings.Index(rest, "\n---")
+	if end < 0 {
+		return findingFrontmatter{}, nil
+	}
+
+	var document yaml.Node
+	if err := yaml.Unmarshal([]byte(rest[:end]), &document); err != nil {
+		return findingFrontmatter{}, fmt.Errorf("parse YAML frontmatter: %w", err)
+	}
+	if len(document.Content) == 0 || len(document.Content[0].Content) == 0 {
+		return findingFrontmatter{}, nil
+	}
+	mapping := document.Content[0]
+	if mapping.Kind != yaml.MappingNode {
+		return findingFrontmatter{}, errors.New("YAML frontmatter must be a mapping")
+	}
+
+	var frontmatter findingFrontmatter
+	for index := 0; index+1 < len(mapping.Content); index += 2 {
+		key := mapping.Content[index]
+		value := mapping.Content[index+1]
+		switch key.Value {
+		case "status":
+			decoded, err := findingScalar(value)
+			if err != nil {
+				return findingFrontmatter{}, fmt.Errorf("read status: %w", err)
+			}
+			frontmatter.status = findingFrontmatterValue{value: decoded, line: value.Line + 1}
+			frontmatter.hasStatus = true
+		case "kind":
+			decoded, err := findingScalar(value)
+			if err != nil {
+				return findingFrontmatter{}, fmt.Errorf("read kind: %w", err)
+			}
+			frontmatter.kind = findingFrontmatterValue{value: decoded, line: value.Line + 1}
+			frontmatter.hasKind = true
+		case "members":
+			if value.Kind != yaml.SequenceNode {
+				return findingFrontmatter{}, errors.New("members must be a YAML sequence")
+			}
+			for _, member := range value.Content {
+				decoded, err := findingScalar(member)
+				if err != nil {
+					return findingFrontmatter{}, fmt.Errorf("read member: %w", err)
+				}
+				frontmatter.members = append(frontmatter.members, findingFrontmatterValue{value: decoded, line: member.Line + 1})
+			}
+		case "absorbed_by":
+			decoded, err := findingScalar(value)
+			if err != nil {
+				return findingFrontmatter{}, fmt.Errorf("read absorbed_by: %w", err)
+			}
+			frontmatter.absorbedBy = findingFrontmatterValue{value: decoded, line: value.Line + 1}
+			frontmatter.hasLicense = true
+		}
+	}
+	return frontmatter, nil
+}
+
+func findingScalar(node *yaml.Node) (string, error) {
+	if node.Kind != yaml.ScalarNode {
+		return "", fmt.Errorf("expected scalar, found YAML kind %d", node.Kind)
+	}
+	var value string
+	if err := node.Decode(&value); err != nil {
+		return "", err
+	}
+	return value, nil
+}
+
+func detectFindingLifecycle(result *Result, documents []findingDocument) {
+	for _, document := range documents {
+		if !document.frontmatter.hasStatus {
+			result.Findings = append(result.Findings, Finding{
+				Code:     CodeFindingLifecycle,
+				Severity: SeverityError,
+				Summary:  document.displayPath + " has no lifecycle status",
+				Where:    []Location{{Path: document.displayPath, Line: 1}},
+				Fix:      "Add status: pending, partial, deferred, or done to the YAML frontmatter in " + document.displayPath + ".",
+			})
+			continue
+		}
+		if validFindingLifecycle[document.frontmatter.status.value] {
+			continue
+		}
+		result.Findings = append(result.Findings, Finding{
+			Code:     CodeFindingLifecycle,
+			Severity: SeverityError,
+			Summary:  document.displayPath + " declares unknown lifecycle status " + strconv.Quote(document.frontmatter.status.value),
+			Where:    []Location{{Path: document.displayPath, Line: document.frontmatter.status.line}},
+			Fix:      "Replace the status in " + document.displayPath + " with exactly one of pending, partial, deferred, or done.",
+		})
+	}
+}
+
+func findingRollups(documents []findingDocument) []findingDocument {
+	rollups := make([]findingDocument, 0)
+	for _, document := range documents {
+		if document.frontmatter.hasKind && document.frontmatter.kind.value == "rollup" {
+			rollups = append(rollups, document)
+		}
+	}
+	return rollups
+}
+
+func findingDocumentNames(documents []findingDocument) map[string]bool {
+	names := make(map[string]bool, len(documents))
+	for _, document := range documents {
+		names[document.name] = true
+	}
+	return names
+}
+
+func detectRollupMembers(result *Result, rollups []findingDocument, active, archived map[string]bool) {
+	for _, rollup := range rollups {
+		for _, member := range rollup.frontmatter.members {
+			if active[member.value] || archived[member.value] {
+				continue
+			}
+			result.Findings = append(result.Findings, Finding{
+				Code:     CodeRollupMember,
+				Severity: SeverityError,
+				Summary:  rollup.displayPath + " declares unresolved member " + strconv.Quote(member.value),
+				Where:    []Location{{Path: rollup.displayPath, Line: member.line}},
+				Fix:      "Restore the declared member " + strconv.Quote(member.value) + " under docs/findings/ or docs/findings/_archived/, or update members in " + rollup.displayPath + ".",
+			})
+		}
+	}
+}
+
+func repositoryDirectoryNames(directory string, skipUnderscore bool) (map[string]bool, error) {
+	names := make(map[string]bool)
+	entries, err := os.ReadDir(directory)
+	if errors.Is(err, os.ErrNotExist) {
+		return names, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read Spec directory %q: %w", directory, err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() || (skipUnderscore && strings.HasPrefix(entry.Name(), "_")) {
+			continue
+		}
+		names[entry.Name()] = true
+	}
+	return names, nil
+}
+
+func detectArchiveLicenses(result *Result, archived []findingDocument, rollups, activeSpecs, archivedSpecs map[string]bool) {
+	for _, document := range archived {
+		if !document.frontmatter.hasLicense {
+			result.Findings = append(result.Findings, Finding{
+				Code:     CodeArchiveLicense,
+				Severity: SeverityError,
+				Summary:  document.displayPath + " has no absorbed_by license",
+				Where:    []Location{{Path: document.displayPath, Line: 1}},
+				Fix:      "Add absorbed_by to the YAML frontmatter in " + document.displayPath + ", naming an active Rollup basename or an active or archived Spec slug.",
+			})
+			continue
+		}
+		license := document.frontmatter.absorbedBy
+		if rollups[license.value] || activeSpecs[license.value] || archivedSpecs[license.value] {
+			continue
+		}
+		result.Findings = append(result.Findings, Finding{
+			Code:     CodeArchiveLicense,
+			Severity: SeverityError,
+			Summary:  document.displayPath + " declares unresolved absorbed_by " + strconv.Quote(license.value),
+			Where:    []Location{{Path: document.displayPath, Line: license.line}},
+			Fix:      "Point absorbed_by in " + document.displayPath + " to an active Rollup basename or an active or archived Spec slug.",
+		})
+	}
 }
 
 func detectLoopOrderConsistency(result *Result, repoRoot string) error {

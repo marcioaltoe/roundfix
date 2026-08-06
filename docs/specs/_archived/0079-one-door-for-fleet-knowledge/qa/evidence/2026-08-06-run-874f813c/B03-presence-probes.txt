@@ -1,0 +1,10 @@
+Presence-aware probes, build 22291c2b:
+
+- Finding lifecycle without findings directory: pass
+- Rollup member check without Rollups: pass
+- Archive license check without archive: pass
+
+The raw verbose test process exited 0 and named all three cases. Fresh-process
+repetition was not run because F-001 blocks assembled flow QA; these isolated
+cases are deterministic static evidence.
+

@@ -1,0 +1,13 @@
+Fresh save-retrieve-triage relation audit:
+
+- Save: commit e982c0137ad61b5cf82de0fa8f63b9c5c325412e creates the pending
+  roundfix intent entry.
+- Retrieve/Triage: commit 4aa955c3ec2c03ef5799ea0745bc8a8938ce6530
+  renames it under _triaged/ and adds resolved_to.
+- Destination artifact search found exactly one match:
+  docs/backlog/2026-08-06-atomic-inbox-capture-helper.md.
+- The Backlog Entry is type feat, status open, and cites the original pending
+  inbox path; the triaged entry's resolved_to names the same artifact exactly.
+
+Result: Success Metric 7 passes with independent reads from both repositories.
+

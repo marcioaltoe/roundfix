@@ -1,0 +1,13 @@
+Task 06 acceptance evidence is blocked by F-001.
+
+- Authorization commit 93e41d33 and Task 02 commit 09a3560b both precede Task
+  06 commit dc5539fb.
+- Actual Task pathset stays inside authorized canonical Skills/modules/guides,
+  their mirrors, the Task file, and generated internal/baseline fallout.
+- Fresh scratch regeneration exits 0 with changed:false.
+- Task 06 added three Source Baseline entries but did not land the separate
+  consequent fixture update required after Task 02 exposed the stale count.
+
+The obligations and generated artifacts are present, but their directly
+dependent maintained fixture remains red at expected 106 versus actual 114.
+

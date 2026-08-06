@@ -65,12 +65,18 @@
         "clause.context.backlog-01-operational-contract",
         "clause.context.backlog-02-finding-boundary",
         "clause.context.findings-01-frontmatter",
+        "clause.context.findings-08-rollup",
+        "clause.context.findings-09-archive",
+        "clause.context.findings-10-live-work-health",
+        "clause.context.findings-11-rollup-closure",
         "clause.context.findings-02-pending",
         "clause.context.findings-03-partial",
         "clause.context.findings-04-deferred",
         "clause.context.findings-05-done",
         "clause.context.findings-06-append-evidence",
         "clause.context.findings-07-update-timestamp",
+        "clause.context.inbox-01-triage",
+        "clause.context.inbox-02-fleet-flow",
         "clause.spec.keep-artifacts-in-spec-folder",
         "clause.spec.specs-are-downstream-artifacts",
         "clause.context.read-domain-contract",
@@ -91,6 +97,12 @@
         "contract.secondbrain.protocol",
         "clause.secondbrain.01-consult-triggers",
         "clause.secondbrain.02-query-order",
+        "clause.secondbrain.inbox-write-permission",
+        "clause.secondbrain.inbox-entry-contract",
+        "clause.secondbrain.inbox-triage-order",
+        "clause.secondbrain.inbox-empty-state",
+        "clause.secondbrain.inbox-auto-capture",
+        "clause.secondbrain.research-capture",
         "clause.secondbrain.prohibit-writes",
         "clause.secondbrain.prohibit-secret-access",
         "clause.secondbrain.cite-used-files",
@@ -114,9 +126,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 106,
-      "corpusDigest": "80eaee8a0c25e85bc712600b43273b7cf581eb28477899b65648180aee45f4ca",
-      "manifestDigest": "232b37e31ec7d55262dba3f03575da6bca51ca9fa3f2295647abb5bb863eb29a"
+      "entryCount": 118,
+      "corpusDigest": "8990968c135ff94d2a00a90246e9da81d0aed31d6e064032b040f5f1ba616ef8",
+      "manifestDigest": "be6aca06de15be528dc04366ee30ee7fbcd0be68dd3a34b7737c7e73b5e0fb3d"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 Working notes for running Specs end to end through Roundfix. Everything here is
 supervisor discipline that needs no product change; the product-side gaps live
-in [the QA cycle finding](../findings/2026-07-29-qa-cycle-latency-and-detector-placement.md).
+in [the QA cycle finding](../findings/_archived/2026-07-29-qa-cycle-latency-and-detector-placement.md).
 This file is a staging area: adjust it as the loop teaches, and promote the
 parts that stabilize into a skill or a command.
 

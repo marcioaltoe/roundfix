@@ -1,0 +1,12 @@
+Row: B01
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+Result: pass
+
+- `rtk make verify` built `bin/roundfix` and invoked its public `spec check`
+  path successfully after all package checks.
+- Two later independent `rtk ./bin/roundfix spec check` processes each exited
+  0 and reported `Spec 0079-one-door-for-fleet-knowledge` and `No findings.`
+- Each run recorded the same presence-aware skip for the absent TechSpec
+  Vocabulary Contract section.
+- The separate relation audit confirmed the persisted filesystem state behind
+  the public result: active=7, rollups=6, archived=65, errors=0.

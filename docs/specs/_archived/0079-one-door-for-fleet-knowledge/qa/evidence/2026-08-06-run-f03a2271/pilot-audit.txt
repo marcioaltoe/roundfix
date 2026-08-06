@@ -1,0 +1,47 @@
+Rows: R02-R07, US01, US02, US05, T05
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+
+Read-only public-path observations:
+- `/Users/marcio/dev/secondbrain/inbox/README.md` defines the positional
+  pending/triaged contract and makes `projects/` the destination registry.
+- The current pending inventory contains exactly
+  `inbox/secondbrain/2026-08-06-fleet-knowledge-door-research-digest.md`.
+  Its safe contract metadata is origin `roundfix`, destination `secondbrain`,
+  type hint `research`, created date `2026-08-06`, capture `manual`. No pending
+  entry predates the gate date, so the current inventory is equivalent
+  evidence for R03 but cannot observe fourteen days of fleet operation.
+- `projects/roundfix`, `inbox/roundfix`, and `inbox/secondbrain` resolve. The
+  observed destinations therefore satisfy the documented registry rule.
+
+Pilot persistence:
+- Commit `93bd7b35b77a356a3d2d50989de93565b1e85dbb` changes only
+  `inbox/secondbrain/2026-08-06-fleet-knowledge-door-research-digest.md`.
+- Commit `e982c0137ad61b5cf82de0fa8f63b9c5c325412e` changes only
+  `inbox/roundfix/2026-08-06-automate-inbox-capture-durability.md`.
+- Commit `4aa955c3ec2c03ef5799ea0745bc8a8938ce6530` changes only the
+  corresponding `_triaged/` path.
+- Fresh reads from all three commit objects reproduce the contract-valid
+  entries. The triaged object adds exactly
+  `resolved_to: docs/backlog/2026-08-06-atomic-inbox-capture-helper.md`.
+- The destination Backlog Entry exists, is `type: feat`, remains `status:
+  open`, and cites the pending inbox path as provenance.
+
+Recorded pilot observables confirmed on this build:
+- capture-to-durability values are 50 seconds and 24 seconds, both below 60;
+- the pre-Triage destination status was recorded clean;
+- capture commit pathsets contain only Secondbrain inbox paths;
+- the qmd result and substantive duplicate review are recorded;
+- the research digest has five cited sources;
+- the save-retrieve-Triage relation closes through the exact `resolved_to`
+  path.
+
+Row outcomes:
+- R02, R04, R05, R06, R07, and T05: pass from persistent commit objects,
+  current public reads, and a green static gate.
+- R03: blocked (environment: fourteen-day fleet-operation window; equivalent
+  current inventory observed). Unblock with a fleet inventory after the full
+  window.
+- US01, US02, and US05: blocked (environment: QA gate is read-only for the
+  external Secondbrain; equivalent recorded pilot commits and current public
+  objects observed). Unblock with a supervised replay that creates no
+  unrelated state.

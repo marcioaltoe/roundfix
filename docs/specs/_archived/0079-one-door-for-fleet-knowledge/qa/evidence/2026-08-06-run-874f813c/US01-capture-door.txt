@@ -1,0 +1,7 @@
+The real pilot supplies equivalent evidence for durability and non-interference:
+single-path Secondbrain capture commits, sub-minute supervised timings, and a
+clean destination status immediately before Triage.
+
+The QA user journey itself was not replayed after F-001 failed the mandatory
+tooling audit. Status is finding-blocked, not pass from task evidence alone.
+
