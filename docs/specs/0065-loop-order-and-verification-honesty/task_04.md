@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0065-loop-order-and-verification-honesty
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -37,17 +37,17 @@ exact shape on 2026-08-05.
 
 ## Subtasks
 
-- [ ] Add the rule reading all three sources.
-- [ ] Fixture a divergence in each source and assert detection.
-- [ ] Assert the corrected repository passes.
+- [x] Add the rule reading all three sources.
+- [x] Fixture a divergence in each source and assert detection.
+- [x] Assert the corrected repository passes.
 
 ## Acceptance Criteria
 
-- [ ] A divergence in the shipped clause is detected and named.
-- [ ] A divergence in the repository guide is detected and named.
-- [ ] A divergence in the Baseline module asset is detected and named.
-- [ ] The repository as task_01 left it passes the rule.
-- [ ] `TestCheckCorpusBudget` passes.
+- [x] A divergence in the shipped clause is detected and named.
+- [x] A divergence in the repository guide is detected and named.
+- [x] A divergence in the Baseline module asset is detected and named.
+- [x] The repository as task_01 left it passes the rule.
+- [x] `TestCheckCorpusBudget` passes.
 
 ## Context
 
@@ -69,3 +69,60 @@ exact shape on 2026-08-05.
 - `_prd.md` → Core Feature 1; Success Metric 1.
 - `_techspec.md` → Build Order 1; Risks & Considerations.
 - ADR-0093.
+
+## Result
+
+Implementation evidence:
+
+- Added `SC-LOOP-ORDER-DIVERGENT` to the Spec Consistency Check. It reads the
+  shipped generated clause, the repository guide, and the Baseline module's
+  `clause.autonomous.loop-01-qa-once` guidance. The module is parsed as JSON by
+  clause identifier; each order is extracted from its explicit declaration,
+  keeping the check inside ADR-0093's declared-source boundary.
+- A mismatch produces an `error` whose summary names all three sources and
+  prints each observed order. Its locations point to all three declarations,
+  so the diagnostic shows both the disagreeing source and the difference.
+- Added independent fixtures that reorder `archive` and `merge` in each source,
+  plus a repository-backed case that asserts task_01's corrected declarations
+  produce no `SC-LOOP-ORDER-DIVERGENT` finding.
+- Registered the new code in the active and archived characterization corpus
+  with zero expected findings.
+
+Focused-check evidence:
+
+- Red signal: `rtk env GOCACHE=<repository>/.gocache rtk go test
+  ./internal/speccheck -count=1 -run '^TestCheckLoopOrder'` failed to compile
+  before implementation because `speccheck.CodeLoopOrderDivergent` did not
+  exist.
+- `rtk env GOCACHE=<repository>/.gocache rtk go test ./internal/speccheck
+  -count=1 -run '^TestCheckLoopOrder'` — exit 0; five loop-order tests passed,
+  including one divergent case for each source and the corrected repository
+  case.
+- `rtk env GOCACHE=<repository>/.gocache rtk go test ./internal/speccheck
+  -count=1 -run '^(TestCheckLoopOrder|TestCheckCorpusGolden)$'` — exit 0; the
+  loop-order and corpus characterization selectors passed.
+- `rtk env GOCACHE=<repository>/.gocache rtk go test -count=1 -parallel=1
+  ./internal/speccheck -run '^TestCheckCorpusBudget$'` — exit 0; the dedicated
+  corpus sweep remained below its wall-clock budget.
+- `rtk env GOCACHE=<repository>/.gocache rtk go test ./internal/speccheck
+  -count=1 -skip '^TestCheckCorpusBudget$'` — exit 0 with 58 tests passed.
+- `rtk git diff --check` — exit 0.
+
+Acceptance-criterion evidence:
+
+- Shipped clause: `TestCheckLoopOrderDivergent/shipped_clause` passed and
+  required the finding summary to name `shipped clause`, print its reordered
+  actions, and locate the shipped clause path.
+- Repository guide: `TestCheckLoopOrderDivergent/repository_guide` passed with
+  the equivalent name, observed-order, and location assertions.
+- Baseline module asset:
+  `TestCheckLoopOrderDivergent/Baseline_module_asset` passed with the equivalent
+  assertions against the clause read from the JSON module.
+- Corrected repository: `TestCheckLoopOrderRepositoryAgrees` passed with no
+  `SC-LOOP-ORDER-DIVERGENT` finding.
+- Corpus budget: the dedicated `TestCheckCorpusBudget` selector exited 0.
+
+Daemon-owned Verification:
+
+- The commands under `## Verification` were not run in this Agent turn. The
+  Daemon owns those commands and the terminal Task verdict.
