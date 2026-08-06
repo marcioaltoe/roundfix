@@ -99,6 +99,115 @@ func TestEmbeddedCatalog(t *testing.T) {
 	}
 }
 
+func TestReadinessComparesDeclaredVersionToMinimum(t *testing.T) {
+	t.Parallel()
+
+	const (
+		minimum       = "1.2.3"
+		oneMinorNewer = "1.3.0"
+	)
+	tests := []struct {
+		name       string
+		declared   SkillVersion
+		wantState  ReadinessState
+		wantErr    error
+		forbidText string
+	}{
+		{
+			name:      "equal satisfies",
+			declared:  SkillVersion{Declared: minimum, Source: "fixture/SKILL.md"},
+			wantState: ReadinessSatisfies,
+		},
+		{
+			name:      "one minor above satisfies",
+			declared:  SkillVersion{Declared: oneMinorNewer, Source: "fixture/SKILL.md"},
+			wantState: ReadinessSatisfies,
+		},
+		{
+			name:      "below reports below",
+			declared:  SkillVersion{Declared: "1.2.2", Source: "fixture/SKILL.md"},
+			wantState: ReadinessBelow,
+		},
+		{
+			name:      "no declaration reports unversioned",
+			declared:  SkillVersion{Source: "fixture/SKILL.md"},
+			wantState: ReadinessUnversioned,
+		},
+		{
+			name:       "unreachable source reports unresolvable",
+			declared:   SkillVersion{},
+			wantState:  ReadinessUnversioned,
+			wantErr:    ErrSkillVersionUnresolvable,
+			forbidText: "missing",
+		},
+		{
+			name:      "malformed declaration reports unresolvable",
+			declared:  SkillVersion{Declared: "not-a-version", Source: "fixture/SKILL.md"},
+			wantState: ReadinessUnversioned,
+			wantErr:   ErrSkillVersionUnresolvable,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := Readiness(test.declared, minimum)
+			if got != test.wantState {
+				t.Fatalf("Readiness(%+v, %q) = %q, want %q", test.declared, minimum, got, test.wantState)
+			}
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("Readiness(%+v, %q) error = %v, want %v", test.declared, minimum, err, test.wantErr)
+			}
+			if test.forbidText != "" && strings.Contains(strings.ToLower(err.Error()), test.forbidText) {
+				t.Fatalf("Readiness(%+v, %q) error = %q, must not report %q", test.declared, minimum, err, test.forbidText)
+			}
+		})
+	}
+}
+
+func TestCatalogRejectsMissingOwnedSkillMinimum(t *testing.T) {
+	t.Parallel()
+
+	const assetPath = "setups/go-cli.json"
+	assets := cloneEmbeddedAssets(t)
+	asset := assets[assetPath]
+	var setup map[string]any
+	if err := json.Unmarshal(asset.Data, &setup); err != nil {
+		t.Fatal(err)
+	}
+	skills, ok := setup["skills"].([]any)
+	if !ok {
+		t.Fatalf("setup skills = %#v, want array", setup["skills"])
+	}
+	removed := false
+	for _, rawSkill := range skills {
+		skill, ok := rawSkill.(map[string]any)
+		if !ok {
+			t.Fatalf("setup skill = %#v, want object", rawSkill)
+		}
+		source, ok := skill["source"].(map[string]any)
+		if !ok || source["type"] != "repo" {
+			continue
+		}
+		delete(skill, "minimumVersion")
+		removed = true
+		break
+	}
+	if !removed {
+		t.Fatal("setup has no Roundfix-owned skill")
+	}
+	data, err := json.Marshal(setup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asset.Data = data
+	assets[assetPath] = asset
+
+	_, err = LoadCatalog(assets)
+	requireCatalogDiagnostic(t, err, "catalog.setup.skill.minimumVersion.invalid")
+}
+
 func TestCatalogRegenerationMode(t *testing.T) {
 	t.Parallel()
 

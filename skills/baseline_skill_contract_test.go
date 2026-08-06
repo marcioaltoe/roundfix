@@ -470,6 +470,8 @@ func TestAuthorialSkillSync(t *testing.T) {
 
 func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
 	t.Parallel()
+	const minimum = "1.2.3"
+
 	repoRoot := t.TempDir()
 	skillRoot := filepath.Join(repoRoot, ".agents", "skills", "roundfix")
 	if err := os.MkdirAll(skillRoot, 0o755); err != nil {
@@ -502,6 +504,26 @@ func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
 		}},
 	}
 	writeBaselineSetupFixture(t, setupPath, setup)
+	var setupDocument map[string]any
+	if err := json.Unmarshal(readBaselineSkillContractFile(t, setupPath), &setupDocument); err != nil {
+		t.Fatal(err)
+	}
+	setupSkills, ok := setupDocument["skills"].([]any)
+	if !ok || len(setupSkills) != 1 {
+		t.Fatalf("fixture skills = %#v, want one skill", setupDocument["skills"])
+	}
+	setupSkill, ok := setupSkills[0].(map[string]any)
+	if !ok {
+		t.Fatalf("fixture skill = %#v, want object", setupSkills[0])
+	}
+	setupSkill["minimumVersion"] = minimum
+	updatedSetup, err := json.MarshalIndent(setupDocument, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(setupPath, append(updatedSetup, '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	knownOwned := map[string]struct{}{"roundfix": {}}
 
 	regenerateBaselineSetupSnapshot(t, repoRoot, setupPath, knownOwned)
@@ -513,6 +535,9 @@ func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
 	if before.Skills[0].ContentDigest != beforeSkillDigest ||
 		before.Digest != baselineSetupDigest(t, before.Skills, before.ActivationBundles) {
 		t.Fatalf("first regenerated setup has stale derived digests: %+v", before)
+	}
+	if got := baselineSetupMinimum(t, setupPath); got != minimum {
+		t.Fatalf("first regenerated minimum = %q, want preserved %q", got, minimum)
 	}
 
 	if err := os.WriteFile(skillPath, []byte("after\n"), 0o644); err != nil {
@@ -531,6 +556,22 @@ func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
 	if after.Skills[0].ContentDigest == before.Skills[0].ContentDigest {
 		t.Fatal("canonical Skill edit did not change the regenerated content digest")
 	}
+	if got := baselineSetupMinimum(t, setupPath); got != minimum {
+		t.Fatalf("second regenerated minimum = %q, want preserved %q", got, minimum)
+	}
+}
+
+func baselineSetupMinimum(t *testing.T, setupPath string) string {
+	t.Helper()
+	var setup struct {
+		Skills []struct {
+			MinimumVersion string `json:"minimumVersion"`
+		} `json:"skills"`
+	}
+	if err := json.Unmarshal(readBaselineSkillContractFile(t, setupPath), &setup); err != nil {
+		t.Fatal(err)
+	}
+	return setup.Skills[0].MinimumVersion
 }
 
 func TestWritePRDProjectConstraints(t *testing.T) {
@@ -1224,11 +1265,12 @@ type baselineSetupSource struct {
 }
 
 type baselineSetupSkill struct {
-	Name          string              `json:"name"`
-	Path          string              `json:"path"`
-	Source        baselineSetupSource `json:"source"`
-	TreeDigest    string              `json:"treeDigest,omitempty"`
-	ContentDigest string              `json:"contentDigest,omitempty"`
+	Name           string              `json:"name"`
+	Path           string              `json:"path"`
+	Source         baselineSetupSource `json:"source"`
+	MinimumVersion string              `json:"minimumVersion,omitempty"`
+	TreeDigest     string              `json:"treeDigest,omitempty"`
+	ContentDigest  string              `json:"contentDigest,omitempty"`
 }
 
 type baselineSetupBundle struct {

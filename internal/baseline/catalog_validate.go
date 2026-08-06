@@ -6,9 +6,11 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -38,6 +40,76 @@ const (
 )
 
 const sourceBaselineManifestRowGuidance = "; the regenerator maintains manifest rows but never creates them, so add this row first"
+
+// ReadinessState is the outcome of comparing a skill's declared compatibility
+// identity with Roundfix's independently declared minimum.
+type ReadinessState string
+
+const (
+	ReadinessSatisfies   ReadinessState = "satisfies"
+	ReadinessBelow       ReadinessState = "below"
+	ReadinessUnversioned ReadinessState = "unversioned"
+)
+
+// ErrSkillVersionUnresolvable distinguishes a source that cannot provide a
+// comparable declaration from a skill that is absent.
+var ErrSkillVersionUnresolvable = errors.New("skill version unresolvable")
+
+// SkillVersion is a skill's declared compatibility identity. Roundfix reads
+// it and never invents one.
+type SkillVersion struct {
+	Declared string
+	Source   string
+}
+
+// Readiness compares a declared version against Roundfix's declared minimum.
+func Readiness(declared SkillVersion, minimum string) (ReadinessState, error) {
+	if strings.TrimSpace(declared.Source) == "" {
+		return ReadinessUnversioned, fmt.Errorf("%w: source is unreachable", ErrSkillVersionUnresolvable)
+	}
+	if strings.TrimSpace(declared.Declared) == "" {
+		return ReadinessUnversioned, nil
+	}
+
+	found, ok := parseSkillVersion(declared.Declared)
+	if !ok {
+		return ReadinessUnversioned, fmt.Errorf(
+			"%w: source %q declares %q",
+			ErrSkillVersionUnresolvable,
+			declared.Source,
+			declared.Declared,
+		)
+	}
+	required, ok := parseSkillVersion(minimum)
+	if !ok {
+		return "", fmt.Errorf("invalid minimum skill version %q", minimum)
+	}
+	for index := range found {
+		if found[index] > required[index] {
+			return ReadinessSatisfies, nil
+		}
+		if found[index] < required[index] {
+			return ReadinessBelow, nil
+		}
+	}
+	return ReadinessSatisfies, nil
+}
+
+func parseSkillVersion(version string) ([3]uint64, bool) {
+	var parsed [3]uint64
+	parts := strings.Split(strings.TrimSpace(version), ".")
+	if len(parts) != len(parsed) {
+		return parsed, false
+	}
+	for index, part := range parts {
+		value, err := strconv.ParseUint(part, 10, 64)
+		if err != nil {
+			return parsed, false
+		}
+		parsed[index] = value
+	}
+	return parsed, true
+}
 
 func (l *catalogLoader) validateTemplates(catalog *Catalog) {
 	for templateID, template := range catalog.templates {
@@ -1250,6 +1322,10 @@ func (l *catalogLoader) validateSetups(catalog *Catalog) {
 					l.add("catalog.setup.skill.treeDigest.invalid", setupID, name)
 				}
 			case "repo":
+				minimum, ok := stringValue(skill, "minimumVersion")
+				if _, valid := parseSkillVersion(minimum); !ok || !valid {
+					l.add("catalog.setup.skill.minimumVersion.invalid", setupID, name)
+				}
 				digest, ok := stringValue(skill, "contentDigest")
 				if !ok || !lowerSHA256.MatchString(digest) {
 					l.add("catalog.setup.skill.contentDigest.invalid", setupID, name)
