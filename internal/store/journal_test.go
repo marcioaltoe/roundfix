@@ -358,6 +358,55 @@ func TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing(t *testing.T) {
 	}
 }
 
+func TestDiscoverArtifactRootsReturnsEveryRecordedRepository(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	firstRequest := sampleCreateRunRequest()
+	firstRequest.GitRoot = filepath.Join(t.TempDir(), "repository-a")
+	firstRequest.ArtifactDir = filepath.Join(t.TempDir(), "artifacts-a")
+	first, err := runStore.CreateRun(ctx, firstRequest)
+	if err != nil {
+		t.Fatalf("create first Artifact Root Run: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, first.ID, StateClean); err != nil {
+		t.Fatalf("complete first Artifact Root Run: %v", err)
+	}
+
+	secondRequest := sampleCreateRunRequest()
+	secondRequest.HeadBranch = "feature/other-artifact-root"
+	secondRequest.PRNumber = "456"
+	secondRequest.GitRoot = filepath.Join(t.TempDir(), "repository-b")
+	secondRequest.ArtifactDir = filepath.Join(t.TempDir(), "artifacts-b")
+	second, err := runStore.CreateRun(ctx, secondRequest)
+	if err != nil {
+		t.Fatalf("create second Artifact Root Run: %v", err)
+	}
+
+	roots, err := DiscoverArtifactRoots(ctx, runStore)
+	if err != nil {
+		t.Fatalf("discover Artifact Roots: %v", err)
+	}
+	if len(roots) != 2 {
+		t.Fatalf("expected roots from both repositories, got %#v", roots)
+	}
+	runsByRoot := map[string]ArtifactRootRun{}
+	for _, root := range roots {
+		if len(root.Runs) != 1 {
+			t.Fatalf("expected one Run for Artifact Root %q, got %#v", root.Path, root.Runs)
+		}
+		runsByRoot[root.Path] = root.Runs[0]
+	}
+	if got := runsByRoot[firstRequest.ArtifactDir]; got.ID != first.ID || got.Repository != firstRequest.GitRoot || got.State != StateClean || got.CompletedAt == nil {
+		t.Fatalf("first Artifact Root lost durable Run evidence: %#v", got)
+	}
+	if got := runsByRoot[secondRequest.ArtifactDir]; got.ID != second.ID || got.Repository != secondRequest.GitRoot || got.State != StateActive || got.CompletedAt != nil {
+		t.Fatalf("second Artifact Root lost durable Run evidence: %#v", got)
+	}
+}
+
 func TestStorageReportReconcilesMeasuredTotalsWithoutMutation(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

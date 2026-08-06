@@ -35,6 +35,22 @@ type PruneCandidate struct {
 	Events int
 }
 
+// ArtifactRoot is one unique Artifact Root recorded by durable Run metadata.
+// Runs retains the evidence needed by callers to classify the root without
+// deriving ownership from the filesystem.
+type ArtifactRoot struct {
+	Path string
+	Runs []ArtifactRootRun
+}
+
+// ArtifactRootRun is the durable Run evidence that records an Artifact Root.
+type ArtifactRootRun struct {
+	ID          string
+	Repository  string
+	State       string
+	CompletedAt *time.Time
+}
+
 // StorageReportReconciliationToleranceReason explains the page-sized
 // reconciliation tolerance. SQLite page accounting and the independent file
 // stat are both page-granular but can be observed on adjacent page boundaries
@@ -534,6 +550,53 @@ func (store *Store) PruneTerminalRuns(ctx context.Context, cutoff time.Time) (Pr
 // cutoff without mutating the Run Database.
 func (store *Store) TerminalRunPruneCandidates(ctx context.Context, cutoff time.Time) ([]PruneCandidate, error) {
 	return terminalRunPruneCandidates(ctx, store.db, cutoff)
+}
+
+// DiscoverArtifactRoots returns every unique Artifact Root recorded by a Run.
+// It reads only durable Run metadata and never discovers roots by scanning the
+// filesystem.
+func DiscoverArtifactRoots(ctx context.Context, runStore *Store) ([]ArtifactRoot, error) {
+	rows, err := runStore.db.QueryContext(ctx, `
+SELECT id, git_root, state, artifact_dir, completed_at
+FROM runs
+ORDER BY artifact_dir, id`)
+	if err != nil {
+		return nil, fmt.Errorf("discover Artifact Roots from Run metadata: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	roots := []ArtifactRoot{}
+	rootIndexes := map[string]int{}
+	for rows.Next() {
+		var run ArtifactRootRun
+		var path string
+		var completedAtRaw string
+		if err := rows.Scan(&run.ID, &run.Repository, &run.State, &path, &completedAtRaw); err != nil {
+			return nil, fmt.Errorf("scan Artifact Root Run metadata: %w", err)
+		}
+		if strings.TrimSpace(completedAtRaw) != "" {
+			completedAt, err := parseTime(completedAtRaw)
+			if err != nil {
+				return nil, fmt.Errorf("read Run %q completion time for Artifact Root discovery: %w", run.ID, err)
+			}
+			run.CompletedAt = &completedAt
+		}
+
+		path = strings.TrimSpace(path)
+		index, ok := rootIndexes[path]
+		if !ok {
+			index = len(roots)
+			rootIndexes[path] = index
+			roots = append(roots, ArtifactRoot{Path: path})
+		}
+		roots[index].Runs = append(roots[index].Runs, run)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate Artifact Root Run metadata: %w", err)
+	}
+	return roots, nil
 }
 
 type queryContextRunner interface {
