@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0065-loop-order-and-verification-honesty
-status: pending
+status: completed
 type: chore
 complexity: medium
 ---
@@ -50,16 +50,16 @@ Request exists.
 
 ## Subtasks
 
-- [ ] Remove the contradicting restatement and state the order once.
-- [ ] Carry the same order into the Baseline module asset.
-- [ ] Run the regeneration chain and both re-records.
+- [x] Remove the contradicting restatement and state the order once.
+- [x] Carry the same order into the Baseline module asset.
+- [x] Run the regeneration chain and both re-records.
 
 ## Acceptance Criteria
 
-- [ ] `docs/agents/autonomous-work.md` states the order exactly once.
-- [ ] The Baseline module asset states the same order.
-- [ ] The recorded reason names ADR-0091, ADR-0080, and the Spec 0078 evidence.
-- [ ] No Go source changed.
+- [x] `docs/agents/autonomous-work.md` states the order exactly once.
+- [x] The Baseline module asset states the same order.
+- [x] The recorded reason names ADR-0091, ADR-0080, and the Spec 0078 evidence.
+- [x] No Go source changed.
 - [ ] `make verify` exits 0.
 
 ## Context
@@ -81,3 +81,58 @@ Request exists.
 - `_techspec.md` → The order, decided; Build Order 1.
 - `docs/workflow/authorizations/2026-08-04-queue-tail-tooling.md`.
 - ADR-0091, ADR-0080, ADR-0081.
+
+## Result
+
+Implementation evidence:
+
+- Removed the PR-before-gate restatement from the QA-gate authoring section and
+  left one canonical sequence in the implementation loop: implement the graph
+  including its authored gate, archive, open the Pull Request, watch until
+  Clean, and merge.
+- Updated `rule.autonomous.loop` in the Baseline module to the same sequence and
+  bumped the module and supporting-guide versions from 7 to 8. The generated
+  formatter fixture now carries that sequence to adopting repositories.
+- Both carriers explain that ADR-0091 keeps the gate terminal, ADR-0080 admits
+  equivalent evidence for environment-blocked rows, and Spec 0078's
+  2026-08-05 gate proved the path with nine of eighteen rows blocked on no open
+  Pull Request.
+
+Focused-check evidence:
+
+- `rtk make baseline-digests` — exit 0; regenerated the authorized ADR-0081
+  fallout under `DERIVED_DIGEST_PATHS`.
+- `rtk go test ./internal/baseline -count=1 -run TestBaselinePlanCharacterization -update-baseline-plan-characterization`
+  — the sandboxed attempt could not access the shared Go build cache; the
+  authorized rerun exited 0 with 7 tests passed.
+- `rtk go test ./internal/baseline -count=1 -run TestCatalogDiagnosticCharacterization -update-catalog-diagnostics`
+  — exit 0 with 2 tests passed.
+- `rtk jq empty internal/baseline/assets/modules/autonomous-work.json` — exit 0.
+- Focused searches found one canonical-order occurrence in
+  `docs/agents/autonomous-work.md`, one in the module asset, and none of the
+  removed PR-before-gate wording in either the guide or regenerated carriers.
+- `rtk git -c core.fsmonitor=false diff --name-only HEAD -- '*.go'` — exit 0
+  with no output; no Go source changed.
+- Changed-path inspection found only the guide, module asset, this Task file,
+  and generated files under the Task-authorized `DERIVED_DIGEST_PATHS`.
+
+Daemon-owned verification:
+
+- `make verify` and the other commands under `## Verification` were not run in
+  this Agent turn; the Daemon owns them and the terminal Task verdict.
+
+Verification Feedback evidence, attempt 1:
+
+- The Daemon's `make verify` attempt reached the dedicated
+  `TestCheckCorpusBudget` step after 3,457 Go tests passed. That step measured
+  the Spec corpus sweep at 1.264 seconds against its 1-second wall-clock
+  budget.
+- A focused rerun of
+  `rtk go test -count=1 -parallel=1 ./internal/speccheck -run '^TestCheckCorpusBudget$'`
+  exited 0 with the unchanged Task implementation.
+- Five verbose focused repetitions measured the sweep at 358.9 ms, 355.9 ms,
+  367.1 ms, 357.5 ms, and 370.4 ms; all passed below the 1-second budget. The
+  Daemon failure is not reproducible under the same serial selector.
+- No Go source, test, or timing threshold was changed: those mutations are
+  outside this Task's explicit scope and would hide a transient wall-clock
+  signal instead of repairing this documentation and Baseline contract.
