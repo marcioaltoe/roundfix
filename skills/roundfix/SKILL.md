@@ -668,6 +668,36 @@ Never substitute manual Git deletion for this supported workflow. Do not run
 directory by hand. The Reconcile Command owns safety proof, evidence recording,
 the guarded Integration Pending transition, and cleanup.
 
+## Spec Consistency Check
+
+Use the read-only Spec Consistency Check before a Run to compare written Spec
+citations, declarations, and cross-references without editing artifacts or
+emitting a QA verdict:
+
+```bash
+roundfix spec check [<slug> ...] [--format <text|json>] [--strict]
+```
+
+With no slug, the command checks every active Spec in the Spec Root. Findings
+are `error` when the check locates both sides of a contradiction and `gap` when
+it surfaces a candidate it cannot settle; `--strict` promotes gaps to errors.
+The authoring-honesty contract includes these stable error identifiers:
+
+- `SC-VERIFY-WORK-INDEPENDENT` — a Task's Verification contains only
+  repository-wide gates and working-tree cleanliness checks, so it cannot
+  distinguish Task work from no work.
+- `SC-REQUIREMENT-CONTRADICTORY` — declared `MUST` and `MUST NOT` clauses
+  require and forbid the same named state.
+- `SC-REHEARSAL-UNDECLARED` — a Task that rehearses or proves a gate lacks a
+  complete `## Rehearsal Cases` declaration with
+  `- Case: <case>; Observation: <observation>` entries.
+- `SC-LOOP-ORDER-DIVERGENT` — the shipped clause, repository guide, and
+  Baseline module asset declare different Spec loop orders.
+
+Exit `0` means no errors, including a non-strict gaps-only result. Exit `1`
+means at least one error, and exit `2` means a usage error or unreadable Spec
+Root. Text is the default output; JSON uses the `roundfix-speccheck/v1` schema.
+
 ## Spec close audit
 
 Use the read-only Spec Audit Command after merge and sync to inspect one active
@@ -1007,6 +1037,8 @@ roundfix resolve --pr <number> [--spec <slug>] --detach
 roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean --detach
 roundfix implement --spec <slug>
 roundfix implement --spec <slug> --detach
+roundfix spec check
+roundfix spec check <slug> --format json --strict
 roundfix runs list
 roundfix runs list --state all --limit 0
 roundfix runs
@@ -1555,6 +1587,9 @@ outcome and never opens pull requests (ADR-0021).
 Use this loop to carry one Spec — or a queue of Specs — from pending Tasks to an
 archived Spec without owning the Run's terminal in the foreground. It composes
 the Implement, Attach, Settle, Stop, and Archive commands documented above.
+
+Follow one order per Spec: implement the graph including its authored gate,
+archive, open the Pull Request, watch until Clean, and merge.
 
 1. **Prepare.** Work on a non-default branch and confirm readiness with
    `roundfix doctor`. Pick the Spec slug under the resolved Spec Root
