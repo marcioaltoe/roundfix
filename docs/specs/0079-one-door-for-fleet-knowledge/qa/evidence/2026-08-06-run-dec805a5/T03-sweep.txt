@@ -1,0 +1,8 @@
+Fresh Task 03 acceptance audit at build 444d1b0e:
+- active files: 7; valid lifecycle declarations: 7
+- active Rollups: 6
+- archived findings carrying absorbed_by: 65
+- public `./bin/roundfix spec check`: exit 0 with No findings
+- `git log --oneline --name-only 169899de..HEAD -- docs/findings/_archived`: no output
+
+The prior current-branch QA artifact qa/evidence/2026-08-06-run-f03a2271/findings-audit.txt records an exact 65-file body comparison with zero mismatches. The fresh history query proves no commit after Task 03 changed any archived legacy Finding, so that exact preservation proof still applies byte-for-byte to this build. The new active Finding added later is not one of the 65 preserved legacy bodies.

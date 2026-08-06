@@ -1,0 +1,8 @@
+Fresh findings inventory at build 444d1b0e:
+- active Markdown files under docs/findings/: 7
+- active files with a valid lifecycle status: 7
+- active Rollups: 6
+- archived findings with absorbed_by: 65
+- `./bin/roundfix spec check`: exit 0, Spec 0079, No findings
+
+The active count 7 is below the PRD maximum of 15, and the valid-status count equals the complete active-file count. The public consistency command independently confirms lifecycle, Rollup-member, and archive-license declarations resolve.

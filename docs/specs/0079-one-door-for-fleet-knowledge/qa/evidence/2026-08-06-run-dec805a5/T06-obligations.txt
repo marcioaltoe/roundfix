@@ -1,0 +1,10 @@
+Fresh Task 06 audit:
+- Commit dc5539fb is after authorization 93e41d33 and after the pilot commit ef498c53.
+- `diff-tree` reports 24 paths: authorized canonical Skills, their mirrors, modules, guide postimages, assigned task_06.md, and generated baseline fallout.
+- `rtk make skills-sync-check` exited 0 with four Skill contract tests passing.
+- Exact `cmp -s` checks exited 0 for both canonical/mirror Skill pairs.
+- Both canonical Skills place `Read the pending inbox` at step 1.
+- Current guides carry `capture: auto`, `never self-triaged`, hook ownership, substantive-research capture, qmd path validation, and the fleet-flow obligation.
+- Fresh `rtk make baseline-digests` exited 0 with changed:false.
+
+No Task 06 authorization-shape defect was found. F-003 is confined to the later Task 09 commit.

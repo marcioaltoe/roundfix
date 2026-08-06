@@ -1,0 +1,8 @@
+Fresh Task 08 audit:
+- `diff-tree -r 6a551ea5` names only task_08.md and internal/baseline/preservation_test.go.
+- The file at commit 6a551ea5 declares maintainedSourceBaselineEntries=114 and maintainedSourceBaselineAccounting=51.
+- The same test retains exact identity-to-entry, entry-to-declared-value, and accounting comparisons.
+- The current build advances the declared entry count to 118 due Task 09; the invariant and accounting assertions remain exact.
+- Fresh `rtk go test -count=1 ./internal/baseline` under the writable scratch Go cache exited 0 with 560 tests passing.
+
+Task 08 is a separate post-cause correction and satisfies its bounded acceptance slice.
