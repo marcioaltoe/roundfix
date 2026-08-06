@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0059-run-storage-compaction-and-global-sanitation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -70,3 +70,51 @@ cannot prove.
 - `_prd.md` → Core Feature 2; User Stories 3 and 5; Success Metric 2.
 - `_techspec.md` → System Architecture; Build Order 3; Risks & Considerations.
 - ADR-0053.
+
+## Result
+
+Implemented metadata-only Artifact Root discovery and the global
+`roundfix gc sanitize [--apply]` surface. The default invocation reports a
+dry-run; apply removes only retention-eligible terminal Run directories or
+directories whose Run ID is absent from the complete durable Run index.
+Classification happens before scanning, and unsafe, missing, overridden, and
+outside-Home roots stay preserved with their evidence.
+
+Focused checks:
+
+- `rtk go test ./internal/store -count=1 -run '^TestDiscoverArtifactRootsReturnsEveryRecordedRepository$' -v`
+  passed. The first sandboxed attempt could not access the system Go build
+  cache; the same focused command passed after granting that filesystem
+  boundary.
+- `rtk go test ./internal/cli -count=1 -run '^TestRunGCSanitizeClassifiesEveryRecordedRootAndMutatesOnlyProvenDirectories$' -v`
+  passed after the final test edit.
+- `rtk go test ./internal/cli -count=1 -run '^TestRunGC(DryRunListsEligibleRunsAndChangesNothing|PrunesEligibleJournalsArtifactsAndOrphans|SkipsWhenJournalRetentionIsZero|Help)$' -v`
+  passed all four existing per-repository GC cases.
+- The commands under `## Verification` were not run; the Daemon owns them.
+
+Acceptance evidence:
+
+- Cross-repository discovery: `TestDiscoverArtifactRootsReturnsEveryRecordedRepository`
+  creates Runs for two repositories and observes both recorded roots and their
+  Run evidence without creating either root on disk.
+- Six classifications and evidence: the sanitation CLI fixture observes
+  `active`, `orphaned`, `missing`, `overridden`, `outside Roundfix Home`, and
+  `unsafe`, plus a stated evidence line for each.
+- Proven deletion boundary: apply removes an old terminal Run directory and
+  an absent-Run directory, while active, recent, overridden, outside-Home, and
+  unsafe paths remain.
+- Review Artifact preservation: the fixture directly asserts the file under
+  `reviews/pr-123/round-001/issue.md` exists after both apply invocations.
+- Ambiguity preservation: overridden, outside-Home, and unsafe fixture paths
+  remain after apply, and the report states why each root was preserved.
+- Idempotence: the fixture derives the first reclaimed directory and byte
+  counts, asserts both are non-zero, then asserts the second apply reclaims
+  zero directories and zero bytes.
+- Dry-run safety: every eligible and preserved fixture path is asserted present
+  after the default sanitation invocation.
+- Per-repository compatibility: all four pre-existing `TestRunGC...` cases pass
+  unchanged for dry-run, apply, zero retention, and help behavior.
+
+Follow-up boundary: Task 05 owns the authorized Roundfix Skill synchronization
+for the new CLI contract; no Skill or generated digest file changed in this
+slice.

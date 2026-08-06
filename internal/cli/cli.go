@@ -5111,14 +5111,20 @@ Doctor is offline, read-only, and mutates nothing.
 	case "gc":
 		return `Usage:
   roundfix gc [--dry-run]
+  roundfix gc sanitize [--apply]
 
 Prunes Run Event Journal rows for terminal Runs older than Journal Retention,
 then removes their run artifact directories and orphaned runs/<id> directories
 under the resolved run artifact root. It never deletes Run rows or Active Run locks,
 and it never removes Review artifacts outside the run artifact root.
 
+The sanitize subcommand discovers every recorded Artifact Root from the
+machine-wide Run Database, classifies it with durable and filesystem evidence,
+and preserves every ambiguous path. It is a dry-run unless --apply is explicit.
+
 Options:
   --dry-run  List the Runs, journal rows, and artifact bytes that would be pruned without changing anything
+  --apply    With sanitize, remove only proven retention-eligible or absent Run artifact directories
 `
 	case "storage":
 		return `Usage:

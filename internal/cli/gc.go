@@ -38,7 +38,9 @@ func defaultGCDependencies() gcDependencies {
 }
 
 type gcOptions struct {
-	dryRun bool
+	dryRun   bool
+	sanitize bool
+	apply    bool
 }
 
 type gcReport struct {
@@ -56,6 +58,44 @@ type gcArtifactDir struct {
 	runID string
 	path  string
 	bytes int64
+}
+
+type gcSanitationClassification string
+
+const (
+	gcSanitationActive      gcSanitationClassification = "active"
+	gcSanitationOrphaned    gcSanitationClassification = "orphaned"
+	gcSanitationMissing     gcSanitationClassification = "missing"
+	gcSanitationOverridden  gcSanitationClassification = "overridden"
+	gcSanitationOutsideHome gcSanitationClassification = "outside Roundfix Home"
+	gcSanitationUnsafe      gcSanitationClassification = "unsafe"
+)
+
+type gcSanitationCandidate struct {
+	dir      gcArtifactDir
+	evidence string
+}
+
+type gcSanitationPreservation struct {
+	path   string
+	reason string
+}
+
+type gcSanitationRootReport struct {
+	path           string
+	classification gcSanitationClassification
+	evidence       string
+	candidates     []gcSanitationCandidate
+	preserved      []gcSanitationPreservation
+}
+
+type gcSanitationReport struct {
+	apply         bool
+	retention     time.Duration
+	cutoff        time.Time
+	roots         []gcSanitationRootReport
+	directories   int
+	artifactBytes int64
 }
 
 type retentionPruneReport struct {
@@ -130,6 +170,16 @@ func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer, 
 	if err != nil {
 		printPreflightFailure("gc", err, stderr)
 		return exitPreflight
+	}
+
+	if opts.sanitize {
+		report, err := runGCSanitation(ctx, opts, loaded)
+		if err != nil {
+			fmt.Fprintf(stderr, "%s: gc sanitize failed: %v\n", app.Name, err)
+			return exitRunFailed
+		}
+		printGCSanitationReport(stdout, report)
+		return exitOK
 	}
 
 	report, err := runGC(ctx, opts, loaded)
@@ -262,6 +312,19 @@ func storageByteDifference(left int64, right int64) int64 {
 }
 
 func parseGCCommand(args []string) (gcOptions, error) {
+	if len(args) > 0 && args[0] == "sanitize" {
+		fs := flag.NewFlagSet("gc sanitize", flag.ContinueOnError)
+		fs.SetOutput(io.Discard)
+		apply := fs.Bool("apply", false, "Remove proven eligible and absent Run artifact directories")
+		if err := fs.Parse(args[1:]); err != nil {
+			return gcOptions{}, validationError{message: err.Error()}
+		}
+		if remaining := fs.Args(); len(remaining) > 0 {
+			return gcOptions{}, validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
+		}
+		return gcOptions{sanitize: true, apply: *apply}, nil
+	}
+
 	fs := flag.NewFlagSet("gc", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	dryRun := fs.Bool("dry-run", false, "Preview pruning without deleting anything")
@@ -272,6 +335,256 @@ func parseGCCommand(args []string) (gcOptions, error) {
 		return gcOptions{}, validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
 	}
 	return gcOptions{dryRun: *dryRun}, nil
+}
+
+func runGCSanitation(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcSanitationReport, error) {
+	report := gcSanitationReport{
+		apply:     opts.apply,
+		retention: loaded.Config.Store.JournalRetention,
+	}
+	if report.retention > 0 {
+		report.cutoff = commandDependenciesForContext(ctx).gc.now().UTC().Add(-report.retention)
+	}
+
+	databaseExists, err := gcDatabaseExists(loaded.HomeDir)
+	if err != nil {
+		return gcSanitationReport{}, err
+	}
+	if !databaseExists {
+		return report, nil
+	}
+
+	runStore, err := commandDependenciesForContext(ctx).gc.openStoreReader(ctx, loaded.HomeDir)
+	if err != nil {
+		return gcSanitationReport{}, err
+	}
+	roots, discoverErr := store.DiscoverArtifactRoots(ctx, runStore)
+	closeErr := runStore.Close()
+	if discoverErr != nil {
+		if closeErr != nil {
+			return gcSanitationReport{}, errors.Join(discoverErr, fmt.Errorf("close Run Database reader: %w", closeErr))
+		}
+		return gcSanitationReport{}, discoverErr
+	}
+	if closeErr != nil {
+		return gcSanitationReport{}, fmt.Errorf("close Run Database reader: %w", closeErr)
+	}
+
+	allRunIDs := map[string]string{}
+	for _, root := range roots {
+		for _, run := range root.Runs {
+			allRunIDs[run.ID] = root.Path
+		}
+	}
+	for _, root := range roots {
+		rootReport := classifyGCSanitationRoot(root, loaded.HomeDir)
+		if rootReport.classification == gcSanitationActive || rootReport.classification == gcSanitationOrphaned {
+			candidates, preserved, err := gcSanitationArtifactDirs(root, allRunIDs, report.cutoff, report.retention)
+			if err != nil {
+				rootReport.classification = gcSanitationUnsafe
+				rootReport.evidence = fmt.Sprintf("preserved because directory ownership could not be proven: %v", err)
+				rootReport.preserved = []gcSanitationPreservation{{path: root.Path, reason: rootReport.evidence}}
+			} else {
+				rootReport.candidates = candidates
+				rootReport.preserved = preserved
+			}
+		}
+		report.roots = append(report.roots, rootReport)
+		for _, candidate := range rootReport.candidates {
+			report.directories++
+			report.artifactBytes += candidate.dir.bytes
+		}
+	}
+
+	if !opts.apply {
+		return report, nil
+	}
+	for _, root := range report.roots {
+		for _, candidate := range root.candidates {
+			if err := gcRemoveArtifactDirs([]gcArtifactDir{candidate.dir}); err != nil {
+				return gcSanitationReport{}, err
+			}
+		}
+	}
+	return report, nil
+}
+
+func classifyGCSanitationRoot(root store.ArtifactRoot, homeDir string) gcSanitationRootReport {
+	report := gcSanitationRootReport{path: root.Path}
+	path := strings.TrimSpace(root.Path)
+	if path == "" || !filepath.IsAbs(path) || filepath.Clean(path) != path {
+		report.classification = gcSanitationUnsafe
+		report.evidence = fmt.Sprintf("preserved because recorded Artifact Root %q is not a clean absolute path", root.Path)
+		return report
+	}
+	for _, run := range root.Runs {
+		if _, err := gcRunArtifactPath(path, run.ID); err != nil {
+			report.classification = gcSanitationUnsafe
+			report.evidence = fmt.Sprintf("preserved because Run %q has unsafe Artifact Directory evidence: %v", run.ID, err)
+			return report
+		}
+	}
+
+	roundfixHome := filepath.Dir(store.DatabasePath(homeDir))
+	insideRoundfixHome, err := gcPathWithin(roundfixHome, path)
+	if err != nil {
+		report.classification = gcSanitationUnsafe
+		report.evidence = fmt.Sprintf("preserved because Artifact Root containment could not be proven: %v", err)
+		return report
+	}
+	if filepath.Clean(path) == filepath.Clean(roundfixHome) {
+		report.classification = gcSanitationUnsafe
+		report.evidence = fmt.Sprintf("preserved because Artifact Root equals Roundfix Home %q", roundfixHome)
+		return report
+	}
+	if !insideRoundfixHome {
+		report.classification = gcSanitationOutsideHome
+		report.evidence = fmt.Sprintf("preserved because recorded Artifact Root is outside Roundfix Home %q", roundfixHome)
+		return report
+	}
+
+	info, err := os.Lstat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		report.classification = gcSanitationMissing
+		report.evidence = "preserved because the recorded Artifact Root does not exist"
+		return report
+	}
+	if err != nil {
+		report.classification = gcSanitationUnsafe
+		report.evidence = fmt.Sprintf("preserved because the recorded Artifact Root cannot be inspected: %v", err)
+		return report
+	}
+	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+		report.classification = gcSanitationUnsafe
+		report.evidence = "preserved because the recorded Artifact Root is not a physical directory"
+		return report
+	}
+	runsRoot := filepath.Join(path, "runs")
+	runsInfo, err := os.Lstat(runsRoot)
+	if err == nil && (runsInfo.Mode()&os.ModeSymlink != 0 || !runsInfo.IsDir()) {
+		report.classification = gcSanitationUnsafe
+		report.evidence = fmt.Sprintf("preserved because Run artifact root %q is not a physical directory", runsRoot)
+		return report
+	}
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		report.classification = gcSanitationUnsafe
+		report.evidence = fmt.Sprintf("preserved because Run artifact root %q cannot be inspected: %v", runsRoot, err)
+		return report
+	}
+
+	repositories := gcArtifactRootRepositories(root)
+	for _, repository := range repositories {
+		defaultRoot, err := roundconfig.ResolveArtifactDirectory("", repository, homeDir)
+		if err != nil {
+			report.classification = gcSanitationUnsafe
+			report.evidence = fmt.Sprintf("preserved because the default Artifact Root for repository %q cannot be proven: %v", repository, err)
+			return report
+		}
+		if path != defaultRoot {
+			report.classification = gcSanitationOverridden
+			report.evidence = fmt.Sprintf("preserved because recorded Artifact Root overrides default %q for repository %q", defaultRoot, repository)
+			return report
+		}
+	}
+
+	activeRunIDs := []string{}
+	for _, run := range root.Runs {
+		if !store.IsTerminalState(run.State) {
+			activeRunIDs = append(activeRunIDs, run.ID)
+		}
+	}
+	if len(activeRunIDs) > 0 {
+		sort.Strings(activeRunIDs)
+		report.classification = gcSanitationActive
+		report.evidence = fmt.Sprintf("Active Runs record this Artifact Root: %s", strings.Join(activeRunIDs, ", "))
+		return report
+	}
+
+	report.classification = gcSanitationOrphaned
+	report.evidence = fmt.Sprintf("no Active Run records this Artifact Root; terminal Runs recorded: %d", len(root.Runs))
+	return report
+}
+
+func gcPathWithin(root string, path string) (bool, error) {
+	relative, err := filepath.Rel(filepath.Clean(root), filepath.Clean(path))
+	if err != nil {
+		return false, err
+	}
+	return relative == "." || (!filepath.IsAbs(relative) && relative != ".." && !strings.HasPrefix(relative, ".."+string(os.PathSeparator))), nil
+}
+
+func gcArtifactRootRepositories(root store.ArtifactRoot) []string {
+	set := map[string]struct{}{}
+	for _, run := range root.Runs {
+		set[run.Repository] = struct{}{}
+	}
+	repositories := make([]string, 0, len(set))
+	for repository := range set {
+		repositories = append(repositories, repository)
+	}
+	sort.Strings(repositories)
+	return repositories
+}
+
+func gcSanitationArtifactDirs(root store.ArtifactRoot, allRunIDs map[string]string, cutoff time.Time, retention time.Duration) ([]gcSanitationCandidate, []gcSanitationPreservation, error) {
+	recordedRuns := map[string]store.ArtifactRootRun{}
+	for _, run := range root.Runs {
+		recordedRuns[run.ID] = run
+	}
+	runsRoot := filepath.Join(root.Path, "runs")
+	entries, err := os.ReadDir(runsRoot)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil, nil
+	}
+	if err != nil {
+		return nil, nil, fmt.Errorf("read Run artifact root %q: %w", runsRoot, err)
+	}
+
+	candidates := []gcSanitationCandidate{}
+	preserved := []gcSanitationPreservation{}
+	for _, entry := range entries {
+		path := filepath.Join(runsRoot, entry.Name())
+		info, err := os.Lstat(path)
+		if err != nil {
+			return nil, nil, fmt.Errorf("inspect Run artifact path %q: %w", path, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
+			preserved = append(preserved, gcSanitationPreservation{path: path, reason: "not a physical Run artifact directory"})
+			continue
+		}
+
+		run, recordedHere := recordedRuns[entry.Name()]
+		if recordedHere {
+			if !gcSanitationRunEligible(run, cutoff, retention) {
+				preserved = append(preserved, gcSanitationPreservation{path: path, reason: fmt.Sprintf("Run %s is not retention-eligible", run.ID)})
+				continue
+			}
+			dir, err := gcRunArtifactDir(root.Path, run.ID)
+			if err != nil {
+				return nil, nil, err
+			}
+			candidates = append(candidates, gcSanitationCandidate{dir: dir, evidence: fmt.Sprintf("terminal Run %s completed before cutoff", run.ID)})
+			continue
+		}
+
+		if recordedRoot, recorded := allRunIDs[entry.Name()]; recorded {
+			preserved = append(preserved, gcSanitationPreservation{
+				path:   path,
+				reason: fmt.Sprintf("Run %s is recorded under Artifact Root %q", entry.Name(), recordedRoot),
+			})
+			continue
+		}
+		dir, err := gcRunArtifactDir(root.Path, entry.Name())
+		if err != nil {
+			return nil, nil, err
+		}
+		candidates = append(candidates, gcSanitationCandidate{dir: dir, evidence: fmt.Sprintf("Run %s is absent from durable Run metadata", entry.Name())})
+	}
+	return candidates, preserved, nil
+}
+
+func gcSanitationRunEligible(run store.ArtifactRootRun, cutoff time.Time, retention time.Duration) bool {
+	return retention > 0 && store.IsTerminalState(run.State) && run.CompletedAt != nil && run.CompletedAt.Before(cutoff)
 }
 
 func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcReport, error) {
@@ -597,6 +910,41 @@ func printGCReport(stdout io.Writer, report gcReport) {
 	fmt.Fprintf(stdout, "  Orphan artifact dirs removed: %d\n", len(report.OrphanIDs))
 	printGCIDList(stdout, "Pruned Runs", report.RunIDs)
 	printGCIDList(stdout, "Orphan artifact dirs", report.OrphanIDs)
+}
+
+func printGCSanitationReport(stdout io.Writer, report gcSanitationReport) {
+	if report.apply {
+		fmt.Fprintln(stdout, "GC sanitation complete")
+	} else {
+		fmt.Fprintln(stdout, "GC sanitation dry-run")
+	}
+	fmt.Fprintf(stdout, "  Journal Retention: %s\n", formatGCDuration(report.retention))
+	if !report.cutoff.IsZero() {
+		fmt.Fprintf(stdout, "  Cutoff: %s\n", report.cutoff.Format(time.RFC3339Nano))
+	}
+	for _, root := range report.roots {
+		fmt.Fprintf(stdout, "  Artifact Root: %s\n", root.path)
+		fmt.Fprintf(stdout, "    Classification: %s\n", root.classification)
+		fmt.Fprintf(stdout, "    Evidence: %s\n", root.evidence)
+		for _, candidate := range root.candidates {
+			action := "would remove"
+			if report.apply {
+				action = "removed"
+			}
+			fmt.Fprintf(stdout, "    %s: %s (%s)\n", action, candidate.dir.path, candidate.evidence)
+		}
+		for _, preserved := range root.preserved {
+			fmt.Fprintf(stdout, "    preserved: %s (%s)\n", preserved.path, preserved.reason)
+		}
+	}
+	if report.apply {
+		fmt.Fprintf(stdout, "  Directories removed: %d\n", report.directories)
+		fmt.Fprintf(stdout, "  Artifact bytes reclaimed: %d\n", report.artifactBytes)
+		return
+	}
+	fmt.Fprintf(stdout, "  Directories reclaimable: %d\n", report.directories)
+	fmt.Fprintf(stdout, "  Artifact bytes reclaimable: %d\n", report.artifactBytes)
+	fmt.Fprintln(stdout, "  No directories removed; rerun with --apply to mutate.")
 }
 
 func printGCIDList(stdout io.Writer, title string, ids []string) {
