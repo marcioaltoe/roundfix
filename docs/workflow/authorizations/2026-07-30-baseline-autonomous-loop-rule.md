@@ -38,4 +38,4 @@ transcribed from the diagnostic.
 This is a product defect in the regeneration contract, not a property of this
 change: it blocks every future Baseline module edit, including the autonomous
 loop this rule describes. Reported in
-`docs/findings/2026-07-30-baseline-digest-regeneration-cannot-bootstrap.md`.
+`docs/findings/_archived/2026-07-30-baseline-digest-regeneration-cannot-bootstrap.md`.

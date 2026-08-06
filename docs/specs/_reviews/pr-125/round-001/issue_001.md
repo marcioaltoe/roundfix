@@ -7,7 +7,7 @@ status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/0078-roundfix-asks-for-the-review
 head_sha: 1384d928c1d0af4d0bca06e506eb8b2953f9f341
-file: docs/findings/2026-08-05-authored-verification-gates-are-untested-code.md
+file: docs/findings/_archived/2026-08-05-authored-verification-gates-are-untested-code.md
 line: 190
 severity: minor
 author: coderabbitai[bot]
@@ -97,7 +97,7 @@ Expected: 2; Actual: 10; Style: 1/2/3
 Verify each finding against current code. Fix only still-valid issues, skip the
 rest with a brief reason, keep changes minimal, and validate.
 
-In `@docs/findings/2026-08-05-authored-verification-gates-are-untested-code.md`
+In `@docs/findings/_archived/2026-08-05-authored-verification-gates-are-untested-code.md`
 around lines 182 - 190, Renumber the ordered list in the addendum beginning at
 the item describing always-green commands so its entries use 1. and 2. instead
 of 9. and 10., preserving the item text unchanged.

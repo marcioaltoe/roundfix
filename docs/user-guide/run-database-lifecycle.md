@@ -29,7 +29,7 @@ a bound; the earlier unbounded Run Event Journal had reached about 220 MB and
 is governed by [ADR-0033](../adr/0033-the-run-event-journal-is-pruned-by-retention.md).
 The same investigation found no Agent Selection rows, so it supplied no
 measured justification for an independent evidence-retention window. See the
-[storage lifecycle finding](../findings/2026-07-17-global-run-storage-sanitation-and-compaction.md#3-storage-lifecycle-policy-does-not-cover-every-durable-run-record).
+[storage lifecycle finding](../findings/_archived/2026-07-17-global-run-storage-sanitation-and-compaction.md#3-storage-lifecycle-policy-does-not-cover-every-durable-run-record).
 
 The `internal/store` lifecycle policy test compares this table with every
 Roundfix-owned durable table in a migrated Run Database. A schema change that

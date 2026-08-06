@@ -3,7 +3,7 @@
 The maintainer authorized Spec 0062 to break the cycle that stops
 `make baseline-digests` from refreshing the derived pins it exists to refresh.
 The finding
-`docs/findings/2026-07-30-baseline-digest-regeneration-cannot-bootstrap.md`
+`docs/findings/_archived/2026-07-30-baseline-digest-regeneration-cannot-bootstrap.md`
 records three defects; this authorization covers the two that block the
 autonomous Spec loop.
 

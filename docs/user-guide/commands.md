@@ -689,7 +689,7 @@ and
 [Spec 0038](../specs/_archived/0038-terminal-run-worktree-reconciliation/_prd.md).
 Adjacent terminal-cleanup diagnostics remain traced through the
 [Stop Command](#stop) to the
-[detached-watch finding](../findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
+[detached-watch finding](../findings/_archived/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
 
 ## Run discovery and monitoring
 
@@ -871,7 +871,7 @@ The terminology and behavior trace to the
 [Roundfix glossary](../../CONTEXT.md#language),
 [ADR-0052](../adr/0052-run-completion-is-compare-and-set.md),
 [Spec 0037](../specs/_archived/0037-terminal-outcome-integrity/_prd.md), and the
-[detached-watch finding](../findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
+[detached-watch finding](../findings/_archived/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
 
 ## Detached Runs
 
@@ -918,7 +918,7 @@ contracts trace to the [Roundfix glossary](../../CONTEXT.md#language),
 [ADR-0054](../adr/0054-review-source-evidence-determines-review-outcomes.md),
 [Spec 0039](../specs/_archived/0039-review-source-evidence-and-detached-outcomes/_prd.md),
 and the
-[detached-watch finding](../findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
+[detached-watch finding](../findings/_archived/2026-07-16-vortex-pr87-detached-watch-notification.md).
 
 ## Agent boundaries
 
