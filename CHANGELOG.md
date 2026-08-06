@@ -2,7 +2,7 @@
 
 All notable changes to Roundfix are documented in this file.
 
-## [Unreleased]
+## [0.4.0] - 2026-08-06
 
 This release closes a gate that failed open, and then makes the loop that
 depends on it able to run unattended.
