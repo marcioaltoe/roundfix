@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0079-one-door-for-fleet-knowledge
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -115,3 +115,75 @@ draft and settle failed naming the dependency — never fake the proof.
 - `_techspec.md` → Integration Points; Testing Approach (pilot hermeticity);
   Build Order 4; Risks.
 - ADR-0095, ADR-0092.
+
+## Result
+
+### Implementation
+
+- Verified the Secondbrain gate before capture: the two destination
+  namespaces existed, the brain's own `AGENTS.md` permitted create-only inbox
+  writes, the entry contract existed, and the advisory qmd collection returned
+  results after the Agent Session received filesystem permission.
+- Captured the Spec research digest at
+  `inbox/secondbrain/2026-08-06-fleet-knowledge-door-research-digest.md` with
+  cited Roundfix and external sources. Brain commit
+  `93bd7b35b77a356a3d2d50989de93565b1e85dbb` made it durable in 50 seconds.
+- Captured the cross-project intent at
+  `inbox/roundfix/2026-08-06-automate-inbox-capture-durability.md` with
+  `origin: secondbrain`, `destination: roundfix`, and `capture: manual`.
+  Brain commit `e982c0137ad61b5cf82de0fa8f63b9c5c325412e` made it durable in
+  24 seconds.
+- Recorded the clean pre-triage destination checkout, then minted exactly one
+  `feat` Backlog Entry with inbox provenance at
+  `docs/backlog/2026-08-06-atomic-inbox-capture-helper.md`. Moved the consumed
+  brain entry under `_triaged/`, added `resolved_to`, and made that brain state
+  durable in commit `4aa955c3ec2c03ef5799ea0745bc8a8938ce6530`.
+- Added `pilot-report.md` with the gate, qmd result, both paths and capture
+  commits, durability measurements, non-interference evidence, triage
+  resolution, friction, and explicitly unexercised scope.
+
+### Focused checks
+
+- The initial advisory qmd query reached the external tool but failed with
+  `SQLITE_CANTOPEN` under the restricted Agent filesystem. The authorized retry
+  returned ranked collection results and the 248-document embedding warning;
+  inspection found no substantive existing digest to extend.
+- Fresh `rtk git -c core.fsmonitor=false status --short
+  --untracked-files=all` in `/Users/marcio/dev/roundfix` produced no paths
+  immediately before triage. The same check in the Secondbrain was clean after
+  capture and triage commits.
+- A focused `rtk rg` report scan found both literal destinations, both 40-byte
+  `brain commit:` values, both durability fields, `qmd check result:`, and
+  `resolved_to:`. A separate Backlog scan found the `feat`/`open` frontmatter
+  and exact pending-entry provenance.
+- `rtk git show` at each capture commit reproduced the corresponding pending
+  entry, and `rtk git show HEAD:` reproduced the triaged entry with the exact
+  `resolved_to` artifact path.
+- `rtk git diff --check` exited 0 for the tracked Task-file diff. A focused
+  trailing-whitespace scan found no matches in the Task file, pilot report, or
+  Backlog Entry.
+- The Daemon-owned commands under `## Verification` were not run in this Agent
+  turn. Task status remains Daemon-owned.
+
+### Acceptance-criterion evidence
+
+1. `pilot-report.md` records both literal destinations, both full `brain
+   commit:` tokens, both `capture_to_durability_seconds:` values, the qmd check
+   result, and `resolved_to`, plus the maintainer friction audit.
+2. `docs/backlog/2026-08-06-atomic-inbox-capture-helper.md` follows the complete
+   `feat` operational contract and cites
+   `inbox/roundfix/2026-08-06-automate-inbox-capture-durability.md` as its
+   provenance.
+3. The two capture measurements are 50 seconds and 24 seconds, both below the
+   one-minute target. Their brain commits are recorded in the pilot report and
+   resolve to the captured entry contents.
+4. The external gate was not blocked. The report preserves the initial qmd
+   filesystem denial as friction and distinguishes it from the successful
+   authorized duplicate check; no brain-side fact is inferred from a missing
+   artifact.
+
+### Follow-up
+
+- The open Backlog Entry carries the future atomic-helper intent. Implementing
+  that helper, binding inbox obligations, ingesting the research digest, or
+  creating a Finding remains outside this Task's slice.
