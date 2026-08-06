@@ -88,6 +88,12 @@ by each Task file. The preflight never moves either responsibility.
 Follow one order per Spec: implement the graph including its authored gate,
 archive, open the Pull Request, watch until Clean, and merge.
 
+ADR-0091 keeps the authored QA gate before any Pull Request exists, while
+ADR-0080 lets environment-blocked rows pass with equivalent evidence. Spec
+0078 proved that path: eleven of eighteen rows were blocked, nine of those
+eleven on no open Pull Request and each of those nine backed by recorded
+payload, command-runner, and event-stream evidence.
+
 Every active Spec authored under the QA Task contract must choose exactly one
 of these shapes during decomposition:
 

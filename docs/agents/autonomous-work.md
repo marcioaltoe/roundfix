@@ -162,9 +162,9 @@ Request, watch until Clean, and merge. Reconcile the terminal Run afterward.
 ADR-0091 keeps the authored QA gate as the graph's terminal Task, so the gate
 runs before any Pull Request exists. ADR-0080 lets an environment-blocked row
 reach `pass` when the report carries equivalent evidence. Spec 0078 proved
-that path on 2026-08-05: its gate reached `pass` with nine of eighteen rows
-blocked on no open Pull Request, each backed by recorded payload,
-command-runner, and event-stream evidence.
+that path on 2026-08-05: its gate reached `pass` with eleven of eighteen rows
+blocked, nine of those eleven on no open Pull Request and each of those nine
+backed by recorded payload, command-runner, and event-stream evidence.
 
 Invocation is the authorization. Stop only for a decision that is genuinely
 the maintainer's: a tooling authorization the Spec does not carry, an

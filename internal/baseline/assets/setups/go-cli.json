@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/go-cli.txt"
   },
-  "digest": "698bf7c952ae076a4e10be11476f7faef9bb3a0ca3b9b1cc8dcc986ffd3ecb2a",
+  "digest": "7c50af7f73e5922f96c1e01f6e9665ebdeda01f338373931ed8bd55578e5e00a",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -179,7 +179,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "a84110fa0dcf2bfdff95b4e5fc2cb8a4efad11f9c03c4c68e7bba6ae2dfed363"
+      "contentDigest": "5c980e462390960f221f0a63798353f9d58563a59e4ff944f8a05d087b5084fa"
     },
     {
       "name": "bubbletea",

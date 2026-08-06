@@ -35,9 +35,10 @@ its own Pull Request cannot reach `pass` before that Pull Request exists — is
 already solved by a mechanism that did not exist when Spec 0053 spent four
 cycles on it. ADR-0080's environment-blocked rows carry equivalent evidence and
 still reach `pass`. Measured on 2026-08-05: Spec 0078's gate closed `pass` with
-nine of eighteen rows blocked on "no open Pull Request", each linking recorded
-payload, command-runner and event-stream evidence. The order does not need to
-change; the blocked-row typing already absorbs the case.
+eleven of eighteen rows blocked, nine of those eleven on "no open Pull
+Request" and each of those nine linking recorded payload, command-runner and
+event-stream evidence. The order does not need to change; the blocked-row
+typing already absorbs the case.
 
 ## Project Constraints
 

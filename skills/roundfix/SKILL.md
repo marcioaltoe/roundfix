@@ -1591,6 +1591,12 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
 Follow one order per Spec: implement the graph including its authored gate,
 archive, open the Pull Request, watch until Clean, and merge.
 
+ADR-0091 keeps the authored QA gate before any Pull Request exists, while
+ADR-0080 lets environment-blocked rows pass with equivalent evidence. Spec
+0078 proved that path: eleven of eighteen rows were blocked, nine of those
+eleven on no open Pull Request and each of those nine backed by recorded
+payload, command-runner, and event-stream evidence.
+
 1. **Prepare.** Work on a non-default branch and confirm readiness with
    `roundfix doctor`. Pick the Spec slug under the resolved Spec Root
    (`docs/specs/` by default). Do not edit files the Run will touch once it is
