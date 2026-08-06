@@ -140,13 +140,8 @@ non-empty reason. The Implement Command never makes that decision. An
 all-completed implementation graph with an unsettled authored gate remains
 runnable because the gate is still a pending Task.
 
-Make every surface the Spec's acceptance observes available before the gate
-becomes runnable. Wait for the terminal QA verdict and merge only when it is
-`pass`; stop the workflow on any non-`pass` verdict. A gate whose matrix
-observes the Pull Request cannot pass before the Pull Request exists, and
-cannot accept one whose review is unprocessed — both cost a full cycle to
-learn. Rebuild any binary the gate exercises before the gate becomes runnable,
-or the gate reports defects the running artifact does not contain.
+Rebuild any binary the gate exercises before the gate becomes runnable, or the
+gate reports defects the running artifact does not contain.
 
 If the Task Graph grows after its gate reports, load-time validation
 invalidates that gate and names the inserted Tasks. Batch corrective work:
@@ -158,12 +153,18 @@ decomposition rather than appending a third.
 
 ## The loop that implements a Spec
 
-The Supervisor runs Specs end to end without pausing between them. Per Spec:
-branch from the synced default branch, author whatever artifacts are missing,
-including the gate decision, commit and push,
-`roundfix implement --spec <slug> --detach`, monitor to a terminal outcome,
-archive on an authored-gate pass, open the Pull Request,
-`roundfix watch --until-clean`, then squash merge and reconcile.
+The Supervisor runs Specs end to end without pausing between them. After
+branching from the synced default branch, authoring any missing artifacts,
+including the gate decision, and committing and pushing them, follow one
+order: implement the graph including its authored gate, archive, open the Pull
+Request, watch until Clean, and merge. Reconcile the terminal Run afterward.
+
+ADR-0091 keeps the authored QA gate as the graph's terminal Task, so the gate
+runs before any Pull Request exists. ADR-0080 lets an environment-blocked row
+reach `pass` when the report carries equivalent evidence. Spec 0078 proved
+that path on 2026-08-05: its gate reached `pass` with eleven of eighteen rows
+blocked, nine of those eleven on no open Pull Request and each of those nine
+backed by recorded payload, command-runner, and event-stream evidence.
 
 Invocation is the authorization. Stop only for a decision that is genuinely
 the maintainer's: a tooling authorization the Spec does not carry, an

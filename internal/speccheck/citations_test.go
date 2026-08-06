@@ -1,16 +1,160 @@
-// Suite: Spec citation, coverage, and reference consistency
-// Invariant: declared ADR, PRD coverage, Task, and path references report only their written inconsistencies.
-// Boundary IN: public speccheck API, fixture Markdown, accepted ADR corpus, and internal/spec loader
+// Suite: Spec citation, coverage, reference, and loop-order consistency
+// Invariant: declared ADR, coverage, path, and loop-order sources report only their written inconsistencies.
+// Boundary IN: public speccheck API, fixture artifacts, accepted ADR corpus, and internal/spec loader
 // Boundary OUT: CLI exit-code policy and characterization corpus assigned to later Spec Tasks
 package speccheck_test
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"roundfix/internal/speccheck"
 )
+
+const (
+	loopOrderShippedClausePath   = "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/autonomous-work.md"
+	loopOrderRepositoryGuidePath = "docs/agents/autonomous-work.md"
+	loopOrderBaselineModulePath  = "internal/baseline/assets/modules/autonomous-work.json"
+	loopOrderCarrierSlug         = "loop-order"
+)
+
+func TestCheckLoopOrderDivergent(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		path      string
+		current   string
+		divergent string
+	}{
+		{
+			name:      "shipped clause",
+			path:      loopOrderShippedClausePath,
+			current:   "archive, open the Pull Request, watch until Clean, and merge",
+			divergent: "merge, open the Pull Request, watch until Clean, and archive",
+		},
+		{
+			name:      "repository guide",
+			path:      loopOrderRepositoryGuidePath,
+			current:   "archive, open the Pull\nRequest, watch until Clean, and merge",
+			divergent: "merge, open the Pull\nRequest, watch until Clean, and archive",
+		},
+		{
+			name:      "Baseline module asset",
+			path:      loopOrderBaselineModulePath,
+			current:   "archive, open the Pull Request, watch until Clean, and merge",
+			divergent: "merge, open the Pull Request, watch until Clean, and archive",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			repoRoot := writeLoopOrderFixture(t)
+			path := filepath.Join(repoRoot, filepath.FromSlash(tt.path))
+			content, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read %s fixture: %v", tt.name, err)
+			}
+			if !strings.Contains(string(content), tt.current) {
+				t.Fatalf("%s fixture does not contain current order %q", tt.name, tt.current)
+			}
+			content = []byte(strings.Replace(string(content), tt.current, tt.divergent, 1))
+			if err := os.WriteFile(path, content, 0o644); err != nil {
+				t.Fatalf("write divergent %s fixture: %v", tt.name, err)
+			}
+
+			result, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, loopOrderCarrierSlug)
+			if err != nil {
+				t.Fatalf("Check(loop-order) error = %v", err)
+			}
+			finding := requireFinding(t, result, speccheck.CodeLoopOrderDivergent)
+			if finding.Severity != speccheck.SeverityError {
+				t.Fatalf("severity = %q, want %q", finding.Severity, speccheck.SeverityError)
+			}
+			for _, sourceLabel := range []string{"shipped clause", "repository guide", "Baseline module asset"} {
+				if !strings.Contains(finding.Summary, sourceLabel) {
+					t.Errorf("summary = %q, want source %q", finding.Summary, sourceLabel)
+				}
+			}
+			if !strings.Contains(finding.Summary, strings.ReplaceAll(tt.divergent, "\n", " ")) {
+				t.Errorf("summary = %q, want divergent order %q", finding.Summary, tt.divergent)
+			}
+			for _, sourcePath := range []string{
+				loopOrderShippedClausePath,
+				loopOrderRepositoryGuidePath,
+				loopOrderBaselineModulePath,
+			} {
+				if !hasLocation(finding, sourcePath) {
+					t.Errorf("locations = %#v, want source %q", finding.Where, sourcePath)
+				}
+			}
+		})
+	}
+}
+
+func TestCheckLoopOrderRepositoryAgrees(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := characterizationRepositoryRoot(t)
+	specsRoot := writeLoopOrderCarrier(t, t.TempDir())
+	// SC-LOOP-ORDER-DIVERGENT reads the repository's own order statements, so
+	// a dedicated carrier keeps the check independent from active and archived
+	// repository Specs.
+	result, err := speccheck.Check(specsRoot, repoRoot, loopOrderCarrierSlug)
+	if err != nil {
+		t.Fatalf("Check(repository) error = %v", err)
+	}
+	if findings := findingsWithCode(result, speccheck.CodeLoopOrderDivergent); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want corrected repository sources to agree", speccheck.CodeLoopOrderDivergent, findings)
+	}
+}
+
+func writeLoopOrderFixture(t *testing.T) string {
+	t.Helper()
+
+	sourceRoot := characterizationRepositoryRoot(t)
+	targetRoot := t.TempDir()
+	for _, relative := range []string{
+		loopOrderShippedClausePath,
+		loopOrderRepositoryGuidePath,
+		loopOrderBaselineModulePath,
+	} {
+		sourcePath := filepath.Join(sourceRoot, filepath.FromSlash(relative))
+		content, err := os.ReadFile(sourcePath)
+		if err != nil {
+			t.Fatalf("read loop-order source %q: %v", sourcePath, err)
+		}
+		targetPath := filepath.Join(targetRoot, filepath.FromSlash(relative))
+		if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
+			t.Fatalf("create loop-order fixture directory: %v", err)
+		}
+		if err := os.WriteFile(targetPath, content, 0o644); err != nil {
+			t.Fatalf("write loop-order fixture %q: %v", targetPath, err)
+		}
+	}
+
+	writeLoopOrderCarrier(t, targetRoot)
+	return targetRoot
+}
+
+func writeLoopOrderCarrier(t *testing.T, root string) string {
+	t.Helper()
+	specsRoot := filepath.Join(root, "docs", "specs")
+	specDir := filepath.Join(specsRoot, loopOrderCarrierSlug)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatalf("create fixture Spec: %v", err)
+	}
+	const prd = "---\nspec: " + loopOrderCarrierSlug + "\nstatus: active\n---\n\n# Loop order\n"
+	if err := os.WriteFile(filepath.Join(specDir, "_prd.md"), []byte(prd), 0o644); err != nil {
+		t.Fatalf("write fixture PRD: %v", err)
+	}
+	return specsRoot
+}
 
 func TestCheckADRUnlisted(t *testing.T) {
 	t.Parallel()

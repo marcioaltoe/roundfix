@@ -91,6 +91,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 	if !info.IsDir() {
 		return result, fmt.Errorf("read Spec %q: %s is not a directory", slug, specDir)
 	}
+	if err := detectLoopOrderConsistency(&result, repoRoot); err != nil {
+		return result, err
+	}
 
 	prd, present, err := readConstraintArtifact(repoRoot, filepath.Join(specDir, "_prd.md"))
 	if err != nil {
