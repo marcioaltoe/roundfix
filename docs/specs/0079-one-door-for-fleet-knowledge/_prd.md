@@ -201,6 +201,44 @@ its own closure.
 - The pilot precedes the rules: the save–retrieve–triage cycle is proven
   with this session's own material before the clauses bind the fleet.
 
+## Unreachable Acceptance
+
+- criterion: Success Metric 3 — no Inbox Entry remains pending beyond
+  fourteen days
+  reason: the metric measures a fourteen-day operating window that cannot
+  exist on the day the door ships
+  satisfied-by: a fleet inventory taken after the window, showing zero
+  pending entries older than fourteen days
+
+- criterion: User Story 1 — a session captures for another project through
+  one door without disturbing the destination's Active Runs
+  reason: the QA gate observes the external Secondbrain read-only and cannot
+  create a second capture without mutating another repository's state
+  satisfied-by: the pilot's recorded brain commits, their one-path change
+  sets, and the destination checkout's clean status before triage, all read
+  fresh from their commit objects by the gate
+
+- criterion: User Story 2 — the destination triages a pending entry into its
+  contract-true home with provenance preserved
+  reason: the same read-only boundary prevents the gate from performing a
+  second Triage commit in an external repository
+  satisfied-by: the triaged entry carrying `resolved_to` in the brain and the
+  typed Backlog Entry citing its inbox provenance in this repository
+
+- criterion: User Story 5 — a substantive-research session captures its
+  digest with sources after a duplicate check
+  reason: the gate cannot create another research capture in the brain
+  satisfied-by: the pending research digest with its cited sources and the
+  recorded advisory qmd result from the pilot
+
+- criterion: User Story 6 — session-end capture drafts entries automatically
+  reason: the session-end hook is the maintainer's own configuration, placed
+  outside this repository by the Spec's own scope; only the output contract
+  is local
+  satisfied-by: a supervised session close that commits a pending
+  `capture: auto` draft, followed by an independent later read proving it was
+  not self-triaged
+
 ## Open Questions
 
 - Triage cadence: fourteen days is a metric target — harden into a clause?
