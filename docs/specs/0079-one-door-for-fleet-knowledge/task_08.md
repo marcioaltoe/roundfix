@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0079-one-door-for-fleet-knowledge
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -77,3 +77,58 @@ sanctioned re-recording workflow and proves the package green.
 - `_techspec.md` → Testing Approach (module choreography); Build Order 1
   and 5.
 - ADR-0081.
+
+## Result
+
+### Implementation
+
+- Confirmed the corpus change from recorded Task evidence: task_02 added five
+  Source Baseline entries and moved the generated count from 106 to 111;
+  task_06 added three more, producing the maintained identity and manifest
+  count of 114. Both Tasks recorded a second digest pass with
+  `changed:false`, and QA finding F-001 independently observed identity 114,
+  entries 114, and accounting 51.
+- Ran the sanctioned `make baseline-digests` workflow before authoring the
+  maintained expectation. It exited 0 with `changed:false`, proving the
+  generated artifacts already match their canonical sources.
+- Moved only `maintainedSourceBaselineEntries` from 106 to the regenerated
+  value 114. The declared constant remains independent of the fixture under
+  test; the identity-agrees-with-entries expression and the separate
+  `maintainedSourceBaselineAccounting = 51` expectation are unchanged.
+
+### Focused checks
+
+- The initial `rtk go test -count=1 -run
+  TestReadoptionCompatibilityMaintainedFixture ./internal/baseline` attempt
+  did not reach compilation because the sandbox denied the default macOS Go
+  build cache. The unchanged retry used the task-scoped cache below.
+- Before the edit, `GOCACHE=/private/tmp/roundfix-task08-gocache rtk go test
+  -count=1 -run TestReadoptionCompatibilityMaintainedFixture
+  ./internal/baseline` reached the assertion and failed with identity 114,
+  entries 114, and accounting 51. After the edit, the same focused command
+  exited 0 and reported one passing test.
+- `GOCACHE=/private/tmp/roundfix-task08-gocache rtk make baseline-digests`
+  exited 0, reported all regeneration steps passing, and returned
+  `{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}`.
+- `GOCACHE=/private/tmp/roundfix-task08-gocache rtk go test -count=1
+  ./internal/baseline` exited 0 for the whole package.
+- `rtk git diff --check` exited 0.
+
+### Acceptance-criterion evidence
+
+1. The named maintained-fixture test failed before the one-value correction
+   and passed afterward with a fresh, uncached run.
+2. Diff inspection shows the sole Go change is the declared entry expectation
+   `106 → 114`; the identity-to-entry comparison, exact expected-entry
+   comparison, and exact accounting comparison remain present without a
+   tolerance, derived expectation, or skip.
+3. A fresh focused run of the complete `internal/baseline` package exited 0.
+4. The changed-path audit contains only
+   `internal/baseline/preservation_test.go` and this Task file. The Task-file
+   frontmatter change was the pre-existing Daemon-owned status transition.
+
+### Handoff boundary
+
+- The Daemon-owned commands under `## Verification`, including the repository
+  gate responsibility, were not run in this Agent turn. Task status remains
+  Daemon-owned; no commit, push, or pull request was created.
