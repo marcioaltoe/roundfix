@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -356,6 +358,217 @@ func TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing(t *testing.T) {
 	if count, err := runStore.RunCount(ctx); err != nil || count != 1 {
 		t.Fatalf("expected Run row to survive, count=%d err=%v", count, err)
 	}
+}
+
+func TestDurableTableLifecyclePolicyCoversEveryTable(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	policy := readDurableTableLifecyclePolicy(t)
+
+	if err := validateDurableTableLifecyclePolicy(ctx, runStore.db, policy); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDurableTableLifecyclePolicyRejectsUnstatedFixtureTable(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+	if _, err := runStore.db.ExecContext(ctx, `CREATE TABLE lifecycle_fixture (id TEXT PRIMARY KEY)`); err != nil {
+		t.Fatalf("create ungoverned durable table fixture: %v", err)
+	}
+
+	err := validateDurableTableLifecyclePolicy(ctx, runStore.db, readDurableTableLifecyclePolicy(t))
+
+	if err == nil {
+		t.Fatal("expected an ungoverned durable table to fail lifecycle policy validation")
+	}
+	if !strings.Contains(err.Error(), `durable table "lifecycle_fixture" has no lifecycle policy`) {
+		t.Fatalf("expected missing fixture policy diagnostic, got %v", err)
+	}
+}
+
+func TestRetentionPreservesRunLifecycleRecords(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	cutoff := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	runStore.now = func() time.Time { return cutoff.Add(-2 * time.Hour) }
+	terminalRun, err := runStore.CreateRun(ctx, sampleImplementCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create terminal Run: %v", err)
+	}
+	if _, err := runStore.AppendAgentSelectionAttempt(ctx, AgentSelectionAttemptRequest{
+		RunID: terminalRun.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_04",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "gpt-5.6-sol",
+		ReasoningEffort: "high", Status: AgentSelectionStatusClosed,
+		Time: cutoff.Add(-90 * time.Minute),
+	}); err != nil {
+		t.Fatalf("append terminal Run Agent Selection: %v", err)
+	}
+	runStore.now = func() time.Time { return cutoff.Add(-time.Hour) }
+	if _, err := runStore.CompleteRun(ctx, terminalRun.ID, StateClean); err != nil {
+		t.Fatalf("complete terminal Run: %v", err)
+	}
+
+	activeRequest := sampleImplementCreateRunRequest()
+	activeRequest.SpecSlug = "active-lifecycle-fixture"
+	runStore.now = func() time.Time { return cutoff.Add(-30 * time.Minute) }
+	activeRun, err := runStore.CreateRun(ctx, activeRequest)
+	if err != nil {
+		t.Fatalf("create Active Run: %v", err)
+	}
+	if _, err := runStore.AppendAgentSelectionAttempt(ctx, AgentSelectionAttemptRequest{
+		RunID: activeRun.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_04",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "gpt-5.6-sol",
+		ReasoningEffort: "high", Status: AgentSelectionStatusActive,
+		Time: cutoff.Add(-15 * time.Minute),
+	}); err != nil {
+		t.Fatalf("append Active Run Agent Selection: %v", err)
+	}
+
+	initialRuns, err := runStore.RunCount(ctx)
+	if err != nil {
+		t.Fatalf("count Runs before retention: %v", err)
+	}
+	initialLocks := countActiveRunLocks(t, ctx, runStore)
+	initialSelections := countAgentSelections(t, ctx, runStore)
+
+	result, err := runStore.PruneTerminalRuns(ctx, cutoff)
+
+	if err != nil {
+		t.Fatalf("prune terminal Run Events: %v", err)
+	}
+	if !slices.Equal(result.RunIDs, []string{terminalRun.ID}) || result.Events != 1 {
+		t.Fatalf("expected only the terminal Run journal pruned, got %#v", result)
+	}
+	if got := countRunEvents(t, ctx, runStore, terminalRun.ID); got != 0 {
+		t.Fatalf("expected terminal Run journal pruned, got %d events", got)
+	}
+	if got := countRunEvents(t, ctx, runStore, activeRun.ID); got != 1 {
+		t.Fatalf("expected Active Run journal preserved, got %d events", got)
+	}
+	if got, err := runStore.RunCount(ctx); err != nil || got != initialRuns {
+		t.Fatalf("expected compact Run index preserved at %d rows, got %d err=%v", initialRuns, got, err)
+	}
+	if got := countActiveRunLocks(t, ctx, runStore); got != initialLocks {
+		t.Fatalf("expected Active Run locks preserved at %d rows, got %d", initialLocks, got)
+	}
+	if got := countAgentSelections(t, ctx, runStore); got != initialSelections {
+		t.Fatalf("expected Agent Selection records preserved at %d rows, got %d", initialSelections, got)
+	}
+}
+
+type durableTableLifecyclePolicy struct {
+	owner string
+	rule  string
+}
+
+func readDurableTableLifecyclePolicy(t *testing.T) map[string]durableTableLifecyclePolicy {
+	t.Helper()
+	_, testFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("locate lifecycle policy: runtime.Caller failed")
+	}
+	policyPath := filepath.Join(filepath.Dir(testFile), "..", "..", "docs", "user-guide", "run-database-lifecycle.md")
+	content, err := os.ReadFile(policyPath)
+	if err != nil {
+		t.Fatalf("read durable table lifecycle policy: %v", err)
+	}
+
+	const begin = "<!-- durable-table-lifecycle:begin -->"
+	const end = "<!-- durable-table-lifecycle:end -->"
+	policyContent := string(content)
+	beginIndex := strings.Index(policyContent, begin)
+	if beginIndex < 0 {
+		t.Fatalf("read durable table lifecycle policy: marker %q is missing", begin)
+	}
+	policyBlock := policyContent[beginIndex+len(begin):]
+	endIndex := strings.Index(policyBlock, end)
+	if endIndex < 0 {
+		t.Fatalf("read durable table lifecycle policy: marker %q is missing", end)
+	}
+	policyBlock = policyBlock[:endIndex]
+
+	policy := map[string]durableTableLifecyclePolicy{}
+	for _, line := range strings.Split(policyBlock, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "| `") {
+			continue
+		}
+		columns := strings.Split(line, "|")
+		if len(columns) != 5 {
+			t.Fatalf("read durable table lifecycle policy: malformed table row %q", line)
+		}
+		table := strings.Trim(strings.TrimSpace(columns[1]), "`")
+		entry := durableTableLifecyclePolicy{
+			owner: strings.TrimSpace(columns[2]),
+			rule:  strings.TrimSpace(columns[3]),
+		}
+		if table == "" || entry.owner == "" || entry.rule == "" {
+			t.Fatalf("read durable table lifecycle policy: table, owner, and retention rule must be non-empty in %q", line)
+		}
+		if _, exists := policy[table]; exists {
+			t.Fatalf("read durable table lifecycle policy: duplicate policy for table %q", table)
+		}
+		policy[table] = entry
+	}
+	if len(policy) == 0 {
+		t.Fatal("read durable table lifecycle policy: no table policies found")
+	}
+	return policy
+}
+
+func validateDurableTableLifecyclePolicy(ctx context.Context, db *sql.DB, policy map[string]durableTableLifecyclePolicy) error {
+	rows, err := db.QueryContext(ctx, `
+SELECT name
+FROM sqlite_schema
+WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
+ORDER BY name`)
+	if err != nil {
+		return fmt.Errorf("list durable Run Database tables: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	tables := map[string]struct{}{}
+	for rows.Next() {
+		var table string
+		if err := rows.Scan(&table); err != nil {
+			return fmt.Errorf("scan durable Run Database table: %w", err)
+		}
+		tables[table] = struct{}{}
+		if _, ok := policy[table]; !ok {
+			return fmt.Errorf("durable table %q has no lifecycle policy", table)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate durable Run Database tables: %w", err)
+	}
+	for table := range policy {
+		if _, ok := tables[table]; !ok {
+			return fmt.Errorf("lifecycle policy names unknown durable table %q", table)
+		}
+	}
+	return nil
+}
+
+func countAgentSelections(t *testing.T, ctx context.Context, store *Store) int {
+	t.Helper()
+	var count int
+	if err := store.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM run_agent_selections`).Scan(&count); err != nil {
+		t.Fatalf("count Agent Selection records: %v", err)
+	}
+	return count
 }
 
 func TestStorageReportReconcilesMeasuredTotalsWithoutMutation(t *testing.T) {
