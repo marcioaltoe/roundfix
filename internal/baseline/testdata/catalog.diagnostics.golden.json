@@ -120,7 +120,7 @@
         {
           "code": "catalog.profile.formatter.goldenDigest.mismatch",
           "subject": "standard-typescript-monorepo",
-          "detail": "got 9bc59a439dd0f280aff81057e9ad57b663083424f7a5f6f6e941a1531e9ed3c5, want c50ae1155497abf696249ea4dae2f8102fb8e500d4dcc06dd69e143f4042ad3d"
+          "detail": "got 198a2147678283b2e89ff54294a5d9ae0d4eae37e4589824f5d87d952a7a689c, want 7f559fc153637f98974c4c547efdb1787bf4934122e8405303c93326e7004b86"
         }
       ]
     },
@@ -210,7 +210,7 @@
         {
           "code": "catalog.setup.digest.mismatch",
           "subject": "rust-cli",
-          "detail": "got 09db7884d0b52bf384137c0d9b716cc67e1f0251398827044c283b4ddf52a13bb, want 9db7884d0b52bf384137c0d9b716cc67e1f0251398827044c283b4ddf52a13bb"
+          "detail": "got 06e4da04e1e772e463ba97da14bcc2e6ec832bc81d1122cf8903854af7c01619e, want 6e4da04e1e772e463ba97da14bcc2e6ec832bc81d1122cf8903854af7c01619e"
         }
       ]
     },

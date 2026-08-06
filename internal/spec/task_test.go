@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -180,6 +181,61 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 	}
 	if len(task.Needs) != 1 || task.Needs[0] != "task_00" {
 		t.Errorf("Needs = %v, want the manifest-owned value untouched", task.Needs)
+	}
+}
+
+func TestParseTaskDocumentDeclarations(t *testing.T) {
+	t.Parallel()
+
+	document, err := parseTaskDocument([]byte(md(`---
+task: task_01
+spec: demo
+status: pending
+type: backend
+complexity: low
+---
+
+# Task 01: Rehearse the gate
+
+## Requirements
+
+1. MUST keep the named gate enabled across
+   the full rehearsal.
+2. MUST NOT keep the named gate enabled.
+
+### Notes
+
+This nested section is not part of the requirement declaration.
+
+## Rehearsal Cases
+
+- Case: contradictory requirements; Observation: spec check reports the contradiction.
+- Case: declared cases; Observation: the focused test records the result.
+
+## Verification
+
+- 'go test ./internal/speccheck' — expected: exit 0.
+`)), "task_01.md")
+	if err != nil {
+		t.Fatalf("parseTaskDocument: %v", err)
+	}
+
+	wantRequirements := []TaskDeclaration{
+		{Text: "MUST keep the named gate enabled across the full rehearsal.", Line: 13},
+		{Text: "MUST NOT keep the named gate enabled.", Line: 15},
+	}
+	if !reflect.DeepEqual(document.Requirements, wantRequirements) {
+		t.Errorf("Requirements = %#v, want %#v", document.Requirements, wantRequirements)
+	}
+	wantCases := []TaskDeclaration{
+		{Text: "Case: contradictory requirements; Observation: spec check reports the contradiction.", Line: 23},
+		{Text: "Case: declared cases; Observation: the focused test records the result.", Line: 24},
+	}
+	if !reflect.DeepEqual(document.RehearsalCases, wantCases) {
+		t.Errorf("RehearsalCases = %#v, want %#v", document.RehearsalCases, wantCases)
+	}
+	if document.TitleLine != 9 {
+		t.Errorf("TitleLine = %d, want 9", document.TitleLine)
 	}
 }
 
