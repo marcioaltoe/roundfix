@@ -318,12 +318,9 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 			baselineDigestRegenerationHint,
 		)
 	}
-	// The identity count and the entry count must agree — that is the
-	// invariant this fixture exists to protect, and it holds whatever the
-	// corpus size is. The sizes themselves are literals, which this
-	// repository's own rule names as the defect that stops a test the day a
-	// legitimate change moves the value: the docs-layout entries added on
-	// 2026-08-05 moved it from 104 to 106 and failed here for no defect.
+	// This compatibility fixture protects both internal count agreement and
+	// the maintained corpus's exact shape. A legitimate corpus change must move
+	// the named expectations above through the sanctioned re-recording workflow.
 	if sourceBaseline.Identity.EntryCount != len(sourceBaseline.Entries) ||
 		len(sourceBaseline.Entries) != maintainedSourceBaselineEntries ||
 		len(sourceBaseline.Accounting) != maintainedSourceBaselineAccounting {
