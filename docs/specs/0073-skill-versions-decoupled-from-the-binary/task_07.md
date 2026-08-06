@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0073-skill-versions-decoupled-from-the-binary
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -86,3 +86,71 @@ requirement ever asked for it, so nothing delivered it — the same shape as Spe
 - `qa/qa-report-2026-08-06.md` → F-001, F-002.
 - `_prd.md` → Success Metrics 1 and 7; Which skills the contract covers.
 - `_techspec.md` → Testing Approach.
+
+## Result
+
+### Implementation
+
+- The current Task base already contains commit `e4f07b1b`, which replaced
+  `TestOwnedSkillEditLeavesMakeVerifyGreen` with
+  `TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical`. The focused history
+  inspection confirmed that its parent still imported `os/exec` and nested the
+  repository-wide gate, while the current test invokes no command.
+- The direct test copies the tracked repository, snapshots every file under the
+  `Makefile`'s `DERIVED_DIGEST_PATHS`, snapshots both characterization corpora
+  explicitly, edits the canonical and mirrored `roundfix` Skill, and compares
+  every artifact's bytes before and after. Its comparison rejects changed,
+  removed, and newly created artifacts.
+- The archived-Spec byte assertion from the prior proof remains in the direct
+  test, so changing the instrument did not drop that preservation check.
+- This Run made no implementation-code change because the corrective test was
+  already present at `HEAD`. It did not change owned-skill readiness code or
+  `skills-lock.json`.
+
+### Focused checks
+
+- Red signal: `rtk git show
+  e4f07b1b^:skills/baseline_skill_contract_integration_test.go` showed the old
+  build-tagged test importing `os/exec` and invoking `make verify` through
+  `exec.Command`.
+- `rtk go test ./skills -count=1 -run
+  '^(TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical|TestRepositoryReadinessNeverComparesThirdPartySkillVersions|TestOwnedSkillBundleReadinessKeepsStatesDistinct|TestCheckRepositoryClassifiesMissingAndOutdatedSkills)$'
+  -v`: authorized rerun exited 0; RTK reported 15 passing tests. The first
+  sandboxed attempt reached no tests because the host Go build cache was not
+  writable from the sandbox.
+- `rtk grep -n "make verify|exec\\.Command|os/exec"
+  skills/baseline_skill_contract_integration_test.go`: exit 1 with no matches.
+- `rtk grep -n "make verify" skills/*_test.go`: exit 1 with no matches.
+- `rtk grep -n
+  "golang-dependency-management|golang-safety|golang-structs-interfaces"
+  skills-lock.json`: exit 1 with no matches, confirming the protected
+  provenance file remains unchanged for those Skills.
+- `rtk git diff HEAD -- skills/baseline_skill_contract_integration_test.go
+  skills/repository.go skills-lock.json`: exit 0 with an empty diff.
+
+### Acceptance evidence
+
+- The focused direct test passed after reading the derived roots from the
+  repository-owned `DERIVED_DIGEST_PATHS` declaration and separately reading
+  `catalog.diagnostics.golden.json` and `plan-characterization`; it compares
+  the captured bytes after the owned-Skill edit without a regeneration step.
+- Both source searches found no nested `make verify`, `exec.Command`, or
+  `os/exec` use in the target test, and no `make verify` text in any
+  `skills/*_test.go` file.
+- `TestRepositoryReadinessNeverComparesThirdPartySkillVersions` passed with a
+  call ledger containing exactly the owned Skills and no third-party Skill.
+  The three named external Go Skills still have no protected-lock entry, as
+  required by this Task's authority boundary.
+- `TestOwnedSkillBundleReadinessKeepsStatesDistinct` and
+  `TestCheckRepositoryClassifiesMissingAndOutdatedSkills` passed in the same
+  focused run, preserving the existing owned-skill readiness states and
+  repository classifications from task_02 and task_04.
+
+### Follow-up
+
+- The Subtask line that says to record provenance contradicts Requirement 4,
+  the third acceptance criterion, and the PRD's `## Unreachable Acceptance`.
+  It remains unchecked. Recording that provenance requires a maintainer grant
+  naming `skills-lock.json` and a separately bounded Task.
+- This Task's declared `## Verification` commands were not run; terminal
+  Verification and status settlement remain Daemon-owned.
