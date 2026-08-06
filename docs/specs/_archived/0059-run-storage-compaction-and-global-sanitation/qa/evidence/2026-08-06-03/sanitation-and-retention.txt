@@ -1,0 +1,31 @@
+Build: 0c6c94f376d7fc66d6cbe9e6b6a4a667ac5f6c5a
+Fixture: `storage-fixture.sql`, isolated Roundfix Home, six repository paths,
+six recorded Artifact Roots, and real files beneath `runs/<run-id>` plus a
+Review Artifact.
+
+Global sanitation
+
+Built `gc sanitize` exited 0 and reported all six classifications with proof:
+active, orphaned, missing, overridden, outside Roundfix Home, and unsafe. It
+listed two candidates (terminal `run_old` and metadata-absent `run_absent`) and
+reported 2 directories / 42 bytes reclaimable. SHA-256 checks proved dry-run
+preserved every eligible and preserved file.
+
+Built `gc sanitize --apply` exited 0, removed only those two candidates, and
+reported 2 directories / 42 bytes reclaimed. Filesystem absence checks passed
+for both removed directories. Exact SHA-256 values remained unchanged for the
+Active, recent, Review, overridden, outside-Home, and unsafe marker files. The
+second built apply exited 0 with 0 directories and 0 bytes reclaimed.
+
+A fresh database read after both applies returned Runs=7, Active Run locks=1,
+Run Events=2, Agent Selection records=2, and `PRAGMA quick_check=ok`.
+
+Per-repository retention
+
+The fixture repository was initialized on scratch branch `ma/qa-fixture`.
+Built `gc --dry-run` exited 0 and named 5 eligible terminal Runs and 1 eligible
+journal row. Built `gc` exited 0 and removed that one row. Fresh readback
+returned Runs=7, Active Run locks=1, Run Events=1, Agent Selection records=2,
+and `quick_check=ok`. The database file stayed 53,248 bytes, proving retention
+did not compact automatically; Active, recent, and Review Artifact hashes were
+unchanged.

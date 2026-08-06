@@ -1,0 +1,15 @@
+Build: 5d5d56cc64e9e2ae84ccf2987de17f6814f3a4b5
+
+$ rtk make verify
+exit: 0
+
+- 3,522 Go tests passed across 26 packages.
+- The Spec corpus-budget test passed.
+- Four repository Skill tests passed.
+- `roundfix skills check` passed for every required owned Skill.
+- The production binary built with `-buildvcs=false`.
+- `bin/roundfix spec check` reported no findings for Spec 0059. It recorded
+  only the existing optional-artifact skips for the absent Vocabulary Contract
+  and references index.
+
+The command ran unpiped; exit 0 is the gate's own exit status.

@@ -1,0 +1,55 @@
+Build: 5d5d56cc64e9e2ae84ccf2987de17f6814f3a4b5
+
+Project Constraint and Task Graph audit
+
+- `_tasks.md` names `task_06` as the authored `type: qa` node. It depends on
+  `task_07`, the graph's only non-QA leaf. Task 07 is `completed`; all earlier
+  dependencies are `completed`; Task 06 remains `pending` for the Daemon.
+- The PRD and TechSpec each account for identifier strategy, authentication
+  and HTTP, active ADR obligations, and tooling authority with operative
+  sources under `docs/agents/`.
+- Authorization commit `9bdaedbe` is an ancestor of both Spec authoring commit
+  `94d75767` and Task 07 commit `5d5d56cc`; it therefore predates the protected
+  tooling edit. The authorization names Spec 0059, the canonical Roundfix
+  Skill, its mirror, five digest-fallout paths, and the characterization
+  regeneration commands.
+- `git diff-tree --no-commit-id --name-only -r bc44a3ac` found only
+  `task_05.md`; Task 05 folded no tooling change or repair into its commit.
+- `git diff-tree --no-commit-id --name-only -r 5d5d56cc` found the canonical
+  Skill and mirror, Task 07, three `internal/cli` files, the five exact digest
+  paths named by both active Spec artifacts, and four additional protected
+  golden files under `internal/baseline/testdata/plan-characterization/`.
+- The four golden diffs contain regenerated catalog/manifest digests,
+  content identities, and plan digests. The Makefile's sanctioned
+  `BASELINE_DIGEST_STEPS` includes both characterization update flags; the
+  focused non-update characterization suite passed 8 tests. This proves the
+  values are generated rather than hand-edited.
+- `rtk make skills-sync-check` passed four tests, and `rtk cmp -s
+  .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` exited 0.
+
+Audit finding
+
+Both the PRD and TechSpec say deterministic Skill-digest fallout lands in
+exactly five named files. Neither names or bounds
+`internal/baseline/testdata/plan-characterization/*.golden.json`; only Task
+07's Result mentions those four paths after the commit. The authorization
+record does authorize the regeneration commands, so the grant is present and
+early, but the active Spec artifacts fail the QA gate's exact bounded-file
+accounting rule. No other authorization-shape, chronology, folded-fix, or
+out-of-scope problem was found.
+
+Focused evidence safe to run before flow QA
+
+- `rtk go test ./internal/baseline -count=1 -run
+  '^Test(BaselinePlanCharacterization|CatalogDiagnosticCharacterization)$'`
+  — exit 0; 8 tests passed.
+- `rtk go test ./internal/store -count=1 -run
+  '^(TestDurableTableLifecyclePolicyCoversEveryTable|TestDurableTableLifecyclePolicyRejectsUnstatedFixtureTable|TestRetentionPreservesRunLifecycleRecords)$'`
+  — exit 0; 3 tests passed.
+- The Task 07 changed-path audit contains no `internal/worktree`, Reconcile
+  Command implementation, or ADR-0053 path.
+- Measurement sweep: `1.4 GB`, `104`, `106`, and the measured
+  `279-row`/`118,784-byte` index occur only in problem/history or Task Result
+  context. Compaction and storage-report tests derive page size and measured
+  bytes at runtime and assert relations/tolerances; no acceptance or
+  Verification records a fixed expected size.

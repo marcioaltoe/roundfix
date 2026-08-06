@@ -1,0 +1,40 @@
+Build: 0c6c94f376d7fc66d6cbe9e6b6a4a667ac5f6c5a
+
+Authored gate and constraints
+
+- `_tasks.md` names `qa: task_06`; task_06 is `type: qa`, is terminal, and
+  depends on task_07, the only non-QA leaf. Tasks 01–05 and 07 are completed.
+- The active PRD and TechSpec each account for identifier strategy,
+  authentication and HTTP, active ADR obligations, and tooling authority with
+  operative sources under `docs/agents/`.
+- `git merge-base --is-ancestor 9bdaedbe HEAD` exited 0. Authorization commit
+  `9bdaedbe` (2026-08-04) predates Spec authoring commit `94d75767`
+  (2026-08-06).
+- Exact `git diff-tree --no-commit-id --name-only -r` inspection found no
+  protected-tooling path in Tasks 01–04 or the no-op Task 05 commit. Task 07
+  commit `5d5d56cc` changed `internal/cli/**`, the canonical and mirrored
+  Roundfix Skill, its own Task file, and the nine exact ADR-0081 fallout paths
+  bounded by the current PRD and TechSpec. The corrective commit `0c6c94f3`
+  changed only the PRD, TechSpec, and QA Task documentation.
+- No missing, late, folded, consequent-fix, or out-of-scope tooling change
+  remained. The current worktree delta before flow QA contained only this
+  report and its evidence.
+
+Static gate
+
+`rtk make verify` exited 0 unpiped:
+
+- 3,522 Go tests passed in 26 packages.
+- The corpus-budget test and four Skill tests passed.
+- `roundfix skills check` passed for every owned Skill.
+- The binary built from `0c6c94f3`; `-dirty` reflects the untracked QA report,
+  not application code.
+- `bin/roundfix spec check` reported `No findings` for Spec 0059. It listed
+  only the authored optional Vocabulary Contract and reference-index skips.
+
+Focused governance checks
+
+- `rtk make skills-sync-check` exited 0.
+- `rtk cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md`
+  exited 0.
+- `rtk git -c core.fsmonitor=false diff --check` exited 0.

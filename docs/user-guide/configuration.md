@@ -450,6 +450,8 @@ Terminal Runs older than the window become eligible for journal and run
 artifact pruning — by `roundfix gc` on demand and by a best-effort sweep at
 `implement`/`resolve`/`watch` startup. Active Runs, `runs` rows, active-run
 locks, and Review artifacts under the Spec Root are never pruned.
+See [Run Database lifecycle](run-database-lifecycle.md) for the owner and
+retention rule of every durable table.
 
 ## Local state
 

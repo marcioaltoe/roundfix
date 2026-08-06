@@ -1,0 +1,46 @@
+Build: bc44a3ac
+
+Project Constraint and tooling audit
+
+- The PRD and TechSpec each contain explicit identifier, authentication/HTTP,
+  active-ADR, and tooling-authority rows with operative docs/agents sources.
+- Authorization commit 9bdaedbe (2026-08-04T12:31:58-03:00) is an ancestor
+  of the Spec authoring commit 94d75767 (2026-08-06T01:08:46-03:00).
+- The authorization names Spec 0059 and bounds the canonical Roundfix Skill,
+  its mirror, and deterministic ADR-0081 digest fallout.
+- Exact `git diff-tree` path audits found no protected-tooling mutation in
+  Tasks 01-04. Task 05 commit bc44a3ac changed only task_05.md. Therefore no
+  authorization/prerequisite/consequent fix was folded into a Task commit and
+  no out-of-scope protected path changed. The missing intended Skill change is
+  a requirements finding, F-002, rather than an unauthorized mutation.
+
+Focused backend evidence
+
+$ rtk go test ./internal/store -count=1 -run '<six compaction cases>' -v
+exit: 0; 6 passed
+Cases independently exercised preview/result tolerance, Active Run refusal,
+other-writer refusal, insufficient-capacity refusal, stale-preview refusal,
+and the rule that retention never vacuums allocated pages. Refusal cases
+compare database bytes before/after. This is backend evidence only; it does
+not replace the missing public CLI journey in F-001.
+
+$ rtk go test ./internal/store -count=1 -run '<three lifecycle cases>' -v
+exit: 0; 3 passed
+Cases reconciled every migrated durable table with the policy, rejected an
+unstated fixture table, and preserved Run lifecycle records under retention.
+
+$ rtk make skills-sync-check
+exit: 0; four Skill tests passed.
+$ rtk cmp -s .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md
+exit: 0; canonical and mirror bytes match.
+
+The canonical Skill and mirror contain none of `gc compact`, `gc sanitize`, or
+`storage report`; see F-002.
+
+Measurement-invariant sweep
+
+The only fixed measurements found in Spec artifacts are historical problem or
+Task Result context (`1.4 GB`, the rejected `104`/`106` test, and the measured
+279-row/118,784-byte Run index). No Acceptance Criteria or Verification asserts
+one of those values. Current tests derive page size, database/file measurements,
+reclaimable bytes, and before/after relations at runtime.
