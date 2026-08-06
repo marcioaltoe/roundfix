@@ -99,6 +99,25 @@ whether `PRRT_…6WxoVQ` was accepted or rejected.
 - The measurement came from a live autonomous queue night on the `vortex`
   repository, driving Specs 0015, 0016 and 0032 through Roundfix.
 
+## Addendum, 2026-08-06 — the same defect also hides open findings
+
+The original measurement showed duplication: 114 files for 70 threads. Two more Specs the same
+night showed the mirror failure, which is worse.
+
+On Specs 0016, 0019 and 0017, after one `resolve` cycle settled its issues, every later `fetch`
+returned `Review Issues: none` **while GitHub still reported open threads** — three, six and
+twelve respectively. Roundfix considers a thread already imported and terminal, so it never
+re-imports it; the Agent is never handed a finding that is demonstrably still open.
+
+The consequence is that the normal loop cannot close those findings at all. Each of the three
+Specs needed a hand-authored corrective Task naming the findings, which also invalidates the
+authored gate and forces another full gate cycle.
+
+So the missing identity costs twice, in opposite directions: without it, the same finding is
+re-imported as a new issue across Rounds, and once settled, a still-open thread can never be
+imported again. Keying on the thread fixes both — a thread that is open at the Review Source and
+terminal in the artifacts is precisely the state that should produce a fresh issue.
+
 ## Spec pointer
 
 None yet.
