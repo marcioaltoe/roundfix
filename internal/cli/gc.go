@@ -20,18 +20,20 @@ import (
 var gcDeps = defaultGCDependencies()
 
 type gcDependencies struct {
-	loadConfig      func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
-	openStore       func(context.Context, string) (*store.Store, error)
-	openStoreReader func(context.Context, string) (*store.Store, error)
-	now             func() time.Time
+	loadConfig        func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
+	openStore         func(context.Context, string) (*store.Store, error)
+	openStoreReader   func(context.Context, string) (*store.Store, error)
+	openStorageReader func(context.Context, string) (*store.Store, error)
+	now               func() time.Time
 }
 
 func defaultGCDependencies() gcDependencies {
 	return gcDependencies{
-		loadConfig:      roundconfig.Load,
-		openStore:       store.Open,
-		openStoreReader: store.OpenReader,
-		now:             func() time.Time { return time.Now().UTC() },
+		loadConfig:        roundconfig.Load,
+		openStore:         store.Open,
+		openStoreReader:   store.OpenReader,
+		openStorageReader: store.OpenStorageReader,
+		now:               func() time.Time { return time.Now().UTC() },
 	}
 }
 
@@ -137,6 +139,126 @@ func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer, 
 	}
 	printGCReport(stdout, report)
 	return exitOK
+}
+
+func runStorageCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
+	if commandWantsHelp(args) {
+		fmt.Fprint(stdout, commandUsage("storage"))
+		return exitOK
+	}
+	if len(args) == 0 || args[0] != "report" {
+		printPreflightFailure("storage", validationError{message: "expected subcommand \"report\""}, stderr)
+		return exitPreflight
+	}
+	if commandWantsHelp(args[1:]) {
+		fmt.Fprint(stdout, commandUsage("storage"))
+		return exitOK
+	}
+	if len(args) != 1 {
+		printPreflightFailure("storage report", validationError{message: "does not accept flags or arguments"}, stderr)
+		return exitPreflight
+	}
+	if environment.homeDirErr != nil {
+		printPreflightFailure("storage report", fmt.Errorf("resolve Roundfix Home: %w", environment.homeDirErr), stderr)
+		return exitPreflight
+	}
+
+	report, err := measureStorageReport(ctx, environment.homeDir)
+	if err != nil {
+		fmt.Fprintf(stderr, "%s: storage report failed: %v\n", app.Name, err)
+		return exitRunFailed
+	}
+	printStorageReport(stdout, report)
+	return exitOK
+}
+
+func measureStorageReport(ctx context.Context, homeDir string) (store.StorageReport, error) {
+	databasePath := store.DatabasePath(homeDir)
+	_, err := os.Stat(databasePath)
+	if errors.Is(err, os.ErrNotExist) {
+		return store.StorageReport{DatabasePath: databasePath}, nil
+	}
+	if err != nil {
+		return store.StorageReport{}, fmt.Errorf("stat Run Database %q: %w", databasePath, err)
+	}
+
+	runStore, err := commandDependenciesForContext(ctx).gc.openStorageReader(ctx, homeDir)
+	if err != nil {
+		return store.StorageReport{}, err
+	}
+	report, reportErr := runStore.StorageReport(ctx)
+	closeErr := runStore.Close()
+	if reportErr != nil {
+		if closeErr != nil {
+			return store.StorageReport{}, errors.Join(reportErr, fmt.Errorf("close Run Database reader: %w", closeErr))
+		}
+		return store.StorageReport{}, reportErr
+	}
+	if closeErr != nil {
+		return store.StorageReport{}, fmt.Errorf("close Run Database reader: %w", closeErr)
+	}
+	return report, nil
+}
+
+func printStorageReport(stdout io.Writer, report store.StorageReport) {
+	fmt.Fprintln(stdout, "Storage report")
+	fmt.Fprintln(stdout, "Database")
+	fmt.Fprintf(stdout, "  Path: %s\n", report.DatabasePath)
+	fmt.Fprintf(stdout, "  File bytes: %d\n", report.DatabaseBytes)
+	fmt.Fprintf(stdout, "  Table bytes: %d\n", report.DatabaseAllocatedBytes)
+	fmt.Fprintf(stdout, "  Free bytes: %d\n", report.DatabaseFreeBytes)
+	databaseGroupedBytes := report.DatabaseAllocatedBytes + report.DatabaseFreeBytes
+	fmt.Fprintf(stdout, "  Grouped bytes: %d\n", databaseGroupedBytes)
+	fmt.Fprintf(stdout, "  Reconciliation difference: %d\n", storageByteDifference(report.DatabaseBytes, databaseGroupedBytes))
+	if report.ReconciliationToleranceReason == "" {
+		fmt.Fprintln(stdout, "  Reconciliation tolerance: 0 bytes (no Run Database exists)")
+	} else {
+		fmt.Fprintf(stdout, "  Reconciliation tolerance: %d bytes (%s)\n", report.ReconciliationToleranceBytes, report.ReconciliationToleranceReason)
+	}
+
+	fmt.Fprintln(stdout, "Tables")
+	fmt.Fprintln(stdout, "  TABLE\tROWS\tBYTES")
+	for _, group := range report.Tables {
+		fmt.Fprintf(stdout, "  %s\t%d\t%d\n", group.Table, group.Rows, group.Bytes)
+	}
+
+	fmt.Fprintln(stdout, "Repositories")
+	fmt.Fprintln(stdout, "  REPOSITORY\tSTATUS\tRUN_ROWS\tRUN_ARTIFACT_BYTES")
+	for _, group := range report.Repositories {
+		fmt.Fprintf(stdout, "  %s\t%s\t%d\t%d\n", group.Repository, storagePathStatus(group.Missing), group.Rows, group.Bytes)
+	}
+
+	fmt.Fprintln(stdout, "States")
+	fmt.Fprintln(stdout, "  STATE\tRUN_ROWS\tRUN_ARTIFACT_BYTES")
+	for _, group := range report.States {
+		fmt.Fprintf(stdout, "  %s\t%d\t%d\n", group.State, group.Rows, group.Bytes)
+	}
+
+	fmt.Fprintln(stdout, "Artifact Roots")
+	fmt.Fprintln(stdout, "  ARTIFACT_ROOT\tSTATUS\tRUN_ROWS\tBYTES")
+	var artifactGroupedBytes int64
+	for _, group := range report.ArtifactRoots {
+		fmt.Fprintf(stdout, "  %s\t%s\t%d\t%d\n", group.ArtifactRoot, storagePathStatus(group.Missing), group.Rows, group.Bytes)
+		artifactGroupedBytes += group.Bytes
+	}
+	fmt.Fprintf(stdout, "  Measured bytes: %d\n", report.ArtifactBytes)
+	fmt.Fprintf(stdout, "  Grouped bytes: %d\n", artifactGroupedBytes)
+	fmt.Fprintf(stdout, "  Reconciliation difference: %d\n", storageByteDifference(report.ArtifactBytes, artifactGroupedBytes))
+}
+
+func storagePathStatus(missing bool) string {
+	if missing {
+		return "missing"
+	}
+	return "present"
+}
+
+func storageByteDifference(left int64, right int64) int64 {
+	difference := left - right
+	if difference < 0 {
+		return -difference
+	}
+	return difference
 }
 
 func parseGCCommand(args []string) (gcOptions, error) {

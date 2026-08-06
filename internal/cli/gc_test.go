@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -161,6 +163,115 @@ func TestRunGCHelp(t *testing.T) {
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunStorageReportOutsideGitRepository(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	outsideGit := t.TempDir()
+	missingRepository := filepath.Join(t.TempDir(), "removed-repository")
+	missingArtifactRoot := filepath.Join(t.TempDir(), "removed-artifacts")
+	setCommandEnvironmentForTest(t, homeDir, outsideGit)
+
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run store: %v", err)
+	}
+	if _, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:           store.KindResolve,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/storage-report",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		GitRoot:        missingRepository,
+		LocalBranch:    "feature/storage-report",
+		HeadSHA:        "abc123",
+		ArtifactDir:    missingArtifactRoot,
+	}); err != nil {
+		t.Fatalf("create storage report Run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run store: %v", err)
+	}
+	databaseBefore, err := os.ReadFile(store.DatabasePath(homeDir))
+	if err != nil {
+		t.Fatalf("read Run Database before command: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runCLIContext(t, ctx, []string{"storage", "report"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected storage report exit 0 outside Git, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected storage report diagnostics to stay empty, got %q", stderr.String())
+	}
+	for _, want := range []string{
+		"Storage report",
+		"Tables",
+		"Repositories",
+		"States",
+		"Artifact Roots",
+		"missing",
+		missingRepository,
+		missingArtifactRoot,
+		"one SQLite page",
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("expected storage report output to contain %q, got %q", want, stdout.String())
+		}
+	}
+	databaseAfter, err := os.ReadFile(store.DatabasePath(homeDir))
+	if err != nil {
+		t.Fatalf("read Run Database after command: %v", err)
+	}
+	if !bytes.Equal(databaseAfter, databaseBefore) {
+		t.Fatal("storage report command changed Run Database bytes")
+	}
+}
+
+func TestRunStorageReportRejectsFlags(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"storage", "report", "--format", "json"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected unsupported storage report flag to exit %d, got %d", exitPreflight, code)
+	}
+	if !strings.Contains(stderr.String(), "does not accept flags or arguments") {
+		t.Fatalf("expected deterministic unsupported-argument diagnostic, got %q", stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout for invalid storage report input, got %q", stdout.String())
+	}
+}
+
+func TestRunStorageReportWithoutDatabaseCreatesNothing(t *testing.T) {
+	t.Parallel()
+	homeDir := t.TempDir()
+	setCommandEnvironmentForTest(t, homeDir, t.TempDir())
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"storage", "report"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected empty storage report exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no empty-report diagnostics, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "no Run Database exists") {
+		t.Fatalf("expected absent Run Database explanation, got %q", stdout.String())
+	}
+	if _, err := os.Stat(store.DatabasePath(homeDir)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("storage report created a Run Database, stat error=%v", err)
 	}
 }
 

@@ -69,6 +69,7 @@ Usage:
   roundfix setup [--yes] [--no-input]
   roundfix doctor
   roundfix gc [--dry-run]
+  roundfix storage report
   roundfix upgrade [--check]
   roundfix runs
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
@@ -95,6 +96,7 @@ Commands:
   setup      Verify and prepare this machine for Roundfix Runs
   doctor     Diagnose this machine's readiness for Roundfix Runs
   gc         Prune old terminal Run journals and run artifacts
+  storage    Report measured Run Database and Artifact Root storage
   upgrade    Upgrade the Roundfix binary from GitHub Releases
   runs       List Runs from the Run Database
   attach     Replay a Run's event timeline from the Run Database
@@ -477,6 +479,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runDoctorCommand(ctx, args[1:], stdout, stderr, environment)
 	case "gc":
 		return runGCCommand(ctx, args[1:], stdout, stderr, environment)
+	case "storage":
+		return runStorageCommand(ctx, args[1:], stdout, stderr, environment)
 	case "upgrade":
 		return runUpgradeCommand(ctx, args[1:], stdout, stderr)
 	case "runs":
@@ -5115,6 +5119,17 @@ and it never removes Review artifacts outside the run artifact root.
 
 Options:
   --dry-run  List the Runs, journal rows, and artifact bytes that would be pruned without changing anything
+`
+	case "storage":
+		return `Usage:
+  roundfix storage report
+
+Commands:
+  report  Measure bytes and row counts by repository, state, table, and Artifact Root.
+
+The report is read-only, accepts no flags, and needs no Git repository. It
+reads the machine-wide Run Database and recorded Artifact Roots from Roundfix
+Home without migrating, locking for writes, or changing any byte.
 `
 	case "upgrade":
 		return `Usage:

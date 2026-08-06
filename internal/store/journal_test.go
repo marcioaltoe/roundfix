@@ -3,6 +3,11 @@ package store
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -351,6 +356,209 @@ func TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing(t *testing.T) {
 	if count, err := runStore.RunCount(ctx); err != nil || count != 1 {
 		t.Fatalf("expected Run row to survive, count=%d err=%v", count, err)
 	}
+}
+
+func TestStorageReportReconcilesMeasuredTotalsWithoutMutation(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	existingRepository := t.TempDir()
+	missingRepository := filepath.Join(t.TempDir(), "removed-repository")
+	artifactRoot := filepath.Join(t.TempDir(), "artifacts")
+	missingArtifactRoot := filepath.Join(t.TempDir(), "removed-artifacts")
+
+	runStore := openTestStore(t, ctx, homeDir)
+	firstRequest := sampleCreateRunRequest()
+	firstRequest.GitRoot = existingRepository
+	firstRequest.ArtifactDir = artifactRoot
+	first, err := runStore.CreateRun(ctx, firstRequest)
+	if err != nil {
+		t.Fatalf("create first Run: %v", err)
+	}
+	if _, err := runStore.AppendRunEvent(ctx, sampleRunEvent(first.ID, "measured event")); err != nil {
+		t.Fatalf("append measured Run Event: %v", err)
+	}
+	for index := 0; index < 32; index++ {
+		event := sampleRunEvent(first.ID, fmt.Sprintf("prunable measured event %d", index))
+		event.Payload = bytes.Repeat([]byte("x"), 8192)
+		if _, err := runStore.AppendRunEvent(ctx, event); err != nil {
+			t.Fatalf("append prunable measured Run Event %d: %v", index, err)
+		}
+	}
+	if _, err := runStore.CompleteRun(ctx, first.ID, StateClean); err != nil {
+		t.Fatalf("complete first Run: %v", err)
+	}
+	if _, err := runStore.PruneTerminalRuns(ctx, time.Now().UTC().Add(time.Hour)); err != nil {
+		t.Fatalf("create free pages by pruning measured Run Events: %v", err)
+	}
+
+	secondRequest := sampleCreateRunRequest()
+	secondRequest.HeadBranch = "feature/missing-root"
+	secondRequest.PRNumber = "456"
+	secondRequest.GitRoot = missingRepository
+	secondRequest.ArtifactDir = missingArtifactRoot
+	if _, err := runStore.CreateRun(ctx, secondRequest); err != nil {
+		t.Fatalf("create Run with missing recorded roots: %v", err)
+	}
+	closeStore(t, runStore)
+
+	artifactPath := filepath.Join(artifactRoot, "runs", first.ID, "agent", "batch-001.log")
+	if err := os.MkdirAll(filepath.Dir(artifactPath), 0o755); err != nil {
+		t.Fatalf("create artifact directory: %v", err)
+	}
+	if err := os.WriteFile(artifactPath, []byte("measured artifact"), 0o644); err != nil {
+		t.Fatalf("write measured artifact: %v", err)
+	}
+	databaseBefore := storageTreeSnapshot(t, filepath.Join(homeDir, roundfixHomeDir))
+	artifactBefore := storageTreeSnapshot(t, artifactRoot)
+
+	reader, err := OpenStorageReader(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database reader: %v", err)
+	}
+	report, err := reader.StorageReport(ctx)
+	if err != nil {
+		t.Fatalf("measure storage report: %v", err)
+	}
+	pageSize, err := storagePragmaInt64(ctx, reader.db, "page_size")
+	if err != nil {
+		t.Fatalf("measure SQLite page size: %v", err)
+	}
+	closeStore(t, reader)
+	if report.ReconciliationToleranceBytes != pageSize {
+		t.Fatalf("expected tolerance to equal measured SQLite page size %d, got %d", pageSize, report.ReconciliationToleranceBytes)
+	}
+	if report.DatabaseFreeBytes == 0 {
+		t.Fatal("expected the reconciliation fixture to contain measured free pages")
+	}
+	if !strings.Contains(report.ReconciliationToleranceReason, "one SQLite page") {
+		t.Fatalf("expected page-sized tolerance reason, got %q", report.ReconciliationToleranceReason)
+	}
+
+	var tableBytes int64
+	var runRows int64
+	for _, group := range report.Tables {
+		tableBytes += group.Bytes
+		if group.Table == "runs" {
+			runRows = group.Rows
+		}
+	}
+	databaseDifference := absInt64(report.DatabaseBytes - (tableBytes + report.DatabaseFreeBytes))
+	if databaseDifference > report.ReconciliationToleranceBytes {
+		t.Fatalf("database groups differ from measured file by %d bytes, tolerance %d: %#v", databaseDifference, report.ReconciliationToleranceBytes, report)
+	}
+	var artifactBytes int64
+	for _, group := range report.ArtifactRoots {
+		artifactBytes += group.Bytes
+	}
+	if artifactBytes != report.ArtifactBytes {
+		t.Fatalf("Artifact Root groups total %d bytes, measured artifacts total %d", artifactBytes, report.ArtifactBytes)
+	}
+	var repositoryRows int64
+	var repositoryBytes int64
+	for _, group := range report.Repositories {
+		repositoryRows += group.Rows
+		repositoryBytes += group.Bytes
+	}
+	var stateRows int64
+	var stateBytes int64
+	for _, group := range report.States {
+		stateRows += group.Rows
+		stateBytes += group.Bytes
+	}
+	var artifactRootRows int64
+	for _, group := range report.ArtifactRoots {
+		artifactRootRows += group.Rows
+	}
+	if repositoryRows != runRows || stateRows != runRows || artifactRootRows != runRows {
+		t.Fatalf("Run row groupings do not reconcile: table=%d repositories=%d states=%d Artifact Roots=%d", runRows, repositoryRows, stateRows, artifactRootRows)
+	}
+	if repositoryBytes != stateBytes {
+		t.Fatalf("Run artifact byte groupings do not reconcile: repositories=%d states=%d", repositoryBytes, stateBytes)
+	}
+	if !storageRepositoryGroup(report.Repositories, missingRepository).Missing {
+		t.Fatalf("expected missing repository %q to remain reported: %#v", missingRepository, report.Repositories)
+	}
+	if !storageArtifactRootGroup(report.ArtifactRoots, missingArtifactRoot).Missing {
+		t.Fatalf("expected missing Artifact Root %q to remain reported: %#v", missingArtifactRoot, report.ArtifactRoots)
+	}
+	if len(report.States) < 2 {
+		t.Fatalf("expected Active and Clean state groups, got %#v", report.States)
+	}
+	if len(report.Tables) == 0 {
+		t.Fatal("expected table groups")
+	}
+
+	databaseAfter := storageTreeSnapshot(t, filepath.Join(homeDir, roundfixHomeDir))
+	artifactAfter := storageTreeSnapshot(t, artifactRoot)
+	if !reflect.DeepEqual(databaseAfter, databaseBefore) {
+		t.Fatalf("storage report changed Run Database tree\nbefore: %#v\nafter:  %#v", databaseBefore, databaseAfter)
+	}
+	if !reflect.DeepEqual(artifactAfter, artifactBefore) {
+		t.Fatalf("storage report changed artifact tree\nbefore: %#v\nafter:  %#v", artifactBefore, artifactAfter)
+	}
+}
+
+func storageTreeSnapshot(t *testing.T, root string) map[string]string {
+	t.Helper()
+	snapshot := map[string]string{}
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			snapshot[relative] = "directory"
+			return nil
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+			snapshot[relative] = "symlink:" + target
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		digest := sha256.Sum256(content)
+		snapshot[relative] = fmt.Sprintf("file:%d:%x", len(content), digest)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("snapshot storage tree %q: %v", root, err)
+	}
+	return snapshot
+}
+
+func storageRepositoryGroup(groups []StorageRepositoryGroup, repository string) StorageRepositoryGroup {
+	for _, group := range groups {
+		if group.Repository == repository {
+			return group
+		}
+	}
+	return StorageRepositoryGroup{}
+}
+
+func storageArtifactRootGroup(groups []StorageArtifactRootGroup, artifactRoot string) StorageArtifactRootGroup {
+	for _, group := range groups {
+		if group.ArtifactRoot == artifactRoot {
+			return group
+		}
+	}
+	return StorageArtifactRootGroup{}
+}
+
+func absInt64(value int64) int64 {
+	if value < 0 {
+		return -value
+	}
+	return value
 }
 
 func TestRunEventsAfterCursorReturnsOnlyNewerAndRespectsLimit(t *testing.T) {
