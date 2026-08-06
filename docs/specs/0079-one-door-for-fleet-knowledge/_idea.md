@@ -16,8 +16,9 @@ licencia, mirror que devolve ao brain. Resolve o acúmulo medido (63 findings no
 roundfix, 111 na frota), o transporte cross-project que hoje é humano, e a
 janela de perda entre observar e versionar. Usuários: as sessões-agente de
 todos os projetos e o mantenedor como curador. V1 ambicioso-híbrido: o ciclo
-completo em regras e skills, mais a captura automática de fim de sessão —
-nenhuma ferramenta nova de CLI.
+completo em regras e skills, a captura automática de fim de sessão, e a
+aquisição de conhecimento de pesquisa entrando pela mesma porta — nenhuma
+ferramenta nova de CLI.
 
 ## Problem
 
@@ -64,6 +65,7 @@ pilha crua via mirror, sem camada de captura nem curadoria de entrada.
 | F8  | Captura automática de fim de sessão | High | Ao fim de cada sessão, um capture rascunha entradas de inbox para as observações que a sessão expôs — marcadas `auto`, sempre pendentes de triagem, nunca auto-triadas. |
 | F9  | Enforcement mecânico | High | As regras viram checagens na infra SC-* da 0065: lifecycle presente em finding ativo, rollup com membros resolvíveis, arquivado só com licença, entrada de inbox válida (lint no brain). Regra sem checagem apodrece — 63 provas. |
 | F10 | Vocabulário no glossário | Medium | `Inbox Entry`, `Rollup` e `Triage` nascem no CONTEXT.md ao lado de Finding e Backlog Entry, com seus _Avoid_. |
+| F11 | Captura de pesquisa para o brain | High | Sessão que fez pesquisa substantiva (web/livros) captura o digest com fontes em `inbox/secondbrain/` — o brain é o destino quando o conhecimento é da frota, não de um projeto. Check advisório via `qmd` antes de incluir: acerto forte → a entrada referencia e estende a página existente em vez de duplicar. A triagem desse namespace é a ingestão que o brain já possui, rodando em sessão do próprio brain. |
 
 ## KPIs
 
@@ -75,6 +77,7 @@ pilha crua via mirror, sem camada de captura nem curadoria de entrada.
 | Inbox pendente > 14 dias | 0 entradas | `ls` por data no brain |
 | Entradas com origin+destination válidos | 100% | lint no brain |
 | Interferência com Runs (preflight/Batch) | 0 ocorrências | Run journals |
+| Pesquisa substantiva capturada com fontes | 100% das sessões que pesquisaram | auditoria do piloto |
 
 ## Feature Assessment
 
@@ -143,6 +146,8 @@ por decisão do mantenedor com o dissenso registrado.
 - **Re-tipagem do backlog da 0075** — tipos e boundary ficam como estão.
 - **Automação de varredura/retenção no brain** (`_triaged/` sweep) — política
   declarada, execução manual até doer.
+- **Mecânica de ingestão ao wiki** — F11 alimenta a fila; o pipeline de
+  ingestão e suas regras são e continuam sendo contrato do repo do brain.
 
 ## Decisions
 
@@ -156,6 +161,11 @@ por decisão do mantenedor com o dissenso registrado.
 - Zero configuração nova no V1; `projects/<p>/` é o registro de destinos.
 - F8 (captura automática) entra no V1 por decisão do mantenedor, contra o
   dissenso do conselho — registrado dos dois lados.
+- Aquisição de conhecimento é fundamento do brain: pesquisa de sessão captura
+  no `inbox/secondbrain/` com check advisório de duplicata via `qmd` antes da
+  inclusão; a ingestão ao wiki permanece contrato do próprio brain. (Adição
+  do mantenedor, 2026-08-06 — a pesquisa desta mesma ideia é o caso-exemplo
+  e o primeiro material do piloto.)
 
 ## Open Questions
 
@@ -167,3 +177,5 @@ por decisão do mantenedor com o dissenso registrado.
   do brain quando a mudança for feita lá.
 - Alias origem↔nome quando basename divergir. Default: inexistente até
   precisar.
+- Limiar de "pesquisa substantiva" que obriga captura F11. Default: qualquer
+  sessão cujo artefato de decisão citou fontes externas captura o digest.
