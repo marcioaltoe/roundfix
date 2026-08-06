@@ -22,10 +22,14 @@ Stream exists for live supervision — `roundfix events --follow` — and once a
 Run reaches a terminal outcome its console log already persists as a file
 artifact, leaving the journal's payloads forensic at best.
 
-Candidate shapes, cheapest first: drop payloads at terminal settlement while
-keeping event headers so the timeline stays readable; give terminal and
-non-terminal Runs different retention; compress payloads, which changes no
-behavior at all.
+Candidate shapes, cheapest first: give terminal and non-terminal Runs
+different retention, which changes no payload at all. Anything that drops or
+rewrites a payload — including compression — is blocked by ADR-0008, which
+makes the payload raw producer JSON, write-once and read-as-blob, and by
+ADR-0030, which removed the per-Batch agent logs on the grounds that the
+journal is the durable copy. Such a shape may only arrive as an explicit
+amendment naming the lost capability; Spec 0081 defers that decision behind a
+measurement that may conclude it is unnecessary.
 
 ## Why it is not only about disk
 

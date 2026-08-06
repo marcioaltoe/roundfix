@@ -35,7 +35,8 @@ Not every change earns a PRD — it pays for itself when there are product decis
 
 ### 1. Read the pending inbox
 
-Before exploration, read the repository's pending Inbox Entries from its
+After the ground-rule reads above — `CONTEXT.md` and the active ADRs — and
+before exploration, read the repository's pending Inbox Entries from its
 brain-side `inbox/<repository>/` namespace through the configured
 knowledge-workspace workflow. Treat queued evidence and intent as inputs to the
 product decision, and leave Triage to a session of the destination repository.

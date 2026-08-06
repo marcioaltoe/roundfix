@@ -36,7 +36,8 @@ Use it for product-level ideas: greenfield features, ideas with real market/comp
 
 ### 1. Read the pending inbox
 
-Before any codebase or market exploration, read the repository's pending Inbox
+After the ground-rule reads above — `CONTEXT.md` and the active ADRs — and
+before any codebase or market exploration, read the repository's pending Inbox
 Entries from its brain-side `inbox/<repository>/` namespace through the
 configured knowledge-workspace workflow. Treat every queued entry as decision
 input: carry relevant evidence and intent into the exploration, and leave

@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
 
 # 2026-08-03 — A recording-order defect blocked every public QA row
 
-status: pending
-
 ## What was observed
 
 Across Spec 0072's four gate executions, the governance preflight (F-001)

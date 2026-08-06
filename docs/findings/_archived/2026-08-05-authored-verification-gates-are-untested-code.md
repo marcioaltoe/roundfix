@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
 
 # 2026-08-05 — Authored verification gates are untested code
 
-status: pending
-
 Source: the second real Supervisor session in the `fiscus` repository, spec
 `0002-auth-staff-e-directory` (runs `run_20260805T131149Z_18c1483e9d4abee4` Stopped and
 `run_20260805T134406Z_41a3bfa9659f0917` in flight), one day after the spec-0001 night that

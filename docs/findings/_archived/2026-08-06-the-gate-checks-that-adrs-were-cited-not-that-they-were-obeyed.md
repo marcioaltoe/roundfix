@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
 
 # 2026-08-06 — The gate checks that ADRs were cited, not that they were obeyed
 
-status: pending
-
 Source: a supervised autonomous session in the `fluxus` repository that delivered three specs
 (0018, 0019, 0020) and two releases (`0.6.0`, `0.6.1`) between 2026-08-05 17:00 and
 2026-08-06 09:45 America/Sao_Paulo, including a destructive production migration. **Eleven

@@ -13,7 +13,7 @@ relaunching a QA gate, on branch `ma/0079-one-door-for-fleet-knowledge`.
 `make verify` failed, and it failed having **deleted tracked files from the
 working tree**:
 
-```
+```text
  D docs/_inbox/samples/AGENTS.go-cli.md
  D docs/_inbox/samples/AGENTS.rust-cli.md
  D docs/_inbox/samples/AGENTS.typescript-bun.md

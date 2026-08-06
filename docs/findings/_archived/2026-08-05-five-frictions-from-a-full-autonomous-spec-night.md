@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-review-and-delivery-convergence.md
 
 # 2026-08-05 — Five frictions from a full autonomous spec night
 
-status: pending
-
 Source: a real overnight Supervisor session in the `fiscus` repository driving spec
 `0001-fundacao-de-contextos` (10-task graph with authored QA gate, docs-heavy) through three
 Implement Runs (`run_20260805T011231Z_fdc643c4319c4d39` Failed,

@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
 
 # 2026-08-04 — Pre-contract Spec graphs run with no QA gate and say nothing
 
-status: pending
-
 ## What was observed
 
 Roundfix 0.3.1 removed the `--qa` flag and moved the gate into the Task Graph

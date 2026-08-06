@@ -139,3 +139,22 @@ three days on a machine whose owner actively maintains the project.
   none required `SIGKILL`, confirming they were idle waiters rather than wedged.
 - `roundfix runs list` on the same machine at the same moment:
   `No Runs found. (119 terminal Run(s) hidden; use --state all)`.
+
+---
+
+## Addendum — 2026-08-06, review correction
+
+Two claims above are narrower than written, per CodeRabbit review on PR #136.
+The observations are the author's and stay as written; the corrections are
+recorded here rather than folded into them.
+
+- On cleanup: `t.Cleanup` does run for `t.Fatalf` and for a panicking test, so
+  those paths do not leak. The leak requires termination that prevents cleanup
+  from running at all — a package timeout, `Ctrl-C`, or a cancelled CI job.
+- On the observed processes: ending under `SIGTERM` shows graceful termination
+  and does not by itself establish that they were idle waiters. Their wait
+  state is unproven; the ages, CPU totals, and parentage stand as recorded.
+
+Neither correction changes the finding's conclusion: four processes outlived
+their tests by days, and nothing in Roundfix reported them.
+

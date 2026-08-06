@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
 
 # 2026-08-05 — Archive refuses a Spec whose graph declined the QA gate
 
-status: pending
-
 ## What was observed
 
 Spec 0016 declared `qa: declined` in its `_tasks.md` frontmatter, with the

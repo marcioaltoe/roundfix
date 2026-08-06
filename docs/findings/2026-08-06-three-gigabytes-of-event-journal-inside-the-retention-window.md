@@ -12,7 +12,7 @@ asking whether any of it is useful.
 
 ## Measurements
 
-```
+```text
 roundfix.db      3.1G
 roundfix.db-wal  4.4M
 ```

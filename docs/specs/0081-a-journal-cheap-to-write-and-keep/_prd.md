@@ -2,7 +2,7 @@
 spec: 0081-a-journal-cheap-to-write-and-keep
 status: active
 created: 2026-08-06
-surfaces: [backend, data, docs]
+surfaces: [backend, data, docs, cli]
 ---
 
 # A journal cheap to write and cheap to keep

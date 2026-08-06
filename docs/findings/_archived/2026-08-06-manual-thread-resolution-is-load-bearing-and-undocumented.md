@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-review-and-delivery-convergence.md
 
 # 2026-08-06 — Manual thread resolution is load-bearing, and the contract forbids it
 
-status: pending
-
 ## What was observed
 
 `2026-08-05-five-frictions-from-a-full-autonomous-spec-night.md` §5 states the constraint plainly:

@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
 
 # 2026-08-04 — A Spec archives with `pass` while a user story was never exercised
 
-status: pending
-
 ## What was observed
 
 fluxus Spec 0012 reached `verdict: pass` and archived on that verdict. Its

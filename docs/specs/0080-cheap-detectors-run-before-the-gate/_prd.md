@@ -2,7 +2,7 @@
 spec: 0080-cheap-detectors-run-before-the-gate
 status: active
 created: 2026-08-06
-surfaces: [backend, docs, infra]
+surfaces: [backend, docs, infra, cli]
 ---
 
 # Cheap detectors run before the gate
@@ -117,7 +117,8 @@ takes ownership of exactly that, on evidence 0063 did not have.
 3. **The stage is citation-only.** Every detector reads declarations and
    compares them with observable repository facts; none infers intent, judges
    prose, or evaluates whether a decision was correct. Absent input artifacts
-   skip rather than fail.
+   skip rather than fail, and every skip is recorded with its detector and the
+   missing artifact, so a skipped check is never mistaken for a passed one.
 4. **The gate learns what changed.** The QA prompt carries the changed-path
    context every Task prompt already carries, plus the previous report's
    identity, so scoping is possible at all.

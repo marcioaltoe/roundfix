@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-review-and-delivery-convergence.md
 
 # 2026-08-04 — Review Runs halt autonomous delivery on unrelated dirty files
 
-status: pending
-
 ## What was observed
 
 An autonomous delivery of four fluxus Specs stopped dead at the review step of

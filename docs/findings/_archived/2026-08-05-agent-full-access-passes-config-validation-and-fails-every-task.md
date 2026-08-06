@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-agent-selection-and-execution-environments.md
 
 # 2026-08-05 — `agent_full_access` passes config validation and fails every Task
 
-status: pending
-
 ## What was observed
 
 Spec 0014's QA gate blocked 10 of its 22 rows and its own evidence file named

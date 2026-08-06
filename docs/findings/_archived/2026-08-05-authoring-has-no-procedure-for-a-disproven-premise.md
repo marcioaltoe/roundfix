@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-spec-authoring-and-contract-enforcement.md
 
 # 2026-08-05 — Spec authoring has no procedure for a disproven premise
 
-status: pending
-
 ## What was observed
 
 oraculum Spec 0020 needed **five gate cycles**. Three of them failed the same

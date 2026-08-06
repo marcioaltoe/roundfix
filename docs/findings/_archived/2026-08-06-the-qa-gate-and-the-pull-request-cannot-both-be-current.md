@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
 
 # 2026-08-06 — The QA gate and the pull request cannot both be current
 
-status: pending
-
 ## What was observed
 
 An authored QA gate that inspects the pull request can never pass on its first run after any

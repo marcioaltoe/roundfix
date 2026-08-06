@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
 
 # 2026-08-04 — Fail-fast Verification spends the single repair turn on the first of N defects
 
-status: pending
-
 ## What was observed
 
 Task 07 of fluxus Spec 0012 failed with two independent defects in the working

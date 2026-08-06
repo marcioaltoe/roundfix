@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-agent-selection-and-execution-environments.md
 
 # 2026-08-04 — The documented sandbox escape does not exist on the Codex adapter
 
-status: pending
-
 ## What was observed
 
 A QA gate recorded ten rows as `blocked (environment)` because the Agent sandbox

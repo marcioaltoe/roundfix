@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-review-and-delivery-convergence.md
 
 # 2026-08-05 — Contract seams between Daemon, gate, and Archive
 
-status: pending
-
 Source: three consecutive Specs delivered end to end in the `fiscus` repository
 (`0001-fundacao-de-contextos`, `0002-auth-staff-e-directory`,
 `0003-design-system-graphite`) — 35 Tasks, 17 Implement Runs, 14 gate executions, 7 merged pull

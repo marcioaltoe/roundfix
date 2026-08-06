@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-run-lifecycle-and-branch-integrity.md
 
 # 2026-08-04 — Branch Integrity Preflight prescribes a remedy that reintroduces superseded work
 
-status: pending
-
 ## What was observed
 
 A QA gate failed a Spec because the Supervisor had committed protected tooling

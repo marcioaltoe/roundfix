@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-run-lifecycle-and-branch-integrity.md
 
 # 2026-08-04 — Watch derives a review head it never checks is reachable
 
-status: pending
-
 ## What was observed
 
 `roundfix watch --source coderabbit --pr 78 --until-clean` started a Run,

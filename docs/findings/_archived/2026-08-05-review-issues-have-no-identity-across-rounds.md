@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-review-and-delivery-convergence.md
 
 # 2026-08-05 — Review Issues have no identity across Rounds
 
-status: pending
-
 ## What was observed
 
 One pull request — `gesttione-solutions/vortex#123` — accumulated **114 Review

@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-review-and-delivery-convergence.md
 
 # 2026-08-05 — What a six-Spec autonomous session asks Roundfix to change
 
-status: pending
-
 ## What was observed
 
 One Supervisor drove six Specs from findings to merged Pull Requests in the

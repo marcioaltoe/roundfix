@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-run-lifecycle-and-branch-integrity.md
 
 # 2026-08-05 — Preflight prescribes integrating a superseded Run Branch
 
-status: pending
-
 ## What was observed
 
 A Spec 0015 Run failed on four Tasks, leaving a Run Branch with one commit —

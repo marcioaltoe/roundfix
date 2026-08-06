@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-review-and-delivery-convergence.md
 
 # 2026-08-03 — Gate and review rounds need a convergence rule
 
-status: pending
-
 ## What was observed
 
 Closing Spec 0072 took four gate executions and two resolve Runs, and the

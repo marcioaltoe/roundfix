@@ -7,8 +7,6 @@ absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
 
 # 2026-08-04 — A static gate row reported one instance per cycle
 
-status: pending
-
 ## What was observed
 
 Closing fluxus Spec 0012 took five Runs. Three consecutive QA gate executions
