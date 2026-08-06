@@ -99,6 +99,17 @@ const (
 func (s *Store) JournalSink() runevent.Sink
 func (s *Store) FlushJournal(ctx context.Context) error
 func (s *Store) CloseJournal(ctx context.Context) error
+
+// CompleteRun bypasses the closed JournalWriter. It validates outcome as this
+// Run's daemon.outcome event, then commits the terminal state, Active Run lock
+// release, cursor allocation, and event insert through one withWriteTx call;
+// an ambiguous commit is reconciled against that exact state and event.
+func (s *Store) CompleteRun(
+    ctx context.Context,
+    runID string,
+    terminalState string,
+    outcome runevent.RunEvent,
+) (CompleteRunResult, error)
 ```
 
 A batch closes at 128 events, 100 milliseconds after its first event, before a
@@ -118,12 +129,38 @@ cursor)` primary key makes that retry idempotent without a new identifier.
 
 The Run lifecycle owns the shared writer. It flushes before ending the Agent
 Session, publishes the closed-session event, then calls `CloseJournal` before
-terminal settlement. Only after Close succeeds does one Store operation commit
-the terminal state and `daemon.outcome` event in the same writer-locked
-transaction. Any Flush or Close error enters the existing Run-failure path
-rather than settling the requested outcome. Post-terminal notification
-receipts use immediate transactions and cannot enter the closed batch; the
-database connection closes after those receipts finish.
+terminal settlement. `CloseJournal` flushes the pending batch and marks the
+writer closed only after that flush commits; a failed Close preserves the batch
+and remains retryable, while every later `Publish` after a successful Close is
+rejected.
+
+Only after Close succeeds does the Daemon construct `daemon.outcome` and call
+`CompleteRun`. `CompleteRun` does not publish through `JournalSink`: it enters
+`withWriteTx` directly, compare-and-sets the terminal state, releases the
+Active Run lock, allocates the event cursor, inserts `daemon.outcome`, and
+commits those changes atomically. This direct terminal path is the sole append
+allowed after the JournalWriter closes. Post-terminal notification receipts
+also use immediate `withWriteTx` transactions and never enter the closed batch;
+the database connection closes after those receipts finish.
+
+A Flush or Close error returns before `CompleteRun`, so the requested outcome
+is not attempted. The existing Run-failure path records the error, retries the
+still-open Close boundary when needed, and then attempts `CompleteRun` with
+`Failed` and a failure outcome. A `CompleteRun` begin, state update, lock
+release, or event-insert error rolls back the whole transaction: the requested
+state, its event, and the lock release are all absent.
+
+A commit error is treated as ambiguous rather than assumed rolled back.
+`CompleteRun` reads the Run state, Active Run lock, and exact serialized outcome
+event: the requested terminal state plus the exact event and released lock
+settles successfully; the original non-terminal state plus lock and no event
+permits one retry of the same transaction; any partial or different result
+fails as corruption. The Run-failure path may attempt `Failed` only after this
+reconciliation proves the requested transaction did not commit. If terminal
+failure settlement also errors, the command returns both diagnostics and
+preserves the last observed state and lock for recovery. No notification or
+requested-outcome report is emitted unless the matching state and
+`daemon.outcome` are proven committed together.
 
 Every writer transaction, not only journal appends, enters through the same
 Store helper:
@@ -222,8 +259,14 @@ every daemon payload field the stream requires.
   retry, and mismatch refusal. Ordering by cursor is asserted under concurrency.
 - The lifecycle suite constructs several sink handles from one Store and proves
   they share one batch. It then covers error, Agent teardown, terminal
-  settlement, and process shutdown, asserting that Flush and Close errors
-  propagate and that terminal state plus `daemon.outcome` commit atomically.
+  settlement, and process shutdown. It asserts that Publish is rejected after
+  a successful Close while direct `CompleteRun` still persists
+  `daemon.outcome`; that a failed Close preserves the batch and leaves the
+  requested outcome unsettled; and that pre-commit terminal-transaction
+  failures roll back state, event, and lock release before the existing failure
+  path attempts `Failed`. Ambiguous commit fixtures prove exact-match success,
+  one same-operation retry after a proven no-op, and corruption refusal for a
+  partial or different state-event-lock combination.
 - The writer-concurrency suite opens independent Store writers against one
   database and proves that every write transaction serializes through the
   machine-wide lock, cursors stay monotonic, and lock cancellation propagates.

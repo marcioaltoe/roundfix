@@ -163,14 +163,54 @@ type EvidenceInput struct {
 }
 ```
 
+Repository evidence is compared as content, not only as a changed-path hint:
+
+```go
+type EvidenceSnapshot struct {
+    Ref   string         // the repository_path declaration this expands
+    Files []EvidenceFile // sorted by repository-relative slash path
+}
+
+type EvidenceFile struct {
+    Path   string
+    SHA256 string // digest of the Git blob bytes at the snapshot head
+}
+```
+
+The report that establishes a passing row stores its canonical snapshot under
+an `evidence_snapshots` frontmatter map keyed by row id. Before considering
+that row again, the mechanical stage reads that establishing snapshot, builds
+a current snapshot from `head`, and passes both snapshots to the resolver:
+
 ```go
 // Carriable reports whether a row may be carried. Every condition must hold:
 // prior status is pass; Inputs is non-empty and every Kind is repository_path;
 // EstablishedHead is an ancestor of head; no Input intersects
-// changed(EstablishedHead, head); every cited evidence path resolves with
-// unchanged content. Any mixed or non-repository input refuses carry-forward.
-func Carriable(prior ReportRow, head string, changed []string) bool
+// changed(EstablishedHead, head); established and current contain one snapshot
+// for every Input; and every snapshot has the same paths and SHA-256 digests.
+// Any missing, empty, mixed, or non-repository input refuses carry-forward.
+func Carriable(
+    prior ReportRow,
+    head string,
+    changed []string,
+    established []EvidenceSnapshot,
+    current []EvidenceSnapshot,
+) bool
 ```
+
+A `repository_path` is a clean repository-relative slash path or glob. Snapshot
+expansion reads tracked blobs from the exact Git tree named by the snapshot
+head; it never reads an uncommitted working-tree file. Literal paths must match
+one blob. Globs support slash-separated `*`, `?`, and recursive `**`, and their
+matches are sorted before hashing. A literal that is missing, a glob with no
+matches, an unreadable blob, or an expansion error refuses carry-forward.
+
+The established and current snapshots must have the same input references,
+the same expanded path set, and the same digest for every path. A deletion, a
+new file entering a glob, a rename, or changed bytes therefore refuses
+carry-forward even when the changed-path intersection was computed
+incorrectly. The changed-path test remains an independent fail-closed check:
+any changed path matching a literal or glob also forces re-observation.
 
 Row input declaration, added to the report's row format so a row can say what
 it depends on:
@@ -179,15 +219,35 @@ it depends on:
 | R04 | … | evidence: qa/evidence/…/R04.txt | inputs: repository_path:internal/inbox/**, repository_path:docs/agents/docs-layout.md | pass |
 ```
 
+The same report persists the machine-readable snapshot without making the
+table row unreadable:
+
+```yaml
+evidence_snapshots:
+  R04:
+    head: <establishing-head>
+    inputs:
+      - ref: internal/inbox/**
+        files:
+          - path: internal/inbox/entry.go
+            sha256: <64-lowercase-hex-digest>
+```
+
+The map key must name a passing row, `head` must equal that row's establishing
+head, each declared `repository_path` must appear exactly once in declaration
+order, and each `files` list must be path-sorted with no duplicates. Any
+missing, extra, malformed, or mismatched snapshot data refuses carry-forward.
+
 ### Data Models
 
-No database and no schema. Two file-contract additions: an `inputs:` field per
-report row, and a carried row's citation of the report and head that
-established it. Each input declares one of `repository_path`,
+No database and no schema. Three file-contract additions: an `inputs:` field
+per report row, the canonical expanded-path and SHA-256 snapshot stored by the
+report that establishes a passing row, and a carried row's citation of that
+report and head. Each input declares one of `repository_path`,
 `external_repository`, `live_service`, or `elapsed_time`; only a non-empty list
-containing exclusively `repository_path` entries can carry. Both additions are
-additive; a report without them behaves exactly as today, and a row without
-`inputs` is never carriable.
+containing exclusively `repository_path` entries can carry. The additions are
+additive; a report without inputs or a complete establishing snapshot behaves
+exactly as today, and its rows are never carriable.
 
 ### API Contracts
 
@@ -237,11 +297,13 @@ commands rather than tools.
   non-regression assertion with `TestCheckCorpusBudget` still green.
 - Carry-forward gets an adversarial suite rather than a happy path: a row that
   failed, a row with no declared inputs, a row whose input changed, a row whose
-  establishing head is not an ancestor, a row whose cited evidence file
-  changed content, and a row mixing an unchanged repository path with any
-  non-repository input must each refuse to carry. The happy path stays one case
-  beside the refusal-focused suite because the risk is entirely on the
-  permissive side.
+  establishing head is not an ancestor, a missing literal, a file deleted
+  after establishment, changed bytes, a glob with no matches, and a glob whose
+  expanded path set gains or loses a file must each refuse to carry. A row
+  mixing an unchanged repository path with any non-repository input also
+  refuses. Separate unchanged-literal and unchanged-glob cases prove that exact
+  path-and-digest matches carry. The happy paths stay beside the
+  refusal-focused suite because the risk is entirely on the permissive side.
 - The Daemon step is exercised through the existing verification-attempt seam,
   asserting that a blocking mechanical result withholds the Agent Session, that
   the single Verification repair is not consumed, and that Task status is never
