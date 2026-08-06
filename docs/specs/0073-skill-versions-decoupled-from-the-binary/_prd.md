@@ -48,7 +48,11 @@ schedule.
 - Active ADR obligations: applicable — ADR-0081 keeps sanctioned digest
   regeneration a fallout of the authorized edit, which whatever replaces the
   content pin must preserve; ADR-0085 keeps a regeneration run ungated by the
-  pins it rewrites while every other load stays strict. Source:
+  pins it rewrites while every other load stays strict. ADR-0080 owns QA
+  verdict semantics and ADR-0091 owns the authored QA gate as a typed Task
+  node, under which this Spec's graph is authored. ADR-0093 surfaces as a
+  relation candidate because it cites ADR-0080; it does not apply — it governs
+  the Spec Consistency Check's detection boundary. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization: on
   2026-08-04 the maintainer authorized the queue-tail tooling boundaries,
