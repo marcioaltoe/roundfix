@@ -1,0 +1,16 @@
+Row: US06
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+Result: blocked (environment: maintainer-owned session-end hook has no safe
+observed output)
+
+Observed:
+- `docs/agents/secondbrain.md` and its canonical module require every
+  `capture: auto` draft to remain pending and never self-triage.
+- `/Users/marcio/dev/secondbrain/inbox/README.md` carries the same contract.
+- A focused safe-metadata scan found no `capture: auto` entry in the observed
+  pending or triaged pilot namespaces.
+
+The local contract is not equivalent behavioral proof of a maintainer-owned
+hook execution. Unblock with one supervised session close that produces a
+committed pending `capture: auto` Inbox Entry and a later independent read
+showing that it did not self-triage.

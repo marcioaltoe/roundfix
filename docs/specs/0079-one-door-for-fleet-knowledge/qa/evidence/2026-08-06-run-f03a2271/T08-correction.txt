@@ -1,0 +1,15 @@
+Row: T08
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+Result: pass
+
+- `git diff-tree --no-commit-id --name-only -r 6a551ea5` reports exactly
+  `docs/specs/0079-one-door-for-fleet-knowledge/task_08.md` and
+  `internal/baseline/preservation_test.go`.
+- Source inspection reports `maintainedSourceBaselineEntries = 114` and
+  `maintainedSourceBaselineAccounting = 51`.
+- The exact identity-to-entry-count comparison and exact accounting comparison
+  remain present; no tolerance, derived expectation, or skip was introduced.
+- Fresh `TestReadoptionCompatibilityMaintainedFixture` selection passed.
+- The authoritative `rtk make verify` independently passed the whole package
+  suite and repository gate.
+- Isolated sanctioned regeneration reported `changed:false`.

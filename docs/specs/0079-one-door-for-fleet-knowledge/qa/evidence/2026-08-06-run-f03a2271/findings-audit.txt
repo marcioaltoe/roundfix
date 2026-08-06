@@ -1,0 +1,24 @@
+Rows: R01, US03, T03
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+Result: pass
+
+Fresh relation audit:
+- active=7
+- rollups=6
+- archived=65
+- lifecycle/member/license/bidirectional errors=0
+- the active count is below the PRD maximum of 15
+
+Fresh preservation audit:
+- Compared every one of the 65 legacy Findings from its first H1 through EOF
+  against `169899de^:docs/findings/<basename>`.
+- Result: checked=65 mismatches=0.
+
+Public confirmation:
+- Two independent `rtk ./bin/roundfix spec check` processes exited 0 and
+  reported `No findings.`
+- `rtk make verify` independently built the binary and obtained the same
+  public result after the full package suite.
+
+The seventh active item is later live work; the six rollups remain present and
+all 65 archived Findings retain resolvable licenses.

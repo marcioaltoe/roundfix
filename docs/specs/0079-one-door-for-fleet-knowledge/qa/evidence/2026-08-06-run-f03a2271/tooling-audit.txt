@@ -1,0 +1,46 @@
+Rows: T02, T06, PC01, US04
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+Result: pass
+
+Project Constraints:
+- Both PRD and TechSpec account for identifier strategy (not applicable),
+  authentication and HTTP (not applicable), active ADR obligations
+  (applicable), and tooling authority (applicable), with operative sources
+  under `docs/agents/`.
+- ADRs 0080, 0081, and 0091-0095 are present and `accepted`.
+- The exact authorization exists at
+  `docs/workflow/authorizations/2026-08-06-fleet-knowledge-door.md`.
+
+Commit choreography:
+- Authorization commit `93e41d33` is an ancestor of Task 02 commit
+  `09a3560b`.
+- Task 02 precedes Task 06 commit `dc5539fb`.
+- Corrective Task 08 commit `6a551ea5` is a separate later commit, after both
+  clause-producing Tasks; no prerequisite or consequent repair is folded into
+  either tooling Task commit.
+
+Changed-path audit:
+- `git diff-tree --no-commit-id --name-only -r` was run for `09a3560b`,
+  `dc5539fb`, and `6a551ea5`.
+- Task 02 changes only its Task file, the two authorized modules and guide
+  postimages, and Baseline formatter/source/catalog/plan artifacts generated
+  from them.
+- Task 06 changes only its Task file, the two authorized canonical Skills and
+  mirrors, the two authorized modules and guide postimages, and the same
+  deterministic Baseline fallout classes.
+- Task 08 changes only its Task file and
+  `internal/baseline/preservation_test.go`.
+
+Fresh contract and regeneration checks:
+- Task 02's commit diff contains none of the later inbox-first, automatic
+  capture, substantive-research, or fleet-obligation clauses.
+- Current guides and modules carry every required Rollup, archive, license,
+  Triage, Inbox Entry, positional status, and exclusive `inbox/**` permission
+  token.
+- Both canonical authorial Skills place `Read the pending inbox` at process
+  step 1. Both canonical/mirror pairs are byte-identical.
+- Current guides/modules carry the later `capture: auto`, `never
+  self-triaged`, substantive-research, fleet-door, and closed-Finding-to-typed-
+  Backlog obligations.
+- In an isolated `git archive` of HEAD, `rtk make baseline-digests` passed and
+  reported `changed:false`; derived artifacts match canonical sources.

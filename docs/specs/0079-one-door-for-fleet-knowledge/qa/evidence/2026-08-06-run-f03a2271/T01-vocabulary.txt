@@ -1,0 +1,10 @@
+Row: T01
+Build: 6a551ea53721aeb37a09bb47e3efe79d1061e1cb
+Result: pass
+
+- `CONTEXT.md` contains the canonical `Inbox Entry`, `Rollup`, and `Triage`
+  blocks at lines 47, 51, and 55, each followed by its `_Avoid_` line.
+- `rtk git diff --numstat f1e3c3af^ f1e3c3af -- CONTEXT.md` reports
+  `12 0 CONTEXT.md`: twelve inserted lines and zero deletions.
+- Fresh reads confirm the definitions preserve the destination-owned Triage,
+  declared Rollup membership/license, and Secondbrain capture boundaries.
