@@ -297,16 +297,25 @@ func OpenReader(ctx context.Context, homeDir string) (*Store, error) {
 	return store, nil
 }
 
+// busyTimeoutMillis bounds how long SQLite waits for a held lock before
+// returning SQLITE_BUSY. The Run Database is machine-wide, so concurrent Runs,
+// a following `roundfix events` stream, and a `runs list` all contend on it. At
+// 5s, an Agent Batch died twice on 2026-08-05 with
+// `publish Run Events: begin Run Event append: database is locked (5)` — an
+// infrastructure failure with no work defect, which failed the Task and cost a
+// recovery Run each time.
+const busyTimeoutMillis = 30000
+
 func writerDSN(path string) string {
 	return "file:" + path + "?_txlock=immediate" +
-		"&_pragma=busy_timeout(5000)" +
+		fmt.Sprintf("&_pragma=busy_timeout(%d)", busyTimeoutMillis) +
 		"&_pragma=journal_mode(WAL)" +
 		"&_pragma=foreign_keys(1)"
 }
 
 func readerDSN(path string) string {
 	return "file:" + path + "?mode=ro" +
-		"&_pragma=busy_timeout(5000)" +
+		fmt.Sprintf("&_pragma=busy_timeout(%d)", busyTimeoutMillis) +
 		"&_pragma=foreign_keys(1)"
 }
 
