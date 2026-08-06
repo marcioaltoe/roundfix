@@ -40,6 +40,8 @@ var (
 		CodeCoverageUntasked,
 		CodeReferenceUnresolved,
 		CodeVerifyWorkIndependent,
+		CodeRequirementContradictory,
+		CodeRehearsalUndeclared,
 	}
 	adrFilenamePattern    = regexp.MustCompile(`^([0-9]{4})-.*\.md$`)
 	adrCitationPattern    = regexp.MustCompile(`\bADR-([0-9]{4})\b`)
@@ -700,6 +702,24 @@ func detectTaskCoverageAndContextReferences(
 			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
 			result.Findings = append(result.Findings, finding)
 		}
+		if finding, ok := ContradictoryRequirements(task); ok {
+			for index := range finding.Where {
+				finding.Where[index] = Location{
+					Path: artifactDisplayPath(repoRoot, taskPath),
+					Line: numberedSectionItemLine(content, "Requirements", finding.Where[index].Line),
+				}
+			}
+			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+			result.Findings = append(result.Findings, finding)
+		}
+		if finding, ok := UndeclaredRehearsal(task); ok {
+			finding.Where[0] = Location{
+				Path: artifactDisplayPath(repoRoot, taskPath),
+				Line: firstLevelOneHeadingLine(content),
+			}
+			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+			result.Findings = append(result.Findings, finding)
+		}
 	}
 
 	manifestDisplayPath := artifactDisplayPath(repoRoot, filepath.Join(graph.Spec.Dir, "_tasks.md"))
@@ -900,6 +920,43 @@ func sectionLineContaining(content []byte, heading, needle string) int {
 			continue
 		}
 		if inSection && strings.Contains(line, needle) {
+			return index + 1
+		}
+	}
+	return sectionLine
+}
+
+func firstLevelOneHeadingLine(content []byte) int {
+	for index, line := range strings.Split(string(content), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "# ") {
+			return index + 1
+		}
+	}
+	return 1
+}
+
+func numberedSectionItemLine(content []byte, heading string, ordinal int) int {
+	lines := strings.Split(string(content), "\n")
+	inSection := false
+	sectionLine := 1
+	item := 0
+	for index, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "## ") {
+			if inSection {
+				break
+			}
+			if strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")) == heading {
+				inSection = true
+				sectionLine = index + 1
+			}
+			continue
+		}
+		if !inSection || !numberedItemPattern.MatchString(line) {
+			continue
+		}
+		item++
+		if item == ordinal {
 			return index + 1
 		}
 	}

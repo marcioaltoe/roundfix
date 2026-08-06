@@ -94,6 +94,8 @@ type Task struct {
 	StatusNormalized bool
 	Type             TaskType
 	Context          []TaskContextRef
+	Requirements     []string
+	RehearsalCases   []string
 	Verification     []string
 }
 
@@ -848,6 +850,8 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		StatusNormalized: document.StatusNormalized,
 		Type:             document.Type,
 		Context:          append([]TaskContextRef(nil), document.Context...),
+		Requirements:     append([]string(nil), document.Requirements...),
+		RehearsalCases:   append([]string(nil), document.RehearsalCases...),
 		Verification:     document.Verification,
 	}, nil
 }

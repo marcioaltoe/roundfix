@@ -183,6 +183,54 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 	}
 }
 
+func TestParseTaskDocumentDeclarations(t *testing.T) {
+	t.Parallel()
+
+	document, err := parseTaskDocument([]byte(md(`---
+task: task_01
+spec: demo
+status: pending
+type: backend
+complexity: low
+---
+
+# Task 01: Rehearse the gate
+
+## Requirements
+
+1. MUST keep the named gate enabled across
+   the full rehearsal.
+2. MUST NOT keep the named gate enabled.
+
+## Rehearsal Cases
+
+- Case: contradictory requirements; Observation: spec check reports the contradiction.
+- Case: declared cases; Observation: the focused test records the result.
+
+## Verification
+
+- 'go test ./internal/speccheck' — expected: exit 0.
+`)), "task_01.md")
+	if err != nil {
+		t.Fatalf("parseTaskDocument: %v", err)
+	}
+
+	wantRequirements := []string{
+		"MUST keep the named gate enabled across the full rehearsal.",
+		"MUST NOT keep the named gate enabled.",
+	}
+	if strings.Join(document.Requirements, "\n") != strings.Join(wantRequirements, "\n") {
+		t.Errorf("Requirements = %#v, want %#v", document.Requirements, wantRequirements)
+	}
+	wantCases := []string{
+		"Case: contradictory requirements; Observation: spec check reports the contradiction.",
+		"Case: declared cases; Observation: the focused test records the result.",
+	}
+	if strings.Join(document.RehearsalCases, "\n") != strings.Join(wantCases, "\n") {
+		t.Errorf("RehearsalCases = %#v, want %#v", document.RehearsalCases, wantCases)
+	}
+}
+
 func TestReloadTaskNormalizesStatusValues(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

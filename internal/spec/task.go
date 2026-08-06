@@ -24,15 +24,17 @@ type taskDocument struct {
 	StatusNormalized bool
 	Type             TaskType
 	Context          []TaskContextRef
+	Requirements     []string
+	RehearsalCases   []string
 	Verification     []string
 }
 
 const maxTaskContextRefs = 50
 
 // ReloadTask re-reads a Task's file from the Spec Root — typically after an
-// Agent has modified it — refreshing Status, Title, Type, and Verification in
-// place. The Task Graph fields (ID, File, Needs) belong to the manifest and
-// are left alone.
+// Agent has modified it — refreshing Status, Title, Type, declarations, and
+// Verification in place. The Task Graph fields (ID, File, Needs) belong to the
+// manifest and are left alone.
 func ReloadTask(specsRoot string, task *Task) error {
 	path := filepath.Join(specsRoot, task.File)
 	content, err := os.ReadFile(path)
@@ -51,6 +53,8 @@ func ReloadTask(specsRoot string, task *Task) error {
 	task.StatusNormalized = document.StatusNormalized
 	task.Type = document.Type
 	task.Context = append([]TaskContextRef(nil), document.Context...)
+	task.Requirements = append([]string(nil), document.Requirements...)
+	task.RehearsalCases = append([]string(nil), document.RehearsalCases...)
 	task.Verification = document.Verification
 	return nil
 }
@@ -108,6 +112,8 @@ func parseTaskDocument(content []byte, taskPath string) (taskDocument, error) {
 		StatusNormalized: strings.TrimSpace(rawStatus) != normalizedStatus,
 		Type:             taskType,
 		Context:          contextRefs,
+		Requirements:     parseTaskRequirements(body),
+		RehearsalCases:   parseTaskSectionBullets(body, "Rehearsal Cases"),
 		Verification:     parseVerificationCommands(body),
 	}, nil
 }
@@ -129,6 +135,74 @@ func parseTaskTitle(body []byte) string {
 		return title
 	}
 	return ""
+}
+
+// parseTaskRequirements extracts numbered requirements and joins their
+// continuation lines without interpreting the requirement prose.
+func parseTaskRequirements(body []byte) []string {
+	var requirements []string
+	for _, line := range taskSectionLines(body, "Requirements") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if item, ok := numberedTaskItem(trimmed); ok {
+			requirements = append(requirements, item)
+			continue
+		}
+		if len(requirements) > 0 {
+			requirements[len(requirements)-1] += " " + trimmed
+		}
+	}
+	return requirements
+}
+
+func parseTaskSectionBullets(body []byte, heading string) []string {
+	var entries []string
+	for _, line := range taskSectionLines(body, heading) {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "- ") {
+			entries = append(entries, strings.TrimSpace(strings.TrimPrefix(trimmed, "- ")))
+		}
+	}
+	return entries
+}
+
+func taskSectionLines(body []byte, heading string) []string {
+	var lines []string
+	inSection := false
+	for _, line := range strings.Split(string(body), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "# ") {
+			inSection = false
+			continue
+		}
+		if strings.HasPrefix(trimmed, "## ") {
+			if inSection {
+				break
+			}
+			inSection = strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")) == heading
+			continue
+		}
+		if inSection {
+			lines = append(lines, line)
+		}
+	}
+	return lines
+}
+
+func numberedTaskItem(line string) (string, bool) {
+	dot := strings.IndexByte(line, '.')
+	if dot < 1 || dot+1 >= len(line) || (line[dot+1] != ' ' && line[dot+1] != '\t') {
+		return "", false
+	}
+	for _, char := range line[:dot] {
+		if char < '0' || char > '9' {
+			return "", false
+		}
+	}
+	item := strings.TrimSpace(line[dot+1:])
+	return item, item != ""
 }
 
 // parseVerificationCommands extracts commands verbatim from the backticked

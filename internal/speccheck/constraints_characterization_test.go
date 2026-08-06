@@ -60,6 +60,24 @@ func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {
 	}
 }
 
+func TestCheckReplay0060Task03RefusesContradictoryRequirementsAndUndeclaredRehearsal(t *testing.T) {
+	t.Parallel()
+
+	const findingPath = "docs/findings/2026-07-31-a-rehearsal-task-can-settle-completed-without-rehearsing.md"
+	result := checkFixture(t, replay0060Task03)
+
+	contradiction := requireReplayFinding(t, findingPath, result, speccheck.CodeRequirementContradictory, "commit")
+	assertReplayLocations(t, findingPath, contradiction,
+		speccheck.Location{Path: "docs/specs/" + replay0060Task03 + "/task_03.md", Line: 13},
+		speccheck.Location{Path: "docs/specs/" + replay0060Task03 + "/task_03.md", Line: 15},
+	)
+
+	rehearsal := requireReplayFinding(t, findingPath, result, speccheck.CodeRehearsalUndeclared, "Rehearsal Cases")
+	assertReplayLocations(t, findingPath, rehearsal,
+		speccheck.Location{Path: "docs/specs/" + replay0060Task03 + "/task_03.md", Line: 9},
+	)
+}
+
 func TestCheckReplay0058QA001FromReport(t *testing.T) {
 	t.Parallel()
 
@@ -393,6 +411,8 @@ var corpusFindingCodes = []string{
 	speccheck.CodeReferenceUnresolved,
 	speccheck.CodeVocabularyUndocumented,
 	speccheck.CodeVerifyWorkIndependent,
+	speccheck.CodeRequirementContradictory,
+	speccheck.CodeRehearsalUndeclared,
 }
 
 func materializeArchivedCorpus(t *testing.T, sourceRoot string) string {

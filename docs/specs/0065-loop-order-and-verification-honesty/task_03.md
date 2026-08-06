@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0065-loop-order-and-verification-honesty
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -74,3 +74,62 @@ rehearsal Task that never declares what it must exercise.
 - `_prd.md` → Core Features 4 and 5; Success Metric 2.
 - `_techspec.md` → Interfaces; Build Order 3.
 - ADR-0093.
+
+## Result
+
+### Implementation
+
+- Extended the canonical Task document parser with numbered Requirements and
+  `## Rehearsal Cases` bullets. Both new rules consume these declarations from
+  `spec.Task`; `speccheck` does not add a second Markdown parser.
+- Added `SC-REQUIREMENT-CONTRADICTORY`. It compares only declared `MUST` and
+  `MUST NOT` clauses, normalizes their written words, and reports the first
+  shared named state. A pair with no identifiable shared state remains silent.
+- Added `SC-REHEARSAL-UNDECLARED`. A Task title that declares rehearsing or
+  proving a gate must provide at least one complete
+  `- Case: <case>; Observation: <observation>` entry under
+  `## Rehearsal Cases`; ordinary Tasks remain unaffected.
+- Integrated both findings into the existing authoring check for non-completed
+  Tasks, with the declaring requirement lines or Task title as locations.
+- Added unit coverage, the Spec 0060 replay assertion, and zero-count corpus
+  characterization entries for both rule identifiers.
+
+### Focused checks
+
+- Red signal after the Verification feedback: the Daemon-selected pattern had
+  no matching tests, and the focused test-first command failed to compile
+  because the declaration fields and both detectors did not exist.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test
+  ./internal/spec ./internal/speccheck -count=1 -run
+  'TaskDocumentDeclarations|ContradictoryRequirements|UndeclaredRehearsal|Replay0060Task03RefusesContradictory'`
+  — exit 0 after implementation.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test
+  ./internal/speccheck -count=1 -run
+  '^(TestCheckCorpusGolden|TestCheckActiveCorpusHasNoErrors)$'` — exit 0; all
+  active and archived corpus counts remain unchanged and both new codes have
+  zero findings.
+- `rtk env GOCACHE=/private/tmp/roundfix-task03-gocache go test
+  ./internal/spec ./internal/speccheck -count=1` — exit 0; both affected
+  package suites passed after the final implementation edit.
+- No command from this Task's `## Verification` section was rerun. The Daemon
+  owns the configured retry, including the dedicated budget invocation.
+
+### Acceptance evidence
+
+- Same-subject `MUST`/`MUST NOT` refusal is covered by
+  `TestContradictoryRequirementsRefusesSameNamedSubject/same_subject_is_required_and_forbidden`.
+- Undecidable-pair silence is covered by
+  `TestContradictoryRequirementsRefusesSameNamedSubject/subject_cannot_be_identified`.
+- The Spec 0060 replay produces both `SC-REQUIREMENT-CONTRADICTORY` at its
+  declared commit clauses and `SC-REHEARSAL-UNDECLARED` at its title, covered
+  by
+  `TestCheckReplay0060Task03RefusesContradictoryRequirementsAndUndeclaredRehearsal`.
+- A rehearsal without cases is refused by
+  `TestUndeclaredRehearsalRequiresCasesAndObservations/rehearsal_has_no_cases`.
+- Complete case and observation declarations pass under
+  `TestUndeclaredRehearsalRequiresCasesAndObservations/rehearsal_declares_cases_and_observations`;
+  an incomplete entry has a negative companion case.
+- `TestCheckCorpusGolden` and `TestCheckActiveCorpusHasNoErrors` both passed in
+  the focused corpus command.
+- `TestCheckCorpusBudget` was not invoked locally because it is a declared
+  Daemon Verification command; the Daemon retry owns that acceptance evidence.
