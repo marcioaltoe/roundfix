@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0065-loop-order-and-verification-honesty
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---
