@@ -1,0 +1,36 @@
+Build: 071d78f79edc6808a738be6bc5a565967ee1efac
+Result: pass
+
+Vocabulary and Task 01:
+- Current CONTEXT.md contains Inbox Entry, Rollup, and Triage, each followed
+  by its own `_Avoid_` line.
+- `git show --numstat f1e3c3af -- CONTEXT.md` reports `12 0 CONTEXT.md`;
+  Task 01 was purely additive.
+
+Contracts, Skills, and operator documentation:
+- docs/agents/docs-layout.md contains `kind: rollup`, `absorbed_by:`, the
+  live-work directory meaning `health`, and `no open members` closure action.
+- docs/agents/secondbrain.md contains `capture: auto`, `never self-triaged`,
+  `empty inbox`, `oldest first`, and the substantive-research qmd obligation.
+- Both canonical authorial Skills put `Read the pending inbox` at step 1.
+- `cmp -s` exits 0 for both canonical Skill/mirror pairs.
+- `rtk make skills-sync-check` exits 0 with four selected Skill tests passing.
+
+Maintained Source Baseline correction:
+- Source declares `maintainedSourceBaselineEntries = 118` and
+  `maintainedSourceBaselineAccounting = 51`.
+- The exact assertion still compares identity entry count to actual entries,
+  actual entries to 118, and accounting to 51.
+- The default macOS cache denied three direct Go probes. The unchanged retry
+  with `/private/tmp/roundfix-qa-40ab-gocache` passed the named maintained
+  fixture and the full internal/baseline package. The independent `make
+  verify` gate also passed using the repository's cache boundary.
+
+Task 09's Result records exact object comparisons proving Task 02/06 clauses
+were unchanged; the fresh commit audit confirms the Task 09 cause and its
+one-file consequent correction remain separate and correctly ordered.
+
+The public guide text is sufficient to follow the declared docs UX without
+undocumented knowledge: work pending Triage oldest first, interpret an empty
+inbox as rest, interpret a live-work-only findings directory as health, and
+review a Rollup with no open members for closure.

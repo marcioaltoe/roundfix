@@ -1,0 +1,43 @@
+Build: 071d78f79edc6808a738be6bc5a565967ee1efac
+Result: six runnable rows pass; five declarations match proved constraints.
+
+Read-only Secondbrain inventory used:
+- /Users/marcio/dev/secondbrain/inbox/README.md
+- /Users/marcio/dev/secondbrain/inbox/secondbrain/2026-08-06-fleet-knowledge-door-research-digest.md
+- /Users/marcio/dev/secondbrain/inbox/roundfix/_triaged/2026-08-06-automate-inbox-capture-durability.md
+
+Fresh external state:
+- Secondbrain tracked status is clean.
+- The pending namespace contains one entry, the manual research digest dated
+  2026-08-06. No pending entry is older than 14 days.
+- `rg '^capture: auto'` over the inbox returns no match (exit 1).
+- The triaged Roundfix entry remains under `_triaged/` with exact
+  `resolved_to: docs/backlog/2026-08-06-atomic-inbox-capture-helper.md`.
+
+Pilot persistence and pathsets:
+- 93bd7b35... reopens the sourced research digest; `diff-tree` shows one added
+  path under inbox/secondbrain/.
+- e982c013... reopens the cross-project intent; `diff-tree` shows one added
+  path under inbox/roundfix/.
+- 4aa955c3... reopens the resolved entry; `diff-tree` shows the old pending
+  path deleted and the `_triaged/` path added.
+- The local typed Backlog Entry is `feat`, `open`, and cites the exact pending
+  Inbox Entry as provenance.
+- pilot-report.md records qmd advisory review, durations of 50s and 24s,
+  the clean destination checkout before Triage, and the exact resolution.
+
+Runnable observations pass R02, R04, R05, R06, R07, and T05.
+
+Pre-run declarations tested:
+- R03 matches: a fourteen-day operating window cannot be completed on the
+  ship date; the named later fleet inventory is not yet available.
+- US01, US02, and US05 match: the Run prompt and gate contract make the
+  external Secondbrain read-only, so a second capture, Triage commit, or
+  research capture cannot be performed. Equivalent pilot commits and current
+  persistent reads exist, but the journeys themselves remain unreachable.
+- US06 matches: the hook is maintainer-owned outside this repository, and the
+  safe current inventory contains no automatic draft. The declaration's
+  supervised session-close plus later-read proof remains outstanding.
+
+None of the five declared journeys became reachable, so no declaration is
+wrongly declared.
