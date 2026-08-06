@@ -2,6 +2,91 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.4.0] - 2026-08-06
+
+This release closes a gate that failed open, and then makes the loop that
+depends on it able to run unattended.
+
+### Fixed
+
+- **A green check is no longer read as a review.** When CodeRabbit declines to
+  review — a rate limit, a path-filter skip — it publishes a check whose
+  conclusion is **success**, deliberately, so the block does not prevent a
+  merge. Roundfix read that check, fell through to the settled path, and
+  recorded the head as `verified`. Pull Request #107 merged 125 files and
+  +5,621 lines with no review at all because of it.
+
+  `verified` now requires positive evidence that a review ran. A refusal
+  resolves `skipped` with the source's own reason, read from the authoritative
+  comment rather than the conclusion, and recognised by class so a shape nobody
+  has seen yet cannot approve a merge. Anything unrecognised resolves
+  `pending`. The default is inverted rather than the refusal list extended: a
+  list fixes today's shape and leaves tomorrow's open.
+
+- **The Run Database waits 30s for a held lock**, up from 5s. The database is
+  machine-wide, so concurrent Runs, a following event stream, and a `runs list`
+  all contend on it. At 5s an Agent Batch died twice writing its completion
+  event — an infrastructure failure with no work defect that failed the Task
+  and cost a recovery Run each time.
+
+- **A Review Run validates its target before acting.** `watch --pr N` named the
+  Pull Request and resolved the branch from the checkout, and nothing checked
+  that the two agreed. Preflight now compares them and refuses with both
+  branches and both revisions named, creating no Run. A checkout that moves
+  mid-Run reaches a terminal interruption distinct from `Failed`, with its
+  Review Issues left unsettled — because a re-run is right for an environmental
+  stop and wrong for a genuine failure.
+
+### Added
+
+- **Roundfix asks for the review.** With automatic review disabled, nothing
+  started one and `watch --until-clean` waited for evidence nobody requested.
+  After a Round's Final Push, `watch` and `resolve` now publish one review
+  request for the pushed head, idempotent per head SHA through a marker in the
+  comment body. `fetch` publishes none. Preflight refuses a configuration pair
+  that would strand a Run or buy two reviews per Round.
+
+- **`roundfix gc compact`** previews bytes before, reclaimable, and projected
+  after, then compacts behind three guards: an Active Run, another writer, and
+  insufficient temporary capacity each refuse by name. Compaction is explicit
+  and never a side effect of a retention sweep. Retention deleted rows and
+  nothing returned the pages; the database had reached 1.4 GB with its journal
+  already pruned.
+
+- **`roundfix gc sanitize`** discovers every Artifact Root from durable Run
+  metadata rather than the current repository alone, classifies each one, and
+  removes only directories proven eligible or absent. Review Artifacts and
+  every ambiguous path are preserved with the reason.
+
+- **`roundfix storage report`** is read-only, takes no flags, and groups
+  measured bytes and row counts by repository, state, table, and Artifact Root.
+
+- **Four Spec Consistency Check rules** refuse at authoring time what used to
+  be advice: a Verification that cannot fail when no work was done, mutually
+  unsatisfiable requirements, a rehearsal Task that declares no cases, and a
+  loop order that diverges between the places stating it.
+
+- **`docs/backlog/`** gives typed intent a home — work that is not yet a Spec
+  and not a dated finding, with a frontmatter contract and a stated boundary
+  against findings.
+
+### Changed
+
+- **Skill compatibility is a declared minimum, not a content digest.** Editing
+  an owned skill no longer changes what the binary claims about it, and no
+  regeneration step follows. A version at or above the minimum satisfies; below
+  blocks naming the skill, the minimum, the version found, and the upgrade
+  path; unversioned or unresolvable stays its own state and an unreachable
+  source is never reported as a missing skill. Third-party skills are never
+  held to a version Roundfix invented for them. This resolves the known issue
+  recorded in 0.3.1.
+
+- **The loop states one order, once.** Implement the graph including its
+  authored gate, archive, open the Pull Request, watch until Clean, merge. The
+  case that motivated reordering — a Spec whose acceptance observes its own
+  Pull Request — is absorbed by environment-blocked rows carrying equivalent
+  evidence.
+
 ## [0.3.1] - 2026-08-03
 
 Version 0.3.1 supersedes the 0.0.3 tag, which never published: its release
