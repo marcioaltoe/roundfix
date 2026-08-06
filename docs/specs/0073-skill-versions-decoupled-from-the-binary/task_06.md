@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0073-skill-versions-decoupled-from-the-binary
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---
