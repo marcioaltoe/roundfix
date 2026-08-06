@@ -417,7 +417,7 @@ func TestAuthorialSkillSync(t *testing.T) {
 	}
 	for _, setupPath := range setupPaths {
 		if *updateDerivedDigests {
-			regenerateBaselineSetupSnapshot(t, repoRoot, setupPath, knownOwned)
+			regenerateBaselineSetupSnapshot(t, setupPath, knownOwned)
 		}
 		t.Run(filepath.Base(setupPath), func(t *testing.T) {
 			var setup baselineSetupSnapshot
@@ -436,23 +436,8 @@ func TestAuthorialSkillSync(t *testing.T) {
 					t.Errorf("%s is repository-sourced but not owned by Roundfix", skill.Name)
 					continue
 				}
-				want, err := SkillFolderHash(
-					t.Context(),
-					filepath.Join(repoRoot, ".agents", "skills", skill.Name),
-				)
-				if err != nil {
-					t.Fatalf("hash canonical skill %s: %v", skill.Name, err)
-				}
-				if skill.ContentDigest != want {
-					t.Errorf(
-						"%s contentDigest = %q, want canonical %q; %s",
-						skill.Name,
-						skill.ContentDigest,
-						want,
-						baselineDigestRegenerationHint,
-					)
-				}
 			}
+			assertBaselineSetupHasNoOwnedContentPins(t, setupPath, knownOwned)
 		})
 	}
 
@@ -500,7 +485,6 @@ func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
 				Type: "repo",
 				Name: "roundfix",
 			},
-			ContentDigest: "stale",
 		}},
 	}
 	writeBaselineSetupFixture(t, setupPath, setup)
@@ -526,15 +510,11 @@ func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
 	}
 	knownOwned := map[string]struct{}{"roundfix": {}}
 
-	regenerateBaselineSetupSnapshot(t, repoRoot, setupPath, knownOwned)
+	regenerateBaselineSetupSnapshot(t, setupPath, knownOwned)
 	before := readBaselineSetupFixture(t, setupPath)
-	beforeSkillDigest, err := SkillFolderHash(t.Context(), skillRoot)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if before.Skills[0].ContentDigest != beforeSkillDigest ||
-		before.Digest != baselineSetupDigest(t, before.Skills, before.ActivationBundles) {
-		t.Fatalf("first regenerated setup has stale derived digests: %+v", before)
+	beforeBytes := readBaselineSkillContractFile(t, setupPath)
+	if before.Digest != baselineSetupDigest(t, before.Skills, before.ActivationBundles) {
+		t.Fatalf("first regenerated setup has a stale snapshot digest: %+v", before)
 	}
 	if got := baselineSetupMinimum(t, setupPath); got != minimum {
 		t.Fatalf("first regenerated minimum = %q, want preserved %q", got, minimum)
@@ -543,21 +523,55 @@ func TestAuthorialSkillSyncUpdateModeRoundTrip(t *testing.T) {
 	if err := os.WriteFile(skillPath, []byte("after\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	regenerateBaselineSetupSnapshot(t, repoRoot, setupPath, knownOwned)
+	regenerateBaselineSetupSnapshot(t, setupPath, knownOwned)
 	after := readBaselineSetupFixture(t, setupPath)
-	afterSkillDigest, err := SkillFolderHash(t.Context(), skillRoot)
-	if err != nil {
-		t.Fatal(err)
+	if after.Digest != baselineSetupDigest(t, after.Skills, after.ActivationBundles) {
+		t.Fatalf("second regenerated setup has a stale snapshot digest: %+v", after)
 	}
-	if after.Skills[0].ContentDigest != afterSkillDigest ||
-		after.Digest != baselineSetupDigest(t, after.Skills, after.ActivationBundles) {
-		t.Fatalf("second regenerated setup has stale derived digests: %+v", after)
-	}
-	if after.Skills[0].ContentDigest == before.Skills[0].ContentDigest {
-		t.Fatal("canonical Skill edit did not change the regenerated content digest")
+	if afterBytes := readBaselineSkillContractFile(t, setupPath); !bytes.Equal(afterBytes, beforeBytes) {
+		t.Fatal("canonical Skill edit changed the setup snapshot")
 	}
 	if got := baselineSetupMinimum(t, setupPath); got != minimum {
 		t.Fatalf("second regenerated minimum = %q, want preserved %q", got, minimum)
+	}
+}
+
+func TestCharacterizationCorporaDoNotRecordOwnedSkillDigests(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	corpusPaths := []string{
+		filepath.Join(repoRoot, "internal", "baseline", "testdata", "catalog.diagnostics.golden.json"),
+	}
+	planPaths, err := filepath.Glob(
+		filepath.Join(repoRoot, "internal", "baseline", "testdata", "plan-characterization", "*.golden.json"),
+	)
+	if err != nil {
+		t.Fatalf("list Baseline plan characterization corpus: %v", err)
+	}
+	if len(planPaths) == 0 {
+		t.Fatal("Baseline plan characterization corpus is missing")
+	}
+	corpusPaths = append(corpusPaths, planPaths...)
+
+	ownedDigests := make(map[string]string, len(Names()))
+	for _, skillName := range Names() {
+		digest, err := SkillFolderHash(
+			t.Context(),
+			filepath.Join(repoRoot, ".agents", "skills", skillName),
+		)
+		if err != nil {
+			t.Fatalf("hash canonical skill %s: %v", skillName, err)
+		}
+		ownedDigests[skillName] = digest
+	}
+	for _, corpusPath := range corpusPaths {
+		content := readBaselineSkillContractFile(t, corpusPath)
+		for skillName, digest := range ownedDigests {
+			if bytes.Contains(content, []byte(digest)) {
+				t.Errorf("%s records volatile digest for owned skill %s", corpusPath, skillName)
+			}
+		}
 	}
 }
 
@@ -572,6 +586,36 @@ func baselineSetupMinimum(t *testing.T, setupPath string) string {
 		t.Fatal(err)
 	}
 	return setup.Skills[0].MinimumVersion
+}
+
+func assertBaselineSetupHasNoOwnedContentPins(
+	t *testing.T,
+	setupPath string,
+	knownOwned map[string]struct{},
+) {
+	t.Helper()
+
+	var setup struct {
+		Skills []map[string]any `json:"skills"`
+	}
+	if err := json.Unmarshal(readBaselineSkillContractFile(t, setupPath), &setup); err != nil {
+		t.Fatal(err)
+	}
+	for _, skill := range setup.Skills {
+		source, ok := skill["source"].(map[string]any)
+		if !ok || source["type"] != "repo" {
+			continue
+		}
+		name, _ := skill["name"].(string)
+		if _, ok := knownOwned[name]; !ok {
+			continue
+		}
+		for _, field := range []string{"treeDigest", "contentDigest"} {
+			if _, exists := skill[field]; exists {
+				t.Errorf("%s repository-owned skill %s retains compatibility content pin %s", setupPath, name, field)
+			}
+		}
+	}
 }
 
 func TestWritePRDProjectConstraints(t *testing.T) {
@@ -1270,7 +1314,6 @@ type baselineSetupSkill struct {
 	Source         baselineSetupSource `json:"source"`
 	MinimumVersion string              `json:"minimumVersion,omitempty"`
 	TreeDigest     string              `json:"treeDigest,omitempty"`
-	ContentDigest  string              `json:"contentDigest,omitempty"`
 }
 
 type baselineSetupBundle struct {
@@ -1280,7 +1323,6 @@ type baselineSetupBundle struct {
 
 func regenerateBaselineSetupSnapshot(
 	t *testing.T,
-	repoRoot string,
 	setupPath string,
 	knownOwned map[string]struct{},
 ) {
@@ -1305,14 +1347,6 @@ func regenerateBaselineSetupSnapshot(
 		if _, ok := knownOwned[skill.Name]; !ok {
 			t.Fatalf("%s is repository-sourced but not owned by Roundfix", skill.Name)
 		}
-		digest, err := SkillFolderHash(
-			t.Context(),
-			filepath.Join(repoRoot, ".agents", "skills", skill.Name),
-		)
-		if err != nil {
-			t.Fatalf("hash canonical skill %s: %v", skill.Name, err)
-		}
-		skill.ContentDigest = digest
 	}
 	setup.Digest = baselineSetupDigest(t, setup.Skills, setup.ActivationBundles)
 	updated, err := json.MarshalIndent(setup, "", "  ")
@@ -1384,6 +1418,126 @@ func baselineSetupDigest(
 	}
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:])
+}
+
+func copyTrackedRepository(t *testing.T, repoRoot string) string {
+	t.Helper()
+
+	command := exec.Command("git", "ls-files", "-z", "--cached")
+	command.Dir = repoRoot
+	output, err := command.Output()
+	if err != nil {
+		t.Fatalf("list tracked repository files: %v", err)
+	}
+	targetRoot := filepath.Join(t.TempDir(), "repository")
+	for _, rawRelative := range bytes.Split(output, []byte{0}) {
+		if len(rawRelative) == 0 {
+			continue
+		}
+		relative := filepath.FromSlash(string(rawRelative))
+		source := filepath.Join(repoRoot, relative)
+		target := filepath.Join(targetRoot, relative)
+		info, err := os.Lstat(source)
+		if err != nil {
+			t.Fatalf("inspect tracked file %s: %v", relative, err)
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			t.Fatalf("create tracked file parent %s: %v", relative, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			destination, err := os.Readlink(source)
+			if err != nil {
+				t.Fatalf("read tracked symlink %s: %v", relative, err)
+			}
+			if err := os.Symlink(destination, target); err != nil {
+				t.Fatalf("copy tracked symlink %s: %v", relative, err)
+			}
+			continue
+		}
+		data, err := os.ReadFile(source)
+		if err != nil {
+			t.Fatalf("read tracked file %s: %v", relative, err)
+		}
+		if err := os.WriteFile(target, data, info.Mode().Perm()); err != nil {
+			t.Fatalf("copy tracked file %s: %v", relative, err)
+		}
+	}
+	return targetRoot
+}
+
+func initializeTrackedRepository(t *testing.T, repoRoot string) {
+	t.Helper()
+
+	commands := [][]string{
+		{"init", "--initial-branch=ma/fixture"},
+		{"config", "commit.gpgsign", "false"},
+		{"config", "user.email", "roundfix-test@example.invalid"},
+		{"config", "user.name", "Roundfix Test"},
+		{"add", "."},
+		{"commit", "-m", "test: seed owned skill edit verification"},
+	}
+	for _, arguments := range commands {
+		command := exec.Command("git", arguments...)
+		command.Dir = repoRoot
+		if output, err := command.CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(arguments, " "), err, output)
+		}
+	}
+}
+
+func trackedPathsDigest(t *testing.T, repoRoot string, relativeRoots []string) string {
+	t.Helper()
+
+	var paths []string
+	for _, relativeRoot := range relativeRoots {
+		root := filepath.Join(repoRoot, filepath.FromSlash(relativeRoot))
+		if err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !entry.IsDir() {
+				paths = append(paths, path)
+			}
+			return nil
+		}); err != nil {
+			t.Fatalf("walk tracked digest root %s: %v", relativeRoot, err)
+		}
+	}
+	sort.Strings(paths)
+	digest := sha256.New()
+	for _, path := range paths {
+		relative, err := filepath.Rel(repoRoot, path)
+		if err != nil {
+			t.Fatalf("relativize tracked digest path %s: %v", path, err)
+		}
+		_, _ = digest.Write([]byte(filepath.ToSlash(relative)))
+		_, _ = digest.Write([]byte{0})
+		info, err := os.Lstat(path)
+		if err != nil {
+			t.Fatalf("inspect tracked digest path %s: %v", relative, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			destination, err := os.Readlink(path)
+			if err != nil {
+				t.Fatalf("read tracked digest symlink %s: %v", relative, err)
+			}
+			_, _ = digest.Write([]byte(destination))
+			continue
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read tracked digest path %s: %v", relative, err)
+		}
+		_, _ = digest.Write(data)
+	}
+	return hex.EncodeToString(digest.Sum(nil))
+}
+
+func tailBytes(data []byte, limit int) []byte {
+	if len(data) <= limit {
+		return data
+	}
+	return data[len(data)-limit:]
 }
 
 func readBaselineSkillContractFile(t *testing.T, path string) []byte {

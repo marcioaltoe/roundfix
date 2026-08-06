@@ -232,7 +232,6 @@ func TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent(t *testin
 
 	targetRepo, assetRoot := newAssetsSyncTarget(t)
 	sourceDir, revision := newAssetsSyncSource(t, assetRoot)
-	beforeOwnedDigest := assetsSyncOwnedDigest(t, filepath.Join(assetRoot, "setups", "go-cli.json"))
 	beforeOwnedMinimum := assetsSyncOwnedMinimum(t, filepath.Join(assetRoot, "setups", "go-cli.json"))
 
 	payload, err := syncAssets(context.Background(), AssetsSyncRequest{
@@ -254,16 +253,7 @@ func TestBaselineAssetsSyncRefreshProducesCanonicalTreeAndIsIdempotent(t *testin
 	if len(catalog.SetupIDs()) != 3 {
 		t.Fatalf("refreshed setup IDs = %v", catalog.SetupIDs())
 	}
-	if afterOwnedDigest := assetsSyncOwnedDigest(
-		t,
-		filepath.Join(assetRoot, "setups", "go-cli.json"),
-	); afterOwnedDigest != beforeOwnedDigest {
-		t.Fatalf(
-			"Roundfix-owned digest = %q, want preserved %q",
-			afterOwnedDigest,
-			beforeOwnedDigest,
-		)
-	}
+	assertAssetsSyncOwnedSkillHasNoContentPin(t, filepath.Join(assetRoot, "setups", "go-cli.json"))
 	if afterOwnedMinimum := assetsSyncOwnedMinimum(
 		t,
 		filepath.Join(assetRoot, "setups", "go-cli.json"),
@@ -786,22 +776,24 @@ func writeAssetsSyncJSON(t *testing.T, path string, value any) {
 	}
 }
 
-func assetsSyncOwnedDigest(t *testing.T, snapshotPath string) string {
+func assertAssetsSyncOwnedSkillHasNoContentPin(t *testing.T, snapshotPath string) {
 	t.Helper()
 	var snapshot struct {
-		Skills []struct {
-			Name          string `json:"name"`
-			ContentDigest string `json:"contentDigest"`
-		} `json:"skills"`
+		Skills []map[string]any `json:"skills"`
 	}
 	readAssetsSyncJSON(t, snapshotPath, &snapshot)
 	for _, skill := range snapshot.Skills {
-		if skill.Name == "setup-context-driven" {
-			return skill.ContentDigest
+		if skill["name"] != "setup-context-driven" {
+			continue
 		}
+		for _, field := range []string{"treeDigest", "contentDigest"} {
+			if _, exists := skill[field]; exists {
+				t.Errorf("setup-context-driven retains compatibility content pin %s", field)
+			}
+		}
+		return
 	}
 	t.Fatal("setup-context-driven entry is missing")
-	return ""
 }
 
 func assetsSyncOwnedMinimum(t *testing.T, snapshotPath string) string {

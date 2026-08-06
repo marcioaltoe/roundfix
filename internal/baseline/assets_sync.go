@@ -112,7 +112,6 @@ type assetsSyncSkill struct {
 	Source         assetsSyncSource `json:"source"`
 	MinimumVersion string           `json:"minimumVersion,omitempty"`
 	TreeDigest     string           `json:"treeDigest,omitempty"`
-	ContentDigest  string           `json:"contentDigest,omitempty"`
 }
 
 type assetsSyncBundle struct {
@@ -618,9 +617,6 @@ func assetsSyncSkillDocument(skill assetsSyncSkill) map[string]any {
 	if skill.MinimumVersion != "" {
 		document["minimumVersion"] = skill.MinimumVersion
 	}
-	if skill.ContentDigest != "" {
-		document["contentDigest"] = skill.ContentDigest
-	}
 	return document
 }
 
@@ -726,18 +722,6 @@ func normalizeAssetsSyncSkill(
 			)
 			return nil, &finding
 		}
-		digest := current.ContentDigest
-		if !lowercaseSHA256.MatchString(digest) {
-			digest, _ = data["contentDigest"].(string)
-		}
-		if !lowercaseSHA256.MatchString(digest) {
-			finding := assetsSyncInvalidFinding(
-				sourcePath,
-				name,
-				fmt.Sprintf("Repository-owned skill %s is missing a valid content digest.", name),
-			)
-			return nil, &finding
-		}
 		return &assetsSyncSkill{
 			Name:           name,
 			Path:           normalizedPath,
@@ -746,7 +730,6 @@ func normalizeAssetsSyncSkill(
 				Type: "repo",
 				Name: "roundfix",
 			},
-			ContentDigest: digest,
 		}, nil
 	}
 

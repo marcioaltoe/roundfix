@@ -210,7 +210,7 @@
         {
           "code": "catalog.setup.digest.mismatch",
           "subject": "rust-cli",
-          "detail": "got 0b5c283640d31aafdf6814fe20ed8c439cef674135d7acba03927334181fcb761, want b5c283640d31aafdf6814fe20ed8c439cef674135d7acba03927334181fcb761"
+          "detail": "got 0c32bf0a30afcaa7d127e12311dad04a434dede0a779563871a20c938996bfe2f, want c32bf0a30afcaa7d127e12311dad04a434dede0a779563871a20c938996bfe2f"
         }
       ]
     },

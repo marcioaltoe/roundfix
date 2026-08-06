@@ -1279,10 +1279,6 @@ func (l *catalogLoader) validateSetups(catalog *Catalog) {
 				if !ok || !roundskills.ValidVersion(minimum) {
 					l.add("catalog.setup.skill.minimumVersion.invalid", setupID, name)
 				}
-				digest, ok := stringValue(skill, "contentDigest")
-				if !ok || !lowerSHA256.MatchString(digest) {
-					l.add("catalog.setup.skill.contentDigest.invalid", setupID, name)
-				}
 			default:
 				l.add("catalog.setup.skill.source.type.unknown", setupID, name)
 			}

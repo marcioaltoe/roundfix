@@ -400,6 +400,38 @@ func TestCatalogDigest(t *testing.T) {
 	}
 }
 
+func TestCatalogDigestExcludesOwnedSkillContent(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+	}
+
+	ownedEdit := cloneEmbeddedAssets(t)
+	replaceSetupSkillDigest(t, ownedEdit, "repo", "contentDigest", strings.Repeat("0", 64))
+	ownedCatalog, err := LoadCatalog(ownedEdit)
+	if err != nil {
+		t.Fatalf("LoadCatalog() after owned skill edit error = %v", err)
+	}
+	if got, want := ownedCatalog.Digest(), catalog.Digest(); got != want {
+		t.Fatalf("Digest() after owned skill edit = %q, want unchanged %q", got, want)
+	}
+	if !bytes.Equal(ownedCatalog.Normalized(), catalog.Normalized()) {
+		t.Fatal("Normalized() changed after an owned skill content edit")
+	}
+
+	externalEdit := cloneEmbeddedAssets(t)
+	replaceSetupSkillDigest(t, externalEdit, "github", "treeDigest", strings.Repeat("0", 64))
+	externalCatalog, err := LoadCatalog(externalEdit)
+	if err != nil {
+		t.Fatalf("LoadCatalog() after external source edit error = %v", err)
+	}
+	if externalCatalog.Digest() == catalog.Digest() {
+		t.Fatal("Digest() ignored an external skill source-tree change")
+	}
+}
+
 func TestGuidanceCompositionAssets(t *testing.T) {
 	t.Parallel()
 
@@ -1563,6 +1595,62 @@ func cloneEmbeddedAssets(t *testing.T) fstest.MapFS {
 		t.Fatalf("clone embedded assets: %v", err)
 	}
 	return assets
+}
+
+func replaceSetupSkillDigest(
+	t *testing.T,
+	assets fstest.MapFS,
+	sourceType string,
+	field string,
+	digest string,
+) {
+	t.Helper()
+
+	const assetPath = "setups/go-cli.json"
+	asset := assets[assetPath]
+	var setup map[string]any
+	if err := json.Unmarshal(asset.Data, &setup); err != nil {
+		t.Fatalf("decode %s: %v", assetPath, err)
+	}
+	skills, ok := setup["skills"].([]any)
+	if !ok {
+		t.Fatalf("%s skills = %#v, want array", assetPath, setup["skills"])
+	}
+	changed := false
+	for _, rawSkill := range skills {
+		skill, ok := rawSkill.(map[string]any)
+		if !ok {
+			t.Fatalf("%s skill = %#v, want object", assetPath, rawSkill)
+		}
+		source, ok := skill["source"].(map[string]any)
+		if !ok || source["type"] != sourceType {
+			continue
+		}
+		if current, _ := skill[field].(string); current == digest {
+			digest = strings.Repeat("1", 64)
+		}
+		skill[field] = digest
+		changed = true
+		break
+	}
+	if !changed {
+		t.Fatalf("%s has no %q skill", assetPath, sourceType)
+	}
+	payload := any(skills)
+	if bundles, exists := setup["activationBundles"]; exists {
+		payload = map[string]any{"activationBundles": bundles, "skills": skills}
+	}
+	setupDigest, err := canonicalSHA256(payload)
+	if err != nil {
+		t.Fatalf("compute %s digest: %v", assetPath, err)
+	}
+	setup["digest"] = setupDigest
+	data, err := json.MarshalIndent(setup, "", "  ")
+	if err != nil {
+		t.Fatalf("encode %s: %v", assetPath, err)
+	}
+	asset.Data = append(data, '\n')
+	assets[assetPath] = asset
 }
 
 func addFormatterGoldenDrift(t *testing.T, assets fstest.MapFS) {
