@@ -183,9 +183,10 @@ zero.
   non-regression plus `TestCheckCorpusBudget` guard over-reach.
 - The legacy sweep's Verification asserts relations, never counts: every
   active finding carries its lifecycle, every archived finding's
-  `absorbed_by` resolves and its rollup names it back, and a second sweep
-  changes nothing. The "at most fifteen" number is the QA gate's
-  observation, not a task assertion.
+  `absorbed_by` resolves and its rollup names it back. The "at most
+  fifteen" number is the QA gate's observation, not a task assertion — and
+  the sweep lands before the checks so the repository is conformant on the
+  day the rules start demanding it.
 - Module edits verify through the Spec 0075 choreography, stated in the
   task rather than rediscovered: new clauses need their Source Baseline
   manifest rows bootstrapped (the regenerator maintains rows, never creates
@@ -199,26 +200,34 @@ zero.
 ## Build Order
 
 1. **Vocabulary and contracts** — glossary entries (Inbox Entry, Rollup,
-   Triage); the findings-contract extensions (rollup kind, `_archived/`,
-   `absorbed_by`) authored in the context-workflow module, regenerated with
-   the manifest-row bootstrap, and adopted into the layout guide. Tooling
-   task one.
-2. **The three checks** (depends on: 1) — `SC-FINDING-LIFECYCLE`,
+   Triage) as their own docs slice; then the findings-contract extensions
+   (rollup kind, `_archived/`, `absorbed_by`) and the **permissive**
+   secondbrain carve-out — sessions may create under the brain's `inbox/**` —
+   authored in their modules, regenerated with the manifest-row bootstrap,
+   and adopted into both guides. Tooling task one. The carve-out is
+   permission, not obligation, so it belongs with the contracts: the pilot
+   cannot write through a door the local guide still prohibits.
+2. **Legacy sweep** (depends on: 1) — first rollups written, all 63
+   findings stamped, absorbed ones archived, the remainder deferred, with
+   the relations asserted directly. The sweep precedes the checks on
+   purpose: landing `SC-FINDING-LIFECYCLE` first would turn the repository
+   gate red on 63 unstamped findings inside the check task's own
+   Verification — the task that repairs the state arriving after the gate
+   that demands it, the exact precondition trap Spec 0075 paid for.
+3. **The three checks** (depends on: 1, 2) — `SC-FINDING-LIFECYCLE`,
    `SC-ROLLUP-MEMBER`, `SC-ARCHIVE-LICENSE` with carrier fixtures, corpus
-   non-regression, and the budget guard.
-3. **Legacy sweep** (depends on: 1, 2) — first rollups written, all 63
-   findings stamped, absorbed ones archived, the remainder deferred; the
-   new checks are what validate the result.
+   non-regression, and the budget guard, landing on a repository the sweep
+   already made conformant.
 4. **Door pilot** (depends on: 1; external gate: the brain-side inbox
    exists under its own contract) — capture this Spec's research digest and
    at least one cross-project observation through the door, triage them
    into this repository, and commit the pilot report with the recorded
    evidence. This is the proof the PRD requires before clauses bind.
 5. **Skills and binding clauses** (depends on: 4) — the inbox-first step in
-   `write-idea` and `write-prd` with mirrors synced; the secondbrain-module
-   carve-out clause and the layout-guide inbox-flow clause, including the
-   `capture: auto` contract for the session-end hook; guides adopted from
-   regenerated postimages. Tooling task two.
+   `write-idea` and `write-prd` with mirrors synced, and the **obligating**
+   clauses: the layout-guide inbox-flow rule and the `capture: auto`
+   contract for the session-end hook, adopted from regenerated postimages.
+   Tooling task two. Obligations bind only after the pilot proved the door.
 6. **QA gate** (depends on: 5) — the authored terminal Task.
 
 Steps 2–3 touch Go and `docs/findings/`; step 5 touches modules, guides,
@@ -250,7 +259,9 @@ same-wave rule the authoring finding records.
   a dedicated fixture carrier — no new check infrastructure.
 - The accumulation half precedes the door half, and the pilot is the gate
   between capability and obligation — the inert-first ordering Spec 0073
-  proved.
+  proved. Permission travels with the contracts; obligation follows the
+  pilot: the carve-out that allows inbox writes lands in step 1, because the
+  pilot cannot exercise a door the local guide still prohibits.
 - After Spec 0073, owned-skill content edits need only the mirror sync;
   only the module edits carry the digest-regeneration chain.
 - Inbox entry status is positional — pending in the namespace root,
