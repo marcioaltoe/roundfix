@@ -1,24 +1,30 @@
-//go:build integration
-
 package skills
 
 import (
 	"bytes"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
-// Suite: owned skill edit verification
-// Invariant: editing owned skill bytes leaves the exact repository verification gate green without regeneration.
-// Boundary IN: an isolated tracked repository and its real make verify target.
-// Boundary OUT: ordinary package tests, which run without the integration build tag.
+// Suite: owned skill artifact stability
+// Invariant: editing owned skill bytes leaves every derived Baseline artifact and characterization corpus byte-identical.
+// Boundary IN: an isolated tracked repository's owned skill files and declared derived artifact roots.
+// Boundary OUT: the repository-wide verification gate and owned-skill readiness behavior covered by their canonical suites.
 
-func TestOwnedSkillEditLeavesMakeVerifyGreen(t *testing.T) {
+func TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical(t *testing.T) {
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	verificationRoot := copyTrackedRepository(t, repoRoot)
-	initializeTrackedRepository(t, verificationRoot)
+	derivedPaths := derivedDigestPaths(t, verificationRoot)
+	characterizationPaths := []string{
+		"internal/baseline/testdata/catalog.diagnostics.golden.json",
+		"internal/baseline/testdata/plan-characterization",
+	}
+	derivedBefore := artifactBytes(t, verificationRoot, derivedPaths)
+	characterizationBefore := artifactBytes(t, verificationRoot, characterizationPaths)
+	archivedBefore := artifactBytes(t, verificationRoot, []string{"docs/specs/_archived"})
+
 	for _, relative := range []string{
 		filepath.Join(".agents", "skills", "roundfix", "SKILL.md"),
 		filepath.Join("skills", "roundfix", "SKILL.md"),
@@ -37,30 +43,78 @@ func TestOwnedSkillEditLeavesMakeVerifyGreen(t *testing.T) {
 		}
 	}
 
-	derivedPaths := []string{
-		"internal/baseline/assets/setups",
-		"internal/baseline/testdata",
-		"internal/baseline/assets/source-baselines",
-		"internal/baseline/assets/formatter-fixtures",
-		"internal/baseline/assets/profiles",
-	}
-	derivedBefore := trackedPathsDigest(t, verificationRoot, derivedPaths)
-	archivedBefore := trackedPathsDigest(t, verificationRoot, []string{"docs/specs/_archived"})
+	assertArtifactBytesEqual(t, "derived Baseline artifact", derivedBefore, artifactBytes(t, verificationRoot, derivedPaths))
+	assertArtifactBytesEqual(t, "characterization corpus artifact", characterizationBefore, artifactBytes(t, verificationRoot, characterizationPaths))
+	assertArtifactBytesEqual(t, "archived Spec artifact", archivedBefore, artifactBytes(t, verificationRoot, []string{"docs/specs/_archived"}))
+}
 
-	command := exec.Command("make", "verify", "RTK=")
-	command.Dir = verificationRoot
-	command.Env = append(os.Environ(), "GOCACHE="+t.TempDir())
-	output, err := command.CombinedOutput()
+func derivedDigestPaths(t *testing.T, repoRoot string) []string {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join(repoRoot, "Makefile"))
 	if err != nil {
-		t.Fatalf("make verify after owned skill edit: %v\n%s", err, tailBytes(output, 32*1024))
+		t.Fatalf("read Makefile DERIVED_DIGEST_PATHS: %v", err)
 	}
-	if bytes.Contains(output, []byte("baseline-digests")) {
-		t.Fatalf("make verify invoked digest regeneration after an owned skill edit:\n%s", tailBytes(output, 32*1024))
+	const assignment = "DERIVED_DIGEST_PATHS :="
+	for _, line := range strings.Split(string(data), "\n") {
+		if !strings.HasPrefix(line, assignment) {
+			continue
+		}
+		paths := strings.Fields(strings.TrimSpace(strings.TrimPrefix(line, assignment)))
+		if len(paths) == 0 {
+			t.Fatal("Makefile DERIVED_DIGEST_PATHS is empty")
+		}
+		return paths
 	}
-	if got := trackedPathsDigest(t, verificationRoot, derivedPaths); got != derivedBefore {
-		t.Fatal("make verify changed derived digest artifacts after an owned skill edit")
+	t.Fatal("Makefile has no DERIVED_DIGEST_PATHS assignment")
+	return nil
+}
+
+func artifactBytes(t *testing.T, repoRoot string, relativeRoots []string) map[string][]byte {
+	t.Helper()
+
+	artifacts := make(map[string][]byte)
+	for _, relativeRoot := range relativeRoots {
+		root := filepath.Join(repoRoot, filepath.FromSlash(relativeRoot))
+		if err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			relative, err := filepath.Rel(repoRoot, path)
+			if err != nil {
+				return err
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			artifacts[filepath.ToSlash(relative)] = data
+			return nil
+		}); err != nil {
+			t.Fatalf("read artifact bytes under %s: %v", relativeRoot, err)
+		}
 	}
-	if got := trackedPathsDigest(t, verificationRoot, []string{"docs/specs/_archived"}); got != archivedBefore {
-		t.Fatal("make verify changed archived Spec artifacts after an owned skill edit")
+	return artifacts
+}
+
+func assertArtifactBytesEqual(t *testing.T, kind string, before map[string][]byte, after map[string][]byte) {
+	t.Helper()
+
+	for path, beforeBytes := range before {
+		afterBytes, exists := after[path]
+		if !exists {
+			t.Fatalf("%s %s was removed by an owned skill edit", kind, path)
+		}
+		if !bytes.Equal(afterBytes, beforeBytes) {
+			t.Fatalf("%s %s changed after an owned skill edit", kind, path)
+		}
+	}
+	for path := range after {
+		if _, existed := before[path]; !existed {
+			t.Fatalf("%s %s was created by an owned skill edit", kind, path)
+		}
 	}
 }
