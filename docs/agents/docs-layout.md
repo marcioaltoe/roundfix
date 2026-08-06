@@ -255,6 +255,10 @@ members:
 absorbed_by: <rollup-basename-or-spec-slug>
 ```
 
+- **mandatory**: Read a findings directory holding only live work as `health`, not loss: Rollups and `docs/findings/_archived/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory.
+
+- **mandatory**: When a Rollup has `no open members`, review it as a candidate for its own closure and close it through the existing Finding lifecycle contract when its work is settled.
+
 - **mandatory**: Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the ADR-0092 boundary: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the Inbox Entry's provenance.
 
 - **mandatory**: Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent.

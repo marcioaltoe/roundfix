@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0079-one-door-for-fleet-knowledge
-status: pending
+status: completed
 type: chore
 complexity: medium
 ---
@@ -101,3 +101,77 @@ leaves the repository gate red for the gate that follows it.
 - `qa/qa-report-2026-08-06-01.md` → Finding F-002 and row D01.
 - `_techspec.md` → Testing Approach (module choreography).
 - ADR-0095, ADR-0081.
+
+## Result
+
+### Implementation
+
+- Versioned the secondbrain module, its guide, and its read-only rule. Added
+  separate operator clauses that direct Triage to work pending entries
+  `oldest first` by `created_at` and treat an `empty inbox` as rest rather
+  than an omitted step.
+- Versioned the context-workflow module, its docs-layout guide, and its layout
+  rule. Added separate operator clauses that read a findings directory holding
+  only live work as `health` because Rollups and the archive preserve what was
+  learned, and treat a Rollup with `no open members` as a candidate for its
+  own closure through the existing Finding lifecycle.
+- Bootstrapped four marker-delimited Source Baseline entries and manifest rows.
+  The sanctioned regeneration replaced every temporary span and digest,
+  regenerated the managed guide postimages, and moved the maintained Source
+  Baseline identity from 114 to 118 entries while accounting stayed at 51.
+- Adopted the regenerated `guide.secondbrain` and `guide.docs-layout` managed
+  blocks into the two public guides. Moved only
+  `maintainedSourceBaselineEntries` from 114 to 118; the independent identity,
+  exact-entry, and accounting assertions remain intact.
+
+### Focused checks
+
+- The pre-change QA evidence and a fresh source inspection found none of the
+  four promised operator readings in either canonical module. After the module
+  edit, focused `jq -e` assertions over both modules exited 0 for all four
+  literal tokens and the four distinct clause IDs.
+- The first
+  `GOCACHE=/private/tmp/roundfix-task09-gocache rtk make baseline-digests`
+  pass exited 0 with `changed:true`. After adopting both postimages, the second
+  pass exited 0 with `changed:false`.
+- Before the expectation edit,
+  `GOCACHE=/private/tmp/roundfix-task09-gocache rtk go test
+  ./internal/baseline -count=1 -run
+  TestReadoptionCompatibilityMaintainedFixture` reached the intended assertion
+  and reported identity 118, entries 118, and accounting 51 against the stale
+  expectation. After the edit, the focused compatibility, catalog, and
+  formatter selection exited 0 with three passing tests.
+- `GOCACHE=/private/tmp/roundfix-task09-gocache rtk go test
+  ./internal/baseline -count=1` exited 0 with 560 passing tests.
+- Exact object comparisons against `HEAD` exited 0 for every clause Task 02 or
+  Task 06 authored in the two modules. Exact managed-block comparisons against
+  the formatter goldens exited 0 for both adopted guides. A focused manifest
+  assertion confirmed four new rows with valid nonzero spans and digests.
+- `rtk git diff --check` exited 0.
+
+### Acceptance-criterion evidence
+
+1. The two public guide blocks are byte-identical to their regenerated module
+   postimages. Focused searches locate `oldest first` and `empty inbox` in the
+   Secondbrain guide, and `health` and `no open members` in the docs-layout
+   guide.
+2. Exact `HEAD` comparisons cover the Task 02 and Task 06 clause objects,
+   including the Inbox Entry, Triage, Rollup/archive, fleet-flow, automatic
+   capture, research-capture, and write-boundary clauses; all comparisons
+   exited 0.
+3. The required regeneration sequence ended with `changed:false`. Fresh
+   focused runs passed the three named seams and all 560 tests in the
+   `internal/baseline` package; the maintained count assertion still compares
+   identity to entries, entries to the declared 118 value, and accounting to
+   the separate declared 51 value.
+4. The changed-path audit contains only the two authorized guides, this Task
+   file, and `internal/baseline/**` module causes, sanctioned deterministic
+   fallout, Source Baseline bootstrap artifacts, and the named maintained
+   expectation. The Task-file frontmatter change was the pre-existing
+   Daemon-owned status transition.
+
+### Handoff boundary
+
+- The Daemon-owned commands under `## Verification` were not run in this Agent
+  turn. Task status remains Daemon-owned; no commit, push, or pull request was
+  created.

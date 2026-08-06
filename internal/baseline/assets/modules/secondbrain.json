@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 5,
+  "version": 6,
   "kind": "knowledge-source",
   "title": "Secondbrain guidance",
   "dependsOn": [
@@ -32,7 +32,7 @@
   "supportingGuides": [
     {
       "id": "guide.secondbrain",
-      "version": 5,
+      "version": 6,
       "path": "docs/agents/secondbrain.md",
       "template": "template.guide.secondbrain",
       "rules": [
@@ -68,7 +68,7 @@
     },
     {
       "id": "rule.secondbrain.read-only",
-      "version": 5,
+      "version": 6,
       "coverage": [
         "coverage.secondbrain",
         "coverage.universal-safety"
@@ -83,6 +83,16 @@
           "id": "clause.secondbrain.inbox-entry-contract",
           "enforcement": "mandatory",
           "guidance": "An Inbox Entry uses positional status: pending entries live at the destination namespace root under `inbox/<destination>/`, and resolved entries live under `inbox/<destination>/_triaged/`. Use this complete copyable contract:\n\n```yaml\n---\norigin: <project-that-observed>\ndestination: <project-that-triages>\ntype-hint: <finding-or-intent-hint>\ncreated_at: YYYY-MM-DD\ncapture: manual # manual | auto\n# added at triage time; exactly one:\nresolved_to: <repository-relative-artifact-path>\n# or discarded_reason: <reason>\n---\n```"
+        },
+        {
+          "id": "clause.secondbrain.inbox-triage-order",
+          "enforcement": "mandatory",
+          "guidance": "Triage works pending entries `oldest first`, ordered by `created_at`; take the earliest entry before newer arrivals."
+        },
+        {
+          "id": "clause.secondbrain.inbox-empty-state",
+          "enforcement": "mandatory",
+          "guidance": "Treat an `empty inbox` as rest and continue the session's current work; do not invent a missing Triage step."
         },
         {
           "id": "clause.secondbrain.inbox-auto-capture",

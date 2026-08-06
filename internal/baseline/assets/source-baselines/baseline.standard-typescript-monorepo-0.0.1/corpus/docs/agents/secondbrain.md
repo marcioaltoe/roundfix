@@ -41,6 +41,14 @@ resolved_to: <repository-relative-artifact-path>
 ```
 <!-- /source-baseline-entry: clause.secondbrain.inbox-entry-contract -->
 
+<!-- source-baseline-entry: clause.secondbrain.inbox-triage-order -->
+Triage works pending entries `oldest first`, ordered by `created_at`; take the earliest entry before newer arrivals.
+<!-- /source-baseline-entry: clause.secondbrain.inbox-triage-order -->
+
+<!-- source-baseline-entry: clause.secondbrain.inbox-empty-state -->
+Treat an `empty inbox` as rest and continue the session's current work; do not invent a missing Triage step.
+<!-- /source-baseline-entry: clause.secondbrain.inbox-empty-state -->
+
 <!-- source-baseline-entry: clause.secondbrain.inbox-auto-capture -->
 The maintainer owns the session-end hook outside this repository; this clause contracts only what that hook writes. Every `capture: auto` draft is always pending triage and never self-triaged.
 <!-- /source-baseline-entry: clause.secondbrain.inbox-auto-capture -->
