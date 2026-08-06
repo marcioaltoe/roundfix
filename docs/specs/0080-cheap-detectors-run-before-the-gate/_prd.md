@@ -32,7 +32,10 @@ takes ownership of exactly that, on evidence 0063 did not have.
 - Authentication and HTTP: not applicable — the work is local process
   execution, Git reads, and file I/O. The gate's existing read-only
   `gh pr list` lookup is untouched. Source: `docs/agents/go.md`.
-- Active ADR obligations: applicable. ADR-0080 keeps sole ownership of QA
+- Active ADR obligations: applicable. ADR-0096 and ADR-0097 are the decisions
+  this Spec implements: the mechanical stage that proves machine facts before
+  any agent turn, and the fail-closed rule for carrying a row forward.
+  ADR-0080 keeps sole ownership of QA
   verdict semantics and the three typed blocked-cause counts; a mechanical
   stage may compute them and may never redefine them or make any verdict more
   permissive. ADR-0091 keeps the gate a terminal `qa` Task node with its
