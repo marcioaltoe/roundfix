@@ -95,8 +95,10 @@ Implementation evidence:
   formatter fixture now carries that sequence to adopting repositories.
 - Both carriers explain that ADR-0091 keeps the gate terminal, ADR-0080 admits
   equivalent evidence for environment-blocked rows, and Spec 0078's
-  2026-08-05 gate proved the path with nine of eighteen rows blocked on no open
-  Pull Request.
+  2026-08-05 gate proved the path with eleven of eighteen rows blocked, nine of
+  them on no open Pull Request. Corrected from a stale `nine of eighteen`
+  against the archived Spec 0078 report; task_07 records the same repair for
+  the shipped carriers.
 
 Focused-check evidence:
 

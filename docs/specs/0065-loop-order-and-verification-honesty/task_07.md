@@ -70,10 +70,17 @@ distrust the correct ones beside it.
 
 ## Verification
 
-- `grep -rn "nine of eighteen" docs/agents .agents skills internal/baseline/assets docs/specs/0065-loop-order-and-verification-honesty/_techspec.md | grep -q . && exit 1 || exit 0`
-  — expected: exit 0; the wrong count is gone from every carrier.
+- `grep -rn "nine of eighteen" docs/agents .agents skills internal/baseline/assets | grep -q . && exit 1 || exit 0`
+  — expected: exit 0; no shipped carrier states the wrong count. Scoped to the
+  shipped surfaces on purpose: this Spec's own artifacts quote the wrong string
+  while explaining the correction, and an absence check that cannot tell a
+  claim from a citation of that claim is the over-strict shape this Spec exists
+  to refuse.
 - `grep -q "eleven of eighteen" docs/agents/autonomous-work.md` — expected:
   exit 0; the guide carries the corrected count.
+- `grep -q "eleven of eighteen" docs/specs/0065-loop-order-and-verification-honesty/task_01.md`
+  — expected: exit 0; the Task evidence carries it too, which the first pass of
+  this Task failed to prove because its search omitted Task files.
 - `go run -buildvcs=false ./cmd/roundfix spec check > /dev/null` — expected:
   exit 0; the order statements still agree.
 - `make verify` — expected: exit 0.
