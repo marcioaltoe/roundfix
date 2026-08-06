@@ -215,6 +215,7 @@ type commandDependencies struct {
 	newEngineCollaborators          func() engineCollaborators
 	watchReviewEvidence             func(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error)
 	watchHeadSHA                    func(context.Context, string) (string, error)
+	checkoutReader                  watch.CheckoutReader
 	newReviewRequester              func(runevent.Sink) reviewsource.ReviewRequester
 	listPendingRunWork              func(context.Context, string, string) ([]runworktree.PendingRunWork, error)
 	supersedingQAReport             func(context.Context, string, string, string, string) (string, bool)
@@ -273,6 +274,7 @@ func defaultCommandDependencies() commandDependencies {
 		newEngineCollaborators:          newEngineCollaborators,
 		watchReviewEvidence:             watchReviewEvidence,
 		watchHeadSHA:                    watchHeadSHA,
+		checkoutReader:                  watch.GitCheckoutReader{},
 		newReviewRequester:              newReviewRequester,
 		listPendingRunWork:              listPendingRunWork,
 		supersedingQAReport:             supersedingQAReport,
@@ -1690,7 +1692,7 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	}
 
 	explicitArtifactDir := strings.TrimSpace(req.artifactDir) != ""
-	artifactDir, err := roundconfig.ValidateArtifactDirectory(req.artifactDir, loadedConfig.GitRoot, loadedConfig.HomeDir)
+	artifactDir, err := resolveArtifactDirectoryForPreflight(req.artifactDir, loadedConfig.GitRoot, loadedConfig.HomeDir)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
@@ -1748,6 +1750,24 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	}
 	fmt.Fprintln(stderr, "Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.")
 	return exitRunFailed
+}
+
+func resolveArtifactDirectoryForPreflight(artifactDir string, gitRoot string, homeDir string) (string, error) {
+	resolved, err := roundconfig.ResolveArtifactDirectory(artifactDir, gitRoot, homeDir)
+	if err != nil {
+		return "", err
+	}
+	info, err := os.Stat(resolved)
+	if errors.Is(err, os.ErrNotExist) {
+		return resolved, nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("stat Artifact Directory %q: %w", resolved, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("Artifact Directory %q is not a directory", resolved)
+	}
+	return resolved, nil
 }
 
 type branchIntegrityReport struct {
@@ -2447,6 +2467,11 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
 	}
+	if err := ensureReviewRunArtifactDirectory(req, loaded, preflightResult); err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
+	}
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		markRunFailed(ctx, runStore, run.ID)
 		printRunFailure(req.name, err, stderr)
@@ -2589,6 +2614,11 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
 	}
+	if err := ensureReviewRunArtifactDirectory(req, loaded, preflightResult); err != nil {
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
+	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printRunFailure(req.name, err, stderr)
@@ -2624,7 +2654,8 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	defer ui.Close()
 
-	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, session, resolvePlan, collaborators, runStore, ui)
+	writeGuard := reviewRunTargetGuard(ctx, run)
+	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, session, resolvePlan, collaborators, runStore, ui, writeGuard)
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
@@ -2639,6 +2670,22 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			printStopSummary(ctx, req, preflightResult, stderr)
 			printReviewIssueReport(stdout, store.StateStopped, 1, true, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 			return exitOK
+		}
+		var checkoutMoved watch.CheckoutMovedError
+		if errors.As(err, &checkoutMoved) {
+			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
+			completed, completeErr := runStore.CompleteRun(context.WithoutCancel(ctx), run.ID, store.StateCheckoutMoved)
+			if completeErr != nil {
+				ui.Close()
+				printResolveRunFailure(completeErr, stderr)
+				return exitRunFailed
+			}
+			publishTerminalCompletion(context.WithoutCancel(ctx), runStore, notifier, stderr, completed, cycleResult.Remaining)
+			ui.Wait()
+			ui.Close()
+			fmt.Fprintf(stderr, "Resolve Run %s reached %s: %v\n", completed.ID, completed.State, checkoutMoved)
+			printReviewIssueReport(stdout, completed.State, 1, true, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
+			return exitRunFailed
 		}
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
@@ -2899,7 +2946,7 @@ func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	}, nil
 }
 
-func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, session agent.SessionRef, resolvePlan resolveBatchPlan, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (resolveBatchResult, error) {
+func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, session agent.SessionRef, resolvePlan resolveBatchPlan, collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard) (resolveBatchResult, error) {
 	fmt.Fprintf(ui.progress, "%s: resolve selected %d downloaded Unresolved Review Issue(s) from %d Compatible Artifact Round(s), assigned %d newest occurrence(s) into %d Batch(es), and associated %d older duplicate occurrence(s).\n", app.Name, len(resolvePlan.selection.Issues), len(resolvePlan.selection.Rounds), countBatchIssues(resolvePlan.plan.Batches), len(resolvePlan.plan.Batches), len(resolvePlan.plan.Duplicates))
 	fmt.Fprintf(ui.progress, "Run: %s\n", runID)
 	fmt.Fprintf(ui.progress, "User checkout: %s on branch %s\n", preflightResult.Git.Root, preflightResult.Git.Branch)
@@ -2910,22 +2957,21 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	fmt.Fprintf(ui.progress, "Agent Model: %s\n", resolvePlan.runtime.Model)
 	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(resolvePlan.runtime.ReasoningEffort))
 
-	engine, err := newResolveEngine(collaborators, runStore, ui)
+	engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard)
 	if err != nil {
 		return resolveBatchResult{}, err
 	}
 
 	result, cycleErr := engine.ResolveCycle(ctx, cyclePlanFrom(req, loaded, preflightResult, runID, preflightResult.Git.Root, session, resolvePlan))
-	if cycleErr != nil {
-		return resolveBatchResult{}, cycleErr
-	}
-
 	commitCreated := false
 	for _, batch := range result.Batches {
 		if batch.Committed {
 			commitCreated = true
 			break
 		}
+	}
+	if cycleErr != nil {
+		return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, cycleErr
 	}
 	if result.Remaining > 0 {
 		fmt.Fprintf(ui.progress, "Final Push blocked: %d Unresolved Review Issue(s) remain.\n", result.Remaining)
@@ -2934,7 +2980,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	}
 	reviewCommit := reviewsource.ArtifactCommit{}
 	if req.name != "watch" || !req.untilClean {
-		reviewCommit, err = maybeCommitReviewArtifacts(ctx, req, loaded, preflightResult, collaborators.committer, ui.sink, runID, resolvePlan.roundNumber, ui.progress)
+		reviewCommit, err = maybeCommitReviewArtifacts(ctx, req, loaded, preflightResult, collaborators.committer, ui.sink, runID, resolvePlan.roundNumber, ui.progress, writeGuard)
 		if err != nil {
 			return resolveBatchResult{}, err
 		}
@@ -2951,17 +2997,18 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
 }
 
-func newResolveEngine(collaborators engineCollaborators, runStore *store.Store, ui *runUI) (*daemon.Engine, error) {
+func newResolveEngine(collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard) (*daemon.Engine, error) {
 	return daemon.NewEngine(daemon.Dependencies{
-		Runner:    collaborators.runner,
-		Verifier:  collaborators.verifier,
-		Committer: collaborators.committer,
-		Pusher:    collaborators.pusher,
-		Source:    collaborators.source,
-		Runs:      runStore,
-		Worktree:  collaborators.worktree,
-		Sink:      ui.sink,
-		Progress:  ui.progress,
+		Runner:     collaborators.runner,
+		Verifier:   collaborators.verifier,
+		Committer:  collaborators.committer,
+		Pusher:     collaborators.pusher,
+		Source:     collaborators.source,
+		Runs:       runStore,
+		WriteGuard: writeGuard,
+		Worktree:   collaborators.worktree,
+		Sink:       ui.sink,
+		Progress:   ui.progress,
 	})
 }
 
@@ -3049,6 +3096,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
 	}
+	if err := ensureReviewRunArtifactDirectory(req, loaded, preflightResult); err != nil {
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
+	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printRunFailure(req.name, err, stderr)
@@ -3097,6 +3149,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if loaded.Config.ReviewSource.RequestReview {
 		requester = commandDependenciesForContext(ctx).newReviewRequester(store.JournalSink{Store: runStore})
 	}
+	writeGuard := reviewRunTargetGuard(ctx, run)
 	result, err := watch.Run(ctx, watch.Request{
 		RunID:            run.ID,
 		PRNumber:         preflightResult.PullRequest.Number,
@@ -3115,6 +3168,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}, watch.Dependencies{
 		StopRequests:    runStore,
 		ReviewRequester: requester,
+		WriteGuard:      writeGuard,
 		ReviewEvidence: watch.ReviewEvidenceFunc(func(ctx context.Context, evidenceReq watch.ReviewEvidenceRequest) (reviewsource.Evidence, error) {
 			return commandDependenciesForContext(ctx).watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
 				Source:          req.source,
@@ -3136,11 +3190,12 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 				run.ID,
 				artifactReq.Round,
 				ui.progress,
+				writeGuard,
 			)
 			if err != nil || commit.CommitSHA == "" {
 				return watch.ArtifactPublication{Commit: commit}, err
 			}
-			engine, err := newResolveEngine(collaborators, runStore, ui)
+			engine, err := newResolveEngine(collaborators, runStore, ui, writeGuard)
 			if err != nil {
 				return watch.ArtifactPublication{}, err
 			}
@@ -3175,7 +3230,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			return fetchResult, err
 		}),
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
-			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, agentSelections, runtimeFactory, run.ID, session, collaborators, runStore, ui)
+			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, agentSelections, runtimeFactory, run.ID, session, collaborators, runStore, ui, writeGuard)
 		}),
 		Clock:   commandDependenciesForContext(ctx).watchClock,
 		Sleeper: commandDependenciesForContext(ctx).watchSleeper,
@@ -3223,6 +3278,9 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	} else {
 		closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
 		publishTerminalCompletionWithContext(completeCtx, runStore, notifier, stderr, completed, terminalContext)
+	}
+	if result.Outcome == store.StateCheckoutMoved {
+		fmt.Fprintf(stderr, "%s: %s Next: %s\n", store.StateCheckoutMoved, result.TerminalReason, result.NextAction)
 	}
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
@@ -3284,6 +3342,22 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 		ReasoningEffort: runtime.ReasoningEffort,
 	}
 	return createReviewRun(ctx, runStore, req, createReq, stderr)
+}
+
+func ensureReviewRunArtifactDirectory(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result) error {
+	_, err := roundconfig.ValidateArtifactDirectory(req.artifactDir, preflightResult.Git.Root, loaded.HomeDir)
+	return err
+}
+
+func reviewRunTargetGuard(ctx context.Context, run store.Run) *watch.TargetGuard {
+	return &watch.TargetGuard{
+		WorkDir: run.GitRoot,
+		Target: watch.Checkout{
+			Branch:   run.HeadBranch,
+			Revision: run.HeadSHA,
+		},
+		Checkouts: commandDependenciesForContext(ctx).checkoutReader,
+	}
 }
 
 func createReviewRun(ctx context.Context, runStore *store.Store, req commandRequest, createReq store.CreateRunRequest, stderr io.Writer) (store.Run, error) {
@@ -3495,7 +3569,7 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 // next fetched Round re-downloads their still-open Review Source threads
 // as fresh occurrences. Progress means the cycle settled at least one
 // selected issue, so the watch loop can stop Rounds that change nothing.
-func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, runID string, session agent.SessionRef, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (watch.ResolveResult, error) {
+func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, runID string, session agent.SessionRef, collaborators engineCollaborators, runStore *store.Store, ui *runUI, writeGuard daemon.WriteBoundaryGuard) (watch.ResolveResult, error) {
 	resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
 	if err != nil {
 		var noArtifacts rounds.NoCompatibleArtifactsError
@@ -3507,7 +3581,7 @@ func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundco
 	resolvePlan.runtime = runtime
 	resolvePlan.agentSelections = agentSelections
 	resolvePlan.runtimeFactory = runtimeFactory
-	result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, session, resolvePlan, collaborators, runStore, ui)
+	result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, session, resolvePlan, collaborators, runStore, ui, writeGuard)
 	if err != nil {
 		return watch.ResolveResult{}, err
 	}
@@ -4290,7 +4364,7 @@ func countBatchIssues(batches []rounds.Batch) int {
 // Roots outside the repository — an explicit external Artifact Directory, an
 // external Spec Root, or a root reached through a symbolic link — are never
 // staged; the Run proceeds without the commit.
-func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, committer daemon.Committer, sink runevent.Sink, runID string, roundNumber int, stderr io.Writer) (reviewsource.ArtifactCommit, error) {
+func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, committer daemon.Committer, sink runevent.Sink, runID string, roundNumber int, stderr io.Writer, writeGuard daemon.WriteBoundaryGuard) (reviewsource.ArtifactCommit, error) {
 	if !loaded.Config.Defaults.AutoCommit {
 		return reviewsource.ArtifactCommit{}, nil
 	}
@@ -4329,12 +4403,24 @@ func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded 
 		return reviewsource.ArtifactCommit{}, errors.New("read review artifact commit parent: git returned an empty SHA")
 	}
 	message := daemon.ReviewArtifactsCommitMessage(roundNumber, req.pr)
+	if writeGuard != nil {
+		if err := writeGuard.Check(ctx); err != nil {
+			return reviewsource.ArtifactCommit{}, fmt.Errorf("guard review artifact commit: %w", err)
+		}
+	}
 	if err := committer.Commit(ctx, daemon.CommitRequest{
 		WorkDir: preflightResult.Git.Root,
 		Message: message,
 		Paths:   []string{relative},
 	}); err != nil {
 		return reviewsource.ArtifactCommit{}, fmt.Errorf("create review artifact commit: %w", err)
+	}
+	if recorder, ok := writeGuard.(interface {
+		RecordWriteBoundary(context.Context) error
+	}); ok {
+		if err := recorder.RecordWriteBoundary(ctx); err != nil {
+			return reviewsource.ArtifactCommit{}, fmt.Errorf("record review artifact commit target: %w", err)
+		}
 	}
 	commitSHA, err := commandDependenciesForContext(ctx).reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
 	if err != nil {
@@ -4669,6 +4755,8 @@ func terminalCompletionDefaults(state string) (string, string) {
 		return "The Run timed out before reaching Clean.", "Inspect the Run Event Stream, restore the missing prerequisite, and start another Run."
 	case store.StateFailed:
 		return "The Run failed before it could complete.", "Inspect the diagnostics, correct the failure, and start another Run."
+	case store.StateCheckoutMoved:
+		return "The checkout no longer matches the target recorded at Preflight.", "Restore the PR Head Branch checkout, then start another Run."
 	case store.StateIntegrationPending:
 		return "Completed work could not be integrated into the target branch.", "Inspect the retained Run Worktree and follow the reported integration command."
 	case store.StateUnresolved:
@@ -5578,6 +5666,13 @@ func printPreflightFailure(name string, err error, stderr io.Writer) {
 	fmt.Fprintf(stderr, "%s\n", style.cyan("Reason:"))
 	fmt.Fprintf(stderr, "  %v\n\n", err)
 	printPreflightNoSideEffects(stderr, style)
+	var actionable interface{ NextAction() string }
+	if errors.As(err, &actionable) {
+		if nextAction := strings.TrimSpace(actionable.NextAction()); nextAction != "" {
+			fmt.Fprintf(stderr, "%s\n", style.cyan("Next action:"))
+			fmt.Fprintf(stderr, "  %s\n\n", nextAction)
+		}
+	}
 	fmt.Fprintf(stderr, "%s\n", style.cyan("Usage:"))
 	fmt.Fprintf(stderr, "  Run '%s %s --help' for usage.\n", app.Name, name)
 }

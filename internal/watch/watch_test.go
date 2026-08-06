@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -847,6 +848,106 @@ func TestRunArtifactCommitDoesNotProduceSecondReviewRequest(t *testing.T) {
 	wantOrder := []string{"evidence:abc123", "request:def456", "evidence:def456", "artifact:def456"}
 	if !reflect.DeepEqual(order, wantOrder) {
 		t.Fatalf("artifact request order = %#v, want %#v", order, wantOrder)
+	}
+}
+
+func TestRunCheckoutMovedBeforeReviewArtifactCommitInterrupts(t *testing.T) {
+	t.Parallel()
+	req := validRequest()
+	clock := &fakeClock{now: time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)}
+	moved := CheckoutMovedError{
+		ExpectedBranch:   "feature/review",
+		ExpectedRevision: req.HeadSHA,
+		FoundBranch:      "feature/other",
+		FoundRevision:    "def456",
+	}
+	artifactCalls := 0
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: &fakeReviewEvidenceSource{results: []reviewEvidenceResult{
+			{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+			{evidence: evidenceForHead(reviewsource.EvidenceVerified, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+		}},
+		WriteGuard: WriteBoundaryGuardFunc(func(context.Context) error { return moved }),
+		Artifacts: ArtifactPublishFunc(func(context.Context, ArtifactPublishRequest) (ArtifactPublication, error) {
+			artifactCalls++
+			return ArtifactPublication{}, nil
+		}),
+		Fetcher:  &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver: &fakeResolver{},
+		Clock:    clock,
+		Sleeper:  &fakeSleeper{clock: clock},
+	})
+
+	var checkoutMoved CheckoutMovedError
+	if !errors.As(err, &checkoutMoved) {
+		t.Fatalf("artifact boundary error = %T %v, want CheckoutMovedError", err, err)
+	}
+	if result.Outcome != store.StateCheckoutMoved {
+		t.Fatalf("artifact boundary outcome = %q, want %q", result.Outcome, store.StateCheckoutMoved)
+	}
+	if artifactCalls != 0 {
+		t.Fatalf("artifact publisher calls = %d, want 0", artifactCalls)
+	}
+	if result.TerminalReason == "" || result.NextAction == "" {
+		t.Fatalf("artifact boundary interruption report = %+v", result)
+	}
+}
+
+func TestRunCheckoutMovedAtBatchBoundaryUsesInterruptionOutcome(t *testing.T) {
+	t.Parallel()
+	req := validRequest()
+	clock := &fakeClock{now: time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)}
+	moved := CheckoutMovedError{
+		ExpectedBranch:   "feature/review",
+		ExpectedRevision: req.HeadSHA,
+		FoundBranch:      "feature/other",
+		FoundRevision:    "def456",
+	}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: &fakeReviewEvidenceSource{results: []reviewEvidenceResult{
+			{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+		}},
+		Fetcher:  &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}},
+		Resolver: &fakeResolver{err: fmt.Errorf("guard Batch commit: %w", moved)},
+		Clock:    clock,
+		Sleeper:  &fakeSleeper{clock: clock},
+	})
+
+	var checkoutMoved CheckoutMovedError
+	if !errors.As(err, &checkoutMoved) {
+		t.Fatalf("Batch boundary error = %T %v, want CheckoutMovedError", err, err)
+	}
+	if result.Outcome != store.StateCheckoutMoved || result.Outcome == store.StateFailed {
+		t.Fatalf("Batch boundary outcome = %q, want distinct %q", result.Outcome, store.StateCheckoutMoved)
+	}
+}
+
+func TestTargetGuardComparesRecordedBranchAndRevision(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name     string
+		checkout Checkout
+		wantMove bool
+	}{
+		{name: "target unchanged", checkout: Checkout{Branch: "feature/review", Revision: "abc123"}},
+		{name: "branch moved", checkout: Checkout{Branch: "feature/other", Revision: "abc123"}, wantMove: true},
+		{name: "revision moved", checkout: Checkout{Branch: "feature/review", Revision: "def456"}, wantMove: true},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			guard := TargetGuard{
+				WorkDir:   "/repo",
+				Target:    Checkout{Branch: "feature/review", Revision: "abc123"},
+				Checkouts: CheckoutReadFunc(func(context.Context, string) (Checkout, error) { return testCase.checkout, nil }),
+			}
+			err := guard.Check(context.Background())
+			var moved CheckoutMovedError
+			if got := errors.As(err, &moved); got != testCase.wantMove {
+				t.Fatalf("TargetGuard.Check() error = %T %v, moved=%v, want %v", err, err, got, testCase.wantMove)
+			}
+		})
 	}
 }
 
