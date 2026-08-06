@@ -1,0 +1,13 @@
+Task 02 acceptance evidence is blocked by F-001.
+
+- Authorization commit 93e41d33 predates Task commit 09a3560b.
+- Actual Task pathset stays inside authorized causes, Task file, and generated
+  internal/baseline fallout.
+- Fresh scratch regeneration exits 0 with changed:false.
+- The Task itself recorded the directly caused maintained-fixture failure at
+  111 entries and left it for a later slice. No separate consequent fix landed;
+  Task 06 increased the actual corpus to 114 while the expectation stayed 106.
+
+The contract/digest observables exist, but the directly dependent maintained
+fixture is red, so the grouped acceptance row cannot be credited as pass.
+

@@ -1,0 +1,12 @@
+Fresh frontmatter audit found exactly two real pilot entries:
+
+- origin roundfix, destination secondbrain, type-hint research, created
+  2026-08-06, capture manual.
+- origin secondbrain, destination roundfix, type-hint feat, created 2026-08-06,
+  capture manual, resolved_to the typed Roundfix Backlog Entry.
+
+The brain itself is an allowed destination and the Roundfix mirror registry
+exists at projects/roundfix/mirror. Both destination namespaces exist.
+
+Result: Success Metric 4 passes for every observed entry.
+

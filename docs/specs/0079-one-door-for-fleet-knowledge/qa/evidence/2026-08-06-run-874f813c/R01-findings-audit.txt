@@ -1,0 +1,10 @@
+Fresh observation on build 22291c2b:
+
+- Active Finding count: 6, below the maximum of 15.
+- All six active files are Rollups with status: pending, a valid lifecycle.
+- rtk go test ./internal/speccheck -count=1 -run
+  'FindingLifecycle|RollupMember|ArchiveLicense' -v exited 0 with 14 tests
+  passed, independently exercising lifecycle and relation enforcement.
+
+Result: Success Metric 1 passes.
+

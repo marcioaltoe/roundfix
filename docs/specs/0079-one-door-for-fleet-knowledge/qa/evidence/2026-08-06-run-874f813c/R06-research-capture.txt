@@ -1,0 +1,11 @@
+Equivalent observed and supervised evidence:
+
+- The pilot records the advisory qmd query, stale-path validation, substantive
+  overlap review, and the decision to create rather than duplicate.
+- The real pending research entry persists under the brain's own namespace.
+- Fresh inspection found a Sources section with repository sources and two
+  external research sources.
+- Commit 93bd7b35b77a356a3d2d50989de93565b1e85dbb contains that exact entry.
+
+Result: Success Metric 6 passes for the pilot's substantive-research session.
+

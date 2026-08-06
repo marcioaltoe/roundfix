@@ -1,0 +1,10 @@
+Fresh maintainer read path:
+
+- Six active Rollups provide the readable map.
+- All carry valid pending lifecycle state.
+- Fourteen focused lifecycle/member/license tests pass.
+- All 65 archived observation bodies are byte-identical to their pre-sweep
+  H1-through-EOF blocks.
+
+Result: User Story 3 passes on the real docs surface.
+

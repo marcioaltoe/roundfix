@@ -1,0 +1,16 @@
+Fresh Task 03 acceptance audit on build 22291c2b:
+
+- Six active Finding files exist; every one has status: pending and
+  kind: rollup.
+- The focused FindingLifecycle, RollupMember, and ArchiveLicense suites exited
+  0 with 14 tests passed, covering valid and invalid relations.
+- Exact observation-body audit compared each of the 65 archived Finding bodies
+  from the first H1 through EOF against the corresponding path at pre-sweep
+  commit ef498c53. Result: checked=65 mismatches=0 hash_errors=0.
+
+The first attempted helper output was discarded because its awk extraction was
+invalid; it is not evidence. The corrected audit compares non-empty complete
+SHA-256 lines and fails unless all 65 bodies match.
+
+Result: all Task 03 Acceptance Criteria pass.
+

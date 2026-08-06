@@ -1,0 +1,15 @@
+Command: rtk make verify
+Exit: 2
+Outcome: fail
+
+make: *** [test] Error 1
+rtk go test -parallel 16 ./...
+Go test: 3586 passed, 1 failed, 3 skipped in 26 packages
+baseline (559 passed, 1 failed)
+  [FAIL] TestReadoptionCompatibilityMaintainedFixture
+     preservation_test.go:327: maintained Source Baseline counts = identity 114 entries 114 accounting 51
+
+Focused reproduction:
+  rtk go test ./internal/baseline -run '^TestReadoptionCompatibilityMaintainedFixture$' -count=1 -v
+  exit 1 with the same count diagnostic.
+

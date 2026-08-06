@@ -1,0 +1,10 @@
+Finding block: F-001 failed the mandatory Project Constraint/tooling audit and
+authoritative repository gate before assembled flow QA.
+
+No real binary happy-path or fresh-process replay was executed after that gate.
+The independent TestCheckActiveCorpusHasNoErrors static test passed, but it is
+not a substitute for the installed/built operator command.
+
+Unblocking action: land the maintained Source Baseline fixture consequent fix,
+obtain a green rtk make verify, then run the built roundfix spec check twice in
+fresh processes and record both exit codes and outputs.

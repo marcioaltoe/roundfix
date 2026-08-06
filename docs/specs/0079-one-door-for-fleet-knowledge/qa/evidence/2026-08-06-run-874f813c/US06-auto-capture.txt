@@ -1,0 +1,12 @@
+Environment block: the session-end hook is maintainer-owned outside this
+repository, and its configuration is not a safe repository QA surface.
+
+- The binding guide and module contain capture: auto, always pending triage,
+  and never self-triaged.
+- A fresh filename-only/content-token search of the safe Secondbrain inbox
+  returned no capture: auto entry, so no actual hook output can be credited.
+
+Unblocking action: run one supervised session close with the maintainer-owned
+hook, then provide the resulting pending entry path and commit for read-only QA.
+The local clause is contract evidence, not equivalent behavioral evidence.
+

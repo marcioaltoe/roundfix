@@ -1,0 +1,18 @@
+Docs contract audit on build 22291c2b:
+
+Present:
+- complete Rollup member and archive-license contracts;
+- one-result Triage and provenance rule;
+- positional Inbox Entry contract;
+- capture: auto and never self-triaged clause;
+- substantive-research duplicate-check clause.
+
+Missing from the durable operator guides and canonical authorial Skills:
+- Triage orders the pending queue oldest first;
+- an empty Secondbrain inbox means rest;
+- an empty findings directory after the sweep means health;
+- a Rollup with no open members is a candidate for closure.
+
+The only matching line says the unrelated local docs/_inbox/ directory is
+healthy when empty. Result: fail, F-002.
+

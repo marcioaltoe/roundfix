@@ -1,0 +1,18 @@
+Fresh static evidence on build 22291c2b:
+
+- rtk proxy go test -count=1 ./internal/speccheck -run
+  'FindingLifecycle|RollupMember|ArchiveLicense' -v exited 0.
+- Named red cases passed for missing/unknown lifecycle, unresolved Rollup
+  member, and missing/unresolved archive license.
+- Named green cases passed for all lifecycle values, active/archived members,
+  and Rollup/active-Spec/archived-Spec licenses.
+- Presence-aware cases passed for missing findings directory, no Rollups, and
+  missing archive.
+- TestCheckCorpusBudget passed at 554.334083ms against the 1s budget.
+- TestCheckActiveCorpusHasNoErrors passed.
+
+The real command-level repository flow was not executed after the tooling audit
+found F-001, because qa-gate blocks assembled flow QA after any tooling-audit
+problem. Acceptance Criteria 1-3 have fresh support; Criterion 4 remains
+finding-blocked pending the consequent fixture fix and a new gate run.
+
