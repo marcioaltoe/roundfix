@@ -252,6 +252,14 @@ func TestDecisionDocumentSkeletonRejectsMalformedInput(t *testing.T) {
 	}
 }
 
+// The maintained Source Baseline's expected shape. Named here so a legitimate
+// corpus change moves one declared value instead of hunting literals, and so
+// the diff says what moved.
+const (
+	maintainedSourceBaselineEntries    = 106
+	maintainedSourceBaselineAccounting = 51
+)
+
 func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 	// Sequential: can rewrite shared digest artifacts when the update flag is enabled.
 	if !*updateBaselineDigests {
@@ -310,9 +318,12 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 			baselineDigestRegenerationHint,
 		)
 	}
-	if len(sourceBaseline.Entries) != 104 ||
-		sourceBaseline.Identity.EntryCount != 104 ||
-		len(sourceBaseline.Accounting) != 51 {
+	// This compatibility fixture protects both internal count agreement and
+	// the maintained corpus's exact shape. A legitimate corpus change must move
+	// the named expectations above through the sanctioned re-recording workflow.
+	if sourceBaseline.Identity.EntryCount != len(sourceBaseline.Entries) ||
+		len(sourceBaseline.Entries) != maintainedSourceBaselineEntries ||
+		len(sourceBaseline.Accounting) != maintainedSourceBaselineAccounting {
 		t.Fatalf(
 			"maintained Source Baseline counts = identity %d entries %d accounting %d",
 			sourceBaseline.Identity.EntryCount,

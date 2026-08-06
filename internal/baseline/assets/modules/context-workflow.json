@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 7,
+  "version": 8,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -218,7 +218,7 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 6,
+      "version": 7,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": [
@@ -255,7 +255,7 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 6,
+      "version": 7,
       "coverage": [
         "coverage.context-workflow"
       ],
@@ -278,12 +278,22 @@
         {
           "id": "clause.context.docs-one-job-per-directory",
           "enforcement": "mandatory",
-          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers."
+          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers."
         },
         {
           "id": "clause.context.docs-upstream-flow",
           "enforcement": "mandatory",
           "guidance": "Durable knowledge flows upstream only: the project glossary (`CONTEXT.md`) and the agent guides reference accepted ADRs and never reference `docs/specs/` or `docs/findings/` content. Findings are dated reports that become Specs, not reference material; a document meant as durable project reference belongs in `docs/references/`."
+        },
+        {
+          "id": "clause.context.backlog-01-operational-contract",
+          "enforcement": "mandatory",
+          "guidance": "Name backlog entries `YYYY-MM-DD-<kebab-slug>.md`. Use this complete copyable Backlog Operational Contract:\n\n```markdown\n---\ntype: feat # feat | fix | perf | refactor\nstatus: open # open | promoted | declined\ncreated: YYYY-MM-DD\nspec: null # Spec slug when status: promoted\nreason: null # required when status: declined\n---\n```\n\nFor `type: feat`, use:\n\n```markdown\n# <Title — the intent in one line>\n\n## Opportunity\n\n<What could exist and for whom.>\n\n## Value\n\n<Why it would matter; the hypothesis.>\n\n## Shape\n\n<The rough form of a solution, explicitly non-binding.>\n```\n\nFor `type: fix`, use:\n\n```markdown\n# <Title — the defect in one line>\n\n## Symptom\n\n<What misbehaves, as a user or operator sees it.>\n\n## Where\n\n<The surface, command, or package, as known.>\n\n## Expected\n\n<The behavior that should replace it.>\n\n## Evidence\n\n<A finding link when one exists; `none yet` is honest.>\n```\n\nFor `type: perf`, use:\n\n```markdown\n# <Title — the cost in one line>\n\n## Slow\n\n<What is slow, for whom, and in which operation.>\n\n## Measured\n\n<The number that says so and how it was measured.>\n\n## Target\n\n<The number that would settle it.>\n```\n\nFor `type: refactor`, use:\n\n```markdown\n# <Title — the tangle in one line>\n\n## Tangled\n\n<What resists change, and where it is duplicated or coupled.>\n\n## Cost\n\n<What it makes slow, risky, or wrong to touch.>\n\n## Shape\n\n<The structure that would replace it, explicitly non-binding.>\n```\n\nKeep `open` entries in `docs/backlog/`. When a Spec adopts an entry, set `status: promoted` and `spec` to that Spec's slug, then move the entry to `docs/specs/<slug>/references/`; git history remains the discovery trail. Set `status: declined` only with a non-null `reason`. The current type set is open: a new type must be a Conventional Commits type that expresses intent. Adding a type is a contract change that requires a corpus re-record, never an informal addition. Use `refactor` as the canonical token, never an abbreviation."
+        },
+        {
+          "id": "clause.context.backlog-02-finding-boundary",
+          "enforcement": "mandatory",
+          "guidance": "Keep evidence and intent distinct in both directions: a finding records what happened and is never a commitment; it is evidence-backed, immutable history. A backlog entry records what to do next and is never evidence. A finding may spawn a backlog entry; a backlog entry needs no finding. A `feat` entry is upstream raw material that the spec pipeline may consume, never the `write-idea` artifact itself."
         },
         {
           "id": "clause.context.findings-01-frontmatter",
