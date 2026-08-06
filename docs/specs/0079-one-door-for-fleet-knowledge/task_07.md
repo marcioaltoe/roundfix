@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0079-one-door-for-fleet-knowledge
-status: failed
+status: pending
 type: qa
 complexity: medium
 ---

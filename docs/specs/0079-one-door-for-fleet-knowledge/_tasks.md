@@ -22,9 +22,12 @@ graph:
     - id: task_06
       file: task_06.md
       needs: [task_05]
+    - id: task_08
+      file: task_08.md
+      needs: [task_02, task_06]
     - id: task_07
       file: task_07.md
-      needs: [task_04, task_06]
+      needs: [task_04, task_06, task_08]
 ---
 
 # Tasks — One door for fleet knowledge
@@ -37,10 +40,18 @@ graph:
 | task_04 | Refuse what the findings contract forbids         | backend | high       | task_02, task_03 |
 | task_05 | Pilot the door with this Spec's own material      | docs    | medium     | task_02          |
 | task_06 | Teach the authorial skills to start at the door   | chore   | medium     | task_05          |
-| task_07 | Run the final QA gate                             | qa      | medium     | task_04, task_06 |
+| task_08 | Re-record the maintained Source Baseline expectation | test  | low        | task_02, task_06 |
+| task_07 | Run the final QA gate                             | qa      | medium     | task_04, task_06, task_08 |
 
 Waves: 1 → task_01 · 2 → task_02 · 3 → task_03, task_05 · 4 → task_04,
-task_06 · 5 → task_07
+task_06 · 5 → task_08 · 6 → task_07
+
+task_08 was appended after the first QA gate run settled `fail`: the clauses
+task_02 and task_06 authored grew the Source Baseline, and the maintained
+compatibility fixture's declared expectation still named the pre-Spec count,
+so the repository gate was red and the gate blocked seven rows behind that
+one finding (F-001). Appending it returns task_07 to `pending` — a gate
+result cannot certify a graph that grew after it ran.
 
 Two orderings in this graph are load-bearing, both from traps this
 repository paid for on 2026-08-05/06:
