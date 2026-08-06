@@ -3,9 +3,11 @@ package skills
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -554,25 +556,79 @@ func TestCharacterizationCorporaDoNotRecordOwnedSkillDigests(t *testing.T) {
 	}
 	corpusPaths = append(corpusPaths, planPaths...)
 
-	ownedDigests := make(map[string]string, len(Names()))
+	knownOwned := make(map[string]struct{}, len(Names()))
 	for _, skillName := range Names() {
-		digest, err := SkillFolderHash(
-			t.Context(),
-			filepath.Join(repoRoot, ".agents", "skills", skillName),
-		)
-		if err != nil {
-			t.Fatalf("hash canonical skill %s: %v", skillName, err)
-		}
-		ownedDigests[skillName] = digest
+		knownOwned[skillName] = struct{}{}
 	}
 	for _, corpusPath := range corpusPaths {
-		content := readBaselineSkillContractFile(t, corpusPath)
-		for skillName, digest := range ownedDigests {
-			if bytes.Contains(content, []byte(digest)) {
-				t.Errorf("%s records volatile digest for owned skill %s", corpusPath, skillName)
-			}
+		var corpus any
+		if err := json.Unmarshal(readBaselineSkillContractFile(t, corpusPath), &corpus); err != nil {
+			t.Fatalf("decode characterization corpus %s: %v", corpusPath, err)
+		}
+		for _, violation := range ownedSkillDigestFields(corpus, knownOwned, "$") {
+			t.Errorf("%s %s", corpusPath, violation)
 		}
 	}
+
+	staleDigestFixture := map[string]any{
+		"skills": []any{map[string]any{
+			"name":          Names()[0],
+			"treeDigest":    strings.Repeat("a", 64),
+			"contentDigest": strings.Repeat("b", 64),
+		}},
+	}
+	if violations := ownedSkillDigestFields(staleDigestFixture, knownOwned, "$"); len(violations) != 2 {
+		t.Fatalf("stale owned-skill digest fixture produced %d violations, want 2: %v", len(violations), violations)
+	}
+}
+
+func ownedSkillDigestFields(value any, knownOwned map[string]struct{}, jsonPath string) []string {
+	var violations []string
+	switch value := value.(type) {
+	case []any:
+		for index, item := range value {
+			violations = append(violations, ownedSkillDigestFields(item, knownOwned, fmt.Sprintf("%s[%d]", jsonPath, index))...)
+		}
+	case map[string]any:
+		name, _ := value["name"].(string)
+		if _, owned := knownOwned[name]; owned {
+			for _, field := range []string{"treeDigest", "contentDigest"} {
+				if digest, exists := value[field]; exists && nonEmptyJSONValue(digest) {
+					violations = append(violations, fmt.Sprintf("records %s for owned skill %s at %s", field, name, jsonPath))
+				}
+			}
+		}
+		for key, item := range value {
+			violations = append(violations, ownedSkillDigestFields(item, knownOwned, jsonPath+"."+key)...)
+			if key != "content" {
+				continue
+			}
+			encoded, ok := item.(string)
+			if !ok {
+				continue
+			}
+			decoded, err := base64.StdEncoding.DecodeString(encoded)
+			if err != nil || !json.Valid(decoded) {
+				continue
+			}
+			var embedded any
+			if err := json.Unmarshal(decoded, &embedded); err != nil {
+				continue
+			}
+			violations = append(violations, ownedSkillDigestFields(embedded, knownOwned, jsonPath+".content(decoded)")...)
+		}
+	}
+	return violations
+}
+
+func nonEmptyJSONValue(value any) bool {
+	if value == nil {
+		return false
+	}
+	if text, ok := value.(string); ok {
+		return strings.TrimSpace(text) != ""
+	}
+	return true
 }
 
 func baselineSetupMinimum(t *testing.T, setupPath string) string {

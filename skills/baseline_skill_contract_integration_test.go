@@ -3,6 +3,7 @@ package skills
 import (
 	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -34,13 +35,21 @@ func TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical(t *testing.T) {
 		if err != nil {
 			t.Fatalf("open owned skill edit target %s: %v", relative, err)
 		}
-		if _, err := file.WriteString("\n<!-- compatibility-preserving owned skill edit -->\n"); err != nil {
-			_ = file.Close()
-			t.Fatalf("edit owned skill %s: %v", relative, err)
+		_, writeErr := file.WriteString("\n<!-- compatibility-preserving owned skill edit -->\n")
+		closeErr := file.Close()
+		if writeErr != nil || closeErr != nil {
+			t.Fatalf("edit owned skill %s: write error = %v, close error = %v", relative, writeErr, closeErr)
 		}
-		if err := file.Close(); err != nil {
-			t.Fatalf("close owned skill edit target %s: %v", relative, err)
-		}
+	}
+
+	command := exec.CommandContext(t.Context(), "make", "baseline-digests")
+	command.Dir = verificationRoot
+	command.Env = append(os.Environ(),
+		"GOCACHE="+filepath.Join(verificationRoot, ".gocache"),
+		"GOFLAGS=-buildvcs=false",
+	)
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("regenerate derived artifacts after owned skill edit: %v\n%s", err, tailBytes(output, 32*1024))
 	}
 
 	assertArtifactBytesEqual(t, "derived Baseline artifact", derivedBefore, artifactBytes(t, verificationRoot, derivedPaths))

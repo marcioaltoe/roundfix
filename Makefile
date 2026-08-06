@@ -178,12 +178,15 @@ OWNED_SKILLS := roundfix write-idea write-prd write-techspec write-tasks setup-c
 skills-sync: ## Regenerate the embedded skills/ bundle from canonical .agents/skills/
 	@for s in $(OWNED_SKILLS); do rm -rf "skills/$$s"; cp -R ".agents/skills/$$s" "skills/$$s"; done
 
-skills-version-check: ## Fail when an owned skill omits its declared version
+skills-version-check: ## Fail unless each owned skill declares exactly one version
 	@for s in $(OWNED_SKILLS); do \
 		for root in .agents/skills skills; do \
 			file="$$root/$$s/SKILL.md"; \
-			awk 'NR == 1 && $$0 == "---" { frontmatter = 1; next } frontmatter && $$0 == "---" { exit } frontmatter && $$0 ~ /^version:[[:space:]]+[^[:space:]#]+([[:space:]]+#.*)?[[:space:]]*$$/ { found = 1 } END { exit !found }' "$$file" || { \
-				echo "$$file does not declare a top-level version"; exit 1; }; \
+			counts=$$(awk 'NR == 1 && $$0 == "---" { frontmatter = 1; next } frontmatter && $$0 == "---" { exit } frontmatter && $$0 ~ /^version:/ { keys++ } frontmatter && $$0 ~ /^version:[[:space:]]+[^[:space:]#]+([[:space:]]+#.*)?[[:space:]]*$$/ { values++ } END { print keys + 0, values + 0 }' "$$file") || exit $$?; \
+			key_count=$${counts%% *}; value_count=$${counts##* }; \
+			if test "$$key_count" -ne 1 || test "$$value_count" -ne 1; then \
+				echo "$$file must declare exactly one non-empty top-level version (found $$key_count key(s), $$value_count value(s))"; exit 1; \
+			fi; \
 		done; \
 	done
 

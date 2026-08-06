@@ -996,6 +996,16 @@ func TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness(t *testing.T) {
 			if !strings.Contains(doctorStdout.String(), test.wantDoctorState) {
 				t.Fatalf("Doctor output = %q, want state %q", doctorStdout.String(), test.wantDoctorState)
 			}
+			if test.state == skills.ReadinessUnversioned {
+				for surface, output := range map[string]string{
+					"Doctor":       doctorStdout.String(),
+					"skills check": checkOutput,
+				} {
+					if !strings.Contains(output, skill) {
+						t.Errorf("%s output %q does not list unversioned skill %q", surface, output, skill)
+					}
+				}
+			}
 
 			if test.state == skills.ReadinessBelow {
 				for surface, output := range map[string]string{
