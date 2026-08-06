@@ -92,11 +92,15 @@ _Source: Coding guidelines_
   before checking for a PASS line, and retains the PASS assertion so a selector
   that discovers no tests cannot pass vacuously. Each full-suite command now
   runs `go test -parallel 16 ./...` directly.
-- Focused evidence: the original focused and full-suite shell shapes both
-  returned exit 0 when a simulated producer exited 7. The replacement focused
+- Focused evidence: synthetic producers confirmed both original pipeline
+  shapes returned exit 0 after the producer exited 7. The replacement focused
   shape returned 0 for success with a PASS line, 7 for failure even with a
-  PASS-like line, and 1 for success with no discovered PASS line; a direct
-  simulated full-suite failure returned 7.
+  PASS-like line, and 1 for success with no discovered PASS line.
+- Focused evidence: `rtk env GOCACHE=/Users/marcio/dev/roundfix-b/.gocache
+  rtk go test ./internal/preflight ./internal/watch -count=1` exited 0 with 85
+  tests passing. The preflight selector currently discovers tests; the watch
+  selector currently discovers none, so its retained PASS assertion correctly
+  prevents a vacuous success until task_02 adds the required tests.
 - Focused evidence: `rtk env GOCACHE=/Users/marcio/dev/roundfix-b/.gocache
   rtk go run -buildvcs=false ./cmd/roundfix spec check
   0069-review-run-targets-its-pull-request` exited 0 with no findings. It

@@ -177,9 +177,10 @@ _Source: Coding guidelines_
 ## Triage
 
 - Decision: `INVALID`
-- Notes: The target is an earlier QA evidence set, including the stale
-  contradiction-location order. The final passing report
-  `qa-report-2026-08-05-02.md` selects the later `2026-08-05-spec-0065-02`
-  evidence root. Rewriting the earlier capture would manufacture historical
-  evidence and violate archived-Spec preservation.
+- Notes: The target is a superseded QA evidence capture inside archived Spec
+  0065. Adding commands, actor/environment metadata, or reordered observations
+  now would manufacture evidence that was not recorded during that run. The
+  final passing report selects the later `2026-08-05-spec-0065-02` evidence
+  root, and repository policy requires both historical captures to remain
+  byte-identical.
 - Daemon Verification: `make verify` not run; Daemon-owned.
