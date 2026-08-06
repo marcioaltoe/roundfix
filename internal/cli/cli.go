@@ -231,6 +231,7 @@ type commandDependencies struct {
 	suggestCurrentPullRequest       func(context.Context, string) (string, error)
 	resolvePullRequestForStop       func(context.Context, string, string) (preflight.PullRequest, error)
 	promptInitScope                 func(context.Context, io.Writer) (string, error)
+	checkOwnedSkills                func() roundskills.BundleReadiness
 	resolveSkillsProjectRoot        func(context.Context, string) (string, error)
 	promptProjectClaudeSkillSymlink func(context.Context, io.Writer, string, string) (bool, error)
 	cancelStopAgentSession          func(context.Context, agent.RuntimeSpec, agent.SessionRef) error
@@ -290,6 +291,7 @@ func defaultCommandDependencies() commandDependencies {
 		suggestCurrentPullRequest:       suggestCurrentPullRequest,
 		resolvePullRequestForStop:       resolvePullRequestForStop,
 		promptInitScope:                 promptInitScope,
+		checkOwnedSkills:                roundskills.CheckReadiness,
 		resolveSkillsProjectRoot:        resolveSkillsProjectRoot,
 		promptProjectClaudeSkillSymlink: promptProjectClaudeSkillSymlink,
 		cancelStopAgentSession:          cancelStopAgentSession,
@@ -582,13 +584,25 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 			fmt.Fprintf(stderr, "Run '%s skills --help' for usage.\n", app.Name)
 			return exitPreflight
 		}
-		diagnostics := roundskills.Check()
+		readiness := environment.dependencies.checkOwnedSkills()
+		diagnostics := readiness.Diagnostics
 		if len(diagnostics) > 0 {
 			fmt.Fprintf(stderr, "%s: Roundfix skill check failed:\n", app.Name)
 			for _, diagnostic := range diagnostics {
 				fmt.Fprintf(stderr, "  %s: %s\n", diagnostic.Path, diagnostic.Message)
 			}
 			return exitRunFailed
+		}
+		var unversioned []string
+		for _, owned := range readiness.Owned {
+			if owned.State == roundskills.ReadinessUnversioned {
+				unversioned = append(unversioned, owned.Skill)
+			}
+		}
+		if len(unversioned) > 0 {
+			sort.Strings(unversioned)
+			fmt.Fprintf(stdout, "Roundfix skill check unversioned: %s\n", strings.Join(unversioned, ", "))
+			return exitOK
 		}
 		fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
 		return exitOK

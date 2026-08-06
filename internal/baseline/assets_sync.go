@@ -13,6 +13,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	roundskills "roundfix/skills"
 )
 
 const AssetsSyncSchemaVersion = "setup-context-driven/audit-v1"
@@ -716,7 +718,7 @@ func normalizeAssetsSyncSkill(
 	_, repoOwnedByName := assetsSyncRepoOwnedSkills[name]
 	if repoOwnedByName || current.Source.Type == "repo" {
 		minimum := current.MinimumVersion
-		if _, ok := parseSkillVersion(minimum); !ok {
+		if !roundskills.ValidVersion(minimum) {
 			finding := assetsSyncInvalidFinding(
 				sourcePath,
 				name,

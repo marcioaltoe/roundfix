@@ -6,12 +6,12 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
+
+	roundskills "roundfix/skills"
 )
 
 var (
@@ -43,72 +43,25 @@ const sourceBaselineManifestRowGuidance = "; the regenerator maintains manifest 
 
 // ReadinessState is the outcome of comparing a skill's declared compatibility
 // identity with Roundfix's independently declared minimum.
-type ReadinessState string
+type ReadinessState = roundskills.ReadinessState
 
 const (
-	ReadinessSatisfies   ReadinessState = "satisfies"
-	ReadinessBelow       ReadinessState = "below"
-	ReadinessUnversioned ReadinessState = "unversioned"
+	ReadinessSatisfies   = roundskills.ReadinessSatisfies
+	ReadinessBelow       = roundskills.ReadinessBelow
+	ReadinessUnversioned = roundskills.ReadinessUnversioned
 )
 
 // ErrSkillVersionUnresolvable distinguishes a source that cannot provide a
 // comparable declaration from a skill that is absent.
-var ErrSkillVersionUnresolvable = errors.New("skill version unresolvable")
+var ErrSkillVersionUnresolvable = roundskills.ErrSkillVersionUnresolvable
 
 // SkillVersion is a skill's declared compatibility identity. Roundfix reads
 // it and never invents one.
-type SkillVersion struct {
-	Declared string
-	Source   string
-}
+type SkillVersion = roundskills.SkillVersion
 
 // Readiness compares a declared version against Roundfix's declared minimum.
 func Readiness(declared SkillVersion, minimum string) (ReadinessState, error) {
-	if strings.TrimSpace(declared.Source) == "" {
-		return ReadinessUnversioned, fmt.Errorf("%w: source is unreachable", ErrSkillVersionUnresolvable)
-	}
-	if strings.TrimSpace(declared.Declared) == "" {
-		return ReadinessUnversioned, nil
-	}
-
-	found, ok := parseSkillVersion(declared.Declared)
-	if !ok {
-		return ReadinessUnversioned, fmt.Errorf(
-			"%w: source %q declares %q",
-			ErrSkillVersionUnresolvable,
-			declared.Source,
-			declared.Declared,
-		)
-	}
-	required, ok := parseSkillVersion(minimum)
-	if !ok {
-		return "", fmt.Errorf("invalid minimum skill version %q", minimum)
-	}
-	for index := range found {
-		if found[index] > required[index] {
-			return ReadinessSatisfies, nil
-		}
-		if found[index] < required[index] {
-			return ReadinessBelow, nil
-		}
-	}
-	return ReadinessSatisfies, nil
-}
-
-func parseSkillVersion(version string) ([3]uint64, bool) {
-	var parsed [3]uint64
-	parts := strings.Split(strings.TrimSpace(version), ".")
-	if len(parts) != len(parsed) {
-		return parsed, false
-	}
-	for index, part := range parts {
-		value, err := strconv.ParseUint(part, 10, 64)
-		if err != nil {
-			return parsed, false
-		}
-		parsed[index] = value
-	}
-	return parsed, true
+	return roundskills.Readiness(declared, minimum)
 }
 
 func (l *catalogLoader) validateTemplates(catalog *Catalog) {
@@ -1323,7 +1276,7 @@ func (l *catalogLoader) validateSetups(catalog *Catalog) {
 				}
 			case "repo":
 				minimum, ok := stringValue(skill, "minimumVersion")
-				if _, valid := parseSkillVersion(minimum); !ok || !valid {
+				if !ok || !roundskills.ValidVersion(minimum) {
 					l.add("catalog.setup.skill.minimumVersion.invalid", setupID, name)
 				}
 				digest, ok := stringValue(skill, "contentDigest")

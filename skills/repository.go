@@ -26,16 +26,23 @@ type RepositoryReadiness struct {
 	OwnedRequired    int
 	ExternalRequired int
 	MissingOwned     []string
-	OutdatedOwned    []string
+	Owned            []OwnedSkillReadiness
 	MissingExternal  []string
 	OutdatedExternal []string
 }
 
 func (readiness RepositoryReadiness) Ready() bool {
-	return len(readiness.MissingOwned) == 0 &&
-		len(readiness.OutdatedOwned) == 0 &&
-		len(readiness.MissingExternal) == 0 &&
-		len(readiness.OutdatedExternal) == 0
+	if len(readiness.MissingOwned) != 0 ||
+		len(readiness.MissingExternal) != 0 ||
+		len(readiness.OutdatedExternal) != 0 {
+		return false
+	}
+	for _, owned := range readiness.Owned {
+		if owned.State != ReadinessSatisfies && owned.State != ReadinessUnversioned {
+			return false
+		}
+	}
+	return true
 }
 
 type RepositoryReadinessError struct {
@@ -86,17 +93,12 @@ func CheckRepositoryWithExternal(ctx context.Context, root string, external []st
 			ExternalRequired: len(external),
 		}, err
 	}
-	files, err := Files()
-	if err != nil {
-		return RepositoryReadiness{
-			OwnedRequired:    len(owned),
-			ExternalRequired: len(external),
-		}, repositoryReadinessError(RepositoryOwnershipOwned, "read embedded skill bundle", "", err)
-	}
-	return checkRepository(ctx, root, owned, external, files)
+	return checkRepositoryWithReadiness(ctx, root, owned, external, Readiness)
 }
 
-func checkRepository(ctx context.Context, root string, owned []string, external []string, files []File) (readiness RepositoryReadiness, returnErr error) {
+type readinessComparison func(SkillVersion, string) (ReadinessState, error)
+
+func checkRepositoryWithReadiness(ctx context.Context, root string, owned []string, external []string, compare readinessComparison) (readiness RepositoryReadiness, returnErr error) {
 	readiness = RepositoryReadiness{
 		OwnedRequired:    len(owned),
 		ExternalRequired: len(external),
@@ -130,10 +132,6 @@ func checkRepository(ctx context.Context, root string, owned []string, external 
 		}
 	}()
 
-	expected, err := expectedOwnedFiles(owned, files)
-	if err != nil {
-		return readiness, err
-	}
 	var externalHashes map[string]string
 	if len(external) > 0 {
 		const lockPath = "skills-lock.json"
@@ -167,20 +165,31 @@ func checkRepository(ctx context.Context, root string, owned []string, external 
 			return readiness, repositoryReadinessError(RepositoryOwnershipOwned, "inspect Roundfix-owned skill", repositoryDisplayPath(root, skillsRoot), err)
 		}
 		skillRoot := path.Join(skillsRoot, name)
-		missing, outdated, err := compareOwnedSkill(
+		minimum, ok := ownedSkillMinimumVersions[name]
+		if !ok {
+			return readiness, repositoryReadinessError(
+				RepositoryOwnershipOwned,
+				"resolve Roundfix-owned skill minimum",
+				name,
+				errors.New("minimum version is not declared"),
+			)
+		}
+		missing, ownedReadiness, err := inspectOwnedSkillReadiness(
 			ctx,
 			repositoryRoot,
+			name,
 			skillRoot,
 			repositoryDisplayPath(root, skillRoot),
-			expected[name],
+			minimum,
+			compare,
 		)
 		if err != nil {
 			return readiness, err
 		}
 		if missing {
 			readiness.MissingOwned = append(readiness.MissingOwned, name)
-		} else if outdated {
-			readiness.OutdatedOwned = append(readiness.OutdatedOwned, name)
+		} else {
+			readiness.Owned = append(readiness.Owned, ownedReadiness)
 		}
 	}
 	for _, name := range external {
@@ -272,7 +281,9 @@ func repositoryDisplayPath(root string, relativePath string) string {
 
 func sortRepositoryReadiness(readiness *RepositoryReadiness) {
 	sort.Strings(readiness.MissingOwned)
-	sort.Strings(readiness.OutdatedOwned)
+	sort.Slice(readiness.Owned, func(i, j int) bool {
+		return readiness.Owned[i].Skill < readiness.Owned[j].Skill
+	})
 	sort.Strings(readiness.MissingExternal)
 	sort.Strings(readiness.OutdatedExternal)
 }
@@ -336,78 +347,6 @@ func safeSkillName(name string) bool {
 		name != ".." &&
 		filepath.Base(name) == name &&
 		!strings.ContainsAny(name, `/\`)
-}
-
-func expectedOwnedFiles(owned []string, files []File) (map[string]map[string][]byte, error) {
-	expected := make(map[string]map[string][]byte, len(owned))
-	for _, name := range owned {
-		expected[name] = make(map[string][]byte)
-	}
-	for _, file := range files {
-		if !safeSkillName(file.Skill) {
-			return nil, repositoryReadinessError(
-				RepositoryOwnershipOwned,
-				"validate embedded skill artifact owner",
-				file.Skill,
-				errors.New("unsafe skill name"),
-			)
-		}
-		skillFiles, required := expected[file.Skill]
-		if !required {
-			return nil, repositoryReadinessError(
-				RepositoryOwnershipOwned,
-				"validate embedded skill artifact owner",
-				file.Skill,
-				errors.New("skill is not in the required owned set"),
-			)
-		}
-		prefix := file.Skill + "/"
-		if !strings.HasPrefix(file.Path, prefix) {
-			return nil, repositoryReadinessError(
-				RepositoryOwnershipOwned,
-				"validate embedded skill artifact path",
-				file.Path,
-				errors.New("path is outside its skill directory"),
-			)
-		}
-		relative := strings.TrimPrefix(file.Path, prefix)
-		if !safeRelativeArtifactPath(relative) {
-			return nil, repositoryReadinessError(
-				RepositoryOwnershipOwned,
-				"validate embedded skill artifact path",
-				file.Path,
-				errors.New("unsafe artifact path"),
-			)
-		}
-		if _, duplicate := skillFiles[relative]; duplicate {
-			return nil, repositoryReadinessError(
-				RepositoryOwnershipOwned,
-				"validate embedded skill artifact path",
-				file.Path,
-				errors.New("duplicate artifact path"),
-			)
-		}
-		skillFiles[relative] = file.Data
-	}
-	for _, name := range owned {
-		if len(expected[name]) == 0 {
-			return nil, repositoryReadinessError(
-				RepositoryOwnershipOwned,
-				"validate embedded skill artifacts",
-				name,
-				errors.New("required skill has no embedded files"),
-			)
-		}
-	}
-	return expected, nil
-}
-
-func safeRelativeArtifactPath(relativePath string) bool {
-	if relativePath == "" || strings.Contains(relativePath, `\`) || filepath.IsAbs(relativePath) {
-		return false
-	}
-	cleaned := filepath.ToSlash(filepath.Clean(filepath.FromSlash(relativePath)))
-	return cleaned == relativePath && cleaned != "." && cleaned != ".." && !strings.HasPrefix(cleaned, "../")
 }
 
 func readLocalSkillsLock(ctx context.Context, repositoryRoot *os.Root, lockPath string, displayPath string) (localSkillsLock, error) {
@@ -548,15 +487,24 @@ func lowerHexSHA256(value string) bool {
 
 const sha256HexLength = 64
 
-func compareOwnedSkill(
+func inspectOwnedSkillReadiness(
 	ctx context.Context,
 	repositoryRoot *os.Root,
+	name string,
 	root string,
 	displayRoot string,
-	expected map[string][]byte,
-) (missing bool, outdated bool, err error) {
+	minimum string,
+	compare readinessComparison,
+) (missing bool, readiness OwnedSkillReadiness, err error) {
+	source := path.Join(root, "SKILL.md")
+	displaySource := filepath.Join(displayRoot, "SKILL.md")
+	readiness = OwnedSkillReadiness{
+		Skill:   name,
+		Minimum: minimum,
+		Source:  displaySource,
+	}
 	if err := ctx.Err(); err != nil {
-		return false, false, repositoryReadinessError(
+		return false, readiness, repositoryReadinessError(
 			RepositoryOwnershipOwned,
 			"inspect Roundfix-owned skill",
 			displayRoot,
@@ -565,10 +513,10 @@ func compareOwnedSkill(
 	}
 	info, lstatErr := repositoryRoot.Lstat(root)
 	if errors.Is(lstatErr, fs.ErrNotExist) {
-		return true, false, nil
+		return true, readiness, nil
 	}
 	if lstatErr != nil {
-		return false, false, repositoryReadinessError(
+		return false, readiness, repositoryReadinessError(
 			RepositoryOwnershipOwned,
 			"inspect Roundfix-owned skill",
 			displayRoot,
@@ -576,72 +524,82 @@ func compareOwnedSkill(
 		)
 	}
 	if info.Mode()&fs.ModeSymlink != 0 || !info.IsDir() {
-		return false, true, nil
+		return classifyUnversionedOwnedSkill(readiness, "skill source is unreachable", minimum, compare)
 	}
 
-	found := make(map[string]struct{}, len(expected))
-	tree := repositoryRoot.FS()
-	walkErr := fs.WalkDir(tree, root, func(entryPath string, entry fs.DirEntry, walkErr error) error {
-		if err := ctx.Err(); err != nil {
-			return repositoryReadinessError(RepositoryOwnershipOwned, "walk Roundfix-owned skill artifact", displayRoot, err)
-		}
-		relative := strings.TrimPrefix(entryPath, root+"/")
-		if entryPath == root {
-			relative = "."
-		}
-		fullPath := filepath.Join(displayRoot, filepath.FromSlash(relative))
-		if walkErr != nil {
-			return repositoryReadinessError(RepositoryOwnershipOwned, "walk Roundfix-owned skill artifact", fullPath, walkErr)
-		}
-		if entryPath == root {
-			return nil
-		}
-		if entry.Type()&fs.ModeSymlink != 0 {
-			outdated = true
-			return nil
-		}
-		if entry.IsDir() {
-			return nil
-		}
-		info, infoErr := entry.Info()
-		if infoErr != nil {
-			return repositoryReadinessError(RepositoryOwnershipOwned, "inspect Roundfix-owned skill artifact", fullPath, infoErr)
-		}
-		if !info.Mode().IsRegular() {
-			outdated = true
-			return nil
-		}
-		relative = filepath.ToSlash(relative)
-		want, required := expected[relative]
-		if !required {
-			outdated = true
-			return nil
-		}
-		if err := ctx.Err(); err != nil {
-			return repositoryReadinessError(RepositoryOwnershipOwned, "read Roundfix-owned skill artifact", fullPath, err)
-		}
-		data, readErr := fs.ReadFile(tree, entryPath)
-		if readErr != nil {
-			return repositoryReadinessError(RepositoryOwnershipOwned, "read Roundfix-owned skill artifact", fullPath, readErr)
-		}
-		if err := ctx.Err(); err != nil {
-			return repositoryReadinessError(RepositoryOwnershipOwned, "read Roundfix-owned skill artifact", fullPath, err)
-		}
-		found[relative] = struct{}{}
-		if !bytes.Equal(data, want) {
-			outdated = true
-		}
-		return nil
-	})
-	if walkErr != nil {
-		return false, false, walkErr
+	if err := ctx.Err(); err != nil {
+		return false, readiness, repositoryReadinessError(
+			RepositoryOwnershipOwned,
+			"inspect Roundfix-owned skill version",
+			displaySource,
+			err,
+		)
 	}
-	for relative := range expected {
-		if _, exists := found[relative]; !exists {
-			outdated = true
+	info, lstatErr = repositoryRoot.Lstat(source)
+	if lstatErr != nil || info.Mode()&fs.ModeSymlink != 0 || !info.Mode().IsRegular() {
+		detail := "skill version source is unreachable"
+		if lstatErr != nil && !errors.Is(lstatErr, fs.ErrNotExist) {
+			detail = lstatErr.Error()
 		}
+		return classifyUnversionedOwnedSkill(readiness, detail, minimum, compare)
 	}
-	return false, outdated, nil
+	data, readErr := repositoryRoot.ReadFile(source)
+	if readErr != nil {
+		if err := ctx.Err(); err != nil {
+			return false, readiness, repositoryReadinessError(
+				RepositoryOwnershipOwned,
+				"read Roundfix-owned skill version",
+				displaySource,
+				err,
+			)
+		}
+		return classifyUnversionedOwnedSkill(readiness, readErr.Error(), minimum, compare)
+	}
+	metadata, ok := parseSkillFrontmatter(string(data))
+	declared := ""
+	if ok {
+		declared = strings.TrimSpace(metadata.Version)
+	} else {
+		declared = "invalid-frontmatter"
+	}
+	state, compareErr := compare(SkillVersion{Declared: declared, Source: displaySource}, minimum)
+	readiness.Found = strings.TrimSpace(metadata.Version)
+	readiness.State = state
+	if compareErr != nil {
+		if !errors.Is(compareErr, ErrSkillVersionUnresolvable) {
+			return false, readiness, repositoryReadinessError(
+				RepositoryOwnershipOwned,
+				"compare Roundfix-owned skill version",
+				displaySource,
+				compareErr,
+			)
+		}
+		readiness.Detail = compareErr.Error()
+	}
+	return false, readiness, nil
+}
+
+func classifyUnversionedOwnedSkill(
+	readiness OwnedSkillReadiness,
+	detail string,
+	minimum string,
+	compare readinessComparison,
+) (bool, OwnedSkillReadiness, error) {
+	state, compareErr := compare(SkillVersion{}, minimum)
+	if state != ReadinessUnversioned || !errors.Is(compareErr, ErrSkillVersionUnresolvable) {
+		if compareErr == nil {
+			compareErr = fmt.Errorf("comparison returned state %q", state)
+		}
+		return false, readiness, repositoryReadinessError(
+			RepositoryOwnershipOwned,
+			"compare unreachable Roundfix-owned skill version",
+			readiness.Source,
+			compareErr,
+		)
+	}
+	readiness.State = state
+	readiness.Detail = detail
+	return false, readiness, nil
 }
 
 func repositoryReadinessError(ownership RepositoryOwnership, operation string, path string, err error) error {
