@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -69,7 +70,7 @@ func TestCheckRepositoryHonorsPreCanceledContext(t *testing.T) {
 				t.Fatalf("CheckRepository() error = %v, want errors.Is(_, %v)", err, test.want)
 			}
 
-			_, err = checkRepository(ctx, root, nil, nil, nil)
+			_, err = checkRepositoryWithReadiness(ctx, root, nil, nil, Readiness)
 			if !errors.Is(err, test.want) {
 				t.Fatalf("checkRepository() error = %v, want errors.Is(_, %v)", err, test.want)
 			}
@@ -126,7 +127,7 @@ func TestCheckRepositoryWithExternalUsesExplicitRequirement(t *testing.T) {
 	if !reflect.DeepEqual(got.MissingExternal, wantMissing) {
 		t.Fatalf("missing external = %v, want %v", got.MissingExternal, wantMissing)
 	}
-	if got.OwnedRequired != len(Names()) || len(got.MissingOwned) != 0 || len(got.OutdatedOwned) != 0 {
+	if got.OwnedRequired != len(Names()) || len(got.MissingOwned) != 0 || len(got.Owned) != len(Names()) {
 		t.Fatalf("owned readiness changed: %#v", got)
 	}
 }
@@ -195,7 +196,7 @@ func TestCheckRepositoryWithExternalKeepsOwnedValidation(t *testing.T) {
 	}
 	if legacy.OwnedRequired != explicit.OwnedRequired ||
 		!reflect.DeepEqual(legacy.MissingOwned, explicit.MissingOwned) ||
-		!reflect.DeepEqual(legacy.OutdatedOwned, explicit.OutdatedOwned) {
+		!reflect.DeepEqual(legacy.Owned, explicit.Owned) {
 		t.Fatalf("owned readiness differs: legacy=%#v explicit=%#v", legacy, explicit)
 	}
 }
@@ -203,9 +204,12 @@ func TestCheckRepositoryWithExternalKeepsOwnedValidation(t *testing.T) {
 func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name   string
-		mutate func(*testing.T, string)
-		want   RepositoryReadiness
+		name             string
+		mutate           func(*testing.T, string)
+		wantMissingOwned []string
+		wantMissingExt   []string
+		wantOutdatedExt  []string
+		wantOwnedState   ReadinessState
 	}{
 		{
 			name: "missing owned",
@@ -215,7 +219,7 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 					t.Fatalf("remove owned skill: %v", err)
 				}
 			},
-			want: RepositoryReadiness{MissingOwned: []string{"archive-spec"}},
+			wantMissingOwned: []string{"archive-spec"},
 		},
 		{
 			name: "missing external",
@@ -225,26 +229,47 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 					t.Fatalf("remove external skill: %v", err)
 				}
 			},
-			want: RepositoryReadiness{MissingExternal: []string{"agentic-cli-design"}},
+			wantMissingExt: []string{"agentic-cli-design"},
 		},
 		{
-			name: "changed owned file",
+			name: "unversioned owned SKILL",
 			mutate: func(t *testing.T, root string) {
 				t.Helper()
 				writeSkillHashTestFile(t, filepath.Join(root, ".agents", "skills", "roundfix"), "SKILL.md", "changed\n")
 			},
-			want: RepositoryReadiness{OutdatedOwned: []string{"roundfix"}},
+			wantOwnedState: ReadinessUnversioned,
 		},
 		{
-			name: "added owned file",
+			name: "owned version below minimum",
+			mutate: func(t *testing.T, root string) {
+				t.Helper()
+				path := filepath.Join(root, ".agents", "skills", "roundfix", "SKILL.md")
+				data, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatalf("read owned skill: %v", err)
+				}
+				minimum := ownedSkillMinimumVersions["roundfix"]
+				data = bytes.Replace(
+					data,
+					[]byte("\nversion: "+minimum+"\n---"),
+					[]byte("\nversion: "+skillVersionBelow(t, minimum)+"\n---"),
+					1,
+				)
+				if err := os.WriteFile(path, data, 0o644); err != nil {
+					t.Fatalf("write owned skill: %v", err)
+				}
+			},
+			wantOwnedState: ReadinessBelow,
+		},
+		{
+			name: "added owned content does not gate compatibility",
 			mutate: func(t *testing.T, root string) {
 				t.Helper()
 				writeSkillHashTestFile(t, filepath.Join(root, ".agents", "skills", "roundfix"), "unexpected.txt", "extra\n")
 			},
-			want: RepositoryReadiness{OutdatedOwned: []string{"roundfix"}},
 		},
 		{
-			name: "removed owned file",
+			name: "removed non-identity owned content does not gate compatibility",
 			mutate: func(t *testing.T, root string) {
 				t.Helper()
 				path := filepath.Join(root, ".agents", "skills", "roundfix", "agents", "openai.yaml")
@@ -252,7 +277,6 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 					t.Fatalf("remove owned artifact: %v", err)
 				}
 			},
-			want: RepositoryReadiness{OutdatedOwned: []string{"roundfix"}},
 		},
 		{
 			name: "changed external file",
@@ -260,7 +284,7 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 				t.Helper()
 				writeSkillHashTestFile(t, filepath.Join(root, ".agents", "skills", "agentic-cli-design"), "SKILL.md", "changed\n")
 			},
-			want: RepositoryReadiness{OutdatedExternal: []string{"agentic-cli-design"}},
+			wantOutdatedExt: []string{"agentic-cli-design"},
 		},
 		{
 			name: "added external file",
@@ -268,7 +292,7 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 				t.Helper()
 				writeSkillHashTestFile(t, filepath.Join(root, ".agents", "skills", "agentic-cli-design"), "unexpected.txt", "extra\n")
 			},
-			want: RepositoryReadiness{OutdatedExternal: []string{"agentic-cli-design"}},
+			wantOutdatedExt: []string{"agentic-cli-design"},
 		},
 	}
 
@@ -281,10 +305,19 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 			if err != nil {
 				t.Fatalf("check repository: %v", err)
 			}
-			got.OwnedRequired = 0
-			got.ExternalRequired = 0
-			if !reflect.DeepEqual(got, test.want) {
-				t.Fatalf("readiness = %#v, want %#v", got, test.want)
+			if !reflect.DeepEqual(got.MissingOwned, test.wantMissingOwned) ||
+				!reflect.DeepEqual(got.MissingExternal, test.wantMissingExt) ||
+				!reflect.DeepEqual(got.OutdatedExternal, test.wantOutdatedExt) {
+				t.Fatalf("readiness classifications = %#v", got)
+			}
+			if test.wantOwnedState != "" {
+				owned := ownedReadinessFor(t, got, "roundfix")
+				if owned.State != test.wantOwnedState {
+					t.Fatalf("roundfix readiness = %#v, want state %q", owned, test.wantOwnedState)
+				}
+				if (test.wantOwnedState == ReadinessBelow) == got.Ready() {
+					t.Fatalf("readiness Ready() = %t for state %q", got.Ready(), test.wantOwnedState)
+				}
 			}
 		})
 	}
@@ -340,6 +373,47 @@ func TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries(t *testing.T) {
 	}
 	if !got.Ready() {
 		t.Fatalf("unrelated entries changed readiness: %#v", got)
+	}
+}
+
+func TestRepositoryReadinessNeverComparesThirdPartySkillVersions(t *testing.T) {
+	t.Parallel()
+	root := writeReadyRepositoryFixture(t)
+	external := Recommended()[0]
+	externalSkill := filepath.Join(root, ".agents", "skills", external, "SKILL.md")
+	writeSkillHashTestFile(t, filepath.Dir(externalSkill), "SKILL.md", "---\nname: "+external+"\nmetadata:\n  version: 0.0.1\n---\n")
+	lock := readRepositoryLockFixture(t, root)
+	hash, err := SkillFolderHash(t.Context(), filepath.Dir(externalSkill))
+	if err != nil {
+		t.Fatalf("hash third-party fixture: %v", err)
+	}
+	lock.Skills[external] = repositoryLockSkillFixture{ComputedHash: hash}
+	writeRepositoryLockFixture(t, root, lock)
+
+	var compared []string
+	got, err := checkRepositoryWithReadiness(
+		t.Context(),
+		root,
+		Names(),
+		[]string{external},
+		func(declared SkillVersion, minimum string) (ReadinessState, error) {
+			compared = append(compared, declared.Source)
+			return Readiness(declared, minimum)
+		},
+	)
+	if err != nil {
+		t.Fatalf("check repository readiness: %v", err)
+	}
+	if !got.Ready() {
+		t.Fatalf("third-party version changed repository readiness: %#v", got)
+	}
+	if len(compared) != len(Names()) {
+		t.Fatalf("comparison calls = %d, want one per owned skill (%d): %v", len(compared), len(Names()), compared)
+	}
+	for _, source := range compared {
+		if strings.Contains(source, external) {
+			t.Fatalf("third-party skill %q was compared against an owned minimum: %v", external, compared)
+		}
 	}
 }
 
@@ -428,7 +502,7 @@ func TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames(t *testing.T)
 	root := t.TempDir()
 	outside := filepath.Join(filepath.Dir(root), "outside")
 	writeSkillHashTestFile(t, outside, "marker", "must not be read\n")
-	_, err := checkRepository(t.Context(), root, []string{"../outside"}, nil, nil)
+	_, err := checkRepositoryWithReadiness(t.Context(), root, []string{"../outside"}, nil, Readiness)
 	if err == nil || !strings.Contains(err.Error(), "unsafe") {
 		t.Fatalf("expected unsafe required name error, got %v", err)
 	}
@@ -552,7 +626,7 @@ func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *tes
 	}
 	if !reflect.DeepEqual(got.MissingOwned, []string{"archive-spec"}) ||
 		!reflect.DeepEqual(got.MissingExternal, []string{"agentic-cli-design", "autoresearch"}) ||
-		!reflect.DeepEqual(got.OutdatedOwned, []string{"roundfix"}) {
+		ownedReadinessFor(t, got, "roundfix").State != ReadinessUnversioned {
 		t.Fatalf("unstable classifications: %#v", got)
 	}
 
@@ -643,6 +717,17 @@ func writeRepositoryLockFixture(t *testing.T, root string, lock repositoryLockFi
 	if err := os.WriteFile(filepath.Join(root, "skills-lock.json"), append(data, '\n'), 0o644); err != nil {
 		t.Fatalf("write repository lock fixture: %v", err)
 	}
+}
+
+func ownedReadinessFor(t *testing.T, readiness RepositoryReadiness, skill string) OwnedSkillReadiness {
+	t.Helper()
+	for _, owned := range readiness.Owned {
+		if owned.Skill == skill {
+			return owned
+		}
+	}
+	t.Fatalf("owned readiness does not contain %q: %#v", skill, readiness)
+	return OwnedSkillReadiness{}
 }
 
 func snapshotRepositoryFixture(t *testing.T, root string) map[string]string {

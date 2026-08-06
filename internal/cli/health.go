@@ -13,9 +13,10 @@ import (
 type CheckStatus string
 
 const (
-	CheckStatusOK      CheckStatus = "ok"
-	CheckStatusSkipped CheckStatus = "skipped"
-	CheckStatusFailed  CheckStatus = "failed"
+	CheckStatusOK          CheckStatus = "ok"
+	CheckStatusSkipped     CheckStatus = "skipped"
+	CheckStatusFailed      CheckStatus = "failed"
+	CheckStatusUnversioned CheckStatus = "unversioned"
 
 	HealthCheckNode     = "node"
 	HealthCheckACPX     = "acpx"

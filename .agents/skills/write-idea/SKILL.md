@@ -8,6 +8,7 @@ metadata:
   version: 0.0.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
+version: 0.0.2
 ---
 
 # Write Idea

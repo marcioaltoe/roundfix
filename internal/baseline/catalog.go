@@ -323,10 +323,14 @@ func (c *Catalog) finishIdentity() error {
 	paths := sortedKeys(c.assets)
 	files := make([]fileIdentity, 0, len(paths))
 	for _, assetPath := range paths {
-		sum := sha256.Sum256(c.assets[assetPath])
+		identityBytes, err := catalogIdentityBytes(assetPath, c.assets[assetPath])
+		if err != nil {
+			return err
+		}
+		sum := sha256.Sum256(identityBytes)
 		files = append(files, fileIdentity{
 			Path:   assetPath,
-			Bytes:  len(c.assets[assetPath]),
+			Bytes:  len(identityBytes),
 			Digest: "sha256:" + hex.EncodeToString(sum[:]),
 		})
 	}
@@ -349,6 +353,47 @@ func (c *Catalog) finishIdentity() error {
 	c.normalized = data
 	c.digest = "sha256:" + hex.EncodeToString(sum[:])
 	return nil
+}
+
+func catalogIdentityBytes(assetPath string, data []byte) ([]byte, error) {
+	if !strings.HasPrefix(assetPath, "setups/") || path.Ext(assetPath) != ".json" {
+		return data, nil
+	}
+
+	setup, diagnostics := decodeDocument(data, assetPath)
+	if len(diagnostics) != 0 || setup == nil {
+		return nil, fmt.Errorf("normalize catalog identity for %s", assetPath)
+	}
+	skills, ok := objectList(setup["skills"])
+	if !ok {
+		return nil, fmt.Errorf("normalize catalog identity for %s: skills are invalid", assetPath)
+	}
+	for _, skill := range skills {
+		source, ok := objectValue(skill["source"])
+		if !ok {
+			continue
+		}
+		sourceType, _ := stringValue(source, "type")
+		if sourceType != "repo" {
+			continue
+		}
+		delete(skill, "treeDigest")
+		delete(skill, "contentDigest")
+	}
+	payload := any(toAnySlice(skills))
+	if bundles, exists := setup["activationBundles"]; exists {
+		payload = document{"activationBundles": bundles, "skills": toAnySlice(skills)}
+	}
+	setupDigest, err := canonicalSHA256(payload)
+	if err != nil {
+		return nil, fmt.Errorf("normalize catalog identity for %s: %w", assetPath, err)
+	}
+	setup["digest"] = setupDigest
+	identityBytes, err := json.Marshal(setup)
+	if err != nil {
+		return nil, fmt.Errorf("serialize catalog identity for %s: %w", assetPath, err)
+	}
+	return identityBytes, nil
 }
 
 func mustSub(root fs.FS, dir string) fs.FS {

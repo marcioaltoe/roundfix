@@ -762,10 +762,12 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 			readiness: skills.RepositoryReadiness{
 				OwnedRequired: 14,
 				MissingOwned:  []string{"write-prd"},
-				OutdatedOwned: []string{"roundfix"},
+				Owned: []skills.OwnedSkillReadiness{{
+					Skill: "roundfix", Minimum: "1.2.3", Found: "1.2.2", State: skills.ReadinessBelow,
+				}},
 			},
 			wantCode: exitRunFailed,
-			wantLine: "skills: failed (missing: write-prd; outdated: roundfix; next: " +
+			wantLine: "skills: failed (missing: write-prd; below minimum: skill \"roundfix\" requires 1.2.3, found 1.2.2; next: " +
 				ownedCommand + ")",
 		},
 		{
@@ -795,11 +797,13 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				ExternalRequired: 25,
 				MissingOwned:     []string{"write-prd"},
 				MissingExternal:  []string{"agentic-cli-design"},
-				OutdatedOwned:    []string{"roundfix"},
+				Owned: []skills.OwnedSkillReadiness{{
+					Skill: "roundfix", Minimum: "1.2.3", Found: "1.2.2", State: skills.ReadinessBelow,
+				}},
 				OutdatedExternal: []string{"testing-boss"},
 			},
 			wantCode: exitRunFailed,
-			wantLine: "skills: failed (missing: agentic-cli-design, write-prd; outdated: roundfix, testing-boss; next: " +
+			wantLine: "skills: failed (missing: agentic-cli-design, write-prd; outdated: testing-boss; below minimum: skill \"roundfix\" requires 1.2.3, found 1.2.2; next: " +
 				ownedCommand + " && " + installAgenticCLIDesign + " && " + installTestingBoss + ")",
 		},
 		{
@@ -886,6 +890,134 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 			}
 			if stderr.Len() != 0 {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestDoctorAndSkillsCheckReportSharedOwnedSkillReadiness(t *testing.T) {
+	t.Parallel()
+
+	const (
+		skill   = "roundfix"
+		minimum = "1.2.3"
+	)
+	tests := []struct {
+		name            string
+		found           string
+		state           skills.ReadinessState
+		wantCode        int
+		wantDoctorState string
+		wantCheckState  string
+	}{
+		{
+			name:            "satisfies",
+			found:           "1.3.0",
+			state:           skills.ReadinessSatisfies,
+			wantCode:        exitOK,
+			wantDoctorState: "skills: ok",
+			wantCheckState:  "Roundfix skill check passed",
+		},
+		{
+			name:            "below",
+			found:           "1.2.2",
+			state:           skills.ReadinessBelow,
+			wantCode:        exitRunFailed,
+			wantDoctorState: "skills: failed",
+			wantCheckState:  "Roundfix skill check failed",
+		},
+		{
+			name:            "unversioned",
+			state:           skills.ReadinessUnversioned,
+			wantCode:        exitOK,
+			wantDoctorState: "skills: unversioned",
+			wantCheckState:  "Roundfix skill check unversioned",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			readiness := skills.OwnedSkillReadiness{
+				Skill:   skill,
+				Minimum: minimum,
+				Found:   test.found,
+				Source:  "/repo/project/.agents/skills/roundfix/SKILL.md",
+				State:   test.state,
+			}
+			checker := newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+			)
+			withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+				Config:  roundconfig.Builtin(),
+				GitRoot: "/repo/project",
+			}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+				return profileProofResult{}
+			})
+			updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+				dependencies.checkOwnedSkills = func() skills.BundleReadiness {
+					bundle := skills.BundleReadiness{Owned: []skills.OwnedSkillReadiness{readiness}}
+					if readiness.State == skills.ReadinessBelow {
+						bundle.Diagnostics = []skills.Diagnostic{{
+							Path: readiness.Source, Message: readiness.Diagnostic(),
+						}}
+					}
+					return bundle
+				}
+				dependencies.doctor.resolveExternal = func(string) ([]string, bool, error) {
+					return nil, true, nil
+				}
+				dependencies.doctor.checkSkills = func(context.Context, string, []string) (skills.RepositoryReadiness, error) {
+					return skills.RepositoryReadiness{
+						OwnedRequired: 1,
+						Owned:         []skills.OwnedSkillReadiness{readiness},
+					}, nil
+				}
+			})
+
+			var checkStdout bytes.Buffer
+			var checkStderr bytes.Buffer
+			checkCode := runCLI(t, []string{"skills", "check"}, &checkStdout, &checkStderr)
+			if checkCode != test.wantCode {
+				t.Fatalf("skills check exit = %d, want %d; stdout=%q stderr=%q", checkCode, test.wantCode, checkStdout.String(), checkStderr.String())
+			}
+			checkOutput := checkStdout.String() + checkStderr.String()
+			if !strings.Contains(checkOutput, test.wantCheckState) {
+				t.Fatalf("skills check output = %q, want state %q", checkOutput, test.wantCheckState)
+			}
+
+			var doctorStdout bytes.Buffer
+			var doctorStderr bytes.Buffer
+			doctorCode := runCLI(t, []string{"doctor"}, &doctorStdout, &doctorStderr)
+			if doctorCode != test.wantCode {
+				t.Fatalf("Doctor exit = %d, want %d; stdout=%q stderr=%q", doctorCode, test.wantCode, doctorStdout.String(), doctorStderr.String())
+			}
+			if !strings.Contains(doctorStdout.String(), test.wantDoctorState) {
+				t.Fatalf("Doctor output = %q, want state %q", doctorStdout.String(), test.wantDoctorState)
+			}
+			if test.state == skills.ReadinessUnversioned {
+				for surface, output := range map[string]string{
+					"Doctor":       doctorStdout.String(),
+					"skills check": checkOutput,
+				} {
+					if !strings.Contains(output, skill) {
+						t.Errorf("%s output %q does not list unversioned skill %q", surface, output, skill)
+					}
+				}
+			}
+
+			if test.state == skills.ReadinessBelow {
+				for surface, output := range map[string]string{
+					"Doctor":       doctorStdout.String(),
+					"skills check": checkOutput,
+				} {
+					for _, fact := range []string{skill, minimum, test.found, ownedSkillsNextAction} {
+						if !strings.Contains(output, fact) {
+							t.Errorf("%s output %q does not name below-minimum fact %q", surface, output, fact)
+						}
+					}
+				}
 			}
 		})
 	}
