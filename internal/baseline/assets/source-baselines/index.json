@@ -67,6 +67,8 @@
         "clause.context.findings-01-frontmatter",
         "clause.context.findings-08-rollup",
         "clause.context.findings-09-archive",
+        "clause.context.findings-10-live-work-health",
+        "clause.context.findings-11-rollup-closure",
         "clause.context.findings-02-pending",
         "clause.context.findings-03-partial",
         "clause.context.findings-04-deferred",
@@ -97,6 +99,8 @@
         "clause.secondbrain.02-query-order",
         "clause.secondbrain.inbox-write-permission",
         "clause.secondbrain.inbox-entry-contract",
+        "clause.secondbrain.inbox-triage-order",
+        "clause.secondbrain.inbox-empty-state",
         "clause.secondbrain.inbox-auto-capture",
         "clause.secondbrain.research-capture",
         "clause.secondbrain.prohibit-writes",
@@ -122,9 +126,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 114,
-      "corpusDigest": "de485d715e2ae6f6efc1cd4b7357c103c0420e77806e4e5035ca40f37f1814e2",
-      "manifestDigest": "ccc1bd94bd959b90ef43d568fd40a83c6903360ae3ff3786d4fcbd7178a32d18"
+      "entryCount": 118,
+      "corpusDigest": "8990968c135ff94d2a00a90246e9da81d0aed31d6e064032b040f5f1ba616ef8",
+      "manifestDigest": "be6aca06de15be528dc04366ee30ee7fbcd0be68dd3a34b7737c7e73b5e0fb3d"
     }
   ]
 }

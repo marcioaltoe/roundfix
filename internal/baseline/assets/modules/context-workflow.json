@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 10,
+  "version": 11,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -218,7 +218,7 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 9,
+      "version": 10,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": [
@@ -255,7 +255,7 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 9,
+      "version": 10,
       "coverage": [
         "coverage.context-workflow"
       ],
@@ -309,6 +309,16 @@
           "id": "clause.context.findings-09-archive",
           "enforcement": "mandatory",
           "guidance": "Use `docs/findings/_archived/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:\n\n```yaml\nabsorbed_by: <rollup-basename-or-spec-slug>\n```"
+        },
+        {
+          "id": "clause.context.findings-10-live-work-health",
+          "enforcement": "mandatory",
+          "guidance": "Read a findings directory holding only live work as `health`, not loss: Rollups and `docs/findings/_archived/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory."
+        },
+        {
+          "id": "clause.context.findings-11-rollup-closure",
+          "enforcement": "mandatory",
+          "guidance": "When a Rollup has `no open members`, review it as a candidate for its own closure and close it through the existing Finding lifecycle contract when its work is settled."
         },
         {
           "id": "clause.context.findings-02-pending",

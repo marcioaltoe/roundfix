@@ -54,6 +54,8 @@ documentation fully answer the task.
 
 - **mandatory**: The maintainer owns the session-end hook outside this repository; this clause contracts only what that hook writes. Every `capture: auto` draft is always pending triage and never self-triaged.
 
+- **mandatory**: Treat an `empty inbox` as rest and continue the session's current work; do not invent a missing Triage step.
+
 - **mandatory**: An Inbox Entry uses positional status: pending entries live at the destination namespace root under `inbox/<destination>/`, and resolved entries live under `inbox/<destination>/_triaged/`. Use this complete copyable contract:
 
 ```yaml
@@ -68,6 +70,8 @@ resolved_to: <repository-relative-artifact-path>
 # or discarded_reason: <reason>
 ---
 ```
+
+- **mandatory**: Triage works pending entries `oldest first`, ordered by `created_at`; take the earliest entry before newer arrivals.
 
 - **mandatory**: Sessions MAY create files under the Secondbrain's `inbox/**`; this is the only writable Secondbrain namespace. Every other Secondbrain path stays read-only.
 

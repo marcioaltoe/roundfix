@@ -234,6 +234,14 @@ absorbed_by: <rollup-basename-or-spec-slug>
 ```
 <!-- /source-baseline-entry: clause.context.findings-09-archive -->
 
+<!-- source-baseline-entry: clause.context.findings-10-live-work-health -->
+Read a findings directory holding only live work as `health`, not loss: Rollups and `docs/findings/_archived/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory.
+<!-- /source-baseline-entry: clause.context.findings-10-live-work-health -->
+
+<!-- source-baseline-entry: clause.context.findings-11-rollup-closure -->
+When a Rollup has `no open members`, review it as a candidate for its own closure and close it through the existing Finding lifecycle contract when its work is settled.
+<!-- /source-baseline-entry: clause.context.findings-11-rollup-closure -->
+
 <!-- source-baseline-entry: clause.context.findings-02-pending -->
 Use `pending` when the finding is new and has no implementation Spec.
 <!-- /source-baseline-entry: clause.context.findings-02-pending -->
