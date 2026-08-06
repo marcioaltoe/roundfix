@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-06
 updated_at: 2026-08-06
 ---
@@ -119,3 +119,9 @@ proposal this evidence feeds lives with the knowledge-pipeline idea under
   strictly current-state, incremental graduation, delete when empty
   (https://holdex.io/insights/spec-lifecycle) — is exactly how this
   repository's specs already archive; extending it to findings is symmetric.
+
+## Addendum — 2026-08-06 — routed to Spec 0079
+
+Adopted by [Spec 0079 — one door for fleet knowledge](../_idea.md),
+which carries every action this investigation proposed. Status flipped to
+`done` on adoption, per the findings contract.

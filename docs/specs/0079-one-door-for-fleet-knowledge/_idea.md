@@ -1,7 +1,7 @@
 ---
 spec: 0079-one-door-for-fleet-knowledge
 created: 2026-08-06
-status: proposed
+status: promoted
 leverage: compounding
 ---
 
@@ -49,7 +49,7 @@ pilha crua via mirror, sem camada de captura nem curadoria de entrada.
   archived com revisão advisória e "arquivado ≠ apagado" (open-zk-kb,
   memento-vault); Products over Projects (Communication Patterns, cap. 10).
 - Evidência completa:
-  [findings accumulate faster than they become Specs](../../findings/2026-08-06-findings-accumulate-faster-than-they-become-specs.md).
+  [findings accumulate faster than they become Specs](references/2026-08-06-findings-accumulate-faster-than-they-become-specs.md).
 
 ## Core Features
 
