@@ -1,0 +1,39 @@
+Build: 0c6c94f376d7fc66d6cbe9e6b6a4a667ac5f6c5a
+
+Lifecycle policy
+
+`docs/user-guide/run-database-lifecycle.md` names an owner and retention rule
+for all five Roundfix-owned tables: `runs`, `active_run_locks`,
+`interactive_defaults`, `run_events`, and `run_agent_selections`. It preserves
+the Run index, leaves Active Run locks to the Run lifecycle, and permits Agent
+Selection deletion only with the owning Run unless a future measured rule is
+stated.
+
+The following current-build focused command exited 0 with all three tests
+passing:
+
+`rtk env GOCACHE=<scratch> go test ./internal/store -count=1 -run '^(TestDurableTableLifecyclePolicyCoversEveryTable|TestDurableTableLifecyclePolicyRejectsUnstatedFixtureTable|TestRetentionPreservesRunLifecycleRecords)$' -v`
+
+CLI and documentation contract
+
+- Built `gc --help` lists `gc`, `gc compact [--apply]`, and
+  `gc sanitize [--apply]`, describes the dry-run/apply boundary, and states
+  that Run rows, Active Run locks, and Review Artifacts are preserved.
+- Built `storage report --help` states that the report is read-only, accepts
+  no flags, needs no Git repository, and changes no byte.
+- Invalid compact, sanitize, and storage-report input each exited 2 with a
+  deterministic Preflight failure and no-side-effects text.
+- The canonical Roundfix Skill names all three surfaces, the Active Run,
+  writer, and temporary-capacity refusals, Review/ambiguous preservation, and
+  unchanged Journal Retention. `make skills-sync-check` and byte comparison
+  with the mirror both exited 0.
+
+Scope and measurement invariant
+
+Exact Task commit path audits contain no Reconcile Command, terminal Run
+Worktree, cloud/remote storage, or scheduled-compaction implementation change.
+The Spec artifact size search found only the historical `1.4 GB` problem
+statement in the PRD, TechSpec, and Task 02 overview. No Acceptance Criterion
+contains a recorded size. Current tests assert `after = before - reclaimable`,
+preview/result difference within the declared page tolerance, refusal size
+equality before/after, and second sanitation result `0/0`.
