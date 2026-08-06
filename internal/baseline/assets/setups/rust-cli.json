@@ -8,7 +8,7 @@
     "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/rust-cli.txt"
   },
-  "digest": "9db7884d0b52bf384137c0d9b716cc67e1f0251398827044c283b4ddf52a13bb",
+  "digest": "5c64fcd2ae86fe16201f813e9e43f9973c0d67e99c4d3def8a6852e7b619da00",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -28,7 +28,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "4c2cd33e5e7dd5197ee798ff19ef05ec1dd8c141307b13810f518b8fe133897d"
+      "contentDigest": "a506c5281633cbae4b68fd09039a88ddd1aba140cc54c4fdcab2c8930a7a7cef"
     },
     {
       "name": "brainstorming",
@@ -37,7 +37,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "5591d0e294612a5363f88aec4bb90837f671eca040939229dfe5ed85e528e159"
+      "contentDigest": "6d890c1349562a24345320eb45b5fecaaa2e6f841faff898d4e4213c0080d438"
     },
     {
       "name": "business-analyst",
@@ -46,7 +46,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "41c29cecf63ec48a7e68a67f145f3ce4a05427c5975a63ff0d888d03fee98c02"
+      "contentDigest": "5f13da73f775f02d9b4aae4267e5c8e9db441ff63d51cdd9edfe4e10ef11e786"
     },
     {
       "name": "context7",
@@ -66,7 +66,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "826b2b23ee67d658e4184a6beb891aeb3686514b9dc309971e63828d47486c9f"
+      "contentDigest": "54a4dad89e0b40704c1613a12a8dfa8d2edfd3372db1f15b45f883d13beb04c1"
     },
     {
       "name": "exa-web-search",
@@ -119,7 +119,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "e6348bfd0193570e4361e94fd59e159f515f36ee1d8ae4e487327dd43f358880"
+      "contentDigest": "d50c1c88c97dd3a3d9908040484cdb8eb8d99d6e0a184dbd294fc7b2f07b26fd"
     },
     {
       "name": "write-prd",
@@ -128,7 +128,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "d2c5e049ae763128257c4e551a3a975dec25b2d168d373c2b29f74d698917fe7"
+      "contentDigest": "6bc3e376ab28aae68797883ba6b4e3127d884f98adcf98988fab8dc530d43f14"
     },
     {
       "name": "agentic-cli-design",
@@ -159,7 +159,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "d3025451086d0fbcb3911ea0a01da30bfce67110f65cb8356c0fea8bdf32f2b4"
+      "contentDigest": "e5cc90d46c9286016ba98257fff3cb5925c2dff784e03cfd5564dac3a797979d"
     },
     {
       "name": "write-tasks",
@@ -168,7 +168,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "effe546bb0d662ba9fea2b0b01b752e933ea0c165655789d25433d9d7ff14483"
+      "contentDigest": "11242e02410559d121a83ccc907d3342022b460b7953f3a6f9afa2fcfba5bdd0"
     },
     {
       "name": "clap-rust",
@@ -199,7 +199,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "1abd69c6a800980bfd68f263a5a8b7c0da95873c3208e10b917a2f2bd4789e0d"
+      "contentDigest": "c47eb8d3cf7bfeccbb3a1c998b285427b0077f3fa280fe78fba4ee25a0cebd2f"
     },
     {
       "name": "implement-task",
@@ -208,7 +208,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "74aea380d42cdb99c67b6bfc9ebb7cb9a836b34bdf04954dcaaa25fa0d105e8f"
+      "contentDigest": "f1c4bcfd0ed478b045aeb5c78aeb8908453d04b44f3012ccb4662c2a729d9e46"
     },
     {
       "name": "no-workarounds",
@@ -261,7 +261,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "607d63fbc30affef712791a5ccd78bcadfac2f61752e32ef239d0e5afa95acf6"
+      "contentDigest": "7eddbc92d97536787c7dc03b3fcc64f1780024a6b2ce63f69eaa6522dd855a8e"
     },
     {
       "name": "qa-gate",
@@ -270,7 +270,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "2eafab0897771975b14fa6a7d7c3c39fe56d89a203c4850aab8e5351ed68611a"
+      "contentDigest": "7b885d72a812ffc2b9c03dc6565218cfb533d76b191c2184dfd2f31ab6dcd601"
     },
     {
       "name": "review",
@@ -301,7 +301,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "46a380abc591e109b64abefc392a1e86522c620410d3dace3a297433294e3266"
+      "contentDigest": "335449593753211988df11cb615f9e6af0a81f83f5d2bb6d9dee3a25ccce49ef"
     },
     {
       "name": "conventional-commits",

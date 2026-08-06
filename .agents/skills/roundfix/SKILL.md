@@ -7,6 +7,7 @@ metadata:
   version: 0.0.2
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
+version: 0.0.2
 ---
 
 # Roundfix
