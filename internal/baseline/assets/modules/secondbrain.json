@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 4,
+  "version": 5,
   "kind": "knowledge-source",
   "title": "Secondbrain guidance",
   "dependsOn": [
@@ -32,7 +32,7 @@
   "supportingGuides": [
     {
       "id": "guide.secondbrain",
-      "version": 4,
+      "version": 5,
       "path": "docs/agents/secondbrain.md",
       "template": "template.guide.secondbrain",
       "rules": [
@@ -68,7 +68,7 @@
     },
     {
       "id": "rule.secondbrain.read-only",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.secondbrain",
         "coverage.universal-safety"
@@ -83,6 +83,16 @@
           "id": "clause.secondbrain.inbox-entry-contract",
           "enforcement": "mandatory",
           "guidance": "An Inbox Entry uses positional status: pending entries live at the destination namespace root under `inbox/<destination>/`, and resolved entries live under `inbox/<destination>/_triaged/`. Use this complete copyable contract:\n\n```yaml\n---\norigin: <project-that-observed>\ndestination: <project-that-triages>\ntype-hint: <finding-or-intent-hint>\ncreated_at: YYYY-MM-DD\ncapture: manual # manual | auto\n# added at triage time; exactly one:\nresolved_to: <repository-relative-artifact-path>\n# or discarded_reason: <reason>\n---\n```"
+        },
+        {
+          "id": "clause.secondbrain.inbox-auto-capture",
+          "enforcement": "mandatory",
+          "guidance": "The maintainer owns the session-end hook outside this repository; this clause contracts only what that hook writes. Every `capture: auto` draft is always pending triage and never self-triaged."
+        },
+        {
+          "id": "clause.secondbrain.research-capture",
+          "enforcement": "mandatory",
+          "guidance": "A session that performed substantive external research must capture a digest with its sources for the brain's own namespace. Run the advisory qmd duplicate check first through an authorized access path, verify that returned paths exist, and review substantive overlap; a score alone never decides. A strong verified match routes the digest to extend existing knowledge instead of duplicating it; otherwise create a new pending research Inbox Entry. Ingestion remains the brain's own contract."
         },
         {
           "id": "clause.secondbrain.prohibit-writes",

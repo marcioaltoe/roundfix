@@ -33,7 +33,14 @@ Not every change earns a PRD — it pays for itself when there are product decis
 
 ## Process
 
-### 1. Research
+### 1. Read the pending inbox
+
+Before exploration, read the repository's pending Inbox Entries from its
+brain-side `inbox/<repository>/` namespace through the configured
+knowledge-workspace workflow. Treat queued evidence and intent as inputs to the
+product decision, and leave Triage to a session of the destination repository.
+
+### 2. Research
 
 Explore before asking anything — questions the codebase can answer are wasted user time:
 
@@ -58,7 +65,7 @@ authentication and HTTP, active ADR obligations, and tooling authority as
 applicable or not applicable with a reason and cite the operative
 `docs/agents/` source path for each row.
 
-### 2. Clarify
+### 3. Clarify
 
 Ask **one question per message**, multiple-choice whenever the options are enumerable:
 
@@ -73,14 +80,14 @@ D) Other — describe
 
 Always state a suggested default and the one-line reason. Cover, in order of importance: goals and success criteria, functional scope, non-goals, constraints, risks. Stop asking when the remaining unknowns don't change what gets built.
 
-### 3. Record decisions
+### 4. Record decisions
 
 A product decision that is hard to reverse, surprising without context, and the result of a real trade-off becomes an ADR at `docs/adr/NNNN-slug.md`, continuing the repository's numbering. Keep it to 1–3 sentences: context, decision, why. Decisions that fail that three-part gate just live in the PRD body.
 
-### 4. Prepare the Spec folder and adopt relied-upon sources
+### 5. Prepare the Spec folder and adopt relied-upon sources
 
 Adoption transfers a source document into the Spec that commits to implementing
-it. Resolve the numbered slug with the rule in step 5, then run
+it. Resolve the numbered slug with the rule in step 6, then run
 `mkdir -p docs/specs/<slug>/references` before the first move. Run these steps
 in order after recording decisions and before writing the PRD:
 
@@ -141,11 +148,11 @@ in order after recording decisions and before writing the PRD:
    source still exists at its `source` path or any rewritten link is unresolved.
    Name the offending source or link and repeat the skipped adoption step.
 
-### 5. Write
+### 6. Write
 
 **HARD RULE — spec folders are numbered `docs/specs/NNNN-<kebab-slug>/`** (zero-padded 4 digits, e.g. `0001-implement-command`). Determine `NNNN` by scanning **both** `docs/specs/` and `docs/specs/_archived/` for the highest existing prefix and adding 1; use `0001` when no specs exist anywhere. Numbers are never reused and travel with the spec when archived. Never create an unnumbered spec folder. When an `_idea.md` fed this PRD, its folder already carries the number — reuse it, don't mint a new one.
 
-Write `_prd.md` in the Spec folder prepared in step 4, using the template in [references/prd-template.md](references/prd-template.md). If an `_idea.md` fed this PRD, flip its frontmatter `status` to `promoted`. Set the PRD frontmatter carefully — downstream skills parse it:
+Write `_prd.md` in the Spec folder prepared in step 5, using the template in [references/prd-template.md](references/prd-template.md). If an `_idea.md` fed this PRD, flip its frontmatter `status` to `promoted`. Set the PRD frontmatter carefully — downstream skills parse it:
 
 - `spec` — the folder slug.
 - `status: active` — flipped to `archived` by `archive-spec` once the spec completes (every task done, QA passed).
@@ -159,7 +166,7 @@ approval and the exact bounded files in the Tooling authority row. A generic
 implementation request, setup completion, silence, or authorization without
 bounded files does not authorize the mutation.
 
-### 6. Report
+### 7. Report
 
 Before reporting, re-read the finished artifact. You MUST NOT report completion
 or recommend the next pipeline step unless `Project Constraints` is present;

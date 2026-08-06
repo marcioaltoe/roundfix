@@ -176,6 +176,8 @@ absorbed_by: <rollup-basename-or-spec-slug>
 
 - **mandatory**: Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the ADR-0092 boundary: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the Inbox Entry's provenance.
 
+- **mandatory**: Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent.
+
 <!-- setup-context-driven:end id=guide.docs-layout -->
 
 <!-- setup-context-driven:begin id=guide.spec-docs-layout version=0.0.1 -->

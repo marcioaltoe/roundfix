@@ -5,9 +5,11 @@
 2. Read its index first, then use its declared semantic query command. Open only the files required by the result and treat project mirrors as references, never as workspaces.
 3. Sessions MAY create files under the knowledge system's `inbox/**`; every other knowledge-system path remains read-only. MUST NOT create, edit, rename, move, or delete raw ingestion data or project mirrors from this repository.
 4. Pending Inbox Entries live at their destination namespace root and resolved entries live under `_triaged/`; each entry declares `origin:`, `destination:`, `type-hint:`, `created_at:`, and `capture:`, then gains exactly one of `resolved_to:` or `discarded_reason:` at triage time.
-5. MUST NOT read, copy, or expose secrets, session material, private keys, credentials, or unsafe personal and client data. Stop at likely secret-bearing sources and request a safe source.
-6. Cite every knowledge-system file used in the final response or handoff. Do not claim knowledge-system context when no file was read.
-7. Request an authorized ingestion workflow for durable additions or corrections instead of writing from this repository.
+5. The maintainer-owned session-end hook writes `capture: auto` drafts that remain pending Triage and never triage themselves.
+6. A session that performs substantive external research captures a sourced digest for the brain's namespace after an advisory duplicate check whose paths and substantive matches are reviewed; a score alone never decides extension versus creation.
+7. MUST NOT read, copy, or expose secrets, session material, private keys, credentials, or unsafe personal and client data. Stop at likely secret-bearing sources and request a safe source.
+8. Cite every knowledge-system file used in the final response or handoff. Do not claim knowledge-system context when no file was read.
+9. Request an authorized ingestion workflow for durable additions or corrections instead of writing from this repository.
 <!-- /source-baseline-entry: contract.secondbrain.protocol -->
 
 <!-- source-baseline-entry: clause.secondbrain.01-consult-triggers -->
@@ -38,6 +40,14 @@ resolved_to: <repository-relative-artifact-path>
 ---
 ```
 <!-- /source-baseline-entry: clause.secondbrain.inbox-entry-contract -->
+
+<!-- source-baseline-entry: clause.secondbrain.inbox-auto-capture -->
+The maintainer owns the session-end hook outside this repository; this clause contracts only what that hook writes. Every `capture: auto` draft is always pending triage and never self-triaged.
+<!-- /source-baseline-entry: clause.secondbrain.inbox-auto-capture -->
+
+<!-- source-baseline-entry: clause.secondbrain.research-capture -->
+A session that performed substantive external research must capture a digest with its sources for the brain's own namespace. Run the advisory qmd duplicate check first through an authorized access path, verify that returned paths exist, and review substantive overlap; a score alone never decides. A strong verified match routes the digest to extend existing knowledge instead of duplicating it; otherwise create a new pending research Inbox Entry. Ingestion remains the brain's own contract.
+<!-- /source-baseline-entry: clause.secondbrain.research-capture -->
 
 <!-- source-baseline-entry: clause.secondbrain.prohibit-writes -->
 Do not create, edit, rename, move, or delete any Secondbrain file outside `inbox/**`. Do not edit `raw/` or `projects/*/mirror/`, and never copy code or generated artifacts from a mirror without a local source check.

@@ -742,14 +742,25 @@
       "digest": "e6f4e77aa8f456c4c7d9e2c2e25c5b9f9141d052ee30abfe44c00e12c3a600d7"
     },
     {
+      "id": "clause.context.inbox-02-fleet-flow",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 11971,
+      "end": 12271,
+      "digest": "481a05ebb148e3e77bec4df6ddee491ca15d8c94868d29a5918c07fe5ffc31be"
+    },
+    {
       "id": "clause.spec.keep-artifacts-in-spec-folder",
       "path": "corpus/docs/agents/docs-layout.md",
       "kind": "normative-clause",
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 11978,
-      "end": 12175,
+      "start": 12414,
+      "end": 12611,
       "digest": "6a6bbd20fad23dc9162a49bdc1b36f36950e55a01456d2d3f4132ac5b10a7ab5"
     },
     {
@@ -759,8 +770,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 12326,
-      "end": 12709,
+      "start": 12762,
+      "end": 13145,
       "digest": "437de61f4c3b444f6509517f1d8994432bb99adaf8edaf17394e611ec04e0dbc"
     },
     {
@@ -936,8 +947,8 @@
       "carrier": "docs/agents/secondbrain.md",
       "structure": "protocol",
       "start": 62,
-      "end": 1426,
-      "digest": "821f1e49cb46b871404355a8273b82a39c50bcd5bad5ef739874dfa742ad53b1"
+      "end": 1801,
+      "digest": "969e970688b4ac2470c95bafcb296678a67a150f14b6484314c784064b00e0c7"
     },
     {
       "id": "clause.secondbrain.01-consult-triggers",
@@ -946,8 +957,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 1561,
-      "end": 1926,
+      "start": 1936,
+      "end": 2301,
       "digest": "ac47e592562ba8ffff41b21a49666d9b92353fc71cd4b142d2c6c6aa232d70f7"
     },
     {
@@ -957,8 +968,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 2065,
-      "end": 2330,
+      "start": 2440,
+      "end": 2705,
       "digest": "602cd3750408b5dc486b2bfc9c744cf584570ab1248f2a7b246d06a07061eabc"
     },
     {
@@ -968,8 +979,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 2472,
-      "end": 2629,
+      "start": 2847,
+      "end": 3004,
       "digest": "f792b593e6dd1127dc1ae34271cec8245fe46512c98bec7fca4ee14e2d35b2ec"
     },
     {
@@ -979,9 +990,31 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 2777,
-      "end": 3301,
+      "start": 3152,
+      "end": 3676,
       "digest": "ca8f3965071db7d78da76225f228d3f466c9cc2b358b2cb5b338a19806c6de62"
+    },
+    {
+      "id": "clause.secondbrain.inbox-auto-capture",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 3820,
+      "end": 4013,
+      "digest": "283a89e0de7eb76eb029c6ca1a7666cb399a91cf653c0dbf702576908b96e898"
+    },
+    {
+      "id": "clause.secondbrain.research-capture",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 4153,
+      "end": 4646,
+      "digest": "449dd48f8556425713170b4da9f0c4969e6d8d6c66bd81e54ea7ecb212407715"
     },
     {
       "id": "clause.secondbrain.prohibit-writes",
@@ -990,8 +1023,8 @@
       "enforcement": "prohibited",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 3442,
-      "end": 3659,
+      "start": 4783,
+      "end": 5000,
       "digest": "cd11ba32187e8ae388201090d051a61142acdc826d2b2274bde2948d76f82008"
     },
     {
@@ -1001,8 +1034,8 @@
       "enforcement": "prohibited",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 3802,
-      "end": 4017,
+      "start": 5143,
+      "end": 5358,
       "digest": "c520b99127df3d92d47786af5b45c573bbeaaa53ec06333672c6e4d5f84c02f0"
     },
     {
@@ -1012,8 +1045,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 4160,
-      "end": 4303,
+      "start": 5501,
+      "end": 5644,
       "digest": "15e0eece3032f56e5cec8f964c440a4aa8fa2a8de12e68e52580efa056a03bf7"
     },
     {
@@ -1023,8 +1056,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 4448,
-      "end": 4578,
+      "start": 5789,
+      "end": 5919,
       "digest": "0af4ae522b06d04fb6797f3001a0531b8d140e4c32f2770e4b19ac6ad820b532"
     },
     {

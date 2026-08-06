@@ -262,6 +262,10 @@ Update `updated_at` whenever status changes or an evidence addendum is appended;
 Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the ADR-0092 boundary: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the Inbox Entry's provenance.
 <!-- /source-baseline-entry: clause.context.inbox-01-triage -->
 
+<!-- source-baseline-entry: clause.context.inbox-02-fleet-flow -->
+Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent.
+<!-- /source-baseline-entry: clause.context.inbox-02-fleet-flow -->
+
 <!-- source-baseline-entry: clause.spec.keep-artifacts-in-spec-folder -->
 Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `docs/specs/_archived/`.
 <!-- /source-baseline-entry: clause.spec.keep-artifacts-in-spec-folder -->

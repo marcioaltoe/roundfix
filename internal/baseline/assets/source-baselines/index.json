@@ -74,6 +74,7 @@
         "clause.context.findings-06-append-evidence",
         "clause.context.findings-07-update-timestamp",
         "clause.context.inbox-01-triage",
+        "clause.context.inbox-02-fleet-flow",
         "clause.spec.keep-artifacts-in-spec-folder",
         "clause.spec.specs-are-downstream-artifacts",
         "clause.context.read-domain-contract",
@@ -96,6 +97,8 @@
         "clause.secondbrain.02-query-order",
         "clause.secondbrain.inbox-write-permission",
         "clause.secondbrain.inbox-entry-contract",
+        "clause.secondbrain.inbox-auto-capture",
+        "clause.secondbrain.research-capture",
         "clause.secondbrain.prohibit-writes",
         "clause.secondbrain.prohibit-secret-access",
         "clause.secondbrain.cite-used-files",
@@ -119,9 +122,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 111,
-      "corpusDigest": "40f71adc8f6773da710d1bfd7018fb97e657f1a06c66e951bfdc4a2ab853f9e1",
-      "manifestDigest": "292248669cc0d24f34988a353dace3be47f0baad0355294a9213d4ef1775459e"
+      "entryCount": 114,
+      "corpusDigest": "de485d715e2ae6f6efc1cd4b7357c103c0420e77806e4e5035ca40f37f1814e2",
+      "manifestDigest": "ccc1bd94bd959b90ef43d568fd40a83c6903360ae3ff3786d4fcbd7178a32d18"
     }
   ]
 }
