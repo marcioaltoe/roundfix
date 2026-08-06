@@ -98,12 +98,42 @@ workflow strips the leading `v` and:
   `npm version <tag> --no-git-tag-version`;
 - rewrites the launcher's `optionalDependencies` to pin the same version.
 
-Nothing can disagree because every artifact is stamped from the one tag. The
-`Validate tag` step fails the run before any build when the tag is not a semver
-version (`vMAJOR.MINOR.PATCH`, with an optional pre-release suffix). Keep
-`CHANGELOG.md` ahead of the tag: the GitHub Release notes are extracted from the
-`## [<version>]` section, falling back to a bare `Release <tag>` line when no
-section matches.
+Nothing can disagree because every artifact is stamped from the one tag —
+**after** the run is allowed to start. `Validate tag` gates that, and it makes
+**two** checks before any build:
+
+1. the tag is a semver version (`vMAJOR.MINOR.PATCH`, with an optional
+   pre-release suffix);
+2. the tag matches the **checked-in launcher version** in
+   `dist/npm/roundfix/package.json`.
+
+There are **two** checked-in version sources, and `TestVersionMatchesTheReleaseManifest`
+keeps them equal:
+
+- `dist/npm/roundfix/package.json` — what `Validate tag` compares against;
+- `internal/app/version.go` (`var Version`) — the binary's fallback when no
+  ldflags stamp is applied.
+
+The second check is why the tag alone is not enough to cut a release. Bump both
+files and commit them **before** creating the tag, or the run stops with
+
+```text
+tag v<version> does not match the checked-in Roundfix version <checked-in>
+```
+
+The five per-platform packages under `dist/npm/packages/` are **not** checked:
+the workflow stamps them from the tag, so they stay at their placeholder
+version in the repository. Only the launcher is compared.
+
+Recovering from a tag pushed against a stale launcher version means deleting
+and recreating that tag, which is a destructive release operation needing its
+own explicit approval. Bumping first avoids it. Measured on 2026-08-06: the
+v0.4.0 tag was pushed against a checked-in 0.3.1 and the run stopped at
+`Validate tag` before publishing anything.
+
+Keep `CHANGELOG.md` ahead of the tag: the GitHub Release notes are extracted
+from the `## [<version>]` section, falling back to a bare `Release <tag>` line
+when no section matches.
 
 ## Configuring npm Trusted Publishing
 
