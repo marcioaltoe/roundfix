@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0079-one-door-for-fleet-knowledge
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -86,3 +86,57 @@ green the day the rules start demanding it.
 - ADR-0093, ADR-0094.
 - `references/2026-08-06-findings-accumulate-faster-than-they-become-specs.md`
   → why advice was not enough.
+
+## Result
+
+### Implementation
+
+- Added the repository-level `SC-FINDING-LIFECYCLE`, `SC-ROLLUP-MEMBER`, and
+  `SC-ARCHIVE-LICENSE` detectors beside the existing loop-order detector and
+  wired them through the public `Check` report surface.
+- Limited discovery to dated Finding files and parsed only written YAML
+  frontmatter values. Lifecycle accepts exactly `pending`, `partial`,
+  `deferred`, and `done`; an unknown value is quoted in the diagnostic.
+- Resolved declared Rollup member basenames against top-level active and
+  archived Findings. Resolved `absorbed_by` only against active Rollups,
+  active Spec folder slugs, and archived Spec folder slugs.
+- Recorded artifact absence through the existing skipped-detector report
+  surface: missing `docs/findings/`, no declared Rollup, and missing or empty
+  `docs/findings/_archived/` produce no error finding.
+- Extended the characterization code inventory and golden with zero findings
+  for all three new codes. The golden also adopts the current archived
+  `SC-REF-UNRESOLVED` count of 191 after task_03 moved cited Findings, and the
+  replay-0060 provenance assertion now reads the `_archived/` path already
+  written by that sweep.
+
+### Focused checks
+
+- The three dedicated carrier suites passed independently after their initial
+  compile-time red signal: `TestCheckFindingLifecycle` reported 5 passing
+  tests, `TestCheckRollupMember` reported 4, and `TestCheckArchiveLicense`
+  reported 5.
+- `GOCACHE=<worktree>/.gocache go test -count=1 ./internal/speccheck` passed
+  92 tests. This includes the corpus golden, the active-corpus no-error check,
+  and the corrected replay provenance assertion; the dedicated wall-clock
+  test is selector-gated in an ordinary package run.
+- `GOCACHE=<worktree>/.gocache go test -count=1 ./internal/speccheck -run Budget -v`
+  passed. The full active and archived Spec corpus sweep took 557.601417 ms
+  against the 1 s budget.
+- The commands under this Task's `## Verification`, including the command-level
+  repository `spec check`, were not run; the Daemon owns them and settlement.
+
+### Acceptance-criterion evidence
+
+1. Each code has a report-surface red case with an exact source line and
+   rendered fix line, plus a green case. Lifecycle additionally covers missing
+   frontmatter, the offending unknown value, and all four allowed values.
+2. Each suite has a presence-aware case that asserts zero findings and the
+   corresponding recorded skip for an absent findings directory, Rollup, or
+   archive.
+3. The package-wide focused run passed the existing fixture corpus; the golden
+   records zero active and zero archived findings for the three new codes. The
+   separate `Budget` selector passed at 557.601417 ms.
+4. The package-wide focused run included
+   `TestCheckActiveCorpusHasNoErrors`, which invokes the public `Check` surface
+   for every active Spec and reported no errors. The Daemon-owned CLI
+   Verification remains not run.
