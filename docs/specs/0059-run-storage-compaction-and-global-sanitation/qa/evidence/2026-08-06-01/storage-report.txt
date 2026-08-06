@@ -1,0 +1,32 @@
+Build: bc44a3ac
+Fixture: storage-fixture.sql in isolated HOME
+Entry point: built CLI, working directory outside Git
+
+Before database SHA-256:
+259ca23325b859e0380d71fe869ee9bf051ef0c544e8ab2bdceaad71bf7f35a4
+
+$ HOME=<isolated> ./bin/roundfix storage report
+exit: 0
+Database: file=53248 table=53248 free=0 grouped=53248 difference=0
+Tolerance: 4096 bytes, stated as one SQLite page because page accounting and
+file stat can land on adjacent boundaries without a writer lock.
+Tables: active_run_locks=1, interactive_defaults=0,
+run_agent_selections=2, run_events=2, runs=7; SQLite-owned metadata was also
+measured.
+Repositories: six groups across six recorded repository paths.
+States: Active=1, Clean=6.
+Artifact Roots: six groups; the absent default root was reported as missing.
+Artifacts: measured=54024 grouped=54024 difference=0.
+
+The second fresh process returned the same grouped rows and byte totals.
+After database SHA-256:
+259ca23325b859e0380d71fe869ee9bf051ef0c544e8ab2bdceaad71bf7f35a4
+
+Selected Active, terminal, and Review Artifact file hashes also matched before
+and after both reports.
+
+$ HOME=<empty-isolated> ./bin/roundfix storage report
+exit: 0; reported no Run Database and left the Home empty.
+
+$ HOME=<isolated> ./bin/roundfix storage report --unexpected
+exit: 2; refused flags/arguments and reported no side effects.

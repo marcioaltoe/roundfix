@@ -1,0 +1,39 @@
+Build: bc44a3ac
+
+$ HOME=<isolated> ./bin/roundfix gc --help
+exit: 0
+Usage:
+  roundfix gc [--dry-run]
+  roundfix gc sanitize [--apply]
+
+$ HOME=<isolated> ./bin/roundfix gc compact
+exit: 2
+Preflight failed
+Reason:
+  unexpected argument "compact"
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+$ HOME=<isolated> ./bin/roundfix storage report
+working directory: outside any Git repository
+exit: 0
+Storage report
+Database
+  File bytes: 0
+  Table bytes: 0
+  Free bytes: 0
+  Grouped bytes: 0
+  Reconciliation difference: 0
+  Reconciliation tolerance: 0 bytes (no Run Database exists)
+Tables
+Repositories
+States
+Artifact Roots
+
+$ HOME=<isolated> ./bin/roundfix storage report --unexpected
+exit: 2
+Preflight failed
+Reason:
+  does not accept flags or arguments
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
