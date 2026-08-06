@@ -19,9 +19,12 @@ graph:
     - id: task_05
       file: task_05.md
       needs: [task_02, task_03, task_04]
+    - id: task_07
+      file: task_07.md
+      needs: [task_05]
     - id: task_06
       file: task_06.md
-      needs: [task_05]
+      needs: [task_07]
 ---
 
 # Tasks — Run storage compaction and global sanitation
@@ -33,10 +36,11 @@ graph:
 | task_03 | Discover and classify every Artifact Root       | backend | high       | task_01                   |
 | task_04 | Give every durable table a stated lifecycle     | backend | medium     | task_01                   |
 | task_05 | Synchronise the Roundfix Skill                  | chore   | low        | task_02, task_03, task_04 |
-| task_06 | Run the final QA gate                           | qa      | medium     | task_05                   |
+| task_07 | Ship the compaction command and document it     | backend | medium     | task_05                   |
+| task_06 | Run the final QA gate                           | qa      | medium     | task_07                   |
 
 Waves: 1 → task_01 · 2 → task_02 · task_03 · task_04 · 3 → task_05 ·
-4 → task_06
+4 → task_07 · 5 → task_06
 
 task_01 leads because it is read-only and because it defines the measurement
 vocabulary the other three assert against. Landing it first means nothing later
@@ -59,5 +63,18 @@ task_05 is the one authorized tooling Task, bounded to
 `.agents/skills/roundfix/SKILL.md` and its mirror under the 2026-08-04 record,
 which names Spec 0059.
 
-The QA gate is authored as task_06 and depends on task_05, the graph's only
+task_07 was appended on 2026-08-06 after the gate reported `fail`, closing
+F-001 and F-002. The compaction guards shipped inside `internal/store` and
+nothing exposed them: the TechSpec declared `roundfix gc compact` in its API
+Contracts and no Task requirement ever asked for it, so the feature shipped as
+an unreachable library. Naming the insertion here is what invalidates that
+report.
+
+The second lesson is recorded in task_07's Verification section. task_05
+settled `completed` having changed nothing, because all four of its checks pass
+most easily on an untouched repository — the shape Spec 0065's
+`SC-VERIFY-WORK-INDEPENDENT` refuses, shipped the same night but authored after
+this graph.
+
+The QA gate is authored as task_06 and depends on task_07, the graph's only
 non-QA leaf.
