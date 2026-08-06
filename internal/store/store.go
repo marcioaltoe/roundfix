@@ -75,8 +75,9 @@ var terminalStates = []string{
 }
 
 type Store struct {
-	db  *sql.DB
-	now func() time.Time
+	db                *sql.DB
+	now               func() time.Time
+	temporaryCapacity func(path string) (int64, error)
 }
 
 type Run struct {
@@ -249,8 +250,9 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 	db.SetMaxOpenConns(1)
 
 	store := &Store{
-		db:  db,
-		now: func() time.Time { return time.Now().UTC() },
+		db:                db,
+		now:               func() time.Time { return time.Now().UTC() },
+		temporaryCapacity: availableTemporaryCapacity,
 	}
 	if err := store.migrate(ctx); err != nil {
 		_ = db.Close()
@@ -290,8 +292,9 @@ func openReader(ctx context.Context, homeDir string, dataSource func(string) str
 	}
 	db.SetMaxOpenConns(1)
 	store := &Store{
-		db:  db,
-		now: func() time.Time { return time.Now().UTC() },
+		db:                db,
+		now:               func() time.Time { return time.Now().UTC() },
+		temporaryCapacity: availableTemporaryCapacity,
 	}
 	if err := db.PingContext(ctx); err != nil {
 		_ = db.Close()

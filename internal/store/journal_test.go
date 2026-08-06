@@ -5,17 +5,17 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"roundfix/internal/runevent"
 	"runtime"
 	"slices"
 	"strings"
 	"testing"
 	"time"
-
-	"roundfix/internal/runevent"
 )
 
 func sampleRunEvent(runID string, summary string) runevent.RunEvent {
@@ -1135,4 +1135,276 @@ func countActiveRunLocks(t *testing.T, ctx context.Context, store *Store) int {
 		t.Fatalf("count Active Run locks: %v", err)
 	}
 	return count
+}
+
+func TestCompactionPreviewMatchesResultWithinDeclaredTolerance(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+	seedPrunableRunEvents(t, ctx, runStore)
+
+	preview, err := runStore.PreviewCompaction(ctx)
+	if err != nil {
+		t.Fatalf("preview Run Database compaction: %v", err)
+	}
+	if preview.BytesBefore <= 0 {
+		t.Fatalf("expected measured bytes before compaction, got %#v", preview)
+	}
+	if preview.BytesReclaimable <= 0 {
+		t.Fatalf("expected measured reclaimable bytes, got %#v", preview)
+	}
+	if preview.BytesAfter != preview.BytesBefore-preview.BytesReclaimable {
+		t.Fatalf("preview relation does not reconcile: %#v", preview)
+	}
+	if preview.ReconciliationToleranceBytes <= 0 || preview.ReconciliationToleranceReason == "" {
+		t.Fatalf("expected declared compaction tolerance, got %#v", preview)
+	}
+
+	result, err := runStore.Compact(ctx, preview)
+	if err != nil {
+		t.Fatalf("compact Run Database: %v", err)
+	}
+	reclaimDifference := absInt64(result.BytesReclaimed - preview.BytesReclaimable)
+	if reclaimDifference > preview.ReconciliationToleranceBytes {
+		t.Fatalf(
+			"compaction reclaimed %d bytes, preview projected %d, difference %d exceeds tolerance %d",
+			result.BytesReclaimed,
+			preview.BytesReclaimable,
+			reclaimDifference,
+			preview.ReconciliationToleranceBytes,
+		)
+	}
+	if result.BytesBefore != preview.BytesBefore || result.BytesAfter != result.BytesBefore-result.BytesReclaimed {
+		t.Fatalf("compaction result does not reconcile with preview: preview=%#v result=%#v", preview, result)
+	}
+	databaseInfo, err := os.Stat(DatabasePath(homeDir))
+	if err != nil {
+		t.Fatalf("stat compacted Run Database: %v", err)
+	}
+	if result.BytesAfter != databaseInfo.Size() {
+		t.Fatalf("compaction reported %d bytes after, file has %d", result.BytesAfter, databaseInfo.Size())
+	}
+	var integrity string
+	if err := runStore.db.QueryRowContext(ctx, `PRAGMA quick_check`).Scan(&integrity); err != nil {
+		t.Fatalf("check compacted Run Database integrity: %v", err)
+	}
+	if integrity != "ok" {
+		t.Fatalf("compacted Run Database integrity check returned %q", integrity)
+	}
+}
+
+func TestCompactRefusesActiveRunAndPreservesDatabaseBytes(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+
+	active, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Active Run: %v", err)
+	}
+	preview, err := runStore.PreviewCompaction(ctx)
+	if err != nil {
+		t.Fatalf("preview Run Database compaction: %v", err)
+	}
+	before := databaseFileSize(t, homeDir)
+
+	_, err = runStore.Compact(ctx, preview)
+
+	var activeErr ActiveRunCompactionError
+	if !errors.As(err, &activeErr) {
+		t.Fatalf("expected Active Run compaction refusal, got %T %v", err, err)
+	}
+	if activeErr.RunID != active.ID || !strings.Contains(err.Error(), active.ID) {
+		t.Fatalf("expected refusal to name Active Run %q, got %#v: %v", active.ID, activeErr, err)
+	}
+	after := databaseFileSize(t, homeDir)
+	if after != before {
+		t.Fatalf("Active Run refusal changed Run Database bytes: before=%d after=%d", before, after)
+	}
+}
+
+func TestCompactRefusesAnotherWriterAndPreservesDatabaseBytes(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+	seedPrunableRunEvents(t, ctx, runStore)
+	preview, err := runStore.PreviewCompaction(ctx)
+	if err != nil {
+		t.Fatalf("preview Run Database compaction: %v", err)
+	}
+	otherWriter := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, otherWriter)
+	before := databaseFileSize(t, homeDir)
+
+	_, err = runStore.Compact(ctx, preview)
+
+	var writerErr WriterPresentCompactionError
+	if !errors.As(err, &writerErr) {
+		t.Fatalf("expected writer-present compaction refusal, got %T %v", err, err)
+	}
+	if !strings.Contains(err.Error(), "another Run Database connection") {
+		t.Fatalf("expected refusal to name the blocking writer, got %v", err)
+	}
+	after := databaseFileSize(t, homeDir)
+	if after != before {
+		t.Fatalf("writer refusal changed Run Database bytes: before=%d after=%d", before, after)
+	}
+}
+
+func TestCompactRefusesInsufficientTemporaryCapacityBeforeMutation(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+	seedPrunableRunEvents(t, ctx, runStore)
+	preview, err := runStore.PreviewCompaction(ctx)
+	if err != nil {
+		t.Fatalf("preview Run Database compaction: %v", err)
+	}
+	required := preview.BytesBefore * 2
+	runStore.temporaryCapacity = func(string) (int64, error) {
+		return required - 1, nil
+	}
+	before := databaseFileSize(t, homeDir)
+
+	_, err = runStore.Compact(ctx, preview)
+
+	var capacityErr CompactionCapacityError
+	if !errors.As(err, &capacityErr) {
+		t.Fatalf("expected temporary-capacity refusal, got %T %v", err, err)
+	}
+	if capacityErr.RequiredBytes != required || capacityErr.AvailableBytes != required-1 || capacityErr.ShortfallBytes != 1 {
+		t.Fatalf("capacity refusal did not name the measured shortfall: %#v", capacityErr)
+	}
+	if !strings.Contains(err.Error(), "shortfall=1") {
+		t.Fatalf("expected refusal to name one-byte shortfall, got %v", err)
+	}
+	after := databaseFileSize(t, homeDir)
+	if after != before {
+		t.Fatalf("capacity refusal changed Run Database bytes: before=%d after=%d", before, after)
+	}
+}
+
+func TestCompactRefusesStalePreviewAndPreservesDatabaseBytes(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+	seedPrunableRunEvents(t, ctx, runStore)
+	preview, err := runStore.PreviewCompaction(ctx)
+	if err != nil {
+		t.Fatalf("preview Run Database compaction: %v", err)
+	}
+	request := sampleCreateRunRequest()
+	request.HeadBranch = "feature/after-preview"
+	request.PRNumber = "after-preview"
+	run, err := runStore.CreateRun(ctx, request)
+	if err != nil {
+		t.Fatalf("create Run after preview: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, run.ID, StateClean); err != nil {
+		t.Fatalf("complete Run after preview: %v", err)
+	}
+	before := databaseFileSize(t, homeDir)
+
+	_, err = runStore.Compact(ctx, preview)
+
+	var staleErr CompactionPreviewStaleError
+	if !errors.As(err, &staleErr) {
+		t.Fatalf("expected stale-preview refusal, got %T %v", err, err)
+	}
+	after := databaseFileSize(t, homeDir)
+	if after != before {
+		t.Fatalf("stale-preview refusal changed Run Database bytes: before=%d after=%d", before, after)
+	}
+}
+
+func TestPruneTerminalRunsNeverVacuumsAllocatedPages(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+
+	run := seedTerminalRunEvents(t, ctx, runStore)
+	checkpointRunDatabase(t, ctx, runStore)
+	before := databaseFileSize(t, homeDir)
+	result, err := runStore.PruneTerminalRuns(ctx, time.Now().UTC().Add(time.Hour))
+	if err != nil {
+		t.Fatalf("prune Run Event Journal: %v", err)
+	}
+	if !slices.Contains(result.RunIDs, run.ID) || result.Events == 0 {
+		t.Fatalf("expected fixture Run Events pruned, got %#v", result)
+	}
+	checkpointRunDatabase(t, ctx, runStore)
+	after := databaseFileSize(t, homeDir)
+	if after != before {
+		t.Fatalf("retention sweep compacted Run Database as a side effect: before=%d after=%d", before, after)
+	}
+	freePages, err := storagePragmaInt64(ctx, runStore.db, "freelist_count")
+	if err != nil {
+		t.Fatalf("measure free pages after retention sweep: %v", err)
+	}
+	if freePages == 0 {
+		t.Fatal("expected retention sweep to leave deleted pages allocated for explicit compaction")
+	}
+}
+
+func seedPrunableRunEvents(t *testing.T, ctx context.Context, runStore *Store) Run {
+	t.Helper()
+	run := seedTerminalRunEvents(t, ctx, runStore)
+	if _, err := runStore.PruneTerminalRuns(ctx, time.Now().UTC().Add(time.Hour)); err != nil {
+		t.Fatalf("prune Run Event Journal fixture: %v", err)
+	}
+	return run
+}
+
+func seedTerminalRunEvents(t *testing.T, ctx context.Context, runStore *Store) Run {
+	t.Helper()
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create compaction fixture Run: %v", err)
+	}
+	for index := 0; index < 48; index++ {
+		event := sampleRunEvent(run.ID, fmt.Sprintf("compaction fixture %d", index))
+		event.Payload = bytes.Repeat([]byte{byte(index + 1)}, 16*1024)
+		if _, err := runStore.AppendRunEvent(ctx, event); err != nil {
+			t.Fatalf("append compaction fixture Run Event %d: %v", index, err)
+		}
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, StateClean)
+	if err != nil {
+		t.Fatalf("complete compaction fixture Run: %v", err)
+	}
+	return completed.Run
+}
+
+func checkpointRunDatabase(t *testing.T, ctx context.Context, runStore *Store) {
+	t.Helper()
+	var busy int
+	var logFrames int
+	var checkpointedFrames int
+	if err := runStore.db.QueryRowContext(ctx, `PRAGMA wal_checkpoint(TRUNCATE)`).Scan(&busy, &logFrames, &checkpointedFrames); err != nil {
+		t.Fatalf("checkpoint Run Database: %v", err)
+	}
+	if busy != 0 {
+		t.Fatalf("checkpoint Run Database remained busy: log=%d checkpointed=%d", logFrames, checkpointedFrames)
+	}
+}
+
+func databaseFileSize(t *testing.T, homeDir string) int64 {
+	t.Helper()
+	info, err := os.Stat(DatabasePath(homeDir))
+	if err != nil {
+		t.Fatalf("stat Run Database: %v", err)
+	}
+	return info.Size()
 }
