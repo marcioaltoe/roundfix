@@ -67,8 +67,8 @@ Check all three with fresh command evidence before touching anything:
    ```
 
    Then parse and validate every data row. The index belongs to the current
-   Spec: `owner` must equal its four-digit prefix, `type` must be `inbox` or
-   `finding`, and each `source` and `path` must appear only once. A `path` must
+   Spec: `owner` must equal its four-digit prefix, `type` must be `inbox`,
+   `finding`, or `backlog`, and each `source` and `path` must appear only once. A `path` must
    be one basename relative to `_index.md`; reject absolute paths, `.`, `..`,
    path separators, and symbolic links instead of allowing traversal or a link
    outside `references/`. Run the following from the repository root and
@@ -135,8 +135,8 @@ Check all three with fresh command evidence before touching anything:
        reject("invalid index row at line " NR ": " $0)
        next
      }
-     if (type != "inbox" && type != "finding") {
-       reject("type must be `inbox` or `finding` at line " NR ": " type)
+     if (type != "inbox" && type != "finding" && type != "backlog") {
+       reject("type must be `inbox`, `finding`, or `backlog` at line " NR ": " type)
      }
      if (owner != expected_owner) {
        reject("owner must be " expected_owner " at line " NR ": " owner)
@@ -151,7 +151,8 @@ Check all three with fresh command evidence before touching anything:
        reject("adopted date must be YYYY-MM-DD at line " NR ": " adopted)
      }
      if ((type == "inbox" && source !~ /^docs\/_inbox\/[^\/]+\.md$/) ||
-         (type == "finding" && source !~ /^docs\/findings\/[^\/]+\.md$/)) {
+         (type == "finding" && source !~ /^docs\/findings\/[^\/]+\.md$/) ||
+         (type == "backlog" && source !~ /^docs\/backlog\/[^\/]+\.md$/)) {
        reject("source does not match type at line " NR ": " source)
      }
      print source "|" type "|" owner "|" adopted "|" path
