@@ -2438,9 +2438,10 @@ func validateManagedRefreshPreservation(
 func nonManagedRegionDigests(relative string, content []byte) []string {
 	var digests []string
 	for _, region := range partitionRootSource(relative, content) {
-		if region.Kind != "managed-block" {
-			digests = append(digests, region.Digest)
+		if region.Kind == "managed-block" || len(bytes.TrimSpace(region.SourceBytes)) == 0 {
+			continue
 		}
+		digests = append(digests, region.Digest)
 	}
 	return digests
 }

@@ -1114,6 +1114,51 @@ Keep this repository-owned rule byte-identical.
 	}
 }
 
+func TestManagedRefreshPreservationAllowsNewManagedRootBlock(t *testing.T) {
+	t.Parallel()
+
+	repository := t.TempDir()
+	const relative = "AGENTS.md"
+	const authored = "Repository-authored preface.\n\n"
+	const existing = `<!-- setup-context-driven:begin id=root.core version=0.0.1 -->
+
+Existing managed block.
+
+<!-- setup-context-driven:end id=root.core -->
+`
+	const added = `<!-- setup-context-driven:begin id=root.secondbrain version=0.0.1 -->
+
+New managed block.
+
+<!-- setup-context-driven:end id=root.secondbrain -->
+`
+	before := []byte(authored + existing)
+	after := []byte(authored + existing + "\n" + added)
+	writeTransactionFile(t, repository, relative, string(before), 0o644)
+
+	err := validateManagedRefreshPreservation(
+		repository,
+		[]Preimage{{
+			Path:            relative,
+			Exists:          true,
+			Kind:            PreimageRegular,
+			Mode:            0o644,
+			Bytes:           int64(len(before)),
+			ContentIdentity: planContentIdentity(before),
+		}},
+		[]Postimage{{
+			Path:            relative,
+			Kind:            PreimageRegular,
+			Mode:            0o644,
+			Content:         after,
+			ContentIdentity: planContentIdentity(after),
+		}},
+	)
+	if err != nil {
+		t.Fatalf("validate managed refresh with new managed root block: %v", err)
+	}
+}
+
 func TestManagedRefreshApplyRejectsChangedNonManagedRegion(t *testing.T) {
 	t.Parallel()
 

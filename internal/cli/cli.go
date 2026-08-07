@@ -53,6 +53,7 @@ Usage:
   roundfix release plan --reset-to <version> [--format <text|json>]
   roundfix spec check [<slug> ...] [--format <text|json>] [--strict]
   roundfix spec audit <slug> [--format <text|json>]
+  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -5357,6 +5358,7 @@ explicit post-QA authority.
 	case "baseline":
 		return `Usage:
   roundfix baseline [--repo <path>] [--format <text|json>]
+  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -5373,6 +5375,7 @@ Change Plan with file changes first. Repository mutation occurs only after
 explicit confirmation of the displayed Plan Digest.
 
 Commands:
+  update   Refresh an adopted repository from its stored Setup Manifest without prompting.
   plan     Automation: emit a portable, digest-bound Baseline Plan without prompting or writing.
   apply    Automation: apply and verify exactly one approved portable Baseline Plan without prompting.
   capabilities  Re-check Profile capability evidence without decisions, prompts, or writes.
@@ -5387,6 +5390,39 @@ approved Plan Digest.
 Repository-owned profiles live only under
 .roundfix/baseline/profiles/<id>.json and may reference only entries in the
 embedded Baseline catalog.
+`
+	case "baseline update":
+		return `Usage:
+  roundfix baseline update [--repo <path>] [--format <text|json>]
+                           [--yes | --confirm-plan <digest>]
+                           [--adopt-suggested]
+
+Reads the repository's Setup Manifest, resolves its recorded Baseline Profile
+and decisions against the current catalog, and builds a managed-refresh Plan
+without prompting or invoking a semantic analyzer. Without confirmation, a
+changed Plan is presented and repository bytes remain unchanged. --yes approves
+the Plan Digest computed in this invocation; --confirm-plan approves the exact
+digest reviewed in a previous invocation. The two forms are mutually exclusive.
+
+A repository without a Setup Manifest requires first adoption. A decision the
+manifest does not carry requires action unless --adopt-suggested explicitly
+selects the catalog suggestion; every adopted suggestion is reported.
+
+JSON output uses roundfix/baseline-update-result/v1.
+
+Exit codes:
+  0  repository already current, or approved managed refresh applied and verified
+  1  apply, verification, output, rollback, or recovery failure
+  2  invalid input, incompatible manifest, or unsafe repository
+  3  adoption, a new decision, confirmation, or retention action is required
+  130 operation canceled
+
+Options:
+  --repo             Git worktree or a path inside it (default current directory)
+  --format           Output format: text or json (default text)
+  --yes              Approve the Plan Digest computed in this invocation
+  --confirm-plan     Exact Plan Digest reviewed in a previous invocation
+  --adopt-suggested  Adopt and report suggestions only for decisions absent from the manifest
 `
 	case "baseline capabilities check":
 		return `Usage:

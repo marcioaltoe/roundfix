@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0082-the-manifest-already-answered-that
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -87,3 +87,65 @@ fixture repository on its own, before skills are involved.
 - `_techspec.md` → Build Order 5; API Contracts; Data Models.
 - `_prd.md` → Core Features 1, 4, 6, 9; User Stories 1 and 5; Goals 1 and 4; Success Metrics.
 - ADR-0066, ADR-0068, ADR-0071, ADR-0073, ADR-0099.
+
+## Result
+
+Implemented the non-interactive `roundfix baseline update` slice. The command
+resolves the stored Setup Manifest, reports or explicitly adopts catalog
+suggestions for newly required decisions, builds a managed-refresh Plan, and
+either presents it without writes or applies it against the exact current Plan
+Digest. Text and JSON use the `roundfix/baseline-update-result/v1` result shape
+with prior/current catalog identities, file changes, retention evidence, clause
+delta, warnings, new/adopted decisions, Plan Digest, approved digest, and the
+apply status matrix.
+
+The suggestion-adoption flow exposed a lower-layer preservation defect when a
+decision adds a managed root block: whitespace-only renderer separators were
+counted as repository-authored regions. The validator now excludes only those
+separator-only regions while continuing to digest every non-managed region
+that contains authored content. The focused positive regression and the
+existing prose-change, hand-edited-marker, and unaccounted-clause negative
+tests all pass.
+
+Focused checks used the worktree-local `.gocache` because the sandbox denied
+the default macOS Go build cache:
+
+- `gofmt -w` over the changed Go files in two focused invocations — both exit 0.
+- Ten individual `go test ./internal/cli -run '^TestBaselineUpdate...$' -count=1` invocations — each exit 0. They covered apply, idempotence, no manifest, missing decisions, suggestion adoption, both confirmation forms, stale confirmation, help, exit categories, and the no-ACP path.
+- Five individual managed-refresh checks in `./internal/baseline` — `TestManagedRefreshPreservationAllowsNewManagedRootBlock`, `TestManagedRefreshPreservesNonManagedRegionDigests`, `TestManagedRefreshApplyRejectsChangedNonManagedRegion`, `TestManagedRefreshBlocksHandEditedManagedMarker`, and `TestManagedRefreshUnaccountedClauseStillBlocks` — each exit 0.
+- `go test ./internal/cli -run '^TestBaselineDocumentationContract$' -count=1` — exit 0.
+- `git diff --check` — exit 0.
+
+Acceptance evidence:
+
+1. `TestBaselineUpdateAppliesManifestPlanAndReportsJSON` applies a stale
+   manifest-backed fixture without an input stream or analyzer and observes
+   managed guide plus Setup Manifest rewrites, exit 0, catalog identities,
+   file changes, retention, warnings, and the approved digest.
+2. `TestBaselineUpdateIdempotenceReportsZeroFileChanges` immediately invokes
+   the command again, observes zero file changes and verified idempotence, and
+   proves the repository tree remains byte-identical after the second call.
+3. `TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites` observes exit 3,
+   category `adoption`, a first-adoption next action, and an unchanged tree.
+4. `TestBaselineUpdateNewDecisionRequiresActionWithoutWrites` removes
+   `secondbrain.enabled` from the manifest and observes exit 3, the named
+   decision, and an unchanged tree.
+5. `TestBaselineUpdateAdoptsEverySuggestedDecision` repeats that case with
+   `--adopt-suggested --yes`, observes exit 0, and records
+   `secondbrain.enabled=true` in `adoptedSuggestions`.
+6. `TestBaselineUpdatePresentsPlanAndConfirmsPreviousDigest` observes the text
+   Plan, digest, file/retention evidence, and byte-identical tree without
+   confirmation, then applies by passing that reviewed digest in a second
+   invocation. `TestBaselineUpdateRejectsDigestOtherThanCurrentPlanWithoutWrites`
+   proves any other digest exits 3 without writes.
+7. `TestBaselineUpdateRejectsMutuallyExclusiveConfirmationForms` observes exit
+   2 and a structured `invalid` result when `--yes` and `--confirm-plan` appear
+   together.
+8. The assembled success cases exercise manifest resolution, `BuildPlan`, and
+   `ApplyPlan` without an analyzer seam. The update implementation imports no
+   analyzer or ACP package, while
+   `TestBaselineUpdateExitCategoriesAndNoACPRuntimeDependency` also proves
+   cancellation maps to exit 130.
+
+The authored `## Verification` commands were not run; the Daemon owns them and
+Task settlement. Skill refresh remains outside this diff for Task 05.
