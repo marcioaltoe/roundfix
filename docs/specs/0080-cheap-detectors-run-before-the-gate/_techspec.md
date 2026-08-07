@@ -323,9 +323,11 @@ commands rather than tools.
    of findings, blocked rows, carried rows, and recorded skips. Inert: nothing
    calls them from the gate yet, so the repository is never left red between
    steps.
-2. **Prompt context** (depends on: 1) — `BuildQAPrompt` carries the Spec
-   Context Bundle and the previous report's identity, and its contract text
-   names all three blocked-cause counts.
+2. **Prompt context** — `BuildQAPrompt` carries the Spec Context Bundle and
+   the previous report's identity, and its contract text names all three
+   blocked-cause counts. It depends on nothing: it touches the agent prompt
+   surface while step 1 touches the consistency checker, so the two are
+   file-disjoint and start together.
 3. **The Daemon stage** (depends on: 1, 2) — the mechanical stage runs before
    the Agent Session, reports every finding in one pass, and withholds the
    session when blocking. Verdict computation is untouched.
@@ -334,11 +336,19 @@ commands rather than tools.
    consumes it yet.
 5. **Carry-forward** (depends on: 3, 4) — the resolver, its refusal cases, and
    the carried-row citation in the report.
-6. **Two-tier verification** (depends on: 1) — the per-profile clause in the
+6. **Two-tier verification** (depends on: 4) — the per-profile clause in the
    Baseline modules with postimage adoption, plus this repository's own
-   incremental target. Tooling task; its consequent fixture correction lands as
-   its own commit after it.
-7. **QA gate** (depends on: 5, 6) — the authored terminal Task.
+   incremental target. Tooling task. It follows step 4 rather than step 1
+   because both are tooling steps that regenerate derived artifacts under
+   `internal/baseline/assets/**`, and running them in one wave invites an
+   integration conflict for no gain.
+7. **Consequent fixture correction** (depends on: 6) — step 6's new clauses
+   grow the Source Baseline, staleing the maintained compatibility
+   expectation. It lands as its own commit after its cause, because
+   `docs/agents/specific-repository.md` fails the tooling-authority gate on a
+   consequent fix folded into the authorized commit — the refusal Spec 0079
+   paid a full gate round to learn.
+8. **QA gate** (depends on: 5, 7) — the authored terminal Task.
 
 ## Risks & Considerations
 

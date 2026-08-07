@@ -287,18 +287,35 @@ every daemon payload field the stream requires.
 2. **Writer transaction discipline** (depends on: 1) — machine-wide advisory
    lock, one connection per process, and one helper for every immediate write
    transaction.
-3. **Retention query repair** (depends on: 1, 2) — cutoff predicate in SQL,
+3. **Retention query repair** (depends on: 2) — cutoff predicate in SQL,
    eligibility work out of the write transaction, event count bounded or
    dropped from the hot path.
-4. **Store-scoped batched appends** (depends on: 1, 2) — shared writer,
+4. **Store-scoped batched appends** (depends on: 3) — shared writer,
    count/linger/immediate boundaries, idempotent ambiguous-commit handling,
    and Flush/Close integration with Agent teardown and terminal settlement.
-5. **Header projection and forward cursor** (depends on: 1) — the payload-free
-   read path and the cockpit's cursor, with the consumer corpus asserted
-   unchanged.
-6. **Parallel-Run proof** (depends on: 3, 4) — the scenario at the pre-raise
-   timeout, measured against the step-1 baseline.
-7. **QA gate** (depends on: 5, 6) — the authored terminal Task.
+5. **Header projection** (depends on: 4) — the payload-free read path, with the
+   consumer corpus asserted unchanged.
+6. **Cockpit forward cursor** (depends on: 5) — rendering cost tracks new
+   events instead of total events.
+7. **Parallel-Run proof** (depends on: 4) — the scenario at the pre-raise
+   timeout, measured against the step-1 baseline. It adds its own test file, so
+   it runs beside step 5.
+8. **Retention shape decision** (depends on: 7) — with the write and lock
+   costs fixed and re-measured against the step-1 baseline, decide whether any
+   payload shedding is needed at all. If it is not, that conclusion is the
+   deliverable and ADR-0008 stands untouched. If it is, it arrives as an
+   explicit ADR-0008 amendment naming the lost capability, and the
+   payload-equality replay probe is re-keyed before any such design becomes
+   possible.
+9. **QA gate** (depends on: 6, 8) — the authored terminal Task.
+
+Steps 2 through 5 are logically independent of one another and are sequenced
+anyway: every one of them edits the store's journal and connection code, and
+Task Worktrees editing one file in the same wave conflict at integration. The
+chain buys integration correctness at the cost of waves, and it is stated here
+so a reader comparing the graph against this order does not read the
+serialization as an accident. The only genuine parallelism left is the proof
+and the projection, which touch disjoint files.
 
 ## Risks & Considerations
 

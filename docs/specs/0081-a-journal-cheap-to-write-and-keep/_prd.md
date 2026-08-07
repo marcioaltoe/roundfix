@@ -48,7 +48,12 @@ cockpit re-reads the entire journal, payloads included, on every append. The
   control state, and this Spec changes event persistence and read paths
   without touching Run state, Stop semantics, or their tables. ADR-0027 owns
   how a removed or renamed config key degrades to
-  a warning. Source: `docs/agents/domain.md`.
+  a warning. ADR-0080 owns QA verdict semantics and the typed blocked-cause
+  counts, and ADR-0091 keeps the authored QA gate a terminal Task node, under
+  which this Spec's own graph is authored. ADR-0093, ADR-0096, and ADR-0097 do
+  not apply: this Spec adds no consistency check, no gate stage, and no
+  carried report row — they belong to Spec 0080, which shares only the QA
+  verdict contract with this one. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — the work is Go code, SQL, a user-guide
   document, and Go-side config defaults. It creates, edits, renames, moves, or
   deletes no repository-tooling configuration, script, ignore file, plugin
