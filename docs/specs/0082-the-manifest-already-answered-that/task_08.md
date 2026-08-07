@@ -42,6 +42,19 @@ catalog digests, and one repository that has never adopted.
 7. MUST classify every finding by user impact and record auditable evidence.
 8. MUST operate only on copies; no repository outside this checkout may be
    mutated by the gate.
+9. MUST create every repository copy outside this repository and outside the
+   Run worktree, under the operating system's temporary directory, with the
+   shared name prefix `roundfix-qa-0082-`. A copy created inside the repository
+   would be committed by the Run, and a copy created inside another project's
+   directory would put a real repository at risk. The prefix is fixed so that
+   cleanup is checkable by a command rather than by inspection.
+10. MUST delete every repository copy it created before the gate finishes,
+    including after a failed or abandoned case, and MUST leave no copy behind
+    even when a case fails. Deletion targets only paths the gate itself created
+    and matched by that prefix; the gate never deletes by a broad pattern that
+    could match a path it did not create.
+11. MUST record in the QA report, for every copy, the path it used and that the
+    path was removed, so cleanup is auditable rather than assumed.
 
 ## Rehearsal Cases
 
@@ -63,6 +76,7 @@ catalog digests, and one repository that has never adopted.
 - [ ] Execute every rehearsal case and capture its observation.
 - [ ] Observe process creation during a refresh to prove no ACP runtime spawns.
 - [ ] Classify findings by user impact and write the dated QA report.
+- [ ] Delete every repository copy created, and record each path and its removal.
 
 ## Acceptance Criteria
 
@@ -72,6 +86,11 @@ catalog digests, and one repository that has never adopted.
 - [ ] Any environment-blocked row carries equivalent evidence and a stated reason.
 - [ ] The dated QA report is written under the Spec's `qa/` directory.
 - [ ] No repository outside this checkout was mutated.
+- [ ] No repository copy remains on disk after the gate finishes, including for
+      cases that failed.
+- [ ] The QA report lists every copy path used and states that each was removed.
+- [ ] The repository working tree contains no leftover copy, so the Run commits
+      no fixture repository.
 
 ## Context
 
@@ -83,6 +102,9 @@ catalog digests, and one repository that has never adopted.
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `ls docs/specs/0082-the-manifest-already-answered-that/qa/ | grep -q '\.md$'` — expected: exits 0, proving the dated QA report exists.
 - `grep -q -i 'byte-identical' docs/specs/0082-the-manifest-already-answered-that/qa/*.md` — expected: exits 0, proving the preservation evidence was recorded.
+- `ls -d "${TMPDIR:-/tmp}"/roundfix-qa-0082-* 2>/dev/null | grep . ; test $? -eq 1` — expected: exits 0, proving every repository copy the gate created was removed.
+- `git status --porcelain | grep 'roundfix-qa-0082' ; test $? -eq 1` — expected: exits 0, proving no copy was left inside the repository for the Run to commit.
+- `grep -q 'roundfix-qa-0082' docs/specs/0082-the-manifest-already-answered-that/qa/*.md` — expected: exits 0, proving the report records the copy paths it used rather than omitting them.
 - `go test ./... -count=1` — expected: exits 0.
 
 ## References
