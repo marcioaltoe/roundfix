@@ -180,6 +180,24 @@ keeps the two-step review available for a single repository.
 
 ## Coverage Map
 
+- Core Feature 1 (manifest-driven refresh) → `ResolveManifestInput`,
+  `baselineUpdateCommand`.
+- Core Feature 2 (managed-only refresh scope) → `PreservationModeManagedRefresh`,
+  marker-bounded postimage assembly.
+- Core Feature 3 (retention accounting without classification) →
+  `resolvePlanRetention` and `classifySourceClauseTransition`, reused unchanged.
+- Core Feature 4 (confirmation-gated apply) → `BuildPlan`, `ApplyPlan`, the
+  `--yes` and `--confirm-plan` contract.
+- Core Feature 5 (skills refresh in the same act) → skills refresh stage
+  composing `skills.Install` and `baseline.RestoreSkills`.
+- Core Feature 6 (new decisions stop the sweep) → `ManifestInput.NewDecisions`,
+  `--adopt-suggested`, exit category `3`.
+- Core Feature 7 (interactive asks only what is new) → interactive short-circuit
+  in `driveHumanBaselinePlanWithAnalyzers`.
+- Core Feature 8 (a moved profile digest is still an update) →
+  `ResolveManifestInput` digest-drift branch, interactive state inspection.
+- Core Feature 9 (result document names the outcome) →
+  `baseline-update-result/v1`, `ResultStatusMatrix`.
 - Goal "refreshes without answering settled questions" → `ResolveManifestInput`,
   `baselineUpdateCommand`, interactive short-circuit in
   `driveHumanBaselinePlanWithAnalyzers`.
@@ -293,6 +311,15 @@ new command's tests hermetic.
   already detect this; the update must surface them as blocking rather than
   inheriting the adoption path's warning-only treatment, because a managed
   refresh's whole contract rests on the markers being trustworthy.
+- **Digest drift is the common case, not the exception.** Interactive state
+  inspection sets the resolved profile and every stored decision before it tests
+  the profile digest, and returns adoption on a mismatch — so the workflow
+  announces adoption while offering the manifest's values as defaults for every
+  prompt. Observed on 2026-08-07 in a repository that answered twenty-one
+  prompts on that path. The fix is to keep resolving when the profile still
+  resolves and the decisions still validate; the trap is that the two failure
+  reasons currently share one message and must be separated before either can be
+  treated differently.
 - **Fleet profiles are not all `go-cli-tui`.** Six of the nine adopted
   repositories are `standard-typescript-monorepo`, which selects decisions this
   repository does not exercise, including `identifier.strategy` and

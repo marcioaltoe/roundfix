@@ -41,16 +41,36 @@ with its guidance.
   immutable Git source contract rather than introducing a new authenticated
   protocol. Source: `docs/agents/spec-routing.md`, which routes active
   obligation discovery in the absence of a backend guide.
-- Active ADR obligations: applicable — ADR-0058 requires every Baseline
-  transition to account for each prior managed Normative Clause and to block
-  while any clause is unaccounted; ADR-0068 requires one confirmation-gated
-  workflow bound to an approved Plan Digest; ADR-0070 limits automatic mutation
-  to root carriers and keeps nested-carrier conflicts as warnings; ADR-0071
-  requires plans to stay portable and preimage-bound; ADR-0073 requires apply to
-  run as a recoverable transaction; ADR-0081 makes sanctioned digest
-  regeneration fallout of the authorized edit; and ADR-0099, minted by this
-  Spec, separates mechanical retention accounting from supervised instruction
-  classification. Source: `docs/agents/spec-routing.md`.
+- Active ADR obligations: applicable. Binding on this Spec: ADR-0047 (setup
+  decisions declare their effects) governs how a stored decision projects back
+  into plan inputs; ADR-0058 requires every Baseline transition to account for
+  each prior managed Normative Clause and to block while any clause is
+  unaccounted; ADR-0066 keeps Baseline execution in the CLI, which is where the
+  new command belongs; ADR-0067 keeps repository-owned profiles resolvable, so
+  manifest resolution must handle them; ADR-0068 requires one confirmation-gated
+  workflow bound to an approved Plan Digest; ADR-0069 keeps semantic analysis
+  read-only and supervised, which this Spec honors by not invoking it at all on
+  the update path; ADR-0070 limits automatic mutation to root carriers and keeps
+  nested-carrier conflicts as warnings; ADR-0071 requires plans to stay portable
+  and preimage-bound; ADR-0073 requires apply to run as a recoverable
+  transaction; ADR-0081 makes sanctioned digest regeneration fallout of the
+  authorized edit; ADR-0087 keeps capability discovery from executing
+  candidates; ADR-0090 requires repository facts to be read in batches and never
+  cached across mutations; ADR-0099 separates mechanical retention accounting
+  from supervised instruction classification; and ADR-0100 replaces the root
+  backup with a verified preservation invariant on the managed-refresh path
+  only. Binding on the authored QA gate: ADR-0080, ADR-0088, ADR-0091,
+  ADR-0096, and ADR-0097. Accounted and not applicable: ADR-0074 (repository
+  rules use hybrid semantic ownership), ADR-0075 (profile divergence uses
+  confirmed repository-owned adaptation), and ADR-0078 (confirmed root rules
+  move to semantic owners) all govern classification-time placement of
+  repository-authored rules, and a managed refresh performs no classification
+  and moves no rule, so none of the three has an obligation to discharge here;
+  they remain binding on the untouched first-adoption path. ADR-0093 (Spec
+  consistency is checked by citation, never by inference) governs how this row
+  itself is validated rather than what the feature must do, and is discharged by
+  citing every ADR the Spec's artifacts reference. Source:
+  `docs/agents/spec-routing.md`.
 - Tooling authority: applicable — this feature edits Roundfix-owned Skills and
   Baseline module assets, which `docs/agents/agent-instructions.md` places
   behind express maintainer authorization. Express maintainer authorization:
@@ -148,7 +168,17 @@ with its guidance.
    manifest does not carry, and for the plan confirmation itself. Its behavior on
    a repository with no manifest — first adoption — is unchanged.
 
-8. **Result document names the outcome.** The refresh emits a structured result
+8. **A moved profile digest is still an update.** When the stored profile still
+   resolves and every stored decision still validates against it, a changed
+   profile digest is a catalog move, not a lost adoption: the repository is
+   refreshed, not re-interviewed. Only a profile that no longer resolves at all,
+   or decisions that no longer validate, drops back to adoption — and the result
+   says which of the two happened. Today the opposite holds: a digest change
+   alone downgrades the workflow to adoption while still offering every stored
+   value as a prompt default, so the maintainer confirms a full interview whose
+   every answer the manifest already carried.
+
+9. **Result document names the outcome.** The refresh emits a structured result
    naming the prior and current catalog identity, the artifacts rewritten, the
    clauses accounted for, the skills touched, the warnings raised, and the
    approved Plan Digest. Exit categories stay consistent with the existing
@@ -180,7 +210,15 @@ can inspect one repository before trusting the sweep across the rest.
   classification. This feature changes nothing about that path.
 - Profile changes. An update keeps the manifest's profile. Moving a repository
   to a different Baseline Profile remains the interactive workflow's job,
-  because it is a policy decision with a full plan of its own.
+  because it is a policy decision with a full plan of its own. That path
+  currently restarts the whole interview after the new profile is selected, even
+  for decisions the old and new profiles share; shortening it is deliberately
+  left out of this Spec so the update path can ship, and it is recorded as an
+  open question below rather than treated as acceptable.
+- Repairing a profile the repository has outgrown. When a repository no longer
+  satisfies its profile's required capabilities, alignment blocks and the
+  maintainer chooses remediation, a repository-owned adaptation, or a different
+  profile. An update surfaces that state and stops; it never picks one.
 - Re-filing repository-authored rules. Rules a maintainer hand-wrote into a root
   carrier after adoption stay exactly where they are. Moving them into a
   canonical carrier is classification, and this feature deliberately does not
@@ -231,4 +269,10 @@ can inspect one repository before trusting the sweep across the rest.
 
 ## Open Questions
 
-None.
+- Should selecting a different Baseline Profile carry over the decisions the old
+  and new profiles share, instead of restarting the interview? Observed on
+  2026-08-07 in a repository whose profile had drifted: after the maintainer
+  selected a replacement profile at prompt 18, prompts 19 onward re-asked
+  decisions already answered at prompts 3 onward. Until answered, the default
+  stands: a profile change produces a new full plan and a full interview, as it
+  does today.
