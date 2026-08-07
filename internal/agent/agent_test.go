@@ -133,9 +133,11 @@ func TestModelCatalogsExposeOrderedPickerData(t *testing.T) {
 			name:    "claude",
 			runtime: "claude",
 			want: []ModelChoice{
-				{Label: "claude-opus-5", Value: "claude-opus-5", Description: "preferred design and frontend agentic coding model"},
-				{Label: "claude-fable-5", Value: "claude-fable-5", Description: "balanced frontend agentic coding model"},
-				{Label: "claude-opus-4-8", Value: "claude-opus-4-8", Description: "Opus 4.8 with a 1M context window"},
+				{Label: "opus", Value: "opus", Description: "Opus 5 with a 1M context window; preferred design and frontend model"},
+				{Label: "claude-fable-5", Value: "claude-fable-5", Description: "Fable 5; most capable for the hardest work, at roughly 25x the latency"},
+				{Label: "sonnet", Value: "sonnet", Description: "Sonnet 5; efficient for routine tasks"},
+				{Label: "haiku", Value: "haiku", Description: "Haiku 4.5; fastest for quick answers"},
+				{Label: "default", Value: "default", Description: "adapter default; currently Opus 5 with a 1M context window"},
 			},
 		},
 	}

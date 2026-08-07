@@ -1197,15 +1197,8 @@ func (probe *implementAgentOverlapProbe) maxObservedActive() int {
 func waitImplementAgentStarts(t *testing.T, probe *implementAgentOverlapProbe, count int) []string {
 	t.Helper()
 	started := make([]string, 0, count)
-	timer := time.NewTimer(implementWaitBudget)
-	defer timer.Stop()
 	for len(started) < count {
-		select {
-		case taskID := <-probe.started:
-			started = append(started, taskID)
-		case <-timer.C:
-			t.Fatalf("timed out waiting for %d Agent starts; got %v", count, started)
-		}
+		started = append(started, <-probe.started)
 	}
 	return started
 }

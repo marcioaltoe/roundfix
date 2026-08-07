@@ -4,8 +4,9 @@ export
 endif
 
 RTK := $(shell command -v rtk >/dev/null 2>&1 && echo rtk)
-GO := $(RTK) go
-GOFMT := $(RTK) gofmt
+GO := go
+GO_HUMAN := $(RTK) go
+GOFMT := gofmt
 
 GOCACHE ?= $(CURDIR)/.gocache
 export GOCACHE
@@ -151,7 +152,7 @@ run: ## Run the CLI; pass ARGS="--help" or another command
 	$(GO) run $(RUN_FLAGS) $(CMD) $(ARGS)
 
 version: ## Print the CLI version
-	$(GO) run $(RUN_FLAGS) $(CMD) --version
+	$(GO_HUMAN) run $(RUN_FLAGS) $(CMD) --version
 
 
 ##@ Cleanup

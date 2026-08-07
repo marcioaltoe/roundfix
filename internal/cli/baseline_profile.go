@@ -41,6 +41,8 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return runBaselineHumanCommand(ctx, args, stdout, stderr, environment)
 	}
 	switch args[0] {
+	case "update":
+		return runBaselineUpdateCommand(ctx, args[1:], stdout, stderr, environment)
 	case "plan":
 		return runBaselinePlanCommand(ctx, args[1:], stdout, stderr, environment)
 	case "apply":
