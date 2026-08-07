@@ -24,7 +24,7 @@ Read the durable operating contract before the first adoption or a recovery:
 
 ## Boundaries
 
-Baseline owns declared root blocks, setup-owned guides, immutable
+Baseline owns declared root blocks, setup-owned guides, first-adoption
 root-instruction backups, and `docs/agents/setup-context.json`. It preserves
 repository-authored bytes outside managed boundaries.
 
@@ -71,7 +71,35 @@ frontmatter remain active unless their body marks them inactive. Findings use
 and append later evidence as dated addenda. Copy those generated templates;
 this skill does not render or replace them.
 
-## Human adoption or update
+## Refresh an adopted repository
+
+When the repository has a compatible Setup Manifest, use the non-interactive
+managed-refresh path:
+
+```bash
+roundfix baseline update --repo . --format json
+```
+
+Without confirmation, a changed Plan is presented and repository bytes remain
+unchanged. For a fleet sweep, approve the Plan Digest computed in the same
+invocation:
+
+```bash
+roundfix baseline update --repo . --yes --format json
+```
+
+The command derives the current Baseline Profile and compatible decisions from
+the Setup Manifest. It asks no settled question and does not invoke semantic
+classification. It changes only Baseline-managed regions and the Repository
+Skill Set; every byte outside managed boundaries remains byte-identical.
+
+Use `--confirm-plan <digest>` instead of `--yes` for a previously reviewed Plan
+Digest. A decision absent from the manifest exits `3` without writing unless
+the maintainer explicitly chooses `--adopt-suggested`. Use `--no-skills` only
+to suppress the Repository Skill Set refresh, and `--skills-source-dir <path>`
+only for a declared offline Git checkout or bare object store.
+
+## Human adoption or profile change
 
 At an interactive terminal, run:
 
@@ -79,10 +107,12 @@ At an interactive terminal, run:
 roundfix baseline --repo . --format text
 ```
 
-The one workflow detects first adoption or update, collects numbered decisions,
-selects exactly one Baseline Profile, and shows one consolidated Change Plan
-with file changes first. Do not authorize mutation before the complete plan and
-Plan Digest are visible.
+The interactive workflow handles first adoption, a Baseline Profile change, or
+a decision the Setup Manifest does not carry. It selects exactly one Baseline
+Profile and shows one consolidated Change Plan with file changes first. With a
+compatible Setup Manifest it skips settled decisions and semantic
+classification. Do not authorize mutation before the complete plan and Plan
+Digest are visible.
 
 Decision and preservation prompts mark one visible default; Enter confirms it.
 A valid stored Setup Manifest value wins even when a changed Profile Digest
@@ -115,12 +145,12 @@ scaffold, and blocks divergent non-empty legacy carriers for manual
 reconciliation. Existing `0.0.1` Decision Documents that name either legacy
 destination are normalized to the canonical path.
 
-For updates, the current Baseline Profile and compatible decisions are offered
-first. If only the Profile Digest changed, the command enters adoption but
-retains still-valid profile and decision values as defaults. A profile change
-produces a new full plan. If the maintainer rejects the plan, use the command's
-decision-area revision flow. Every accepted correction must produce a new Plan
-Digest and another complete review.
+For a managed refresh, use `roundfix baseline update`; a moved Profile Digest
+alone does not force a new interview when the profile and stored decisions
+still resolve. A profile change produces a new full interactive plan. If the
+maintainer rejects the plan, use the command's decision-area revision flow.
+Every accepted correction must produce a new Plan Digest and another complete
+review.
 
 Profile alignment runs before instruction classification. For
 profile-specific blockers, the interactive command offers **Change Baseline
@@ -171,10 +201,11 @@ authorization and the exact bounded repository-relative files. Task assignment
 and generic implementation requests do not grant that authority. Keep
 completed and archived legacy Specs byte-identical.
 
-## Non-interactive planning
+## Non-interactive planning for adoption or profile change
 
 The interactive root command refuses redirected or absent terminal input.
-Automation and Agents use:
+Automation and Agents use `baseline update` for an adopted repository. For
+first adoption or a Profile change, use:
 
 ```bash
 roundfix baseline plan --repo . --profile <profile-id> --decision-file <decision-file> --format json

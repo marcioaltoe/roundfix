@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 11,
+  "version": 12,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -140,7 +140,7 @@
       "triggers": [
         {
           "id": "trigger.context-workflow.setup-context-driven",
-          "when": "Auditing, applying, or refreshing the Context-Driven Baseline."
+          "when": "Auditing or applying the Context-Driven Baseline for first adoption, or refreshing an adopted repository with `roundfix baseline update`."
         }
       ]
     },

@@ -110,6 +110,20 @@ func applyPlan(
 	if state == applyPreimagePostimage {
 		return verifiedApplyResult(document, document.Postimages, true), nil
 	}
+	if state == applyPreimageApproved &&
+		document.PreservationMode == PreservationModeManagedRefresh {
+		if err := validateManagedRefreshPreservation(
+			repository,
+			document.Preimages,
+			document.Postimages,
+		); err != nil {
+			return Result{}, applyError(
+				ApplyErrorInvalid,
+				"generate a new managed-refresh plan from the unchanged repository",
+				fmt.Errorf("verify managed-refresh preservation: %w", err),
+			)
+		}
+	}
 
 	var transaction Transaction
 	if catalog == nil {
@@ -430,9 +444,15 @@ func validatePlanApplyContract(document PlanDocument) error {
 			return fmt.Errorf("immutable backup %q collides with different bytes", entry.Path)
 		}
 	}
-	for source := range expectedBackups {
-		if _, exists := actualBackups[source]; !exists {
-			return fmt.Errorf("root carrier source %q has no immutable backup", source)
+	if document.PreservationMode == PreservationModeManagedRefresh {
+		if len(actualBackups) != 0 {
+			return errors.New("managed-refresh Baseline Plan must not contain root backups")
+		}
+	} else {
+		for source := range expectedBackups {
+			if _, exists := actualBackups[source]; !exists {
+				return fmt.Errorf("root carrier source %q has no immutable backup", source)
+			}
 		}
 	}
 

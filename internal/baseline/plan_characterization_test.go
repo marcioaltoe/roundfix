@@ -133,6 +133,87 @@ func TestBaselinePlanCharacterization(t *testing.T) {
 	}
 }
 
+func TestBaselineRetentionAccountingCharacterizationCorpus(t *testing.T) {
+	t.Parallel()
+
+	const clauseID = "clause.core.keep-follow-ups-outside-slice"
+	tests := []struct {
+		name            string
+		mutate          func(*testing.T, *Catalog)
+		wantPlan        bool
+		wantState       string
+		wantCategory    string
+		wantDisposition ClauseDisposition
+	}{
+		{
+			name: "managed-artifact-drift-accounted-as-retained",
+			mutate: func(t *testing.T, catalog *Catalog) {
+				changeCatalogClauseGuidance(t, catalog, "core", clauseID)
+			},
+			wantPlan:        true,
+			wantState:       "ready",
+			wantDisposition: ClauseRetained,
+		},
+		{
+			name: "managed-artifact-drift-with-unaccounted-clause-blocks",
+			mutate: func(t *testing.T, catalog *Catalog) {
+				removeCatalogClause(t, catalog, "core", clauseID)
+			},
+			wantState:       "action_required",
+			wantCategory:    "classification",
+			wantDisposition: ClauseUnaccounted,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, request, target, baselineID := newSameIdentityRetentionDrift(t)
+			test.mutate(t, target)
+			target.retentionSources[baselineID] = SourceBaseline{Entries: []SourceBaselineEntry{{
+				ID:          clauseID,
+				Kind:        "normative-clause",
+				Enforcement: "mandatory",
+				Carrier:     "docs/agents/agent-instructions.md",
+			}}}
+
+			outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+			if err != nil {
+				t.Fatalf("build retention characterization: %v", err)
+			}
+			if (outcome.Plan != nil) != test.wantPlan {
+				t.Fatalf("plan presence = %t, want %t", outcome.Plan != nil, test.wantPlan)
+			}
+			if outcome.Result.State != test.wantState || outcome.Result.Category != test.wantCategory {
+				t.Fatalf(
+					"result identity = state %q category %q, want state %q category %q",
+					outcome.Result.State,
+					outcome.Result.Category,
+					test.wantState,
+					test.wantCategory,
+				)
+			}
+
+			delta := outcome.Result.ClauseDelta
+			if outcome.Plan != nil {
+				if outcome.Plan.SchemaVersion != PlanSchemaVersion {
+					t.Fatalf("plan schema = %q, want %q", outcome.Plan.SchemaVersion, PlanSchemaVersion)
+				}
+				delta = outcome.Plan.ClauseDelta
+				if len(outcome.Plan.Retention) != 1 ||
+					outcome.Plan.Retention[0].FromClause != clauseID ||
+					outcome.Plan.Retention[0].Disposition != string(test.wantDisposition) {
+					t.Fatalf("retention identity = %+v", outcome.Plan.Retention)
+				}
+			}
+			if delta == nil ||
+				delta.Dispositions[clauseID] != test.wantDisposition ||
+				delta.Counts[test.wantDisposition] != 1 {
+				t.Fatalf("clause disposition identity = %+v", delta)
+			}
+		})
+	}
+}
+
 func TestBaselinePlanCharacterizationDiffNamesShapeAndField(t *testing.T) {
 	t.Parallel()
 

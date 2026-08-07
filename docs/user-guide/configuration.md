@@ -290,9 +290,11 @@ Built-in required profiles use these official identifiers:
   `codex / gpt-5.6-sol / high`.
 
 The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official Codex identifiers, plus `claude-opus-5`,
-`claude-fable-5`, and `claude-opus-4-8` as Claude identifiers. Identifier
-validity does not prove operational availability. Recommendations are advisory
+`gpt-5.6-luna` as official Codex identifiers, plus `opus`, `claude-fable-5`,
+`sonnet`, `haiku`, and `default` as Claude identifiers. Those are the values the
+Claude adapter advertises, with the bracketed context suffix removed as the
+capability parser removes it — the adapter advertises Opus 5 as `opus[1m]`.
+Identifier validity does not prove operational availability. Recommendations are advisory
 rankings only; the effective adapter in each environment must complete Exact
 Agent Selection Proof before Roundfix can use a tuple. This exact proof is the
 operational readiness authority. Custom model strings remain accepted verbatim
@@ -358,7 +360,7 @@ multiple Task or QA categories, text and JSON output include a cross-category
 warning.
 
 Recommendations shown by `profiles show` are a dated advisory snapshot
-(`2026-07-16`) with five entries per category, benchmark/result/cost evidence,
+(`2026-08-07`) with five entries per category, benchmark/result/cost evidence,
 rationale, and `category_specific: false`. Recommendation rank never changes
 configuration, proof order, Preferred Selection, Fallback Chain, or routing.
 

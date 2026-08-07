@@ -15,6 +15,20 @@ defaults:
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: true
+# Model identifiers are the ones each ACP adapter advertises, not the ones in
+# internal/agent/catalog.go, which is stale. The claude adapter advertises
+# `opus` (as `opus[1m]`), `claude-fable-5`, `sonnet`, `haiku`, and `default`;
+# reasoning effort is a separate adapter option. Snapshot and rationale:
+# docs/references/model-selection.md, 2026-08-07.
+#
+# Fallbacks are cross-runtime on purpose. A fallback exists for when the
+# preferred Selection cannot start, and a second codex model does not help when
+# codex is what is unavailable. Every fallback here changes runtime.
+#
+# Claude Fable 5 appears nowhere below. It answers in 1.7 minutes — roughly 25x
+# Sol's latency — while costing the most per token on the board, for a result
+# Sol matches at a third of the price. In a Run, where latency multiplies by
+# turn count, that trade never pays.
 profiles:
   general:
     preferred:
@@ -22,23 +36,28 @@ profiles:
       model: gpt-5.6-sol
       reasoning_effort: high
     fallbacks:
-      - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: medium
   backend:
+    # Sol at high takes 37 steps, fewer than anything near its quality. Raise to
+    # xhigh for a hard Spec: 71% against 69%, at 44 steps and +35% cost.
     preferred:
       runtime: codex
       model: gpt-5.6-sol
       reasoning_effort: high
     fallbacks:
-      - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
   frontend:
+    # Lowered from xhigh: Opus 5 scores 73% at both settings, so xhigh bought
+    # nothing and cost $9.07 against $6.08 with 16 more steps. Claude is
+    # preferred here on design judgment, which no benchmark on file measures.
     preferred:
       runtime: claude
       model: opus
-      reasoning_effort: xhigh
+      reasoning_effort: high
     fallbacks:
       - runtime: codex
         model: gpt-5.6-sol
@@ -49,17 +68,21 @@ profiles:
       model: gpt-5.6-sol
       reasoning_effort: high
     fallbacks:
-      - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
   review:
+    # Luna at max: 67% against Sol's 69%, for $0.61 against $3.47. It spends 102
+    # steps against 37, but answers in 4.1s against 9.4s, so the two nearly
+    # cancel. Review work is bounded and has no dependency graph, so extra turns
+    # block nobody.
     preferred:
       runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      model: gpt-5.6-luna
+      reasoning_effort: max
     fallbacks:
-      - runtime: codex
-        model: gpt-5.6-terra
+      - runtime: claude
+        model: sonnet
         reasoning_effort: xhigh
 specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
