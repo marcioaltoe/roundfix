@@ -515,7 +515,7 @@
     },
     {
       "id": "rule.core.git-delivery",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.git-delivery"
       ],
@@ -534,6 +534,11 @@
           "id": "clause.core.ask-before-delivery",
           "enforcement": "stop-and-ask",
           "guidance": "Stop and ask for explicit authority before committing, pushing, creating a branch, or opening a pull request when that authority is not already explicit."
+        },
+        {
+          "id": "clause.core.request-review-explicitly",
+          "enforcement": "mandatory",
+          "guidance": "When a pull request changes code and the repository's review automation does not review it on its own, request the review explicitly as part of opening the pull request rather than as a follow-up. Never read a skipped or absent review check as approval."
         }
       ]
     },

@@ -236,14 +236,25 @@
       "digest": "85a14c3a9018f6bb1328526b492058a42eef132b089db1e5d2d60a71e90c636b"
     },
     {
+      "id": "clause.core.request-review-explicitly",
+      "path": "corpus/docs/agents/agent-instructions.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/agent-instructions.md",
+      "structure": null,
+      "start": 6526,
+      "end": 6751,
+      "digest": "c147262dc38ba7ef55958b593fc938e180215f62241ede801b0060b6c52c8164"
+    },
+    {
       "id": "clause.core.ask-user-answerable-decisions",
       "path": "corpus/docs/agents/agent-instructions.md",
       "kind": "normative-clause",
       "enforcement": "stop-and-ask",
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
-      "start": 6531,
-      "end": 6687,
+      "start": 6897,
+      "end": 7053,
       "digest": "b43d80becc4c1c011e204fb90f1fc11d7beac0d6926baaefcd3b6cc2ba0421e9"
     },
     {
@@ -253,8 +264,8 @@
       "enforcement": "prohibited",
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
-      "start": 6832,
-      "end": 7086,
+      "start": 7198,
+      "end": 7452,
       "digest": "d317c9e18102e0ed19aec89a4e8e8c30d0e4e6a0f97024fc562e2804c5afcd7e"
     },
     {
@@ -264,8 +275,8 @@
       "enforcement": "recommended",
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
-      "start": 7225,
-      "end": 7375,
+      "start": 7591,
+      "end": 7741,
       "digest": "addc84e7f37d34d737c1f8b0541939349b6a335171d6b452070ff7df399a92ae"
     },
     {
@@ -275,8 +286,8 @@
       "enforcement": "recommended",
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
-      "start": 7501,
-      "end": 7624,
+      "start": 7867,
+      "end": 7990,
       "digest": "35be36533875ec7d48faa4c8077fa65852926148943c5533b331db3949b9a8e3"
     },
     {
@@ -286,8 +297,8 @@
       "enforcement": "recommended",
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
-      "start": 7737,
-      "end": 7814,
+      "start": 8103,
+      "end": 8180,
       "digest": "affe1f6f2668612ba48e531d237860fba7e4787a5813f556a83cadbc9e4613cc"
     },
     {
@@ -297,8 +308,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
-      "start": 7955,
-      "end": 8080,
+      "start": 8321,
+      "end": 8446,
       "digest": "108ff4153d82e11db2d7a19b0f75b8239077ccea44c495dd8cca620ae95f1444"
     },
     {
@@ -308,8 +319,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
-      "start": 8238,
-      "end": 8292,
+      "start": 8604,
+      "end": 8658,
       "digest": "5d08d2f766ad798d4cda8f64cac8e3bf88167c5fe5c9fbd47c9c2dbeab48de2f"
     },
     {
@@ -319,8 +330,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
-      "start": 8450,
-      "end": 8646,
+      "start": 8816,
+      "end": 9012,
       "digest": "1270c6ba3dafb1cf6716b4f551dec426f28d9787d366677ef504edf548c43b85"
     },
     {
@@ -330,8 +341,8 @@
       "enforcement": "prohibited",
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
-      "start": 8818,
-      "end": 8909,
+      "start": 9184,
+      "end": 9275,
       "digest": "5ca17488bae2a58bd31d28eb23fd6405afb4fb63d4c1859c560b8e14491d93f8"
     },
     {

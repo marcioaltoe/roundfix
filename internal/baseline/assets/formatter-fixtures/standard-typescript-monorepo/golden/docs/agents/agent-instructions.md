@@ -46,6 +46,8 @@ The selected repository Verification is `make verify`.
 
 - **mandatory**: Inspect repository status before staging or delivery and preserve unrelated work.
 
+- **mandatory**: When a pull request changes code and the repository's review automation does not review it on its own, request the review explicitly as part of opening the pull request rather than as a follow-up. Never read a skipped or absent review check as approval.
+
 - **stop-and-ask**: Never guess a decision the user can answer cheaply. Ask through the available user-interaction tool, or ask plainly and stop when no such tool exists.
 
 - **prohibited**: Never read, print, commit, or generate secrets. Keep credentials and environment-specific values in the repository's existing secure configuration boundary, and do not invent authentication, authorization, database, transport, or deployment policy.

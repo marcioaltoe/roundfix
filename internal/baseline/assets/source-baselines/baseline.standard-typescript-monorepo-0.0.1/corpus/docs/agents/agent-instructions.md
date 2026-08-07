@@ -83,6 +83,9 @@
 <!-- source-baseline-entry: clause.core.ask-before-delivery -->
 - MUST stop and ask for explicit authority before committing, pushing, creating a branch, or opening a pull request when that authority is not already explicit.
 <!-- /source-baseline-entry: clause.core.ask-before-delivery -->
+<!-- source-baseline-entry: clause.core.request-review-explicitly -->
+- MUST request the review explicitly as part of opening a pull request that changes code, when the repository's review automation does not review it on its own, and MUST NOT read a skipped or absent review check as approval.
+<!-- /source-baseline-entry: clause.core.request-review-explicitly -->
 
 <!-- source-baseline-entry: clause.core.ask-user-answerable-decisions -->
 - MUST NOT guess a decision the user can answer cheaply. Ask through the available user-interaction tool, or ask plainly and stop when no such tool exists.

@@ -28,6 +28,7 @@
         "clause.core.preserve-git-scope",
         "clause.core.ask-before-destructive-git",
         "clause.core.ask-before-delivery",
+        "clause.core.request-review-explicitly",
         "clause.core.ask-user-answerable-decisions",
         "clause.core.prohibit-secret-exposure",
         "recommendation.capability.firecrawl",
@@ -126,9 +127,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 118,
-      "corpusDigest": "8990968c135ff94d2a00a90246e9da81d0aed31d6e064032b040f5f1ba616ef8",
-      "manifestDigest": "be6aca06de15be528dc04366ee30ee7fbcd0be68dd3a34b7737c7e73b5e0fb3d"
+      "entryCount": 119,
+      "corpusDigest": "6027bc3916abb04c0b63634c70f7873444910b9effcea3563549adedc9894f75",
+      "manifestDigest": "152ce8c13d8ec3fd60301066ca7d0fd09035b4991444c772448e69ddc25a9b04"
     }
   ]
 }
