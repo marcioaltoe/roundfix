@@ -35,17 +35,27 @@ cli.promptBaselineClassification
           → syscall.wait4
 ```
 
-`classificationRuntime` hard-codes runtime `codex`. On this machine `codex`
-resolves first to a cmux shim — a bash script under
-`/var/folders/.../T/cmux-cli-shims/<uuid>/codex` — ahead of the real binaries at
-`~/.local/bin/codex` and `/opt/homebrew/bin/codex`.
+`classificationRuntime` hard-codes runtime `codex`.
+
+**The stall's cause is not established.** Two facts sit in tension and neither
+was resolved here. On this machine `which -a codex` resolves first to a cmux
+shim — a bash script under `/var/folders/.../T/cmux-cli-shims/<uuid>/codex` —
+ahead of the real binaries at `~/.local/bin/codex` and `/opt/homebrew/bin/codex`.
+But `roundfix doctor` exits `0` and reports `codex: ok`, naming
+`/Users/marcio/.local/bin/codex`, and reports the `codex-acp` adapter healthy at
+1.1.13. So readiness diagnostics and the sealed-prompt runner may resolve the
+same runtime differently, or the stall may have nothing to do with resolution at
+all. Do not act on the shim as a cause without first proving which binary the
+sealed prompt actually spawns.
 
 **The 5-minute bound did not bound it.** `agent.SealedPromptTimeout` is
 `5 * time.Minute` and reaches the subprocess through `exec.CommandContext`. A
-run left alone was still alive past ten minutes. The mechanism is not yet
-proven; a pipe write-end inherited by a descendant of the killed child, which
-would block `Wait` after the direct child dies, is the leading hypothesis and
-needs a dedicated repro before anyone acts on it.
+run left alone was still alive past ten minutes. The mechanism is not proven; a
+pipe write-end inherited by a descendant of the killed child, which would block
+`Wait` after the direct child dies, is the leading hypothesis and needs a
+dedicated repro before anyone acts on it. This one is independent of the
+resolution question above: whatever the sealed prompt spawns, its declared
+timeout did not end the run.
 
 **The non-interactive path never opens the manifest.** With the manifest
 present and complete, `roundfix baseline plan --profile go-cli-tui` exits `3`
@@ -85,5 +95,7 @@ live and unowned:
 
 - the sealed prompt outliving `SealedPromptTimeout`, which also affects first
   adoption and every other sealed-prompt caller;
+- which binary the sealed prompt actually spawns for runtime `codex`, given that
+  `doctor` and `which -a` disagree on this machine;
 - the profile-change interview restart, recorded as the open question in Spec
   0082's PRD.
