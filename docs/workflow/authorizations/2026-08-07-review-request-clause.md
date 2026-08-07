@@ -27,6 +27,19 @@ is absent, not merely weak.
 - `internal/baseline/assets/modules/core.json`, limited to adding one clause to
   the existing `rule.core.git-delivery` rule and bumping that rule's version.
 
+Extended on the same day, after the first attempt revealed that the clause
+cannot be added without them. The catalog validator refuses a required clause
+that no Source Baseline row carries, and its own message states that the
+regenerator maintains manifest rows but never creates them:
+
+- `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/agent-instructions.md`
+- `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json`
+
+Both limited to seating `clause.core.request-review-explicitly`. This is the
+same sequence pull request #35 used when it last added a clause: corpus text
+first, then the manifest row, then regeneration to compute offsets and digests.
+No other clause, row, or corpus passage may change.
+
 That rule already owns delivery authority — it carries
 `clause.core.preserve-git-scope`, `clause.core.ask-before-destructive-git`, and
 `clause.core.ask-before-delivery` — so the concern belongs to it rather than to
