@@ -7,20 +7,66 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"path/filepath"
+	"sort"
 	"strings"
 
 	"roundfix/internal/app"
 	"roundfix/internal/baseline"
+	roundskills "roundfix/skills"
 )
 
 const baselineUpdateResultSchema = "roundfix/baseline-update-result/v1"
 
+const (
+	baselineUpdateSkillsNotRun   = "not_run"
+	baselineUpdateSkillsVerified = "verified"
+	baselineUpdateSkillsWarning  = "warning"
+	baselineUpdateSkillsSkipped  = "skipped"
+	baselineUpdateSkillsFailed   = "failed"
+)
+
 type baselineUpdateRequest struct {
-	repo           string
-	format         string
-	confirmation   string
-	yes            bool
-	adoptSuggested bool
+	repo            string
+	format          string
+	confirmation    string
+	yes             bool
+	adoptSuggested  bool
+	skipSkills      bool
+	skillsSourceDir string
+}
+
+type baselineUpdateSkillsRequest struct {
+	Repository string
+	ProfileID  string
+	SourceDir  string
+}
+
+type baselineUpdateSkillDrift struct {
+	Skill  string `json:"skill"`
+	Reason string `json:"reason"`
+}
+
+type baselineUpdateSkillsResult struct {
+	Status         string                     `json:"status"`
+	InstalledCount int                        `json:"installedCount"`
+	Installed      []string                   `json:"installed"`
+	Restored       []string                   `json:"restored"`
+	Drifted        []baselineUpdateSkillDrift `json:"drifted"`
+}
+
+type baselineUpdateSkillsStage func(
+	context.Context,
+	baselineUpdateSkillsRequest,
+) (baselineUpdateSkillsResult, error)
+
+type baselineUpdateSkillsDependencies struct {
+	resolveProjectRoot func(context.Context, string) (string, error)
+	install            func(context.Context, roundskills.InstallRequest) (roundskills.InstallResult, error)
+	ownedNames         func() []string
+	resolveExternal    func(string) ([]string, bool, error)
+	checkRepository    func(context.Context, string, []string) (roundskills.RepositoryReadiness, error)
+	restore            func(context.Context, baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error)
 }
 
 type baselineUpdateResult struct {
@@ -41,6 +87,7 @@ type baselineUpdateResult struct {
 	PlanDigest         string                        `json:"planDigest,omitempty"`
 	ApprovedPlanDigest string                        `json:"approvedPlanDigest,omitempty"`
 	StatusMatrix       *baseline.ResultStatusMatrix  `json:"statusMatrix,omitempty"`
+	Skills             baselineUpdateSkillsResult    `json:"skills"`
 }
 
 func runBaselineUpdateCommand(
@@ -49,6 +96,24 @@ func runBaselineUpdateCommand(
 	stdout io.Writer,
 	stderr io.Writer,
 	environment commandEnvironment,
+) int {
+	return runBaselineUpdateCommandWithSkillsStage(
+		ctx,
+		args,
+		stdout,
+		stderr,
+		environment,
+		runBaselineUpdateSkillsStage,
+	)
+}
+
+func runBaselineUpdateCommandWithSkillsStage(
+	ctx context.Context,
+	args []string,
+	stdout io.Writer,
+	stderr io.Writer,
+	environment commandEnvironment,
+	skillsStage baselineUpdateSkillsStage,
 ) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline update"))
@@ -189,6 +254,32 @@ func runBaselineUpdateCommand(
 	result.NextAction = applyResult.NextAction
 	result.ApprovedPlanDigest = applyResult.PlanDigest
 	result.StatusMatrix = applyResult.StatusMatrix
+	if request.skipSkills {
+		result.Skills.Status = baselineUpdateSkillsSkipped
+	} else {
+		skillsResult, skillsErr := skillsStage(ctx, baselineUpdateSkillsRequest{
+			Repository: request.repo,
+			ProfileID:  input.ProfileID,
+			SourceDir:  request.skillsSourceDir,
+		})
+		result.Skills = skillsResult
+		if skillsErr != nil {
+			exit := exitRunFailed
+			if errors.Is(skillsErr, context.Canceled) || errors.Is(skillsErr, context.DeadlineExceeded) {
+				exit = exitSIGINT
+			}
+			return writeBaselineUpdateFailure(
+				result,
+				fmt.Errorf("refresh repository skills after guidance apply: %w", skillsErr),
+				"skills",
+				"repair the named skills-stage failure and rerun roundfix baseline update",
+				exit,
+				jsonOutput,
+				stdout,
+				stderr,
+			)
+		}
+	}
 	return writeBaselineUpdateOutcome(result, exitOK, jsonOutput, stdout, stderr)
 }
 
@@ -201,6 +292,8 @@ func parseBaselineUpdateCommand(args []string) (baselineUpdateRequest, error) {
 	flags.StringVar(&request.confirmation, "confirm-plan", "", "Exact Plan Digest reviewed in a previous invocation")
 	flags.BoolVar(&request.yes, "yes", false, "Approve the Plan Digest computed in this invocation")
 	flags.BoolVar(&request.adoptSuggested, "adopt-suggested", false, "Adopt catalog suggestions for decisions absent from the Setup Manifest")
+	flags.BoolVar(&request.skipSkills, "no-skills", false, "Skip the Repository Skill Set refresh")
+	flags.StringVar(&request.skillsSourceDir, "skills-source-dir", "", "Offline Git checkout or bare object store for external skill restoration")
 	if err := flags.Parse(args); err != nil {
 		return baselineUpdateRequest{}, validationError{
 			message: fmt.Sprintf("invalid baseline update arguments: %v; run '%s baseline update --help' for usage", err, app.Name),
@@ -214,6 +307,7 @@ func parseBaselineUpdateCommand(args []string) (baselineUpdateRequest, error) {
 	request.repo = strings.TrimSpace(request.repo)
 	request.format = strings.TrimSpace(request.format)
 	request.confirmation = strings.TrimSpace(request.confirmation)
+	request.skillsSourceDir = strings.TrimSpace(request.skillsSourceDir)
 	if request.repo == "" {
 		return request, validationError{message: "--repo cannot be empty"}
 	}
@@ -224,6 +318,13 @@ func parseBaselineUpdateCommand(args []string) (baselineUpdateRequest, error) {
 	}
 	if request.yes && request.confirmation != "" {
 		return request, validationError{message: "--yes and --confirm-plan are mutually exclusive"}
+	}
+	if request.skillsSourceDir != "" {
+		absolute, err := filepath.Abs(request.skillsSourceDir)
+		if err != nil {
+			return request, validationError{message: fmt.Sprintf("resolve --skills-source-dir: %v", err)}
+		}
+		request.skillsSourceDir = absolute
 	}
 	return request, nil
 }
@@ -237,7 +338,164 @@ func newBaselineUpdateResult() baselineUpdateResult {
 		Warnings:           []baseline.Finding{},
 		NewDecisions:       []baseline.DecisionSuggestion{},
 		AdoptedSuggestions: []baseline.DecisionSuggestion{},
+		Skills: baselineUpdateSkillsResult{
+			Status:    baselineUpdateSkillsNotRun,
+			Installed: []string{},
+			Restored:  []string{},
+			Drifted:   []baselineUpdateSkillDrift{},
+		},
 	}
+}
+
+func runBaselineUpdateSkillsStage(
+	ctx context.Context,
+	request baselineUpdateSkillsRequest,
+) (baselineUpdateSkillsResult, error) {
+	return runBaselineUpdateSkillsStageWith(ctx, request, baselineUpdateSkillsDependencies{
+		resolveProjectRoot: defaultResolveSkillsProjectRoot,
+		install:            roundskills.Install,
+		ownedNames:         roundskills.Names,
+		resolveExternal:    resolveExternalSkillRequirement,
+		checkRepository:    roundskills.CheckRepositoryWithExternal,
+		restore:            baseline.RestoreSkills,
+	})
+}
+
+func runBaselineUpdateSkillsStageWith(
+	ctx context.Context,
+	request baselineUpdateSkillsRequest,
+	dependencies baselineUpdateSkillsDependencies,
+) (baselineUpdateSkillsResult, error) {
+	result := baselineUpdateSkillsResult{
+		Status:    baselineUpdateSkillsVerified,
+		Installed: []string{},
+		Restored:  []string{},
+		Drifted:   []baselineUpdateSkillDrift{},
+	}
+	root, err := dependencies.resolveProjectRoot(ctx, request.Repository)
+	if err != nil {
+		result.Status = baselineUpdateSkillsFailed
+		return result, fmt.Errorf("resolve repository root for skills refresh: %w", err)
+	}
+	if _, err := dependencies.install(ctx, roundskills.InstallRequest{
+		Target:     "project",
+		ProjectDir: root,
+	}); err != nil {
+		result.Status = baselineUpdateSkillsFailed
+		return result, fmt.Errorf("install binary-carried Roundfix skills: %w", err)
+	}
+	result.Installed = append(result.Installed, dependencies.ownedNames()...)
+	sort.Strings(result.Installed)
+	result.InstalledCount = len(result.Installed)
+
+	external, manifestOK, err := dependencies.resolveExternal(root)
+	if err != nil {
+		result.Status = baselineUpdateSkillsFailed
+		return result, fmt.Errorf("resolve external Repository Skill Set: %w", err)
+	}
+	if !manifestOK {
+		result.Status = baselineUpdateSkillsFailed
+		return result, errors.New("resolve external Repository Skill Set: Setup Manifest is unavailable")
+	}
+	if len(external) == 0 {
+		return result, nil
+	}
+
+	readiness, checkErr := dependencies.checkRepository(ctx, root, external)
+	drifted, err := baselineUpdateExternalDrift(readiness, checkErr)
+	if err != nil {
+		result.Status = baselineUpdateSkillsFailed
+		return result, err
+	}
+	for _, skill := range drifted {
+		restored, restoreErr := restoreBaselineUpdateExternalSkill(
+			ctx,
+			dependencies.restore,
+			baseline.SkillsRestoreRequest{
+				Repository: root,
+				ProfileID:  request.ProfileID,
+				Skills:     []string{skill},
+				SourceDir:  request.SourceDir,
+			},
+		)
+		if restoreErr != nil {
+			if baselineUpdateSourceUnreachable(restored, restoreErr) {
+				result.Drifted = append(result.Drifted, baselineUpdateSkillDrift{
+					Skill:  skill,
+					Reason: baselineUpdateRestoreReason(restored, restoreErr),
+				})
+				continue
+			}
+			result.Status = baselineUpdateSkillsFailed
+			return result, fmt.Errorf("restore external skill %q: %w", skill, restoreErr)
+		}
+		if restored.Applied {
+			result.Restored = append(result.Restored, skill)
+		}
+	}
+	if len(result.Drifted) != 0 {
+		result.Status = baselineUpdateSkillsWarning
+	}
+	return result, nil
+}
+
+func baselineUpdateExternalDrift(
+	readiness roundskills.RepositoryReadiness,
+	checkErr error,
+) ([]string, error) {
+	names := make(map[string]struct{})
+	for _, name := range readiness.MissingExternal {
+		names[name] = struct{}{}
+	}
+	for _, name := range readiness.OutdatedExternal {
+		names[name] = struct{}{}
+	}
+	if checkErr != nil {
+		var readinessErr *roundskills.RepositoryReadinessError
+		if !errors.As(checkErr, &readinessErr) || len(readinessErr.MissingExternal) == 0 {
+			return nil, fmt.Errorf("inspect external Repository Skill Set: %w", checkErr)
+		}
+		for _, name := range readinessErr.MissingExternal {
+			names[name] = struct{}{}
+		}
+	}
+	drifted := make([]string, 0, len(names))
+	for name := range names {
+		drifted = append(drifted, name)
+	}
+	sort.Strings(drifted)
+	return drifted, nil
+}
+
+func restoreBaselineUpdateExternalSkill(
+	ctx context.Context,
+	restore func(context.Context, baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error),
+	request baseline.SkillsRestoreRequest,
+) (baseline.SkillsRestorePayload, error) {
+	preview, err := restore(ctx, request)
+	if err == nil || baselineUpdateSourceUnreachable(preview, err) {
+		return preview, err
+	}
+	if preview.Finding == nil || preview.Finding.Code != "plan.confirmation.required" || preview.PlanDigest == nil {
+		return preview, err
+	}
+	request.Confirmation = *preview.PlanDigest
+	return restore(ctx, request)
+}
+
+func baselineUpdateSourceUnreachable(payload baseline.SkillsRestorePayload, err error) bool {
+	if payload.Finding != nil && payload.Finding.Code == "source.commit-unavailable" {
+		return true
+	}
+	var restoreErr *baseline.SkillsRestoreError
+	return errors.As(err, &restoreErr) && restoreErr.Finding.Code == "source.commit-unavailable"
+}
+
+func baselineUpdateRestoreReason(payload baseline.SkillsRestorePayload, err error) string {
+	if payload.Finding != nil && strings.TrimSpace(payload.Finding.Message) != "" {
+		return strings.TrimSpace(payload.Finding.Message)
+	}
+	return err.Error()
 }
 
 func baselineUpdateDecisionIDs(suggestions []baseline.DecisionSuggestion) []string {
@@ -391,6 +649,19 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	}
 	for _, warning := range result.Warnings {
 		fmt.Fprintf(stdout, "Warning: %s: %s: %s\n", warning.Code, warning.Path, warning.Message)
+	}
+	fmt.Fprintf(stdout, "Skills: %s\n", strings.ReplaceAll(result.Skills.Status, "_", " "))
+	fmt.Fprintf(stdout, "Skills installed: %d\n", result.Skills.InstalledCount)
+	for _, skill := range result.Skills.Installed {
+		fmt.Fprintf(stdout, "- installed %s\n", skill)
+	}
+	fmt.Fprintf(stdout, "Skills restored: %d\n", len(result.Skills.Restored))
+	for _, skill := range result.Skills.Restored {
+		fmt.Fprintf(stdout, "- restored %s\n", skill)
+	}
+	fmt.Fprintf(stdout, "Skills drifted: %d\n", len(result.Skills.Drifted))
+	for _, drift := range result.Skills.Drifted {
+		fmt.Fprintf(stdout, "- drifted %s: %s\n", drift.Skill, drift.Reason)
 	}
 	if result.PlanDigest != "" {
 		fmt.Fprintf(stdout, "Plan Digest: %s\n", result.PlanDigest)

@@ -1,7 +1,7 @@
 // Suite: manifest-driven Baseline update command
 // Invariant: update either presents a digest-bound managed refresh without writes or applies that exact plan.
-// Boundary IN: CLI parsing, manifest projection, managed-refresh planning, apply, structured output, and exit categories.
-// Boundary OUT: skill refresh and interactive Baseline adoption, which later Tasks own.
+// Boundary IN: CLI parsing, manifest projection, managed-refresh planning, apply, injected skill refresh, structured output, and exit categories.
+// Boundary OUT: external skill acquisition and interactive Baseline adoption.
 
 package cli
 
@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"roundfix/internal/baseline"
+	roundskills "roundfix/skills"
 )
 
 func TestBaselineUpdateAppliesManifestPlanAndReportsJSON(t *testing.T) {
@@ -52,6 +53,268 @@ func TestBaselineUpdateAppliesManifestPlanAndReportsJSON(t *testing.T) {
 	}
 	if before == baselinePlanTestTree(t, repository) {
 		t.Fatal("baseline update did not rewrite stale managed artifacts")
+	}
+}
+
+func TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills(t *testing.T) {
+	repository := staleBaselineUpdateRepository(t)
+	var gotRequest baselineUpdateSkillsRequest
+	stage := func(_ context.Context, request baselineUpdateSkillsRequest) (baselineUpdateSkillsResult, error) {
+		gotRequest = request
+		return baselineUpdateSkillsResult{
+			Status:         baselineUpdateSkillsVerified,
+			InstalledCount: 1,
+			Installed:      []string{"roundfix"},
+			Restored:       []string{"context7"},
+			Drifted:        []baselineUpdateSkillDrift{},
+		}, nil
+	}
+
+	result, stdout, stderr, code := runBaselineUpdateTestCommandWithSkillsStage(
+		t,
+		context.Background(),
+		stage,
+		"baseline", "update", "--repo", repository, "--yes", "--format=json",
+	)
+	if code != exitOK || stderr != "" {
+		t.Fatalf("skill-refreshing update exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	if gotRequest.Repository != repository || gotRequest.ProfileID == "" || gotRequest.SourceDir != "" {
+		t.Fatalf("skills stage request = %+v", gotRequest)
+	}
+	if result.Skills.Status != baselineUpdateSkillsVerified ||
+		result.Skills.InstalledCount != 1 ||
+		len(result.Skills.Installed) != 1 || result.Skills.Installed[0] != "roundfix" ||
+		len(result.Skills.Restored) != 1 || result.Skills.Restored[0] != "context7" {
+		t.Fatalf("skills result = %+v", result.Skills)
+	}
+}
+
+func TestBaselineUpdateSkillWarningKeepsApplyAxisVerified(t *testing.T) {
+	repository := staleBaselineUpdateRepository(t)
+	stage := func(_ context.Context, _ baselineUpdateSkillsRequest) (baselineUpdateSkillsResult, error) {
+		return baselineUpdateSkillsResult{
+			Status:         baselineUpdateSkillsWarning,
+			InstalledCount: 1,
+			Installed:      []string{"roundfix"},
+			Restored:       []string{},
+			Drifted: []baselineUpdateSkillDrift{{
+				Skill:  "context7",
+				Reason: "immutable upstream is unreachable",
+			}},
+		}, nil
+	}
+
+	result, stdout, stderr, code := runBaselineUpdateTestCommandWithSkillsStage(
+		t,
+		context.Background(),
+		stage,
+		"baseline", "update", "--repo", repository, "--yes", "--format=json",
+	)
+	if code != exitOK || stderr != "" {
+		t.Fatalf("warning update exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	if result.State != "verified" || result.StatusMatrix == nil ||
+		result.StatusMatrix.ApprovedPostimages != baseline.EvidenceStatusVerified {
+		t.Fatalf("apply axis = state %q matrix %+v", result.State, result.StatusMatrix)
+	}
+	if result.Skills.Status != baselineUpdateSkillsWarning || len(result.Skills.Drifted) != 1 ||
+		result.Skills.Drifted[0].Skill != "context7" ||
+		!strings.Contains(result.Skills.Drifted[0].Reason, "unreachable") {
+		t.Fatalf("skills warning axis = %+v", result.Skills)
+	}
+}
+
+func TestBaselineUpdateSkipsSkillStageAndPreservesSkillDirectory(t *testing.T) {
+	repository := staleBaselineUpdateRepository(t)
+	sentinel := filepath.Join(repository, ".agents", "skills", "maintainer", "SKILL.md")
+	if err := os.MkdirAll(filepath.Dir(sentinel), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(sentinel, []byte("maintainer skill\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	skillsRoot := filepath.Join(repository, ".agents", "skills")
+	before := baselinePlanTestTree(t, skillsRoot)
+	stage := func(context.Context, baselineUpdateSkillsRequest) (baselineUpdateSkillsResult, error) {
+		t.Fatal("suppressed skills stage was called")
+		return baselineUpdateSkillsResult{}, nil
+	}
+
+	result, stdout, stderr, code := runBaselineUpdateTestCommandWithSkillsStage(
+		t,
+		context.Background(),
+		stage,
+		"baseline", "update", "--repo", repository, "--yes", "--no-skills", "--format=json",
+	)
+	if code != exitOK || stderr != "" {
+		t.Fatalf("skills-suppressed update exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	if result.Skills.Status != baselineUpdateSkillsSkipped {
+		t.Fatalf("suppressed skills result = %+v", result.Skills)
+	}
+	if after := baselinePlanTestTree(t, skillsRoot); after != before {
+		t.Fatalf("suppressed skills stage changed the project skill directory: got %s want %s", after, before)
+	}
+}
+
+func TestBaselineUpdatePassesOfflineSourceToSkillStage(t *testing.T) {
+	repository := staleBaselineUpdateRepository(t)
+	source := t.TempDir()
+	var gotSource string
+	stage := func(_ context.Context, request baselineUpdateSkillsRequest) (baselineUpdateSkillsResult, error) {
+		gotSource = request.SourceDir
+		return successfulBaselineUpdateSkillsResult(), nil
+	}
+
+	_, stdout, stderr, code := runBaselineUpdateTestCommandWithSkillsStage(
+		t,
+		context.Background(),
+		stage,
+		"baseline", "update", "--repo", repository, "--yes",
+		"--skills-source-dir", source, "--format=json",
+	)
+	if code != exitOK || stderr != "" {
+		t.Fatalf("offline-source update exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	wantSource, err := filepath.Abs(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotSource != wantSource {
+		t.Fatalf("skills source = %q, want %q", gotSource, wantSource)
+	}
+}
+
+func TestBaselineUpdateSkillsStageUsesPreviewThenConfirmation(t *testing.T) {
+	const externalSkill = "context7"
+	const planDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	var restoreRequests []baseline.SkillsRestoreRequest
+	dependencies := baselineUpdateSkillsDependencies{
+		resolveProjectRoot: func(context.Context, string) (string, error) { return "/repo", nil },
+		install: func(_ context.Context, request roundskills.InstallRequest) (roundskills.InstallResult, error) {
+			if request.Target != "project" || request.ProjectDir != "/repo" {
+				t.Fatalf("install request = %+v", request)
+			}
+			return roundskills.InstallResult{Targets: []roundskills.InstalledTarget{{Target: "project", Dir: "/repo/.agents/skills", Files: 3}}}, nil
+		},
+		ownedNames: func() []string { return []string{"roundfix"} },
+		resolveExternal: func(string) ([]string, bool, error) {
+			return []string{externalSkill}, true, nil
+		},
+		checkRepository: func(context.Context, string, []string) (roundskills.RepositoryReadiness, error) {
+			return roundskills.RepositoryReadiness{MissingExternal: []string{externalSkill}}, nil
+		},
+		restore: func(_ context.Context, request baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error) {
+			restoreRequests = append(restoreRequests, request)
+			payload := baseline.SkillsRestorePayload{
+				SchemaVersion: baseline.SkillsRestoreSchemaVersion,
+				Profile:       request.ProfileID,
+				Skills:        []baseline.RestoreSkill{{Skill: externalSkill}},
+				PlanDigest:    pointerToString(planDigest),
+			}
+			if request.Confirmation == "" {
+				restoreErr := &baseline.SkillsRestoreError{
+					Category: baseline.SkillsRestoreAction,
+					Finding: baseline.RestoreFinding{
+						Code: "plan.confirmation.required",
+					},
+					Err: errors.New("restoration plan is not confirmed"),
+				}
+				payload.Finding = &restoreErr.Finding
+				return payload, restoreErr
+			}
+			payload.OK = true
+			payload.Applied = true
+			return payload, nil
+		},
+	}
+
+	result, err := runBaselineUpdateSkillsStageWith(
+		context.Background(),
+		baselineUpdateSkillsRequest{
+			Repository: "/repo",
+			ProfileID:  "go-cli-tui",
+			SourceDir:  "/offline",
+		},
+		dependencies,
+	)
+	if err != nil {
+		t.Fatalf("skills stage: %v", err)
+	}
+	if len(restoreRequests) != 2 || restoreRequests[0].Confirmation != "" ||
+		restoreRequests[1].Confirmation != planDigest ||
+		restoreRequests[0].SourceDir != "/offline" || restoreRequests[1].SourceDir != "/offline" {
+		t.Fatalf("restore requests = %+v", restoreRequests)
+	}
+	if result.Status != baselineUpdateSkillsVerified || result.InstalledCount != 1 ||
+		len(result.Restored) != 1 || result.Restored[0] != externalSkill {
+		t.Fatalf("skills stage result = %+v", result)
+	}
+}
+
+func TestBaselineUpdateSkillsStageDegradesUnreachableSourcePerSkill(t *testing.T) {
+	const unreachableSkill = "context7"
+	const restorableSkill = "testing-boss"
+	const planDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	dependencies := baselineUpdateSkillsDependencies{
+		resolveProjectRoot: func(context.Context, string) (string, error) { return "/repo", nil },
+		install: func(context.Context, roundskills.InstallRequest) (roundskills.InstallResult, error) {
+			return roundskills.InstallResult{}, nil
+		},
+		ownedNames: func() []string { return []string{"roundfix"} },
+		resolveExternal: func(string) ([]string, bool, error) {
+			return []string{unreachableSkill, restorableSkill}, true, nil
+		},
+		checkRepository: func(context.Context, string, []string) (roundskills.RepositoryReadiness, error) {
+			return roundskills.RepositoryReadiness{
+				OutdatedExternal: []string{unreachableSkill, restorableSkill},
+			}, nil
+		},
+		restore: func(_ context.Context, request baseline.SkillsRestoreRequest) (baseline.SkillsRestorePayload, error) {
+			if request.Skills[0] == unreachableSkill {
+				restoreErr := &baseline.SkillsRestoreError{
+					Category: baseline.SkillsRestoreExecution,
+					Finding: baseline.RestoreFinding{
+						Code:    "source.commit-unavailable",
+						Message: "immutable upstream is unreachable",
+					},
+					Err: errors.New("git fetch failed"),
+				}
+				return baseline.SkillsRestorePayload{Finding: &restoreErr.Finding}, restoreErr
+			}
+			payload := baseline.SkillsRestorePayload{
+				Skills:     []baseline.RestoreSkill{{Skill: restorableSkill}},
+				PlanDigest: pointerToString(planDigest),
+			}
+			if request.Confirmation == "" {
+				restoreErr := &baseline.SkillsRestoreError{
+					Category: baseline.SkillsRestoreAction,
+					Finding:  baseline.RestoreFinding{Code: "plan.confirmation.required"},
+					Err:      errors.New("restoration plan is not confirmed"),
+				}
+				payload.Finding = &restoreErr.Finding
+				return payload, restoreErr
+			}
+			payload.OK = true
+			payload.Applied = true
+			return payload, nil
+		},
+	}
+
+	result, err := runBaselineUpdateSkillsStageWith(
+		context.Background(),
+		baselineUpdateSkillsRequest{Repository: "/repo", ProfileID: "go-cli-tui"},
+		dependencies,
+	)
+	if err != nil {
+		t.Fatalf("unreachable source must be a warning: %v", err)
+	}
+	if result.Status != baselineUpdateSkillsWarning || len(result.Drifted) != 1 ||
+		result.Drifted[0].Skill != unreachableSkill ||
+		!strings.Contains(result.Drifted[0].Reason, "unreachable") ||
+		len(result.Restored) != 1 || result.Restored[0] != restorableSkill {
+		t.Fatalf("unreachable skills result = %+v", result)
 	}
 }
 
@@ -245,6 +508,8 @@ func TestBaselineUpdateHelpNamesNonInteractiveContract(t *testing.T) {
 		"roundfix baseline update",
 		"--yes | --confirm-plan <digest>",
 		"--adopt-suggested",
+		"--no-skills",
+		"--skills-source-dir",
 		baselineUpdateResultSchema,
 		"without prompting or invoking a semantic analyzer",
 	} {
@@ -289,9 +554,36 @@ func runBaselineUpdateTestCommand(
 	args ...string,
 ) (baselineUpdateResult, string, string, int) {
 	t.Helper()
+	return runBaselineUpdateTestCommandWithSkillsStage(
+		t,
+		ctx,
+		func(context.Context, baselineUpdateSkillsRequest) (baselineUpdateSkillsResult, error) {
+			return successfulBaselineUpdateSkillsResult(), nil
+		},
+		args...,
+	)
+}
+
+func runBaselineUpdateTestCommandWithSkillsStage(
+	t *testing.T,
+	ctx context.Context,
+	stage baselineUpdateSkillsStage,
+	args ...string,
+) (baselineUpdateResult, string, string, int) {
+	t.Helper()
+	if len(args) < 2 || args[0] != "baseline" || args[1] != "update" {
+		t.Fatalf("baseline update test arguments = %v", args)
+	}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(ctx, args, &stdout, &stderr)
+	code := runBaselineUpdateCommandWithSkillsStage(
+		ctx,
+		args[2:],
+		&stdout,
+		&stderr,
+		commandEnvironmentFromProcess(),
+		stage,
+	)
 	var result baselineUpdateResult
 	if index := strings.Index(stdout.String(), "{"); index >= 0 {
 		if err := json.Unmarshal(stdout.Bytes()[index:], &result); err != nil {
@@ -301,6 +593,20 @@ func runBaselineUpdateTestCommand(
 		result.PlanDigest = digest
 	}
 	return result, stdout.String(), stderr.String(), code
+}
+
+func successfulBaselineUpdateSkillsResult() baselineUpdateSkillsResult {
+	return baselineUpdateSkillsResult{
+		Status:         baselineUpdateSkillsVerified,
+		InstalledCount: 1,
+		Installed:      []string{"roundfix"},
+		Restored:       []string{},
+		Drifted:        []baselineUpdateSkillDrift{},
+	}
+}
+
+func pointerToString(value string) *string {
+	return &value
 }
 
 func baselineUpdateTextValue(output, label string) string {

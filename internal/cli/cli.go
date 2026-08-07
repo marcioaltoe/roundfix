@@ -53,7 +53,7 @@ Usage:
   roundfix release plan --reset-to <version> [--format <text|json>]
   roundfix spec check [<slug> ...] [--format <text|json>] [--strict]
   roundfix spec audit <slug> [--format <text|json>]
-  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested]
+  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--skills-source-dir <path>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -5358,7 +5358,7 @@ explicit post-QA authority.
 	case "baseline":
 		return `Usage:
   roundfix baseline [--repo <path>] [--format <text|json>]
-  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested]
+  roundfix baseline update [--repo <path>] [--format <text|json>] [--yes | --confirm-plan <digest>] [--adopt-suggested] [--no-skills] [--skills-source-dir <path>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline capabilities check [--profile <id>] [--repo <path>] [--format <text|json>]
@@ -5396,6 +5396,8 @@ embedded Baseline catalog.
   roundfix baseline update [--repo <path>] [--format <text|json>]
                            [--yes | --confirm-plan <digest>]
                            [--adopt-suggested]
+                           [--no-skills]
+                           [--skills-source-dir <path>]
 
 Reads the repository's Setup Manifest, resolves its recorded Baseline Profile
 and decisions against the current catalog, and builds a managed-refresh Plan
@@ -5407,6 +5409,13 @@ digest reviewed in a previous invocation. The two forms are mutually exclusive.
 A repository without a Setup Manifest requires first adoption. A decision the
 manifest does not carry requires action unless --adopt-suggested explicitly
 selects the catalog suggestion; every adopted suggestion is reported.
+
+After an approved guidance apply, the command reinstalls the binary-carried
+Roundfix skills and restores missing or drifted external Repository Skill Set
+members through their preview-and-confirm contract. --no-skills suppresses that
+stage. --skills-source-dir selects an explicit offline Git checkout or bare
+object store for external restoration. An unreachable immutable upstream is a
+per-skill warning and does not change the successful guidance-apply exit.
 
 JSON output uses roundfix/baseline-update-result/v1.
 
@@ -5423,6 +5432,9 @@ Options:
   --yes              Approve the Plan Digest computed in this invocation
   --confirm-plan     Exact Plan Digest reviewed in a previous invocation
   --adopt-suggested  Adopt and report suggestions only for decisions absent from the manifest
+  --no-skills        Skip the Repository Skill Set refresh
+  --skills-source-dir
+                      Offline Git checkout or bare object store for external skill restoration
 `
 	case "baseline capabilities check":
 		return `Usage:
