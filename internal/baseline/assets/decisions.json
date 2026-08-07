@@ -155,7 +155,7 @@
       "version": 1,
       "type": "http-contract",
       "modes": ["REST", "Post-only"],
-      "default": {"mode": "Post-only"},
+      "default": {"mode": "REST"},
       "summary": "The repository-owned HTTP Contract Decision and its explicit typed exceptions.",
       "effects": [
         {

@@ -238,7 +238,7 @@ func TestHumanBaselineDecisionDefaults(t *testing.T) {
 		},
 		{name: "language", id: "language.generated", want: "English"},
 		{name: "verification", id: "verification.gate", want: "rtk make verify"},
-		{name: "HTTP contract", id: "http.contract", want: map[string]any{"mode": "Post-only"}},
+		{name: "HTTP contract", id: "http.contract", want: map[string]any{"mode": "REST"}},
 		{name: "spec scaffold", id: "spec.scaffold", want: true},
 		{name: "domain layout", id: "domain.layout", want: "single-context"},
 		{name: "external triage", id: "triage.external", want: false},
@@ -458,7 +458,7 @@ func TestProjectDecisionParity(t *testing.T) {
 	for index := range automation {
 		switch automation[index].ID {
 		case "http.contract":
-			automation[index].Value = map[string]any{"mode": "Post-only"}
+			automation[index].Value = map[string]any{"mode": "REST"}
 		case "auth.provider":
 			provider := automation[index].Value.(map[string]any)
 			exception := provider["routeException"].(map[string]any)
