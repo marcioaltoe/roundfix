@@ -1,0 +1,8 @@
+#!/bin/sh
+# Valida a mensagem antes de o commit existir, quando corrigir é só reescrever
+# o editor. O mesmo commitlint e a mesma commitlint.config.mjs que o CI usa.
+#
+# Este hook é alcançável porque `core.hooksPath` aponta para .githooks, o que o
+# `bun install` configura via script `prepare`. Ele pode ser burlado com
+# `--no-verify`; o CI é quem garante.
+exec bunx commitlint --edit "$1"

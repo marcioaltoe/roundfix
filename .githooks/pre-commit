@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+set -eu
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+if ! printf '%s\n' "$staged_files" | grep -Eq '\.(js|jsx|ts|tsx|css|scss|html|json|jsonc|ya?ml|md|markdown|graphql)$'; then
+  exit 0
+fi
+
+if command -v lint-staged >/dev/null 2>&1; then
+  lint-staged
+else
+  bun x lint-staged
+fi
