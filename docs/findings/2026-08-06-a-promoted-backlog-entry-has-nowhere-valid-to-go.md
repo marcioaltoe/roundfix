@@ -78,3 +78,24 @@ competing one.
 
 The archive-spec skill is Roundfix-owned, so changing its validator needs an
 express tooling authorization with bounded files.
+
+---
+
+## Addendum — 2026-08-07, resolved
+
+The seam is closed. The adoption index learned the type the typed backlog
+introduced: `backlog` joins `inbox` and `finding` in the `archive-spec`
+validator and in the `write-prd` adoption steps, with the source-shape check
+requiring a `docs/backlog/` path for it.
+
+The three entries promoted on 2026-08-06 moved into their Specs' `references/`
+with an `_index.md` each, so `docs/backlog/` again holds only live intent.
+
+The third question this finding raised — that the rule needs a detector,
+because its absence is why three entries sat promoted-but-unmoved on the day
+the clause was being cited — is answered by `SC-BACKLOG-UNMOVED`. It reads only
+declared values (the entry's own `status` and `spec`), reports the destination
+in its fix line, and skips when no backlog directory exists. It fails an entry
+that is promoted without naming a Spec, one that names a Spec that does not
+resolve, and one that names a real Spec but never left `docs/backlog/`.
+

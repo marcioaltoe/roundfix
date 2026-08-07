@@ -700,7 +700,7 @@ func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 				"`internal/spec.QAVerdict`",
 				"expected_owner",
 				"duplicate source",
-				"type must be `inbox` or `finding`",
+				"type must be `inbox`, `finding`, or `backlog`",
 				"exists or is a symbolic link",
 				"path must be one basename relative to `_index.md`",
 				"test -L \"$index\" || test ! -f \"$index\"",

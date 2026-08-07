@@ -92,11 +92,15 @@ it. Resolve the numbered slug with the rule in step 6, then run
 `mkdir -p docs/specs/<slug>/references` before the first move. Run these steps
 in order after recording decisions and before writing the PRD:
 
-1. **Inventory.** List every inbox note and finding whose content the PRD relies
-   on. A document cited only as background is not adopted.
+1. **Inventory.** List every inbox note, finding, and backlog entry whose
+   content the PRD relies on. A document cited only as background is not
+   adopted.
 2. **Classify.** A raw inbox note that is source material can move directly. A
    note that records observed behavior is field evidence: promote it to a
-   finding first, then adopt the finding.
+   finding first, then adopt the finding. A backlog entry this Spec implements
+   is adopted as `backlog`: set its `status: promoted` and `spec` to this
+   Spec's slug in the same change that moves it, so the entry's own frontmatter
+   and the index agree.
 3. **Claim ownership.** Search both `docs/specs/` and
    `docs/specs/_archived/` for an existing owner. Exactly one Spec owns a shared
    source: the first Spec that commits to implementation. A secondary Spec links
@@ -119,7 +123,8 @@ in order after recording decisions and before writing the PRD:
    ```
 
    `source` is the pre-adoption repository path and is never updated; it is the
-   provenance record. `type` identifies the source as `inbox` or `finding`.
+   provenance record. `type` identifies the source as `inbox`, `finding`, or
+   `backlog`.
    `owner` is the owning four-digit Spec number. `adopted date` is the adoption
    date, and `path` is the current path relative to `_index.md`, so it remains
    valid when the Spec archives. Before continuing, validate the complete index:

@@ -97,6 +97,9 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 	if err := detectFindingsConsistency(&result, repoRoot); err != nil {
 		return result, err
 	}
+	if err := detectBacklogPromotion(&result, repoRoot); err != nil {
+		return result, err
+	}
 
 	prd, present, err := readConstraintArtifact(repoRoot, filepath.Join(specDir, "_prd.md"))
 	if err != nil {
