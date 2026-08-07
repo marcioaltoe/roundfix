@@ -1,6 +1,7 @@
 package speccheck_test
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -26,6 +27,21 @@ func TestCheckBacklogUnmoved(t *testing.T) {
 		if !strings.Contains(finding.Summary, "still lives in docs/backlog") {
 			t.Fatalf("summary = %q, want the unmoved statement", finding.Summary)
 		}
+		if !strings.Contains(finding.Fix, "docs/specs/"+backlogCarrierSlug+"/references/") {
+			t.Fatalf("fix = %q, want the destination path", finding.Fix)
+		}
+	})
+
+	t.Run("red CRLF promoted entry never moved", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeBacklogCarrier(t)
+		const entryPath = "docs/backlog/2026-08-06-crlf-still-here.md"
+		writeFindingsArtifact(t, repoRoot, entryPath,
+			"---\r\ntype: perf\r\nstatus: promoted\r\ncreated: 2026-08-06\r\nspec: "+backlogCarrierSlug+"\r\n---\r\n\r\n# Still here\r\n")
+
+		result := checkBacklogCarrier(t, repoRoot)
+		finding := requireRenderedFinding(t, result, speccheck.CodeBacklogUnmoved, entryPath, 2)
 		if !strings.Contains(finding.Fix, "docs/specs/"+backlogCarrierSlug+"/references/") {
 			t.Fatalf("fix = %q, want the destination path", finding.Fix)
 		}
@@ -113,6 +129,25 @@ func TestCheckBacklogUnmoved(t *testing.T) {
 		}
 		if !hasSkip(result, speccheck.CodeBacklogUnmoved, "docs/backlog") {
 			t.Fatalf("Skipped = %#v, want %s missing docs/backlog", result.Skipped, speccheck.CodeBacklogUnmoved)
+		}
+	})
+
+	t.Run("wraps detector errors with operation context", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeBacklogCarrier(t)
+		writeFindingsArtifact(t, repoRoot, "docs/backlog/2026-08-06-invalid.md",
+			"---\nstatus: [\n---\n")
+
+		_, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, backlogCarrierSlug)
+		if err == nil {
+			t.Fatal("Check(backlog carrier) error = nil, want invalid frontmatter error")
+		}
+		if !strings.Contains(err.Error(), "detect backlog promotion: parse Backlog Entry") {
+			t.Fatalf("Check(backlog carrier) error = %q, want detector operation context", err)
+		}
+		if errors.Unwrap(err) == nil {
+			t.Fatalf("Check(backlog carrier) error = %q, want wrapped detector cause", err)
 		}
 	})
 }

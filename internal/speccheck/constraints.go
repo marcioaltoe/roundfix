@@ -98,7 +98,7 @@ func Check(specsRoot, repoRoot, slug string) (Result, error) {
 		return result, err
 	}
 	if err := detectBacklogPromotion(&result, repoRoot); err != nil {
-		return result, err
+		return result, fmt.Errorf("detect backlog promotion: %w", err)
 	}
 
 	prd, present, err := readConstraintArtifact(repoRoot, filepath.Join(specDir, "_prd.md"))

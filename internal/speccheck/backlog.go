@@ -131,7 +131,7 @@ func readBacklogDocuments(repoRoot, relativeDir string) ([]backlogDocument, bool
 
 func parseBacklogFrontmatter(content []byte) (backlogFrontmatter, error) {
 	const opening = "---\n"
-	text := string(content)
+	text := strings.ReplaceAll(string(content), "\r\n", "\n")
 	if !strings.HasPrefix(text, opening) {
 		return backlogFrontmatter{}, nil
 	}

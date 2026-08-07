@@ -94,8 +94,9 @@ with an `_index.md` each, so `docs/backlog/` again holds only live intent.
 The third question this finding raised — that the rule needs a detector,
 because its absence is why three entries sat promoted-but-unmoved on the day
 the clause was being cited — is answered by `SC-BACKLOG-UNMOVED`. It reads only
-declared values (the entry's own `status` and `spec`), reports the destination
-in its fix line, and skips when no backlog directory exists. It fails an entry
-that is promoted without naming a Spec, one that names a Spec that does not
-resolve, and one that names a real Spec but never left `docs/backlog/`.
-
+declared values (the entry's own `status` and `spec`) and skips when no backlog
+directory exists. For a resolvable Spec, its fix reports the concrete
+destination. Missing and unresolvable Spec cases instead say how to establish
+a valid destination. It fails an entry that is promoted without naming a
+Spec, one that names a Spec that does not resolve, and one that names a real
+Spec but never left `docs/backlog/`.
