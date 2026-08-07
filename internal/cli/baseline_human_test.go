@@ -61,17 +61,12 @@ func TestHumanBaselineAdoption(t *testing.T) {
 	}
 }
 
-func TestHumanBaselineUpdate(t *testing.T) {
+func TestBaselineHumanResolvedManifestSkipsPromptsAndAnalyzer(t *testing.T) {
 	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	applyHumanBaselineFixturePlan(t, repo)
 	before := baselinePlanTestTree(t, repo)
 
-	answers := []string{"1", "1"}
-	for range 10 {
-		answers = append(answers, "1")
-	}
-	answers = append(answers, "2")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := runBaselineHumanCommandWithIO(
@@ -80,8 +75,9 @@ func TestHumanBaselineUpdate(t *testing.T) {
 		&stdout,
 		&stderr,
 		baselineHumanCommandIO{
-			input:       strings.NewReader(strings.Join(answers, "\n") + "\n"),
-			interactive: true,
+			input:            strings.NewReader("2\n"),
+			interactive:      true,
+			semanticAnalyzer: &forbiddenBaselineSemanticAnalyzer{t: t},
 		},
 	)
 	if code != exitUnverified {
@@ -96,62 +92,53 @@ func TestHumanBaselineUpdate(t *testing.T) {
 			t.Fatalf("human update output missing %q:\n%s", want, stdout.String())
 		}
 	}
-	if !strings.Contains(stderr.String(), "Change Baseline Profile") {
-		t.Fatalf("human update did not offer explicit profile change:\n%s", stderr.String())
+	promptLabels := humanBaselinePromptLabels(stderr.String())
+	if !reflect.DeepEqual(promptLabels, []string{"Final confirmation for Plan Digest "}) {
+		t.Fatalf("resolved human update prompts = %#v, want only final confirmation\n%s", promptLabels, stderr.String())
 	}
 	after := baselinePlanTestTree(t, repo)
 	if before != after {
 		t.Fatalf("declined human update changed repository bytes:\nbefore=%s\nafter=%s", before, after)
 	}
+}
 
-	changeAnswers := []string{"1", "2", "2"}
+func TestBaselineHumanProfileChangeRemainsReachable(t *testing.T) {
+	t.Parallel()
+	repo := newHumanBaselineRepository(t)
+	applyHumanBaselineFixturePlan(t, repo)
+	changeAnswers := []string{"3", "1", "1", "1", "2", "2"}
 	for range 10 {
 		changeAnswers = append(changeAnswers, "1")
 	}
+	changeAnswers = append(changeAnswers, "2")
 	var changeReview bytes.Buffer
 	var changePrompts bytes.Buffer
-	humanPlan, err := driveHumanBaselinePlan(
+	changeCode := runBaselineHumanCommandWithIO(
 		context.Background(),
-		repo,
-		&baselineHumanPrompt{
-			reader: bufioReader(strings.Join(changeAnswers, "\n") + "\n"),
-			writer: &changePrompts,
-		},
+		[]string{"--repo", repo},
 		&changeReview,
-	)
-	if err != nil {
-		t.Fatalf("build human profile-change Plan: %v\nreview=%s\nprompts=%s", err, changeReview.String(), changePrompts.String())
-	}
-	automation, err := baseline.BuildPlan(context.Background(), baseline.PlanRequest{
-		Repository: repo,
-		ProfileID:  "rust-cli",
-		Decisions:  humanBaselineFixtureDecisions(),
-		Preservation: baseline.RootPreservationRequest{
-			Mode: baseline.PreservationModeGreenfield,
+		&changePrompts,
+		baselineHumanCommandIO{
+			input:       strings.NewReader(strings.Join(changeAnswers, "\n") + "\n"),
+			interactive: true,
 		},
-	})
-	if err != nil || automation.Plan == nil {
-		t.Fatalf("build automation profile-change Plan: outcome=%+v error=%v", automation, err)
+	)
+	if changeCode != exitUnverified {
+		t.Fatalf("human profile-change decline exit = %d\nreview=%s\nprompts=%s", changeCode, changeReview.String(), changePrompts.String())
 	}
-	humanBytes, err := baseline.MarshalPlanDocument(humanPlan)
-	if err != nil {
-		t.Fatal(err)
-	}
-	automationBytes, err := baseline.MarshalPlanDocument(*automation.Plan)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if humanPlan.Profile.ID != "rust-cli" || !bytes.Equal(humanBytes, automationBytes) {
-		t.Fatalf(
-			"profile-change parity failed: profile=%s human=%s automation=%s",
-			humanPlan.Profile.ID,
-			humanPlan.PlanDigest,
-			automation.Plan.PlanDigest,
-		)
+	for _, want := range []string{
+		"Decision area to revisit",
+		"Change Baseline Profile",
+		"Profile change requested",
+		"Rejected Plan revision accepted",
+	} {
+		if !strings.Contains(changePrompts.String()+changeReview.String(), want) {
+			t.Fatalf("profile-change route missing %q\nreview=%s\nprompts=%s", want, changeReview.String(), changePrompts.String())
+		}
 	}
 }
 
-func TestHumanBaselineIncompatibleManifestKeepsValidDefaults(t *testing.T) {
+func TestHumanBaselineProfileDigestDriftRemainsUpdate(t *testing.T) {
 	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	applyHumanBaselineFixturePlan(t, repo)
@@ -179,10 +166,10 @@ func TestHumanBaselineIncompatibleManifestKeepsValidDefaults(t *testing.T) {
 	}
 	state, err := inspectBaselineHumanState(repo, catalog)
 	if err != nil {
-		t.Fatalf("inspect incompatible human state: %v", err)
+		t.Fatalf("inspect digest-drift human state: %v", err)
 	}
-	if state.mode != "adoption" || state.incompatible == "" {
-		t.Fatalf("incompatible state = %+v, want adoption with diagnostic", state)
+	if state.mode != "update" || state.incompatible != "" {
+		t.Fatalf("digest-drift state = %+v, want update", state)
 	}
 	if state.currentProfile == nil || state.currentProfile.ID != "go-cli-tui" {
 		t.Fatalf("recovered profile = %+v, want go-cli-tui", state.currentProfile)
@@ -193,22 +180,116 @@ func TestHumanBaselineIncompatibleManifestKeepsValidDefaults(t *testing.T) {
 
 	var review bytes.Buffer
 	var prompts bytes.Buffer
-	profile, err := promptBaselineProfile(
+	_, err = driveHumanBaselinePlanWithAnalyzers(
 		context.Background(),
-		&baselineHumanPrompt{reader: bufioReader("\n"), writer: &prompts},
-		&review,
 		repo,
-		catalog,
-		state,
+		&baselineHumanPrompt{reader: bufioReader(""), writer: &prompts},
+		&review,
+		nil,
+		&forbiddenBaselineSemanticAnalyzer{t: t},
+		nil,
 	)
 	if err != nil {
-		t.Fatalf("accept recovered profile default: %v", err)
+		t.Fatalf("build digest-drift update Plan: %v\nreview=%s\nprompts=%s", err, review.String(), prompts.String())
 	}
-	if profile.ID != "go-cli-tui" {
-		t.Fatalf("accepted profile = %q, want go-cli-tui", profile.ID)
+	if labels := humanBaselinePromptLabels(prompts.String()); len(labels) != 0 {
+		t.Fatalf("digest-drift update prompts = %#v, want none\n%s", labels, prompts.String())
 	}
-	if !strings.Contains(prompts.String(), "Reuse existing profile go-cli-tui (default)") {
-		t.Fatalf("recovered profile default is not visible:\n%s", prompts.String())
+}
+
+func TestHumanBaselinePromptsOnlyForManifestMissingDecision(t *testing.T) {
+	t.Parallel()
+	repo := newHumanBaselineRepository(t)
+	applyHumanBaselineFixturePlan(t, repo)
+	removeHumanBaselineManifestDecision(t, repo, "verification.gate")
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runBaselineHumanCommandWithIO(
+		context.Background(),
+		[]string{"--repo", repo},
+		&stdout,
+		&stderr,
+		baselineHumanCommandIO{
+			input:            strings.NewReader("\n2\n"),
+			interactive:      true,
+			semanticAnalyzer: &forbiddenBaselineSemanticAnalyzer{t: t},
+		},
+	)
+	if code != exitUnverified {
+		t.Fatalf("missing-decision update exit = %d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	labels := humanBaselinePromptLabels(stderr.String())
+	want := []string{
+		"The repository verification command named by generated guidance. (verification.gate)",
+		"Final confirmation for Plan Digest ",
+	}
+	if !reflect.DeepEqual(labels, want) {
+		t.Fatalf("missing-decision prompts = %#v, want %#v\n%s", labels, want, stderr.String())
+	}
+}
+
+func TestHumanBaselineFirstAdoptionPromptSequenceCharacterization(t *testing.T) {
+	t.Parallel()
+	repo := newHumanBaselineRepository(t)
+	var review bytes.Buffer
+	var prompts bytes.Buffer
+	_, err := driveHumanBaselinePlan(
+		context.Background(),
+		repo,
+		&baselineHumanPrompt{
+			reader: bufioReader(humanBaselineAdoptionAnswers("")),
+			writer: &prompts,
+		},
+		&review,
+	)
+	if err != nil {
+		t.Fatalf("build first-adoption characterization Plan: %v\nreview=%s\nprompts=%s", err, review.String(), prompts.String())
+	}
+	want := []string{
+		"Instruction preservation",
+		"Select exactly one Baseline Profile",
+		"The language used for generated repository content.",
+		"The repository verification command named by generated guidance. (verification.gate)",
+		"Whether the repository uses local docs/specs artifacts as its planning source.",
+		"The CONTEXT.md layout agents must read before naming domain concepts.",
+		"Whether external forge issues require triage-label guidance.",
+		"Whether autonomous Supervisor and ACP Runtime delegation applies.",
+		"Whether read-only Secondbrain guidance is generated.",
+		"Whether Baseline may preserve and link non-empty Repository-Specific Normative Rules.",
+		"The default implementation ACP Runtime and model for backend Tasks. (runtime.backend)",
+		"The design, UI, UX, or frontend ACP Runtime and model. (runtime.design)",
+	}
+	if labels := humanBaselinePromptLabels(prompts.String()); !reflect.DeepEqual(labels, want) {
+		t.Fatalf("first-adoption prompts = %#v, want %#v\n%s", labels, want, prompts.String())
+	}
+}
+
+func TestHumanBaselineUnreadableManifestFallsBackToFullInterview(t *testing.T) {
+	t.Parallel()
+	repo := newHumanBaselineRepository(t)
+	manifestPath := filepath.Join(repo, filepath.FromSlash(baselineSetupManifestPath))
+	if err := os.MkdirAll(manifestPath, 0o755); err != nil {
+		t.Fatalf("create unreadable Setup Manifest fixture: %v", err)
+	}
+
+	var review bytes.Buffer
+	var prompts bytes.Buffer
+	_, err := driveHumanBaselinePlan(
+		context.Background(),
+		repo,
+		&baselineHumanPrompt{reader: bufioReader(""), writer: &prompts},
+		&review,
+	)
+	if err == nil || !strings.Contains(err.Error(), "interactive Baseline input ended") {
+		t.Fatalf("unreadable manifest fallback error = %v, want interview input exhaustion", err)
+	}
+	if labels := humanBaselinePromptLabels(prompts.String()); !reflect.DeepEqual(labels, []string{"Instruction preservation"}) {
+		t.Fatalf("unreadable manifest prompts = %#v, want full-interview preservation prompt\n%s", labels, prompts.String())
+	}
+	if !strings.Contains(review.String(), "Baseline workflow: adoption") ||
+		!strings.Contains(review.String(), "Existing state: incompatible") {
+		t.Fatalf("unreadable manifest state did not fall back to adoption:\n%s", review.String())
 	}
 }
 
@@ -1530,6 +1611,30 @@ func applyHumanBaselineFixturePlan(t *testing.T, repo string) {
 	}
 }
 
+func removeHumanBaselineManifestDecision(t *testing.T, repo string, id string) {
+	t.Helper()
+	manifestPath := filepath.Join(repo, filepath.FromSlash(baselineSetupManifestPath))
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatalf("read Setup Manifest: %v", err)
+	}
+	var manifest baseline.SetupManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		t.Fatalf("decode Setup Manifest: %v", err)
+	}
+	if _, ok := manifest.Decisions[id]; !ok {
+		t.Fatalf("Setup Manifest has no decision %q", id)
+	}
+	delete(manifest.Decisions, id)
+	data, err = json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		t.Fatalf("encode Setup Manifest: %v", err)
+	}
+	if err := os.WriteFile(manifestPath, append(data, '\n'), 0o644); err != nil {
+		t.Fatalf("write Setup Manifest: %v", err)
+	}
+}
+
 func humanBaselineFixtureDecisions() []baseline.DecisionValue {
 	return []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
@@ -1582,6 +1687,21 @@ func humanReviewDigests(output string) []string {
 	return digests
 }
 
+func humanBaselinePromptLabels(output string) []string {
+	var labels []string
+	for _, line := range strings.Split(output, "\n") {
+		_, label, found := strings.Cut(line, ": ")
+		if !found || !strings.HasPrefix(line, "Prompt ") {
+			continue
+		}
+		if strings.HasPrefix(label, "Final confirmation for Plan Digest ") {
+			label = "Final confirmation for Plan Digest "
+		}
+		labels = append(labels, label)
+	}
+	return labels
+}
+
 type countingBaselineRevisionAnalyzer struct {
 	calls int
 }
@@ -1598,6 +1718,28 @@ type countingBaselineSemanticAnalyzer struct {
 	segmentCalls  int
 	classifyCalls int
 	findings      []baseline.Finding
+}
+
+type forbiddenBaselineSemanticAnalyzer struct {
+	t *testing.T
+}
+
+func (analyzer *forbiddenBaselineSemanticAnalyzer) Segment(
+	context.Context,
+	baseline.RuleSegmentationSnapshot,
+) (baseline.RuleSegmentationProposal, error) {
+	analyzer.t.Helper()
+	analyzer.t.Fatal("semantic analyzer Segment called on resolved manifest path")
+	return baseline.RuleSegmentationProposal{}, nil
+}
+
+func (analyzer *forbiddenBaselineSemanticAnalyzer) Classify(
+	context.Context,
+	baseline.AnalysisSnapshot,
+) (baseline.ClassificationProposal, error) {
+	analyzer.t.Helper()
+	analyzer.t.Fatal("semantic analyzer Classify called on resolved manifest path")
+	return baseline.ClassificationProposal{}, nil
 }
 
 func (analyzer *countingBaselineSemanticAnalyzer) Segment(

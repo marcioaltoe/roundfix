@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0082-the-manifest-already-answered-that
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -37,28 +37,28 @@ is untouched.
 
 ## Subtasks
 
-- [ ] Short-circuit the settled prompts when the manifest resolves.
-- [ ] Prompt only for newly required decisions.
-- [ ] Skip classification on the resolved path.
-- [ ] Keep the profile-change route reachable from the short-circuited path.
-- [ ] Prove first adoption and the incompatible-manifest fallback are unchanged.
+- [x] Short-circuit the settled prompts when the manifest resolves.
+- [x] Prompt only for newly required decisions.
+- [x] Skip classification on the resolved path.
+- [x] Keep the profile-change route reachable from the short-circuited path.
+- [x] Prove first adoption and the incompatible-manifest fallback are unchanged.
 
 ## Acceptance Criteria
 
-- [ ] On a repository with a complete current manifest, the interactive workflow
+- [x] On a repository with a complete current manifest, the interactive workflow
       reaches the plan confirmation having issued zero decision prompts.
-- [ ] On a repository whose manifest lacks a catalog-required decision, exactly
+- [x] On a repository whose manifest lacks a catalog-required decision, exactly
       that decision is prompted.
-- [ ] No semantic analyzer call occurs on the resolved path, proven by a test
+- [x] No semantic analyzer call occurs on the resolved path, proven by a test
       whose injected analyzer fails the test if it is called.
-- [ ] On a repository with no manifest, the prompt sequence matches the task_01
+- [x] On a repository with no manifest, the prompt sequence matches the task_01
       characterization corpus exactly.
-- [ ] On a repository with an unreadable manifest, the full interactive path runs
+- [x] On a repository with an unreadable manifest, the full interactive path runs
       rather than the command refusing.
-- [ ] On a repository whose stored profile digest no longer matches the catalog
+- [x] On a repository whose stored profile digest no longer matches the catalog
       but whose profile resolves and whose decisions validate, the workflow
       announces update rather than adoption and issues zero decision prompts.
-- [ ] A maintainer can still choose to change the Baseline Profile.
+- [x] A maintainer can still choose to change the Baseline Profile.
 
 ## Context
 
@@ -77,3 +77,57 @@ is untouched.
 - `_techspec.md` → Build Order 8; System Architecture.
 - `_prd.md` → Core Features 7 and 8; User Story 2; Goal 1; Non-Goals: first adoption, profile changes.
 - ADR-0068, ADR-0069, ADR-0099.
+
+## Result
+
+### Implementation
+
+- The human workflow now resolves the Setup Manifest through
+  `ResolveManifestInput`. Resolved and incomplete manifests announce `update`;
+  unreadable or incompatible manifests retain the existing full-interview
+  fallback instead of returning a manifest-read error.
+- A manifest-backed Plan starts from the stored profile and decisions, prompts
+  only for decision IDs still required by `ResolveDecisionInput`, uses
+  `managed-refresh`, and never enters preservation selection, profile selection,
+  segmentation, or classification.
+- The final Plan Digest confirmation and reject-and-revise loop remain shared by
+  adoption and update. Choosing Baseline Profile from that loop re-enters the
+  full preservation/profile interview before recalculation, preserving the
+  interactive profile-change route.
+
+### Focused checks
+
+- The pre-change focused run of the six Task 06 cases failed on the intended
+  signals: complete manifests still requested preservation/profile input,
+  profile-digest drift and a missing decision fell back to adoption, and a
+  non-regular manifest returned a read error before the interview.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-0082-task-06-split-gocache go test ./internal/cli -run '^(TestBaselineHumanResolvedManifestSkipsPromptsAndAnalyzer|TestBaselineHumanProfileChangeRemainsReachable|TestHumanBaselineProfileDigestDriftRemainsUpdate|TestHumanBaselinePromptsOnlyForManifestMissingDecision|TestHumanBaselineFirstAdoptionPromptSequenceCharacterization|TestHumanBaselineUnreadableManifestFallsBackToFullInterview)$' -count=1`
+  exited 0: `ok roundfix/internal/cli`.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-0082-task-06-regression-gocache go test ./internal/cli -run '^(TestHumanBaselineAdoption|TestConsolidatedReview|TestHumanBaselineInvokesSemanticSegmentationAndClassification|TestRejectedPlanRevision|TestRepeatedPlanRevisionDeterminism|TestBaselineNoTTY)$' -count=1`
+  exited 0: `ok roundfix/internal/cli`.
+- The commands under `## Verification` were not run; the Daemon owns them.
+
+### Acceptance evidence
+
+1. `TestBaselineHumanResolvedManifestSkipsPromptsAndAnalyzer` observes only the
+   final Plan Digest confirmation on a complete current manifest and proves a
+   declined Plan writes no repository bytes.
+2. `TestHumanBaselinePromptsOnlyForManifestMissingDecision` removes only
+   `verification.gate` and observes exactly its prompt followed by final Plan
+   confirmation.
+3. The injected `forbiddenBaselineSemanticAnalyzer` fails immediately from
+   either `Segment` or `Classify`; the resolved and incomplete update cases pass
+   with that analyzer installed.
+4. `TestHumanBaselineFirstAdoptionPromptSequenceCharacterization` asserts the
+   twelve pre-Plan prompt labels for a repository with no manifest, while the
+   existing adoption, consolidated-review, and semantic-classification cases
+   remain green.
+5. `TestHumanBaselineUnreadableManifestFallsBackToFullInterview` presents a
+   non-regular manifest path and reaches the preservation prompt with an
+   incompatible-adoption announcement instead of returning the read error.
+6. `TestHumanBaselineProfileDigestDriftRemainsUpdate` changes only the stored
+   profile digest, observes `update`, builds the managed-refresh Plan with zero
+   prompts, and keeps the analyzer forbidden.
+7. `TestBaselineHumanProfileChangeRemainsReachable` rejects the initial update
+   Plan, selects the Baseline Profile revision area, changes to `rust-cli`,
+   receives a newly computed complete Plan, and declines it without mutation.
