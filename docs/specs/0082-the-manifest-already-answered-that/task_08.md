@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0082-the-manifest-already-answered-that
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
