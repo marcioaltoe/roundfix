@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0082-the-manifest-already-answered-that
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -97,3 +97,93 @@ else. Its boundary is the exact file list recorded in the authorization.
 - `_techspec.md` → Build Order 9; Project Constraints: Tooling authority.
 - `_prd.md` → Project Constraints: Tooling authority.
 - ADR-0081.
+
+## Result
+
+Implementation-ready work is present for Daemon Verification. The declared
+`## Verification` commands were not run in this Agent turn.
+
+### Implementation
+
+- The durable user guide now routes compatible adopted repositories through
+  `roundfix baseline update`, documents all seven flags and exit categories
+  `0`, `1`, `2`, `3`, and `130`, and states the byte-identical preservation
+  guarantee for every non-managed region.
+- The canonical `setup-context-driven` skill now separates managed refresh from
+  first adoption and Profile changes, and the canonical `roundfix` skill names
+  the update command, flags, result schema, preservation behavior, and exit
+  categories. `make skills-sync` regenerated both embedded mirrors.
+- The `context-workflow` module's existing `setup-context-driven` dispatch
+  trigger now teaches `roundfix baseline update`; no Normative Clause,
+  decision, capability, or template changed.
+- The published-example contract now dispatches `baseline update` examples to
+  `parseBaselineUpdateCommand`, and its help contract covers the shipped update
+  usage, flags, result schema, and exit categories.
+- `make baseline-digests` regenerated every derived pin and fixture; no digest
+  value was transcribed manually.
+
+### Focused checks
+
+- Initial signal: repository search found no `baseline update` occurrence in
+  the user guide or either owned skill pair, and
+  `parsePublishedBaselineExample` had no update dispatch branch.
+- `rtk make skills-sync` — exit `0`; `cmp -s` confirmed both canonical/embedded
+  skill pairs are byte-identical.
+- `rtk make baseline-digests` — exit `0`, eight regeneration tests and the
+  strict catalog validation passed; emitted
+  `{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":true}`.
+- `GOCACHE=<worktree>/.gocache rtk go test ./internal/cli -run '^(TestBaselineDocumentationContract|TestBaselineExamplesParse)$' -count=1`
+  — 15 subtests passed. The first attempt did not compile because the sandbox
+  denied the shared macOS Go cache; the repository-local ignored cache removed
+  that environment boundary.
+- `GOCACHE=<worktree>/.gocache rtk go test ./skills -run '^(TestThinSetupSkill|TestAuthorialSkillSync)$' -count=1`
+  — 19 subtests passed.
+- `GOCACHE=<worktree>/.gocache rtk go run -buildvcs=false ./cmd/roundfix baseline update --help`
+  — exit `0`; output listed every documented flag, schema
+  `roundfix/baseline-update-result/v1`, and exits `0/1/2/3/130`.
+
+### Acceptance-criterion evidence
+
+1. The user-guide option and exit tables are grounded in the focused shipped
+   help output, and the guide explicitly preserves Repository-Specific
+   Normative Rules, repository-rule blocks, and authored prose byte-for-byte.
+2. The setup skill's first recipe is now the dedicated managed-refresh command;
+   the interview is reserved for first adoption, Profile changes, or genuinely
+   new decisions.
+3. The roundfix skill records the Baseline update usage, all flags, result
+   schema, preservation behavior, and every exit category observed in shipped
+   help.
+4. Sanctioned regeneration rewrote the formatter fixture's generated
+   `docs/agents/skill-dispatch.md`, whose setup trigger now names
+   `roundfix baseline update`.
+5. The successful `baseline-digests` result regenerated all catalog, profile,
+   formatter, diagnostic, and characterization pins from canonical sources.
+6. `TestBaselineExamplesParse` passed after the update branch was added, so
+   every published update Bash example was accepted by
+   `parseBaselineUpdateCommand` rather than the interactive parser.
+7. Changed-path postflight is recorded below after the final Task-file update.
+
+### Changed-path postflight
+
+- `rtk git -c core.fsmonitor=false status --short --untracked-files=all` — exit
+  `0`; every changed source path is one of the two authorized skill pairs, the
+  command-family module asset, the user guide, the published-example contract
+  test, or this Task file. Every remaining changed Baseline profile, formatter,
+  diagnostic, catalog, and characterization path is deterministic output named
+  by the successful sanctioned regeneration. No other tracked, staged, or
+  untracked path was present.
+- `rtk git diff --check` — exit `0` after the final implementation edits.
+
+### Verification Feedback repair — attempt 1
+
+- The Daemon's diagnostic artifact identified one failing documentation
+  composition assertion: the user guide no longer contained the contiguous
+  contract phrase `exact source bytes`.
+- Root cause: the managed-refresh clarification retained those words but line
+  wrapping split `exact` from `source bytes`, so the established documentation
+  contract could not find the phrase. The repair reflows that sentence only;
+  it does not change the new update semantics or weaken preservation guidance.
+- `GOCACHE=<worktree>/.gocache rtk go test ./internal/cli -run '^TestGuidanceCompositionDocumentation$' -count=1`
+  — 3 subtests passed after the repair.
+- The failed declared Verification command was not rerun; the Daemon owns its
+  one configured retry.

@@ -288,7 +288,33 @@ confirmation of the displayed Plan Digest. Rejecting a plan returns to a
 selected decision area and requires a newly calculated complete plan and
 confirmation.
 
-Automation and Agents use the non-interactive pair:
+For a repository with a compatible Setup Manifest, use the dedicated
+non-interactive managed refresh:
+
+```bash
+roundfix baseline update --repo . --format json
+roundfix baseline update --repo . --yes --format json
+```
+
+Without confirmation, a changed Plan is presented and nothing is written.
+`--yes` approves the Plan Digest computed in that invocation;
+`--confirm-plan <digest>` approves a previously reviewed digest, and the two
+flags are mutually exclusive. `--adopt-suggested` explicitly adopts and reports
+suggestions only for decisions absent from the manifest. `--no-skills` skips the
+Repository Skill Set refresh. `--skills-source-dir <path>` selects an offline
+Git checkout or bare object store for external skill restoration. `--repo`
+defaults to the current directory, and `--format` accepts `text` or `json`.
+
+Update exits `0` when the repository is current or an approved refresh applied
+and verified; `1` for apply, verification, output, rollback, or recovery
+failure; `2` for invalid input, an incompatible manifest, or an unsafe
+repository; `3` when adoption, a new decision, confirmation, or retention
+action is required; and `130` when canceled. JSON output uses
+`roundfix/baseline-update-result/v1`. Managed refresh never invokes semantic
+classification and preserves every non-managed byte exactly.
+
+Automation and Agents use the non-interactive plan/apply pair for first
+adoption or a Profile change:
 
 ```bash
 roundfix baseline plan --repo . --profile <profile-id> --decision-file <decision-file> --format json
