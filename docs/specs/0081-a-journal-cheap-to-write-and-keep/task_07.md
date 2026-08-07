@@ -67,7 +67,7 @@ thirty seconds would prove only that waiting works.
 
 - `output="$(go test -count=1 ./internal/store -run 'ParallelRuns' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the parallel-Run scenario is selected and passes.
-- `output="$(go test -count=1 ./internal/store -run 'ParallelRuns' -v 2>&1)"; printf '%s\n' "$output" | grep -c -- '--- PASS' | { read n; [ "$n" -ge 3 ]; }`
+- `output="$(go test -count=1 ./internal/store -run 'ParallelRuns' -v 2>&1)"; printf '%s\n' "$output" | grep -cE -- '--- PASS: [^ ]+/' | { read count; [ "$count" -ge 3 ]; }`
   — expected: exit 0; the three rehearsal cases exist as passing subtests.
 - `grep -q 'busyTimeoutMillis = 30000' internal/store/store.go`
   — expected: exit 0; the production default is untouched by this Task.

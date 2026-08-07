@@ -88,7 +88,7 @@ events a post-mortem needs most never sit in one.
 - `go build -buildvcs=false ./...` — expected: exit 0.
 - `output="$(go test -count=1 ./internal/store -run 'Batch|Journal|AmbiguousCommit' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the batching tests are selected and pass.
-- `output="$(go test -count=1 ./internal/store -run 'Batch|AmbiguousCommit' -v 2>&1)"; printf '%s\n' "$output" | grep -c -- '--- PASS' | { read n; [ "$n" -ge 8 ]; }`
+- `output="$(go test -count=1 ./internal/store -run 'Batch|AmbiguousCommit' -v 2>&1)"; printf '%s\n' "$output" | grep -cE -- '--- PASS: [^ ]+/' | { read count; [ "$count" -ge 8 ]; }`
   — expected: exit 0; at least the eight rehearsal cases exist as passing
   subtests, so the boundary suite cannot collapse to a happy path.
 - `go test -count=1 ./internal/store/... ./internal/runevent/... ./internal/daemon/... ./internal/tui/...`
