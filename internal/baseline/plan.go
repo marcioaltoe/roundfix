@@ -182,20 +182,21 @@ type SetupManifest struct {
 
 // PlanDocument is the complete portable approval artifact.
 type PlanDocument struct {
-	SchemaVersion  string              `json:"schemaVersion"`
-	Repository     RepositoryIdentity  `json:"repository"`
-	Catalog        CatalogIdentity     `json:"catalog"`
-	Profile        ResolvedProfile     `json:"profile"`
-	Decisions      []DecisionValue     `json:"decisions"`
-	Retention      []RetentionEvidence `json:"retention"`
-	ClauseDelta    *ClauseDelta        `json:"clauseDelta,omitempty"`
-	Preimages      []Preimage          `json:"preimages"`
-	Postimages     []Postimage         `json:"postimages"`
-	Warnings       []Finding           `json:"warnings"`
-	SetupManifest  SetupManifest       `json:"setupManifest"`
-	ManagedEntries []ManagedEntry      `json:"managedEntries"`
-	FileChanges    []FileChange        `json:"fileChanges"`
-	PlanDigest     string              `json:"planDigest"`
+	SchemaVersion    string              `json:"schemaVersion"`
+	PreservationMode PreservationMode    `json:"preservationMode,omitempty"`
+	Repository       RepositoryIdentity  `json:"repository"`
+	Catalog          CatalogIdentity     `json:"catalog"`
+	Profile          ResolvedProfile     `json:"profile"`
+	Decisions        []DecisionValue     `json:"decisions"`
+	Retention        []RetentionEvidence `json:"retention"`
+	ClauseDelta      *ClauseDelta        `json:"clauseDelta,omitempty"`
+	Preimages        []Preimage          `json:"preimages"`
+	Postimages       []Postimage         `json:"postimages"`
+	Warnings         []Finding           `json:"warnings"`
+	SetupManifest    SetupManifest       `json:"setupManifest"`
+	ManagedEntries   []ManagedEntry      `json:"managedEntries"`
+	FileChanges      []FileChange        `json:"fileChanges"`
+	PlanDigest       string              `json:"planDigest"`
 }
 
 // EvidenceStatus reports whether one result axis produced affirmative evidence.
@@ -544,6 +545,15 @@ func buildPlanWithCatalog(
 	if err != nil {
 		return PlanOutcome{}, err
 	}
+	if preservation.Mode == PreservationModeManagedRefresh {
+		if err := validateManagedRefreshPreservation(
+			initial.Root,
+			snapshot.Preimages,
+			postimages,
+		); err != nil {
+			return PlanOutcome{}, fmt.Errorf("validate managed-refresh preservation: %w", err)
+		}
+	}
 	doc := PlanDocument{
 		SchemaVersion:  PlanSchemaVersion,
 		Repository:     initial.Identity,
@@ -557,6 +567,9 @@ func buildPlanWithCatalog(
 		Warnings:       cloneFindings(preservation.Warnings),
 		SetupManifest:  manifest,
 		ManagedEntries: ledger,
+	}
+	if preservation.Mode == PreservationModeManagedRefresh {
+		doc.PreservationMode = PreservationModeManagedRefresh
 	}
 	doc.FileChanges, err = deriveFileChanges(doc.ManagedEntries, doc.Preimages, doc.Postimages)
 	if err != nil {
@@ -2390,6 +2403,48 @@ func planContentIdentity(data []byte) string {
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
+func validateManagedRefreshPreservation(
+	root string,
+	preimages []Preimage,
+	postimages []Postimage,
+) error {
+	preimagesByPath := preimagesByPath(preimages)
+	for _, postimage := range postimages {
+		preimage, bounded := preimagesByPath[postimage.Path]
+		if postimage.Path == manifestPath || !bounded ||
+			!preimage.Exists || preimage.Kind != PreimageRegular {
+			continue
+		}
+		current, err := readOptionalRegular(root, postimage.Path)
+		if err != nil {
+			return err
+		}
+		if planContentIdentity(current) != preimage.ContentIdentity {
+			return fmt.Errorf("preimage %q changed during preservation validation", postimage.Path)
+		}
+		afterContent := []byte(nil)
+		if postimage.Kind == PreimageRegular {
+			afterContent = postimage.Content
+		}
+		before := nonManagedRegionDigests(postimage.Path, current)
+		after := nonManagedRegionDigests(postimage.Path, afterContent)
+		if !slices.Equal(before, after) {
+			return fmt.Errorf("non-managed region digest mismatch at %q", postimage.Path)
+		}
+	}
+	return nil
+}
+
+func nonManagedRegionDigests(relative string, content []byte) []string {
+	var digests []string
+	for _, region := range partitionRootSource(relative, content) {
+		if region.Kind != "managed-block" {
+			digests = append(digests, region.Digest)
+		}
+	}
+	return digests
+}
+
 func preimagesByPath(preimages []Preimage) map[string]Preimage {
 	result := make(map[string]Preimage, len(preimages))
 	for _, preimage := range preimages {
@@ -2498,6 +2553,10 @@ func validatePlanDocumentShape(document PlanDocument) error {
 		document.Warnings == nil || document.ManagedEntries == nil ||
 		document.FileChanges == nil {
 		return errors.New("Baseline Plan collections must be JSON arrays")
+	}
+	if document.PreservationMode != "" &&
+		document.PreservationMode != PreservationModeManagedRefresh {
+		return fmt.Errorf("unsupported Baseline Plan preservation mode %q", document.PreservationMode)
 	}
 	if err := validatePlanRepositoryIdentity(document.Repository); err != nil {
 		return err

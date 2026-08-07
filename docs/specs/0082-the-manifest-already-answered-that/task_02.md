@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0082-the-manifest-already-answered-that
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -40,26 +40,26 @@ its own through planning alone, before any new command exists.
 
 ## Subtasks
 
-- [ ] Add the mode and accept it in root-preservation planning.
-- [ ] Return a ready plan with no source baseline and no decision skeleton.
-- [ ] Make hand-edited managed markers blocking in this mode.
-- [ ] Suppress root backup planning in this mode.
-- [ ] Build the mixed fixture: managed markers, authored prose, repository rules.
-- [ ] Assert non-managed region digests survive a plan and apply unchanged.
-- [ ] Assert an unaccounted managed clause still blocks in this mode.
+- [x] Add the mode and accept it in root-preservation planning.
+- [x] Return a ready plan with no source baseline and no decision skeleton.
+- [x] Make hand-edited managed markers blocking in this mode.
+- [x] Suppress root backup planning in this mode.
+- [x] Build the mixed fixture: managed markers, authored prose, repository rules.
+- [x] Assert non-managed region digests survive a plan and apply unchanged.
+- [x] Assert an unaccounted managed clause still blocks in this mode.
 
 ## Acceptance Criteria
 
-- [ ] A managed-refresh plan on an adopted repository reports a ready state with
+- [x] A managed-refresh plan on an adopted repository reports a ready state with
       zero source baseline entries and no decision skeleton.
-- [ ] Applying a managed-refresh plan against a stale catalog leaves every
+- [x] Applying a managed-refresh plan against a stale catalog leaves every
       non-managed region byte-identical, proven by digest comparison.
-- [ ] A repository with a hand-edited managed marker blocks in managed-refresh
+- [x] A repository with a hand-edited managed marker blocks in managed-refresh
       mode and names the offending path.
-- [ ] A managed-refresh plan emits no root backup postimage.
-- [ ] A managed-refresh plan whose transition leaves a managed clause unaccounted
+- [x] A managed-refresh plan emits no root backup postimage.
+- [x] A managed-refresh plan whose transition leaves a managed clause unaccounted
       does not become applicable and names the unaccounted clause.
-- [ ] The task_01 corpus still passes, proving adoption is unchanged.
+- [x] The task_01 corpus still passes, proving adoption is unchanged.
 
 ## Context
 
@@ -78,3 +78,62 @@ its own through planning alone, before any new command exists.
 - `_techspec.md` → Build Order 2 and 3; Interfaces: `PreservationModeManagedRefresh`; Testing Approach.
 - `_prd.md` → Core Features 2 and 3; User Stories 3 and 6; Goals 2 and 5.
 - ADR-0058, ADR-0069, ADR-0070, ADR-0099, ADR-0100.
+
+## Result
+
+### Implementation
+
+- Added `managed-refresh` as a third root-preservation mode. It returns before
+  source-baseline, Decision Document, and backup construction while retaining
+  repository inventory and blocking-carrier checks.
+- Bound managed-marker trust to the adopted Setup Manifest. A changed, missing,
+  malformed, or duplicated adopted marker blocks planning and reports its path;
+  catalog drift alone does not make unchanged adopted marker bytes unsafe.
+- Added the managed-refresh mode to portable plans only on this path. Existing
+  greenfield and preservation plan JSON remains unchanged because the field is
+  omitted for those modes.
+- Replaced root-backup enforcement only for managed-refresh plans with a
+  preimage-bound region-digest proof. Planning and first apply both compare the
+  ordered SHA-256 digests of every byte region outside setup-owned markers;
+  Setup Manifest bytes remain the sole whole-file managed exception.
+- Added filesystem-backed plan/apply coverage with managed markers, CRLF
+  authored root prose, authored guide prose, and a repository-rule block. The
+  suite also rejects a re-digested plan that attempts to change authored bytes.
+
+### Focused checks
+
+- The pre-change focused run failed at compilation because
+  `PreservationModeManagedRefresh` was undefined, establishing the red signal.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-0082-task-02-final-gocache go test ./internal/baseline -run '^(TestManagedRefreshPlanNeedsNoClassificationInputOrBackup|TestManagedRefreshUnsafeRootCarrierStillBlocks|TestManagedRefreshPreservesNonManagedRegionDigests|TestManagedRefreshApplyRejectsChangedNonManagedRegion|TestManagedRefreshBlocksHandEditedManagedMarker|TestManagedRefreshUnaccountedClauseStillBlocks)$' -count=1`
+  exited 0: `ok roundfix/internal/baseline`.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-0082-task-02-final-gocache go test ./internal/baseline -run '^(TestGreenfieldPlanBacksUpWithoutImport|TestPreservationRequiresEveryDisposition|TestPreservationPlanAcceptsCompleteDecisionDocument|TestDecisionDocumentSkeletonDoesNotProposeManagedSemanticVersionBytes|TestRootBackupIdentityRejectsCollisions|TestBaselinePlanCharacterization|TestBaselineRetentionAccountingCharacterizationCorpus|TestPlanDocumentStrictCodecs)$' -count=1`
+  exited 0: `ok roundfix/internal/baseline`.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-0082-task-02-final-cli-gocache go test ./internal/cli -run '^(TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus|TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles)$' -count=1`
+  exited 0: `ok roundfix/internal/cli`.
+- `rtk git diff --check` exited 0.
+- The commands under `## Verification` were not run; the Daemon owns them.
+
+### Acceptance evidence
+
+- `TestManagedRefreshPlanNeedsNoClassificationInputOrBackup` observes ready
+  state, zero Source Baseline entries, a nil Decision Skeleton, and zero root
+  backups. `TestManagedRefreshUnsafeRootCarrierStillBlocks` proves the existing
+  unsafe-root finding remains blocking.
+- `TestManagedRefreshPreservesNonManagedRegionDigests` builds and applies a
+  stale-catalog plan, round-trips its portable mode field, asserts no backup
+  ledger entry or backup postimage, and compares every non-managed region digest
+  before and after apply. The mixed fixture includes authored prose and a
+  repository-rule block.
+- `TestManagedRefreshApplyRejectsChangedNonManagedRegion` proves apply repeats
+  the preservation check instead of trusting a self-declared mode.
+- `TestManagedRefreshBlocksHandEditedManagedMarker` reports
+  `docs/agents/agent-instructions.md` with
+  `baseline.preservation.managed-marker.modified` and produces no applicable
+  plan.
+- `TestManagedRefreshUnaccountedClauseStillBlocks` produces no applicable plan,
+  retains the `classification` action category, and names
+  `clause.core.keep-follow-ups-outside-slice` as `unaccounted`.
+- The focused baseline and CLI characterization checks named above exercise the
+  Task 01 corpus without changing its recorded goldens, while the selected
+  greenfield and preservation cases retain their prior backup and disposition
+  behavior.
