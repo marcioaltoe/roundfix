@@ -419,6 +419,201 @@ func TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles(t *testi
 	}
 }
 
+func TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                     string
+		args                     func(*testing.T, string) []string
+		wantExit                 int
+		wantPlan                 bool
+		wantCategory             string
+		wantRetentionDisposition string
+		assertResult             func(*testing.T, baseline.Result)
+	}{
+		{
+			name: "first-adoption-greenfield-with-inline-decisions-emits-plan",
+			args: func(_ *testing.T, repo string) []string {
+				return baselinePlanCharacterizationArgs(repo, "greenfield")
+			},
+			wantExit: exitOK,
+			wantPlan: true,
+		},
+		{
+			name: "first-adoption-preservation-with-complete-strict-decision-document-emits-plan",
+			args: func(t *testing.T, repo string) []string {
+				inspection, err := baseline.InspectRepository(context.Background(), repo, nil)
+				if err != nil {
+					t.Fatalf("inspect first-adoption repository: %v", err)
+				}
+				preservation, err := baseline.PlanRootPreservation(
+					inspection,
+					baseline.RootPreservationRequest{Mode: baseline.PreservationModePreservation},
+				)
+				if err != nil {
+					t.Fatalf("build preservation Decision Document: %v", err)
+				}
+				if preservation.DecisionSkeleton == nil {
+					t.Fatalf("preservation result has no strict Decision Document: %+v", preservation)
+				}
+				document := preservation.DecisionSkeleton.Document
+				document.Decisions = append(
+					[]baseline.DecisionValue{{ID: "preservation.mode", Value: "preservation"}},
+					baselinePlanCharacterizationDecisions()...,
+				)
+				data, err := json.MarshalIndent(document, "", "  ")
+				if err != nil {
+					t.Fatalf("marshal strict Decision Document: %v", err)
+				}
+				decisionPath := filepath.Join(t.TempDir(), "decisions.json")
+				if err := os.WriteFile(decisionPath, append(data, '\n'), 0o644); err != nil {
+					t.Fatalf("write strict Decision Document: %v", err)
+				}
+				return []string{
+					"baseline", "plan", "--repo", repo, "--profile", "go-cli-tui",
+					"--decision-file", decisionPath, "--format=json",
+				}
+			},
+			wantExit:                 exitOK,
+			wantPlan:                 true,
+			wantRetentionDisposition: "repository-rules",
+		},
+		{
+			name: "decisions-absent-names-every-required-decision",
+			args: func(_ *testing.T, repo string) []string {
+				return []string{
+					"baseline", "plan", "--repo", repo, "--profile", "go-cli-tui", "--format=json",
+				}
+			},
+			wantExit:     exitUnverified,
+			wantCategory: "decision",
+			assertResult: func(t *testing.T, result baseline.Result) {
+				catalog, err := baseline.LoadEmbeddedCatalog()
+				if err != nil {
+					t.Fatalf("load embedded catalog: %v", err)
+				}
+				profile, err := baseline.ResolveProfile("", "go-cli-tui", catalog)
+				if err != nil {
+					t.Fatalf("resolve characterization Profile: %v", err)
+				}
+				for _, decisionID := range profile.Decisions {
+					if !strings.Contains(result.Message, decisionID) {
+						t.Errorf("missing-decision result omitted %q", decisionID)
+					}
+				}
+			},
+		},
+		{
+			name: "decisions-supplied-without-preservation-mode-requires-action",
+			args: func(_ *testing.T, repo string) []string {
+				return baselinePlanCharacterizationArgs(repo, "")
+			},
+			wantExit:     exitUnverified,
+			wantCategory: "decision",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repo := newHumanBaselineRepository(t)
+			writeBaselinePlanTestFile(t, repo, "AGENTS.md", "retain this repository rule\n")
+			commitBaselinePlanTestRepository(t, repo)
+			if _, err := os.Stat(filepath.Join(repo, "docs", "agents", "setup-context.json")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("first-adoption fixture unexpectedly has a Setup Manifest: %v", err)
+			}
+			before := baselinePlanTestTree(t, repo)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			code := RunContext(context.Background(), test.args(t, repo), &stdout, &stderr)
+			if code != test.wantExit || stderr.Len() != 0 {
+				t.Fatalf(
+					"exit identity = %d, want %d stdout=%s stderr=%s",
+					code,
+					test.wantExit,
+					stdout.String(),
+					stderr.String(),
+				)
+			}
+			if after := baselinePlanTestTree(t, repo); after != before {
+				t.Fatalf("non-interactive characterization mutated repository bytes")
+			}
+
+			if test.wantPlan {
+				plan, err := baseline.ParsePlanDocument(stdout.Bytes())
+				if err != nil {
+					t.Fatalf("parse characterization Plan: %v", err)
+				}
+				if plan.SchemaVersion != baseline.PlanSchemaVersion || plan.Profile.ID != "go-cli-tui" {
+					t.Fatalf(
+						"plan identity = schema %q profile %q",
+						plan.SchemaVersion,
+						plan.Profile.ID,
+					)
+				}
+				if test.wantRetentionDisposition == "" {
+					if len(plan.Retention) != 0 {
+						t.Fatalf("initial greenfield retention = %+v, want empty", plan.Retention)
+					}
+				} else if len(plan.Retention) != 1 ||
+					plan.Retention[0].Disposition != test.wantRetentionDisposition {
+					t.Fatalf(
+						"initial preservation clause disposition = %+v, want %q",
+						plan.Retention,
+						test.wantRetentionDisposition,
+					)
+				}
+				return
+			}
+
+			var result baseline.Result
+			if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+				t.Fatalf("decode characterization Result: %v", err)
+			}
+			if result.SchemaVersion != baseline.ResultSchemaVersion ||
+				result.Operation != "plan" ||
+				result.State != "action_required" ||
+				result.Category != test.wantCategory {
+				t.Fatalf(
+					"result identity = schema %q operation %q state %q category %q",
+					result.SchemaVersion,
+					result.Operation,
+					result.State,
+					result.Category,
+				)
+			}
+			if test.assertResult != nil {
+				test.assertResult(t, result)
+			}
+		})
+	}
+}
+
+func baselinePlanCharacterizationArgs(repo, preservationMode string) []string {
+	args := []string{"baseline", "plan", "--repo", repo, "--profile", "go-cli-tui"}
+	for _, decision := range baselinePlanCharacterizationDecisions() {
+		args = append(args, "--decision", fmt.Sprintf("%s=%v", decision.ID, decision.Value))
+	}
+	if preservationMode != "" {
+		args = append(args, "--decision", "preservation.mode="+preservationMode)
+	}
+	return append(args, "--format=json")
+}
+
+func baselinePlanCharacterizationDecisions() []baseline.DecisionValue {
+	return []baseline.DecisionValue{
+		{ID: "language.generated", Value: "English"},
+		{ID: "verification.gate", Value: "make verify"},
+		{ID: "spec.scaffold", Value: true},
+		{ID: "domain.layout", Value: "single-context"},
+		{ID: "triage.external", Value: false},
+		{ID: "autonomous.enabled", Value: true},
+		{ID: "runtime.backend", Value: "codex gpt-5.5 xhigh"},
+		{ID: "runtime.design", Value: "claude opus xhigh"},
+		{ID: "secondbrain.enabled", Value: false},
+		{ID: "repository.extension.enabled", Value: true},
+	}
+}
+
 func newBaselinePlanTestRepository(t *testing.T) string {
 	t.Helper()
 	repo := t.TempDir()
