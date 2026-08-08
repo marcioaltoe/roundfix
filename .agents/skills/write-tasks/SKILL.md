@@ -82,6 +82,15 @@ by each Task file. The preflight never moves either responsibility.
 - **Verification must be hermetic, portable, effect-proving, and Daemon-owned.** Every task's `## Verification` commands must be satisfiable in a fresh worktree using only repository state, declared config, and task-owned setup. Do not depend on untracked local files, prior Runs, interactive prompts, pushed branches, or ambient machine state unless the task explicitly creates that state. Use portable shell forms: prefer `grep` over `rg` in task gates, avoid `wc`-pipeline assertions that vary across platforms, and use repository build flags such as `go build -buildvcs=false ./...` when a build is required. A Task must prove its own effect with executable checks; the Run-level gate proves nothing else regressed. Do not add a whole-package suite command to each Task for regression coverage. Every Verification command must be able to fail when no work was done: a command that names a missing test or selects no cases is vacuous if it still exits zero. Refuse the work-independent shape composed only of repository-wide gates plus working-tree cleanliness checks; those checks pass most easily when no Task work occurred. The Daemon runs these commands after the Agent turn and may send one failure-only Verification Feedback prompt; do not tell the Agent to run the authoritative gate itself.
 - **Requirements must be mutually satisfiable.** Refuse a Task when its declared `MUST` and `MUST NOT` clauses require and forbid the same named state. Do not send work that cannot satisfy its own written contract to an Agent Session.
 - **Gate rehearsals declare their evidence.** A Task whose title states that it rehearses or proves a gate must include `## Rehearsal Cases` with one `- Case: <case>; Observation: <observation>` entry for every case it must exercise. Refuse the Task when the section is absent or any entry lacks its case or observation.
+- **One acceptance row rests on evidence the Spec did not author.** At least one
+  named acceptance row in the graph must rest on evidence originating outside
+  the Spec's own artifacts — a repository the Spec did not build, a measurement
+  it did not design, or published literature — and must record where that
+  evidence came from. A rehearsal shows that the code matches the requirement;
+  only an outside source can show that the requirement was right. When that
+  source cannot be obtained, the gate records the row as blocked with its
+  reason: the obligation never requires human interaction and never stalls the
+  Spec.
 - **Commit and push stay out of task criteria.** The Daemon owns Task commits, Run integration, and any configured push. Never put commit, push, PR creation, or branch-publishing requirements in task Requirements, Subtasks, Acceptance Criteria, or Verification commands.
 
 ### Author the QA gate decision
@@ -109,6 +118,14 @@ A post-contract graph with neither declaration, both shapes, an unnamed `qa`
 Task, or a gate that is not terminal is a defect. Refuse to produce it. An
 absent declaration remains valid only for a legacy graph proven to predate the
 contract; leave that graph byte-identical.
+
+Whichever shape the graph takes, its closing node also carries the glossary
+check — the authored `qa` Task when the gate is included, otherwise the last
+Task in topological order. Give the check that home so a term the Spec coined,
+changed, or dropped is noticed while the work is still open rather than after it
+closes. The domain guide (`docs/agents/domain.md`) owns what the check looks for
+and when the domain context is updated in response; the graph owns only where it
+happens, and nothing in it waits for a human.
 
 ### Task Type selection
 
