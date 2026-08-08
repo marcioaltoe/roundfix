@@ -1,0 +1,9 @@
+=== post-sweep worktree state of managed paths ===
+gss       docs/agents+.roundfix dirty: 0
+oraculum  docs/agents+.roundfix dirty: 0
+roundfix  docs/agents+.roundfix dirty: 0
+fiscus    docs/agents+.roundfix dirty: 0
+conexus   docs/agents+.roundfix dirty: 0
+tax-poc   docs/agents+.roundfix dirty: 0
+vortex    docs/agents+.roundfix dirty: 0
+fluxus    docs/agents+.roundfix dirty: 0

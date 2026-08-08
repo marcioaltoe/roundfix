@@ -1,0 +1,53 @@
+go test -parallel 16 ./...
+?   	roundfix/cmd/roundfix	[no test files]
+ok  	roundfix/internal/agent	17.953s
+ok  	roundfix/internal/app	0.612s
+ok  	roundfix/internal/baseline	143.218s
+ok  	roundfix/internal/baselineacp	0.910s
+ok  	roundfix/internal/cli	67.238s
+ok  	roundfix/internal/codex	3.727s
+ok  	roundfix/internal/config	4.178s
+ok  	roundfix/internal/daemon	5.701s
+ok  	roundfix/internal/gittest	3.316s
+ok  	roundfix/internal/notify	4.264s
+ok  	roundfix/internal/preflight	3.915s
+ok  	roundfix/internal/releaseplan	4.537s
+ok  	roundfix/internal/reviewsource	5.094s
+ok  	roundfix/internal/reviewsource/coderabbit	5.398s
+ok  	roundfix/internal/rounds	4.128s
+ok  	roundfix/internal/runevent	3.976s
+ok  	roundfix/internal/skillhash	4.062s
+--- FAIL: TestCoverageEquivalence (5.19s)
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestAmbiguousManagedMarkerBlocksManagedRefresh"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestManagedRefreshConvergesAfterManifestRepublication"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestManagedRefreshDoesNotConvergeWithoutManifestRepublication"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestManagedRefreshPlanReportsEmptyRemovedLines"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestManagedRefreshPlanReportsRemovedLines"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestManagedRefreshPlanTruncatesRemovedLines"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestManagedRefreshRemovedLinesPlanDigestAndStrictCodecRoundTrip"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestManagedRefreshUnrecordedManagedRegionReachesReadyPlan"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestNonManagedPlansOmitRemovedLines"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestResolveManifestInputUnresolvedProfileDiagnosis"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestStandardTypeScriptStructuralClauseRetention"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestUnrecordedManagedRegionDigestMismatchReachesReadyPlan"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestUnrecordedManagedRegionFieldOmittedWhenCurrent"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/baseline" now executes "TestUnrecordedManagedRegionMarkerAbsentReachesReadyPlan"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/cli" now executes "TestBaselineUpdateFleetSweep"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/cli" now executes "TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/cli" now executes "TestBaselineUpdateUnrecordedManagedRegionJSONOutput"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/cli" now executes "TestBaselineUpdateUnrecordedManagedRegionTextOutput"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/cli" now executes "TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput"
+    coverage_test.go:67: coverage addition: package "roundfix/internal/cli" now executes "TestBaselineUpdateUnresolvedProfileDiagnosis"
+    coverage_test.go:70: coverage regression: package "roundfix/internal/baseline" no longer executes "TestManagedRefreshBlocksHandEditedManagedMarker"
+FAIL
+FAIL	roundfix/internal/spec	19.558s
+ok  	roundfix/internal/specaudit	7.304s
+ok  	roundfix/internal/speccheck	17.443s
+ok  	roundfix/internal/store	5.219s
+ok  	roundfix/internal/tui	4.926s
+ok  	roundfix/internal/watch	4.584s
+ok  	roundfix/internal/worktree	13.027s
+ok  	roundfix/skills	32.560s
+FAIL
+make: *** [test] Error 1
+MAKE_VERIFY_EXIT=2

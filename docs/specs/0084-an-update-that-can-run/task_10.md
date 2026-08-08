@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0084-an-update-that-can-run
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,1 @@
+roundfix: baseline update failed: setup manifest is incompatible: recorded Baseline Profile "oraculum-backend" is unresolved; searched locations: .roundfix/baseline/profiles/oraculum-backend.json; repair action: restore the repository-owned Baseline Profile at .roundfix/baseline/profiles/oraculum-backend.json, then rerun roundfix baseline update

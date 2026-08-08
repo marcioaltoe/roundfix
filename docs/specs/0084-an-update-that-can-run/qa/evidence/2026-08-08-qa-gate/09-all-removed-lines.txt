@@ -1,0 +1,16 @@
+### docs/agents/agent-instructions.md
+  REMOVED: - **stop-and-ask**: Never guess a decision the user can answer cheaply. Ask through the available user-interaction tool, or ask plainly and stop when no such tool exists.
+### docs/agents/autonomous-work.md
+  REMOVED: frontend-dominant work uses `claude opus 5 high` when the Task Graph routes that
+### docs/agents/backend.md
+  REMOVED: - Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy.
+### docs/agents/docs-layout.md
+  REMOVED: - **mandatory**: Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent.
+### docs/agents/domain.md
+### docs/agents/frontend.md
+### docs/agents/issue-tracker.md
+### docs/agents/monorepo.md
+  REMOVED: - Identify the owning package and bounded context before editing. Read its context and local instructions, keep changes inside the Task slice, and require an explicit owning contract plus boundary Verification for cross-package changes.
+### docs/agents/secondbrain.md
+  REMOVED: - **mandatory**: Sessions MAY create files under the Secondbrain's `inbox/**`; this is the only writable Secondbrain namespace. Every other Secondbrain path stays read-only.
+### docs/agents/spec-routing.md

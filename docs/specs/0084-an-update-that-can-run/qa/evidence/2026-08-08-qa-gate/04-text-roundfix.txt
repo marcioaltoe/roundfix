@@ -1,0 +1,86 @@
+Baseline update: plan ready
+Category: approval
+Result: managed-refresh plan is ready; repository bytes are unchanged
+Prior catalog: sha256:f082de03ea52e1b17e75daf0d65ef2d535f8d8d36951fe08dd435732e4008c1e
+Current catalog: sha256:6d08fccbb8fe112185f64abd7aac2a00d4000a077d015182f84584056340edeb
+File changes: 9
+- update docs/agents/agent-instructions.md (1 managed entries)
+- update docs/agents/autonomous-work.md (3 managed entries)
+- update docs/agents/docs-layout.md (4 managed entries)
+- update docs/agents/domain.md (5 managed entries)
+- update docs/agents/issue-tracker.md (4 managed entries)
+- update docs/agents/secondbrain.md (3 managed entries)
+- update docs/agents/setup-context.json (1 managed entries)
+- update docs/agents/skill-dispatch.md (21 managed entries)
+- update docs/agents/spec-routing.md (3 managed entries)
+Unrecorded managed regions: 4
+- Path: docs/agents/autonomous-work.md
+  Managed identity: guide.autonomous-work
+  Reason: digest-mismatch
+  Removed lines:
+    - **mandatory**: Each Task owns a Task Type-selected Agent Session; mixed frontend and non-frontend Tasks remain in one Task Graph, and requested QA owns a separate `qa` Agent Session.
+- Path: docs/agents/docs-layout.md
+  Managed identity: guide.docs-layout
+  Reason: digest-mismatch
+  Removed lines:
+    - **mandatory**: Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent.
+- Path: docs/agents/secondbrain.md
+  Managed identity: guide.secondbrain
+  Reason: digest-mismatch
+  Removed lines:
+    - **mandatory**: Sessions MAY create files under the Secondbrain's `inbox/**`; this is the only writable Secondbrain namespace. Every other Secondbrain path stays read-only.
+- Path: docs/agents/skill-dispatch.md
+  Managed identity: guide.skill-dispatch
+  Reason: digest-mismatch
+  Removed lines:
+    - `trigger.context-workflow.setup-context-driven`: Auditing, applying, or refreshing the Context-Driven Baseline.
+Retention evidence: 41
+- repository-rule.rule.0d49c2a353155f1dc777e6513b646c37287d41769fd717c0463a98c9567d295e: repository-document -> docs/agents/autonomous-work.md
+- repository-rule.rule.6b28f6bdd57f8a34a73143025f571d9c12bd6d571192ec9a27ac12cc21e74bce: repository-document -> docs/agents/autonomous-work.md
+- repository-rule.rule.4d357b3e1dea4134655b4cb84ada6c82d7b66000aa4e98bfd4b49bf2c608f0ab: repository-document -> docs/agents/docs-layout.md
+- repository-rule.rule.cd6d2ee319dd816af83a745181f1499c3b739167e48af1f29fb7044220d2ba3e: repository-document -> docs/agents/docs-layout.md
+- repository-rule.rule.3b1da2dff813927c9add235124eecbb89296b9d0399471c6799722d9ed8eb557: repository-document -> docs/agents/domain.md
+- repository-rule.rule.d8b07ca0330a68aae05aa9ca33369ae6e78b7a66e3a8b50bc2769506f8258857: repository-document -> docs/agents/domain.md
+- repository-rule.rule.a386a34b4e5d005bc9982eef99310ee74d2b8b8caeacc8c7ca8c877240cb0d09: repository-document -> docs/agents/domain.md
+- repository-rule.rule.12c3a84f0277df7a6904c307bc2d7de469129ae284e28a8159d6c3fe2d95e84b: repository-document -> docs/agents/domain.md
+- repository-rule.rule.164b03244b3e089313c3cd9b379f4cce885e87b985e19ef76fb2ee8bff5ec7e6: repository-document -> docs/agents/external-triage.md
+- repository-rule.rule.b8db22d5fd25040757476f158bf97daf69dd6bbe5773390c73bb4128c4386fbb: repository-document -> docs/agents/go.md
+- repository-rule.rule.e8d9aa165083fcc61cc6a852fa5cdca5c52bc4f12055cbc01931292897763f7b: repository-document -> docs/agents/go.md
+- repository-rule.rule.596377c10f505c35df02e372aea92bcccb98991ac1ea055d03301bb1b9b231a9: repository-document -> docs/agents/go.md
+- repository-rule.rule.70eb8ff15c03ef56d724a61c44c3d479f91912f693b68f832c0f2fea799924dd: repository-document -> docs/agents/issue-tracker.md
+- repository-rule.rule.9754a69cf216a520e424e4705dfebf6dcf22fd8d021b243c967598765b9622f8: repository-document -> docs/agents/issue-tracker.md
+- repository-rule.rule.64fe5b9bda0a948e5a23375064fcdf9158651a35d555b973a2fc92224622a7e5: repository-document -> docs/agents/issue-tracker.md
+- repository-rule.rule.8d99a6ddc2032d2e4df584b4e9402d7e733345ebb279cfe371423d379054c639: repository-document -> docs/agents/secondbrain.md
+- repository-rule.rule.cf2bb6e8555b28a55a64f750621e98ecc8adec17060fed22824dacd2bb227bd9: repository-document -> docs/agents/secondbrain.md
+- repository-rule.rule.fa2871b863891fa9aa1200e64da20a493ff91b274d1e49f1d5cec763b060b54f: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.b7ee6fb14a4e620c351e803f52d4dc4752636e9319c1445ae8d01a9939b6ba62: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.44abd68d3af68ac77a9668ca6df1a4fd2fd03807b0c18570614051e14bd4d2b0: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.91383959f8b5a1f4bc15edc36a1ac18bacea397adb5a3848e77d6e3ca751a8fe: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.a709b50ca54a0862333e30497aa73778928b0a3f8133c87e5c812fa878895ece: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.b62e0e1064e62aedee90356df08c6ca6517c05a95cf404a6dce68377fa83fa02: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.257cded33420ff9e2c0a1233b04f3a9bb4d3e69a927ceaa9fb2bc82d132dd42e: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.7223a2001fea50552284adbccc0fcddf59c01bbf5bb943b7f94c1c78bfca68aa: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.5ecd1c28260d6faad79e50f91d615b54ad54bbdcf6f533666df04facc90206f6: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.6bb7ff6acfe19f3b76058b07f09510505b96cd30c590f1c4850508b27e5b90e0: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.ad9c13f96bd7ec59d54989a8cd065338c06ead025129dadfbefef3d418b29bd9: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.742b018445608f7db9454c22779b77c2a00b659964d8bf900e390bcd63b6733b: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.65cb06de682d619743c6549e45005b020c46272b8c614e8ce90c18afbfb02760: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.e6998fd3ffda4286cad26995d5c58da80bb8c93ce665fa2fd1def9748fc7fd18: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.eb416a2e487d856a0649451b1fc9580e42abfa08df38ab7bf23d37a1642f7b1b: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.d0ab371252128a34bf2b6000031026be1019930f88d714bed6f7147db803ebdb: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.ec539cc69cd3996d889c1a1b493c8b77ce4f96a71402c09f568f84ec6571925e: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.b33d4d55a40b58baea327824fde5611396391e677119020377419b6dadb1ad4e: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.0815cdacadf1822cebd71fd4c406d891bfd1a70c682cbf21f01e5a7f11955375: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.5f91916a7ee99b20b60f63c5855c3af4bf775950c037b12c9dfa3d7e0e0bb094: repository-document -> docs/agents/skill-dispatch.md
+- repository-rule.rule.4a17d217e1a8c5c732ab54bb64f5b6ce3eafeaaf428fa6da80fe46ac48276555: repository-document -> docs/agents/spec-routing.md
+- repository-rule.rule.068b6fb73d68a1c56aa33b0eb68f6732f2a4b84851b29b279dc0912117c18bf9: repository-document -> docs/agents/spec-routing.md
+- repository-rule.rule.2658ee39ca2d77c945009bf95f8c5035770790be9cfad1e8e70079891e238ff1: repository-document -> docs/agents/tui.md
+- repository-rule.rule.3495f2da07f3e9d988b5280f7ba7683eee66b54c72197294faf5cf2500c33927: repository-document -> docs/agents/tui.md
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Warning: baseline.inventory.nested-carrier-conflict: internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/AGENTS.md: nested carrier remains unchanged: bytes inside setup-context-driven begin/end markers are managed; bytes outside those markers are preserved and require conflict review
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:7d8465bc5f762f0eebb98a1f6d31c78f9540dd3962b65bd2cf444212a92183d1
+Next action: review the plan and rerun with --confirm-plan sha256:7d8465bc5f762f0eebb98a1f6d31c78f9540dd3962b65bd2cf444212a92183d1, or use --yes to approve the digest computed in one invocation
