@@ -33,7 +33,7 @@ Task Worktrees, and QA uses its own Agent Session after Tasks settle.
 
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
-shared Node.js, minimum-supported acpx, effective adapters, required Agent
+shared Node.js, minimum-supported acpx, effective adapters, configured Agent
 Selection Profiles, Repository Skill Set, and codex runtime hygiene checks and
 prints one line per check with status `ok`, `failed`, or `skipped`. Adapter
 Readiness requires the effective Codex command to prove official
@@ -46,6 +46,24 @@ and fallback through disposable ACP Sessions and reports affected category
 references plus one deterministic next action. Doctor has no separate legacy
 `agent:` or `model:` authority. Failed checks include `next: <action>` when
 Roundfix knows the remediation.
+
+Profile readiness covers every Agent Work Category the effective configuration
+defines — the five required categories plus each optional category
+(`data`, `infra`, `docs`, `test`, `chore`) a profile actually declares. A
+category that resolves only by inheriting `general` adds no distinct tuple and
+is not enumerated. The `adapter:` line follows the same scope, so it names every
+ACP Runtime the configured tuples reference, including one only an optional
+category selects. A configured profile that fails therefore fails the
+`profiles:` line instead of leaving it `ok`.
+
+The `opencode` runtime manages its own reasoning effort. Configure it with
+`reasoning_effort: ""`; any other value is refused when the configuration
+loads, and again by runtime validation so a `--reasoning-effort` override
+cannot bypass it. OpenCode advertises effort per model and only after an Agent
+Session's first prompt, so Roundfix cannot apply one during a token-free Exact
+Agent Selection Proof. Such a selection proves with encoding `runtime_managed`,
+which differs from `model_managed` in that the adapter may advertise a reasoning
+option Roundfix deliberately never assigns.
 
 The blocking `skills:` line runs after, and independently from, `profiles:`.
 For each Roundfix-owned skill, the running binary declares a minimum version
