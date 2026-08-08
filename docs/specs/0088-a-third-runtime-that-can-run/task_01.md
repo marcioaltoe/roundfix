@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0088-a-third-runtime-that-can-run
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -42,24 +42,24 @@ deliberate edit rather than a silent one.
 
 ## Subtasks
 
-- [ ] Add the capability-projection characterization file with both halves.
-- [ ] Add the configuration characterization file covering the accepted
+- [x] Add the capability-projection characterization file with both halves.
+- [x] Add the configuration characterization file covering the accepted
       `opencode` reasoning effort.
-- [ ] Add the Doctor Command characterization file covering readiness scope.
-- [ ] Name every break-half test with `Today` so a later edit is self-declaring.
-- [ ] Confirm the whole suite is green with the corpus added.
+- [x] Add the Doctor Command characterization file covering readiness scope.
+- [x] Name every break-half test with `Today` so a later edit is self-declaring.
+- [x] Confirm the whole suite is green with the corpus added.
 
 ## Acceptance Criteria
 
-- [ ] Three new test files exist, one in each of the agent, config, and cli
+- [x] Three new test files exist, one in each of the agent, config, and cli
       packages, and no pre-existing test file differs.
-- [ ] Every invariant in Requirement 2 has a test that fails if the behavior
+- [x] Every invariant in Requirement 2 has a test that fails if the behavior
       moves.
-- [ ] Every current behavior in Requirement 3 has a test whose name contains
+- [x] Every current behavior in Requirement 3 has a test whose name contains
       `Today`.
-- [ ] The oversized-option fixture exceeds the retained bound and uses
+- [x] The oversized-option fixture exceeds the retained bound and uses
       provider-prefixed model identifiers.
-- [ ] No file outside the three new test files changed.
+- [x] No file outside the three new test files changed.
 
 ## Context
 
@@ -91,3 +91,50 @@ This Task may create or modify only:
 - `references/2026-08-08-what-the-opencode-adapter-answers-before-its-first-prompt.md`
   → the advertised payload shape the fixture reproduces.
 - ADR-0105, ADR-0106, ADR-0107.
+
+## Result
+
+Three characterization files were added and no existing file moved.
+
+**What changed.** The capability projection, Agent Selection normalization, and
+Doctor Command readiness scope now each have executable descriptions of their
+current behavior, split into an invariant half the Spec must preserve and a
+`Today` half the Spec intends to break. The oversized-option fixture is built
+from the retained-bound constant rather than a literal, so it follows the bound
+when Task 02 moves it, and it uses provider-prefixed identifiers matching the
+shape the adopted measurement recorded.
+
+**Commands and outcomes.**
+
+- `go build -buildvcs=false ./...` — exit 0.
+- `go test ./internal/agent ./internal/config ./internal/cli -run 'CharacterizationToday|CharacterizationInvariant' -count=1 -v` — exit 0; eight tests, four in agent, three in config, one in cli.
+- `git status --porcelain -- internal` — three untracked characterization files and nothing else.
+- `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1` — exit 0 on a clean test cache.
+- `make verify` — exit 0 after `go clean -testcache`.
+
+**Evidence per acceptance criterion.**
+
+- Three new test files, no pre-existing file changed: the `git status` output
+  above lists exactly `internal/agent/selection_capabilities_characterization_test.go`,
+  `internal/config/profiles_characterization_test.go`, and
+  `internal/cli/doctor_characterization_test.go`.
+- Invariants pinned: `TestCharacterizationInvariantRetainsEveryValueAtOrBelowTheBound`,
+  `TestCharacterizationInvariantParsesBracketedVariantIntoCanonicalAndEffort`,
+  `TestCharacterizationInvariantUnadvertisedModelIsUnsupportedNotInvalidEvidence`,
+  `TestCharacterizationInvariantAcceptsCodexAndClaudeReasoningEffort`,
+  `TestCharacterizationInvariantAcceptsAnEmptyReasoningEffort`.
+- Break-half pinned with `Today` in the name:
+  `TestCharacterizationTodayRefusesAnOversizedAdvertisedOption`,
+  `TestCharacterizationTodayAcceptsOpenCodeReasoningEffort`,
+  `TestCharacterizationTodayDoctorIgnoresConfiguredOptionalCategory`.
+- Oversized fixture exceeds the bound and uses provider-prefixed identifiers:
+  `oversizedModelCapabilityFixture` fills until `len(values) > maxCapabilityValues`
+  with `openrouter/vendor-NNN/model` values plus the requested
+  `opencode-go/kimi-k3`.
+- The oversized refusal reproduces the measured cascade: the test asserts
+  `too_many_option_values`, `missing_model_state`, and `contradictory_response`
+  together, which is the exact triple `roundfix profiles validate --category data`
+  returned on 2026-08-08.
+
+**Follow-ups.** Tasks 02, 03, and 04 each edit exactly one `Today` test; each
+must declare that edit as a break in its own Result.
