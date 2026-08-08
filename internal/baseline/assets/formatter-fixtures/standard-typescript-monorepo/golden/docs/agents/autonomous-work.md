@@ -24,4 +24,6 @@ surface.
 
 - **mandatory**: Never commit to a Run's branch or move the checkout away from it while that Run is Active. Roundfix integrates a Run Branch with a fast-forward merge and review Runs operate in the user checkout, so either action strands the Run or sends its commits to the wrong branch. Parallel work belongs in its own clone or waits.
 
+- **mandatory**: A supervising session that intends to keep working unattended must arm something that outlives its own turn before that turn ends: a detached Run, a scheduled wake-up, or a daemon. Never end a turn stating that work will continue, because a turn that has ended is indistinguishable, to whoever is waiting, from a turn still working. When no such mechanism is armed, say plainly that work is stopping and what remains.
+
 <!-- setup-context-driven:end id=guide.autonomous-work -->

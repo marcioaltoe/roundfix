@@ -456,6 +456,17 @@
       "digest": "fff202017e275236d837a495382e387b75f6ea62674a6cd883fb99170417a158"
     },
     {
+      "id": "clause.autonomous.loop-07-outlive-the-turn",
+      "path": "corpus/docs/agents/autonomous-work.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/autonomous-work.md",
+      "structure": null,
+      "start": 5154,
+      "end": 5451,
+      "digest": "c3657acf82ee5bb7a6fcacc262d35264ddd7fef5891b76538c2fdca31b594502"
+    },
+    {
       "id": "clause.backend.boundary-contracts",
       "path": "corpus/docs/agents/backend.md",
       "kind": "normative-clause",
