@@ -1,7 +1,8 @@
 ---
 spec: 0088-a-third-runtime-that-can-run
-status: active
+status: archived
 created: 2026-08-08
+archived: 2026-08-08
 surfaces: [backend, cli, docs]
 ---
 
