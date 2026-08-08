@@ -1217,7 +1217,7 @@ func TestManagedRefreshApplyRejectsChangedNonManagedRegion(t *testing.T) {
 	}
 }
 
-func TestManagedRefreshBlocksHandEditedManagedMarker(t *testing.T) {
+func TestManagedRefreshUnrecordedManagedRegionReachesReadyPlan(t *testing.T) {
 	t.Parallel()
 
 	repository, request, target, _ := newSameIdentityRetentionDrift(t)
@@ -1239,13 +1239,8 @@ func TestManagedRefreshBlocksHandEditedManagedMarker(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build managed refresh with edited marker: %v", err)
 	}
-	if outcome.Plan != nil || outcome.Result.State != "action_required" ||
-		!hasRepositoryFinding(
-			outcome.Result.Warnings,
-			"baseline.preservation.managed-marker.modified",
-			carrierPath,
-		) {
-		t.Fatalf("hand-edited managed marker outcome = %+v", outcome)
+	if outcome.Plan == nil || outcome.Result.State != "ready" {
+		t.Fatalf("unrecorded managed-region outcome = %+v", outcome)
 	}
 }
 

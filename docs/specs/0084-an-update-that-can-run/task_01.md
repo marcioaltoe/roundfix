@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0084-an-update-that-can-run
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -88,3 +88,55 @@ surface changes.
 - `references/2026-08-08-the-update-refuses-six-of-the-eight-copies-it-exists-to-update.md`
   → the measured cold-start block this task removes.
 - ADR-0101, ADR-0102, ADR-0058, ADR-0100.
+
+## Result
+
+### Implementation
+
+- Root-preservation planning now carries typed unrecorded managed-region
+  classifications with `digest-mismatch` and `marker-absent` reasons. The
+  optional JSON field remains absent when the classification slice is empty.
+- Managed-refresh planning reports those classifications without blocking.
+  A duplicated managed identity remains blocking under
+  `baseline.preservation.managed-marker.ambiguous`, with the carrier path and
+  identity in the finding.
+- The prior full-plan regression case now proves that an edited managed region
+  reaches a ready plan. Greenfield, preservation, unsafe-carrier, and retention
+  paths retain their existing behavior.
+
+### Focused checks
+
+- Pre-change signal:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-0084-task01-gocache go test ./internal/baseline -run 'Test(UnrecordedManagedRegion|AmbiguousManagedMarker|ManagedRefreshUnrecordedManagedRegion)' -count=1`
+  failed to compile because `RootPreservationPlan.UnrecordedManagedRegions` and
+  the unrecorded-region types did not exist.
+- After implementation, the same filtered command passed:
+  `ok roundfix/internal/baseline 1.019s`.
+- Regression check:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-0084-task01-gocache go test ./internal/baseline -run 'Test(GreenfieldPlanBacksUpWithoutImport|PreservationPlanAcceptsCompleteDecisionDocument|ManagedRefreshUnsafeRootCarrierStillBlocks|ManagedRefreshUnaccountedClauseStillBlocks)' -count=1`
+  passed: `ok roundfix/internal/baseline 0.826s`.
+- `rtk rg -n 'baseline\.preservation\.managed-marker\.modified' internal`
+  returned no matches.
+
+### Acceptance evidence
+
+1. `TestUnrecordedManagedRegionDigestMismatchReachesReadyPlan` asserts ready
+   root-preservation state plus the exact path, managed identity, and
+   `digest-mismatch` reason. The full construction seam
+   `TestManagedRefreshUnrecordedManagedRegionReachesReadyPlan` also returns a
+   non-nil ready plan.
+2. `TestUnrecordedManagedRegionMarkerAbsentReachesReadyPlan` asserts ready state
+   plus the exact path, managed identity, and `marker-absent` reason.
+3. `TestAmbiguousManagedMarkerBlocksManagedRefresh` asserts blocked state and
+   the new ambiguity finding with both the carrier path and duplicated identity.
+4. The focused package search found no production occurrence of the retired
+   finding code.
+5. `TestUnrecordedManagedRegionFieldOmittedWhenCurrent` asserts an empty
+   classification and verifies marshaled JSON omits
+   `unrecordedManagedRegions`.
+6. `TestManagedRefreshUnsafeRootCarrierStillBlocks` and
+   `TestManagedRefreshUnaccountedClauseStillBlocks` each passed. The same
+   regression command also passed the existing greenfield and preservation
+   behavior tests.
+
+The Daemon-owned `## Verification` commands were not run in this Agent turn.
