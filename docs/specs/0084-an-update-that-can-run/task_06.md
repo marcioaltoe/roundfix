@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0084-an-update-that-can-run
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -90,7 +90,7 @@ reporting them unaccounted.
 - `go test ./internal/baseline/ -run 'Retention' -v > /tmp/0084-task-06-a.log 2>&1 && grep -q '^--- PASS: .*Retention' /tmp/0084-task-06-a.log` — expected: exits 0, proving the retention corpus ran and passed.
 - `go test ./internal/baseline/ -run 'Catalog' -v > /tmp/0084-task-06-b.log 2>&1 && grep -q '^--- PASS: .*Catalog' /tmp/0084-task-06-b.log` — expected: exits 0, proving catalog validation accepts the restored clauses.
 - `grep -c 'clause.backend.' internal/baseline/assets/modules/backend.json > /tmp/0084-task-06-c.log 2>&1 && grep -qv '^0$' /tmp/0084-task-06-c.log` — expected: exits 0, proving the module declares backend clauses where it previously declared none.
-- `make baseline-digests > /tmp/0084-task-06-d.log 2>&1 && git diff --quiet -- internal/baseline/assets` — expected: exits 0, proving every derived pin already matches the sanctioned regeneration.
+- `make baseline-digests > /tmp/0084-task-06-d.log 2>&1 && grep -q '"changed":false' /tmp/0084-task-06-d.log` — expected: exits 0, proving the sanctioned regeneration is a no-op and every derived pin already matches its canonical source.
 - `go test ./internal/baseline/ -run 'MaintainedManagedEntryFixture' -v > /tmp/0084-task-06-e.log 2>&1 && grep -q '^--- PASS: .*MaintainedManagedEntryFixture' /tmp/0084-task-06-e.log` — expected: exits 0, proving every guide that grew past the frozen record is declared.
 - `git diff --quiet -- internal/baseline/testdata/parity-corpus` — expected: exits 0, proving the frozen parity corpus was not edited.
 - `go test ./internal/baseline/ ./internal/cli/ -count=1` — expected: exits 0.
@@ -102,3 +102,96 @@ reporting them unaccounted.
 - `references/2026-08-08-the-update-refuses-six-of-the-eight-copies-it-exists-to-update.md`
   → the three repositories that stop on these fourteen.
 - ADR-0058, ADR-0081, ADR-0099.
+
+## Result
+
+### Implementation
+
+- Restored the fourteen authorized Source Baseline identities to five owning
+  rules: seven under the backend boundary rule, two under the domain rule, two
+  under the frontend rule, two under the Spec artifact rule, and one under the
+  monorepo boundary rule. Each clause keeps the Source Baseline's enforcement
+  and guidance after the catalog's structured enforcement normalization.
+- Bumped each changed rule and its owning module and supporting guide. No
+  identity moved, so `internal/baseline/assets/retention/` remains unchanged.
+- Added a standard-profile retention regression that reads the maintained
+  Source Baseline bytes, checks the restored enforcement and guidance, and
+  requires every authorized identity to classify as `retained`. The existing
+  same-identity drift test remains the negative companion for an omitted
+  clause.
+- Declared only `docs/agents/backend.md`, `docs/agents/domain.md`,
+  `docs/agents/frontend.md`, `docs/agents/issue-tracker.md`, and
+  `docs/agents/monorepo.md` as evolved past the frozen parity record.
+- Ran the sanctioned digest regeneration. It rewrote the five formatter
+  goldens and the catalog/profile/plan-characterization pins owned by
+  `DERIVED_DIGEST_PATHS`; a second pass reported no changes.
+
+### Focused checks
+
+- Pre-change
+  `rtk env GOCACHE=/private/tmp/roundfix-0084-task06-gocache go test ./internal/baseline -run '^TestStandardTypeScriptStructuralClauseRetention$' -count=1`
+  — exit 1; the test reported exactly the fourteen authorized identities as
+  `unaccounted`. The first attempt against the shared macOS Go cache stopped
+  before compilation on sandbox cache access, so the isolated cache supplied
+  the behavioral red signal.
+- Post-change
+  `rtk env GOCACHE=/private/tmp/roundfix-0084-task06-gocache go test ./internal/baseline -count=1 -run '^(TestStandardTypeScriptStructuralClauseRetention|TestSameIdentityDriftRequiresRetention|TestFormatterComposition|TestPlanDeterminismMatchesMaintainedManagedEntryFixture)$'`
+  — exit 0.
+- `rtk make baseline-digests` — first pass exit 0 with `changed:true`; second
+  pass exit 0 with `changed:false` and
+  `derived artifacts already match their canonical sources`.
+- Focused `jq -e` assertions over all five modules — exit 0; every restored
+  identity is present under the intended rule and every changed
+  module/guide/rule version increased.
+- Exact `cmp -s` projections against `HEAD` for all five modules — exit 0;
+  required decisions, capabilities, required skills, skill dispatch, root
+  selections, guide rule selections, references, and templates are unchanged.
+- `rtk git diff --exit-code HEAD -- internal/baseline/testdata/parity-corpus`
+  — exit 0 with no output; the frozen corpus is byte-identical to `HEAD`.
+- `rtk git diff --check` — exit 0 with no diagnostics.
+
+### Acceptance criterion evidence
+
+1. `TestStandardTypeScriptStructuralClauseRetention` resolves all fourteen
+   authorization identities from the selected standard profile, reads their
+   maintained Source Baseline byte spans, and matches catalog enforcement and
+   normalized guidance.
+2. The focused retention regression exits 0 and observes `retained` for every
+   restored identity; its missing-clause negative companion also exits 0.
+3. The focused version assertions prove the changed rules increased:
+   backend `2→3`, domain `3→4`, frontend `3→4`, Spec artifacts `3→4`, and
+   monorepo `2→3`.
+4. The five exact `HEAD` projection comparisons prove decisions,
+   capabilities, skills, dispatch, rule selection, references, and templates
+   did not change.
+5. The second sanctioned regeneration pass reports `changed:false`.
+6. The exact parity-corpus `HEAD` diff exits 0 with no output.
+7. The focused formatter and plan-determinism tests exit 0. Git names exactly
+   the five declared evolved guides under the maintained formatter golden
+   root.
+8. Changed-file inspection contains only the five authorized module assets,
+   this Task's plan test and Result, and deterministic files under the
+   Makefile's sanctioned `DERIVED_DIGEST_PATHS`; no retention asset, decision
+   catalog, Source Baseline, Task Graph, or sibling Task file changed. The only
+   profile edit is the sanctioned formatter `goldenDigest` pin.
+
+### Daemon handoff
+
+The Agent did not rerun the declared `## Verification` command lines; the
+sanctioned regeneration was used only as the required implementation step. The
+Daemon owns the declared Verification and terminal Task verdict.
+
+### Verification feedback — attempt 1
+
+- The Daemon's diagnostic artifact was empty because the failing
+  `git diff --quiet` emitted no diagnostic body. Its redirected regeneration
+  log showed that `make baseline-digests` exited successfully and reported
+  `changed:false`.
+- The failure came from comparing the Task's intended changes under
+  `internal/baseline/assets` with `HEAD` after regeneration. That assertion
+  necessarily exits 1 for this Task even when every derived pin has converged.
+- Corrected only Task 06's verification assertion to require the generator's
+  structured `changed:false` result. This preserves the intended idempotence
+  proof without hiding or staging the implementation diff.
+- No catalog, test, derived asset, frozen corpus, status field, Task Graph, or
+  sibling Task file was changed in this feedback repair.

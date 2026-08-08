@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 12,
+  "version": 13,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -228,7 +228,7 @@
     },
     {
       "id": "guide.domain",
-      "version": 4,
+      "version": 5,
       "path": "docs/agents/domain.md",
       "template": "template.guide.domain",
       "rules": [
@@ -240,7 +240,7 @@
   "rules": [
     {
       "id": "rule.context.domain-docs",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.context-workflow",
         "coverage.research"
@@ -250,6 +250,16 @@
           "id": "clause.context.read-domain-contract",
           "enforcement": "mandatory",
           "guidance": "Read the repository's selected domain context and relevant accepted ADRs before naming domain concepts or changing behavior. Flag conflicts instead of silently overriding repository decisions."
+        },
+        {
+          "id": "clause.domain.canonical-language",
+          "enforcement": "mandatory",
+          "guidance": "Use the repository's canonical domain terms in code names, tests, user-facing copy, Specs, and delivery notes. Call out a missing term instead of inventing a competing synonym."
+        },
+        {
+          "id": "clause.domain.layout-decision",
+          "enforcement": "mandatory",
+          "guidance": "Follow the repository's declared single-context or multi-context layout. Setup can require that decision but cannot infer bounded contexts from directory names."
         }
       ]
     },

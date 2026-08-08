@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "monorepo", "version": 2, "kind": "repository-layout", "title": "Monorepo context boundaries",
+  "schemaVersion": "setup-context-driven/module-v2", "id": "monorepo", "version": 3, "kind": "repository-layout", "title": "Monorepo context boundaries",
   "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": [
     "turborepo"
   ],
@@ -18,6 +18,8 @@
   "rootBlocks": [{"id": "root.monorepo", "version": 2, "template": "template.root.monorepo", "rules": [], "references": [
     {"id": "reference.root.monorepo", "token": "reference.monorepo", "ownership": "setup", "managedId": "guide.monorepo"}
   ]}],
-  "supportingGuides": [{"id": "guide.monorepo", "version": 2, "path": "docs/agents/monorepo.md", "template": "template.guide.monorepo", "rules": ["rule.monorepo.context-boundaries"], "references": []}],
-  "rules": [{"id": "rule.monorepo.context-boundaries", "version": 2, "coverage": ["coverage.monorepo", "coverage.context-workflow"], "guidance": "Identify the owning package and bounded context before editing. Read its context and local instructions, keep changes inside the Task slice, and require an explicit owning contract plus boundary Verification for cross-package changes."}]
+  "supportingGuides": [{"id": "guide.monorepo", "version": 3, "path": "docs/agents/monorepo.md", "template": "template.guide.monorepo", "rules": ["rule.monorepo.context-boundaries"], "references": []}],
+  "rules": [{"id": "rule.monorepo.context-boundaries", "version": 3, "coverage": ["coverage.monorepo", "coverage.context-workflow"], "clauses": [
+    {"id": "rule.monorepo.context-boundaries", "enforcement": "mandatory", "guidance": "Identify the owning package and bounded context before editing. Read its context and local instructions, keep changes inside the Task slice, and require an explicit owning contract plus boundary Verification for cross-package changes."}
+  ]}]
 }

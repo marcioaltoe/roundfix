@@ -5,7 +5,19 @@
 This setup-owned guide defines portable backend rules. Repository-authored
 architecture and service contracts remain authoritative.
 
-- Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy.
+- **mandatory**: Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy.
+
+- **mandatory**: Keep application use cases independent of HTTP request, response, router, and middleware types.
+
+- **mandatory**: Organize backend behavior through domain, application, and infrastructure layers. Dependencies point inward toward domain behavior.
+
+- **mandatory**: Keep persistence implementation in infrastructure and behind application-owned boundaries; schema and query definitions belong to the selected persistence capability.
+
+- **prohibited**: Do not introduce generic `modules` or `services` buckets as the normative backend architecture.
+
+- **mandatory**: Keep HTTP handlers thin: validate and translate transport input, invoke one application use case, and translate the result into the repository's HTTP Contract.
+
+- **mandatory**: Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy.
 
 ## HTTP contract
 

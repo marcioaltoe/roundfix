@@ -2152,6 +2152,11 @@ func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 		"docs/agents/docs-layout.md":        true,
 		"docs/agents/skill-dispatch.md":     true,
 		"docs/agents/autonomous-work.md":    true,
+		"docs/agents/backend.md":            true,
+		"docs/agents/domain.md":             true,
+		"docs/agents/frontend.md":           true,
+		"docs/agents/issue-tracker.md":      true,
+		"docs/agents/monorepo.md":           true,
 	}
 	expectedPostimages := make(map[string]string)
 	for _, entry := range fixture.PlannedByteSequence {
@@ -2805,6 +2810,111 @@ func TestPlanDocumentIncludesMaintainedUpgradeRetention(t *testing.T) {
 			entry.Reason != contract.Accounting[index].Reason {
 			t.Fatalf("retention entry %d = %+v, want contract accounting %+v",
 				index, entry, contract.Accounting[index])
+		}
+	}
+}
+
+func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
+	t.Parallel()
+
+	restoredClauseIDs := []string{
+		"clause.backend.boundary-contracts",
+		"clause.backend.http-independent-use-cases",
+		"clause.backend.layered-architecture",
+		"clause.backend.persistence-owner",
+		"clause.backend.prohibit-generic-layers",
+		"clause.backend.thin-http-handlers",
+		"clause.domain.canonical-language",
+		"clause.domain.layout-decision",
+		"clause.frontend.organize-by-system",
+		"clause.frontend.public-system-boundary",
+		"clause.spec.local-task-tracker-only",
+		"clause.spec.status-only-in-task",
+		"rule.backend.boundary-contracts",
+		"rule.monorepo.context-boundaries",
+	}
+	catalog := mustEmbeddedCatalog(t)
+	profile, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatalf("resolve standard TypeScript Profile: %v", err)
+	}
+	activeModules, artifacts, err := resolveManagedArtifacts(
+		catalog,
+		profile,
+		standardTypeScriptDecisions("make verify"),
+		false,
+	)
+	if err != nil {
+		t.Fatalf("resolve standard TypeScript managed artifacts: %v", err)
+	}
+	managedArtifacts := make([]ManifestArtifact, len(artifacts))
+	for index, artifact := range artifacts {
+		managedArtifacts[index] = ManifestArtifact{
+			ID: artifact.ID, Path: artifact.Path, Kind: artifact.Kind,
+			Module: artifact.Module, Template: artifact.Template,
+			Version: artifact.Version, Digest: artifact.Digest,
+		}
+	}
+	source, err := catalog.SourceBaseline("baseline.standard-typescript-monorepo-0.0.1")
+	if err != nil {
+		t.Fatalf("load standard TypeScript Source Baseline: %v", err)
+	}
+	_, delta := classifySourceClauseTransition(source, managedArtifacts, catalog, activeModules)
+	currentClauses := make(map[string]document)
+	for _, moduleID := range activeModules {
+		for _, rule := range objectsOrEmpty(catalog.modules[moduleID]["rules"]) {
+			for _, clause := range objectsOrEmpty(rule["clauses"]) {
+				clauseID, _ := stringValue(clause, "id")
+				currentClauses[clauseID] = clause
+			}
+		}
+	}
+	sourceEntries := make(map[string]SourceBaselineEntry, len(source.Entries))
+	for _, entry := range source.Entries {
+		sourceEntries[entry.ID] = entry
+	}
+	normalizeSourceGuidance := func(raw string) string {
+		raw = strings.TrimSpace(raw)
+		if prohibited, found := strings.CutPrefix(raw, "- MUST NOT "); found {
+			if prohibited != "" {
+				prohibited = strings.ToLower(prohibited[:1]) + prohibited[1:]
+			}
+			return "Do not " + prohibited
+		}
+		if mandatory, found := strings.CutPrefix(raw, "- MUST "); found {
+			if mandatory != "" {
+				mandatory = strings.ToUpper(mandatory[:1]) + mandatory[1:]
+			}
+			return mandatory
+		}
+		return raw
+	}
+	for _, clauseID := range restoredClauseIDs {
+		if got := delta.Dispositions[clauseID]; got != ClauseRetained {
+			t.Errorf("structural clause %q disposition = %q, want %q", clauseID, got, ClauseRetained)
+		}
+		previous, ok := sourceEntries[clauseID]
+		if !ok {
+			t.Errorf("structural clause %q is absent from the Source Baseline", clauseID)
+			continue
+		}
+		assetPath := "source-baselines/" + source.Identity.ID + "/" + previous.Path
+		asset, ok := catalog.Asset(assetPath)
+		if !ok {
+			t.Errorf("structural clause %q source asset %q is missing", clauseID, assetPath)
+			continue
+		}
+		current, ok := currentClauses[clauseID]
+		if !ok {
+			t.Errorf("structural clause %q is absent from the selected catalog", clauseID)
+			continue
+		}
+		if got, _ := stringValue(current, "enforcement"); got != previous.Enforcement {
+			t.Errorf("structural clause %q enforcement = %q, want %q", clauseID, got, previous.Enforcement)
+		}
+		wantGuidance := normalizeSourceGuidance(string(asset.Data[previous.Start:previous.End]))
+		if got, _ := stringValue(current, "guidance"); got != wantGuidance {
+			t.Errorf("structural clause %q guidance = %q, want Source Baseline text %q", clauseID, got, wantGuidance)
 		}
 	}
 }

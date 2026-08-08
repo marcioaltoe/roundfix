@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "frontend",
-  "version": 3,
+  "version": 4,
   "kind": "application-surface",
   "title": "Frontend application guidance",
   "dependsOn": [
@@ -292,7 +292,7 @@
   "supportingGuides": [
     {
       "id": "guide.frontend",
-      "version": 3,
+      "version": 4,
       "path": "docs/agents/frontend.md",
       "template": "template.guide.frontend",
       "rules": [
@@ -311,12 +311,22 @@
   "rules": [
     {
       "id": "rule.frontend.user-visible-behavior",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.frontend",
         "coverage.verification-integrity"
       ],
       "clauses": [
+        {
+          "id": "clause.frontend.organize-by-system",
+          "enforcement": "mandatory",
+          "guidance": "Organize frontend feature code by domain system. Each system exposes one public boundary while its internal components, hooks, queries, routes, and state import each other directly."
+        },
+        {
+          "id": "clause.frontend.public-system-boundary",
+          "enforcement": "mandatory",
+          "guidance": "Import another system through that system's public boundary instead of reaching into its internal modules."
+        },
         {
           "id": "clause.frontend.read-design-contract-before-ui-work",
           "enforcement": "mandatory",

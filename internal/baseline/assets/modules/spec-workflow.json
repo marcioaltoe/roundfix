@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 5,
+  "version": 6,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -49,7 +49,7 @@
     },
     {
       "id": "guide.issue-tracker",
-      "version": 3,
+      "version": 4,
       "path": "docs/agents/issue-tracker.md",
       "template": "template.guide.issue-tracker",
       "rules": [
@@ -105,11 +105,21 @@
     },
     {
       "id": "rule.spec.artifacts",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.spec-workflow"
       ],
       "clauses": [
+        {
+          "id": "clause.spec.local-task-tracker-only",
+          "enforcement": "mandatory",
+          "guidance": "Use the local Spec folder, Task Graph, and Task files as the implementation issue tracker. Do not introduce external triage labels or external issue status as Task state."
+        },
+        {
+          "id": "clause.spec.status-only-in-task",
+          "enforcement": "mandatory",
+          "guidance": "Keep Task status only in the assigned Task file frontmatter. The Task Graph records topology and dependencies, not progress."
+        },
         {
           "id": "clause.spec.tracker-artifacts",
           "enforcement": "mandatory",
