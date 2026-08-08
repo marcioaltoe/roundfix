@@ -1,5 +1,8 @@
 ---
-date: 2026-08-08
+status: done
+created_at: 2026-08-08
+updated_at: 2026-08-08
+kind: finding
 origin: direct measurement against a live OpenCode installation
 runtime: opencode 1.18.15
 adapter: acpx 0.13.0
