@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0084-an-update-that-can-run
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -43,25 +43,25 @@ update flow honest.
 
 ## Subtasks
 
-- [ ] Render the unrecorded-region block in text output.
-- [ ] Add the optional field to the JSON result.
-- [ ] Report the regions on both the presented and applied paths.
-- [ ] Update the roundfix skill's update-flow description and sync it.
-- [ ] Cover text and JSON output with an unrecorded region present.
-- [ ] Cover text and JSON output with no unrecorded region.
+- [x] Render the unrecorded-region block in text output.
+- [x] Add the optional field to the JSON result.
+- [x] Report the regions on both the presented and applied paths.
+- [x] Update the roundfix skill's update-flow description and sync it.
+- [x] Cover text and JSON output with an unrecorded region present.
+- [x] Cover text and JSON output with no unrecorded region.
 
 ## Acceptance Criteria
 
-- [ ] Running the update against a fixture with an unrecorded region prints the
+- [x] Running the update against a fixture with an unrecorded region prints the
       region's path and managed identity and the removed line beneath it.
-- [ ] The JSON result for that fixture carries the region, its reason, and its
+- [x] The JSON result for that fixture carries the region, its reason, and its
       removed line.
-- [ ] Running the update against a fixture with a region that removes no line
+- [x] Running the update against a fixture with a region that removes no line
       prints the explicit no-removal statement for that region.
-- [ ] The JSON result for a repository with no unrecorded region omits the field.
-- [ ] The JSON result's schema identity string is unchanged from the value the
+- [x] The JSON result for a repository with no unrecorded region omits the field.
+- [x] The JSON result's schema identity string is unchanged from the value the
       command emitted before this task.
-- [ ] The generated roundfix skill matches its authoritative source after sync.
+- [x] The generated roundfix skill matches its authoritative source after sync.
 
 ## Context
 
@@ -84,3 +84,59 @@ update flow honest.
 - `_techspec.md` → Build Order 3; API Contracts.
 - `_prd.md` → Core Features 2 and 3; User Story 3; User Experience.
 - ADR-0102.
+
+## Result
+
+Implementation-ready handoff for Daemon Verification:
+
+- The update result now copies every `UnrecordedManagedRegion` from the
+  digest-bound plan into the optional `unrecordedManagedRegions` JSON field
+  before the presented-plan/applied-path split, so both outcomes retain the
+  same replacement record and an empty result omits the field.
+- Text output reports each region's path, managed identity, reason, indented
+  removed lines, any truncation count, and the explicit `no lines removed`
+  statement for an empty removed-line set. No flag, state, exit code, or other
+  output field changed.
+- The authoritative roundfix skill now documents the unrecorded-region report;
+  `make skills-sync` regenerated the shipped copy under `skills/`.
+
+Focused implementation evidence:
+
+- Red signal: the focused CLI selection initially failed to compile because
+  `baselineUpdateResult` had no `UnrecordedManagedRegions` field. The first
+  attempt also exposed the host Go-cache sandbox boundary; all subsequent Go
+  checks used the worktree-local `.gocache`.
+- `rtk proxy env GOCACHE=<worktree>/.gocache go test ./internal/cli -run
+  'TestBaselineUpdate(UnrecordedManagedRegion|NoUnrecordedManagedRegion|HelpNamesNonInteractiveContract)$'
+  -count=1` — passed.
+- `rtk proxy env GOCACHE=<worktree>/.gocache go test ./internal/cli -list
+  'UnrecordedManagedRegion'` — passed and listed all four Task-specific tests.
+- `rtk proxy env GOCACHE=<worktree>/.gocache go test ./internal/cli -run
+  '^(TestBaselineUpdate|TestBaselineDocumentationContract)' -count=1` — passed.
+- `rtk make skills-sync` — exited 0; `rtk proxy cmp -s
+  .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — exited 0.
+- `rtk make baseline-digests` — exited 0 and reported that derived artifacts
+  already match their canonical sources, with no changes.
+
+Acceptance evidence:
+
+1. `TestBaselineUpdateUnrecordedManagedRegionTextOutput` passed for both the
+   presented and applied paths and asserted the path, managed identity, reason,
+   and indented removed line.
+2. `TestBaselineUpdateUnrecordedManagedRegionJSONOutput` passed for both paths
+   and asserted the structured path, managed identity, `digest-mismatch` reason,
+   and removed line.
+3. `TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput`
+   passed and asserted the explicit `no lines removed` statement.
+4. `TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs` passed and asserted
+   that the text block and raw JSON field are both absent for a current
+   repository.
+5. The combined focused run passed `TestBaselineUpdateHelpNamesNonInteractiveContract`
+   and `TestBaselineDocumentationContract`, which retain the
+   `roundfix/baseline-update-result/v1` public schema identity; the schema
+   constant was not changed.
+6. The authoritative/generated skill byte comparison exited 0 after
+   `make skills-sync`.
+
+The commands under this Task's `## Verification` section were not run; the
+Daemon owns those checks and terminal settlement.

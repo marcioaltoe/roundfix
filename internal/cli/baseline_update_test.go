@@ -57,6 +57,157 @@ func TestBaselineUpdateAppliesManifestPlanAndReportsJSON(t *testing.T) {
 	}
 }
 
+func TestBaselineUpdateUnrecordedManagedRegionTextOutput(t *testing.T) {
+	tests := []struct {
+		name      string
+		approval  []string
+		wantState string
+		wantExit  int
+	}{
+		{
+			name:      "presented plan",
+			wantState: "plan_ready",
+			wantExit:  exitUnverified,
+		},
+		{
+			name:      "applied plan",
+			approval:  []string{"--yes"},
+			wantState: "verified",
+			wantExit:  exitOK,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repository := unrecordedBaselineUpdateRepository(t, []string{"line removed by refresh"})
+			args := []string{"baseline", "update", "--repo", repository, "--format=text"}
+			args = append(args, test.approval...)
+
+			_, stdout, stderr, code := runBaselineUpdateTestCommand(
+				t,
+				context.Background(),
+				args...,
+			)
+			if code != test.wantExit || stderr != "" {
+				t.Fatalf("%s update exit=%d stdout=%s stderr=%s", test.name, code, stdout, stderr)
+			}
+			for _, want := range []string{
+				"Baseline update: " + strings.ReplaceAll(test.wantState, "_", " "),
+				"Unrecorded managed regions: 1",
+				"- Path: docs/agents/agent-instructions.md",
+				"  Managed identity: guide.agent-instructions",
+				"  Reason: digest-mismatch",
+				"  Removed lines:\n    line removed by refresh",
+			} {
+				if !strings.Contains(stdout, want) {
+					t.Fatalf("%s update output missing %q:\n%s", test.name, want, stdout)
+				}
+			}
+		})
+	}
+}
+
+func TestBaselineUpdateUnrecordedManagedRegionJSONOutput(t *testing.T) {
+	tests := []struct {
+		name      string
+		approval  []string
+		wantState string
+		wantExit  int
+	}{
+		{
+			name:      "presented plan",
+			wantState: "plan_ready",
+			wantExit:  exitUnverified,
+		},
+		{
+			name:      "applied plan",
+			approval:  []string{"--yes"},
+			wantState: "verified",
+			wantExit:  exitOK,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repository := unrecordedBaselineUpdateRepository(t, []string{"line removed by refresh"})
+			args := []string{"baseline", "update", "--repo", repository, "--format=json"}
+			args = append(args, test.approval...)
+
+			result, stdout, stderr, code := runBaselineUpdateTestCommand(
+				t,
+				context.Background(),
+				args...,
+			)
+			if code != test.wantExit || stderr != "" {
+				t.Fatalf("%s update exit=%d stdout=%s stderr=%s", test.name, code, stdout, stderr)
+			}
+			if result.State != test.wantState || result.SchemaVersion != baselineUpdateResultSchema {
+				t.Fatalf("%s update result = %+v", test.name, result)
+			}
+			if len(result.UnrecordedManagedRegions) != 1 {
+				t.Fatalf("%s unrecorded managed regions = %+v", test.name, result.UnrecordedManagedRegions)
+			}
+			region := result.UnrecordedManagedRegions[0]
+			if region.Path != "docs/agents/agent-instructions.md" ||
+				region.ManagedID != "guide.agent-instructions" ||
+				region.Reason != baseline.UnrecordedManagedRegionReasonDigestMismatch ||
+				!slices.Equal(region.RemovedLines, []string{"line removed by refresh"}) {
+				t.Fatalf("%s unrecorded managed region = %+v", test.name, region)
+			}
+			if !strings.Contains(stdout, `"unrecordedManagedRegions"`) {
+				t.Fatalf("%s JSON omitted unrecorded managed regions: %s", test.name, stdout)
+			}
+		})
+	}
+}
+
+func TestBaselineUpdateUnrecordedManagedRegionWithoutRemovedLinesTextOutput(t *testing.T) {
+	repository := unrecordedBaselineUpdateRepository(t, nil)
+
+	_, stdout, stderr, code := runBaselineUpdateTestCommand(
+		t,
+		context.Background(),
+		"baseline", "update", "--repo", repository, "--format=text",
+	)
+	if code != exitUnverified || stderr != "" {
+		t.Fatalf("no-removal update exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	if !strings.Contains(stdout, "  Removed lines: no lines removed") {
+		t.Fatalf("no-removal update lacks explicit statement:\n%s", stdout)
+	}
+}
+
+func TestBaselineUpdateNoUnrecordedManagedRegionOmitsOutputs(t *testing.T) {
+	repository := newBaselineUpdateRepository(t)
+
+	_, textOutput, textError, textCode := runBaselineUpdateTestCommand(
+		t,
+		context.Background(),
+		"baseline", "update", "--repo", repository, "--format=text",
+	)
+	if textCode != exitOK || textError != "" {
+		t.Fatalf("current text update exit=%d stdout=%s stderr=%s", textCode, textOutput, textError)
+	}
+	if strings.Contains(textOutput, "Unrecorded managed regions:") {
+		t.Fatalf("current text update reported an unrecorded-region block:\n%s", textOutput)
+	}
+
+	result, jsonOutput, jsonError, jsonCode := runBaselineUpdateTestCommand(
+		t,
+		context.Background(),
+		"baseline", "update", "--repo", repository, "--format=json",
+	)
+	if jsonCode != exitOK || jsonError != "" {
+		t.Fatalf("current JSON update exit=%d stdout=%s stderr=%s", jsonCode, jsonOutput, jsonError)
+	}
+	if result.UnrecordedManagedRegions != nil {
+		t.Fatalf("current JSON update unrecorded regions = %#v, want nil", result.UnrecordedManagedRegions)
+	}
+	if strings.Contains(jsonOutput, `"unrecordedManagedRegions"`) {
+		t.Fatalf("current JSON update emitted the optional field: %s", jsonOutput)
+	}
+}
+
 func TestBaselineUpdateSkillStageReportsInstalledAndRestoredSkills(t *testing.T) {
 	repository := staleBaselineUpdateRepository(t)
 	var gotRequest baselineUpdateSkillsRequest
@@ -747,6 +898,49 @@ func staleBaselineUpdateRepository(t *testing.T) string {
 	sum := sha256.Sum256([]byte(staleBody))
 	manifest.ManagedArtifacts[artifactIndex].Digest = hex.EncodeToString(sum[:])
 	writeBaselineUpdateManifest(t, repository, manifest)
+	commitBaselinePlanTestRepository(t, repository)
+	return repository
+}
+
+func unrecordedBaselineUpdateRepository(t *testing.T, removedLines []string) string {
+	t.Helper()
+	repository := newBaselineUpdateRepository(t)
+	const (
+		carrierPath = "docs/agents/agent-instructions.md"
+		managedID   = "guide.agent-instructions"
+	)
+
+	if len(removedLines) == 0 {
+		manifest := readBaselineUpdateManifest(t, repository)
+		found := false
+		for index := range manifest.ManagedArtifacts {
+			artifact := &manifest.ManagedArtifacts[index]
+			if artifact.Path == carrierPath && artifact.ID == managedID {
+				artifact.Digest = strings.Repeat("0", 64)
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("Setup Manifest has no managed region %s:%s", carrierPath, managedID)
+		}
+		writeBaselineUpdateManifest(t, repository, manifest)
+	} else {
+		path := filepath.Join(repository, filepath.FromSlash(carrierPath))
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read managed guide %q: %v", carrierPath, err)
+		}
+		endMarker := []byte("<!-- setup-context-driven:end id=" + managedID + " -->")
+		if !bytes.Contains(content, endMarker) {
+			t.Fatalf("managed guide %q lacks end marker for %q", carrierPath, managedID)
+		}
+		inserted := []byte(strings.Join(removedLines, "\n") + "\n")
+		content = bytes.Replace(content, endMarker, append(inserted, endMarker...), 1)
+		if err := os.WriteFile(path, content, 0o644); err != nil {
+			t.Fatalf("write unrecorded managed guide %q: %v", carrierPath, err)
+		}
+	}
 	commitBaselinePlanTestRepository(t, repository)
 	return repository
 }

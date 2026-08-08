@@ -310,8 +310,12 @@ and verified; `1` for apply, verification, output, rollback, or recovery
 failure; `2` for invalid input, an incompatible manifest, or an unsafe
 repository; `3` when adoption, a new decision, confirmation, or retention
 action is required; and `130` when canceled. JSON output uses
-`roundfix/baseline-update-result/v1`. Managed refresh never invokes semantic
-classification and preserves every non-managed byte exactly.
+`roundfix/baseline-update-result/v1`. A plan with an Unrecorded Managed Region
+reports its path, managed identity, reason, and every reported line the refresh
+removes; text says `no lines removed` when there are none, and JSON includes the
+optional `unrecordedManagedRegions` field only when at least one exists. The
+same report remains in the applied result. Managed refresh never invokes
+semantic classification and preserves every non-managed byte exactly.
 
 Automation and Agents use the non-interactive plan/apply pair for first
 adoption or a Profile change:

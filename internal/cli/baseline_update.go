@@ -70,25 +70,26 @@ type baselineUpdateSkillsDependencies struct {
 }
 
 type baselineUpdateResult struct {
-	SchemaVersion      string                               `json:"schemaVersion"`
-	Operation          string                               `json:"operation"`
-	State              string                               `json:"state"`
-	Category           string                               `json:"category,omitempty"`
-	Message            string                               `json:"message,omitempty"`
-	NextAction         string                               `json:"nextAction,omitempty"`
-	PriorCatalog       baseline.CatalogIdentity             `json:"priorCatalog"`
-	CurrentCatalog     baseline.CatalogIdentity             `json:"currentCatalog"`
-	FileChanges        []baseline.FileChange                `json:"fileChanges"`
-	Retention          []baseline.RetentionEvidence         `json:"retention"`
-	ClauseDelta        *baseline.ClauseDelta                `json:"clauseDelta,omitempty"`
-	Warnings           []baseline.Finding                   `json:"warnings"`
-	NewDecisions       []baseline.DecisionSuggestion        `json:"newDecisions"`
-	AdoptedSuggestions []baseline.DecisionSuggestion        `json:"adoptedSuggestions"`
-	UnresolvedProfile  *baseline.UnresolvedProfileDiagnosis `json:"unresolvedProfile,omitempty"`
-	PlanDigest         string                               `json:"planDigest,omitempty"`
-	ApprovedPlanDigest string                               `json:"approvedPlanDigest,omitempty"`
-	StatusMatrix       *baseline.ResultStatusMatrix         `json:"statusMatrix,omitempty"`
-	Skills             baselineUpdateSkillsResult           `json:"skills"`
+	SchemaVersion            string                               `json:"schemaVersion"`
+	Operation                string                               `json:"operation"`
+	State                    string                               `json:"state"`
+	Category                 string                               `json:"category,omitempty"`
+	Message                  string                               `json:"message,omitempty"`
+	NextAction               string                               `json:"nextAction,omitempty"`
+	PriorCatalog             baseline.CatalogIdentity             `json:"priorCatalog"`
+	CurrentCatalog           baseline.CatalogIdentity             `json:"currentCatalog"`
+	FileChanges              []baseline.FileChange                `json:"fileChanges"`
+	UnrecordedManagedRegions []baseline.UnrecordedManagedRegion   `json:"unrecordedManagedRegions,omitempty"`
+	Retention                []baseline.RetentionEvidence         `json:"retention"`
+	ClauseDelta              *baseline.ClauseDelta                `json:"clauseDelta,omitempty"`
+	Warnings                 []baseline.Finding                   `json:"warnings"`
+	NewDecisions             []baseline.DecisionSuggestion        `json:"newDecisions"`
+	AdoptedSuggestions       []baseline.DecisionSuggestion        `json:"adoptedSuggestions"`
+	UnresolvedProfile        *baseline.UnresolvedProfileDiagnosis `json:"unresolvedProfile,omitempty"`
+	PlanDigest               string                               `json:"planDigest,omitempty"`
+	ApprovedPlanDigest       string                               `json:"approvedPlanDigest,omitempty"`
+	StatusMatrix             *baseline.ResultStatusMatrix         `json:"statusMatrix,omitempty"`
+	Skills                   baselineUpdateSkillsResult           `json:"skills"`
 }
 
 func runBaselineUpdateCommand(
@@ -230,6 +231,10 @@ func runBaselineUpdateCommandWithSkillsStage(
 	result.PlanDigest = plan.PlanDigest
 	result.CurrentCatalog = plan.Catalog
 	result.FileChanges = append(result.FileChanges, plan.FileChanges...)
+	result.UnrecordedManagedRegions = append(
+		result.UnrecordedManagedRegions,
+		plan.UnrecordedManagedRegions...,
+	)
 	result.Retention = append(result.Retention, plan.Retention...)
 	result.ClauseDelta = plan.ClauseDelta
 	result.Warnings = append(result.Warnings, plan.Warnings...)
@@ -634,6 +639,25 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	fmt.Fprintf(stdout, "File changes: %d\n", len(result.FileChanges))
 	for _, change := range result.FileChanges {
 		fmt.Fprintf(stdout, "- %s %s (%d managed entries)\n", change.Action, change.Path, len(change.ManagedEntries))
+	}
+	if len(result.UnrecordedManagedRegions) != 0 {
+		fmt.Fprintf(stdout, "Unrecorded managed regions: %d\n", len(result.UnrecordedManagedRegions))
+		for _, region := range result.UnrecordedManagedRegions {
+			fmt.Fprintf(stdout, "- Path: %s\n", region.Path)
+			fmt.Fprintf(stdout, "  Managed identity: %s\n", region.ManagedID)
+			fmt.Fprintf(stdout, "  Reason: %s\n", region.Reason)
+			if len(region.RemovedLines) == 0 {
+				fmt.Fprintln(stdout, "  Removed lines: no lines removed")
+			} else {
+				fmt.Fprintln(stdout, "  Removed lines:")
+				for _, line := range region.RemovedLines {
+					fmt.Fprintf(stdout, "    %s\n", line)
+				}
+			}
+			if region.RemovedLinesTruncated != 0 {
+				fmt.Fprintf(stdout, "    ... %d additional lines omitted\n", region.RemovedLinesTruncated)
+			}
+		}
 	}
 	fmt.Fprintf(stdout, "Retention evidence: %d\n", len(result.Retention))
 	for _, evidence := range result.Retention {
