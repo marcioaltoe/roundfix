@@ -137,3 +137,16 @@ its own through planning alone, before any new command exists.
   Task 01 corpus without changing its recorded goldens, while the selected
   greenfield and preservation cases retain their prior backup and disposition
   behavior.
+
+### Superseded
+
+Requirement 4 — "MUST treat a hand-edited managed marker as blocking rather than
+as a warning" — is superseded by Spec 0084. Measured against the eight
+repositories that had adopted a Baseline, it blocked the first update of every
+repository whose managed regions moved before this command existed, which is
+every repository that predates this Spec, and it blocked before producing the
+plan that would have repaired the condition. The premise was wrong: the Setup
+Manifest digest records what adoption wrote, not what a Managed Region should
+contain after the catalog legitimately moves. The remaining seven requirements,
+the preimage-bound preservation proof, and the mode itself stand unchanged. See
+`docs/specs/0084-an-update-that-can-run/_prd.md` and ADR-0101.

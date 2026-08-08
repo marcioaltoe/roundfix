@@ -1,0 +1,91 @@
+---
+task: task_07
+spec: 0084-an-update-that-can-run
+status: pending
+type: backend
+complexity: medium
+---
+
+# Task 07: Seat the consultation, outside-evidence, and glossary clauses
+
+## Overview
+
+Adds the three Normative Clauses whose absence let this defect ship and whose
+authorizations name it: the Secondbrain is a source consulted when a decision is
+formed, a Spec's acceptance rests on evidence the Spec did not author, and the
+glossary is checked when work closes. Each clause is seated with its Source
+Baseline entry in the same change, because the catalog refuses a mandatory clause
+no Source Baseline row carries.
+
+## Requirements
+
+1. MUST add one consultation clause obliging the Secondbrain to be read when a
+   Spec is authored or an approach is chosen, naming prior decisions from sibling
+   projects, literature, and technical knowledge the repository does not hold as
+   what it supplies.
+2. MUST NOT let that clause restate the query order, weaken the read-only
+   boundary, weaken the citation obligation, or make an unavailable Secondbrain a
+   blocker; unavailability is a reported condition.
+3. MUST add one clause requiring a Spec's acceptance to rest, in at least one
+   named row, on evidence originating outside the Spec's own artifacts, and to
+   record that evidence's origin.
+4. MUST NOT let that clause mandate a row count, require human interaction, or
+   turn an unobtainable external source into a Spec blocker; such a row is
+   recorded as blocked with its reason.
+5. MUST add one clause obliging the check, at the close of a Spec, feature,
+   refactor, or fix, of whether the work introduced, changed, or retired a term
+   the glossary should carry, with the update conditional on that check finding
+   something and human interaction not required.
+6. MUST NOT let the glossary clause restate the existing obligation to read the
+   domain context before naming concepts.
+7. MUST bump the version of every rule that receives a clause and seat each clause
+   in the Source Baseline corpus and manifest.
+8. MUST regenerate derived pins with the sanctioned command rather than by hand.
+9. MUST change only the paths the three authorizations bound.
+
+## Subtasks
+
+- [ ] Add the Secondbrain consultation clause and bump its rule.
+- [ ] Add the outside-evidence clause and bump its rule.
+- [ ] Add the glossary-currency clause and bump its rule.
+- [ ] Seat all three in the Source Baseline corpus and manifest.
+- [ ] Regenerate derived pins with the sanctioned command.
+- [ ] Move the maintained Source Baseline entry expectation with the new entries.
+
+## Acceptance Criteria
+
+- [ ] The catalog emits a mandatory consultation clause naming Spec authoring and
+      approach selection as its trigger.
+- [ ] The catalog emits a mandatory clause requiring at least one acceptance row
+      backed by evidence from outside the Spec, with its origin recorded.
+- [ ] The catalog emits a mandatory clause requiring the glossary check at the
+      close of a Spec, feature, refactor, or fix.
+- [ ] No added clause makes Secondbrain unavailability or unobtainable external
+      evidence a blocking condition.
+- [ ] Every rule receiving a clause carries a higher version than before.
+- [ ] Catalog validation and the Source Baseline corpus accept all three clauses.
+- [ ] Derived pins match what the sanctioned regeneration command produces.
+
+## Context
+
+- instruction: `docs/workflow/authorizations/2026-08-08-the-brain-is-a-source-not-an-archive.md`
+- instruction: `docs/workflow/authorizations/2026-08-08-evidence-from-outside-the-spec.md`
+- instruction: `docs/workflow/authorizations/2026-08-08-glossary-currency-clause.md`
+- interface: `internal/baseline/assets/modules/secondbrain.json`
+- interface: `internal/baseline/assets/modules/spec-workflow.json`
+- interface: `internal/baseline/assets/modules/context-workflow.json`
+
+## Verification
+
+- `go build -buildvcs=false ./...` — expected: exits 0.
+- `grep -q 'outside' internal/baseline/assets/modules/spec-workflow.json` — expected: exits 0, proving the outside-evidence clause text is present in its owning module.
+- `go test ./internal/baseline/ -run 'Catalog' -v > /tmp/0084-task-07-a.log 2>&1 && grep -q '^--- PASS: .*Catalog' /tmp/0084-task-07-a.log` — expected: exits 0, proving catalog validation accepts the three clauses.
+- `go test ./internal/baseline/ -run 'SourceBaseline' -v > /tmp/0084-task-07-b.log 2>&1 && grep -q '^--- PASS: .*SourceBaseline' /tmp/0084-task-07-b.log` — expected: exits 0, proving the seated corpus entries are accounted.
+- `make baseline-digests > /tmp/0084-task-07-c.log 2>&1 && git diff --quiet -- internal/baseline/assets` — expected: exits 0, proving every derived pin already matches the sanctioned regeneration.
+- `go test ./internal/baseline/ ./internal/cli/ -count=1` — expected: exits 0.
+
+## References
+
+- `_techspec.md` → Build Order 7; Risks & Considerations.
+- `_prd.md` → Core Features 7, 8, and 9; User Stories 6 and 7; Goal 5.
+- ADR-0104, ADR-0081, ADR-0095.

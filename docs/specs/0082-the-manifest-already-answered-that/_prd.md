@@ -57,9 +57,11 @@ with its guidance.
   authorized edit; ADR-0087 keeps capability discovery from executing
   candidates; ADR-0090 requires repository facts to be read in batches and never
   cached across mutations; ADR-0099 separates mechanical retention accounting
-  from supervised instruction classification; and ADR-0100 replaces the root
+  from supervised instruction classification; ADR-0100 replaces the root
   backup with a verified preservation invariant on the managed-refresh path
-  only. Binding on the authored QA gate: ADR-0080, ADR-0088, ADR-0091,
+  only; and ADR-0101 supersedes this Spec's managed-marker blocking requirement
+  after the fact, recorded in the Task 02 supersession note. Binding on the
+  authored QA gate: ADR-0080, ADR-0088, ADR-0091,
   ADR-0096, and ADR-0097. Accounted and not applicable: ADR-0074 (repository
   rules use hybrid semantic ownership), ADR-0075 (profile divergence uses
   confirmed repository-owned adaptation), and ADR-0078 (confirmed root rules

@@ -1,0 +1,80 @@
+---
+task: task_03
+spec: 0084-an-update-that-can-run
+status: pending
+type: backend
+complexity: medium
+---
+
+# Task 03: Show the maintainer what the refresh replaces
+
+## Overview
+
+Surfaces the unrecorded regions and their removed lines on the update command's
+two output surfaces, so the maintainer approving a Plan Digest can see which
+managed regions carried bytes the Setup Manifest did not record and what the
+refresh removes from them. This is the slice that turns the classification into
+the thing a human acts on, and it keeps the roundfix skill's description of the
+update flow honest.
+
+## Requirements
+
+1. MUST report every unrecorded managed region in the update command's text
+   output, listing its path and managed identity, with its removed lines indented
+   beneath and an explicit statement when a region removes none.
+2. MUST report the same information in the JSON result under a field omitted when
+   no region is unrecorded.
+3. MUST keep the JSON result schema identity unchanged, because the added field is
+   optional and additive and every existing consumer must keep parsing the result
+   unchanged.
+4. MUST leave the command's flags, states, exit codes, and every other reported
+   field unchanged.
+5. MUST report the regions in both the presented-plan path and the applied path,
+   so the record of what was replaced survives approval.
+6. MUST update the roundfix skill's description of the update flow to match the
+   shipped behavior, because a pull request that changes CLI behavior ships the
+   skill update with it.
+7. MUST prove, by test, that a repository with no unrecorded region produces text
+   and JSON output free of the new block and the new field.
+
+## Subtasks
+
+- [ ] Render the unrecorded-region block in text output.
+- [ ] Add the optional field to the JSON result.
+- [ ] Report the regions on both the presented and applied paths.
+- [ ] Update the roundfix skill's update-flow description and sync it.
+- [ ] Cover text and JSON output with an unrecorded region present.
+- [ ] Cover text and JSON output with no unrecorded region.
+
+## Acceptance Criteria
+
+- [ ] Running the update against a fixture with an unrecorded region prints the
+      region's path and managed identity and the removed line beneath it.
+- [ ] The JSON result for that fixture carries the region, its reason, and its
+      removed line.
+- [ ] Running the update against a fixture with a region that removes no line
+      prints the explicit no-removal statement for that region.
+- [ ] The JSON result for a repository with no unrecorded region omits the field.
+- [ ] The JSON result's schema identity string is unchanged from the value the
+      command emitted before this task.
+- [ ] The generated roundfix skill matches its authoritative source after sync.
+
+## Context
+
+- interface: `internal/cli/baseline_update.go`
+- interface: `internal/cli/baseline_human.go`
+- instruction: `docs/agents/skill-dispatch.md`
+
+## Verification
+
+- `go build -buildvcs=false ./...` — expected: exits 0.
+- `go test ./internal/cli/ -run 'UnrecordedManagedRegion' -v > /tmp/0084-task-03-a.log 2>&1 && grep -q '^--- PASS: .*UnrecordedManagedRegion' /tmp/0084-task-03-a.log` — expected: exits 0, proving the output cases exist and pass rather than being selected out.
+- `go run ./cmd/roundfix baseline update --help > /tmp/0084-task-03-b.log 2>&1 && grep -q 'baseline-update-result/v1' /tmp/0084-task-03-b.log` — expected: exits 0, proving the schema identity is unchanged.
+- `go test ./internal/cli/ ./internal/baseline/ -count=1` — expected: exits 0.
+- `go run ./cmd/roundfix skills check > /tmp/0084-task-03-c.log 2>&1` — expected: exits 0, proving the shipped skill matches its authoritative source.
+
+## References
+
+- `_techspec.md` → Build Order 3; API Contracts.
+- `_prd.md` → Core Features 2 and 3; User Story 3; User Experience.
+- ADR-0102.
