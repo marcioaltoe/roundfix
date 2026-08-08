@@ -1,6 +1,7 @@
 # Model selection reference
 
-Source snapshot: 2026-08-07
+Source snapshot: 2026-08-07; OpenCode runtime facts remeasured 2026-08-08
+against opencode 1.18.15 through acpx 0.13.0.
 Status: recommendation input, not routing policy.
 
 Sources, each answering a different question:
@@ -81,10 +82,14 @@ source; the catalog is a copy nothing checks. See
 ### The opencode runtime reaches everything else
 
 Roundfix supports three runtimes — `codex`, `claude`, `opencode` — and the third
-changes what is reachable. OpenCode 1.18.15 advertises **431** model
-identifiers, including the whole OpenRouter catalog under an `openrouter/`
-prefix. Every model on the DeepSWE board that neither first-party adapter offers
-is selectable this way:
+changes what is reachable. Measured 2026-08-08 against opencode 1.18.15 through
+acpx 0.13.0, `opencode models` advertises **417** identifiers: 339 under
+`openrouter/`, 60 under `opencode/`, and 18 under `opencode-go/`. The 2026-08-07
+reading of 431 was taken before the account's provider set changed; the count
+moves, so read it rather than quote it.
+
+Every model on the DeepSWE board that neither first-party adapter offers is
+selectable this way:
 
 | Requested | Agent Selection under `opencode` |
 | --- | --- |
@@ -107,7 +112,51 @@ hand. Combined with the adapter accepting unknown identifiers, a typo here is
 silent until a Run.
 
 Reasoning-effort names (`low`, `medium`, `high`, `xhigh`, `max`) match the
-benchmark's bracketed suffix and both adapters' advertised effort values.
+benchmark's bracketed suffix and the **codex and claude** adapters' advertised
+effort values. OpenCode does not share that vocabulary — see below.
+
+#### The `opencode-go` subscription tier — 2026-08-08
+
+Three tiers hide behind the one runtime, and only the middle one is the
+subscription. `openrouter/` is pay-per-use through an OpenRouter key.
+`opencode/` — the entries the picker labels *OpenCode Zen*, such as
+`gpt-5.6-sol`, `gpt-5.5-pro`, and `grok-build-0.1` — is a separate pay-per-use
+tier. `opencode-go/` is what the subscription grants, eighteen models:
+
+`deepseek-v4-flash`, `deepseek-v4-pro`, `glm-5.1`, `glm-5.2`, `gpt-5.6-luna`,
+`grok-4.5`, `hy3`, `kimi-k2.6`, `kimi-k2.7-code`, `kimi-k3`, `mimo-v2.5`,
+`mimo-v2.5-pro`, `minimax-m2.7`, `minimax-m3`, `qwen3.6-plus`, `qwen3.7-max`,
+`qwen3.7-plus`, `qwen3.8-max`.
+
+Two of them bill at **2x usage**: `gpt-5.6-luna` and `deepseek-v4-flash`. That
+inverts the obvious guess, because `deepseek-v4-pro` carries no multiplier.
+
+#### OpenCode reasoning effort is per model, and Roundfix does not set it
+
+The `effort` option OpenCode advertises is model-dependent and does not use one
+vocabulary. Measured 2026-08-08, each row from `sessions ensure --model <M>`
+followed by `sessions show`:
+
+| model | advertised effort values | default |
+| --- | --- | --- |
+| `opencode-go/kimi-k3` | `max` | `max` |
+| `opencode-go/qwen3.8-max` | `high`, `max` | `high` |
+| `opencode-go/glm-5.2` | `high`, `max` | `high` |
+| `opencode-go/deepseek-v4-pro` | `high`, `max` | `high` |
+| `opencode-go/minimax-m3` | `none`, `thinking` | `none` |
+| `openrouter/anthropic/claude-opus-5` | `low`, `medium`, `high`, `xhigh`, `max` | `low` |
+| `openrouter/openai/gpt-5.6-luna` | `none`, `low`, `medium`, `high`, `xhigh`, `max` | `none` |
+
+A session ensured with no `--model` sits on `opencode/big-pickle` and advertises
+**no `effort` option at all**.
+
+Roundfix therefore treats `opencode` as a model-managed reasoning runtime and
+refuses any non-empty `reasoning_effort` for it — see ADR-0106. Write
+`reasoning_effort: ""` and the model runs at its own default. The reason is
+mechanical rather than stylistic: the option only exists once a queue-owner
+agent process holds the selected model, which acpx starts on the first prompt,
+so a config set issued during a token-free Exact Agent Selection Proof reaches a
+transient process on the runtime default and answers ACP `-32602`.
 
 **The adapter refuses nothing.** An unknown model string comes back labelled
 `Custom model` rather than rejected, so a typo in a claude Selection survives
