@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0088-a-third-runtime-that-can-run
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -41,28 +41,28 @@ configuration actually defines.
 
 ## Subtasks
 
-- [ ] Add the configured-category resolver beside the profile resolution it
+- [x] Add the configured-category resolver beside the profile resolution it
       belongs to.
-- [ ] Point the Doctor Command's profile readiness and runtime enumeration at it.
-- [ ] Point profile validation's default scope at it.
-- [ ] Point the Setup Command's profile readiness at it.
-- [ ] Edit the break-half characterization test that pinned required-only scope,
+- [x] Point the Doctor Command's profile readiness and runtime enumeration at it.
+- [x] Point profile validation's default scope at it.
+- [x] Point the Setup Command's profile readiness at it.
+- [x] Edit the break-half characterization test that pinned required-only scope,
       and declare the break in this Task's Result.
 
 ## Acceptance Criteria
 
-- [ ] With a configured optional-category profile whose preferred selection
+- [x] With a configured optional-category profile whose preferred selection
       fails, the Doctor Command reports the profiles check as failed and names
       that category among the affected categories.
-- [ ] With a configured optional-category profile selecting a runtime no required
+- [x] With a configured optional-category profile selecting a runtime no required
       category uses, the adapter line names that runtime.
-- [ ] With no optional category configured, the Doctor Command's reported tuple
+- [x] With no optional category configured, the Doctor Command's reported tuple
       and reference counts are unchanged from before this Task.
-- [ ] A category present in configuration only by inheritance from `general` adds
+- [x] A category present in configuration only by inheritance from `general` adds
       no tuple and no reference.
-- [ ] Profile validation with no `--category` covers the same categories the
+- [x] Profile validation with no `--category` covers the same categories the
       Doctor Command covers.
-- [ ] The Setup Command's readiness over a generated proposal behaves as before.
+- [x] The Setup Command's readiness over a generated proposal behaves as before.
 
 ## Context
 
@@ -103,3 +103,69 @@ This Task may create or modify only:
   → the measured `profiles: ok (5 distinct tuples; 10 category references)` over
   a failing configured profile.
 - ADR-0107.
+
+## Result
+
+Agent Selection Profile Readiness now covers every Agent Work Category the
+effective configuration defines, and a readiness command can no longer report
+`ok` over a failing configured profile.
+
+**What changed.** `ConfiguredWorkCategories` walks the catalog order and keeps
+every required category plus each optional category the effective profiles
+define, skipping any category that resolves only by inheritance from `general`.
+The Doctor Command uses it for both profile readiness and ACP Runtime
+enumeration; profile validation uses it as its default scope, which required
+loading the configuration before resolving categories rather than after; and the
+Setup Command uses it over its proposed configuration, where a generated
+proposal defines only the required five and behavior is therefore unchanged. The
+Run preflight was left alone: it already derives categories from the Task
+Graph's Task Types.
+
+**Declared break.** `TestCharacterizationTodayDoctorIgnoresConfiguredOptionalCategory`
+became `TestCharacterizationDeclaredBreakDoctorProvesConfiguredOptionalCategory`.
+The superseded behavior — `profiles: ok (5 distinct tuples; 10 category
+references)` over a failing `data` profile, with only claude and codex named —
+is preserved in that test's comment with its measured provenance.
+
+**Commands and outcomes.**
+
+- `go build -buildvcs=false ./...` — exit 0.
+- `go test ./internal/cli ./internal/config -count=1` — exit 0.
+- `go test ./internal/config -run 'ConfiguredWorkCategories' -count=1 -v` — exit 0; two tests, five subtests.
+- `go test ./internal/cli -run 'Characterization|DoctorProfileReadinessFails' -count=1 -v` — exit 0.
+- `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1` — exit 0 after re-recording.
+- `grep -q 'ConfiguredWorkCategories' internal/cli/doctor.go` — exit 0.
+- `make verify` — exit 0, with `internal/spec` executing in 20.5s rather than reporting cached.
+
+**Evidence per acceptance criterion.**
+
+- A failing configured optional category fails the check and is named:
+  `TestDoctorProfileReadinessFailsOnAConfiguredOptionalCategory` makes the
+  `opencode` proof return `SelectionUnsupportedError` and asserts a non-zero
+  exit, `profiles: failed`, and `data` in the output.
+- The adapter line names the new runtime:
+  `TestCharacterizationDeclaredBreakDoctorProvesConfiguredOptionalCategory`
+  asserts `opencode:` in the adapter line.
+- Counts unchanged without optional categories:
+  `TestCharacterizationInvariantDoctorCountsAreUnchangedWithoutOptionalCategories`
+  asserts the exact `3 distinct tuples; 10 category references` line and three
+  proofs.
+- An inherited category adds nothing:
+  `TestCharacterizationInvariantInheritedCategoryAddsNoTuple` and
+  `TestConfiguredWorkCategoriesOmitsInheritedCategories` both assert the docs
+  category resolves by inheritance and is still absent from readiness.
+- Validation and Doctor agree: both call `ConfiguredWorkCategories` over the
+  loaded configuration.
+- Setup unchanged for a generated proposal:
+  `TestConfiguredWorkCategoriesCoversDefinedOptionalCategories` first case
+  asserts the resolver returns exactly `RequiredWorkCategories` when no optional
+  category is defined.
+
+**Follow-ups — a false green found in this Task.** `make verify` reported
+`ok roundfix/internal/spec (cached)` during Task 03 even though
+`go clean -testcache` had just run, so the coverage regression Task 03
+introduced went unreported until this Task re-recorded. The cause is that the
+Makefile exports `GOCACHE ?= $(CURDIR)/.gocache` while a bare `go clean
+-testcache` clears the user-level cache instead. The correct incantation is
+`GOCACHE="$PWD/.gocache" go clean -testcache`. Filed as a backlog entry; the
+Spec's own artifacts were corrected in a follow-up commit.

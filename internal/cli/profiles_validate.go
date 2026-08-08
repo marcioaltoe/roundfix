@@ -100,11 +100,11 @@ func runProfilesValidateCommand(ctx context.Context, args []string, stdout, stde
 	if err != nil {
 		return printProfilesValidateError(req, profileProofResult{}, err, stdout, stderr)
 	}
-	categories, err := profilesValidateCategories(req)
+	loaded, err := loadCommandConfig(environment, stderr)
 	if err != nil {
 		return printProfilesValidateError(req, profileProofResult{}, err, stdout, stderr)
 	}
-	loaded, err := loadCommandConfig(environment, stderr)
+	categories, err := profilesValidateCategories(req, loaded.Config)
 	if err != nil {
 		return printProfilesValidateError(req, profileProofResult{}, err, stdout, stderr)
 	}
@@ -140,9 +140,9 @@ func parseProfilesValidateCommand(args []string) (profilesValidateRequest, error
 	return req, nil
 }
 
-func profilesValidateCategories(req profilesValidateRequest) ([]roundconfig.WorkCategory, error) {
+func profilesValidateCategories(req profilesValidateRequest, config roundconfig.Config) ([]roundconfig.WorkCategory, error) {
 	if req.category == "" {
-		return roundconfig.RequiredWorkCategories(), nil
+		return roundconfig.ConfiguredWorkCategories(config), nil
 	}
 	category, ok := roundconfig.ParseWorkCategory(req.category)
 	if !ok {

@@ -108,6 +108,29 @@ func AllWorkCategories() []WorkCategory {
 	return append([]WorkCategory(nil), allWorkCategories...)
 }
 
+// ConfiguredWorkCategories returns every required Agent Work Category plus each
+// optional category the effective configuration defines. An optional category
+// present only by inheritance from general is absent, because it contributes no
+// distinct Agent Selection tuple to prove. The required categories keep their
+// relative order, so a configuration defining no optional category yields
+// exactly RequiredWorkCategories. See ADR-0107.
+func ConfiguredWorkCategories(config Config) []WorkCategory {
+	entries := config.Profiles
+	if entries == nil {
+		entries = builtinProfiles()
+	}
+	categories := make([]WorkCategory, 0, len(allWorkCategories))
+	for _, category := range allWorkCategories {
+		if isOptionalWorkCategory(category) {
+			if _, defined := entries[category]; !defined {
+				continue
+			}
+		}
+		categories = append(categories, category)
+	}
+	return categories
+}
+
 func ResolveProfile(config Config, category WorkCategory, preferredOverride *AgentSelection) (ResolvedProfile, error) {
 	entries := config.Profiles
 	if entries == nil {

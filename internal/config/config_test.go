@@ -3393,3 +3393,75 @@ func selectionsEqual(left []AgentSelection, right []AgentSelection) bool {
 	}
 	return true
 }
+
+// TestConfiguredWorkCategoriesCoversDefinedOptionalCategories keeps profile
+// readiness aligned with what the effective configuration actually defines.
+// See ADR-0107.
+func TestConfiguredWorkCategoriesCoversDefinedOptionalCategories(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		optional []WorkCategory
+		want     []WorkCategory
+	}{
+		{
+			name: "no optional category yields exactly the required categories",
+			want: RequiredWorkCategories(),
+		},
+		{
+			name:     "one defined optional category joins the required ones in order",
+			optional: []WorkCategory{CategoryData},
+			want:     []WorkCategory{CategoryGeneral, CategoryBackend, CategoryFrontend, CategoryData, CategoryQA, CategoryReview},
+		},
+		{
+			name:     "several defined optional categories keep catalog order",
+			optional: []WorkCategory{CategoryChore, CategoryInfra},
+			want:     []WorkCategory{CategoryGeneral, CategoryBackend, CategoryFrontend, CategoryInfra, CategoryChore, CategoryQA, CategoryReview},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			config := Builtin()
+			for _, category := range tt.optional {
+				config.Profiles[category] = ProfileEntry{
+					Profile: AgentSelectionProfile{
+						Preferred: AgentSelection{Runtime: "opencode", Model: "opencode-go/kimi-k3"},
+						Fallbacks: []AgentSelection{{Runtime: "claude", Model: "opus", ReasoningEffort: "high"}},
+					},
+					Source: ProfileSourceProject,
+				}
+			}
+
+			got := ConfiguredWorkCategories(config)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("configured categories = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestConfiguredWorkCategoriesOmitsInheritedCategories keeps a category that
+// resolves only by inheritance out of readiness: it contributes no distinct
+// Agent Selection tuple to prove.
+func TestConfiguredWorkCategoriesOmitsInheritedCategories(t *testing.T) {
+	t.Parallel()
+
+	config := Builtin()
+	resolved, err := ResolveProfile(config, CategoryDocs, nil)
+	if err != nil {
+		t.Fatalf("an optional category must still resolve by inheritance: %v", err)
+	}
+	if resolved.InheritedFrom != CategoryGeneral {
+		t.Fatalf("inherited from = %q, want %q", resolved.InheritedFrom, CategoryGeneral)
+	}
+
+	for _, category := range ConfiguredWorkCategories(config) {
+		if category == CategoryDocs {
+			t.Fatal("an inherited category must not be enumerated for readiness")
+		}
+	}
+}

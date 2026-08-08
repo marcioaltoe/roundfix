@@ -304,7 +304,7 @@ func (runner *setupRunner) proveProposal(ctx context.Context, proposal *setupPro
 	result := proveProfileSelectionsWithOptions(
 		ctx,
 		proposal.config,
-		roundconfig.RequiredWorkCategories(),
+		roundconfig.ConfiguredWorkCategories(proposal.config),
 		workDir,
 		proofRunner,
 		profileProofOptions{CommandOverrides: proposal.commandOverrides},
