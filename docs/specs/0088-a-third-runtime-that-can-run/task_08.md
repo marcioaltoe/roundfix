@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0088-a-third-runtime-that-can-run
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

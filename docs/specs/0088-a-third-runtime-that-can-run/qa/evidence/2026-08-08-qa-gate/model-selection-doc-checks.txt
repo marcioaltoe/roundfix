@@ -1,0 +1,15 @@
+$ grep -c opencode-go/ docs/references/model-selection.md
+7
+$ grep -n ADR-0106 docs/references/model-selection.md
+154:refuses any non-empty `reasoning_effort` for it — see ADR-0106. Write
+$ grep -n 2026-08-08 docs/references/model-selection.md
+3:Source snapshot: 2026-08-07; OpenCode runtime facts remeasured 2026-08-08
+85:changes what is reachable. Measured 2026-08-08 against opencode 1.18.15 through
+118:#### The `opencode-go` subscription tier — 2026-08-08
+137:vocabulary. Measured 2026-08-08, each row from `sessions ensure --model <M>`
+$ grep -n "1.18.15\|0.13.0" docs/references/model-selection.md
+4:against opencode 1.18.15 through acpx 0.13.0.
+85:changes what is reachable. Measured 2026-08-08 against opencode 1.18.15 through
+86:acpx 0.13.0, `opencode models` advertises **417** identifiers: 339 under
+$ grep -n docs/specs/ docs/references/model-selection.md (expect no output)
+grep exit: 1
