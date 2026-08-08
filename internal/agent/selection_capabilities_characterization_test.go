@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -21,6 +22,7 @@ func TestCharacterizationInvariantRetainsEveryValueAtOrBelowTheBound(t *testing.
 	capabilities, err := ParseSessionConfigOptions(
 		[]byte(officialAdapterCapabilityFixture()),
 		AdapterEvidence{Command: "codex-acp"},
+		SelectionRetention{},
 	)
 	if err != nil {
 		t.Fatalf("project an advertised set within the bound: %v", err)
@@ -50,6 +52,7 @@ func TestCharacterizationInvariantParsesBracketedVariantIntoCanonicalAndEffort(t
 	capabilities, err := ParseSessionConfigOptions(
 		[]byte(modelVariantCapabilityFixture()),
 		AdapterEvidence{Command: "codex-acp"},
+		SelectionRetention{},
 	)
 	if err != nil {
 		t.Fatalf("project a variant-encoded advertised set: %v", err)
@@ -80,6 +83,7 @@ func TestCharacterizationInvariantUnadvertisedModelIsUnsupportedNotInvalidEviden
 	capabilities, err := ParseSessionConfigOptions(
 		[]byte(officialAdapterCapabilityFixture()),
 		AdapterEvidence{Command: "codex-acp"},
+		SelectionRetention{},
 	)
 	if err != nil {
 		t.Fatalf("project an advertised set within the bound: %v", err)
@@ -103,31 +107,64 @@ func TestCharacterizationInvariantUnadvertisedModelIsUnsupportedNotInvalidEviden
 	}
 }
 
-// TestCharacterizationTodayRefusesAnOversizedAdvertisedOption pins the defect
-// Spec 0088 exists to remove. Measured against opencode 1.18.15 on 2026-08-08,
-// a real adapter advertised 417 model values and Roundfix answered exactly the
-// three issues asserted here.
-func TestCharacterizationTodayRefusesAnOversizedAdvertisedOption(t *testing.T) {
+// TestCharacterizationDeclaredBreakOversizedOptionRetainsInsteadOfRefusing
+// records the first break this Spec declares. Until Task 02, an advertised
+// option above the bound was refused whole and answered
+// too_many_option_values, missing_model_state, and contradictory_response —
+// the exact triple `roundfix profiles validate --category data` returned
+// against opencode 1.18.15 on 2026-08-08. The projection now accepts the
+// advertised set and bounds what it retains, so the same payload projects and
+// keeps the requested Agent Model.
+func TestCharacterizationDeclaredBreakOversizedOptionRetainsInsteadOfRefusing(t *testing.T) {
 	t.Parallel()
 
 	fixture := oversizedModelCapabilityFixture(t, "opencode-go/kimi-k3")
-	_, err := ParseSessionConfigOptions([]byte(fixture), AdapterEvidence{Command: "opencode"})
-	if err == nil {
-		t.Fatal("today an advertised option above the bound is refused whole")
+	capabilities, err := ParseSessionConfigOptions(
+		[]byte(fixture),
+		AdapterEvidence{Command: "opencode"},
+		SelectionRetention{Model: "opencode-go/kimi-k3"},
+	)
+	if err != nil {
+		t.Fatalf("an advertised option above the bound must project: %v", err)
 	}
 
+	if !slices.ContainsFunc(capabilities.Models, func(model ModelCapability) bool {
+		return model.AdapterValue == "opencode-go/kimi-k3"
+	}) {
+		t.Fatalf("retention dropped the requested Agent Model: %#v", capabilities.Models)
+	}
+
+	modelOption := capabilities.Options[selectCapabilityIndex(capabilities.Options, "model")]
+	if modelOption.AdvertisedCount <= len(modelOption.Values) {
+		t.Fatalf("advertised %d, retained %d; retention must bound an oversized option",
+			modelOption.AdvertisedCount, len(modelOption.Values))
+	}
+	if len(modelOption.Values) != maxRetainedCapabilityValues {
+		t.Fatalf("retained %d values, want the bound %d", len(modelOption.Values), maxRetainedCapabilityValues)
+	}
+}
+
+// TestCharacterizationInvariantOversizedOptionStillFailsClosedAboveTheCeiling
+// keeps the refusal that size alone no longer triggers: a payload larger than
+// any plausible catalog is still malformed input.
+func TestCharacterizationInvariantOversizedOptionStillFailsClosedAboveTheCeiling(t *testing.T) {
+	t.Parallel()
+
+	fixture := ceilingBreachingModelCapabilityFixture(t, "opencode-go/kimi-k3")
+	_, err := ParseSessionConfigOptions(
+		[]byte(fixture),
+		AdapterEvidence{Command: "opencode"},
+		SelectionRetention{Model: "opencode-go/kimi-k3"},
+	)
+	if err == nil {
+		t.Fatal("an advertised option above the absolute ceiling must be refused")
+	}
 	var evidence *CapabilityEvidenceError
 	if !errors.As(err, &evidence) {
 		t.Fatalf("error = %v, want CapabilityEvidenceError", err)
 	}
-	for _, issue := range []string{
-		CapabilityIssueTooManyValues,
-		CapabilityIssueMissingModel,
-		CapabilityIssueContradictoryResponse,
-	} {
-		if !strings.Contains(err.Error(), issue) {
-			t.Fatalf("error %q missing issue %q", err.Error(), issue)
-		}
+	if !strings.Contains(err.Error(), CapabilityIssueTooManyValues) {
+		t.Fatalf("error %q missing issue %q", err.Error(), CapabilityIssueTooManyValues)
 	}
 }
 
@@ -136,9 +173,22 @@ func TestCharacterizationTodayRefusesAnOversizedAdvertisedOption(t *testing.T) {
 // at a size above the bound rather than at the measured 417.
 func oversizedModelCapabilityFixture(t *testing.T, current string, alsoAdvertised ...string) string {
 	t.Helper()
+	return modelCapabilityFixtureOfSize(t, maxRetainedCapabilityValues+1, current, alsoAdvertised...)
+}
 
-	seen := make(map[string]struct{}, maxCapabilityValues*2)
-	values := make([]map[string]string, 0, maxCapabilityValues*2)
+// ceilingBreachingModelCapabilityFixture exceeds the absolute ceiling above
+// which an advertised option is refused as implausible rather than merely
+// large.
+func ceilingBreachingModelCapabilityFixture(t *testing.T, current string) string {
+	t.Helper()
+	return modelCapabilityFixtureOfSize(t, maxAdvertisedCapabilityValues+1, current)
+}
+
+func modelCapabilityFixtureOfSize(t *testing.T, size int, current string, alsoAdvertised ...string) string {
+	t.Helper()
+
+	seen := make(map[string]struct{}, size)
+	values := make([]map[string]string, 0, size)
 	add := func(value string) {
 		if _, exists := seen[value]; exists {
 			return
@@ -150,8 +200,8 @@ func oversizedModelCapabilityFixture(t *testing.T, current string, alsoAdvertise
 	for _, value := range alsoAdvertised {
 		add(value)
 	}
-	for index := 0; len(values) <= maxCapabilityValues; index++ {
-		add(fmt.Sprintf("openrouter/vendor-%03d/model", index))
+	for index := 0; len(values) < size; index++ {
+		add(fmt.Sprintf("openrouter/vendor-%04d/model", index))
 	}
 
 	payload := map[string]any{

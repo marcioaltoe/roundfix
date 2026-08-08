@@ -2,7 +2,9 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -33,9 +35,10 @@ func TestSelectionCapabilitiesOfficialAndLegacyFixtures(t *testing.T) {
 				{AdapterValue: "gpt-5.5", CanonicalModel: "gpt-5.5", ModelManaged: true},
 			},
 			wantReasoning: &SelectCapability{
-				ID:           "reasoning_effort",
-				CurrentValue: "high",
-				Values:       []string{"low", "medium", "high", "xhigh", "max", "ultra"},
+				ID:              "reasoning_effort",
+				CurrentValue:    "high",
+				Values:          []string{"low", "medium", "high", "xhigh", "max", "ultra"},
+				AdvertisedCount: 6,
 			},
 		},
 		{
@@ -53,7 +56,7 @@ func TestSelectionCapabilitiesOfficialAndLegacyFixtures(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := ParseSessionConfigOptions([]byte(tt.fixture), tt.adapter)
+			got, err := ParseSessionConfigOptions([]byte(tt.fixture), tt.adapter, SelectionRetention{})
 			if err != nil {
 				t.Fatalf("parse fixture: %v", err)
 			}
@@ -77,7 +80,7 @@ func TestParseSessionCapabilitySnapshot(t *testing.T) {
 	t.Parallel()
 
 	snapshot := sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "xhigh", []string{"low", "medium", "high", "xhigh"})
-	got, err := ParseSessionCapabilitySnapshot([]byte(snapshot), AdapterEvidence{Command: "adapter"})
+	got, err := ParseSessionCapabilitySnapshot([]byte(snapshot), AdapterEvidence{Command: "adapter"}, SelectionRetention{})
 	if err != nil {
 		t.Fatalf("parse Agent Session capability snapshot: %v", err)
 	}
@@ -90,7 +93,7 @@ func TestParseSessionCapabilitySnapshotTreatsBracketedModelsAsOpaque(t *testing.
 	t.Parallel()
 
 	snapshot := sessionCapabilitySnapshotFixture(t, "opus[1m]", []string{"opus[1m]"}, "effort", "xhigh", []string{"high", "xhigh"})
-	got, err := ParseSessionCapabilitySnapshot([]byte(snapshot), AdapterEvidence{Command: "adapter"})
+	got, err := ParseSessionCapabilitySnapshot([]byte(snapshot), AdapterEvidence{Command: "adapter"}, SelectionRetention{})
 	if err != nil {
 		t.Fatalf("parse Agent Session capability snapshot: %v", err)
 	}
@@ -115,7 +118,7 @@ func TestParseSessionCapabilitySnapshotRejectsInvalidEvidence(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseSessionCapabilitySnapshot([]byte(tt.payload), AdapterEvidence{Command: "adapter"})
+			_, err := ParseSessionCapabilitySnapshot([]byte(tt.payload), AdapterEvidence{Command: "adapter"}, SelectionRetention{})
 			var evidence *CapabilityEvidenceError
 			if !errors.As(err, &evidence) || !containsString(evidence.Issues, tt.issue) {
 				t.Fatalf("error = %T %v, want issue %q", err, err, tt.issue)
@@ -180,7 +183,7 @@ func TestSelectionCapabilitiesIndependentAndVariantOptions(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := ParseSessionConfigOptions([]byte(tt.fixture), AdapterEvidence{Command: "adapter", Package: "example/adapter", Version: "1.0.0"})
+			got, err := ParseSessionConfigOptions([]byte(tt.fixture), AdapterEvidence{Command: "adapter", Package: "example/adapter", Version: "1.0.0"}, SelectionRetention{})
 			if err != nil {
 				t.Fatalf("parse fixture: %v", err)
 			}
@@ -197,23 +200,23 @@ func TestSelectionCapabilitiesIndependentAndVariantOptions(t *testing.T) {
 func TestPlanSelectionAssignment(t *testing.T) {
 	t.Parallel()
 
-	official, err := ParseSessionConfigOptions([]byte(officialAdapterCapabilityFixture()), AdapterEvidence{Command: "official-adapter"})
+	official, err := ParseSessionConfigOptions([]byte(officialAdapterCapabilityFixture()), AdapterEvidence{Command: "official-adapter"}, SelectionRetention{})
 	if err != nil {
 		t.Fatalf("parse official capabilities: %v", err)
 	}
-	variant, err := ParseSessionConfigOptions([]byte(modelVariantCapabilityFixture()), AdapterEvidence{Command: "variant-adapter"})
+	variant, err := ParseSessionConfigOptions([]byte(modelVariantCapabilityFixture()), AdapterEvidence{Command: "variant-adapter"}, SelectionRetention{})
 	if err != nil {
 		t.Fatalf("parse variant capabilities: %v", err)
 	}
-	legacy, err := ParseSessionConfigOptions([]byte(legacyAdapterCapabilityFixture()), AdapterEvidence{Command: "legacy-adapter"})
+	legacy, err := ParseSessionConfigOptions([]byte(legacyAdapterCapabilityFixture()), AdapterEvidence{Command: "legacy-adapter"}, SelectionRetention{})
 	if err != nil {
 		t.Fatalf("parse legacy capabilities: %v", err)
 	}
-	opaque, err := ParseSessionConfigOptions([]byte(opaqueModelIdentifierCapabilityFixture()), AdapterEvidence{Command: "opaque-adapter"})
+	opaque, err := ParseSessionConfigOptions([]byte(opaqueModelIdentifierCapabilityFixture()), AdapterEvidence{Command: "opaque-adapter"}, SelectionRetention{})
 	if err != nil {
 		t.Fatalf("parse opaque capabilities: %v", err)
 	}
-	echoed, err := ParseSessionConfigOptions([]byte(echoedOpaqueModelCapabilityFixture()), AdapterEvidence{Command: "echoing-adapter"})
+	echoed, err := ParseSessionConfigOptions([]byte(echoedOpaqueModelCapabilityFixture()), AdapterEvidence{Command: "echoing-adapter"}, SelectionRetention{})
 	if err != nil {
 		t.Fatalf("parse echoed opaque capabilities: %v", err)
 	}
@@ -410,7 +413,7 @@ func TestPlanSelectionAssignment(t *testing.T) {
 func TestSelectionProofAcceptsEchoedAliasGroup(t *testing.T) {
 	t.Parallel()
 
-	echoed, err := ParseSessionConfigOptions([]byte(echoedOpaqueModelCapabilityFixture()), AdapterEvidence{Command: "echoing-adapter"})
+	echoed, err := ParseSessionConfigOptions([]byte(echoedOpaqueModelCapabilityFixture()), AdapterEvidence{Command: "echoing-adapter"}, SelectionRetention{})
 	if err != nil {
 		t.Fatalf("parse echoed opaque capabilities: %v", err)
 	}
@@ -463,7 +466,7 @@ func TestParseSessionConfigOptionsRejectsInvalidEvidence(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := ParseSessionConfigOptions([]byte(tt.fixture), AdapterEvidence{Command: "adapter"})
+			_, err := ParseSessionConfigOptions([]byte(tt.fixture), AdapterEvidence{Command: "adapter"}, SelectionRetention{})
 			if err == nil {
 				t.Fatal("expected invalid capability evidence")
 			}
@@ -528,7 +531,7 @@ func TestCapabilityEvidenceIsBounded(t *testing.T) {
 		"configOptions": []any{},
 	}
 	payload := []byte(mustJSONForTest(t, raw))
-	_, err := ParseSessionConfigOptions(payload, AdapterEvidence{Command: strings.Repeat("adapter-output", 1000)})
+	_, err := ParseSessionConfigOptions(payload, AdapterEvidence{Command: strings.Repeat("adapter-output", 1000)}, SelectionRetention{})
 	if err == nil {
 		t.Fatal("expected bounded evidence failure")
 	}
@@ -665,4 +668,167 @@ func sortStringsAreStable(values []string) bool {
 		}
 	}
 	return true
+}
+
+// TestRetentionKeepsRequestedModelPastTheBound proves retention is by
+// reference, not by position: the requested Agent Model is advertised last, far
+// beyond the retained bound, and survives projection.
+func TestRetentionKeepsRequestedModelPastTheBound(t *testing.T) {
+	t.Parallel()
+
+	const requested = "opencode-go/kimi-k3"
+	fixture := trailingRequestedModelFixture(t, requested, maxRetainedCapabilityValues*3)
+
+	capabilities, err := ParseSessionConfigOptions(
+		[]byte(fixture),
+		AdapterEvidence{Command: "opencode"},
+		SelectionRetention{Model: requested},
+	)
+	if err != nil {
+		t.Fatalf("project an oversized advertised set: %v", err)
+	}
+
+	found := false
+	for _, model := range capabilities.Models {
+		if model.AdapterValue == requested {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("retention dropped the requested Agent Model advertised past the bound: %#v", capabilities.Models)
+	}
+
+	assignment, err := PlanSelectionAssignment(
+		RuntimeSpec{ID: "opencode", Model: requested},
+		capabilities,
+	)
+	if err != nil {
+		t.Fatalf("plan the retained Agent Selection: %v", err)
+	}
+	if assignment.AdapterModel != requested {
+		t.Fatalf("adapter model = %q, want %q", assignment.AdapterModel, requested)
+	}
+}
+
+// TestRetentionKeepsBracketedVariantOfRequestedCanonicalModel keeps retention
+// aligned with the way modelsForCanonical binds, so a canonical request never
+// loses the annotated form the adapter actually advertises.
+func TestRetentionKeepsBracketedVariantOfRequestedCanonicalModel(t *testing.T) {
+	t.Parallel()
+
+	fixture := trailingRequestedModelFixture(t, "opus[1m]", maxRetainedCapabilityValues*3)
+
+	capabilities, err := ParseSessionConfigOptions(
+		[]byte(fixture),
+		AdapterEvidence{Command: "claude-agent-acp"},
+		SelectionRetention{Model: "opus"},
+	)
+	if err != nil {
+		t.Fatalf("project an oversized advertised set: %v", err)
+	}
+
+	for _, model := range capabilities.Models {
+		if model.AdapterValue == "opus[1m]" && model.CanonicalModel == "opus" {
+			return
+		}
+	}
+	t.Fatalf("retention dropped the advertised variant of the requested canonical model: %#v", capabilities.Models)
+}
+
+// TestRetentionLeavesUnadvertisedModelUnsupported keeps the fail-closed
+// contract: retention narrows what is kept, never what binding accepts.
+func TestRetentionLeavesUnadvertisedModelUnsupported(t *testing.T) {
+	t.Parallel()
+
+	fixture := trailingRequestedModelFixture(t, "opencode-go/kimi-k3", maxRetainedCapabilityValues*3)
+
+	capabilities, err := ParseSessionConfigOptions(
+		[]byte(fixture),
+		AdapterEvidence{Command: "opencode"},
+		SelectionRetention{Model: "never-advertised"},
+	)
+	if err != nil {
+		t.Fatalf("project an oversized advertised set: %v", err)
+	}
+
+	_, err = PlanSelectionAssignment(
+		RuntimeSpec{ID: "opencode", Model: "never-advertised"},
+		capabilities,
+	)
+	var unsupported *SelectionUnsupportedError
+	if !errors.As(err, &unsupported) {
+		t.Fatalf("error = %v, want SelectionUnsupportedError", err)
+	}
+	var evidence *CapabilityEvidenceError
+	if errors.As(err, &evidence) {
+		t.Fatalf("an unadvertised Agent Model must never read as invalid capability evidence: %v", err)
+	}
+}
+
+// TestRetentionRecordsAdvertisedAndRetainedCounts keeps the diagnostic honest
+// about what the adapter offered against what Roundfix kept.
+func TestRetentionRecordsAdvertisedAndRetainedCounts(t *testing.T) {
+	t.Parallel()
+
+	const advertised = maxRetainedCapabilityValues * 3
+	fixture := trailingRequestedModelFixture(t, "opencode-go/kimi-k3", advertised)
+
+	capabilities, err := ParseSessionConfigOptions(
+		[]byte(fixture),
+		AdapterEvidence{Command: "opencode"},
+		SelectionRetention{Model: "opencode-go/kimi-k3"},
+	)
+	if err != nil {
+		t.Fatalf("project an oversized advertised set: %v", err)
+	}
+
+	option := capabilities.Options[selectCapabilityIndex(capabilities.Options, "model")]
+	if option.AdvertisedCount != advertised {
+		t.Fatalf("advertised count = %d, want %d", option.AdvertisedCount, advertised)
+	}
+	if len(option.Values) != maxRetainedCapabilityValues {
+		t.Fatalf("retained %d values, want the bound %d", len(option.Values), maxRetainedCapabilityValues)
+	}
+}
+
+// trailingRequestedModelFixture advertises size values whose last entry is the
+// requested model, so a projection that kept an advertised prefix would drop
+// it. currentValue is the first advertised value, matching an adapter that has
+// not yet been told which model to use.
+func trailingRequestedModelFixture(t *testing.T, requested string, size int) string {
+	t.Helper()
+	if size < 2 {
+		t.Fatalf("fixture size %d must advertise at least two values", size)
+	}
+
+	values := make([]string, 0, size)
+	for index := 0; len(values) < size-1; index++ {
+		values = append(values, fmt.Sprintf("openrouter/vendor-%04d/model", index))
+	}
+	values = append(values, requested)
+
+	options := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		options = append(options, map[string]string{"value": value})
+	}
+
+	payload := map[string]any{
+		"action":   "config_set",
+		"configId": "model",
+		"value":    values[0],
+		"configOptions": []any{
+			map[string]any{
+				"id":           "model",
+				"category":     "model",
+				"type":         "select",
+				"currentValue": values[0],
+				"options":      options,
+			},
+		},
+	}
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("encode trailing-model capability fixture: %v", err)
+	}
+	return string(encoded)
 }

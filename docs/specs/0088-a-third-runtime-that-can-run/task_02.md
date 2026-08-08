@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0088-a-third-runtime-that-can-run
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -45,30 +45,30 @@ unadvertised still fails closed.
 
 ## Subtasks
 
-- [ ] Introduce the retention input and thread it through both read paths.
-- [ ] Replace the size-as-malformation rule with the retention rule.
-- [ ] Record advertised-versus-retained counts on the projected option.
-- [ ] Move the three bounds and comment the measured payload size.
-- [ ] Edit the break-half characterization test that pinned the old refusal, and
+- [x] Introduce the retention input and thread it through both read paths.
+- [x] Replace the size-as-malformation rule with the retention rule.
+- [x] Record advertised-versus-retained counts on the projected option.
+- [x] Move the three bounds and comment the measured payload size.
+- [x] Edit the break-half characterization test that pinned the old refusal, and
       declare the break in this Task's Result.
-- [ ] Re-record the coverage record if a test name moved.
+- [x] Re-record the coverage record if a test name moved.
 
 ## Acceptance Criteria
 
-- [ ] A `model` option advertising more values than the bound, whose values
+- [x] A `model` option advertising more values than the bound, whose values
       include `opencode-go/kimi-k3`, projects into capabilities whose model list
       contains `opencode-go/kimi-k3`.
-- [ ] The same payload with the requested model removed produces
+- [x] The same payload with the requested model removed produces
       `SelectionUnsupportedError` and no `capability_evidence_invalid`.
-- [ ] A five-value Claude-shaped option, including a bracketed variant, projects
+- [x] A five-value Claude-shaped option, including a bracketed variant, projects
       exactly as it does today, value for value and in the same order.
-- [ ] A requested canonical model whose advertised form carries a bracketed
+- [x] A requested canonical model whose advertised form carries a bracketed
       effort suffix is retained when the option is above the bound.
-- [ ] The projected option reports the advertised count and the retained count,
+- [x] The projected option reports the advertised count and the retained count,
       and they differ for an oversized option.
-- [ ] An option above the hard ceiling still fails with
+- [x] An option above the hard ceiling still fails with
       `too_many_option_values`.
-- [ ] The invariant half of the characterization corpus passes unmodified.
+- [x] The invariant half of the characterization corpus passes unmodified.
 
 ## Context
 
@@ -103,3 +103,75 @@ This Task may create or modify only:
 - `references/2026-08-08-what-the-opencode-adapter-answers-before-its-first-prompt.md`
   → the 417-value catalog and the 50,590-byte payload.
 - ADR-0105.
+
+## Result
+
+The capability projection now bounds what it retains. A 417-value catalog
+projects; a model nobody advertises still fails closed.
+
+**What changed.** `ParseSessionConfigOptions` and
+`ParseSessionCapabilitySnapshot` take a `SelectionRetention` naming the
+requested Agent Selection, and both read paths supply it from the RuntimeSpec
+through `RetentionFor`, so the projection never infers it. At or below
+`maxRetainedCapabilityValues` every advertised value survives in advertised
+order, which is why the Codex and Claude fixtures project unchanged. Above it,
+`retainAdvertisedValues` keeps the current value, every value binding to the
+requested model — by exact advertised value or by canonical prefix before a
+trailing bracketed effort, the same rule `modelsForCanonical` applies — and then
+fills to the bound in advertised order. `SelectCapability.AdvertisedCount`
+records what the adapter offered. `maxCapabilityValues` became
+`maxRetainedCapabilityValues`; `maxAdvertisedCapabilityValues` (4096) is the new
+absolute refusal ceiling, so `too_many_option_values` still fires on an
+implausible payload rather than becoming dead vocabulary.
+`maxCapabilityResponseBytes` moved from 64 KiB to 1 MiB, with the measured
+50,590-byte payload named in the comment beside it.
+
+**Declared breaks.**
+
+1. `TestCharacterizationTodayRefusesAnOversizedAdvertisedOption` became
+   `TestCharacterizationDeclaredBreakOversizedOptionRetainsInsteadOfRefusing`.
+   The old assertion — the `too_many_option_values`, `missing_model_state`,
+   `contradictory_response` triple — is preserved in that test's comment as the
+   behavior this Task removed, and the measured provenance stays with it.
+2. `TestSelectionCapabilitiesOfficialAndLegacyFixtures` gained
+   `AdvertisedCount: 6` in its expected reasoning option, because
+   `SelectCapability` gained a field and the test compares the whole struct.
+
+**Commands and outcomes.**
+
+- `go build -buildvcs=false ./...` — exit 0.
+- `go test ./internal/agent -count=1` — exit 0.
+- `go test ./internal/agent -run 'Retention' -count=1 -v` — exit 0; four tests.
+- `go test ./internal/agent -run 'CharacterizationInvariant' -count=1 -v` — exit 0; four tests, the invariant half unchanged.
+- `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1` — exit 0.
+- `grep -q 'maxAdvertisedCapabilityValues' internal/agent/selection_capabilities.go` — exit 0.
+- `grep -q 'AdvertisedCount' internal/agent/selection_capabilities.go` — exit 0.
+- `make verify` — exit 0 after `go clean -testcache`.
+
+**Evidence per acceptance criterion.**
+
+- Requested model retained past the bound:
+  `TestRetentionKeepsRequestedModelPastTheBound` advertises the model **last**
+  among 192 values, so a projection keeping an advertised prefix would drop it;
+  the test then plans the assignment and asserts the adapter model.
+- Unadvertised model still unsupported:
+  `TestRetentionLeavesUnadvertisedModelUnsupported` asserts
+  `SelectionUnsupportedError` and asserts the absence of
+  `CapabilityEvidenceError`.
+- Small advertised sets unchanged:
+  `TestCharacterizationInvariantRetainsEveryValueAtOrBelowTheBound` compares
+  four model values and six effort values in advertised order, and the whole
+  pre-existing `internal/agent` suite passes.
+- Bracketed variant of a canonical request retained:
+  `TestRetentionKeepsBracketedVariantOfRequestedCanonicalModel` requests `opus`
+  and asserts `opus[1m]` survives.
+- Advertised and retained counts differ and are both reported:
+  `TestRetentionRecordsAdvertisedAndRetainedCounts` asserts 192 advertised and
+  64 retained.
+- Absolute ceiling still fails closed:
+  `TestCharacterizationInvariantOversizedOptionStillFailsClosedAboveTheCeiling`
+  advertises 4097 values and asserts `too_many_option_values`.
+
+**Follow-ups.** The coverage record was re-recorded in this commit, adding the
+thirteen tests Tasks 01 and 02 introduced, so a future removal of any of them is
+caught rather than logged.

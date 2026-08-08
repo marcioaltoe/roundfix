@@ -891,7 +891,7 @@ func TestApplySessionSelection(t *testing.T) {
 			if tt.exitBy != nil {
 				harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, tt.exitBy))
 			}
-			capabilities, err := ParseSessionConfigOptions([]byte(tt.initial), AdapterEvidence{Command: "adapter"})
+			capabilities, err := ParseSessionConfigOptions([]byte(tt.initial), AdapterEvidence{Command: "adapter"}, SelectionRetention{})
 			if err != nil {
 				t.Fatalf("parse initial capabilities: %v", err)
 			}

@@ -30,9 +30,18 @@ const (
 	CapabilityIssueTooManyValues          = "too_many_option_values"
 
 	MaxCapabilityDiagnosticIssues = 8
-	maxCapabilityResponseBytes    = 64 * 1024
-	maxCapabilityOptions          = 32
-	maxCapabilityValues           = 64
+	// maxCapabilityResponseBytes bounds one adapter response. The measured
+	// ceiling is the OpenCode session snapshot, 50,590 bytes with 417
+	// advertised models on 2026-08-08, so this leaves roughly twenty times
+	// today's payload. It bounds reading; retention bounds what is kept.
+	maxCapabilityResponseBytes = 1024 * 1024
+	maxCapabilityOptions       = 32
+	// maxRetainedCapabilityValues bounds how many advertised values one
+	// projected option keeps, not how many a runtime may advertise.
+	maxRetainedCapabilityValues = 64
+	// maxAdvertisedCapabilityValues is the absolute ceiling above which an
+	// advertised option is refused as implausible rather than merely large.
+	maxAdvertisedCapabilityValues = 4096
 	maxCapabilityIDBytes          = 64
 	maxCapabilityValueBytes       = 160
 	maxAdapterIdentityBytes       = 512
@@ -59,11 +68,32 @@ type ModelCapability struct {
 }
 
 // SelectCapability contains only the documented select-option fields needed
-// for exact assignment and proof.
+// for exact assignment and proof. Values holds what the projection retained;
+// AdvertisedCount holds how many valid values the adapter offered, so a
+// diagnostic can report both instead of implying the adapter offers only what
+// was kept.
 type SelectCapability struct {
-	ID           string
-	CurrentValue string
-	Values       []string
+	ID              string
+	CurrentValue    string
+	Values          []string
+	AdvertisedCount int
+}
+
+// SelectionRetention names the advertised values a capability projection must
+// keep when an option advertises more values than Roundfix retains. It is the
+// requested Agent Selection, never inferred from the payload.
+type SelectionRetention struct {
+	Model           string
+	ReasoningEffort string
+}
+
+// RetentionFor returns the retention one runtime's requested Agent Selection
+// implies.
+func RetentionFor(runtime RuntimeSpec) SelectionRetention {
+	return SelectionRetention{
+		Model:           strings.TrimSpace(runtime.Model),
+		ReasoningEffort: strings.TrimSpace(runtime.ReasoningEffort),
+	}
 }
 
 // CapabilityAcquisitionRequest identifies one public ACPX config-option
@@ -143,8 +173,10 @@ type acpSelectValuePayload struct {
 }
 
 // ParseSessionConfigOptions validates and bounds the machine-readable ACPX
-// projection of a documented ACP configOptions response.
-func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence) (SelectionCapabilities, error) {
+// projection of a documented ACP configOptions response. Retention names the
+// requested Agent Selection so an advertised option larger than Roundfix
+// retains keeps the values that selection needs.
+func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence, retention SelectionRetention) (SelectionCapabilities, error) {
 	issues := newCapabilityIssueSet()
 	if len(payload) == 0 {
 		issues.add(CapabilityIssueMalformedResponse)
@@ -183,7 +215,7 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence) (Selecti
 	configuredValueMatched := false
 
 	for _, rawOption := range boundedConfigOptions(*response.ConfigOptions) {
-		option, ok := projectSelectCapability(rawOption, issues)
+		option, ok := projectSelectCapability(rawOption, retention, issues)
 		if rawOption.ID != "" {
 			if _, exists := seenIDs[rawOption.ID]; exists {
 				issues.add(CapabilityIssueDuplicateOptionID)
@@ -274,8 +306,9 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence) (Selecti
 }
 
 // ParseSessionCapabilitySnapshot validates ACPX's public acpx.session.v1
-// projection and reuses the ACP configOptions validation contract.
-func ParseSessionCapabilitySnapshot(payload []byte, adapter AdapterEvidence) (SelectionCapabilities, error) {
+// projection and reuses the ACP configOptions validation contract, including
+// its retention rule.
+func ParseSessionCapabilitySnapshot(payload []byte, adapter AdapterEvidence, retention SelectionRetention) (SelectionCapabilities, error) {
 	issues := newCapabilityIssueSet()
 	if len(payload) == 0 {
 		issues.add(CapabilityIssueMalformedResponse)
@@ -306,7 +339,7 @@ func ParseSessionCapabilitySnapshot(payload []byte, adapter AdapterEvidence) (Se
 		issues.add(CapabilityIssueMalformedResponse)
 		return SelectionCapabilities{}, issues.err()
 	}
-	return ParseSessionConfigOptions(projection, adapter)
+	return ParseSessionConfigOptions(projection, adapter, retention)
 }
 
 // AcquireSelectionCapabilities uses only ACPX's public strict-JSON command
@@ -337,7 +370,7 @@ func (runner ACPXRunner) acquireSelectionCapabilities(ctx context.Context, reque
 		}
 		return SelectionCapabilities{}, &CapabilityAcquisitionError{Err: err}
 	}
-	capabilities, parseErr := ParseSessionConfigOptions([]byte(output), request.Adapter)
+	capabilities, parseErr := ParseSessionConfigOptions([]byte(output), request.Adapter, RetentionFor(request.Runtime))
 	if parseErr != nil {
 		if request.ConfigID == "model" && exactACPXModelSetResponse([]byte(output), request.Value) {
 			return runner.observeSelectionCapabilities(ctx, request.Runtime, request.Session, request.Adapter, env)
@@ -372,7 +405,7 @@ func (runner ACPXRunner) observeSelectionCapabilities(ctx context.Context, runti
 		}
 		return SelectionCapabilities{}, &CapabilityAcquisitionError{Err: err}
 	}
-	return ParseSessionCapabilitySnapshot([]byte(output), adapter)
+	return ParseSessionCapabilitySnapshot([]byte(output), adapter, RetentionFor(runtime))
 }
 
 func exactACPXModelSetResponse(payload []byte, expectedModel string) bool {
@@ -434,7 +467,7 @@ func boundedConfigOptions(options []acpSelectOptionPayload) []acpSelectOptionPay
 	return options
 }
 
-func projectSelectCapability(raw acpSelectOptionPayload, issues *capabilityIssueSet) (SelectCapability, bool) {
+func projectSelectCapability(raw acpSelectOptionPayload, retention SelectionRetention, issues *capabilityIssueSet) (SelectCapability, bool) {
 	if raw.Type != "select" {
 		return SelectCapability{}, false
 	}
@@ -443,12 +476,12 @@ func projectSelectCapability(raw acpSelectOptionPayload, issues *capabilityIssue
 		issues.add(CapabilityIssueInvalidOption)
 		return SelectCapability{}, false
 	}
-	if len(*raw.Options) > maxCapabilityValues {
+	if len(*raw.Options) > maxAdvertisedCapabilityValues {
 		issues.add(CapabilityIssueTooManyValues)
 		return SelectCapability{}, false
 	}
 
-	values := make([]string, 0, len(*raw.Options))
+	advertised := make([]string, 0, len(*raw.Options))
 	seen := make(map[string]struct{}, len(*raw.Options))
 	currentAdvertised := false
 	for _, rawValue := range *raw.Options {
@@ -462,7 +495,7 @@ func projectSelectCapability(raw acpSelectOptionPayload, issues *capabilityIssue
 			continue
 		}
 		seen[value] = struct{}{}
-		values = append(values, value)
+		advertised = append(advertised, value)
 		if value == currentValue {
 			currentAdvertised = true
 		}
@@ -470,7 +503,71 @@ func projectSelectCapability(raw acpSelectOptionPayload, issues *capabilityIssue
 	if !currentAdvertised {
 		issues.add(CapabilityIssueInvalidCurrentValue)
 	}
-	return SelectCapability{ID: raw.ID, CurrentValue: currentValue, Values: values}, true
+	return SelectCapability{
+		ID:              raw.ID,
+		CurrentValue:    currentValue,
+		Values:          retainAdvertisedValues(advertised, currentValue, retention),
+		AdvertisedCount: len(advertised),
+	}, true
+}
+
+// retainAdvertisedValues bounds what the projection keeps rather than what the
+// adapter may advertise. At or below the bound every value survives in
+// advertised order, so a runtime with a small catalog projects exactly as it
+// did before retention existed. Above it, the current value and every value the
+// requested Agent Selection binds to are kept first, then advertised order
+// fills the remainder for diagnostics. Retention narrows only what is kept:
+// a value planning would have bound is never dropped, so an unadvertised
+// Agent Model still fails as unsupported rather than as invalid evidence.
+func retainAdvertisedValues(advertised []string, currentValue string, retention SelectionRetention) []string {
+	if len(advertised) <= maxRetainedCapabilityValues {
+		return advertised
+	}
+
+	keep := make(map[string]struct{}, maxRetainedCapabilityValues)
+	for _, value := range advertised {
+		if len(keep) >= maxRetainedCapabilityValues {
+			break
+		}
+		if value == currentValue || value == retention.ReasoningEffort || bindsRequestedModel(value, retention.Model) {
+			keep[value] = struct{}{}
+		}
+	}
+	for _, value := range advertised {
+		if len(keep) >= maxRetainedCapabilityValues {
+			break
+		}
+		keep[value] = struct{}{}
+	}
+
+	retained := make([]string, 0, len(keep))
+	for _, value := range advertised {
+		if _, exists := keep[value]; exists {
+			retained = append(retained, value)
+		}
+	}
+	return retained
+}
+
+// bindsRequestedModel reports whether one advertised value represents the
+// requested model, matching the way modelsForCanonical binds: the exact
+// advertised value, or a value whose canonical prefix before a trailing
+// bracketed effort equals the request.
+func bindsRequestedModel(value string, requested string) bool {
+	if requested == "" {
+		return false
+	}
+	if value == requested {
+		return true
+	}
+	if !strings.HasSuffix(value, "]") {
+		return false
+	}
+	open := strings.LastIndexByte(value, '[')
+	if open <= 0 {
+		return false
+	}
+	return strings.TrimSpace(value[:open]) == requested
 }
 
 func parseModelCapability(adapterValue string, opaque bool) (ModelCapability, bool) {
