@@ -35,8 +35,9 @@ the work is still open.
 6. MUST record the origin of the external evidence used, per ADR-0104.
 7. MUST run the glossary check against `CONTEXT.md` and record whether this Spec
    coined, changed, or dropped a term, and what was done about it.
-8. MUST prove the authoritative gate on a clean test cache, because a stale cache
-   reported exit 0 over a failing test on 2026-08-08.
+8. MUST prove the authoritative gate on a genuinely cold cache — the one the
+   Makefile exports, not the user-level one — because a stale cache reported
+   exit 0 over a real coverage regression during this Spec's own Task 03.
 9. MUST report `rows_blocked_environment` and `rows_blocked_finding` counts in the
    report frontmatter.
 10. MUST NOT mutate any repository outside this one.
@@ -77,8 +78,8 @@ the work is still open.
 - `grep -q 'rows_blocked_environment' docs/specs/0088-a-third-runtime-that-can-run/qa/qa-report-*.md` — expected: exits 0.
 - `grep -q 'rows_blocked_finding' docs/specs/0088-a-third-runtime-that-can-run/qa/qa-report-*.md` — expected: exits 0.
 - `grep -q 'opencode-go' docs/specs/0088-a-third-runtime-that-can-run/qa/qa-report-*.md` — expected: exits 0, proving the acceptance Run row exists.
-- `go clean -testcache` — expected: exits 0.
-- `make verify` — expected: exits 0 on a clean cache, proving the authoritative gate passes on the finished Spec.
+- `GOCACHE="$PWD/.gocache" go clean -testcache` — expected: exits 0. A bare `go clean -testcache` clears the user-level cache, not the one the Makefile exports, and leaves the gate reading a stale cache.
+- `make verify` — expected: exits 0 on a genuinely cold cache, with no Go package line reporting `(cached)`, proving the authoritative gate passes on the finished Spec.
 
 ## References
 

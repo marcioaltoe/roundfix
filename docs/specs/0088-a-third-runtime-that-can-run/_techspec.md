@@ -236,7 +236,15 @@ Any task that removes or renames a test re-records
 `docs/references/coverage-record.json` with
 `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record`
 **in its own commit**, because a retired test the record still names reads as a
-regression. Run `go clean -testcache` before trusting `make verify`.
+regression.
+
+Clear the cache the gate actually uses before trusting it:
+`GOCACHE="$PWD/.gocache" go clean -testcache`. The Makefile exports
+`GOCACHE ?= $(CURDIR)/.gocache`, so a bare `go clean -testcache` clears the
+user-level cache and leaves the gate's cache untouched. Measured on 2026-08-08
+during Task 03 of this Spec: `make verify` reported exit 0 with
+`ok roundfix/internal/spec (cached)` over a real coverage regression. Filed as
+`docs/backlog/2026-08-08-go-clean-testcache-clears-a-cache-the-gate-does-not-use.md`.
 
 ## Build Order
 
