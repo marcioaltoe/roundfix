@@ -30,12 +30,20 @@ reporting them unaccounted.
    dispatch, or template selection.
 5. MUST regenerate derived pins with the sanctioned command rather than by hand,
    per ADR-0081.
-6. MUST leave per-project customization as decisions, never clauses: identifier
+6. MUST move, in this Task's own commit, every hand-maintained fixture the
+   restored clauses invalidate. `make baseline-digests` does not reach the
+   parity corpus: `internal/baseline/testdata/parity-corpus/v1/fixtures/greenfield-go-cli-tui.json`
+   pins both the managed-entry ledger digests and the planned byte identity of
+   every managed artifact for the `go-cli-tui` profile, so any restored clause
+   that renders into a managed guide moves it. Verify by running the package
+   suite, not by inspecting the sanctioned regeneration alone.
+7. MUST leave per-project customization as decisions, never clauses: identifier
    strategy, HTTP contract, authentication provider, and database choice stay
    maintainer-answered.
-7. MUST prove, by test, that retention accounting over the standard profile
+8. MUST prove, by test, that retention accounting over the standard profile
    reports zero unaccounted entries for the fourteen restored identities.
-8. MUST change only the paths the authorization bounds.
+9. MUST change only the paths the authorization bounds plus the hand-maintained
+   fixtures Requirement 6 names.
 
 ## Subtasks
 
@@ -43,6 +51,7 @@ reporting them unaccounted.
 - [ ] Restore each clause with the Source Baseline's text and bump its rule.
 - [ ] Record accounting for any identity whose owner legitimately moved.
 - [ ] Regenerate derived pins with the sanctioned command.
+- [ ] Move the hand-maintained parity-corpus fixture in the same commit.
 - [ ] Cover retention accounting reporting zero unaccounted for the fourteen.
 - [ ] Confirm no decision, capability, skill, or template selection changed.
 
@@ -56,7 +65,10 @@ reporting them unaccounted.
 - [ ] The catalog's decision, capability, skill, and template selections are
       unchanged.
 - [ ] Derived pins match what the sanctioned regeneration command produces.
-- [ ] The change touches only paths the authorization bounds.
+- [ ] The parity-corpus fixture's managed-entry ledger and planned byte
+      identities match what the current catalog renders.
+- [ ] The change touches only paths the authorization bounds plus the
+      hand-maintained fixtures Requirement 6 names.
 
 ## Context
 
@@ -71,6 +83,7 @@ reporting them unaccounted.
 - `go test ./internal/baseline/ -run 'Catalog' -v > /tmp/0084-task-06-b.log 2>&1 && grep -q '^--- PASS: .*Catalog' /tmp/0084-task-06-b.log` — expected: exits 0, proving catalog validation accepts the restored clauses.
 - `grep -c 'clause.backend.' internal/baseline/assets/modules/backend.json > /tmp/0084-task-06-c.log 2>&1 && grep -qv '^0$' /tmp/0084-task-06-c.log` — expected: exits 0, proving the module declares backend clauses where it previously declared none.
 - `make baseline-digests > /tmp/0084-task-06-d.log 2>&1 && git diff --quiet -- internal/baseline/assets` — expected: exits 0, proving every derived pin already matches the sanctioned regeneration.
+- `go test ./internal/baseline/ -run 'MaintainedManagedEntryFixture' -v > /tmp/0084-task-06-e.log 2>&1 && grep -q '^--- PASS: .*MaintainedManagedEntryFixture' /tmp/0084-task-06-e.log` — expected: exits 0, proving the hand-maintained parity fixture moved with the restored clauses.
 - `go test ./internal/baseline/ ./internal/cli/ -count=1` — expected: exits 0.
 
 ## References

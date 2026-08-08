@@ -47,7 +47,8 @@ a human can act on.
   `docs/workflow/authorizations/2026-08-07-restore-structural-clauses.md`,
   `docs/workflow/authorizations/2026-08-08-the-brain-is-a-source-not-an-archive.md`,
   `docs/workflow/authorizations/2026-08-08-evidence-from-outside-the-spec.md`,
-  and `docs/workflow/authorizations/2026-08-08-glossary-currency-clause.md`.
+  `docs/workflow/authorizations/2026-08-08-glossary-currency-clause.md`, and
+  `docs/workflow/authorizations/2026-08-08-the-skill-ships-with-the-cli-change.md`.
   Bounded files: `internal/baseline/assets/modules/*.json`,
   `internal/baseline/assets/retention/**`,
   `internal/baseline/assets/modules/secondbrain.json`,
@@ -57,7 +58,8 @@ a human can act on.
   `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/spec-routing.md`,
   `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/domain.md`,
   `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json`,
-  `.agents/skills/write-tasks/SKILL.md`, and `.agents/skills/qa-gate/SKILL.md`.
+  `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/qa-gate/SKILL.md`, and
+  `.agents/skills/roundfix/SKILL.md`.
   Source: `docs/agents/agent-instructions.md`.
 
 ## Goals
