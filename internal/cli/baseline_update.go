@@ -70,24 +70,25 @@ type baselineUpdateSkillsDependencies struct {
 }
 
 type baselineUpdateResult struct {
-	SchemaVersion      string                        `json:"schemaVersion"`
-	Operation          string                        `json:"operation"`
-	State              string                        `json:"state"`
-	Category           string                        `json:"category,omitempty"`
-	Message            string                        `json:"message,omitempty"`
-	NextAction         string                        `json:"nextAction,omitempty"`
-	PriorCatalog       baseline.CatalogIdentity      `json:"priorCatalog"`
-	CurrentCatalog     baseline.CatalogIdentity      `json:"currentCatalog"`
-	FileChanges        []baseline.FileChange         `json:"fileChanges"`
-	Retention          []baseline.RetentionEvidence  `json:"retention"`
-	ClauseDelta        *baseline.ClauseDelta         `json:"clauseDelta,omitempty"`
-	Warnings           []baseline.Finding            `json:"warnings"`
-	NewDecisions       []baseline.DecisionSuggestion `json:"newDecisions"`
-	AdoptedSuggestions []baseline.DecisionSuggestion `json:"adoptedSuggestions"`
-	PlanDigest         string                        `json:"planDigest,omitempty"`
-	ApprovedPlanDigest string                        `json:"approvedPlanDigest,omitempty"`
-	StatusMatrix       *baseline.ResultStatusMatrix  `json:"statusMatrix,omitempty"`
-	Skills             baselineUpdateSkillsResult    `json:"skills"`
+	SchemaVersion      string                               `json:"schemaVersion"`
+	Operation          string                               `json:"operation"`
+	State              string                               `json:"state"`
+	Category           string                               `json:"category,omitempty"`
+	Message            string                               `json:"message,omitempty"`
+	NextAction         string                               `json:"nextAction,omitempty"`
+	PriorCatalog       baseline.CatalogIdentity             `json:"priorCatalog"`
+	CurrentCatalog     baseline.CatalogIdentity             `json:"currentCatalog"`
+	FileChanges        []baseline.FileChange                `json:"fileChanges"`
+	Retention          []baseline.RetentionEvidence         `json:"retention"`
+	ClauseDelta        *baseline.ClauseDelta                `json:"clauseDelta,omitempty"`
+	Warnings           []baseline.Finding                   `json:"warnings"`
+	NewDecisions       []baseline.DecisionSuggestion        `json:"newDecisions"`
+	AdoptedSuggestions []baseline.DecisionSuggestion        `json:"adoptedSuggestions"`
+	UnresolvedProfile  *baseline.UnresolvedProfileDiagnosis `json:"unresolvedProfile,omitempty"`
+	PlanDigest         string                               `json:"planDigest,omitempty"`
+	ApprovedPlanDigest string                               `json:"approvedPlanDigest,omitempty"`
+	StatusMatrix       *baseline.ResultStatusMatrix         `json:"statusMatrix,omitempty"`
+	Skills             baselineUpdateSkillsResult           `json:"skills"`
 }
 
 func runBaselineUpdateCommand(
@@ -165,6 +166,10 @@ func runBaselineUpdateCommandWithSkillsStage(
 	if resolveErr != nil {
 		category := "manifest"
 		nextAction := "repair the Setup Manifest or run roundfix baseline for first adoption"
+		if input.UnresolvedProfile != nil {
+			result.UnresolvedProfile = input.UnresolvedProfile
+			nextAction = input.UnresolvedProfile.Action
+		}
 		return writeBaselineUpdateFailure(
 			result, resolveErr, category, nextAction, exitPreflight,
 			jsonOutput, stdout, stderr,
@@ -605,6 +610,18 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	}
 	if result.Message != "" {
 		fmt.Fprintf(stdout, "Result: %s\n", result.Message)
+	}
+	if result.UnresolvedProfile != nil {
+		fmt.Fprintf(stdout, "Profile identity: %s\n", result.UnresolvedProfile.Identity)
+		if len(result.UnresolvedProfile.SearchedLocations) == 0 {
+			fmt.Fprintln(stdout, "Searched locations: none")
+		} else {
+			fmt.Fprintf(stdout, "Searched locations: %d\n", len(result.UnresolvedProfile.SearchedLocations))
+			for _, location := range result.UnresolvedProfile.SearchedLocations {
+				fmt.Fprintf(stdout, "- %s\n", location)
+			}
+		}
+		fmt.Fprintf(stdout, "Repair action: %s\n", result.UnresolvedProfile.Action)
 	}
 	if result.PriorCatalog.Digest == "" {
 		fmt.Fprintln(stdout, "Prior catalog: unavailable")

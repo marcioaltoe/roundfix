@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0084-an-update-that-can-run
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -71,3 +71,52 @@ where the command looked, and the action that restores it.
 - `_prd.md` → Core Feature 6; User Story 5; Goal 1.
 - `references/2026-08-08-the-update-refuses-six-of-the-eight-copies-it-exists-to-update.md`
   → the measured repository that produces this failure.
+
+## Result
+
+### Implementation
+
+- Profile resolution now carries every repository-relative location consulted
+  after an identity misses the embedded catalog.
+- Setup Manifest resolution projects a typed unresolved-profile diagnosis with
+  the recorded identity, searched locations, and repair action while preserving
+  the underlying error chain for programmatic inspection.
+- The update command emits the diagnosis as structured JSON under
+  `unresolvedProfile` and renders the same identity, locations, and action in
+  text output. Its user-facing message no longer contains the raw filesystem
+  error.
+
+### Focused checks
+
+- Red signal: with the worktree-local Go cache, the new focused tests initially
+  failed to compile because `UnresolvedProfileKind`, the diagnosis constants,
+  and the result fields did not exist.
+- `rtk go test ./internal/baseline -run '^TestResolveManifestInputUnresolvedProfileDiagnosis$' -count=1`
+  with the worktree-local `GOCACHE`: passed, 3 tests.
+- `rtk go test ./internal/cli -run '^TestBaselineUpdateUnresolvedProfileDiagnosis$' -count=1`
+  with the worktree-local `GOCACHE`: passed, 3 tests.
+- `rtk go test ./internal/baseline -run '^(TestResolveManifestInput|TestCustomProfileRejectsUnsafePathsAndNonRepositorySources)' -count=1`
+  with the worktree-local `GOCACHE`: passed, 18 tests.
+- `rtk go test ./internal/cli -run '^TestBaselineUpdate(NoManifest|UnresolvedProfile|NewDecision)' -count=1`
+  with the worktree-local `GOCACHE`: passed, 5 tests.
+- `rtk git -c core.fsmonitor=false diff --check`: passed.
+- `rtk gofmt -d internal/baseline/custom_profile.go internal/baseline/update.go internal/baseline/update_test.go internal/cli/baseline_update.go internal/cli/baseline_update_test.go`:
+  passed with no output.
+
+### Acceptance evidence
+
+1. `TestResolveManifestInputUnresolvedProfileDiagnosis/missing_repository-owned_Profile`
+   and the matching CLI subtest assert the Setup Manifest identity,
+   `.roundfix/baseline/profiles/repository-backend.json`, and a restore action.
+2. The `unknown_catalog_identity` subtests assert the distinct
+   `catalog_identity_unknown` diagnosis and an action that names adoption.
+3. Both owning suites reject `lstat` and `open` leakage from the diagnosis;
+   the CLI suite checks the JSON message plus text stdout and stderr.
+4. The package test preserves `ErrManifestIncompatible`,
+   `ManifestInputIncompatible`, and `profile_unresolved`; the CLI test preserves
+   exit `2`, state `failed`, and category `manifest` for both cases.
+5. The CLI test decodes the JSON identity, searched locations, and action, then
+   requires those same values in the text surface.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.

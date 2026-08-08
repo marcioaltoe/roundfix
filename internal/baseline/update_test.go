@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -176,6 +177,89 @@ func TestResolveManifestInputProfileDigestDriftIsResolved(t *testing.T) {
 		t.Fatal("ResolveManifestInput() did not report the profile catalog move")
 	}
 	assertManifestInputDecisionsEqual(t, input.Decisions, manifest.Decisions)
+}
+
+func TestResolveManifestInputUnresolvedProfileDiagnosis(t *testing.T) {
+	t.Parallel()
+
+	catalog := loadManifestInputCatalog(t)
+	tests := []struct {
+		name          string
+		profileID     string
+		wantKind      UnresolvedProfileKind
+		wantLocations []string
+		wantAction    string
+	}{
+		{
+			name:          "missing repository-owned Profile",
+			profileID:     "repository-backend",
+			wantKind:      UnresolvedProfileRepositoryMissing,
+			wantLocations: []string{".roundfix/baseline/profiles/repository-backend.json"},
+			wantAction:    "restore",
+		},
+		{
+			name:          "unknown catalog identity",
+			profileID:     "retired/profile",
+			wantKind:      UnresolvedProfileCatalogUnknown,
+			wantLocations: []string{},
+			wantAction:    "adopt",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			repository := t.TempDir()
+			manifest := SetupManifest{
+				SchemaVersion: ManifestSchema,
+				Version:       ManifestVersion,
+				Generator: ManifestGenerator{
+					Skill:    "setup-context-driven",
+					Version:  ManifestVersion,
+					Baseline: "baseline." + test.profileID + "-" + ManifestVersion,
+				},
+				Profile:          test.profileID,
+				ProfileDigest:    "sha256:" + strings.Repeat("0", 64),
+				CatalogDigest:    catalog.Digest(),
+				Modules:          []string{},
+				Decisions:        map[string]ManifestDecision{},
+				ManagedArtifacts: []ManifestArtifact{},
+				LocalSkills:      []string{},
+				Verification:     []VerificationProjection{},
+			}
+			writeManifestInputFixture(t, repository, manifest)
+
+			input, err := ResolveManifestInput(repository, catalog)
+			if !errors.Is(err, ErrManifestIncompatible) {
+				t.Fatalf("ResolveManifestInput() error = %v, want ErrManifestIncompatible", err)
+			}
+			if input.State != ManifestInputIncompatible ||
+				input.Incompatibility != ManifestInputProfileUnresolved {
+				t.Fatalf("ResolveManifestInput() state = %q reason = %q", input.State, input.Incompatibility)
+			}
+			if input.UnresolvedProfile == nil {
+				t.Fatal("ResolveManifestInput() unresolved Profile diagnosis is nil")
+			}
+			diagnosis := *input.UnresolvedProfile
+			if diagnosis.Identity != test.profileID || diagnosis.Kind != test.wantKind ||
+				!reflect.DeepEqual(diagnosis.SearchedLocations, test.wantLocations) ||
+				!strings.Contains(strings.ToLower(diagnosis.Action), test.wantAction) {
+				t.Fatalf("ResolveManifestInput() unresolved Profile diagnosis = %+v", diagnosis)
+			}
+			message := err.Error()
+			if !strings.Contains(message, test.profileID) ||
+				!strings.Contains(message, diagnosis.Action) ||
+				strings.Contains(message, "lstat") || strings.Contains(message, "open ") {
+				t.Fatalf("ResolveManifestInput() diagnosis message = %q", message)
+			}
+			for _, location := range test.wantLocations {
+				if !strings.Contains(message, location) {
+					t.Fatalf("ResolveManifestInput() diagnosis message %q lacks %q", message, location)
+				}
+			}
+		})
+	}
 }
 
 func TestResolveManifestInputDistinguishesAdoptionReasons(t *testing.T) {

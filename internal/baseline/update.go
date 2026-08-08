@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 var (
@@ -51,6 +52,54 @@ type DecisionSuggestion struct {
 	Summary        string `json:"summary"`
 }
 
+// UnresolvedProfileKind identifies the repair path for one unresolved
+// Baseline Profile recorded by the Setup Manifest.
+type UnresolvedProfileKind string
+
+const (
+	// UnresolvedProfileRepositoryMissing means the repository-owned location
+	// did not supply the recorded Profile.
+	UnresolvedProfileRepositoryMissing UnresolvedProfileKind = "repository_profile_missing"
+	// UnresolvedProfileCatalogUnknown means the identity is neither in the
+	// embedded catalog nor a valid repository-owned Profile identity.
+	UnresolvedProfileCatalogUnknown UnresolvedProfileKind = "catalog_identity_unknown"
+)
+
+// UnresolvedProfileDiagnosis is the actionable projection of a failed
+// recorded Profile resolution.
+type UnresolvedProfileDiagnosis struct {
+	Kind              UnresolvedProfileKind `json:"kind"`
+	Identity          string                `json:"identity"`
+	SearchedLocations []string              `json:"searchedLocations"`
+	Action            string                `json:"action"`
+}
+
+func (diagnosis UnresolvedProfileDiagnosis) message() string {
+	locations := "none"
+	if len(diagnosis.SearchedLocations) != 0 {
+		locations = strings.Join(diagnosis.SearchedLocations, ", ")
+	}
+	return fmt.Sprintf(
+		"recorded Baseline Profile %q is unresolved; searched locations: %s; repair action: %s",
+		diagnosis.Identity,
+		locations,
+		diagnosis.Action,
+	)
+}
+
+type unresolvedProfileDiagnosisError struct {
+	diagnosis UnresolvedProfileDiagnosis
+	cause     error
+}
+
+func (err *unresolvedProfileDiagnosisError) Error() string {
+	return err.diagnosis.message()
+}
+
+func (err *unresolvedProfileDiagnosisError) Unwrap() error {
+	return err.cause
+}
+
 // ManifestInput is a stored Setup Manifest projected into plan inputs.
 type ManifestInput struct {
 	State                ManifestInputState           `json:"state"`
@@ -59,6 +108,7 @@ type ManifestInput struct {
 	ProfileDigestChanged bool                         `json:"profileDigestChanged,omitempty"`
 	Decisions            []DecisionValue              `json:"decisions"`
 	NewDecisions         []DecisionSuggestion         `json:"newDecisions"`
+	UnresolvedProfile    *UnresolvedProfileDiagnosis  `json:"unresolvedProfile,omitempty"`
 	Manifest             SetupManifest                `json:"manifest"`
 }
 
@@ -118,10 +168,12 @@ func ResolveManifestInput(root string, catalog *Catalog) (ManifestInput, error) 
 	}
 	profile, err := ResolveProfile(rootPath, manifest.Profile, catalog)
 	if err != nil {
+		diagnosis := diagnoseUnresolvedProfile(manifest.Profile, err)
+		input.UnresolvedProfile = &diagnosis
 		return incompatibleManifestInput(
 			input,
 			ManifestInputProfileUnresolved,
-			fmt.Errorf("resolve recorded Baseline Profile %q: %w", manifest.Profile, err),
+			&unresolvedProfileDiagnosisError{diagnosis: diagnosis, cause: err},
 		)
 	}
 	input.ProfileDigestChanged = manifest.ProfileDigest != profile.Digest
@@ -149,6 +201,27 @@ func ResolveManifestInput(root string, catalog *Catalog) (ManifestInput, error) 
 	}
 	input.State = ManifestInputIncomplete
 	return input, nil
+}
+
+func diagnoseUnresolvedProfile(profileID string, err error) UnresolvedProfileDiagnosis {
+	diagnosis := UnresolvedProfileDiagnosis{
+		Kind:              UnresolvedProfileCatalogUnknown,
+		Identity:          profileID,
+		SearchedLocations: []string{},
+		Action: "run roundfix baseline to adopt a Baseline Profile known to the current catalog, " +
+			"then rerun roundfix baseline update",
+	}
+	var resolutionErr *ProfileResolutionError
+	if !errors.As(err, &resolutionErr) || len(resolutionErr.SearchedLocations) == 0 {
+		return diagnosis
+	}
+	diagnosis.Kind = UnresolvedProfileRepositoryMissing
+	diagnosis.SearchedLocations = append(diagnosis.SearchedLocations, resolutionErr.SearchedLocations...)
+	diagnosis.Action = fmt.Sprintf(
+		"restore the repository-owned Baseline Profile at %s, then rerun roundfix baseline update",
+		strings.Join(diagnosis.SearchedLocations, ", "),
+	)
+	return diagnosis
 }
 
 func incompatibleManifestInput(

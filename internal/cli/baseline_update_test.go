@@ -14,6 +14,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -371,6 +372,84 @@ func TestBaselineUpdateNoManifestRequiresAdoptionWithoutWrites(t *testing.T) {
 	}
 	if after := baselinePlanTestTree(t, repository); after != before {
 		t.Fatal("no-manifest update changed repository bytes")
+	}
+}
+
+func TestBaselineUpdateUnresolvedProfileDiagnosis(t *testing.T) {
+	tests := []struct {
+		name          string
+		profileID     string
+		wantKind      baseline.UnresolvedProfileKind
+		wantLocations []string
+		wantAction    string
+	}{
+		{
+			name:          "missing repository-owned Profile",
+			profileID:     "repository-backend",
+			wantKind:      baseline.UnresolvedProfileRepositoryMissing,
+			wantLocations: []string{".roundfix/baseline/profiles/repository-backend.json"},
+			wantAction:    "restore",
+		},
+		{
+			name:          "unknown catalog identity",
+			profileID:     "retired/profile",
+			wantKind:      baseline.UnresolvedProfileCatalogUnknown,
+			wantLocations: []string{},
+			wantAction:    "adopt",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repository := newBaselineUpdateRepository(t)
+			manifest := readBaselineUpdateManifest(t, repository)
+			manifest.Profile = test.profileID
+			manifest.ProfileDigest = "sha256:" + strings.Repeat("0", 64)
+			manifest.Generator.Baseline = "baseline." + test.profileID + "-" + baseline.ManifestVersion
+			writeBaselineUpdateManifest(t, repository, manifest)
+
+			result, stdout, stderr, code := runBaselineUpdateTestCommand(
+				t,
+				context.Background(),
+				"baseline", "update", "--repo", repository, "--format=json",
+			)
+			if code != exitPreflight || result.State != "failed" || result.Category != "manifest" {
+				t.Fatalf("JSON update exit=%d result=%+v stdout=%s stderr=%s", code, result, stdout, stderr)
+			}
+			if result.UnresolvedProfile == nil {
+				t.Fatalf("JSON update unresolved Profile diagnosis is nil: %s", stdout)
+			}
+			diagnosis := *result.UnresolvedProfile
+			if diagnosis.Identity != test.profileID || diagnosis.Kind != test.wantKind ||
+				!slices.Equal(diagnosis.SearchedLocations, test.wantLocations) ||
+				!strings.Contains(strings.ToLower(diagnosis.Action), test.wantAction) {
+				t.Fatalf("JSON update unresolved Profile diagnosis = %+v", diagnosis)
+			}
+			if !strings.Contains(result.Message, diagnosis.Identity) ||
+				!strings.Contains(result.Message, diagnosis.Action) ||
+				strings.Contains(result.Message, "lstat") || strings.Contains(result.Message, "open ") ||
+				strings.Contains(stderr, "lstat") || strings.Contains(stderr, "open ") {
+				t.Fatalf("JSON update message=%q stderr=%q", result.Message, stderr)
+			}
+
+			_, text, textErr, textCode := runBaselineUpdateTestCommand(
+				t,
+				context.Background(),
+				"baseline", "update", "--repo", repository, "--format=text",
+			)
+			if textCode != exitPreflight ||
+				!strings.Contains(text, diagnosis.Identity) ||
+				!strings.Contains(text, diagnosis.Action) ||
+				strings.Contains(text, "lstat") || strings.Contains(text, "open ") ||
+				strings.Contains(textErr, "lstat") || strings.Contains(textErr, "open ") {
+				t.Fatalf("text update exit=%d stdout=%q stderr=%q", textCode, text, textErr)
+			}
+			for _, location := range diagnosis.SearchedLocations {
+				if !strings.Contains(text, location) {
+					t.Fatalf("text update output %q lacks %q", text, location)
+				}
+			}
+		})
 	}
 }
 
