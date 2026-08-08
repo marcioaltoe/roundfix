@@ -271,7 +271,7 @@ Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog En
 <!-- /source-baseline-entry: clause.context.inbox-01-triage -->
 
 <!-- source-baseline-entry: clause.context.inbox-02-fleet-flow -->
-Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent.
+- MUST mint each typed Backlog Entry a closed Finding's recorded actions call for, preserving the boundary between evidence and intent. Where a fleet observation is captured before it reaches this repository is the Secondbrain guidance's concern.
 <!-- /source-baseline-entry: clause.context.inbox-02-fleet-flow -->
 
 <!-- source-baseline-entry: clause.spec.keep-artifacts-in-spec-folder -->

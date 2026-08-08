@@ -68,7 +68,7 @@
     },
     {
       "id": "rule.secondbrain.read-only",
-      "version": 7,
+      "version": 8,
       "coverage": [
         "coverage.secondbrain",
         "coverage.universal-safety"
@@ -77,7 +77,7 @@
         {
           "id": "clause.secondbrain.inbox-write-permission",
           "enforcement": "mandatory",
-          "guidance": "Sessions MAY create files under the Secondbrain's `inbox/**`; this is the only writable Secondbrain namespace. Every other Secondbrain path stays read-only."
+          "guidance": "`inbox/**` is the only writable Secondbrain namespace; every other Secondbrain path stays read-only. This clause bounds where a session may write, never whether it must — the capture obligation is stated separately."
         },
         {
           "id": "clause.secondbrain.inbox-entry-contract",

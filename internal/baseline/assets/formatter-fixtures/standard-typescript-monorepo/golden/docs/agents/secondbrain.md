@@ -31,7 +31,7 @@ resolved_to: <repository-relative-artifact-path>
 
 - **mandatory**: Triage works pending entries `oldest first`, ordered by `created_at`; take the earliest entry before newer arrivals.
 
-- **mandatory**: Sessions MAY create files under the Secondbrain's `inbox/**`; this is the only writable Secondbrain namespace. Every other Secondbrain path stays read-only.
+- **mandatory**: `inbox/**` is the only writable Secondbrain namespace; every other Secondbrain path stays read-only. This clause bounds where a session may write, never whether it must — the capture obligation is stated separately.
 
 - **prohibited**: Do not create, edit, rename, move, or delete any Secondbrain file outside `inbox/**`. Do not edit `raw/` or `projects/*/mirror/`, and never copy code or generated artifacts from a mirror without a local source check.
 

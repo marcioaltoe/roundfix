@@ -21,7 +21,7 @@ Read `wiki/index.md` first. Then run `qmd query "<question>" --all --files --min
 <!-- /source-baseline-entry: clause.secondbrain.02-query-order -->
 
 <!-- source-baseline-entry: clause.secondbrain.inbox-write-permission -->
-Sessions MAY create files under the Secondbrain's `inbox/**`; this is the only writable Secondbrain namespace. Every other Secondbrain path stays read-only.
+- MUST treat `inbox/**` as the only writable Secondbrain namespace and every other Secondbrain path as read-only. This bounds where a session may write, never whether it must.
 <!-- /source-baseline-entry: clause.secondbrain.inbox-write-permission -->
 
 <!-- source-baseline-entry: clause.secondbrain.inbox-entry-contract -->
