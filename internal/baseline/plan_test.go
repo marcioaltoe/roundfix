@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -1241,6 +1242,158 @@ func TestManagedRefreshUnrecordedManagedRegionReachesReadyPlan(t *testing.T) {
 	}
 	if outcome.Plan == nil || outcome.Result.State != "ready" {
 		t.Fatalf("unrecorded managed-region outcome = %+v", outcome)
+	}
+}
+
+func TestManagedRefreshPlanReportsRemovedLines(t *testing.T) {
+	t.Parallel()
+
+	plan := buildManagedRefreshPlanWithInsertedLines(t, []string{
+		"",
+		"  line removed by refresh  ",
+		"line removed by refresh",
+	})
+	region := requirePlanUnrecordedManagedRegion(
+		t,
+		plan,
+		"docs/agents/agent-instructions.md",
+		"guide.agent-instructions",
+	)
+	if got, want := region.RemovedLines, []string{"line removed by refresh"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("removed lines = %#v, want %#v", got, want)
+	}
+	if region.RemovedLinesTruncated != 0 {
+		t.Fatalf("removed lines truncated = %d, want 0", region.RemovedLinesTruncated)
+	}
+}
+
+func TestManagedRefreshPlanReportsEmptyRemovedLines(t *testing.T) {
+	t.Parallel()
+
+	plan := buildManagedRefreshPlanWithAgedRegionDigest(t)
+	region := requirePlanUnrecordedManagedRegion(
+		t,
+		plan,
+		"docs/agents/agent-instructions.md",
+		"guide.agent-instructions",
+	)
+	if region.RemovedLines == nil || len(region.RemovedLines) != 0 {
+		t.Fatalf("removed lines = %#v, want an empty array", region.RemovedLines)
+	}
+	if region.RemovedLinesTruncated != 0 {
+		t.Fatalf("removed lines truncated = %d, want 0", region.RemovedLinesTruncated)
+	}
+}
+
+func TestManagedRefreshPlanTruncatesRemovedLines(t *testing.T) {
+	t.Parallel()
+
+	inserted := make([]string, removedManagedRegionLinesLimit+3)
+	for index := range inserted {
+		inserted[index] = fmt.Sprintf("removed line %03d", index)
+	}
+	plan := buildManagedRefreshPlanWithInsertedLines(t, inserted)
+	region := requirePlanUnrecordedManagedRegion(
+		t,
+		plan,
+		"docs/agents/agent-instructions.md",
+		"guide.agent-instructions",
+	)
+	if len(region.RemovedLines) != removedManagedRegionLinesLimit {
+		t.Fatalf(
+			"removed lines = %d, want bound %d",
+			len(region.RemovedLines),
+			removedManagedRegionLinesLimit,
+		)
+	}
+	if region.RemovedLinesTruncated != 3 {
+		t.Fatalf("removed lines truncated = %d, want 3", region.RemovedLinesTruncated)
+	}
+	if got, want := region.RemovedLines[0], inserted[0]; got != want {
+		t.Fatalf("first removed line = %q, want %q", got, want)
+	}
+	if got, want := region.RemovedLines[len(region.RemovedLines)-1],
+		inserted[removedManagedRegionLinesLimit-1]; got != want {
+		t.Fatalf("last reported removed line = %q, want %q", got, want)
+	}
+}
+
+func TestManagedRefreshRemovedLinesPlanDigestAndStrictCodecRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	plan := buildManagedRefreshPlanWithInsertedLines(t, []string{"digest-bound removed line"})
+	encoded, err := MarshalPlanDocument(plan)
+	if err != nil {
+		t.Fatalf("marshal managed-refresh Plan Document: %v", err)
+	}
+	decoded, err := ParsePlanDocument(encoded)
+	if err != nil {
+		t.Fatalf("parse managed-refresh Plan Document: %v", err)
+	}
+	if !reflect.DeepEqual(decoded.UnrecordedManagedRegions, plan.UnrecordedManagedRegions) {
+		t.Fatalf(
+			"unrecorded managed regions changed on round trip:\n got=%+v\nwant=%+v",
+			decoded.UnrecordedManagedRegions,
+			plan.UnrecordedManagedRegions,
+		)
+	}
+
+	changed := plan
+	changed.UnrecordedManagedRegions = append(
+		[]UnrecordedManagedRegion(nil),
+		plan.UnrecordedManagedRegions...,
+	)
+	changed.UnrecordedManagedRegions[0].RemovedLines = []string{"different removed line"}
+	changedDigest, err := computePlanDigest(changed)
+	if err != nil {
+		t.Fatalf("compute changed removed-line Plan Digest: %v", err)
+	}
+	if changedDigest == plan.PlanDigest {
+		t.Fatal("changing only a removed line did not change the Plan Digest")
+	}
+}
+
+func TestNonManagedPlansOmitRemovedLines(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		plan func(*testing.T) PlanDocument
+	}{
+		{
+			name: "greenfield",
+			plan: func(t *testing.T) PlanDocument {
+				return buildTestPlan(t, newPlanRepository(t))
+			},
+		},
+		{
+			name: "preservation",
+			plan: func(t *testing.T) PlanDocument {
+				repository := newPlanRepository(t)
+				writeInspectionFile(t, repository, "AGENTS.md", "Preserve this repository rule.\n")
+				commitInspectionRepository(t, repository, "seed preservation fixture")
+				return buildRootPreservationPlan(
+					t,
+					repository,
+					"repository-rules",
+					specificRepositoryPath,
+				)
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			plan := test.plan(t)
+			encoded, err := MarshalPlanDocument(plan)
+			if err != nil {
+				t.Fatalf("marshal %s Plan Document: %v", test.name, err)
+			}
+			for _, field := range []string{"unrecordedManagedRegions", "removedLines"} {
+				if bytes.Contains(encoded, []byte(`"`+field+`"`)) {
+					t.Fatalf("%s Plan Document includes managed-refresh field %q", test.name, field)
+				}
+			}
+		})
 	}
 }
 
@@ -2864,6 +3017,128 @@ func newSameIdentityRetentionDrift(
 	target := cloneCatalogForRetentionDrift(t, source)
 	target.digest = "sha256:" + strings.Repeat("f", 64)
 	return repository, request, target, outcome.Plan.SetupManifest.Generator.Baseline
+}
+
+func buildManagedRefreshPlanWithInsertedLines(
+	t *testing.T,
+	lines []string,
+) PlanDocument {
+	t.Helper()
+	repository, request := newManagedRefreshPlanFixture(t)
+	const (
+		carrierPath = "docs/agents/agent-instructions.md"
+		managedID   = "guide.agent-instructions"
+	)
+	content, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(carrierPath)))
+	if err != nil {
+		t.Fatalf("read managed-refresh carrier: %v", err)
+	}
+	endMarker := []byte("<!-- setup-context-driven:end id=" + managedID + " -->")
+	if !bytes.Contains(content, endMarker) {
+		t.Fatalf("managed-refresh carrier has no %q marker", endMarker)
+	}
+	inserted := []byte(strings.Join(lines, "\n") + "\n")
+	content = bytes.Replace(content, endMarker, append(inserted, endMarker...), 1)
+	writeTransactionFile(t, repository, carrierPath, string(content), 0o644)
+	commitInspectionRepository(t, repository, "insert managed-refresh fixture lines")
+	return buildManagedRefreshPlan(t, request)
+}
+
+func buildManagedRefreshPlanWithAgedRegionDigest(t *testing.T) PlanDocument {
+	t.Helper()
+	repository, request := newManagedRefreshPlanFixture(t)
+	data, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(manifestPath)))
+	if err != nil {
+		t.Fatalf("read managed-refresh Setup Manifest: %v", err)
+	}
+	var manifest SetupManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		t.Fatalf("decode managed-refresh Setup Manifest: %v", err)
+	}
+	const (
+		carrierPath = "docs/agents/agent-instructions.md"
+		managedID   = "guide.agent-instructions"
+	)
+	found := false
+	for index := range manifest.ManagedArtifacts {
+		artifact := &manifest.ManagedArtifacts[index]
+		if artifact.Path == carrierPath && artifact.ID == managedID {
+			artifact.Digest = strings.Repeat("0", 64)
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Setup Manifest has no managed region %s:%s", carrierPath, managedID)
+	}
+	data, err = marshalSetupManifestBytes(manifest)
+	if err != nil {
+		t.Fatalf("encode aged managed-refresh Setup Manifest: %v", err)
+	}
+	writeTransactionFile(t, repository, manifestPath, string(data), 0o644)
+	commitInspectionRepository(t, repository, "age managed-refresh fixture digest")
+	return buildManagedRefreshPlan(t, request)
+}
+
+func newManagedRefreshPlanFixture(t *testing.T) (string, PlanRequest) {
+	t.Helper()
+	repository := newPlanRepository(t)
+	request := PlanRequest{
+		Repository:   repository,
+		ProfileID:    "go-cli-tui",
+		Decisions:    planTestDecisions(),
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil {
+		t.Fatalf("build source managed-refresh fixture plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("source managed-refresh fixture plan result = %+v", outcome.Result)
+	}
+	if _, err := ApplyPlan(
+		context.Background(),
+		repository,
+		*outcome.Plan,
+		outcome.Plan.PlanDigest,
+	); err != nil {
+		t.Fatalf("apply source managed-refresh fixture plan: %v", err)
+	}
+	request.Preservation = RootPreservationRequest{Mode: PreservationModeManagedRefresh}
+	return repository, request
+}
+
+func buildManagedRefreshPlan(t *testing.T, request PlanRequest) PlanDocument {
+	t.Helper()
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil {
+		t.Fatalf("build managed-refresh fixture plan: %v", err)
+	}
+	if outcome.Plan == nil || outcome.Result.State != "ready" {
+		t.Fatalf("managed-refresh fixture outcome = %+v", outcome)
+	}
+	return *outcome.Plan
+}
+
+func requirePlanUnrecordedManagedRegion(
+	t *testing.T,
+	plan PlanDocument,
+	path string,
+	managedID string,
+) UnrecordedManagedRegion {
+	t.Helper()
+	for _, region := range plan.UnrecordedManagedRegions {
+		if region.Path == path && region.ManagedID == managedID {
+			return region
+		}
+	}
+	t.Fatalf(
+		"Plan has no unrecorded managed region %s:%s: %+v",
+		path,
+		managedID,
+		plan.UnrecordedManagedRegions,
+	)
+	return UnrecordedManagedRegion{}
 }
 
 func cloneCatalogForRetentionDrift(t *testing.T, source *Catalog) *Catalog {

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0084-an-update-that-can-run
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -79,3 +79,54 @@ place where both the preimage and the rendered postimage exist.
 - `_techspec.md` → Build Order 2; Data Models; Interfaces: `UnrecordedManagedRegion`.
 - `_prd.md` → Core Feature 2; User Story 3; Goal 3.
 - ADR-0102, ADR-0100.
+
+## Result
+
+### Implementation
+
+- Managed-refresh plan construction now compares each unrecorded Managed
+  Region's on-disk and rendered bodies as trimmed non-blank lines. It keeps the
+  on-disk order, removes duplicate report entries, and carries an explicit empty
+  array when the refresh removes nothing.
+- Each region reports at most 50 removed lines and records the remaining unique
+  line count in `removedLinesTruncated`.
+- The portable Plan Document carries `unrecordedManagedRegions` only in
+  `managed-refresh` mode. The field participates in the existing Plan Digest
+  payload and is checked by the strict Plan Document validator and codecs.
+- The ADR-0100 preimage-bound non-managed-region validation path was not changed.
+
+### Focused checks
+
+- Pre-change signal:
+  `rtk proxy env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260808T153649Z_78746d4b80d08fc7.task_02/.gocache go test ./internal/baseline -run '^TestManagedRefreshPlanReportsRemovedLines$' -count=1`
+  failed to compile because `UnrecordedManagedRegion.RemovedLines`,
+  `RemovedLinesTruncated`, and the fixed bound did not exist.
+- After implementation:
+  `rtk proxy env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260808T153649Z_78746d4b80d08fc7.task_02/.gocache go test ./internal/baseline -run '^TestManagedRefresh(PlanReportsRemovedLines|PlanReportsEmptyRemovedLines|PlanTruncatesRemovedLines|RemovedLinesPlanDigestAndStrictCodecRoundTrip)$' -count=1`
+  passed: `ok roundfix/internal/baseline 1.830s`.
+- Fresh regression check after the final test edit:
+  `rtk proxy env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260808T153649Z_78746d4b80d08fc7.task_02/.gocache go test ./internal/baseline -run '^(TestManagedRefreshPlanReportsRemovedLines|TestManagedRefreshPlanReportsEmptyRemovedLines|TestManagedRefreshPlanTruncatesRemovedLines|TestManagedRefreshRemovedLinesPlanDigestAndStrictCodecRoundTrip|TestNonManagedPlansOmitRemovedLines|TestManagedRefreshPreservesNonManagedRegionDigests|TestBaselinePlanCharacterization)$' -count=1`
+  passed: `ok roundfix/internal/baseline 3.368s`.
+
+### Acceptance evidence
+
+1. `TestManagedRefreshPlanReportsRemovedLines` reports exactly
+   `line removed by refresh` after trimming blanks and deduplicating the repeated
+   on-disk line.
+2. `TestManagedRefreshPlanReportsEmptyRemovedLines` ages only the recorded digest
+   and asserts that the carried region has a non-nil, zero-length removed-line
+   array.
+3. `TestManagedRefreshPlanTruncatesRemovedLines` supplies 53 unique removed lines
+   and asserts the first 50 remain in on-disk order with a truncated count of 3.
+4. `TestManagedRefreshRemovedLinesPlanDigestAndStrictCodecRoundTrip` changes only
+   one carried removed line and observes a different computed Plan Digest.
+5. `TestNonManagedPlansOmitRemovedLines` asserts both real greenfield and
+   preservation Plan Documents omit the managed-refresh fields;
+   `TestBaselinePlanCharacterization` passed against the recorded plan goldens.
+6. `TestManagedRefreshRemovedLinesPlanDigestAndStrictCodecRoundTrip` uses
+   `MarshalPlanDocument` and `ParsePlanDocument` and asserts every carried region
+   and line survives unchanged.
+7. `TestManagedRefreshPreservesNonManagedRegionDigests` passed after the change,
+   exercising the existing exact non-managed-region digest proof from ADR-0100.
+
+The Daemon-owned `## Verification` commands were not run in this Agent turn.

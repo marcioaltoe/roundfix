@@ -52,9 +52,11 @@ const (
 // UnrecordedManagedRegion is one managed region whose on-disk bytes are not
 // the bytes the adopted Setup Manifest recorded. It is reported, not blocking.
 type UnrecordedManagedRegion struct {
-	Path      string                        `json:"path"`
-	ManagedID string                        `json:"managedId"`
-	Reason    UnrecordedManagedRegionReason `json:"reason"`
+	Path                  string                        `json:"path"`
+	ManagedID             string                        `json:"managedId"`
+	Reason                UnrecordedManagedRegionReason `json:"reason"`
+	RemovedLines          []string                      `json:"removedLines"`
+	RemovedLinesTruncated int                           `json:"removedLinesTruncated,omitempty"`
 }
 
 // RootPreservationRequest contains the explicit instruction-preservation

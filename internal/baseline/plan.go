@@ -24,8 +24,9 @@ const (
 	ManifestSchema      = "setup-context-driven/manifest/0.0.1"
 	ManifestVersion     = "0.0.1"
 
-	planDigestDomain = PlanSchemaVersion + "\x00"
-	manifestPath     = "docs/agents/setup-context.json"
+	planDigestDomain               = PlanSchemaVersion + "\x00"
+	manifestPath                   = "docs/agents/setup-context.json"
+	removedManagedRegionLinesLimit = 50
 
 	specificRepositoryPath      = "docs/agents/specific-repository.md"
 	legacyRepositoryPath        = "docs/agents/repository.md"
@@ -182,21 +183,22 @@ type SetupManifest struct {
 
 // PlanDocument is the complete portable approval artifact.
 type PlanDocument struct {
-	SchemaVersion    string              `json:"schemaVersion"`
-	PreservationMode PreservationMode    `json:"preservationMode,omitempty"`
-	Repository       RepositoryIdentity  `json:"repository"`
-	Catalog          CatalogIdentity     `json:"catalog"`
-	Profile          ResolvedProfile     `json:"profile"`
-	Decisions        []DecisionValue     `json:"decisions"`
-	Retention        []RetentionEvidence `json:"retention"`
-	ClauseDelta      *ClauseDelta        `json:"clauseDelta,omitempty"`
-	Preimages        []Preimage          `json:"preimages"`
-	Postimages       []Postimage         `json:"postimages"`
-	Warnings         []Finding           `json:"warnings"`
-	SetupManifest    SetupManifest       `json:"setupManifest"`
-	ManagedEntries   []ManagedEntry      `json:"managedEntries"`
-	FileChanges      []FileChange        `json:"fileChanges"`
-	PlanDigest       string              `json:"planDigest"`
+	SchemaVersion            string                    `json:"schemaVersion"`
+	PreservationMode         PreservationMode          `json:"preservationMode,omitempty"`
+	UnrecordedManagedRegions []UnrecordedManagedRegion `json:"unrecordedManagedRegions,omitempty"`
+	Repository               RepositoryIdentity        `json:"repository"`
+	Catalog                  CatalogIdentity           `json:"catalog"`
+	Profile                  ResolvedProfile           `json:"profile"`
+	Decisions                []DecisionValue           `json:"decisions"`
+	Retention                []RetentionEvidence       `json:"retention"`
+	ClauseDelta              *ClauseDelta              `json:"clauseDelta,omitempty"`
+	Preimages                []Preimage                `json:"preimages"`
+	Postimages               []Postimage               `json:"postimages"`
+	Warnings                 []Finding                 `json:"warnings"`
+	SetupManifest            SetupManifest             `json:"setupManifest"`
+	ManagedEntries           []ManagedEntry            `json:"managedEntries"`
+	FileChanges              []FileChange              `json:"fileChanges"`
+	PlanDigest               string                    `json:"planDigest"`
 }
 
 // EvidenceStatus reports whether one result axis produced affirmative evidence.
@@ -553,6 +555,14 @@ func buildPlanWithCatalog(
 		); err != nil {
 			return PlanOutcome{}, fmt.Errorf("validate managed-refresh preservation: %w", err)
 		}
+		preservation.UnrecordedManagedRegions, err = reportRemovedManagedRegionLines(
+			initial.Root,
+			preservation.UnrecordedManagedRegions,
+			postimages,
+		)
+		if err != nil {
+			return PlanOutcome{}, err
+		}
 	}
 	doc := PlanDocument{
 		SchemaVersion:  PlanSchemaVersion,
@@ -570,6 +580,7 @@ func buildPlanWithCatalog(
 	}
 	if preservation.Mode == PreservationModeManagedRefresh {
 		doc.PreservationMode = PreservationModeManagedRefresh
+		doc.UnrecordedManagedRegions = preservation.UnrecordedManagedRegions
 	}
 	doc.FileChanges, err = deriveFileChanges(doc.ManagedEntries, doc.Preimages, doc.Postimages)
 	if err != nil {
@@ -2311,6 +2322,88 @@ func assemblePostimages(
 	return postimages, ledger, nil
 }
 
+func reportRemovedManagedRegionLines(
+	root string,
+	regions []UnrecordedManagedRegion,
+	postimages []Postimage,
+) ([]UnrecordedManagedRegion, error) {
+	postimageByPath := make(map[string]Postimage, len(postimages))
+	for _, postimage := range postimages {
+		postimageByPath[postimage.Path] = postimage
+	}
+	reported := make([]UnrecordedManagedRegion, 0, len(regions))
+	for _, region := range regions {
+		preimage, err := readOptionalRegular(root, region.Path)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"read unrecorded managed region %s:%s: %w",
+				region.Path,
+				region.ManagedID,
+				err,
+			)
+		}
+		postimage, ok := postimageByPath[region.Path]
+		if !ok {
+			return nil, fmt.Errorf(
+				"render unrecorded managed region %s:%s: planned path has no postimage",
+				region.Path,
+				region.ManagedID,
+			)
+		}
+		region.RemovedLines = removedManagedRegionLines(
+			preimage,
+			postimage.Content,
+			region.ManagedID,
+		)
+		if len(region.RemovedLines) > removedManagedRegionLinesLimit {
+			region.RemovedLinesTruncated = len(region.RemovedLines) - removedManagedRegionLinesLimit
+			region.RemovedLines = region.RemovedLines[:removedManagedRegionLinesLimit]
+		}
+		reported = append(reported, region)
+	}
+	return reported, nil
+}
+
+func removedManagedRegionLines(preimage, postimage []byte, managedID string) []string {
+	postimageLines := stringSet(managedRegionBodyLines(postimage, managedID))
+	removed := make([]string, 0)
+	seen := make(map[string]struct{})
+	for _, line := range managedRegionBodyLines(preimage, managedID) {
+		if _, reproduced := postimageLines[line]; reproduced {
+			continue
+		}
+		if _, duplicate := seen[line]; duplicate {
+			continue
+		}
+		seen[line] = struct{}{}
+		removed = append(removed, line)
+	}
+	return removed
+}
+
+func managedRegionBodyLines(content []byte, managedID string) []string {
+	for _, entry := range partitionRootSource("managed-region", content) {
+		if entry.Kind != "managed-block" ||
+			entry.StructuralProvenance["managedId"] != managedID {
+			continue
+		}
+		openEnd := bytes.Index(entry.SourceBytes, []byte("-->"))
+		closeStart := bytes.LastIndex(entry.SourceBytes, []byte("<!--"))
+		if openEnd < 0 || closeStart < openEnd+3 {
+			return []string{}
+		}
+		lines := make([]string, 0)
+		for _, raw := range bytes.Split(entry.SourceBytes[openEnd+3:closeStart], []byte("\n")) {
+			line := strings.TrimSpace(string(raw))
+			if line != "" {
+				lines = append(lines, line)
+			}
+		}
+		return lines
+	}
+	return []string{}
+}
+
 func preservationConsumesRootPath(preservation RootPreservationPlan, relative string) bool {
 	if preservation.Mode != PreservationModePreservation ||
 		preservation.State != PreservationStateReady {
@@ -2559,8 +2652,78 @@ func validatePlanDocumentShape(document PlanDocument) error {
 		document.PreservationMode != PreservationModeManagedRefresh {
 		return fmt.Errorf("unsupported Baseline Plan preservation mode %q", document.PreservationMode)
 	}
+	if document.PreservationMode != PreservationModeManagedRefresh &&
+		document.UnrecordedManagedRegions != nil {
+		return errors.New("unrecorded managed regions require managed-refresh preservation mode")
+	}
+	if err := validatePlanUnrecordedManagedRegions(document.UnrecordedManagedRegions); err != nil {
+		return err
+	}
 	if err := validatePlanRepositoryIdentity(document.Repository); err != nil {
 		return err
+	}
+	return nil
+}
+
+func validatePlanUnrecordedManagedRegions(regions []UnrecordedManagedRegion) error {
+	for index, region := range regions {
+		if !safeRelative(region.Path) || !validBaselineIdentifier(region.ManagedID) {
+			return fmt.Errorf("invalid unrecorded managed region %d", index)
+		}
+		if region.Reason != UnrecordedManagedRegionReasonDigestMismatch &&
+			region.Reason != UnrecordedManagedRegionReasonMarkerAbsent {
+			return fmt.Errorf(
+				"unrecorded managed region %s:%s has invalid reason %q",
+				region.Path,
+				region.ManagedID,
+				region.Reason,
+			)
+		}
+		if region.RemovedLines == nil {
+			return fmt.Errorf(
+				"unrecorded managed region %s:%s removedLines must be an array",
+				region.Path,
+				region.ManagedID,
+			)
+		}
+		if len(region.RemovedLines) > removedManagedRegionLinesLimit ||
+			region.RemovedLinesTruncated < 0 ||
+			region.RemovedLinesTruncated > 0 &&
+				len(region.RemovedLines) != removedManagedRegionLinesLimit {
+			return fmt.Errorf(
+				"unrecorded managed region %s:%s has invalid removed-line truncation",
+				region.Path,
+				region.ManagedID,
+			)
+		}
+		seen := make(map[string]struct{}, len(region.RemovedLines))
+		for _, line := range region.RemovedLines {
+			if line == "" || strings.TrimSpace(line) != line {
+				return fmt.Errorf(
+					"unrecorded managed region %s:%s has an unnormalized removed line",
+					region.Path,
+					region.ManagedID,
+				)
+			}
+			if _, duplicate := seen[line]; duplicate {
+				return fmt.Errorf(
+					"unrecorded managed region %s:%s has duplicate removed line %q",
+					region.Path,
+					region.ManagedID,
+					line,
+				)
+			}
+			seen[line] = struct{}{}
+		}
+		if index > 0 {
+			previous := regions[index-1]
+			if previous.Path > region.Path ||
+				previous.Path == region.Path && previous.ManagedID >= region.ManagedID {
+				return errors.New(
+					"unrecorded managed regions must be unique in path and managed-ID order",
+				)
+			}
+		}
 	}
 	return nil
 }
