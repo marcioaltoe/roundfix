@@ -88,7 +88,7 @@
 <!-- /source-baseline-entry: clause.core.request-review-explicitly -->
 
 <!-- source-baseline-entry: clause.core.ask-user-answerable-decisions -->
-- MUST NOT guess a decision the user can answer cheaply. Ask through the available user-interaction tool, or ask plainly and stop when no such tool exists.
+- MUST NOT guess a decision the user can answer cheaply. Ask through the runtime's structured user-interaction tool when it has one; when it has none, reproduce that shape by hand — one question per message, options enumerated by number or letter with a one-line consequence each, and a stated recommendation.
 <!-- /source-baseline-entry: clause.core.ask-user-answerable-decisions -->
 
 <!-- source-baseline-entry: clause.core.prohibit-secret-exposure -->

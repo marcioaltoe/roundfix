@@ -544,7 +544,7 @@
     },
     {
       "id": "rule.core.decision-authority",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.universal-safety"
       ],
@@ -552,7 +552,7 @@
         {
           "id": "clause.core.ask-user-answerable-decisions",
           "enforcement": "stop-and-ask",
-          "guidance": "Never guess a decision the user can answer cheaply. Ask through the available user-interaction tool, or ask plainly and stop when no such tool exists."
+          "guidance": "Never guess a decision the user can answer cheaply. Ask through the runtime's structured user-interaction tool when it has one. When it has none, reproduce that tool's shape by hand: one question per message, each option enumerated by number or letter with a one-line consequence, and a stated recommendation. Never bundle several questions into one message or ask in open prose — both make a question expensive to answer and easy to answer partially."
         }
       ]
     },
