@@ -422,10 +422,34 @@ func normalizeSelection(path string, selection AgentSelection, requireReasoning 
 	if normalized.Model == "" {
 		return AgentSelection{}, fmt.Errorf("%s.model must not be empty", path)
 	}
+	if err := validateModelManagedReasoning(path, normalized); err != nil {
+		return AgentSelection{}, err
+	}
 	if !requireReasoning {
 		return normalized, nil
 	}
 	return normalized, nil
+}
+
+// runtimesManagingReasoning lists the ACP Runtimes whose reasoning effort only
+// the Agent Model can set, so Roundfix must not be configured to assign one.
+// See ADR-0106.
+var runtimesManagingReasoning = map[string]string{
+	"opencode": "OpenCode advertises reasoning effort per model and only after an Agent Session's first prompt, " +
+		"so Roundfix cannot apply one during a token-free Exact Agent Selection Proof",
+}
+
+func validateModelManagedReasoning(path string, selection AgentSelection) error {
+	reason, managed := runtimesManagingReasoning[selection.Runtime]
+	if !managed || selection.ReasoningEffort == "" {
+		return nil
+	}
+	return fmt.Errorf(
+		"%s.reasoning_effort must be empty for runtime %q; %s; use reasoning_effort: \"\" for model-managed reasoning",
+		path,
+		selection.Runtime,
+		reason,
+	)
 }
 
 func configHasProfilesSection(document *yaml.Node) bool {

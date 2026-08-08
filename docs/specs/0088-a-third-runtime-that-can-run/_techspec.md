@@ -71,6 +71,13 @@ the concern:
   reasoning-effort config key. It stops mapping `opencode`, which makes
   `validateRuntimeSelection` reject a non-empty effort on that runtime for every
   entry point, including an invocation override.
+- `internal/agent/selection_assignment.go` owns selection encodings. It gains
+  `runtime_managed` beside `model_managed`, because the two differ in what the
+  adapter may advertise: `model_managed` requires the absence of a reasoning
+  option, while OpenCode advertises a per-model `effort` option Roundfix
+  deliberately never assigns. Without the distinction an empty-effort OpenCode
+  selection plans and then fails its own effective-state check. Discovered
+  during Task 03 against the measured payload; see ADR-0106.
 - `internal/config/profiles.go` owns Agent Selection normalization. It gains the
   same refusal earlier, where the maintainer can act on it.
 - `internal/config/profiles.go` also gains the resolver for configured Agent Work
@@ -286,6 +293,11 @@ regression. Run `go clean -testcache` before trusting `make verify`.
   See ADR-0105.
 - OpenCode reasoning effort is managed by the model, refused when non-empty. See
   ADR-0106.
+- An empty reasoning effort has two proof meanings, kept apart as two encodings:
+  `model_managed` proves only against an adapter advertising no reasoning
+  control, and `runtime_managed` proves against a runtime whose advertised
+  control Roundfix declines to assign. Collapsing them would have weakened the
+  Codex and Claude proof to admit an unassigned reasoning option.
 - Profile readiness covers every configured Agent Work Category; inherited
   categories add no tuple and are not enumerated. See ADR-0107.
 - The retention bound stays at 64 values, and a separate absolute ceiling of 4096

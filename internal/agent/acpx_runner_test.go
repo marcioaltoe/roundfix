@@ -1921,12 +1921,14 @@ func TestACPXRunAppliesSelectionBeforePrompt(t *testing.T) {
 			},
 		},
 		{
-			name:    "opencode effort",
-			runtime: RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "opencode-model", ReasoningEffort: "maximum"},
+			// OpenCode manages its own reasoning effort, so a Run issues no
+			// reasoning config set between the Agent Session and the prompt.
+			// See ADR-0106.
+			name:    "opencode model-managed reasoning issues no effort set",
+			runtime: RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "opencode-model"},
 			want: func(gitRoot string) [][]string {
 				return [][]string{
 					{"--cwd", gitRoot, "--model", "opencode-model", "opencode", "sessions", "ensure", "--name", "roundfix-run-1"},
-					{"--cwd", gitRoot, "opencode", "set", "effort", "maximum", "-s", "roundfix-run-1"},
 					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "opencode-model", "opencode", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 				}
 			},
@@ -2297,7 +2299,6 @@ func TestACPXRunAppliesFullAccessSessionSetup(t *testing.T) {
 			want: func(gitRoot string) [][]string {
 				return [][]string{
 					{"--cwd", gitRoot, "--model", "opencode-test", "opencode", "sessions", "ensure", "--name", "roundfix-run-1"},
-					{"--cwd", gitRoot, "opencode", "set", "effort", "high", "-s", "roundfix-run-1"},
 					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "opencode-test", "opencode", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 				}
 			},
@@ -3455,9 +3456,7 @@ func selectedRuntime(runtime RuntimeSpec) RuntimeSpec {
 		if runtime.Model == "" {
 			runtime.Model = "opencode-test"
 		}
-		if runtime.ReasoningEffort == "" {
-			runtime.ReasoningEffort = "high"
-		}
+		// No reasoning-effort default: OpenCode manages its own. See ADR-0106.
 	default:
 		if runtime.Model == "" {
 			runtime.Model = "gpt-test"
@@ -4399,4 +4398,111 @@ func infrastructureTailFromMessageForTest(t *testing.T, message string) string {
 		t.Fatalf("message has no stderr tail delimiter: %q", message)
 	}
 	return tail
+}
+
+// TestReasoningEffortConfigKeyRefusesOpenCode keeps the single source of truth
+// for which ACP Runtimes Roundfix will not assign a reasoning effort on.
+func TestReasoningEffortConfigKeyRefusesOpenCode(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		runtime     RuntimeSpec
+		wantKey     string
+		wantRefusal bool
+	}{
+		{name: "codex maps to its own key", runtime: RuntimeSpec{ID: "codex"}, wantKey: acpxCodexReasoningEffortKey},
+		{name: "claude maps to the generic key", runtime: RuntimeSpec{ID: "claude"}, wantKey: acpxGenericReasoningEffortKey},
+		{name: "opencode manages its own reasoning", runtime: RuntimeSpec{ID: "opencode"}, wantRefusal: true},
+		{name: "opencode override manages its own reasoning", runtime: RuntimeSpec{ID: "opencode-custom"}, wantRefusal: true},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			key, err := acpxReasoningEffortConfigKey(tt.runtime)
+			if !tt.wantRefusal {
+				if err != nil {
+					t.Fatalf("reasoning key for %q: %v", tt.runtime.ID, err)
+				}
+				if key != tt.wantKey {
+					t.Fatalf("reasoning key = %q, want %q", key, tt.wantKey)
+				}
+				return
+			}
+			var managed *ModelManagedReasoningError
+			if !errors.As(err, &managed) {
+				t.Fatalf("error = %T %v, want ModelManagedReasoningError", err, err)
+			}
+			if !strings.Contains(err.Error(), "empty reasoning effort") {
+				t.Fatalf("error %q must name the repair", err.Error())
+			}
+			if managed.Classification() != SelectionReasoningControlNotAdvertised {
+				t.Fatalf("classification = %q, want %q", managed.Classification(), SelectionReasoningControlNotAdvertised)
+			}
+		})
+	}
+}
+
+// TestValidateRuntimeSelectionRefusesOpenCodeReasoningEffort closes the
+// invocation-override path: a --reasoning-effort flag cannot reach an OpenCode
+// Run by bypassing configuration validation.
+func TestValidateRuntimeSelectionRefusesOpenCodeReasoningEffort(t *testing.T) {
+	t.Parallel()
+
+	err := validateRuntimeSelection(RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3", ReasoningEffort: "max"})
+	var managed *ModelManagedReasoningError
+	if !errors.As(err, &managed) {
+		t.Fatalf("error = %T %v, want ModelManagedReasoningError", err, err)
+	}
+
+	if err := validateRuntimeSelection(RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3"}); err != nil {
+		t.Fatalf("a model-managed OpenCode selection must validate: %v", err)
+	}
+}
+
+// TestRuntimeManagedReasoningProvesAgainstAnAdvertisedEffortOption is the
+// measured OpenCode shape: the adapter advertises a per-model effort option
+// that Roundfix declines to assign, and the selection still proves.
+func TestRuntimeManagedReasoningProvesAgainstAnAdvertisedEffortOption(t *testing.T) {
+	t.Parallel()
+
+	fixture := `{"action":"config_set","configId":"model","value":"opencode-go/kimi-k3","configOptions":[` +
+		`{"id":"model","category":"model","type":"select","currentValue":"opencode-go/kimi-k3","options":[{"value":"opencode-go/kimi-k3"},{"value":"opencode-go/qwen3.8-max"}]},` +
+		`{"id":"effort","type":"select","currentValue":"max","options":[{"value":"max"}]}]}`
+
+	capabilities, err := ParseSessionConfigOptions(
+		[]byte(fixture),
+		AdapterEvidence{Command: "opencode"},
+		SelectionRetention{Model: "opencode-go/kimi-k3"},
+	)
+	if err != nil {
+		t.Fatalf("project the OpenCode capability shape: %v", err)
+	}
+
+	runtime := RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3"}
+	assignment, err := PlanSelectionAssignment(runtime, capabilities)
+	if err != nil {
+		t.Fatalf("plan a model-managed OpenCode selection: %v", err)
+	}
+	if assignment.Encoding != SelectionEncodingRuntimeManaged {
+		t.Fatalf("encoding = %q, want %q", assignment.Encoding, SelectionEncodingRuntimeManaged)
+	}
+	if !selectionStateMatches(assignment, capabilities) {
+		t.Fatalf("an advertised effort option Roundfix never assigns must not break the proof: %#v", capabilities.ReasoningOption)
+	}
+
+	// A runtime Roundfix does control keeps the strict rule.
+	claude := RuntimeSpec{ID: "claude", Model: "opencode-go/kimi-k3"}
+	claudeAssignment, err := PlanSelectionAssignment(claude, capabilities)
+	if err != nil {
+		t.Fatalf("plan a model-managed Claude selection: %v", err)
+	}
+	if claudeAssignment.Encoding != SelectionEncodingModelManaged {
+		t.Fatalf("encoding = %q, want %q", claudeAssignment.Encoding, SelectionEncodingModelManaged)
+	}
+	if selectionStateMatches(claudeAssignment, capabilities) {
+		t.Fatal("model_managed must still require the absence of a reasoning option")
+	}
 }

@@ -18,6 +18,12 @@ const (
 	SelectionEncodingIndependent  = "independent"
 	SelectionEncodingModelVariant = "model_variant"
 	SelectionEncodingModelManaged = "model_managed"
+	// SelectionEncodingRuntimeManaged is an empty reasoning effort on an ACP
+	// Runtime whose reasoning Roundfix declines to control. It differs from
+	// model_managed in what the adapter may advertise: model_managed requires
+	// the absence of a reasoning option, while a runtime-managed runtime may
+	// advertise one that Roundfix deliberately never assigns. See ADR-0106.
+	SelectionEncodingRuntimeManaged = "runtime_managed"
 
 	SelectionProofStatusProven = "proven"
 )
@@ -288,6 +294,9 @@ func PlanSelectionAssignment(runtime RuntimeSpec, capabilities SelectionCapabili
 		}
 		assignment.AdapterModel = base.AdapterValue
 		assignment.Encoding = SelectionEncodingModelManaged
+		if runtimeManagesOwnReasoning(runtime) {
+			assignment.Encoding = SelectionEncodingRuntimeManaged
+		}
 		return assignment, nil
 	}
 
@@ -484,9 +493,23 @@ func selectionStateMatches(assignment SelectionAssignment, state SelectionCapabi
 		return model.ReasoningEffort == assignment.ReasoningEffort
 	case SelectionEncodingModelManaged:
 		return model.ModelManaged && model.ReasoningEffort == "" && state.ReasoningOption == nil
+	case SelectionEncodingRuntimeManaged:
+		// The adapter may advertise a reasoning option here. Roundfix declines
+		// to assign one on this runtime, so whatever value the option carries
+		// is the Agent Model's own and is not proof-relevant. See ADR-0106.
+		return model.ModelManaged && model.ReasoningEffort == ""
 	default:
 		return false
 	}
+}
+
+// runtimeManagesOwnReasoning reports whether Roundfix declines to control this
+// ACP Runtime's reasoning effort, reading the same mapping that refuses to
+// produce a reasoning config key for it.
+func runtimeManagesOwnReasoning(runtime RuntimeSpec) bool {
+	_, err := acpxReasoningEffortConfigKey(runtime)
+	var managed *ModelManagedReasoningError
+	return errors.As(err, &managed)
 }
 
 func modelByAdapterValue(models []ModelCapability, adapterValue string) (ModelCapability, bool) {
