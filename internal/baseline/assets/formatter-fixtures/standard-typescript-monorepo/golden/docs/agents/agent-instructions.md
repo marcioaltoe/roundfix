@@ -48,7 +48,7 @@ The selected repository Verification is `make verify`.
 
 - **mandatory**: When a pull request changes code and the repository's review automation does not review it on its own, request the review explicitly as part of opening the pull request rather than as a follow-up. Never read a skipped or absent review check as approval.
 
-- **stop-and-ask**: Never guess a decision the user can answer cheaply. Ask through the runtime's structured user-interaction tool when it has one. When it has none, reproduce that tool's shape by hand: one question per message, each option enumerated by number or letter with a one-line consequence, and a stated recommendation. Never bundle several questions into one message or ask in open prose — both make a question expensive to answer and easy to answer partially.
+- **stop-and-ask**: Never guess a decision the user can answer cheaply. Ask through the runtime's structured user-interaction tool when it has one; when it has none, reproduce that shape by hand. Either way the question must be answerable without rereading the session: state what was found and why it forces a choice, then enumerate options by number or letter, each with the consequence of picking it, and name a recommendation. Never bundle several questions into one message, ask in open prose, or compress an option until only its author can tell what it means — an under-explained question is answered by guess, which costs more than not asking.
 
 - **prohibited**: Never read, print, commit, or generate secrets. Keep credentials and environment-specific values in the repository's existing secure configuration boundary, and do not invent authentication, authorization, database, transport, or deployment policy.
 

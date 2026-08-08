@@ -88,7 +88,7 @@
 <!-- /source-baseline-entry: clause.core.request-review-explicitly -->
 
 <!-- source-baseline-entry: clause.core.ask-user-answerable-decisions -->
-- MUST NOT guess a decision the user can answer cheaply. Ask through the runtime's structured user-interaction tool when it has one; when it has none, reproduce that shape by hand — one question per message, options enumerated by number or letter with a one-line consequence each, and a stated recommendation.
+- MUST NOT guess a decision the user can answer cheaply, and MUST ask it so it is answerable without rereading the session: what was found and why it forces a choice, options enumerated by number or letter with the consequence of each, and a named recommendation. Never bundle questions, ask in prose, or compress an option until only its author can read it.
 <!-- /source-baseline-entry: clause.core.ask-user-answerable-decisions -->
 
 <!-- source-baseline-entry: clause.core.prohibit-secret-exposure -->
