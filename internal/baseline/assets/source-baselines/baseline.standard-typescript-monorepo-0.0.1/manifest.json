@@ -1083,14 +1083,36 @@
       "digest": "449dd48f8556425713170b4da9f0c4969e6d8d6c66bd81e54ea7ecb212407715"
     },
     {
+      "id": "clause.secondbrain.capture-trigger",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 5290,
+      "end": 5607,
+      "digest": "ffaa0c879758f9bcbc60ea60de073d66a88d7704d0e5d44727218a9f190b6da1"
+    },
+    {
+      "id": "clause.secondbrain.capture-self-contained",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 5749,
+      "end": 5944,
+      "digest": "094d7b0eeaf4b30a369173ce6dbd52e8d274e226e96f21e310c3164217baaa4b"
+    },
+    {
       "id": "clause.secondbrain.prohibit-writes",
       "path": "corpus/docs/agents/secondbrain.md",
       "kind": "normative-clause",
       "enforcement": "prohibited",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 5291,
-      "end": 5508,
+      "start": 6087,
+      "end": 6304,
       "digest": "cd11ba32187e8ae388201090d051a61142acdc826d2b2274bde2948d76f82008"
     },
     {
@@ -1100,8 +1122,8 @@
       "enforcement": "prohibited",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 5651,
-      "end": 5866,
+      "start": 6447,
+      "end": 6662,
       "digest": "c520b99127df3d92d47786af5b45c573bbeaaa53ec06333672c6e4d5f84c02f0"
     },
     {
@@ -1111,8 +1133,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 6009,
-      "end": 6152,
+      "start": 6805,
+      "end": 6948,
       "digest": "15e0eece3032f56e5cec8f964c440a4aa8fa2a8de12e68e52580efa056a03bf7"
     },
     {
@@ -1122,9 +1144,20 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/secondbrain.md",
       "structure": null,
-      "start": 6297,
-      "end": 6427,
+      "start": 7093,
+      "end": 7223,
       "digest": "0af4ae522b06d04fb6797f3001a0531b8d140e4c32f2770e4b19ac6ad820b532"
+    },
+    {
+      "id": "clause.secondbrain.baseline-owned-guidance",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 7375,
+      "end": 7578,
+      "digest": "b05e624b5b9074ae2cbebf16c17f2e90c7ba12ba1d59b5a8a43a3276ae15e7ef"
     },
     {
       "id": "contract.skill-dispatch.active-modules",

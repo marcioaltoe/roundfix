@@ -300,7 +300,7 @@ func TestDecisionDocumentSkeletonRejectsMalformedInput(t *testing.T) {
 // corpus change moves one declared value instead of hunting literals, and so
 // the diff says what moved.
 const (
-	maintainedSourceBaselineEntries    = 120
+	maintainedSourceBaselineEntries    = 123
 	maintainedSourceBaselineAccounting = 51
 )
 

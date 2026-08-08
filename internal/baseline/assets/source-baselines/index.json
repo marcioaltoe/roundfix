@@ -105,10 +105,13 @@
         "clause.secondbrain.inbox-empty-state",
         "clause.secondbrain.inbox-auto-capture",
         "clause.secondbrain.research-capture",
+        "clause.secondbrain.capture-trigger",
+        "clause.secondbrain.capture-self-contained",
         "clause.secondbrain.prohibit-writes",
         "clause.secondbrain.prohibit-secret-access",
         "clause.secondbrain.cite-used-files",
         "clause.secondbrain.escalate-durable-updates",
+        "clause.secondbrain.baseline-owned-guidance",
         "contract.skill-dispatch.active-modules",
         "contract.spec.route-matrix",
         "contract.spec.task-ownership",
@@ -128,9 +131,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 120,
-      "corpusDigest": "df8b9705f42b5b722257bc81c4bd9ec9584e4d7f5a20a998f15402c1dff0d3be",
-      "manifestDigest": "bbfa0953e14a4bf20f33b2ba4ed56399df5fea8c42248538b5b5591add93fde0"
+      "entryCount": 123,
+      "corpusDigest": "3db90b738cfbe6975149adc13116684b1edf790111bbf46479203b754e145eda",
+      "manifestDigest": "4a3d185c51fc1722a50dbfd5b0dab1de3b06a63021dac96f5f273fb3451476ac"
     }
   ]
 }
