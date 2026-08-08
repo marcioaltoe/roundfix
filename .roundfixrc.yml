@@ -72,6 +72,32 @@ profiles:
       - runtime: claude
         model: opus
         reasoning_effort: high
+  data:
+    # The OpenCode route. It exists so this repository has a third ACP Runtime
+    # it can actually reach: on 2026-08-08 the codex quota was exhausted until
+    # 08-12 and the Anthropic week stood at 66%, while a freshly subscribed
+    # OpenCode sat at 0% across all three windows with no way in.
+    #
+    # reasoning_effort is empty on purpose, and Roundfix now refuses any other
+    # value here. OpenCode advertises effort per model and only after an Agent
+    # Session's first prompt, so a token-free Exact Agent Selection Proof cannot
+    # apply one; see ADR-0106. kimi-k3 runs at `max` by its own default.
+    #
+    # kimi-k3 carries no usage multiplier. Two subscribed models do — gpt-5.6-luna
+    # and deepseek-v4-flash bill at 2x — which inverts the obvious guess, since
+    # deepseek-v4-pro carries none. Snapshot: docs/references/model-selection.md.
+    #
+    # Only `data` routes here. Promoting OpenCode into the required categories'
+    # Fallback Chains is a separate maintainer decision and would change routing
+    # for work already in flight.
+    preferred:
+      runtime: opencode
+      model: opencode-go/kimi-k3
+      reasoning_effort: ""
+    fallbacks:
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
   review:
     # Luna at max: 67% against Sol's 69%, for $0.61 against $3.47. It spends 102
     # steps against 37, but answers in 4.1s against 9.4s, so the two nearly
