@@ -55,6 +55,32 @@ The Source Baseline paths are included from the start: the catalog refuses a
 mandatory clause that no Source Baseline row carries, and the regenerator
 maintains rows but never creates them.
 
+## Extension — consolidating the overlap the clauses created
+
+Checking the result against the Secondbrain's own literature the same day
+surfaced a defect the additions introduced. `wiki/concepts/agent-workflows-e-loop-engineering.md`
+states the harness principle as "ferramentas pequenas e sem sobreposição", and
+the catalog now carries four clauses across two modules governing one act:
+`context.inbox-02-fleet-flow` and `secondbrain.capture-trigger` both route
+observations to `inbox/<destination>/`, while `secondbrain.inbox-write-permission`
+says sessions **MAY** write where `capture-trigger` says they **must**.
+
+Consolidation is inside the purpose already granted, because the overlap is a
+consequence of the clauses this record authorized:
+
+- `internal/baseline/assets/modules/context-workflow.json`, limited to removing
+  the routing sentence from `clause.context.inbox-02-fleet-flow` so it keeps
+  only the Finding-to-Backlog lifecycle that is its own concern, and bumping its
+  rule's version.
+- `internal/baseline/assets/modules/secondbrain.json`, additionally limited to
+  rewriting `clause.secondbrain.inbox-write-permission` so it states the write
+  boundary without contradicting the obligation.
+- the same Source Baseline corpus files and manifest, limited to keeping those
+  two clauses' entries in agreement.
+
+One act, one owner: `secondbrain` owns capture; `context-workflow` owns what
+happens to an artifact after Triage admits it.
+
 ## Bounded by purpose
 
 The three clauses are the capture trigger with owner routing, the entry's
