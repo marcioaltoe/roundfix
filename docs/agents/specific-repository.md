@@ -115,12 +115,16 @@ project moves to `0.1.0`.
   loops and nothing else. A pull request opened directly — by `gh pr create` or
   any other route — gets no review at all, and its CodeRabbit check reports
   `Review skipped: automatic reviews are disabled`, which reads like a pass.
-  Whenever the pull request changes code, post `@coderabbitai review` as a
-  comment immediately after opening it, and treat that comment as part of
-  opening the pull request rather than a follow-up. Documentation-only pull
-  requests may skip it. Three pull requests merged unreviewed on 2026-08-07
-  because this rule did not exist: the tool had been taught to ask and the
-  agents had not.
+  Whenever the pull request changes code, put the line `coderabbit:review` in
+  the **pull request description**, written when the pull request is opened
+  rather than added afterwards. Documentation-only pull requests may skip it.
+  Do not rely on an `@coderabbitai review` comment instead: that command is
+  one-shot and any later push invalidates it, answering
+  `Action not completed — Head commit changed` while the check still reads
+  green. Measured on pull request #143 on 2026-08-07, where the comment fired,
+  a commit followed, and the review never ran. The description marker survives
+  every push. Three pull requests merged unreviewed the same day because this
+  rule did not exist: the tool had been taught to ask and the agents had not.
 
 ## Anti-patterns (immediate rejection)
 
