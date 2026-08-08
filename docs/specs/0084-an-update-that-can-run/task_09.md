@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0084-an-update-that-can-run
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -96,3 +96,59 @@ by the test, and the real-fleet reading belongs to the QA gate.
 - `references/2026-08-08-the-update-refuses-six-of-the-eight-copies-it-exists-to-update.md`
   → the recorded divergence patterns this corpus reproduces.
 - ADR-0104.
+
+## Result
+
+Implemented one command-level `FleetSweep` corpus in
+`internal/cli/baseline_update_test.go`. Every copy is a real temporary Git
+repository built and adopted by the test, moved under one corpus root, and run
+through the production Baseline update planning and apply path. The case
+documentation cites the measured repository cohort and calls out that GSS and
+Oraculum were measured as planning-capable; the already-current copy proves the
+zero-change endpoint Task 09 requires for that cohort.
+
+### Focused checks
+
+- Pre-change: `rtk rg -n 'FleetSweep' internal/baseline internal/cli` returned
+  no matches, proving the fleet corpus was absent.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task09-go-build-a889ef9d6ad09873 rtk go test ./internal/cli -run '^TestBaselineUpdateFleetSweep/structural-clauses-missing$' -count=1`
+  passed (`2 passed`). This exercised Standard TypeScript adoption, removal of
+  exactly the 14 recorded clauses, manifest-digest alignment, planning, apply,
+  exact clause restoration, and next-run convergence.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task09-go-build-a889ef9d6ad09873 rtk go test ./internal/cli -run '^TestBaselineUpdateFleetSweep/(manifest-predates-managed-regions|recorded-profile-does-not-resolve|already-current)$' -count=1`
+  passed (`4 passed`). This exercised the remaining three corpus rows.
+- The first focused test attempt used Go's default cache and stopped before
+  compilation because the managed sandbox denied access to
+  `~/Library/Caches/go-build`; the task-specific `/private/tmp` cache removed
+  that environment boundary.
+- The commands under `## Verification` were not run; the Daemon owns them.
+
+### Acceptance evidence
+
+- **One copy per recorded divergence pattern:** the table-driven corpus builds
+  four independent copies for the Roundfix/Fiscus stale-manifest pattern, the
+  Conexus/Tax PoC/Vortex missing-structural-clause pattern, the Fluxus
+  unresolved-profile pattern, and the GSS/Oraculum non-blocking current
+  endpoint. The structural fixture removes the 14 recorded clause identities,
+  not an arbitrary guide body.
+- **Applicable plan or named human action:** the stale-manifest and structural
+  copies assert `plan_ready`, category `approval`, and a non-empty Plan Digest;
+  the unresolved-profile copy asserts `failed`/`manifest` plus a restoring
+  `NextAction`; the current copy asserts `current`. A shared guard rejects any
+  other pre-planning state without a named action.
+- **Applied copies become current:** both `plan_ready` copies are applied through
+  the update command, assert `verified`, and then assert a second unapproved run
+  returns `current` with zero `FileChanges`.
+- **Measured patterns are documented:** comments adjacent to the corpus name
+  every recorded repository cohort and explain the GSS/Oraculum endpoint
+  mapping.
+- **Hermetic and portable:** every builder uses `testing.T` temporary
+  repositories; each finished copy is moved beneath one `t.TempDir` corpus root,
+  and the test rejects a repository path that escapes that root. The skills
+  stage is the suite's injected local success stage, so no copy reads another
+  checkout or prior Run.
+- **Classification regression is detectable:** the stale-manifest copy first
+  passes an oracle requiring the exact `guide.agent-instructions`
+  `digest-mismatch` classification. The test then removes only that
+  classification from a copy of the observed result and asserts the same oracle
+  fails, demonstrating the known negative required by ADR-0104.

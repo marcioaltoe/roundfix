@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -601,6 +602,358 @@ func TestBaselineUpdateUnresolvedProfileDiagnosis(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestBaselineUpdateFleetSweep(t *testing.T) {
+	// Recorded fleet pattern: roundfix and fiscus had Setup Manifests whose
+	// recorded digests predated their otherwise untouched Managed Regions.
+	const manifestPredatesRegions = "roundfix and fiscus: manifest predates managed regions"
+	// Recorded fleet pattern: conexus, tax-poc, and vortex were missing the same
+	// fourteen structural clauses that the current catalog emits again.
+	const structuralClausesMissing = "conexus, tax-poc, and vortex: structural clauses missing"
+	// Recorded fleet pattern: fluxus named a repository-owned Baseline Profile
+	// that was absent from the checkout.
+	const unresolvedProfile = "fluxus: recorded Baseline Profile does not resolve"
+	// Recorded fleet cohort: gss and oraculum were the only measured copies that
+	// reached planning. This already-current copy exercises Task 09's required
+	// zero-change endpoint for that non-blocking cohort.
+	const alreadyCurrent = "gss and oraculum: current catalog has no proposed changes"
+
+	type fleetCopy struct {
+		name    string
+		pattern string
+		build   func(*testing.T) string
+		apply   bool
+	}
+	corpus := []fleetCopy{
+		{
+			name:    "manifest-predates-managed-regions",
+			pattern: manifestPredatesRegions,
+			build: func(t *testing.T) string {
+				return unrecordedBaselineUpdateRepository(t, nil)
+			},
+			apply: true,
+		},
+		{
+			name:    "structural-clauses-missing",
+			pattern: structuralClausesMissing,
+			build:   newFleetStructuralClauseRepository,
+			apply:   true,
+		},
+		{
+			name:    "recorded-profile-does-not-resolve",
+			pattern: unresolvedProfile,
+			build:   newFleetUnresolvedProfileRepository,
+		},
+		{
+			name:    "already-current",
+			pattern: alreadyCurrent,
+			build:   newBaselineUpdateRepository,
+		},
+	}
+
+	corpusRoot := t.TempDir()
+	for _, copy := range corpus {
+		t.Run(copy.name, func(t *testing.T) {
+			built := copy.build(t)
+			repository := filepath.Join(corpusRoot, copy.name)
+			if err := os.Rename(built, repository); err != nil {
+				t.Fatalf("%s: move copy into fleet corpus: %v", copy.pattern, err)
+			}
+			relative, err := filepath.Rel(corpusRoot, repository)
+			if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(os.PathSeparator)) {
+				t.Fatalf("%s: repository %q escapes corpus root %q", copy.pattern, repository, corpusRoot)
+			}
+
+			result, stdout, stderr, code := runBaselineUpdateTestCommand(
+				t,
+				context.Background(),
+				"baseline", "update", "--repo", repository, "--format=json",
+			)
+			switch copy.pattern {
+			case manifestPredatesRegions:
+				if code != exitUnverified || stderr != "" || result.State != "plan_ready" ||
+					result.Category != "approval" || result.PlanDigest == "" {
+					t.Fatalf("%s: exit=%d result=%+v stdout=%s stderr=%s", copy.pattern, code, result, stdout, stderr)
+				}
+				if err := fleetManifestPredatesRegionsOracle(result); err != nil {
+					t.Fatalf("%s: %v", copy.pattern, err)
+				}
+				withoutClassification := result
+				withoutClassification.UnrecordedManagedRegions = nil
+				if err := fleetManifestPredatesRegionsOracle(withoutClassification); err == nil {
+					t.Fatalf("%s: removing the preservation classification did not break the sweep oracle", copy.pattern)
+				}
+			case structuralClausesMissing:
+				if code != exitUnverified || stderr != "" || result.State != "plan_ready" ||
+					result.Category != "approval" || result.PlanDigest == "" ||
+					len(result.UnrecordedManagedRegions) != 0 {
+					t.Fatalf("%s: exit=%d result=%+v stdout=%s stderr=%s", copy.pattern, code, result, stdout, stderr)
+				}
+				assertFleetStructuralClauseChanges(t, copy.pattern, result.FileChanges)
+			case unresolvedProfile:
+				if code != exitPreflight || result.State != "failed" || result.Category != "manifest" ||
+					result.UnresolvedProfile == nil || result.NextAction == "" {
+					t.Fatalf("%s: exit=%d result=%+v stdout=%s stderr=%s", copy.pattern, code, result, stdout, stderr)
+				}
+				diagnosis := result.UnresolvedProfile
+				if diagnosis.Identity != "oraculum-backend" ||
+					diagnosis.Kind != baseline.UnresolvedProfileRepositoryMissing ||
+					!slices.Equal(diagnosis.SearchedLocations, []string{".roundfix/baseline/profiles/oraculum-backend.json"}) ||
+					!strings.Contains(strings.ToLower(diagnosis.Action), "restore") ||
+					strings.Contains(result.Message, "lstat") || strings.Contains(result.Message, "open ") {
+					t.Fatalf("%s: diagnosis=%+v message=%q", copy.pattern, diagnosis, result.Message)
+				}
+			case alreadyCurrent:
+				if code != exitOK || stderr != "" || result.State != "current" ||
+					len(result.FileChanges) != 0 || result.PlanDigest == "" ||
+					!strings.Contains(result.Message, "already matches the current Baseline catalog") {
+					t.Fatalf("%s: exit=%d result=%+v stdout=%s stderr=%s", copy.pattern, code, result, stdout, stderr)
+				}
+			default:
+				t.Fatalf("unhandled fleet pattern %q", copy.pattern)
+			}
+
+			if result.State != "plan_ready" && result.State != "current" && result.NextAction == "" {
+				t.Fatalf("%s: state %q blocks before planning without a named human action", copy.pattern, result.State)
+			}
+			if !copy.apply {
+				return
+			}
+
+			applied, applyOut, applyErr, applyCode := runBaselineUpdateTestCommand(
+				t,
+				context.Background(),
+				"baseline", "update", "--repo", repository, "--yes", "--format=json",
+			)
+			if applyCode != exitOK || applyErr != "" || applied.State != "verified" {
+				t.Fatalf("%s: apply exit=%d result=%+v stdout=%s stderr=%s", copy.pattern, applyCode, applied, applyOut, applyErr)
+			}
+			if copy.pattern == structuralClausesMissing {
+				assertFleetStructuralClausesPresent(t, repository)
+			}
+
+			current, currentOut, currentErr, currentCode := runBaselineUpdateTestCommand(
+				t,
+				context.Background(),
+				"baseline", "update", "--repo", repository, "--format=json",
+			)
+			if currentCode != exitOK || currentErr != "" || current.State != "current" || len(current.FileChanges) != 0 {
+				t.Fatalf("%s: next run exit=%d result=%+v stdout=%s stderr=%s", copy.pattern, currentCode, current, currentOut, currentErr)
+			}
+		})
+	}
+}
+
+func fleetManifestPredatesRegionsOracle(result baselineUpdateResult) error {
+	if len(result.UnrecordedManagedRegions) != 1 {
+		return fmt.Errorf("unrecorded Managed Regions = %d, want 1", len(result.UnrecordedManagedRegions))
+	}
+	region := result.UnrecordedManagedRegions[0]
+	if region.Path != "docs/agents/agent-instructions.md" ||
+		region.ManagedID != "guide.agent-instructions" ||
+		region.Reason != baseline.UnrecordedManagedRegionReasonDigestMismatch {
+		return fmt.Errorf("unrecorded Managed Region = %+v, want agent-instructions digest mismatch", region)
+	}
+	return nil
+}
+
+type fleetStructuralClause struct {
+	path string
+	ids  []string
+	line string
+}
+
+var fleetStructuralClauses = []fleetStructuralClause{
+	{
+		path: "docs/agents/backend.md",
+		ids:  []string{"clause.backend.boundary-contracts", "rule.backend.boundary-contracts"},
+		line: "- **mandatory**: Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy.",
+	},
+	{
+		path: "docs/agents/backend.md",
+		ids:  []string{"clause.backend.http-independent-use-cases"},
+		line: "- **mandatory**: Keep application use cases independent of HTTP request, response, router, and middleware types.",
+	},
+	{
+		path: "docs/agents/backend.md",
+		ids:  []string{"clause.backend.layered-architecture"},
+		line: "- **mandatory**: Organize backend behavior through domain, application, and infrastructure layers. Dependencies point inward toward domain behavior.",
+	},
+	{
+		path: "docs/agents/backend.md",
+		ids:  []string{"clause.backend.persistence-owner"},
+		line: "- **mandatory**: Keep persistence implementation in infrastructure and behind application-owned boundaries; schema and query definitions belong to the selected persistence capability.",
+	},
+	{
+		path: "docs/agents/backend.md",
+		ids:  []string{"clause.backend.prohibit-generic-layers"},
+		line: "- **prohibited**: Do not introduce generic `modules` or `services` buckets as the normative backend architecture.",
+	},
+	{
+		path: "docs/agents/backend.md",
+		ids:  []string{"clause.backend.thin-http-handlers"},
+		line: "- **mandatory**: Keep HTTP handlers thin: validate and translate transport input, invoke one application use case, and translate the result into the repository's HTTP Contract.",
+	},
+	{
+		path: "docs/agents/domain.md",
+		ids:  []string{"clause.domain.canonical-language"},
+		line: "- **mandatory**: Use the repository's canonical domain terms in code names, tests, user-facing copy, Specs, and delivery notes. Call out a missing term instead of inventing a competing synonym.",
+	},
+	{
+		path: "docs/agents/domain.md",
+		ids:  []string{"clause.domain.layout-decision"},
+		line: "- **mandatory**: Follow the repository's declared single-context or multi-context layout. Setup can require that decision but cannot infer bounded contexts from directory names.",
+	},
+	{
+		path: "docs/agents/frontend.md",
+		ids:  []string{"clause.frontend.organize-by-system"},
+		line: "- **mandatory**: Organize frontend feature code by domain system. Each system exposes one public boundary while its internal components, hooks, queries, routes, and state import each other directly.",
+	},
+	{
+		path: "docs/agents/frontend.md",
+		ids:  []string{"clause.frontend.public-system-boundary"},
+		line: "- **mandatory**: Import another system through that system's public boundary instead of reaching into its internal modules.",
+	},
+	{
+		path: "docs/agents/issue-tracker.md",
+		ids:  []string{"clause.spec.local-task-tracker-only"},
+		line: "- **mandatory**: Use the local Spec folder, Task Graph, and Task files as the implementation issue tracker. Do not introduce external triage labels or external issue status as Task state.",
+	},
+	{
+		path: "docs/agents/issue-tracker.md",
+		ids:  []string{"clause.spec.status-only-in-task"},
+		line: "- **mandatory**: Keep Task status only in the assigned Task file frontmatter. The Task Graph records topology and dependencies, not progress.",
+	},
+	{
+		path: "docs/agents/monorepo.md",
+		ids:  []string{"rule.monorepo.context-boundaries"},
+		line: "- **mandatory**: Identify the owning package and bounded context before editing. Read its context and local instructions, keep changes inside the Task slice, and require an explicit owning contract plus boundary Verification for cross-package changes.",
+	},
+}
+
+func newFleetStructuralClauseRepository(t *testing.T) string {
+	t.Helper()
+	repository := newBaselineReleaseRepository(t, "standard-typescript-monorepo")
+	args := []string{"baseline", "plan", "--repo", repository, "--profile", "standard-typescript-monorepo"}
+	for _, decision := range baselineReleaseDecisionArgs("standard-typescript-monorepo", "greenfield") {
+		args = append(args, "--decision", decision)
+	}
+	args = append(args, "--format=json")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if code := RunContext(context.Background(), args, &stdout, &stderr); code != exitOK {
+		t.Fatalf("build structural-clause adoption plan exit=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	plan, err := baseline.ParsePlanDocument(stdout.Bytes())
+	if err != nil {
+		t.Fatalf("parse structural-clause adoption plan: %v\n%s", err, stdout.String())
+	}
+	if _, err := baseline.ApplyPlan(context.Background(), repository, plan, plan.PlanDigest); err != nil {
+		t.Fatalf("apply structural-clause adoption plan: %v", err)
+	}
+
+	manifest := readBaselineUpdateManifest(t, repository)
+	manifest.CatalogDigest = "sha256:" + strings.Repeat("0", 64)
+	removed := 0
+	touched := make(map[string]struct{})
+	for _, clause := range fleetStructuralClauses {
+		path := filepath.Join(repository, filepath.FromSlash(clause.path))
+		content, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read %s structural-clause carrier: %v", clause.path, err)
+		}
+		needle := []byte(clause.line + "\n\n")
+		if count := bytes.Count(content, needle); count != len(clause.ids) {
+			t.Fatalf("structural clauses %v occur %d times in %s, want %d", clause.ids, count, clause.path, len(clause.ids))
+		}
+		content = bytes.ReplaceAll(content, needle, nil)
+		if err := os.WriteFile(path, content, 0o644); err != nil {
+			t.Fatalf("write %s without structural clauses: %v", clause.path, err)
+		}
+		removed += len(clause.ids)
+		touched[clause.path] = struct{}{}
+	}
+	if removed != 14 {
+		t.Fatalf("removed structural clauses = %d, want 14", removed)
+	}
+	for path := range touched {
+		updateFleetManifestArtifactDigest(t, repository, &manifest, path)
+	}
+	writeBaselineUpdateManifest(t, repository, manifest)
+	commitBaselinePlanTestRepository(t, repository)
+	return repository
+}
+
+func updateFleetManifestArtifactDigest(
+	t *testing.T,
+	repository string,
+	manifest *baseline.SetupManifest,
+	carrierPath string,
+) {
+	t.Helper()
+	for index := range manifest.ManagedArtifacts {
+		artifact := &manifest.ManagedArtifacts[index]
+		if artifact.Path != carrierPath {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(carrierPath)))
+		if err != nil {
+			t.Fatalf("read managed carrier %s: %v", carrierPath, err)
+		}
+		begin := []byte("<!-- setup-context-driven:begin id=" + artifact.ID + " version=" + artifact.Version + " -->")
+		end := []byte("<!-- setup-context-driven:end id=" + artifact.ID + " -->")
+		start := bytes.Index(content, begin)
+		finish := bytes.Index(content, end)
+		if start < 0 || finish < start {
+			t.Fatalf("managed carrier %s lacks markers for %s", carrierPath, artifact.ID)
+		}
+		body := content[start+len(begin) : finish]
+		body = bytes.TrimPrefix(body, []byte("\n\n"))
+		body = bytes.TrimSuffix(body, []byte("\n"))
+		sum := sha256.Sum256(body)
+		artifact.Digest = hex.EncodeToString(sum[:])
+		return
+	}
+	t.Fatalf("Setup Manifest has no managed artifact for %s", carrierPath)
+}
+
+func newFleetUnresolvedProfileRepository(t *testing.T) string {
+	t.Helper()
+	repository := newBaselineUpdateRepository(t)
+	manifest := readBaselineUpdateManifest(t, repository)
+	manifest.Profile = "oraculum-backend"
+	manifest.ProfileDigest = "sha256:" + strings.Repeat("0", 64)
+	manifest.Generator.Baseline = "baseline.oraculum-backend-" + baseline.ManifestVersion
+	writeBaselineUpdateManifest(t, repository, manifest)
+	commitBaselinePlanTestRepository(t, repository)
+	return repository
+}
+
+func assertFleetStructuralClauseChanges(t *testing.T, pattern string, changes []baseline.FileChange) {
+	t.Helper()
+	changed := make(map[string]struct{}, len(changes))
+	for _, change := range changes {
+		changed[change.Path] = struct{}{}
+	}
+	for _, clause := range fleetStructuralClauses {
+		if _, ok := changed[clause.path]; !ok {
+			t.Errorf("%s: plan does not restore %v in %s", pattern, clause.ids, clause.path)
+		}
+	}
+}
+
+func assertFleetStructuralClausesPresent(t *testing.T, repository string) {
+	t.Helper()
+	for _, clause := range fleetStructuralClauses {
+		content, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(clause.path)))
+		if err != nil {
+			t.Fatalf("read restored structural-clause carrier %s: %v", clause.path, err)
+		}
+		if count := strings.Count(string(content), clause.line); count != len(clause.ids) {
+			t.Errorf("restored structural clauses %v occur %d times in %s, want %d", clause.ids, count, clause.path, len(clause.ids))
+		}
 	}
 }
 
