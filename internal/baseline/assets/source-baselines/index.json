@@ -84,6 +84,7 @@
         "clause.context.read-domain-contract",
         "clause.domain.canonical-language",
         "clause.domain.layout-decision",
+        "clause.domain.glossary-currency",
         "rule.external-triage",
         "clause.frontend.read-design-contract-before-ui-work",
         "clause.frontend.organize-by-system",
@@ -99,6 +100,7 @@
         "contract.secondbrain.protocol",
         "clause.secondbrain.01-consult-triggers",
         "clause.secondbrain.02-query-order",
+        "clause.secondbrain.03-decision-consultation",
         "clause.secondbrain.inbox-write-permission",
         "clause.secondbrain.inbox-entry-contract",
         "clause.secondbrain.inbox-triage-order",
@@ -120,6 +122,7 @@
         "clause.spec.routing-03-refactor-bugfix",
         "clause.spec.routing-04-trivial-change",
         "clause.spec.routing-05-task-graph",
+        "clause.spec.project-constraints-06-outside-evidence",
         "clause.typescript.read-current-authoritative-docs",
         "clause.typescript.keep-type-errors-visible",
         "clause.typescript.inspect-dependent-interfaces-before-tests",
@@ -131,9 +134,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 123,
-      "corpusDigest": "50f26acaf27ff1afdc052b150875ec76211a8fccd46567ff3093edbc678ea804",
-      "manifestDigest": "760aea1346cc7aed9a2c2e367ba07507afeacda11817a6e5f9b26ce38d19276f"
+      "entryCount": 126,
+      "corpusDigest": "a189f9c54116640fe08a0ba0028ea0e72a829c9e4adccf9848970b417e352e1e",
+      "manifestDigest": "127eae9a3c9f9cb0ffc8ebba89f810c7781ecb001cd68a58deaa3c771134d453"
     }
   ]
 }

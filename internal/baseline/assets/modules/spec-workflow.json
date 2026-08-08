@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 6,
+  "version": 7,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -38,7 +38,7 @@
   "supportingGuides": [
     {
       "id": "guide.spec-routing",
-      "version": 4,
+      "version": 5,
       "path": "docs/agents/spec-routing.md",
       "template": "template.guide.spec-routing",
       "rules": [
@@ -129,7 +129,7 @@
     },
     {
       "id": "rule.spec.project-constraints",
-      "version": 1,
+      "version": 2,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -158,6 +158,11 @@
           "id": "clause.spec.project-constraints-05-legacy-and-ownership",
           "enforcement": "mandatory",
           "guidance": "Keep completed or archived legacy Specs byte-identical. Dependencies remain owned only by the Task Graph, and status remains owned only by each Task file."
+        },
+        {
+          "id": "clause.spec.project-constraints-06-outside-evidence",
+          "enforcement": "mandatory",
+          "guidance": "Rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts: a repository the Spec did not build, a measurement it did not design, or published literature. Record in that row where the evidence came from, so a later reader can tell it apart from a rehearsal of the Spec's own premise. When the outside source cannot be obtained, record the row as blocked with that reason and continue; the row never requires human interaction and never blocks the Spec."
         }
       ]
     },

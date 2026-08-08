@@ -20,6 +20,10 @@ Consult the local Secondbrain before acting when repository context does not ans
 Read `wiki/index.md` first. Then run `qmd query "<question>" --all --files --min-score 0.3`. Inspect `projects/<project>/mirror/` only when the index and query point there, and open only the files required for the task; treat mirrors as references, not workspaces.
 <!-- /source-baseline-entry: clause.secondbrain.02-query-order -->
 
+<!-- source-baseline-entry: clause.secondbrain.03-decision-consultation -->
+- MUST consult the local knowledge system while a decision is being formed — authoring a Spec, choosing an approach, or validating a strategy — for the decisions sibling projects already made, the literature, and the general technical knowledge this repository does not hold. An unreachable knowledge system or an empty result is reported as a condition in the artifact being written, never a reason to stop.
+<!-- /source-baseline-entry: clause.secondbrain.03-decision-consultation -->
+
 <!-- source-baseline-entry: clause.secondbrain.inbox-write-permission -->
 - MUST treat `inbox/**` as the only writable Secondbrain namespace and every other Secondbrain path as read-only. This bounds where a session may write, never whether it must.
 <!-- /source-baseline-entry: clause.secondbrain.inbox-write-permission -->

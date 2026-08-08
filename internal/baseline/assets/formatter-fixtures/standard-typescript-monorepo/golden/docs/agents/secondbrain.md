@@ -6,6 +6,8 @@
 
 - **mandatory**: Read `wiki/index.md` first. Then run `qmd query "<question>" --all --files --min-score 0.3`. Inspect `projects/<project>/mirror/` only when the index and query point there, and open only the files required for the task; treat mirrors as references, not workspaces.
 
+- **mandatory**: Consult the Secondbrain while a decision is being formed — authoring a Spec, choosing an approach, or validating a strategy — for what it holds and this repository does not: the decisions sibling projects in the ecosystem already made and paid for, literature, and general technical knowledge. Report an unreachable Secondbrain or an empty result as a condition in the artifact being written; it is never a reason to stop the work.
+
 - **mandatory**: Write each Inbox Entry so the triaging session can act on it without the author's context: the observation, its evidence with commands and paths, and the reasoning that makes it actionable. Commit the entry at the moment of capture, because durability is the point of the door. Never commit, edit, or move an entry another session created, even in the same namespace on the same day; two projects reporting one class of defect is signal for Triage, not a merge conflict to resolve.
 
 - **mandatory**: Observing a defect, an improvement worth making, or a feature idea obliges capture: create one pending Inbox Entry under `inbox/<destination>/` for the project that owns the fix, which is frequently not the project the session is running in. Read the destination's existing pending and triaged entries first and extend a strong verified match instead of duplicating it. Capture is an obligation, not a permission; an observation left only in a session transcript is lost when that session ends.

@@ -9,3 +9,7 @@
 <!-- source-baseline-entry: clause.domain.layout-decision -->
 - MUST follow the repository's declared single-context or multi-context layout. Setup can require that decision but cannot infer bounded contexts from directory names.
 <!-- /source-baseline-entry: clause.domain.layout-decision -->
+
+<!-- source-baseline-entry: clause.domain.glossary-currency -->
+- MUST check, at the close of a Spec, feature, refactor, or fix, whether the work introduced, changed, or retired a term the glossary should carry, and update the domain context when it did. The check is obliged; the update follows only from a check that found something, and neither waits for human interaction.
+<!-- /source-baseline-entry: clause.domain.glossary-currency -->

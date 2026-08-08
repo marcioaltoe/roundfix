@@ -22,4 +22,6 @@
 
 - **mandatory**: Keep completed or archived legacy Specs byte-identical. Dependencies remain owned only by the Task Graph, and status remains owned only by each Task file.
 
+- **mandatory**: Rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts: a repository the Spec did not build, a measurement it did not design, or published literature. Record in that row where the evidence came from, so a later reader can tell it apart from a rehearsal of the Spec's own premise. When the outside source cannot be obtained, record the row as blocked with that reason and continue; the row never requires human interaction and never blocks the Spec.
+
 <!-- setup-context-driven:end id=guide.spec-routing -->

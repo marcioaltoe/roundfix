@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 6,
+  "version": 7,
   "kind": "knowledge-source",
   "title": "Secondbrain guidance",
   "dependsOn": [
@@ -32,7 +32,7 @@
   "supportingGuides": [
     {
       "id": "guide.secondbrain",
-      "version": 6,
+      "version": 7,
       "path": "docs/agents/secondbrain.md",
       "template": "template.guide.secondbrain",
       "rules": [
@@ -48,7 +48,7 @@
   "rules": [
     {
       "id": "rule.secondbrain.index-first",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.secondbrain",
         "coverage.research"
@@ -63,6 +63,11 @@
           "id": "clause.secondbrain.02-query-order",
           "enforcement": "mandatory",
           "guidance": "Read `wiki/index.md` first. Then run `qmd query \"<question>\" --all --files --min-score 0.3`. Inspect `projects/<project>/mirror/` only when the index and query point there, and open only the files required for the task; treat mirrors as references, not workspaces."
+        },
+        {
+          "id": "clause.secondbrain.03-decision-consultation",
+          "enforcement": "mandatory",
+          "guidance": "Consult the Secondbrain while a decision is being formed — authoring a Spec, choosing an approach, or validating a strategy — for what it holds and this repository does not: the decisions sibling projects in the ecosystem already made and paid for, literature, and general technical knowledge. Report an unreachable Secondbrain or an empty result as a condition in the artifact being written; it is never a reason to stop the work."
         }
       ]
     },

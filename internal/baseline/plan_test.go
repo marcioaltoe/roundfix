@@ -2157,6 +2157,7 @@ func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 		"docs/agents/frontend.md":           true,
 		"docs/agents/issue-tracker.md":      true,
 		"docs/agents/monorepo.md":           true,
+		"docs/agents/spec-routing.md":       true,
 	}
 	expectedPostimages := make(map[string]string)
 	for _, entry := range fixture.PlannedByteSequence {

@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0084-an-update-that-can-run
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -95,7 +95,7 @@ no Source Baseline row carries.
 - `grep -q 'outside' internal/baseline/assets/modules/spec-workflow.json` — expected: exits 0, proving the outside-evidence clause text is present in its owning module.
 - `go test ./internal/baseline/ -run 'Catalog' -v > /tmp/0084-task-07-a.log 2>&1 && grep -q '^--- PASS: .*Catalog' /tmp/0084-task-07-a.log` — expected: exits 0, proving catalog validation accepts the three clauses.
 - `go test ./internal/baseline/ -run 'SourceBaseline' -v > /tmp/0084-task-07-b.log 2>&1 && grep -q '^--- PASS: .*SourceBaseline' /tmp/0084-task-07-b.log` — expected: exits 0, proving the seated corpus entries are accounted.
-- `make baseline-digests > /tmp/0084-task-07-c.log 2>&1 && git diff --quiet -- internal/baseline/assets` — expected: exits 0, proving every derived pin already matches the sanctioned regeneration.
+- `make baseline-digests > /tmp/0084-task-07-c.log 2>&1 && grep -q '"changed":false' /tmp/0084-task-07-c.log` — expected: exits 0, proving the sanctioned regeneration is a no-op because every derived pin already matches its canonical source. This replaces an authored `git diff --quiet -- internal/baseline/assets` clause, which compared the working tree against `HEAD` and so could only pass on a Task that changed no asset; the property to observe is that regeneration finds nothing to rewrite, which is the same shape task_06 uses.
 - `go test ./internal/baseline/ -run 'MaintainedManagedEntryFixture' -v > /tmp/0084-task-07-d.log 2>&1 && grep -q '^--- PASS: .*MaintainedManagedEntryFixture' /tmp/0084-task-07-d.log` — expected: exits 0, proving every guide that grew past the frozen record is declared.
 - `git diff --quiet -- internal/baseline/testdata/parity-corpus` — expected: exits 0, proving the frozen parity corpus was not edited.
 - `go test ./internal/baseline/ ./internal/cli/ -count=1` — expected: exits 0.
@@ -105,3 +105,149 @@ no Source Baseline row carries.
 - `_techspec.md` → Build Order 7; Risks & Considerations.
 - `_prd.md` → Core Features 7, 8, and 9; User Stories 6 and 7; Goal 5.
 - ADR-0104, ADR-0081, ADR-0095.
+
+## Result
+
+Implemented 2026-08-08.
+
+### What was seated
+
+Each clause landed in its owning module with its rule's version bumped, and in
+the maintained Source Baseline corpus and manifest in the same change:
+
+| Clause | Rule | Module | Corpus carrier |
+| --- | --- | --- | --- |
+| `clause.secondbrain.03-decision-consultation` | `rule.secondbrain.index-first` 3 → 4 | `secondbrain.json` 6 → 7 | `corpus/docs/agents/secondbrain.md` |
+| `clause.spec.project-constraints-06-outside-evidence` | `rule.spec.project-constraints` 1 → 2 | `spec-workflow.json` 6 → 7 | `corpus/docs/agents/spec-routing.md` |
+| `clause.domain.glossary-currency` | `rule.context.domain-docs` 4 → 5 | `context-workflow.json` 13 → 14 | `corpus/docs/agents/domain.md` |
+
+The guide that renders each rule moved with it: `guide.secondbrain` 6 → 7,
+`guide.spec-routing` 4 → 5, `guide.domain` 5 → 6.
+
+Manifest rows were added by hand — the regenerator maintains rows but never
+creates them — and their spans and digests come from the sanctioned regeneration
+of the `<!-- source-baseline-entry: … -->` markers:
+
+```
+clause.domain.glossary-currency                       corpus/docs/agents/domain.md       1012:1325
+clause.secondbrain.03-decision-consultation           corpus/docs/agents/secondbrain.md  2849:3262
+clause.spec.project-constraints-06-outside-evidence   corpus/docs/agents/spec-routing.md 3179:3600
+```
+
+`maintainedSourceBaselineEntries` moved 123 → 126 with them; the accounting
+count is unchanged because no prior entry was retired.
+
+### Acceptance criteria
+
+- **Mandatory consultation clause naming Spec authoring and approach selection.**
+  `clause.secondbrain.03-decision-consultation`, enforcement `mandatory`, renders
+  in `assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md`
+  as `- **mandatory**: Consult the Secondbrain while a decision is being formed —
+  authoring a Spec, choosing an approach, or validating a strategy — …`. It names
+  what the brain supplies (sibling-project decisions, literature, general
+  technical knowledge) and does not restate the query order, the read-only
+  boundary, or the citation obligation, each of which keeps its existing owner.
+
+- **Mandatory clause requiring one acceptance row backed by outside evidence,
+  with its origin recorded.** `clause.spec.project-constraints-06-outside-evidence`
+  renders at line 25 of the `spec-routing.md` golden: `- **mandatory**: Rest a
+  Spec's acceptance, in at least one named row, on evidence originating outside
+  the Spec's own artifacts: … Record in that row where the evidence came from …`.
+  It does not restate `clause.spec.project-constraints-04-qa-audit`, whose concern
+  is that the audit happens at all.
+
+- **Mandatory glossary check at the close of a Spec, feature, refactor, or fix.**
+  `clause.domain.glossary-currency` renders in the `domain.md` golden as
+  `- **mandatory**: At the close of a Spec, feature, refactor, or fix, check
+  whether the work introduced, changed, or retired a term the glossary should
+  carry …`. The check is the obligation; the update is conditional on it finding
+  something. The existing read obligation in
+  `clause.context.read-domain-contract` is untouched.
+
+- **No added clause makes unavailability blocking.** The consultation clause ends
+  `Report an unreachable Secondbrain or an empty result as a condition in the
+  artifact being written; it is never a reason to stop the work.` The
+  outside-evidence clause ends `When the outside source cannot be obtained,
+  record the row as blocked with that reason and continue; the row never requires
+  human interaction and never blocks the Spec.` Neither mandates a row count nor
+  human interaction; the glossary clause states that neither the check nor the
+  update waits for human interaction.
+
+- **Every rule receiving a clause carries a higher version.** 3 → 4, 1 → 2, 4 → 5
+  as tabled above; `go test ./internal/baseline/ -run 'Catalog…' -v` reports
+  `--- PASS: TestCatalogCompatibility (0.04s)`, which is the strict validation the
+  regenerator re-runs.
+
+- **Catalog validation and the Source Baseline corpus accept all three clauses.**
+  `go build -buildvcs=false ./...` exits 0.
+  `go test ./internal/baseline/ -run 'Catalog|SourceBaseline|MaintainedManagedEntryFixture|FormatterComposition' -count=1 -v`:
+  `--- PASS: TestCatalogCompatibility`, `--- PASS: TestSourceBaselineGuidanceComposition`,
+  `--- PASS: TestPlanDeterminismMatchesMaintainedManagedEntryFixture`,
+  `--- PASS: TestFormatterComposition`.
+
+- **Derived pins match the sanctioned regeneration.** `make baseline-digests`
+  rewrote the three formatter goldens, the profile's formatter golden digest, the
+  Source Baseline identity, manifest and index, the catalog digest and normalized
+  catalog, the catalog diagnostics golden, and the four plan-characterization
+  goldens. Nothing was pinned by hand. A second run reports
+  `baseline-digests: no changes; derived artifacts already match their canonical
+  sources` and `{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":false}`,
+  so regeneration is at a fixed point.
+
+- **Frozen parity corpus untouched, and every grown guide declared.**
+  `git diff --quiet -- internal/baseline/testdata/parity-corpus` exits 0.
+  `docs/agents/spec-routing.md` was added to `evolvedPastFrozenCorpus` in
+  `internal/baseline/plan_test.go`; `docs/agents/domain.md` was already declared
+  there. The third clause's guide, `docs/agents/secondbrain.md`, never appears in
+  the frozen fixture's `plannedByteSequence` — the `go-cli-tui` plan it records
+  resolves `secondbrain.enabled=false` — so it has no frozen byte identity to
+  outgrow; its generated bytes are covered by `TestFormatterComposition`, whose
+  `standard-typescript-monorepo` request enables the module. Each of the three
+  guides was checked rather than assumed.
+
+### Full-package check
+
+`go test ./internal/baseline/ ./internal/cli/ -count=1` →
+`ok roundfix/internal/baseline 126.228s`, `ok roundfix/internal/cli 64.807s`.
+
+An earlier run of that same command was killed at the 10-minute Go test timeout
+under heavy machine load (a second Cursor/VM workload was saturating the box);
+re-run on a quieter machine it completes in 2m08s. No code change was involved —
+the intervening edit was clause wording, and `internal/cli` alone measures 48.5s.
+
+### Changed-file scope
+
+Modules, Source Baseline corpus, manifest, identity and index for the three
+authorized clauses; `internal/baseline/plan_test.go` for the declared
+grown-guide set; `internal/baseline/preservation_test.go` for the maintained
+entry-count expectation, which the authorizations name as sanctioned fallout;
+and the derived goldens `make baseline-digests` rewrites. The skills named by the
+outside-evidence authorization are Build Order 8's slice and were not touched.
+
+### Verification Feedback repair — attempt 1
+
+The declared command
+`make baseline-digests … && git diff --quiet -- internal/baseline/assets`
+failed, and its diagnostic artifact is empty because nothing printed: the
+regeneration half succeeded and wrote `{"…","ok":true,"changed":false}` to its
+log, and the failing exit came from `git diff`.
+
+That clause could not observe the property it claimed. It compares the working
+tree against `HEAD`, and the Daemon runs Verification before it commits the
+Task — `HEAD` is `2c86dc60`, so every asset edit requirements 1–8 oblige is
+still uncommitted while the command runs. It therefore fails for any Task that
+changes an asset and passes only for one that changed nothing, which is the
+inverse of what this Task must do. No amount of correct implementation could
+satisfy it.
+
+The command was repaired in place to observe the actual property — that the
+sanctioned regeneration finds nothing left to rewrite — using
+`grep -q '"changed":false'`, the same shape task_06 uses for the same
+regenerator in this Spec. The new contract is stated in the `## Verification`
+entry itself. It is commit-independent and strictly discriminating: a
+hand-edited derived pin makes regeneration rewrite it and report
+`"changed":true`, failing the gate.
+
+No implementation change was needed or made; the only edits this turn are to
+this Task file. The fixed-point evidence above postdates the last asset edit,
+and the Daemon's own run of the regenerator reproduced it independently.
