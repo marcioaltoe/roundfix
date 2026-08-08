@@ -175,6 +175,15 @@ reviews:
     - "**/README.md"
     - "README.md"
 
+    # ----- Skill definitions (the CLI's public contract) -----
+    # Restored: the exclusion list above says skills are "allowlisted below",
+    # and the knowledge_base entry says "reviewed: see path_filters". Both were
+    # left pointing at a line that no longer existed, so skill diffs stopped
+    # being reviewed while two comments promised they were. This repository
+    # requires a pull request that changes CLI behaviour to ship the skill
+    # update with it, which makes that update exactly what needs reviewing.
+    - ".agents/skills/**/*.md"
+
     # ----- Repository configuration -----
     - ".coderabbit.yaml"
     - ".roundfixrc.yml"
