@@ -1115,6 +1115,93 @@ Keep this repository-owned rule byte-identical.
 	}
 }
 
+func TestManagedRefreshConvergesAfterManifestRepublication(t *testing.T) {
+	t.Parallel()
+
+	fixture := newManagedRefreshConvergenceFixture(t)
+	before := managedArtifactNonManagedRegionDigests(
+		t,
+		fixture.repository,
+		fixture.first.SetupManifest.ManagedArtifacts,
+	)
+
+	result, err := applyPlanWithCatalog(
+		context.Background(),
+		fixture.repository,
+		fixture.first,
+		fixture.first.PlanDigest,
+		fixture.catalog,
+	)
+	if err != nil {
+		t.Fatalf("apply aged-manifest Managed Refresh: %v", err)
+	}
+	if result.State != "verified" || result.StatusMatrix == nil ||
+		result.StatusMatrix.ApprovedPostimages != EvidenceStatusVerified {
+		t.Fatalf("aged-manifest Managed Refresh result = %+v, want verified postimages", result)
+	}
+
+	assertSetupManifestMatchesManagedRegions(t, fixture.repository)
+	after := managedArtifactNonManagedRegionDigests(
+		t,
+		fixture.repository,
+		fixture.first.SetupManifest.ManagedArtifacts,
+	)
+	if !reflect.DeepEqual(after, before) {
+		t.Fatalf("non-managed region digests changed:\nbefore=%+v\nafter=%+v", before, after)
+	}
+
+	second, err := buildPlanWithCatalog(context.Background(), fixture.request, fixture.catalog)
+	if err != nil {
+		t.Fatalf("build second Managed Refresh plan: %v", err)
+	}
+	if second.Plan == nil {
+		t.Fatalf("second Managed Refresh returned result: %+v", second.Result)
+	}
+	if len(second.Plan.FileChanges) != 0 {
+		t.Fatalf("second Managed Refresh file changes = %+v, want none", second.Plan.FileChanges)
+	}
+}
+
+func TestManagedRefreshDoesNotConvergeWithoutManifestRepublication(t *testing.T) {
+	t.Parallel()
+
+	fixture := newManagedRefreshConvergenceFixture(t)
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		fixture.repository,
+		fixture.first,
+		fixture.first.PlanDigest,
+		fixture.catalog,
+	); err != nil {
+		t.Fatalf("apply negative-case Managed Refresh: %v", err)
+	}
+	writeTransactionFile(
+		t,
+		fixture.repository,
+		manifestPath,
+		string(fixture.agedManifest),
+		0o644,
+	)
+
+	second, err := buildPlanWithCatalog(context.Background(), fixture.request, fixture.catalog)
+	if err != nil {
+		t.Fatalf("build unrepublished-manifest second plan: %v", err)
+	}
+	if second.Plan == nil {
+		t.Fatalf("unrepublished-manifest second plan returned result: %+v", second.Result)
+	}
+	if len(second.Plan.FileChanges) == 0 {
+		t.Fatal("unrepublished Setup Manifest incorrectly converged with zero file changes")
+	}
+	if !reflect.DeepEqual(second.Plan.FileChanges, fixture.first.FileChanges) {
+		t.Fatalf(
+			"unrepublished Setup Manifest proposed different work:\nfirst=%+v\nsecond=%+v",
+			fixture.first.FileChanges,
+			second.Plan.FileChanges,
+		)
+	}
+}
+
 func TestManagedRefreshPreservationAllowsNewManagedRootBlock(t *testing.T) {
 	t.Parallel()
 
@@ -3017,6 +3104,182 @@ func newSameIdentityRetentionDrift(
 	target := cloneCatalogForRetentionDrift(t, source)
 	target.digest = "sha256:" + strings.Repeat("f", 64)
 	return repository, request, target, outcome.Plan.SetupManifest.Generator.Baseline
+}
+
+type managedRefreshConvergenceFixture struct {
+	repository   string
+	request      PlanRequest
+	catalog      *Catalog
+	agedManifest []byte
+	first        PlanDocument
+}
+
+func newManagedRefreshConvergenceFixture(t *testing.T) managedRefreshConvergenceFixture {
+	t.Helper()
+
+	repository := newPlanRepository(t)
+	catalog := mustEmbeddedCatalog(t)
+	request := PlanRequest{
+		Repository:   repository,
+		ProfileID:    "go-cli-tui",
+		Decisions:    planTestDecisions(),
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}
+	adoption, err := buildPlanWithCatalog(context.Background(), request, catalog)
+	if err != nil {
+		t.Fatalf("build convergence adoption plan: %v", err)
+	}
+	if adoption.Plan == nil {
+		t.Fatalf("convergence adoption returned result: %+v", adoption.Result)
+	}
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		repository,
+		*adoption.Plan,
+		adoption.Plan.PlanDigest,
+		catalog,
+	); err != nil {
+		t.Fatalf("apply convergence adoption plan: %v", err)
+	}
+
+	carriersBefore := managedArtifactCarrierBytes(
+		t,
+		repository,
+		adoption.Plan.SetupManifest.ManagedArtifacts,
+	)
+	manifestBytes, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(manifestPath)))
+	if err != nil {
+		t.Fatalf("read adopted Setup Manifest: %v", err)
+	}
+	var manifest SetupManifest
+	if err := decodeStrictJSON(manifestBytes, &manifest); err != nil {
+		t.Fatalf("decode adopted Setup Manifest: %v", err)
+	}
+	if len(manifest.ManagedArtifacts) == 0 {
+		t.Fatal("adopted Setup Manifest has no managed artifacts to age")
+	}
+	for index := range manifest.ManagedArtifacts {
+		manifest.ManagedArtifacts[index].Digest = strings.Repeat("0", 64)
+	}
+	agedManifest, err := marshalSetupManifestBytes(manifest)
+	if err != nil {
+		t.Fatalf("encode aged Setup Manifest: %v", err)
+	}
+	agedManifest = append(agedManifest, '\n')
+	writeTransactionFile(t, repository, manifestPath, string(agedManifest), 0o644)
+	if after := managedArtifactCarrierBytes(
+		t,
+		repository,
+		manifest.ManagedArtifacts,
+	); !reflect.DeepEqual(after, carriersBefore) {
+		t.Fatalf("aging the Setup Manifest changed managed carriers")
+	}
+	commitInspectionRepository(t, repository, "age Setup Manifest managed-artifact digests")
+
+	request.Preservation = RootPreservationRequest{Mode: PreservationModeManagedRefresh}
+	first, err := buildPlanWithCatalog(context.Background(), request, catalog)
+	if err != nil {
+		t.Fatalf("build aged-manifest Managed Refresh plan: %v", err)
+	}
+	if first.Plan == nil || first.Result.State != "ready" {
+		t.Fatalf("aged-manifest Managed Refresh outcome = %+v, want ready plan", first)
+	}
+	if len(first.Plan.FileChanges) == 0 {
+		t.Fatal("aged-manifest Managed Refresh proposed no file changes")
+	}
+
+	return managedRefreshConvergenceFixture{
+		repository:   repository,
+		request:      request,
+		catalog:      catalog,
+		agedManifest: agedManifest,
+		first:        *first.Plan,
+	}
+}
+
+func managedArtifactCarrierBytes(
+	t *testing.T,
+	repository string,
+	artifacts []ManifestArtifact,
+) map[string][]byte {
+	t.Helper()
+
+	carriers := make(map[string][]byte)
+	for _, artifact := range artifacts {
+		if _, seen := carriers[artifact.Path]; seen {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(artifact.Path)))
+		if err != nil {
+			t.Fatalf("read managed carrier %q: %v", artifact.Path, err)
+		}
+		carriers[artifact.Path] = content
+	}
+	return carriers
+}
+
+func managedArtifactNonManagedRegionDigests(
+	t *testing.T,
+	repository string,
+	artifacts []ManifestArtifact,
+) map[string][]string {
+	t.Helper()
+
+	digests := make(map[string][]string)
+	for path, content := range managedArtifactCarrierBytes(t, repository, artifacts) {
+		for _, region := range partitionRootSource(path, content) {
+			if region.Kind != "managed-block" {
+				digests[path] = append(digests[path], region.Digest)
+			}
+		}
+	}
+	return digests
+}
+
+func assertSetupManifestMatchesManagedRegions(t *testing.T, repository string) {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(manifestPath)))
+	if err != nil {
+		t.Fatalf("read republished Setup Manifest: %v", err)
+	}
+	var manifest SetupManifest
+	if err := decodeStrictJSON(data, &manifest); err != nil {
+		t.Fatalf("decode republished Setup Manifest: %v", err)
+	}
+	for _, artifact := range manifest.ManagedArtifacts {
+		content, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(artifact.Path)))
+		if err != nil {
+			t.Fatalf("read republished managed carrier %q: %v", artifact.Path, err)
+		}
+		matches := 0
+		for _, region := range partitionRootSource(artifact.Path, content) {
+			if region.Kind != "managed-block" ||
+				region.StructuralProvenance["managedId"] != artifact.ID {
+				continue
+			}
+			matches++
+			openEnd := bytes.Index(region.SourceBytes, []byte("-->"))
+			closeStart := bytes.LastIndex(region.SourceBytes, []byte("<!--"))
+			if openEnd < 0 || closeStart < openEnd+3 {
+				t.Fatalf("managed region %s:%s has invalid marker bounds", artifact.Path, artifact.ID)
+			}
+			body := strings.TrimSpace(string(region.SourceBytes[openEnd+3:closeStart])) + "\n"
+			digest := strings.TrimPrefix(planContentIdentity([]byte(body)), "sha256:")
+			if digest != artifact.Digest {
+				t.Fatalf(
+					"Setup Manifest digest for %s:%s = %q, on-disk digest = %q",
+					artifact.Path,
+					artifact.ID,
+					artifact.Digest,
+					digest,
+				)
+			}
+		}
+		if matches != 1 {
+			t.Fatalf("managed region %s:%s matches = %d, want 1", artifact.Path, artifact.ID, matches)
+		}
+	}
 }
 
 func buildManagedRefreshPlanWithInsertedLines(

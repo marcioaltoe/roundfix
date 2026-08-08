@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0084-an-update-that-can-run
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -91,3 +91,55 @@ first place.
 - `references/2026-08-08-the-update-refuses-six-of-the-eight-copies-it-exists-to-update.md`
   → the measured second-run behavior this task turns into a test.
 - ADR-0103, ADR-0100.
+
+## Result
+
+### Implementation
+
+- Added filesystem-backed Managed Refresh convergence coverage to the existing
+  plan/apply suite. The fixture adopts a repository, changes every recorded
+  managed-artifact digest in its Setup Manifest without changing any carrier,
+  then plans and applies the refresh with one catalog instance.
+- The positive case reads the republished Setup Manifest from disk, independently
+  hashes every corresponding on-disk Managed Region, compares exact digests for
+  every region outside managed markers, and requires the second plan to contain
+  zero file changes.
+- The negative companion restores the aged Setup Manifest after apply to model
+  suppressed republication, then requires the second plan to repeat the first
+  file-change set.
+
+### Focused checks
+
+- Pre-change signal:
+  `rtk rg -n 'ManagedRefresh.*Converge|Converge.*ManagedRefresh' internal/baseline/*_test.go`
+  exited 1 with no matches, confirming the Managed Refresh convergence property
+  had no owning package test.
+- After implementation:
+  `rtk proxy env GOCACHE=/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260808T153649Z_78746d4b80d08fc7.task_04/.gocache go test ./internal/baseline -run '^(TestManagedRefreshConvergesAfterManifestRepublication|TestManagedRefreshDoesNotConvergeWithoutManifestRepublication|TestManagedRefreshPreservesNonManagedRegionDigests|TestManagedRefreshPlanReportsEmptyRemovedLines)$' -count=1`
+  passed: `ok roundfix/internal/baseline 2.485s`.
+- `rtk gofmt -d internal/baseline/plan_test.go` exited 0 with no output.
+- `rtk git -c core.fsmonitor=false diff --check` exited 0 with no output.
+
+### Acceptance evidence
+
+1. `newManagedRefreshConvergenceFixture` changes every Setup Manifest
+   managed-artifact digest to a stale value, proves all managed-carrier bytes
+   stayed identical, and `TestManagedRefreshConvergesAfterManifestRepublication`
+   requires the first Managed Refresh outcome to contain a ready plan.
+2. The same test applies the plan and requires state `verified` plus verified
+   approved postimages in the Result Status Matrix.
+3. The positive test rebuilds the plan against the same repository and catalog
+   and requires zero `FileChanges`, the planner condition the update command
+   reports as `current`.
+4. `assertSetupManifestMatchesManagedRegions` reads the applied copy's Setup
+   Manifest directly and requires every recorded artifact digest to equal an
+   independently computed digest of its one on-disk Managed Region.
+5. The positive test records every outside-marker region digest before apply and
+   requires an identical path-and-order digest map after apply, including blank
+   outside-marker spans.
+6. `TestManagedRefreshDoesNotConvergeWithoutManifestRepublication` restores the
+   aged manifest after the real apply, rejects a zero-change second plan, and
+   requires that plan to propose exactly the first plan's file changes again.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.
