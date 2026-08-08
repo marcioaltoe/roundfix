@@ -1316,9 +1316,9 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 			"roundfix profiles validate",
 			"gpt-5.6-sol",
 			"gpt-5.6-terra",
-			"claude-opus-5",
+			"sonnet",
 			"claude-fable-5",
-			"2026-07-16",
+			"2026-08-07",
 			"category_specific: false",
 			"agent_work_started",
 			"defaults.agent",
@@ -1586,7 +1586,7 @@ profiles:
 	if first.Selection != (profilesShowTestSelection{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}) {
 		t.Fatalf("first recommendation selection = %+v", first.Selection)
 	}
-	if first.Benchmark != "DeepSWE v1.1" || first.ResultPercent != 69 || first.AverageCostUSD != 3.47 || first.SourceAsOf != "2026-07-16" {
+	if first.Benchmark != "DeepSWE v1.1" || first.ResultPercent != 69 || first.AverageCostUSD != 3.47 || first.SourceAsOf != roundconfig.ModelRecommendationSnapshotDate {
 		t.Fatalf("first recommendation evidence = %+v", first)
 	}
 	if first.CategorySpecific {
@@ -2692,13 +2692,13 @@ func TestProfilesShowReportsUnavailableRecommendationWithoutReordering(t *testin
 			t.Fatalf("rank at index %d = %d, want %d", index, recommendation.Rank, index+1)
 		}
 	}
-	if recommendations[0].Selection.Model != "gpt-5.6-sol" || recommendations[1].Selection.Model != "gpt-5.6-terra" || recommendations[2].Selection.Model != "claude-fable-5" {
+	if recommendations[0].Selection.Model != "gpt-5.6-sol" || recommendations[1].Selection.Model != "opus" || recommendations[2].Selection.Model != "gpt-5.6-terra" {
 		t.Fatalf("recommendation order changed: %+v", recommendations)
 	}
-	if recommendations[1].UnavailableReason != "adapter proof rejected tuple" {
-		t.Fatalf("unavailable_reason = %q, want proof rejection", recommendations[1].UnavailableReason)
+	if recommendations[2].UnavailableReason != "adapter proof rejected tuple" {
+		t.Fatalf("unavailable_reason = %q, want proof rejection", recommendations[2].UnavailableReason)
 	}
-	if recommendations[0].UnavailableReason != "" || recommendations[2].UnavailableReason != "" {
+	if recommendations[0].UnavailableReason != "" || recommendations[1].UnavailableReason != "" {
 		t.Fatalf("unexpected unavailable marker outside rejected tuple: %+v", recommendations)
 	}
 }

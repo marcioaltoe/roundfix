@@ -28,6 +28,7 @@
         "clause.core.preserve-git-scope",
         "clause.core.ask-before-destructive-git",
         "clause.core.ask-before-delivery",
+        "clause.core.request-review-explicitly",
         "clause.core.ask-user-answerable-decisions",
         "clause.core.prohibit-secret-exposure",
         "recommendation.capability.firecrawl",
@@ -47,6 +48,7 @@
         "clause.autonomous.loop-04-verify-the-class",
         "clause.autonomous.loop-05-clean-is-not-evidence",
         "clause.autonomous.loop-06-branch-hygiene",
+        "clause.autonomous.loop-07-outlive-the-turn",
         "clause.backend.boundary-contracts",
         "clause.backend.layered-architecture",
         "clause.backend.thin-http-handlers",
@@ -103,10 +105,13 @@
         "clause.secondbrain.inbox-empty-state",
         "clause.secondbrain.inbox-auto-capture",
         "clause.secondbrain.research-capture",
+        "clause.secondbrain.capture-trigger",
+        "clause.secondbrain.capture-self-contained",
         "clause.secondbrain.prohibit-writes",
         "clause.secondbrain.prohibit-secret-access",
         "clause.secondbrain.cite-used-files",
         "clause.secondbrain.escalate-durable-updates",
+        "clause.secondbrain.baseline-owned-guidance",
         "contract.skill-dispatch.active-modules",
         "contract.spec.route-matrix",
         "contract.spec.task-ownership",
@@ -126,9 +131,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 118,
-      "corpusDigest": "8990968c135ff94d2a00a90246e9da81d0aed31d6e064032b040f5f1ba616ef8",
-      "manifestDigest": "be6aca06de15be528dc04366ee30ee7fbcd0be68dd3a34b7737c7e73b5e0fb3d"
+      "entryCount": 123,
+      "corpusDigest": "50f26acaf27ff1afdc052b150875ec76211a8fccd46567ff3093edbc678ea804",
+      "manifestDigest": "760aea1346cc7aed9a2c2e367ba07507afeacda11817a6e5f9b26ce38d19276f"
     }
   ]
 }

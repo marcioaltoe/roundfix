@@ -1,5 +1,5 @@
 // Suite: Baseline root-instruction preservation
-// Invariant: every trusted root source is backed up and every preserved source entry is dispositioned before planning is ready.
+// Invariant: preservation modes either prove managed-only refresh safety or account for every root source before planning is ready.
 // Boundary IN: bounded repository inspection, root backups, Decision Documents, Readoption, Source Baselines, and retention contracts.
 // Boundary OUT: profile alignment, portable Plan Documents, file transactions, and ACP classification proposals.
 
@@ -50,6 +50,50 @@ func TestGreenfieldPlanBacksUpWithoutImport(t *testing.T) {
 	}
 	if len(plan.Dispositions) != 0 || len(plan.RepositoryRulesBytes) != 0 {
 		t.Fatalf("greenfield imported root rules: dispositions=%+v bytes=%q", plan.Dispositions, plan.RepositoryRulesBytes)
+	}
+}
+
+func TestManagedRefreshPlanNeedsNoClassificationInputOrBackup(t *testing.T) {
+	t.Parallel()
+
+	repo := newInspectionRepository(t)
+	writeInspectionFile(t, repo, "AGENTS.md", "repository-authored policy\n")
+	commitInspectionRepository(t, repo, "seed managed refresh root")
+
+	plan, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModeManagedRefresh},
+	)
+	if err != nil {
+		t.Fatalf("plan managed refresh preservation: %v", err)
+	}
+	if plan.State != PreservationStateReady ||
+		len(plan.SourceBaseline.Entries) != 0 ||
+		plan.DecisionSkeleton != nil ||
+		len(plan.Backups) != 0 {
+		t.Fatalf("managed refresh preservation plan = %+v", plan)
+	}
+}
+
+func TestManagedRefreshUnsafeRootCarrierStillBlocks(t *testing.T) {
+	t.Parallel()
+
+	repo := newInspectionRepository(t)
+	if err := os.Symlink("../outside.md", filepath.Join(repo, "AGENTS.md")); err != nil {
+		t.Fatalf("create escaping root alias: %v", err)
+	}
+	commitInspectionRepository(t, repo, "seed unsafe root carrier")
+
+	plan, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModeManagedRefresh},
+	)
+	if err != nil {
+		t.Fatalf("plan managed refresh with unsafe root carrier: %v", err)
+	}
+	if plan.State != PreservationStateBlocked ||
+		!hasRepositoryFinding(plan.Findings, "baseline.inventory.unsafe-alias", "AGENTS.md") {
+		t.Fatalf("unsafe root carrier did not block managed refresh: %+v", plan)
 	}
 }
 
@@ -256,7 +300,7 @@ func TestDecisionDocumentSkeletonRejectsMalformedInput(t *testing.T) {
 // corpus change moves one declared value instead of hunting literals, and so
 // the diff says what moved.
 const (
-	maintainedSourceBaselineEntries    = 118
+	maintainedSourceBaselineEntries    = 123
 	maintainedSourceBaselineAccounting = 51
 )
 

@@ -1,6 +1,6 @@
 {
-  "schema": "roundfix-speccheck-corpus/v1",
-  "update": "After an intentional detector change, run the focused corpus test, inspect its actual counts, and update this file in the same change.",
+  "schema": "roundfix-speccheck-corpus/v2",
+  "update": "Only active-corpus counts are pinned. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change. Archived counts are derived and reported because historical authoring changes them.",
   "active": {
     "SC-ADR-RELATED": 0,
     "SC-ADR-UNLISTED": 0,
@@ -18,26 +18,6 @@
     "SC-REQUIREMENT-CONTRADICTORY": 0,
     "SC-TOOLING-UNAUTHORIZED": 0,
     "SC-TOOLING-UNBOUNDED": 0,
-    "SC-VERIFY-WORK-INDEPENDENT": 0,
-    "SC-VOCABULARY-UNDOCUMENTED": 0
-  },
-  "archived": {
-    "SC-ADR-RELATED": 70,
-    "SC-ADR-UNLISTED": 35,
-    "SC-ARCHIVE-LICENSE": 0,
-    "SC-CONSTRAINT-MISSING": 320,
-    "SC-CONSTRAINT-SOURCE": 10,
-    "SC-CONSTRAINT-UNREASONED": 0,
-    "SC-COVERAGE-UNMAPPED": 424,
-    "SC-COVERAGE-UNTASKED": 30,
-    "SC-FINDING-LIFECYCLE": 0,
-    "SC-LOOP-ORDER-DIVERGENT": 0,
-    "SC-REF-UNRESOLVED": 191,
-    "SC-ROLLUP-MEMBER": 0,
-    "SC-REHEARSAL-UNDECLARED": 0,
-    "SC-REQUIREMENT-CONTRADICTORY": 0,
-    "SC-TOOLING-UNAUTHORIZED": 0,
-    "SC-TOOLING-UNBOUNDED": 10,
     "SC-VERIFY-WORK-INDEPENDENT": 0,
     "SC-VOCABULARY-UNDOCUMENTED": 0
   }

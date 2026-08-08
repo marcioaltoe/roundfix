@@ -174,7 +174,7 @@ Individual skill triggers:
 - `security-threat-model`:
   - `trigger.backend.security-threat-model`: Threat-modeling backend data, trust boundaries, and abuse cases.
 - `setup-context-driven`:
-  - `trigger.context-workflow.setup-context-driven`: Auditing, applying, or refreshing the Context-Driven Baseline.
+  - `trigger.context-workflow.setup-context-driven`: Auditing or applying the Context-Driven Baseline for first adoption, or refreshing an adopted repository with `roundfix baseline update`.
 - `shadcn`:
   - `trigger.frontend.shadcn`: Building or changing components based on shadcn.
 - `solid`:

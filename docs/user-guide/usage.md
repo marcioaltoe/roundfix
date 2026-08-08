@@ -125,9 +125,11 @@ recommendation rank are not readiness claims. Roundfix proves operational
 availability in the effective environment through exact proof of the complete
 runtime/model/reasoning tuple. Custom model values remain forward-compatible:
 Roundfix sends them verbatim for the same proof instead of treating the catalog
-as an allowlist. The dated Claude catalog still includes advisory labels such
-as `claude-opus-5` and `claude-fable-5`; these are not the working built-in
-frontend selection, which uses the adapter-advertised `opus` identifier.
+as an allowlist. The Claude Model Catalog recognizes the identifiers the adapter
+advertises: `opus`, `claude-fable-5`, `sonnet`, `haiku`, and `default`. It
+previously listed `claude-opus-5` and `claude-opus-4-8`, which no adapter
+advertises, and omitted three that it does; the catalog now follows the
+adapter.
 
 When an adapter advertises an independent reasoning control, Roundfix treats
 every advertised Agent Model identifier as opaque. Copy bracketed identifiers
@@ -164,7 +166,7 @@ roundfix profiles show --category backend --json
 ```
 
 JSON uses schema `roundfix/profiles/v1`. Recommendations come from a
-2026-07-16 five-entry snapshot. Each row includes benchmark, result, average
+2026-08-07 five-entry snapshot. Each row includes benchmark, result, average
 cost, source date, rationale, and `category_specific: false`. They are advisory
 only: the list is not category-specific proof, not automatic routing input, and
 never mutates User Config or Project Config.

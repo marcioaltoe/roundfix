@@ -22,7 +22,6 @@ reviews:
     # behaviour must ship the skill update with it, so that update is exactly
     # what needs reviewing. It is allowlisted below.
     - "!.claude/**"
-    - "!.compozy/**"
     - "!.cursor/**"
 
     # ----- Generated skill mirror (byte-identical to .agents/skills) -----
@@ -172,19 +171,42 @@ reviews:
 
     # ----- Documentation (Specs, ADRs, glossary, READMEs) -----
     - "docs/**/*.md"
-    - "!docs/**/_reviews/**/*.md"
-    - "!docs/**/_archived/**/*.md"
-    - "!docs/**/archive/**/*.md"
     - "CONTEXT.md"
     - "**/README.md"
     - "README.md"
 
     # ----- Skill definitions (the CLI's public contract) -----
+    # Restored: the exclusion list above says skills are "allowlisted below",
+    # and the knowledge_base entry says "reviewed: see path_filters". Both were
+    # left pointing at a line that no longer existed, so skill diffs stopped
+    # being reviewed while two comments promised they were. This repository
+    # requires a pull request that changes CLI behaviour to ship the skill
+    # update with it, which makes that update exactly what needs reviewing.
     - ".agents/skills/**/*.md"
 
     # ----- Repository configuration -----
     - ".coderabbit.yaml"
     - ".roundfixrc.yml"
+
+    # =====================================================================
+    # Arquivado — sempre por último, para vencer qualquer inclusão acima
+    # =====================================================================
+    # Arquivar move o arquivo sem mudar uma linha dele, e um rename aparece no
+    # diff como arquivo inteiro. Sem isto, o commit que arquiva uma Spec faz o
+    # CodeRabbit revisar a Spec toda outra vez — conteúdo que já foi revisado
+    # quando foi escrito, e que o `docs-layout.md` trata como história imutável.
+    #
+    # Sem sufixo `.md`: sob esses caminhos há `.excalidraw`, `.json` e `.txt` de
+    # evidência de QA, e um `.tsx` em `docs/reference/archive/gss-migration/`
+    # que casava com `**/*.tsx` e era revisado apesar de arquivado.
+    #
+    # `_archived` e `_reviews` valem em qualquer lugar: o prefixo `_` é
+    # convenção deste repositório para "não é código". `archive` fica preso a
+    # `docs/` de propósito — sem underscore, é nome plausível de módulo real, e
+    # excluir código por causa do nome de uma pasta é pior que revisar história.
+    - "!**/_archived/**"
+    - "!**/_reviews/**"
+    - "!docs/**/archive/**"
 
 knowledge_base:
   code_guidelines:

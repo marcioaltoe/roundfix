@@ -37,6 +37,7 @@ const (
 	fakeACPXClosed     = "ROUNDFIX_FAKE_ACPX_CLOSED"
 	fakeACPXPromptDone = "ROUNDFIX_FAKE_ACPX_PROMPT_DONE"
 	fakeACPXStarted    = "ROUNDFIX_FAKE_ACPX_STARTED"
+	fakeACPXStartEvent = "ROUNDFIX_FAKE_ACPX_STARTED_RUN_EVENT"
 	fakeACPXBlock      = "ROUNDFIX_FAKE_ACPX_BLOCK_PROMPT"
 	fakeACPXBlockCmd   = "ROUNDFIX_FAKE_ACPX_BLOCK_COMMAND"
 	fakeACPXExitCancel = "ROUNDFIX_FAKE_ACPX_EXIT_AFTER_CANCEL"
@@ -2502,6 +2503,9 @@ func TestACPXRunCancellationCommandFailuresWarnAndContinue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			harness := newBlockingFakeACPXHarness(t, false)
+			const promptStartedSummary = "fake acpx prompt started"
+			harness.setEnv(fakeACPXStartEvent, promptStartedSummary)
+			promptStarted := newCaptureSink(promptStartedSummary)
 			clock := newFakeCancellationClock()
 			harness.runner.cancelClock = clock
 			var warnings []string
@@ -2513,10 +2517,10 @@ func TestACPXRunCancellationCommandFailuresWarnAndContinue(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			resultCh := make(chan error, 1)
 			go func() {
-				_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
+				_, err := harness.runWithSink(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1", promptStarted)
 				resultCh <- err
 			}()
-			harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
+			<-promptStarted.done
 			cancel()
 			harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
 			if !clock.waitForTimer(t, 0).Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
@@ -4040,6 +4044,13 @@ func runFakeACPXProcess() int {
 		if path := os.Getenv(fakeACPXStarted); path != "" {
 			if err := os.WriteFile(path, []byte("started\n"), 0o644); err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "write started marker: %v\n", err)
+				return 2
+			}
+		}
+		if summary := os.Getenv(fakeACPXStartEvent); summary != "" {
+			update := `{"sessionId":"fake","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":` + strconv.Quote(summary) + `}}}`
+			if _, err := io.WriteString(os.Stdout, acpxUpdateLine(update)); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "write prompt-started Run Event: %v\n", err)
 				return 2
 			}
 		}

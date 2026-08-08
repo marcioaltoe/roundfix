@@ -288,7 +288,33 @@ confirmation of the displayed Plan Digest. Rejecting a plan returns to a
 selected decision area and requires a newly calculated complete plan and
 confirmation.
 
-Automation and Agents use the non-interactive pair:
+For a repository with a compatible Setup Manifest, use the dedicated
+non-interactive managed refresh:
+
+```bash
+roundfix baseline update --repo . --format json
+roundfix baseline update --repo . --yes --format json
+```
+
+Without confirmation, a changed Plan is presented and nothing is written.
+`--yes` approves the Plan Digest computed in that invocation;
+`--confirm-plan <digest>` approves a previously reviewed digest, and the two
+flags are mutually exclusive. `--adopt-suggested` explicitly adopts and reports
+suggestions only for decisions absent from the manifest. `--no-skills` skips the
+Repository Skill Set refresh. `--skills-source-dir <path>` selects an offline
+Git checkout or bare object store for external skill restoration. `--repo`
+defaults to the current directory, and `--format` accepts `text` or `json`.
+
+Update exits `0` when the repository is current or an approved refresh applied
+and verified; `1` for apply, verification, output, rollback, or recovery
+failure; `2` for invalid input, an incompatible manifest, or an unsafe
+repository; `3` when adoption, a new decision, confirmation, or retention
+action is required; and `130` when canceled. JSON output uses
+`roundfix/baseline-update-result/v1`. Managed refresh never invokes semantic
+classification and preserves every non-managed byte exactly.
+
+Automation and Agents use the non-interactive plan/apply pair for first
+adoption or a Profile change:
 
 ```bash
 roundfix baseline plan --repo . --profile <profile-id> --decision-file <decision-file> --format json
@@ -412,9 +438,10 @@ Required built-ins:
 Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. If configured, they must
 be complete. The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official Codex identifiers, plus advisory Claude labels
-`claude-opus-5`, `claude-fable-5`, and `claude-opus-4-8`. Those labels do not
-replace the working built-in `opus` identifier. Catalog validity is distinct
+`gpt-5.6-luna` as official Codex identifiers, plus the Claude identifiers the
+adapter advertises: `opus`, `claude-fable-5`, `sonnet`, `haiku`, and `default`.
+The adapter advertises Opus 5 as `opus[1m]`; the capability parser removes the
+bracketed context suffix, so `opus` is the catalog value. Catalog validity is distinct
 from advisory recommendation rank and from operational availability: exact
 proof in the effective environment is the only readiness authority. Explicit
 custom model strings, including adapter aliases, are sent to the ACP Runtime
@@ -464,7 +491,7 @@ roundfix profiles validate --json
 
 `profiles show` is read-only and returns `roundfix/profiles/v1` JSON with the
 effective source, inherited source, Preferred Selection, ordered fallbacks, and
-five recommendations. Recommendations are dated `2026-07-16`, include
+five recommendations. Recommendations are dated `2026-08-07`, include
 benchmark/result/cost/rationale evidence, set `category_specific: false`, and
 are advisory only. They never route, prove availability, or mutate config.
 

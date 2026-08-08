@@ -1,7 +1,15 @@
 package config
 
+// Model identifiers below are the ones each ACP adapter advertises, not display
+// names from the benchmark. The claude adapter advertises `opus` (as
+// `opus[1m]`), `claude-fable-5`, `sonnet`, `haiku`, and `default`; reasoning
+// effort is a separate adapter option. `claude-opus-4-8` appeared in the
+// 2026-07-16 snapshot and is advertised by no adapter, so it is gone.
+//
+// Rationale, sources, and the cost/latency/step trade-offs behind each ordering
+// live in docs/references/model-selection.md.
 const (
-	ModelRecommendationSnapshotVersion = "2026-07-16"
+	ModelRecommendationSnapshotVersion = "2026-08-07"
 	ModelRecommendationSnapshotDate    = ModelRecommendationSnapshotVersion
 	modelRecommendationBenchmark       = "DeepSWE v1.1"
 )
@@ -39,39 +47,39 @@ func ModelRecommendations(category WorkCategory) ([]ModelRecommendation, WorkCat
 
 var modelRecommendationsByCategory = map[WorkCategory][]ModelRecommendation{
 	CategoryGeneral: {
-		modelRecommendation(CategoryGeneral, 1, "codex", "gpt-5.6-sol", "high", 69, 3.47, "Built-in quality/cost default; Sol leads the broader composite at max without requiring max for routine work."),
-		modelRecommendation(CategoryGeneral, 2, "codex", "gpt-5.6-terra", "max", 70, 4.95, "Strong quality-preserving fallback with lower average cost than the largest Claude settings."),
-		modelRecommendation(CategoryGeneral, 3, "claude", "claude-fable-5", "high", 69, 9.18, "Cross-runtime high-quality option when provider diversity matters."),
-		modelRecommendation(CategoryGeneral, 4, "codex", "gpt-5.6-luna", "max", 67, 3.03, "Cost-conscious option that remains competitive at maximum effort."),
-		modelRecommendation(CategoryGeneral, 5, "codex", "gpt-5.5", "xhigh", 67, 7.23, "Retained proven-generation option, but less attractive than GPT-5.6 on this snapshot."),
+		modelRecommendation(CategoryGeneral, 1, "codex", "gpt-5.6-sol", "high", 69, 3.47, "Built-in quality/cost default; 37 steps is fewer than anything near its result, which keeps Run wall clock down."),
+		modelRecommendation(CategoryGeneral, 2, "claude", "opus", "high", 73, 6.08, "Highest result on this snapshot at a moderate setting; within one point of its own max for half the cost."),
+		modelRecommendation(CategoryGeneral, 3, "codex", "gpt-5.6-terra", "max", 70, 3.96, "Quality-preserving alternative that costs less than raising the default to xhigh."),
+		modelRecommendation(CategoryGeneral, 4, "codex", "gpt-5.6-luna", "max", 67, 0.61, "Cost floor: two points below the default for a sixth of the price, and its 4.1s latency offsets its extra steps."),
+		modelRecommendation(CategoryGeneral, 5, "codex", "gpt-5.5", "xhigh", 67, 7.23, "Retained proven-generation option, now dominated by every GPT-5.6 setting above it."),
 	},
 	CategoryBackend: {
 		modelRecommendation(CategoryBackend, 1, "codex", "gpt-5.6-sol", "high", 69, 3.47, "Best default for complex repository changes, debugging, and multi-file implementation."),
-		modelRecommendation(CategoryBackend, 2, "codex", "gpt-5.6-terra", "max", 70, 4.95, "Quality-preserving alternative with a strong long-horizon result."),
-		modelRecommendation(CategoryBackend, 3, "claude", "claude-fable-5", "high", 69, 9.18, "Cross-runtime option for architecture-heavy or broad refactoring work."),
-		modelRecommendation(CategoryBackend, 4, "codex", "gpt-5.5", "xhigh", 67, 7.23, "Stable legacy choice when a repository has already validated it."),
-		modelRecommendation(CategoryBackend, 5, "codex", "gpt-5.6-luna", "max", 67, 3.03, "Lower-cost option for bounded backend slices."),
+		modelRecommendation(CategoryBackend, 2, "claude", "opus", "high", 73, 6.08, "Cross-runtime option with the highest result, for architecture-heavy or broad refactoring work."),
+		modelRecommendation(CategoryBackend, 3, "codex", "gpt-5.6-terra", "max", 70, 3.96, "Quality-preserving alternative with a strong long-horizon result."),
+		modelRecommendation(CategoryBackend, 4, "codex", "gpt-5.6-luna", "max", 67, 0.61, "Lower-cost option for bounded backend slices where a Verification gate catches what the model misses."),
+		modelRecommendation(CategoryBackend, 5, "codex", "gpt-5.5", "xhigh", 67, 7.23, "Stable legacy choice when a repository has already validated it."),
 	},
 	CategoryFrontend: {
-		modelRecommendation(CategoryFrontend, 1, "claude", "claude-fable-5", "medium", 65, 6.09, "Dated benchmark-ranked frontend option; task-fit is qualitative because the benchmark has no UI-specific slice."),
+		modelRecommendation(CategoryFrontend, 1, "claude", "opus", "high", 73, 6.08, "Preferred frontend profile on design judgment; task-fit is qualitative because no benchmark on file has a UI slice."),
 		modelRecommendation(CategoryFrontend, 2, "codex", "gpt-5.6-sol", "high", 69, 3.47, "Strong cross-runtime fallback for implementation and integration correctness."),
-		modelRecommendation(CategoryFrontend, 3, "claude", "claude-opus-4-8", "high", 52, 4.28, "Design-heavy alternative retained for repositories that have validated Opus; general benchmark result is weaker."),
-		modelRecommendation(CategoryFrontend, 4, "codex", "gpt-5.6-terra", "max", 70, 4.95, "Quality-focused Codex alternative when visual specialization is less important than repository completion."),
-		modelRecommendation(CategoryFrontend, 5, "codex", "gpt-5.6-luna", "max", 67, 3.03, "Cost-conscious option for small, well-specified UI slices."),
+		modelRecommendation(CategoryFrontend, 3, "codex", "gpt-5.6-terra", "max", 70, 3.96, "Quality-focused Codex alternative when visual specialization matters less than repository completion."),
+		modelRecommendation(CategoryFrontend, 4, "codex", "gpt-5.6-luna", "max", 67, 0.61, "Cost-conscious option for small, well-specified UI slices."),
+		modelRecommendation(CategoryFrontend, 5, "claude", "claude-fable-5", "high", 69, 9.18, "Ranked last despite a competitive result: it answers in about 1.7 minutes, roughly 25x Sol, and that multiplies by turn count in a Run."),
 	},
 	CategoryQA: {
 		modelRecommendation(CategoryQA, 1, "codex", "gpt-5.6-sol", "high", 69, 3.47, "Built-in QA default for broad behavior checks and evidence synthesis."),
-		modelRecommendation(CategoryQA, 2, "codex", "gpt-5.6-terra", "max", 70, 4.95, "Quality-preserving fallback for long validation flows."),
-		modelRecommendation(CategoryQA, 3, "codex", "gpt-5.6-luna", "max", 67, 3.03, "Cost-conscious option for deterministic, well-bounded QA matrices."),
-		modelRecommendation(CategoryQA, 4, "claude", "claude-fable-5", "high", 69, 9.18, "Cross-runtime option for exploratory behavior analysis."),
+		modelRecommendation(CategoryQA, 2, "claude", "opus", "high", 73, 6.08, "Cross-runtime option with the highest result, for exploratory behavior analysis."),
+		modelRecommendation(CategoryQA, 3, "codex", "gpt-5.6-luna", "max", 67, 0.61, "Cost-conscious option for deterministic, well-bounded QA matrices."),
+		modelRecommendation(CategoryQA, 4, "codex", "gpt-5.6-terra", "max", 70, 3.96, "Quality-preserving fallback for long validation flows."),
 		modelRecommendation(CategoryQA, 5, "codex", "gpt-5.5", "xhigh", 67, 7.23, "Legacy option for established QA setups already proven on GPT-5.5."),
 	},
 	CategoryReview: {
-		modelRecommendation(CategoryReview, 1, "codex", "gpt-5.6-sol", "high", 69, 3.47, "Matches the OpenClaw autoreview default and balances review depth with cost."),
-		modelRecommendation(CategoryReview, 2, "codex", "gpt-5.6-terra", "max", 70, 4.95, "Strong alternative when Sol cannot start or a quality-preserving fallback is required."),
-		modelRecommendation(CategoryReview, 3, "claude", "claude-fable-5", "high", 69, 9.18, "Cross-runtime review option with a competitive general coding result."),
-		modelRecommendation(CategoryReview, 4, "codex", "gpt-5.5", "xhigh", 67, 7.23, "Established predecessor for repositories that prefer a validated older generation."),
-		modelRecommendation(CategoryReview, 5, "claude", "claude-opus-4-8", "high", 52, 4.28, "Design- and architecture-oriented alternative; lower general benchmark result keeps it fifth."),
+		modelRecommendation(CategoryReview, 1, "codex", "gpt-5.6-luna", "max", 67, 0.61, "Review work is bounded and has no dependency graph, so its extra steps block nobody while its price is a sixth of the alternatives."),
+		modelRecommendation(CategoryReview, 2, "codex", "gpt-5.6-sol", "high", 69, 3.47, "Balances review depth with cost when two points of result are worth six times the price."),
+		modelRecommendation(CategoryReview, 3, "claude", "opus", "medium", 69, 3.29, "Cross-runtime option at the same result and price as Sol, for provider diversity."),
+		modelRecommendation(CategoryReview, 4, "codex", "gpt-5.6-terra", "xhigh", 60, 1.70, "Middle-cost alternative when Sol cannot start and Luna's result is too low for the change under review."),
+		modelRecommendation(CategoryReview, 5, "claude", "claude-fable-5", "high", 69, 9.18, "Cross-runtime review option; its 1.7-minute latency matters less on a single bounded review than inside a Run."),
 	},
 }
 

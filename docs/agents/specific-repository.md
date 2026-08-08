@@ -108,6 +108,23 @@ project moves to `0.1.0`.
 - Commit and PR titles are unscoped Conventional Commits subjects here
   (`cog.toml` sets `scopes = []`).
 - PR bodies summarize changes, call out risk, and list validation commands run.
+- **HARD RULE — a hand-opened code pull request asks for its own review**:
+  `.coderabbit.yaml` sets `auto_review.enabled: false`, so no review happens
+  unless something asks. Roundfix asks on its own Final Push
+  (`review_source.request_review: true`), which covers the watch and resolve
+  loops and nothing else. A pull request opened directly — by `gh pr create` or
+  any other route — gets no review at all, and its CodeRabbit check reports
+  `Review skipped: automatic reviews are disabled`, which reads like a pass.
+  Whenever the pull request changes code, put the line `coderabbit:review` in
+  the **pull request description**, written when the pull request is opened
+  rather than added afterwards. Documentation-only pull requests may skip it.
+  Do not rely on an `@coderabbitai review` comment instead: that command is
+  one-shot and any later push invalidates it, answering
+  `Action not completed — Head commit changed` while the check still reads
+  green. Measured on pull request #143 on 2026-08-07, where the comment fired,
+  a commit followed, and the review never ran. The description marker survives
+  every push. Three pull requests merged unreviewed the same day because this
+  rule did not exist: the tool had been taught to ask and the agents had not.
 
 ## Anti-patterns (immediate rejection)
 

@@ -9,9 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -75,6 +73,7 @@ type baselineHumanState struct {
 	currentProfile   *baseline.ResolvedProfile
 	currentDecisions map[string]any
 	incompatible     string
+	manifestInput    *baseline.ManifestInput
 }
 
 type baselineHumanActionError struct {
@@ -370,6 +369,18 @@ func driveHumanBaselinePlanWithAnalyzers(
 		return baseline.PlanDocument{}, err
 	}
 	renderBaselineHumanState(review, state)
+	if state.manifestInput != nil {
+		return driveResolvedHumanBaselinePlan(
+			ctx,
+			prompt,
+			review,
+			inspection,
+			catalog,
+			state,
+			captured,
+			executableDirectories,
+		)
+	}
 
 	preservationMode, err := promptPreservationMode(
 		ctx,
@@ -430,6 +441,95 @@ func driveHumanBaselinePlanWithAnalyzers(
 	outcome, err := baseline.BuildPlan(ctx, request)
 	if err != nil {
 		return baseline.PlanDocument{}, fmt.Errorf("build human Baseline Plan: %w", err)
+	}
+	if outcome.Plan == nil {
+		outcome.Result.Operation = "baseline"
+		outcome.Result.NextAction = humanBaselineNextAction(outcome.Result)
+		return baseline.PlanDocument{}, &baselineHumanActionError{result: outcome.Result}
+	}
+	printConsolidatedBaselineReview(*outcome.Plan, review)
+	if captured != nil {
+		*captured = request
+	}
+	return *outcome.Plan, nil
+}
+
+func driveResolvedHumanBaselinePlan(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	inspection baseline.RepositoryInspection,
+	catalog *baseline.Catalog,
+	state baselineHumanState,
+	captured *baseline.PlanRequest,
+	executableDirectories []string,
+) (baseline.PlanDocument, error) {
+	if state.currentProfile == nil {
+		return baseline.PlanDocument{}, errors.New(
+			"drive resolved human Baseline workflow: current profile is required",
+		)
+	}
+	profile := *state.currentProfile
+	decisions := append([]baseline.DecisionValue(nil), state.manifestInput.Decisions...)
+	current := make(map[string]any, len(state.currentDecisions))
+	for id, value := range state.currentDecisions {
+		current[id] = value
+	}
+	answered := make(map[string]struct{})
+	for {
+		normalized, missing, err := baseline.ResolveDecisionInput(profile, decisions, catalog)
+		if err != nil {
+			return baseline.PlanDocument{}, fmt.Errorf("resolve manifest-backed Baseline decisions: %w", err)
+		}
+		if len(missing) == 0 {
+			decisions = normalized
+			break
+		}
+		for _, id := range missing {
+			if _, exists := answered[id]; exists {
+				return baseline.PlanDocument{}, fmt.Errorf(
+					"resolve manifest-backed Baseline decisions: %q remains missing after an answer",
+					id,
+				)
+			}
+			value, err := promptBaselineDecision(ctx, prompt, catalog, id, current)
+			if err != nil {
+				return baseline.PlanDocument{}, err
+			}
+			decisions = append(decisions, baseline.DecisionValue{ID: id, Value: value})
+			current[id] = value
+			answered[id] = struct{}{}
+		}
+	}
+
+	profile, decisions, profileDraft, err := promptBaselineProfileAlignmentWithDirectories(
+		ctx,
+		prompt,
+		review,
+		inspection.Root,
+		catalog,
+		state,
+		profile,
+		decisions,
+		executableDirectories,
+	)
+	if err != nil {
+		return baseline.PlanDocument{}, err
+	}
+	request := baseline.PlanRequest{
+		Repository:            inspection.Root,
+		Decisions:             decisions,
+		Preservation:          baseline.RootPreservationRequest{Mode: baseline.PreservationModeManagedRefresh},
+		ExecutableDirectories: executableDirectories,
+	}
+	if profileDraft == nil {
+		request.ProfileID = profile.ID
+	} else {
+		request.ProfileDraft = profileDraft
+	}
+	outcome, err := baseline.BuildPlan(ctx, request)
+	if err != nil {
+		return baseline.PlanDocument{}, fmt.Errorf("build manifest-backed human Baseline Plan: %w", err)
 	}
 	if outcome.Plan == nil {
 		outcome.Result.Operation = "baseline"
@@ -575,6 +675,22 @@ func promptStructuredBaselineRevision(
 	}
 	switch area {
 	case baseline.RevisionAreaProfile:
+		var inspection baseline.RepositoryInspection
+		preservationMode := request.Preservation.Mode
+		if preservationMode == baseline.PreservationModeManagedRefresh {
+			inspection, err = baseline.InspectRepository(ctx, request.Repository, nil)
+			if err != nil {
+				return request, err
+			}
+			preservationMode, err = promptPreservationMode(
+				ctx,
+				prompt,
+				baselineHasRootInstructions(inspection.Snapshot),
+			)
+			if err != nil {
+				return request, err
+			}
+		}
 		profile := current.Profile
 		revisionState := baselineHumanState{
 			mode:             "update",
@@ -594,6 +710,23 @@ func promptStructuredBaselineRevision(
 			request.ProfileDraft = nil
 		}
 		request.Decisions = decisions
+		if request.Preservation.Mode == baseline.PreservationModeManagedRefresh {
+			preservation, preservationErr := promptBaselineClassification(
+				ctx,
+				prompt,
+				review,
+				inspection,
+				preservationMode,
+				catalog,
+				selected,
+				decisions,
+				semanticAnalyzer,
+			)
+			if preservationErr != nil {
+				return request, preservationErr
+			}
+			request.Preservation = preservation
+		}
 	case baseline.RevisionAreaRepositoryRules:
 		inspection, inspectErr := baseline.InspectRepository(ctx, request.Repository, nil)
 		if inspectErr != nil {
@@ -669,57 +802,56 @@ func inspectBaselineHumanState(root string, catalog *baseline.Catalog) (baseline
 		mode:             "adoption",
 		currentDecisions: map[string]any{},
 	}
-	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(baselineSetupManifestPath)))
-	if errors.Is(err, fs.ErrNotExist) {
+	input, err := baseline.ResolveManifestInput(root, catalog)
+	if errors.Is(err, baseline.ErrNoManifest) {
 		return state, nil
 	}
-	if err != nil {
-		return state, fmt.Errorf("read current Setup Manifest: %w", err)
-	}
-	var manifest baseline.SetupManifest
-	if err := json.Unmarshal(data, &manifest); err != nil {
-		state.incompatible = "the existing Setup Manifest is invalid JSON"
+	if err == nil {
+		profile, resolveErr := baseline.ResolveProfile(root, input.ProfileID, catalog)
+		if resolveErr != nil {
+			return state, fmt.Errorf("resolve manifest-backed Baseline Profile: %w", resolveErr)
+		}
+		state.currentProfile = &profile
+		for _, decision := range input.Decisions {
+			state.currentDecisions[decision.ID] = decision.Value
+		}
+		state.mode = "update"
+		state.manifestInput = &input
 		return state, nil
 	}
-	if manifest.SchemaVersion != baseline.ManifestSchema ||
-		manifest.Version != baseline.ManifestVersion ||
-		strings.TrimSpace(manifest.Profile) == "" {
-		state.incompatible = "the existing Setup Manifest is incompatible with the current Baseline"
-		return state, nil
+	if !errors.Is(err, baseline.ErrManifestIncompatible) {
+		return state, fmt.Errorf("resolve current Setup Manifest: %w", err)
 	}
-	for id, decision := range manifest.Decisions {
+
+	state.incompatible = baselineHumanIncompatibilityMessage(input.Incompatibility)
+	for id, decision := range input.Manifest.Decisions {
 		state.currentDecisions[id] = decision.Value
 	}
-	profile, err := baseline.ResolveProfile(root, manifest.Profile, catalog)
-	if err != nil {
-		state.incompatible = "the existing Setup Manifest references an unavailable or changed Baseline Profile"
+	if strings.TrimSpace(input.ProfileID) == "" {
 		return state, nil
 	}
-	state.currentProfile = &profile
-	if profile.Digest != manifest.ProfileDigest {
-		state.incompatible = "the existing Setup Manifest references an unavailable or changed Baseline Profile"
-		return state, nil
+	profile, resolveErr := baseline.ResolveProfile(root, input.ProfileID, catalog)
+	if resolveErr == nil {
+		state.currentProfile = &profile
 	}
-	stored := make([]baseline.DecisionValue, 0, len(manifest.Decisions))
-	for id, decision := range manifest.Decisions {
-		if _, fixed := profile.Values[id]; fixed {
-			continue
-		}
-		stored = append(stored, baseline.DecisionValue{ID: id, Value: decision.Value})
-	}
-	normalized, missing, err := baseline.ResolveDecisionInput(profile, stored, catalog)
-	if err != nil || len(missing) != 0 {
-		state.incompatible = "the existing Setup Manifest contains incompatible project decisions"
-		delete(state.currentDecisions, "auth.provider")
-		delete(state.currentDecisions, "http.contract")
-		return state, nil
-	}
-	state.currentDecisions = make(map[string]any, len(normalized))
-	for _, decision := range normalized {
-		state.currentDecisions[decision.ID] = decision.Value
-	}
-	state.mode = "update"
 	return state, nil
+}
+
+func baselineHumanIncompatibilityMessage(
+	reason baseline.ManifestInputIncompatibility,
+) string {
+	switch reason {
+	case baseline.ManifestInputManifestUnreadable:
+		return "the existing Setup Manifest cannot be read by the current Baseline"
+	case baseline.ManifestInputManifestInvalid:
+		return "the existing Setup Manifest is incompatible with the current Baseline"
+	case baseline.ManifestInputProfileUnresolved:
+		return "the existing Setup Manifest references an unavailable Baseline Profile"
+	case baseline.ManifestInputDecisionsInvalid:
+		return "the existing Setup Manifest contains incompatible project decisions"
+	default:
+		return "the existing Setup Manifest is incompatible with the current Baseline"
+	}
 }
 
 func renderBaselineHumanState(output io.Writer, state baselineHumanState) {

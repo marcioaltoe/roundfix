@@ -29,8 +29,9 @@ const (
 type PreservationMode string
 
 const (
-	PreservationModeGreenfield   PreservationMode = "greenfield"
-	PreservationModePreservation PreservationMode = "preservation"
+	PreservationModeGreenfield     PreservationMode = "greenfield"
+	PreservationModePreservation   PreservationMode = "preservation"
+	PreservationModeManagedRefresh PreservationMode = "managed-refresh"
 )
 
 type PreservationState string
@@ -538,7 +539,9 @@ func planRootPreservationWithCatalog(
 	request RootPreservationRequest,
 	catalog *Catalog,
 ) (RootPreservationPlan, error) {
-	if request.Mode != PreservationModeGreenfield && request.Mode != PreservationModePreservation {
+	if request.Mode != PreservationModeGreenfield &&
+		request.Mode != PreservationModePreservation &&
+		request.Mode != PreservationModeManagedRefresh {
 		return RootPreservationPlan{}, fmt.Errorf(
 			"plan root-instruction preservation: unsupported mode %q",
 			request.Mode,
@@ -573,6 +576,18 @@ func planRootPreservationWithCatalog(
 		return RootPreservationPlan{}, err
 	}
 	plan.Findings = append(plan.Findings, findings...)
+	if request.Mode == PreservationModeManagedRefresh {
+		markerFindings, err := managedRefreshMarkerFindings(inspection.Root)
+		if err != nil {
+			return RootPreservationPlan{}, err
+		}
+		plan.Findings = sortedFindings(append(plan.Findings, markerFindings...))
+		if len(plan.Findings) != 0 {
+			plan.State = PreservationStateBlocked
+			plan.NextAction = "repair every blocking root carrier or modified managed marker and rerun Baseline planning"
+		}
+		return plan, nil
+	}
 	retainsRepositoryRules, err := currentSetupRetainsRecognizedRepositoryRulesWithCatalog(
 		inspection.Root,
 		catalog,
@@ -664,6 +679,55 @@ func planRootPreservationWithCatalog(
 		plan.NextAction = "complete or correct every root-rule disposition and rerun Baseline planning"
 	}
 	return plan, nil
+}
+
+func managedRefreshMarkerFindings(
+	root string,
+) ([]Finding, error) {
+	manifestBytes, err := readOptionalRegular(root, manifestPath)
+	if err != nil {
+		return nil, fmt.Errorf("inspect managed-refresh Setup Manifest: %w", err)
+	}
+	manifest, valid := parseManagedSetupManifest(manifestBytes)
+	if !valid {
+		return nil, nil
+	}
+	sourceByPath := manifestArtifactsByPath(manifest.ManagedArtifacts)
+	var findings []Finding
+	for _, relative := range sortedKeys(sourceByPath) {
+		content, err := readOptionalRegular(root, relative)
+		if err != nil {
+			return nil, err
+		}
+		if content == nil {
+			continue
+		}
+		entriesByID := make(map[string][]ReadoptionSourceEntry)
+		for _, entry := range partitionRootSource(relative, content) {
+			if entry.Kind != "managed-block" {
+				continue
+			}
+			managedID, _ := entry.StructuralProvenance["managedId"].(string)
+			entriesByID[managedID] = append(entriesByID[managedID], entry)
+		}
+		modified := false
+		for managedID, artifact := range sourceByPath[relative] {
+			entries := entriesByID[managedID]
+			if len(entries) != 1 || !managedEntryMatchesManifest(entries[0], artifact) {
+				modified = true
+				break
+			}
+		}
+		if !modified {
+			continue
+		}
+		findings = append(findings, Finding{
+			Code:    "baseline.preservation.managed-marker.modified",
+			Path:    relative,
+			Message: "managed marker bytes no longer match the adopted Setup Manifest",
+		})
+	}
+	return sortedFindings(findings), nil
 }
 
 type rootPreservationSource struct {

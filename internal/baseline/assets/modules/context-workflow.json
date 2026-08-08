@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 11,
+  "version": 12,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -140,7 +140,7 @@
       "triggers": [
         {
           "id": "trigger.context-workflow.setup-context-driven",
-          "when": "Auditing, applying, or refreshing the Context-Driven Baseline."
+          "when": "Auditing or applying the Context-Driven Baseline for first adoption, or refreshing an adopted repository with `roundfix baseline update`."
         }
       ]
     },
@@ -255,7 +255,7 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 10,
+      "version": 11,
       "coverage": [
         "coverage.context-workflow"
       ],
@@ -358,7 +358,7 @@
         {
           "id": "clause.context.inbox-02-fleet-flow",
           "enforcement": "mandatory",
-          "guidance": "Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent."
+          "guidance": "When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent. Where a fleet observation is captured before it reaches this repository is the Secondbrain guidance's concern, not this one's."
         }
       ]
     }

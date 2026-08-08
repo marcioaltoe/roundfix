@@ -70,6 +70,23 @@ func TestBaselineDocumentationContract(t *testing.T) {
 			},
 		},
 		{
+			command: "baseline update",
+			args:    []string{"baseline", "update", "--help"},
+			snippets: []string{
+				"roundfix baseline update [--repo <path>] [--format <text|json>]",
+				"--yes | --confirm-plan <digest>",
+				"--adopt-suggested",
+				"--no-skills",
+				"--skills-source-dir <path>",
+				"roundfix/baseline-update-result/v1",
+				"0  repository already current, or approved managed refresh applied and verified",
+				"1  apply, verification, output, rollback, or recovery failure",
+				"2  invalid input, incompatible manifest, or unsafe repository",
+				"3  adoption, a new decision, confirmation, or retention action is required",
+				"130 operation canceled",
+			},
+		},
+		{
 			command: "baseline apply",
 			args:    []string{"baseline", "apply", "--help"},
 			snippets: []string{
@@ -137,6 +154,9 @@ func TestBaselineDocumentationContract(t *testing.T) {
 			path: filepath.Join(root, "docs", "user-guide", "context-driven-development.md"),
 			snippets: []string{
 				"### First adoption",
+				"roundfix baseline update --repo . --yes --format json",
+				"roundfix/baseline-update-result/v1",
+				"Every byte outside managed boundaries remains byte-identical",
 				"Greenfield",
 				"Preservation",
 				"### Update, profile change, and rejected plans",
@@ -183,6 +203,7 @@ func TestBaselineDocumentationContract(t *testing.T) {
 			path: filepath.Join(root, ".agents", "skills", "setup-context-driven", "SKILL.md"),
 			snippets: []string{
 				"public `roundfix baseline` command family",
+				"roundfix baseline update --repo . --yes --format json",
 				"only runtime authority",
 				"roundfix baseline plan",
 				"roundfix baseline apply",
@@ -194,6 +215,7 @@ func TestBaselineDocumentationContract(t *testing.T) {
 			path: filepath.Join(root, ".agents", "skills", "roundfix", "SKILL.md"),
 			snippets: []string{
 				"## Context-Driven Baseline",
+				"roundfix baseline update --repo . --yes --format json",
 				"roundfix baseline plan",
 				"roundfix baseline apply",
 				"no partial plan",
@@ -544,6 +566,9 @@ func parsePublishedBaselineExample(args []string, workDir string) error {
 	switch {
 	case len(args) == 0:
 		_, err := parseBaselineHumanCommand(nil)
+		return err
+	case args[0] == "update":
+		_, err := parseBaselineUpdateCommand(args[1:])
 		return err
 	case args[0] == "plan":
 		_, err := parseBaselinePlanCommand(args[1:])
