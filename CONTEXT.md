@@ -132,6 +132,10 @@ _Avoid_: Adapter found, binary check, PATH readiness
 The token-free disposable Agent Session check that maps one Agent Selection through advertised ACP capabilities, applies its exact model and reasoning assignment, observes matching effective state, and closes the Session successfully.
 _Avoid_: Model validity, catalog match, recommendation rank
 
+**Selection Encoding**:
+How one Agent Selection's reasoning effort is represented in the advertised ACP controls, decided during proof and reported by readiness surfaces. `independent` assigns a separate advertised reasoning option. `model_variant` selects an advertised model identifier that already carries the effort. `model_managed` is an empty reasoning effort on an adapter advertising no reasoning control at all. `runtime_managed` is an empty reasoning effort on an ACP Runtime whose advertised reasoning control Roundfix declines to assign, so the observed value is the Agent Model's own and is not proof-relevant.
+_Avoid_: Effort mode, reasoning strategy, assignment style
+
 **Agent Selection Profile**:
 The atomic policy for one Agent Work Category, containing one Preferred Selection and a non-empty ordered Fallback Chain. A higher-precedence profile replaces the complete lower-precedence profile rather than merging individual fields.
 _Avoid_: Runtime defaults, model preset, partial override
