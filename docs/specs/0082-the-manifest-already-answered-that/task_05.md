@@ -41,27 +41,27 @@ guidance refresh.
 
 ## Subtasks
 
-- [ ] Add the skills stage and its seam for test injection.
-- [ ] Reinstall the owned bundle into the project skill directory.
-- [ ] Drive external restoration through preview and confirm.
-- [ ] Degrade unreachable sources to per-skill warnings.
-- [ ] Project the outcome into the result document on its own status axis.
-- [ ] Add the suppression and offline-source flags with tests.
+- [x] Add the skills stage and its seam for test injection.
+- [x] Reinstall the owned bundle into the project skill directory.
+- [x] Drive external restoration through preview and confirm.
+- [x] Degrade unreachable sources to per-skill warnings.
+- [x] Project the outcome into the result document on its own status axis.
+- [x] Add the suppression and offline-source flags with tests.
 
 ## Acceptance Criteria
 
-- [ ] An applied update reinstalls the owned skill bundle and the result names
+- [x] An applied update reinstalls the owned skill bundle and the result names
       the count installed.
-- [ ] An external skill that is missing or drifted is restored, and the result
+- [x] An external skill that is missing or drifted is restored, and the result
       names it.
-- [ ] With the upstream source unreachable, the command still applies the
+- [x] With the upstream source unreachable, the command still applies the
       guidance refresh, exits successfully, and names the drifted skill and the
       reason it was not restored.
-- [ ] The skills axis in the result is distinguishable from the apply axis; a
+- [x] The skills axis in the result is distinguishable from the apply axis; a
       warning on one does not change the other.
-- [ ] With the skills stage suppressed, no skill directory changes and the result
+- [x] With the skills stage suppressed, no skill directory changes and the result
       says the stage was skipped.
-- [ ] The command's own tests pass with no network access.
+- [x] The command's own tests pass with no network access.
 
 ## Context
 
@@ -72,7 +72,7 @@ guidance refresh.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exits 0.
-- `go test ./internal/cli/ -run 'BaselineUpdate.*Skill|Skill.*BaselineUpdate' -v 2>&1 | grep -q '^--- PASS: '` — expected: exits 0, proving the skills-stage cases exist and pass.
+- `go test ./internal/cli/ -run 'BaselineUpdate.*Skill|Skill.*BaselineUpdate' -v > /tmp/task_05-1.log 2>&1 && grep -q '^--- PASS: ' /tmp/task_05-1.log` — expected: exits 0, proving the skills-stage cases exist and pass.
 - `go test ./internal/cli/ -run 'BaselineUpdate' -v 2>&1 | grep -q -i 'unreachable'` — expected: exits 0, proving the degradation case ran.
 - `go test ./internal/baseline/ ./internal/cli/ ./skills/ -count=1` — expected: exits 0.
 - `go run -buildvcs=false ./cmd/roundfix baseline update --help` — expected: exits 0 and the usage names the skills suppression and offline-source flags.

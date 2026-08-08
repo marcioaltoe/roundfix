@@ -43,28 +43,28 @@ command consumes it.
 
 ## Subtasks
 
-- [ ] Add the manifest resolver and its result type.
-- [ ] Detect and name newly required decisions against the current catalog.
-- [ ] Carry each new decision's suggested value and summary.
-- [ ] Distinguish absent, incompatible, clean, and incomplete outcomes.
-- [ ] Cover both profile decision sets in tests, including a structured value.
+- [x] Add the manifest resolver and its result type.
+- [x] Detect and name newly required decisions against the current catalog.
+- [x] Carry each new decision's suggested value and summary.
+- [x] Distinguish absent, incompatible, clean, and incomplete outcomes.
+- [x] Cover both profile decision sets in tests, including a structured value.
 
 ## Acceptance Criteria
 
-- [ ] A repository with no manifest resolves to the absent outcome and no error
+- [x] A repository with no manifest resolves to the absent outcome and no error
       that a caller must parse text to classify.
-- [ ] A repository with a valid current manifest resolves to a profile and a
+- [x] A repository with a valid current manifest resolves to a profile and a
       decision set equal to the manifest's recorded values.
-- [ ] A manifest missing a decision the catalog requires resolves to the
+- [x] A manifest missing a decision the catalog requires resolves to the
       incomplete outcome and names exactly the missing decision ids.
-- [ ] A manifest whose profile digest no longer matches, but whose profile
+- [x] A manifest whose profile digest no longer matches, but whose profile
       resolves and whose decisions all validate, resolves to the update outcome
       and not to adoption.
-- [ ] A manifest naming a profile that no longer resolves is distinguishable in
+- [x] A manifest naming a profile that no longer resolves is distinguishable in
       the returned value from one whose decisions no longer validate.
-- [ ] Resolution writes nothing: the fixture repository is byte-identical after
+- [x] Resolution writes nothing: the fixture repository is byte-identical after
       the call.
-- [ ] A profile-fixed decision never appears among newly required decisions.
+- [x] A profile-fixed decision never appears among newly required decisions.
 
 ## Context
 
@@ -75,8 +75,8 @@ command consumes it.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exits 0.
-- `go test ./internal/baseline/ -run 'ManifestInput' -v 2>&1 | grep -q '^--- PASS: .*ManifestInput'` — expected: exits 0, proving the resolver's cases exist and pass.
-- `go test ./internal/baseline/ -run 'ManifestInput' -v 2>&1 | grep -q 'typescript'` — expected: exits 0, proving the second profile's decision set is exercised.
+- `go test ./internal/baseline/ -run 'ManifestInput' -v > /tmp/task_03-1.log 2>&1 && grep -q '^--- PASS: .*ManifestInput' /tmp/task_03-1.log` — expected: exits 0, proving the resolver's cases exist and pass.
+- `go test ./internal/baseline/ -run 'ManifestInput' -v > /tmp/task_03-2.log 2>&1 && grep -q 'typescript' /tmp/task_03-2.log` — expected: exits 0, proving the second profile's decision set is exercised.
 - `go test ./internal/baseline/ ./internal/cli/ -count=1` — expected: exits 0.
 
 ## References

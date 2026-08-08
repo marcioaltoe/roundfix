@@ -66,7 +66,7 @@ suite — which is what makes the tree green for the first time in this Spec.
 - `test -f docs/references/coverage-record.json` — expected: exits 0.
 - `test -e docs/specs/_archived/0071-verification-cost/coverage-record.json ; test $? -eq 1` — expected: exits 0, proving the record no longer lives in the archived Spec.
 - `if grep -n 'docs/specs' internal/spec/coverage_test.go; then exit 1; fi` — expected: exits 0 and prints nothing, proving no remaining path constant points into the Spec tree.
-- `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1 -v 2>&1 | grep -q '^--- PASS: TestCoverageEquivalence'` — expected: exits 0, proving the invariant passes at its new home.
+- `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1 -v > /tmp/task_02-1.log 2>&1 && grep -q '^--- PASS: TestCoverageEquivalence' /tmp/task_02-1.log` — expected: exits 0, proving the invariant passes at its new home.
 - `git diff --name-only HEAD | grep -v -E '^(internal/spec/coverage_test\.go|docs/references/coverage-record\.json|docs/specs/_archived/0071-verification-cost/coverage-record\.json|docs/specs/0083-a-gate-that-can-say-no/task_02\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.
 
 ## References

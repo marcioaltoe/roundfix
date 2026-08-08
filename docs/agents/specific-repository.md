@@ -125,6 +125,13 @@ project moves to `0.1.0`.
   a commit followed, and the review never ran. The description marker survives
   every push. Three pull requests merged unreviewed the same day because this
   rule did not exist: the tool had been taught to ask and the agents had not.
+  **Before merging, confirm the review covered the head that will land.** The
+  description marker is not that evidence: it survives a push without proving
+  anything about what the push added. Read the review's own result and compare
+  it against the current head, and treat an absent or stale result as a block
+  rather than a pass — the check reads green in both cases. Measured again on
+  #143 the next day, where twelve commits landed after a completed review and
+  nothing in the pull request said so.
 
 ## Anti-patterns (immediate rejection)
 

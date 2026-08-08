@@ -32,20 +32,20 @@ makes it wait on the starts it means rather than on a duration.
 
 ## Subtasks
 
-- [ ] Identify the start condition the test truly depends on.
-- [ ] Replace the elapsed-time wait with a condition wait.
-- [ ] Prove the test still fails when the integrated behavior regresses.
-- [ ] Run it repeatedly under induced load and record the outcome.
-- [ ] Confirm the changed-file set matches the declared boundary.
+- [x] Identify the start condition the test truly depends on.
+- [x] Replace the elapsed-time wait with a condition wait.
+- [x] Prove the test still fails when the integrated behavior regresses.
+- [x] Run it repeatedly under induced load and record the outcome.
+- [x] Confirm the changed-file set matches the declared boundary.
 
 ## Acceptance Criteria
 
-- [ ] The test passes on at least twenty consecutive runs under induced CPU
+- [x] The test passes on at least twenty consecutive runs under induced CPU
       load, with the run count and load method recorded in the Task Result.
-- [ ] Breaking the capacity or daemon-status behavior still fails the test,
+- [x] Breaking the capacity or daemon-status behavior still fails the test,
       proven by observation rather than asserted.
-- [ ] No assertion in the test depends on a fixed duration elapsing.
-- [ ] The test's name and protected behavior are unchanged.
+- [x] No assertion in the test depends on a fixed duration elapsing.
+- [x] The test's name and protected behavior are unchanged.
 
 ## Context
 
@@ -54,7 +54,7 @@ makes it wait on the starts it means rather than on a duration.
 
 ## Verification
 
-- `go test ./internal/cli -run '^TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow$' -count=20 -v 2>&1 | grep -q '^--- PASS: TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow'` — expected: exits 0, proving twenty consecutive runs pass rather than one.
+- `go test ./internal/cli -run '^TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow$' -count=20 -v > /tmp/task_06-1.log 2>&1 && grep -q '^--- PASS: TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow' /tmp/task_06-1.log` — expected: exits 0, proving twenty consecutive runs pass rather than one.
 - `go test ./internal/cli -count=1` — expected: exits 0.
 - `git diff --name-only HEAD | grep -v -E '^(internal/cli/implement_test\.go|docs/specs/0083-a-gate-that-can-say-no/task_06\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.
 

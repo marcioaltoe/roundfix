@@ -55,23 +55,23 @@ untrustworthy before this Spec.
 
 ## Subtasks
 
-- [ ] Derive the resumable QA matrix from the PRD and task evidence.
-- [ ] Execute every rehearsal case and capture its observation.
-- [ ] Prove each retired gate is quiet and each retained gate still bites.
-- [ ] Classify findings by user impact and write the dated QA report.
-- [ ] Delete every copy created, and record each path and its removal.
+- [x] Derive the resumable QA matrix from the PRD and task evidence.
+- [x] Execute every rehearsal case and capture its observation.
+- [x] Prove each retired gate is quiet and each retained gate still bites.
+- [x] Classify findings by user impact and write the dated QA report.
+- [x] Delete every copy created, and record each path and its removal.
 
 ## Acceptance Criteria
 
-- [ ] Every rehearsal case above is executed and its observation recorded.
-- [ ] Every PRD goal and core feature has a matrix row with a verdict and evidence.
-- [ ] The gate is shown failing on an induced defect and passing on a clean tree.
-- [ ] Every retained gate is shown still failing on an induced defect.
-- [ ] Any environment-blocked row carries equivalent evidence and a stated reason.
-- [ ] The dated QA report is written under the Spec's `qa/` directory.
-- [ ] No repository copy remains on disk after the gate finishes, including for
+- [x] Every rehearsal case above is executed and its observation recorded.
+- [x] Every PRD goal and core feature has a matrix row with a verdict and evidence.
+- [x] The gate is shown failing on an induced defect and passing on a clean tree.
+- [x] Every retained gate is shown still failing on an induced defect.
+- [x] Any environment-blocked row carries equivalent evidence and a stated reason.
+- [x] The dated QA report is written under the Spec's `qa/` directory.
+- [x] No repository copy remains on disk after the gate finishes, including for
       cases that failed.
-- [ ] The QA report lists every copy path used and states that each was removed.
+- [x] The QA report lists every copy path used and states that each was removed.
 
 ## Context
 

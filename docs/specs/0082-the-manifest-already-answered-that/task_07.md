@@ -49,29 +49,29 @@ else. Its boundary is the exact file list recorded in the authorization.
 
 ## Subtasks
 
-- [ ] Document the update command in the durable operating contract.
-- [ ] Route adopted repositories to the update path in the setup skill.
-- [ ] Sync the roundfix skill with the shipped CLI surface.
-- [ ] Name the update path in the module assets that name the command family.
-- [ ] Route the update subcommand in the published-example contract test.
-- [ ] Run the sanctioned digest regeneration and keep its output unedited.
-- [ ] Confirm the changed-file set matches the authorized boundary exactly.
+- [x] Document the update command in the durable operating contract.
+- [x] Route adopted repositories to the update path in the setup skill.
+- [x] Sync the roundfix skill with the shipped CLI surface.
+- [x] Name the update path in the module assets that name the command family.
+- [x] Route the update subcommand in the published-example contract test.
+- [x] Run the sanctioned digest regeneration and keep its output unedited.
+- [x] Confirm the changed-file set matches the authorized boundary exactly.
 
 ## Acceptance Criteria
 
-- [ ] The user guide documents the command, every flag, every exit category, and
+- [x] The user guide documents the command, every flag, every exit category, and
       the preservation guarantee.
-- [ ] The setup skill no longer presents the full interview as the only refresh
+- [x] The setup skill no longer presents the full interview as the only refresh
       route for an adopted repository.
-- [ ] The roundfix skill's described CLI surface matches the binary's usage
+- [x] The roundfix skill's described CLI surface matches the binary's usage
       output for the Baseline command family.
-- [ ] Generated guidance produced from the module assets names the update path.
-- [ ] Every derived pin equals the value the sanctioned regeneration command
+- [x] Generated guidance produced from the module assets names the update path.
+- [x] Every derived pin equals the value the sanctioned regeneration command
       produces; no pin was hand-edited.
-- [ ] Every published `roundfix baseline update` example in the user guide
+- [x] Every published `roundfix baseline update` example in the user guide
       parses through the update command's own argument parser, so a documented
       example that the CLI would reject fails the contract test.
-- [ ] The changed-file set is a subset of the authorized boundary.
+- [x] The changed-file set is a subset of the authorized boundary.
 
 ## Context
 
@@ -89,7 +89,7 @@ else. Its boundary is the exact file list recorded in the authorization.
 - `grep -q 'baseline update' docs/user-guide/context-driven-development.md` — expected: exits 0.
 - `grep -q 'baseline update' skills/setup-context-driven/SKILL.md` — expected: exits 0.
 - `git diff --name-only HEAD | grep -v -E '^(skills/(setup-context-driven|roundfix)/|\.agents/skills/(setup-context-driven|roundfix)/|internal/baseline/assets/|internal/baseline/testdata/|internal/cli/baseline_documentation_contract_test\.go|docs/user-guide/context-driven-development\.md|docs/specs/0082-the-manifest-already-answered-that/task_07\.md)' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the authorized boundary changed.
-- `go test ./internal/cli/ -run 'TestBaselineExamplesParse|TestBaselineDocumentationContractExamples' -v 2>&1 | grep -q '^--- PASS: TestBaselineExamplesParse'` — expected: exits 0, proving the documented update examples parse rather than being routed to the interactive parser.
+- `go test ./internal/cli/ -run 'TestBaselineExamplesParse|TestBaselineDocumentationContractExamples' -v > /tmp/task_07-1.log 2>&1 && grep -q '^--- PASS: TestBaselineExamplesParse' /tmp/task_07-1.log` — expected: exits 0, proving the documented update examples parse rather than being routed to the interactive parser.
 - `go test ./internal/baseline/ ./internal/cli/ ./skills/ -count=1` — expected: exits 0.
 
 ## References

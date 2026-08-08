@@ -15,8 +15,9 @@ defaults:
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: true
-# Model identifiers are the ones each ACP adapter advertises, not the ones in
-# internal/agent/catalog.go, which is stale. The claude adapter advertises
+# Model identifiers are the ones each ACP adapter advertises. The catalog in
+# internal/agent/catalog.go is picker metadata that must follow the adapter, and
+# it did drift until 2026-08-07. The claude adapter advertises
 # `opus` (as `opus[1m]`), `claude-fable-5`, `sonnet`, `haiku`, and `default`;
 # reasoning effort is a separate adapter option. Snapshot and rationale:
 # docs/references/model-selection.md, 2026-08-07.

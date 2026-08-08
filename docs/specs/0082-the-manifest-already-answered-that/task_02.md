@@ -69,8 +69,8 @@ its own through planning alone, before any new command exists.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exits 0.
-- `go test ./internal/baseline/ -run 'ManagedRefresh' -v 2>&1 | grep -q '^--- PASS: .*ManagedRefresh'` — expected: exits 0, proving the new mode's cases exist and pass rather than being selected out.
-- `go test ./internal/baseline/ -run 'ManagedRefresh.*Preserv|Preserv.*ManagedRefresh' -v 2>&1 | grep -q '^--- PASS: '` — expected: exits 0, proving the byte-identity assertion ran.
+- `go test ./internal/baseline/ -run 'ManagedRefresh' -v > /tmp/task_02-1.log 2>&1 && grep -q '^--- PASS: .*ManagedRefresh' /tmp/task_02-1.log` — expected: exits 0, proving the new mode's cases exist and pass rather than being selected out.
+- `go test ./internal/baseline/ -run 'ManagedRefresh.*Preserv|Preserv.*ManagedRefresh' -v > /tmp/task_02-2.log 2>&1 && grep -q '^--- PASS: ' /tmp/task_02-2.log` — expected: exits 0, proving the byte-identity assertion ran.
 - `go test ./internal/baseline/ ./internal/cli/ -count=1` — expected: exits 0, with the task_01 corpus passing unchanged.
 
 ## References

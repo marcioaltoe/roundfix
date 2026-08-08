@@ -68,7 +68,7 @@ is untouched.
 ## Verification
 
 - `go build -buildvcs=false ./...` — expected: exits 0.
-- `go test ./internal/cli/ -run 'BaselineHuman' -v 2>&1 | grep -q '^--- PASS: .*BaselineHuman'` — expected: exits 0.
+- `go test ./internal/cli/ -run 'BaselineHuman' -v > /tmp/task_06-1.log 2>&1 && grep -q '^--- PASS: .*BaselineHuman' /tmp/task_06-1.log` — expected: exits 0.
 - `go test ./internal/cli/ -run 'BaselineHuman' -v 2>&1 | grep -q -i 'analyzer'` — expected: exits 0, proving the never-called-analyzer case ran.
 - `go test ./internal/baseline/ ./internal/cli/ -count=1` — expected: exits 0, with the task_01 corpus proving first adoption is unchanged.
 

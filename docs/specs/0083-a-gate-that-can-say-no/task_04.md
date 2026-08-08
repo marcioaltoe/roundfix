@@ -59,7 +59,7 @@ change.
 
 ## Verification
 
-- `go test ./internal/speccheck -run '^TestCheckCorpusBudget$' -count=1 -parallel=1 -v 2>&1 | grep -q '^--- PASS: TestCheckCorpusBudget'` — expected: exits 0.
+- `go test ./internal/speccheck -run '^TestCheckCorpusBudget$' -count=1 -parallel=1 -v > /tmp/task_04-1.log 2>&1 && grep -q '^--- PASS: TestCheckCorpusBudget' /tmp/task_04-1.log` — expected: exits 0.
 - `grep -E 'time\.Since|elapsed[[:space:]]*>=|elapsed[[:space:]]*>' internal/speccheck/constraints_characterization_test.go | grep -E 'Errorf|Fatalf' ; test $? -eq 1` — expected: exits 0, proving no duration is compared against a constant in a failing assertion.
 - `go test ./internal/speccheck -count=1` — expected: exits 0.
 - `git diff --name-only HEAD | grep -v -E '^(internal/speccheck/constraints_characterization_test\.go|docs/specs/0083-a-gate-that-can-say-no/task_04\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.

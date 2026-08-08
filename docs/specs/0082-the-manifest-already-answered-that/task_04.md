@@ -44,29 +44,29 @@ fixture repository on its own, before skills are involved.
 
 ## Subtasks
 
-- [ ] Add the command, its flags, and their mutual exclusions.
-- [ ] Wire manifest resolution to managed-refresh plan assembly.
-- [ ] Implement the refusal paths: no manifest, new decisions, no confirmation.
-- [ ] Implement suggestion adoption and its reporting.
-- [ ] Emit the result document in text and JSON.
-- [ ] Prove idempotence and every exit category by test.
+- [x] Add the command, its flags, and their mutual exclusions.
+- [x] Wire manifest resolution to managed-refresh plan assembly.
+- [x] Implement the refusal paths: no manifest, new decisions, no confirmation.
+- [x] Implement suggestion adoption and its reporting.
+- [x] Emit the result document in text and JSON.
+- [x] Prove idempotence and every exit category by test.
 
 ## Acceptance Criteria
 
-- [ ] Running the command against a fixture repository with a stale catalog and a
+- [x] Running the command against a fixture repository with a stale catalog and a
       complete manifest rewrites the managed artifacts and exits successfully,
       having asked nothing.
-- [ ] Running it a second time immediately after reports zero file changes.
-- [ ] Running it against a repository with no manifest writes nothing and exits
+- [x] Running it a second time immediately after reports zero file changes.
+- [x] Running it against a repository with no manifest writes nothing and exits
       in the action-required category naming adoption as the next action.
-- [ ] Running it against a manifest missing a catalog-required decision writes
+- [x] Running it against a manifest missing a catalog-required decision writes
       nothing, exits in the action-required category, and names that decision id.
-- [ ] Running the same case with the suggestion-adopting flag applies and lists
+- [x] Running the same case with the suggestion-adopting flag applies and lists
       every adopted value in the result.
-- [ ] Running it without confirmation presents a Plan Digest and leaves the
+- [x] Running it without confirmation presents a Plan Digest and leaves the
       fixture repository byte-identical.
-- [ ] Supplying both confirmation forms together is rejected as invalid input.
-- [ ] No ACP runtime process is required for any of the above.
+- [x] Supplying both confirmation forms together is rejected as invalid input.
+- [x] No ACP runtime process is required for any of the above.
 
 ## Context
 
@@ -78,7 +78,7 @@ fixture repository on its own, before skills are involved.
 
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `go run -buildvcs=false ./cmd/roundfix baseline update --help` — expected: exits 0 and prints usage naming the update command.
-- `go test ./internal/cli/ -run 'BaselineUpdate' -v 2>&1 | grep -q '^--- PASS: .*BaselineUpdate'` — expected: exits 0, proving the command's cases exist and pass.
+- `go test ./internal/cli/ -run 'BaselineUpdate' -v > /tmp/task_04-1.log 2>&1 && grep -q '^--- PASS: .*BaselineUpdate' /tmp/task_04-1.log` — expected: exits 0, proving the command's cases exist and pass.
 - `go test ./internal/cli/ -run 'BaselineUpdate' -v 2>&1 | grep -q -i 'idempot'` — expected: exits 0, proving the idempotence case ran.
 - `go test ./internal/baseline/ ./internal/cli/ -count=1` — expected: exits 0, with the task_01 corpus passing unchanged.
 
