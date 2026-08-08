@@ -52,6 +52,10 @@ owner in the same rule.
 Derived pins rewritten by `make baseline-digests` are deterministic consequences
 of the authorized asset edits, per ADR-0081.
 
+## Consuming Spec
+
+This authorization is consumed by Spec `0084-an-update-that-can-run`.
+
 ## Commit choreography
 
 This record lands as its own commit, before the commit that changes the module.
