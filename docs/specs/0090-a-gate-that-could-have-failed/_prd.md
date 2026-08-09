@@ -82,15 +82,32 @@ text, never on a demonstration that it can fail.
    spent on its Task, not after.
 2. A Task's recorded Result can be distinguished from a Task's claimed Result.
 3. The authoritative gate returns the same verdict for the same tree.
+4. A Verification that did not observe what it claims returns `unknown` rather
+   than passing. A timeout, a partial execution, or a command that never reached
+   the surface it names is not evidence of success.
 
 ## Core Features
 
-- **The pre-work probe.** Before dispatching a Task, the Daemon runs that Task's
-  `## Verification` commands against the unchanged tree. A command that exits
-  zero there proves nothing about the work, because the work has not happened
-  yet. The Task fails at dispatch with the offending command named, and no Agent
-  turn is spent. This is the mechanism that would have caught Task 05 for the
-  price of one `grep`.
+- **Three controls, not one check.** A Verification earns trust by demonstrating
+  it can discriminate, which takes three observations rather than one green run:
+  a *positive control* that passes on correct work, a *negative control* that
+  must fail against a known defect, and an *observability control* that must not
+  report success when the command never reached the surface it names. The
+  cheapest of the three is available today at dispatch time: run the Task's
+  `## Verification` against the unchanged tree, and refuse the Task if it already
+  passes, because the work has not happened yet. That one would have caught Task
+  05 for the price of a `grep`, before any Agent turn was spent.
+- **Gate health is recorded, not assumed.** A gate carries how many negative
+  controls it has rejected, which surface it observed, and when its own test was
+  last updated against a changed contract or tool. A gate nobody has attacked
+  since the contract moved is an unmeasured gate, and that fact belongs next to
+  its verdict.
+- **A rubric that predates the implementation.** A Task's `## Verification` is
+  authored and hashed before its implementation runs, so the record shows the
+  criterion was not written to fit the work. This is the mechanical half of
+  separating who states the criterion from who satisfies it; the rest — a checker
+  that receives diff, state, logs and rubric without inheriting the maker's
+  account, and may return `unproven` — is its own Spec.
 - **Recorded rather than narrated evidence.** A Task Result carries the commands
   the Daemon actually executed and their exit statuses, captured by the runner
   rather than typed by the Agent. Prose stays welcome; it stops being the only
@@ -111,6 +128,11 @@ text, never on a demonstration that it can fail.
 - Retrofitting archived Specs. Their Task files stay byte-identical.
 - Replacing the authored QA gate. This Spec moves one class of defect earlier;
   ADR-0091's gate keeps its role.
+- Separating the authorship of a criterion from the authorship of the work that
+  satisfies it. This Spec takes only the mechanical half — the rubric exists and
+  is hashed before implementation. A checker with its own context, and a
+  reviewer able to return `unproven`, is a distinct mechanism and gets its own
+  Spec.
 
 ## Decisions
 
@@ -121,3 +143,25 @@ text, never on a demonstration that it can fail.
   holds before and after — is a Task whose Verification does not prove its own
   effect, which the `write-tasks` contract already forbids. The probe enforces an
   existing rule rather than adding one.
+
+## External evidence
+
+ADR-0104 requires at least one acceptance row to rest on evidence this Spec did
+not author. The source is the Secondbrain's
+`wiki/concepts/verificacao-adversarial-e-oraculos-de-agentes.md`, compiled
+2026-08-08 from published work this repository neither produced nor
+commissioned — among it *Validation Evidence in LLM Repair Agents*
+(arXiv:2607.28871), which measured 3,730 events and found 46.0% of comparable
+positives carrying no information that discriminated the bug from an unrelated
+pass.
+
+Two of its statements are load-bearing here, and neither originates in this
+repository:
+
+- the central problem is not testing the generated code but testing the
+  mechanism that decides the code is correct;
+- a cheap gate that lies is worse than an expensive gate that declares
+  `unknown`.
+
+The second is why this Spec precedes `0080-cheap-detectors-run-before-the-gate`
+in the queue rather than following it.
