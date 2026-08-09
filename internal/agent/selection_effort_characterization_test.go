@@ -2,6 +2,8 @@ package agent
 
 import (
 	"errors"
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -65,6 +67,61 @@ func TestSelectionEffortCharacterizationInvariantOpenCodeEmptyEffortPlansRuntime
 	}
 	if assignment.Encoding != SelectionEncodingRuntimeManaged {
 		t.Fatalf("encoding = %q, want %q", assignment.Encoding, SelectionEncodingRuntimeManaged)
+	}
+}
+
+// Task 02 deliberately breaks the old shared independent-control path for a
+// non-empty OpenCode effort: Preflight sees the advertised value but defers
+// applying it until the Run can warm the Agent Session.
+func TestSelectionEffortCharacterizationRuntimeDeferredPlansAdvertisedOpenCodeEffort(t *testing.T) {
+	t.Parallel()
+
+	capabilities := parseMeasuredEffortCapabilities(t, measuredGrok45EffortCapabilities)
+	assignment, err := PlanSelectionAssignment(
+		RuntimeSpec{ID: "opencode", Model: "openrouter/x-ai/grok-4.5", ReasoningEffort: "high"},
+		capabilities,
+	)
+	if err != nil {
+		t.Fatalf("plan OpenCode Agent Selection: %v", err)
+	}
+	want := SelectionAssignment{
+		Runtime:         "opencode",
+		Model:           "openrouter/x-ai/grok-4.5",
+		ReasoningEffort: "high",
+		AdapterModel:    "openrouter/x-ai/grok-4.5",
+		ReasoningKey:    "effort",
+		ReasoningValue:  "high",
+		Encoding:        SelectionEncodingRuntimeDeferred,
+	}
+	if assignment != want {
+		t.Fatalf("assignment = %#v, want %#v", assignment, want)
+	}
+}
+
+func TestSelectionEffortCharacterizationRuntimeDeferredRejectsUnadvertisedOpenCodeEffort(t *testing.T) {
+	t.Parallel()
+
+	capabilities := parseMeasuredEffortCapabilities(t, measuredGrok45EffortCapabilities)
+	_, err := PlanSelectionAssignment(
+		RuntimeSpec{ID: "opencode", Model: "openrouter/x-ai/grok-4.5", ReasoningEffort: "xhigh"},
+		capabilities,
+	)
+	if err == nil {
+		t.Fatal("an OpenCode reasoning effort absent from advertised values must not plan")
+	}
+	var unsupported *SelectionUnsupportedError
+	if !errors.As(err, &unsupported) {
+		t.Fatalf("error = %T %v, want *SelectionUnsupportedError", err, err)
+	}
+	if unsupported.Classification() != SelectionReasoningControlNotAdvertised {
+		t.Fatalf("classification = %q, want %q", unsupported.Classification(), SelectionReasoningControlNotAdvertised)
+	}
+	wantAdvertised := []string{"low", "medium", "high"}
+	if !reflect.DeepEqual(unsupported.AdvertisedReasoning, wantAdvertised) {
+		t.Fatalf("advertised reasoning = %#v, want %#v", unsupported.AdvertisedReasoning, wantAdvertised)
+	}
+	if !strings.Contains(err.Error(), "advertised reasoning efforts: low, medium, high") {
+		t.Fatalf("error = %q, want advertised reasoning values", err)
 	}
 }
 
