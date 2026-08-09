@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0090-a-gate-that-could-have-failed
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -85,3 +85,43 @@ This Task may create or modify only:
 - `_prd.md` → Goal 1; Core Features, three controls.
 - `_techspec.md` → Build Order 3; System Architecture.
 - ADR-0109.
+
+## Result
+
+### Implementation
+
+- Added a pre-work Verification probe beside the repository precondition. It
+  runs every Task command under Verification Capacity before the Agent Session
+  owner is created.
+- The probe records each command as vacuous, observed non-zero, or unknown. A
+  vacuous or unknown result settles the Task `failed`; the terminal reason names
+  every vacuous command and retains each unknown cause and diagnostic path.
+- Updated the task-engine corpus and Task 01 characterization so a vacuous gate
+  is refused, while a gate that fails before Agent work and passes after the
+  Agent keeps the existing Agent, post-Verification, settlement, and commit path.
+
+### Focused checks
+
+- Pre-change signal: `GOCACHE="$PWD/.gocache" rtk proxy go test ./internal/daemon -run 'RefusesATaskWhoseGateAlreadyPasses$' -count=1` failed because the Daemon reported only the later non-zero command and did not name Spec 0089's already-passing gate.
+- After implementation, `GOCACHE="$PWD/.gocache" rtk go test ./internal/daemon -run 'RefusesATaskWhoseGateAlreadyPasses$' -count=1` passed: 1 test.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/daemon -run 'SpendsNoAgentTurnOnARefusedTask$|LeavesAFailingGateOnItsOrdinaryPath$|RecordsUnobservableVerdictAsUnknown$|VerificationProbeCharacterization' -count=1` passed: 5 tests.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/daemon -run 'TaskCycle|PreWork|VerificationProbeCharacterization' -count=1` passed: 97 tests.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/daemon -run 'TaskScheduler|TaskVerification|VerifyTask|VerificationCapacity|VerificationGate|PreWork|VerificationProbeCharacterization' -count=1` passed: 14 tests.
+- `rtk git diff --check` passed, and the changed-path audit contains only the four paths allowed by this Task.
+- The Task's declared `## Verification` commands were not run; the Daemon owns them.
+
+### Acceptance evidence
+
+- A Task whose Verification passes against the unchanged tree settles `failed`
+  with every offending command named: `TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses` uses Spec 0089's exact gate, a second vacuous command, and an observed non-zero command; both vacuous commands appear in the terminal reason and the middle command's diagnostics prove the full list ran.
+- No Agent Session is created for a refused Task:
+  `TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask` observes zero prepare, run,
+  close, and Agent Selection attempt records.
+- A Task whose commands all fail against the unchanged tree reaches its Agent
+  turn unchanged: `TestPreWorkProbeLeavesAFailingGateOnItsOrdinaryPath` observes
+  one Agent turn, successful post-Agent Verification, and one Task commit.
+- A probe command with no observable verdict is recorded `unknown` and does not
+  clear the Task: `TestPreWorkProbeRecordsUnobservableVerdictAsUnknown` and
+  `TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed` retain
+  the Task 02 cause, command, and diagnostic path while spending no Agent turn
+  for the unknown Task.

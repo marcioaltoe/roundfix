@@ -9,10 +9,9 @@ import (
 	"roundfix/internal/spec"
 )
 
-// TestVerificationProbeCharacterizationVacuousGateSettlesCompleted records
-// that a gate which already passes still lets the Daemon settle the Task.
-// Declared break: task_03 changes this to refusal before the Agent turn.
-func TestVerificationProbeCharacterizationVacuousGateSettlesCompleted(t *testing.T) {
+// TestVerificationProbeCharacterizationVacuousGateSettlesFailedBeforeAgent
+// records the refusal behavior that replaced the declared break from task_01.
+func TestVerificationProbeCharacterizationVacuousGateSettlesFailedBeforeAgent(t *testing.T) {
 	t.Parallel()
 	const command = "gate already passes"
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
@@ -20,7 +19,7 @@ func TestVerificationProbeCharacterizationVacuousGateSettlesCompleted(t *testing
 		verification: []string{command},
 	}})
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
-	verifier := &taskFakeVerifier{calls: fixture.calls}
+	verifier := &characterizationVerdictVerifier{calls: fixture.calls}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
 
@@ -29,17 +28,20 @@ func TestVerificationProbeCharacterizationVacuousGateSettlesCompleted(t *testing
 	if err != nil {
 		t.Fatalf("TaskCycle() error = %v", err)
 	}
-	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
-		t.Fatalf("vacuous Verification settlement = %+v, want one completed Task", result)
+	if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("vacuous Verification settlement = %+v, want one failed Task", result)
 	}
-	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
-		t.Fatalf("vacuous Verification status = %q, want %q", got, spec.StatusCompleted)
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("vacuous Verification status = %q, want %q", got, spec.StatusFailed)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit" {
-		t.Fatalf("vacuous Verification call sequence = %q, want Agent, Verification, and commit", got)
+	if got := strings.Join(*fixture.calls, ">"); got != "verify" {
+		t.Fatalf("vacuous Verification call sequence = %q, want only the pre-work probe", got)
 	}
 	if got := strings.Join(verifier.commands, "|"); got != command {
 		t.Fatalf("fake verifier commands = %q, want %q", got, command)
+	}
+	if runner.taskCalls["task_01"] != 0 || len(committer.messages) != 0 {
+		t.Fatalf("vacuous Verification spent Agent or commit work: agent=%d commits=%v", runner.taskCalls["task_01"], committer.messages)
 	}
 }
 
@@ -76,7 +78,7 @@ func TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed(t *test
 	}
 	unobserved := failedTaskOutcome(t, result.Outcomes, "task_01")
 	observed := failedTaskOutcome(t, result.Outcomes, "task_02")
-	unobservedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	unobservedPath := verificationProbeOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
 	for _, want := range []string{"Verification unknown", unobservedCommand, unobservedErr.Error(), unobservedPath} {
 		if !strings.Contains(unobserved.Reason, want) {
 			t.Fatalf("unobserved terminal reason %q does not contain %q", unobserved.Reason, want)
@@ -91,6 +93,9 @@ func TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed(t *test
 	if unobserved.Reason == observed.Reason {
 		t.Fatalf("unobserved and command-failure terminal reasons are identical: %q", unobserved.Reason)
 	}
+	if runner.taskCalls["task_01"] != 0 {
+		t.Fatalf("unobserved probe spent %d Agent turns, want 0", runner.taskCalls["task_01"])
+	}
 	if len(committer.messages) != 0 {
 		t.Fatalf("failed Tasks produced commits: %v", committer.messages)
 	}
@@ -100,10 +105,12 @@ type characterizationVerdictVerifier struct {
 	calls     *[]string
 	unknownOn map[string]error
 	failOn    map[string]error
+	commands  []string
 }
 
 func (verifier *characterizationVerdictVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
 	*verifier.calls = append(*verifier.calls, "verify")
+	verifier.commands = append(verifier.commands, req.Command)
 	result := VerifyResult{OutputPath: req.OutputPath}
 	if err := verifier.unknownOn[req.Command]; err != nil {
 		return result, &VerificationUnknownError{Command: req.Command, DiagnosticPath: req.OutputPath, Err: err}
