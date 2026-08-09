@@ -172,6 +172,14 @@ _Avoid_: Model router, benchmark policy, automatic selection
 The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun.
 _Avoid_: Dynamic fallback, silent model switch, catalog probe winner
 
+**Agent Work Started**:
+The status (`agent_work_started`) marking the first Agent output that could have changed something, published once per Agent Session. It is the boundary after which a Fallback Selection may no longer switch ACP Runtime, because a second runtime would inherit state the first one built. Preparing or activating a Session does not reach it.
+_Avoid_: Session opened, prompt sent, turn started
+
+**Selection Failure**:
+The outcome (`agent_selection_failed`) of a turn that ended before any Agent output, because the selected ACP Runtime would not serve it — exhausted quota, failed authentication, an adapter that will not start. It is a failure of the selection rather than of the work, so the Fallback Chain stays eligible.
+_Avoid_: Batch failure, agent crash, runtime error
+
 **Agent Session**:
 The acpx-backed session owned by one Work Item or action. Each Implement Task owns a Task Type-selected Agent Session, requested QA owns a separate `qa` Agent Session, and review work uses a review-selected Agent Session; effective selection and fallback attempts are persisted for that owner.
 _Avoid_: ACP session, chat, conversation, thread
