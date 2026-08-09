@@ -322,6 +322,54 @@ func TestLoadParsesTaskFiles(t *testing.T) {
 	}
 }
 
+func TestNegativeControlDeclarationCountTravelsWithTaskOutcome(t *testing.T) {
+	t.Parallel()
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	tail := md(`## Negative Control
+
+- 'go test ./internal/spec -run TestRejectsKnownDefect' — expected: exits non-zero.
+- 'go test ./internal/spec -run TestRejectsMissingSection' — expected: exits non-zero.
+
+`) + defaultVerificationSection
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
+		"_prd.md": prdFixture("active"),
+		"_tasks.md": manifestFixture("spec-tasks/v1", `    - id: task_01
+      file: task_01.md
+      needs: []
+`),
+		"task_01.md": taskFixture("task_01", "Carry the negative control", "pending", "backend", tail),
+	})
+
+	graph, err := Load(specsRoot, "demo")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(graph.Tasks) != 1 {
+		t.Fatalf("len(Tasks) = %d, want 1", len(graph.Tasks))
+	}
+	task := &graph.Tasks[0]
+	if got := len(task.NegativeControl); got != 2 {
+		t.Fatalf("initial negative control declaration count = %d, want 2", got)
+	}
+	writeFile(t, filepath.Join(specsRoot, task.File), taskFixture(
+		"task_01",
+		"Carry the negative control",
+		"completed",
+		"backend",
+		tail+"\n## Result\n\nImplementation evidence.\n",
+	))
+	if err := ReloadTask(specsRoot, task); err != nil {
+		t.Fatalf("ReloadTask: %v", err)
+	}
+	if task.Status != StatusCompleted {
+		t.Fatalf("Status = %q, want completed outcome", task.Status)
+	}
+	if got := len(task.NegativeControl); got != 2 {
+		t.Fatalf("negative control declaration count = %d, want 2", got)
+	}
+}
+
 func TestTaskTypeCanonicalValuesLoadThroughTaskGraph(t *testing.T) {
 	t.Parallel()
 	gitRoot := t.TempDir()

@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0090-a-gate-that-could-have-failed
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -65,3 +65,28 @@ This Task may create or modify only:
 - `_prd.md` → Core Features, three controls.
 - `_techspec.md` → Build Order 5; Data Models.
 - ADR-0110.
+
+## Result
+
+Implemented the authored negative-control carrier without adding an execution
+path. Task parsing now reads backticked bullet declarations from every
+`## Negative Control` section in source order, stores them on `spec.Task`, and
+refreshes them when the Daemon reloads a Task after the Agent turn. An absent
+section yields zero declarations. The declaration count remains available as
+`len(task.NegativeControl)` alongside the Task status used for its outcome.
+
+Focused-check evidence:
+
+- Red baseline: `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/spec -run 'TestNegativeControl(Section|Absent|Declaration|Parsing)'` failed to compile because `Task` and `taskDocument` had no `NegativeControl` field.
+- `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/spec -run 'Test(LoadParsesTaskFiles|ReloadTaskPicksUpAgentEdits|NegativeControl(SectionParsesInOrder|AbsentSectionParsesEmpty|DeclarationCountTravelsWithTaskOutcome|ParsingPreservesVerificationCommands))$'` passed.
+- `rtk proxy cmp <(rtk proxy git show HEAD:internal/spec/task.go | rtk proxy sed -n '/^func parseVerificationCommands/,/^}/p') <(rtk proxy sed -n '/^func parseVerificationCommands/,/^}/p' internal/spec/task.go)` exited 0, proving the existing Verification parser block is byte-identical to `HEAD`.
+- `rtk git -c core.fsmonitor=false diff --check` exited 0.
+
+Acceptance evidence:
+
+- Declared controls preserve order: `TestNegativeControlSectionParsesInOrder` passed with two distinct declarations around a skipped non-command bullet.
+- No declaration remains valid: `TestNegativeControlAbsentSectionParsesEmpty` passed with a zero-length declaration list.
+- The declaration count travels with the outcome: `TestNegativeControlDeclarationCountTravelsWithTaskOutcome` passed after reloading a Task whose status changed to `completed`, retaining both declarations.
+- Verification parsing is preserved: the exact `HEAD` parser-block comparison exited 0; `TestNegativeControlParsingPreservesVerificationCommands`, `TestLoadParsesTaskFiles`, and `TestReloadTaskPicksUpAgentEdits` also passed.
+
+The commands under `## Verification` were not run; the Daemon owns them.

@@ -184,6 +184,86 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 	}
 }
 
+func TestNegativeControlSectionParsesInOrder(t *testing.T) {
+	t.Parallel()
+
+	document, err := parseTaskDocument([]byte(taskFixture(
+		"task_01",
+		"Carry the negative control",
+		"pending",
+		"backend",
+		md(`## Negative Control
+
+- 'go test ./internal/spec -run TestRejectsKnownDefect' — expected: exits non-zero.
+- a declaration without a backticked command is skipped
+- 'go test ./internal/spec -run TestRejectsMissingSection' — expected: exits non-zero.
+
+`)+defaultVerificationSection,
+	)), "task_01.md")
+	if err != nil {
+		t.Fatalf("parseTaskDocument: %v", err)
+	}
+
+	want := []string{
+		"go test ./internal/spec -run TestRejectsKnownDefect",
+		"go test ./internal/spec -run TestRejectsMissingSection",
+	}
+	if !reflect.DeepEqual(document.NegativeControl, want) {
+		t.Fatalf("NegativeControl = %q, want declarations in source order %q", document.NegativeControl, want)
+	}
+}
+
+func TestNegativeControlAbsentSectionParsesEmpty(t *testing.T) {
+	t.Parallel()
+
+	document, err := parseTaskDocument([]byte(taskFixture(
+		"task_01",
+		"Carry no negative control",
+		"pending",
+		"backend",
+		defaultVerificationSection,
+	)), "task_01.md")
+	if err != nil {
+		t.Fatalf("parseTaskDocument: %v", err)
+	}
+	if len(document.NegativeControl) != 0 {
+		t.Fatalf("NegativeControl = %q, want an empty declaration list", document.NegativeControl)
+	}
+}
+
+func TestNegativeControlParsingPreservesVerificationCommands(t *testing.T) {
+	t.Parallel()
+
+	document, err := parseTaskDocument([]byte(taskFixture(
+		"task_01",
+		"Keep verification stable",
+		"pending",
+		"backend",
+		md(`## Negative Control
+
+- 'go test ./internal/spec -run TestRejectsKnownDefect' — expected: exits non-zero.
+
+## Verification
+
+- 'go test ./internal/spec/' — expected: all tests pass.
+- a bullet without a command is skipped
+- 'go build ./...' — expected: builds cleanly.
+
+## References
+
+- 'go vet ./...' outside the Verification section is not a command.
+`),
+	)), "task_01.md")
+	if err != nil {
+		t.Fatalf("parseTaskDocument: %v", err)
+	}
+
+	want := []string{"go test ./internal/spec/", "go build ./..."}
+	if !reflect.DeepEqual(document.Verification, want) {
+		t.Fatalf("Verification = %q, want unchanged commands %q", document.Verification, want)
+	}
+}
+
 func TestParseTaskDocumentDeclarations(t *testing.T) {
 	t.Parallel()
 
