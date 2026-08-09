@@ -525,6 +525,23 @@ func retainAdvertisedValues(advertised []string, currentValue string, retention 
 	}
 
 	keep := make(map[string]struct{}, maxRetainedCapabilityValues)
+	// Exact requests come first. bindsRequestedModel also matches every
+	// `<model>[<effort>]` variant of the same canonical model, so an adapter
+	// advertising more than the bound in variants could otherwise fill the map
+	// with siblings and drop the exact value the Agent Selection names —
+	// planning would then reject a selection the runtime does in fact
+	// advertise.
+	for _, exact := range []string{currentValue, retention.ReasoningEffort, retention.Model} {
+		if exact == "" {
+			continue
+		}
+		for _, value := range advertised {
+			if value == exact {
+				keep[value] = struct{}{}
+				break
+			}
+		}
+	}
 	for _, value := range advertised {
 		if len(keep) >= maxRetainedCapabilityValues {
 			break

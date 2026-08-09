@@ -3,7 +3,7 @@ source: coderabbit
 pr: "143"
 round: 1
 round_created_at: "2026-08-09T01:14:50Z"
-status: pending
+status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/specs-0082-0083
 head_sha: 49ad4407ca050772b13a812b9625cf45d940e19e
@@ -57,5 +57,20 @@ regression case covering over 64 variants with the requested variant last.
 
 ## Triage
 
-- Decision: `UNREVIEWED`
-- Notes:
+- Decision: `resolved`
+- Notes: Confirmed real before fixing. `retainAdvertisedValues` already
+  prioritised `currentValue`, the requested effort, and every
+  `bindsRequestedModel` match over the generic fill, but it treated all
+  canonical matches alike. When more than `maxRetainedCapabilityValues`
+  advertised values bind to the requested canonical model, the map fills on
+  sibling `<model>[<effort>]` variants and the exact requested value is dropped,
+  so `PlanSelectionAssignment` rejects a selection the runtime does advertise.
+  Fixed by an exact-match pass that retains `currentValue`, the requested
+  effort, and the requested model by identity before canonical matching runs; it
+  adds at most three entries and cannot itself exhaust the bound. Regression
+  added as `TestRetentionKeepsExactRequestedModelAmongItsOwnVariants`, with 128
+  variants of one canonical model and the exact value advertised last. Proven
+  non-vacuous: with the exact-match pass disabled it fails reporting
+  `retained 64 models`, and passes with it restored. The sibling test
+  `TestRetentionKeepsRequestedModelPastTheBound` missed this because its fixture
+  advertises distinct vendors, so only one value ever bound.

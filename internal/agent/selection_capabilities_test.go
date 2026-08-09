@@ -795,6 +795,61 @@ func TestRetentionRecordsAdvertisedAndRetainedCounts(t *testing.T) {
 // requested model, so a projection that kept an advertised prefix would drop
 // it. currentValue is the first advertised value, matching an adapter that has
 // not yet been told which model to use.
+// TestRetentionKeepsExactRequestedModelAmongItsOwnVariants covers the case the
+// sibling test above does not: every advertised value binds to the requested
+// canonical model, so prioritising canonical matches is not enough on its own.
+// With more variants than the bound and the exact value advertised last, a
+// retention pass that treats all canonical matches alike fills on siblings and
+// drops the one value the Agent Selection actually names.
+func TestRetentionKeepsExactRequestedModelAmongItsOwnVariants(t *testing.T) {
+	t.Parallel()
+
+	const requested = "openrouter/deepseek/deepseek-v4-flash-0731"
+	values := make([]string, 0, maxRetainedCapabilityValues*2)
+	for index := 0; len(values) < maxRetainedCapabilityValues*2-1; index++ {
+		values = append(values, fmt.Sprintf("%s[effort-%04d]", requested, index))
+	}
+	values = append(values, requested)
+
+	options := make([]map[string]string, 0, len(values))
+	for _, value := range values {
+		options = append(options, map[string]string{"value": value})
+	}
+	payload, err := json.Marshal(map[string]any{
+		"action":   "config_set",
+		"configId": "model",
+		"value":    values[0],
+		"configOptions": []any{
+			map[string]any{
+				"id":           "model",
+				"category":     "model",
+				"type":         "select",
+				"currentValue": values[0],
+				"options":      options,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("build the variant fixture: %v", err)
+	}
+
+	capabilities, err := ParseSessionConfigOptions(
+		payload,
+		AdapterEvidence{Command: "opencode"},
+		SelectionRetention{Model: requested},
+	)
+	if err != nil {
+		t.Fatalf("project an oversized advertised set: %v", err)
+	}
+
+	for _, model := range capabilities.Models {
+		if model.AdapterValue == requested {
+			return
+		}
+	}
+	t.Fatalf("retention dropped the exact requested Agent Model in favour of its own variants; retained %d models", len(capabilities.Models))
+}
+
 func trailingRequestedModelFixture(t *testing.T, requested string, size int) string {
 	t.Helper()
 	if size < 2 {
