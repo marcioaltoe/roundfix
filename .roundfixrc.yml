@@ -58,8 +58,9 @@ defaults:
 # advertises `openrouter/openai/gpt-5.6-sol`, and
 # docs/references/model-selection.md documents that mapping — it is pay-per-use
 # billing for a model this repository already has, so the mapping is reachable
-# and wrong. The only OpenCode identifiers used here carry the `opencode-go/`
-# prefix, which is the subscribed tier.
+# and wrong. The rule is about sol specifically, not about OpenRouter: the
+# `opencode` runtime below deliberately routes an OpenRouter model no
+# subscription here covers.
 #
 # Claude Fable 5 appears nowhere below. It answers in 1.7 minutes — roughly 25x
 # Sol's latency — for a result Sol matches. In a Run, where latency multiplies
@@ -72,7 +73,7 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: opencode
-        model: opencode-go/kimi-k3
+        model: openrouter/deepseek/deepseek-v4-pro
         reasoning_effort: ""
       - runtime: claude
         model: opus
@@ -84,7 +85,7 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: opencode
-        model: opencode-go/kimi-k3
+        model: openrouter/deepseek/deepseek-v4-pro
         reasoning_effort: ""
       - runtime: claude
         model: opus
@@ -102,38 +103,43 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: opencode
-        model: opencode-go/kimi-k3
+        model: openrouter/deepseek/deepseek-v4-pro
         reasoning_effort: ""
       - runtime: codex
         model: gpt-5.6-sol
         reasoning_effort: high
   data:
-    # The OpenCode route, kept preferred on purpose. Spec 0088 made this runtime
-    # reachable and proved one Task on it; the subscribed `opencode-go` tier has
-    # no row on the benchmark board, so the next Spec's data Tasks are also the
-    # measurement that would justify promoting OpenCode anywhere else.
+    # The OpenCode runtime, now pointed at OpenRouter rather than the subscribed
+    # Go tier. Measured 2026-08-08: the Go continuous window hit 100% with 1h06
+    # to reset, weekly at 40%, monthly at 20%, and the account's
+    # spend-balance-after-limits toggle is OFF — so a capped window fails
+    # requests rather than degrading. One QA gate Run and a handful of probes
+    # were enough to exhaust it, which is not a budget sustained work can plan
+    # against.
     #
-    # reasoning_effort is empty on purpose, and Roundfix refuses any other value
-    # here. OpenCode advertises effort per model and only after an Agent
+    # This is the one pay-per-use selection in the file. deepseek-v4-pro is
+    # discounted on OpenRouter to roughly $0.11 in and $0.22 out per 1M, and it
+    # is the model the Secondbrain moved its own session, cron jobs, and
+    # delegation onto on 2026-08-08. Prices move: the Secondbrain refetches them
+    # daily at 06:30 and re-evaluates at 08:00, and the discount is promotional.
+    #
+    # It is the cheap choice, not the strong one. kimi-k3 leads it on every
+    # measured axis — Design Arena Elo in the 98-99th percentile against
+    # deepseek-v4-pro's 51-90th, and higher Artificial Analysis intelligence,
+    # coding, and agentic scores — for $2.80 in and $14.00 out, roughly 25x and
+    # 64x. That trade suits `review`, which is bounded and high-volume, better
+    # than it suits `data`, where the gap is quality a Run cannot recover. The
+    # tables are in docs/references/model-selection.md.
+    #
+    # reasoning_effort is empty because Roundfix refuses any other value on this
+    # runtime — OpenCode advertises effort per model and only after an Agent
     # Session's first prompt, so a token-free Exact Agent Selection Proof cannot
-    # apply one; see ADR-0106. kimi-k3 runs at `max` by its own default, which
-    # is also the only effort it advertises.
-    #
-    # kimi-k3 carries no usage multiplier. Two subscribed models do — gpt-5.6-luna
-    # and deepseek-v4-flash bill at 2x — which inverts the obvious guess, since
-    # deepseek-v4-pro carries none. Snapshot: docs/references/model-selection.md.
-    #
-    # kimi-k3 is an unmeasured bet, deliberately. The only benchmarked member of
-    # the subscribed tier is deepseek-v4-flash at 53%, which fails against
-    # sol/high's 69% and bills at 2x. deepseek-v4-pro is the alternative with
-    # real evidence — the Secondbrain moved its whole stack onto it on
-    # 2026-08-08 — but Roundfix cannot ask OpenCode for an effort, and
-    # deepseek-v4-pro defaults to `high` while kimi-k3 advertises only `max`.
-    # The daily monitoring lives in the Secondbrain; see the OpenCode section of
-    # docs/references/model-selection.md for both sources.
+    # apply one; see ADR-0106. deepseek-v4-pro advertises `high` and `xhigh` and
+    # defaults to `high`, so that is what a Run gets, matching the Secondbrain's
+    # delegation setting rather than its main-session `max`.
     preferred:
       runtime: opencode
-      model: opencode-go/kimi-k3
+      model: openrouter/deepseek/deepseek-v4-pro
       reasoning_effort: ""
     fallbacks:
       - runtime: codex
@@ -149,27 +155,25 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: opencode
-        model: opencode-go/kimi-k3
+        model: openrouter/deepseek/deepseek-v4-pro
         reasoning_effort: ""
       - runtime: claude
         model: opus
         reasoning_effort: high
   review:
-    # The second place OpenCode leads, and the safest one. Review work is
-    # bounded, has no dependency graph, and blocks nobody, so extra turns cost
-    # wall clock and nothing else — which makes it the right category to spend
-    # an unbenchmarked model on while the subscribed tier still has no row on
-    # the board.
+    # The second category the OpenCode runtime leads, and the safest one. Review
+    # work is bounded, has no dependency graph, and blocks nobody, so extra
+    # turns cost wall clock and nothing else. It is also the category that pays
+    # for re-enabling nitpicks: a long tail of low-severity findings runs here
+    # at $0.253 per 1M output instead of against a quota the Task Graph needs.
     #
-    # luna/max sits behind it rather than in front: 67% for $0.61 against Sol's
-    # 69% for $3.47, bought with 102 steps against 37. The discount buys little
-    # while the codex week sits at 100% remaining, and the steps are a real
-    # cost, but it stays the cheapest usable row on the board by an order of
-    # magnitude — which is what makes it the right thing to weigh forward as
-    # that headroom is spent.
+    # luna/max sits behind it: 67% for $0.61 against Sol's 69% for $3.47, bought
+    # with 102 steps against 37. It stays the cheapest usable codex row on the
+    # board by an order of magnitude, which is what makes it the right thing to
+    # weigh forward as the codex headroom is spent.
     preferred:
       runtime: opencode
-      model: opencode-go/kimi-k3
+      model: openrouter/deepseek/deepseek-v4-pro
       reasoning_effort: ""
     fallbacks:
       - runtime: codex
@@ -206,8 +210,13 @@ review_source:
   # Preflight coherence check refuses watch and resolve — a Run would wait for
   # a review nobody asks for.
   request_review: true
-  # false excludes CodeRabbit findings whose severity is nitpick.
-  include_nitpicks: false
+  # false excludes CodeRabbit findings whose severity is nitpick. Re-enabled
+  # 2026-08-08: nitpicks were off because resolve ran on the codex quota, where
+  # a long tail of low-severity findings competed with implementation work for
+  # the same budget. Resolve now routes through `review`, which leads with the
+  # OpenCode subscription, so the tail costs subscription time rather than a
+  # quota the Task Graph also needs.
+  include_nitpicks: true
 watch:
   until_clean: true
   max_rounds: 2

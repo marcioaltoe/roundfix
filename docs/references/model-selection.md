@@ -131,12 +131,56 @@ tier. `opencode-go/` is what the subscription grants, eighteen models:
 Two of them bill at **2x usage**: `gpt-5.6-luna` and `deepseek-v4-flash`. That
 inverts the obvious guess, because `deepseek-v4-pro` carries no multiplier.
 
-**Almost none of this tier is measured.** Exactly one member has a DeepSWE row:
-`deepseek-v4-flash / max` at **53%** for $0.10 per task — far under
+**Almost none of this tier is on the DeepSWE board.** Exactly one member has a
+row: `deepseek-v4-flash / max` at **53%** for $0.10 per task — far under
 `gpt-5.6-sol / high` at 69%, and it is one of the two that bill at 2x, so it is
 ruled out on both axes at once. `deepseek-v4-pro` has no row because it is newer
-than the board. `kimi-k3`, which this repository routes `data` and `review` to,
-has no row anywhere: not DeepSWE, not whatllm, not the pricing feed.
+than the board.
+
+### The Go tier is capped, and OpenRouter carries the same models
+
+Measured 2026-08-08 on the OpenCode Go dashboard: the **continuous window hit
+100%** with 1h06 to reset, weekly at 40%, monthly at 20%, and the
+spend-balance-after-limits toggle is **off**, so a capped window fails requests
+rather than degrading. One QA gate Run and a handful of probes exhausted it.
+That is not a budget sustained work can plan against, which is why this
+repository routes the `opencode` runtime through `openrouter/` identifiers
+instead of `opencode-go/` ones.
+
+### Kimi K3 against DeepSeek V4 Pro — OpenRouter, 2026-08-08
+
+The two candidates for that slot, from OpenRouter's own comparison. Kimi K3
+leads every measured axis and costs one to two orders of magnitude more.
+
+| | `kimi-k3` (max) | `deepseek/deepseek-v4-pro` | `deepseek-v4-flash-0731` |
+| --- | ---: | ---: | ---: |
+| Input $/M | 2.80 | 0.1096 | 0.08 |
+| Output $/M | 14.00 | 0.2192 | 0.252 |
+| Cached input $/M | 0.29 | 0.009135 | 0.0252 |
+| Latency p50 | 1.65 s | 2.21 s | 2.30 s |
+| Throughput p50 | 28 tok/s | 35 tok/s | 16 tok/s |
+| Artificial Analysis — intelligence | 66 | lower | lower |
+| Artificial Analysis — coding | 76 | lower | lower |
+| Artificial Analysis — agentic | 54 | lower | lower |
+
+Design Arena Elo, with percentile, is the cleanest read of the gap:
+
+| category | `kimi-k3` | `deepseek-v4-pro` | `deepseek-v4-flash-0731` |
+| --- | ---: | ---: | ---: |
+| 3D | 1453 (99%) | 1312 (90%) | 1272 (77%) |
+| Code Categories | 1414 (99%) | 1271 (80%) | 1258 (74%) |
+| Data Visualization | 1381 (98%) | 1224 (67%) | 1191 (51%) |
+| UI Component | 1390 (99%) | 1256 (72%) | 1273 (79%) |
+| Website | 1378 (99%) | 1259 (77%) | 1259 (77%) |
+| Game Development | — | 1272 (81%) | 1252 (77%) |
+| SVG | — | 1181 (54%) | — |
+| Asciiart | — | 1189 (51%) | — |
+
+`deepseek-v4-pro` is the configured choice: roughly 25x cheaper on input and 64x
+on output, for Elo percentiles in the 51–90 band against Kimi K3's 98–99. That
+trade suits a bounded, high-volume tail — the `review` category and its
+nitpicks — better than it suits implementation work, where the gap is quality a
+Run cannot recover.
 
 Two live sources cover what this dated snapshot cannot, both in the Secondbrain:
 `raw/monitoring/model-pricing.md` is refetched daily at 06:30 from the OpenRouter
