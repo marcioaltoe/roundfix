@@ -787,6 +787,7 @@ func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 func TestProjectConstraintTaskGate(t *testing.T) {
 	t.Parallel()
 	testWorkflowProjectConstraintContract(t, "write-tasks", []string{
+		"roundfix spec check",
 		"Project Constraint preflight",
 		"active, non-archived, and not already completed",
 		"complete `Project Constraints` sections",
@@ -817,6 +818,44 @@ func TestProjectConstraintImplementationGate(t *testing.T) {
 		"`git status --short` and `git diff --name-only`",
 		"set `status: failed`",
 		"Never edit `_tasks.md` or any other Task file",
+	})
+}
+
+// The authoring skills carry the clauses that produce Project Constraints in the
+// first place, and the checker invocation that catches a defect while the
+// artifact is still open. Neither may be edited away: Spec 0093's own Task 06
+// removed the QA gate's audit block under a standing grant, and only a contract
+// test noticed.
+func TestProjectConstraintPRDGate(t *testing.T) {
+	t.Parallel()
+	testWorkflowProjectConstraintContract(t, "write-prd", []string{
+		"Project Constraints",
+		"express maintainer authorization",
+		"bounded files",
+		"MUST NOT report",
+		"roundfix spec check",
+	})
+}
+
+func TestProjectConstraintTechSpecGate(t *testing.T) {
+	t.Parallel()
+	testWorkflowProjectConstraintContract(t, "write-techspec", []string{
+		"Project Constraints",
+		"express maintainer authorization",
+		"bounded files",
+		"MUST NOT report",
+		"roundfix spec check",
+	})
+}
+
+// Archiving is where a Spec stops being auditable, so its preconditions are the
+// last chance to catch an unfinished one.
+func TestArchiveSpecContract(t *testing.T) {
+	t.Parallel()
+	testWorkflowProjectConstraintContract(t, "archive-spec", []string{
+		"self-contained",
+		"qa_override",
+		"status: completed",
 	})
 }
 
