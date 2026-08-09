@@ -57,30 +57,30 @@ Open-ended. Consumed first by Spec 0093, and available to every later Spec whose
 purpose matches. A Spec relying on it records that reliance in its Tooling
 authority row and cites this record.
 
-## Audit of the first two edits — recorded late, on 2026-08-09
+## Audit of the first two edits — 2026-08-09
 
-Spec 0093's QA gate reported (F-002) that the two Task commits made under this
-grant do not carry the statement the obligation above requires. That is
-accurate. `bb101161` and `b7680d00` were authored by the Daemon from Task
-requirements that asked for the statement, and the Agent did not write it; the
-grant was minted the same day and nothing enforced it.
+Spec 0093's QA gate reported twice (F-002) that the two Task commits made under
+this grant carried no statement of which half they serve. That was accurate.
+Both were authored by the Daemon from Task requirements that asked for it, and
+the Agent did not write it; nothing enforced the obligation at the time.
 
-The audit is therefore written here rather than in the commits, and the gap is
-recorded rather than smoothed over:
+An addendum recording the audit here was written first and rejected on the
+gate's second pass, correctly: annotating an omission elsewhere does not make a
+commit compliant. The two messages were therefore rewritten on the unmerged
+branch, and the tree is byte-identical across the rewrite. They now read:
 
-- **`bb101161` — wire the checker into PRD and TechSpec authoring.** Serves
-  *performance*: it moves checks that cost an Agent turn at the gate to a
-  sub-second command at authoring. Reliability preserved because it adds a
-  check and removes none; the unscoped sweep in `make verify` is untouched.
-- **`b7680d00` — let the QA gate read product instead of paperwork.** Serves
-  *performance*: it removes gate rows whose rules the checker now runs.
-  Reliability was **not** fully preserved, and the same gate caught it: the
-  edit also removed the Project Constraint audit block, restored in `cacd73f9`
-  after `skills/baseline_skill_contract_test.go` failed. That is the grant's
-  reliability half doing its job against an edit made under the grant itself.
+- **`wire the checker into PRD and TechSpec authoring`** — performance half: it
+  moves checks that cost an Agent turn at the gate to a sub-second command while
+  the artifact is still open. Reliability preserved by adding a check and
+  removing none; the unscoped sweep is untouched.
+- **`let the QA gate read product instead of paperwork`** — performance half: it
+  removes gate rows whose rules the checker now runs earlier. Reliability
+  preserved by mapping every removed row to its replacement and keeping every
+  rule without one. That mapping was not complete on the first attempt: the edit
+  also removed the Project Constraint audit block, and
+  `skills/baseline_skill_contract_test.go` failed until it was restored. The
+  grant's reliability half caught an edit made under the grant itself.
 
-Recording an audit after the fact is weaker than writing it in the commit. It
-does not make these two compliant, and it is not a precedent: the obligation
-stands as written, and a later edit that omits it should be treated as outside
-the grant rather than repaired this way.
-
+The obligation stands as written. A later edit that omits the statement is
+outside the grant, and the repair is to write it into the commit — which is only
+available while the branch is unmerged.
