@@ -1,0 +1,73 @@
+#!/bin/sh
+if [ "$1" = "--version" ]; then
+  printf '%s\n' '0.12.0'
+  exit 0
+fi
+case " $* " in
+  *" sessions ensure "*)
+    model=""
+    session=""
+    previous=""
+    for argument in "$@"; do
+      if [ "$previous" = "--model" ]; then
+        model="$argument"
+      elif [ "$previous" = "--name" ]; then
+        session="$argument"
+      fi
+      previous="$argument"
+    done
+    printf '%s' "$model" > "$0.$session.model"
+    exit 0
+    ;;
+  *" sessions show "*)
+    session=""
+    for argument in "$@"; do
+      session="$argument"
+    done
+    model=$(rtk proxy sed -n '1p' "$0.$session.model")
+    printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%s","options":[{"value":"%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"high","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"ultra"}]}]}}\n' "$model" "$model" "$model"
+    exit 0
+    ;;
+  *" set model "*|*" set reasoning_effort "*|*" set effort "*)
+    config_id=""
+    config_value=""
+    session=""
+    previous=""
+    for argument in "$@"; do
+      if [ "$previous" = "set" ]; then
+        config_id="$argument"
+      elif [ -n "$config_id" ] && [ -z "$config_value" ]; then
+        config_value="$argument"
+      elif [ "$previous" = "-s" ]; then
+        session="$argument"
+      fi
+      previous="$argument"
+    done
+    state_path="$0.$session.model"
+    if [ "$config_id" = "model" ]; then
+      printf '%s' "$config_value" > "$state_path"
+      model="$config_value"
+      current_reasoning="high"
+    else
+      model=$(rtk proxy sed -n '1p' "$state_path")
+      current_reasoning="$config_value"
+    fi
+    printf '{"action":"config_set","configId":"%s","value":"%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%s","options":[{"value":"%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$model" "$current_reasoning"
+    exit 0
+    ;;
+  *" sessions close "*)
+    exit 0
+    ;;
+  *" prompt "*)
+    rtk proxy tee /dev/null >/dev/null
+    if [ -n "$ROUNDFIX_QA_PROMPT_MARKER" ]; then
+      : > "$ROUNDFIX_QA_PROMPT_MARKER"
+    fi
+    if [ -n "$ROUNDFIX_QA_AGENT_CREATE" ]; then
+      : > "$ROUNDFIX_QA_AGENT_CREATE"
+    fi
+    printf '{"jsonrpc":"2.0","id":1,"result":{"stopReason":"end_turn"}}\n'
+    exit 0
+    ;;
+esac
+exit 0
