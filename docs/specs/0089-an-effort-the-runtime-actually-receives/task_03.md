@@ -24,11 +24,15 @@ the refusals so a maintainer can configure one at all.
 3. MUST keep an empty `reasoning_effort` on `opencode` valid, still planning
    `runtime_managed`.
 4. MUST NOT change how Codex or Claude map to their reasoning keys.
-5. MUST leave no unreachable remnant of the refusal — the error type and the
+5. MUST also edit Spec 0088's configuration corpus, which pins the refusal this
+   Task removes. A characterization corpus outlives the Spec that wrote it, so a
+   later declared break lands in an earlier Spec's file; that is a declared
+   break like any other and is recorded in this Task's Result.
+6. MUST leave no unreachable remnant of the refusal — the error type and the
    runtime list it consulted go with it if nothing else uses them. Task 02
    already rewrote the deferring predicate so it does not catch that error; if
    any reference survives, remove it here rather than keeping the type alive.
-6. MUST re-record the coverage record in this Task's own commit if any test is
+7. MUST re-record the coverage record in this Task's own commit if any test is
    renamed or removed.
 
 ## Subtasks
@@ -60,6 +64,7 @@ This Task may create or modify only:
 - `internal/config/profiles.go`
 - `internal/config/config_test.go`
 - `internal/config/opencode_effort_characterization_test.go`
+- `internal/config/profiles_characterization_test.go`
 - `internal/agent/acpx_runner.go`
 - `internal/agent/acpx_runner_test.go`
 - `internal/agent/acpx_session_effort_characterization_test.go`
