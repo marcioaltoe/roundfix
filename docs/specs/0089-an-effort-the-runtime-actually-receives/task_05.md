@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0089-an-effort-the-runtime-actually-receives
-status: pending
+status: completed
 type: infra
 complexity: low
 ---
@@ -70,3 +70,44 @@ Any other path is out of scope; stop and fail the Task rather than widen it.
 - `_prd.md` → Goal 1; Project Constraints: Tooling authority.
 - `_techspec.md` → Build Order 5.
 - ADR-0108.
+
+## Result
+
+Every explicit `opencode` selection keeps
+`openrouter/deepseek/deepseek-v4-pro` and now carries
+`reasoning_effort: xhigh`. The profile comment records that `xhigh` is this
+model's maximum and the variant measured by its published benchmarks, and that
+Roundfix applies and observes the effort after warming the Agent Session rather
+than inheriting it from the model.
+
+Pre-change signal:
+
+- A focused `awk` inventory reported all six explicit `opencode` selections
+  with `reasoning_effort: ""`, plus three stale comment signals describing the
+  removed refusal and inherited default.
+
+Focused checks after the configuration edit:
+
+- `rtk awk '/^  [a-z]+:$/ { profile=$1; sub(":$", "", profile) } /runtime: opencode/ { getline; model=$2; getline; effort=$2; print profile, model, effort; count++; if (model != "openrouter/deepseek/deepseek-v4-pro" || effort != "xhigh") bad++ } END { print "opencode selections=" count ", mismatches=" bad+0; exit !(count == 6 && bad == 0) }' .roundfixrc.yml` — exited 0 with six selections and zero mismatches.
+- `GOCACHE="$PWD/.gocache" rtk go run -buildvcs=false ./cmd/roundfix profiles show --json` — exited 0, loaded the Project Config as `roundfix/profiles/v1`, and resolved all ten required Agent Work Categories. The four optional categories inherited `general`; the explicit categories retained their existing routing and every resolved OpenCode selection reported `deepseek-v4-pro/xhigh`.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/config -run '^TestOpenCodeEffortAcceptedConfigurationLoadsAndResolvesNonEmptyReasoningEffort$'` — one focused configuration test passed. The first attempt used the sandbox-denied macOS Go cache; the recorded rerun used the repository-local ignored cache.
+- A focused `awk` comment check exited 0 with all three required signals (`xhigh` maximum and benchmarked variant, Agent Session warm-up and application, no inheritance) and zero stale refusal signals.
+- `rtk diff <(rtk git show HEAD:.roundfixrc.yml | rtk awk 'BEGIN { p=0 } /^profiles:/ { p=1; next } /^[a-z_]+:/ { if (p) p=0 } !p { print }') <(rtk awk 'BEGIN { p=0 } /^profiles:/ { p=1; next } /^[a-z_]+:/ { if (p) p=0 } !p { print }' .roundfixrc.yml)` — exited 0 with `[ok] Files are identical`, a byte-level proof that all content outside `profiles` still matches `HEAD`.
+
+Acceptance evidence:
+
+- Criterion 1: the OpenCode tuple inventory found six selections, all at
+  `reasoning_effort: xhigh`, with zero mismatches.
+- Criterion 2: the same complete inventory found no OpenCode selection with an
+  empty effort.
+- Criterion 3: `profiles show --json` loaded the changed Project Config and
+  resolved all ten Agent Work Categories; the focused configuration test also
+  passed for a non-empty OpenCode effort.
+- Criterion 4: the comment check found the required maximum, benchmark, warm-up,
+  and applied-effort statements and no stale refusal/default statement.
+- Criterion 5: the exact outside-`profiles` comparison matched `HEAD` byte for
+  byte.
+
+No follow-up work was found inside this Task's slice. The commands authored
+under `## Verification` were not run; Daemon Verification remains responsible
+for proving every configured tuple and settling the Task.
