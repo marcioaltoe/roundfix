@@ -1,0 +1,5 @@
+{"status": "passed", "encoding": "independent", "adapter_command": "codex-acp", "adapter_version": "1.1.14"}
+{"status": "passed", "encoding": "runtime_deferred", "adapter_command": "opencode acp"}
+{"status": "passed", "encoding": "independent", "adapter_command": "claude-agent-acp", "adapter_version": "0.66.0"}
+{"status": "passed", "encoding": "independent", "adapter_command": "codex-acp", "adapter_version": "1.1.14"}
+{"status": "passed", "encoding": "independent", "adapter_command": "claude-agent-acp", "adapter_version": "0.66.0"}

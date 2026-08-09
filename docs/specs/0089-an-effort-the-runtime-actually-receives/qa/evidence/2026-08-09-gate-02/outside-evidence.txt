@@ -1,0 +1,29 @@
+== Outside evidence for Spec 0089's premise (ADR-0104)
+Source: ~/dev/secondbrain/wiki/concepts/modelos-custos-e-selecao.md
+A repository this Spec did not build; an analysis it did not design.
+Provenance: compiled from raw/monitoring/model-pricing.md, refetched daily at 06:30 from https://openrouter.ai/api/v1/models; re-evaluated daily at 08:00.
+
+## Benchmark DeepSWE (coding agent)
+
+Snapshot 2026-08-07. Resultado vs custo por tarefa:
+
+| Modelo / Reasoning | Resultado | Custo/task | Cost/point |
+|---|---|---|---|
+| `claude-opus-5 / max` | 74% | $11.84 | $0.160 |
+| `claude-opus-5 / xhigh` | 73% | $9.07 | $0.124 |
+| `gpt-5.6-sol / max` | 73% | $8.39 | $0.115 |
+| `gpt-5.6-terra / max` | 70% | $3.96 | $0.057 |
+| `gpt-5.6-luna / max` | 67% | $0.61 | $0.009 |
+| `deepseek-v4-flash / max` | 53% | $0.10 | $0.002 |
+
+**Nota**: o benchmark é específico para coding agents. O uso no secondbrain (síntese, raciocínio, ingestão) tem perfil diferente. O `deepseek-v4-pro` não aparece no benchmark porque é um modelo mais novo.
+
+## Qualidade e latência (whatllm.org)
+
+Snapshot 2026-08-07:
+
+| Modelo | Inteligência | Latência | Custo/task |
+|---|---|---|---|
+
+== reasoning note (line 23)
+**Nota sobre reasoning**: `deepseek-v4-pro` suporta `high` e `xhigh` (max). A sessão principal usa `max` e a delegação usa `high`.

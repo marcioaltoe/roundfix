@@ -1,0 +1,15 @@
+== three stopped Run Worktrees discarded 2026-08-09
+reconcile classified each 'unintegrated' and preserved them; Branch Integrity Preflight
+then refused every new Run. Each held only re-executions of task_01 and task_02,
+whose work is already in HEAD via run_20260809T111812Z. Nothing unique was lost.
+
+-- roundfix/run-run_20260809T100113Z_5f31bde03200c464 @ 6baf153c
+6baf153c test: record the characterization corpus before anything moves
+
+-- roundfix/run-run_20260809T101832Z_7e534c461190cb3f @ 24589b2a
+24589b2a feat: plan a deferred effort and fail closed on an unadvertised one
+aae3f7c8 test: record the characterization corpus before anything moves
+
+-- roundfix/run-run_20260809T104632Z_583f49f98968df54 @ f0ff0e75
+f0ff0e75 feat: plan a deferred effort and fail closed on an unadvertised one
+00a6a9f1 test: record the characterization corpus before anything moves
