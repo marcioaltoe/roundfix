@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0093-a-spec-that-validates-itself
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -60,3 +60,39 @@ This Task may create or modify only:
 
 - `_prd.md` → Goals 1 and 4.
 - `_techspec.md` → Build Order 1; Testing Approach.
+
+## Result
+
+Implemented the characterization corpus without changing production code. The
+fixture PRD is byte-identical to Spec 0090's original authoring commit
+`1a31c965037fb3657de6b481a0285af935c16ebb`; its cited ADR-0083 fixture carries
+the real adopted-source decision that does not support the PRD's verification
+claim.
+
+Focused checks:
+
+- `rtk gofmt -w internal/speccheck/citation_characterization_test.go` — exited
+  `0`.
+- `GOCACHE="$PWD/.gocache" rtk go test -buildvcs=false ./internal/speccheck` —
+  exited `0`; 108 tests passed in one package.
+- `rtk git show 1a31c965037fb3657de6b481a0285af935c16ebb:docs/specs/0090-a-gate-that-could-have-failed/_prd.md | rtk cmp - internal/speccheck/testdata/citation/repo/docs/specs/0090-a-gate-that-could-have-failed/_prd.md`
+  — exited `0`, proving exact fixture preservation.
+
+Acceptance evidence:
+
+- False citation produces no finding today:
+  `TestCitationCharacterizationFalseCitationPassesEveryCheck` passed and also
+  asserts that `SC-ADR-UNLISTED` and `SC-ADR-RELATED` ran rather than skipped.
+- Existing checks pass for listing reasons:
+  `TestCitationCharacterizationExistingChecksOnlyListAndAccount` passed; its
+  negative controls produce `SC-ADR-UNLISTED` when ADR-0083 leaves the Active
+  ADR row and `SC-ADR-RELATED` when an unlisted accepted ADR cites ADR-0083.
+- Declared break names Task 02: the characterization source contains
+  `Declared break: task_02` beside the zero-finding assertion. Task 02 must
+  revise that assertion when it adds semantic support checking.
+- No current detector evaluates the cited record's supporting prose:
+  `TestCitationCharacterizationNoDetectorReadsACitedRecordBody` passed after
+  replacing ADR-0083's unrelated body with text that explicitly supports the
+  false claim and proving the complete checker result stayed identical.
+
+The Daemon-owned `## Verification` commands were not run in this Agent turn.
