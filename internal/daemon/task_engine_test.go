@@ -3025,6 +3025,15 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 }
 
 func TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses(t *testing.T) {
+	testPreWorkProbePublishesEveryOffendingCommand(t)
+}
+
+func TestPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
+	testPreWorkProbePublishesEveryOffendingCommand(t)
+}
+
+func testPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
+	t.Helper()
 	t.Parallel()
 	const (
 		spec0089Gate  = "grep -q 'reasoning_effort: xhigh' .roundfixrc.yml"
@@ -3068,6 +3077,32 @@ func TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses(t *testing.T) {
 	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
 		t.Fatalf("refused Task status = %q, want %q", got, spec.StatusFailed)
 	}
+	var probeEvents []runevent.RunEvent
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		if eventPayloadString(t, event, "classification") == string(runevent.VerificationClassificationVacuous) {
+			probeEvents = append(probeEvents, event)
+		}
+	}
+	if len(probeEvents) != 1 {
+		t.Fatalf("vacuous probe events = %d, want one aggregate refusal event: %+v", len(probeEvents), probeEvents)
+	}
+	var payload struct {
+		Task           string   `json:"task"`
+		Classification string   `json:"classification"`
+		Commands       []string `json:"commands"`
+	}
+	if err := json.Unmarshal(probeEvents[0].Payload, &payload); err != nil {
+		t.Fatalf("decode vacuous probe event: %v", err)
+	}
+	if payload.Task != "task_01" || probeEvents[0].ReviewIssue != "task_01" {
+		t.Fatalf("vacuous probe event Task identity = payload %q Work Item %q", payload.Task, probeEvents[0].ReviewIssue)
+	}
+	if payload.Classification != string(runevent.VerificationClassificationVacuous) {
+		t.Fatalf("vacuous probe classification = %q", payload.Classification)
+	}
+	if !slices.Equal(payload.Commands, []string{spec0089Gate, secondVacuous}) {
+		t.Fatalf("vacuous probe commands = %q, want every offending command", payload.Commands)
+	}
 }
 
 func TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask(t *testing.T) {
@@ -3109,6 +3144,15 @@ func TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask(t *testing.T) {
 }
 
 func TestPreWorkProbeLeavesAFailingGateOnItsOrdinaryPath(t *testing.T) {
+	testPreWorkProbePublishesNothingForAClearedTask(t)
+}
+
+func TestPreWorkProbePublishesNothingForAClearedTask(t *testing.T) {
+	testPreWorkProbePublishesNothingForAClearedTask(t)
+}
+
+func testPreWorkProbePublishesNothingForAClearedTask(t *testing.T) {
+	t.Helper()
 	t.Parallel()
 	const (
 		command   = "test -f agent-output.txt"
@@ -3141,9 +3185,24 @@ func TestPreWorkProbeLeavesAFailingGateOnItsOrdinaryPath(t *testing.T) {
 	if len(committer.messages) != 1 {
 		t.Fatalf("ordinary Task commits = %v, want one", committer.messages)
 	}
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		classification := eventPayloadString(t, event, "classification")
+		if classification == string(runevent.VerificationClassificationVacuous) || classification == string(runevent.VerificationClassificationUnknown) {
+			t.Fatalf("cleared Task published probe event: %+v", event)
+		}
+	}
 }
 
 func TestPreWorkProbeRecordsUnobservableVerdictAsUnknown(t *testing.T) {
+	testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t)
+}
+
+func TestPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t *testing.T) {
+	testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t)
+}
+
+func testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t *testing.T) {
+	t.Helper()
 	t.Parallel()
 	const command = "gate verdict not observed"
 	unknownErr := errors.New("runner did not observe the command verdict")
@@ -3174,6 +3233,31 @@ func TestPreWorkProbeRecordsUnobservableVerdictAsUnknown(t *testing.T) {
 	}
 	if runner.taskCalls["task_01"] != 0 {
 		t.Fatalf("unknown probe Agent calls = %d, want 0", runner.taskCalls["task_01"])
+	}
+	var probeEvents []runevent.RunEvent
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		if eventPayloadString(t, event, "classification") == string(runevent.VerificationClassificationUnknown) {
+			probeEvents = append(probeEvents, event)
+		}
+	}
+	if len(probeEvents) != 1 {
+		t.Fatalf("unknown probe events = %d, want one: %+v", len(probeEvents), probeEvents)
+	}
+	var payload struct {
+		Task           string `json:"task"`
+		Classification string `json:"classification"`
+		Command        string `json:"command"`
+		Reason         string `json:"reason"`
+		DiagnosticPath string `json:"diagnostic_path"`
+	}
+	if err := json.Unmarshal(probeEvents[0].Payload, &payload); err != nil {
+		t.Fatalf("decode unknown probe event: %v", err)
+	}
+	if payload.Task != "task_01" || payload.Classification != string(runevent.VerificationClassificationUnknown) {
+		t.Fatalf("unexpected unknown probe identity: %#v", payload)
+	}
+	if payload.Command != command || payload.Reason != unknownErr.Error() || payload.DiagnosticPath == "" || !strings.Contains(payload.DiagnosticPath, fixture.artifactDir) {
+		t.Fatalf("unknown probe evidence = %#v", payload)
 	}
 }
 

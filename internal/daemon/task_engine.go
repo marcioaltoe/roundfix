@@ -567,6 +567,9 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 	if probeErr != nil {
 		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: probeErr}
 	}
+	if publishErr := engine.publishPreWorkProbeFindings(ctx, taskPlan, task, ordinal, probe); publishErr != nil {
+		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: publishErr}
+	}
 	if reason := preWorkProbeFailureReason(probe); reason != "" {
 		if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
 			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: settleErr}
@@ -1039,6 +1042,52 @@ func (engine *Engine) verifyTaskPreWork(ctx context.Context, plan TaskPlan, task
 
 func verificationProbeOutputPath(artifactDir string, runID string, batchNumber int, commandNumber int) string {
 	return filepath.Join(artifactDir, "runs", runID, "verification", fmt.Sprintf("batch-%03d-probe-%d.log", batchNumber, commandNumber))
+}
+
+func (engine *Engine) publishPreWorkProbeFindings(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, probe VerificationProbe) error {
+	if vacuous := probe.Vacuous(); len(vacuous) > 0 {
+		summary := fmt.Sprintf("Pre-work Verification refused Task %s: %d commands exited zero against the unchanged tree.", task.ID, len(vacuous))
+		payload := map[string]any{
+			"attempt":        1,
+			"phase":          string(runevent.VerificationPhaseFailed),
+			"task":           task.ID,
+			"classification": string(runevent.VerificationClassificationVacuous),
+			"commands":       vacuous,
+		}
+		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
+			return fmt.Errorf("publish vacuous pre-work Verification event for run %q Task %s: %w", plan.RunID, task.ID, err)
+		}
+	}
+
+	for _, result := range probe.Commands {
+		if !result.Unknown {
+			continue
+		}
+		reason := "reason unavailable"
+		diagnosticPath := "unavailable"
+		if result.UnknownCause != nil {
+			if result.UnknownCause.Err != nil && strings.TrimSpace(result.UnknownCause.Err.Error()) != "" {
+				reason = result.UnknownCause.Err.Error()
+			}
+			if strings.TrimSpace(result.UnknownCause.DiagnosticPath) != "" {
+				diagnosticPath = result.UnknownCause.DiagnosticPath
+			}
+		}
+		summary := fmt.Sprintf("Pre-work Verification could not observe Task %s command %q.", task.ID, result.Command)
+		payload := map[string]any{
+			"attempt":         1,
+			"phase":           string(runevent.VerificationPhaseFailed),
+			"task":            task.ID,
+			"classification":  string(runevent.VerificationClassificationUnknown),
+			"command":         result.Command,
+			"reason":          reason,
+			"diagnostic_path": diagnosticPath,
+		}
+		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
+			return fmt.Errorf("publish unknown pre-work Verification event for run %q Task %s command %q: %w", plan.RunID, task.ID, result.Command, err)
+		}
+	}
+	return nil
 }
 
 func preWorkProbeFailureReason(probe VerificationProbe) string {

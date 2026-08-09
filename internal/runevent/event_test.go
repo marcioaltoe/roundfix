@@ -156,6 +156,74 @@ func TestVerificationEventVocabulary(t *testing.T) {
 	}
 }
 
+func TestVerificationProbeEventProjectsVacuousAndUnknownDistinctly(t *testing.T) {
+	t.Parallel()
+	if VerificationClassificationVacuous != "verification_vacuous" {
+		t.Fatalf("vacuous classification = %q, want verification_vacuous", VerificationClassificationVacuous)
+	}
+	if VerificationClassificationUnknown != "verification_unknown" {
+		t.Fatalf("unknown classification = %q, want verification_unknown", VerificationClassificationUnknown)
+	}
+	if VerificationClassificationVacuous == VerificationClassificationUnknown {
+		t.Fatalf("probe classifications must be distinct, got %q", VerificationClassificationVacuous)
+	}
+
+	events := []RunEvent{
+		{
+			RunID:       "run_probe",
+			Batch:       4,
+			Source:      SourceDaemon,
+			Kind:        KindDaemonVerification,
+			ReviewIssue: "task_04",
+			Time:        time.Date(2026, 8, 9, 12, 0, 0, 0, time.UTC),
+			Payload:     []byte(`{"attempt":1,"phase":"failed","task":"task_04","classification":"verification_vacuous","commands":["test -f one","test -f two"]}`),
+		},
+		{
+			RunID:       "run_probe",
+			Batch:       4,
+			Source:      SourceDaemon,
+			Kind:        KindDaemonVerification,
+			ReviewIssue: "task_04",
+			Time:        time.Date(2026, 8, 9, 12, 0, 1, 0, time.UTC),
+			Payload:     []byte(`{"attempt":1,"phase":"failed","task":"task_04","classification":"verification_unknown","command":"make focused","reason":"runner stopped before exit","diagnostic_path":"/tmp/probe.log"}`),
+		},
+	}
+
+	vacuous, ok, err := ProjectStreamEvent(1, events[0], AllStreamCategories())
+	if err != nil {
+		t.Fatalf("project vacuous probe event: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected vacuous probe event to project")
+	}
+	if vacuous.Category != StreamCategoryVerification || vacuous.WorkItem != "task_04" || vacuous.Classification != string(VerificationClassificationVacuous) {
+		t.Fatalf("unexpected vacuous projection: %#v", vacuous)
+	}
+	if got := strings.Join(vacuous.Commands, "|"); got != "test -f one|test -f two" {
+		t.Fatalf("vacuous commands = %q, want every offending command", got)
+	}
+	if vacuous.Command != "" || vacuous.Reason != "" || vacuous.DiagnosticPath != "" {
+		t.Fatalf("vacuous projection leaked unknown-only fields: %#v", vacuous)
+	}
+
+	unknown, ok, err := ProjectStreamEvent(2, events[1], AllStreamCategories())
+	if err != nil {
+		t.Fatalf("project unknown probe event: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected unknown probe event to project")
+	}
+	if unknown.Category != StreamCategoryVerification || unknown.WorkItem != "task_04" || unknown.Classification != string(VerificationClassificationUnknown) {
+		t.Fatalf("unexpected unknown projection: %#v", unknown)
+	}
+	if unknown.Command != "make focused" || unknown.Reason != "runner stopped before exit" || unknown.DiagnosticPath != "/tmp/probe.log" {
+		t.Fatalf("unknown observation evidence was not projected: %#v", unknown)
+	}
+	if len(unknown.Commands) != 0 {
+		t.Fatalf("unknown projection leaked vacuous commands: %#v", unknown)
+	}
+}
+
 func TestWaitingForVerificationReplayProjectsAdditivePhase(t *testing.T) {
 	t.Parallel()
 	event := RunEvent{

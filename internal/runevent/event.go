@@ -97,6 +97,8 @@ type VerificationClassification string
 const (
 	VerificationClassificationTemporary    VerificationClassification = "temporary"
 	VerificationClassificationPrecondition VerificationClassification = "precondition"
+	VerificationClassificationVacuous      VerificationClassification = "verification_vacuous"
+	VerificationClassificationUnknown      VerificationClassification = "verification_unknown"
 )
 
 // VerificationReason names a bounded machine-readable Verification reason.

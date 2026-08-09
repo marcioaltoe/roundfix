@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0090-a-gate-that-could-have-failed
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -66,3 +66,40 @@ This Task may create or modify only:
 
 - `_prd.md` → Goal 2; Core Features, recorded rather than narrated evidence.
 - `_techspec.md` → Build Order 4; API Contracts.
+
+## Result
+
+Published pre-work probe findings through the existing
+`daemon.verification` event kind. A refusal produces one aggregate
+`verification_vacuous` record with the Task ID and every command that exited
+zero against the unchanged tree. Each unobserved command produces a
+`verification_unknown` record with its Task ID, command, runner reason, and
+diagnostic path. The stable Run Event stream projects those fields only for the
+new classifications, so ordinary Verification records keep their existing
+bounded shape. A probe with only observed non-zero commands publishes neither
+classification.
+
+Focused-check evidence:
+
+- Red baseline: `GOCACHE="$PWD/.gocache" rtk go test ./internal/runevent ./internal/daemon -run '^$'` failed to compile after the tests were added because the two classifications and the projected command evidence fields did not exist.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/runevent ./internal/daemon` passed: 234 tests across 2 packages.
+- `rtk git -c core.fsmonitor=false diff --check` exited 0.
+
+Acceptance evidence:
+
+- Refusal names every offending command:
+  `TestPreWorkProbePublishesEveryOffendingCommand` passed with two vacuous
+  commands separated by an observed non-zero command, and asserted one
+  aggregate `daemon.verification` event carrying both commands and the Task ID.
+- Unknown observations carry actionable evidence:
+  `TestPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath` passed and
+  asserted the command, the runner's reason, and the retained diagnostic path.
+- The classifications are distinct strings and both project through the stable
+  stream: `TestVerificationProbeEventProjectsVacuousAndUnknownDistinctly`
+  passed for `verification_vacuous` and `verification_unknown`.
+- Cleared Tasks stay silent:
+  `TestPreWorkProbePublishesNothingForAClearedTask` passed after the Task took
+  its ordinary Agent, post-Agent Verification, settlement, and commit path with
+  no probe-classified event.
+
+The commands under `## Verification` were not run; the Daemon owns them.
