@@ -407,6 +407,39 @@ config: defaults.model is deprecated and ignored; use profiles.<category>.prefer
 Unknown keys that are not in the deprecation registry still fail strict
 validation.
 
+## A review only happens when it is asked for
+
+Automatic CodeRabbit review is **off** across these repositories, by deliberate
+configuration: automatic incremental review fires on every push and burns the
+hourly allowance while a review is still being worked. The consequence is the
+rule that is easiest to forget — **a pull request gets no review unless someone
+requests one.**
+
+Requesting it, either way works:
+
+- add the `coderabbit:review` tag to the pull request description, or
+- comment `@coderabbitai review` on the pull request.
+
+`@coderabbitai review` is **incremental**: it covers only what changed since the
+last review. Use `@coderabbitai full review` for a pass over the whole pull
+request — after many incremental rounds, or when the earlier reviews may have
+missed something.
+
+Request again after any of these, because none of them triggers a review on its
+own: commits pushed after the first review, a batch of fixes landing, or a
+rebase that changes the head.
+
+**A green check is not evidence of a review.** When the allowance is exhausted,
+CodeRabbit posts a rate-limit comment and a check named `Review rate limited`
+that **passes by design**, so it never blocks a merge on a protected branch. The
+comment is the authoritative signal that no review ran. Reading that green check
+as "reviewed" is how a pull request reaches `main` unreviewed.
+
+The allowance is roughly ten pull request reviews per hour, shared across the
+`marcioaltoe` and `gesttione-solutions` organizations, as a rolling window
+rather than a quota that resets on the hour. Comment `@coderabbitai rate limit`
+to see what remains without spending a review.
+
 `review_source.include_nitpicks` defaults to `false`, so CodeRabbit findings
 whose severity is `nitpick` do not become Review Issues unless User Config or
 Project Config explicitly sets the key to `true`.

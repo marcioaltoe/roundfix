@@ -826,6 +826,22 @@ func TestProjectConstraintImplementationGate(t *testing.T) {
 // artifact is still open. Neither may be edited away: Spec 0093's own Task 06
 // removed the QA gate's audit block under a standing grant, and only a contract
 // test noticed.
+// The review-request rule is the one that keeps getting forgotten, and forgetting
+// it is how a pull request reaches main unreviewed: automatic review is off by
+// configuration, and the rate-limit check passes by design.
+func TestReviewRequestContract(t *testing.T) {
+	t.Parallel()
+	testWorkflowProjectConstraintContract(t, "roundfix", []string{
+		"a pull request gets no review unless someone requests one",
+		"coderabbit:review",
+		"@coderabbitai review",
+		"@coderabbitai full review",
+		"@coderabbitai rate limit",
+		"A green check is not evidence of a review",
+		"Review rate limited",
+	})
+}
+
 func TestProjectConstraintPRDGate(t *testing.T) {
 	t.Parallel()
 	testWorkflowProjectConstraintContract(t, "write-prd", []string{
