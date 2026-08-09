@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0090-a-gate-that-could-have-failed
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -62,3 +62,53 @@ This Task may create or modify only:
 
 - `_prd.md` → Goal 3; Core Features, a gate that is the same twice.
 - `_techspec.md` → Build Order 6.
+
+## Result
+
+### Implementation
+
+- Added one ninety-second `ownerProcessTestWaitBudget` for condition waits in
+  the store process harness. Real-process controller stop windows and helper
+  waits now read that ceiling; grace periods, short behavioral windows, and
+  polling intervals keep their existing values through named constants.
+- Kept the agent harness on its existing ninety-second `agentWaitBudget`; it
+  already had no literal `time.After` budget at a guarded call site.
+- Added an AST-based guard over the agent and Unix process harnesses. It rejects
+  literal duration expressions passed to `time.After`, `time.NewTimer`, or
+  `newOwnerProcessController`, and carries a synthetic negative control with
+  both a literal `time.After` and controller stop window.
+
+### Focused checks
+
+- `rtk env GOCACHE="$PWD/.gocache" go test ./internal/store -run '^(TestWaitBudgetIsNeverRestatedAtACallSite|TestWaitBudgetGuardRejectsRestatedLiteral|TestOwnerProcessController)' -count=1`
+  exited `0`: `ok roundfix/internal/store 0.475s`.
+- `rtk env GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestACPXRunCancellationCommandFailuresWarnAndContinue$' -count=1`
+  exited `0`: `ok roundfix/internal/agent 0.993s`.
+- `rtk git diff --check` exited `0`.
+- `rtk git diff -U0 -- internal/store/process_unix_test.go` showed only named
+  duration substitutions plus the shared constants; no assertion or guarded
+  control-flow line changed.
+
+### Acceptance evidence
+
+- **No literal wait budget at a call site:**
+  `TestWaitBudgetIsNeverRestatedAtACallSite` parsed both bounded harness files
+  and passed. Store waits now use `ownerProcessTestWaitBudget`; agent waits use
+  `agentWaitBudget`.
+- **The guard rejects a reintroduced literal:**
+  `TestWaitBudgetGuardRejectsRestatedLiteral` supplied two literal-duration
+  call sites and required the detector to report both; the focused store check
+  passed.
+- **Assertions retain their defect signal:** the zero-context diff proves that
+  existing process outcome, liveness, cancellation, and failure assertions are
+  byte-unchanged. The focused controller and cancellation tests exercised the
+  real subjects after the duration-only substitutions, while the new negative
+  control proves the source guard detects the absent shared-constant behavior.
+
+### Follow-up
+
+- The PRD and TechSpec describe ADR-0083 as the local authoritative-gate
+  decision, but accepted `docs/adr/0083-adopted-sources-move-to-their-owning-spec.md`
+  concerns adopted-source ownership. Correcting that Spec citation is outside
+  this Task's bounded files.
+- The authored `## Verification` commands were not run; they remain Daemon-owned.
