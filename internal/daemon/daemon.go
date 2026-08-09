@@ -31,6 +31,14 @@ type VerificationCommandError struct {
 	Err        error
 }
 
+// VerificationUnknownError records why the command runner could not observe
+// a Verification verdict and where its diagnostics would be retained.
+type VerificationUnknownError struct {
+	Command        string
+	DiagnosticPath string
+	Err            error
+}
+
 const TemporaryVerificationExitCode = 75
 
 // TemporaryVerificationFailureError marks the sole retryable Verification
@@ -70,31 +78,48 @@ func (err *VerificationCommandError) Unwrap() error {
 	return err.Err
 }
 
+func (err *VerificationUnknownError) Error() string {
+	if err == nil {
+		return ""
+	}
+	if strings.TrimSpace(err.DiagnosticPath) == "" {
+		return fmt.Sprintf("verification command %q verdict unknown: %v", err.Command, err.Err)
+	}
+	return fmt.Sprintf("verification command %q verdict unknown; diagnostics: %s: %v", err.Command, err.DiagnosticPath, err.Err)
+}
+
+func (err *VerificationUnknownError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
+
 type ExecVerifier struct{}
 
 func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult, error) {
 	result := VerifyResult{OutputPath: req.OutputPath}
 	if strings.TrimSpace(req.WorkDir) == "" {
-		return result, fmt.Errorf("run verification: git root is required")
+		return result, verificationUnknown(req, fmt.Errorf("run verification: git root is required"))
 	}
 	if strings.TrimSpace(req.Command) == "" {
-		return result, fmt.Errorf("run verification: command is required")
+		return result, verificationUnknown(req, fmt.Errorf("run verification: command is required"))
 	}
 	if strings.TrimSpace(req.OutputPath) == "" {
-		return result, fmt.Errorf("run verification: diagnostic output path is required")
+		return result, verificationUnknown(req, fmt.Errorf("run verification: diagnostic output path is required"))
 	}
 	if err := ctx.Err(); err != nil {
-		return result, fmt.Errorf("run verification command %q: %w", req.Command, err)
+		return result, verificationUnknown(req, fmt.Errorf("run verification command %q: %w", req.Command, err))
 	}
 
 	outputPath := filepath.Clean(req.OutputPath)
 	outputDir := filepath.Dir(outputPath)
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		return result, fmt.Errorf("prepare verification diagnostics directory %q: %w", outputDir, err)
+		return result, verificationUnknown(req, fmt.Errorf("prepare verification diagnostics directory %q: %w", outputDir, err))
 	}
 	tempFile, err := os.CreateTemp(outputDir, filepath.Base(outputPath)+".tmp-*")
 	if err != nil {
-		return result, fmt.Errorf("create verification diagnostics temp file for %q: %w", outputPath, err)
+		return result, verificationUnknown(req, fmt.Errorf("create verification diagnostics temp file for %q: %w", outputPath, err))
 	}
 	tempPath := tempFile.Name()
 
@@ -110,7 +135,7 @@ func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult
 	}
 	if err := ctx.Err(); err != nil {
 		_ = os.Remove(tempPath)
-		return result, fmt.Errorf("run verification command %q: %w", req.Command, err)
+		return result, verificationUnknown(req, fmt.Errorf("run verification command %q: %w", req.Command, err))
 	}
 	if runErr == nil {
 		cleanupErr := errors.Join(removeIfExists(tempPath), removeIfExists(outputPath))
@@ -123,7 +148,7 @@ func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult
 	var exitErr *exec.ExitError
 	if !errors.As(runErr, &exitErr) {
 		_ = os.Remove(tempPath)
-		return result, fmt.Errorf("start verification command %q: %w", req.Command, runErr)
+		return result, verificationUnknown(req, fmt.Errorf("start verification command %q: %w", req.Command, runErr))
 	}
 	if err := os.Rename(tempPath, outputPath); err != nil {
 		_ = os.Remove(tempPath)
@@ -135,6 +160,14 @@ func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult
 		return result, &TemporaryVerificationFailureError{CommandFailure: commandErr}
 	}
 	return result, commandErr
+}
+
+func verificationUnknown(req VerifyRequest, err error) *VerificationUnknownError {
+	return &VerificationUnknownError{
+		Command:        req.Command,
+		DiagnosticPath: req.OutputPath,
+		Err:            err,
+	}
 }
 
 func removeIfExists(path string) error {

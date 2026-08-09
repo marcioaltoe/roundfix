@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0090-a-gate-that-could-have-failed
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -68,3 +68,33 @@ This Task may create or modify only:
 - `_techspec.md` → Build Order 2; Data Models.
 - ADR-0111.
 
+## Result
+
+### Implementation
+
+- Added `VerificationUnknownError` with the command, underlying reason, and
+  diagnostic path. `ExecVerifier` now returns it when request validation,
+  deadline expiry, diagnostic setup, or process startup prevents a verdict.
+- Added `UnknownCause` to `verificationAttemptOutcome`. The engine keeps typed
+  command exits on `CommandFailure`, routes typed unobserved outcomes through
+  `UnknownCause`, and preserves raw post-verdict infrastructure errors on their
+  existing halt path.
+- Added a distinct actionable Task reason beginning `Verification unknown` and
+  naming the command, cause, and diagnostic path. The Task still settles
+  `failed`; no new `spec.Status` was added.
+- Updated Task 01's unobserved-verdict characterization to require the unknown
+  reason while retaining the command-failure comparison case.
+
+### Focused checks
+
+- Pre-change signal: `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/daemon -run '^TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed$' -count=1` exited 0 against the declared old behaviour, confirming that both causes still had the same terminal shape before this Task's edits.
+- Regression tests first: `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/daemon -run '^TestVerificationUnknownCauseIsSetOnlyWhenNoVerdictWasObserved$' -count=1` failed to compile before production changes because `VerificationUnknownError` and `UnknownCause` did not exist.
+- After the final code edit: `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/daemon -run '^(TestExecVerifier|TestVerificationUnknownCause|TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed|TestResolveCycleVerificationInfrastructureErrorHaltsWithoutFailedSettlement|TestTaskCycleDaemonStatusRemainsInProgressOnVerificationInfrastructureError)' -count=1` exited 0.
+- The commands under `## Verification` were not run; the Daemon owns them.
+
+### Acceptance criteria evidence
+
+- Unobservable Verification: `TestVerificationUnknownCauseIsSetOnlyWhenNoVerdictWasObserved` asserts a non-nil `UnknownCause`, the original cause identity, and a nil `CommandFailure`; the focused regression set exited 0.
+- Observed non-zero exit: `TestVerificationUnknownCauseAndCommandFailureAreMutuallyExclusive` asserts the original `CommandFailure` and a nil `UnknownCause`; `TestExecVerifierRetainsFailedOutputAsTypedCommandError` exercises the real runner; the focused regression set exited 0.
+- Distinct terminal reasons: `TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed` requires `Verification unknown` for the unobserved case and `Verification failed` for the command exit, with different command, cause, and diagnostic text; the focused regression set exited 0.
+- Failed settlement in both cases: the same characterization asserts two failed Tasks, zero completed Tasks, and no Task commit; the focused regression set exited 0.

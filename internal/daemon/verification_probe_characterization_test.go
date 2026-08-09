@@ -44,8 +44,8 @@ func TestVerificationProbeCharacterizationVacuousGateSettlesCompleted(t *testing
 }
 
 // TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed records
-// that an unobserved verdict has the same failure report as a command rejection.
-// Declared break: task_02 changes the unobserved case to an explicit unknown cause.
+// that an unobserved verdict settles failed with an explicit unknown cause,
+// distinct from a command rejection.
 func TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed(t *testing.T) {
 	t.Parallel()
 	const (
@@ -58,12 +58,10 @@ func TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed(t *test
 		{id: "task_02", verification: []string{failedCommand}},
 	})
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
-	verifier := &taskFakeVerifier{
-		calls: fixture.calls,
-		failOn: map[string]error{
-			unobservedCommand: unobservedErr,
-			failedCommand:     errors.New("exit status 7"),
-		},
+	verifier := &characterizationVerdictVerifier{
+		calls:     fixture.calls,
+		unknownOn: map[string]error{unobservedCommand: unobservedErr},
+		failOn:    map[string]error{failedCommand: errors.New("exit status 7")},
 	}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
@@ -78,31 +76,42 @@ func TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed(t *test
 	}
 	unobserved := failedTaskOutcome(t, result.Outcomes, "task_01")
 	observed := failedTaskOutcome(t, result.Outcomes, "task_02")
-	unobservedShape := currentVerificationFailureShape(
-		unobserved.Reason,
-		unobservedCommand,
-		unobservedErr.Error(),
-		VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 2),
-	)
-	observedShape := currentVerificationFailureShape(
-		observed.Reason,
-		failedCommand,
-		"exit status 7",
-		VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 2, 2),
-	)
-	if unobservedShape != observedShape {
-		t.Fatalf("unobserved failure shape = %q, command failure shape = %q", unobservedShape, observedShape)
+	unobservedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	for _, want := range []string{"Verification unknown", unobservedCommand, unobservedErr.Error(), unobservedPath} {
+		if !strings.Contains(unobserved.Reason, want) {
+			t.Fatalf("unobserved terminal reason %q does not contain %q", unobserved.Reason, want)
+		}
 	}
-	const currentShape = `Verification failed: command "<command>" exited with <cause>; diagnostics: <diagnostics>`
-	if unobservedShape != currentShape {
-		t.Fatalf("normalized current failure shape = %q, want %q", unobservedShape, currentShape)
+	observedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 2, 2)
+	for _, want := range []string{"Verification failed", failedCommand, "exit status 7", observedPath} {
+		if !strings.Contains(observed.Reason, want) {
+			t.Fatalf("command-failure terminal reason %q does not contain %q", observed.Reason, want)
+		}
 	}
-	if strings.Contains(strings.ToLower(unobserved.Reason), "unknown") {
-		t.Fatalf("unobserved verdict unexpectedly distinguished as unknown: %q", unobserved.Reason)
+	if unobserved.Reason == observed.Reason {
+		t.Fatalf("unobserved and command-failure terminal reasons are identical: %q", unobserved.Reason)
 	}
 	if len(committer.messages) != 0 {
 		t.Fatalf("failed Tasks produced commits: %v", committer.messages)
 	}
+}
+
+type characterizationVerdictVerifier struct {
+	calls     *[]string
+	unknownOn map[string]error
+	failOn    map[string]error
+}
+
+func (verifier *characterizationVerdictVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
+	*verifier.calls = append(*verifier.calls, "verify")
+	result := VerifyResult{OutputPath: req.OutputPath}
+	if err := verifier.unknownOn[req.Command]; err != nil {
+		return result, &VerificationUnknownError{Command: req.Command, DiagnosticPath: req.OutputPath, Err: err}
+	}
+	if err := verifier.failOn[req.Command]; err != nil {
+		return result, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: err}
+	}
+	return result, nil
 }
 
 func failedTaskOutcome(t *testing.T, outcomes []TaskOutcome, taskID string) TaskOutcome {
@@ -115,12 +124,4 @@ func failedTaskOutcome(t *testing.T, outcomes []TaskOutcome, taskID string) Task
 		t.Fatalf("%s status = %q, want %q", taskID, outcome.Status, spec.StatusFailed)
 	}
 	return outcome
-}
-
-func currentVerificationFailureShape(reason string, command string, cause string, diagnosticPath string) string {
-	return strings.NewReplacer(
-		command, "<command>",
-		cause, "<cause>",
-		diagnosticPath, "<diagnostics>",
-	).Replace(reason)
 }

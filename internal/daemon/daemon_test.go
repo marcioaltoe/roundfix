@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"roundfix/internal/gittest"
 )
@@ -194,7 +195,31 @@ func TestExecVerifierClassifiesCancellationAsInfrastructureError(t *testing.T) {
 	}
 }
 
-func TestExecVerifierClassifiesProcessStartFailureAsInfrastructureError(t *testing.T) {
+func TestExecVerifierClassifiesDeadlineAsUnknownVerdict(t *testing.T) {
+	t.Parallel()
+	outputPath := filepath.Join(t.TempDir(), "verification.log")
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+	defer cancel()
+
+	_, err := ExecVerifier{}.Verify(ctx, VerifyRequest{
+		WorkDir:    t.TempDir(),
+		Command:    "printf never-started",
+		OutputPath: outputPath,
+	})
+
+	var unknownErr *VerificationUnknownError
+	if !errors.As(err, &unknownErr) {
+		t.Fatalf("expected deadline to produce an unknown verdict, got %T %[1]v", err)
+	}
+	if unknownErr.Command != "printf never-started" || unknownErr.DiagnosticPath != outputPath {
+		t.Fatalf("unexpected unknown-verdict metadata: %+v", unknownErr)
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected deadline identity preserved, got %v", err)
+	}
+}
+
+func TestExecVerifierClassifiesProcessStartFailureAsUnknownVerdict(t *testing.T) {
 	t.Parallel()
 	outputPath := filepath.Join(t.TempDir(), "verification.log")
 	_, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
@@ -208,7 +233,14 @@ func TestExecVerifierClassifiesProcessStartFailureAsInfrastructureError(t *testi
 	}
 	var commandErr *VerificationCommandError
 	if errors.As(err, &commandErr) {
-		t.Fatalf("expected process-start failure to stay infrastructure error, got %+v", commandErr)
+		t.Fatalf("expected process-start failure not to become a command verdict, got %+v", commandErr)
+	}
+	var unknownErr *VerificationUnknownError
+	if !errors.As(err, &unknownErr) {
+		t.Fatalf("expected process-start failure to produce an unknown verdict, got %T %[1]v", err)
+	}
+	if unknownErr.Command != "printf never-started" || unknownErr.DiagnosticPath != outputPath {
+		t.Fatalf("unexpected unknown-verdict metadata: %+v", unknownErr)
 	}
 	if _, statErr := os.Stat(outputPath); !errors.Is(statErr, os.ErrNotExist) {
 		t.Fatalf("expected no retained artifact on process-start failure, stat err=%v", statErr)

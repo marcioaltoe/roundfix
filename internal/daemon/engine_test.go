@@ -262,6 +262,75 @@ func (verifier *engineInfrastructureVerifier) Verify(_ context.Context, req Veri
 	return VerifyResult{OutputPath: req.OutputPath}, verifier.err
 }
 
+type engineOutcomeVerifier struct {
+	err error
+}
+
+func (verifier engineOutcomeVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
+	return VerifyResult{OutputPath: req.OutputPath}, verifier.err
+}
+
+func TestVerificationUnknownCauseIsSetOnlyWhenNoVerdictWasObserved(t *testing.T) {
+	t.Parallel()
+	unknownErr := &VerificationUnknownError{
+		Command:        "make verify",
+		DiagnosticPath: "/tmp/verification.log",
+		Err:            errors.New("runner did not observe the command verdict"),
+	}
+
+	unknownOutcome, err := runVerificationOutcomeForTest(t, engineOutcomeVerifier{err: unknownErr})
+	if err != nil {
+		t.Fatalf("run unobserved Verification: %v", err)
+	}
+	if unknownOutcome.UnknownCause != unknownErr {
+		t.Fatalf("unknown cause = %#v, want %#v", unknownOutcome.UnknownCause, unknownErr)
+	}
+	if unknownOutcome.CommandFailure != nil {
+		t.Fatalf("unobserved Verification command failure = %#v, want nil", unknownOutcome.CommandFailure)
+	}
+
+	observedOutcome, err := runVerificationOutcomeForTest(t, engineOutcomeVerifier{})
+	if err != nil {
+		t.Fatalf("run observed Verification: %v", err)
+	}
+	if observedOutcome.UnknownCause != nil {
+		t.Fatalf("observed Verification unknown cause = %#v, want nil", observedOutcome.UnknownCause)
+	}
+}
+
+func TestVerificationUnknownCauseAndCommandFailureAreMutuallyExclusive(t *testing.T) {
+	t.Parallel()
+	commandErr := &VerificationCommandError{
+		Command:    "make verify",
+		OutputPath: "/tmp/verification.log",
+		Err:        errors.New("exit status 7"),
+	}
+
+	outcome, err := runVerificationOutcomeForTest(t, engineOutcomeVerifier{err: commandErr})
+	if err != nil {
+		t.Fatalf("run failed Verification: %v", err)
+	}
+	if outcome.CommandFailure != commandErr {
+		t.Fatalf("command failure = %#v, want %#v", outcome.CommandFailure, commandErr)
+	}
+	if outcome.UnknownCause != nil {
+		t.Fatalf("failed command unknown cause = %#v, want nil", outcome.UnknownCause)
+	}
+}
+
+func runVerificationOutcomeForTest(t *testing.T, verifier Verifier) (verificationAttemptOutcome, error) {
+	t.Helper()
+	engine := &Engine{deps: Dependencies{Verifier: verifier, Progress: &bytes.Buffer{}}}
+	return engine.runVerificationAttempt(context.Background(), verificationAttemptRequest{
+		Attempt:     1,
+		Commands:    []string{"make verify"},
+		ArtifactDir: t.TempDir(),
+		Publish: func(context.Context, string, map[string]any) error {
+			return nil
+		},
+	})
+}
+
 type engineStopAfterCommandFailureVerifier struct {
 	calls *[]string
 	store *store.Store
