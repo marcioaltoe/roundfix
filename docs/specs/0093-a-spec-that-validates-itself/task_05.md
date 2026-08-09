@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0093-a-spec-that-validates-itself
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -72,3 +72,83 @@ Any other path is out of scope; stop and fail the Task rather than widen it.
 - `_prd.md` → Goal 2.
 - `_techspec.md` → Build Order 5.
 - ADR-0081, ADR-0117.
+
+## Result
+
+Verification Feedback attempt 1 reported that the first declared check could
+not find `spec check` in the canonical PRD skill. The diagnostic artifact was
+inspected and contained no log body; the Daemon diagnostic supplied the failed
+command and exit status. The root cause was that the prior Agent turn stopped
+before making the authorized skill edit.
+
+Both authoring skills now finish their existing Report step by running
+`roundfix spec check <slug>` with their own `--stage` value. An error-level
+finding or checker execution failure blocks reporting and requires the author
+to repair the named artifact and re-run the command. The additions do not
+change the questions either skill asks or the content it decides.
+
+Each skill also bounds the meaning of a clean scoped result. The PRD stage
+names the TechSpec, Task Graph, commit-dependent, non-mechanical, and product
+judgment classes it does not decide. The TechSpec stage names the remaining
+Task Graph, commit-dependent, non-mechanical, and user-surface classes. Both
+retain omitted work in later authoring stages, the full unscoped sweep, or QA,
+and treat named skipped detectors as omissions rather than clean findings.
+
+Focused checks:
+
+- `rtk wc -c
+  /Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260809T180804Z_645ff4014195a5b6/verification/batch-003-attempt-1.log`
+  — exited `0` and reported `0` bytes; the artifact path was inspected without
+  copying a log body into this Result.
+- `rtk make skills-sync` — exited `0`; it regenerated the embedded skill
+  bundle from the canonical sources.
+- `rtk cmp -s .agents/skills/write-prd/SKILL.md
+  skills/write-prd/SKILL.md` and the equivalent TechSpec comparison — both
+  exited `0` after synchronization.
+- `rtk rg -n "roundfix spec check <slug> --stage|error-level finding|not full
+  Spec coverage|named skipped detectors" .agents/skills/write-prd/SKILL.md
+  .agents/skills/write-techspec/SKILL.md skills/write-prd/SKILL.md
+  skills/write-techspec/SKILL.md` — exited `0` and located the command,
+  blocking rule, and coverage boundary in both canonical and generated copies.
+- `rtk git diff --check -- .agents/skills/write-prd/SKILL.md
+  .agents/skills/write-techspec/SKILL.md skills/write-prd/SKILL.md
+  skills/write-techspec/SKILL.md
+  docs/specs/0093-a-spec-that-validates-itself/task_05.md` — exited `0` after
+  the final documentation edits.
+- `rtk git -c core.fsmonitor=false status --short --untracked-files=all` —
+  reported exactly the two canonical skills, their two generated copies, and
+  this Task file; no path outside the bounded list moved.
+
+Acceptance evidence:
+
+- Both skills instruct the author to run the stage-scoped checker before
+  reporting: the PRD Report step uses `--stage prd`, and the TechSpec Report
+  step uses `--stage techspec`.
+- Both state that an error-level finding blocks the report: each Report step
+  prohibits reporting while an error finding or checker execution failure
+  stands.
+- Both name what the stage does not cover: each clean-result paragraph lists
+  its later-stage, commit-dependent, non-mechanical, and judgment classes and
+  states where those checks remain.
+- Generated copies match their sources: both focused byte comparisons exited
+  `0` after the sanctioned synchronization.
+
+Standing-grant commit-message obligation for the Daemon-owned commit:
+
+```text
+docs: validate PRD and TechSpec authoring stages
+
+Performance: run registered file checks in each artifact's closing authoring
+step.
+Reliability: block on errors and execution failures; retain omitted classes in
+later stages, the full sweep, and QA.
+
+spec: 0093-a-spec-that-validates-itself / task_05
+```
+
+Follow-up outside this Task's slice: Task 02 records that the stage registry
+does not yet assign `SC-CITATION-UNSUPPORTED` to the PRD stage. This Task did
+not widen its protected-tooling allowlist; the unscoped sweep retains that
+detector until a separately bounded change registers it for authoring stages.
+
+The Daemon-owned `## Verification` commands were not run in this Agent turn.
