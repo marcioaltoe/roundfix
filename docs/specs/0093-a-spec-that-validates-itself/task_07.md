@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0093-a-spec-that-validates-itself
-status: failed
+status: pending
 type: qa
 complexity: medium
 ---
