@@ -28,14 +28,18 @@ what keeps a readiness surface from reporting an assignment it never made.
    whose effort has not been applied yet, and MUST NOT let it accept one whose
    model is wrong.
 5. MUST derive "this runtime defers effort" from one predicate so no second copy
-   of the runtime list can drift from the first.
+   of the runtime list can drift from the first, and that predicate MUST NOT
+   detect the runtime by catching the refusal error, because Task 03 removes
+   that error. `runtimeManagesOwnReasoning` does exactly that today and is
+   rewritten here, not left for Task 03 to discover.
 6. MUST re-record the coverage record in this Task's own commit if any test is
    renamed or removed.
 
 ## Subtasks
 
 - [ ] Add the encoding constant with the comment that distinguishes it.
-- [ ] Add the deferring-runtime predicate and use it in planning.
+- [ ] Add the deferring-runtime predicate, independent of the refusal error, and
+      use it in planning.
 - [ ] Select the encoding and fail closed on an unadvertised value.
 - [ ] Extend the effective-state check for the new encoding.
 - [ ] Edit the break-half characterization tests and declare the breaks.
@@ -48,6 +52,8 @@ what keeps a readiness surface from reporting an assignment it never made.
       `SelectionUnsupportedError` listing the advertised values.
 - [ ] A Codex selection with a non-empty effort still plans `independent`.
 - [ ] An `opencode` selection with an empty effort still plans `runtime_managed`.
+- [ ] No predicate in `internal/agent` decides that a runtime defers effort by
+      matching `ModelManagedReasoningError`.
 - [ ] The effective-state check accepts a `runtime_deferred` assignment before
       application and rejects one whose current model differs.
 
@@ -71,6 +77,7 @@ This Task may create or modify only:
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `go test ./internal/agent -count=1` — expected: exits 0.
 - `go test ./internal/agent -run 'RuntimeDeferred' -count=1 -v` — expected: exits 0 and names at least one test; `no tests to run` fails this Task.
+- `! grep -q 'ModelManagedReasoningError' internal/agent/selection_assignment.go` — expected: exits 0, proving the deferring predicate does not depend on the error Task 03 removes.
 - `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1` — expected: exits 0.
 - `grep -q 'SelectionEncodingRuntimeDeferred' internal/agent/selection_assignment.go` — expected: exits 0.
 

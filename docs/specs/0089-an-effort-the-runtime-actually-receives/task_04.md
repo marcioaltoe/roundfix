@@ -24,7 +24,10 @@ records what the system executed.
 2. MUST apply the requested effort after the warm-up and observe the effective
    value, failing the session when the observed value differs.
 3. MUST publish the observed effective effort as a Run Event so the evidence
-   outlives the call that checked it.
+   outlives the call that checked it. Run Event kinds are a closed enum in
+   `internal/runevent`; if the receipt needs a kind that does not exist, add it
+   there rather than overloading an existing one, and keep the existing
+   `agent-selection` stream category.
 4. MUST be idempotent per Agent Session: a session already warmed is not warmed
    again.
 5. MUST order the acpx commands ensure, warm-up prompt, effort set, then work
@@ -71,6 +74,10 @@ This Task may create or modify only:
 - `internal/agent/acpx_runner_test.go`
 - `internal/agent/acpx_session_effort_characterization_test.go`
 - `internal/agent/selection_assignment.go`
+- `internal/runevent/event.go`
+- `internal/runevent/selection.go`
+- `internal/runevent/stream.go`
+- `internal/runevent/stream_test.go`
 - `docs/references/coverage-record.json`
 - `docs/specs/0089-an-effort-the-runtime-actually-receives/task_04.md`
 
