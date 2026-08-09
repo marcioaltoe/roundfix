@@ -1221,7 +1221,7 @@ New managed block.
 <!-- setup-context-driven:end id=root.secondbrain -->
 `
 	before := []byte(authored + existing)
-	after := []byte(authored + existing + "\n" + added)
+	after := []byte(authored + existing + added)
 	writeTransactionFile(t, repository, relative, string(before), 0o644)
 
 	err := validateManagedRefreshPreservation(

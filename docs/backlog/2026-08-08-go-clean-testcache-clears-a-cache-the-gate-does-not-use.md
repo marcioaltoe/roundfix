@@ -33,7 +33,7 @@ Measured on 2026-08-08 during Spec 0088. Task 03 renamed a test the coverage
 record still named, which `TestCoverageEquivalence` is built to catch. The Task's
 gate ran `go clean -testcache && make verify` and reported:
 
-```
+```text
 make verify exit=0
 ok  	roundfix/internal/spec	(cached)
 ```

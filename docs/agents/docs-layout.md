@@ -8,7 +8,8 @@ that fits two folders goes to the one whose job it serves now — move it
 when its job changes (triaged evidence → spec is the normal flow).
 
 **Capture does not start here.** Every new observation is born in the
-Secondbrain's `inbox/roundfix/`, committed there at the moment of capture, and
+Secondbrain's inbox under the project namespace responsible for the fix,
+committed there at the moment of capture, and
 only reaches this repository once a session of this project triages it into a
 Finding or a Backlog Entry. See ADR-0095 and the mandatory clause in the
 generated section below. Writing a loose capture file straight into
@@ -22,7 +23,9 @@ Preflight was refused on 2026-08-06.
 | `docs/adr/` | Accepted decision records — `NNNN-kebab-slug.md`, 1–3 sentences each (context, decision, why). One numbering sequence for the repo's life. | Append-only. Numbers are never reused; superseding decisions name what they supersede. |
 | `docs/agents/` | Agent-facing usage guides: the files seeded by `setup-context-driven` plus repo-authored guides. `AGENTS.md`/`CLAUDE.md` hold only short pointers here, never rule bodies. | Seeded files are owned by the skill and regenerated on re-run; repo-authored guides are owned by the repo. |
 | `docs/design/` | Design artifacts: mockups, visual and interaction decisions, UI/TUI explorations, design-review notes. | Kept while the design is live; superseded explorations may be pruned or archived into the spec that consumed them. |
-| `docs/findings/` | Dated field reports **that Triage has already admitted** from the Secondbrain inbox: dogfood incidents, retrospectives, root-cause investigations. Never a capture destination — see the note above. Follow the template below. | Observations stay immutable: append root causes and Spec pointers; never rewrite what was observed. Before a Spec adopts a finding, record its `done` status and Spec link, then move it to `docs/specs/<slug>/references/`, so it leaves the findings tree. Git history at the old path remains the discovery trail. |
+| `docs/findings/` | Dated field reports **that Triage has already admitted** from the Secondbrain inbox: dogfood incidents, retrospectives, root-cause investigations. Never a capture destination — see the note above. Follow the template below. | Observations stay immutable: append root causes and Spec pointers; never rewrite what was observed. Before a Spec adopts a finding, record its status (`partial` for findings
+addressed in part, `deferred` for findings not implemented, `done` only
+when fully adopted) and Spec link, then move it to `docs/specs/<slug>/references/`, so it leaves the findings tree. Git history at the old path remains the discovery trail. |
 | `docs/handoffs/` | Session handoff documents: the state snapshot one working session leaves for the next. | Superseded by the next handoff; keep the recent few, prune the rest. |
 | `docs/references/` | Pointers to external resources, each with a one-line explanation of why it matters here. | Prune links that stop mattering. |
 | `docs/specs/` | The spec workflow tree: `NNNN-<slug>/` feature folders, `_archived/` for shipped specs, `_reviews/` for review-run artifacts. | Owned by the pipeline skills; status lives only in task files. |

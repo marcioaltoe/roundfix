@@ -224,7 +224,9 @@ that path.
 Managed refresh does not redistribute repository-authored rules; it preserves
 their exact bytes and regenerates only Baseline-managed regions. Profile changes
 and Baseline Readoption account for every existing repository rule before
-mutation. Roundfix segments the current carriers without changing their
+mutation.
+
+Roundfix segments the current carriers without changing their
 exact source bytes, then proposes one reviewed disposition for each segment:
 
 - move the exact bytes into a repository-owned block in the active semantic

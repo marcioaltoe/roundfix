@@ -67,6 +67,7 @@ func TestBaselineHumanResolvedManifestSkipsPromptsAndAnalyzer(t *testing.T) {
 	applyHumanBaselineFixturePlan(t, repo)
 	before := baselinePlanTestTree(t, repo)
 
+	forbiddenAnalyzer := &forbiddenBaselineSemanticAnalyzer{t: t}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := runBaselineHumanCommandWithIO(
@@ -77,7 +78,7 @@ func TestBaselineHumanResolvedManifestSkipsPromptsAndAnalyzer(t *testing.T) {
 		baselineHumanCommandIO{
 			input:            strings.NewReader("2\n"),
 			interactive:      true,
-			semanticAnalyzer: &forbiddenBaselineSemanticAnalyzer{t: t},
+			semanticAnalyzer: forbiddenAnalyzer,
 		},
 	)
 	if code != exitUnverified {
@@ -96,6 +97,9 @@ func TestBaselineHumanResolvedManifestSkipsPromptsAndAnalyzer(t *testing.T) {
 	if !reflect.DeepEqual(promptLabels, []string{"Final confirmation for Plan Digest "}) {
 		t.Fatalf("resolved human update prompts = %#v, want only final confirmation\n%s", promptLabels, stderr.String())
 	}
+	if forbiddenAnalyzer.called {
+		t.Error("semantic analyzer was called on resolved manifest path")
+	}
 	after := baselinePlanTestTree(t, repo)
 	if before != after {
 		t.Fatalf("declined human update changed repository bytes:\nbefore=%s\nafter=%s", before, after)
@@ -106,6 +110,10 @@ func TestBaselineHumanProfileChangeRemainsReachable(t *testing.T) {
 	t.Parallel()
 	repo := newHumanBaselineRepository(t)
 	applyHumanBaselineFixturePlan(t, repo)
+	// answers: change to "Decision area to revisit" (3), select
+	// "Change Baseline Profile" (1), confirm three "1" changes,
+	// decline two "2" re-ask confirmations, then answer "1" to
+	// every remaining prompt (10x) and decline recomputed Plan (2).
 	changeAnswers := []string{"3", "1", "1", "1", "2", "2"}
 	for range 10 {
 		changeAnswers = append(changeAnswers, "1")
@@ -131,6 +139,7 @@ func TestBaselineHumanProfileChangeRemainsReachable(t *testing.T) {
 		"Change Baseline Profile",
 		"Profile change requested",
 		"Rejected Plan revision accepted",
+		"go-cli-tui",
 	} {
 		if !strings.Contains(changePrompts.String()+changeReview.String(), want) {
 			t.Fatalf("profile-change route missing %q\nreview=%s\nprompts=%s", want, changeReview.String(), changePrompts.String())
@@ -180,13 +189,14 @@ func TestHumanBaselineProfileDigestDriftRemainsUpdate(t *testing.T) {
 
 	var review bytes.Buffer
 	var prompts bytes.Buffer
+	forbiddenAnalyzer := &forbiddenBaselineSemanticAnalyzer{t: t}
 	_, err = driveHumanBaselinePlanWithAnalyzers(
 		context.Background(),
 		repo,
 		&baselineHumanPrompt{reader: bufioReader(""), writer: &prompts},
 		&review,
 		nil,
-		&forbiddenBaselineSemanticAnalyzer{t: t},
+		forbiddenAnalyzer,
 		nil,
 	)
 	if err != nil {
@@ -195,6 +205,9 @@ func TestHumanBaselineProfileDigestDriftRemainsUpdate(t *testing.T) {
 	if labels := humanBaselinePromptLabels(prompts.String()); len(labels) != 0 {
 		t.Fatalf("digest-drift update prompts = %#v, want none\n%s", labels, prompts.String())
 	}
+	if forbiddenAnalyzer.called {
+		t.Error("semantic analyzer was called on digest-drift update path")
+	}
 }
 
 func TestHumanBaselinePromptsOnlyForManifestMissingDecision(t *testing.T) {
@@ -202,6 +215,8 @@ func TestHumanBaselinePromptsOnlyForManifestMissingDecision(t *testing.T) {
 	repo := newHumanBaselineRepository(t)
 	applyHumanBaselineFixturePlan(t, repo)
 	removeHumanBaselineManifestDecision(t, repo, "verification.gate")
+
+	forbiddenAnalyzer := &forbiddenBaselineSemanticAnalyzer{t: t}
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -213,7 +228,7 @@ func TestHumanBaselinePromptsOnlyForManifestMissingDecision(t *testing.T) {
 		baselineHumanCommandIO{
 			input:            strings.NewReader("\n2\n"),
 			interactive:      true,
-			semanticAnalyzer: &forbiddenBaselineSemanticAnalyzer{t: t},
+			semanticAnalyzer: forbiddenAnalyzer,
 		},
 	)
 	if code != exitUnverified {
@@ -226,6 +241,9 @@ func TestHumanBaselinePromptsOnlyForManifestMissingDecision(t *testing.T) {
 	}
 	if !reflect.DeepEqual(labels, want) {
 		t.Fatalf("missing-decision prompts = %#v, want %#v\n%s", labels, want, stderr.String())
+	}
+	if forbiddenAnalyzer.called {
+		t.Error("semantic analyzer was called on manifest-missing-decision path")
 	}
 }
 
@@ -1613,26 +1631,12 @@ func applyHumanBaselineFixturePlan(t *testing.T, repo string) {
 
 func removeHumanBaselineManifestDecision(t *testing.T, repo string, id string) {
 	t.Helper()
-	manifestPath := filepath.Join(repo, filepath.FromSlash(baselineSetupManifestPath))
-	data, err := os.ReadFile(manifestPath)
-	if err != nil {
-		t.Fatalf("read Setup Manifest: %v", err)
-	}
-	var manifest baseline.SetupManifest
-	if err := json.Unmarshal(data, &manifest); err != nil {
-		t.Fatalf("decode Setup Manifest: %v", err)
-	}
+	manifest := ReadBaselineSetupManifest(t, repo)
 	if _, ok := manifest.Decisions[id]; !ok {
 		t.Fatalf("Setup Manifest has no decision %q", id)
 	}
 	delete(manifest.Decisions, id)
-	data, err = json.MarshalIndent(manifest, "", "  ")
-	if err != nil {
-		t.Fatalf("encode Setup Manifest: %v", err)
-	}
-	if err := os.WriteFile(manifestPath, append(data, '\n'), 0o644); err != nil {
-		t.Fatalf("write Setup Manifest: %v", err)
-	}
+	WriteBaselineSetupManifest(t, repo, manifest)
 }
 
 func humanBaselineFixtureDecisions() []baseline.DecisionValue {
@@ -1721,7 +1725,8 @@ type countingBaselineSemanticAnalyzer struct {
 }
 
 type forbiddenBaselineSemanticAnalyzer struct {
-	t *testing.T
+	t      *testing.T
+	called bool
 }
 
 func (analyzer *forbiddenBaselineSemanticAnalyzer) Segment(
@@ -1729,7 +1734,8 @@ func (analyzer *forbiddenBaselineSemanticAnalyzer) Segment(
 	baseline.RuleSegmentationSnapshot,
 ) (baseline.RuleSegmentationProposal, error) {
 	analyzer.t.Helper()
-	analyzer.t.Fatal("semantic analyzer Segment called on resolved manifest path")
+	analyzer.called = true
+	analyzer.t.Error("semantic analyzer Segment called on resolved manifest path")
 	return baseline.RuleSegmentationProposal{}, nil
 }
 
@@ -1738,7 +1744,8 @@ func (analyzer *forbiddenBaselineSemanticAnalyzer) Classify(
 	baseline.AnalysisSnapshot,
 ) (baseline.ClassificationProposal, error) {
 	analyzer.t.Helper()
-	analyzer.t.Fatal("semantic analyzer Classify called on resolved manifest path")
+	analyzer.called = true
+	analyzer.t.Error("semantic analyzer Classify called on resolved manifest path")
 	return baseline.ClassificationProposal{}, nil
 }
 

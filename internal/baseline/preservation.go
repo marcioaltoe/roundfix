@@ -709,7 +709,11 @@ func classifyManagedRegions(
 	}
 	manifest, valid := parseManagedSetupManifest(manifestBytes)
 	if !valid {
-		return nil, nil, nil
+		return nil, []Finding{{
+			Code:    "baseline.preservation.managed-refresh.manifest.invalid",
+			Path:    manifestPath,
+			Message: "Setup Manifest is invalid; managed refresh requires a valid Setup Manifest with adoption markers",
+		}}, nil
 	}
 	sourceByPath := manifestArtifactsByPath(manifest.ManagedArtifacts)
 	var unrecorded []UnrecordedManagedRegion
@@ -717,17 +721,23 @@ func classifyManagedRegions(
 	for _, relative := range sortedKeys(sourceByPath) {
 		content, err := readOptionalRegular(root, relative)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("read managed carrier %q: %w", relative, err)
+		}
+		if content == nil {
+			findings = append(findings, Finding{
+				Code:    "baseline.preservation.managed-refresh.carrier.missing",
+				Path:    relative,
+				Message: fmt.Sprintf("manifest-managed carrier %q is absent; every managed carrier must be present for managed refresh", relative),
+			})
+			continue
 		}
 		entriesByID := make(map[string][]ReadoptionSourceEntry)
-		if content != nil {
-			for _, entry := range partitionRootSource(relative, content) {
-				if entry.Kind != "managed-block" {
-					continue
-				}
-				managedID, _ := entry.StructuralProvenance["managedId"].(string)
-				entriesByID[managedID] = append(entriesByID[managedID], entry)
+		for _, entry := range partitionRootSource(relative, content) {
+			if entry.Kind != "managed-block" {
+				continue
 			}
+			managedID, _ := entry.StructuralProvenance["managedId"].(string)
+			entriesByID[managedID] = append(entriesByID[managedID], entry)
 		}
 		for _, managedID := range sortedKeys(entriesByID) {
 			if len(entriesByID[managedID]) < 2 {

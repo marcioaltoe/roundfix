@@ -21,7 +21,7 @@ scratch repository whose `data.preferred` names
 naming the affected `data` category and the advertised catalog — and then the
 output continues:
 
-```
+```text
 close disposable Agent Session "roundfix-preflight-…": … No named session …
 for cwd … and agent opencode; recovery: rerun Agent Selection readiness after
 the Session can be closed; next: restore Agent Session cleanup

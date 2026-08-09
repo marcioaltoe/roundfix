@@ -2488,7 +2488,7 @@ func upsertManagedBlock(current string, artifact plannedArtifact) string {
 	if !strings.HasSuffix(current, "\n") {
 		current += "\n"
 	}
-	return current + "\n" + block
+	return current + block
 }
 
 func planContentIdentity(data []byte) string {
@@ -2531,7 +2531,7 @@ func validateManagedRefreshPreservation(
 func nonManagedRegionDigests(relative string, content []byte) []string {
 	var digests []string
 	for _, region := range partitionRootSource(relative, content) {
-		if region.Kind == "managed-block" || len(bytes.TrimSpace(region.SourceBytes)) == 0 {
+		if region.Kind == "managed-block" {
 			continue
 		}
 		digests = append(digests, region.Digest)

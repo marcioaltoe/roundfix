@@ -98,7 +98,7 @@ guard read a deliberate retirement as a regression.
 
 **The repair is already applied**, using the flag the QA named:
 `go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record`.
-After `go clean -testcache`, `make verify` exits 0.
+After `GOCACHE="$PWD/.gocache" go clean -testcache`, `make verify` exits 0.
 
 **What remains for 0084**: re-run the authored QA gate so its verdict flips.
 ADR-0097 allows carrying rows forward on declared unmoved evidence, so only row
@@ -106,7 +106,7 @@ ADR-0097 allows carrying rows forward on declared unmoved evidence, so only row
 still reads `verdict: fail`; both are accurate until the gate runs again.
 
 A caution for whoever re-runs it: **`make verify` reported exit 0 on a stale
-test cache** while the underlying test failed. Run `go clean -testcache` first,
+test cache** while the underlying test failed. Run `GOCACHE="$PWD/.gocache" go clean -testcache` first,
 or run the specific test with `-count=1`. This is a variant of the defect Spec
 0083 exists to close and it is not closed.
 
@@ -208,7 +208,7 @@ mechanically clean under `roundfix spec check`; the clause is not enforced by an
 
 ## State to reproduce
 
-```
+```text
 branch: ma/specs-0082-0083   (19 commits ahead, unpushed)
 PR:     #143 OPEN — "feat: a Baseline update that reads the manifest, and a gate that can say no"
 gate:   make verify exits 0 after go clean -testcache

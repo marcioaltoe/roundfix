@@ -2521,7 +2521,11 @@ func TestACPXRunCancellationCommandFailuresWarnAndContinue(t *testing.T) {
 				_, err := harness.runWithSink(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1", promptStarted)
 				resultCh <- err
 			}()
-			<-promptStarted.done
+			select {
+			case <-promptStarted.done:
+			case <-time.After(5 * time.Second):
+				t.Fatalf("timed out waiting for prompt start event; Agent did not start within 5s")
+			}
 			cancel()
 			harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
 			if !clock.waitForTimer(t, 0).Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
@@ -3981,41 +3985,41 @@ func runFakeACPXProcess() int {
 	if path := os.Getenv(fakeACPXArgsPath); path != "" {
 		payload, err := json.Marshal(args)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "marshal args: %v\n", err)
+			fmt.Fprintf(os.Stderr, "marshal args: %v\n", err)
 			return 2
 		}
 		if err := os.WriteFile(path, payload, 0o644); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "write args: %v\n", err)
+			fmt.Fprintf(os.Stderr, "write args: %v\n", err)
 			return 2
 		}
 	}
 	if path := os.Getenv(fakeACPXInvokes); path != "" {
 		if err := appendFakeACPXInvocation(path, args); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "append invocation: %v\n", err)
+			fmt.Fprintf(os.Stderr, "append invocation: %v\n", err)
 			return 2
 		}
 	}
 	if path := os.Getenv(fakeACPXCodexPath); path != "" {
 		if err := appendFakeACPXString(path, os.Getenv(codexPathEnv)); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "append codex path: %v\n", err)
+			fmt.Fprintf(os.Stderr, "append codex path: %v\n", err)
 			return 2
 		}
 	}
 	if path := os.Getenv(fakeACPXPromptPath); path != "" && commandKey == "prompt" {
 		prompt, err := io.ReadAll(os.Stdin)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "read stdin: %v\n", err)
+			fmt.Fprintf(os.Stderr, "read stdin: %v\n", err)
 			return 2
 		}
 		if err := os.WriteFile(path, prompt, 0o644); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "write prompt: %v\n", err)
+			fmt.Fprintf(os.Stderr, "write prompt: %v\n", err)
 			return 2
 		}
 	}
 	if commandKey == "cancel" {
 		if path := os.Getenv(fakeACPXCanceled); path != "" {
 			if err := os.WriteFile(path, []byte("canceled\n"), 0o644); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "write cancel marker: %v\n", err)
+				fmt.Fprintf(os.Stderr, "write cancel marker: %v\n", err)
 				return 2
 			}
 		}
@@ -4023,7 +4027,7 @@ func runFakeACPXProcess() int {
 	if commandKey == "sessions close" {
 		if path := os.Getenv(fakeACPXClosed); path != "" {
 			if err := os.WriteFile(path, []byte("closed\n"), 0o644); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "write close marker: %v\n", err)
+				fmt.Fprintf(os.Stderr, "write close marker: %v\n", err)
 				return 2
 			}
 		}
@@ -4031,7 +4035,7 @@ func runFakeACPXProcess() int {
 	if blockCommand := os.Getenv(fakeACPXBlockCmd); blockCommand != "" && commandKey == blockCommand {
 		if path := os.Getenv(fakeACPXStarted); path != "" {
 			if err := os.WriteFile(path, []byte("started\n"), 0o644); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "write started marker: %v\n", err)
+				fmt.Fprintf(os.Stderr, "write started marker: %v\n", err)
 				return 2
 			}
 		}
@@ -4042,14 +4046,14 @@ func runFakeACPXProcess() int {
 	if commandKey == "prompt" && os.Getenv(fakeACPXBlock) == "1" {
 		if path := os.Getenv(fakeACPXStarted); path != "" {
 			if err := os.WriteFile(path, []byte("started\n"), 0o644); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "write started marker: %v\n", err)
+				fmt.Fprintf(os.Stderr, "write started marker: %v\n", err)
 				return 2
 			}
 		}
 		if summary := os.Getenv(fakeACPXStartEvent); summary != "" {
 			update := `{"sessionId":"fake","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":` + strconv.Quote(summary) + `}}}`
 			if _, err := io.WriteString(os.Stdout, acpxUpdateLine(update)); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "write prompt-started Run Event: %v\n", err)
+				fmt.Fprintf(os.Stderr, "write prompt-started Run Event: %v\n", err)
 				return 2
 			}
 		}
@@ -4057,7 +4061,7 @@ func runFakeACPXProcess() int {
 			if canceled := os.Getenv(fakeACPXCanceled); canceled != "" {
 				if _, err := os.Stat(canceled); err == nil && os.Getenv(fakeACPXExitCancel) == "1" {
 					if err := writeFakeACPXPromptCompletion(); err != nil {
-						_, _ = fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
+						fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
 						return 2
 					}
 					return 130
@@ -4066,7 +4070,7 @@ func runFakeACPXProcess() int {
 			if closed := os.Getenv(fakeACPXClosed); closed != "" {
 				if _, err := os.Stat(closed); err == nil {
 					if err := writeFakeACPXPromptCompletion(); err != nil {
-						_, _ = fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
+						fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
 						return 2
 					}
 					return 130
@@ -4080,7 +4084,7 @@ func runFakeACPXProcess() int {
 	stderrByCommand := fakeACPXStringMap(os.Getenv(fakeACPXStderrBy))
 	if commandKey == "prompt" {
 		if err := writeFakeACPXThoughtStream(os.Getenv(fakeACPXThoughtLen)); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "write thought stream: %v\n", err)
+			fmt.Fprintf(os.Stderr, "write thought stream: %v\n", err)
 			return 2
 		}
 	}
@@ -4097,7 +4101,7 @@ func runFakeACPXProcess() int {
 	if rawExitCode := os.Getenv(fakeACPXExitCode); rawExitCode != "" {
 		exitCode, err := strconv.Atoi(rawExitCode)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "parse exit code: %v\n", err)
+			fmt.Fprintf(os.Stderr, "parse exit code: %v\n", err)
 			return 2
 		}
 		return exitCode

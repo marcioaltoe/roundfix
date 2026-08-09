@@ -114,7 +114,7 @@ type ManifestInput struct {
 
 // ResolveManifestInput reads docs/agents/setup-context.json and resolves it
 // against the current catalog. It never prompts and never writes.
-func ResolveManifestInput(root string, catalog *Catalog) (ManifestInput, error) {
+func ResolveManifestInput(root string, catalog *Catalog) (input ManifestInput, err error) {
 	if catalog == nil {
 		return ManifestInput{}, errors.New("resolve Setup Manifest input: catalog is required")
 	}
@@ -126,7 +126,15 @@ func ResolveManifestInput(root string, catalog *Catalog) (ManifestInput, error) 
 	if err != nil {
 		return ManifestInput{}, fmt.Errorf("open repository root for Setup Manifest input: %w", err)
 	}
-	defer anchored.Close()
+	defer func() {
+		if closeErr := anchored.Close(); closeErr != nil {
+			if err == nil {
+				err = closeErr
+			} else {
+				err = errors.Join(err, closeErr)
+			}
+		}
+	}()
 
 	_, err = anchored.Lstat(filepath.FromSlash(manifestPath))
 	if errors.Is(err, fs.ErrNotExist) {
@@ -160,7 +168,7 @@ func ResolveManifestInput(root string, catalog *Catalog) (ManifestInput, error) 
 		)
 	}
 
-	input := ManifestInput{
+	input = ManifestInput{
 		ProfileID:    manifest.Profile,
 		Decisions:    []DecisionValue{},
 		NewDecisions: []DecisionSuggestion{},

@@ -554,11 +554,11 @@ func TestBaselineUpdateUnresolvedProfileDiagnosis(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			repository := newBaselineUpdateRepository(t)
-			manifest := readBaselineUpdateManifest(t, repository)
+			manifest := ReadBaselineSetupManifest(t, repository)
 			manifest.Profile = test.profileID
 			manifest.ProfileDigest = "sha256:" + strings.Repeat("0", 64)
 			manifest.Generator.Baseline = "baseline." + test.profileID + "-" + baseline.ManifestVersion
-			writeBaselineUpdateManifest(t, repository, manifest)
+			WriteBaselineSetupManifest(t, repository, manifest)
 
 			result, stdout, stderr, code := runBaselineUpdateTestCommand(
 				t,
@@ -854,7 +854,7 @@ func newFleetStructuralClauseRepository(t *testing.T) string {
 		t.Fatalf("apply structural-clause adoption plan: %v", err)
 	}
 
-	manifest := readBaselineUpdateManifest(t, repository)
+	manifest := ReadBaselineSetupManifest(t, repository)
 	manifest.CatalogDigest = "sha256:" + strings.Repeat("0", 64)
 	removed := 0
 	touched := make(map[string]struct{})
@@ -881,7 +881,7 @@ func newFleetStructuralClauseRepository(t *testing.T) string {
 	for path := range touched {
 		updateFleetManifestArtifactDigest(t, repository, &manifest, path)
 	}
-	writeBaselineUpdateManifest(t, repository, manifest)
+	WriteBaselineSetupManifest(t, repository, manifest)
 	commitBaselinePlanTestRepository(t, repository)
 	return repository
 }
@@ -922,11 +922,11 @@ func updateFleetManifestArtifactDigest(
 func newFleetUnresolvedProfileRepository(t *testing.T) string {
 	t.Helper()
 	repository := newBaselineUpdateRepository(t)
-	manifest := readBaselineUpdateManifest(t, repository)
+	manifest := ReadBaselineSetupManifest(t, repository)
 	manifest.Profile = "oraculum-backend"
 	manifest.ProfileDigest = "sha256:" + strings.Repeat("0", 64)
 	manifest.Generator.Baseline = "baseline.oraculum-backend-" + baseline.ManifestVersion
-	writeBaselineUpdateManifest(t, repository, manifest)
+	WriteBaselineSetupManifest(t, repository, manifest)
 	commitBaselinePlanTestRepository(t, repository)
 	return repository
 }
@@ -1215,7 +1215,7 @@ func newBaselineUpdateRepository(t *testing.T) string {
 func staleBaselineUpdateRepository(t *testing.T) string {
 	t.Helper()
 	repository := newBaselineUpdateRepository(t)
-	manifest := readBaselineUpdateManifest(t, repository)
+	manifest := ReadBaselineSetupManifest(t, repository)
 	manifest.CatalogDigest = "sha256:" + strings.Repeat("0", 64)
 
 	artifactIndex := -1
@@ -1250,7 +1250,7 @@ func staleBaselineUpdateRepository(t *testing.T) string {
 	}
 	sum := sha256.Sum256([]byte(staleBody))
 	manifest.ManagedArtifacts[artifactIndex].Digest = hex.EncodeToString(sum[:])
-	writeBaselineUpdateManifest(t, repository, manifest)
+	WriteBaselineSetupManifest(t, repository, manifest)
 	commitBaselinePlanTestRepository(t, repository)
 	return repository
 }
@@ -1264,7 +1264,7 @@ func unrecordedBaselineUpdateRepository(t *testing.T, removedLines []string) str
 	)
 
 	if len(removedLines) == 0 {
-		manifest := readBaselineUpdateManifest(t, repository)
+		manifest := ReadBaselineSetupManifest(t, repository)
 		found := false
 		for index := range manifest.ManagedArtifacts {
 			artifact := &manifest.ManagedArtifacts[index]
@@ -1277,7 +1277,7 @@ func unrecordedBaselineUpdateRepository(t *testing.T, removedLines []string) str
 		if !found {
 			t.Fatalf("Setup Manifest has no managed region %s:%s", carrierPath, managedID)
 		}
-		writeBaselineUpdateManifest(t, repository, manifest)
+		WriteBaselineSetupManifest(t, repository, manifest)
 	} else {
 		path := filepath.Join(repository, filepath.FromSlash(carrierPath))
 		content, err := os.ReadFile(path)
@@ -1301,19 +1301,19 @@ func unrecordedBaselineUpdateRepository(t *testing.T, removedLines []string) str
 func incompleteBaselineUpdateRepository(t *testing.T, decisionID string) string {
 	t.Helper()
 	repository := newBaselineUpdateRepository(t)
-	manifest := readBaselineUpdateManifest(t, repository)
+	manifest := ReadBaselineSetupManifest(t, repository)
 	if _, exists := manifest.Decisions[decisionID]; !exists {
 		t.Fatalf("adopted fixture manifest has no decision %q", decisionID)
 	}
 	delete(manifest.Decisions, decisionID)
-	writeBaselineUpdateManifest(t, repository, manifest)
+	WriteBaselineSetupManifest(t, repository, manifest)
 	commitBaselinePlanTestRepository(t, repository)
 	return repository
 }
 
-func readBaselineUpdateManifest(t *testing.T, repository string) baseline.SetupManifest {
+func ReadBaselineSetupManifest(t *testing.T, repository string) baseline.SetupManifest {
 	t.Helper()
-	path := filepath.Join(repository, "docs", "agents", "setup-context.json")
+	path := filepath.Join(repository, filepath.FromSlash(baselineSetupManifestPath))
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read Setup Manifest: %v", err)
@@ -1325,14 +1325,14 @@ func readBaselineUpdateManifest(t *testing.T, repository string) baseline.SetupM
 	return manifest
 }
 
-func writeBaselineUpdateManifest(t *testing.T, repository string, manifest baseline.SetupManifest) {
+func WriteBaselineSetupManifest(t *testing.T, repository string, manifest baseline.SetupManifest) {
 	t.Helper()
 	data, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
 		t.Fatalf("encode Setup Manifest: %v", err)
 	}
 	data = append(data, '\n')
-	path := filepath.Join(repository, "docs", "agents", "setup-context.json")
+	path := filepath.Join(repository, filepath.FromSlash(baselineSetupManifestPath))
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		t.Fatalf("write Setup Manifest: %v", err)
 	}

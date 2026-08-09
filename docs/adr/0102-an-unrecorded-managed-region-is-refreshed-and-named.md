@@ -16,7 +16,9 @@ the Baseline, and proposing a change to it is an Inbox Entry to the Baseline's
 owner rather than a local edit. What was wrong was not the replacement but the
 silence around it. An unrecorded managed region is therefore refreshed, and the
 presented plan names it by path and managed identity and lists every line on
-disk that the refreshed rendering does not reproduce, so approval is given with
+disk that the refreshed rendering does not reproduce, up to the configured limit
+(50), recording in RemovedLinesTruncated how many additional lines were
+suppressed, so approval is given with
 the replacement in view; the existing Plan Digest confirmation remains the only
 gate. Blocking was rejected because it makes the first update of every
 pre-existing repository unrecoverable, and refreshing silently was rejected

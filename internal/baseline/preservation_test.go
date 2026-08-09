@@ -67,7 +67,8 @@ func TestManagedRefreshPlanNeedsNoClassificationInputOrBackup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("plan managed refresh preservation: %v", err)
 	}
-	if plan.State != PreservationStateReady ||
+	if plan.State != PreservationStateBlocked ||
+		!hasRepositoryFinding(plan.Findings, "baseline.preservation.managed-refresh.manifest.invalid", "docs/agents/setup-context.json") ||
 		len(plan.SourceBaseline.Entries) != 0 ||
 		plan.DecisionSkeleton != nil ||
 		len(plan.Backups) != 0 {

@@ -72,6 +72,7 @@ type baselineUpdateSkillsDependencies struct {
 type baselineUpdateResult struct {
 	SchemaVersion            string                               `json:"schemaVersion"`
 	Operation                string                               `json:"operation"`
+	OK                       bool                                 `json:"ok"`
 	State                    string                               `json:"state"`
 	Category                 string                               `json:"category,omitempty"`
 	Message                  string                               `json:"message,omitempty"`
@@ -387,12 +388,13 @@ func runBaselineUpdateSkillsStageWith(
 		result.Status = baselineUpdateSkillsFailed
 		return result, fmt.Errorf("resolve repository root for skills refresh: %w", err)
 	}
-	if _, err := dependencies.install(ctx, roundskills.InstallRequest{
+	_, installErr := dependencies.install(ctx, roundskills.InstallRequest{
 		Target:     "project",
 		ProjectDir: root,
-	}); err != nil {
+	})
+	if installErr != nil {
 		result.Status = baselineUpdateSkillsFailed
-		return result, fmt.Errorf("install binary-carried Roundfix skills: %w", err)
+		return result, fmt.Errorf("install binary-carried Roundfix skills: %w", installErr)
 	}
 	result.Installed = append(result.Installed, dependencies.ownedNames()...)
 	sort.Strings(result.Installed)
@@ -598,6 +600,7 @@ func writeBaselineUpdateOutcome(
 	stdout io.Writer,
 	stderr io.Writer,
 ) int {
+	result.OK = exit == exitOK
 	if err := writeBaselineUpdateResult(result, jsonOutput, stdout); err != nil {
 		fmt.Fprintf(stderr, "%s: baseline update output failed: %v\n", app.Name, err)
 		return exitRunFailed
