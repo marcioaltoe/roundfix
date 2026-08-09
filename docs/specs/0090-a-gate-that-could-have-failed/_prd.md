@@ -43,12 +43,29 @@ text, never on a demonstration that it can fail.
 
 ## Project Constraints
 
-| Constraint              | Applicability | Reason and source |
-| ----------------------- | ------------- | ----------------- |
-| Identifier strategy     | Not applicable | This Spec adds no persisted entity and no new identifier; it constrains when existing Verification commands run. Source: `docs/agents/domain.md`. |
-| Authentication and HTTP | Not applicable | Entirely local: Task Verification runs through the Daemon's own command runner and reaches no network surface. Source: `docs/agents/backend.md`. |
-| Active ADR obligations  | Applicable | ADR-0083 makes `make verify` the only authoritative gate, so a non-deterministic result is an ADR-level defect, not a test annoyance. ADR-0091 keeps the authored QA gate before any Pull Request, which is what caught this class late rather than early. Source: `docs/agents/domain.md`. |
-| Tooling authority       | Applicable, not yet granted | Any change to `Makefile`, to CI workflow files, or to a skill's authored Verification contract is protected tooling and needs express maintainer authorization naming exact bounded files before decomposition. Source: `docs/agents/agent-instructions.md`. |
+- Identifier strategy: not applicable — this Spec adds no persisted entity and
+  no new identifier; it constrains when existing Task Verification commands run.
+  Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — entirely local. Task Verification
+  runs through the Daemon's own command runner and reaches no network surface.
+  Source: `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0083 makes `make verify` the only
+  authoritative gate, so a non-deterministic result from it is an ADR-level
+  defect rather than a test annoyance. ADR-0091 keeps the authored QA gate
+  before any Pull Request exists, which is the reason this class of defect was
+  caught at a gate rather than in review, and this Spec moves it earlier still
+  without displacing that gate. ADR-0096 already establishes that the QA gate
+  proves machine facts before it spends an Agent turn; this Spec is that same
+  principle applied one level down, to a Task's own Verification, and must not
+  contradict it. ADR-0104 requires an acceptance row resting on evidence this
+  Spec did not author. Source: `docs/agents/domain.md`.
+- Tooling authority: not applicable — the mechanism proposed here lives in the
+  Daemon's own command runner and Task dispatch, which are ordinary source
+  rather than protected tooling. Should the design require a `Makefile`, CI
+  workflow, or authored skill-contract change, that mutation is protected and
+  needs its own express maintainer authorization with exact bounded files before
+  decomposition; none is claimed by this PRD.
+  Source: `docs/agents/agent-instructions.md`.
 
 ## Goals
 
