@@ -1,5 +1,0 @@
----
-status: active
----
-
-# Ordinary failure

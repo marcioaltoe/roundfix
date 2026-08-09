@@ -1,5 +1,0 @@
----
-status: active
----
-
-# Unknown control

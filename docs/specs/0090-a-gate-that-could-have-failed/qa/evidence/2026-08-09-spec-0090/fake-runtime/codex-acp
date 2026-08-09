@@ -1,2 +1,0 @@
-#!/bin/sh
-printf '%s\n' '@agentclientprotocol/codex-acp 1.1.5'

@@ -172,6 +172,10 @@ _Avoid_: Model router, benchmark policy, automatic selection
 The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun.
 _Avoid_: Dynamic fallback, silent model switch, catalog probe winner
 
+**Negative Control**:
+The defect a Task declares its Verification must catch, named in the Task's own `## Negative Control` section and recorded beside its outcome. It is authored rather than synthesised, because manufacturing one means mutating the repository under test. A Task declaring none is recorded as having none, which is a weaker gate stated honestly.
+_Avoid_: Failing test, mutation, sanity check
+
 **Vacuous Verification**:
 The Run Event classification (`verification_vacuous`) recorded when a Task's Verification command exits zero against the tree as it stands before the Agent runs. A command that passes before the work happened cannot be evidence that the work happened, so the Task is refused at dispatch with the offending command named and no Agent turn spent.
 _Avoid_: Weak test, trivial gate, false green
