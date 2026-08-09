@@ -22,9 +22,12 @@ graph:
     - id: task_06
       file: task_06.md
       needs: []
+    - id: task_08
+      file: task_08.md
+      needs: [task_03]
     - id: task_07
       file: task_07.md
-      needs: [task_04, task_05, task_06]
+      needs: [task_04, task_05, task_06, task_08]
 ---
 
 # Tasks — A gate that could have failed
@@ -37,9 +40,10 @@ graph:
 | task_04 | Publish the probe's finding where a reader can see it    | backend | medium     | task_03                   |
 | task_05 | Carry the negative control a Task declares               | backend | medium     | task_01                   |
 | task_06 | Source every wait budget from its shared constant        | test    | low        | —                         |
-| task_07 | Run the final QA gate                                    | qa      | high       | task_04, task_05, task_06 |
+| task_08 | Give the CLI fixtures gates that can fail                | test    | medium     | task_03                   |
+| task_07 | Run the final QA gate                                    | qa      | high       | task_04, task_05, task_06, task_08 |
 
-Waves: 1 → task_01, task_06 · 2 → task_02, task_05 · 3 → task_03 · 4 → task_04 · 5 → task_07
+Waves: 1 → task_01, task_06 · 2 → task_02, task_05 · 3 → task_03 · 4 → task_04 · 5 → task_08 · 6 → task_07
 
 The two parallel waves are file-disjoint by construction. Wave 1 splits
 `internal/daemon` (task_01) from `internal/agent` and `internal/store`
@@ -56,3 +60,9 @@ not yet produce.
 From task_03 onward this Spec is subject to its own mechanism — task_04's
 Verification is probed by the code task_03 introduces. That is intended, and it
 is the cheapest possible acceptance evidence for the feature.
+
+Task 08 is corrective, added on 2026-08-09 after the gate's F-002: the probe
+Task 03 introduced is universal dispatch behaviour, and its bounded scope
+covered daemon tests only, so 66 CLI fixtures declaring `true` as their gate
+were refused. The probe is right; the fixtures were asserting journeys they did
+not exercise.
