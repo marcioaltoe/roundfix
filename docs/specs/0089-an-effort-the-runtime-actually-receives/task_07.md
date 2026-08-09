@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0089-an-effort-the-runtime-actually-receives
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -65,3 +65,33 @@ This Task may create or modify only:
 - `_techspec.md` → Build Order 7.
 - `docs/agents/specific-repository.md` → the durable-knowledge-flows-upstream HARD RULE.
 - ADR-0108.
+
+## Result
+
+The model selection reference now records the four OpenRouter candidates'
+advertised effort ranges and measured opening values. It identifies the three
+models that open at the floor, dates the snapshot, names the measured runtime
+and adapter versions, and replaces the superseded refusal with Roundfix's
+session warm-up contract and its ADR-0108 citation.
+
+Pre-change signal:
+
+- `rtk rg -n 'OpenCode reasoning effort|Roundfix therefore treats|ADR-0108|2026-08-09' docs/references/model-selection.md` — returned only the superseded heading and the statement that Roundfix treated OpenCode as model-managed; the durable reference contained neither the 2026-08-09 snapshot nor an ADR-0108 citation.
+
+Focused checks after the documentation edit:
+
+- `rtk rg -n '2026-08-09|OpenCode 1\.18\.15|acpx 0\.13\.0|openrouter/x-ai/grok-4\.5|openrouter/moonshotai/kimi-k3|openrouter/deepseek/deepseek-v4-flash-0731|openrouter/deepseek/deepseek-v4-pro|Three of four candidates|ADR-0108' docs/references/model-selection.md` — exited 0 and returned the dated/versioned snapshot, all four candidate rows, the three-of-four observation, and the ADR citation.
+- `rtk rg -n 'model-managed reasoning runtime|refuses any non-empty|docs/specs/' docs/references/model-selection.md` — exited 1 with no matches, confirming that neither the superseded refusal nor a Spec-directory path remains.
+- `rtk git -c core.fsmonitor=false diff --check` — exited 0.
+
+Acceptance evidence:
+
+- Criterion 1: the focused positive search returned all four candidate rows; their recorded defaults are `low` for `grok-4.5`, `kimi-k3`, and `deepseek-v4-flash-0731`, and `high` for `deepseek-v4-pro`.
+- Criterion 2: the same search returned the statement that three of four candidates open at the floor of their advertised range.
+- Criterion 3: the same search returned the session warm-up contract's ADR-0108 citation.
+- Criterion 4: the focused absence search found neither the model-managed claim nor the non-empty-effort refusal.
+- Criterion 5: the focused absence search found no `docs/specs/` path in the durable reference.
+
+No follow-up work was found inside this Task's slice. The commands authored
+under `## Verification` were not run; Daemon Verification remains the
+settlement boundary.
