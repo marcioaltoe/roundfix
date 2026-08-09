@@ -42,6 +42,26 @@ authoritative source. The generated copies under `skills/` are rewritten by
 `make skills-sync`, and derived Baseline pins by `make baseline-digests`; both
 are sanctioned fallout under ADR-0081, not separate targets.
 
+## Superseding selection — 2026-08-09
+
+Later the same day, after the Secondbrain's daily pricing monitoring was read,
+the maintainer replaced the selection this grant names:
+
+> No lugar do deepseek v4 pro, pelo estudo que o secondbrain fez, é melhor usar
+> o deepseek v4 flash.
+
+The authorized `.roundfixrc.yml` selection is therefore
+`openrouter/deepseek/deepseek-v4-flash-0731` with `reasoning_effort: max`, not
+`openrouter/deepseek/deepseek-v4-pro` with `reasoning_effort: xhigh`. The
+bounded paths and the purpose are unchanged; only the value the maintainer chose
+inside the already-authorized `profiles` section moved. The reason is recorded
+in `docs/references/model-selection.md`: Pro's lower price is a 93%-off
+promotion over a $0.4350 and $0.8700 base, while Flash bills $0.09 and $0.18
+with no discount to lose.
+
+This paragraph was added after the commit it describes, which is a deviation
+from the choreography stated below. Recorded rather than smoothed over.
+
 ## Bounded by purpose
 
 This grant covers the OpenCode reasoning-effort contract and the profile that
