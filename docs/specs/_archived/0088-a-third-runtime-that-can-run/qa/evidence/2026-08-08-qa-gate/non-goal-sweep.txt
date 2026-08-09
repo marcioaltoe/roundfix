@@ -1,0 +1,26 @@
+== catalog/picker/TUI files touched by spec commits (expect none):
+(exit 0)
+
+== fallback.go diff in 4f3b0fcb:
+commit 4f3b0fcb33b37d6b12533910d7212e82253ff181
+Author: Marcio Altoe <marcio.altoe@gmail.com>
+Date:   Sat Aug 8 19:14:03 2026 -0300
+
+    fix: make opencode reasoning effort model-managed
+    
+    A reasoning effort cannot reach an OpenCode session before its first prompt: the
+    adapter answers ACP -32602 because the live agent still sits on the runtime
+    default and advertises no effort option. Configuration and runtime validation
+    now refuse a non-empty effort on that runtime and name the empty value as the
+    repair, so the proof and the Run both skip the config set that cannot succeed.
+    
+    Splits the empty-effort proof into two encodings. model_managed keeps requiring
+    an adapter that advertises no reasoning control; runtime_managed proves against
+    a runtime whose advertised control Roundfix declines to assign, which is the
+    measured OpenCode shape. Without the split an empty-effort OpenCode selection
+    planned and then failed its own effective-state check.
+    
+    Claude-Session: https://claude.ai/code/session_01AVUapLHwqziBVm8xc2hMMn
+
+== any usage/cost-recording files touched (expect none):
+(exit 0)

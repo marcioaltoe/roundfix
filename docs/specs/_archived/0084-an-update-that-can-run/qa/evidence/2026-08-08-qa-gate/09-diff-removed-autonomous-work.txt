@@ -1,0 +1,1 @@
+frontend-dominant work uses `claude opus 5 high` when the Task Graph routes that

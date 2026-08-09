@@ -18,6 +18,16 @@ const (
 	SelectionEncodingIndependent  = "independent"
 	SelectionEncodingModelVariant = "model_variant"
 	SelectionEncodingModelManaged = "model_managed"
+	// SelectionEncodingRuntimeDeferred is a non-empty effort on a runtime that
+	// cannot accept one before its session's first prompt: Preflight proves it
+	// advertised, the Run proves it applied. See ADR-0108.
+	SelectionEncodingRuntimeDeferred = "runtime_deferred"
+	// SelectionEncodingRuntimeManaged is an empty reasoning effort on an ACP
+	// Runtime whose reasoning Roundfix declines to control. It differs from
+	// model_managed in what the adapter may advertise: model_managed requires
+	// the absence of a reasoning option, while a runtime-managed runtime may
+	// advertise one that Roundfix deliberately never assigns. See ADR-0106.
+	SelectionEncodingRuntimeManaged = "runtime_managed"
 
 	SelectionProofStatusProven = "proven"
 )
@@ -288,6 +298,20 @@ func PlanSelectionAssignment(runtime RuntimeSpec, capabilities SelectionCapabili
 		}
 		assignment.AdapterModel = base.AdapterValue
 		assignment.Encoding = SelectionEncodingModelManaged
+		if runtimeDefersReasoningEffort(runtime) {
+			assignment.Encoding = SelectionEncodingRuntimeManaged
+		}
+		return assignment, nil
+	}
+
+	if runtimeDefersReasoningEffort(runtime) {
+		if !hasBase || capabilities.ReasoningOption == nil || !containsCapabilityValue(capabilities.ReasoningOption.Values, assignment.ReasoningEffort) {
+			return SelectionAssignment{}, unsupportedSelection(SelectionReasoningControlNotAdvertised, assignment, capabilities)
+		}
+		assignment.AdapterModel = base.AdapterValue
+		assignment.ReasoningKey = capabilities.ReasoningOption.ID
+		assignment.ReasoningValue = assignment.ReasoningEffort
+		assignment.Encoding = SelectionEncodingRuntimeDeferred
 		return assignment, nil
 	}
 
@@ -484,9 +508,41 @@ func selectionStateMatches(assignment SelectionAssignment, state SelectionCapabi
 		return model.ReasoningEffort == assignment.ReasoningEffort
 	case SelectionEncodingModelManaged:
 		return model.ModelManaged && model.ReasoningEffort == "" && state.ReasoningOption == nil
+	case SelectionEncodingRuntimeManaged:
+		// The adapter may advertise a reasoning option here. Roundfix declines
+		// to assign one on this runtime, so whatever value the option carries
+		// is the Agent Model's own and is not proof-relevant. See ADR-0106.
+		return model.ModelManaged && model.ReasoningEffort == ""
+	case SelectionEncodingRuntimeDeferred:
+		// Preflight proves only that the requested effort remains advertised.
+		// The Run applies and observes it after the first prompt raises the
+		// runtime's queue owner. See ADR-0108.
+		return model.ModelManaged && model.ReasoningEffort == "" &&
+			state.ReasoningOption != nil &&
+			state.ReasoningOption.ID == assignment.ReasoningKey &&
+			containsCapabilityValue(state.ReasoningOption.Values, assignment.ReasoningValue)
 	default:
 		return false
 	}
+}
+
+func deferredSelectionStateMatches(assignment SelectionAssignment, state SelectionCapabilities) bool {
+	if state.CurrentModel != assignment.AdapterModel {
+		return false
+	}
+	model, ok := modelByAdapterValue(state.Models, state.CurrentModel)
+	return ok &&
+		modelRepresents(model, assignment.Model) &&
+		state.ReasoningOption != nil &&
+		state.ReasoningOption.ID == assignment.ReasoningKey &&
+		state.ReasoningOption.CurrentValue == assignment.ReasoningValue
+}
+
+// runtimeDefersReasoningEffort reports whether an ACP Runtime can advertise a
+// reasoning effort during Preflight but can apply it only after the Agent
+// Session's first prompt. Every planning path derives that distinction here.
+func runtimeDefersReasoningEffort(runtime RuntimeSpec) bool {
+	return strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom") == "opencode"
 }
 
 func modelByAdapterValue(models []ModelCapability, adapterValue string) (ModelCapability, bool) {

@@ -33,7 +33,7 @@ Task Worktrees, and QA uses its own Agent Session after Tasks settle.
 
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
-shared Node.js, minimum-supported acpx, effective adapters, required Agent
+shared Node.js, minimum-supported acpx, effective adapters, configured Agent
 Selection Profiles, Repository Skill Set, and codex runtime hygiene checks and
 prints one line per check with status `ok`, `failed`, or `skipped`. Adapter
 Readiness requires the effective Codex command to prove official
@@ -46,6 +46,26 @@ and fallback through disposable ACP Sessions and reports affected category
 references plus one deterministic next action. Doctor has no separate legacy
 `agent:` or `model:` authority. Failed checks include `next: <action>` when
 Roundfix knows the remediation.
+
+Profile readiness covers every Agent Work Category the effective configuration
+defines — the five required categories plus each optional category
+(`data`, `infra`, `docs`, `test`, `chore`) a profile actually declares. A
+category that resolves only by inheriting `general` adds no distinct tuple and
+is not enumerated. The `adapter:` line follows the same scope, so it names every
+ACP Runtime the configured tuples reference, including one only an optional
+category selects. A configured profile that fails therefore fails the
+`profiles:` line instead of leaving it `ok`.
+
+The `opencode` runtime accepts a non-empty reasoning effort with the
+`runtime_deferred` encoding. OpenCode advertises effort per model only after an
+Agent Session's first prompt, so token-free Preflight cannot apply the effort:
+it proves that the model is advertised and current and that the requested
+effort is among the values that model advertises. Before any work turn, the Run
+ensures the Agent Session with its model, sends one minimal warm-up prompt to
+raise the queue owner, applies the requested effort, and observes the effective
+value. The Run therefore proves the effort applied. An empty effort remains
+`runtime_managed`: Roundfix declines to assign the advertised control and the
+Agent Model opens at its own value.
 
 The blocking `skills:` line runs after, and independently from, `profiles:`.
 For each Roundfix-owned skill, the running binary declares a minimum version
@@ -288,7 +308,37 @@ confirmation of the displayed Plan Digest. Rejecting a plan returns to a
 selected decision area and requires a newly calculated complete plan and
 confirmation.
 
-Automation and Agents use the non-interactive pair:
+For a repository with a compatible Setup Manifest, use the dedicated
+non-interactive managed refresh:
+
+```bash
+roundfix baseline update --repo . --format json
+roundfix baseline update --repo . --yes --format json
+```
+
+Without confirmation, a changed Plan is presented and nothing is written.
+`--yes` approves the Plan Digest computed in that invocation;
+`--confirm-plan <digest>` approves a previously reviewed digest, and the two
+flags are mutually exclusive. `--adopt-suggested` explicitly adopts and reports
+suggestions only for decisions absent from the manifest. `--no-skills` skips the
+Repository Skill Set refresh. `--skills-source-dir <path>` selects an offline
+Git checkout or bare object store for external skill restoration. `--repo`
+defaults to the current directory, and `--format` accepts `text` or `json`.
+
+Update exits `0` when the repository is current or an approved refresh applied
+and verified; `1` for apply, verification, output, rollback, or recovery
+failure; `2` for invalid input, an incompatible manifest, or an unsafe
+repository; `3` when adoption, a new decision, confirmation, or retention
+action is required; and `130` when canceled. JSON output uses
+`roundfix/baseline-update-result/v1`. A plan with an Unrecorded Managed Region
+reports its path, managed identity, reason, and every reported line the refresh
+removes; text says `no lines removed` when there are none, and JSON includes the
+optional `unrecordedManagedRegions` field only when at least one exists. The
+same report remains in the applied result. Managed refresh never invokes
+semantic classification and preserves every non-managed byte exactly.
+
+Automation and Agents use the non-interactive plan/apply pair for first
+adoption or a Profile change:
 
 ```bash
 roundfix baseline plan --repo . --profile <profile-id> --decision-file <decision-file> --format json
@@ -412,9 +462,10 @@ Required built-ins:
 Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. If configured, they must
 be complete. The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official Codex identifiers, plus advisory Claude labels
-`claude-opus-5`, `claude-fable-5`, and `claude-opus-4-8`. Those labels do not
-replace the working built-in `opus` identifier. Catalog validity is distinct
+`gpt-5.6-luna` as official Codex identifiers, plus the Claude identifiers the
+adapter advertises: `opus`, `claude-fable-5`, `sonnet`, `haiku`, and `default`.
+The adapter advertises Opus 5 as `opus[1m]`; the capability parser removes the
+bracketed context suffix, so `opus` is the catalog value. Catalog validity is distinct
 from advisory recommendation rank and from operational availability: exact
 proof in the effective environment is the only readiness authority. Explicit
 custom model strings, including adapter aliases, are sent to the ACP Runtime
@@ -464,7 +515,7 @@ roundfix profiles validate --json
 
 `profiles show` is read-only and returns `roundfix/profiles/v1` JSON with the
 effective source, inherited source, Preferred Selection, ordered fallbacks, and
-five recommendations. Recommendations are dated `2026-07-16`, include
+five recommendations. Recommendations are dated `2026-08-07`, include
 benchmark/result/cost/rationale evidence, set `category_specific: false`, and
 are advisory only. They never route, prove availability, or mutate config.
 

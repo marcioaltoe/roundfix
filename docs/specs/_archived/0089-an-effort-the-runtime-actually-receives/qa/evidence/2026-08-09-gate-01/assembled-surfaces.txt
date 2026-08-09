@@ -1,0 +1,24 @@
+Built CLI
+- `bin/roundfix profiles show --json` exited 0 and resolved all ten Agent Work
+  Categories.
+- It also proved F-001's shipped configuration defect: every displayed
+  OpenCode selection still has an empty reasoning effort.
+
+Project Config
+- Six explicit `runtime: opencode` blocks remain.
+- Each uses openrouter/deepseek/deepseek-v4-pro with reasoning_effort: "".
+- The data comments still state that Roundfix refuses a non-empty effort and
+  cite superseded ADR-0106.
+
+Shipped skill
+- `.agents/skills/roundfix/SKILL.md` contains runtime_deferred, token-free
+  Preflight, session warm-up, and Run-applied proof.
+- `cmp -s` with `skills/roundfix/SKILL.md` exited 0.
+
+Durable model-selection reference
+- Names the 2026-08-09 snapshot, OpenCode 1.18.15, acpx 0.13.0, all four
+  defaults, the three-of-four floor result, and ADR-0108.
+- Contains no docs/specs path and no superseded refusal claim.
+
+The docs and generated-copy halves pass. The assembled surface fails because
+the Project Config did not ship the required xhigh selection.

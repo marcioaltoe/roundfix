@@ -1,0 +1,62 @@
+go test -parallel 16 ./...
+?   	roundfix/cmd/roundfix	[no test files]
+ok  	roundfix/internal/agent	15.412s
+ok  	roundfix/internal/app	0.351s
+ok  	roundfix/internal/baseline	139.151s
+ok  	roundfix/internal/baselineacp	3.086s
+ok  	roundfix/internal/cli	68.331s
+ok  	roundfix/internal/codex	2.018s
+ok  	roundfix/internal/config	4.040s
+ok  	roundfix/internal/daemon	4.942s
+ok  	roundfix/internal/gittest	3.391s
+ok  	roundfix/internal/notify	2.284s
+ok  	roundfix/internal/preflight	3.717s
+ok  	roundfix/internal/releaseplan	2.530s
+ok  	roundfix/internal/reviewsource	2.780s
+ok  	roundfix/internal/reviewsource/coderabbit	4.418s
+ok  	roundfix/internal/rounds	4.434s
+ok  	roundfix/internal/runevent	4.768s
+ok  	roundfix/internal/skillhash	5.101s
+ok  	roundfix/internal/spec	20.812s
+ok  	roundfix/internal/specaudit	7.876s
+ok  	roundfix/internal/speccheck	17.136s
+ok  	roundfix/internal/store	5.836s
+ok  	roundfix/internal/tui	4.873s
+ok  	roundfix/internal/watch	3.835s
+ok  	roundfix/internal/worktree	10.767s
+ok  	roundfix/skills	29.042s
+go test -count=1 -parallel=1 ./internal/speccheck -run '^TestCheckCorpusBudget$'
+ok  	roundfix/internal/speccheck	1.483s
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.207s
+go run -buildvcs=false ./cmd/roundfix skills check
+Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, implement-spec, brainstorming, council, business-analyst, archive-spec, qa-gate, evidence-gate
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=e535b8b2-dirty' -X 'roundfix/internal/app.BuildTime=2026-08-08 20:09:03 -0300'" -o bin/roundfix ./cmd/roundfix
+bin/roundfix spec check
+skipped docs/specs/_reviews: missing _prd.md
+Spec 0080-cheap-detectors-run-before-the-gate
+No findings.
+Skipped:
+  SC-VOCABULARY-UNDOCUMENTED: missing docs/specs/0080-cheap-detectors-run-before-the-gate/_techspec.md Vocabulary Contract
+Spec 0081-a-journal-cheap-to-write-and-keep
+No findings.
+Skipped:
+  SC-VOCABULARY-UNDOCUMENTED: missing docs/specs/0081-a-journal-cheap-to-write-and-keep/_techspec.md Vocabulary Contract
+Spec 0082-the-manifest-already-answered-that
+No findings.
+Skipped:
+  SC-VOCABULARY-UNDOCUMENTED: missing docs/specs/0082-the-manifest-already-answered-that/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0082-the-manifest-already-answered-that/references/_index.md
+Spec 0083-a-gate-that-can-say-no
+No findings.
+Skipped:
+  SC-VOCABULARY-UNDOCUMENTED: missing docs/specs/0083-a-gate-that-can-say-no/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0083-a-gate-that-can-say-no/references/_index.md
+Spec 0084-an-update-that-can-run
+No findings.
+Skipped:
+  SC-VOCABULARY-UNDOCUMENTED: missing docs/specs/0084-an-update-that-can-run/_techspec.md Vocabulary Contract
+Spec 0088-a-third-runtime-that-can-run
+No findings.
+Skipped:
+  SC-VOCABULARY-UNDOCUMENTED: missing docs/specs/0088-a-third-runtime-that-can-run/_techspec.md Vocabulary Contract

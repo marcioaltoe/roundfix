@@ -45,6 +45,7 @@ const (
 	acpxCodexFullAccessSandbox      = "danger-full-access"
 	acpxCodexReasoningEffortKey     = "reasoning_effort"
 	acpxGenericReasoningEffortKey   = "effort"
+	acpxDeferredEffortWarmupPrompt  = "Session setup."
 	acpxPreflightSessionPrefix      = "roundfix-preflight-"
 	acpxPreflightSetupTimeout       = 30 * time.Second
 	acpxPreflightCleanupTimeout     = 5 * time.Second
@@ -134,6 +135,7 @@ type ACPXRunner struct {
 	cancelClock       cancellationClock
 	stateMu           sync.Mutex
 	ensuredSessions   map[string]struct{}
+	warmedSessions    map[string]struct{}
 	sessionSelections map[string]SelectionAssignment
 	codexSpawn        codexSpawnDependencies
 	codexResolutions  map[string]codexSpawnResolution
@@ -178,6 +180,11 @@ func (runner ACPXRunner) cancellationClock() cancellationClock {
 type ACPXPromptRequest struct {
 	ExecuteRequest
 	Session string
+	// Inert marks a prompt whose only purpose is to raise the Agent Session's
+	// queue owner, never to perform Agent work. It withholds every tool and
+	// denies every permission request for that invocation only; the Agent
+	// Session keeps its normal capabilities for the work turns that follow.
+	Inert bool
 }
 
 // BatchFailureError is returned when acpx reports an Agent/Batch-level
@@ -1262,6 +1269,13 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 		}
 		return selectionPreflightError(req.Runtime, "apply advertised selection", err)
 	}
+	proof, err = runner.warmSessionForDeferredEffort(ctx, req, proof, capabilities, codexEnv, sink)
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return err
+		}
+		return selectionPreflightError(req.Runtime, "apply deferred selection", err)
+	}
 	if err := runner.applyFullAccess(ctx, req, sink, codexEnv); err != nil {
 		return err
 	}
@@ -1270,6 +1284,54 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 	}
 	runner.markSessionEnsured(sessionName, proof.Assignment)
 	return nil
+}
+
+func (runner *ACPXRunner) warmSessionForDeferredEffort(
+	ctx context.Context,
+	req ExecuteRequest,
+	proof SelectionProof,
+	capabilities SelectionCapabilities,
+	codexEnv []string,
+	sink runevent.Sink,
+) (SelectionProof, error) {
+	assignment := proof.Assignment
+	if assignment.Encoding != SelectionEncodingRuntimeDeferred {
+		return proof, nil
+	}
+	sessionName := strings.TrimSpace(req.Session.Name)
+	session := SessionRef{Name: sessionName, WorkDir: strings.TrimSpace(req.GitRoot)}
+	if !runner.sessionWarmed(sessionName) {
+		warmRequest := req
+		warmRequest.Runtime.Model = assignment.AdapterModel
+		warmRequest.LogPath = ""
+		warmRequest.Prompt = acpxDeferredEffortWarmupPrompt
+		if _, err := runner.RunPrompt(ctx, ACPXPromptRequest{
+			ExecuteRequest: warmRequest,
+			Session:        sessionName,
+			Inert:          true,
+		}, runevent.Discard); err != nil {
+			return SelectionProof{}, fmt.Errorf("warm acpx Agent Session %q: %w", sessionName, err)
+		}
+		runner.markSessionWarmed(sessionName)
+	}
+
+	state, err := runner.applySelectionOption(ctx, SessionSelectionRequest{
+		Runtime:      req.Runtime,
+		Session:      session,
+		Capabilities: capabilities,
+	}, assignment, assignment.ReasoningKey, assignment.ReasoningValue, codexEnv)
+	if err != nil {
+		return SelectionProof{}, err
+	}
+	if !deferredSelectionStateMatches(assignment, state) {
+		return SelectionProof{}, effectiveSelectionError(assignment, state)
+	}
+	observedEffort := state.ReasoningOption.CurrentValue
+	if err := runner.publishSelectionReceipt(ctx, req, sink, assignment, observedEffort); err != nil {
+		return SelectionProof{}, err
+	}
+	proof.Adapter = state.Adapter
+	return proof, nil
 }
 
 func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteRequest, sink runevent.Sink, codexEnv []string) error {
@@ -1503,6 +1565,22 @@ func (runner *ACPXRunner) sessionEnsured(sessionName string) bool {
 	return ok
 }
 
+func (runner *ACPXRunner) sessionWarmed(sessionName string) bool {
+	unlock := runner.lockState()
+	defer unlock()
+	_, ok := runner.warmedSessions[sessionName]
+	return ok
+}
+
+func (runner *ACPXRunner) markSessionWarmed(sessionName string) {
+	unlock := runner.lockState()
+	defer unlock()
+	if runner.warmedSessions == nil {
+		runner.warmedSessions = map[string]struct{}{}
+	}
+	runner.warmedSessions[sessionName] = struct{}{}
+}
+
 func (runner *ACPXRunner) markSessionEnsured(sessionName string, selection SelectionAssignment) {
 	unlock := runner.lockState()
 	defer unlock()
@@ -1527,6 +1605,7 @@ func (runner *ACPXRunner) clearSessionState(sessionName string) {
 	unlock := runner.lockState()
 	defer unlock()
 	delete(runner.ensuredSessions, sessionName)
+	delete(runner.warmedSessions, sessionName)
 	delete(runner.sessionSelections, sessionName)
 	delete(runner.codexResolutions, sessionName)
 }
@@ -1597,7 +1676,11 @@ func acpxPromptArgs(req ACPXPromptRequest) ([]string, error) {
 		"--cwd", strings.TrimSpace(req.GitRoot),
 		"--format", "json",
 		"--json-strict",
-		"--approve-all",
+	}
+	if req.Inert {
+		args = append(args, "--deny-all", "--allowed-tools", "")
+	} else {
+		args = append(args, "--approve-all")
 	}
 	if model := strings.TrimSpace(req.Runtime.Model); model != "" {
 		args = append(args, "--model", model)
@@ -1846,6 +1929,46 @@ func (runner ACPXRunner) publishStatus(ctx context.Context, req ExecuteRequest, 
 	event := newAgentRunEvent(req, update, marshalStatusPayload(status), eventClock(runner.Now)())
 	if err := sink.Publish(ctx, event); err != nil {
 		return fmt.Errorf("publish acpx Agent status %q: %w", status, err)
+	}
+	return nil
+}
+
+func (runner ACPXRunner) publishSelectionReceipt(ctx context.Context, req ExecuteRequest, sink runevent.Sink, assignment SelectionAssignment, observedEffort string) error {
+	if sink == nil {
+		sink = runevent.Discard
+	}
+	record := runevent.SelectionReceiptRecord{
+		Event:                    runevent.SelectionReceiptEventApplied,
+		Session:                  strings.TrimSpace(req.Session.Name),
+		Runtime:                  assignment.Runtime,
+		Model:                    assignment.Model,
+		RequestedReasoningEffort: assignment.ReasoningEffort,
+		ReasoningEffort:          strings.TrimSpace(observedEffort),
+		Status:                   runevent.SelectionReceiptStatusApplied,
+	}
+	payload, err := json.Marshal(runevent.SelectionReceiptPayload{
+		Event:                    record.Event,
+		Session:                  record.Session,
+		Runtime:                  record.Runtime,
+		Model:                    record.Model,
+		RequestedReasoningEffort: record.RequestedReasoningEffort,
+		ReasoningEffort:          record.ReasoningEffort,
+		Status:                   record.Status,
+	})
+	if err != nil {
+		return fmt.Errorf("marshal effective Agent Selection receipt: %w", err)
+	}
+	event := runevent.RunEvent{
+		RunID:   req.RunID,
+		Batch:   req.Batch.Number,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentSelectionReceipt,
+		Summary: runevent.SelectionReceiptLine(record),
+		Time:    eventClock(runner.Now)(),
+		Payload: payload,
+	}
+	if err := sink.Publish(ctx, event); err != nil {
+		return fmt.Errorf("publish effective Agent Selection receipt: %w", err)
 	}
 	return nil
 }

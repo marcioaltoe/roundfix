@@ -43,3 +43,6 @@ Treat a terminal Clean and a resolved status as claims, not evidence. Read the d
 <!-- source-baseline-entry: clause.autonomous.loop-06-branch-hygiene -->
 Never commit to a Run's branch or move the checkout away from it while that Run is Active. Roundfix integrates a Run Branch with a fast-forward merge and review Runs operate in the user checkout, so either action strands the Run or sends its commits to the wrong branch. Parallel work belongs in its own clone or waits.
 <!-- /source-baseline-entry: clause.autonomous.loop-06-branch-hygiene -->
+<!-- source-baseline-entry: clause.autonomous.loop-07-outlive-the-turn -->
+- MUST arm something that outlives the turn before ending it when work is meant to continue unattended — a detached Run, a scheduled wake-up, or a daemon — and MUST NOT end a turn stating that work will continue, because an ended turn is indistinguishable from a working one to whoever waits.
+<!-- /source-baseline-entry: clause.autonomous.loop-07-outlive-the-turn -->

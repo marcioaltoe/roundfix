@@ -24,6 +24,22 @@ const (
 
 var ErrUnsafeCustomProfilePath = errors.New("unsafe custom Baseline Profile path")
 
+// ProfileResolutionError carries the repository-relative locations consulted
+// after an identity misses the embedded catalog.
+type ProfileResolutionError struct {
+	ProfileID         string
+	SearchedLocations []string
+	Err               error
+}
+
+func (err *ProfileResolutionError) Error() string {
+	return err.Err.Error()
+}
+
+func (err *ProfileResolutionError) Unwrap() error {
+	return err.Err
+}
+
 type BaselineProfileSource string
 
 const (
@@ -779,7 +795,23 @@ func ResolveProfile(repoRoot, id string, catalog *Catalog) (ResolvedProfile, err
 	if _, ok := catalog.Profile(id); ok {
 		return resolveBuiltInProfile(id, catalog)
 	}
-	return LoadRepositoryProfile(repoRoot, id, catalog)
+	if err := validateCustomProfileID(id); err != nil {
+		return ResolvedProfile{}, &ProfileResolutionError{
+			ProfileID:         id,
+			SearchedLocations: []string{},
+			Err:               err,
+		}
+	}
+	searched := path.Join(customProfileDirectory, id+".json")
+	profile, err := LoadRepositoryProfile(repoRoot, id, catalog)
+	if err != nil {
+		return ResolvedProfile{}, &ProfileResolutionError{
+			ProfileID:         id,
+			SearchedLocations: []string{searched},
+			Err:               err,
+		}
+	}
+	return profile, nil
 }
 
 func resolveBuiltInProfile(id string, catalog *Catalog) (ResolvedProfile, error) {

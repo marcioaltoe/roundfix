@@ -1,0 +1,66 @@
+# Tooling authorization — what an Agent reads before it decides (2026-08-09)
+
+On 2026-08-09 the maintainer gave two directions in one message:
+
+> Valide a estrategia com o secondbrain. Reforce a regra de uso no baseline
+> tornando obrigatório o uso do secondbrain antes de sugestões de design e
+> arquitetura e antes de escrever idea, prd e techspec
+
+and, on where the archive should live:
+
+> mudar a estrutura dos arquiveds de pastas dentro dos folders findings, specs,
+> backlog e outras para uma estrutura com _archived/specs|findings|adr|backlog e
+> assim mantemos os arquivos ativos e o histórico dos inativos e bloqueamos a
+> revisão do coderabbit facilmente
+
+Asked where a new Baseline rule may land while the Baseline reform is frozen,
+the maintainer chose to mint Spec 0085 carrying both.
+
+## What this covers
+
+**The consultation clause.** `clause.secondbrain.01-consult-triggers` is
+conditional today: consult the Secondbrain when repository context does not
+answer, and do not consult it when local code, `CONTEXT.md`, ADRs, and
+repository documentation fully answer the task. That escape hatch is real and
+was used badly in this very session — a design decision about session warm-up
+was formed and only then checked against the Secondbrain, which changed it. The
+clause becomes unconditional for two moments: forming a design or architecture
+recommendation, and writing an Idea, PRD, or TechSpec.
+
+**The archive layout.** Inactive material moves out of the directories an Agent
+reads, into one `_archived/` root holding `specs/`, `findings/`, `adr/`, and
+`backlog/`. `docs/agents/docs-layout.md` is the contract that declares the
+current per-tree shape, and `.coderabbit.yaml` is where a single exclusion
+replaces one filter per tree.
+
+## Authorized paths
+
+- `internal/baseline/assets/modules/secondbrain.json`, limited to the
+  consultation trigger clause.
+- `internal/baseline/assets/modules/context-workflow.json`, limited to binding
+  that consultation to the Idea, PRD, and TechSpec authoring stages.
+- `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/secondbrain.md`
+  and `.../corpus/docs/agents/docs-layout.md`, limited to the same two subjects.
+- `internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json`,
+  limited to the clause entries the edits above require.
+- `docs/agents/secondbrain.md` and `docs/agents/docs-layout.md`, which carry
+  setup-owned managed regions rendered from the catalog above.
+- `.coderabbit.yaml`, limited to the path filter that excludes the archive.
+
+Derived Baseline pins and skill copies rewritten by `make baseline-digests` and
+`make skills-sync` are sanctioned fallout under ADR-0081, not separate targets.
+
+## Bounded by purpose
+
+This grant covers the consultation trigger and the archive layout. It does not
+authorize other Baseline clauses, other modules, other guides, or any
+`.coderabbit.yaml` key outside `path_filters`.
+
+## Consuming Spec
+
+This authorization is consumed by Spec `0085-what-an-agent-reads-before-it-decides`.
+
+## Commit choreography
+
+This record lands as its own commit, before the commits that change the catalog,
+the guides, and the review configuration.

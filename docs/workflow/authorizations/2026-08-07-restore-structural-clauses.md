@@ -68,6 +68,10 @@ values remain unauthorized mutations.
   chose restoration over rejection; declaring them discontinued would need a
   new decision and a new record.
 
+## Consuming Spec
+
+This authorization is consumed by Spec `0084-an-update-that-can-run`.
+
 ## Commit choreography
 
 This record lands as its own commit, before the commit of any Task it

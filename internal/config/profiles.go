@@ -108,6 +108,29 @@ func AllWorkCategories() []WorkCategory {
 	return append([]WorkCategory(nil), allWorkCategories...)
 }
 
+// ConfiguredWorkCategories returns every required Agent Work Category plus each
+// optional category the effective configuration defines. An optional category
+// present only by inheritance from general is absent, because it contributes no
+// distinct Agent Selection tuple to prove. The required categories keep their
+// relative order, so a configuration defining no optional category yields
+// exactly RequiredWorkCategories. See ADR-0107.
+func ConfiguredWorkCategories(config Config) []WorkCategory {
+	entries := config.Profiles
+	if entries == nil {
+		entries = builtinProfiles()
+	}
+	categories := make([]WorkCategory, 0, len(allWorkCategories))
+	for _, category := range allWorkCategories {
+		if isOptionalWorkCategory(category) {
+			if _, defined := entries[category]; !defined {
+				continue
+			}
+		}
+		categories = append(categories, category)
+	}
+	return categories
+}
+
 func ResolveProfile(config Config, category WorkCategory, preferredOverride *AgentSelection) (ResolvedProfile, error) {
 	entries := config.Profiles
 	if entries == nil {
@@ -121,7 +144,7 @@ func ResolveProfile(config Config, category WorkCategory, preferredOverride *Age
 	profile := cloneProfile(entry.Profile)
 	source := entry.Source
 	if preferredOverride != nil {
-		selection, err := normalizeSelection("invocation preferred", *preferredOverride, true)
+		selection, err := normalizeSelection("invocation preferred", *preferredOverride)
 		if err != nil {
 			return ResolvedProfile{}, err
 		}
@@ -370,7 +393,7 @@ func decodeSelection(path string, node *yaml.Node) (AgentSelection, error) {
 		Runtime:         values["runtime"],
 		Model:           values["model"],
 		ReasoningEffort: values["reasoning_effort"],
-	}, true)
+	})
 }
 
 func decodeStringValue(path string, node *yaml.Node) (string, error) {
@@ -385,17 +408,17 @@ func decodeStringValue(path string, node *yaml.Node) (string, error) {
 }
 
 func validateAgentSelectionProfile(path string, profile AgentSelectionProfile) error {
-	if _, err := normalizeSelection(path+".preferred", profile.Preferred, true); err != nil {
+	if _, err := normalizeSelection(path+".preferred", profile.Preferred); err != nil {
 		return err
 	}
 	if len(profile.Fallbacks) == 0 {
 		return fmt.Errorf("%s.fallbacks must include at least one Agent Selection; one additional distinct authorized and proven Agent Selection is required", path)
 	}
 	seen := map[AgentSelection]bool{}
-	preferred, _ := normalizeSelection(path+".preferred", profile.Preferred, true)
+	preferred, _ := normalizeSelection(path+".preferred", profile.Preferred)
 	seen[preferred] = true
 	for index, fallback := range profile.Fallbacks {
-		selection, err := normalizeSelection(fmt.Sprintf("%s.fallbacks[%d]", path, index), fallback, true)
+		selection, err := normalizeSelection(fmt.Sprintf("%s.fallbacks[%d]", path, index), fallback)
 		if err != nil {
 			return err
 		}
@@ -407,7 +430,7 @@ func validateAgentSelectionProfile(path string, profile AgentSelectionProfile) e
 	return nil
 }
 
-func normalizeSelection(path string, selection AgentSelection, requireReasoning bool) (AgentSelection, error) {
+func normalizeSelection(path string, selection AgentSelection) (AgentSelection, error) {
 	normalized := AgentSelection{
 		Runtime:         strings.TrimSpace(selection.Runtime),
 		Model:           strings.TrimSpace(selection.Model),
@@ -421,9 +444,6 @@ func normalizeSelection(path string, selection AgentSelection, requireReasoning 
 	}
 	if normalized.Model == "" {
 		return AgentSelection{}, fmt.Errorf("%s.model must not be empty", path)
-	}
-	if !requireReasoning {
-		return normalized, nil
 	}
 	return normalized, nil
 }

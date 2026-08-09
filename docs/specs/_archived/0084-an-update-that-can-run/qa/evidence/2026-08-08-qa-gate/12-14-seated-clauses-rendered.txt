@@ -1,0 +1,10 @@
+Clauses as rendered by the applied refresh into the fiscus scratch copy (build 4e300143).
+
+== CF7 docs/agents/secondbrain.md:9 ==
+9:- **mandatory**: Consult the Secondbrain while a decision is being formed — authoring a Spec, choosing an approach, or validating a strategy — for what it holds and this repository does not: the decisions sibling projects in the ecosystem already made and paid for, literature, and general technical knowledge. Report an unreachable Secondbrain or an empty result as a condition in the artifact being written; it is never a reason to stop the work.
+
+== CF8 docs/agents/spec-routing.md:25 ==
+25:- **mandatory**: Rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts: a repository the Spec did not build, a measurement it did not design, or published literature. Record in that row where the evidence came from, so a later reader can tell it apart from a rehearsal of the Spec's own premise. When the outside source cannot be obtained, record the row as blocked with that reason and continue; the row never requires human interaction and never blocks the Spec.
+
+== CF9 docs/agents/domain.md:11 ==
+11:- **mandatory**: At the close of a Spec, feature, refactor, or fix, check whether the work introduced, changed, or retired a term the glossary should carry, and update the domain context through `domain-modeling` when it did. The check is what is obliged; the update follows only from a check that found something, and neither waits for human interaction. Reach for `grilling` only when a term is ambiguous enough to need sharpening before it is written down.

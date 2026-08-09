@@ -81,7 +81,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results = append(results, checker.ACPX(ctx))
 	runtimes, runtimeErr := doctorAdapterRuntimes(loaded.Config)
 	results = append(results, doctorAdapterCheck(ctx, checker, runtimes, runtimeErr))
-	profileReadiness := dependencies.profileReadiness(ctx, loaded.Config, roundconfig.RequiredWorkCategories(), profileWorkDir)
+	profileReadiness := dependencies.profileReadiness(ctx, loaded.Config, roundconfig.ConfiguredWorkCategories(loaded.Config), profileWorkDir)
 	results = append(results, doctorProfileReadinessResult(profileReadiness))
 	if repositoryRoot == "" {
 		results = append(results, doctorMissingRepositoryRootResult())
@@ -192,9 +192,9 @@ func parseDoctorCommand(args []string) error {
 }
 
 func doctorAdapterRuntimes(config roundconfig.Config) ([]agent.RuntimeSpec, error) {
-	proofs, err := buildProfileProofReports(config, roundconfig.RequiredWorkCategories())
+	proofs, err := buildProfileProofReports(config, roundconfig.ConfiguredWorkCategories(config))
 	if err != nil {
-		return nil, fmt.Errorf("resolve effective required Agent Selection Profiles for adapter readiness: %w", err)
+		return nil, fmt.Errorf("resolve effective configured Agent Selection Profiles for adapter readiness: %w", err)
 	}
 
 	selectionsByRuntime := make(map[string]roundconfig.AgentSelection)

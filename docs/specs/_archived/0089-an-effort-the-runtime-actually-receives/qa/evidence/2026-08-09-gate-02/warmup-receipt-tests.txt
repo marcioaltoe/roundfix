@@ -1,0 +1,22 @@
+=== RUN   TestACPXPromptArgsInertWarmupWithholdsTools
+=== RUN   TestACPXRunWarmSessionPublishesEffectiveEffortReceipt
+=== RUN   TestACPXRunWarmSessionIsIdempotent
+=== RUN   TestACPXRunWarmSessionMismatchStopsBeforeWork
+=== RUN   TestACPXSessionEffortCharacterizationDeclaredBreakWarmSessionOrdersEffortBeforeWork
+=== RUN   TestSelectionRuntimeDeferredStateMatchesBeforeEffortApplication
+=== RUN   TestSelectionRuntimeDeferredStateRejectsDifferentCurrentModel
+=== RUN   TestSelectionEffortCharacterizationRuntimeDeferredPlansAdvertisedOpenCodeEffort
+=== RUN   TestSelectionEffortCharacterizationRuntimeDeferredRejectsUnadvertisedOpenCodeEffort
+--- PASS: TestACPXPromptArgsInertWarmupWithholdsTools (0.00s)
+--- PASS: TestSelectionEffortCharacterizationRuntimeDeferredPlansAdvertisedOpenCodeEffort (0.00s)
+--- PASS: TestSelectionRuntimeDeferredStateRejectsDifferentCurrentModel (0.00s)
+--- PASS: TestSelectionEffortCharacterizationRuntimeDeferredRejectsUnadvertisedOpenCodeEffort (0.00s)
+--- PASS: TestSelectionRuntimeDeferredStateMatchesBeforeEffortApplication (0.00s)
+--- PASS: TestACPXRunWarmSessionMismatchStopsBeforeWork (0.02s)
+--- PASS: TestACPXRunWarmSessionPublishesEffectiveEffortReceipt (0.02s)
+--- PASS: TestACPXSessionEffortCharacterizationDeclaredBreakWarmSessionOrdersEffortBeforeWork (0.02s)
+--- PASS: TestACPXRunWarmSessionIsIdempotent (0.03s)
+ok  	roundfix/internal/agent	0.646s
+=== RUN   TestProjectStreamEventProjectsSelectionReceiptInExistingCategory
+--- PASS: TestProjectStreamEventProjectsSelectionReceiptInExistingCategory (0.00s)
+ok  	roundfix/internal/runevent	0.347s

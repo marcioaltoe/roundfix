@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -1016,6 +1017,501 @@ func TestPreservationSemanticRedistributionConverges(t *testing.T) {
 	}
 }
 
+func TestManagedRefreshPreservesNonManagedRegionDigests(t *testing.T) {
+	t.Parallel()
+
+	repository, request, target, baselineID := newSameIdentityRetentionDrift(t)
+	const clauseID = "clause.core.keep-follow-ups-outside-slice"
+	changeCatalogClauseGuidance(t, target, "core", clauseID)
+	target.retentionSources[baselineID] = SourceBaseline{Entries: []SourceBaselineEntry{{
+		ID:          clauseID,
+		Kind:        "normative-clause",
+		Enforcement: "mandatory",
+		Carrier:     "docs/agents/agent-instructions.md",
+	}}}
+
+	const rootProse = "Authored root preface with CRLF.\r\n"
+	agentsPath := filepath.Join(repository, "AGENTS.md")
+	agents, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatalf("read adopted AGENTS.md: %v", err)
+	}
+	writeTransactionFile(t, repository, "AGENTS.md", rootProse+string(agents), 0o644)
+
+	const guidePath = "docs/agents/agent-instructions.md"
+	guide, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(guidePath)))
+	if err != nil {
+		t.Fatalf("read adopted agent guide: %v", err)
+	}
+	const authoredGuideBytes = "\nAuthored guide epilogue.\n"
+	const repositoryRuleBlock = `<!-- roundfix:repository-rule:begin id=rule.managed-refresh-preservation -->
+Keep this repository-owned rule byte-identical.
+<!-- roundfix:repository-rule:end id=rule.managed-refresh-preservation -->
+`
+	writeTransactionFile(
+		t,
+		repository,
+		guidePath,
+		string(guide)+authoredGuideBytes+repositoryRuleBlock,
+		0o644,
+	)
+	commitInspectionRepository(t, repository, "add repository-authored managed-refresh fixture bytes")
+
+	request.Preservation = RootPreservationRequest{Mode: PreservationModeManagedRefresh}
+	outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+	if err != nil {
+		t.Fatalf("build managed refresh plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("managed refresh returned result: %+v", outcome.Result)
+	}
+	plan := *outcome.Plan
+
+	before := managedCarrierNonManagedRegionDigests(t, repository, plan)
+	if len(before["AGENTS.md"]) == 0 || len(before[guidePath]) == 0 {
+		t.Fatalf("mixed managed-refresh fixture regions = %+v", before)
+	}
+	for _, entry := range plan.ManagedEntries {
+		if entry.Kind == "backup" {
+			t.Fatalf("managed refresh planned root backup entry: %+v", entry)
+		}
+	}
+	for _, postimage := range plan.Postimages {
+		parts := strings.Split(filepath.Base(postimage.Path), ".")
+		if len(parts) == 3 &&
+			(parts[0] == "AGENTS" || parts[0] == "CLAUDE") &&
+			isRawSHA256(parts[1]) && parts[2] == "md" {
+			t.Fatalf("managed refresh planned root backup postimage: %+v", postimage)
+		}
+	}
+	encoded, err := json.Marshal(plan)
+	if err != nil {
+		t.Fatalf("marshal managed refresh plan: %v", err)
+	}
+	var parsed PlanDocument
+	if err := decodeStrictJSON(encoded, &parsed); err != nil {
+		t.Fatalf("parse managed refresh plan: %v", err)
+	}
+	if err := validatePlanDocumentWithCatalog(parsed, target); err != nil {
+		t.Fatalf("validate parsed managed refresh plan: %v", err)
+	}
+	plan = parsed
+	if plan.PreservationMode != PreservationModeManagedRefresh {
+		t.Fatalf("parsed preservation mode = %q", plan.PreservationMode)
+	}
+
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		repository,
+		plan,
+		plan.PlanDigest,
+		target,
+	); err != nil {
+		t.Fatalf("apply managed refresh: %v", err)
+	}
+	after := managedCarrierNonManagedRegionDigests(t, repository, plan)
+	if !reflect.DeepEqual(after, before) {
+		t.Fatalf("non-managed region digests changed:\nbefore=%+v\nafter=%+v", before, after)
+	}
+}
+
+func TestManagedRefreshConvergesAfterManifestRepublication(t *testing.T) {
+	t.Parallel()
+
+	fixture := newManagedRefreshConvergenceFixture(t)
+	before := managedArtifactNonManagedRegionDigests(
+		t,
+		fixture.repository,
+		fixture.first.SetupManifest.ManagedArtifacts,
+	)
+
+	result, err := applyPlanWithCatalog(
+		context.Background(),
+		fixture.repository,
+		fixture.first,
+		fixture.first.PlanDigest,
+		fixture.catalog,
+	)
+	if err != nil {
+		t.Fatalf("apply aged-manifest Managed Refresh: %v", err)
+	}
+	if result.State != "verified" || result.StatusMatrix == nil ||
+		result.StatusMatrix.ApprovedPostimages != EvidenceStatusVerified {
+		t.Fatalf("aged-manifest Managed Refresh result = %+v, want verified postimages", result)
+	}
+
+	assertSetupManifestMatchesManagedRegions(t, fixture.repository)
+	after := managedArtifactNonManagedRegionDigests(
+		t,
+		fixture.repository,
+		fixture.first.SetupManifest.ManagedArtifacts,
+	)
+	if !reflect.DeepEqual(after, before) {
+		t.Fatalf("non-managed region digests changed:\nbefore=%+v\nafter=%+v", before, after)
+	}
+
+	second, err := buildPlanWithCatalog(context.Background(), fixture.request, fixture.catalog)
+	if err != nil {
+		t.Fatalf("build second Managed Refresh plan: %v", err)
+	}
+	if second.Plan == nil {
+		t.Fatalf("second Managed Refresh returned result: %+v", second.Result)
+	}
+	if len(second.Plan.FileChanges) != 0 {
+		t.Fatalf("second Managed Refresh file changes = %+v, want none", second.Plan.FileChanges)
+	}
+}
+
+func TestManagedRefreshDoesNotConvergeWithoutManifestRepublication(t *testing.T) {
+	t.Parallel()
+
+	fixture := newManagedRefreshConvergenceFixture(t)
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		fixture.repository,
+		fixture.first,
+		fixture.first.PlanDigest,
+		fixture.catalog,
+	); err != nil {
+		t.Fatalf("apply negative-case Managed Refresh: %v", err)
+	}
+	writeTransactionFile(
+		t,
+		fixture.repository,
+		manifestPath,
+		string(fixture.agedManifest),
+		0o644,
+	)
+
+	second, err := buildPlanWithCatalog(context.Background(), fixture.request, fixture.catalog)
+	if err != nil {
+		t.Fatalf("build unrepublished-manifest second plan: %v", err)
+	}
+	if second.Plan == nil {
+		t.Fatalf("unrepublished-manifest second plan returned result: %+v", second.Result)
+	}
+	if len(second.Plan.FileChanges) == 0 {
+		t.Fatal("unrepublished Setup Manifest incorrectly converged with zero file changes")
+	}
+	if !reflect.DeepEqual(second.Plan.FileChanges, fixture.first.FileChanges) {
+		t.Fatalf(
+			"unrepublished Setup Manifest proposed different work:\nfirst=%+v\nsecond=%+v",
+			fixture.first.FileChanges,
+			second.Plan.FileChanges,
+		)
+	}
+}
+
+func TestManagedRefreshPreservationAllowsNewManagedRootBlock(t *testing.T) {
+	t.Parallel()
+
+	repository := t.TempDir()
+	const relative = "AGENTS.md"
+	const authored = "Repository-authored preface.\n\n"
+	const existing = `<!-- setup-context-driven:begin id=root.core version=0.0.1 -->
+
+Existing managed block.
+
+<!-- setup-context-driven:end id=root.core -->
+`
+	const added = `<!-- setup-context-driven:begin id=root.secondbrain version=0.0.1 -->
+
+New managed block.
+
+<!-- setup-context-driven:end id=root.secondbrain -->
+`
+	before := []byte(authored + existing)
+	after := []byte(authored + existing + added)
+	writeTransactionFile(t, repository, relative, string(before), 0o644)
+
+	err := validateManagedRefreshPreservation(
+		repository,
+		[]Preimage{{
+			Path:            relative,
+			Exists:          true,
+			Kind:            PreimageRegular,
+			Mode:            0o644,
+			Bytes:           int64(len(before)),
+			ContentIdentity: planContentIdentity(before),
+		}},
+		[]Postimage{{
+			Path:            relative,
+			Kind:            PreimageRegular,
+			Mode:            0o644,
+			Content:         after,
+			ContentIdentity: planContentIdentity(after),
+		}},
+	)
+	if err != nil {
+		t.Fatalf("validate managed refresh with new managed root block: %v", err)
+	}
+}
+
+func TestManagedRefreshApplyRejectsChangedNonManagedRegion(t *testing.T) {
+	t.Parallel()
+
+	repository, request, target, _ := newSameIdentityRetentionDrift(t)
+	const authored = "Authored root bytes must survive.\n"
+	agentsPath := filepath.Join(repository, "AGENTS.md")
+	agents, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatalf("read adopted AGENTS.md: %v", err)
+	}
+	writeTransactionFile(t, repository, "AGENTS.md", authored+string(agents), 0o644)
+	commitInspectionRepository(t, repository, "add authored root bytes")
+
+	request.Preservation = RootPreservationRequest{Mode: PreservationModeManagedRefresh}
+	outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+	if err != nil {
+		t.Fatalf("build managed refresh plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("managed refresh returned result: %+v", outcome.Result)
+	}
+	plan := *outcome.Plan
+	for index := range plan.Postimages {
+		if plan.Postimages[index].Path != "AGENTS.md" {
+			continue
+		}
+		plan.Postimages[index].Content = bytes.Replace(
+			plan.Postimages[index].Content,
+			[]byte(authored),
+			[]byte("Changed authored root bytes.\n"),
+			1,
+		)
+		plan.Postimages[index].ContentIdentity = planContentIdentity(plan.Postimages[index].Content)
+	}
+	for index := range plan.ManagedEntries {
+		if plan.ManagedEntries[index].Path != "AGENTS.md" {
+			continue
+		}
+		plan.ManagedEntries[index].Action = "update"
+		plan.ManagedEntries[index].AfterIdentity = planPostimage(t, plan, "AGENTS.md").ContentIdentity
+	}
+	plan.FileChanges, err = deriveFileChanges(plan.ManagedEntries, plan.Preimages, plan.Postimages)
+	if err != nil {
+		t.Fatalf("derive tampered managed-refresh file changes: %v", err)
+	}
+	plan.PlanDigest, err = computePlanDigest(plan)
+	if err != nil {
+		t.Fatalf("digest tampered managed-refresh plan: %v", err)
+	}
+
+	_, err = applyPlanWithCatalog(context.Background(), repository, plan, plan.PlanDigest, target)
+	var applyErr *ApplyError
+	if err == nil || !errors.As(err, &applyErr) || applyErr.Kind != ApplyErrorInvalid ||
+		!strings.Contains(err.Error(), "non-managed region digest mismatch") {
+		t.Fatalf("changed non-managed region apply error = %v", err)
+	}
+}
+
+func TestManagedRefreshUnrecordedManagedRegionReachesReadyPlan(t *testing.T) {
+	t.Parallel()
+
+	repository, request, target, _ := newSameIdentityRetentionDrift(t)
+	const carrierPath = "docs/agents/agent-instructions.md"
+	content, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(carrierPath)))
+	if err != nil {
+		t.Fatalf("read managed carrier: %v", err)
+	}
+	const endMarker = "<!-- setup-context-driven:end id=guide.agent-instructions -->"
+	if !bytes.Contains(content, []byte(endMarker)) {
+		t.Fatalf("managed carrier has no %q marker", endMarker)
+	}
+	edited := bytes.Replace(content, []byte(endMarker), []byte("hand-edited managed bytes\n\n"+endMarker), 1)
+	writeTransactionFile(t, repository, carrierPath, string(edited), 0o644)
+	commitInspectionRepository(t, repository, "hand edit managed marker")
+
+	request.Preservation = RootPreservationRequest{Mode: PreservationModeManagedRefresh}
+	outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+	if err != nil {
+		t.Fatalf("build managed refresh with edited marker: %v", err)
+	}
+	if outcome.Plan == nil || outcome.Result.State != "ready" {
+		t.Fatalf("unrecorded managed-region outcome = %+v", outcome)
+	}
+}
+
+func TestManagedRefreshPlanReportsRemovedLines(t *testing.T) {
+	t.Parallel()
+
+	plan := buildManagedRefreshPlanWithInsertedLines(t, []string{
+		"",
+		"  line removed by refresh  ",
+		"line removed by refresh",
+	})
+	region := requirePlanUnrecordedManagedRegion(
+		t,
+		plan,
+		"docs/agents/agent-instructions.md",
+		"guide.agent-instructions",
+	)
+	if got, want := region.RemovedLines, []string{"line removed by refresh"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("removed lines = %#v, want %#v", got, want)
+	}
+	if region.RemovedLinesTruncated != 0 {
+		t.Fatalf("removed lines truncated = %d, want 0", region.RemovedLinesTruncated)
+	}
+}
+
+func TestManagedRefreshPlanReportsEmptyRemovedLines(t *testing.T) {
+	t.Parallel()
+
+	plan := buildManagedRefreshPlanWithAgedRegionDigest(t)
+	region := requirePlanUnrecordedManagedRegion(
+		t,
+		plan,
+		"docs/agents/agent-instructions.md",
+		"guide.agent-instructions",
+	)
+	if region.RemovedLines == nil || len(region.RemovedLines) != 0 {
+		t.Fatalf("removed lines = %#v, want an empty array", region.RemovedLines)
+	}
+	if region.RemovedLinesTruncated != 0 {
+		t.Fatalf("removed lines truncated = %d, want 0", region.RemovedLinesTruncated)
+	}
+}
+
+func TestManagedRefreshPlanTruncatesRemovedLines(t *testing.T) {
+	t.Parallel()
+
+	inserted := make([]string, removedManagedRegionLinesLimit+3)
+	for index := range inserted {
+		inserted[index] = fmt.Sprintf("removed line %03d", index)
+	}
+	plan := buildManagedRefreshPlanWithInsertedLines(t, inserted)
+	region := requirePlanUnrecordedManagedRegion(
+		t,
+		plan,
+		"docs/agents/agent-instructions.md",
+		"guide.agent-instructions",
+	)
+	if len(region.RemovedLines) != removedManagedRegionLinesLimit {
+		t.Fatalf(
+			"removed lines = %d, want bound %d",
+			len(region.RemovedLines),
+			removedManagedRegionLinesLimit,
+		)
+	}
+	if region.RemovedLinesTruncated != 3 {
+		t.Fatalf("removed lines truncated = %d, want 3", region.RemovedLinesTruncated)
+	}
+	if got, want := region.RemovedLines[0], inserted[0]; got != want {
+		t.Fatalf("first removed line = %q, want %q", got, want)
+	}
+	if got, want := region.RemovedLines[len(region.RemovedLines)-1],
+		inserted[removedManagedRegionLinesLimit-1]; got != want {
+		t.Fatalf("last reported removed line = %q, want %q", got, want)
+	}
+}
+
+func TestManagedRefreshRemovedLinesPlanDigestAndStrictCodecRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	plan := buildManagedRefreshPlanWithInsertedLines(t, []string{"digest-bound removed line"})
+	encoded, err := MarshalPlanDocument(plan)
+	if err != nil {
+		t.Fatalf("marshal managed-refresh Plan Document: %v", err)
+	}
+	decoded, err := ParsePlanDocument(encoded)
+	if err != nil {
+		t.Fatalf("parse managed-refresh Plan Document: %v", err)
+	}
+	if !reflect.DeepEqual(decoded.UnrecordedManagedRegions, plan.UnrecordedManagedRegions) {
+		t.Fatalf(
+			"unrecorded managed regions changed on round trip:\n got=%+v\nwant=%+v",
+			decoded.UnrecordedManagedRegions,
+			plan.UnrecordedManagedRegions,
+		)
+	}
+
+	changed := plan
+	changed.UnrecordedManagedRegions = append(
+		[]UnrecordedManagedRegion(nil),
+		plan.UnrecordedManagedRegions...,
+	)
+	changed.UnrecordedManagedRegions[0].RemovedLines = []string{"different removed line"}
+	changedDigest, err := computePlanDigest(changed)
+	if err != nil {
+		t.Fatalf("compute changed removed-line Plan Digest: %v", err)
+	}
+	if changedDigest == plan.PlanDigest {
+		t.Fatal("changing only a removed line did not change the Plan Digest")
+	}
+}
+
+func TestNonManagedPlansOmitRemovedLines(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		plan func(*testing.T) PlanDocument
+	}{
+		{
+			name: "greenfield",
+			plan: func(t *testing.T) PlanDocument {
+				return buildTestPlan(t, newPlanRepository(t))
+			},
+		},
+		{
+			name: "preservation",
+			plan: func(t *testing.T) PlanDocument {
+				repository := newPlanRepository(t)
+				writeInspectionFile(t, repository, "AGENTS.md", "Preserve this repository rule.\n")
+				commitInspectionRepository(t, repository, "seed preservation fixture")
+				return buildRootPreservationPlan(
+					t,
+					repository,
+					"repository-rules",
+					specificRepositoryPath,
+				)
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			plan := test.plan(t)
+			encoded, err := MarshalPlanDocument(plan)
+			if err != nil {
+				t.Fatalf("marshal %s Plan Document: %v", test.name, err)
+			}
+			for _, field := range []string{"unrecordedManagedRegions", "removedLines"} {
+				if bytes.Contains(encoded, []byte(`"`+field+`"`)) {
+					t.Fatalf("%s Plan Document includes managed-refresh field %q", test.name, field)
+				}
+			}
+		})
+	}
+}
+
+func TestManagedRefreshUnaccountedClauseStillBlocks(t *testing.T) {
+	t.Parallel()
+
+	const clauseID = "clause.core.keep-follow-ups-outside-slice"
+	_, request, target, baselineID := newSameIdentityRetentionDrift(t)
+	request.Preservation = RootPreservationRequest{Mode: PreservationModeManagedRefresh}
+	removeCatalogClause(t, target, "core", clauseID)
+	target.retentionSources[baselineID] = SourceBaseline{Entries: []SourceBaselineEntry{{
+		ID:          clauseID,
+		Kind:        "normative-clause",
+		Enforcement: "mandatory",
+		Carrier:     "docs/agents/agent-instructions.md",
+	}}}
+
+	outcome, err := buildPlanWithCatalog(context.Background(), request, target)
+	if err != nil {
+		t.Fatalf("build managed refresh with unaccounted clause: %v", err)
+	}
+	if outcome.Plan != nil ||
+		outcome.Result.State != "action_required" ||
+		outcome.Result.Category != "classification" ||
+		outcome.Result.ClauseDelta == nil ||
+		outcome.Result.ClauseDelta.Dispositions[clauseID] != ClauseUnaccounted ||
+		!strings.Contains(outcome.Result.Message, clauseID) {
+		t.Fatalf("unaccounted managed-refresh outcome = %+v", outcome)
+	}
+}
+
 func TestPreservationLaterUnmarkedAdditionConverges(t *testing.T) {
 	t.Parallel()
 
@@ -1656,6 +2152,12 @@ func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 		"docs/agents/docs-layout.md":        true,
 		"docs/agents/skill-dispatch.md":     true,
 		"docs/agents/autonomous-work.md":    true,
+		"docs/agents/backend.md":            true,
+		"docs/agents/domain.md":             true,
+		"docs/agents/frontend.md":           true,
+		"docs/agents/issue-tracker.md":      true,
+		"docs/agents/monorepo.md":           true,
+		"docs/agents/spec-routing.md":       true,
 	}
 	expectedPostimages := make(map[string]string)
 	for _, entry := range fixture.PlannedByteSequence {
@@ -2313,6 +2815,111 @@ func TestPlanDocumentIncludesMaintainedUpgradeRetention(t *testing.T) {
 	}
 }
 
+func TestStandardTypeScriptStructuralClauseRetention(t *testing.T) {
+	t.Parallel()
+
+	restoredClauseIDs := []string{
+		"clause.backend.boundary-contracts",
+		"clause.backend.http-independent-use-cases",
+		"clause.backend.layered-architecture",
+		"clause.backend.persistence-owner",
+		"clause.backend.prohibit-generic-layers",
+		"clause.backend.thin-http-handlers",
+		"clause.domain.canonical-language",
+		"clause.domain.layout-decision",
+		"clause.frontend.organize-by-system",
+		"clause.frontend.public-system-boundary",
+		"clause.spec.local-task-tracker-only",
+		"clause.spec.status-only-in-task",
+		"rule.backend.boundary-contracts",
+		"rule.monorepo.context-boundaries",
+	}
+	catalog := mustEmbeddedCatalog(t)
+	profile, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatalf("resolve standard TypeScript Profile: %v", err)
+	}
+	activeModules, artifacts, err := resolveManagedArtifacts(
+		catalog,
+		profile,
+		standardTypeScriptDecisions("make verify"),
+		false,
+	)
+	if err != nil {
+		t.Fatalf("resolve standard TypeScript managed artifacts: %v", err)
+	}
+	managedArtifacts := make([]ManifestArtifact, len(artifacts))
+	for index, artifact := range artifacts {
+		managedArtifacts[index] = ManifestArtifact{
+			ID: artifact.ID, Path: artifact.Path, Kind: artifact.Kind,
+			Module: artifact.Module, Template: artifact.Template,
+			Version: artifact.Version, Digest: artifact.Digest,
+		}
+	}
+	source, err := catalog.SourceBaseline("baseline.standard-typescript-monorepo-0.0.1")
+	if err != nil {
+		t.Fatalf("load standard TypeScript Source Baseline: %v", err)
+	}
+	_, delta := classifySourceClauseTransition(source, managedArtifacts, catalog, activeModules)
+	currentClauses := make(map[string]document)
+	for _, moduleID := range activeModules {
+		for _, rule := range objectsOrEmpty(catalog.modules[moduleID]["rules"]) {
+			for _, clause := range objectsOrEmpty(rule["clauses"]) {
+				clauseID, _ := stringValue(clause, "id")
+				currentClauses[clauseID] = clause
+			}
+		}
+	}
+	sourceEntries := make(map[string]SourceBaselineEntry, len(source.Entries))
+	for _, entry := range source.Entries {
+		sourceEntries[entry.ID] = entry
+	}
+	normalizeSourceGuidance := func(raw string) string {
+		raw = strings.TrimSpace(raw)
+		if prohibited, found := strings.CutPrefix(raw, "- MUST NOT "); found {
+			if prohibited != "" {
+				prohibited = strings.ToLower(prohibited[:1]) + prohibited[1:]
+			}
+			return "Do not " + prohibited
+		}
+		if mandatory, found := strings.CutPrefix(raw, "- MUST "); found {
+			if mandatory != "" {
+				mandatory = strings.ToUpper(mandatory[:1]) + mandatory[1:]
+			}
+			return mandatory
+		}
+		return raw
+	}
+	for _, clauseID := range restoredClauseIDs {
+		if got := delta.Dispositions[clauseID]; got != ClauseRetained {
+			t.Errorf("structural clause %q disposition = %q, want %q", clauseID, got, ClauseRetained)
+		}
+		previous, ok := sourceEntries[clauseID]
+		if !ok {
+			t.Errorf("structural clause %q is absent from the Source Baseline", clauseID)
+			continue
+		}
+		assetPath := "source-baselines/" + source.Identity.ID + "/" + previous.Path
+		asset, ok := catalog.Asset(assetPath)
+		if !ok {
+			t.Errorf("structural clause %q source asset %q is missing", clauseID, assetPath)
+			continue
+		}
+		current, ok := currentClauses[clauseID]
+		if !ok {
+			t.Errorf("structural clause %q is absent from the selected catalog", clauseID)
+			continue
+		}
+		if got, _ := stringValue(current, "enforcement"); got != previous.Enforcement {
+			t.Errorf("structural clause %q enforcement = %q, want %q", clauseID, got, previous.Enforcement)
+		}
+		wantGuidance := normalizeSourceGuidance(string(asset.Data[previous.Start:previous.End]))
+		if got, _ := stringValue(current, "guidance"); got != wantGuidance {
+			t.Errorf("structural clause %q guidance = %q, want Source Baseline text %q", clauseID, got, wantGuidance)
+		}
+	}
+}
+
 func TestSameIdentityDriftRequiresRetention(t *testing.T) {
 	t.Parallel()
 
@@ -2608,6 +3215,304 @@ func newSameIdentityRetentionDrift(
 	target := cloneCatalogForRetentionDrift(t, source)
 	target.digest = "sha256:" + strings.Repeat("f", 64)
 	return repository, request, target, outcome.Plan.SetupManifest.Generator.Baseline
+}
+
+type managedRefreshConvergenceFixture struct {
+	repository   string
+	request      PlanRequest
+	catalog      *Catalog
+	agedManifest []byte
+	first        PlanDocument
+}
+
+func newManagedRefreshConvergenceFixture(t *testing.T) managedRefreshConvergenceFixture {
+	t.Helper()
+
+	repository := newPlanRepository(t)
+	catalog := mustEmbeddedCatalog(t)
+	request := PlanRequest{
+		Repository:   repository,
+		ProfileID:    "go-cli-tui",
+		Decisions:    planTestDecisions(),
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}
+	adoption, err := buildPlanWithCatalog(context.Background(), request, catalog)
+	if err != nil {
+		t.Fatalf("build convergence adoption plan: %v", err)
+	}
+	if adoption.Plan == nil {
+		t.Fatalf("convergence adoption returned result: %+v", adoption.Result)
+	}
+	if _, err := applyPlanWithCatalog(
+		context.Background(),
+		repository,
+		*adoption.Plan,
+		adoption.Plan.PlanDigest,
+		catalog,
+	); err != nil {
+		t.Fatalf("apply convergence adoption plan: %v", err)
+	}
+
+	carriersBefore := managedArtifactCarrierBytes(
+		t,
+		repository,
+		adoption.Plan.SetupManifest.ManagedArtifacts,
+	)
+	manifestBytes, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(manifestPath)))
+	if err != nil {
+		t.Fatalf("read adopted Setup Manifest: %v", err)
+	}
+	var manifest SetupManifest
+	if err := decodeStrictJSON(manifestBytes, &manifest); err != nil {
+		t.Fatalf("decode adopted Setup Manifest: %v", err)
+	}
+	if len(manifest.ManagedArtifacts) == 0 {
+		t.Fatal("adopted Setup Manifest has no managed artifacts to age")
+	}
+	for index := range manifest.ManagedArtifacts {
+		manifest.ManagedArtifacts[index].Digest = strings.Repeat("0", 64)
+	}
+	agedManifest, err := marshalSetupManifestBytes(manifest)
+	if err != nil {
+		t.Fatalf("encode aged Setup Manifest: %v", err)
+	}
+	agedManifest = append(agedManifest, '\n')
+	writeTransactionFile(t, repository, manifestPath, string(agedManifest), 0o644)
+	if after := managedArtifactCarrierBytes(
+		t,
+		repository,
+		manifest.ManagedArtifacts,
+	); !reflect.DeepEqual(after, carriersBefore) {
+		t.Fatalf("aging the Setup Manifest changed managed carriers")
+	}
+	commitInspectionRepository(t, repository, "age Setup Manifest managed-artifact digests")
+
+	request.Preservation = RootPreservationRequest{Mode: PreservationModeManagedRefresh}
+	first, err := buildPlanWithCatalog(context.Background(), request, catalog)
+	if err != nil {
+		t.Fatalf("build aged-manifest Managed Refresh plan: %v", err)
+	}
+	if first.Plan == nil || first.Result.State != "ready" {
+		t.Fatalf("aged-manifest Managed Refresh outcome = %+v, want ready plan", first)
+	}
+	if len(first.Plan.FileChanges) == 0 {
+		t.Fatal("aged-manifest Managed Refresh proposed no file changes")
+	}
+
+	return managedRefreshConvergenceFixture{
+		repository:   repository,
+		request:      request,
+		catalog:      catalog,
+		agedManifest: agedManifest,
+		first:        *first.Plan,
+	}
+}
+
+func managedArtifactCarrierBytes(
+	t *testing.T,
+	repository string,
+	artifacts []ManifestArtifact,
+) map[string][]byte {
+	t.Helper()
+
+	carriers := make(map[string][]byte)
+	for _, artifact := range artifacts {
+		if _, seen := carriers[artifact.Path]; seen {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(artifact.Path)))
+		if err != nil {
+			t.Fatalf("read managed carrier %q: %v", artifact.Path, err)
+		}
+		carriers[artifact.Path] = content
+	}
+	return carriers
+}
+
+func managedArtifactNonManagedRegionDigests(
+	t *testing.T,
+	repository string,
+	artifacts []ManifestArtifact,
+) map[string][]string {
+	t.Helper()
+
+	digests := make(map[string][]string)
+	for path, content := range managedArtifactCarrierBytes(t, repository, artifacts) {
+		for _, region := range partitionRootSource(path, content) {
+			if region.Kind != "managed-block" {
+				digests[path] = append(digests[path], region.Digest)
+			}
+		}
+	}
+	return digests
+}
+
+func assertSetupManifestMatchesManagedRegions(t *testing.T, repository string) {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(manifestPath)))
+	if err != nil {
+		t.Fatalf("read republished Setup Manifest: %v", err)
+	}
+	var manifest SetupManifest
+	if err := decodeStrictJSON(data, &manifest); err != nil {
+		t.Fatalf("decode republished Setup Manifest: %v", err)
+	}
+	for _, artifact := range manifest.ManagedArtifacts {
+		content, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(artifact.Path)))
+		if err != nil {
+			t.Fatalf("read republished managed carrier %q: %v", artifact.Path, err)
+		}
+		matches := 0
+		for _, region := range partitionRootSource(artifact.Path, content) {
+			if region.Kind != "managed-block" ||
+				region.StructuralProvenance["managedId"] != artifact.ID {
+				continue
+			}
+			matches++
+			openEnd := bytes.Index(region.SourceBytes, []byte("-->"))
+			closeStart := bytes.LastIndex(region.SourceBytes, []byte("<!--"))
+			if openEnd < 0 || closeStart < openEnd+3 {
+				t.Fatalf("managed region %s:%s has invalid marker bounds", artifact.Path, artifact.ID)
+			}
+			body := strings.TrimSpace(string(region.SourceBytes[openEnd+3:closeStart])) + "\n"
+			digest := strings.TrimPrefix(planContentIdentity([]byte(body)), "sha256:")
+			if digest != artifact.Digest {
+				t.Fatalf(
+					"Setup Manifest digest for %s:%s = %q, on-disk digest = %q",
+					artifact.Path,
+					artifact.ID,
+					artifact.Digest,
+					digest,
+				)
+			}
+		}
+		if matches != 1 {
+			t.Fatalf("managed region %s:%s matches = %d, want 1", artifact.Path, artifact.ID, matches)
+		}
+	}
+}
+
+func buildManagedRefreshPlanWithInsertedLines(
+	t *testing.T,
+	lines []string,
+) PlanDocument {
+	t.Helper()
+	repository, request := newManagedRefreshPlanFixture(t)
+	const (
+		carrierPath = "docs/agents/agent-instructions.md"
+		managedID   = "guide.agent-instructions"
+	)
+	content, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(carrierPath)))
+	if err != nil {
+		t.Fatalf("read managed-refresh carrier: %v", err)
+	}
+	endMarker := []byte("<!-- setup-context-driven:end id=" + managedID + " -->")
+	if !bytes.Contains(content, endMarker) {
+		t.Fatalf("managed-refresh carrier has no %q marker", endMarker)
+	}
+	inserted := []byte(strings.Join(lines, "\n") + "\n")
+	content = bytes.Replace(content, endMarker, append(inserted, endMarker...), 1)
+	writeTransactionFile(t, repository, carrierPath, string(content), 0o644)
+	commitInspectionRepository(t, repository, "insert managed-refresh fixture lines")
+	return buildManagedRefreshPlan(t, request)
+}
+
+func buildManagedRefreshPlanWithAgedRegionDigest(t *testing.T) PlanDocument {
+	t.Helper()
+	repository, request := newManagedRefreshPlanFixture(t)
+	data, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(manifestPath)))
+	if err != nil {
+		t.Fatalf("read managed-refresh Setup Manifest: %v", err)
+	}
+	var manifest SetupManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		t.Fatalf("decode managed-refresh Setup Manifest: %v", err)
+	}
+	const (
+		carrierPath = "docs/agents/agent-instructions.md"
+		managedID   = "guide.agent-instructions"
+	)
+	found := false
+	for index := range manifest.ManagedArtifacts {
+		artifact := &manifest.ManagedArtifacts[index]
+		if artifact.Path == carrierPath && artifact.ID == managedID {
+			artifact.Digest = strings.Repeat("0", 64)
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("Setup Manifest has no managed region %s:%s", carrierPath, managedID)
+	}
+	data, err = marshalSetupManifestBytes(manifest)
+	if err != nil {
+		t.Fatalf("encode aged managed-refresh Setup Manifest: %v", err)
+	}
+	writeTransactionFile(t, repository, manifestPath, string(data), 0o644)
+	commitInspectionRepository(t, repository, "age managed-refresh fixture digest")
+	return buildManagedRefreshPlan(t, request)
+}
+
+func newManagedRefreshPlanFixture(t *testing.T) (string, PlanRequest) {
+	t.Helper()
+	repository := newPlanRepository(t)
+	request := PlanRequest{
+		Repository:   repository,
+		ProfileID:    "go-cli-tui",
+		Decisions:    planTestDecisions(),
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil {
+		t.Fatalf("build source managed-refresh fixture plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("source managed-refresh fixture plan result = %+v", outcome.Result)
+	}
+	if _, err := ApplyPlan(
+		context.Background(),
+		repository,
+		*outcome.Plan,
+		outcome.Plan.PlanDigest,
+	); err != nil {
+		t.Fatalf("apply source managed-refresh fixture plan: %v", err)
+	}
+	request.Preservation = RootPreservationRequest{Mode: PreservationModeManagedRefresh}
+	return repository, request
+}
+
+func buildManagedRefreshPlan(t *testing.T, request PlanRequest) PlanDocument {
+	t.Helper()
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil {
+		t.Fatalf("build managed-refresh fixture plan: %v", err)
+	}
+	if outcome.Plan == nil || outcome.Result.State != "ready" {
+		t.Fatalf("managed-refresh fixture outcome = %+v", outcome)
+	}
+	return *outcome.Plan
+}
+
+func requirePlanUnrecordedManagedRegion(
+	t *testing.T,
+	plan PlanDocument,
+	path string,
+	managedID string,
+) UnrecordedManagedRegion {
+	t.Helper()
+	for _, region := range plan.UnrecordedManagedRegions {
+		if region.Path == path && region.ManagedID == managedID {
+			return region
+		}
+	}
+	t.Fatalf(
+		"Plan has no unrecorded managed region %s:%s: %+v",
+		path,
+		managedID,
+		plan.UnrecordedManagedRegions,
+	)
+	return UnrecordedManagedRegion{}
 }
 
 func cloneCatalogForRetentionDrift(t *testing.T, source *Catalog) *Catalog {
@@ -3156,6 +4061,32 @@ func planPostimage(t *testing.T, plan PlanDocument, path string) Postimage {
 	}
 	t.Fatalf("plan has no postimage for %q", path)
 	return Postimage{}
+}
+
+func managedCarrierNonManagedRegionDigests(
+	t *testing.T,
+	repository string,
+	plan PlanDocument,
+) map[string][]string {
+	t.Helper()
+
+	digests := make(map[string][]string)
+	for _, postimage := range plan.Postimages {
+		if postimage.Kind != PreimageRegular ||
+			!bytes.Contains(postimage.Content, []byte("setup-context-driven:begin")) {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(postimage.Path)))
+		if err != nil {
+			t.Fatalf("read managed carrier %q: %v", postimage.Path, err)
+		}
+		for _, region := range partitionRootSource(postimage.Path, content) {
+			if region.Kind != "managed-block" {
+				digests[postimage.Path] = append(digests[postimage.Path], region.Digest)
+			}
+		}
+	}
+	return digests
 }
 
 func newPlanRepository(t *testing.T) string {

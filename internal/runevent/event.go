@@ -25,14 +25,15 @@ const (
 type Kind string
 
 const (
-	KindAgentMessage        Kind = "agent.message"
-	KindAgentThought        Kind = "agent.thought"
-	KindAgentToolStarted    Kind = "agent.tool_started"
-	KindAgentToolUpdated    Kind = "agent.tool_updated"
-	KindAgentPlan           Kind = "agent.plan"
-	KindAgentStatus         Kind = "agent.status"
-	KindAgentRaw            Kind = "agent.raw"
-	KindReviewSourceRequest Kind = "review_source.request"
+	KindAgentMessage          Kind = "agent.message"
+	KindAgentThought          Kind = "agent.thought"
+	KindAgentToolStarted      Kind = "agent.tool_started"
+	KindAgentToolUpdated      Kind = "agent.tool_updated"
+	KindAgentPlan             Kind = "agent.plan"
+	KindAgentStatus           Kind = "agent.status"
+	KindAgentRaw              Kind = "agent.raw"
+	KindAgentSelectionReceipt Kind = "agent.selection_receipt"
+	KindReviewSourceRequest   Kind = "review_source.request"
 
 	// Daemon kinds cover the orchestration loop: every user-meaningful
 	// state transition appends one of these with a small payload of IDs
@@ -168,6 +169,23 @@ type ReviewRequestPayload struct {
 	HeadSHA string               `json:"head_sha"`
 	Command string               `json:"command"`
 	Outcome ReviewRequestOutcome `json:"outcome"`
+}
+
+const (
+	SelectionReceiptEventApplied  = "agent_selection_receipt"
+	SelectionReceiptStatusApplied = "applied"
+)
+
+// SelectionReceiptPayload records the effective reasoning effort observed
+// after an Agent Session applies a runtime-deferred selection.
+type SelectionReceiptPayload struct {
+	Event                    string `json:"event"`
+	Session                  string `json:"session"`
+	Runtime                  string `json:"runtime"`
+	Model                    string `json:"model"`
+	RequestedReasoningEffort string `json:"requested_reasoning_effort"`
+	ReasoningEffort          string `json:"reasoning_effort"`
+	Status                   string `json:"status"`
 }
 
 // RetryPayload is the stable daemon.retry payload for one bounded Review

@@ -1,5 +1,5 @@
 // Suite: Baseline root-instruction preservation
-// Invariant: every trusted root source is backed up and every preserved source entry is dispositioned before planning is ready.
+// Invariant: preservation modes either prove managed-only refresh safety or account for every root source before planning is ready.
 // Boundary IN: bounded repository inspection, root backups, Decision Documents, Readoption, Source Baselines, and retention contracts.
 // Boundary OUT: profile alignment, portable Plan Documents, file transactions, and ACP classification proposals.
 
@@ -51,6 +51,211 @@ func TestGreenfieldPlanBacksUpWithoutImport(t *testing.T) {
 	if len(plan.Dispositions) != 0 || len(plan.RepositoryRulesBytes) != 0 {
 		t.Fatalf("greenfield imported root rules: dispositions=%+v bytes=%q", plan.Dispositions, plan.RepositoryRulesBytes)
 	}
+}
+
+func TestManagedRefreshPlanNeedsNoClassificationInputOrBackup(t *testing.T) {
+	t.Parallel()
+
+	repo := newInspectionRepository(t)
+	writeInspectionFile(t, repo, "AGENTS.md", "repository-authored policy\n")
+	commitInspectionRepository(t, repo, "seed managed refresh root")
+
+	plan, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModeManagedRefresh},
+	)
+	if err != nil {
+		t.Fatalf("plan managed refresh preservation: %v", err)
+	}
+	if plan.State != PreservationStateBlocked ||
+		!hasRepositoryFinding(plan.Findings, "baseline.preservation.managed-refresh.manifest.invalid", "docs/agents/setup-context.json") ||
+		len(plan.SourceBaseline.Entries) != 0 ||
+		plan.DecisionSkeleton != nil ||
+		len(plan.Backups) != 0 {
+		t.Fatalf("managed refresh preservation plan = %+v", plan)
+	}
+}
+
+func TestManagedRefreshUnsafeRootCarrierStillBlocks(t *testing.T) {
+	t.Parallel()
+
+	repo := newInspectionRepository(t)
+	if err := os.Symlink("../outside.md", filepath.Join(repo, "AGENTS.md")); err != nil {
+		t.Fatalf("create escaping root alias: %v", err)
+	}
+	commitInspectionRepository(t, repo, "seed unsafe root carrier")
+
+	plan, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModeManagedRefresh},
+	)
+	if err != nil {
+		t.Fatalf("plan managed refresh with unsafe root carrier: %v", err)
+	}
+	if plan.State != PreservationStateBlocked ||
+		!hasRepositoryFinding(plan.Findings, "baseline.inventory.unsafe-alias", "AGENTS.md") {
+		t.Fatalf("unsafe root carrier did not block managed refresh: %+v", plan)
+	}
+}
+
+func TestUnrecordedManagedRegionDigestMismatchReachesReadyPlan(t *testing.T) {
+	t.Parallel()
+
+	const (
+		carrierPath = "AGENTS.md"
+		managedID   = "root.core"
+		body        = "Current managed guidance."
+	)
+	repo := newInspectionRepository(t)
+	writeInspectionFile(t, repo, carrierPath, managedRegionFixture(managedID, body))
+	writeManagedRefreshManifest(t, repo, ManifestArtifact{
+		ID:       managedID,
+		Path:     carrierPath,
+		Kind:     "root-block",
+		Module:   "core",
+		Template: "root.core",
+		Version:  ManifestVersion,
+		Digest:   managedRegionBodyDigest("Recorded managed guidance."),
+	})
+	commitInspectionRepository(t, repo, "seed stale managed-region digest")
+
+	plan, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModeManagedRefresh},
+	)
+	if err != nil {
+		t.Fatalf("plan managed refresh with stale digest: %v", err)
+	}
+	if plan.State != PreservationStateReady {
+		t.Fatalf("stale digest state = %q, want %q: %+v", plan.State, PreservationStateReady, plan.Findings)
+	}
+	assertUnrecordedManagedRegion(
+		t,
+		plan.UnrecordedManagedRegions,
+		carrierPath,
+		managedID,
+		UnrecordedManagedRegionReasonDigestMismatch,
+	)
+}
+
+func TestUnrecordedManagedRegionMarkerAbsentReachesReadyPlan(t *testing.T) {
+	t.Parallel()
+
+	const (
+		carrierPath = "AGENTS.md"
+		managedID   = "root.core"
+	)
+	repo := newInspectionRepository(t)
+	writeInspectionFile(t, repo, carrierPath, "Repository-authored guidance.\n")
+	writeManagedRefreshManifest(t, repo, ManifestArtifact{
+		ID:       managedID,
+		Path:     carrierPath,
+		Kind:     "root-block",
+		Module:   "core",
+		Template: "root.core",
+		Version:  ManifestVersion,
+		Digest:   managedRegionBodyDigest("Recorded managed guidance."),
+	})
+	commitInspectionRepository(t, repo, "seed missing managed marker")
+
+	plan, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModeManagedRefresh},
+	)
+	if err != nil {
+		t.Fatalf("plan managed refresh with absent marker: %v", err)
+	}
+	if plan.State != PreservationStateReady {
+		t.Fatalf("absent marker state = %q, want %q: %+v", plan.State, PreservationStateReady, plan.Findings)
+	}
+	assertUnrecordedManagedRegion(
+		t,
+		plan.UnrecordedManagedRegions,
+		carrierPath,
+		managedID,
+		UnrecordedManagedRegionReasonMarkerAbsent,
+	)
+}
+
+func TestUnrecordedManagedRegionFieldOmittedWhenCurrent(t *testing.T) {
+	t.Parallel()
+
+	const (
+		carrierPath = "AGENTS.md"
+		managedID   = "root.core"
+		body        = "Current managed guidance."
+	)
+	repo := newInspectionRepository(t)
+	writeInspectionFile(t, repo, carrierPath, managedRegionFixture(managedID, body))
+	writeManagedRefreshManifest(t, repo, ManifestArtifact{
+		ID:       managedID,
+		Path:     carrierPath,
+		Kind:     "root-block",
+		Module:   "core",
+		Template: "root.core",
+		Version:  ManifestVersion,
+		Digest:   managedRegionBodyDigest(body),
+	})
+	commitInspectionRepository(t, repo, "seed current managed marker")
+
+	plan, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModeManagedRefresh},
+	)
+	if err != nil {
+		t.Fatalf("plan managed refresh with current marker: %v", err)
+	}
+	if plan.State != PreservationStateReady || len(plan.UnrecordedManagedRegions) != 0 {
+		t.Fatalf("current managed-region plan = %+v", plan)
+	}
+	encoded, err := json.Marshal(plan)
+	if err != nil {
+		t.Fatalf("marshal current managed-region plan: %v", err)
+	}
+	if bytes.Contains(encoded, []byte(`"unrecordedManagedRegions"`)) {
+		t.Fatalf("current managed-region JSON includes optional classification: %s", encoded)
+	}
+}
+
+func TestAmbiguousManagedMarkerBlocksManagedRefresh(t *testing.T) {
+	t.Parallel()
+
+	const (
+		carrierPath = "AGENTS.md"
+		managedID   = "root.core"
+		body        = "Current managed guidance."
+	)
+	repo := newInspectionRepository(t)
+	block := managedRegionFixture(managedID, body)
+	writeInspectionFile(t, repo, carrierPath, block+"\n"+block)
+	writeManagedRefreshManifest(t, repo, ManifestArtifact{
+		ID:       managedID,
+		Path:     carrierPath,
+		Kind:     "root-block",
+		Module:   "core",
+		Template: "root.core",
+		Version:  ManifestVersion,
+		Digest:   managedRegionBodyDigest(body),
+	})
+	commitInspectionRepository(t, repo, "seed duplicated managed identity")
+
+	plan, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModeManagedRefresh},
+	)
+	if err != nil {
+		t.Fatalf("plan managed refresh with duplicated identity: %v", err)
+	}
+	if plan.State != PreservationStateBlocked {
+		t.Fatalf("duplicated managed identity state = %q, want %q", plan.State, PreservationStateBlocked)
+	}
+	for _, finding := range plan.Findings {
+		if finding.Code == "baseline.preservation.managed-marker.ambiguous" &&
+			finding.Path == carrierPath && strings.Contains(finding.Message, managedID) {
+			return
+		}
+	}
+	t.Fatalf("duplicated managed identity finding missing file or identity: %+v", plan.Findings)
 }
 
 func TestPreservationRequiresEveryDisposition(t *testing.T) {
@@ -256,7 +461,7 @@ func TestDecisionDocumentSkeletonRejectsMalformedInput(t *testing.T) {
 // corpus change moves one declared value instead of hunting literals, and so
 // the diff says what moved.
 const (
-	maintainedSourceBaselineEntries    = 118
+	maintainedSourceBaselineEntries    = 126
 	maintainedSourceBaselineAccounting = 51
 )
 
@@ -683,6 +888,69 @@ func inspectPreservationRepository(t *testing.T, repo string) RepositoryInspecti
 		t.Fatalf("inspect preservation repository: %v", err)
 	}
 	return inspection
+}
+
+func writeManagedRefreshManifest(t *testing.T, repo string, artifact ManifestArtifact) {
+	t.Helper()
+	manifest := SetupManifest{
+		SchemaVersion: ManifestSchema,
+		Version:       ManifestVersion,
+		Generator: ManifestGenerator{
+			Skill:    "setup-context-driven",
+			Version:  ManifestVersion,
+			Baseline: "baseline.test-" + ManifestVersion,
+		},
+		Profile:          "test",
+		ProfileDigest:    "sha256:" + strings.Repeat("1", 64),
+		CatalogDigest:    "sha256:" + strings.Repeat("2", 64),
+		Modules:          []string{},
+		Decisions:        map[string]ManifestDecision{},
+		ManagedArtifacts: []ManifestArtifact{artifact},
+		LocalSkills:      []string{},
+		Verification:     []VerificationProjection{},
+	}
+	encoded, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatalf("marshal managed-refresh Setup Manifest: %v", err)
+	}
+	writeInspectionFile(t, repo, manifestPath, string(encoded)+"\n")
+}
+
+func managedRegionFixture(managedID, body string) string {
+	return fmt.Sprintf(
+		"<!-- setup-context-driven:begin id=%s version=%s -->\n\n%s\n\n<!-- setup-context-driven:end id=%s -->\n",
+		managedID,
+		ManifestVersion,
+		body,
+		managedID,
+	)
+}
+
+func managedRegionBodyDigest(body string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(body) + "\n"))
+	return hex.EncodeToString(sum[:])
+}
+
+func assertUnrecordedManagedRegion(
+	t *testing.T,
+	regions []UnrecordedManagedRegion,
+	path string,
+	managedID string,
+	reason UnrecordedManagedRegionReason,
+) {
+	t.Helper()
+	if len(regions) != 1 {
+		t.Fatalf("unrecorded managed regions = %+v, want one", regions)
+	}
+	if regions[0].Path != path || regions[0].ManagedID != managedID || regions[0].Reason != reason {
+		t.Fatalf(
+			"unrecorded managed region = %+v, want path %q identity %q reason %q",
+			regions[0],
+			path,
+			managedID,
+			reason,
+		)
+	}
 }
 
 func hasPreservationFinding(findings []Finding, code string) bool {

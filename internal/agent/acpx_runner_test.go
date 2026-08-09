@@ -25,6 +25,7 @@ const (
 	fakeACPXArgsPath   = "ROUNDFIX_FAKE_ACPX_ARGS_PATH"
 	fakeACPXInvokes    = "ROUNDFIX_FAKE_ACPX_INVOKES"
 	fakeACPXPromptPath = "ROUNDFIX_FAKE_ACPX_PROMPT_PATH"
+	fakeACPXPrompts    = "ROUNDFIX_FAKE_ACPX_PROMPTS"
 	fakeACPXStdout     = "ROUNDFIX_FAKE_ACPX_STDOUT"
 	fakeACPXStderr     = "ROUNDFIX_FAKE_ACPX_STDERR"
 	fakeACPXExitCode   = "ROUNDFIX_FAKE_ACPX_EXIT_CODE"
@@ -37,6 +38,7 @@ const (
 	fakeACPXClosed     = "ROUNDFIX_FAKE_ACPX_CLOSED"
 	fakeACPXPromptDone = "ROUNDFIX_FAKE_ACPX_PROMPT_DONE"
 	fakeACPXStarted    = "ROUNDFIX_FAKE_ACPX_STARTED"
+	fakeACPXStartEvent = "ROUNDFIX_FAKE_ACPX_STARTED_RUN_EVENT"
 	fakeACPXBlock      = "ROUNDFIX_FAKE_ACPX_BLOCK_PROMPT"
 	fakeACPXBlockCmd   = "ROUNDFIX_FAKE_ACPX_BLOCK_COMMAND"
 	fakeACPXExitCancel = "ROUNDFIX_FAKE_ACPX_EXIT_AFTER_CANCEL"
@@ -890,7 +892,7 @@ func TestApplySessionSelection(t *testing.T) {
 			if tt.exitBy != nil {
 				harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, tt.exitBy))
 			}
-			capabilities, err := ParseSessionConfigOptions([]byte(tt.initial), AdapterEvidence{Command: "adapter"})
+			capabilities, err := ParseSessionConfigOptions([]byte(tt.initial), AdapterEvidence{Command: "adapter"}, SelectionRetention{})
 			if err != nil {
 				t.Fatalf("parse initial capabilities: %v", err)
 			}
@@ -1654,6 +1656,65 @@ func TestACPXPromptArgsPlaceGlobalsBeforeAgentAndSubcommand(t *testing.T) {
 	}
 }
 
+// The setup turn that raises a runtime_deferred queue owner must be
+// structurally unable to perform Agent work. Spec 0089's QA gate measured the
+// unrestricted prompt reading directories, reading Specs, and calling a tool
+// while the Agent Session still held its default effort, which is the state
+// the warm-up exists to leave behind. The restriction is scoped to that one
+// invocation: measured against OpenCode 1.18.15 on 2026-08-09, the following
+// work prompt on the same Agent Session called tools normally.
+func TestACPXPromptArgsInertWarmupWithholdsTools(t *testing.T) {
+	t.Parallel()
+
+	contains := func(args []string, want string) bool {
+		for _, arg := range args {
+			if arg == want {
+				return true
+			}
+		}
+		return false
+	}
+	runtime := RuntimeSpec{ID: "opencode", Protocol: ProtocolACP}
+
+	inert, err := acpxPromptArgs(ACPXPromptRequest{
+		ExecuteRequest: ExecuteRequest{Runtime: runtime, GitRoot: "/repo"},
+		Session:        "roundfix-run-1",
+		Inert:          true,
+	})
+	if err != nil {
+		t.Fatalf("acpx prompt args: %v", err)
+	}
+	want := []string{
+		"--cwd", "/repo",
+		"--format", "json",
+		"--json-strict",
+		"--deny-all",
+		"--allowed-tools", "",
+		"opencode", "prompt",
+		"-s", "roundfix-run-1",
+		"-f", "-",
+	}
+	if !reflect.DeepEqual(inert, want) {
+		t.Fatalf("inert warm-up must withhold every tool and deny permissions\nwant: %#v\ngot:  %#v", want, inert)
+	}
+
+	work, err := acpxPromptArgs(ACPXPromptRequest{
+		ExecuteRequest: ExecuteRequest{Runtime: runtime, GitRoot: "/repo"},
+		Session:        "roundfix-run-1",
+	})
+	if err != nil {
+		t.Fatalf("acpx prompt args: %v", err)
+	}
+	for _, restricted := range []string{"--deny-all", "--allowed-tools"} {
+		if contains(work, restricted) {
+			t.Fatalf("a work prompt must keep its tools; found %q in %#v", restricted, work)
+		}
+	}
+	if !contains(work, "--approve-all") {
+		t.Fatalf("a work prompt must approve its permission requests; got %#v", work)
+	}
+}
+
 func TestACPXCancelSessionInvokesSessionCancel(t *testing.T) {
 	t.Parallel()
 
@@ -1920,12 +1981,13 @@ func TestACPXRunAppliesSelectionBeforePrompt(t *testing.T) {
 			},
 		},
 		{
-			name:    "opencode effort",
-			runtime: RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "opencode-model", ReasoningEffort: "maximum"},
+			// An empty OpenCode effort remains runtime-managed, so a Run issues
+			// neither a setup prompt nor an effort set. See ADR-0108.
+			name:    "opencode model-managed reasoning issues no effort set",
+			runtime: RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "opencode-model"},
 			want: func(gitRoot string) [][]string {
 				return [][]string{
 					{"--cwd", gitRoot, "--model", "opencode-model", "opencode", "sessions", "ensure", "--name", "roundfix-run-1"},
-					{"--cwd", gitRoot, "opencode", "set", "effort", "maximum", "-s", "roundfix-run-1"},
 					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "opencode-model", "opencode", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 				}
 			},
@@ -1944,6 +2006,100 @@ func TestACPXRunAppliesSelectionBeforePrompt(t *testing.T) {
 				t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, got)
 			}
 		})
+	}
+}
+
+func TestACPXRunWarmSessionPublishesEffectiveEffortReceipt(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	const model = "openrouter/deepseek/deepseek-v4-pro"
+	sink := newCaptureSink("")
+
+	if _, err := harness.runWithSink(context.Background(), RuntimeSpec{
+		ID:              "opencode",
+		Protocol:        ProtocolACP,
+		Model:           model,
+		ReasoningEffort: "xhigh",
+	}, "roundfix-run-1-task_04", sink); err != nil {
+		t.Fatalf("run deferred OpenCode selection: %v", err)
+	}
+
+	var receipts []runevent.RunEvent
+	for _, event := range sink.Events() {
+		if event.Kind == runevent.KindAgentSelectionReceipt {
+			receipts = append(receipts, event)
+		}
+	}
+	if len(receipts) != 1 {
+		t.Fatalf("selection receipts = %#v, want exactly one", receipts)
+	}
+	receipt := receipts[0]
+	if receipt.RunID != "run-acpx" || receipt.Batch != 7 || receipt.Source != runevent.SourceAgent {
+		t.Fatalf("selection receipt identity = %#v", receipt)
+	}
+	var payload runevent.SelectionReceiptPayload
+	if err := json.Unmarshal(receipt.Payload, &payload); err != nil {
+		t.Fatalf("decode selection receipt: %v", err)
+	}
+	if payload.Session != "roundfix-run-1-task_04" || payload.Runtime != "opencode" || payload.Model != model {
+		t.Fatalf("selection receipt target = %#v", payload)
+	}
+	if payload.RequestedReasoningEffort != "xhigh" || payload.ReasoningEffort != "xhigh" || payload.Status != runevent.SelectionReceiptStatusApplied {
+		t.Fatalf("selection receipt effort = %#v", payload)
+	}
+}
+
+func TestACPXRunWarmSessionIsIdempotent(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	runtime := RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "openrouter/x-ai/grok-4.5", ReasoningEffort: "high"}
+
+	if _, err := harness.run(context.Background(), runtime, "roundfix-run-1-task_04"); err != nil {
+		t.Fatalf("first work turn: %v", err)
+	}
+	if _, err := harness.run(context.Background(), runtime, "roundfix-run-1-task_04"); err != nil {
+		t.Fatalf("second work turn: %v", err)
+	}
+
+	prompts := readJSONStrings(t, harness.promptsPath)
+	if len(prompts) != 3 {
+		t.Fatalf("prompt count = %d, want one setup and two work prompts: %#v", len(prompts), prompts)
+	}
+	warmups := 0
+	for _, prompt := range prompts {
+		if prompt == acpxDeferredEffortWarmupPrompt {
+			warmups++
+		}
+	}
+	if warmups != 1 {
+		t.Fatalf("setup prompt count = %d, want 1: %#v", warmups, prompts)
+	}
+}
+
+func TestACPXRunWarmSessionMismatchStopsBeforeWork(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	const model = "openrouter/x-ai/grok-4.5"
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show":         sessionCapabilitySnapshotFixture(t, model, []string{model}, "effort", "low", []string{"low", "medium", "high"}),
+		"set effort value=high": selectionStateFixture(t, "effort", "high", model, []string{model}, "effort", "low", []string{"low", "medium", "high"}),
+	}))
+
+	_, err := harness.run(context.Background(), RuntimeSpec{
+		ID:              "opencode",
+		Protocol:        ProtocolACP,
+		Model:           model,
+		ReasoningEffort: "high",
+	}, "roundfix-run-1-task_04")
+	if err == nil || !strings.Contains(err.Error(), CapabilityIssueContradictoryResponse) {
+		t.Fatalf("error = %T %v, want contradictory effective effort evidence", err, err)
+	}
+	prompts := readJSONStrings(t, harness.promptsPath)
+	if len(prompts) != 1 || prompts[0] != acpxDeferredEffortWarmupPrompt {
+		t.Fatalf("prompt bytes = %#v, want setup only before mismatch", prompts)
 	}
 }
 
@@ -2296,7 +2452,6 @@ func TestACPXRunAppliesFullAccessSessionSetup(t *testing.T) {
 			want: func(gitRoot string) [][]string {
 				return [][]string{
 					{"--cwd", gitRoot, "--model", "opencode-test", "opencode", "sessions", "ensure", "--name", "roundfix-run-1"},
-					{"--cwd", gitRoot, "opencode", "set", "effort", "high", "-s", "roundfix-run-1"},
 					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "opencode-test", "opencode", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 				}
 			},
@@ -2502,6 +2657,9 @@ func TestACPXRunCancellationCommandFailuresWarnAndContinue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			harness := newBlockingFakeACPXHarness(t, false)
+			const promptStartedSummary = "fake acpx prompt started"
+			harness.setEnv(fakeACPXStartEvent, promptStartedSummary)
+			promptStarted := newCaptureSink(promptStartedSummary)
 			clock := newFakeCancellationClock()
 			harness.runner.cancelClock = clock
 			var warnings []string
@@ -2513,10 +2671,14 @@ func TestACPXRunCancellationCommandFailuresWarnAndContinue(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			resultCh := make(chan error, 1)
 			go func() {
-				_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
+				_, err := harness.runWithSink(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1", promptStarted)
 				resultCh <- err
 			}()
-			harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
+			select {
+			case <-promptStarted.done:
+			case <-time.After(agentWaitBudget):
+				t.Fatalf("timed out waiting for prompt start event; Agent did not start within %s", agentWaitBudget)
+			}
 			cancel()
 			harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
 			if !clock.waitForTimer(t, 0).Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
@@ -3095,6 +3257,7 @@ type fakeACPXHarness struct {
 	gitRoot         string
 	adapterDir      string
 	invocationsPath string
+	promptsPath     string
 	startedPath     string
 	stopGrace       time.Duration
 	milestones      fakeACPXMilestones
@@ -3104,6 +3267,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 	t.Helper()
 	dir := t.TempDir()
 	invocationsPath := filepath.Join(dir, "invocations.jsonl")
+	promptsPath := filepath.Join(dir, "prompts.jsonl")
 	homeDir := filepath.Join(dir, "home")
 	if err := os.MkdirAll(homeDir, 0o755); err != nil {
 		t.Fatalf("create fake HOME: %v", err)
@@ -3128,6 +3292,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 				"HOME="+homeDir,
 				fakeACPXEnv+"=1",
 				fakeACPXInvokes+"="+invocationsPath,
+				fakeACPXPrompts+"="+promptsPath,
 				fakeACPXStdoutBy+"="+mustJSONForTest(t, map[string]string{"prompt": acpxPromptResponseLine("end_turn")}),
 			),
 			Now: func() time.Time {
@@ -3138,6 +3303,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 		gitRoot:         dir,
 		adapterDir:      adapterDir,
 		invocationsPath: invocationsPath,
+		promptsPath:     promptsPath,
 	}
 }
 
@@ -3451,9 +3617,8 @@ func selectedRuntime(runtime RuntimeSpec) RuntimeSpec {
 		if runtime.Model == "" {
 			runtime.Model = "opencode-test"
 		}
-		if runtime.ReasoningEffort == "" {
-			runtime.ReasoningEffort = "high"
-		}
+		// No reasoning-effort default: an empty effort remains runtime-managed.
+		// See ADR-0108.
 	default:
 		if runtime.Model == "" {
 			runtime.Model = "gpt-test"
@@ -3978,41 +4143,51 @@ func runFakeACPXProcess() int {
 	if path := os.Getenv(fakeACPXArgsPath); path != "" {
 		payload, err := json.Marshal(args)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "marshal args: %v\n", err)
+			fmt.Fprintf(os.Stderr, "marshal args: %v\n", err)
 			return 2
 		}
 		if err := os.WriteFile(path, payload, 0o644); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "write args: %v\n", err)
+			fmt.Fprintf(os.Stderr, "write args: %v\n", err)
 			return 2
 		}
 	}
 	if path := os.Getenv(fakeACPXInvokes); path != "" {
 		if err := appendFakeACPXInvocation(path, args); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "append invocation: %v\n", err)
+			fmt.Fprintf(os.Stderr, "append invocation: %v\n", err)
 			return 2
 		}
 	}
 	if path := os.Getenv(fakeACPXCodexPath); path != "" {
 		if err := appendFakeACPXString(path, os.Getenv(codexPathEnv)); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "append codex path: %v\n", err)
+			fmt.Fprintf(os.Stderr, "append codex path: %v\n", err)
 			return 2
 		}
 	}
-	if path := os.Getenv(fakeACPXPromptPath); path != "" && commandKey == "prompt" {
+	promptPath := os.Getenv(fakeACPXPromptPath)
+	promptsPath := os.Getenv(fakeACPXPrompts)
+	if commandKey == "prompt" && (promptPath != "" || promptsPath != "") {
 		prompt, err := io.ReadAll(os.Stdin)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "read stdin: %v\n", err)
+			fmt.Fprintf(os.Stderr, "read stdin: %v\n", err)
 			return 2
 		}
-		if err := os.WriteFile(path, prompt, 0o644); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "write prompt: %v\n", err)
-			return 2
+		if promptPath != "" {
+			if err := os.WriteFile(promptPath, prompt, 0o644); err != nil {
+				fmt.Fprintf(os.Stderr, "write prompt: %v\n", err)
+				return 2
+			}
+		}
+		if promptsPath != "" {
+			if err := appendFakeACPXString(promptsPath, string(prompt)); err != nil {
+				fmt.Fprintf(os.Stderr, "append prompt: %v\n", err)
+				return 2
+			}
 		}
 	}
 	if commandKey == "cancel" {
 		if path := os.Getenv(fakeACPXCanceled); path != "" {
 			if err := os.WriteFile(path, []byte("canceled\n"), 0o644); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "write cancel marker: %v\n", err)
+				fmt.Fprintf(os.Stderr, "write cancel marker: %v\n", err)
 				return 2
 			}
 		}
@@ -4020,7 +4195,7 @@ func runFakeACPXProcess() int {
 	if commandKey == "sessions close" {
 		if path := os.Getenv(fakeACPXClosed); path != "" {
 			if err := os.WriteFile(path, []byte("closed\n"), 0o644); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "write close marker: %v\n", err)
+				fmt.Fprintf(os.Stderr, "write close marker: %v\n", err)
 				return 2
 			}
 		}
@@ -4028,7 +4203,7 @@ func runFakeACPXProcess() int {
 	if blockCommand := os.Getenv(fakeACPXBlockCmd); blockCommand != "" && commandKey == blockCommand {
 		if path := os.Getenv(fakeACPXStarted); path != "" {
 			if err := os.WriteFile(path, []byte("started\n"), 0o644); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "write started marker: %v\n", err)
+				fmt.Fprintf(os.Stderr, "write started marker: %v\n", err)
 				return 2
 			}
 		}
@@ -4039,7 +4214,14 @@ func runFakeACPXProcess() int {
 	if commandKey == "prompt" && os.Getenv(fakeACPXBlock) == "1" {
 		if path := os.Getenv(fakeACPXStarted); path != "" {
 			if err := os.WriteFile(path, []byte("started\n"), 0o644); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "write started marker: %v\n", err)
+				fmt.Fprintf(os.Stderr, "write started marker: %v\n", err)
+				return 2
+			}
+		}
+		if summary := os.Getenv(fakeACPXStartEvent); summary != "" {
+			update := `{"sessionId":"fake","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":` + strconv.Quote(summary) + `}}}`
+			if _, err := io.WriteString(os.Stdout, acpxUpdateLine(update)); err != nil {
+				fmt.Fprintf(os.Stderr, "write prompt-started Run Event: %v\n", err)
 				return 2
 			}
 		}
@@ -4047,7 +4229,7 @@ func runFakeACPXProcess() int {
 			if canceled := os.Getenv(fakeACPXCanceled); canceled != "" {
 				if _, err := os.Stat(canceled); err == nil && os.Getenv(fakeACPXExitCancel) == "1" {
 					if err := writeFakeACPXPromptCompletion(); err != nil {
-						_, _ = fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
+						fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
 						return 2
 					}
 					return 130
@@ -4056,7 +4238,7 @@ func runFakeACPXProcess() int {
 			if closed := os.Getenv(fakeACPXClosed); closed != "" {
 				if _, err := os.Stat(closed); err == nil {
 					if err := writeFakeACPXPromptCompletion(); err != nil {
-						_, _ = fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
+						fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
 						return 2
 					}
 					return 130
@@ -4070,7 +4252,7 @@ func runFakeACPXProcess() int {
 	stderrByCommand := fakeACPXStringMap(os.Getenv(fakeACPXStderrBy))
 	if commandKey == "prompt" {
 		if err := writeFakeACPXThoughtStream(os.Getenv(fakeACPXThoughtLen)); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "write thought stream: %v\n", err)
+			fmt.Fprintf(os.Stderr, "write thought stream: %v\n", err)
 			return 2
 		}
 	}
@@ -4087,7 +4269,7 @@ func runFakeACPXProcess() int {
 	if rawExitCode := os.Getenv(fakeACPXExitCode); rawExitCode != "" {
 		exitCode, err := strconv.Atoi(rawExitCode)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "parse exit code: %v\n", err)
+			fmt.Fprintf(os.Stderr, "parse exit code: %v\n", err)
 			return 2
 		}
 		return exitCode
@@ -4388,4 +4570,95 @@ func infrastructureTailFromMessageForTest(t *testing.T, message string) string {
 		t.Fatalf("message has no stderr tail delimiter: %q", message)
 	}
 	return tail
+}
+
+// TestReasoningEffortConfigKeyMapsSupportedRuntimes keeps the runtime-specific
+// Codex key separate while Claude and OpenCode use the generic effort key.
+func TestReasoningEffortConfigKeyMapsSupportedRuntimes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		runtime RuntimeSpec
+		wantKey string
+	}{
+		{name: "codex maps to its own key", runtime: RuntimeSpec{ID: "codex"}, wantKey: acpxCodexReasoningEffortKey},
+		{name: "claude maps to the generic key", runtime: RuntimeSpec{ID: "claude"}, wantKey: acpxGenericReasoningEffortKey},
+		{name: "opencode maps to the generic key", runtime: RuntimeSpec{ID: "opencode"}, wantKey: acpxGenericReasoningEffortKey},
+		{name: "opencode override maps to the generic key", runtime: RuntimeSpec{ID: "opencode-custom"}, wantKey: acpxGenericReasoningEffortKey},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			key, err := acpxReasoningEffortConfigKey(tt.runtime)
+			if err != nil {
+				t.Fatalf("reasoning key for %q: %v", tt.runtime.ID, err)
+			}
+			if key != tt.wantKey {
+				t.Fatalf("reasoning key = %q, want %q", key, tt.wantKey)
+			}
+		})
+	}
+}
+
+// TestValidateRuntimeSelectionAcceptsOpenCodeReasoningEffort closes the
+// invocation-override path: a configured effort can reach OpenCode without
+// bypassing runtime validation.
+func TestValidateRuntimeSelectionAcceptsOpenCodeReasoningEffort(t *testing.T) {
+	t.Parallel()
+
+	if err := validateRuntimeSelection(RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3", ReasoningEffort: "max"}); err != nil {
+		t.Fatalf("validate OpenCode selection with a non-empty reasoning effort: %v", err)
+	}
+
+	if err := validateRuntimeSelection(RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3"}); err != nil {
+		t.Fatalf("a model-managed OpenCode selection must validate: %v", err)
+	}
+}
+
+// TestRuntimeManagedReasoningProvesAgainstAnAdvertisedEffortOption is the
+// measured OpenCode shape: the adapter advertises a per-model effort option
+// that Roundfix declines to assign, and the selection still proves.
+func TestRuntimeManagedReasoningProvesAgainstAnAdvertisedEffortOption(t *testing.T) {
+	t.Parallel()
+
+	fixture := `{"action":"config_set","configId":"model","value":"opencode-go/kimi-k3","configOptions":[` +
+		`{"id":"model","category":"model","type":"select","currentValue":"opencode-go/kimi-k3","options":[{"value":"opencode-go/kimi-k3"},{"value":"opencode-go/qwen3.8-max"}]},` +
+		`{"id":"effort","type":"select","currentValue":"max","options":[{"value":"max"}]}]}`
+
+	capabilities, err := ParseSessionConfigOptions(
+		[]byte(fixture),
+		AdapterEvidence{Command: "opencode"},
+		SelectionRetention{Model: "opencode-go/kimi-k3"},
+	)
+	if err != nil {
+		t.Fatalf("project the OpenCode capability shape: %v", err)
+	}
+
+	runtime := RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3"}
+	assignment, err := PlanSelectionAssignment(runtime, capabilities)
+	if err != nil {
+		t.Fatalf("plan a model-managed OpenCode selection: %v", err)
+	}
+	if assignment.Encoding != SelectionEncodingRuntimeManaged {
+		t.Fatalf("encoding = %q, want %q", assignment.Encoding, SelectionEncodingRuntimeManaged)
+	}
+	if !selectionStateMatches(assignment, capabilities) {
+		t.Fatalf("an advertised effort option Roundfix never assigns must not break the proof: %#v", capabilities.ReasoningOption)
+	}
+
+	// A runtime Roundfix does control keeps the strict rule.
+	claude := RuntimeSpec{ID: "claude", Model: "opencode-go/kimi-k3"}
+	claudeAssignment, err := PlanSelectionAssignment(claude, capabilities)
+	if err != nil {
+		t.Fatalf("plan a model-managed Claude selection: %v", err)
+	}
+	if claudeAssignment.Encoding != SelectionEncodingModelManaged {
+		t.Fatalf("encoding = %q, want %q", claudeAssignment.Encoding, SelectionEncodingModelManaged)
+	}
+	if selectionStateMatches(claudeAssignment, capabilities) {
+		t.Fatal("model_managed must still require the absence of a reasoning option")
+	}
 }

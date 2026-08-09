@@ -1,6 +1,7 @@
 # Model selection reference
 
-Source snapshot: 2026-08-07
+Source snapshot: 2026-08-07; OpenCode runtime facts remeasured 2026-08-08
+against opencode 1.18.15 through acpx 0.13.0.
 Status: recommendation input, not routing policy.
 
 Sources, each answering a different question:
@@ -81,10 +82,14 @@ source; the catalog is a copy nothing checks. See
 ### The opencode runtime reaches everything else
 
 Roundfix supports three runtimes — `codex`, `claude`, `opencode` — and the third
-changes what is reachable. OpenCode 1.18.15 advertises **431** model
-identifiers, including the whole OpenRouter catalog under an `openrouter/`
-prefix. Every model on the DeepSWE board that neither first-party adapter offers
-is selectable this way:
+changes what is reachable. Measured 2026-08-08 against opencode 1.18.15 through
+acpx 0.13.0, `opencode models` advertises **417** identifiers: 339 under
+`openrouter/`, 60 under `opencode/`, and 18 under `opencode-go/`. The 2026-08-07
+reading of 431 was taken before the account's provider set changed; the count
+moves, so read it rather than quote it.
+
+Every model on the DeepSWE board that neither first-party adapter offers is
+selectable this way:
 
 | Requested | Agent Selection under `opencode` |
 | --- | --- |
@@ -107,7 +112,136 @@ hand. Combined with the adapter accepting unknown identifiers, a typo here is
 silent until a Run.
 
 Reasoning-effort names (`low`, `medium`, `high`, `xhigh`, `max`) match the
-benchmark's bracketed suffix and both adapters' advertised effort values.
+benchmark's bracketed suffix and the **codex and claude** adapters' advertised
+effort values. OpenCode does not share that vocabulary — see below.
+
+#### The `opencode-go` subscription tier — 2026-08-08
+
+Three tiers hide behind the one runtime, and only the middle one is the
+subscription. `openrouter/` is pay-per-use through an OpenRouter key.
+`opencode/` — the entries the picker labels *OpenCode Zen*, such as
+`gpt-5.6-sol`, `gpt-5.5-pro`, and `grok-build-0.1` — is a separate pay-per-use
+tier. `opencode-go/` is what the subscription grants, eighteen models:
+
+`deepseek-v4-flash`, `deepseek-v4-pro`, `glm-5.1`, `glm-5.2`, `gpt-5.6-luna`,
+`grok-4.5`, `hy3`, `kimi-k2.6`, `kimi-k2.7-code`, `kimi-k3`, `mimo-v2.5`,
+`mimo-v2.5-pro`, `minimax-m2.7`, `minimax-m3`, `qwen3.6-plus`, `qwen3.7-max`,
+`qwen3.7-plus`, `qwen3.8-max`.
+
+Two of them bill at **2x usage**: `gpt-5.6-luna` and `deepseek-v4-flash`. That
+inverts the obvious guess, because `deepseek-v4-pro` carries no multiplier.
+
+**Almost none of this tier is on the DeepSWE board.** Exactly one member has a
+row: `deepseek-v4-flash / max` at **53%** for $0.10 per task — far under
+`gpt-5.6-sol / high` at 69%, and it is one of the two that bill at 2x, so it is
+ruled out on both axes at once. `deepseek-v4-pro` has no row because it is newer
+than the board.
+
+### The Go tier is capped, and OpenRouter carries the same models
+
+Measured 2026-08-08 on the OpenCode Go dashboard: the **continuous window hit
+100%** with 1h06 to reset, weekly at 40%, monthly at 20%, and the
+spend-balance-after-limits toggle is **off**, so a capped window fails requests
+rather than degrading. One QA gate Run and a handful of probes exhausted it.
+That is not a budget sustained work can plan against, which is why this
+repository routes the `opencode` runtime through `openrouter/` identifiers
+instead of `opencode-go/` ones.
+
+### Kimi K3 against DeepSeek V4 Pro — OpenRouter, 2026-08-08
+
+The two candidates for that slot, from OpenRouter's own comparison. Kimi K3
+leads every measured axis and costs one to two orders of magnitude more.
+
+| | `kimi-k3` (max) | `deepseek/deepseek-v4-pro` | `deepseek-v4-flash-0731` |
+| --- | ---: | ---: | ---: |
+| Input $/M | 2.80 | 0.1096 | 0.08 |
+| Output $/M | 14.00 | 0.2192 | 0.252 |
+| Cached input $/M | 0.29 | 0.009135 | 0.0252 |
+| Latency p50 | 1.65 s | 2.21 s | 2.30 s |
+| Throughput p50 | 28 tok/s | 35 tok/s | 16 tok/s |
+| Artificial Analysis — intelligence | 66 | lower | lower |
+| Artificial Analysis — coding | 76 | lower | lower |
+| Artificial Analysis — agentic | 54 | lower | lower |
+
+Design Arena Elo, with percentile, is the cleanest read of the gap:
+
+| category | `kimi-k3` | `deepseek-v4-pro` | `deepseek-v4-flash-0731` |
+| --- | ---: | ---: | ---: |
+| 3D | 1453 (99%) | 1312 (90%) | 1272 (77%) |
+| Code Categories | 1414 (99%) | 1271 (80%) | 1258 (74%) |
+| Data Visualization | 1381 (98%) | 1224 (67%) | 1191 (51%) |
+| UI Component | 1390 (99%) | 1256 (72%) | 1273 (79%) |
+| Website | 1378 (99%) | 1259 (77%) | 1259 (77%) |
+| Game Development | — | 1272 (81%) | 1252 (77%) |
+| SVG | — | 1181 (54%) | — |
+| Asciiart | — | 1189 (51%) | — |
+
+A DeepSeek row is the configured choice: one to two orders of magnitude cheaper
+than Kimi K3, for Elo percentiles in the 51–90 band against its 98–99. That
+trade suits a bounded, high-volume tail — the `review` category and its
+nitpicks — better than it suits implementation work, where the gap is quality a
+Run cannot recover.
+
+**Which DeepSeek row, and why it changed on 2026-08-09.** The configured model is
+`deepseek-v4-flash-0731`, not `deepseek-v4-pro`. Comparing the two on list price
+alone is misleading, because only one of them is at list price:
+
+| | `deepseek-v4-pro` | `deepseek-v4-flash-0731` |
+| --- | ---: | ---: |
+| Effective input $/M | 0.1265 | 0.09 |
+| Effective output $/M | 0.253 | 0.18 |
+| Discount applied | 93% off | none |
+| Base input $/M | 0.4350 | 0.09 |
+| Base output $/M | 0.8700 | 0.18 |
+
+Read from the Secondbrain's `raw/monitoring/model-pricing.md`, fetched
+2026-08-09. Flash is the cheaper row *today* and the only one of the two whose
+price cannot move against a running configuration: Pro's advantage is entirely a
+promotion, and its base price is roughly 4.8x what it currently bills. A
+promotional price is a fine reason to try a model and a poor reason to route a
+profile to it, because the day it ends is not a day anyone here will notice
+before the invoice does.
+
+The quality gap between the two DeepSeek rows is narrow and does not run one
+way: on Design Arena, Pro leads Flash on 3D, Code Categories, and Data
+Visualization, while Flash leads on UI Component, and they tie on Website. On
+effort the two differ in a way that matters more than that spread: Pro
+advertises `high` and `xhigh`, Flash advertises `low`, `high`, and `max`. These
+are vendor labels on different models and do not rank across the two, so the
+usable point is about defaults — Flash opens at `low`, the floor of its own
+range, and so depends on Roundfix actually assigning the effort in a way Pro,
+which opens at `high`, does not.
+
+Two live sources cover what this dated snapshot cannot, both in the Secondbrain:
+`raw/monitoring/model-pricing.md` is refetched daily at 06:30 from the OpenRouter
+models API, and `wiki/concepts/modelos-custos-e-selecao.md` is the canonical
+page a daily 08:00 job re-evaluates, reporting only when it recommends a change.
+Read them before repointing a profile — but read them knowing they price
+**OpenRouter pay-per-use**, while every runtime this repository routes to is
+subscription-covered, so their prices inform which model is good, not what a Run
+here costs.
+
+#### OpenCode reasoning-effort defaults — 2026-08-09 snapshot
+
+This snapshot records measurements taken 2026-08-08 against OpenCode 1.18.15
+through acpx 0.13.0. Each row comes from `sessions ensure --model <M>` followed
+by `sessions show`:
+
+| model | advertised effort values | default |
+| --- | --- | --- |
+| `openrouter/x-ai/grok-4.5` | `low`, `medium`, `high` | `low` |
+| `openrouter/moonshotai/kimi-k3` | `low`, `high`, `max` | `low` |
+| `openrouter/deepseek/deepseek-v4-flash-0731` | `low`, `high`, `max` | `low` |
+| `openrouter/deepseek/deepseek-v4-pro` | `high`, `xhigh` | `high` |
+
+Three of four candidates open at the floor of their advertised range. The
+fourth, `deepseek-v4-pro`, opens at `high` because it advertises no lower
+effort.
+
+Roundfix now accepts a requested OpenCode effort. During a Run, it ensures the
+Agent Session with the selected model, sends one setup prompt to warm the
+session, applies and observes the requested effort, and only then sends the
+first work prompt. See ADR-0108.
 
 **The adapter refuses nothing.** An unknown model string comes back labelled
 `Custom model` rather than rejected, so a typo in a claude Selection survives

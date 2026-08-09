@@ -15,6 +15,56 @@ defaults:
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: true
+# Model identifiers are the ones each ACP adapter advertises. The catalog in
+# internal/agent/catalog.go is picker metadata that must follow the adapter, and
+# it did drift until 2026-08-07. The claude adapter advertises
+# `opus` (as `opus[1m]`), `claude-fable-5`, `sonnet`, `haiku`, and `default`;
+# reasoning effort is a separate adapter option. Snapshot and rationale:
+# docs/references/model-selection.md.
+#
+# ---------------------------------------------------------------------------
+# Revised 2026-08-08. Routing follows measured supply, not guesses. Both figures
+# below were read from the providers on 2026-08-08; neither reverts itself.
+#
+# CODEX — OpenAI Pro. Weekly limit at 100% remaining, resets 2026-08-15 21:03
+# America/Sao_Paulo. Full headroom, but a quota all the same: a long Run spends
+# it, so this is not a licence to buy points with steps. The baseline stays
+# sol/high, 69% in 37 steps, against xhigh's 71% in 44. Two points do not pay
+# for 19% more turns when latency multiplies by turn count in a Run.
+#
+# CLAUDE — 68% of the week used, 32% left, resets 2026-08-10 14:00
+# America/Sao_Paulo. A +50% weekly-limit promotion runs through 2026-08-19, so
+# the headroom is larger than the percentage suggests. Claude still runs by
+# default in one category only; everywhere else it sits last, where it consumes
+# nothing unless both selections ahead of it fail to start. `frontend` is the
+# deliberate exception: Claude leads there on design judgment that no benchmark
+# on file measures, and the exposure is small — one frontend Task in the whole
+# near queue.
+#
+# WHAT TO REVISIT, AND WHEN. On 2026-08-10 14:00, whether Claude should lead
+# more than `frontend` again. On 2026-08-15 21:03, the codex reset — `review`
+# already carries luna/max one step behind its preferred for exactly the moment
+# price becomes a criterion again.
+# ---------------------------------------------------------------------------
+#
+# Claude is last in every Fallback Chain except `frontend`, which it leads. The
+# runtime that leads the other five varies by category: codex on general,
+# backend, and qa; opencode on data and review. Every chain changes runtime at
+# each step, because a fallback exists for when a runtime is unavailable and a
+# second model on the same runtime does not help.
+#
+# NEVER route gpt-5.6-sol through OpenRouter. Every `gpt-5.6-sol` below is
+# `runtime: codex`, which is the GPT subscription. The `opencode` runtime also
+# advertises `openrouter/openai/gpt-5.6-sol`, and
+# docs/references/model-selection.md documents that mapping — it is pay-per-use
+# billing for a model this repository already has, so the mapping is reachable
+# and wrong. The rule is about sol specifically, not about OpenRouter: the
+# `opencode` runtime below deliberately routes an OpenRouter model no
+# subscription here covers.
+#
+# Claude Fable 5 appears nowhere below. It answers in 1.7 minutes — roughly 25x
+# Sol's latency — for a result Sol matches. In a Run, where latency multiplies
+# by turn count, that trade never pays, and no subscription makes time free.
 profiles:
   general:
     preferred:
@@ -22,26 +72,87 @@ profiles:
       model: gpt-5.6-sol
       reasoning_effort: high
     fallbacks:
-      - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: xhigh
+      - runtime: opencode
+        model: openrouter/deepseek/deepseek-v4-flash-0731
+        reasoning_effort: max
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
   backend:
     preferred:
       runtime: codex
       model: gpt-5.6-sol
       reasoning_effort: high
     fallbacks:
-      - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: xhigh
+      - runtime: opencode
+        model: openrouter/deepseek/deepseek-v4-flash-0731
+        reasoning_effort: max
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
   frontend:
+    # The one category Claude still leads, and the one place it runs by default
+    # during the low week. Opus 5 at high scores 73% in 73 steps; the codex row
+    # that matches it is sol/max at 61 steps, and sol/high does not — it scores
+    # 69%. Claude is kept here on design judgment no benchmark on file measures,
+    # so the chain accepts the weaker codex setting at its tail rather than
+    # promoting a stronger one that would only ever run in an outage.
     preferred:
       runtime: claude
       model: opus
-      reasoning_effort: xhigh
+      reasoning_effort: high
+    fallbacks:
+      - runtime: opencode
+        model: openrouter/deepseek/deepseek-v4-flash-0731
+        reasoning_effort: max
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
+  data:
+    # The OpenCode runtime, now pointed at OpenRouter rather than the subscribed
+    # Go tier. Measured 2026-08-08: the Go continuous window hit 100% with 1h06
+    # to reset, weekly at 40%, monthly at 20%, and the account's
+    # spend-balance-after-limits toggle is OFF — so a capped window fails
+    # requests rather than degrading. One QA gate Run and a handful of probes
+    # were enough to exhaust it, which is not a budget sustained work can plan
+    # against.
+    #
+    # This is the one pay-per-use selection in the file, and it is
+    # deepseek-v4-flash-0731 rather than deepseek-v4-pro on the Secondbrain's
+    # 2026-08-09 reading. Flash bills $0.09 in and $0.18 out per 1M with no
+    # discount applied; Pro reads cheaper on some days only because it carries a
+    # 93%-off promotion, and its base price is $0.4350 and $0.8700. So Flash is
+    # the cheaper row today and the only one of the two whose price cannot move
+    # against us when a promotion ends — Pro would snap to roughly 4.8x. The
+    # Secondbrain refetches OpenRouter daily at 06:30 and re-evaluates at 08:00;
+    # the table is raw/monitoring/model-pricing.md there, mirrored into
+    # docs/references/model-selection.md here.
+    #
+    # It is the cheap choice, not the strong one. kimi-k3 leads it on every
+    # measured axis — Design Arena Elo in the 98-99th percentile, and higher
+    # Artificial Analysis intelligence, coding, and agentic scores — for $3.00
+    # in and $15.00 out, roughly 33x and 83x. That trade suits `review`, which
+    # is bounded and high-volume, better than it suits `data`, where the gap is
+    # quality a Run cannot recover.
+    #
+    # reasoning_effort is `max` because Spec 0089 made this runtime's effort
+    # assignable; ADR-0106 previously forced it empty. Measured 2026-08-09,
+    # deepseek-v4-flash-0731 advertises `low`, `high`, and `max` and defaults to
+    # `low` — the weakest setting it offers. Leaving this empty would not mean
+    # "the model's own choice"; it would mean every Run here silently took the
+    # floor. OpenCode only exposes the control once the Agent Session holds a
+    # queue owner, so Roundfix raises one with an inert setup turn that carries
+    # no tools, then applies and observes `max` before the first work turn.
+    preferred:
+      runtime: opencode
+      model: openrouter/deepseek/deepseek-v4-flash-0731
+      reasoning_effort: max
     fallbacks:
       - runtime: codex
         model: gpt-5.6-sol
+        reasoning_effort: high
+      - runtime: claude
+        model: opus
         reasoning_effort: high
   qa:
     preferred:
@@ -49,17 +160,33 @@ profiles:
       model: gpt-5.6-sol
       reasoning_effort: high
     fallbacks:
-      - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: xhigh
+      - runtime: opencode
+        model: openrouter/deepseek/deepseek-v4-flash-0731
+        reasoning_effort: max
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
   review:
+    # The second category the OpenCode runtime leads, and the safest one. Review
+    # work is bounded, has no dependency graph, and blocks nobody, so extra
+    # turns cost wall clock and nothing else. It is also the category that pays
+    # for re-enabling nitpicks: a long tail of low-severity findings runs here
+    # at $0.18 per 1M output instead of against a quota the Task Graph needs.
+    #
+    # luna/max sits behind it: 67% for $0.61 against Sol's 69% for $3.47, bought
+    # with 102 steps against 37. It stays the cheapest usable codex row on the
+    # board by an order of magnitude, which is what makes it the right thing to
+    # weigh forward as the codex headroom is spent.
     preferred:
-      runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
+      runtime: opencode
+      model: openrouter/deepseek/deepseek-v4-flash-0731
+      reasoning_effort: max
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
+        model: gpt-5.6-luna
+        reasoning_effort: max
+      - runtime: claude
+        model: sonnet
         reasoning_effort: xhigh
 specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
@@ -89,8 +216,13 @@ review_source:
   # Preflight coherence check refuses watch and resolve — a Run would wait for
   # a review nobody asks for.
   request_review: true
-  # false excludes CodeRabbit findings whose severity is nitpick.
-  include_nitpicks: false
+  # false excludes CodeRabbit findings whose severity is nitpick. Re-enabled
+  # 2026-08-08: nitpicks were off because resolve ran on the codex quota, where
+  # a long tail of low-severity findings competed with implementation work for
+  # the same budget. Resolve now routes through `review`, which leads with the
+  # OpenCode subscription, so the tail costs subscription time rather than a
+  # quota the Task Graph also needs.
+  include_nitpicks: true
 watch:
   until_clean: true
   max_rounds: 2

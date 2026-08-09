@@ -1,0 +1,29 @@
+diff --git a/docs/agents/agent-instructions.md b/docs/agents/agent-instructions.md
+index c026671..d9ef943 100644
+--- a/docs/agents/agent-instructions.md
++++ b/docs/agents/agent-instructions.md
+@@ -48,3 +48,5 @@ The selected repository Verification is `rtk make verify`.
+ 
+-- **stop-and-ask**: Never guess a decision the user can answer cheaply. Ask through the available user-interaction tool, or ask plainly and stop when no such tool exists.
++- **mandatory**: When a pull request changes code and the repository's review automation does not review it on its own, request the review explicitly as part of opening the pull request rather than as a follow-up. Never read a skipped or absent review check as approval.
++
++- **stop-and-ask**: Never guess a decision the user can answer cheaply. Ask through the runtime's structured user-interaction tool when it has one; when it has none, reproduce that shape by hand. Either way the question must be answerable without rereading the session: state what was found and why it forces a choice, then enumerate options by number or letter, each with the consequence of picking it, and name a recommendation. Never bundle several questions into one message, ask in open prose, or compress an option until only its author can tell what it means — an under-explained question is answered by guess, which costs more than not asking.
+ 
+diff --git a/docs/agents/docs-layout.md b/docs/agents/docs-layout.md
+index e942ae0..d4adaea 100644
+--- a/docs/agents/docs-layout.md
++++ b/docs/agents/docs-layout.md
+@@ -182,3 +182,3 @@ absorbed_by: <rollup-basename-or-spec-slug>
+ 
+-- **mandatory**: Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent.
++- **mandatory**: When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent. Where a fleet observation is captured before it reaches this repository is the Secondbrain guidance's concern, not this one's.
+ 
+diff --git a/docs/agents/monorepo.md b/docs/agents/monorepo.md
+index 9857f91..2ad1f15 100644
+--- a/docs/agents/monorepo.md
++++ b/docs/agents/monorepo.md
+@@ -4,3 +4,3 @@
+ 
+-- Identify the owning package and bounded context before editing. Read its context and local instructions, keep changes inside the Task slice, and require an explicit owning contract plus boundary Verification for cross-package changes.
++- **mandatory**: Identify the owning package and bounded context before editing. Read its context and local instructions, keep changes inside the Task slice, and require an explicit owning contract plus boundary Verification for cross-package changes.
+ 

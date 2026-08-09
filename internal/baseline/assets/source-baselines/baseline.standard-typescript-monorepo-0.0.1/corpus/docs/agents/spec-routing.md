@@ -41,3 +41,7 @@ Trivial one-line fix, typo, or configuration tweak: implement directly without a
 <!-- source-baseline-entry: clause.spec.routing-05-task-graph -->
 Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, and execute implementation from the Task Graph.
 <!-- /source-baseline-entry: clause.spec.routing-05-task-graph -->
+
+<!-- source-baseline-entry: clause.spec.project-constraints-06-outside-evidence -->
+- MUST rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts — a repository the Spec did not build, a measurement it did not design, or published literature — and record in that row where the evidence came from. A row whose outside source cannot be obtained is recorded as blocked with its reason; it never requires human interaction and never blocks the Spec.
+<!-- /source-baseline-entry: clause.spec.project-constraints-06-outside-evidence -->

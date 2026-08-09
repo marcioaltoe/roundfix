@@ -104,6 +104,10 @@ _Avoid_: Tool preference, implicit permission, cleanup authorization
 The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict plus `rows_blocked_environment` and `rows_blocked_finding` counts in its frontmatter.
 _Avoid_: Test report, QA log
 
+**External Acceptance Evidence**:
+Evidence for at least one named acceptance row that originates outside the Spec's own artifacts — a real repository, a measurement, or published literature — with its origin recorded. A row whose external evidence cannot be obtained is recorded as blocked with its reason. It exists because a rubric and the requirement it measures, written by one author from one premise, confirm rather than test.
+_Avoid_: Self-authored rehearsal, internal fixture, passing suite
+
 **ACP Runtime**:
 A local coding runtime that Roundfix launches through the user's installed tool and authentication setup using Agent Client Protocol stdio. The MVP supports Codex through `codex-acp`, Claude through `claude-agent-acp`, and OpenCode through `opencode acp`; command overrides remain a stdio escape hatch for local testing.
 _Avoid_: Review Source, review provider
@@ -127,6 +131,10 @@ _Avoid_: Adapter found, binary check, PATH readiness
 **Exact Agent Selection Proof**:
 The token-free disposable Agent Session check that maps one Agent Selection through advertised ACP capabilities, applies its exact model and reasoning assignment, observes matching effective state, and closes the Session successfully.
 _Avoid_: Model validity, catalog match, recommendation rank
+
+**Selection Encoding**:
+How one Agent Selection's reasoning effort is represented in the advertised ACP controls, decided during proof and reported by readiness surfaces. `independent` assigns a separate advertised reasoning option. `model_variant` selects an advertised model identifier that already carries the effort. `model_managed` is an empty reasoning effort on an adapter advertising no reasoning control at all. `runtime_managed` is an empty reasoning effort on an ACP Runtime whose advertised reasoning control Roundfix declines to assign, so the observed value is the Agent Model's own and is not proof-relevant. `runtime_deferred` is a non-empty reasoning effort on an ACP Runtime that advertises the control only once the Agent Session holds a queue owner, so proof verifies the value is advertised and the Run applies and observes it after an inert setup turn and before the first work turn.
+_Avoid_: Effort mode, reasoning strategy, assignment style
 
 **Agent Selection Profile**:
 The atomic policy for one Agent Work Category, containing one Preferred Selection and a non-empty ordered Fallback Chain. A higher-precedence profile replaces the complete lower-precedence profile rather than merging individual fields.
@@ -503,8 +511,20 @@ The exact set of repository changes proposed for explicit review and confirmatio
 _Avoid_: Patch, implicit apply, change preview
 
 **Setup Manifest**:
-The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline.
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline. Every applied Baseline change republishes it, so its recorded digests describe the bytes on disk rather than the bytes adoption wrote.
 _Avoid_: Project Config, lock file, generated guide
+
+**Managed Region**:
+The byte range one setup-owned marker pair delimits inside an instruction carrier, identified by its managed artifact identity. Its content belongs to the Context-Driven Baseline, not to the repository holding it; the bytes outside every marker pair belong to the repository and no Baseline operation changes them.
+_Avoid_: Managed file, generated block, setup section
+
+**Managed Refresh**:
+The preservation mode that regenerates only Managed Regions, leaves every other byte identical, requires no Source Baseline and no Decision Plan, and takes no root backup because the plan's preimages carry the preservation proof. It converges: a second run against an unchanged catalog reports the repository current and proposes no change.
+_Avoid_: Baseline Readoption, reapply, overwrite
+
+**Unrecorded Managed Region**:
+A Managed Region whose bytes are not the bytes the adopted Setup Manifest recorded. It is classified and reported by path, managed identity, and the lines a refresh removes — never presumed damaged and never silently replaced. Only a managed identity appearing more than once in one carrier blocks, because that refresh has no defensible target.
+_Avoid_: Hand-edited marker, corrupted block, drift
 
 **Baseline ADR**:
 An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.

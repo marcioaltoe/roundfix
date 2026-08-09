@@ -120,10 +120,25 @@ Add a row for:
 
 - every user story, exercised end to end by a named actor;
 - every acceptance criterion not safely credited from task evidence;
+- the Spec's outside-evidence acceptance row, when no row above already carries it;
 - every Non-Goal that needs a scope-creep check;
 - each mandatory surface sweep below.
 
 For each row record the actor, entry point, surface, steps, expected observable, independent confirmation, persistence check, evidence path, and status `pending`. Order rows by user impact and blast radius. Select 2-5 relevant behavior probes for each high-risk journey: double submit, refresh or back navigation mid-action, deep-link/reopen, invalid or out-of-order input, session expiry, offline/reconnect, concurrent tabs, or locale/accessibility changes. Choose probes that fit the feature; unrelated probes create noise.
+
+One row is the Spec's outside-evidence row: the acceptance row that rests on
+evidence originating outside the Spec's own artifacts — a repository the Spec
+did not build, a measurement it did not design, or published literature. Record
+in that row where its evidence came from, named precisely enough for a later
+reader to reach the same source, so the result cannot be read as a rehearsal of
+the Spec's own premise. When that source cannot be obtained, record the row as
+`blocked (environment: <cause>)` with the reason it was unreachable and count it
+in `rows_blocked_environment`. Never drop the row, and never satisfy it with
+evidence the Spec authored. A blocked or partial outside-evidence row blocks
+pull request preparation until the row is satisfied or carried forward on
+declared unmoved evidence under ADR-0097. Task authoring never stalls on it —
+decomposition records the blocked row and proceeds — so the obligation lands
+here, at the gate, where the Spec is asked to account for it. See ADR-0104.
 
 The plan is complete when every story and criterion has coverage, every chosen probe has a reason, and the report contains the full pending matrix.
 
@@ -301,6 +316,10 @@ The gate permits PR preparation only on `pass`. On `fail` or `partial`, state wh
 - A governance check fails but does not affect the runnable application's
   behavior: block only the governance rows that wait on that named check and
   continue the functional journeys.
+- The outside-evidence row names repositories this environment does not hold:
+  record `blocked (environment: <cause>)` with the attempted lookup as proof and
+  count it in `rows_blocked_environment` — never substitute a rehearsal the Spec
+  authored.
 - The prompt names an Open Pull Request and read-only observation proves approval, Merge-Ready acceptance, and review-artifact ancestry: pass those Pull Request journeys without commit, push, or Pull Request mutation authority.
 - A task Result names a passing unit test, while the assembled browser journey also persists after refresh with screenshots: credit the task criterion and pass the user-story row from live evidence.
 

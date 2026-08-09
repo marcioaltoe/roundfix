@@ -20,8 +20,12 @@ Consult the local Secondbrain before acting when repository context does not ans
 Read `wiki/index.md` first. Then run `qmd query "<question>" --all --files --min-score 0.3`. Inspect `projects/<project>/mirror/` only when the index and query point there, and open only the files required for the task; treat mirrors as references, not workspaces.
 <!-- /source-baseline-entry: clause.secondbrain.02-query-order -->
 
+<!-- source-baseline-entry: clause.secondbrain.03-decision-consultation -->
+- MUST consult the local knowledge system while a decision is being formed — authoring a Spec, choosing an approach, or validating a strategy — for the decisions sibling projects already made, the literature, and the general technical knowledge this repository does not hold. An unreachable knowledge system or an empty result is reported as a condition in the artifact being written, never a reason to stop.
+<!-- /source-baseline-entry: clause.secondbrain.03-decision-consultation -->
+
 <!-- source-baseline-entry: clause.secondbrain.inbox-write-permission -->
-Sessions MAY create files under the Secondbrain's `inbox/**`; this is the only writable Secondbrain namespace. Every other Secondbrain path stays read-only.
+- MUST treat `inbox/**` as the only writable Secondbrain namespace and every other Secondbrain path as read-only. This bounds where a session may write, never whether it must.
 <!-- /source-baseline-entry: clause.secondbrain.inbox-write-permission -->
 
 <!-- source-baseline-entry: clause.secondbrain.inbox-entry-contract -->
@@ -56,6 +60,12 @@ The maintainer owns the session-end hook outside this repository; this clause co
 <!-- source-baseline-entry: clause.secondbrain.research-capture -->
 A session that performed substantive external research must capture a digest with its sources for the brain's own namespace. Run the advisory qmd duplicate check first through an authorized access path, verify that returned paths exist, and review substantive overlap; a score alone never decides. A strong verified match routes the digest to extend existing knowledge instead of duplicating it; otherwise create a new pending research Inbox Entry. Ingestion remains the brain's own contract.
 <!-- /source-baseline-entry: clause.secondbrain.research-capture -->
+<!-- source-baseline-entry: clause.secondbrain.capture-trigger -->
+- MUST capture an observed defect, improvement, or feature idea as one pending Inbox Entry under the namespace of the project that owns the fix, which is frequently not the project the session runs in, after reading that destination's existing entries and extending a strong verified match instead of duplicating it.
+<!-- /source-baseline-entry: clause.secondbrain.capture-trigger -->
+<!-- source-baseline-entry: clause.secondbrain.capture-self-contained -->
+- MUST write each Inbox Entry so a triaging session can act without the author's context, commit it at the moment of capture, and MUST NOT commit, edit, or move an entry another session created.
+<!-- /source-baseline-entry: clause.secondbrain.capture-self-contained -->
 
 <!-- source-baseline-entry: clause.secondbrain.prohibit-writes -->
 Do not create, edit, rename, move, or delete any Secondbrain file outside `inbox/**`. Do not edit `raw/` or `projects/*/mirror/`, and never copy code or generated artifacts from a mirror without a local source check.
@@ -72,3 +82,6 @@ Cite every Secondbrain file used in the final response or handoff by path. Do no
 <!-- source-baseline-entry: clause.secondbrain.escalate-durable-updates -->
 When Secondbrain knowledge must be added or corrected, ask Hermes to ingest or update it instead of writing from this repository.
 <!-- /source-baseline-entry: clause.secondbrain.escalate-durable-updates -->
+<!-- source-baseline-entry: clause.secondbrain.baseline-owned-guidance -->
+- MUST treat guidance inside `setup-context-driven` markers as Baseline-owned: propose changes to it as an Inbox Entry to the Baseline's owner, never as a local edit the next Baseline update overwrites.
+<!-- /source-baseline-entry: clause.secondbrain.baseline-owned-guidance -->

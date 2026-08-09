@@ -1,0 +1,10 @@
+Preflight failed
+
+Reason:
+  invocation preferred.reasoning_effort must be empty for runtime "opencode"; OpenCode advertises reasoning effort per model and only after an Agent Session's first prompt, so Roundfix cannot apply one during a token-free Exact Agent Selection Proof; use reasoning_effort: "" for model-managed reasoning
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix implement --help' for usage.

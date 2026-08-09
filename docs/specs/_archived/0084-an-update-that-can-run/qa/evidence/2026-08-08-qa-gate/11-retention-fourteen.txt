@@ -1,0 +1,15 @@
+=== all 14 present & retained in conexus ===
+clause.backend.boundary-contracts             retained
+clause.backend.http-independent-use-cases     retained
+clause.backend.layered-architecture           retained
+clause.backend.persistence-owner              retained
+clause.backend.prohibit-generic-layers        retained
+clause.backend.thin-http-handlers             retained
+rule.backend.boundary-contracts               retained
+clause.domain.canonical-language              retained
+clause.domain.layout-decision                 retained
+clause.frontend.organize-by-system            retained
+clause.frontend.public-system-boundary        retained
+clause.spec.local-task-tracker-only           retained
+clause.spec.status-only-in-task               retained
+rule.monorepo.context-boundaries              retained

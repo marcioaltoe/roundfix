@@ -112,17 +112,61 @@ has one semantic owner, and each active guide has one root pointer. Read the
 universal tier first, then continue through the active tiers that match the
 work; do not use file order or a narrower guide to override earlier policy.
 
-Run the interactive workflow from a terminal:
+Refresh a repository with a compatible Setup Manifest through the dedicated,
+non-interactive update path:
+
+```bash
+roundfix baseline update --repo . --format json
+```
+
+Without confirmation, a changed managed-refresh Plan is presented and the
+repository remains unchanged. Approve the Plan Digest computed in the same
+invocation for a fleet sweep:
+
+```bash
+roundfix baseline update --repo . --yes --format json
+```
+
+The command reads the Baseline Profile and recorded decisions from the Setup
+Manifest, prompts for nothing, and never invokes semantic classification. It
+rewrites only Baseline-managed blocks, setup-owned guides, skills, and the Setup
+Manifest. Every byte outside managed boundaries remains byte-identical,
+including Repository-Specific Normative Rules, repository-rule blocks, and
+authored prose in touched files.
+
+| Option | Contract |
+| --- | --- |
+| `--repo <path>` | Git worktree or a path inside it; defaults to the current directory. |
+| `--format <text\|json>` | Output format; defaults to `text`. JSON uses `roundfix/baseline-update-result/v1`. |
+| `--yes` | Approve the Plan Digest computed in this invocation. Mutually exclusive with `--confirm-plan`. |
+| `--confirm-plan <digest>` | Approve the exact Plan Digest reviewed in a previous invocation. Mutually exclusive with `--yes`. |
+| `--adopt-suggested` | Adopt and report catalog suggestions only for decisions absent from the Setup Manifest. Without it, a new decision requires action and no bytes are written. |
+| `--no-skills` | Skip the Repository Skill Set refresh after guidance apply. |
+| `--skills-source-dir <path>` | Use an explicit offline Git checkout or bare object store for external skill restoration. |
+
+The update exit categories are stable for automation:
+
+| Exit | Category |
+| --- | --- |
+| `0` | The repository is already current, or an approved managed refresh applied and verified. |
+| `1` | Apply, verification, output, rollback, or recovery failed. |
+| `2` | Input is invalid, the manifest is incompatible, or the repository is unsafe. |
+| `3` | First adoption, a new decision, confirmation, or retention action is required; nothing is written. |
+| `130` | The operation was canceled. |
+
+Use the interactive workflow from a terminal for first adoption, a Baseline
+Profile change, or a decision the Setup Manifest does not carry:
 
 ```bash
 roundfix baseline --repo . --format text
 ```
 
-The same command handles first adoption and later updates. It detects the
-current state, asks numbered questions, resolves exactly one Baseline Profile,
-shows one consolidated Change Plan with file changes first, and asks once
-whether to apply the displayed Plan Digest. It writes nothing before that final
-confirmation.
+The interactive command detects the current state, resolves exactly one
+Baseline Profile, shows one consolidated Change Plan with file changes first,
+and asks once whether to apply the displayed Plan Digest. With a compatible
+Setup Manifest it skips every settled question and semantic classification,
+prompting only for decisions the manifest does not carry and for final Plan
+Digest confirmation. It writes nothing before that final confirmation.
 
 Each decision prompt and the contextual preservation prompt mark one visible
 default. Press Enter to accept it. A still-valid value from the existing Setup
@@ -165,8 +209,9 @@ profile default. Classification, plan approval, and apply never accept an empty
 answer.
 
 The interactive command refuses redirected or absent terminal input. Scripts,
-CI jobs, and Agents must use the non-interactive `baseline plan` and `baseline
-apply` commands described under [Automation](#automation).
+CI jobs, and Agents use `baseline update` for an adopted repository, or the
+non-interactive `baseline plan` and `baseline apply` commands described under
+[Automation](#automation) for first adoption and Profile changes.
 
 ### Greenfield composition and update redistribution
 
@@ -176,8 +221,12 @@ generate a generic repository guide. With no accepted residual rules, it also
 creates no `docs/agents/specific-repository.md` carrier and no root pointer to
 that path.
 
-Update and Baseline Readoption account for every existing repository rule
-before mutation. Roundfix segments the current carriers without changing their
+Managed refresh does not redistribute repository-authored rules; it preserves
+their exact bytes and regenerates only Baseline-managed regions. Profile changes
+and Baseline Readoption account for every existing repository rule before
+mutation.
+
+Roundfix segments the current carriers without changing their
 exact source bytes, then proposes one reviewed disposition for each segment:
 
 - move the exact bytes into a repository-owned block in the active semantic
@@ -234,11 +283,17 @@ validation and the maintainer's confirmation remain authoritative.
 
 ### Update, profile change, and rejected plans
 
-A compatible Setup Manifest enters update with its current Baseline Profile and
-stored decisions. An incompatible Profile Digest enters adoption but retains
-still-valid stored decisions and a resolvable profile as interactive defaults.
-The workflow asks whether to keep or change the profile. Changing it produces a
-new complete Change Plan and Plan Digest; profiles are never combined.
+`baseline update` keeps the current Baseline Profile and resolves compatible
+stored decisions from the Setup Manifest even when the Profile Digest moved.
+It stops without writing when the profile no longer resolves, a stored decision
+is invalid, a new decision needs an answer, or retention accounting is
+incomplete. Use `--adopt-suggested` only when explicitly accepting suggestions
+for newly introduced decisions.
+
+The interactive workflow handles a Baseline Profile change. It retains
+still-valid stored decisions as defaults, asks whether to keep or change the
+profile, and produces a new complete Change Plan and Plan Digest. Profiles are
+never combined.
 
 Rejecting a final plan does not authorize a partial write. Select the decision
 area to revisit:
@@ -503,6 +558,17 @@ paths with that scope. Completed and archived legacy Specs remain
 byte-identical.
 
 ### Automation
+
+For a repository with a compatible Setup Manifest, update directly from the
+recorded Baseline Profile and decisions:
+
+```bash
+roundfix baseline update --repo . --yes --format json
+```
+
+Omit `--yes` to review the managed-refresh Plan without writing, then rerun with
+`--confirm-plan <digest>` after approving its exact Plan Digest. Exit `3` names
+any decision or retention action that still needs a maintainer.
 
 Planning is read-only and non-interactive:
 

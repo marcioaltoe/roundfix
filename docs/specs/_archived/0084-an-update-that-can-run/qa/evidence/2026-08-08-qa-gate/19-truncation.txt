@@ -1,0 +1,183 @@
+Baseline update: plan ready
+Category: approval
+Result: managed-refresh plan is ready; repository bytes are unchanged
+Prior catalog: sha256:6d08fccbb8fe112185f64abd7aac2a00d4000a077d015182f84584056340edeb
+Current catalog: sha256:6d08fccbb8fe112185f64abd7aac2a00d4000a077d015182f84584056340edeb
+File changes: 2
+- update docs/agents/setup-context.json (1 managed entries)
+- update docs/agents/skill-dispatch.md (1 managed entries)
+Unrecorded managed regions: 1
+- Path: docs/agents/skill-dispatch.md
+  Managed identity: guide.skill-dispatch
+  Reason: digest-mismatch
+  Removed lines:
+    - probe unique line 01 that the catalog cannot reproduce
+    - probe unique line 02 that the catalog cannot reproduce
+    - probe unique line 03 that the catalog cannot reproduce
+    - probe unique line 04 that the catalog cannot reproduce
+    - probe unique line 05 that the catalog cannot reproduce
+    - probe unique line 06 that the catalog cannot reproduce
+    - probe unique line 07 that the catalog cannot reproduce
+    - probe unique line 08 that the catalog cannot reproduce
+    - probe unique line 09 that the catalog cannot reproduce
+    - probe unique line 10 that the catalog cannot reproduce
+    - probe unique line 11 that the catalog cannot reproduce
+    - probe unique line 12 that the catalog cannot reproduce
+    - probe unique line 13 that the catalog cannot reproduce
+    - probe unique line 14 that the catalog cannot reproduce
+    - probe unique line 15 that the catalog cannot reproduce
+    - probe unique line 16 that the catalog cannot reproduce
+    - probe unique line 17 that the catalog cannot reproduce
+    - probe unique line 18 that the catalog cannot reproduce
+    - probe unique line 19 that the catalog cannot reproduce
+    - probe unique line 20 that the catalog cannot reproduce
+    - probe unique line 21 that the catalog cannot reproduce
+    - probe unique line 22 that the catalog cannot reproduce
+    - probe unique line 23 that the catalog cannot reproduce
+    - probe unique line 24 that the catalog cannot reproduce
+    - probe unique line 25 that the catalog cannot reproduce
+    - probe unique line 26 that the catalog cannot reproduce
+    - probe unique line 27 that the catalog cannot reproduce
+    - probe unique line 28 that the catalog cannot reproduce
+    - probe unique line 29 that the catalog cannot reproduce
+    - probe unique line 30 that the catalog cannot reproduce
+    - probe unique line 31 that the catalog cannot reproduce
+    - probe unique line 32 that the catalog cannot reproduce
+    - probe unique line 33 that the catalog cannot reproduce
+    - probe unique line 34 that the catalog cannot reproduce
+    - probe unique line 35 that the catalog cannot reproduce
+    - probe unique line 36 that the catalog cannot reproduce
+    - probe unique line 37 that the catalog cannot reproduce
+    - probe unique line 38 that the catalog cannot reproduce
+    - probe unique line 39 that the catalog cannot reproduce
+    - probe unique line 40 that the catalog cannot reproduce
+    - probe unique line 41 that the catalog cannot reproduce
+    - probe unique line 42 that the catalog cannot reproduce
+    - probe unique line 43 that the catalog cannot reproduce
+    - probe unique line 44 that the catalog cannot reproduce
+    - probe unique line 45 that the catalog cannot reproduce
+    - probe unique line 46 that the catalog cannot reproduce
+    - probe unique line 47 that the catalog cannot reproduce
+    - probe unique line 48 that the catalog cannot reproduce
+    - probe unique line 49 that the catalog cannot reproduce
+    - probe unique line 50 that the catalog cannot reproduce
+    ... 10 additional lines omitted
+Retention evidence: 111
+- clause.core.keep-root-compact: retained -> clause.core.keep-root-compact
+- clause.core.fix-root-causes: retained -> clause.core.fix-root-causes
+- clause.core.prohibit-verification-workarounds: retained -> clause.core.prohibit-verification-workarounds
+- clause.core.keep-follow-ups-outside-slice: retained -> clause.core.keep-follow-ups-outside-slice
+- clause.core.record-acceptance-evidence: retained -> clause.core.record-acceptance-evidence
+- clause.core.require-fresh-evidence: retained -> clause.core.require-fresh-evidence
+- clause.core.run-selected-verification: retained -> clause.core.run-selected-verification
+- clause.core.prohibit-verification-contract-bypass: retained -> clause.core.prohibit-verification-contract-bypass
+- clause.core.ask-before-verification-configuration-change: retained -> clause.core.ask-before-verification-configuration-change
+- clause.core.require-tooling-authorization: retained -> clause.core.require-tooling-authorization
+- clause.core.activate-matching-skills: retained -> clause.core.activate-matching-skills
+- clause.core.use-conventional-commits: retained -> clause.core.use-conventional-commits
+- clause.core.use-github-pr-workflow: retained -> clause.core.use-github-pr-workflow
+- clause.core.write-generated-guidance-in-english: retained -> clause.core.write-generated-guidance-in-english
+- clause.core.follow-dependency-workflow: retained -> clause.core.follow-dependency-workflow
+- clause.core.review-new-dependencies: retained -> clause.core.review-new-dependencies
+- clause.core.preserve-git-scope: retained -> clause.core.preserve-git-scope
+- clause.core.ask-before-destructive-git: retained -> clause.core.ask-before-destructive-git
+- clause.core.ask-before-delivery: retained -> clause.core.ask-before-delivery
+- clause.core.request-review-explicitly: retained -> clause.core.request-review-explicitly
+- clause.core.ask-user-answerable-decisions: retained -> clause.core.ask-user-answerable-decisions
+- clause.core.prohibit-secret-exposure: retained -> clause.core.prohibit-secret-exposure
+- clause.core.research-authoritative-external-sources: retained -> clause.core.research-authoritative-external-sources
+- clause.core.research-local-code-locally: retained -> clause.core.research-local-code-locally
+- clause.core.use-declared-external-research-fallback: retained -> clause.core.use-declared-external-research-fallback
+- clause.core.prohibit-external-research-for-local-code: retained -> clause.core.prohibit-external-research-for-local-code
+- clause.autonomous.delegate-through-roundfix: retained -> clause.autonomous.delegate-through-roundfix
+- clause.autonomous.supervisor-prohibition: retained -> clause.autonomous.supervisor-prohibition
+- clause.autonomous.daemon-verifies-task: retained -> clause.autonomous.daemon-verifies-task
+- clause.autonomous.loop-01-qa-once: retained -> clause.autonomous.loop-01-qa-once
+- clause.autonomous.loop-02-autonomous-decomposition: retained -> clause.autonomous.loop-02-autonomous-decomposition
+- clause.autonomous.loop-03-specify-the-hazard: retained -> clause.autonomous.loop-03-specify-the-hazard
+- clause.autonomous.loop-04-verify-the-class: retained -> clause.autonomous.loop-04-verify-the-class
+- clause.autonomous.loop-05-clean-is-not-evidence: retained -> clause.autonomous.loop-05-clean-is-not-evidence
+- clause.autonomous.loop-06-branch-hygiene: retained -> clause.autonomous.loop-06-branch-hygiene
+- clause.autonomous.loop-07-outlive-the-turn: retained -> clause.autonomous.loop-07-outlive-the-turn
+- clause.backend.boundary-contracts: retained -> clause.backend.boundary-contracts
+- clause.backend.layered-architecture: retained -> clause.backend.layered-architecture
+- clause.backend.thin-http-handlers: retained -> clause.backend.thin-http-handlers
+- clause.backend.http-independent-use-cases: retained -> clause.backend.http-independent-use-cases
+- clause.backend.persistence-owner: retained -> clause.backend.persistence-owner
+- clause.backend.prohibit-generic-layers: retained -> clause.backend.prohibit-generic-layers
+- rule.backend.boundary-contracts: retained -> rule.backend.boundary-contracts
+- clause.context.adr-01-template: retained -> clause.context.adr-01-template
+- clause.context.adr-02-active-status: retained -> clause.context.adr-02-active-status
+- clause.context.adr-03-legacy-compatibility: retained -> clause.context.adr-03-legacy-compatibility
+- clause.context.docs-one-job-per-directory: retained -> clause.context.docs-one-job-per-directory
+- clause.context.docs-upstream-flow: retained -> clause.context.docs-upstream-flow
+- clause.context.backlog-01-operational-contract: retained -> clause.context.backlog-01-operational-contract
+- clause.context.backlog-02-finding-boundary: retained -> clause.context.backlog-02-finding-boundary
+- clause.context.findings-01-frontmatter: retained -> clause.context.findings-01-frontmatter
+- clause.context.findings-08-rollup: retained -> clause.context.findings-08-rollup
+- clause.context.findings-09-archive: retained -> clause.context.findings-09-archive
+- clause.context.findings-10-live-work-health: retained -> clause.context.findings-10-live-work-health
+- clause.context.findings-11-rollup-closure: retained -> clause.context.findings-11-rollup-closure
+- clause.context.findings-02-pending: retained -> clause.context.findings-02-pending
+- clause.context.findings-03-partial: retained -> clause.context.findings-03-partial
+- clause.context.findings-04-deferred: retained -> clause.context.findings-04-deferred
+- clause.context.findings-05-done: retained -> clause.context.findings-05-done
+- clause.context.findings-06-append-evidence: retained -> clause.context.findings-06-append-evidence
+- clause.context.findings-07-update-timestamp: retained -> clause.context.findings-07-update-timestamp
+- clause.context.inbox-01-triage: retained -> clause.context.inbox-01-triage
+- clause.context.inbox-02-fleet-flow: retained -> clause.context.inbox-02-fleet-flow
+- clause.spec.keep-artifacts-in-spec-folder: retained -> clause.spec.keep-artifacts-in-spec-folder
+- clause.spec.specs-are-downstream-artifacts: retained -> clause.spec.specs-are-downstream-artifacts
+- clause.context.read-domain-contract: retained -> clause.context.read-domain-contract
+- clause.domain.canonical-language: retained -> clause.domain.canonical-language
+- clause.domain.layout-decision: retained -> clause.domain.layout-decision
+- clause.domain.glossary-currency: retained -> clause.domain.glossary-currency
+- clause.frontend.read-design-contract-before-ui-work: retained -> clause.frontend.read-design-contract-before-ui-work
+- clause.frontend.organize-by-system: retained -> clause.frontend.organize-by-system
+- clause.frontend.public-system-boundary: retained -> clause.frontend.public-system-boundary
+- clause.frontend.test-user-visible-behavior: retained -> clause.frontend.test-user-visible-behavior
+- clause.frontend.prohibit-incidental-ui-assertions: retained -> clause.frontend.prohibit-incidental-ui-assertions
+- clause.frontend.inspect-runnable-ui: retained -> clause.frontend.inspect-runnable-ui
+- clause.spec.local-task-tracker-only: retained -> clause.spec.local-task-tracker-only
+- clause.spec.status-only-in-task: retained -> clause.spec.status-only-in-task
+- clause.spec.tracker-artifacts: retained -> clause.spec.tracker-artifacts
+- rule.monorepo.context-boundaries: retained -> rule.monorepo.context-boundaries
+- clause.secondbrain.01-consult-triggers: retained -> clause.secondbrain.01-consult-triggers
+- clause.secondbrain.02-query-order: retained -> clause.secondbrain.02-query-order
+- clause.secondbrain.03-decision-consultation: retained -> clause.secondbrain.03-decision-consultation
+- clause.secondbrain.inbox-write-permission: retained -> clause.secondbrain.inbox-write-permission
+- clause.secondbrain.inbox-entry-contract: retained -> clause.secondbrain.inbox-entry-contract
+- clause.secondbrain.inbox-triage-order: retained -> clause.secondbrain.inbox-triage-order
+- clause.secondbrain.inbox-empty-state: retained -> clause.secondbrain.inbox-empty-state
+- clause.secondbrain.inbox-auto-capture: retained -> clause.secondbrain.inbox-auto-capture
+- clause.secondbrain.research-capture: retained -> clause.secondbrain.research-capture
+- clause.secondbrain.capture-trigger: retained -> clause.secondbrain.capture-trigger
+- clause.secondbrain.capture-self-contained: retained -> clause.secondbrain.capture-self-contained
+- clause.secondbrain.prohibit-writes: retained -> clause.secondbrain.prohibit-writes
+- clause.secondbrain.prohibit-secret-access: retained -> clause.secondbrain.prohibit-secret-access
+- clause.secondbrain.cite-used-files: retained -> clause.secondbrain.cite-used-files
+- clause.secondbrain.escalate-durable-updates: retained -> clause.secondbrain.escalate-durable-updates
+- clause.secondbrain.baseline-owned-guidance: retained -> clause.secondbrain.baseline-owned-guidance
+- clause.spec.routing-01-large-initiative: retained -> clause.spec.routing-01-large-initiative
+- clause.spec.routing-02-standard-feature: retained -> clause.spec.routing-02-standard-feature
+- clause.spec.routing-03-refactor-bugfix: retained -> clause.spec.routing-03-refactor-bugfix
+- clause.spec.routing-04-trivial-change: retained -> clause.spec.routing-04-trivial-change
+- clause.spec.routing-05-task-graph: retained -> clause.spec.routing-05-task-graph
+- clause.spec.project-constraints-06-outside-evidence: retained -> clause.spec.project-constraints-06-outside-evidence
+- clause.typescript.read-current-authoritative-docs: retained -> clause.typescript.read-current-authoritative-docs
+- clause.typescript.keep-type-errors-visible: retained -> clause.typescript.keep-type-errors-visible
+- clause.typescript.inspect-dependent-interfaces-before-tests: retained -> clause.typescript.inspect-dependent-interfaces-before-tests
+- clause.typescript.test-observable-failure-modes: retained -> clause.typescript.test-observable-failure-modes
+- clause.typescript.prohibit-incidental-test-oracles: retained -> clause.typescript.prohibit-incidental-test-oracles
+- clause.bun.use-bun-owned-commands: retained -> clause.bun.use-bun-owned-commands
+- clause.bun.verify-dependency-before-add: retained -> clause.bun.verify-dependency-before-add
+- clause.bun.add-from-owning-workspace: retained -> clause.bun.add-from-owning-workspace
+- clause.bun.prohibit-other-package-managers: retained -> clause.bun.prohibit-other-package-managers
+- clause.bun.block-warnings-when-profile-treats-them-as-errors: retained -> clause.bun.block-warnings-when-profile-treats-them-as-errors
+Clause delta: {"moved":0,"reasoned-rejection":0,"replaced":0,"repository-document":0,"repository-extension":0,"retained":111,"unaccounted":0}
+Skills: not run
+Skills installed: 0
+Skills restored: 0
+Skills drifted: 0
+Plan Digest: sha256:ed0937aaeddc759ab88519a4748eee1251e161cf55a8e6904da4cf9038c513a4
+Next action: review the plan and rerun with --confirm-plan sha256:ed0937aaeddc759ab88519a4748eee1251e161cf55a8e6904da4cf9038c513a4, or use --yes to approve the digest computed in one invocation

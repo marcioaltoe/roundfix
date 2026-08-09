@@ -29,8 +29,9 @@ const (
 type PreservationMode string
 
 const (
-	PreservationModeGreenfield   PreservationMode = "greenfield"
-	PreservationModePreservation PreservationMode = "preservation"
+	PreservationModeGreenfield     PreservationMode = "greenfield"
+	PreservationModePreservation   PreservationMode = "preservation"
+	PreservationModeManagedRefresh PreservationMode = "managed-refresh"
 )
 
 type PreservationState string
@@ -40,6 +41,23 @@ const (
 	PreservationStateActionRequired PreservationState = "action_required"
 	PreservationStateBlocked        PreservationState = "blocked"
 )
+
+type UnrecordedManagedRegionReason string
+
+const (
+	UnrecordedManagedRegionReasonDigestMismatch UnrecordedManagedRegionReason = "digest-mismatch"
+	UnrecordedManagedRegionReasonMarkerAbsent   UnrecordedManagedRegionReason = "marker-absent"
+)
+
+// UnrecordedManagedRegion is one managed region whose on-disk bytes are not
+// the bytes the adopted Setup Manifest recorded. It is reported, not blocking.
+type UnrecordedManagedRegion struct {
+	Path                  string                        `json:"path"`
+	ManagedID             string                        `json:"managedId"`
+	Reason                UnrecordedManagedRegionReason `json:"reason"`
+	RemovedLines          []string                      `json:"removedLines"`
+	RemovedLinesTruncated int                           `json:"removedLinesTruncated,omitempty"`
+}
 
 // RootPreservationRequest contains the explicit instruction-preservation
 // choice, optional locally materialized segmented source, and any
@@ -185,17 +203,18 @@ func (e *DecisionDocumentError) Error() string {
 // RootPreservationPlan is the complete read-only root and recognized
 // repository-rule preservation result consumed by portable-plan assembly.
 type RootPreservationPlan struct {
-	Mode                 PreservationMode         `json:"mode"`
-	State                PreservationState        `json:"state"`
-	Backups              []RootBackup             `json:"backups"`
-	SourceBaseline       ReadoptionSourceBaseline `json:"sourceBaseline"`
-	Dispositions         []ReadoptionDisposition  `json:"dispositions"`
-	RepositoryRuleBlocks []RepositoryRuleBlock    `json:"repositoryRuleBlocks"`
-	RepositoryRulesBytes []byte                   `json:"repositoryRulesBytes,omitempty"`
-	Warnings             []Finding                `json:"warnings"`
-	Findings             []Finding                `json:"findings"`
-	DecisionSkeleton     *DecisionSkeleton        `json:"decisionSkeleton,omitempty"`
-	NextAction           string                   `json:"nextAction,omitempty"`
+	Mode                     PreservationMode          `json:"mode"`
+	State                    PreservationState         `json:"state"`
+	Backups                  []RootBackup              `json:"backups"`
+	SourceBaseline           ReadoptionSourceBaseline  `json:"sourceBaseline"`
+	Dispositions             []ReadoptionDisposition   `json:"dispositions"`
+	RepositoryRuleBlocks     []RepositoryRuleBlock     `json:"repositoryRuleBlocks"`
+	RepositoryRulesBytes     []byte                    `json:"repositoryRulesBytes,omitempty"`
+	UnrecordedManagedRegions []UnrecordedManagedRegion `json:"unrecordedManagedRegions,omitempty"`
+	Warnings                 []Finding                 `json:"warnings"`
+	Findings                 []Finding                 `json:"findings"`
+	DecisionSkeleton         *DecisionSkeleton         `json:"decisionSkeleton,omitempty"`
+	NextAction               string                    `json:"nextAction,omitempty"`
 
 	consumedRootPaths map[string]struct{}
 }
@@ -538,7 +557,9 @@ func planRootPreservationWithCatalog(
 	request RootPreservationRequest,
 	catalog *Catalog,
 ) (RootPreservationPlan, error) {
-	if request.Mode != PreservationModeGreenfield && request.Mode != PreservationModePreservation {
+	if request.Mode != PreservationModeGreenfield &&
+		request.Mode != PreservationModePreservation &&
+		request.Mode != PreservationModeManagedRefresh {
 		return RootPreservationPlan{}, fmt.Errorf(
 			"plan root-instruction preservation: unsupported mode %q",
 			request.Mode,
@@ -573,6 +594,19 @@ func planRootPreservationWithCatalog(
 		return RootPreservationPlan{}, err
 	}
 	plan.Findings = append(plan.Findings, findings...)
+	if request.Mode == PreservationModeManagedRefresh {
+		unrecorded, markerFindings, err := classifyManagedRegions(inspection.Root)
+		if err != nil {
+			return RootPreservationPlan{}, err
+		}
+		plan.UnrecordedManagedRegions = unrecorded
+		plan.Findings = sortedFindings(append(plan.Findings, markerFindings...))
+		if len(plan.Findings) != 0 {
+			plan.State = PreservationStateBlocked
+			plan.NextAction = "repair every blocking root carrier or ambiguous managed marker and rerun Baseline planning"
+		}
+		return plan, nil
+	}
 	retainsRepositoryRules, err := currentSetupRetainsRecognizedRepositoryRulesWithCatalog(
 		inspection.Root,
 		catalog,
@@ -664,6 +698,77 @@ func planRootPreservationWithCatalog(
 		plan.NextAction = "complete or correct every root-rule disposition and rerun Baseline planning"
 	}
 	return plan, nil
+}
+
+func classifyManagedRegions(
+	root string,
+) ([]UnrecordedManagedRegion, []Finding, error) {
+	manifestBytes, err := readOptionalRegular(root, manifestPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("inspect managed-refresh Setup Manifest: %w", err)
+	}
+	manifest, valid := parseManagedSetupManifest(manifestBytes)
+	if !valid {
+		return nil, []Finding{{
+			Code:    "baseline.preservation.managed-refresh.manifest.invalid",
+			Path:    manifestPath,
+			Message: "Setup Manifest is invalid; managed refresh requires a valid Setup Manifest with adoption markers",
+		}}, nil
+	}
+	sourceByPath := manifestArtifactsByPath(manifest.ManagedArtifacts)
+	var unrecorded []UnrecordedManagedRegion
+	var findings []Finding
+	for _, relative := range sortedKeys(sourceByPath) {
+		content, err := readOptionalRegular(root, relative)
+		if err != nil {
+			return nil, nil, fmt.Errorf("read managed carrier %q: %w", relative, err)
+		}
+		if content == nil {
+			findings = append(findings, Finding{
+				Code:    "baseline.preservation.managed-refresh.carrier.missing",
+				Path:    relative,
+				Message: fmt.Sprintf("manifest-managed carrier %q is absent; every managed carrier must be present for managed refresh", relative),
+			})
+			continue
+		}
+		entriesByID := make(map[string][]ReadoptionSourceEntry)
+		for _, entry := range partitionRootSource(relative, content) {
+			if entry.Kind != "managed-block" {
+				continue
+			}
+			managedID, _ := entry.StructuralProvenance["managedId"].(string)
+			entriesByID[managedID] = append(entriesByID[managedID], entry)
+		}
+		for _, managedID := range sortedKeys(entriesByID) {
+			if len(entriesByID[managedID]) < 2 {
+				continue
+			}
+			findings = append(findings, Finding{
+				Code:    "baseline.preservation.managed-marker.ambiguous",
+				Path:    relative,
+				Message: fmt.Sprintf("managed identity %q appears more than once in this file", managedID),
+			})
+		}
+		for _, managedID := range sortedKeys(sourceByPath[relative]) {
+			artifact := sourceByPath[relative][managedID]
+			entries := entriesByID[managedID]
+			switch {
+			case len(entries) == 0:
+				unrecorded = append(unrecorded, UnrecordedManagedRegion{
+					Path:      relative,
+					ManagedID: managedID,
+					Reason:    UnrecordedManagedRegionReasonMarkerAbsent,
+				})
+			case len(entries) == 1 && !managedEntryMatchesManifest(entries[0], artifact):
+				unrecorded = append(unrecorded, UnrecordedManagedRegion{
+					Path:      relative,
+					ManagedID: managedID,
+					Reason:    UnrecordedManagedRegionReasonDigestMismatch,
+				})
+			}
+		}
+	}
+	return unrecorded, sortedFindings(findings), nil
 }
 
 type rootPreservationSource struct {

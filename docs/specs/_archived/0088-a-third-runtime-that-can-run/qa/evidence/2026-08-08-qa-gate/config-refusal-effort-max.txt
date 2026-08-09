@@ -1,0 +1,2 @@
+roundfix: profiles failed: parse config "/private/var/folders/p7/wnjmrqxd6kzcb0zs8c958j7c0000gn/T/opencode/qa-scratch/.roundfixrc.yml": profiles.data.preferred.reasoning_effort must be empty for runtime "opencode"; OpenCode advertises reasoning effort per model and only after an Agent Session's first prompt, so Roundfix cannot apply one during a token-free Exact Agent Selection Proof; use reasoning_effort: "" for model-managed reasoning
+Run 'roundfix profiles --help' for usage.

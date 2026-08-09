@@ -1,0 +1,27 @@
+Scratch Project Config probe
+- Category: data
+- Selection: opencode/openrouter/deepseek/deepseek-v4-pro/low
+- `low` is absent from this model's advertised [high, xhigh] range.
+
+Before
+- `roundfix runs list --state all --limit 0` -> No Runs found.
+
+Command
+- `bin/roundfix profiles validate --category data --json`
+- Exit: 2
+
+Observed
+- ok: false
+- status: failed
+- classification: reasoning_control_not_advertised
+- advertised_reasoning: [high, xhigh]
+- the exact unsupported tuple was named
+- fallback proofs remained pending because ADR-0050 forbids substitution during
+  Preflight
+- a concrete profile-update and revalidation action was printed
+
+After
+- `roundfix runs list --state all --limit 0` -> No Runs found.
+
+The unsupported effort failed closed before Run creation and made no Task,
+worktree, commit, or Run mutation.

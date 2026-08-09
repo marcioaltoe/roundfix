@@ -1,0 +1,19 @@
+== row 02: effort + model inventory on the built tree
+  selection 1: openrouter/deepseek/deepseek-v4-flash-0731 / max
+  selection 2: openrouter/deepseek/deepseek-v4-flash-0731 / max
+  selection 3: openrouter/deepseek/deepseek-v4-flash-0731 / max
+  selection 4: openrouter/deepseek/deepseek-v4-flash-0731 / max
+  selection 5: openrouter/deepseek/deepseek-v4-flash-0731 / max
+  selection 6: openrouter/deepseek/deepseek-v4-flash-0731 / max
+  total=6 bad_effort=0 bad_model=0
+  exit=0
+
+== row 03: the corrected gate against the pre-fix configuration
+  total=6 bad=6
+  exit=1 (nonzero required — proves the gate is not vacuous)
+
+== row 03b: the SUPERSEDED gate against the same pre-fix configuration
+  grep -q 'reasoning_effort: xhigh' exit=0 (zero here is the original defect)
+
+== row 05: glossary
+1
