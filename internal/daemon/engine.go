@@ -188,6 +188,7 @@ type verificationAttemptOutcome struct {
 	Failure          string
 	CommandFailure   *VerificationCommandError
 	TemporaryFailure *TemporaryVerificationFailureError
+	UnknownCause     *VerificationUnknownError
 }
 
 func terminalReasonLine(reason string) string {
@@ -245,6 +246,25 @@ func verificationTerminalReason(commandErr *VerificationCommandError) string {
 		diagnostics = "unavailable"
 	}
 	return terminalReasonLine(fmt.Sprintf("Verification failed: command %q exited with %s; diagnostics: %s", command, verificationExitStatus(commandErr), diagnostics))
+}
+
+func verificationUnknownTerminalReason(unknownErr *VerificationUnknownError) string {
+	if unknownErr == nil {
+		return ""
+	}
+	command := strings.TrimSpace(unknownErr.Command)
+	if command == "" {
+		command = "<unknown>"
+	}
+	diagnostics := strings.TrimSpace(unknownErr.DiagnosticPath)
+	if diagnostics == "" {
+		diagnostics = "unavailable"
+	}
+	reason := "reason unavailable"
+	if unknownErr.Err != nil && strings.TrimSpace(unknownErr.Err.Error()) != "" {
+		reason = unknownErr.Err.Error()
+	}
+	return terminalReasonLine(fmt.Sprintf("Verification unknown: runner could not observe a verdict for command %q: %s; diagnostics: %s", command, reason, diagnostics))
 }
 
 func verificationExitStatus(commandErr *VerificationCommandError) string {
@@ -333,13 +353,13 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 		if req.Retry > 0 {
 			outputPath = VerificationRetryOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt, req.Retry)
 		}
-		_, err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
+		result, err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
 			WorkDir:    req.WorkDir,
 			Command:    command,
 			OutputPath: outputPath,
 		})
 		if err != nil {
-			if isStop(ctx, err) {
+			if verificationStopRequested(ctx, err) {
 				return verificationAttemptOutcome{}, err
 			}
 			var commandErr *VerificationCommandError
@@ -356,6 +376,22 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 					TemporaryFailure: temporaryErr,
 				}, nil
 			}
+			var unknownErr *VerificationUnknownError
+			if errors.As(err, &unknownErr) {
+				unknownErr = completeVerificationUnknownCause(unknownErr, command, result.OutputPath)
+				if err := req.publishUnknownFailure(ctx, command, unknownErr); err != nil {
+					return verificationAttemptOutcome{}, err
+				}
+				diagnostics := strings.TrimSpace(unknownErr.DiagnosticPath)
+				if diagnostics == "" {
+					diagnostics = "unavailable"
+				}
+				fmt.Fprintf(engine.deps.Progress, "Verification unknown (%s); diagnostics: %s\n", req.identity(), diagnostics)
+				return verificationAttemptOutcome{
+					Failure:      verificationUnknownTerminalReason(unknownErr),
+					UnknownCause: unknownErr,
+				}, nil
+			}
 			if err := req.publishInfrastructureFailure(ctx, command, err); err != nil {
 				return verificationAttemptOutcome{}, err
 			}
@@ -370,6 +406,24 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 	}
 	fmt.Fprintf(engine.deps.Progress, "Verification passed (%s).\n", req.identity())
 	return verificationAttemptOutcome{}, nil
+}
+
+func completeVerificationUnknownCause(unknownErr *VerificationUnknownError, command string, diagnosticPath string) *VerificationUnknownError {
+	if unknownErr == nil || (strings.TrimSpace(unknownErr.Command) != "" && strings.TrimSpace(unknownErr.DiagnosticPath) != "") {
+		return unknownErr
+	}
+	completed := *unknownErr
+	if strings.TrimSpace(completed.Command) == "" {
+		completed.Command = command
+	}
+	if strings.TrimSpace(completed.DiagnosticPath) == "" {
+		completed.DiagnosticPath = diagnosticPath
+	}
+	return &completed
+}
+
+func verificationStopRequested(ctx context.Context, err error) bool {
+	return agent.IsStopError(err) || errors.Is(err, ErrStopRequested) || errors.Is(err, context.Canceled) || (ctx != nil && errors.Is(ctx.Err(), context.Canceled))
 }
 
 func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, command string, commandErr *VerificationCommandError, temporary bool) error {
@@ -392,6 +446,18 @@ func (req verificationAttemptRequest) publishInfrastructureFailure(ctx context.C
 		return publishErr
 	}
 	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, "", "", false)
+}
+
+func (req verificationAttemptRequest) publishUnknownFailure(ctx context.Context, command string, unknownErr *VerificationUnknownError) error {
+	payload := req.payload(runevent.VerificationPhaseFailed, command)
+	payload["error"] = unknownErr.Error()
+	if unknownErr.DiagnosticPath != "" {
+		payload["diagnostic_path"] = unknownErr.DiagnosticPath
+	}
+	if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); err != nil {
+		return err
+	}
+	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, unknownErr.DiagnosticPath, unknownErr.Error(), false)
 }
 
 func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdict runevent.VerificationVerdict, diagnosticPath string, failure string, temporary bool) error {

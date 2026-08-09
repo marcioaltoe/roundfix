@@ -98,6 +98,7 @@ type Task struct {
 	Requirements     []TaskDeclaration
 	RehearsalCases   []TaskDeclaration
 	Verification     []string
+	NegativeControl  []string
 }
 
 // TaskDeclaration is one author-written Task declaration and its 1-based
@@ -862,6 +863,7 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		Requirements:     append([]TaskDeclaration(nil), document.Requirements...),
 		RehearsalCases:   append([]TaskDeclaration(nil), document.RehearsalCases...),
 		Verification:     document.Verification,
+		NegativeControl:  append([]string(nil), document.NegativeControl...),
 	}, nil
 }
 

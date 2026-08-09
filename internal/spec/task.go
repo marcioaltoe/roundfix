@@ -29,6 +29,7 @@ type taskDocument struct {
 	Requirements     []TaskDeclaration
 	RehearsalCases   []TaskDeclaration
 	Verification     []string
+	NegativeControl  []string
 }
 
 type taskMarkdownLine struct {
@@ -64,6 +65,7 @@ func ReloadTask(specsRoot string, task *Task) error {
 	task.Requirements = append([]TaskDeclaration(nil), document.Requirements...)
 	task.RehearsalCases = append([]TaskDeclaration(nil), document.RehearsalCases...)
 	task.Verification = document.Verification
+	task.NegativeControl = append([]string(nil), document.NegativeControl...)
 	return nil
 }
 
@@ -126,6 +128,7 @@ func parseTaskDocument(content []byte, taskPath string) (taskDocument, error) {
 		Requirements:     parseTaskRequirements(body, bodyLineOffset),
 		RehearsalCases:   parseTaskSectionBullets(body, "Rehearsal Cases", bodyLineOffset),
 		Verification:     parseVerificationCommands(body),
+		NegativeControl:  parseNegativeControlDeclarations(body),
 	}, nil
 }
 
@@ -250,6 +253,32 @@ func parseVerificationCommands(body []byte) []string {
 		}
 	}
 	return commands
+}
+
+// parseNegativeControlDeclarations extracts declarations verbatim from the
+// backticked bullet entries of every ## Negative Control section, in section
+// order. It carries declarations only; executing them belongs to no parser.
+func parseNegativeControlDeclarations(body []byte) []string {
+	var declarations []string
+	inSection := false
+	for _, line := range strings.Split(string(body), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "# ") {
+			inSection = false
+			continue
+		}
+		if strings.HasPrefix(trimmed, "## ") {
+			inSection = strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")) == "Negative Control"
+			continue
+		}
+		if !inSection || !strings.HasPrefix(trimmed, "- ") {
+			continue
+		}
+		if declaration, ok := firstBacktickSpan(trimmed); ok && declaration != "" {
+			declarations = append(declarations, declaration)
+		}
+	}
+	return declarations
 }
 
 func firstBacktickSpan(line string) (string, bool) {

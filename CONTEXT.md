@@ -172,6 +172,18 @@ _Avoid_: Model router, benchmark policy, automatic selection
 The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun.
 _Avoid_: Dynamic fallback, silent model switch, catalog probe winner
 
+**Negative Control**:
+The defect a Task declares its Verification must catch, named in the Task's own `## Negative Control` section and recorded beside its outcome. It is authored rather than synthesised, because manufacturing one means mutating the repository under test. A Task declaring none is recorded as having none, which is a weaker gate stated honestly.
+_Avoid_: Failing test, mutation, sanity check
+
+**Vacuous Verification**:
+The Run Event classification (`verification_vacuous`) recorded when a Task's Verification command exits zero against the tree as it stands before the Agent runs. A command that passes before the work happened cannot be evidence that the work happened, so the Task is refused at dispatch with the offending command named and no Agent turn spent.
+_Avoid_: Weak test, trivial gate, false green
+
+**Unobserved Verification**:
+The Run Event classification (`verification_unknown`) recorded when a Verification command's verdict could not be observed — a timeout, a partial execution, or a runner error that is not the command's answer. It is distinct from a command that ran and exited non-zero, which has a verdict, and it keeps "the work is wrong" separable from "we did not find out".
+_Avoid_: Flaky test, transient failure, retry
+
 **Unsupported Citation**:
 The Spec check finding (`SC-CITATION-UNSUPPORTED`) raised when an artifact attributes a subject to a decision record that the record's own text does not carry. It is distinct from an unlisted citation, which asks whether a record was named; this one asks whether the claim about it holds, and reports both texts so a maintainer settles it by reading rather than trusting the checker.
 _Avoid_: Broken link, missing ADR, stale reference

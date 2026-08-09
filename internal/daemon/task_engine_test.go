@@ -1063,8 +1063,8 @@ func eventsOfKind(sink *captureEventSink, kind runevent.Kind) []runevent.RunEven
 	return events
 }
 
-// taskFakeVerifier records every verification command verbatim and fails
-// the commands scripted in failOn.
+// taskFakeVerifier treats pre-work commands as observed non-zero by default,
+// then records and scripts the ordinary repository and post-Agent checks.
 type taskFakeVerifier struct {
 	calls           *[]string
 	store           *store.Store
@@ -1080,6 +1080,13 @@ type taskFakeVerifier struct {
 }
 
 func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
+	if isPreWorkProbeRequest(req) {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{
+			Command:    req.Command,
+			OutputPath: req.OutputPath,
+			Err:        errors.New("exit status 1"),
+		}
+	}
 	*verifier.calls = append(*verifier.calls, "verify")
 	verifier.commands = append(verifier.commands, req.Command)
 	verifier.workDirs = append(verifier.workDirs, req.WorkDir)
@@ -1111,6 +1118,27 @@ func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) (
 		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: err}
 	}
 	return VerifyResult{OutputPath: req.OutputPath}, nil
+}
+
+func isPreWorkProbeRequest(req VerifyRequest) bool {
+	return strings.Contains(filepath.Base(req.OutputPath), "-probe-")
+}
+
+type taskInfrastructureVerifier struct {
+	calls *[]string
+	err   error
+}
+
+func (verifier *taskInfrastructureVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
+	if isPreWorkProbeRequest(req) {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{
+			Command:    req.Command,
+			OutputPath: req.OutputPath,
+			Err:        errors.New("exit status 1"),
+		}
+	}
+	*verifier.calls = append(*verifier.calls, "verify")
+	return VerifyResult{OutputPath: req.OutputPath}, verifier.err
 }
 
 type fakePriorChangedResolver struct {
@@ -1287,6 +1315,13 @@ type taskSchedulerVerifier struct {
 }
 
 func (verifier *taskSchedulerVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
+	if isPreWorkProbeRequest(req) {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{
+			Command:    req.Command,
+			OutputPath: req.OutputPath,
+			Err:        errors.New("exit status 1"),
+		}
+	}
 	verifier.mu.Lock()
 	verifier.commands = append(verifier.commands, req.Command)
 	verifier.workDirs = append(verifier.workDirs, req.WorkDir)
@@ -1327,6 +1362,13 @@ func newTaskCapacityVerifier(taskIDs ...string) *taskCapacityVerifier {
 }
 
 func (verifier *taskCapacityVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult, error) {
+	if isPreWorkProbeRequest(req) {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{
+			Command:    req.Command,
+			OutputPath: req.OutputPath,
+			Err:        errors.New("exit status 1"),
+		}
+	}
 	taskID := strings.TrimPrefix(req.Command, "verify-")
 	verifier.mu.Lock()
 	verifier.calls[taskID]++
@@ -2982,6 +3024,243 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	}
 }
 
+func TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses(t *testing.T) {
+	testPreWorkProbePublishesEveryOffendingCommand(t)
+}
+
+func TestPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
+	testPreWorkProbePublishesEveryOffendingCommand(t)
+}
+
+func testPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	const (
+		spec0089Gate  = "grep -q 'reasoning_effort: xhigh' .roundfixrc.yml"
+		secondVacuous = "test -f .roundfixrc.yml"
+		nonVacuous    = "test -f missing-before-agent"
+	)
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		verification: []string{spec0089Gate, nonVacuous, secondVacuous},
+	}})
+	if err := os.WriteFile(filepath.Join(fixture.gitRoot, ".roundfixrc.yml"), []byte("profiles:\n  review:\n    reasoning_effort: xhigh\n"), 0o644); err != nil {
+		t.Fatalf("write pre-existing configuration: %v", err)
+	}
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, ExecVerifier{}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("TaskCycle() error = %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("pre-work probe settlement = %+v, want one failed Task", result)
+	}
+	outcome := failedTaskOutcome(t, result.Outcomes, "task_01")
+	for _, command := range []string{spec0089Gate, secondVacuous} {
+		if !strings.Contains(outcome.Reason, command) {
+			t.Fatalf("pre-work probe reason %q does not name vacuous command %q", outcome.Reason, command)
+		}
+	}
+	if _, err := os.Stat(verificationProbeOutputPath(fixture.artifactDir, fixture.run.ID, 1, 2)); err != nil {
+		t.Fatalf("middle non-vacuous command did not retain probe diagnostics: %v", err)
+	}
+	if runner.taskCalls["task_01"] != 0 {
+		t.Fatalf("refused Task Agent calls = %d, want 0", runner.taskCalls["task_01"])
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("refused Task produced commits: %v", committer.messages)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("refused Task status = %q, want %q", got, spec.StatusFailed)
+	}
+	var probeEvents []runevent.RunEvent
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		if eventPayloadString(t, event, "classification") == string(runevent.VerificationClassificationVacuous) {
+			probeEvents = append(probeEvents, event)
+		}
+	}
+	if len(probeEvents) != 1 {
+		t.Fatalf("vacuous probe events = %d, want one aggregate refusal event: %+v", len(probeEvents), probeEvents)
+	}
+	var payload struct {
+		Task           string   `json:"task"`
+		Classification string   `json:"classification"`
+		Commands       []string `json:"commands"`
+	}
+	if err := json.Unmarshal(probeEvents[0].Payload, &payload); err != nil {
+		t.Fatalf("decode vacuous probe event: %v", err)
+	}
+	if payload.Task != "task_01" || probeEvents[0].ReviewIssue != "task_01" {
+		t.Fatalf("vacuous probe event Task identity = payload %q Work Item %q", payload.Task, probeEvents[0].ReviewIssue)
+	}
+	if payload.Classification != string(runevent.VerificationClassificationVacuous) {
+		t.Fatalf("vacuous probe classification = %q", payload.Classification)
+	}
+	if !slices.Equal(payload.Commands, []string{spec0089Gate, secondVacuous}) {
+		t.Fatalf("vacuous probe commands = %q, want every offending command", payload.Commands)
+	}
+}
+
+func TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask(t *testing.T) {
+	t.Parallel()
+	const command = "test -f pre-existing-marker"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		taskType:     string(spec.TaskTypeBackend),
+		verification: []string{command},
+	}})
+	if err := os.WriteFile(filepath.Join(fixture.gitRoot, "pre-existing-marker"), []byte("already present\n"), 0o644); err != nil {
+		t.Fatalf("write pre-existing marker: %v", err)
+	}
+	runner := &selectionLifecycleRunner{gitRoot: fixture.gitRoot}
+	engine := fixture.engine(t, runner, ExecVerifier{}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(
+			selectionForTest("codex", "backend-model", "high"),
+			selectionForTest("codex", "backend-fallback", "high"),
+		),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle() error = %v", err)
+	}
+	if result.Failed != 1 {
+		t.Fatalf("pre-work probe settlement = %+v, want one failed Task", result)
+	}
+	if len(runner.prepareRequests()) != 0 || len(runner.runRequests()) != 0 || len(runner.closedSessions()) != 0 {
+		t.Fatalf("refused Task touched an Agent Session: prepare=%v run=%v closed=%v", runner.prepareRequests(), runner.runRequests(), runner.closedSessions())
+	}
+	if events := eventsOfKind(fixture.sink, runevent.KindDaemonAgentSelectionAttempt); len(events) != 0 {
+		t.Fatalf("refused Task published Agent Selection attempts: %+v", events)
+	}
+}
+
+func TestPreWorkProbeLeavesAFailingGateOnItsOrdinaryPath(t *testing.T) {
+	testPreWorkProbePublishesNothingForAClearedTask(t)
+}
+
+func TestPreWorkProbePublishesNothingForAClearedTask(t *testing.T) {
+	testPreWorkProbePublishesNothingForAClearedTask(t)
+}
+
+func testPreWorkProbePublishesNothingForAClearedTask(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	const (
+		command   = "test -f agent-output.txt"
+		outputRel = "agent-output.txt"
+	)
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		verification: []string{command},
+	}})
+	fixture.worktree.snapshots = [][]string{nil, {outputRel}}
+	runner := &taskFakeRunner{
+		calls:       fixture.calls,
+		gitRoot:     fixture.gitRoot,
+		writeByTask: map[string]string{"task_01": outputRel},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, ExecVerifier{}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("TaskCycle() error = %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("ordinary Task settlement = %+v, want one completed Task", result)
+	}
+	if runner.taskCalls["task_01"] != 1 {
+		t.Fatalf("ordinary Task Agent calls = %d, want 1", runner.taskCalls["task_01"])
+	}
+	if len(committer.messages) != 1 {
+		t.Fatalf("ordinary Task commits = %v, want one", committer.messages)
+	}
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		classification := eventPayloadString(t, event, "classification")
+		if classification == string(runevent.VerificationClassificationVacuous) || classification == string(runevent.VerificationClassificationUnknown) {
+			t.Fatalf("cleared Task published probe event: %+v", event)
+		}
+	}
+}
+
+func TestPreWorkProbeRecordsUnobservableVerdictAsUnknown(t *testing.T) {
+	testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t)
+}
+
+func TestPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t *testing.T) {
+	testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t)
+}
+
+func testPreWorkProbePublishesUnknownCommandReasonAndDiagnosticPath(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	const command = "gate verdict not observed"
+	unknownErr := errors.New("runner did not observe the command verdict")
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		verification: []string{command},
+	}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &characterizationVerdictVerifier{
+		calls:     fixture.calls,
+		unknownOn: map[string]error{command: unknownErr},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("TaskCycle() error = %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("unknown probe settlement = %+v, want one failed Task", result)
+	}
+	outcome := failedTaskOutcome(t, result.Outcomes, "task_01")
+	for _, want := range []string{"Verification unknown", command, unknownErr.Error(), fixture.artifactDir} {
+		if !strings.Contains(outcome.Reason, want) {
+			t.Fatalf("unknown probe reason %q does not contain %q", outcome.Reason, want)
+		}
+	}
+	if runner.taskCalls["task_01"] != 0 {
+		t.Fatalf("unknown probe Agent calls = %d, want 0", runner.taskCalls["task_01"])
+	}
+	var probeEvents []runevent.RunEvent
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		if eventPayloadString(t, event, "classification") == string(runevent.VerificationClassificationUnknown) {
+			probeEvents = append(probeEvents, event)
+		}
+	}
+	if len(probeEvents) != 1 {
+		t.Fatalf("unknown probe events = %d, want one: %+v", len(probeEvents), probeEvents)
+	}
+	var payload struct {
+		Task           string `json:"task"`
+		Classification string `json:"classification"`
+		Command        string `json:"command"`
+		Reason         string `json:"reason"`
+		DiagnosticPath string `json:"diagnostic_path"`
+	}
+	if err := json.Unmarshal(probeEvents[0].Payload, &payload); err != nil {
+		t.Fatalf("decode unknown probe event: %v", err)
+	}
+	if payload.Task != "task_01" || payload.Classification != string(runevent.VerificationClassificationUnknown) {
+		t.Fatalf("unexpected unknown probe identity: %#v", payload)
+	}
+	if payload.Command != command || payload.Reason != unknownErr.Error() || payload.DiagnosticPath == "" || !strings.Contains(payload.DiagnosticPath, fixture.artifactDir) {
+		t.Fatalf("unknown probe evidence = %#v", payload)
+	}
+}
+
 func TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession(t *testing.T) {
 	t.Parallel()
 	const repositoryVerification = "make verify"
@@ -3061,20 +3340,15 @@ func TestTaskCycleRepositoryGatePreconditionFailureStartsNoAgentSession(t *testi
 	}
 }
 
-func TestTaskCycleRepositoryGatePreconditionPassesBeforeAgentAndPostVerification(t *testing.T) {
+func TestTaskCycleRepositoryGatePreconditionPassesThenProbeRefusesVacuousGate(t *testing.T) {
 	t.Parallel()
 	const repositoryVerification = "make verify"
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
 		id:           "task_01",
 		verification: []string{"focused check", repositoryVerification},
 	}})
-	fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}}
-	runner := &taskFakeRunner{
-		calls:        fixture.calls,
-		gitRoot:      fixture.gitRoot,
-		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
-	}
-	verifier := &taskFakeVerifier{calls: fixture.calls}
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &characterizationVerdictVerifier{calls: fixture.calls}
 	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 	plan := fixture.plan()
 	plan.RepositoryVerification = repositoryVerification
@@ -3084,14 +3358,17 @@ func TestTaskCycleRepositoryGatePreconditionPassesBeforeAgentAndPostVerification
 	if err != nil {
 		t.Fatalf("TaskCycle returned error: %v", err)
 	}
-	if result.Completed != 1 || result.Failed != 0 {
-		t.Fatalf("expected the green Task to complete, got %+v", result)
+	if result.Completed != 0 || result.Failed != 1 {
+		t.Fatalf("expected the green repository precondition followed by a vacuous-gate refusal, got %+v", result)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "verify>agent>verify>verify>commit" {
-		t.Fatalf("expected precondition before Agent and unchanged post-Agent Verification, got %q", got)
+	if got := strings.Join(*fixture.calls, ">"); got != "verify>verify>verify" {
+		t.Fatalf("expected precondition and every probe command before refusal, got %q", got)
 	}
 	if got := strings.Join(verifier.commands, "|"); got != "make verify|focused check|make verify" {
-		t.Fatalf("expected one entry gate and the full post-Agent Verification, got %q", got)
+		t.Fatalf("expected one entry gate followed by the full pre-work probe, got %q", got)
+	}
+	if runner.taskCalls["task_01"] != 0 {
+		t.Fatalf("vacuous repository-gate Task spent %d Agent turns, want 0", runner.taskCalls["task_01"])
 	}
 }
 
@@ -3876,7 +4153,7 @@ func TestTaskCycleDaemonStatusRemainsInProgressOnVerificationInfrastructureError
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	infraErr := errors.New("diagnostic artifact write failed")
 	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}
-	engine := fixture.engine(t, runner, &engineInfrastructureVerifier{calls: fixture.calls, err: infraErr}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	engine := fixture.engine(t, runner, &taskInfrastructureVerifier{calls: fixture.calls, err: infraErr}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
 
 	result, err := engine.TaskCycle(context.Background(), fixture.plan())
 
@@ -4370,8 +4647,8 @@ func TestTaskCycleRerunsStaleTasksAndSkipsCompletedTasks(t *testing.T) {
 func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
-		{id: "task_01", title: "Write the usage docs", taskType: "docs", verification: []string{"true"}},
-		{id: "task_02", title: "Add the backend behavior", needs: []string{"task_01"}, verification: []string{"true"}},
+		{id: "task_01", title: "Write the usage docs", taskType: "docs", verification: []string{"test -f docs/usage.md"}},
+		{id: "task_02", title: "Add the backend behavior", needs: []string{"task_01"}, verification: []string{"test -f internal/feature.go"}},
 	})
 	repoDir := fixture.gitRoot
 	gittest.InitRepo(t, repoDir, "-b", "main")

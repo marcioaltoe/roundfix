@@ -36,6 +36,9 @@ type StreamRecord struct {
 	Phase               string         `json:"phase,omitempty"`
 	Mode                string         `json:"mode,omitempty"`
 	Classification      string         `json:"classification,omitempty"`
+	Commands            []string       `json:"commands,omitempty"`
+	Command             string         `json:"command,omitempty"`
+	DiagnosticPath      string         `json:"diagnostic_path,omitempty"`
 	RetryAvailable      *bool          `json:"retry_available,omitempty"`
 	Status              string         `json:"status,omitempty"`
 	Verdict             string         `json:"verdict,omitempty"`
@@ -250,6 +253,21 @@ func projectVerificationRecord(record *StreamRecord, fields map[string]json.RawM
 	if err != nil {
 		return err
 	}
+	switch VerificationClassification(record.Classification) {
+	case VerificationClassificationVacuous:
+		record.Commands, err = requiredPayloadStrings(fields, event, "commands")
+	case VerificationClassificationUnknown:
+		record.Command, err = requiredPayloadString(fields, event, "command")
+		if err == nil {
+			record.Reason, err = requiredPayloadString(fields, event, "reason")
+		}
+		if err == nil {
+			record.DiagnosticPath, err = requiredPayloadString(fields, event, "diagnostic_path")
+		}
+	}
+	if err != nil {
+		return err
+	}
 	if record.WorkItem == "" {
 		record.WorkItem, err = firstPayloadString(fields, "work_item", "task")
 		if err != nil {
@@ -397,6 +415,21 @@ func readOptionalString(fields map[string]json.RawMessage, event RunEvent, key s
 		return "", streamPayloadFieldError(event, key, err)
 	}
 	return value, nil
+}
+
+func requiredPayloadStrings(fields map[string]json.RawMessage, event RunEvent, key string) ([]string, error) {
+	raw, ok := fields[key]
+	if !ok {
+		return nil, streamMissingField(event, key)
+	}
+	var values []string
+	if err := json.Unmarshal(raw, &values); err != nil {
+		return nil, streamPayloadFieldError(event, key, err)
+	}
+	if len(values) == 0 {
+		return nil, streamMissingField(event, key)
+	}
+	return values, nil
 }
 
 func optionalPayloadBool(fields map[string]json.RawMessage, key string) (*bool, error) {

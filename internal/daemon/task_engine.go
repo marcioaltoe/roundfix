@@ -221,6 +221,40 @@ type TaskPlan struct {
 	BootstrapOutput         io.Writer
 }
 
+// VerificationProbe records how one Task's Verification commands behave
+// against the unchanged tree before the Agent Session owner exists.
+type VerificationProbe struct {
+	TaskID   string
+	Commands []VerificationProbeResult
+}
+
+type VerificationProbeResult struct {
+	Command      string
+	Vacuous      bool
+	Unknown      bool
+	UnknownCause *VerificationUnknownError
+}
+
+func (probe VerificationProbe) Vacuous() []string {
+	commands := make([]string, 0, len(probe.Commands))
+	for _, result := range probe.Commands {
+		if result.Vacuous {
+			commands = append(commands, result.Command)
+		}
+	}
+	return commands
+}
+
+func (probe VerificationProbe) Unknown() []string {
+	commands := make([]string, 0, len(probe.Commands))
+	for _, result := range probe.Commands {
+		if result.Unknown {
+			commands = append(commands, result.Command)
+		}
+	}
+	return commands
+}
+
 // TaskOutcome reports one Task's terminal cycle outcome. Reason is empty for
 // completed Tasks and matches the one-line reason journaled for failed and
 // skipped Tasks.
@@ -515,6 +549,28 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 	}
 	if required && precondition.Failure != "" {
 		reason := repositoryPreconditionFailureReason(precondition)
+		if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
+			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: settleErr}
+		}
+		fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", task.ID, reason)
+		return taskWorkerResult{
+			task:             task,
+			ordinal:          ordinal,
+			status:           spec.StatusFailed,
+			reason:           reason,
+			taskPlan:         taskPlan,
+			taskRef:          taskRef,
+			usesTaskWorktree: usesTaskWorktree,
+		}
+	}
+	probe, probeErr := engine.verifyTaskPreWork(ctx, taskPlan, task, ordinal)
+	if probeErr != nil {
+		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: probeErr}
+	}
+	if publishErr := engine.publishPreWorkProbeFindings(ctx, taskPlan, task, ordinal, probe); publishErr != nil {
+		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: publishErr}
+	}
+	if reason := preWorkProbeFailureReason(probe); reason != "" {
 		if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
 			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: settleErr}
 		}
@@ -923,6 +979,132 @@ func repositoryPreconditionFailureReason(outcome verificationAttemptOutcome) str
 		excerpt,
 		diagnostics,
 	))
+}
+
+func (engine *Engine) verifyTaskPreWork(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int) (VerificationProbe, error) {
+	probe := VerificationProbe{TaskID: task.ID, Commands: make([]VerificationProbeResult, 0, len(task.Verification))}
+	if len(task.Verification) == 0 {
+		return probe, nil
+	}
+	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
+		return VerificationProbe{}, fmt.Errorf("update run %q to state %q before Task %s pre-work Verification probe: %w", plan.RunID, store.StateVerifying, task.ID, err)
+	}
+	request := verificationAttemptRequest{
+		RunID:       plan.RunID,
+		BatchNumber: ordinal,
+		WorkItem:    task.ID,
+		Attempt:     1,
+		Mode:        verificationShared,
+		Capacity:    plan.VerificationConcurrency,
+	}
+	if plan.verificationGate == nil {
+		return VerificationProbe{}, fmt.Errorf("probe run %q Task %s: Verification gate is required", plan.RunID, task.ID)
+	}
+	release, err := engine.acquireVerificationCapacity(ctx, plan, task, request)
+	if err != nil {
+		return VerificationProbe{}, err
+	}
+	defer release()
+
+	for index, command := range task.Verification {
+		outputPath := verificationProbeOutputPath(plan.ArtifactDir, plan.RunID, ordinal, index+1)
+		result, verifyErr := engine.deps.Verifier.Verify(ctx, VerifyRequest{
+			WorkDir:    plan.WorkDir,
+			Command:    command,
+			OutputPath: outputPath,
+		})
+		probeResult := VerificationProbeResult{Command: command}
+		if verifyErr == nil {
+			probeResult.Vacuous = true
+			probe.Commands = append(probe.Commands, probeResult)
+			continue
+		}
+		if verificationStopRequested(ctx, verifyErr) {
+			return VerificationProbe{}, fmt.Errorf("probe run %q Task %s command %q: %w", plan.RunID, task.ID, command, verifyErr)
+		}
+		var commandErr *VerificationCommandError
+		if errors.As(verifyErr, &commandErr) {
+			probe.Commands = append(probe.Commands, probeResult)
+			continue
+		}
+		var unknownErr *VerificationUnknownError
+		if errors.As(verifyErr, &unknownErr) {
+			unknownErr = completeVerificationUnknownCause(unknownErr, command, result.OutputPath)
+			probeResult.Unknown = true
+			probeResult.UnknownCause = unknownErr
+			probe.Commands = append(probe.Commands, probeResult)
+			continue
+		}
+		return VerificationProbe{}, fmt.Errorf("probe run %q Task %s command %q: %w", plan.RunID, task.ID, command, verifyErr)
+	}
+	return probe, nil
+}
+
+func verificationProbeOutputPath(artifactDir string, runID string, batchNumber int, commandNumber int) string {
+	return filepath.Join(artifactDir, "runs", runID, "verification", fmt.Sprintf("batch-%03d-probe-%d.log", batchNumber, commandNumber))
+}
+
+func (engine *Engine) publishPreWorkProbeFindings(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, probe VerificationProbe) error {
+	if vacuous := probe.Vacuous(); len(vacuous) > 0 {
+		summary := fmt.Sprintf("Pre-work Verification refused Task %s: %d commands exited zero against the unchanged tree.", task.ID, len(vacuous))
+		payload := map[string]any{
+			"attempt":        1,
+			"phase":          string(runevent.VerificationPhaseFailed),
+			"task":           task.ID,
+			"classification": string(runevent.VerificationClassificationVacuous),
+			"commands":       vacuous,
+		}
+		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
+			return fmt.Errorf("publish vacuous pre-work Verification event for run %q Task %s: %w", plan.RunID, task.ID, err)
+		}
+	}
+
+	for _, result := range probe.Commands {
+		if !result.Unknown {
+			continue
+		}
+		reason := "reason unavailable"
+		diagnosticPath := "unavailable"
+		if result.UnknownCause != nil {
+			if result.UnknownCause.Err != nil && strings.TrimSpace(result.UnknownCause.Err.Error()) != "" {
+				reason = result.UnknownCause.Err.Error()
+			}
+			if strings.TrimSpace(result.UnknownCause.DiagnosticPath) != "" {
+				diagnosticPath = result.UnknownCause.DiagnosticPath
+			}
+		}
+		summary := fmt.Sprintf("Pre-work Verification could not observe Task %s command %q.", task.ID, result.Command)
+		payload := map[string]any{
+			"attempt":         1,
+			"phase":           string(runevent.VerificationPhaseFailed),
+			"task":            task.ID,
+			"classification":  string(runevent.VerificationClassificationUnknown),
+			"command":         result.Command,
+			"reason":          reason,
+			"diagnostic_path": diagnosticPath,
+		}
+		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
+			return fmt.Errorf("publish unknown pre-work Verification event for run %q Task %s command %q: %w", plan.RunID, task.ID, result.Command, err)
+		}
+	}
+	return nil
+}
+
+func preWorkProbeFailureReason(probe VerificationProbe) string {
+	var reasons []string
+	if vacuous := probe.Vacuous(); len(vacuous) > 0 {
+		quoted := make([]string, 0, len(vacuous))
+		for _, command := range vacuous {
+			quoted = append(quoted, fmt.Sprintf("%q", command))
+		}
+		reasons = append(reasons, fmt.Sprintf("Pre-work Verification vacuous: commands %s exited zero against the unchanged tree", strings.Join(quoted, ", ")))
+	}
+	for _, result := range probe.Commands {
+		if result.Unknown {
+			reasons = append(reasons, "Pre-work "+verificationUnknownTerminalReason(result.UnknownCause))
+		}
+	}
+	return terminalReasonLine(strings.Join(reasons, "; "))
 }
 
 func verificationOutputTail(path string, limit int) string {

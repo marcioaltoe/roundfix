@@ -23,6 +23,18 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// ownerProcessTestWaitBudget bounds condition waits in this process harness.
+// Passing waits return as soon as the process state is observed; the full
+// budget is paid only when the guarded behavior is absent on a loaded runner.
+const ownerProcessTestWaitBudget = 90 * time.Second
+
+const (
+	ownerProcessTestGracePeriod     = 20 * time.Millisecond
+	ownerProcessTestLongGracePeriod = 250 * time.Millisecond
+	ownerProcessTestShortWindow     = 100 * time.Millisecond
+	ownerProcessTestPollInterval    = 5 * time.Millisecond
+)
+
 func TestProcessAliveReportsCurrentProcessAlive(t *testing.T) {
 	t.Parallel()
 	if !ProcessAlive(os.Getpid()) {
@@ -48,7 +60,7 @@ func TestProcessAliveReportsReapedChildDead(t *testing.T) {
 func TestOwnerProcessControllerGracefulExitProof(t *testing.T) {
 	t.Parallel()
 	pid, wait := startOwnerProcessHelper(t, "graceful")
-	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestLongGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 
 	if err := controller.TerminateAndWait(t.Context(), pid, ""); err != nil {
 		t.Fatalf("terminate owner process gracefully: %v", err)
@@ -60,7 +72,7 @@ func TestOwnerProcessControllerGracefulExitProof(t *testing.T) {
 func TestOwnerProcessControllerForceKillExitProof(t *testing.T) {
 	t.Parallel()
 	pid, wait := startOwnerProcessHelper(t, "ignore")
-	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 
 	if err := controller.TerminateAndWait(t.Context(), pid, ""); err != nil {
 		t.Fatalf("force-kill owner process: %v", err)
@@ -74,7 +86,7 @@ func TestOwnerProcessControllerInspectTreeReportsOnlyLiveOwnedProcesses(t *testi
 	const ownerPID = 7101
 	const childPID = 7102
 	const exitedPID = 7103
-	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestShortWindow, ownerProcessTestPollInterval)
 	controller.processAbsent = func(pid int) (bool, error) {
 		return pid == exitedPID, nil
 	}
@@ -102,7 +114,7 @@ func TestOwnerProcessControllerInspectTreeReportsOnlyLiveOwnedProcesses(t *testi
 func TestOwnerProcessControllerInspectTreeFindsOutlivingGrandchild(t *testing.T) {
 	t.Parallel()
 	ownerPID, grandchildPID, wait := startOwnerProcessTreeHelper(t)
-	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestLongGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 
 	got, err := controller.InspectTree(t.Context(), ownerPID, "")
 	if err != nil {
@@ -121,7 +133,7 @@ func TestOwnerProcessControllerInspectTreeFindsOutlivingGrandchild(t *testing.T)
 func TestOwnerProcessControllerTerminateTreeProvesOutlivingGrandchildGone(t *testing.T) {
 	t.Parallel()
 	ownerPID, grandchildPID, wait := startOwnerProcessTreeHelper(t)
-	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestLongGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 
 	outcomes, err := controller.TerminateTreeAndWait(t.Context(), ownerPID, "")
 	if err != nil {
@@ -153,7 +165,7 @@ func TestOwnerProcessControllerTerminateTreeLeavesUnrelatedProcessRunning(t *tes
 	t.Parallel()
 	ownerPID, _, wait := startOwnerProcessTreeHelper(t)
 	unrelatedPID, _ := startOwnerProcessHelper(t, "graceful")
-	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestLongGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 
 	if _, err := controller.TerminateTreeAndWait(t.Context(), ownerPID, ""); err != nil {
 		t.Fatalf("terminate owner process tree: %v", err)
@@ -169,7 +181,7 @@ func TestOwnerProcessControllerTerminateTreeReportsUnprovenAbsence(t *testing.T)
 	t.Parallel()
 	const pid = 424242
 	hostErr := errors.New("host process table unavailable")
-	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestShortWindow, ownerProcessTestPollInterval)
 	absenceReads := 0
 	controller.processAbsent = func(gotPID int) (bool, error) {
 		if gotPID != pid {
@@ -219,7 +231,7 @@ func TestOwnerProcessControllerTerminateTreeReportsUnprovenAbsence(t *testing.T)
 func TestOwnerProcessControllerTerminateTreeStopsRediscoveryWhenContextCanceled(t *testing.T) {
 	t.Parallel()
 	const pid = 424243
-	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestShortWindow, ownerProcessTestPollInterval)
 	controller.processAbsent = func(gotPID int) (bool, error) {
 		if gotPID != pid {
 			t.Fatalf("absence read pid = %d, want %d", gotPID, pid)
@@ -263,7 +275,7 @@ func TestDescendantProcessPIDsAfterStartRejectsStaleParentLinks(t *testing.T) {
 
 func TestOwnerProcessControllerRejectsUnprovenCurrentProcess(t *testing.T) {
 	t.Parallel()
-	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestShortWindow, ownerProcessTestPollInterval)
 
 	err := controller.TerminateAndWait(t.Context(), os.Getpid(), "")
 
@@ -289,7 +301,7 @@ func TestOwnerProcessControllerAcceptsAlreadyAbsentProcess(t *testing.T) {
 	if err := cmd.Wait(); err != nil {
 		t.Fatalf("wait for child process: %v", err)
 	}
-	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestShortWindow, ownerProcessTestPollInterval)
 
 	if err := controller.TerminateAndWait(t.Context(), pid, ""); err != nil {
 		t.Fatalf("accept already absent owner process: %v", err)
@@ -299,7 +311,7 @@ func TestOwnerProcessControllerAcceptsAlreadyAbsentProcess(t *testing.T) {
 func TestOwnerProcessControllerRefusesMismatchedOwnerIdentity(t *testing.T) {
 	t.Parallel()
 	pid, _ := startOwnerProcessHelper(t, "graceful")
-	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 
 	err := controller.TerminateAndWait(t.Context(), pid, runtime.GOOS+":identity-token-of-exited-owner-process")
 
@@ -325,7 +337,7 @@ func TestOwnerProcessControllerMatchingOwnerIdentityProceeds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read owner process identity: %v", err)
 	}
-	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestLongGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 
 	if err := controller.TerminateAndWait(t.Context(), pid, identity); err != nil {
 		t.Fatalf("terminate owner process with matching identity: %v", err)
@@ -341,7 +353,7 @@ func TestOwnerProcessControllerProveOwnerLeavesProvenOwnerRunning(t *testing.T) 
 	if err != nil {
 		t.Fatalf("read owner process identity: %v", err)
 	}
-	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestLongGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 
 	if err := controller.ProveOwner(t.Context(), pid, identity); err != nil {
 		t.Fatalf("prove matching owner identity: %v", err)
@@ -355,7 +367,7 @@ func TestOwnerProcessControllerProveOwnerLeavesProvenOwnerRunning(t *testing.T) 
 func TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity(t *testing.T) {
 	t.Parallel()
 	pid, _ := startOwnerProcessHelper(t, "graceful")
-	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 
 	err := controller.ProveOwner(t.Context(), pid, runtime.GOOS+":identity-token-of-exited-owner-process")
 
@@ -377,7 +389,7 @@ func TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity(t *testing.T)
 func TestOwnerProcessControllerProveOwnerDoesNotReportLegacyIdentityAsReusedPID(t *testing.T) {
 	t.Parallel()
 	pid, _ := startOwnerProcessHelper(t, "graceful")
-	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestWaitBudget, ownerProcessTestPollInterval)
 
 	err := controller.ProveOwner(t.Context(), pid, "identity-token-from-legacy-ps-reader")
 
@@ -493,7 +505,7 @@ func TestOwnerProcessControllerProveOwnerClassifiesIdentityEvidence(t *testing.T
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+			controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestShortWindow, ownerProcessTestPollInterval)
 			absenceReads := 0
 			controller.processAbsent = func(int) (bool, error) {
 				if absenceReads >= len(tt.absenceResults) {
@@ -549,7 +561,7 @@ func TestOwnerProcessControllerProveOwnerAcceptsAbsentOwner(t *testing.T) {
 	if err := cmd.Wait(); err != nil {
 		t.Fatalf("wait for child process: %v", err)
 	}
-	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestShortWindow, ownerProcessTestPollInterval)
 
 	if err := controller.ProveOwner(t.Context(), pid, "identity-token-of-exited-owner-process"); err != nil {
 		t.Fatalf("absence is its own proof, got: %v", err)
@@ -558,7 +570,7 @@ func TestOwnerProcessControllerProveOwnerAcceptsAbsentOwner(t *testing.T) {
 
 func TestOwnerProcessControllerProveOwnerRejectsCurrentProcess(t *testing.T) {
 	t.Parallel()
-	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+	controller := newOwnerProcessController(ownerProcessTestGracePeriod, ownerProcessTestShortWindow, ownerProcessTestPollInterval)
 
 	err := controller.ProveOwner(t.Context(), os.Getpid(), "")
 
@@ -822,7 +834,7 @@ func startOwnerProcessHelper(t *testing.T, mode string) (int, <-chan error) {
 		}
 		select {
 		case <-wait:
-		case <-time.After(2 * time.Second):
+		case <-time.After(ownerProcessTestWaitBudget):
 		}
 	})
 	scanner := bufio.NewScanner(stdout)
@@ -869,7 +881,7 @@ func startOwnerProcessTreeHelper(t *testing.T) (int, int, <-chan error) {
 		}
 		select {
 		case <-wait:
-		case <-time.After(2 * time.Second):
+		case <-time.After(ownerProcessTestWaitBudget):
 		}
 	})
 	scanner := bufio.NewScanner(stdout)
@@ -907,7 +919,7 @@ func assertOwnerProcessExited(t *testing.T, pid int, wait <-chan error) {
 	t.Helper()
 	select {
 	case <-wait:
-	case <-time.After(2 * time.Second):
+	case <-time.After(ownerProcessTestWaitBudget):
 		t.Fatalf("owner process %d did not exit", pid)
 	}
 	if ProcessAlive(pid) {
@@ -927,7 +939,7 @@ func assertOwnerProcessForceKilled(t *testing.T, pid int, wait <-chan error) {
 		if !ok || !status.Signaled() || status.Signal() != syscall.SIGKILL {
 			t.Fatalf("owner process %d exit = %v, want controller force-kill signal %v", pid, err, syscall.SIGKILL)
 		}
-	case <-time.After(2 * time.Second):
+	case <-time.After(ownerProcessTestWaitBudget):
 		t.Fatalf("owner process %d did not exit after controller force-kill escalation", pid)
 	}
 	if ProcessAlive(pid) {
