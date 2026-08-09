@@ -177,7 +177,28 @@ Durability applies here too: describe behavior and interfaces, not repo file pat
 
 ### 4. Validate the graph
 
-Before reporting, verify mechanically — parse, don't eyeball:
+Before reporting, verify mechanically — parse, don't eyeball.
+
+Start by running the repository's own checker on the Spec you just decomposed:
+
+```bash
+roundfix spec check <slug>
+```
+
+It runs in well under a second and reads the PRD, the TechSpec, the ADRs they
+cite, and the graph together — which is the first moment all four exist. Treat
+every reported error as blocking: fix the artifact and re-run until it is clean,
+and do not report the breakdown while a finding stands. A `[gap]` is blocking
+too; account for the named ADR or record why it does not apply. Skipped checks
+are informational.
+
+This is not a substitute for the list below, which covers what the checker does
+not: it catches unlisted and unaccounted ADRs, incomplete Project Constraints,
+unmapped coverage, contradictory requirements, undeclared rehearsals,
+work-independent Verification, and an undocumented Vocabulary Contract. It does
+not yet verify that a cited ADR says what the artifact claims it says.
+
+Then confirm by reading:
 
 - Every `graph.nodes[].file` exists and every task file has parseable frontmatter with `status: pending`.
 - Every task file has exactly one `type` value from `backend`, `frontend`,
