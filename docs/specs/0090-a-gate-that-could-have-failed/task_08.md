@@ -79,7 +79,12 @@ Any other path is out of scope; stop and fail the Task rather than widen it.
 
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli -count=1 2>&1 | tee /dev/stderr | grep -qE '^ok[[:space:]]+roundfix/internal/cli'` — expected: exits 0, proving the package passes with the probe active.
 - `test -z "$(grep -rnE '"## Verification\\n\\n- \`true\`|Verification: *"true"' internal/cli/*_test.go)"` — expected: exits 0, proving no fixture still declares a gate that cannot fail.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbe' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses'` — expected: exits 0, proving the probe still refuses a vacuous gate rather than having been softened to fit the fixtures.
+
+The probe's own regression is asserted under Acceptance Criteria and Rehearsal
+Cases rather than here. It is an invariant that holds before and after this
+Task, so as a Verification command it would pass against the unchanged tree —
+which is exactly what the probe refuses, and it refused this Task for that
+reason on its first dispatch, at a cost of zero Agent turns.
 
 ## References
 
