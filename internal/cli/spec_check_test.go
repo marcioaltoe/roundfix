@@ -69,6 +69,99 @@ func TestRunSpecCheckErrorText(t *testing.T) {
 	}
 }
 
+func TestSpecCheckStageExitsNonZeroOnAFinding(t *testing.T) {
+	t.Parallel()
+	_, _ = newSpecCheckWorkspace(t, "tooling-unauthorized")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{
+		"spec", "check", "tooling-unauthorized", "--stage", "prd",
+	}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("stage-scoped spec check exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "[error] "+speccheck.CodeToolingUnauthorized) {
+		t.Fatalf("stage-scoped stdout does not contain the error finding:\n%s", stdout.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want no diagnostics", stderr.String())
+	}
+}
+
+func TestSpecCheckStageExitsZeroWithoutAFinding(t *testing.T) {
+	t.Parallel()
+	_, _ = newSpecCheckWorkspace(t, "clean")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{
+		"spec", "check", "clean", "--stage=prd",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("stage-scoped spec check exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings.\n") {
+		t.Fatalf("stdout = %q, want clean stage-scoped report", stdout.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want no diagnostics", stderr.String())
+	}
+}
+
+func TestSpecCheckStageRejectsAnUnknownValue(t *testing.T) {
+	t.Parallel()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{
+		"spec", "check", "--stage", "design",
+	}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("unknown stage exit = %d, want %d", code, exitPreflight)
+	}
+	if stdout.String() != "" {
+		t.Fatalf("stdout = %q, want no report", stdout.String())
+	}
+	for _, want := range []string{"design", "prd", "techspec", "tasks"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("stderr does not contain %q: %q", want, stderr.String())
+		}
+	}
+}
+
+func TestSpecCheckWithoutStageIsUnchanged(t *testing.T) {
+	t.Parallel()
+	_, repoDir := newSpecCheckWorkspace(t, "tooling-unauthorized")
+	wantResult, err := speccheck.Check(
+		filepath.Join(repoDir, "docs", "specs"),
+		repoDir,
+		"tooling-unauthorized",
+	)
+	if err != nil {
+		t.Fatalf("build unscoped comparison result: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{
+		"spec", "check", "tooling-unauthorized",
+	}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("unscoped spec check exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if want := speccheck.RenderText(wantResult); stdout.String() != want {
+		t.Fatalf("unscoped stdout = %q, want existing report %q", stdout.String(), want)
+	}
+	if stderr.String() != "" {
+		t.Fatalf("stderr = %q, want no diagnostics", stderr.String())
+	}
+}
+
 func TestRunSpecCheckGapStrictPromotion(t *testing.T) {
 	t.Parallel()
 	_, repoDir := newSpecCheckWorkspace(t, "citation-dirty")
@@ -223,7 +316,7 @@ func TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("spec check help exit = %d, want %d", code, exitOK)
 	}
-	for _, want := range []string{"--format", "--strict", "0  no errors", "1  at least one error", "2  usage error"} {
+	for _, want := range []string{"--stage", "prd, techspec, or tasks", "--format", "--strict", "0  no errors", "1  at least one error", "2  usage error"} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Errorf("spec check help does not contain %q:\n%s", want, stdout.String())
 		}

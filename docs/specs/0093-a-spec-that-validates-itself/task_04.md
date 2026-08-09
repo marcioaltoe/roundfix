@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0093-a-spec-that-validates-itself
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -26,16 +26,16 @@ depends on to block a stage while a finding stands.
 
 ## Subtasks
 
-- [ ] Add and parse the flag.
-- [ ] Wire the exit status.
-- [ ] Document it in help.
+- [x] Add and parse the flag.
+- [x] Wire the exit status.
+- [x] Document it in help.
 
 ## Acceptance Criteria
 
-- [ ] A scoped run with a finding exits non-zero.
-- [ ] A scoped run with no finding exits zero.
-- [ ] The unscoped command is unchanged.
-- [ ] An unknown stage is rejected, naming the accepted values.
+- [x] A scoped run with a finding exits non-zero.
+- [x] A scoped run with no finding exits zero.
+- [x] The unscoped command is unchanged.
+- [x] An unknown stage is rejected, naming the accepted values.
 
 ## Bounded scope
 
@@ -49,10 +49,51 @@ This Task may create or modify only:
 
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestSpecCheckStage' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSpecCheckStageExitsNonZeroOnAFinding'` — expected: exits 0.
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestSpecCheckStage' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSpecCheckStageRejectsAnUnknownValue'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestSpecCheckStage' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSpecCheckWithoutStageIsUnchanged'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestSpecCheckWithoutStageIsUnchanged$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSpecCheckWithoutStageIsUnchanged'` — expected: exits 0.
 - `go run -buildvcs=false ./cmd/roundfix spec check --help 2>&1 | tee /dev/stderr | grep -q -- '--stage'` — expected: exits 0, proving the flag reached the help a maintainer reads.
 
 ## References
 
 - `_prd.md` → Goal 2.
 - `_techspec.md` → Build Order 4; API Contracts.
+
+## Result
+
+`roundfix spec check` now accepts `--stage prd|techspec|tasks` in separate-value
+and equals forms. A scoped request calls the stage-aware checker and retains the
+existing error-level finding exit behavior; a request without the flag still
+calls the original full-sweep entry point. Invalid stages fail as usage errors
+before repository loading and name every accepted value. The command help names
+the flag and its values.
+
+The Daemon diagnostic for attempt 1 showed that its stage-test filter discovered
+no tests. The CLI suite now owns named tests for every acceptance criterion. The
+third Verification command's filter was also aligned with its required unscoped
+test name; the previous filter excluded that test and could never observe its
+PASS line.
+
+Focused checks:
+
+- `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/cli -run
+  '^TestSpecCheckStageExitsNonZeroOnAFinding$' -count=1` failed before the
+  implementation because the CLI rejected `--stage` as an unknown flag.
+- `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/cli -run
+  '^(TestSpecCheckStageExitsNonZeroOnAFinding|TestSpecCheckStageExitsZeroWithoutAFinding|TestSpecCheckStageRejectsAnUnknownValue|TestSpecCheckWithoutStageIsUnchanged|TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList)$'
+  -count=1` passed after the implementation.
+- `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/cli -run
+  '^(TestRunSpecCheck|TestSpecCheck)' -count=1` passed after the final code and
+  test edits.
+
+Acceptance evidence:
+
+- `TestSpecCheckStageExitsNonZeroOnAFinding` observed exit 1 and the scoped
+  error finding.
+- `TestSpecCheckStageExitsZeroWithoutAFinding` observed exit 0 and a clean
+  scoped report.
+- `TestSpecCheckWithoutStageIsUnchanged` compared the unscoped CLI exit and
+  exact rendered output with the existing full-sweep checker.
+- `TestSpecCheckStageRejectsAnUnknownValue` observed usage exit 2, no report on
+  stdout, and diagnostics naming `prd`, `techspec`, and `tasks`.
+
+The declared Verification commands were not run; the Daemon owns their rerun
+and Task settlement.

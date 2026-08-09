@@ -18,7 +18,7 @@ import (
 )
 
 const specUsage = `Usage:
-  roundfix spec check [<slug> ...] [--format <text|json>] [--strict]
+  roundfix spec check [<slug> ...] [--stage <prd|techspec|tasks>] [--format <text|json>] [--strict]
   roundfix spec audit <slug> [--format <text|json>]
 
 Commands:
@@ -27,12 +27,13 @@ Commands:
 `
 
 const specCheckUsage = `Usage:
-  roundfix spec check [<slug> ...] [--format <text|json>] [--strict]
+  roundfix spec check [<slug> ...] [--stage <prd|techspec|tasks>] [--format <text|json>] [--strict]
 
 Checks the declarations and citations in the requested Specs without changing
 their artifacts. With no slug, checks every active Spec in the Spec Root.
 
 Options:
+  --stage   Limit checks to the prd, techspec, or tasks authoring stage
   --format  Output format: text or json (default: text)
   --strict  Promote gap findings to errors
 
@@ -67,6 +68,7 @@ const (
 
 type specCheckRequest struct {
 	slugs        []string
+	stage        speccheck.Stage
 	outputFormat string
 	strict       bool
 }
@@ -207,7 +209,13 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 			printSpecCheckFailure(err, stderr)
 			return exitPreflight
 		}
-		result, err := speccheck.Check(resolvedSpecsRoot.Path, loaded.GitRoot, slug)
+		var result speccheck.Result
+		var err error
+		if req.stage == speccheck.StageAll {
+			result, err = speccheck.Check(resolvedSpecsRoot.Path, loaded.GitRoot, slug)
+		} else {
+			result, err = speccheck.CheckStage(resolvedSpecsRoot.Path, loaded.GitRoot, slug, req.stage)
+		}
 		if err != nil {
 			printSpecCheckFailure(err, stderr)
 			return exitPreflight
@@ -252,6 +260,22 @@ func parseSpecCheckCommand(args []string) (specCheckRequest, error) {
 		switch {
 		case arg == "--strict":
 			req.strict = true
+		case arg == "--stage":
+			index++
+			if index >= len(args) {
+				return specCheckRequest{}, validationError{message: "--stage requires prd, techspec, or tasks"}
+			}
+			stage, err := parseSpecCheckStage(args[index])
+			if err != nil {
+				return specCheckRequest{}, err
+			}
+			req.stage = stage
+		case strings.HasPrefix(arg, "--stage="):
+			stage, err := parseSpecCheckStage(strings.TrimPrefix(arg, "--stage="))
+			if err != nil {
+				return specCheckRequest{}, err
+			}
+			req.stage = stage
 		case arg == "--format":
 			index++
 			if index >= len(args) {
@@ -278,6 +302,18 @@ func parseSpecCheckCommand(args []string) (specCheckRequest, error) {
 		return specCheckRequest{}, validationError{message: fmt.Sprintf("unsupported --format %q; use text or json", req.outputFormat)}
 	}
 	return req, nil
+}
+
+func parseSpecCheckStage(value string) (speccheck.Stage, error) {
+	stage := speccheck.Stage(strings.TrimSpace(value))
+	switch stage {
+	case speccheck.StagePRD, speccheck.StageTechSpec, speccheck.StageTasks:
+		return stage, nil
+	default:
+		return speccheck.StageAll, validationError{
+			message: fmt.Sprintf("unsupported --stage %q; use prd, techspec, or tasks", value),
+		}
+	}
 }
 
 func parseSpecAuditCommand(args []string) (specAuditRequest, error) {
