@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0089-an-effort-the-runtime-actually-receives
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -86,3 +86,39 @@ This Task may create or modify only:
 - `_prd.md` → Goals 2 and 4; Core Features: a proof split across two moments.
 - `_techspec.md` → Implementation Design: Interfaces; Build Order 2.
 - ADR-0108.
+
+## Result
+
+Implemented the planning half of the deferred OpenCode effort contract. A
+non-empty effort now plans `runtime_deferred` only when the selected model's
+reasoning option advertises it, carries the option id and requested value for
+later Run application, and otherwise returns `SelectionUnsupportedError` with
+the advertised effort values. Empty-effort OpenCode planning and every
+non-deferring encoding retain their existing paths.
+
+The runtime distinction now comes from `runtimeDefersReasoningEffort`, which
+normalizes the ACP Runtime id directly and is reused by both the empty and
+non-empty planning branches. It does not inspect or match
+`ModelManagedReasoningError`. The effective-state check proves a deferred
+assignment from the current model and still-advertised requested effort without
+requiring that effort to be current before the Run applies it.
+
+Focused checks run after the last Go edit:
+
+- `rtk zsh -c 'GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run "^TestSelection(EffortCharacterizationRuntimeDeferred|RuntimeDeferred)" -count=1'` — 4 tests passed.
+- `rtk zsh -c 'GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run "^(TestPlanSelectionAssignment|TestSelectionProofAcceptsEchoedAliasGroup|TestSelectionEffortCharacterization.*|TestSelectionRuntimeDeferred.*|TestApplySessionSelection)$" -count=1'` — 29 tests passed.
+- `rtk rg -n 'ModelManagedReasoningError|runtimeDefersReasoningEffort|SelectionEncodingRuntimeDeferred' internal/agent/selection_assignment.go` — found the new encoding and predicate call sites, with no `ModelManagedReasoningError` match.
+
+Acceptance evidence:
+
+- Criterion 1: `TestSelectionEffortCharacterizationRuntimeDeferredPlansAdvertisedOpenCodeEffort` passed and compares the full planned assignment, including `ReasoningEffort: "high"`, `ReasoningKey: "effort"`, and `Encoding: "runtime_deferred"`.
+- Criterion 2: `TestSelectionEffortCharacterizationRuntimeDeferredRejectsUnadvertisedOpenCodeEffort` passed and proves the typed error, `reasoning_control_not_advertised` classification, and advertised `low`, `medium`, and `high` values.
+- Criterion 3: `TestSelectionEffortCharacterizationInvariantCodexPlansIndependentEncoding` passed in the 29-test focused run.
+- Criterion 4: `TestSelectionEffortCharacterizationInvariantOpenCodeEmptyEffortPlansRuntimeManagedEncoding` passed in the 29-test focused run.
+- Criterion 5: the predicate inspection found no `ModelManagedReasoningError` reference in `selection_assignment.go`; the single normalized runtime predicate owns both planning decisions.
+- Criterion 6: `TestSelectionRuntimeDeferredStateMatchesBeforeEffortApplication` and `TestSelectionRuntimeDeferredStateRejectsDifferentCurrentModel` both passed.
+
+The characterization corpus gained tests but no test was renamed or removed,
+so `docs/references/coverage-record.json` was not re-recorded. The commands
+authored under `## Verification` were not run; Daemon Verification remains the
+settlement boundary.

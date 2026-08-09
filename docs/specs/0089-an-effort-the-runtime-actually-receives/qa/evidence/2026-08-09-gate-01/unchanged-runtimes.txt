@@ -1,0 +1,17 @@
+Current-build live profile proof
+- codex/gpt-5.6-sol/high: passed with encoding independent,
+  codex-acp 1.1.14.
+- claude/opus/high: passed with encoding independent,
+  claude-agent-acp 0.66.0.
+- These were the fallbacks of the same data profile whose OpenCode preferred
+  selection passed as runtime_deferred.
+
+Current-build application evidence
+- The genuinely cold `make verify` run passed the complete internal/agent and
+  internal/config suites.
+- Task 04's named current-build tests cover the unchanged Codex command order
+  and no warm-up on non-runtime_deferred assignments; they were part of that
+  cold passing package run.
+
+No production file under internal/cli or internal/agent/catalog.go changed from
+the pre-Task base 202c2f8d through build 23834e8a.

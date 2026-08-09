@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0089-an-effort-the-runtime-actually-receives
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -79,3 +79,47 @@ This Task may create or modify only:
 - `references/2026-08-09-the-opencode-runtime-hands-back-the-floor-of-every-range.md`
   → the per-model effort vocabularies the fixtures reproduce.
 - ADR-0108.
+
+## Result
+
+Implemented the characterization corpus without changing production behavior.
+The planning tests preserve Codex and Claude `independent` encoding, OpenCode
+empty-effort `runtime_managed` encoding, and the typed refusal for an Agent
+Model absent from advertised values. Their capability fixtures reproduce the
+measured per-model `effort` shapes: Grok 4.5 advertises `low`, `medium`, and
+`high`, while DeepSeek V4 Pro advertises `high` and `xhigh`.
+
+The declared-break tests all contain `Today` in their names. They record the
+configuration refusal, the `ModelManagedReasoningError` key-mapping refusal,
+and the current Run command order. The lifecycle assertion locates `sessions
+ensure` and `prompt` in the recorded acpx invocations, then rejects either
+`set effort` or `set reasoning_effort` anywhere between them.
+
+Focused checks run after the last Go edit:
+
+- `rtk zsh -c 'GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run "^TestSelectionEffortCharacterization" -count=1'` — 4 tests passed.
+- `rtk zsh -c 'GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run "^TestACPXSessionEffortCharacterization" -count=1'` — 2 tests passed.
+- `rtk zsh -c 'GOCACHE="$PWD/.gocache" rtk go test ./internal/config -run "^TestOpenCodeEffortCharacterizationTodayConfigurationRefusesNonEmptyReasoningEffort$" -count=1'` — 1 test passed.
+- `rtk zsh -c 'GOCACHE="$PWD/.gocache" rtk go test ./internal/agent ./internal/config -count=1'` — 471 tests passed across both affected packages.
+- `rtk git -c core.fsmonitor=false diff --check` — exited 0.
+
+Acceptance evidence:
+
+- Criterion 1: `rtk git -c core.fsmonitor=false status --short --untracked-files=all`
+  reports exactly the three new characterization test files plus this Task
+  file; no pre-existing test file differs.
+- Criterion 2: the four `TestSelectionEffortCharacterizationInvariant...`
+  tests exercise every Requirement 2 invariant and passed in the focused run.
+- Criterion 3: the three declared breaks are named
+  `TestOpenCodeEffortCharacterizationToday...` and
+  `TestACPXSessionEffortCharacterizationToday...`; all passed in the focused
+  runs.
+- Criterion 4: the Run lifecycle test asserts both command order and the
+  absence of the two reasoning-set command keys between session creation and
+  the work prompt.
+- Criterion 5: the changed-path inspection shows no implementation or
+  pre-existing test change. The Task file differs because the Daemon set its
+  status to `in_progress` and this Result records Agent evidence.
+
+The commands authored under `## Verification` were not run; Daemon
+Verification remains the settlement boundary.

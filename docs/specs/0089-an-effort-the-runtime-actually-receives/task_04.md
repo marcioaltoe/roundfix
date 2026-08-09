@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0089-an-effort-the-runtime-actually-receives
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -94,3 +94,45 @@ This Task may create or modify only:
 - `_prd.md` → Goals 1 and 3; Core Features: session warm-up.
 - `_techspec.md` → Implementation Design: Interfaces; Consultation; Build Order 4.
 - ADR-0108.
+
+## Result
+
+The Agent Session lifecycle now recognizes `runtime_deferred` assignments,
+sends one setup prompt before applying the advertised effort, validates the
+effective value returned by acpx, and stops before work when that evidence is
+contradictory. The per-session warmed state is retained independently of the
+fully ensured state, so a retry after a later setup failure does not send a
+second setup prompt; ending the Agent Session clears both states.
+
+The observed value is published as the new `agent.selection_receipt` Run Event.
+Its payload carries the Agent Session, runtime, model, requested effort,
+observed effort, and `applied` status. The public Run Event Stream projects the
+receipt through the existing `agent-selection` category with an
+`agent_session` scope.
+
+Warm-up prompt exact bytes (14 ASCII/UTF-8 bytes, with no trailing newline):
+`Session setup.` Hex: `53 65 73 73 69 6f 6e 20 73 65 74 75 70 2e`.
+
+Pre-change signal:
+
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run '^TestACPXSessionEffortCharacterizationDeclaredBreakWarmSessionOrdersEffortBeforeWork$' -count=1` — failed to compile because `acpxDeferredEffortWarmupPrompt` did not exist. The replaced characterization test had asserted the prior behavior: ensure followed by the work prompt with no effort set in between.
+
+Focused checks run after the last Go edit:
+
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run '^(TestACPXSessionEffortCharacterizationDeclaredBreakWarmSessionOrdersEffortBeforeWork|TestACPXRunWarmSessionPublishesEffectiveEffortReceipt|TestACPXRunWarmSessionIsIdempotent|TestACPXRunWarmSessionMismatchStopsBeforeWork|TestACPXRunAppliesSelectionBeforePrompt)$' -count=1` — 8 tests/subtests passed.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/runevent -count=1` — 46 tests passed, including the new receipt projection through `agent-selection`.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record` — exited 0 and regenerated `docs/references/coverage-record.json` after the characterization test rename; the record was generated rather than hand-edited.
+- `rtk git diff --check` — exited 0.
+
+Acceptance evidence:
+
+- Criterion 1: `TestACPXSessionEffortCharacterizationDeclaredBreakWarmSessionOrdersEffortBeforeWork` passed with the ordered command keys `sessions ensure`, `prompt`, `set effort`, `prompt`, and asserted the setup and work prompt bytes in that order.
+- Criterion 2: `TestACPXRunWarmSessionPublishesEffectiveEffortReceipt` passed with exactly one `agent.selection_receipt` whose requested and observed values were both `xhigh`; `TestProjectStreamEventProjectsSelectionReceiptInExistingCategory` passed with category `agent-selection`.
+- Criterion 3: `TestACPXRunWarmSessionIsIdempotent` passed across two work turns on the same Agent Session with three total prompts: one setup prompt and two work prompts.
+- Criterion 4: `TestACPXRunWarmSessionMismatchStopsBeforeWork` passed with acpx returning `high` as the set value but `low` as the effective current value. The capability boundary rejected `contradictory_response`, and the prompt ledger contained only the setup prompt.
+- Criterion 5: the `codex reasoning_effort` subtest of `TestACPXRunAppliesSelectionBeforePrompt` passed with its unchanged ensure, `set reasoning_effort`, work-prompt sequence and no setup prompt.
+- Criterion 6: the `opencode model-managed reasoning issues no effort set` subtest passed with only ensure and the work prompt; it contained neither a setup prompt nor an effort set.
+
+No follow-up work was found inside this Task's slice. The commands authored
+under `## Verification` were not run; Daemon Verification remains the
+settlement boundary.

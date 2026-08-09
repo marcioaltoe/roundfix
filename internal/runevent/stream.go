@@ -172,6 +172,25 @@ func ProjectStreamEvent(cursor int64, event RunEvent, filter StreamCategoryFilte
 			return StreamRecord{}, false, err
 		}
 	case StreamCategorySelection:
+		if event.Kind == KindAgentSelectionReceipt {
+			receipt, ok, err := ProjectSelectionReceipt(event)
+			if err != nil {
+				return StreamRecord{}, false, err
+			}
+			if !ok {
+				return StreamRecord{}, false, nil
+			}
+			record.ScopeKind = "agent_session"
+			record.ScopeID = receipt.Session
+			record.ScopeIdentity = record.ScopeKind + ":" + record.ScopeID
+			record.SelectionRole = "effective"
+			record.Status = receipt.Status
+			record.Runtime = receipt.Runtime
+			record.Model = receipt.Model
+			record.ReasoningEffort = receipt.ReasoningEffort
+			record.Summary = SelectionReceiptLine(receipt)
+			break
+		}
 		selection, ok, err := ProjectSelectionLifecycle(event)
 		if err != nil {
 			return StreamRecord{}, false, err
@@ -311,6 +330,9 @@ func isStreamCategory(category StreamCategory) bool {
 }
 
 func streamCategoryForEvent(event RunEvent) (StreamCategory, bool) {
+	if event.Source == SourceAgent && event.Kind == KindAgentSelectionReceipt {
+		return StreamCategorySelection, true
+	}
 	if event.Source != SourceDaemon {
 		return "", false
 	}

@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0089-an-effort-the-runtime-actually-receives
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -85,3 +85,43 @@ This Task may create or modify only:
 - `_prd.md` → Goal 1; Core Features: a configuration that stops lying.
 - `_techspec.md` → Implementation Design: API Contracts; Build Order 3.
 - ADR-0108.
+
+## Result
+
+Removed both OpenCode refusal gates. Agent Selection normalization now accepts
+and preserves a non-empty `reasoning_effort`, and the acpx runtime mapping uses
+the generic `effort` key for both `opencode` and `opencode-custom`. Codex keeps
+its `model_reasoning_effort` key, Claude keeps the generic key, and an empty
+OpenCode effort still bypasses runtime assignment and plans `runtime_managed`.
+
+The obsolete `runtimesManagingReasoning` list,
+`validateModelManagedReasoning`, `ModelManagedReasoningError`, and its measured
+reason constant were removed with their last uses. Spec 0088's surviving
+configuration corpus now declares the later Spec 0089 break: Preferred and
+Fallback OpenCode selections both load with their configured efforts intact.
+The OpenCode config and Agent Session characterization tests were renamed from
+the old `Today...Refuses...` contract to the accepted key/loading contract.
+
+Pre-change signal:
+
+- `rtk proxy env GOCACHE=<worktree>/.gocache go test ./internal/config -run '^TestOpenCodeEffortAcceptedConfigurationLoadsAndResolvesNonEmptyReasoningEffort$' -count=1 -v` — failed because normalization returned `reasoning_effort must be empty for runtime "opencode"`.
+- `rtk proxy env GOCACHE=<worktree>/.gocache go test ./internal/agent -run '^(TestACPXSessionEffortCharacterizationDeclaredBreakReasoningKeyMapsOpenCode|TestReasoningEffortConfigKeyMapsSupportedRuntimes|TestValidateRuntimeSelectionAcceptsOpenCodeReasoningEffort)$' -count=1 -v` — failed because the OpenCode key mapping returned `ModelManagedReasoningError`.
+
+Focused checks run after the last Go edit:
+
+- `rtk zsh -c 'GOCACHE="$PWD/.gocache" rtk go test ./internal/config -run "^(TestOpenCodeEffortAcceptedConfigurationLoadsAndResolvesNonEmptyReasoningEffort|TestCharacterizationDeclaredBreakAcceptsOpenCodeReasoningEffort|TestCharacterizationDeclaredBreakAcceptsOpenCodeReasoningEffortInFallbackChain|TestCharacterizationInvariantAcceptsAnEmptyReasoningEffort)$" -count=1 -v'` — 4 tests passed.
+- `rtk zsh -c 'GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run "^(TestACPXSessionEffortCharacterizationDeclaredBreakReasoningKeyMapsOpenCode|TestReasoningEffortConfigKeyMapsSupportedRuntimes|TestValidateRuntimeSelectionAcceptsOpenCodeReasoningEffort|TestSelectionEffortCharacterizationInvariantOpenCodeEmptyEffortPlansRuntimeManagedEncoding)$" -count=1 -v'` — 8 tests/subtests passed.
+- `rtk proxy env GOCACHE=<worktree>/.gocache GOFLAGS=-buildvcs=false go test ./internal/spec -run '^TestCoverageEquivalence$' -update-coverage-record` — exited 0 and re-recorded `docs/references/coverage-record.json` after the test renames; the record was generated, not hand-edited.
+- `rtk rg -n "must be empty for runtime|runtimesManagingReasoning|validateModelManagedReasoning|ModelManagedReasoningError|openCodeModelManagedReasoning" internal/config internal/agent` — produced no matches.
+
+Acceptance evidence:
+
+- Criterion 1: `TestOpenCodeEffortAcceptedConfigurationLoadsAndResolvesNonEmptyReasoningEffort` passed after parsing and resolving an OpenCode Preferred Selection at `high`, then asserted that `high` remained intact. The two Spec 0088 declared-break tests passed for Preferred and Fallback positions at `max`.
+- Criterion 2: `TestCharacterizationInvariantAcceptsAnEmptyReasoningEffort` passed for configuration loading, and `TestSelectionEffortCharacterizationInvariantOpenCodeEmptyEffortPlansRuntimeManagedEncoding` passed with `runtime_managed`.
+- Criterion 3: `TestValidateRuntimeSelectionAcceptsOpenCodeReasoningEffort` passed for both non-empty `max` and empty OpenCode efforts.
+- Criterion 4: all four subtests of `TestReasoningEffortConfigKeyMapsSupportedRuntimes` passed: Codex maps to `model_reasoning_effort`, while Claude, OpenCode, and the OpenCode command override map to `effort`.
+- Criterion 5: the refusal/remnant search produced no match in `internal/config` or `internal/agent`; the narrower Daemon-owned negative `grep` remains in authored Verification.
+
+No follow-up work was found inside this Task's slice. The commands authored
+under `## Verification` were not run; Daemon Verification remains the
+settlement boundary.

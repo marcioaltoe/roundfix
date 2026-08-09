@@ -1,0 +1,11 @@
+Build comparison: 202c2f8d..23834e8a
+
+- No path under docs/specs/_archived changed. Archived Spec 0088 therefore
+  remains byte-identical to its pre-implementation Git objects.
+- No internal/agent/catalog.go or internal/cli path changed. The built help
+  surface adds no OpenCode Model Catalog or effort picker.
+- The durable model-selection reference reports runtime defaults and does not
+  claim that higher effort improves Roundfix outcomes.
+- Codex and Claude retained independent proof in the live profile validation.
+- The Spec's own Non-Goal wording remains explicit that outcome comparison was
+  not performed.

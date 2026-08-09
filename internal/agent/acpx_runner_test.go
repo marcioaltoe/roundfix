@@ -25,6 +25,7 @@ const (
 	fakeACPXArgsPath   = "ROUNDFIX_FAKE_ACPX_ARGS_PATH"
 	fakeACPXInvokes    = "ROUNDFIX_FAKE_ACPX_INVOKES"
 	fakeACPXPromptPath = "ROUNDFIX_FAKE_ACPX_PROMPT_PATH"
+	fakeACPXPrompts    = "ROUNDFIX_FAKE_ACPX_PROMPTS"
 	fakeACPXStdout     = "ROUNDFIX_FAKE_ACPX_STDOUT"
 	fakeACPXStderr     = "ROUNDFIX_FAKE_ACPX_STDERR"
 	fakeACPXExitCode   = "ROUNDFIX_FAKE_ACPX_EXIT_CODE"
@@ -1921,9 +1922,8 @@ func TestACPXRunAppliesSelectionBeforePrompt(t *testing.T) {
 			},
 		},
 		{
-			// OpenCode manages its own reasoning effort, so a Run issues no
-			// reasoning config set between the Agent Session and the prompt.
-			// See ADR-0106.
+			// An empty OpenCode effort remains runtime-managed, so a Run issues
+			// neither a setup prompt nor an effort set. See ADR-0108.
 			name:    "opencode model-managed reasoning issues no effort set",
 			runtime: RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "opencode-model"},
 			want: func(gitRoot string) [][]string {
@@ -1947,6 +1947,100 @@ func TestACPXRunAppliesSelectionBeforePrompt(t *testing.T) {
 				t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, got)
 			}
 		})
+	}
+}
+
+func TestACPXRunWarmSessionPublishesEffectiveEffortReceipt(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	const model = "openrouter/deepseek/deepseek-v4-pro"
+	sink := newCaptureSink("")
+
+	if _, err := harness.runWithSink(context.Background(), RuntimeSpec{
+		ID:              "opencode",
+		Protocol:        ProtocolACP,
+		Model:           model,
+		ReasoningEffort: "xhigh",
+	}, "roundfix-run-1-task_04", sink); err != nil {
+		t.Fatalf("run deferred OpenCode selection: %v", err)
+	}
+
+	var receipts []runevent.RunEvent
+	for _, event := range sink.Events() {
+		if event.Kind == runevent.KindAgentSelectionReceipt {
+			receipts = append(receipts, event)
+		}
+	}
+	if len(receipts) != 1 {
+		t.Fatalf("selection receipts = %#v, want exactly one", receipts)
+	}
+	receipt := receipts[0]
+	if receipt.RunID != "run-acpx" || receipt.Batch != 7 || receipt.Source != runevent.SourceAgent {
+		t.Fatalf("selection receipt identity = %#v", receipt)
+	}
+	var payload runevent.SelectionReceiptPayload
+	if err := json.Unmarshal(receipt.Payload, &payload); err != nil {
+		t.Fatalf("decode selection receipt: %v", err)
+	}
+	if payload.Session != "roundfix-run-1-task_04" || payload.Runtime != "opencode" || payload.Model != model {
+		t.Fatalf("selection receipt target = %#v", payload)
+	}
+	if payload.RequestedReasoningEffort != "xhigh" || payload.ReasoningEffort != "xhigh" || payload.Status != runevent.SelectionReceiptStatusApplied {
+		t.Fatalf("selection receipt effort = %#v", payload)
+	}
+}
+
+func TestACPXRunWarmSessionIsIdempotent(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	runtime := RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "openrouter/x-ai/grok-4.5", ReasoningEffort: "high"}
+
+	if _, err := harness.run(context.Background(), runtime, "roundfix-run-1-task_04"); err != nil {
+		t.Fatalf("first work turn: %v", err)
+	}
+	if _, err := harness.run(context.Background(), runtime, "roundfix-run-1-task_04"); err != nil {
+		t.Fatalf("second work turn: %v", err)
+	}
+
+	prompts := readJSONStrings(t, harness.promptsPath)
+	if len(prompts) != 3 {
+		t.Fatalf("prompt count = %d, want one setup and two work prompts: %#v", len(prompts), prompts)
+	}
+	warmups := 0
+	for _, prompt := range prompts {
+		if prompt == acpxDeferredEffortWarmupPrompt {
+			warmups++
+		}
+	}
+	if warmups != 1 {
+		t.Fatalf("setup prompt count = %d, want 1: %#v", warmups, prompts)
+	}
+}
+
+func TestACPXRunWarmSessionMismatchStopsBeforeWork(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	const model = "openrouter/x-ai/grok-4.5"
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show":         sessionCapabilitySnapshotFixture(t, model, []string{model}, "effort", "low", []string{"low", "medium", "high"}),
+		"set effort value=high": selectionStateFixture(t, "effort", "high", model, []string{model}, "effort", "low", []string{"low", "medium", "high"}),
+	}))
+
+	_, err := harness.run(context.Background(), RuntimeSpec{
+		ID:              "opencode",
+		Protocol:        ProtocolACP,
+		Model:           model,
+		ReasoningEffort: "high",
+	}, "roundfix-run-1-task_04")
+	if err == nil || !strings.Contains(err.Error(), CapabilityIssueContradictoryResponse) {
+		t.Fatalf("error = %T %v, want contradictory effective effort evidence", err, err)
+	}
+	prompts := readJSONStrings(t, harness.promptsPath)
+	if len(prompts) != 1 || prompts[0] != acpxDeferredEffortWarmupPrompt {
+		t.Fatalf("prompt bytes = %#v, want setup only before mismatch", prompts)
 	}
 }
 
@@ -3104,6 +3198,7 @@ type fakeACPXHarness struct {
 	gitRoot         string
 	adapterDir      string
 	invocationsPath string
+	promptsPath     string
 	startedPath     string
 	stopGrace       time.Duration
 	milestones      fakeACPXMilestones
@@ -3113,6 +3208,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 	t.Helper()
 	dir := t.TempDir()
 	invocationsPath := filepath.Join(dir, "invocations.jsonl")
+	promptsPath := filepath.Join(dir, "prompts.jsonl")
 	homeDir := filepath.Join(dir, "home")
 	if err := os.MkdirAll(homeDir, 0o755); err != nil {
 		t.Fatalf("create fake HOME: %v", err)
@@ -3137,6 +3233,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 				"HOME="+homeDir,
 				fakeACPXEnv+"=1",
 				fakeACPXInvokes+"="+invocationsPath,
+				fakeACPXPrompts+"="+promptsPath,
 				fakeACPXStdoutBy+"="+mustJSONForTest(t, map[string]string{"prompt": acpxPromptResponseLine("end_turn")}),
 			),
 			Now: func() time.Time {
@@ -3147,6 +3244,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 		gitRoot:         dir,
 		adapterDir:      adapterDir,
 		invocationsPath: invocationsPath,
+		promptsPath:     promptsPath,
 	}
 }
 
@@ -3460,7 +3558,8 @@ func selectedRuntime(runtime RuntimeSpec) RuntimeSpec {
 		if runtime.Model == "" {
 			runtime.Model = "opencode-test"
 		}
-		// No reasoning-effort default: OpenCode manages its own. See ADR-0106.
+		// No reasoning-effort default: an empty effort remains runtime-managed.
+		// See ADR-0108.
 	default:
 		if runtime.Model == "" {
 			runtime.Model = "gpt-test"
@@ -4005,15 +4104,25 @@ func runFakeACPXProcess() int {
 			return 2
 		}
 	}
-	if path := os.Getenv(fakeACPXPromptPath); path != "" && commandKey == "prompt" {
+	promptPath := os.Getenv(fakeACPXPromptPath)
+	promptsPath := os.Getenv(fakeACPXPrompts)
+	if commandKey == "prompt" && (promptPath != "" || promptsPath != "") {
 		prompt, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "read stdin: %v\n", err)
 			return 2
 		}
-		if err := os.WriteFile(path, prompt, 0o644); err != nil {
-			fmt.Fprintf(os.Stderr, "write prompt: %v\n", err)
-			return 2
+		if promptPath != "" {
+			if err := os.WriteFile(promptPath, prompt, 0o644); err != nil {
+				fmt.Fprintf(os.Stderr, "write prompt: %v\n", err)
+				return 2
+			}
+		}
+		if promptsPath != "" {
+			if err := appendFakeACPXString(promptsPath, string(prompt)); err != nil {
+				fmt.Fprintf(os.Stderr, "append prompt: %v\n", err)
+				return 2
+			}
 		}
 	}
 	if commandKey == "cancel" {
@@ -4404,21 +4513,20 @@ func infrastructureTailFromMessageForTest(t *testing.T, message string) string {
 	return tail
 }
 
-// TestReasoningEffortConfigKeyRefusesOpenCode keeps the single source of truth
-// for which ACP Runtimes Roundfix will not assign a reasoning effort on.
-func TestReasoningEffortConfigKeyRefusesOpenCode(t *testing.T) {
+// TestReasoningEffortConfigKeyMapsSupportedRuntimes keeps the runtime-specific
+// Codex key separate while Claude and OpenCode use the generic effort key.
+func TestReasoningEffortConfigKeyMapsSupportedRuntimes(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name        string
-		runtime     RuntimeSpec
-		wantKey     string
-		wantRefusal bool
+		name    string
+		runtime RuntimeSpec
+		wantKey string
 	}{
 		{name: "codex maps to its own key", runtime: RuntimeSpec{ID: "codex"}, wantKey: acpxCodexReasoningEffortKey},
 		{name: "claude maps to the generic key", runtime: RuntimeSpec{ID: "claude"}, wantKey: acpxGenericReasoningEffortKey},
-		{name: "opencode manages its own reasoning", runtime: RuntimeSpec{ID: "opencode"}, wantRefusal: true},
-		{name: "opencode override manages its own reasoning", runtime: RuntimeSpec{ID: "opencode-custom"}, wantRefusal: true},
+		{name: "opencode maps to the generic key", runtime: RuntimeSpec{ID: "opencode"}, wantKey: acpxGenericReasoningEffortKey},
+		{name: "opencode override maps to the generic key", runtime: RuntimeSpec{ID: "opencode-custom"}, wantKey: acpxGenericReasoningEffortKey},
 	}
 
 	for _, tt := range tests {
@@ -4426,39 +4534,24 @@ func TestReasoningEffortConfigKeyRefusesOpenCode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			key, err := acpxReasoningEffortConfigKey(tt.runtime)
-			if !tt.wantRefusal {
-				if err != nil {
-					t.Fatalf("reasoning key for %q: %v", tt.runtime.ID, err)
-				}
-				if key != tt.wantKey {
-					t.Fatalf("reasoning key = %q, want %q", key, tt.wantKey)
-				}
-				return
+			if err != nil {
+				t.Fatalf("reasoning key for %q: %v", tt.runtime.ID, err)
 			}
-			var managed *ModelManagedReasoningError
-			if !errors.As(err, &managed) {
-				t.Fatalf("error = %T %v, want ModelManagedReasoningError", err, err)
-			}
-			if !strings.Contains(err.Error(), "empty reasoning effort") {
-				t.Fatalf("error %q must name the repair", err.Error())
-			}
-			if managed.Classification() != SelectionReasoningControlNotAdvertised {
-				t.Fatalf("classification = %q, want %q", managed.Classification(), SelectionReasoningControlNotAdvertised)
+			if key != tt.wantKey {
+				t.Fatalf("reasoning key = %q, want %q", key, tt.wantKey)
 			}
 		})
 	}
 }
 
-// TestValidateRuntimeSelectionRefusesOpenCodeReasoningEffort closes the
-// invocation-override path: a --reasoning-effort flag cannot reach an OpenCode
-// Run by bypassing configuration validation.
-func TestValidateRuntimeSelectionRefusesOpenCodeReasoningEffort(t *testing.T) {
+// TestValidateRuntimeSelectionAcceptsOpenCodeReasoningEffort closes the
+// invocation-override path: a configured effort can reach OpenCode without
+// bypassing runtime validation.
+func TestValidateRuntimeSelectionAcceptsOpenCodeReasoningEffort(t *testing.T) {
 	t.Parallel()
 
-	err := validateRuntimeSelection(RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3", ReasoningEffort: "max"})
-	var managed *ModelManagedReasoningError
-	if !errors.As(err, &managed) {
-		t.Fatalf("error = %T %v, want ModelManagedReasoningError", err, err)
+	if err := validateRuntimeSelection(RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3", ReasoningEffort: "max"}); err != nil {
+		t.Fatalf("validate OpenCode selection with a non-empty reasoning effort: %v", err)
 	}
 
 	if err := validateRuntimeSelection(RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3"}); err != nil {

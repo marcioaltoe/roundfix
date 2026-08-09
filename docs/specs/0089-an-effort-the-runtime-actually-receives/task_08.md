@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0089-an-effort-the-runtime-actually-receives
-status: pending
+status: failed
 type: qa
 complexity: high
 ---

@@ -1,0 +1,17 @@
+CONTEXT.md check at build 23834e8a
+
+- Selection Encoding is an existing glossary entry.
+- It defines independent, model_variant, model_managed, and runtime_managed.
+- `rg -n runtime_deferred CONTEXT.md` exited 1 with no match.
+- The built CLI's readiness output reports `runtime_deferred` publicly.
+- The TechSpec uses runtime_deferred throughout but has no `## Vocabulary
+  Contract` section; `roundfix spec check` therefore skipped its automated
+  vocabulary check for Spec 0089.
+
+Classification
+- Coined term: runtime_deferred.
+- Existing term extended: Selection Encoding.
+- Dropped term: none.
+
+The coined public encoding is missing from the canonical glossary entry, a
+genuine vocabulary gap under docs/agents/domain.md.

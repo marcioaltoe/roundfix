@@ -1,0 +1,27 @@
+Build: 23834e8a895a377c974b36693f6d1d63437b2acc (report made worktree dirty)
+Date: 2026-08-09
+
+Cold-cache preparation
+- Command: GOCACHE="$PWD/.gocache" go clean -testcache
+- Exit: 0
+
+Authoritative gate
+- Command: rtk make verify
+- Exit: 0
+- Full-access rerun was required after the sandbox denied api.github.com.
+- The successful run followed a second repository-local cache clear.
+- No Go package line reported `(cached)`.
+- go test ./... passed across every package; representative fresh durations:
+  internal/agent 10.866s, internal/baseline 144.244s,
+  internal/cli 70.059s, internal/spec 18.098s, skills 28.610s.
+- The uncached corpus-budget and selected skills tests passed.
+- `go run -buildvcs=false ./cmd/roundfix skills check` passed.
+- `go build -buildvcs=false ... -o bin/roundfix ./cmd/roundfix` passed.
+- `bin/roundfix spec check` exited 0. For Spec 0089 it reported no
+  findings and skipped SC-VOCABULARY-UNDOCUMENTED because the TechSpec has no
+  Vocabulary Contract section; QA-10 checks the glossary obligation directly.
+
+Earlier non-authoritative attempts
+- The sandboxed cold run was interrupted by blocked api.github.com access.
+- The first full-access rerun passed but showed cached packages because that
+  interrupted attempt had populated the cache. It was not credited.

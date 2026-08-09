@@ -191,32 +191,27 @@ Read them before repointing a profile — but read them knowing they price
 subscription-covered, so their prices inform which model is good, not what a Run
 here costs.
 
-#### OpenCode reasoning effort is per model, and Roundfix does not set it
+#### OpenCode reasoning-effort defaults — 2026-08-09 snapshot
 
-The `effort` option OpenCode advertises is model-dependent and does not use one
-vocabulary. Measured 2026-08-08, each row from `sessions ensure --model <M>`
-followed by `sessions show`:
+This snapshot records measurements taken 2026-08-08 against OpenCode 1.18.15
+through acpx 0.13.0. Each row comes from `sessions ensure --model <M>` followed
+by `sessions show`:
 
 | model | advertised effort values | default |
 | --- | --- | --- |
-| `opencode-go/kimi-k3` | `max` | `max` |
-| `opencode-go/qwen3.8-max` | `high`, `max` | `high` |
-| `opencode-go/glm-5.2` | `high`, `max` | `high` |
-| `opencode-go/deepseek-v4-pro` | `high`, `max` | `high` |
-| `opencode-go/minimax-m3` | `none`, `thinking` | `none` |
-| `openrouter/anthropic/claude-opus-5` | `low`, `medium`, `high`, `xhigh`, `max` | `low` |
-| `openrouter/openai/gpt-5.6-luna` | `none`, `low`, `medium`, `high`, `xhigh`, `max` | `none` |
+| `openrouter/x-ai/grok-4.5` | `low`, `medium`, `high` | `low` |
+| `openrouter/moonshotai/kimi-k3` | `low`, `high`, `max` | `low` |
+| `openrouter/deepseek/deepseek-v4-flash-0731` | `low`, `high`, `max` | `low` |
+| `openrouter/deepseek/deepseek-v4-pro` | `high`, `xhigh` | `high` |
 
-A session ensured with no `--model` sits on `opencode/big-pickle` and advertises
-**no `effort` option at all**.
+Three of four candidates open at the floor of their advertised range. The
+fourth, `deepseek-v4-pro`, opens at `high` because it advertises no lower
+effort.
 
-Roundfix therefore treats `opencode` as a model-managed reasoning runtime and
-refuses any non-empty `reasoning_effort` for it — see ADR-0106. Write
-`reasoning_effort: ""` and the model runs at its own default. The reason is
-mechanical rather than stylistic: the option only exists once a queue-owner
-agent process holds the selected model, which acpx starts on the first prompt,
-so a config set issued during a token-free Exact Agent Selection Proof reaches a
-transient process on the runtime default and answers ACP `-32602`.
+Roundfix now accepts a requested OpenCode effort. During a Run, it ensures the
+Agent Session with the selected model, sends one setup prompt to warm the
+session, applies and observes the requested effort, and only then sends the
+first work prompt. See ADR-0108.
 
 **The adapter refuses nothing.** An unknown model string comes back labelled
 `Custom model` rather than rejected, so a typo in a claude Selection survives

@@ -56,14 +56,16 @@ ACP Runtime the configured tuples reference, including one only an optional
 category selects. A configured profile that fails therefore fails the
 `profiles:` line instead of leaving it `ok`.
 
-The `opencode` runtime manages its own reasoning effort. Configure it with
-`reasoning_effort: ""`; any other value is refused when the configuration
-loads, and again by runtime validation so a `--reasoning-effort` override
-cannot bypass it. OpenCode advertises effort per model and only after an Agent
-Session's first prompt, so Roundfix cannot apply one during a token-free Exact
-Agent Selection Proof. Such a selection proves with encoding `runtime_managed`,
-which differs from `model_managed` in that the adapter may advertise a reasoning
-option Roundfix deliberately never assigns.
+The `opencode` runtime accepts a non-empty reasoning effort with the
+`runtime_deferred` encoding. OpenCode advertises effort per model only after an
+Agent Session's first prompt, so token-free Preflight cannot apply the effort:
+it proves that the model is advertised and current and that the requested
+effort is among the values that model advertises. Before any work turn, the Run
+ensures the Agent Session with its model, sends one minimal warm-up prompt to
+raise the queue owner, applies the requested effort, and observes the effective
+value. The Run therefore proves the effort applied. An empty effort remains
+`runtime_managed`: Roundfix declines to assign the advertised control and the
+Agent Model opens at its own value.
 
 The blocking `skills:` line runs after, and independently from, `profiles:`.
 For each Roundfix-owned skill, the running binary declares a minimum version
