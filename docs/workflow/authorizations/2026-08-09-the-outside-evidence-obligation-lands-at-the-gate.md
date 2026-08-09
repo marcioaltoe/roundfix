@@ -18,25 +18,29 @@ kept. Asked which direction holds, the maintainer answered:
 
 ## What this covers
 
-The authoring clause stands: an unobtainable outside source never stalls the
-Spec. The QA contract moves to match it — a blocked outside-evidence row is
-recorded with its reason and does not by itself block pull request preparation —
-and ADR-0104 states that consequence so the two skills read from one decision
-rather than from each other.
+Asked to be precise, the maintainer clarified the direction:
 
-This is the direction that keeps the obligation honest without giving a third
-party a veto over delivery. ADR-0104 exists because a Spec that grades its own
-homework passes; it does not exist to let an unreachable source hold a finished
-Spec hostage.
+> O que disse foi para manter o write-tasks com a alteração e ajustar o qa-gate
+> e adr
+
+So the resolve Batch's authoring text stands: decomposition never stalls and
+never asks a human, it records the blocked row and proceeds, and the row is
+carried into the QA gate. The `qa-gate` skill and ADR-0104 move to say the same
+thing in the same words — the gate holds pull request preparation until the row
+is satisfied or carried forward on declared unmoved evidence under ADR-0097.
+
+The obligation therefore lands at the gate rather than during authoring. That is
+what keeps ADR-0104 from being satisfiable by silence: a Spec may reach its gate
+with the row open, but it may not ship past one.
 
 ## Authorized paths
 
 - `.agents/skills/qa-gate/SKILL.md`, limited to the outside-evidence row's
   effect on the verdict and on pull request preparation.
 - `docs/adr/0104-a-spec-accepts-on-evidence-it-did-not-author.md`, limited to
-  stating that a blocked row is recorded and does not stall delivery.
-- `.agents/skills/write-tasks/SKILL.md`, limited to restoring the clause the
-  resolve Batch reversed.
+  stating where the obligation lands and what it blocks.
+- `.agents/skills/write-tasks/SKILL.md`, limited to the outside-evidence clause
+  the resolve Batch rewrote.
 
 `.claude/skills/` is a symbolic link to `.agents/skills/`, which is the
 authoritative source. The generated copies under `skills/` are rewritten by

@@ -183,7 +183,6 @@ absorbed_by: <rollup-basename-or-spec-slug>
 - **mandatory**: When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent. Where a fleet observation is captured before it reaches this repository is the Secondbrain guidance's concern, not this one's.
 
 <!-- setup-context-driven:end id=guide.docs-layout -->
-
 <!-- setup-context-driven:begin id=guide.spec-docs-layout version=0.0.1 -->
 
 # Spec docs layout

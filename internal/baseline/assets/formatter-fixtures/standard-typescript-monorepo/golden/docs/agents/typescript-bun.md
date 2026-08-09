@@ -13,7 +13,6 @@
 - **mandatory**: Test observable behavior and explicit failure modes.
 
 <!-- setup-context-driven:end id=guide.typescript-bun -->
-
 <!-- setup-context-driven:begin id=guide.bun version=0.0.1 -->
 
 # Bun

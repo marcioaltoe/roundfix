@@ -134,7 +134,11 @@ reader to reach the same source, so the result cannot be read as a rehearsal of
 the Spec's own premise. When that source cannot be obtained, record the row as
 `blocked (environment: <cause>)` with the reason it was unreachable and count it
 in `rows_blocked_environment`. Never drop the row, and never satisfy it with
-evidence the Spec authored.
+evidence the Spec authored. A blocked or partial outside-evidence row blocks
+pull request preparation until the row is satisfied or carried forward on
+declared unmoved evidence under ADR-0097. Task authoring never stalls on it —
+decomposition records the blocked row and proceeds — so the obligation lands
+here, at the gate, where the Spec is asked to account for it. See ADR-0104.
 
 The plan is complete when every story and criterion has coverage, every chosen probe has a reason, and the report contains the full pending matrix.
 

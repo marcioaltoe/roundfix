@@ -6,7 +6,6 @@ become Baseline guidance, and chose how to split it:
 > Então o ideal é ter em docs/agents/autonomous-work.md uma instrução para
 > montar o comando de construção do prompt para o /loop antes de iniciar o
 > trabalho […] Isso deve ser, também, uma parte do canônico do context-driven.
-
 > Princípio no catálogo, receita aqui.
 
 ## What this covers

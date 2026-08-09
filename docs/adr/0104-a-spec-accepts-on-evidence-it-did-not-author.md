@@ -17,7 +17,13 @@ confirms rather than tests. Every Spec therefore rests at least one named
 acceptance row on evidence originating outside its own artifacts — a real
 repository, a measurement, or published literature — and records where that
 evidence came from; a row whose external evidence cannot be obtained is recorded
-as blocked with its reason rather than dropped. The Secondbrain's
+as blocked with its reason rather than dropped. The obligation lands at the
+gate, not during authoring: decomposition never stalls and never asks a human,
+it records the blocked row and proceeds, while the QA gate holds pull request
+preparation until that row is satisfied or carried forward on declared unmoved
+evidence under ADR-0097. Blocking at the gate is what keeps the clause from
+being satisfiable by silence — a Spec may reach its gate with the row open, but
+it may not ship past one. The Secondbrain's
 `verificacao-adversarial-e-oraculos-de-agentes` supplies the underlying rule,
 that a gate is trustworthy only with evidence it observed the right property and
 can fail a known negative, and reports that 46.0% of comparable positive results

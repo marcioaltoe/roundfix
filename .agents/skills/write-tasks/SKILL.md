@@ -88,9 +88,10 @@ by each Task file. The preflight never moves either responsibility.
   it did not design, or published literature — and must record where that
   evidence came from. A rehearsal shows that the code matches the requirement;
   only an outside source can show that the requirement was right. When that
-  source cannot be obtained, the gate records the row as blocked with its
-  reason: the obligation never requires human interaction and never stalls the
-  Spec.
+  source cannot be obtained during task authoring, decomposition proceeds
+  without human interaction and records the row as blocked with its reason.
+  The blocked row is carried into the QA gate, where it triggers a
+  `rows_blocked_environment` entry on the report and blocks PR preparation.
 - **Commit and push stay out of task criteria.** The Daemon owns Task commits, Run integration, and any configured push. Never put commit, push, PR creation, or branch-publishing requirements in task Requirements, Subtasks, Acceptance Criteria, or Verification commands.
 
 ### Author the QA gate decision
