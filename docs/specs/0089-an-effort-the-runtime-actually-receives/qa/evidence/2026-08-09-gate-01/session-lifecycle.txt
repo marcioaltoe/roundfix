@@ -1,0 +1,23 @@
+Live session: qa-0089-pro-20260809
+Session id: ses_0197df7bbffeC7Yboc8UzjwhkW
+Model default before application: high
+
+Command boundary
+- Sent the implementation's exact setup prompt bytes: `Session setup.` with no
+  trailing newline.
+- The request carried the selected DeepSeek V4 Pro model and ran before any
+  `set effort xhigh`, matching the implemented order.
+
+Observed behavior before effort application
+- The Agent reasoned that it was in a Roundfix QA session.
+- It read the scratch repository directory.
+- It read the external Spec Root and the scratch Spec directory.
+- It created an execute tool call for `rtk roundfix doctor` and placed it in
+  progress.
+- The probe was interrupted with exit 130 to stop further unintended work.
+
+This contradicts the promised boundary that the setup prompt is not a work
+turn and that every work turn, including the first, runs at the requested
+effort. The live Agent performed tool-driven work at the model's default high
+before xhigh was applied. A second-turn/idempotency probe cannot repair that
+first-turn divergence and was not continued.

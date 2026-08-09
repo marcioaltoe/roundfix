@@ -1,0 +1,38 @@
+Built binary: bin/roundfix from build 23834e8a895a377c974b36693f6d1d63437b2acc
+Scratch repository: /private/tmp/roundfix-spec0089-qa.FLt2XP/repo
+Scratch branch: ma/qa-spec0089-runtime-effort
+
+Purpose
+- Start one real Task Run with the data Project Config at
+  opencode/openrouter/deepseek/deepseek-v4-pro/xhigh.
+- Capture a Run id, proof tuple, applied-effort receipt, event order, and the
+  public scratch file observable.
+
+Attempt 1
+- An uncommitted in-repository scratch Spec was supplied.
+- `roundfix implement --spec qa-spec0089-runtime-effort --detach` exited 2.
+- Preflight said the Spec graph must load from committed build 23834e8a and the
+  uncommitted path did not exist there.
+- It explicitly reported no Run, Agent, worktree, commit, or push side effect.
+
+Attempt 2
+- The scratch Spec was moved to an external Spec Root to avoid a repository
+  commit.
+- The same command exited 2.
+- Preflight said an external Spec Root must be committed in its own Git
+  repository before Agent profiles can be selected from a committed Task Graph.
+- It again explicitly reported no side effects.
+
+Environmental boundary
+- This QA assignment forbids commits. Roundfix requires a committed Task Graph
+  before a real Task Run. No allowed path can satisfy both contracts.
+- `roundfix runs list --state all --limit 0` reported `No Runs found.` before
+  and after the probes.
+
+Equivalent observed evidence
+- profiles validate exact-proved the requested tuple with runtime_deferred.
+- Live acpx/OpenCode evidence reproduced the model's high default, raised the
+  queue owner, accepted `set effort xhigh`, and a fresh session read observed
+  deepseek-v4-pro/xhigh.
+- The live setup prompt also exposed F-002: it performed Agent work before the
+  effort was applied, so equivalent evidence does not establish Goal 3.

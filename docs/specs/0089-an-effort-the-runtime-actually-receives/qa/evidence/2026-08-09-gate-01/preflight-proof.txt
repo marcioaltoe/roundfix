@@ -1,0 +1,23 @@
+Built binary: bin/roundfix from build 23834e8a895a377c974b36693f6d1d63437b2acc
+Scratch repository: /private/tmp/roundfix-spec0089-qa.FLt2XP/repo
+
+The disposable Project Config selected category data as:
+- runtime: opencode
+- model: openrouter/deepseek/deepseek-v4-pro
+- reasoning_effort: xhigh
+
+Command:
+  bin/roundfix profiles validate --category data --json
+Exit: 0
+
+Observed proof summary:
+- opencode/deepseek-v4-pro/xhigh: passed, encoding runtime_deferred,
+  adapter command `opencode acp`.
+- codex/gpt-5.6-sol/high fallback: passed, encoding independent,
+  codex-acp 1.1.14.
+- claude/opus/high fallback: passed, encoding independent,
+  claude-agent-acp 0.66.0.
+
+The output did not claim the OpenCode effort was applied during Preflight. Its
+runtime_deferred encoding distinguishes the advertised-value proof from the
+later live application. The live session evidence is in outside-measurement/.

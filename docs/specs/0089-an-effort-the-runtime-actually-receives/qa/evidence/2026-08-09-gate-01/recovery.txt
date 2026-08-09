@@ -1,0 +1,10 @@
+The invalid-effort path supplies a concrete safe recovery:
+- low fails with reasoning_control_not_advertised and prints advertised
+  [high, xhigh] plus the profile update/revalidate action.
+- no Run is created.
+
+The observed-effort mismatch path has current-build unit coverage inside the
+cold passing internal/agent suite, but the live recovery journey cannot be
+safely completed on this build. Its setup prompt already performs Agent work
+before the requested effort is applied (F-002). Retrying or opening another
+session repeats the unsafe first-turn boundary instead of proving recovery.
