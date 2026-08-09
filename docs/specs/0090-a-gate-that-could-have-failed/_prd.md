@@ -31,12 +31,21 @@ test, and a byte-level diff proving nothing outside `profiles` had moved. None o
 those commands had run. A Task's Result is prose, and nothing in the contract
 distinguishes a command that ran from a command that was described.
 
-Two more instances the same day. `make verify` — the repository's authoritative
+Three more instances the same day. `make verify` — the repository's authoritative
 gate, the one ADR-0083 makes the only gate — returned exit `2` and then exit `0`
 on an unchanged tree, because one wait in the agent test harness used 5s where
-every sibling wait uses the shared 90s budget. And six of Spec 0089's eight
-authored Tasks originally carried Verification commands that could only pass by
-exiting zero, with no way to fail when no work was done.
+every sibling wait uses the shared 90s budget. The same gate then failed in CI on
+a documentation-only commit, in
+`TestOwnerProcessControllerTerminateTreeProvesOutlivingGrandchildGone`, which
+gives a process tree 250ms of grace and a 2s deadline and passes five times out
+of five locally. And six of Spec 0089's eight authored Tasks originally carried
+Verification commands that could only pass by exiting zero, with no way to fail
+when no work was done.
+
+The two timing failures share a shape worth naming: a budget written as a literal
+at one call site, sized for an unloaded machine, in a test whose subject is
+process or session startup. Neither is a wrong assertion. Both make the gate
+answer a question about the machine when it was asked a question about the tree.
 
 The common shape is not "a bug in a gate". It is that a gate is accepted on its
 text, never on a demonstration that it can fail.
@@ -87,8 +96,10 @@ text, never on a demonstration that it can fail.
   rather than typed by the Agent. Prose stays welcome; it stops being the only
   record.
 - **A gate that is the same twice.** The authoritative gate is proven
-  deterministic on an unchanged tree, and a wait budget in a test harness is
-  sourced from one shared constant rather than restated per call site.
+  deterministic on an unchanged tree, on the loaded machine and the CI runner
+  alike, and a wait budget in a test harness is sourced from one shared constant
+  rather than restated per call site. A budget written as a literal beside the
+  assertion it guards is the defect to remove, not the individual number.
 
 ## Non-Goals / Out of Scope
 
