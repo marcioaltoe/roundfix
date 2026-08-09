@@ -90,6 +90,25 @@ not applicable with a reason; every row cites an operative `docs/agents/`
 source; and any protected tooling mutation records express maintainer
 authorization plus bounded files. Keep authorization out of frontmatter.
 
+Then run the checker against the stage that produced the artifact:
+
+```bash
+roundfix spec check <slug> --stage techspec
+```
+
+An error-level finding or a checker execution failure blocks the report. Fix
+the PRD or TechSpec named by the finding and re-run the command; do not report
+completion or recommend `write-tasks` while either stands.
+
+A clean TechSpec-stage result is not full Spec coverage. This stage does not
+decide Task Graph ADR accounting, task coverage, context references,
+Verification independence, requirement contradictions, or rehearsal
+declarations; commit-dependent changed-path scope; rules that are not yet
+mechanical; or whether the product goals work through their user-reachable
+surfaces. The Task authoring stage, the full unscoped sweep, and QA retain
+those classes. Treat the checker's named skipped detectors as omitted, not as
+clean findings.
+
 Reply with the file path, the ADRs created, any decisions still open, and the next step: `write-tasks`.
 
 ## Anti-patterns

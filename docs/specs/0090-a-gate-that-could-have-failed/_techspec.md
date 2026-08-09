@@ -26,9 +26,8 @@ settling it either way.
 - Authentication and HTTP: not applicable — the probe runs through the Daemon's
   existing command runner and reaches no network surface.
   Source: `docs/agents/cli.md`.
-- Active ADR obligations: applicable — ADR-0083 makes `make verify` the only
-  authoritative gate, so its determinism is in scope here. ADR-0091 keeps the
-  authored QA gate before any Pull Request; this Spec moves one defect class
+- Active ADR obligations: applicable — `docs/agents/specific-repository.md` makes
+  `make verify` the authoritative gate, so its determinism is in scope here. ADR-0091 makes the QA gate a Task node of its own type; this Spec moves one defect class
   earlier without displacing it. ADR-0096 already establishes that the QA gate
   proves machine facts before spending an Agent turn, and this Spec applies that
   same principle to a Task's own Verification. ADR-0104 requires an acceptance

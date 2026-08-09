@@ -53,10 +53,10 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunDispositionCharacterization' -count=1 -v 2>&1 | grep -q '^--- PASS: TestRunDispositionCharacterizationWorkStartedPrecedesTheFirstPrompt'` — expected: exits 0. A `-run` pattern selecting no cases exits 0, so this asserts the named case ran.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunDispositionCharacterization' -count=1 -v 2>&1 | grep -q '^--- PASS: TestRunDispositionCharacterizationFailedBatchOverwritesSettledIssues'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunDispositionCharacterization' -count=1 -v 2>&1 | grep -q '^--- PASS: TestRunDispositionCharacterizationStoppedRunLeavesTasksPending'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunDispositionCharacterization' -count=1 -v 2>&1 | grep -q '^--- PASS: TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunDispositionCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunDispositionCharacterizationWorkStartedPrecedesTheFirstPrompt'` — expected: exits 0. A `-run` pattern selecting no cases exits 0, so this asserts the named case ran.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunDispositionCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunDispositionCharacterizationFailedBatchOverwritesSettledIssues'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunDispositionCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunDispositionCharacterizationStoppedRunLeavesTasksPending'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunDispositionCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch'` — expected: exits 0.
 - `test "$(grep -c 'Outcome contract test:' internal/daemon/run_disposition_characterization_test.go)" -eq 6` — expected: exits 0, proving all six are enumerated rather than some.
 
 ## References

@@ -38,8 +38,7 @@ takes ownership of exactly that, on evidence 0063 did not have.
   QA gate accounts for it before delivery. ADR-0096 and ADR-0097 are the
   decisions this Spec implements: the mechanical stage that proves machine facts before
   any agent turn, and the fail-closed rule for carrying a row forward.
-  ADR-0080 keeps sole ownership of QA
-  verdict semantics and the three typed blocked-cause counts; a mechanical
+  ADR-0080 has QA verdicts distinguish environment-blocked rows and owns the three typed blocked-cause counts; a mechanical
   stage may compute them and may never redefine them or make any verdict more
   permissive. ADR-0091 keeps the gate a terminal `qa` Task node with its
   dependency and post-report invalidation rules, so no stage may become a
@@ -58,7 +57,7 @@ takes ownership of exactly that, on evidence 0063 did not have.
   delivered agent work; and ADR-0056 keeps Task Capacity separate from
   Verification Capacity, which a stage running before the agent must respect
   rather than borrow. ADR-0081 sanctions digest fallout of the authorized
-  edits. Source: `docs/agents/domain.md`.
+  edits. ADR-0117 places a check with the stage that can produce its defect; it does not change what this Spec delivers, and it moves where this Spec's gate rows run only once Spec 0093 ships. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — express maintainer authorization granted
   2026-08-06 in the write-prd authorization gate, recorded at
   `docs/workflow/authorizations/2026-08-06-proof-cost.md`; bounded files:

@@ -17,8 +17,7 @@ gains repository-level detectors in the shape it already proved, the Daemon
 gains a step next to the Verification it already owns, and the QA prompt gains
 the Spec Context Bundle every Task prompt already carries. The one genuinely
 new mechanism is evidence-scoped carry-forward, which is designed to fail
-closed in every direction. Nothing here may relax a verdict; ADR-0080 keeps
-that ownership, and the stage computes counts rather than defining them.
+closed in every direction. Nothing here may relax a verdict; ADR-0080 owns how verdicts distinguish environment-blocked rows, and the stage computes counts rather than defining them.
 
 ## Project Constraints
 
@@ -29,9 +28,7 @@ that ownership, and the stage computes counts rather than defining them.
   and file I/O only; the gate's existing read-only `gh pr list` lookup is
   untouched. Source: `docs/agents/go.md`.
 - Active ADR obligations: applicable — ADR-0096 and ADR-0097 are the decisions
-  this design implements. ADR-0080 keeps sole ownership of verdict semantics
-  and the three typed blocked-cause counts. ADR-0091 keeps the gate a terminal
-  `qa` node whose stages live inside it, and ADR-0088 keeps it authored rather
+  this design implements. ADR-0080 has QA verdicts distinguish environment-blocked rows and owns the three typed blocked-cause counts. ADR-0091 makes the gate a Task node of its own type, terminal and depending on every leaf, so its stages live inside it, and ADR-0088 keeps it authored rather
   than requested. ADR-0015 keeps the report commit, the fail-on-missing-verdict
   rule, and the unresolved outcome on any non-pass. ADR-0093 and ADR-0094 bound
   every detector to citation-checkable facts, deterministic and hermetic,

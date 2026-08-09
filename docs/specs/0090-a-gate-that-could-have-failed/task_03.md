@@ -75,10 +75,10 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbe' -count=1 -v 2>&1 | grep -q '^--- PASS: TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbe' -count=1 -v 2>&1 | grep -q '^--- PASS: TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbe' -count=1 -v 2>&1 | grep -q '^--- PASS: TestPreWorkProbeLeavesAFailingGateOnItsOrdinaryPath'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -count=1 2>&1 | grep -q '^ok'` — expected: exits 0, proving the declared break was updated.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbe' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbe' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbe' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestPreWorkProbeLeavesAFailingGateOnItsOrdinaryPath'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestVerificationProbeCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestVerificationProbeCharacterization'` — expected: exits 0, proving the declared break was updated to the new behaviour rather than left failing. A whole-package sweep would pass with the work absent; this names the case that must change.
 
 ## References
 

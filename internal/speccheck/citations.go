@@ -22,6 +22,8 @@ const (
 	CodeADRUnlisted = "SC-ADR-UNLISTED"
 	// CodeADRRelated identifies an unlisted accepted ADR one citation edge from a listed ADR.
 	CodeADRRelated = "SC-ADR-RELATED"
+	// CodeCitationUnsupported identifies a claim whose cited ADR does not carry the claimed subject.
+	CodeCitationUnsupported = "SC-CITATION-UNSUPPORTED"
 	// CodeCoverageUnmapped identifies a PRD unit absent from the TechSpec Coverage Map.
 	CodeCoverageUnmapped = "SC-COVERAGE-UNMAPPED"
 	// CodeCoverageUntasked identifies a PRD unit absent from every Task References section.
@@ -42,6 +44,7 @@ var (
 	citationCoverageDetectorCodes = []string{
 		CodeADRUnlisted,
 		CodeADRRelated,
+		CodeCitationUnsupported,
 		CodeCoverageUnmapped,
 		CodeCoverageUntasked,
 		CodeReferenceUnresolved,
@@ -52,6 +55,8 @@ var (
 	adrFilenamePattern     = regexp.MustCompile(`^([0-9]{4})-.*\.md$`)
 	findingFilenamePattern = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}-.+\.md$`)
 	adrCitationPattern     = regexp.MustCompile(`\bADR-([0-9]{4})\b`)
+	adrAttributionPattern  = regexp.MustCompile(`(?i)\bADR-([0-9]{4})\s+(?:already\s+)?(?:makes?|establish(?:es|ed)?|requires?|keeps?|has|places?|puts?|says?)\s+`)
+	citationWordPattern    = regexp.MustCompile(`[a-z0-9]+`)
 	legacyInactivePattern  = regexp.MustCompile(`(?im)^\s*(?:\*\*)?status(?:\*\*)?:\s*(?:proposed|rejected|deprecated|superseded)\b`)
 	featureRefPattern      = regexp.MustCompile(`(?i)\bCore Features?\s+`)
 	storyRefPattern        = regexp.MustCompile(`(?i)\b(?:User )?(?:Story|Stories)\s+`)
@@ -526,9 +531,277 @@ func lineContainingText(content []byte, needle string) int {
 type adrRecord struct {
 	Number        string
 	Title         string
+	TitleLine     int
+	Text          string
 	DisplayPath   string
 	Citations     map[string]bool
 	CitationLines map[string]int
+}
+
+// Claim is one attribution a Spec artifact makes about a decision record.
+type Claim struct {
+	Artifact string
+	Line     int
+	Target   string
+	Subject  string
+	sentence string
+}
+
+type resolvedCitationClaim struct {
+	claim  Claim
+	record adrRecord
+}
+
+// CitationClaims parses subject attributions from one PRD or TechSpec. A bare
+// ADR token is not a claim because it has no attribution verb or subject.
+func CitationClaims(artifact string, content []byte) []Claim {
+	var claims []Claim
+	var paragraph []string
+	paragraphLine := 0
+	inFence := false
+
+	flush := func() {
+		if len(paragraph) == 0 {
+			return
+		}
+		claims = append(claims, citationClaimsInParagraph(artifact, paragraphLine, strings.Join(paragraph, "\n"))...)
+		paragraph = nil
+		paragraphLine = 0
+	}
+
+	for index, line := range strings.Split(string(content), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") {
+			flush()
+			inFence = !inFence
+			continue
+		}
+		if inFence {
+			continue
+		}
+		if trimmed == "" {
+			flush()
+			continue
+		}
+		if len(paragraph) > 0 && strings.HasPrefix(trimmed, "- ") {
+			flush()
+		}
+		if len(paragraph) == 0 {
+			paragraphLine = index + 1
+		}
+		paragraph = append(paragraph, line)
+	}
+	flush()
+	return claims
+}
+
+func citationClaimsInParagraph(artifact string, firstLine int, paragraph string) []Claim {
+	var claims []Claim
+	for _, match := range adrAttributionPattern.FindAllStringSubmatchIndex(paragraph, -1) {
+		if citationIsExample(paragraph, match[0]) {
+			continue
+		}
+		subjectStart := match[1]
+		subjectEnd := citationSubjectEnd(paragraph, subjectStart)
+		subject := strings.TrimSpace(paragraph[subjectStart:subjectEnd])
+		if subject == "" {
+			continue
+		}
+		target := "ADR-" + paragraph[match[2]:match[3]]
+		claims = append(claims, Claim{
+			Artifact: artifact,
+			Line:     firstLine + strings.Count(paragraph[:match[0]], "\n"),
+			Target:   target,
+			Subject:  strings.Join(strings.Fields(subject), " "),
+			sentence: citationSentence(paragraph, match[0]),
+		})
+	}
+	return claims
+}
+
+func citationIsExample(paragraph string, claimStart int) bool {
+	prefix := strings.TrimSpace(paragraph[:claimStart])
+	if prefix != "" {
+		last := prefix[len(prefix)-1]
+		if last == '"' || last == '\'' {
+			return true
+		}
+	}
+	lower := strings.ToLower(prefix)
+	if len(lower) > 64 {
+		lower = lower[len(lower)-64:]
+	}
+	return strings.Contains(lower, "claiming") || strings.Contains(lower, "example")
+}
+
+func citationSubjectEnd(paragraph string, start int) int {
+	remainder := paragraph[start:]
+	end := len(remainder)
+	for _, delimiter := range []string{",", ";", ".", "!", "?", " — ", "\nADR-", " ADR-"} {
+		if index := strings.Index(remainder, delimiter); index >= 0 && index < end {
+			end = index
+		}
+	}
+	return start + end
+}
+
+func citationSentence(paragraph string, claimStart int) string {
+	start := 0
+	for index := claimStart - 1; index >= 0; index-- {
+		if strings.ContainsRune(".!?", rune(paragraph[index])) {
+			start = index + 1
+			break
+		}
+	}
+	end := len(paragraph)
+	for index := claimStart; index < len(paragraph); index++ {
+		if strings.ContainsRune(".!?", rune(paragraph[index])) {
+			end = index + 1
+			break
+		}
+	}
+	return strings.Join(strings.Fields(strings.TrimSpace(paragraph[start:end])), " ")
+}
+
+// ResolvedCitationClaimCount reports how many parsed claims name an accepted
+// record in the repository corpus. Callers can distinguish no attributions
+// from a parser that failed to recognize a known attribution by comparing this
+// count with CitationClaims.
+func ResolvedCitationClaimCount(repoRoot string, claims []Claim) (int, error) {
+	resolved, err := resolveCitationClaims(repoRoot, claims)
+	if err != nil {
+		return 0, err
+	}
+	return len(resolved), nil
+}
+
+func resolveCitationClaims(repoRoot string, claims []Claim) ([]resolvedCitationClaim, error) {
+	corpus, present, err := readADRCorpus(repoRoot)
+	if err != nil {
+		return nil, err
+	}
+	if !present {
+		return nil, nil
+	}
+	resolved := make([]resolvedCitationClaim, 0, len(claims))
+	for _, claim := range claims {
+		record, ok := corpus[strings.TrimPrefix(claim.Target, "ADR-")]
+		if !ok {
+			continue
+		}
+		resolved = append(resolved, resolvedCitationClaim{claim: claim, record: record})
+	}
+	return resolved, nil
+}
+
+func detectUnsupportedCitations(result *Result, repoRoot string, claims []Claim) error {
+	resolved, err := resolveCitationClaims(repoRoot, claims)
+	if err != nil {
+		return err
+	}
+	for _, resolution := range resolved {
+		if citationSubjectSupported(resolution.claim.Subject, resolution.record) {
+			continue
+		}
+		claimingSentence := resolution.claim.sentence
+		if claimingSentence == "" {
+			claimingSentence = resolution.claim.Target + " establishes " + resolution.claim.Subject
+		}
+		result.Findings = append(result.Findings, Finding{
+			Code:     CodeCitationUnsupported,
+			Severity: SeverityError,
+			Summary: resolution.claim.Artifact + " claims " + strconv.Quote(claimingSentence) +
+				", but " + resolution.claim.Target + "'s subject is " + strconv.Quote(resolution.record.Title),
+			Where: []Location{
+				{Path: resolution.claim.Artifact, Line: resolution.claim.Line},
+				{Path: resolution.record.DisplayPath, Line: resolution.record.TitleLine},
+			},
+			Fix: "Rewrite the claim in " + resolution.claim.Artifact + " to match " + resolution.claim.Target +
+				", or cite the decision record that carries the claimed subject.",
+		})
+	}
+	return nil
+}
+
+func citationSubjectSupported(subject string, record adrRecord) bool {
+	subjectWords := significantCitationWords(subject)
+	if len(subjectWords) == 0 {
+		return true
+	}
+	recordWordsInOrder := significantCitationWords(record.Text)
+	recordWords := make(map[string]bool)
+	for _, word := range recordWordsInOrder {
+		recordWords[word] = true
+	}
+	matched := citationWordOverlap(subjectWords, recordWords)
+	if len(subjectWords) <= 2 {
+		return matched == len(subjectWords)
+	}
+	if matched*5 < len(subjectWords)*3 {
+		return false
+	}
+	titleWords := make(map[string]bool)
+	for _, word := range significantCitationWords(record.Title) {
+		titleWords[word] = true
+	}
+	return citationWordOverlap(subjectWords, titleWords) >= 2 || citationPhraseMatches(subjectWords, recordWordsInOrder)
+}
+
+func citationWordOverlap(words []string, corpus map[string]bool) int {
+	matched := 0
+	for _, word := range words {
+		if corpus[word] {
+			matched++
+		}
+	}
+	return matched
+}
+
+func citationPhraseMatches(subjectWords, recordWords []string) bool {
+	pairs := make(map[string]bool)
+	for index := 0; index+1 < len(recordWords); index++ {
+		pairs[recordWords[index]+"\x00"+recordWords[index+1]] = true
+	}
+	for index := 0; index+1 < len(subjectWords); index++ {
+		if pairs[subjectWords[index]+"\x00"+subjectWords[index+1]] {
+			return true
+		}
+	}
+	return false
+}
+
+func significantCitationWords(text string) []string {
+	var words []string
+	for _, word := range citationWordPattern.FindAllString(strings.ToLower(text), -1) {
+		if citationStopWords[word] {
+			continue
+		}
+		words = append(words, citationWordStem(word))
+	}
+	return words
+}
+
+func citationWordStem(word string) string {
+	switch {
+	case len(word) > 4 && strings.HasSuffix(word, "ies"):
+		return strings.TrimSuffix(word, "ies") + "y"
+	case len(word) > 5 && strings.HasSuffix(word, "ing"):
+		return strings.TrimSuffix(word, "ing")
+	case len(word) > 4 && strings.HasSuffix(word, "ed"):
+		return strings.TrimSuffix(word, "ed")
+	case len(word) > 3 && strings.HasSuffix(word, "s"):
+		return strings.TrimSuffix(word, "s")
+	default:
+		return word
+	}
+}
+
+var citationStopWords = map[string]bool{
+	"a": true, "an": true, "and": true, "as": true, "at": true,
+	"be": true, "by": true, "for": true, "from": true, "in": true,
+	"is": true, "it": true, "its": true, "of": true, "on": true,
+	"or": true, "that": true, "the": true, "this": true, "to": true,
+	"with": true,
 }
 
 type coverageKind string
@@ -564,6 +837,7 @@ func detectCitationCoverageAndReferences(
 	if err := detectADRConsistency(result, repoRoot, specDir, prdContent, prdDisplayPath); err != nil {
 		return err
 	}
+	claims := CitationClaims(prdDisplayPath, prdContent)
 
 	units := parsePRDCoverageUnits(prdContent)
 	if techSpecPresent {
@@ -572,9 +846,13 @@ func detectCitationCoverageAndReferences(
 		if err != nil {
 			return fmt.Errorf("read Spec artifact %q: %w", techSpecPath, err)
 		}
+		claims = append(claims, CitationClaims(artifactDisplayPath(repoRoot, techSpecPath), techSpecContent)...)
 		detectCoverageMap(result, units, prdDisplayPath, techSpecContent, artifactDisplayPath(repoRoot, techSpecPath))
 	} else {
 		addSkip(result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, filepath.Join(specDir, "_techspec.md")))
+	}
+	if err := detectUnsupportedCitations(result, repoRoot, claims); err != nil {
+		return fmt.Errorf("detect unsupported citations: %w", err)
 	}
 
 	graph, graphPresent, err := loadOptionalTaskGraph(specsRoot, slug, specDir)
@@ -606,6 +884,7 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 		missing := filepath.ToSlash(filepath.Join("docs", "adr"))
 		addSkip(result, CodeADRUnlisted, missing)
 		addSkip(result, CodeADRRelated, missing)
+		addSkip(result, CodeCitationUnsupported, missing)
 		return nil
 	}
 
@@ -700,9 +979,12 @@ func readADRCorpus(repoRoot string) (map[string]adrRecord, bool, error) {
 		for number := range lines {
 			lines[number] += lineOffset
 		}
+		title := firstHeading(body)
 		corpus[match[1]] = adrRecord{
 			Number:        match[1],
-			Title:         firstHeading(body),
+			Title:         title,
+			TitleLine:     lineOffset + lineContainingText(body, "# "+title),
+			Text:          string(body),
 			DisplayPath:   artifactDisplayPath(repoRoot, path),
 			Citations:     citations,
 			CitationLines: lines,

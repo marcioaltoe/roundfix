@@ -71,10 +71,10 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestWorkStartedBoundary' -count=1 -v 2>&1 | grep -q '^--- PASS: TestWorkStartedBoundaryPublishesOnFirstAgentOutput'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestWorkStartedBoundary' -count=1 -v 2>&1 | grep -q '^--- PASS: TestWorkStartedBoundaryReportsSelectionFailureWithoutOutput'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestFallbackEligibility' -count=1 -v 2>&1 | grep -q '^--- PASS: TestFallbackEligibilitySurvivesASelectionFailure'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestFallbackEligibility' -count=1 -v 2>&1 | grep -q '^--- PASS: TestFallbackEligibilityEndsAfterAnyAgentOutput'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestWorkStartedBoundary' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestWorkStartedBoundaryPublishesOnFirstAgentOutput'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestWorkStartedBoundary' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestWorkStartedBoundaryReportsSelectionFailureWithoutOutput'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestFallbackEligibility' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestFallbackEligibilitySurvivesASelectionFailure'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestFallbackEligibility' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestFallbackEligibilityEndsAfterAnyAgentOutput'` — expected: exits 0.
 
 ## References
 

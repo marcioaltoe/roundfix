@@ -53,8 +53,8 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestSelectionCatalogueCharacterization' -count=1 -v 2>&1 | grep -q '^--- PASS: TestSelectionCatalogueCharacterizationClaudeProvesAnUnofferedModel'` — expected: exits 0. A `-run` pattern selecting no cases exits 0, so this asserts the named case ran.
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestSelectionCatalogueCharacterization' -count=1 -v 2>&1 | grep -q '^--- PASS: TestSelectionCatalogueCharacterizationCodexRefusesAnUnofferedModel'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestSelectionCatalogueCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSelectionCatalogueCharacterizationClaudeProvesAnUnofferedModel'` — expected: exits 0. A `-run` pattern selecting no cases exits 0, so this asserts the named case ran.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestSelectionCatalogueCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSelectionCatalogueCharacterizationCodexRefusesAnUnofferedModel'` — expected: exits 0.
 - `grep -c 'Declared break: task_0' internal/agent/selection_catalogue_characterization_test.go | grep -qE '^[2-9]'` — expected: exits 0, proving both breaks are declared.
 
 ## References

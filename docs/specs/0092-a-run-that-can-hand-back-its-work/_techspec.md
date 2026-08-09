@@ -26,8 +26,7 @@ Roundfix with its contents recorded first.
 - Authentication and HTTP: not applicable — Run lifecycle, git plumbing and
   local storage. Source: `docs/agents/cli.md`.
 - Active ADR obligations: applicable — ADR-0010 lets a Batch settle and the Run
-  continue. ADR-0050 keeps Fallback Chains inactive until Run creation and
-  forbids preflight substitution; this Spec narrows when a chain is *ineligible*
+  continue. ADR-0050 has a configured fallback activate only after its notification; this Spec narrows when a chain is *ineligible*
   and widens nothing. ADR-0091 makes the QA gate its own Task node. ADR-0104
   requires an outside-evidence acceptance row. This Spec adds ADR-0113,
   ADR-0114 and ADR-0115. Source: `docs/agents/domain.md`.

@@ -51,7 +51,7 @@ changes what agents read and what they must read first.
   that reads the archive paths this Spec moves; ADR-0091, ADR-0096, and ADR-0097
   govern the authored QA gate; ADR-0104 requires an acceptance row on evidence
   this Spec did not author and holds pull request preparation until it is
-  satisfied or carried forward. Source: `docs/agents/domain.md`.
+  satisfied or carried forward. ADR-0117 places a check with the stage that can produce its defect; it does not change what this Spec delivers, and it moves where this Spec's gate rows run only once Spec 0093 ships. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — Baseline catalog modules, the source-baseline
   corpus and manifest, two setup-owned guides, and the review configuration are
   mutated. Express maintainer authorization:
