@@ -20,97 +20,150 @@ defaults:
 # it did drift until 2026-08-07. The claude adapter advertises
 # `opus` (as `opus[1m]`), `claude-fable-5`, `sonnet`, `haiku`, and `default`;
 # reasoning effort is a separate adapter option. Snapshot and rationale:
-# docs/references/model-selection.md, 2026-08-07.
+# docs/references/model-selection.md.
 #
-# Fallbacks are cross-runtime on purpose. A fallback exists for when the
-# preferred Selection cannot start, and a second codex model does not help when
-# codex is what is unavailable. Every fallback here changes runtime.
+# ---------------------------------------------------------------------------
+# Revised 2026-08-08. EVERY CHANGE BELOW IS TEMPORARY. Two windows, two expiry
+# dates, and neither reverts itself. Read both before editing.
+#
+# WINDOW A — until 2026-08-12. Codex is unlimited, so cost is not a selection
+# criterion and every clause that picked a weaker setting to save money is
+# suspended. Selection is by result and by step count, because steps still cost
+# wall clock and latency multiplies by turn count in a Run. From the 2026-08-07
+# board: sol/xhigh scores 71% in 44 steps, sol/high 69% in 37, sol/max 73% in
+# 61. xhigh is the working baseline; max is reserved for the one category where
+# it displaces a stronger model.
+#
+# ON 2026-08-12, codex returns to a quota and cost becomes a criterion again.
+# What to weigh back: `general`, `backend`, `qa` at sol/high (69% for $3.47
+# against xhigh's 71% for $4.70), and `review` at luna/max, which scored 67% for
+# $0.61 and was the cheapest usable row on the board by an order of magnitude.
+#
+# WINDOW B — until 2026-08-10 14:00 America/Sao_Paulo. The Anthropic weekly
+# limit is low, so Claude is demoted to last resort everywhere. A fallback
+# consumes nothing unless the selections ahead of it cannot start, so Claude
+# keeps its place as the safety net and simply stops running by default.
+#
+# ON THE 08-10 RESET, one line is worth weighing back, not the whole file:
+# `frontend` preferred was `claude / opus / high`, chosen on design judgment
+# that no benchmark on file measures.
+# ---------------------------------------------------------------------------
+#
+# Fallback Chain order is codex, then opencode, then claude. Every chain changes
+# runtime at each step, because a fallback exists for when a runtime is
+# unavailable and a second model on the same runtime does not help. Claude last
+# is what conserves it.
+#
+# NEVER route gpt-5.6-sol through OpenRouter. Every `gpt-5.6-sol` below is
+# `runtime: codex`, which is the unlimited GPT subscription. The `opencode`
+# runtime also advertises `openrouter/openai/gpt-5.6-sol`, and
+# docs/references/model-selection.md documents that mapping — it is pay-per-use
+# billing for a model this repository already has for free, so the mapping is
+# reachable and wrong. The only OpenCode identifiers used here carry the
+# `opencode-go/` prefix, which is the subscribed tier.
 #
 # Claude Fable 5 appears nowhere below. It answers in 1.7 minutes — roughly 25x
-# Sol's latency — while costing the most per token on the board, for a result
-# Sol matches at a third of the price. In a Run, where latency multiplies by
-# turn count, that trade never pays.
+# Sol's latency — for a result Sol matches. In a Run, where latency multiplies
+# by turn count, that trade never pays, and no subscription makes time free.
 profiles:
   general:
     preferred:
       runtime: codex
       model: gpt-5.6-sol
-      reasoning_effort: high
+      reasoning_effort: xhigh
     fallbacks:
+      - runtime: opencode
+        model: opencode-go/kimi-k3
+        reasoning_effort: ""
       - runtime: claude
         model: opus
-        reasoning_effort: medium
+        reasoning_effort: high
   backend:
-    # Sol at high takes 37 steps, fewer than anything near its quality. Raise to
-    # xhigh for a hard Spec: 71% against 69%, at 44 steps and +35% cost.
+    # Raised from high. The file's own note already recommended xhigh for a hard
+    # Spec — 71% against 69% at 44 steps — and objected only to the +35% cost,
+    # which no longer exists.
     preferred:
       runtime: codex
       model: gpt-5.6-sol
-      reasoning_effort: high
+      reasoning_effort: xhigh
     fallbacks:
+      - runtime: opencode
+        model: opencode-go/kimi-k3
+        reasoning_effort: ""
       - runtime: claude
         model: opus
         reasoning_effort: high
   frontend:
-    # Lowered from xhigh: Opus 5 scores 73% at both settings, so xhigh bought
-    # nothing and cost $9.07 against $6.08 with 16 more steps. Claude is
-    # preferred here on design judgment, which no benchmark on file measures.
-    preferred:
-      runtime: claude
-      model: opus
-      reasoning_effort: high
-    fallbacks:
-      - runtime: codex
-        model: gpt-5.6-sol
-        reasoning_effort: high
-  qa:
+    # The only category where Claude ran by default, and therefore the only one
+    # where conserving it costs quality. sol/max is the single codex row that
+    # matches Opus 5 at high: both score 73%. It spends 61 steps against Opus's
+    # 73, so the substitution is not slower. Design judgment is the part no
+    # benchmark measures — weigh this line again after the 08-10 reset.
     preferred:
       runtime: codex
       model: gpt-5.6-sol
-      reasoning_effort: high
+      reasoning_effort: max
     fallbacks:
+      - runtime: opencode
+        model: opencode-go/kimi-k3
+        reasoning_effort: ""
       - runtime: claude
         model: opus
         reasoning_effort: high
   data:
-    # The OpenCode route. It exists so this repository has a third ACP Runtime
-    # it can actually reach: on 2026-08-08 the codex quota was exhausted until
-    # 08-12 and the Anthropic week stood at 66%, while a freshly subscribed
-    # OpenCode sat at 0% across all three windows with no way in.
+    # The OpenCode route, kept preferred on purpose. Spec 0088 made this runtime
+    # reachable and proved one Task on it; the subscribed `opencode-go` tier has
+    # no row on the benchmark board, so the next Spec's data Tasks are also the
+    # measurement that would justify promoting OpenCode anywhere else.
     #
-    # reasoning_effort is empty on purpose, and Roundfix now refuses any other
-    # value here. OpenCode advertises effort per model and only after an Agent
+    # reasoning_effort is empty on purpose, and Roundfix refuses any other value
+    # here. OpenCode advertises effort per model and only after an Agent
     # Session's first prompt, so a token-free Exact Agent Selection Proof cannot
-    # apply one; see ADR-0106. kimi-k3 runs at `max` by its own default.
+    # apply one; see ADR-0106. kimi-k3 runs at `max` by its own default, which
+    # is also the only effort it advertises.
     #
     # kimi-k3 carries no usage multiplier. Two subscribed models do — gpt-5.6-luna
     # and deepseek-v4-flash bill at 2x — which inverts the obvious guess, since
     # deepseek-v4-pro carries none. Snapshot: docs/references/model-selection.md.
-    #
-    # Only `data` routes here. Promoting OpenCode into the required categories'
-    # Fallback Chains is a separate maintainer decision and would change routing
-    # for work already in flight.
     preferred:
       runtime: opencode
       model: opencode-go/kimi-k3
       reasoning_effort: ""
     fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: xhigh
+      - runtime: claude
+        model: opus
+        reasoning_effort: high
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: xhigh
+    fallbacks:
+      - runtime: opencode
+        model: opencode-go/kimi-k3
+        reasoning_effort: ""
       - runtime: claude
         model: opus
         reasoning_effort: high
   review:
-    # Luna at max: 67% against Sol's 69%, for $0.61 against $3.47. It spends 102
-    # steps against 37, but answers in 4.1s against 9.4s, so the two nearly
-    # cancel. Review work is bounded and has no dependency graph, so extra turns
-    # block nobody.
+    # Replaced luna/max. That pick was entirely economic — 67% for $0.61 against
+    # Sol's 69% for $3.47 — and it bought the discount with 102 steps against
+    # 37. With cost gone, luna loses on both axes at once: sol/xhigh scores 71%
+    # in 44 steps.
     preferred:
       runtime: codex
-      model: gpt-5.6-luna
-      reasoning_effort: max
+      model: gpt-5.6-sol
+      reasoning_effort: xhigh
     fallbacks:
+      - runtime: opencode
+        model: opencode-go/kimi-k3
+        reasoning_effort: ""
       - runtime: claude
-        model: sonnet
-        reasoning_effort: xhigh
+        model: opus
+        reasoning_effort: high
 specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
   root: "docs/specs"
