@@ -180,6 +180,11 @@ func (runner ACPXRunner) cancellationClock() cancellationClock {
 type ACPXPromptRequest struct {
 	ExecuteRequest
 	Session string
+	// Inert marks a prompt whose only purpose is to raise the Agent Session's
+	// queue owner, never to perform Agent work. It withholds every tool and
+	// denies every permission request for that invocation only; the Agent
+	// Session keeps its normal capabilities for the work turns that follow.
+	Inert bool
 }
 
 // BatchFailureError is returned when acpx reports an Agent/Batch-level
@@ -1303,6 +1308,7 @@ func (runner *ACPXRunner) warmSessionForDeferredEffort(
 		if _, err := runner.RunPrompt(ctx, ACPXPromptRequest{
 			ExecuteRequest: warmRequest,
 			Session:        sessionName,
+			Inert:          true,
 		}, runevent.Discard); err != nil {
 			return SelectionProof{}, fmt.Errorf("warm acpx Agent Session %q: %w", sessionName, err)
 		}
@@ -1670,7 +1676,11 @@ func acpxPromptArgs(req ACPXPromptRequest) ([]string, error) {
 		"--cwd", strings.TrimSpace(req.GitRoot),
 		"--format", "json",
 		"--json-strict",
-		"--approve-all",
+	}
+	if req.Inert {
+		args = append(args, "--deny-all", "--allowed-tools", "")
+	} else {
+		args = append(args, "--approve-all")
 	}
 	if model := strings.TrimSpace(req.Runtime.Model); model != "" {
 		args = append(args, "--model", model)

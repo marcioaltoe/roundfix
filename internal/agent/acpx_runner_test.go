@@ -1656,6 +1656,65 @@ func TestACPXPromptArgsPlaceGlobalsBeforeAgentAndSubcommand(t *testing.T) {
 	}
 }
 
+// The setup turn that raises a runtime_deferred queue owner must be
+// structurally unable to perform Agent work. Spec 0089's QA gate measured the
+// unrestricted prompt reading directories, reading Specs, and calling a tool
+// while the Agent Session still held its default effort, which is the state
+// the warm-up exists to leave behind. The restriction is scoped to that one
+// invocation: measured against OpenCode 1.18.15 on 2026-08-09, the following
+// work prompt on the same Agent Session called tools normally.
+func TestACPXPromptArgsInertWarmupWithholdsTools(t *testing.T) {
+	t.Parallel()
+
+	contains := func(args []string, want string) bool {
+		for _, arg := range args {
+			if arg == want {
+				return true
+			}
+		}
+		return false
+	}
+	runtime := RuntimeSpec{ID: "opencode", Protocol: ProtocolACP}
+
+	inert, err := acpxPromptArgs(ACPXPromptRequest{
+		ExecuteRequest: ExecuteRequest{Runtime: runtime, GitRoot: "/repo"},
+		Session:        "roundfix-run-1",
+		Inert:          true,
+	})
+	if err != nil {
+		t.Fatalf("acpx prompt args: %v", err)
+	}
+	want := []string{
+		"--cwd", "/repo",
+		"--format", "json",
+		"--json-strict",
+		"--deny-all",
+		"--allowed-tools", "",
+		"opencode", "prompt",
+		"-s", "roundfix-run-1",
+		"-f", "-",
+	}
+	if !reflect.DeepEqual(inert, want) {
+		t.Fatalf("inert warm-up must withhold every tool and deny permissions\nwant: %#v\ngot:  %#v", want, inert)
+	}
+
+	work, err := acpxPromptArgs(ACPXPromptRequest{
+		ExecuteRequest: ExecuteRequest{Runtime: runtime, GitRoot: "/repo"},
+		Session:        "roundfix-run-1",
+	})
+	if err != nil {
+		t.Fatalf("acpx prompt args: %v", err)
+	}
+	for _, restricted := range []string{"--deny-all", "--allowed-tools"} {
+		if contains(work, restricted) {
+			t.Fatalf("a work prompt must keep its tools; found %q in %#v", restricted, work)
+		}
+	}
+	if !contains(work, "--approve-all") {
+		t.Fatalf("a work prompt must approve its permission requests; got %#v", work)
+	}
+}
+
 func TestACPXCancelSessionInvokesSessionCancel(t *testing.T) {
 	t.Parallel()
 
@@ -2617,8 +2676,8 @@ func TestACPXRunCancellationCommandFailuresWarnAndContinue(t *testing.T) {
 			}()
 			select {
 			case <-promptStarted.done:
-			case <-time.After(5 * time.Second):
-				t.Fatalf("timed out waiting for prompt start event; Agent did not start within 5s")
+			case <-time.After(agentWaitBudget):
+				t.Fatalf("timed out waiting for prompt start event; Agent did not start within %s", agentWaitBudget)
 			}
 			cancel()
 			harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
