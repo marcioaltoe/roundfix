@@ -2,25 +2,23 @@ package agent
 
 import (
 	"context"
-	"errors"
 	"testing"
 )
 
 // Suite: OpenCode Agent Session effort characterization
-// Invariant: today's OpenCode Run reaches its work prompt without setting a reasoning option.
+// Invariant: OpenCode uses the generic effort key, while today's Run still reaches its work prompt without setting it.
 // Boundary IN: ACPXRunner Run lifecycle and the acpx command sequence it executes.
 // Boundary OUT: profile configuration parsing and future warm-up behavior.
 
-func TestACPXSessionEffortCharacterizationTodayReasoningKeyRefusesOpenCode(t *testing.T) {
+func TestACPXSessionEffortCharacterizationDeclaredBreakReasoningKeyMapsOpenCode(t *testing.T) {
 	t.Parallel()
 
-	_, err := acpxReasoningEffortConfigKey(RuntimeSpec{ID: "opencode"})
-	var managed *ModelManagedReasoningError
-	if !errors.As(err, &managed) {
-		t.Fatalf("error = %T %v, want *ModelManagedReasoningError", err, err)
+	key, err := acpxReasoningEffortConfigKey(RuntimeSpec{ID: "opencode"})
+	if err != nil {
+		t.Fatalf("reasoning key for OpenCode: %v", err)
 	}
-	if managed.Runtime != "opencode" {
-		t.Fatalf("managed runtime = %q, want opencode", managed.Runtime)
+	if key != acpxGenericReasoningEffortKey {
+		t.Fatalf("reasoning key = %q, want %q", key, acpxGenericReasoningEffortKey)
 	}
 }
 

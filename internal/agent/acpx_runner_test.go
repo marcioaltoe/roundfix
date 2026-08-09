@@ -4404,21 +4404,20 @@ func infrastructureTailFromMessageForTest(t *testing.T, message string) string {
 	return tail
 }
 
-// TestReasoningEffortConfigKeyRefusesOpenCode keeps the single source of truth
-// for which ACP Runtimes Roundfix will not assign a reasoning effort on.
-func TestReasoningEffortConfigKeyRefusesOpenCode(t *testing.T) {
+// TestReasoningEffortConfigKeyMapsSupportedRuntimes keeps the runtime-specific
+// Codex key separate while Claude and OpenCode use the generic effort key.
+func TestReasoningEffortConfigKeyMapsSupportedRuntimes(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name        string
-		runtime     RuntimeSpec
-		wantKey     string
-		wantRefusal bool
+		name    string
+		runtime RuntimeSpec
+		wantKey string
 	}{
 		{name: "codex maps to its own key", runtime: RuntimeSpec{ID: "codex"}, wantKey: acpxCodexReasoningEffortKey},
 		{name: "claude maps to the generic key", runtime: RuntimeSpec{ID: "claude"}, wantKey: acpxGenericReasoningEffortKey},
-		{name: "opencode manages its own reasoning", runtime: RuntimeSpec{ID: "opencode"}, wantRefusal: true},
-		{name: "opencode override manages its own reasoning", runtime: RuntimeSpec{ID: "opencode-custom"}, wantRefusal: true},
+		{name: "opencode maps to the generic key", runtime: RuntimeSpec{ID: "opencode"}, wantKey: acpxGenericReasoningEffortKey},
+		{name: "opencode override maps to the generic key", runtime: RuntimeSpec{ID: "opencode-custom"}, wantKey: acpxGenericReasoningEffortKey},
 	}
 
 	for _, tt := range tests {
@@ -4426,39 +4425,24 @@ func TestReasoningEffortConfigKeyRefusesOpenCode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			key, err := acpxReasoningEffortConfigKey(tt.runtime)
-			if !tt.wantRefusal {
-				if err != nil {
-					t.Fatalf("reasoning key for %q: %v", tt.runtime.ID, err)
-				}
-				if key != tt.wantKey {
-					t.Fatalf("reasoning key = %q, want %q", key, tt.wantKey)
-				}
-				return
+			if err != nil {
+				t.Fatalf("reasoning key for %q: %v", tt.runtime.ID, err)
 			}
-			var managed *ModelManagedReasoningError
-			if !errors.As(err, &managed) {
-				t.Fatalf("error = %T %v, want ModelManagedReasoningError", err, err)
-			}
-			if !strings.Contains(err.Error(), "empty reasoning effort") {
-				t.Fatalf("error %q must name the repair", err.Error())
-			}
-			if managed.Classification() != SelectionReasoningControlNotAdvertised {
-				t.Fatalf("classification = %q, want %q", managed.Classification(), SelectionReasoningControlNotAdvertised)
+			if key != tt.wantKey {
+				t.Fatalf("reasoning key = %q, want %q", key, tt.wantKey)
 			}
 		})
 	}
 }
 
-// TestValidateRuntimeSelectionRefusesOpenCodeReasoningEffort closes the
-// invocation-override path: a --reasoning-effort flag cannot reach an OpenCode
-// Run by bypassing configuration validation.
-func TestValidateRuntimeSelectionRefusesOpenCodeReasoningEffort(t *testing.T) {
+// TestValidateRuntimeSelectionAcceptsOpenCodeReasoningEffort closes the
+// invocation-override path: a configured effort can reach OpenCode without
+// bypassing runtime validation.
+func TestValidateRuntimeSelectionAcceptsOpenCodeReasoningEffort(t *testing.T) {
 	t.Parallel()
 
-	err := validateRuntimeSelection(RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3", ReasoningEffort: "max"})
-	var managed *ModelManagedReasoningError
-	if !errors.As(err, &managed) {
-		t.Fatalf("error = %T %v, want ModelManagedReasoningError", err, err)
+	if err := validateRuntimeSelection(RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3", ReasoningEffort: "max"}); err != nil {
+		t.Fatalf("validate OpenCode selection with a non-empty reasoning effort: %v", err)
 	}
 
 	if err := validateRuntimeSelection(RuntimeSpec{ID: "opencode", Model: "opencode-go/kimi-k3"}); err != nil {

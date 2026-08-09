@@ -1698,41 +1698,12 @@ func acpxAgentArgs(runtime RuntimeSpec) ([]string, error) {
 	return []string{agent}, nil
 }
 
-// ModelManagedReasoningError reports an ACP Runtime whose reasoning effort
-// only the Agent Model can set. See ADR-0106.
-type ModelManagedReasoningError struct {
-	Runtime string
-	Reason  string
-}
-
-func (err *ModelManagedReasoningError) Error() string {
-	if err == nil {
-		return ""
-	}
-	return fmt.Sprintf(
-		"ACP Runtime %q manages its own reasoning effort: %s; use an empty reasoning effort so the Agent Model manages reasoning",
-		err.Runtime,
-		err.Reason,
-	)
-}
-
-func (err *ModelManagedReasoningError) Classification() string {
-	return SelectionReasoningControlNotAdvertised
-}
-
-// openCodeModelManagedReasoning is the measured reason OpenCode cannot accept a
-// reasoning assignment during a token-free Exact Agent Selection Proof.
-const openCodeModelManagedReasoning = "OpenCode advertises reasoning effort per model and only after an Agent Session's first prompt, " +
-	"so every effort applied before it answers ACP -32602"
-
 func acpxReasoningEffortConfigKey(runtime RuntimeSpec) (string, error) {
 	switch strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom") {
 	case "codex":
 		return acpxCodexReasoningEffortKey, nil
-	case "claude":
+	case "claude", "opencode":
 		return acpxGenericReasoningEffortKey, nil
-	case "opencode":
-		return "", &ModelManagedReasoningError{Runtime: "opencode", Reason: openCodeModelManagedReasoning}
 	case "":
 		return "", errors.New("ACP Runtime id is required for Agent reasoning effort")
 	default:

@@ -2,7 +2,6 @@ package config
 
 import (
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -12,21 +11,14 @@ import (
 // A test named CharacterizationToday pins behavior the Spec intends to break,
 // so a later Task editing it is a declared break rather than a silent one.
 
-// TestCharacterizationDeclaredBreakRefusesOpenCodeReasoningEffort records the
-// second break this Spec declares. Until Task 03, a profile naming
-// `runtime: opencode` with a non-empty `reasoning_effort` loaded and resolved
-// with that effort intact. Measured against opencode 1.18.15 on 2026-08-08, the
-// adapter answers ACP -32602 for every effort applied before an Agent Session's
-// first prompt, so accepting one promised what no Run could keep. Configuration
-// now refuses it and names the empty value as the repair.
-func TestCharacterizationDeclaredBreakRefusesOpenCodeReasoningEffort(t *testing.T) {
+// TestCharacterizationDeclaredBreakAcceptsOpenCodeReasoningEffort records a
+// later declared break to Spec 0088's corpus. Spec 0089 replaces the refusal
+// because runtime_deferred now represents an effort that Preflight proves as
+// advertised and the Run applies after warming the Agent Session.
+func TestCharacterizationDeclaredBreakAcceptsOpenCodeReasoningEffort(t *testing.T) {
 	t.Parallel()
 
-	homeDir := t.TempDir()
-	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
-	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+	loaded := loadCharacterizationConfig(t, `
 profiles:
   data:
     preferred:
@@ -39,32 +31,22 @@ profiles:
         reasoning_effort: high
 `)
 
-	_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
-	if err == nil {
-		t.Fatal("a non-empty opencode reasoning effort must be refused")
+	resolved, err := ResolveProfile(loaded.Config, CategoryData, nil)
+	if err != nil {
+		t.Fatalf("resolve data profile: %v", err)
 	}
-	for _, want := range []string{
-		"profiles.data.preferred.reasoning_effort",
-		"must be empty for runtime \"opencode\"",
-		"model-managed reasoning",
-	} {
-		if !strings.Contains(err.Error(), want) {
-			t.Fatalf("error %q missing %q", err.Error(), want)
-		}
+	if got := resolved.Profile.Preferred.ReasoningEffort; got != "max" {
+		t.Fatalf("OpenCode reasoning effort = %q, want %q", got, "max")
 	}
 }
 
-// TestOpenCodeReasoningRefusalNamesTheRepairOnEveryFallbackPosition keeps the
-// refusal positional-agnostic: a Fallback Chain entry is as unusable as a
-// Preferred Selection.
-func TestOpenCodeReasoningRefusalNamesTheRepairOnEveryFallbackPosition(t *testing.T) {
+// TestCharacterizationDeclaredBreakAcceptsOpenCodeReasoningEffortInFallbackChain
+// keeps the later acceptance positional-agnostic: a Fallback Selection retains
+// the same configured effort as a Preferred Selection.
+func TestCharacterizationDeclaredBreakAcceptsOpenCodeReasoningEffortInFallbackChain(t *testing.T) {
 	t.Parallel()
 
-	homeDir := t.TempDir()
-	workDir := t.TempDir()
-	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
-	mustMkdir(t, filepath.Join(workDir, ".git"))
-	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+	loaded := loadCharacterizationConfig(t, `
 profiles:
   data:
     preferred:
@@ -77,12 +59,15 @@ profiles:
         reasoning_effort: max
 `)
 
-	_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
-	if err == nil {
-		t.Fatal("a non-empty opencode reasoning effort must be refused in a Fallback Chain too")
+	resolved, err := ResolveProfile(loaded.Config, CategoryData, nil)
+	if err != nil {
+		t.Fatalf("resolve data profile: %v", err)
 	}
-	if !strings.Contains(err.Error(), "model-managed reasoning") {
-		t.Fatalf("error %q must name the repair", err.Error())
+	if len(resolved.Profile.Fallbacks) != 1 {
+		t.Fatalf("Fallback Chain length = %d, want 1", len(resolved.Profile.Fallbacks))
+	}
+	if got := resolved.Profile.Fallbacks[0].ReasoningEffort; got != "max" {
+		t.Fatalf("OpenCode fallback reasoning effort = %q, want %q", got, "max")
 	}
 }
 
