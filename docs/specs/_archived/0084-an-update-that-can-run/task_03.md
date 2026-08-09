@@ -75,9 +75,9 @@ update flow honest.
 
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `go test ./internal/cli/ -run 'UnrecordedManagedRegion' -v > /tmp/0084-task-03-a.log 2>&1 && grep -q '^--- PASS: .*UnrecordedManagedRegion' /tmp/0084-task-03-a.log` — expected: exits 0, proving the output cases exist and pass rather than being selected out.
-- `go run ./cmd/roundfix baseline update --help > /tmp/0084-task-03-b.log 2>&1 && grep -q 'baseline-update-result/v1' /tmp/0084-task-03-b.log` — expected: exits 0, proving the schema identity is unchanged.
+- `go run -buildvcs=false ./cmd/roundfix baseline update --help > /tmp/0084-task-03-b.log 2>&1 && grep -q 'baseline-update-result/v1' /tmp/0084-task-03-b.log` — expected: exits 0, proving the schema identity is unchanged.
 - `go test ./internal/cli/ ./internal/baseline/ -count=1` — expected: exits 0.
-- `go run ./cmd/roundfix skills check > /tmp/0084-task-03-c.log 2>&1` — expected: exits 0, proving the shipped skill matches its authoritative source.
+- `go run -buildvcs=false ./cmd/roundfix skills check > /tmp/0084-task-03-c.log 2>&1` — expected: exits 0, proving the shipped skill matches its authoritative source.
 
 ## References
 

@@ -1,7 +1,9 @@
 ---
 spec: 0084-an-update-that-can-run
-status: active
+status: archived
 created: 2026-08-08
+archived: 2026-08-09
+qa_override: true
 surfaces: [backend, cli, docs]
 ---
 
@@ -42,7 +44,7 @@ a human can act on.
   not widen; ADR-0097 governs QA row carry-forward; ADR-0099 keeps retention
   accounting mechanical. New decisions land as ADR-0101, ADR-0102, ADR-0103, and
   ADR-0104. Source: `docs/agents/domain.md`.
-- Tooling authority: applicable — protected Baseline catalog assets and two
+- Tooling authority: applicable — protected Baseline catalog assets and three
   repo-owned authorial skills are mutated. Express maintainer authorization:
   `docs/workflow/authorizations/2026-08-07-restore-structural-clauses.md`,
   `docs/workflow/authorizations/2026-08-08-the-brain-is-a-source-not-an-archive.md`,
@@ -81,7 +83,7 @@ a human can act on.
 
 1. As a maintainer, I want to run one update command in each repository of my
    fleet, so that a Baseline change reaches every project without me answering
-   the same setup questions nine times.
+   the same setup questions eight times.
 2. As a maintainer, I want a repository whose managed regions moved ahead of its
    Setup Manifest to refresh anyway, so that adopting the Baseline before the
    update command existed is not a permanent block.

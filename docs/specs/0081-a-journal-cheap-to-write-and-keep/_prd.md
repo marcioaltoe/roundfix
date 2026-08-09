@@ -30,7 +30,10 @@ cockpit re-reads the entire journal, payloads included, on every append. The
 - Authentication and HTTP: not applicable — the work is local SQLite access
   and file I/O; no endpoint, credential, or transport is created. Source:
   `docs/agents/go.md`.
-- Active ADR obligations: applicable and, in one case, in tension. ADR-0098 is
+- Active ADR obligations: applicable and, in one case, in tension. ADR-0104
+  requires at least one acceptance row to rest on evidence this Spec did not
+  author; the row is recorded blocked with its reason when the source cannot be
+  obtained, and the QA gate accounts for it before delivery. ADR-0098 is
   the decision this Spec implements: appends batch, with durability per batch
   and `synchronous` unchanged. ADR-0008
   states that Run Event payload stores raw producer JSON, write-once and

@@ -64,7 +64,7 @@ corpus passes against today's code, unchanged.
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `go test ./internal/baseline/ -run 'Characterization|Corpus' -v > /tmp/task_01-1.log 2>&1 && grep -q '^--- PASS: ' /tmp/task_01-1.log` — expected: exits 0, proving at least one characterization case ran and passed rather than being silently selected out.
 - `go test ./internal/baseline/ ./internal/cli/ -count=1` — expected: exits 0.
-- `git diff --name-only HEAD -- internal/ | grep -v -E '(_test\.go|/testdata/)' | grep . ; test $? -eq 1` — expected: exits 0, proving this task changed no production source.
+- `(git diff --name-only HEAD; git ls-files --others --exclude-standard) | grep -v -E '(_test\.go|/testdata/)' | grep . ; test $? -eq 1` — expected: exits 0, proving this task changed no production source.
 
 ## References
 

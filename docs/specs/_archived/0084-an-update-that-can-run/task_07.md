@@ -55,28 +55,28 @@ no Source Baseline row carries.
 
 ## Subtasks
 
-- [ ] Add the Secondbrain consultation clause and bump its rule.
-- [ ] Add the outside-evidence clause and bump its rule.
-- [ ] Add the glossary-currency clause and bump its rule.
-- [ ] Seat all three in the Source Baseline corpus and manifest.
-- [ ] Regenerate derived pins with the sanctioned command.
-- [ ] Declare each guide whose rendering grew past the frozen parity record.
-- [ ] Move the maintained Source Baseline entry expectation with the new entries.
+- [x] Add the Secondbrain consultation clause and bump its rule.
+- [x] Add the outside-evidence clause and bump its rule.
+- [x] Add the glossary-currency clause and bump its rule.
+- [x] Seat all three in the Source Baseline corpus and manifest.
+- [x] Regenerate derived pins with the sanctioned command.
+- [x] Declare each guide whose rendering grew past the frozen parity record.
+- [x] Move the maintained Source Baseline entry expectation with the new entries.
 
 ## Acceptance Criteria
 
-- [ ] The catalog emits a mandatory consultation clause naming Spec authoring and
+- [x] The catalog emits a mandatory consultation clause naming Spec authoring and
       approach selection as its trigger.
-- [ ] The catalog emits a mandatory clause requiring at least one acceptance row
+- [x] The catalog emits a mandatory clause requiring at least one acceptance row
       backed by evidence from outside the Spec, with its origin recorded.
-- [ ] The catalog emits a mandatory clause requiring the glossary check at the
+- [x] The catalog emits a mandatory clause requiring the glossary check at the
       close of a Spec, feature, refactor, or fix.
-- [ ] No added clause makes Secondbrain unavailability or unobtainable external
+- [x] No added clause makes Secondbrain unavailability or unobtainable external
       evidence a blocking condition.
-- [ ] Every rule receiving a clause carries a higher version than before.
-- [ ] Catalog validation and the Source Baseline corpus accept all three clauses.
-- [ ] Derived pins match what the sanctioned regeneration command produces.
-- [ ] The frozen parity corpus is byte-identical to its pre-Task state, and every
+- [x] Every rule receiving a clause carries a higher version than before.
+- [x] Catalog validation and the Source Baseline corpus accept all three clauses.
+- [x] Derived pins match what the sanctioned regeneration command produces.
+- [x] The frozen parity corpus is byte-identical to its pre-Task state, and every
       guide whose rendering changed is declared as grown past it.
 
 ## Context

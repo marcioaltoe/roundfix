@@ -73,7 +73,7 @@ guidance refresh.
 
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `go test ./internal/cli/ -run 'BaselineUpdate.*Skill|Skill.*BaselineUpdate' -v > /tmp/task_05-1.log 2>&1 && grep -q '^--- PASS: ' /tmp/task_05-1.log` — expected: exits 0, proving the skills-stage cases exist and pass.
-- `go test ./internal/cli/ -run 'BaselineUpdate' -v 2>&1 | grep -q -i 'unreachable'` — expected: exits 0, proving the degradation case ran.
+- `go test ./internal/cli/ -run 'BaselineUpdate' -v > /tmp/task_05-2.log 2>&1 && grep -q -i 'unreachable' /tmp/task_05-2.log` — expected: exits 0, proving the degradation case ran.
 - `go test ./internal/baseline/ ./internal/cli/ ./skills/ -count=1` — expected: exits 0.
 - `go run -buildvcs=false ./cmd/roundfix baseline update --help` — expected: exits 0 and the usage names the skills suppression and offline-source flags.
 

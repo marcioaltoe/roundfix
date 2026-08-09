@@ -1,7 +1,9 @@
 ---
 spec: 0082-the-manifest-already-answered-that
-status: active
+status: archived
 created: 2026-08-07
+archived: 2026-08-09
+qa_override: true
 surfaces: [cli, docs]
 ---
 
@@ -190,7 +192,7 @@ with its guidance.
 
 The command surface is a CLI. The sweep case is the design center:
 
-```
+```sh
 roundfix baseline update --repo <path> --yes --format json
 ```
 

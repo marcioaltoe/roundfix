@@ -79,7 +79,7 @@ fixture repository on its own, before skills are involved.
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `go run -buildvcs=false ./cmd/roundfix baseline update --help` — expected: exits 0 and prints usage naming the update command.
 - `go test ./internal/cli/ -run 'BaselineUpdate' -v > /tmp/task_04-1.log 2>&1 && grep -q '^--- PASS: .*BaselineUpdate' /tmp/task_04-1.log` — expected: exits 0, proving the command's cases exist and pass.
-- `go test ./internal/cli/ -run 'BaselineUpdate' -v 2>&1 | grep -q -i 'idempot'` — expected: exits 0, proving the idempotence case ran.
+- `go test ./internal/cli/ -run 'BaselineUpdate' -v > /tmp/task_04-2.log 2>&1 && grep -q -i 'idempot' /tmp/task_04-2.log` — expected: exits 0, proving the idempotence case ran.
 - `go test ./internal/baseline/ ./internal/cli/ -count=1` — expected: exits 0, with the task_01 corpus passing unchanged.
 
 ## References

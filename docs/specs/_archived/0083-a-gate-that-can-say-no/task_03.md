@@ -60,7 +60,7 @@ active corpus fails.
 - `go test ./internal/speccheck -run 'Corpus' -count=1 -v > /tmp/task_03-1.log 2>&1 && grep -q '^--- PASS: ' /tmp/task_03-1.log` — expected: exits 0, proving the corpus checks run and pass.
 - `go test ./internal/speccheck -count=1` — expected: exits 0.
 - `grep -q -iE 'archiv' internal/speccheck/constraints_characterization_test.go` — expected: exits 0, proving the archived-corpus treatment is stated where the next author will read it.
-- `git diff --name-only HEAD | grep -v -E '^(internal/speccheck/constraints_characterization_test\.go|internal/speccheck/testdata/corpus-golden\.json|docs/specs/0083-a-gate-that-can-say-no/task_03\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.
+- `(git diff --name-only HEAD; git ls-files --others --exclude-standard) | grep -v -E '^(internal/speccheck/constraints_characterization_test\.go|internal/speccheck/testdata/corpus-golden\.json|docs/specs/0083-a-gate-that-can-say-no/task_03\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.
 
 ## References
 

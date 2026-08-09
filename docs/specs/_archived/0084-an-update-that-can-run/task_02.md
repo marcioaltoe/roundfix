@@ -39,27 +39,27 @@ place where both the preimage and the rendered postimage exist.
 
 ## Subtasks
 
-- [ ] Compute removed lines from the preimage and the rendered postimage.
-- [ ] Apply order preservation, deduplication, and bounded truncation.
-- [ ] Carry the value on the portable plan document for the managed-refresh mode.
-- [ ] Include the value in the Plan Digest.
-- [ ] Cover a region that removes a line and a region that removes none.
-- [ ] Cover truncation and its reported remainder.
-- [ ] Cover strict-codec round-trip and unchanged non-managed region proof.
+- [x] Compute removed lines from the preimage and the rendered postimage.
+- [x] Apply order preservation, deduplication, and bounded truncation.
+- [x] Carry the value on the portable plan document for the managed-refresh mode.
+- [x] Include the value in the Plan Digest.
+- [x] Cover a region that removes a line and a region that removes none.
+- [x] Cover truncation and its reported remainder.
+- [x] Cover strict-codec round-trip and unchanged non-managed region proof.
 
 ## Acceptance Criteria
 
-- [ ] A managed-refresh plan over a region whose rendering drops a specific line
+- [x] A managed-refresh plan over a region whose rendering drops a specific line
       reports exactly that line as removed.
-- [ ] A managed-refresh plan over a region whose rendering only adds lines reports
+- [x] A managed-refresh plan over a region whose rendering only adds lines reports
       the region with an empty removed-line set.
-- [ ] A region whose removed lines exceed the bound reports the bounded list and a
+- [x] A region whose removed lines exceed the bound reports the bounded list and a
       non-zero omitted count equal to the difference.
-- [ ] Two plans over the same repository that differ only in a removed line have
+- [x] Two plans over the same repository that differ only in a removed line have
       different Plan Digests.
-- [ ] A greenfield plan and a preservation plan over the same fixtures produce
+- [x] A greenfield plan and a preservation plan over the same fixtures produce
       byte-identical JSON to the recorded goldens.
-- [ ] Encoding and decoding a managed-refresh plan document preserves every
+- [x] Encoding and decoding a managed-refresh plan document preserves every
       reported region and line.
 
 ## Context

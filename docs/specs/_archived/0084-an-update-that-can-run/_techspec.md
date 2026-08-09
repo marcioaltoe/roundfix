@@ -40,7 +40,7 @@ blocker, and seats the three Normative Clauses whose absence let the defect ship
   mechanical; ADR-0091 keeps the authored QA gate terminal in the Task Graph.
   ADR-0101 through ADR-0104 are introduced by this Spec. Source:
   `docs/agents/domain.md`.
-- Tooling authority: applicable — protected Baseline catalog assets and two
+- Tooling authority: applicable — protected Baseline catalog assets and three
   repo-owned authorial skills are mutated. Express maintainer authorization:
   `docs/workflow/authorizations/2026-08-07-restore-structural-clauses.md`,
   `docs/workflow/authorizations/2026-08-08-the-brain-is-a-source-not-an-archive.md`,

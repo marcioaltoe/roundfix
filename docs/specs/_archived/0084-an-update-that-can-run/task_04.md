@@ -35,12 +35,12 @@ first place.
 
 ## Subtasks
 
-- [ ] Build the aged-manifest fixture from an adopted copy.
-- [ ] Apply the refresh and assert verification.
-- [ ] Assert the second run reports current with zero file changes.
-- [ ] Assert the republished manifest describes the on-disk bytes.
-- [ ] Assert non-managed regions are byte-identical across the apply.
-- [ ] Demonstrate the negative: a copy whose manifest is not republished does not
+- [x] Build the aged-manifest fixture from an adopted copy.
+- [x] Apply the refresh and assert verification.
+- [x] Assert the second run reports current with zero file changes.
+- [x] Assert the republished manifest describes the on-disk bytes.
+- [x] Assert non-managed regions are byte-identical across the apply.
+- [x] Demonstrate the negative: a copy whose manifest is not republished does not
       report current.
 
 ## Rehearsal Cases
@@ -61,15 +61,15 @@ first place.
 
 ## Acceptance Criteria
 
-- [ ] The aged-manifest copy reaches a ready plan on the first run.
-- [ ] Applying that plan verifies.
-- [ ] The second run over the applied copy reports the repository current with
+- [x] The aged-manifest copy reaches a ready plan on the first run.
+- [x] Applying that plan verifies.
+- [x] The second run over the applied copy reports the repository current with
       zero proposed file changes.
-- [ ] Every managed-artifact digest recorded in the applied copy's Setup Manifest
+- [x] Every managed-artifact digest recorded in the applied copy's Setup Manifest
       equals the digest of the corresponding on-disk region.
-- [ ] Every region outside a managed marker has an identical digest before and
+- [x] Every region outside a managed marker has an identical digest before and
       after the apply.
-- [ ] The negative case, with republication suppressed, does not report current.
+- [x] The negative case, with republication suppressed, does not report current.
 
 ## Context
 

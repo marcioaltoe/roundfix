@@ -77,9 +77,10 @@ command shape.
 
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `grep -E '^GO[[:space:]]*:?=' Makefile | grep 'RTK' ; test $? -eq 1` — expected: exits 0, proving the authoritative toolchain variable no longer routes through the wrapper.
-- `grep -q 'RTK' Makefile` — expected: exits 0, proving the wrapper is still available to convenience targets rather than deleted.
+- `grep -q 'GO_HUMAN' Makefile` — expected: exits 0, proving the convenience wrapper variable is still declared rather than deleted.
+- `make -n verify > /tmp/task_01-2.log 2>&1 && grep -q -F '$(GO) ' /tmp/task_01-2.log` — expected: exits 0, proving every verify prerequisite resolves to the authoritative toolchain variable without the wrapper.
 - `go test ./internal/spec -run '^TestAuthoritativeGateReportsFailure$' -count=1 -v > /tmp/task_01-1.log 2>&1 && grep -q '^--- PASS: TestAuthoritativeGateReportsFailure' /tmp/task_01-1.log` — expected: exits 0, proving the regression test exists at its declared home and passes rather than being selected out.
-- `git diff --name-only HEAD | grep -v -E '^(Makefile|internal/spec/gate_test\.go|docs/specs/0083-a-gate-that-can-say-no/task_01\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.
+- `(git diff --name-only HEAD; git ls-files --others --exclude-standard) | grep -v -E '^(Makefile|internal/spec/gate_test\.go|docs/specs/0083-a-gate-that-can-say-no/task_01\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.
 
 ## References
 

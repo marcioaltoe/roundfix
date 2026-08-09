@@ -99,6 +99,7 @@ catalog digests, and one repository that has never adopted.
 
 ## Verification
 
+- `make verify` — expected: exits 0.
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `ls docs/specs/0082-the-manifest-already-answered-that/qa/ | grep -q '\.md$'` — expected: exits 0, proving the dated QA report exists.
 - `grep -q -i 'byte-identical' docs/specs/0082-the-manifest-already-answered-that/qa/*.md` — expected: exits 0, proving the preservation evidence was recorded.

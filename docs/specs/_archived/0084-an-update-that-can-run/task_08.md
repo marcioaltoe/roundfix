@@ -36,22 +36,22 @@ moment it applies.
 
 ## Subtasks
 
-- [ ] State the outside-evidence obligation in the task-authoring skill.
-- [ ] State the external-evidence recording and blocked-row handling in the QA
+- [x] State the outside-evidence obligation in the task-authoring skill.
+- [x] State the external-evidence recording and blocked-row handling in the QA
       gate skill.
-- [ ] State the glossary check in the task-authoring skill.
-- [ ] Sync the generated skill copies with the sanctioned command.
+- [x] State the glossary check in the task-authoring skill.
+- [x] Sync the generated skill copies with the sanctioned command.
 
 ## Acceptance Criteria
 
-- [ ] The task-authoring skill states the outside-evidence obligation adjacent to
+- [x] The task-authoring skill states the outside-evidence obligation adjacent to
       its Rehearsal Cases contract.
-- [ ] The QA gate skill states how the external-evidence row's origin is recorded
+- [x] The QA gate skill states how the external-evidence row's origin is recorded
       and how an unobtainable one is blocked.
-- [ ] The task-authoring skill states the glossary check without restating the
+- [x] The task-authoring skill states the glossary check without restating the
       catalog clause verbatim.
-- [ ] Neither skill gains a new required section or frontmatter field.
-- [ ] The generated skill copies match their authoritative sources.
+- [x] Neither skill gains a new required section or frontmatter field.
+- [x] The generated skill copies match their authoritative sources.
 
 ## Context
 

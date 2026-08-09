@@ -41,12 +41,12 @@ by the test, and the real-fleet reading belongs to the QA gate.
 
 ## Subtasks
 
-- [ ] Enumerate the divergence patterns from the adopted finding.
-- [ ] Build one adopted copy per pattern inside the test's temporary tree.
-- [ ] Assert the expected outcome and reason for each copy.
-- [ ] Assert the applied copies report current on their next run.
-- [ ] Document which recorded pattern each copy reproduces.
-- [ ] Demonstrate the negative for at least one pattern.
+- [x] Enumerate the divergence patterns from the adopted finding.
+- [x] Build one adopted copy per pattern inside the test's temporary tree.
+- [x] Assert the expected outcome and reason for each copy.
+- [x] Assert the applied copies report current on their next run.
+- [x] Document which recorded pattern each copy reproduces.
+- [x] Demonstrate the negative for at least one pattern.
 
 ## Rehearsal Cases
 
@@ -68,14 +68,14 @@ by the test, and the real-fleet reading belongs to the QA gate.
 
 ## Acceptance Criteria
 
-- [ ] The corpus contains one copy per recorded divergence pattern, each built by
+- [x] The corpus contains one copy per recorded divergence pattern, each built by
       the test.
-- [ ] Every copy reaches an applicable plan or a reported condition naming a
+- [x] Every copy reaches an applicable plan or a reported condition naming a
       human action.
-- [ ] Every applied copy reports the repository current on its next run.
-- [ ] Each copy's documentation names the recorded fleet pattern it reproduces.
-- [ ] The sweep depends on no path outside its own temporary tree.
-- [ ] Removing the classification makes at least one copy's assertion fail.
+- [x] Every applied copy reports the repository current on its next run.
+- [x] Each copy's documentation names the recorded fleet pattern it reproduces.
+- [x] The sweep depends on no path outside its own temporary tree.
+- [x] Removing the classification makes at least one copy's assertion fail.
 
 ## Context
 

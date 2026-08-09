@@ -81,6 +81,7 @@ untrustworthy before this Spec.
 
 ## Verification
 
+- `make verify` — expected: exits non-zero, proving the gate detects the failing test suite and the clean-tree boundary rejects the repository state.
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `ls docs/specs/0083-a-gate-that-can-say-no/qa/ | grep -q '\.md$'` — expected: exits 0, proving the dated QA report exists.
 - `grep -q -i 'non-zero' docs/specs/0083-a-gate-that-can-say-no/qa/*.md` — expected: exits 0, proving the gate was observed failing rather than assumed able to.
@@ -93,3 +94,11 @@ untrustworthy before this Spec.
 - `_prd.md` → all Goals and Core Features.
 - `_techspec.md` → Testing Approach; Risks & Considerations.
 - ADR-0080, ADR-0088, ADR-0091, ADR-0096, ADR-0097.
+
+## Result
+
+- QA gate authored and executed per `.agents/skills/qa-gate/SKILL.md`.
+- Dated QA report written at `docs/specs/0083-a-gate-that-can-say-no/qa/qa-report-2026-08-07.md`.
+- Rehearsal cases executed: non-zero exit on induced failing test, high-output-volume masking coverage, clean-tree pass, archived counter quiet under unrelated changes, corpus budget under load, induced inefficiency detection, spec check and published-example contract still bite, coverage invariant from new path.
+- Every repository copy created for destructive rehearsal was deleted; paths and removals recorded in the QA report.
+- Findings classified by user impact; matrix row covers every PRD goal and core feature.

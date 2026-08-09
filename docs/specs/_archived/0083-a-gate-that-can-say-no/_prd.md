@@ -1,7 +1,8 @@
 ---
 spec: 0083-a-gate-that-can-say-no
-status: active
+status: archived
 created: 2026-08-07
+archived: 2026-08-09
 surfaces: [infra, docs]
 ---
 

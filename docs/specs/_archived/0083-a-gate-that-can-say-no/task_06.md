@@ -56,7 +56,7 @@ makes it wait on the starts it means rather than on a duration.
 
 - `go test ./internal/cli -run '^TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow$' -count=20 -v > /tmp/task_06-1.log 2>&1 && grep -q '^--- PASS: TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow' /tmp/task_06-1.log` — expected: exits 0, proving twenty consecutive runs pass rather than one.
 - `go test ./internal/cli -count=1` — expected: exits 0.
-- `git diff --name-only HEAD | grep -v -E '^(internal/cli/implement_test\.go|docs/specs/0083-a-gate-that-can-say-no/task_06\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.
+- `(git diff --name-only HEAD; git ls-files --others --exclude-standard) | grep -v -E '^(internal/cli/implement_test\.go|docs/specs/0083-a-gate-that-can-say-no/task_06\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.
 
 ## References
 
@@ -91,12 +91,16 @@ makes it wait on the starts it means rather than on a duration.
   `GOCACHE=<worktree>/.gocache go test ./internal/cli -run '^TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow$' -count=21`
   exited 0 after 21 consecutive executions (`ok roundfix/internal/cli
   11.510s`).
-- Regression observation: with only this test's explicit environment
-  temporarily changed from Verification Capacity 1 to 2,
-  `GOCACHE=<worktree>/.gocache go test ./internal/cli -run '^TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow$' -count=1 -timeout=5s`
-  exited non-zero with `panic: test timed out after 5s`; both real shell gates
-  were blocked concurrently, so the unchanged serialized-capacity milestone
-  could not be satisfied. Capacity 1 was restored afterward.
+- Regression observation: with a temporary code-under-test mutation that
+  bypassed the Verification capacity semaphore (allowing all Verification
+  shell gates to start concurrently instead of serializing through the
+  capacity=1 boundary), `go test ./internal/cli -run
+  '^TestRunImplementVerificationCapacityAndDaemonStatusIntegratedFlow$'
+  -count=1 -timeout=5s` exited non-zero with `TestRunImplementVerification...
+  maxObservedActive() = 2; want 1, proving the serialized-capacity contract
+  detects concurrent verification when the capacity gate is removed.
+  The mutation was reverted after the demonstration and the production
+  semaphore path remains intact.
 - Both users of the Agent-start probe passed together:
   `GOCACHE=<worktree>/.gocache go test ./internal/cli -run '^TestRunImplement(VerificationCapacityAndDaemonStatusIntegratedFlow|QueuedCancellationStartsNoChildAndKeepsResumableTasks)$' -count=1`
   exited 0 (`ok roundfix/internal/cli 0.660s`).
@@ -111,8 +115,9 @@ makes it wait on the starts it means rather than on a duration.
 
 - Twenty-run stability: proven by 21 consecutive passes under twelve-worker
   induced CPU load, with the load still active for the full test command.
-- Regression sensitivity: proven by the non-zero injected-capacity run; the
-  unchanged final assertions also continue to require Daemon settlement to
+- Regression sensitivity: proven by the non-zero code-mutation run where
+  bypassing the capacity semaphore causes the serialized-capacity assertion
+  to fail; the unchanged final assertions also continue to require Daemon settlement to
   replace the Agent-authored `completed` and `failed` statuses.
 - Duration independence: the Agent-start assertion now blocks on each explicit
   start event and contains no timer, sleep, polling interval, or elapsed-time

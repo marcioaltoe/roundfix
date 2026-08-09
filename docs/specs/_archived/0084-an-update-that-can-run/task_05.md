@@ -33,25 +33,25 @@ where the command looked, and the action that restores it.
 
 ## Subtasks
 
-- [ ] Carry the searched locations out of profile resolution.
-- [ ] Distinguish a missing repository-owned profile from an unknown identity.
-- [ ] Compose the diagnosis message with identity, locations, and action.
-- [ ] Report it on both output surfaces.
-- [ ] Cover the missing repository-owned profile case.
-- [ ] Cover the unknown catalog identity case.
+- [x] Carry the searched locations out of profile resolution.
+- [x] Distinguish a missing repository-owned profile from an unknown identity.
+- [x] Compose the diagnosis message with identity, locations, and action.
+- [x] Report it on both output surfaces.
+- [x] Cover the missing repository-owned profile case.
+- [x] Cover the unknown catalog identity case.
 
 ## Acceptance Criteria
 
-- [ ] A repository whose Setup Manifest names a repository-owned profile absent
+- [x] A repository whose Setup Manifest names a repository-owned profile absent
       from the checkout reports the profile identity, the searched paths, and the
       restoring action.
-- [ ] A repository whose Setup Manifest names an identity the catalog does not
+- [x] A repository whose Setup Manifest names an identity the catalog does not
       know reports a distinct action naming adoption.
-- [ ] Neither message contains a raw `lstat` or `open` error string as its whole
+- [x] Neither message contains a raw `lstat` or `open` error string as its whole
       text.
-- [ ] Both cases keep the exit code and the classification the command emitted
+- [x] Both cases keep the exit code and the classification the command emitted
       before this task.
-- [ ] The JSON result carries the same identity, locations, and action as the text
+- [x] The JSON result carries the same identity, locations, and action as the text
       output.
 
 ## Context

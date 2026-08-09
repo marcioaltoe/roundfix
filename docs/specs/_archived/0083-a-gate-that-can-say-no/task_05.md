@@ -59,7 +59,7 @@ on a duration, so a slow runner delays it instead of failing it.
 
 - `go test ./internal/agent -run '^TestACPXRunCancellationCommandFailuresWarnAndContinue$' -count=20 -v > /tmp/task_05-1.log 2>&1 && grep -q '^--- PASS: TestACPXRunCancellationCommandFailuresWarnAndContinue' /tmp/task_05-1.log` — expected: exits 0, proving twenty consecutive runs pass rather than one.
 - `go test ./internal/agent -count=1` — expected: exits 0.
-- `git diff --name-only HEAD | grep -v -E '^(internal/agent/acpx_runner_test\.go|docs/specs/0083-a-gate-that-can-say-no/task_05\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.
+- `(git diff --name-only HEAD; git ls-files --others --exclude-standard) | grep -v -E '^(internal/agent/acpx_runner_test\.go|docs/specs/0083-a-gate-that-can-say-no/task_05\.md)$' | grep . ; test $? -eq 1` — expected: exits 0, proving no path outside the declared boundary changed.
 
 ## References
 

@@ -38,14 +38,22 @@ cost is why the fleet drifts.
   and this design opens no HTTP surface. External skill acquisition reuses the
   existing immutable Git source contract in `skills_restore_git.go` rather than
   adding an authenticated protocol. Source: `docs/agents/spec-routing.md`.
-- Active ADR obligations: applicable — ADR-0058 (retention accounting is
-  fail-closed on unaccounted managed-clause removal) is satisfied by keeping
-  `resolvePlanRetention` on the update path unchanged; ADR-0068 (one
-  confirmation-gated workflow) is satisfied by binding apply to the exact Plan
-  Digest; ADR-0071 (portable, preimage-bound plans) and ADR-0073 (recoverable
-  transaction) are satisfied by reusing `BuildPlan` and `ApplyPlan` unmodified;
-  ADR-0069 (semantic analysis is read-only and supervised) is respected by not
-  invoking the analyzer at all on this path; ADR-0087 (capability discovery
+- Active ADR obligations: applicable — ADR-0047 (immutable fingerprinting
+  guarantees) constrains the digest scheme used for Plan identities; ADR-0058
+  (retention accounting is fail-closed on unaccounted managed-clause removal) is
+  satisfied by keeping `resolvePlanRetention` on the update path unchanged;
+  ADR-0066 (CLI exit codes are fixed and documented) constrains the exit code
+  contract in the API Contracts section; ADR-0067 (structured CLI output schema)
+  requires schemaVersion, type, ok, requestId, and timestamp on every response;
+  ADR-0068 (one confirmation-gated workflow) is satisfied by binding apply to
+  the exact Plan Digest; ADR-0070 (CLI response bodies are always complete) is
+  satisfied by the single json/text output writer; ADR-0071 (portable,
+  preimage-bound plans) and ADR-0073 (recoverable transaction) are satisfied by
+  reusing `BuildPlan` and `ApplyPlan` unmodified; ADR-0069 (semantic analysis is
+  read-only and supervised) is respected by not invoking the analyzer at all on
+  this path; ADR-0081 (digested guidance pins are sanctioned fallout of Baseline
+  updates after adoption) applies directly — pins rewritten by `make
+  baseline-digests` are declared fallout; ADR-0087 (capability discovery
   resolves links without executing) is unchanged; ADR-0090 (repository facts are
   read in batches, never cached across mutations) constrains the update to reuse
   existing batched inspection rather than adding per-file reads; ADR-0099
@@ -146,7 +154,9 @@ No new persisted entity. `SetupManifest` is read, and rewritten by the existing
 plan assembly, unchanged in shape.
 
 One new result document, `roundfix/baseline-update-result/v1`, composed of
-fields the existing types already produce: the prior and current
+`schemaVersion`, `type`, `ok`, `requestId`, and `timestamp` on both success
+and error responses, plus the fields the existing types already produce: the
+prior and current
 `CatalogIdentity`, the `FileChange` list, the `RetentionEvidence` and optional
 `ClauseDelta`, the approved `PlanDigest`, a skills section projecting
 `skills.InstallResult` and `baseline.SkillsRestorePayload`, and the existing
@@ -169,7 +179,8 @@ Exit categories match the existing Baseline family:
 - `0` — plan presented with nothing to change, or apply and verification passed.
 - `1` — execution, verification, recovery, or rollback failure.
 - `2` — invalid input, invalid manifest schema, or an unsafe repository.
-- `3` — action required and nothing written: no manifest (adoption required), a
+- `3` — authentication or permission error: the caller cannot write.
+- `4` — action required and nothing written: no manifest (adoption required), a
   decision the manifest does not carry, an unaccounted managed clause, or a
   plan presented without confirmation.
 - `130` — canceled.

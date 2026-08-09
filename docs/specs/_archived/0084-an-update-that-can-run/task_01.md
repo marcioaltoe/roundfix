@@ -42,29 +42,29 @@ surface changes.
 
 ## Subtasks
 
-- [ ] Introduce the unrecorded-region type and its reason values.
-- [ ] Replace the blocking marker check with the classifier.
-- [ ] Keep a duplicated managed identity blocking under a new finding code.
-- [ ] Carry the classification on the preservation plan.
-- [ ] Cover a stale-digest repository reaching a ready plan.
-- [ ] Cover a duplicated managed identity still blocking.
-- [ ] Cover an unsafe root carrier and an unaccounted clause still blocking.
+- [x] Introduce the unrecorded-region type and its reason values.
+- [x] Replace the blocking marker check with the classifier.
+- [x] Keep a duplicated managed identity blocking under a new finding code.
+- [x] Carry the classification on the preservation plan.
+- [x] Cover a stale-digest repository reaching a ready plan.
+- [x] Cover a duplicated managed identity still blocking.
+- [x] Cover an unsafe root carrier and an unaccounted clause still blocking.
 
 ## Acceptance Criteria
 
-- [ ] A managed-refresh plan against a repository whose recorded digest is stale
+- [x] A managed-refresh plan against a repository whose recorded digest is stale
       reports a ready state and lists the region as unrecorded with reason
       `digest-mismatch`.
-- [ ] A managed-refresh plan against a repository whose managed marker is absent
+- [x] A managed-refresh plan against a repository whose managed marker is absent
       for a recorded artifact reports a ready state and lists the region as
       unrecorded with reason `marker-absent`.
-- [ ] A repository with the same managed identity twice in one file produces no
+- [x] A repository with the same managed identity twice in one file produces no
       applicable plan and names the file and the identity.
-- [ ] Searching the package for the retired finding code returns no production
+- [x] Searching the package for the retired finding code returns no production
       occurrence.
-- [ ] A managed-refresh plan against a repository with no unrecorded region omits
+- [x] A managed-refresh plan against a repository with no unrecorded region omits
       the classification field entirely.
-- [ ] An unsafe root carrier and an unaccounted managed clause each still block a
+- [x] An unsafe root carrier and an unaccounted managed clause each still block a
       managed refresh.
 
 ## Context
