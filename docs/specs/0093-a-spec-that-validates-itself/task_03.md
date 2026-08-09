@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0093-a-spec-that-validates-itself
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -63,3 +63,38 @@ This Task may create or modify only:
 - `_prd.md` → Goal 2.
 - `_techspec.md` → Build Order 3; System Architecture.
 - ADR-0117.
+
+## Result
+
+Implemented cumulative authoring-stage scope in `internal/speccheck`. `StageAll`
+keeps the existing `Check` sweep, `StageTasks` delegates to that same full
+sweep, and PRD and TechSpec scopes run only the detector groups whose inputs
+exist by that stage. Scoped results add one `SkippedDetector` entry per later
+detector, named by its existing finding code.
+
+Focused checks:
+
+- `rtk gofmt -w internal/speccheck/coherence.go internal/speccheck/coherence_test.go`
+  — exited `0`.
+- `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestStageScope' -count=1`
+  — exited `0`; the focused stage suite reported `ok` in 2.334 seconds.
+- `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/speccheck -count=1`
+  — exited `0`; the package reported `ok` in 4.817 seconds.
+
+Acceptance evidence:
+
+- PRD scope executes PRD-only detectors:
+  `TestStageScopeRunsOnlyDetectorsTheStageCanDecide` observes
+  `SC-CONSTRAINT-MISSING` findings from an incomplete PRD and no findings from
+  TechSpec- or Task-stage detectors.
+- Tasks scope executes every detector: the same test proves the complete
+  `StageTasks` result is deeply equal to the existing unscoped `Check` result.
+- The default sweep is unchanged: `TestStageScopeDefaultSweepIsUnchanged`
+  compares `StageAll` with `Check` for every active and archived Spec in the
+  repository corpus and requires deeply equal findings and skipped-detector
+  records.
+- Scoped runs name omitted detectors:
+  `TestStageScopeNamesTheDetectorsItSkipped` requires all nine TechSpec- and
+  Task-stage detector codes in the PRD result's `Skipped` records.
+
+The Daemon-owned `## Verification` commands were not run in this Agent turn.
