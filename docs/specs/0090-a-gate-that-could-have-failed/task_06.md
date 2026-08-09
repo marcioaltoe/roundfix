@@ -53,7 +53,7 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/store -run '^TestWaitBudget' -count=1 -v 2>&1 | grep -q '^--- PASS: TestWaitBudgetIsNeverRestatedAtACallSite'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/store -run '^TestWaitBudget' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestWaitBudgetIsNeverRestatedAtACallSite'` — expected: exits 0.
 - `test -z "$(grep -nE 'time\.After\([0-9]+ ?\* ?time\.(Second|Millisecond)\)' internal/agent/acpx_runner_test.go)"` — expected: exits 0, proving no literal wait budget remains in the agent harness.
 - `test -z "$(grep -nE 'newOwnerProcessController\([0-9]+ ?\*' internal/store/process_unix_test.go)"` — expected: exits 0, proving the controller budget is no longer built from literals at the call site.
 - `GOCACHE="$PWD/.gocache" go test ./internal/agent ./internal/store -count=1 2>&1 | grep -cq '^ok' ; test "$(GOCACHE="$PWD/.gocache" go test ./internal/agent ./internal/store -count=1 2>&1 | grep -c '^ok')" -eq 2` — expected: exits 0, proving both packages pass rather than one being skipped.

@@ -56,7 +56,7 @@ cockpit re-reads the entire journal, payloads included, on every append. The
   which this Spec's own graph is authored. ADR-0093, ADR-0096, and ADR-0097 do
   not apply: this Spec adds no consistency check, no gate stage, and no
   carried report row — they belong to Spec 0080, which shares only the QA
-  verdict contract with this one. Source: `docs/agents/domain.md`.
+  verdict contract with this one. ADR-0117 places a check with the stage that can produce its defect; it does not change what this Spec delivers, and it moves where this Spec's gate rows run only once Spec 0093 ships. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — the work is Go code, SQL, a user-guide
   document, and Go-side config defaults. It creates, edits, renames, moves, or
   deletes no repository-tooling configuration, script, ignore file, plugin

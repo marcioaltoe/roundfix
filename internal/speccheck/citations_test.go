@@ -441,6 +441,138 @@ func TestCheckADRClosureDepthOne(t *testing.T) {
 	}
 }
 
+func TestCitationReportsAnUnsupportedClaim(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := writeSemanticCitationFixture(t, "_prd.md", "ADR-0083 makes `make verify` the only authoritative gate.")
+	result := checkSemanticCitationFixture(t, repoRoot)
+	finding := requireFinding(t, result, speccheck.CodeCitationUnsupported)
+
+	const claimingSentence = "ADR-0083 makes `make verify` the only authoritative gate."
+	for _, text := range []string{claimingSentence, "Adopted sources move to their owning Spec"} {
+		if !strings.Contains(finding.Summary, text) {
+			t.Errorf("summary = %q, want quoted evidence %q", finding.Summary, text)
+		}
+	}
+	for _, path := range []string{
+		"docs/specs/semantic-citation/_prd.md",
+		"docs/adr/0083-adopted-sources-move-to-their-owning-spec.md",
+	} {
+		if !hasLocation(finding, path) {
+			t.Errorf("locations = %#v, want %q", finding.Where, path)
+		}
+	}
+}
+
+func TestCitationAcceptsASupportedClaim(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := writeSemanticCitationFixture(t, "_techspec.md", "ADR-0096 has the QA gate prove machine facts before it spends an Agent turn.")
+	result := checkSemanticCitationFixture(t, repoRoot)
+	if findings := findingsWithCode(result, speccheck.CodeCitationUnsupported); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want the cited record to support the claim", speccheck.CodeCitationUnsupported, findings)
+	}
+}
+
+func TestCitationBareListingIsNotAClaim(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := writeSemanticCitationFixture(t, "_prd.md", "Active ADRs: ADR-0083, ADR-0096.")
+	result := checkSemanticCitationFixture(t, repoRoot)
+	if findings := findingsWithCode(result, speccheck.CodeCitationUnsupported); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want a bare ADR listing ignored", speccheck.CodeCitationUnsupported, findings)
+	}
+}
+
+func TestCitationReportsHowManyClaimsItResolved(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := writeSemanticCitationFixture(t, "_prd.md", "ADR-0083 makes `make verify` the only authoritative gate.")
+	artifact := "docs/specs/semantic-citation/_prd.md"
+	content, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(artifact)))
+	if err != nil {
+		t.Fatalf("read semantic citation fixture: %v", err)
+	}
+	claims := speccheck.CitationClaims(artifact, content)
+	if len(claims) != 1 {
+		t.Fatalf("parsed claims = %#v, want exactly one attribution", claims)
+	}
+	resolved, err := speccheck.ResolvedCitationClaimCount(repoRoot, claims)
+	if err != nil {
+		t.Fatalf("ResolvedCitationClaimCount() error = %v", err)
+	}
+	if resolved != 1 {
+		t.Fatalf("resolved claims = %d, want 1", resolved)
+	}
+
+	bareClaims := speccheck.CitationClaims(artifact, []byte("Active ADRs: ADR-0083, ADR-0096.\n"))
+	if len(bareClaims) != 0 {
+		t.Fatalf("bare listing claims = %#v, want none", bareClaims)
+	}
+	resolved, err = speccheck.ResolvedCitationClaimCount(repoRoot, bareClaims)
+	if err != nil {
+		t.Fatalf("ResolvedCitationClaimCount(bare listing) error = %v", err)
+	}
+	if resolved != 0 {
+		t.Fatalf("bare listing resolved claims = %d, want 0", resolved)
+	}
+}
+
+func writeSemanticCitationFixture(t *testing.T, artifactName, sentence string) string {
+	t.Helper()
+
+	repoRoot := t.TempDir()
+	for _, source := range []string{
+		"docs/agents/agent-instructions.md",
+		"docs/agents/cli.md",
+		"docs/agents/domain.md",
+	} {
+		writeCitationFixtureFile(t, repoRoot, source, "# Fixture source\n")
+	}
+	writeCitationFixtureFile(t, repoRoot, "docs/adr/0083-adopted-sources-move-to-their-owning-spec.md", `---
+status: accepted
+---
+
+# Adopted sources move to their owning Spec
+
+An adopted source moves into the owning Spec so one authoritative home cannot drift.
+`)
+	const adr0096Path = "docs/adr/0096-the-qa-gate-proves-machine-facts-before-it-spends-an-agent-turn.md"
+	adr0096, err := os.ReadFile(filepath.Join(characterizationRepositoryRoot(t), filepath.FromSlash(adr0096Path)))
+	if err != nil {
+		t.Fatalf("read real ADR-0096: %v", err)
+	}
+	writeCitationFixtureFile(t, repoRoot, adr0096Path, string(adr0096))
+
+	const prd = `---
+spec: semantic-citation
+status: active
+---
+
+# Semantic citation
+
+## Project Constraints
+
+- Identifier strategy: not applicable — no persisted identity. Source: ` + "`docs/agents/domain.md`" + `.
+- Authentication and HTTP: not applicable — file reads only. Source: ` + "`docs/agents/cli.md`" + `.
+- Active ADR obligations: applicable — ADR-0083 and ADR-0096 are fixture decisions. Source: ` + "`docs/agents/domain.md`" + `.
+- Tooling authority: not applicable — ordinary source only. Source: ` + "`docs/agents/agent-instructions.md`" + `.
+`
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/semantic-citation/_prd.md", prd)
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/semantic-citation/"+artifactName, prd+"\n"+sentence+"\n")
+	return repoRoot
+}
+
+func checkSemanticCitationFixture(t *testing.T, repoRoot string) speccheck.Result {
+	t.Helper()
+
+	result, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, "semantic-citation")
+	if err != nil {
+		t.Fatalf("Check(semantic-citation) error = %v", err)
+	}
+	return result
+}
+
 func TestCheckCoverageUnmapped(t *testing.T) {
 	t.Parallel()
 

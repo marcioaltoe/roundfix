@@ -64,9 +64,9 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestCarryForward' -count=1 -v 2>&1 | grep -q '^--- PASS: TestCarryForwardSettlesATaskWhoseInputsAreUnchanged'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestCarryForward' -count=1 -v 2>&1 | grep -q '^--- PASS: TestCarryForwardRefusesATaskWhoseInputsMoved'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestCarryForward' -count=1 -v 2>&1 | grep -q '^--- PASS: TestCarryForwardRefusesRatherThanCarryingASubset'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestCarryForward' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCarryForwardSettlesATaskWhoseInputsAreUnchanged'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestCarryForward' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCarryForwardRefusesATaskWhoseInputsMoved'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestCarryForward' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCarryForwardRefusesRatherThanCarryingASubset'` — expected: exits 0.
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli ./internal/spec -count=1 2>&1 | grep -c '^ok' | grep -q '^2$'` — expected: exits 0.
 
 ## References

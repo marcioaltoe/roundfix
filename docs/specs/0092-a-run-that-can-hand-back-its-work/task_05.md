@@ -68,10 +68,10 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestSupersededBranch' -count=1 -v 2>&1 | grep -q '^--- PASS: TestSupersededBranchIsClassifiedWhenEveryCommitIsReachable'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestSupersededBranch' -count=1 -v 2>&1 | grep -q '^--- PASS: TestSupersededBranchRefusesAnUnreachableCommit'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestReconcileDiscard' -count=1 -v 2>&1 | grep -q '^--- PASS: TestReconcileDiscardWritesTheRecordBeforeRemoving'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestReconcileDiscard' -count=1 -v 2>&1 | grep -q '^--- PASS: TestReconcileWithoutTheFlagRemovesNothing'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestSupersededBranch' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSupersededBranchIsClassifiedWhenEveryCommitIsReachable'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestSupersededBranch' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSupersededBranchRefusesAnUnreachableCommit'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestReconcileDiscard' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestReconcileDiscardWritesTheRecordBeforeRemoving'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestReconcileDiscard' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestReconcileWithoutTheFlagRemovesNothing'` — expected: exits 0.
 
 ## References
 

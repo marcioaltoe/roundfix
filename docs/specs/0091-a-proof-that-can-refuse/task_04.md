@@ -49,9 +49,8 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestDisposableSessionClose' -count=1 -v 2>&1 | grep -q '^--- PASS: TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestDisposableSessionClose' -count=1 -v 2>&1 | grep -q '^--- PASS: TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -count=1 2>&1 | grep -q '^ok'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestDisposableSessionClose' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestDisposableSessionClose' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose'` — expected: exits 0.
 
 ## References
 

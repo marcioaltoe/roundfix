@@ -57,9 +57,9 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/runevent -run '^TestVerificationProbeEvent' -count=1 -v 2>&1 | grep -q '^--- PASS: TestVerificationProbeEventProjectsVacuousAndUnknownDistinctly'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbePublishes' -count=1 -v 2>&1 | grep -q '^--- PASS: TestPreWorkProbePublishesEveryOffendingCommand'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbePublishes' -count=1 -v 2>&1 | grep -q '^--- PASS: TestPreWorkProbePublishesNothingForAClearedTask'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/runevent -run '^TestVerificationProbeEvent' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestVerificationProbeEventProjectsVacuousAndUnknownDistinctly'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbePublishes' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestPreWorkProbePublishesEveryOffendingCommand'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestPreWorkProbePublishes' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestPreWorkProbePublishesNothingForAClearedTask'` — expected: exits 0.
 - `grep -q 'verification_vacuous' internal/runevent/event.go && grep -q 'verification_unknown' internal/runevent/event.go` — expected: exits 0. Neither string exists before this Task.
 
 ## References

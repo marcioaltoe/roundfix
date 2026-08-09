@@ -1,17 +1,209 @@
-// Suite: Task authoring coherence classification
-// Invariant: only declared same-subject contradictions and undeclared rehearsal cases produce findings.
-// Boundary IN: parsed Task declarations and the public coherence detectors
+// Suite: Task authoring coherence and stage-scoped Spec checks
+// Invariant: coherence findings retain their declared meaning, and a stage runs exactly the detectors it can decide.
+// Boundary IN: parsed Task declarations and the public coherence and stage-scope APIs
 // Boundary OUT: Markdown parsing, CLI rendering, and Daemon Verification execution
 package speccheck_test
 
 import (
+	"errors"
+	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
+
+func TestStageScopeRunsOnlyDetectorsTheStageCanDecide(t *testing.T) {
+	t.Parallel()
+
+	repoRoot, specsRoot, slug := writeStageScopeFixture(t)
+	prdResult, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+	if err != nil {
+		t.Fatalf("CheckStage(StagePRD): %v", err)
+	}
+	if len(findingsWithCode(prdResult, speccheck.CodeConstraintMissing)) == 0 {
+		t.Fatalf("StagePRD findings = %#v, want PRD constraint detector findings", prdResult.Findings)
+	}
+	for _, code := range []string{
+		speccheck.CodeCoverageUnmapped,
+		speccheck.CodeCoverageUntasked,
+		speccheck.CodeVerifyWorkIndependent,
+	} {
+		if findings := findingsWithCode(prdResult, code); len(findings) != 0 {
+			t.Errorf("StagePRD %s findings = %#v, want detector not run", code, findings)
+		}
+	}
+
+	techSpecResult, err := speccheck.CheckStage(fixtureSpecRoot, "testdata/repo", "vocabulary-missing", speccheck.StageTechSpec)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTechSpec): %v", err)
+	}
+	if len(findingsWithCode(techSpecResult, speccheck.CodeVocabularyUndocumented)) != 1 {
+		t.Fatalf("StageTechSpec %s findings = %#v, want the TechSpec detector finding", speccheck.CodeVocabularyUndocumented, techSpecResult.Findings)
+	}
+	for _, code := range []string{
+		speccheck.CodeCoverageUntasked,
+		speccheck.CodeVerifyWorkIndependent,
+		speccheck.CodeRequirementContradictory,
+	} {
+		if findings := findingsWithCode(techSpecResult, code); len(findings) != 0 {
+			t.Errorf("StageTechSpec %s findings = %#v, want detector not run", code, findings)
+		}
+	}
+
+	tasksResult, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks): %v", err)
+	}
+	fullResult, err := speccheck.Check(specsRoot, repoRoot, slug)
+	if err != nil {
+		t.Fatalf("Check(): %v", err)
+	}
+	if !reflect.DeepEqual(tasksResult, fullResult) {
+		t.Errorf("CheckStage(StageTasks) = %#v, want full detector sweep %#v", tasksResult, fullResult)
+	}
+}
+
+func TestStageScopeRunsTheCitationDetectorInAuthoringStages(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := citationCharacterizationFixtureRoot(t)
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	tests := []struct {
+		name  string
+		stage speccheck.Stage
+	}{
+		{name: "PRD", stage: speccheck.StagePRD},
+		{name: "TechSpec", stage: speccheck.StageTechSpec},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			result, err := speccheck.CheckStage(specsRoot, repoRoot, citationCharacterizationSlug, tt.stage)
+			if err != nil {
+				t.Fatalf("CheckStage(%s): %v", tt.stage, err)
+			}
+			findings := findingsWithCode(result, speccheck.CodeCitationUnsupported)
+			if len(findings) != 1 {
+				t.Fatalf("CheckStage(%s) %s findings = %#v, want one", tt.stage, speccheck.CodeCitationUnsupported, findings)
+			}
+			if findings[0].Severity != speccheck.SeverityError {
+				t.Errorf("CheckStage(%s) severity = %q, want %q", tt.stage, findings[0].Severity, speccheck.SeverityError)
+			}
+			for _, want := range []string{
+				"ADR-0083 makes `make verify` the only authoritative gate",
+				"Adopted sources move to their owning Spec",
+			} {
+				if !strings.Contains(findings[0].Summary, want) {
+					t.Errorf("CheckStage(%s) summary = %q, want %q", tt.stage, findings[0].Summary, want)
+				}
+			}
+		})
+	}
+}
+
+func TestStageScopeDefaultSweepIsUnchanged(t *testing.T) {
+	repoRoot := characterizationRepositoryRoot(t)
+	activeRoot := filepath.Join(repoRoot, "docs", "specs")
+	archivedRoot := materializeArchivedCorpus(t, filepath.Join(activeRoot, "_archived"))
+	for _, specsRoot := range []string{activeRoot, archivedRoot} {
+		assertDefaultStageSweepUnchanged(t, specsRoot, repoRoot)
+	}
+}
+
+func assertDefaultStageSweepUnchanged(t *testing.T, specsRoot, repoRoot string) {
+	t.Helper()
+
+	entries, err := os.ReadDir(specsRoot)
+	if err != nil {
+		t.Fatalf("read Spec corpus %q: %v", specsRoot, err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(specsRoot, entry.Name(), "_prd.md")); errors.Is(err, os.ErrNotExist) {
+			continue
+		} else if err != nil {
+			t.Fatalf("inspect Spec %q: %v", entry.Name(), err)
+		}
+		t.Run(filepath.Base(specsRoot)+"/"+entry.Name(), func(t *testing.T) {
+			fullResult, err := speccheck.Check(specsRoot, repoRoot, entry.Name())
+			if err != nil {
+				t.Fatalf("Check(): %v", err)
+			}
+			defaultResult, err := speccheck.CheckStage(specsRoot, repoRoot, entry.Name(), speccheck.StageAll)
+			if err != nil {
+				t.Fatalf("CheckStage(StageAll): %v", err)
+			}
+			if !reflect.DeepEqual(defaultResult, fullResult) {
+				t.Errorf("default stage result = %#v, want unchanged result %#v", defaultResult, fullResult)
+			}
+		})
+	}
+}
+
+func TestStageScopeNamesTheDetectorsItSkipped(t *testing.T) {
+	t.Parallel()
+
+	repoRoot, specsRoot, slug := writeStageScopeFixture(t)
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+	if err != nil {
+		t.Fatalf("CheckStage(StagePRD): %v", err)
+	}
+	for _, code := range []string{
+		speccheck.CodeCoverageUnmapped,
+		speccheck.CodeVocabularyUndocumented,
+		speccheck.CodeADRUnlisted,
+		speccheck.CodeADRRelated,
+		speccheck.CodeCoverageUntasked,
+		speccheck.CodeReferenceUnresolved,
+		speccheck.CodeVerifyWorkIndependent,
+		speccheck.CodeRequirementContradictory,
+		speccheck.CodeRehearsalUndeclared,
+	} {
+		if !hasSkip(result, code, "stage prd") {
+			t.Errorf("StagePRD Skipped = %#v, want named %s detector", result.Skipped, code)
+		}
+	}
+}
+
+func TestStageScopeRejectsUnknownStage(t *testing.T) {
+	t.Parallel()
+
+	repoRoot, specsRoot, slug := writeStageScopeFixture(t)
+	_, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.Stage("draft"))
+	if err == nil {
+		t.Fatal("CheckStage(unknown) error = nil, want accepted stage values")
+	}
+	for _, want := range []string{"prd", "techspec", "tasks"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("CheckStage(unknown) error = %q, want accepted value %q", err, want)
+		}
+	}
+}
+
+func writeStageScopeFixture(t *testing.T) (string, string, string) {
+	t.Helper()
+
+	const slug = "stage-scope"
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	path := filepath.Join(specsRoot, slug, "_prd.md")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("create stage-scope fixture: %v", err)
+	}
+	if err := os.WriteFile(path, []byte("# Stage scope\n"), 0o644); err != nil {
+		t.Fatalf("write stage-scope fixture: %v", err)
+	}
+	return repoRoot, specsRoot, slug
+}
 
 func TestCoherenceFindingsRetainDeclarationSourceLines(t *testing.T) {
 	t.Parallel()

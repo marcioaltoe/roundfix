@@ -181,6 +181,25 @@ an operative `docs/agents/` source; and any protected tooling mutation records
 express maintainer authorization plus bounded files. Keep authorization out of
 frontmatter.
 
+Then run the checker against the stage that produced the artifact:
+
+```bash
+roundfix spec check <slug> --stage prd
+```
+
+An error-level finding or a checker execution failure blocks the report. Fix
+the PRD and re-run the command; do not report completion or recommend the next
+pipeline step while either stands.
+
+A clean PRD-stage result is not full Spec coverage. This stage does not decide
+TechSpec coverage mapping or its Vocabulary Contract; Task Graph ADR
+accounting, task coverage, context references, Verification independence,
+requirement contradictions, or rehearsal declarations; commit-dependent
+changed-path scope; rules that are not yet mechanical; or whether the product
+goals are correct. Later authoring stages, the full unscoped sweep, and QA
+retain those classes. Treat the checker's named skipped detectors as omitted,
+not as clean findings.
+
 Reply with the file path, any open questions that survived clarification, and the next step: `write-techspec` for features with architectural decisions to make, `write-tasks` directly when the technical approach is already obvious.
 
 ## Anti-patterns

@@ -1,6 +1,9 @@
 package speccheck
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -13,6 +16,207 @@ const (
 	// CodeRehearsalUndeclared identifies a gate rehearsal with no complete case declarations.
 	CodeRehearsalUndeclared = "SC-REHEARSAL-UNDECLARED"
 )
+
+// Stage names the authoring moment a caller is validating.
+type Stage string
+
+const (
+	// StageAll runs the full detector sweep used by Check.
+	StageAll Stage = ""
+	// StagePRD runs detectors decidable once the PRD exists.
+	StagePRD Stage = "prd"
+	// StageTechSpec runs detectors decidable once the PRD and TechSpec exist.
+	StageTechSpec Stage = "techspec"
+	// StageTasks runs every detector because the complete Spec exists.
+	StageTasks Stage = "tasks"
+)
+
+type stagedDetector struct {
+	code  string
+	stage Stage
+}
+
+var stagedDetectors = []stagedDetector{
+	{code: CodeLoopOrderDivergent, stage: StagePRD},
+	{code: CodeFindingLifecycle, stage: StagePRD},
+	{code: CodeRollupMember, stage: StagePRD},
+	{code: CodeArchiveLicense, stage: StagePRD},
+	{code: CodeBacklogUnmoved, stage: StagePRD},
+	{code: CodeConstraintMissing, stage: StagePRD},
+	{code: CodeConstraintUnreasoned, stage: StagePRD},
+	{code: CodeConstraintSource, stage: StagePRD},
+	{code: CodeToolingUnauthorized, stage: StagePRD},
+	{code: CodeToolingUnbounded, stage: StagePRD},
+	{code: CodeCitationUnsupported, stage: StagePRD},
+	{code: CodeCoverageUnmapped, stage: StageTechSpec},
+	{code: CodeVocabularyUndocumented, stage: StageTechSpec},
+	{code: CodeADRUnlisted, stage: StageTasks},
+	{code: CodeADRRelated, stage: StageTasks},
+	{code: CodeCoverageUntasked, stage: StageTasks},
+	{code: CodeReferenceUnresolved, stage: StageTasks},
+	{code: CodeVerifyWorkIndependent, stage: StageTasks},
+	{code: CodeRequirementContradictory, stage: StageTasks},
+	{code: CodeRehearsalUndeclared, stage: StageTasks},
+}
+
+// CheckStage runs the detectors whose inputs exist by stage. StageAll keeps
+// the existing Check sweep unchanged, and StageTasks runs that same full sweep.
+func CheckStage(specsRoot, repoRoot, slug string, stage Stage) (Result, error) {
+	switch stage {
+	case StageAll, StageTasks:
+		return Check(specsRoot, repoRoot, slug)
+	case StagePRD, StageTechSpec:
+		return checkAuthoringStage(specsRoot, repoRoot, slug, stage)
+	default:
+		return Result{Slug: slug, Findings: []Finding{}, Skipped: []SkippedDetector{}},
+			fmt.Errorf("unknown Spec authoring stage %q; accepted values: prd, techspec, tasks", stage)
+	}
+}
+
+func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result, error) {
+	result := Result{
+		Slug:     slug,
+		Findings: []Finding{},
+		Skipped:  []SkippedDetector{},
+	}
+	if strings.TrimSpace(slug) == "" || filepath.Base(slug) != slug || slug == "." {
+		return result, fmt.Errorf("invalid Spec slug %q", slug)
+	}
+
+	specDir := filepath.Join(filepath.Clean(specsRoot), slug)
+	info, err := os.Stat(specDir)
+	if err != nil {
+		return result, fmt.Errorf("read Spec %q: %w", slug, err)
+	}
+	if !info.IsDir() {
+		return result, fmt.Errorf("read Spec %q: %s is not a directory", slug, specDir)
+	}
+	if err := detectLoopOrderConsistency(&result, repoRoot); err != nil {
+		return result, err
+	}
+	if err := detectFindingsConsistency(&result, repoRoot); err != nil {
+		return result, err
+	}
+	if err := detectBacklogPromotion(&result, repoRoot); err != nil {
+		return result, fmt.Errorf("detect backlog promotion: %w", err)
+	}
+
+	prdPath := filepath.Join(specDir, "_prd.md")
+	prd, present, err := readConstraintArtifact(repoRoot, prdPath)
+	if err != nil {
+		return result, err
+	}
+	if !present {
+		for _, code := range detectorCodes {
+			addSkip(&result, code, artifactDisplayPath(repoRoot, prdPath))
+		}
+		if stage == StageTechSpec {
+			addSkip(&result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, prdPath))
+		}
+		addStageSkips(&result, stage)
+		return result, nil
+	}
+
+	artifacts := []constraintArtifact{prd}
+	techSpecPath := filepath.Join(specDir, "_techspec.md")
+	techSpecPresent := false
+	citationArtifactPaths := []string{prdPath}
+	if stage == StageTechSpec {
+		techSpec, found, err := readConstraintArtifact(repoRoot, techSpecPath)
+		if err != nil {
+			return result, err
+		}
+		techSpecPresent = found
+		if found {
+			artifacts = append(artifacts, techSpec)
+			citationArtifactPaths = append(citationArtifactPaths, techSpecPath)
+		} else {
+			for _, code := range detectorCodes {
+				addSkip(&result, code, artifactDisplayPath(repoRoot, techSpecPath))
+			}
+		}
+		if err := detectVocabularyContract(&result, repoRoot, techSpecPath, found); err != nil {
+			return result, err
+		}
+	}
+	if err := detectAuthoringStageUnsupportedCitations(&result, repoRoot, citationArtifactPaths); err != nil {
+		return result, err
+	}
+
+	for artifactIndex := range artifacts {
+		detectConstraintRows(&result, repoRoot, slug, artifacts, artifactIndex)
+	}
+	if stage == StageTechSpec {
+		if err := detectTechSpecCoverage(&result, repoRoot, prdPath, techSpecPath, techSpecPresent); err != nil {
+			return result, err
+		}
+	}
+	addStageSkips(&result, stage)
+	return result, nil
+}
+
+func detectAuthoringStageUnsupportedCitations(result *Result, repoRoot string, artifactPaths []string) error {
+	var claims []Claim
+	for _, path := range artifactPaths {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read Spec artifact %q: %w", path, err)
+		}
+		claims = append(claims, CitationClaims(artifactDisplayPath(repoRoot, path), content)...)
+	}
+	if err := detectUnsupportedCitations(result, repoRoot, claims); err != nil {
+		return fmt.Errorf("detect unsupported citations: %w", err)
+	}
+	return nil
+}
+
+func detectTechSpecCoverage(result *Result, repoRoot, prdPath, techSpecPath string, techSpecPresent bool) error {
+	prdContent, err := os.ReadFile(prdPath)
+	if err != nil {
+		return fmt.Errorf("read Spec artifact %q: %w", prdPath, err)
+	}
+	if !techSpecPresent {
+		addSkip(result, CodeCoverageUnmapped, artifactDisplayPath(repoRoot, techSpecPath))
+		return nil
+	}
+	techSpecContent, err := os.ReadFile(techSpecPath)
+	if err != nil {
+		return fmt.Errorf("read Spec artifact %q: %w", techSpecPath, err)
+	}
+	detectCoverageMap(
+		result,
+		parsePRDCoverageUnits(prdContent),
+		artifactDisplayPath(repoRoot, prdPath),
+		techSpecContent,
+		artifactDisplayPath(repoRoot, techSpecPath),
+	)
+	return nil
+}
+
+func addStageSkips(result *Result, stage Stage) {
+	for _, detector := range stagedDetectors {
+		if stageIncludes(stage, detector.stage) {
+			continue
+		}
+		addSkip(result, detector.code, "stage "+string(stage))
+	}
+}
+
+func stageIncludes(scope, detectorStage Stage) bool {
+	rank := func(stage Stage) int {
+		switch stage {
+		case StagePRD:
+			return 1
+		case StageTechSpec:
+			return 2
+		case StageTasks:
+			return 3
+		default:
+			return 0
+		}
+	}
+	return rank(detectorStage) <= rank(scope)
+}
 
 var (
 	modalMentionPattern     = regexp.MustCompile(`(?i)\bMUST\s+and\s+MUST\s+NOT\b`)

@@ -67,10 +67,10 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestProofRefuses' -count=1 -v 2>&1 | grep -q '^--- PASS: TestProofRefusesAModelTheCatalogueDoesNotAdvertise'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestProofRefuses' -count=1 -v 2>&1 | grep -q '^--- PASS: TestProofRefusalNamesTheAdvertisedSet'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestProofRefuses' -count=1 -v 2>&1 | grep -q '^--- PASS: TestProofKeepsTheAdapterRefusalFastPath'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -count=1 2>&1 | grep -q '^ok'` — expected: exits 0, proving the declared break was updated rather than left failing.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestProofRefuses' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestProofRefusesAModelTheCatalogueDoesNotAdvertise'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestProofRefuses' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestProofRefusalNamesTheAdvertisedSet'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestProofRefuses' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestProofKeepsTheAdapterRefusalFastPath'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestSelectionCatalogueCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSelectionCatalogueCharacterization'` — expected: exits 0, proving the declared break was updated to the new behaviour rather than left failing. A whole-package sweep would pass with the work absent; this names the case that must change.
 
 ## References
 

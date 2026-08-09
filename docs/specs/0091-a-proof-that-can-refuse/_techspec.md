@@ -24,9 +24,9 @@ that was never opened.
   Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — proof runs over ACP against a local
   adapter process. Source: `docs/agents/cli.md`.
-- Active ADR obligations: applicable — ADR-0050 requires preflight to prove every
-  configured tuple and substitute none, which a proof that cannot refuse
-  defeats. ADR-0104 requires an acceptance row on outside evidence. This Spec
+- Active ADR obligations: applicable — ADR-0050 has a configured fallback activate
+  only after its notification, so every reachable tuple is proven ahead of the
+  Run — which a proof that cannot refuse defeats. ADR-0104 requires an acceptance row on outside evidence. This Spec
   adds ADR-0112. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — every file below is ordinary source under
   `internal/agent`. Source: `docs/agents/agent-instructions.md`.

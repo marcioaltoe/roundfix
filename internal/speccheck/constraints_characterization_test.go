@@ -415,6 +415,7 @@ func checkCorpusSpec(specsRoot, repoRoot, slug string, work *corpusSweepWork) (s
 }
 
 var corpusFindingCodes = []string{
+	speccheck.CodeCitationUnsupported,
 	speccheck.CodeConstraintMissing,
 	speccheck.CodeConstraintUnreasoned,
 	speccheck.CodeConstraintSource,
