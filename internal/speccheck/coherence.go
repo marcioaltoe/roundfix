@@ -47,6 +47,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeConstraintSource, stage: StagePRD},
 	{code: CodeToolingUnauthorized, stage: StagePRD},
 	{code: CodeToolingUnbounded, stage: StagePRD},
+	{code: CodeCitationUnsupported, stage: StagePRD},
 	{code: CodeCoverageUnmapped, stage: StageTechSpec},
 	{code: CodeVocabularyUndocumented, stage: StageTechSpec},
 	{code: CodeADRUnlisted, stage: StageTasks},
@@ -119,6 +120,7 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 	artifacts := []constraintArtifact{prd}
 	techSpecPath := filepath.Join(specDir, "_techspec.md")
 	techSpecPresent := false
+	citationArtifactPaths := []string{prdPath}
 	if stage == StageTechSpec {
 		techSpec, found, err := readConstraintArtifact(repoRoot, techSpecPath)
 		if err != nil {
@@ -127,6 +129,7 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		techSpecPresent = found
 		if found {
 			artifacts = append(artifacts, techSpec)
+			citationArtifactPaths = append(citationArtifactPaths, techSpecPath)
 		} else {
 			for _, code := range detectorCodes {
 				addSkip(&result, code, artifactDisplayPath(repoRoot, techSpecPath))
@@ -135,6 +138,9 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 		if err := detectVocabularyContract(&result, repoRoot, techSpecPath, found); err != nil {
 			return result, err
 		}
+	}
+	if err := detectAuthoringStageUnsupportedCitations(&result, repoRoot, citationArtifactPaths); err != nil {
+		return result, err
 	}
 
 	for artifactIndex := range artifacts {
@@ -147,6 +153,21 @@ func checkAuthoringStage(specsRoot, repoRoot, slug string, stage Stage) (Result,
 	}
 	addStageSkips(&result, stage)
 	return result, nil
+}
+
+func detectAuthoringStageUnsupportedCitations(result *Result, repoRoot string, artifactPaths []string) error {
+	var claims []Claim
+	for _, path := range artifactPaths {
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read Spec artifact %q: %w", path, err)
+		}
+		claims = append(claims, CitationClaims(artifactDisplayPath(repoRoot, path), content)...)
+	}
+	if err := detectUnsupportedCitations(result, repoRoot, claims); err != nil {
+		return fmt.Errorf("detect unsupported citations: %w", err)
+	}
+	return nil
 }
 
 func detectTechSpecCoverage(result *Result, repoRoot, prdPath, techSpecPath string, techSpecPresent bool) error {

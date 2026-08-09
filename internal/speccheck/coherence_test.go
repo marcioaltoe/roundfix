@@ -67,6 +67,47 @@ func TestStageScopeRunsOnlyDetectorsTheStageCanDecide(t *testing.T) {
 	}
 }
 
+func TestStageScopeRunsTheCitationDetectorInAuthoringStages(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := citationCharacterizationFixtureRoot(t)
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	tests := []struct {
+		name  string
+		stage speccheck.Stage
+	}{
+		{name: "PRD", stage: speccheck.StagePRD},
+		{name: "TechSpec", stage: speccheck.StageTechSpec},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			result, err := speccheck.CheckStage(specsRoot, repoRoot, citationCharacterizationSlug, tt.stage)
+			if err != nil {
+				t.Fatalf("CheckStage(%s): %v", tt.stage, err)
+			}
+			findings := findingsWithCode(result, speccheck.CodeCitationUnsupported)
+			if len(findings) != 1 {
+				t.Fatalf("CheckStage(%s) %s findings = %#v, want one", tt.stage, speccheck.CodeCitationUnsupported, findings)
+			}
+			if findings[0].Severity != speccheck.SeverityError {
+				t.Errorf("CheckStage(%s) severity = %q, want %q", tt.stage, findings[0].Severity, speccheck.SeverityError)
+			}
+			for _, want := range []string{
+				"ADR-0083 makes `make verify` the only authoritative gate",
+				"Adopted sources move to their owning Spec",
+			} {
+				if !strings.Contains(findings[0].Summary, want) {
+					t.Errorf("CheckStage(%s) summary = %q, want %q", tt.stage, findings[0].Summary, want)
+				}
+			}
+		})
+	}
+}
+
 func TestStageScopeDefaultSweepIsUnchanged(t *testing.T) {
 	repoRoot := characterizationRepositoryRoot(t)
 	activeRoot := filepath.Join(repoRoot, "docs", "specs")

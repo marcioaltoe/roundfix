@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0093-a-spec-that-validates-itself
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -72,3 +72,35 @@ This Task may create or modify only:
 - `_techspec.md` → Build Order 3; System Architecture.
 - `qa/qa-report-2026-08-09-01.md` → F-001.
 - ADR-0117.
+
+## Result
+
+The stage registry now assigns the existing citation detector to `prd`, and
+the authoring-stage path passes the PRD plus the TechSpec when present to that
+detector. The detector's parsing, resolution, and verdict rules remain
+unchanged.
+
+Focused implementation evidence, separate from Daemon Verification:
+
+- Acceptance criterion 1: `rtk proxy env GOCACHE="$PWD/.gocache" go test
+  ./internal/speccheck -run
+  '^TestStageScopeRunsTheCitationDetectorInAuthoringStages$' -count=1` exits
+  `0`. Its `PRD` subtest checks the Spec 0090 fixture for one error-level
+  `SC-CITATION-UNSUPPORTED` finding containing both the false attribution and
+  ADR-0083's actual subject.
+- Acceptance criterion 2: the same focused test's `TechSpec` subtest exercises
+  `StageTechSpec` against the same fixture and requires the same finding,
+  severity, and two texts.
+- Acceptance criterion 3: `rtk proxy env GOCACHE="$PWD/.gocache" go test
+  ./internal/speccheck -run '^TestStageScopeDefaultSweepIsUnchanged$' -count=1`
+  exits `0` across the active and archived characterization corpus. The
+  unscoped `Check` implementation was not edited.
+- Acceptance criterion 4: the change only registers and invokes the existing
+  detector from `coherence.go`; `internal/speccheck/citations.go` is unchanged.
+  `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run
+  '^TestCitation' -count=1` exits `0` for the existing citation behavior suite.
+
+The regression test first failed for both `PRD` and `TechSpec` with zero
+citation findings, then passed after the registry and scoped invocation change.
+The Task's authored `## Verification` commands were not run; the Daemon owns
+those commands and Task settlement.
