@@ -63,7 +63,7 @@ Covered by the standing grant at
 This Task may create or modify only:
 
 - `.agents/skills/qa-gate/SKILL.md`
-- `skills/qa-gate/SKILL.md`, as `make skills-sync` fallout under ADR-0081
+- `skills/qa-gate/SKILL.md`, which `make skills-sync` rewrites, following the authorized edit on ADR-0081's principle
 - `docs/specs/0093-a-spec-that-validates-itself/task_06.md`
 
 Any other path is out of scope; stop and fail the Task rather than widen it.

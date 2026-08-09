@@ -38,8 +38,7 @@ takes ownership of exactly that, on evidence 0063 did not have.
   QA gate accounts for it before delivery. ADR-0096 and ADR-0097 are the
   decisions this Spec implements: the mechanical stage that proves machine facts before
   any agent turn, and the fail-closed rule for carrying a row forward.
-  ADR-0080 keeps sole ownership of QA
-  verdict semantics and the three typed blocked-cause counts; a mechanical
+  ADR-0080 has QA verdicts distinguish environment-blocked rows and owns the three typed blocked-cause counts; a mechanical
   stage may compute them and may never redefine them or make any verdict more
   permissive. ADR-0091 keeps the gate a terminal `qa` Task node with its
   dependency and post-report invalidation rules, so no stage may become a

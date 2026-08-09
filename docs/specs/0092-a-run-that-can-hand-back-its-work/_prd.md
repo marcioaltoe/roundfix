@@ -54,9 +54,7 @@ branches had diverged behind the work that superseded them.
 - Authentication and HTTP: not applicable — Run lifecycle, git plumbing and
   local storage only. Source: `docs/agents/cli.md`.
 - Active ADR obligations: applicable — ADR-0010 lets a Batch settle and the Run
-  continue, which this Spec builds on rather than replaces. ADR-0050 keeps
-  Fallback Chains inactive until Run creation and forbids preflight
-  substitution; the eligibility boundary this Spec moves lives after that point
+  continue, which this Spec builds on rather than replaces. ADR-0050 has a configured fallback activate only after its notification; the eligibility boundary this Spec moves lives after that point
   and must not weaken it. ADR-0069 also cites ADR-0050 and does not apply here:
   it governs Baseline semantic analysis, which this Spec does not touch.
   ADR-0091 makes the QA gate a Task node of its own type, which is why this

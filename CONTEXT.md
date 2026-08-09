@@ -172,6 +172,10 @@ _Avoid_: Model router, benchmark policy, automatic selection
 The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun.
 _Avoid_: Dynamic fallback, silent model switch, catalog probe winner
 
+**Unsupported Citation**:
+The Spec check finding (`SC-CITATION-UNSUPPORTED`) raised when an artifact attributes a subject to a decision record that the record's own text does not carry. It is distinct from an unlisted citation, which asks whether a record was named; this one asks whether the claim about it holds, and reports both texts so a maintainer settles it by reading rather than trusting the checker.
+_Avoid_: Broken link, missing ADR, stale reference
+
 **Agent Work Started**:
 The status (`agent_work_started`) marking the first Agent output that could have changed something, published once per Agent Session. It is the boundary after which a Fallback Selection may no longer switch ACP Runtime, because a second runtime would inherit state the first one built. Preparing or activating a Session does not reach it.
 _Avoid_: Session opened, prompt sent, turn started

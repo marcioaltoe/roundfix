@@ -58,16 +58,16 @@ text, never on a demonstration that it can fail.
 - Authentication and HTTP: not applicable — entirely local. Task Verification
   runs through the Daemon's own command runner and reaches no network surface.
   Source: `docs/agents/cli.md`.
-- Active ADR obligations: applicable — ADR-0083 makes `make verify` the only
-  authoritative gate, so a non-deterministic result from it is an ADR-level
-  defect rather than a test annoyance. ADR-0091 keeps the authored QA gate
-  before any Pull Request exists, which is the reason this class of defect was
-  caught at a gate rather than in review, and this Spec moves it earlier still
-  without displacing that gate. ADR-0096 already establishes that the QA gate
+- Active ADR obligations: applicable — `docs/agents/specific-repository.md` makes
+  `make verify` the authoritative gate, so a non-deterministic result from it is
+  a Normative-Clause defect rather than a test annoyance. ADR-0091 makes the QA gate a Task node of
+  its own type, terminal and depending on every leaf, which is why this class of
+  defect surfaced at a gate rather than in review; this Spec moves it earlier
+  still without displacing that node. ADR-0096 already establishes that the QA gate
   proves machine facts before it spends an Agent turn; this Spec is that same
   principle applied one level down, to a Task's own Verification, and must not
   contradict it. ADR-0104 requires an acceptance row resting on evidence this
-  Spec did not author. This Spec adds ADR-0109, which runs a Task's gate against
+  Spec did not author. ADR-0083 appears above only as the worked example of a false attribution: this Spec neither obeys nor revises it. This Spec adds ADR-0109, which runs a Task's gate against
   the unchanged tree before the Agent; ADR-0110, which keeps a negative control
   authored and recorded rather than synthesised; and ADR-0111, which makes an
   unobserved Verification `unknown` rather than a verdict.

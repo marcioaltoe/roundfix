@@ -50,8 +50,7 @@ This Task may create or modify only:
 
 - `.agents/skills/write-prd/SKILL.md`
 - `.agents/skills/write-techspec/SKILL.md`
-- `skills/write-prd/SKILL.md` and `skills/write-techspec/SKILL.md`, as
-  `make skills-sync` fallout under ADR-0081
+- `skills/write-prd/SKILL.md` and `skills/write-techspec/SKILL.md`, which `make skills-sync` rewrites, following the authorized edit on ADR-0081's principle
 - `docs/specs/0093-a-spec-that-validates-itself/task_05.md`
 
 Any other path is out of scope; stop and fail the Task rather than widen it.

@@ -29,8 +29,7 @@ shipped ahead of this Spec under an earlier narrow grant.
   Bounded files: `.agents/skills/write-prd/SKILL.md`,
   `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/qa-gate/SKILL.md`,
   and their generated copies `skills/write-prd/SKILL.md`,
-  `skills/write-techspec/SKILL.md` and `skills/qa-gate/SKILL.md`, which
-  `make skills-sync` rewrites as sanctioned fallout under ADR-0081.
+  `skills/write-techspec/SKILL.md` and `skills/qa-gate/SKILL.md`, which `make skills-sync` rewrites; ADR-0081 draws authorization around the cause rather than its computable effects, so they follow the authorized skill edit.
   Source: `docs/agents/agent-instructions.md`.
 
 ## Vocabulary Contract

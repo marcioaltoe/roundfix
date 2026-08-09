@@ -91,6 +91,35 @@ named checker rule decides them.
   assigned Task file. Do not stop at the first problem and defer the rest to
   another QA rerun. Any problem blocks flow QA after the complete command audit
   has been reported.
+- Run a Project Constraint audit before crediting Task evidence. A completed or
+  archived legacy Spec is exempt from forced backfill; keep every legacy
+  artifact byte-identical and record the proven exemption. Absence of a
+  Project Constraints section by itself is not proof of legacy status.
+- For every active, non-legacy Spec, verify that the PRD and every present
+  TechSpec each account for identifier strategy, authentication and HTTP,
+  active ADR obligations, and tooling authority. Every row must state its
+  applicability or non-applicability with a reason and cite an operative
+  source path under `docs/agents/`.
+- Identify every Task that creates, edits, renames, moves, or deletes
+  repository-tooling configuration, scripts, ignore files, plugin
+  declarations, or version pins. Require express maintainer authorization and
+  exact bounded files in both active Spec artifacts; Task assignment, setup
+  approval, or generic implementation approval does not qualify.
+- Audit every tooling Task and repair in one pass before flow QA. Resolve the
+  actual changed paths from the Daemon-owned Task commit and any current
+  worktree delta, then resolve the authorization, prerequisite-fix, and
+  consequent-fix commits in chronological ancestry.
+  Use `git diff-tree --no-commit-id --name-only -r <commit>` for every
+  committed change rather than trusting a reported file list.
+- Report every authorization-shape problem together in the same failed audit
+  row: missing authorization; late or untraceable authorization;
+  authorization or a prerequisite fix folded into the Task commit; a
+  consequent fix folded into or ordered before the change that caused it; a
+  claimed derived pin without reproducible evidence from the sanctioned
+  regeneration command; and all out-of-scope tooling changes. Do not stop at
+  the first problem and defer the rest to another QA rerun.
+- Permit only the exact bounded paths and the assigned Task file. Any audit
+  problem blocks flow QA after the complete audit has been reported.
 - QA writes only its report and evidence. It never changes Task status or Task
   Graph dependencies.
 - Require every dependency of the authored `qa` Task to be `completed`. If any

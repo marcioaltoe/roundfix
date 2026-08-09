@@ -54,8 +54,7 @@ missing. Its rules and its timing are.
   an acceptance row on evidence this Spec did not author. ADR-0083 appears above
   only as the worked example of a false attribution — this Spec neither obeys
   nor revises it, and the mention is what the existing listing check cannot tell
-  apart from a citation. ADR-0081 makes the generated skill copies rewritten by `make skills-sync`
-  sanctioned fallout of an authorized edit rather than separate targets. This
+  apart from a citation. ADR-0081 draws authorization around the cause rather than its computable effects, which is why the copies `make skills-sync` rewrites follow the authorized skill edit. This
   Spec adds ADR-0116 and ADR-0117. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the checker itself lives in
   `internal/speccheck` and `internal/cli`, which are ordinary source, but wiring
@@ -66,7 +65,7 @@ missing. Its rules and its timing are.
   cheaper, and none is dropped. Bounded files:
   `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-techspec/SKILL.md`,
   `.agents/skills/qa-gate/SKILL.md`, and their generated copies under `skills/`,
-  which `make skills-sync` rewrites as sanctioned fallout under ADR-0081. The
+  which `make skills-sync` rewrites; ADR-0081 draws authorization around the cause rather than its computable effects, so they follow the authorized skill edit. The
   `write-tasks` wiring shipped ahead of this Spec under its own narrow grant.
   Source: `docs/agents/agent-instructions.md`.
 

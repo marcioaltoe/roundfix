@@ -55,9 +55,10 @@ about a session they did not create.
 - Authentication and HTTP: not applicable — proof runs through `acpx` over ACP
   on a local adapter process and reaches no HTTP surface of this repository's.
   Source: `docs/agents/cli.md`.
-- Active ADR obligations: applicable — ADR-0050 keeps Fallback Chains inactive
-  until Run creation, so preflight must prove every configured tuple and
-  substitute none; a proof that cannot refuse defeats that directly. ADR-0069
+- Active ADR obligations: applicable — ADR-0050 has a configured fallback activate
+  only after its notification, so every tuple a Run may reach is proven before
+  the Run rather than substituted during it; a proof that cannot refuse defeats
+  that directly. ADR-0069
   keeps Baseline semantic analysis read-only and supervised; it cites ADR-0050
   but does not apply here, because this Spec changes Agent Selection proof and
   touches no Baseline analysis path. ADR-0114 also cites ADR-0050 and does not
