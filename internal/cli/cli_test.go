@@ -13360,7 +13360,13 @@ type fakeVerifier struct {
 	commands     []string
 }
 
-func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest) (daemon.VerifyResult, error) {
+func (verifier *fakeVerifier) Verify(ctx context.Context, req daemon.VerifyRequest) (daemon.VerifyResult, error) {
+	if isImplementFixtureVerificationCommand(req.Command) {
+		result, err := (daemon.ExecVerifier{}).Verify(ctx, req)
+		if err != nil {
+			return result, err
+		}
+	}
 	verifier.calls++
 	verifier.commands = append(verifier.commands, req.Command)
 	if req.OutputPath != "" {

@@ -62,8 +62,8 @@ func TestMain(m *testing.M) {
 }
 
 // implementSeed describes one task file for a test Spec directory. Zero
-// values default to status pending, type backend, and one passing
-// Verification command.
+// values default to status pending, type backend, and one Verification command
+// that fails until the scripted Agent records its work.
 type implementSeed struct {
 	id           string
 	title        string
@@ -215,7 +215,13 @@ case " $* " in
     exit 0
     ;;
   *" prompt "*)
-    cat >/dev/null
+    prompt=$(cat)
+    task_id=$(printf '%%s\n' "$prompt" | sed -n 's/^Task: //p' | head -n 1)
+    if [ -n "$task_id" ]; then
+      marker=$(git rev-parse --git-path "%s$task_id.done")
+      mkdir -p "$(dirname "$marker")"
+      printf 'scripted Agent work\n' > "$marker"
+    fi
     if [ -n "$ROUNDFIX_FAKE_ACPX_PROMPT_STARTED" ]; then
       : > "$ROUNDFIX_FAKE_ACPX_PROMPT_STARTED"
     fi
@@ -229,7 +235,7 @@ case " $* " in
     ;;
 esac
 exit 0
-`, agent.MinimumACPXVersion)
+`, agent.MinimumACPXVersion, implementFixtureAgentMarkerPrefix)
 	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
 		t.Fatalf("write fake acpx: %v", err)
 	}
@@ -616,7 +622,7 @@ func implementTaskContent(slug string, seed implementSeed) string {
 	}
 	verification := seed.verification
 	if len(verification) == 0 {
-		verification = []string{"true"}
+		verification = []string{implementFixtureVerificationCommand(seed.id)}
 	}
 	var body strings.Builder
 	body.WriteString(fmt.Sprintf("---\ntask: %s\nspec: %s\nstatus: %s\ntype: %s\n---\n\n# %s\n\n## Verification\n\n", seed.id, slug, status, taskType, title))
@@ -624,6 +630,48 @@ func implementTaskContent(slug string, seed implementSeed) string {
 		body.WriteString(fmt.Sprintf("- `%s` — expected: passes.\n", command))
 	}
 	return body.String()
+}
+
+const implementFixtureAgentMarkerPrefix = "roundfix-test-agent-"
+
+func implementFixtureAgentMarkerName(taskID string) string {
+	return implementFixtureAgentMarkerPrefix + taskID + ".done"
+}
+
+func implementFixtureVerificationCommand(taskID string) string {
+	return fmt.Sprintf(
+		"test -f \"$(git rev-parse --git-path %s)\"",
+		shellQuoteImplement(implementFixtureAgentMarkerName(taskID)),
+	)
+}
+
+func isImplementFixtureVerificationCommand(command string) bool {
+	return strings.Contains(command, implementFixtureAgentMarkerPrefix)
+}
+
+func recordImplementFixtureAgentWork(gitRoot string, taskID string) error {
+	cmdArgs := append(gitConfigArgsForTest(), "rev-parse", "--git-path", implementFixtureAgentMarkerName(taskID))
+	cmd := exec.Command("git", cmdArgs...)
+	cmd.Dir = gitRoot
+	cmd.Env = isolatedGitEnvForTest()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("resolve fixture Agent marker for %s: %w: %s", taskID, err, strings.TrimSpace(string(output)))
+	}
+	markerPath := strings.TrimSpace(string(output))
+	if markerPath == "" {
+		return fmt.Errorf("resolve fixture Agent marker for %s: empty path", taskID)
+	}
+	if !filepath.IsAbs(markerPath) {
+		markerPath = filepath.Join(gitRoot, markerPath)
+	}
+	if err := os.MkdirAll(filepath.Dir(markerPath), 0o755); err != nil {
+		return fmt.Errorf("create fixture Agent marker directory for %s: %w", taskID, err)
+	}
+	if err := os.WriteFile(markerPath, []byte("scripted Agent work\n"), 0o644); err != nil {
+		return fmt.Errorf("record fixture Agent work for %s: %w", taskID, err)
+	}
+	return nil
 }
 
 func implementTaskPath(repoDir string, taskID string) string {
@@ -727,8 +775,14 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 			return agent.ExecuteResult{}, err
 		}
 	}
-	if status, ok := statusByTask[taskID]; ok {
+	status, hasScriptedStatus := statusByTask[taskID]
+	if hasScriptedStatus {
 		if err := spec.SetStatus(implementTaskPathFromPrompt(req.Prompt, executionRoot, taskID), status); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
+	if onTask != nil || hasScriptedStatus {
+		if err := recordImplementFixtureAgentWork(executionRoot, taskID); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
@@ -1263,7 +1317,8 @@ func shellQuoteImplement(value string) string {
 
 func blockingVerificationCommand(taskID string, logPath string, startedPath string, releasePath string) string {
 	return fmt.Sprintf(
-		"printf 'start %s\\n' >> %s; printf 'started\\n' > %s; IFS= read -r _ < %s; printf 'end %s\\n' >> %s",
+		"%s || exit 1; printf 'start %s\\n' >> %s; printf 'started\\n' > %s; IFS= read -r _ < %s; printf 'end %s\\n' >> %s",
+		implementFixtureVerificationCommand(taskID),
 		taskID,
 		shellQuoteImplement(logPath),
 		shellQuoteImplement(startedPath),
@@ -1996,8 +2051,8 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 	t.Parallel()
 	withImplementOwnerIdentity(t, "test-owner-identity")
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
-		{id: "task_01", title: "Write the widget guide", taskType: "docs", verification: []string{"echo docs-check"}},
-		{id: "task_02", title: "Build the widget backend", needs: []string{"task_01"}, verification: []string{"echo backend-check"}},
+		{id: "task_01", title: "Write the widget guide", taskType: "docs"},
+		{id: "task_02", title: "Build the widget backend", needs: []string{"task_01"}},
 	})
 	runner := &implementFakeRunner{
 		gitRoot: repoDir,
@@ -2062,11 +2117,41 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 }
 
+func TestRunImplementAgentThatDoesNoWorkStillFailsVerification(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:    "task_01",
+		title: "Build the widget core",
+	}})
+	runner := &implementFakeRunner{gitRoot: repoDir}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected no-work Agent exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, stderr.String(), stdout.String())
+	}
+	if runner.calls != 2 {
+		t.Fatalf("expected initial and Verification Feedback Agent turns, got %d", runner.calls)
+	}
+	if !strings.Contains(stdout.String(), "task_01 failed — Build the widget core\n") ||
+		!strings.Contains(stdout.String(), "Verification failed: command") ||
+		!strings.Contains(stdout.String(), implementFixtureAgentMarkerName("task_01")) {
+		t.Fatalf("expected no-work Verification failure for marker %q, got stdout=%q", implementFixtureAgentMarkerName("task_01"), stdout.String())
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.State != store.StateUnresolved {
+		t.Fatalf("expected no-work Run state %q, got %q", store.StateUnresolved, run.State)
+	}
+}
+
 func TestRunImplementHasNoSpecCheckPrecondition(t *testing.T) {
 	t.Parallel()
 	withImplementOwnerIdentity(t, "test-owner-identity")
 	_, repoDir := newImplementWorkspace(t, []implementSeed{
-		{id: "task_01", title: "Build the widget backend", verification: []string{"echo backend-check"}},
+		{id: "task_01", title: "Build the widget backend"},
 	})
 	checkResult, err := speccheck.Check(filepath.Join(repoDir, "docs", "specs"), repoDir, implementTestSlug)
 	if err != nil {
@@ -2106,7 +2191,7 @@ func TestRunImplementWarnsOnceAndMarksFailedOwnerIdentityCapture(t *testing.T) {
 	t.Parallel()
 	withImplementOwnerIdentity(t, "")
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
-		{id: "task_01", title: "Build the widget backend", verification: []string{"echo backend-check"}},
+		{id: "task_01", title: "Build the widget backend"},
 	})
 	runner := &implementFakeRunner{
 		gitRoot: repoDir,
@@ -2358,7 +2443,8 @@ func TestRunImplementTemporaryVerificationFlowRetriesOnceWithoutAgentRepair(t *t
 	t.Parallel()
 	markerPath := filepath.Join(t.TempDir(), "temporary-seen")
 	command := fmt.Sprintf(
-		"if test -f %s; then printf 'exclusive retry passed\\n'; exit 0; fi; printf 'initial temporary failure\\n'; : > %s; exit 75",
+		"%s || exit 1; if test -f %s; then printf 'exclusive retry passed\\n'; exit 0; fi; printf 'initial temporary failure\\n'; : > %s; exit 75",
+		implementFixtureVerificationCommand("task_01"),
 		shellQuoteImplement(markerPath),
 		shellQuoteImplement(markerPath),
 	)
@@ -2447,14 +2533,15 @@ func TestRunImplementTemporaryVerificationFlowRepeatedTemporaryPreservesTaskWork
 	t.Parallel()
 	counterPath := filepath.Join(t.TempDir(), "temporary-count")
 	command := fmt.Sprintf(
-		"count=0; if test -f %s; then count=$(cat %s); fi; count=$((count + 1)); printf '%%s' \"$count\" > %s; printf 'temporary failure %%s\\n' \"$count\"; exit 75",
+		"%s || exit 1; count=0; if test -f %s; then count=$(cat %s); fi; count=$((count + 1)); printf '%%s' \"$count\" > %s; printf 'temporary failure %%s\\n' \"$count\"; exit 75",
+		implementFixtureVerificationCommand("task_01"),
 		shellQuoteImplement(counterPath),
 		shellQuoteImplement(counterPath),
 		shellQuoteImplement(counterPath),
 	)
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Exhaust one temporary gate", verification: []string{command}},
-		{id: "task_02", title: "Complete an independent Task", verification: []string{"printf 'independent pass\\n'"}},
+		{id: "task_02", title: "Complete an independent Task"},
 	})
 	configureImplementCapacities(t, repoDir, 2, 1)
 	runner := &implementFakeRunner{
@@ -2817,9 +2904,8 @@ func TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork(t *testing.T) {
 func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
-		id:           "task_01",
-		title:        "Build the widget core",
-		verification: []string{"test -f bootstrap.ready"},
+		id:    "task_01",
+		title: "Build the widget core",
 	}})
 	command := "pwd > bootstrap.cwd && printf ready > bootstrap.ready"
 	mustWrite(t, filepath.Join(repoDir, ".gitignore"), "bootstrap.cwd\nbootstrap.ready\n")
@@ -2863,8 +2949,8 @@ func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
 func TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
-		{id: "task_01", title: "Build the first slice", verification: []string{"test -f bootstrap.ready"}},
-		{id: "task_02", title: "Build the second slice", verification: []string{"test -f bootstrap.ready"}},
+		{id: "task_01", title: "Build the first slice"},
+		{id: "task_02", title: "Build the second slice"},
 	})
 	command := "pwd > bootstrap.cwd && printf ready > bootstrap.ready"
 	mustWrite(t, filepath.Join(repoDir, ".gitignore"), "bootstrap.cwd\nbootstrap.ready\n")
@@ -3246,8 +3332,9 @@ func TestRunImplementReportPrintsVerificationFailureReason(t *testing.T) {
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
 	}
 	_, verifier, _, _ := withImplementCollaborators(t, runner)
-	// Pass the repository-green entry precondition, then fail the post-Agent
-	// Verification this regression exists to cover.
+	// Pass the repository-green entry precondition, then fail both the pre-work
+	// probe and post-Agent Verification. The non-zero probe clears this fixture;
+	// the post-Agent failure is the regression signal.
 	verifier.passingCalls = 1
 	verifier.err = errors.New("exit status 7")
 	var stdout bytes.Buffer
@@ -3293,7 +3380,9 @@ func TestRunImplementReportPrintsModelNotAdvertisedReason(t *testing.T) {
 			},
 		},
 	}
-	withImplementCollaborators(t, runner)
+	_, verifier, _, _ := withImplementCollaborators(t, runner)
+	verifier.passingCalls = 1
+	verifier.err = errors.New("exit status 2")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -5530,6 +5619,7 @@ func newMacroFakeACPX(t *testing.T) macroFakeACPX {
 	binDir := t.TempDir()
 	logPath := filepath.Join(t.TempDir(), "acpx.jsonl")
 	script := strings.ReplaceAll(macroFakeACPXScript, "__PINNED_ACPX_VERSION__", agent.MinimumACPXVersion)
+	script = strings.ReplaceAll(script, "__AGENT_MARKER_PREFIX__", implementFixtureAgentMarkerPrefix)
 	acpxPath := filepath.Join(binDir, "acpx")
 	if err := os.WriteFile(acpxPath, []byte(script), 0o755); err != nil {
 		t.Fatalf("write fake acpx: %v", err)
@@ -5598,6 +5688,7 @@ import json
 import os
 import re
 import sqlite3
+import subprocess
 import sys
 
 PINNED = "__PINNED_ACPX_VERSION__"
@@ -5700,6 +5791,18 @@ def set_status(path, status):
         lines.insert(end, "status: " + status + "\n")
     with open(path, "w", encoding="utf-8") as handle:
         handle.writelines(lines)
+
+def write_agent_marker(cwd, task_path):
+    task_id = os.path.splitext(os.path.basename(task_path))[0]
+    marker = subprocess.check_output(
+        ["git", "rev-parse", "--git-path", "__AGENT_MARKER_PREFIX__" + task_id + ".done"],
+        cwd=cwd,
+        text=True,
+    ).strip()
+    marker = resolve_path(cwd, marker)
+    os.makedirs(os.path.dirname(marker), exist_ok=True)
+    with open(marker, "w", encoding="utf-8") as handle:
+        handle.write("scripted Agent work\n")
 
 def write_qa_report(spec_dir):
     report = os.path.join(spec_dir, "qa", "qa-report-2026-01-01.md")
@@ -5805,6 +5908,7 @@ if event["command"] == "prompt":
     if event["prompt_kind"] == "task":
         task_path = resolve_path(event["cwd"], prompt_field(stdin_data, "Task file"))
         set_status(task_path, "completed")
+        write_agent_marker(event["cwd"], task_path)
     elif event["prompt_kind"] == "qa":
         spec_dir = resolve_path(event["cwd"], prompt_field(stdin_data, "Spec directory"))
         write_qa_report(spec_dir)

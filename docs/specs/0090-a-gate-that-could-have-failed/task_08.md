@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0090-a-gate-that-could-have-failed
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -98,3 +98,89 @@ reason on its first dispatch, at a cost of zero Agent turns.
 - `_techspec.md` → Build Order 3; Risks.
 - `qa/qa-report-2026-08-09.md` → F-002.
 - ADR-0109.
+
+## Result
+
+### Implementation
+
+- `internal/cli/implement_test.go` now gives the shared Task fixture a
+  per-Task Verification marker under Git metadata. The command exits non-zero
+  on the unchanged Task Worktree and the scripted fake Agent records the marker
+  only after its Task work returns successfully. The detached fake ACP runtime
+  records the same marker from the `Task:` identity in its prompt.
+- Inline CLI fixtures that previously used `echo`, an already-created bootstrap
+  file, or an unconditional `printf` now use the same Agent-work gate. Blocking
+  and temporary-failure commands first require that gate, so the pre-work probe
+  cannot block or mutate their later post-Agent scenario.
+- `internal/cli/cli_test.go` delegates the shared marker command to the real
+  `daemon.ExecVerifier`. Scripted verifier failures still apply after the marker
+  exists, preserving the existing journey, exit-code, and Run-outcome
+  assertions.
+- Added the negative companion
+  `TestRunImplementAgentThatDoesNoWorkStillFailsVerification`: an Agent with no
+  scripted work receives its Verification Feedback turn, fails the marker gate
+  again, and leaves the Run Unresolved.
+- `internal/daemon/task_engine_test.go`, `internal/daemon/daemon_test.go`, and
+  `internal/cli/settle_test.go` were not changed. The daemon fixtures already
+  model the deliberate Vacuous Verification refusal correctly; Settle fixtures
+  verify preserved work from an earlier Agent turn rather than a pre-Agent
+  Implement journey.
+
+### Focused checks
+
+- Red baseline:
+  `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestRunImplementExecutesSpecEndToEnd$' -count=1 -v`
+  exited 1 before the edit because `echo docs-check` was reported as a vacuous
+  pre-work Verification and `task_02` was skipped.
+- Ordinary and inline journeys:
+  `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/cli -run 'Implement' -count=1`
+  exited 0 after the final edit (`ok roundfix/internal/cli 7.239s`). This focused
+  sweep covers the central Task builder, detached child, bootstrap, temporary
+  retry, failure-report, worktree, QA, and Run-outcome Implement cases.
+- No-work negative companion:
+  `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestRunImplementAgentThatDoesNoWorkStillFailsVerification$' -count=1 -v`
+  exited 0; the test observed two no-op Agent turns and an Unresolved Run after
+  the marker Verification failed twice.
+- Refused-Task regression:
+  `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^(TestPreWorkProbeRefusesATaskWhoseGateAlreadyPasses|TestPreWorkProbePublishesEveryOffendingCommand|TestPreWorkProbeSpendsNoAgentTurnOnARefusedTask)$' -count=1`
+  exited 0 (`ok roundfix/internal/daemon 0.252s`). The deliberately vacuous gate
+  still names every offending command and spends no Agent turn.
+- Vacuous inline-fixture scan:
+  `rtk proxy rg -n 'verification = \\[\\]string\\{\"true\"\\}|echo docs-check|echo backend-check|verification: \\[\\]string\\{\"test -f bootstrap\\.ready\"\\}|verification: \\[\\]string\\{\"printf .independent pass' internal/cli/implement_test.go`
+  exited 1 with no matches, the expected absence result.
+- `rtk git -c core.fsmonitor=false diff --check` exited 0.
+
+### Acceptance evidence
+
+- `internal/cli` with the probe active: the focused Implement-named sweep exits
+  0 after the final edit. The complete package command in `## Verification` was
+  not run; the Daemon owns that terminal check.
+- No work-independent fixture gate: the shared command requires the Agent marker;
+  inline unconditional/bootstrap gates are absent, the ordinary journey passes,
+  and the no-work negative companion remains Unresolved.
+- Probe integrity: no production probe code or daemon fixture changed. The test
+  verifier runs the marker command through `daemon.ExecVerifier`; it does not
+  disable or force a pre-work verdict.
+- Refused Task: the three focused daemon regressions pass without any daemon
+  changes, including exact offending-command publication and zero Agent turns.
+
+### Verification feedback attempt 1
+
+- The Daemon diagnostic isolated
+  `TestAgentSelectionProfilesMacro/mixed_profiles_configure_validate_fallback_persist_and_stream`:
+  its separate Python ACP fixture still marked Task frontmatter completed but
+  did not record the new Agent-work marker, so both backend and frontend gates
+  correctly remained non-zero after their Agent turns.
+- `macroFakeACPXScript` now derives the Task identity from the prompted Task file
+  and writes the same Git-metadata marker only after its successful scripted
+  Task work. A rejected Agent prompt exits before this write, preserving the
+  macro fixture's post-start failure assertions.
+- Exact reported regression:
+  `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestAgentSelectionProfilesMacro$/^mixed_profiles_configure_validate_fallback_persist_and_stream$' -count=1 -v`
+  exited 0 (`ok roundfix/internal/cli 6.014s`).
+- Macro success and refusal/failure companions:
+  `rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestAgentSelectionProfilesMacro$' -count=1 -v`
+  exited 0 (`ok roundfix/internal/cli 8.156s`), including the invalid-Task
+  preflight refusal and the post-start Agent failure with no fallback.
+- The declared `## Verification` command was not rerun; the Daemon owns that
+  terminal package check.
