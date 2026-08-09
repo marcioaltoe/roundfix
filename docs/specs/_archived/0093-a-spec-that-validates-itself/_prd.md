@@ -1,6 +1,8 @@
 ---
 spec: 0093-a-spec-that-validates-itself
-status: active
+status: archived
+archived: 2026-08-09
+qa_override: true
 created: 2026-08-09
 surfaces: [backend, cli]
 ---

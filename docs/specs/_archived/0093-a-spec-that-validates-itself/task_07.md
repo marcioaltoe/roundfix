@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0093-a-spec-that-validates-itself
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
@@ -85,3 +85,35 @@ who runs it, and that the checker's own corpus verdict did not move.
 - `_prd.md` → every Goal.
 - `_techspec.md` → Testing Approach; Build Order 7.
 - ADR-0091, ADR-0096, ADR-0104, ADR-0116, ADR-0117.
+
+## Result
+
+Cancelled by the maintainer on 2026-08-09 after four gate executions, none of
+which closed. The instruction was explicit: *"Cancele os gates"*, and before it,
+*"Não faz sentido tanto tempo em gate assim"*. That judgement is supported by
+the measurements this Spec itself produced.
+
+What the four runs cost and returned:
+
+| Run | Tool calls | Compactions | Verdict |
+| --- | ---: | ---: | --- |
+| 1 | 53 | 0 | fail — stopped at the authoring precondition |
+| 2 | 234 | 0 | fail — F-001 unwired detector, F-002 commit statements |
+| 3 | 478 | 0 | fail — F-002 repeated |
+| 4 | — | — | force-stopped |
+
+Every finding those runs produced is fixed and merged: the coined code is in
+`CONTEXT.md`, the citation detector runs in the `prd` and `techspec` scopes
+(Task 08), and the two protected-tooling commits carry their grant statements
+after a message rewrite that left the tree byte-identical.
+
+What stayed unproven is the acceptance this Task authored: an operator seeing
+the finding through the command, the corpus verdict measured unchanged, and a
+scoped run timed against the 0.04 second baseline. None was contradicted; none
+was demonstrated by this gate.
+
+The honest reading is that the gate did not fail to converge on defects — it
+converged on three, and each was real. It failed to converge on *cost*: 765 tool
+calls across three completed executions, against the 0.04 second command this
+Spec exists to promote. That is the argument for the Spec, made by the Spec, at
+its own expense.
