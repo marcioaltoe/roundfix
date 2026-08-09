@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0090-a-gate-that-could-have-failed
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -61,3 +61,55 @@ This Task may create or modify only:
 - `_prd.md` → Goals 1 and 4.
 - `_techspec.md` → Build Order 1; Testing Approach.
 
+## Result
+
+### Implementation
+
+- Added two daemon Task-cycle characterization tests using the existing
+  `taskFakeRunner` and `taskFakeVerifier`; neither test executes a repository
+  command.
+- The vacuous-gate case records the current `agent>verify>commit` path and the
+  Daemon-owned `completed` settlement when the fake Verification already
+  passes without an Agent change.
+- The unobserved-verdict case records the current failed settlement beside a
+  command that returned a real non-zero verdict. It normalizes both terminal
+  reasons and requires the same exact command-failure shape.
+- Each test's documentation comment declares its break: `task_03` changes the
+  vacuous case to refusal before the Agent turn, and `task_02` changes the
+  unobserved case to an explicit unknown cause.
+
+### Focused checks
+
+- Before implementation, `rtk ls
+  internal/daemon/verification_probe_characterization_test.go` exited `1`
+  because the required characterization file did not exist.
+- The first focused Go test attempt stopped before compilation because the
+  sandbox denied the default macOS Go build cache under
+  `/Users/marcio/Library/Caches/go-build`.
+- `GOCACHE=/private/tmp/roundfix-task-01-gocache rtk go test
+  ./internal/daemon -run
+  '^TestVerificationProbeCharacterization(VacuousGateSettlesCompleted|UnobservedVerdictSettlesFailed)$'
+  -count=1` passed both selected tests.
+
+### Acceptance evidence
+
+- Vacuous gate: the focused test asserts one completed Task, the persisted
+  `completed` status, the fake command ledger, and the
+  `agent>verify>commit` sequence.
+- Unobserved verdict: the focused test asserts that both the unobserved runner
+  error and a real non-zero verdict settle `failed`, produce no commit, and
+  normalize to
+  `Verification failed: command "<command>" exited with <cause>; diagnostics: <diagnostics>`.
+- Declared breaks: source inspection finds one `Declared break` comment naming
+  `task_03` and its pre-Agent refusal, and one naming `task_02` and its explicit
+  unknown cause.
+- Production scope: no production file changed; the only implementation path
+  is the Task-authorized characterization test file.
+
+### Follow-up
+
+- The PRD and TechSpec attribute the authoritative repository gate decision to
+  ADR-0083, but accepted ADR-0083 concerns adopted Spec sources. Correcting
+  those out-of-scope Spec artifacts belongs to a separate documentation slice.
+
+The Daemon-owned `## Verification` commands were not run in this Agent turn.
