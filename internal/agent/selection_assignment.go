@@ -526,6 +526,18 @@ func selectionStateMatches(assignment SelectionAssignment, state SelectionCapabi
 	}
 }
 
+func deferredSelectionStateMatches(assignment SelectionAssignment, state SelectionCapabilities) bool {
+	if state.CurrentModel != assignment.AdapterModel {
+		return false
+	}
+	model, ok := modelByAdapterValue(state.Models, state.CurrentModel)
+	return ok &&
+		modelRepresents(model, assignment.Model) &&
+		state.ReasoningOption != nil &&
+		state.ReasoningOption.ID == assignment.ReasoningKey &&
+		state.ReasoningOption.CurrentValue == assignment.ReasoningValue
+}
+
 // runtimeDefersReasoningEffort reports whether an ACP Runtime can advertise a
 // reasoning effort during Preflight but can apply it only after the Agent
 // Session's first prompt. Every planning path derives that distinction here.

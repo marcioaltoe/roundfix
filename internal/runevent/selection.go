@@ -27,6 +27,67 @@ type SelectionLifecycleRecord struct {
 	NextReasoningEffort string
 }
 
+type SelectionReceiptRecord struct {
+	Event                    string
+	Session                  string
+	Runtime                  string
+	Model                    string
+	RequestedReasoningEffort string
+	ReasoningEffort          string
+	Status                   string
+}
+
+// ProjectSelectionReceipt projects the applied-selection receipt emitted by
+// an Agent Session. Unknown event kinds remain skippable.
+func ProjectSelectionReceipt(event RunEvent) (SelectionReceiptRecord, bool, error) {
+	if event.Source != SourceAgent || event.Kind != KindAgentSelectionReceipt {
+		return SelectionReceiptRecord{}, false, nil
+	}
+	fields, err := selectionPayloadFields(event)
+	if err != nil {
+		return SelectionReceiptRecord{}, true, err
+	}
+	record := SelectionReceiptRecord{}
+	record.Event, err = selectionRequiredString(fields, event, "event")
+	if err != nil {
+		return SelectionReceiptRecord{}, true, err
+	}
+	record.Session, err = selectionRequiredString(fields, event, "session")
+	if err != nil {
+		return SelectionReceiptRecord{}, true, err
+	}
+	record.Runtime, err = selectionRequiredString(fields, event, "runtime")
+	if err != nil {
+		return SelectionReceiptRecord{}, true, err
+	}
+	record.Model, err = selectionRequiredString(fields, event, "model")
+	if err != nil {
+		return SelectionReceiptRecord{}, true, err
+	}
+	record.RequestedReasoningEffort, err = selectionRequiredString(fields, event, "requested_reasoning_effort")
+	if err != nil {
+		return SelectionReceiptRecord{}, true, err
+	}
+	record.ReasoningEffort, err = selectionRequiredString(fields, event, "reasoning_effort")
+	if err != nil {
+		return SelectionReceiptRecord{}, true, err
+	}
+	record.Status, err = selectionRequiredString(fields, event, "status")
+	if err != nil {
+		return SelectionReceiptRecord{}, true, err
+	}
+	return record, true, nil
+}
+
+func SelectionReceiptLine(record SelectionReceiptRecord) string {
+	summary := strings.TrimSpace("Agent Session " + record.Session)
+	parts := []string{summary, "effective", strings.TrimSpace(record.Status)}
+	if selection := selectionLifecycleTuple(record.Runtime, record.Model, record.ReasoningEffort); selection != "" {
+		parts = append(parts, selection)
+	}
+	return BoundSummary("SELECTION " + strings.Join(nonEmptySelectionParts(parts), " "))
+}
+
 func ProjectSelectionLifecycle(event RunEvent) (SelectionLifecycleRecord, bool, error) {
 	if event.Source != SourceDaemon || !isSelectionLifecycleKind(event.Kind) {
 		return SelectionLifecycleRecord{}, false, nil
