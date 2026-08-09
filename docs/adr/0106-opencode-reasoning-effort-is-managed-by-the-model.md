@@ -1,9 +1,9 @@
 ---
-status: accepted
+status: superseded
 created_at: 2026-08-08T00:00:00Z
-updated_at: 2026-08-08T00:00:00Z
+updated_at: 2026-08-09T00:00:00Z
 deprecated_at: null
-superseded_by: null
+superseded_by: ADR-0108
 ---
 
 # OpenCode reasoning effort is managed by the model
