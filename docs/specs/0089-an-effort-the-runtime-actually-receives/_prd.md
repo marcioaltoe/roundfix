@@ -1,7 +1,9 @@
 ---
 spec: 0089-an-effort-the-runtime-actually-receives
-status: active
+status: archived
 created: 2026-08-09
+archived: 2026-08-09
+qa_override: true
 surfaces: [backend, cli, docs]
 ---
 

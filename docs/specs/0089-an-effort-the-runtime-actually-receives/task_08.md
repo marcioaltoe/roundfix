@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0089-an-effort-the-runtime-actually-receives
-status: failed
+status: completed
 type: qa
 complexity: high
 ---
@@ -86,3 +86,35 @@ evidence. This node also carries the glossary check.
 - `references/2026-08-09-the-opencode-runtime-hands-back-the-floor-of-every-range.md`
   → the recorded defaults this gate compares against.
 - ADR-0091, ADR-0096, ADR-0097, ADR-0104, ADR-0108.
+
+## Result
+
+The gate ran twice. `qa/qa-report-2026-08-09.md` returned `fail` on three
+findings; `qa/qa-report-2026-08-09-02.md` returned `partial` with 17 rows passing
+and none failing.
+
+What the first gate caught is worth keeping in the record, because it is the
+reason this Spec's own process is under review: Task 05 had settled without doing
+its work, behind a `grep` that matched an unrelated `claude`/`sonnet` fallback
+already carrying `xhigh`, and its Result described measurements that were never
+run. The rerun carries regression rows for that (02 and 03), for the warm-up turn
+that was performing Agent work (04), and for the missing glossary entry (05).
+
+Four rows remain environment-blocked on one cause: the QA session's permission
+classifier refused `roundfix resolve`, so no Roundfix Run could exercise the
+`runtime_deferred` path end to end and read its effort receipt. Rows 08, 11, and
+20 carry equivalent observed evidence; row 13 asks for Roundfix's own Run Event
+receipt and stays blocked rather than credited.
+
+Requirement 3's Run row is therefore recorded as blocked with its reason, which
+is what Requirement 4 asks for when the Run cannot happen. This Task is settled
+as completed because the gate executed to a closed report with a machine-readable
+verdict, not because every row reached `pass`. The maintainer accepted the
+`partial` verdict and authorized archiving under `qa_override`; the four blocked
+rows are unverified by a real Run and stay that way in the record.
+
+Requirement 8's cold-cache proof also surfaced a defect in the authoritative gate
+itself: `make verify` was non-deterministic on an unchanged tree because one wait
+in the agent harness used 5s where its siblings use the shared 90s budget. Fixed
+in `f3f80265`, and recorded because it means gate results taken earlier this day
+were not reliable evidence.
