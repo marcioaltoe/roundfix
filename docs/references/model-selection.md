@@ -176,11 +176,41 @@ Design Arena Elo, with percentile, is the cleanest read of the gap:
 | SVG | — | 1181 (54%) | — |
 | Asciiart | — | 1189 (51%) | — |
 
-`deepseek-v4-pro` is the configured choice: roughly 25x cheaper on input and 64x
-on output, for Elo percentiles in the 51–90 band against Kimi K3's 98–99. That
+A DeepSeek row is the configured choice: one to two orders of magnitude cheaper
+than Kimi K3, for Elo percentiles in the 51–90 band against its 98–99. That
 trade suits a bounded, high-volume tail — the `review` category and its
 nitpicks — better than it suits implementation work, where the gap is quality a
 Run cannot recover.
+
+**Which DeepSeek row, and why it changed on 2026-08-09.** The configured model is
+`deepseek-v4-flash-0731`, not `deepseek-v4-pro`. Comparing the two on list price
+alone is misleading, because only one of them is at list price:
+
+| | `deepseek-v4-pro` | `deepseek-v4-flash-0731` |
+| --- | ---: | ---: |
+| Effective input $/M | 0.1265 | 0.09 |
+| Effective output $/M | 0.253 | 0.18 |
+| Discount applied | 93% off | none |
+| Base input $/M | 0.4350 | 0.09 |
+| Base output $/M | 0.8700 | 0.18 |
+
+Read from the Secondbrain's `raw/monitoring/model-pricing.md`, fetched
+2026-08-09. Flash is the cheaper row *today* and the only one of the two whose
+price cannot move against a running configuration: Pro's advantage is entirely a
+promotion, and its base price is roughly 4.8x what it currently bills. A
+promotional price is a fine reason to try a model and a poor reason to route a
+profile to it, because the day it ends is not a day anyone here will notice
+before the invoice does.
+
+The quality gap between the two DeepSeek rows is narrow and does not run one
+way: on Design Arena, Pro leads Flash on 3D, Code Categories, and Data
+Visualization, while Flash leads on UI Component, and they tie on Website. On
+effort the two differ in a way that matters more than that spread: Pro
+advertises `high` and `xhigh`, Flash advertises `low`, `high`, and `max`. These
+are vendor labels on different models and do not rank across the two, so the
+usable point is about defaults — Flash opens at `low`, the floor of its own
+range, and so depends on Roundfix actually assigning the effort in a way Pro,
+which opens at `high`, does not.
 
 Two live sources cover what this dated snapshot cannot, both in the Secondbrain:
 `raw/monitoring/model-pricing.md` is refetched daily at 06:30 from the OpenRouter
