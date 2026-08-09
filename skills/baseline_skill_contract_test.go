@@ -877,16 +877,20 @@ func TestArchiveSpecContract(t *testing.T) {
 
 func TestProjectConstraintQAGate(t *testing.T) {
 	t.Parallel()
+	// The gate keeps what a commit is needed to answer and delegates the rest.
+	// Clauses that moved are asserted where their rule now lives: the authoring
+	// obligations in TestProjectConstraintPRDGate and its TechSpec sibling, the
+	// mechanical rules in internal/speccheck. Nothing was dropped; each is
+	// required somewhere, and the delegation itself is required here so it
+	// cannot be quietly removed.
 	testWorkflowProjectConstraintContract(t, "qa-gate", []string{
-		"Project Constraint audit",
-		"applicability",
-		"source path under `docs/agents/`",
-		"express maintainer authorization",
-		"exact bounded files",
-		"actual changed paths",
+		"roundfix spec check",
+		"Authoring rule removed from the QA matrix",
+		"did not run. It is not an equivalent",
+		"actual paths from the Daemon-owned Task commit",
 		"git diff-tree --no-commit-id --name-only -r",
-		"missing authorization",
-		"out-of-scope tooling changes",
+		"missing, late, or untraceable authorization",
+		"outside the exact bounded list",
 		"Task status or Task Graph dependencies",
 	})
 }
@@ -1011,11 +1015,15 @@ func TestToolingAuthorizationJourney(t *testing.T) {
 		})
 	})
 	t.Run("QA contract", func(t *testing.T) {
+		// The gate audits what a commit is needed to answer. The declaration
+		// half — express authorization and its exact bounded files — moved to
+		// the authoring skills, where `spec check` now decides it before any
+		// Agent turn; it is asserted there, not dropped.
 		testWorkflowProjectConstraintContract(t, "qa-gate", []string{
-			"exact bounded files",
-			"actual changed paths",
-			"missing authorization",
-			"out-of-scope tooling changes",
+			"outside the exact bounded list",
+			"actual paths from the Daemon-owned Task commit",
+			"missing, late, or untraceable authorization",
+			"git diff-tree --no-commit-id --name-only -r",
 		})
 	})
 }
