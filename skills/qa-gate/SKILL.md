@@ -37,35 +37,60 @@ field names the current `type: qa` Task and that this node is terminal and
 depends on every non-QA leaf. A missing or mismatched authored node is a graph
 defect; do not run the gate outside that node.
 
-- Run a Project Constraint audit before crediting Task evidence. A completed or
-  archived legacy Spec is exempt from forced backfill; keep every legacy
-  artifact byte-identical and record the proven exemption. Absence of a
-  Project Constraints section by itself is not proof of legacy status.
-- For every active, non-legacy Spec, verify that the PRD and every present
-  TechSpec each account for identifier strategy, authentication and HTTP,
-  active ADR obligations, and tooling authority. Every row must state its
-  applicability or non-applicability with a reason and cite an operative
-  source path under `docs/agents/`.
-- Identify every Task that creates, edits, renames, moves, or deletes
-  repository-tooling configuration, scripts, ignore files, plugin
-  declarations, or version pins. Require express maintainer authorization and
-  exact bounded files in both active Spec artifacts; Task assignment, setup
-  approval, or generic implementation approval does not qualify.
-- Audit every tooling Task and repair in one pass before flow QA. Resolve the
-  actual changed paths from the Daemon-owned Task commit and any current
+- A clean authoring check is a precondition of the gate, not a substitute for
+  it. For every active, non-legacy Spec, run:
+
+  ```bash
+  roundfix spec check <slug> --strict
+  ```
+
+  Stop before building the matrix when the command fails. Record the clean
+  result in the report's scope and environment, but do not create QA matrix
+  rows that repeat the authoring rules in the table below. A completed or
+  archived legacy Spec is exempt from forced constraint backfill; keep every
+  legacy artifact byte-identical and retain any governance row that has no
+  clean authoring result to replace it. Absence of a Project Constraints
+  section by itself is not proof of legacy status.
+
+| Authoring rule removed from the QA matrix | `spec check` equivalent |
+| --- | --- |
+| The authored Task Graph parses, maps PRD promises to Tasks, and resolves declared repository paths. | The Task Graph load required by `SC-COVERAGE-UNTASKED`, plus `SC-COVERAGE-UNTASKED` and `SC-REF-UNRESOLVED` |
+| PRD promises map into the TechSpec. | `SC-COVERAGE-UNMAPPED` |
+| Every required Project Constraint row exists. | `SC-CONSTRAINT-MISSING` |
+| A declared Project Constraint applicability has a reason. | `SC-CONSTRAINT-UNREASONED` |
+| A Project Constraint row cites an operative source. | `SC-CONSTRAINT-SOURCE` |
+| A cited tooling authorization names the Spec. | `SC-TOOLING-UNAUTHORIZED` |
+| Applicable tooling authority declares bounded files. | `SC-TOOLING-UNBOUNDED` |
+| Active ADR obligations are listed, related decisions are accounted for, and attributed claims match the cited record. | `SC-ADR-UNLISTED`, `SC-ADR-RELATED`, and `SC-CITATION-UNSUPPORTED` |
+| Task requirements do not contradict each other, rehearsals are declared, and Verification can distinguish Task work from no work. | `SC-REQUIREMENT-CONTRADICTORY`, `SC-REHEARSAL-UNDECLARED`, and `SC-VERIFY-WORK-INDEPENDENT` |
+| Emitted vocabulary is documented through the TechSpec's Vocabulary Contract. | `SC-VOCABULARY-UNDOCUMENTED` |
+| Repository loop declarations and Finding, Rollup, archive, and promoted Backlog lifecycles agree. | `SC-LOOP-ORDER-DIVERGENT`, `SC-FINDING-LIFECYCLE`, `SC-ROLLUP-MEMBER`, `SC-ARCHIVE-LICENSE`, and `SC-BACKLOG-UNMOVED` |
+
+A named detector in the checker's skipped list did not run. It is not an
+equivalent, so retain the corresponding QA row. Do not extend this mapping by
+analogy: applicability that the checker did not parse, missing tooling
+authorization, outside evidence, Non-Goals, the report contract, current Task
+status, and live control or chronology behavior stay in the gate unless a
+named checker rule decides them.
+
+- Keep the commit-dependent tooling audit as matrix rows. Identify every Task
+  that actually creates, edits, renames, moves, or deletes repository-tooling
+  configuration, scripts, ignore files, plugin declarations, or version pins.
+  Execute each row as commands, not as a judgement over Spec or Result prose:
+  resolve the actual paths from the Daemon-owned Task commit and any current
   worktree delta, then resolve the authorization, prerequisite-fix, and
-  consequent-fix commits in chronological ancestry.
-  Use `git diff-tree --no-commit-id --name-only -r <commit>` for every
-  committed change rather than trusting a reported file list.
-- Report every authorization-shape problem together in the same failed audit
-  row: missing authorization; late or untraceable authorization;
+  consequent-fix commits in chronological ancestry. Use
+  `git diff-tree --no-commit-id --name-only -r <commit>` for every committed
+  change rather than trusting a reported file list.
+- Report every post-commit authorization-shape problem together in the same
+  failed command row: missing, late, or untraceable authorization;
   authorization or a prerequisite fix folded into the Task commit; a
   consequent fix folded into or ordered before the change that caused it; a
   claimed derived pin without reproducible evidence from the sanctioned
-  regeneration command; and all out-of-scope tooling changes. Do not stop at
-  the first problem and defer the rest to another QA rerun.
-- Permit only the exact bounded paths and the assigned Task file. Any audit
-  problem blocks flow QA after the complete audit has been reported.
+  regeneration command; and every path outside the exact bounded list plus the
+  assigned Task file. Do not stop at the first problem and defer the rest to
+  another QA rerun. Any problem blocks flow QA after the complete command audit
+  has been reported.
 - QA writes only its report and evidence. It never changes Task status or Task
   Graph dependencies.
 - Require every dependency of the authored `qa` Task to be `completed`. If any
