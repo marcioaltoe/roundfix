@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0089-an-effort-the-runtime-actually-receives
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -32,18 +32,18 @@ skill update with it. Authorized tooling work with exact bounded files.
 
 ## Subtasks
 
-- [ ] Replace the refusal paragraph with the new contract.
-- [ ] Name the encoding and the split proof.
+- [x] Replace the refusal paragraph with the new contract.
+- [x] Name the encoding and the split proof.
 - [ ] Run the sanctioned synchronization command.
 - [ ] Confirm the repository skill check passes.
 
 ## Acceptance Criteria
 
-- [ ] The canonical skill no longer claims a non-empty OpenCode effort is refused.
-- [ ] The canonical skill names `runtime_deferred` and the session warm-up.
+- [x] The canonical skill no longer claims a non-empty OpenCode effort is refused.
+- [x] The canonical skill names `runtime_deferred` and the session warm-up.
 - [ ] The embedded copy matches the canonical skill.
-- [ ] No section outside the OpenCode reasoning guidance differs.
-- [ ] No other skill in the repository differs.
+- [x] No section outside the OpenCode reasoning guidance differs.
+- [x] No other skill in the repository differs.
 
 ## Context
 
@@ -75,3 +75,43 @@ fallout under ADR-0081, not separate targets.
 - `_prd.md` → Project Constraints: Tooling authority.
 - `_techspec.md` → Implementation Design: API Contracts; Build Order 6.
 - ADR-0081, ADR-0108.
+
+## Result
+
+Implementation:
+
+- Replaced only the canonical Roundfix skill's OpenCode reasoning paragraph.
+  The new contract accepts a non-empty effort, names the `runtime_deferred`
+  encoding, keeps Preflight token-free, and states that the Run warms the Agent
+  Session, applies the effort, and observes it before any work turn.
+
+Focused checks:
+
+- `rtk git diff -- .agents/skills/roundfix/SKILL.md` — exit 0; one diff hunk,
+  confined to the OpenCode reasoning paragraph.
+- `rtk rg -n "runtime_deferred|warm-up|token-free Preflight|Run therefore proves" .agents/skills/roundfix/SKILL.md`
+  — exit 0; the canonical paragraph contains the encoding, warm-up, and split
+  proof.
+- `rtk rg -ni "must be empty|any other value is refused|cannot bypass it" .agents/skills/roundfix/SKILL.md`
+  — exit 1 with no matches, the expected absence signal for the removed
+  refusal.
+- `rtk git diff --name-only -- .agents/skills` — exit 0; only
+  `.agents/skills/roundfix/SKILL.md` differs under the canonical skill root.
+- `rtk git -c core.fsmonitor=false status --short --untracked-files=all` — exit
+  0; only the canonical Roundfix skill and this assigned Task file are changed.
+
+Acceptance evidence:
+
+- Canonical refusal removed: the focused absence search returned no match.
+- Encoding and warm-up named: the focused content search found
+  `runtime_deferred`, token-free Preflight, the session warm-up, and the Run's
+  applied-effort proof.
+- Embedded-copy equality: pending the Daemon-owned `make skills-sync`; the
+  Agent did not run this declared Verification command or hand-edit `skills/`.
+- Outside-section preservation: the canonical skill diff contains exactly one
+  hunk at the existing OpenCode reasoning paragraph.
+- Other-skill preservation: the canonical skill-root diff names only the
+  Roundfix skill.
+
+Daemon-owned Verification was not run during this Agent turn, including the
+declared synchronization and repository skill check.
