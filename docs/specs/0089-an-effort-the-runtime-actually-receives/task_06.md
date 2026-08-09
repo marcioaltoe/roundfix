@@ -65,10 +65,10 @@ fallout under ADR-0081, not separate targets.
 ## Verification
 
 - `grep -q 'runtime_deferred' .agents/skills/roundfix/SKILL.md` — expected: exits 0.
-- `grep -i 'must be empty' .agents/skills/roundfix/SKILL.md` — expected: exits non-zero with no output, proving the refusal text is gone.
+- `! grep -iq 'must be empty' .agents/skills/roundfix/SKILL.md` — expected: exits 0, proving the refusal text is gone.
 - `make skills-sync` — expected: exits 0.
 - `go run -buildvcs=false ./cmd/roundfix skills check` — expected: exits 0.
-- `git diff --name-only -- .agents/skills | grep -v '^\.agents/skills/roundfix/SKILL\.md$'` — expected: prints nothing, proving no other skill moved.
+- `test -z "$(git diff --name-only -- .agents/skills | grep -v '^\.agents/skills/roundfix/SKILL\.md$')"` — expected: exits 0, proving no other skill moved.
 
 ## References
 

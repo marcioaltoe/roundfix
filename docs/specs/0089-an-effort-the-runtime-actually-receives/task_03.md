@@ -68,7 +68,7 @@ This Task may create or modify only:
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `go test ./internal/config ./internal/agent -count=1` — expected: exits 0.
 - `go test ./internal/config -run 'OpenCodeEffortAccepted' -count=1 -v` — expected: exits 0 and names at least one test; `no tests to run` fails this Task.
-- `grep -rn 'must be empty for runtime' internal/config` — expected: exits non-zero with no output, proving the refusal text is gone rather than reworded.
+- `! grep -rq 'must be empty for runtime' internal/config` — expected: exits 0, proving the refusal text is gone rather than reworded. The leading `!` is required: a Verification command passes only by exiting 0.
 - `go test ./internal/spec -run '^TestCoverageEquivalence$' -count=1` — expected: exits 0.
 
 ## References

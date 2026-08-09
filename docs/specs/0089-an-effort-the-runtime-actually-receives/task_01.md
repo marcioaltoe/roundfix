@@ -70,7 +70,7 @@ This Task may create or modify only:
 - `go build -buildvcs=false ./...` — expected: exits 0.
 - `go test ./internal/agent ./internal/config -run 'EffortCharacterization' -count=1 -v` — expected: exits 0 and names at least one test in each package; `no tests to run` fails this Task.
 - `go test ./internal/agent ./internal/config -run 'EffortCharacterizationToday' -count=1 -v` — expected: exits 0 and names the break-half tests, proving Requirement 3 is pinned rather than described.
-- `git diff --name-only -- internal | grep -v '_characterization_test\.go$'` — expected: prints nothing, proving no existing source or test file moved.
+- `test -z "$(git diff --name-only -- internal | grep -v '_characterization_test\.go$')"` — expected: exits 0, proving no existing source or test file moved. `test -z` is what makes an empty result a pass; a bare `grep -v` exits 1 when it matches nothing, which the Daemon reads as failure.
 
 ## References
 

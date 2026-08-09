@@ -61,9 +61,9 @@ Any other path is out of scope; stop and fail the Task rather than widen it.
 ## Verification
 
 - `grep -q 'reasoning_effort: xhigh' .roundfixrc.yml` — expected: exits 0.
-- `grep -A 2 'runtime: opencode' .roundfixrc.yml | grep 'reasoning_effort: ""'` — expected: exits non-zero with no output, proving no OpenCode selection kept the empty effort.
+- `! grep -A 2 'runtime: opencode' .roundfixrc.yml | grep -q 'reasoning_effort: ""'` — expected: exits 0, proving no OpenCode selection kept the empty effort.
 - `go run -buildvcs=false ./cmd/roundfix profiles validate` — expected: exits 0, proving every configured tuple including the deferred-effort one passes Exact Agent Selection Proof.
-- `git diff -- .roundfixrc.yml | grep '^[-+]' | grep -v '^[-+][-+]' | grep -vE '^[+-] *(#|$)' | grep -vE '^[+-] *-? *(preferred|fallbacks|runtime|model|reasoning_effort|general|backend|frontend|data|infra|docs|test|chore|qa|review):' | grep -v '^[+-]profiles:'` — expected: prints nothing, proving no key outside the profiles section moved.
+- `test -z "$(git diff -- .roundfixrc.yml | grep '^[-+]' | grep -v '^[-+][-+]' | grep -vE '^[+-] *(#|$)' | grep -vE '^[+-] *-? *(preferred|fallbacks|runtime|model|reasoning_effort|general|backend|frontend|data|infra|docs|test|chore|qa|review):' | grep -v '^[+-]profiles:')"` — expected: exits 0, proving no key outside the profiles section moved.
 
 ## References
 

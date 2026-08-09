@@ -55,8 +55,8 @@ This Task may create or modify only:
 
 - `grep -q 'ADR-0108' docs/references/model-selection.md` — expected: exits 0.
 - `grep -q '2026-08-09' docs/references/model-selection.md` — expected: exits 0.
-- `grep -i 'model-managed reasoning runtime' docs/references/model-selection.md` — expected: exits non-zero with no output, proving the superseded claim is gone.
-- `grep 'docs/specs/' docs/references/model-selection.md` — expected: exits non-zero with no output.
+- `! grep -iq 'model-managed reasoning runtime' docs/references/model-selection.md` — expected: exits 0, proving the superseded claim is gone.
+- `! grep -q 'docs/specs/' docs/references/model-selection.md` — expected: exits 0, proving durable knowledge does not depend on a Spec.
 - `go run -buildvcs=false ./cmd/roundfix spec check 0089-an-effort-the-runtime-actually-receives` — expected: exits 0.
 
 ## References
