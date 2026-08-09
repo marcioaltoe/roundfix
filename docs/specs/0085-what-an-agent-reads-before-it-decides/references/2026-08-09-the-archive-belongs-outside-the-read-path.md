@@ -1,8 +1,8 @@
 ---
 type: refactor # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: promoted # open | promoted | declined
 created: 2026-08-09
-spec: null # Spec slug when status: promoted
+spec: 0085-what-an-agent-reads-before-it-decides # Spec slug when status: promoted
 reason: null # required when status: declined
 ---
 
