@@ -67,7 +67,11 @@ text, never on a demonstration that it can fail.
   proves machine facts before it spends an Agent turn; this Spec is that same
   principle applied one level down, to a Task's own Verification, and must not
   contradict it. ADR-0104 requires an acceptance row resting on evidence this
-  Spec did not author. Source: `docs/agents/domain.md`.
+  Spec did not author. This Spec adds ADR-0109, which runs a Task's gate against
+  the unchanged tree before the Agent; ADR-0110, which keeps a negative control
+  authored and recorded rather than synthesised; and ADR-0111, which makes an
+  unobserved Verification `unknown` rather than a verdict.
+  Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — the mechanism proposed here lives in the
   Daemon's own command runner and Task dispatch, which are ordinary source
   rather than protected tooling. Should the design require a `Makefile`, CI
