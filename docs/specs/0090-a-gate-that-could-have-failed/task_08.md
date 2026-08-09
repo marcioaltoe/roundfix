@@ -78,7 +78,13 @@ Any other path is out of scope; stop and fail the Task rather than widen it.
 ## Verification
 
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli -count=1 2>&1 | tee /dev/stderr | grep -qE '^ok[[:space:]]+roundfix/internal/cli'` — expected: exits 0, proving the package passes with the probe active.
-- `test -z "$(grep -rnE '"## Verification\\n\\n- \`true\`|Verification: *"true"' internal/cli/*_test.go)"` — expected: exits 0, proving no fixture still declares a gate that cannot fail.
+
+One command, deliberately. It fails today — the package does not pass with the
+probe active — and passes only once every fixture declares a gate that can fail,
+which is this Task's whole effect. A second command checking for the literal
+`true` was tried twice and dropped: it needs backticks, and the Verification
+contract extracts commands from a backticked span, so the pattern cannot survive
+the round trip. A fragile check beside a sufficient one buys nothing.
 
 The probe's own regression is asserted under Acceptance Criteria and Rehearsal
 Cases rather than here. It is an invariant that holds before and after this
