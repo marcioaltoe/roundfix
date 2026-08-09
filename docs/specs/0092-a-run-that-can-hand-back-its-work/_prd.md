@@ -65,7 +65,7 @@ branches had diverged behind the work that superseded them.
   row is a command run, not Agent work. ADR-0104 requires an acceptance row on
   evidence this Spec did not author. This Spec adds ADR-0113, ADR-0114 and
   ADR-0115.
-  Source: `docs/agents/domain.md`.
+  ADR-0117 places a check with the stage that can produce its defect; it does not change what this Spec delivers, and it moves where this Spec's gate rows run only once Spec 0093 ships. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — the change lives in `internal/daemon`,
   `internal/agent`, `internal/rounds` and `internal/spec`, all ordinary source.
   Source: `docs/agents/agent-instructions.md`.

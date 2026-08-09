@@ -69,7 +69,7 @@ about a session they did not create.
   follows it: the live refusals are cheap command runs, not Agent work.
   ADR-0104 requires an
   acceptance row on evidence this Spec did not author. This Spec adds ADR-0112.
-  Source: `docs/agents/domain.md`.
+  ADR-0117 places a check with the stage that can produce its defect; it does not change what this Spec delivers, and it moves where this Spec's gate rows run only once Spec 0093 ships. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — the change lives in `internal/agent`,
   which is ordinary source. No `Makefile`, CI workflow, skill contract, ignore
   file or version pin is touched. Source: `docs/agents/agent-instructions.md`.

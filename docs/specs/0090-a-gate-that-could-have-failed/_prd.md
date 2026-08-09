@@ -71,7 +71,7 @@ text, never on a demonstration that it can fail.
   the unchanged tree before the Agent; ADR-0110, which keeps a negative control
   authored and recorded rather than synthesised; and ADR-0111, which makes an
   unobserved Verification `unknown` rather than a verdict.
-  Source: `docs/agents/domain.md`.
+  ADR-0116 has a citation read against what it cites, which is the check this Spec's own F-001 called for. ADR-0117 places a check with the stage that can produce its defect; it does not change what this Spec delivers, and it moves where this Spec's gate rows run only once Spec 0093 ships. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — the mechanism proposed here lives in the
   Daemon's own command runner and Task dispatch, which are ordinary source
   rather than protected tooling. Should the design require a `Makefile`, CI
