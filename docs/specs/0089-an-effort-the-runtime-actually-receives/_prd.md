@@ -38,7 +38,9 @@ component real on a runtime where it was inert.
   own. Source: `docs/agents/cli.md`.
 - Active ADR obligations: applicable — ADR-0108 is the decision this Spec
   implements and supersedes ADR-0106, which must be left superseded rather than
-  edited away; ADR-0105 keeps capability retention bounded by relevance and is
+  edited away; ADR-0081 makes the copies and digests rewritten by `make skills-sync`
+  sanctioned fallout of the authorized skill edit rather than separate targets;
+  ADR-0105 keeps capability retention bounded by relevance and is
   unaffected; ADR-0107 keeps readiness over configured categories and is
   unaffected; ADR-0050 keeps Fallback Chains inactive until after Run creation,
   so Preflight still proves every configured tuple and substitutes none;
@@ -87,9 +89,10 @@ component real on a runtime where it was inert.
 
 - Changing what any other runtime does. Codex and Claude keep the `independent`
   path unchanged.
-- Choosing which model or effort this repository should route to. That is a
-  configuration decision the maintainer makes once the capability exists, and it
-  wants measurement this Spec does not produce.
+- Measuring which model or effort produces better Roundfix outcomes. The
+  maintainer chose `deepseek-v4-pro` at `xhigh` for the profile that proves the
+  capability, and that choice rests on published benchmarks rather than on any
+  comparison this Spec runs.
 - A Model Catalog or effort picker for `opencode` in the interactive surfaces.
   Still deferred, as in Spec 0088.
 - Proving that a higher effort improves Roundfix's outcomes. The adopted

@@ -39,7 +39,9 @@ loud (a Run that stops before its first work turn).
   `docs/agents/cli.md`.
 - Active ADR obligations: applicable — ADR-0108 is the decision this design
   implements and supersedes ADR-0106, which stays superseded rather than edited
-  away; ADR-0105 keeps capability retention relevance-bounded and is relied on
+  away; ADR-0081 makes the copies and digests rewritten by `make skills-sync`
+  sanctioned fallout of the authorized skill edit rather than separate targets;
+  ADR-0105 keeps capability retention relevance-bounded and is relied on
   unchanged, because the retained `effort` values are what Preflight checks
   against; ADR-0107 keeps readiness over every configured category; ADR-0050
   keeps Fallback Chains inactive until after Run creation; ADR-0091, ADR-0096,
