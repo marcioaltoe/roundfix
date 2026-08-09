@@ -1,7 +1,7 @@
-// Suite: Semantic citation characterization before task_02
-// Invariant: a false claim about a listed ADR passes checks that only inventory and relate citations.
+// Suite: Semantic citation characterization after task_02
+// Invariant: a false claim about a listed ADR is checked against the cited record's text.
 // Boundary IN: public speccheck API, Spec 0090's original PRD, and a cited ADR fixture
-// Boundary OUT: the semantic citation detector assigned to task_02
+// Boundary OUT: authoring-stage and CLI policy assigned to later Spec Tasks
 package speccheck_test
 
 import (
@@ -16,16 +16,43 @@ import (
 
 const citationCharacterizationSlug = "0090-a-gate-that-could-have-failed"
 
-func TestCitationCharacterizationFalseCitationPassesEveryCheck(t *testing.T) {
+func TestCitationCharacterization(t *testing.T) {
 	t.Parallel()
 
 	repoRoot := citationCharacterizationFixtureRoot(t)
+	prdPath := filepath.Join(repoRoot, "docs", "specs", citationCharacterizationSlug, "_prd.md")
+	prd, err := os.ReadFile(prdPath)
+	if err != nil {
+		t.Fatalf("read characterization PRD: %v", err)
+	}
+	claims := speccheck.CitationClaims("docs/specs/"+citationCharacterizationSlug+"/_prd.md", prd)
+	if len(claims) == 0 {
+		t.Fatal("CitationClaims() parsed no attribution from Spec 0090's original PRD")
+	}
+	resolved, err := speccheck.ResolvedCitationClaimCount(repoRoot, claims)
+	if err != nil {
+		t.Fatalf("ResolvedCitationClaimCount() error = %v", err)
+	}
 	result := checkCitationCharacterization(t, repoRoot)
 
-	// Declared break: task_02 adds SC-CITATION-UNSUPPORTED, so this assertion
-	// must change when the checker starts matching claims against cited records.
-	if len(result.Findings) != 0 {
-		t.Fatalf("Findings = %#v, want the false citation to pass every current check", result.Findings)
+	findings := findingsWithCode(result, speccheck.CodeCitationUnsupported)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v for %d resolved claims %#v, want the explicit false attribution reported", speccheck.CodeCitationUnsupported, findings, resolved, claims)
+	}
+	var activeRowFinding speccheck.Finding
+	for _, finding := range findings {
+		if strings.Contains(finding.Summary, "ADR-0083 makes `make verify` the only authoritative gate") {
+			activeRowFinding = finding
+			break
+		}
+	}
+	for _, text := range []string{
+		"ADR-0083 makes `make verify` the only authoritative gate",
+		"Adopted sources move to their owning Spec",
+	} {
+		if !strings.Contains(activeRowFinding.Summary, text) {
+			t.Errorf("summary = %q, want %q", activeRowFinding.Summary, text)
+		}
 	}
 	for _, code := range []string{speccheck.CodeADRUnlisted, speccheck.CodeADRRelated} {
 		for _, skipped := range result.Skipped {
@@ -77,7 +104,7 @@ This decision cites ADR-0083.
 	})
 }
 
-func TestCitationCharacterizationNoDetectorReadsACitedRecordBody(t *testing.T) {
+func TestCitationCharacterizationReadsACitedRecordBody(t *testing.T) {
 	t.Parallel()
 
 	repoRoot := copyCitationCharacterizationFixture(t)
@@ -100,8 +127,14 @@ func TestCitationCharacterizationNoDetectorReadsACitedRecordBody(t *testing.T) {
 	)
 	after := checkCitationCharacterization(t, repoRoot)
 
-	if !reflect.DeepEqual(after, before) {
-		t.Fatalf("Check result changed after only the cited ADR's supporting prose changed:\n before: %#v\n after: %#v", before, after)
+	if reflect.DeepEqual(after, before) {
+		t.Fatalf("Check result did not change after the cited ADR began supporting the claim:\n before: %#v\n after: %#v", before, after)
+	}
+	if findings := findingsWithCode(before, speccheck.CodeCitationUnsupported); len(findings) != 1 {
+		t.Fatalf("before %s findings = %#v, want one", speccheck.CodeCitationUnsupported, findings)
+	}
+	if findings := findingsWithCode(after, speccheck.CodeCitationUnsupported); len(findings) != 0 {
+		t.Fatalf("after %s findings = %#v, want none", speccheck.CodeCitationUnsupported, findings)
 	}
 }
 
