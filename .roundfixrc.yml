@@ -122,6 +122,15 @@ profiles:
     # kimi-k3 carries no usage multiplier. Two subscribed models do — gpt-5.6-luna
     # and deepseek-v4-flash bill at 2x — which inverts the obvious guess, since
     # deepseek-v4-pro carries none. Snapshot: docs/references/model-selection.md.
+    #
+    # kimi-k3 is an unmeasured bet, deliberately. The only benchmarked member of
+    # the subscribed tier is deepseek-v4-flash at 53%, which fails against
+    # sol/high's 69% and bills at 2x. deepseek-v4-pro is the alternative with
+    # real evidence — the Secondbrain moved its whole stack onto it on
+    # 2026-08-08 — but Roundfix cannot ask OpenCode for an effort, and
+    # deepseek-v4-pro defaults to `high` while kimi-k3 advertises only `max`.
+    # The daily monitoring lives in the Secondbrain; see the OpenCode section of
+    # docs/references/model-selection.md for both sources.
     preferred:
       runtime: opencode
       model: opencode-go/kimi-k3

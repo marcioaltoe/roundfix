@@ -131,6 +131,22 @@ tier. `opencode-go/` is what the subscription grants, eighteen models:
 Two of them bill at **2x usage**: `gpt-5.6-luna` and `deepseek-v4-flash`. That
 inverts the obvious guess, because `deepseek-v4-pro` carries no multiplier.
 
+**Almost none of this tier is measured.** Exactly one member has a DeepSWE row:
+`deepseek-v4-flash / max` at **53%** for $0.10 per task — far under
+`gpt-5.6-sol / high` at 69%, and it is one of the two that bill at 2x, so it is
+ruled out on both axes at once. `deepseek-v4-pro` has no row because it is newer
+than the board. `kimi-k3`, which this repository routes `data` and `review` to,
+has no row anywhere: not DeepSWE, not whatllm, not the pricing feed.
+
+Two live sources cover what this dated snapshot cannot, both in the Secondbrain:
+`raw/monitoring/model-pricing.md` is refetched daily at 06:30 from the OpenRouter
+models API, and `wiki/concepts/modelos-custos-e-selecao.md` is the canonical
+page a daily 08:00 job re-evaluates, reporting only when it recommends a change.
+Read them before repointing a profile — but read them knowing they price
+**OpenRouter pay-per-use**, while every runtime this repository routes to is
+subscription-covered, so their prices inform which model is good, not what a Run
+here costs.
+
 #### OpenCode reasoning effort is per model, and Roundfix does not set it
 
 The `effort` option OpenCode advertises is model-dependent and does not use one
