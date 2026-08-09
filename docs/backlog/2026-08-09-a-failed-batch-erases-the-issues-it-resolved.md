@@ -54,3 +54,32 @@ whose fix is already in the tree, since that is the case this defect creates mos
 often. And whether a Batch whose Verification fails for a cause outside its own
 issues should be distinguishable from one that failed because its edits were
 wrong — the two currently look identical in the artifacts.
+
+## Attempted fix and why it was reverted — 2026-08-09
+
+Measured cost first. On PR 143 round 001, twenty Review Issues carry triage
+notes describing the work they did and sit at `status: failed`. A spot check
+confirmed one of them landed in the tree, so the notes are not fiction; the
+outcomes were overwritten.
+
+The obvious repair is to make `MarkBatchFailed` re-read each issue and skip any
+already in a Terminal status — exactly what its sibling `SettleAssignedIssues`
+already does, which is what makes the asymmetry look like an oversight. It is
+not an oversight. Applying it breaks six tests in `internal/cli` and
+`internal/daemon`, and reading them shows why: the Run outcome depends on this
+behaviour. A Batch whose Agent failed is expected to leave its issues `failed`
+so the Run ends `Unresolved` with exit 1 and a later Round retries. Preserve the
+resolutions and the same Run reaches `Clean` instead — the Agent crashed and the
+Run reports success.
+
+So this is not a one-function fix, and the estimate above was wrong. What needs
+settling is what a Batch outcome means when the Agent failed partway: whether a
+Run may reach Clean on work an Agent completed before crashing, or whether the
+retry contract should keep the resolutions while still reporting Unresolved.
+Both are defensible; the second looks closer to the intent, and it needs the
+Run-outcome contract changed alongside the marking, not instead of it.
+
+Not repaired either way: the twenty already-overwritten issues. Restoring
+nineteen statuses on the strength of their own notes is the same class of
+evidence that proved false in Spec 0089's `task_05`, so they stay `failed` and a
+later Round retries them. Wasteful, and safe.
