@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0090-a-gate-that-could-have-failed
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
