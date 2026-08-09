@@ -73,8 +73,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: opencode
-        model: openrouter/deepseek/deepseek-v4-pro
-        reasoning_effort: ""
+        model: openrouter/deepseek/deepseek-v4-flash-0731
+        reasoning_effort: max
       - runtime: claude
         model: opus
         reasoning_effort: high
@@ -85,8 +85,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: opencode
-        model: openrouter/deepseek/deepseek-v4-pro
-        reasoning_effort: ""
+        model: openrouter/deepseek/deepseek-v4-flash-0731
+        reasoning_effort: max
       - runtime: claude
         model: opus
         reasoning_effort: high
@@ -103,8 +103,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: opencode
-        model: openrouter/deepseek/deepseek-v4-pro
-        reasoning_effort: ""
+        model: openrouter/deepseek/deepseek-v4-flash-0731
+        reasoning_effort: max
       - runtime: codex
         model: gpt-5.6-sol
         reasoning_effort: high
@@ -117,30 +117,36 @@ profiles:
     # were enough to exhaust it, which is not a budget sustained work can plan
     # against.
     #
-    # This is the one pay-per-use selection in the file. deepseek-v4-pro is
-    # discounted on OpenRouter to roughly $0.11 in and $0.22 out per 1M, and it
-    # is the model the Secondbrain moved its own session, cron jobs, and
-    # delegation onto on 2026-08-08. Prices move: the Secondbrain refetches them
-    # daily at 06:30 and re-evaluates at 08:00, and the discount is promotional.
+    # This is the one pay-per-use selection in the file, and it is
+    # deepseek-v4-flash-0731 rather than deepseek-v4-pro on the Secondbrain's
+    # 2026-08-09 reading. Flash bills $0.09 in and $0.18 out per 1M with no
+    # discount applied; Pro reads cheaper on some days only because it carries a
+    # 93%-off promotion, and its base price is $0.4350 and $0.8700. So Flash is
+    # the cheaper row today and the only one of the two whose price cannot move
+    # against us when a promotion ends — Pro would snap to roughly 4.8x. The
+    # Secondbrain refetches OpenRouter daily at 06:30 and re-evaluates at 08:00;
+    # the table is raw/monitoring/model-pricing.md there, mirrored into
+    # docs/references/model-selection.md here.
     #
     # It is the cheap choice, not the strong one. kimi-k3 leads it on every
-    # measured axis — Design Arena Elo in the 98-99th percentile against
-    # deepseek-v4-pro's 51-90th, and higher Artificial Analysis intelligence,
-    # coding, and agentic scores — for $2.80 in and $14.00 out, roughly 25x and
-    # 64x. That trade suits `review`, which is bounded and high-volume, better
-    # than it suits `data`, where the gap is quality a Run cannot recover. The
-    # tables are in docs/references/model-selection.md.
+    # measured axis — Design Arena Elo in the 98-99th percentile, and higher
+    # Artificial Analysis intelligence, coding, and agentic scores — for $3.00
+    # in and $15.00 out, roughly 33x and 83x. That trade suits `review`, which
+    # is bounded and high-volume, better than it suits `data`, where the gap is
+    # quality a Run cannot recover.
     #
-    # reasoning_effort is empty because Roundfix refuses any other value on this
-    # runtime — OpenCode advertises effort per model and only after an Agent
-    # Session's first prompt, so a token-free Exact Agent Selection Proof cannot
-    # apply one; see ADR-0106. deepseek-v4-pro advertises `high` and `xhigh` and
-    # defaults to `high`, so that is what a Run gets, matching the Secondbrain's
-    # delegation setting rather than its main-session `max`.
+    # reasoning_effort is `max` because Spec 0089 made this runtime's effort
+    # assignable; ADR-0106 previously forced it empty. Measured 2026-08-09,
+    # deepseek-v4-flash-0731 advertises `low`, `high`, and `max` and defaults to
+    # `low` — the weakest setting it offers. Leaving this empty would not mean
+    # "the model's own choice"; it would mean every Run here silently took the
+    # floor. OpenCode only exposes the control once the Agent Session holds a
+    # queue owner, so Roundfix raises one with an inert setup turn that carries
+    # no tools, then applies and observes `max` before the first work turn.
     preferred:
       runtime: opencode
-      model: openrouter/deepseek/deepseek-v4-pro
-      reasoning_effort: ""
+      model: openrouter/deepseek/deepseek-v4-flash-0731
+      reasoning_effort: max
     fallbacks:
       - runtime: codex
         model: gpt-5.6-sol
@@ -155,8 +161,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: opencode
-        model: openrouter/deepseek/deepseek-v4-pro
-        reasoning_effort: ""
+        model: openrouter/deepseek/deepseek-v4-flash-0731
+        reasoning_effort: max
       - runtime: claude
         model: opus
         reasoning_effort: high
@@ -165,7 +171,7 @@ profiles:
     # work is bounded, has no dependency graph, and blocks nobody, so extra
     # turns cost wall clock and nothing else. It is also the category that pays
     # for re-enabling nitpicks: a long tail of low-severity findings runs here
-    # at $0.253 per 1M output instead of against a quota the Task Graph needs.
+    # at $0.18 per 1M output instead of against a quota the Task Graph needs.
     #
     # luna/max sits behind it: 67% for $0.61 against Sol's 69% for $3.47, bought
     # with 102 steps against 37. It stays the cheapest usable codex row on the
@@ -173,8 +179,8 @@ profiles:
     # weigh forward as the codex headroom is spent.
     preferred:
       runtime: opencode
-      model: openrouter/deepseek/deepseek-v4-pro
-      reasoning_effort: ""
+      model: openrouter/deepseek/deepseek-v4-flash-0731
+      reasoning_effort: max
     fallbacks:
       - runtime: codex
         model: gpt-5.6-luna
