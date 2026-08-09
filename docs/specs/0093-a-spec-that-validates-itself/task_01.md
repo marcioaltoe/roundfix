@@ -52,8 +52,8 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitationCharacterization' -count=1 -v 2>&1 | grep -q '^--- PASS: TestCitationCharacterizationFalseCitationPassesEveryCheck'` — expected: exits 0. A `-run` pattern selecting no cases exits 0, so this asserts the named case ran.
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitationCharacterization' -count=1 -v 2>&1 | grep -q '^--- PASS: TestCitationCharacterizationNoDetectorReadsACitedRecordBody'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitationCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCitationCharacterizationFalseCitationPassesEveryCheck'` — expected: exits 0. A `-run` pattern selecting no cases exits 0, so this asserts the named case ran.
+- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitationCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCitationCharacterizationNoDetectorReadsACitedRecordBody'` — expected: exits 0.
 - `grep -q 'Declared break: task_02' internal/speccheck/citation_characterization_test.go` — expected: exits 0.
 
 ## References

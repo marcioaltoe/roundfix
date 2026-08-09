@@ -70,11 +70,11 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitation' -count=1 -v 2>&1 | grep -q '^--- PASS: TestCitationReportsAnUnsupportedClaim'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitation' -count=1 -v 2>&1 | grep -q '^--- PASS: TestCitationAcceptsASupportedClaim'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitation' -count=1 -v 2>&1 | grep -q '^--- PASS: TestCitationReportsHowManyClaimsItResolved'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitation' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCitationReportsAnUnsupportedClaim'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitation' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCitationAcceptsASupportedClaim'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitation' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCitationReportsHowManyClaimsItResolved'` — expected: exits 0.
 - `grep -q 'SC-CITATION-UNSUPPORTED' internal/speccheck/citations.go` — expected: exits 0. This string does not exist before this Task.
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -count=1 2>&1 | grep -q '^ok'` — expected: exits 0, proving the declared break was updated.
+- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestCitationCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCitationCharacterization'` — expected: exits 0, proving the declared break was updated to the new behaviour rather than left failing. A whole-package sweep would pass with the work absent; this names the case that must change.
 
 ## References
 

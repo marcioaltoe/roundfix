@@ -52,8 +52,8 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestVerificationProbeCharacterization' -count=1 -v 2>&1 | grep -q '^--- PASS: TestVerificationProbeCharacterizationVacuousGateSettlesCompleted'` — expected: exits 0. A `-run` pattern that selects no cases still exits 0, so this asserts the named case actually ran and passed.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestVerificationProbeCharacterization' -count=1 -v 2>&1 | grep -q '^--- PASS: TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestVerificationProbeCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestVerificationProbeCharacterizationVacuousGateSettlesCompleted'` — expected: exits 0. A `-run` pattern that selects no cases still exits 0, so this asserts the named case actually ran and passed.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestVerificationProbeCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestVerificationProbeCharacterizationUnobservedVerdictSettlesFailed'` — expected: exits 0.
 - `grep -c 'Declared break: task_0' internal/daemon/verification_probe_characterization_test.go | grep -qE '^[2-9]'` — expected: exits 0, proving both breaks are declared and each names its Task.
 
 ## References

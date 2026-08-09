@@ -53,9 +53,9 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestStageScope' -count=1 -v 2>&1 | grep -q '^--- PASS: TestStageScopeRunsOnlyDetectorsTheStageCanDecide'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestStageScope' -count=1 -v 2>&1 | grep -q '^--- PASS: TestStageScopeDefaultSweepIsUnchanged'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestStageScope' -count=1 -v 2>&1 | grep -q '^--- PASS: TestStageScopeNamesTheDetectorsItSkipped'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestStageScope' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestStageScopeRunsOnlyDetectorsTheStageCanDecide'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestStageScope' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestStageScopeDefaultSweepIsUnchanged'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestStageScope' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestStageScopeNamesTheDetectorsItSkipped'` — expected: exits 0.
 - `grep -q 'StagePRD' internal/speccheck/coherence.go` — expected: exits 0. This string does not exist before this Task.
 
 ## References

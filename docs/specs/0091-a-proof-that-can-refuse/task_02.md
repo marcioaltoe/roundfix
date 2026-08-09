@@ -56,9 +56,9 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestRuntimeCatalogue' -count=1 -v 2>&1 | grep -q '^--- PASS: TestRuntimeCatalogueReadsAdvertisedModelsWithoutAnOverride'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestRuntimeCatalogue' -count=1 -v 2>&1 | grep -q '^--- PASS: TestRuntimeCatalogueBindsCanonicalVariant'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestRuntimeCatalogue' -count=1 -v 2>&1 | grep -q '^--- PASS: TestRuntimeCatalogueRecordsAContaminatedAdvertisement'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestRuntimeCatalogue' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRuntimeCatalogueReadsAdvertisedModelsWithoutAnOverride'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestRuntimeCatalogue' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRuntimeCatalogueBindsCanonicalVariant'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestRuntimeCatalogue' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRuntimeCatalogueRecordsAContaminatedAdvertisement'` — expected: exits 0.
 - `grep -q 'RuntimeCatalogue' internal/agent/selection_assignment.go` — expected: exits 0. This string does not exist in the file before this Task.
 
 ## References

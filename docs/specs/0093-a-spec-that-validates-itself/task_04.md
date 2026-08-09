@@ -47,10 +47,10 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestSpecCheckStage' -count=1 -v 2>&1 | grep -q '^--- PASS: TestSpecCheckStageExitsNonZeroOnAFinding'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestSpecCheckStage' -count=1 -v 2>&1 | grep -q '^--- PASS: TestSpecCheckStageRejectsAnUnknownValue'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestSpecCheckStage' -count=1 -v 2>&1 | grep -q '^--- PASS: TestSpecCheckWithoutStageIsUnchanged'` — expected: exits 0.
-- `go run -buildvcs=false ./cmd/roundfix spec check --help 2>&1 | grep -q -- '--stage'` — expected: exits 0, proving the flag reached the help a maintainer reads.
+- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestSpecCheckStage' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSpecCheckStageExitsNonZeroOnAFinding'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestSpecCheckStage' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSpecCheckStageRejectsAnUnknownValue'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestSpecCheckStage' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSpecCheckWithoutStageIsUnchanged'` — expected: exits 0.
+- `go run -buildvcs=false ./cmd/roundfix spec check --help 2>&1 | tee /dev/stderr | grep -q -- '--stage'` — expected: exits 0, proving the flag reached the help a maintainer reads.
 
 ## References
 

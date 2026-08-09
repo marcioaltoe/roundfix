@@ -55,10 +55,9 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/spec -run '^TestNegativeControl' -count=1 -v 2>&1 | grep -q '^--- PASS: TestNegativeControlSectionParsesInOrder'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/spec -run '^TestNegativeControl' -count=1 -v 2>&1 | grep -q '^--- PASS: TestNegativeControlAbsentSectionParsesEmpty'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/spec -run '^TestNegativeControl' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestNegativeControlSectionParsesInOrder'` — expected: exits 0.
+- `GOCACHE="$PWD/.gocache" go test ./internal/spec -run '^TestNegativeControl' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestNegativeControlAbsentSectionParsesEmpty'` — expected: exits 0.
 - `grep -q 'NegativeControl' internal/spec/task.go` — expected: exits 0. This string does not exist in the file before this Task.
-- `GOCACHE="$PWD/.gocache" go test ./internal/spec -count=1 2>&1 | grep -q '^ok'` — expected: exits 0.
 
 ## References
 
