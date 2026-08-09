@@ -43,6 +43,24 @@ The proposed shape — `_archived/specs/`, `_archived/findings/`, `_archived/adr
 `_archived/backlog/` under one root — keeps active material in the read path and
 history out of it, with one path for every consumer to know.
 
+## What the Secondbrain says about it
+
+`wiki/concepts/arquitetura-de-instrucoes-e-progressive-disclosure.md` treats
+agent instructions as a context architecture rather than a store of every known
+rule, and it makes two claims that bear directly on this.
+
+The first raises the stakes past token cost: "documentação stale é mais perigosa
+para agentes do que para humanos porque o agente pode tratá-la como instrução
+atual." A superseded ADR left in `docs/adr/` is not merely paid for on every
+task — it can be read as governing. Lifecycle markers do not fix that, because
+they rely on the reader noticing them.
+
+The second answers the obvious objection, that moving history hides it: "o
+objetivo não é esconder conhecimento. É tornar o próximo documento descobrível
+quando necessário, sem fazê-lo pagar tokens em todas as tarefas." That is the
+test this work must pass — the archive stays reachable, and the forward pointer
+question above is how it stays reachable rather than an optional nicety.
+
 ## Shape
 
 Non-binding, but the blast radius is known: `_archived` appears 50 times in Go
