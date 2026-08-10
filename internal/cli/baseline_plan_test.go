@@ -357,6 +357,7 @@ func TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles(t *testi
 		"--decision", "preservation.mode=greenfield",
 		"--decision", "language.generated=English",
 		"--decision", "verification.gate=make verify",
+		"--decision", "branch.prefix=ma/",
 		"--decision", "spec.scaffold=true",
 		"--decision", "domain.layout=single-context",
 		"--decision", "triage.external=false",
@@ -603,6 +604,7 @@ func baselinePlanCharacterizationDecisions() []baseline.DecisionValue {
 	return []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "spec.scaffold", Value: true},
 		{ID: "domain.layout", Value: "single-context"},
 		{ID: "triage.external", Value: false},
@@ -665,6 +667,7 @@ func baselinePlanProfileFileFixture(
 	decisions := []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 		{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
 		{

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -20,6 +21,9 @@ const (
 	CodeToolingUnauthorized = "SC-TOOLING-UNAUTHORIZED"
 	// CodeToolingUnbounded identifies applicable tooling authority without bounded files.
 	CodeToolingUnbounded = "SC-TOOLING-UNBOUNDED"
+	// CodeToolingUntyped identifies an authorization record that states its grant
+	// only in prose, so no checker can enumerate what it permits.
+	CodeToolingUntyped = "SC-TOOLING-UNTYPED"
 )
 
 const (
@@ -42,6 +46,7 @@ var (
 		CodeConstraintSource,
 		CodeToolingUnauthorized,
 		CodeToolingUnbounded,
+		CodeToolingUntyped,
 	}
 	sourcePathPattern = regexp.MustCompile("(?is)\\bSource:\\s*`([^`]+)`")
 	backtickPattern   = regexp.MustCompile("`([^`]+)`")
@@ -349,6 +354,8 @@ func detectToolingRow(result *Result, repoRoot, slug string, artifact constraint
 					Where:    []Location{rowLocation, recordLocation},
 					Fix:      "Add Spec " + slug + " to " + row.AuthorizationPath + " or cite the authorization record that already names it.",
 				})
+			default:
+				detectUntypedAuthorization(result, row.AuthorizationPath, content)
 			}
 		}
 	}
@@ -362,6 +369,99 @@ func detectToolingRow(result *Result, repoRoot, slug string, artifact constraint
 			Fix:      "Add an exact bounded files list to the Tooling authority row in " + artifact.displayPath + ".",
 		})
 	}
+}
+
+// typedAuthorizationCutoff is the first day an authorization record must state
+// its grant in machine-readable frontmatter. Records granted before it are
+// historical evidence and stay byte-identical.
+const typedAuthorizationCutoff = "2026-08-10"
+
+var authorizationRecordDatePattern = regexp.MustCompile(`(\d{4}-\d{2}-\d{2})`)
+
+// authorizationGrantFields are the fields a typed authorization record must
+// carry so a checker can enumerate the grant instead of reading prose for it.
+var authorizationGrantFields = []string{"granted", "action", "paths", "consuming"}
+
+// detectUntypedAuthorization reports an authorization record that a checker
+// cannot enumerate. A record granted on or after the cutoff must open with
+// frontmatter naming every grant field, and `paths` must list at least one
+// bounded repository path.
+func detectUntypedAuthorization(result *Result, recordPath string, content []byte) {
+	match := authorizationRecordDatePattern.FindStringSubmatch(path.Base(recordPath))
+	if len(match) != 2 || match[1] < typedAuthorizationCutoff {
+		return
+	}
+	location := Location{Path: recordPath, Line: 1}
+	fields, ok := authorizationFrontmatterFields(content)
+	if !ok {
+		result.Findings = append(result.Findings, Finding{
+			Code:     CodeToolingUntyped,
+			Severity: SeverityError,
+			Summary:  recordPath + " states its grant only in prose, so no checker can enumerate it",
+			Where:    []Location{location},
+			Fix:      "Open " + recordPath + " with frontmatter carrying " + strings.Join(authorizationGrantFields, ", ") + ".",
+		})
+		return
+	}
+	var missing []string
+	for _, field := range authorizationGrantFields {
+		if strings.TrimSpace(fields[field]) == "" {
+			missing = append(missing, field)
+		}
+	}
+	if len(missing) != 0 {
+		result.Findings = append(result.Findings, Finding{
+			Code:     CodeToolingUntyped,
+			Severity: SeverityError,
+			Summary:  recordPath + " omits typed grant fields: " + strings.Join(missing, ", "),
+			Where:    []Location{location},
+			Fix:      "Record " + strings.Join(missing, ", ") + " in the frontmatter of " + recordPath + ".",
+		})
+	}
+}
+
+// authorizationFrontmatterFields reads a leading YAML frontmatter block as
+// top-level key to raw value. A `paths` list collapses into its joined items so
+// an empty list reads as an absent value.
+func authorizationFrontmatterFields(content []byte) (map[string]string, bool) {
+	text := strings.ReplaceAll(string(content), "\r\n", "\n")
+	if !strings.HasPrefix(text, "---\n") {
+		return nil, false
+	}
+	body, _, found := strings.Cut(text[len("---\n"):], "\n---")
+	if !found {
+		return nil, false
+	}
+	fields := make(map[string]string)
+	currentKey := ""
+	for _, line := range strings.Split(body, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "- ") {
+			if currentKey == "" {
+				continue
+			}
+			item := strings.TrimSpace(strings.TrimPrefix(trimmed, "- "))
+			if item == "" {
+				continue
+			}
+			if fields[currentKey] == "" {
+				fields[currentKey] = item
+			} else {
+				fields[currentKey] += " " + item
+			}
+			continue
+		}
+		key, value, ok := strings.Cut(trimmed, ":")
+		if !ok {
+			continue
+		}
+		currentKey = strings.TrimSpace(key)
+		fields[currentKey] = strings.TrimSpace(value)
+	}
+	return fields, true
 }
 
 func authorizationNamesSpec(content []byte, slug string) bool {

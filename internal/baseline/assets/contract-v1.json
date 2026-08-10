@@ -234,13 +234,11 @@
         "version",
         "fromBaseline",
         "toBaseline",
-        "legacyManifestFingerprints",
         "priorClauses",
         "mappings"
       ],
       "rules": [
         "Every prior clause records its enforcement, carrier, and guidance digest.",
-        "Every source baseline declares one or more exact legacy Setup Manifest fingerprints.",
         "Every prior clause has exactly one retained, moved, replaced, or rejected mapping with a reason.",
         "Accepted mappings target a current clause with equal enforcement or declared Repository-Specific Normative Rules; rejected mappings have no target."
       ]

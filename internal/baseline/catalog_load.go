@@ -144,7 +144,6 @@ func (l *catalogLoader) validateSchemaFields(catalog *Catalog) {
 			"version",
 			"fromBaseline",
 			"toBaseline",
-			"legacyManifestFingerprints",
 			"priorClauses",
 			"mappings",
 		)

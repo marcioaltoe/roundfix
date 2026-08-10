@@ -245,6 +245,7 @@ func baselineApplyTestPlan(t *testing.T, repo string) (baseline.PlanDocument, st
 		"--decision", "preservation.mode=greenfield",
 		"--decision", "language.generated=English",
 		"--decision", "verification.gate=make verify",
+		"--decision", "branch.prefix=ma/",
 		"--decision", "spec.scaffold=true",
 		"--decision", "domain.layout=single-context",
 		"--decision", "triage.external=false",

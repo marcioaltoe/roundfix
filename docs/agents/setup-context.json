@@ -7,8 +7,8 @@
     "baseline": "baseline.go-cli-tui-0.0.1"
   },
   "profile": "go-cli-tui",
-  "profileDigest": "sha256:2b8bd2acd9e79f93524954e5de32e89cd8ba9eea4145e98b06834db56e917ef7",
-  "catalogDigest": "sha256:f082de03ea52e1b17e75daf0d65ef2d535f8d8d36951fe08dd435732e4008c1e",
+  "profileDigest": "sha256:74c30a138531e9d9f509cb8c9eeda13984ac4bb348cbb66a27c53f0754246569",
+  "catalogDigest": "sha256:968c473a587b0c7426211619b8678cc5df9f3005ff96b19a24f8a15b16a77bac",
   "modules": [
     "core",
     "context-workflow",
@@ -17,13 +17,15 @@
     "tui-surface",
     "autonomous-work",
     "spec-workflow",
-    "external-triage",
     "secondbrain",
     "repository-extension"
   ],
   "decisions": {
     "autonomous.enabled": {
       "value": true
+    },
+    "branch.prefix": {
+      "value": "ma/"
     },
     "domain.layout": {
       "value": "single-context"
@@ -47,7 +49,7 @@
       "value": true
     },
     "triage.external": {
-      "value": true
+      "value": false
     },
     "verification.gate": {
       "value": "rtk make verify"
@@ -61,7 +63,7 @@
       "module": "core",
       "template": "template.guide.skill-dispatch",
       "version": "0.0.1",
-      "digest": "2b3e6b61cc0942a56ef29b136f3aca9fef6f0412168023385b9c7197e05b8867"
+      "digest": "6a09cf7631b6c7e92df1b884a63c6c637e2d74f79789166b7223cbcef100fdf5"
     },
     {
       "id": "root.core",
@@ -79,7 +81,7 @@
       "module": "context-workflow",
       "template": "template.guide.docs-layout",
       "version": "0.0.1",
-      "digest": "037dafecb9efa6eb45744dc0d3889a4f0a014aef41914dba151cf14574ab9621"
+      "digest": "f2b4375602ea708b6efcb0781e16b11c2df83c1b8591db46a41688883ccca883"
     },
     {
       "id": "root.context-workflow",
@@ -118,13 +120,13 @@
       "digest": "eccd16c4b04dd206395f030f64115b5cd1a91450ba745867ef164e2197f73a7a"
     },
     {
-      "id": "root.external-triage",
+      "id": "root.autonomous-work",
       "path": "AGENTS.md",
       "kind": "root-block",
-      "module": "external-triage",
-      "template": "template.root.external-triage",
+      "module": "autonomous-work",
+      "template": "template.root.autonomous-work",
       "version": "0.0.1",
-      "digest": "f8717c0486ab2ab117dcf136148f812e239375d2f720a231172e7c980481e665"
+      "digest": "f056b3e672ecb439c578096d2e157ed438ec291ece01eade9102a03c7da51dec"
     },
     {
       "id": "guide.tui-surface",
@@ -136,24 +138,6 @@
       "digest": "487cb07b110df86651c7ef4a45d10799cb64b5dab07afd378fef343f03f69d2a"
     },
     {
-      "id": "root.autonomous-work",
-      "path": "AGENTS.md",
-      "kind": "root-block",
-      "module": "autonomous-work",
-      "template": "template.root.autonomous-work",
-      "version": "0.0.1",
-      "digest": "f056b3e672ecb439c578096d2e157ed438ec291ece01eade9102a03c7da51dec"
-    },
-    {
-      "id": "guide.agent-instructions",
-      "path": "docs/agents/agent-instructions.md",
-      "kind": "guide",
-      "module": "core",
-      "template": "template.guide.agent-instructions",
-      "version": "0.0.1",
-      "digest": "c4fec753d0f2464857eeda6dd48af4dead901ef654e725b2dfa9d7b0dc018323"
-    },
-    {
       "id": "root.go",
       "path": "AGENTS.md",
       "kind": "root-block",
@@ -163,40 +147,13 @@
       "digest": "66ebe38c0cae01a9039e126979fce84d10f3f4f562b2f5fa08cbe9ecf8b9dc84"
     },
     {
-      "id": "guide.spec-routing",
-      "path": "docs/agents/spec-routing.md",
+      "id": "guide.agent-instructions",
+      "path": "docs/agents/agent-instructions.md",
       "kind": "guide",
-      "module": "spec-workflow",
-      "template": "template.guide.spec-routing",
+      "module": "core",
+      "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "58f95806bfd45ea1091ea3cc910cab3335fb24764c33984e62cf2f385a1832f9"
-    },
-    {
-      "id": "guide.issue-tracker",
-      "path": "docs/agents/issue-tracker.md",
-      "kind": "guide",
-      "module": "spec-workflow",
-      "template": "template.guide.issue-tracker",
-      "version": "0.0.1",
-      "digest": "84ef3c03d23cbae80a202393e2be05ddc345918ff87a69de6299b128b5fb86a3"
-    },
-    {
-      "id": "guide.spec-docs-layout",
-      "path": "docs/agents/docs-layout.md",
-      "kind": "guide",
-      "module": "spec-workflow",
-      "template": "template.guide.spec-docs-layout",
-      "version": "0.0.1",
-      "digest": "35b00b79609481bcce3b2ed06439575ee2be3725e5988e82912cac6fcce58241"
-    },
-    {
-      "id": "guide.domain",
-      "path": "docs/agents/domain.md",
-      "kind": "guide",
-      "module": "context-workflow",
-      "template": "template.guide.domain.single-context",
-      "version": "0.0.1",
-      "digest": "86b13d9ac7cd64f05278c6ea45e4607b3e83a87fcb49930e67d7df637593b304"
+      "digest": "c7b72d6478c7b66fc65b1ea592f4089c055aedb1904d880b7c9cb007bdf59bcf"
     },
     {
       "id": "root.cli-surface",
@@ -208,13 +165,40 @@
       "digest": "00d780aa07a370ecd77b09d4b0eb0326f80980372652be67d30c699aee931bdb"
     },
     {
-      "id": "guide.external-triage",
-      "path": "docs/agents/external-triage.md",
+      "id": "guide.spec-routing",
+      "path": "docs/agents/spec-routing.md",
       "kind": "guide",
-      "module": "external-triage",
-      "template": "template.guide.external-triage",
+      "module": "spec-workflow",
+      "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "ce7087f8957f7524133f46b3df193a5e4969a4fc193e6d705e5ed3f19b0a519a"
+      "digest": "746462f33adf3ed45956e72798cd681ce5d40b617073bf89dd09ca114b04f7f7"
+    },
+    {
+      "id": "guide.issue-tracker",
+      "path": "docs/agents/issue-tracker.md",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "template": "template.guide.issue-tracker",
+      "version": "0.0.1",
+      "digest": "6de94546501df45cc5b9e997c08a13f7154ace22fe48d69ebe0e4ba5a0ea895a"
+    },
+    {
+      "id": "guide.spec-docs-layout",
+      "path": "docs/agents/docs-layout.md",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "template": "template.guide.spec-docs-layout",
+      "version": "0.0.1",
+      "digest": "7441e3110833e8dfa39cf48a580df17e1275621a4bb795c98ca119b51c70ad21"
+    },
+    {
+      "id": "guide.domain",
+      "path": "docs/agents/domain.md",
+      "kind": "guide",
+      "module": "context-workflow",
+      "template": "template.guide.domain.single-context",
+      "version": "0.0.1",
+      "digest": "7626cb6e6d50a5273bd50360ddaf1b0ee38350f0e331f1a4d8e229e0378ddbca"
     },
     {
       "id": "root.tui-surface",
@@ -232,7 +216,7 @@
       "module": "autonomous-work",
       "template": "template.guide.autonomous-work",
       "version": "0.0.1",
-      "digest": "07845ef3c93229faa1511bf978e778e3c00bcee98f197be49ba8d365c0eb8588"
+      "digest": "fe4718ba3b705491c033abf05452fe4c1e7d5cb08d0744fa0692828f1b488032"
     },
     {
       "id": "root.secondbrain",
@@ -250,7 +234,7 @@
       "module": "secondbrain",
       "template": "template.guide.secondbrain",
       "version": "0.0.1",
-      "digest": "de871861b07e07bae3accfdf2f33ddea4acaa9afb16712566e3beb132c37afdc"
+      "digest": "f0c9e8ee15fc5c66c2a68d7e401fe41ee1e87813ab79933978c85570b506dcc5"
     },
     {
       "id": "root.repository-extension",
@@ -271,7 +255,7 @@
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
-      "declarationDigest": "sha256:5f29d5e818fa63ca3e5034629bfc90deff3acada8a403255d2afdf416ef0ea82"
+      "declarationDigest": "sha256:450c6ca32b00080001d0acf4b7ecea77dd64dc2c01302d365a357c8dd18a1a5f"
     }
   ]
 }

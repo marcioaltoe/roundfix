@@ -26,11 +26,8 @@ const (
 	MinimumACPXVersion              = "0.12.0"
 	CodexAdapterPackage             = "@agentclientprotocol/codex-acp"
 	PinnedCodexAdapterVersion       = "1.1.5"
-	legacyCodexAdapterPackage       = "@zed-industries/codex-acp"
 	ClaudeAdapterPackage            = "@agentclientprotocol/claude-agent-acp"
 	PinnedClaudeAdapterVersion      = "0.63.0"
-	legacyClaudeCodeAdapterPackage  = "@zed-industries/" + "claude-code-acp"
-	legacyClaudeAgentAdapterPackage = "@zed-industries/" + "claude-agent-acp"
 	defaultCodexAdapterCommand      = "npx -y " + CodexAdapterPackage
 	defaultClaudeAdapterCommand     = "npx -y " + ClaudeAdapterPackage + "@" + PinnedClaudeAdapterVersion
 	adapterProbeOutputLimit         = 512
@@ -68,26 +65,23 @@ var adapterInstallCommands = map[string]string{
 }
 
 type adapterLineageContract struct {
-	RuntimeID      string
-	Package        string
-	PinnedVersion  string
-	LegacyPackages []string
-	VersionOnly    bool
+	RuntimeID     string
+	Package       string
+	PinnedVersion string
+	VersionOnly   bool
 }
 
 var adapterLineageContracts = map[string]adapterLineageContract{
 	"codex": {
-		RuntimeID:      "codex",
-		Package:        CodexAdapterPackage,
-		PinnedVersion:  PinnedCodexAdapterVersion,
-		LegacyPackages: []string{legacyCodexAdapterPackage},
+		RuntimeID:     "codex",
+		Package:       CodexAdapterPackage,
+		PinnedVersion: PinnedCodexAdapterVersion,
 	},
 	"claude": {
-		RuntimeID:      "claude",
-		Package:        ClaudeAdapterPackage,
-		PinnedVersion:  PinnedClaudeAdapterVersion,
-		LegacyPackages: []string{legacyClaudeCodeAdapterPackage, legacyClaudeAgentAdapterPackage},
-		VersionOnly:    true,
+		RuntimeID:     "claude",
+		Package:       ClaudeAdapterPackage,
+		PinnedVersion: PinnedClaudeAdapterVersion,
+		VersionOnly:   true,
 	},
 }
 
@@ -383,7 +377,6 @@ type AdapterLineageError struct {
 	RequiredPackage string
 	RequiredVersion string
 	Install         string
-	Legacy          bool
 	Err             error
 }
 
@@ -395,9 +388,7 @@ func (err *AdapterLineageError) Error() string {
 	requiredPackage := adapterErrorRequiredPackage(err.RequiredPackage)
 	requiredVersion := adapterErrorRequiredVersion(err.RequiredVersion)
 	message := fmt.Sprintf("effective %s adapter command %q did not prove required package lineage %s", runtimeDisplayName(runtimeID), strings.TrimSpace(err.Command), requiredPackage)
-	if err.Legacy || isLegacyAdapterPackage(err.Package) {
-		message = fmt.Sprintf("effective %s adapter command %q reported legacy package %s", runtimeDisplayName(runtimeID), strings.TrimSpace(err.Command), err.Package)
-	} else if packageName := strings.TrimSpace(err.Package); packageName != "" && packageName != requiredPackage {
+	if packageName := strings.TrimSpace(err.Package); packageName != "" && packageName != requiredPackage {
 		message = fmt.Sprintf("effective %s adapter command %q reported unknown package %s", runtimeDisplayName(runtimeID), strings.TrimSpace(err.Command), packageName)
 	}
 	if strings.TrimSpace(err.Version) != "" {
@@ -701,10 +692,8 @@ func adapterInstallCommand(command string) string {
 	if binary := adapterBinary(command); binary == "claude-code-acp" || binary == "claude-agent-acp" {
 		return ClaudeAdapterInstallCommand()
 	}
-	for _, packageName := range append([]string{ClaudeAdapterPackage}, adapterLineageContracts["claude"].LegacyPackages...) {
-		if invocationNamesPackage(invocation, packageName) {
-			return ClaudeAdapterInstallCommand()
-		}
+	if invocationNamesPackage(invocation, ClaudeAdapterPackage) {
+		return ClaudeAdapterInstallCommand()
 	}
 	if install, ok := adapterInstallCommands[adapterBinary(command)]; ok {
 		return install
@@ -771,7 +760,6 @@ func newAdapterLineageError(contract adapterLineageContract, command string, pac
 		RequiredPackage: contract.Package,
 		RequiredVersion: contract.PinnedVersion,
 		Install:         contract.installCommand(),
-		Legacy:          contract.isLegacy(packageName),
 		Err:             err,
 	}
 }
@@ -792,24 +780,13 @@ func (contract adapterLineageContract) installCommand() string {
 	return adapterPackageInstallCommand(contract.Package, contract.PinnedVersion)
 }
 
-func (contract adapterLineageContract) isLegacy(packageName string) bool {
-	for _, legacyPackage := range contract.LegacyPackages {
-		if packageName == legacyPackage {
-			return true
-		}
-	}
-	return false
-}
-
 func adapterPackageInstallCommand(packageName string, version string) string {
 	return "npm install -g " + strings.TrimSpace(packageName) + "@" + strings.TrimSpace(version)
 }
 
 func resolveAdapterPackage(invocation adapterInvocation, contract adapterLineageContract) string {
-	for _, packageName := range append([]string{contract.Package}, contract.LegacyPackages...) {
-		if invocationNamesPackage(invocation, packageName) {
-			return packageName
-		}
+	if invocationNamesPackage(invocation, contract.Package) {
+		return contract.Package
 	}
 	executablePath, err := exec.LookPath(invocation.executable())
 	if err != nil {
@@ -819,10 +796,8 @@ func resolveAdapterPackage(invocation adapterInvocation, contract adapterLineage
 	if err != nil {
 		return ""
 	}
-	for _, packageName := range append([]string{contract.Package}, contract.LegacyPackages...) {
-		if resolvedPathNamesPackage(resolvedPath, packageName) {
-			return packageName
-		}
+	if resolvedPathNamesPackage(resolvedPath, contract.Package) {
+		return contract.Package
 	}
 	return ""
 }
@@ -872,15 +847,6 @@ func runtimeDisplayName(runtimeID string) string {
 		return "Adapter"
 	}
 	return strings.ToUpper(runtimeID[:1]) + runtimeID[1:]
-}
-
-func isLegacyAdapterPackage(packageName string) bool {
-	for _, contract := range adapterLineageContracts {
-		if contract.isLegacy(packageName) {
-			return true
-		}
-	}
-	return false
 }
 
 type boundedAdapterOutput struct {

@@ -261,6 +261,7 @@ func TestFormatterComposition(t *testing.T) {
 		Decisions: []DecisionValue{
 			{ID: "language.generated", Value: "English"},
 			{ID: "verification.gate", Value: "make verify"},
+			{ID: "branch.prefix", Value: "ma/"},
 			{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 			{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
 			{ID: "auth.provider", Value: completeAuthProviderDecision()},
@@ -2223,6 +2224,7 @@ func TestToolingAuthorityClause(t *testing.T) {
 			_, artifacts, err := resolveManagedArtifacts(catalog, profile, []DecisionValue{
 				{ID: "language.generated", Value: "English"},
 				{ID: "verification.gate", Value: "rtk make verify"},
+				{ID: "branch.prefix", Value: "ma/"},
 			}, false)
 			if err != nil {
 				t.Fatalf("render Profile %q artifacts: %v", profileID, err)
@@ -3920,7 +3922,7 @@ func backendProfileDraftPlanRequest(t *testing.T, repo string) (PlanRequest, []s
 		CatalogSchema: CatalogSchemaVersion(),
 		ID:            "backend-only",
 		Modules:       []string{"core", "typescript", "bun", "backend"},
-		Decisions:     []string{"language.generated", "verification.gate"},
+		Decisions:     []string{"language.generated", "verification.gate", "branch.prefix"},
 		Capabilities: []string{
 			"capability.stack.bun",
 			"capability.stack.hono",
@@ -3944,6 +3946,7 @@ func backendProfileDraftPlanRequest(t *testing.T, repo string) (PlanRequest, []s
 		Decisions: []DecisionValue{
 			{ID: "language.generated", Value: "English"},
 			{ID: "verification.gate", Value: "make verify"},
+			{ID: "branch.prefix", Value: "ma/"},
 		},
 		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
 	}, append([]string(nil), document.Templates...)
@@ -4012,6 +4015,7 @@ func planTestDecisions() []DecisionValue {
 	return []DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "spec.scaffold", Value: true},
 		{ID: "domain.layout", Value: "single-context"},
 		{ID: "triage.external", Value: false},

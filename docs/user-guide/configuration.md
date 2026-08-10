@@ -318,12 +318,11 @@ version `0.63.0` or newer. The deterministic install actions are
 
 Setup writes `npx -y @agentclientprotocol/codex-acp@1.1.5` or
 `npx -y @agentclientprotocol/claude-agent-acp@0.63.0` when an explicit
-override needs migration. For Codex, that includes a bare override resolving
-to legacy `@zed-industries/codex-acp` and earlier explicit pins such as
-`1.1.4`. For Claude, it includes both legacy lineages — the former
-`claude-code-acp` package and wrong-scope
-`@zed-industries/claude-agent-acp`. Setup and Doctor diagnose the effective
-lineage and direct the user to the applicable official install action.
+override needs migration. Migration follows from failed official lineage proof
+rather than from recognizing any particular superseded package, so it covers a bare
+override that resolves to a differently scoped package as well as an earlier
+explicit pin such as `1.1.4`. Setup and Doctor report the effective command,
+the required official package, and the applicable install action.
 
 An explicit empty `reasoning_effort: ""` means model-managed reasoning;
 omitted `reasoning_effort` is invalid because the runtime would not receive a

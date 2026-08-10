@@ -1,48 +1,3 @@
-# Spec workflow routing
-
-The CONTEXT-driven pipeline coordinates through local markdown under
-`docs/specs/`.
-
-## Pipeline
-
-```text
-write-idea → write-prd → write-techspec → write-tasks →
-implement-spec / implement-task → qa-gate → archive-spec
-```
-
-Every stage reads and writes `docs/specs/<slug>/`. A fresh session must be able
-to continue from the files without relying on prior conversation.
-
-When a Spec commits to implementation, ownership of each adopted source
-transfers to that Spec. The first Spec to commit is the primary owner: its PRD
-adoption step moves the source into `docs/specs/<slug>/references/`; a later
-Spec links the owner's copy and adopts nothing.
-
-## Entry points
-
-| Change | Route |
-| --- | --- |
-| Large or fuzzy product initiative | `write-idea` → `write-prd` → `write-techspec` → `write-tasks` |
-| Standard feature that changes product behavior | `write-prd` → `write-techspec` → `write-tasks` |
-| Refactor or bug fix without product-behavior change | `write-techspec` → `write-tasks` |
-| Trivial one-line fix, typo, or configuration tweak | Direct implementation; no Spec folder |
-
-- `brainstorming` precedes creative or feature work and selects the route.
-- The refactor/bugfix route creates a minimal `_prd.md` so every downstream
-  skill retains one artifact contract.
-- A tech spec can be skipped only when the feature has no architectural
-  surface.
-- When two tiers appear sufficient, begin with the smaller route and add an
-  upstream artifact if product questions emerge.
-- Implementation always executes from the Task Graph.
-
-## Done
-
-- Every Task reaches `completed` with fresh verification evidence.
-- `qa-gate` validates the assembled behavior and writes evidence under `qa/`.
-- On QA pass, `archive-spec` stamps and moves the Spec to `_archived/`.
-- Merge and release remain separate user-directed actions.
-
 <!-- setup-context-driven:begin id=guide.spec-routing version=0.0.1 -->
 
 # Spec routing
@@ -67,19 +22,6 @@ Spec links the owner's copy and adopts nothing.
 
 - **mandatory**: Keep completed or archived legacy Specs byte-identical. Dependencies remain owned only by the Task Graph, and status remains owned only by each Task file.
 
+- **mandatory**: Rest a Spec's acceptance, in at least one named row, on evidence originating outside the Spec's own artifacts: a repository the Spec did not build, a measurement it did not design, or published literature. Record in that row where the evidence came from, so a later reader can tell it apart from a rehearsal of the Spec's own premise. When the outside source cannot be obtained, record the row as blocked with that reason and continue; the row never requires human interaction and never blocks the Spec.
+
 <!-- setup-context-driven:end id=guide.spec-routing -->
-
-<!-- roundfix:repository-rule:begin id=rule.4a17d217e1a8c5c732ab54bb64f5b6ce3eafeaaf428fa6da80fe46ac48276555 -->
-### Spec routing
-
-Pick the pipeline entry point by the change — large initiative, feature,
-refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
-
-
-<!-- roundfix:repository-rule:end id=rule.4a17d217e1a8c5c732ab54bb64f5b6ce3eafeaaf428fa6da80fe46ac48276555 -->
-
-<!-- roundfix:repository-rule:begin id=rule.068b6fb73d68a1c56aa33b0eb68f6732f2a4b84851b29b279dc0912117c18bf9 -->
-4. Asking for confirmation before running spec tasks — invocation is the
-   authorization
-
-<!-- roundfix:repository-rule:end id=rule.068b6fb73d68a1c56aa33b0eb68f6732f2a4b84851b29b279dc0912117c18bf9 -->

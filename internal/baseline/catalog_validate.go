@@ -1359,7 +1359,6 @@ func (l *catalogLoader) validateTransitions(catalog *Catalog) {
 			"version",
 			"fromBaseline",
 			"toBaseline",
-			"legacyManifestFingerprints",
 			"priorClauses",
 			"mappings",
 		)

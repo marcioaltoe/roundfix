@@ -37,14 +37,13 @@ or newer. The deterministic install actions are
 `npm install -g @agentclientprotocol/codex-acp@1.1.5` and
 `npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
 
-A stale bare Codex override that resolves to legacy
-`@zed-industries/codex-acp` produces one migration offer to
-`npx -y @agentclientprotocol/codex-acp@1.1.5`. A stale or bare Claude override
-from either legacy lineage — the former `claude-code-acp` package or
-wrong-scope `@zed-industries/claude-agent-acp` — produces one migration offer
-to `npx -y @agentclientprotocol/claude-agent-acp@0.63.0`. Setup diagnoses and
-proves each proposal before asking; declining preserves the acpx configuration
-bytes.
+A stale or bare Codex override that fails official lineage proof produces one
+migration offer to `npx -y @agentclientprotocol/codex-acp@1.1.5`, and a Claude
+override that fails the same proof produces one migration offer to
+`npx -y @agentclientprotocol/claude-agent-acp@0.63.0`. The offer follows from
+the failed proof, so it covers a differently named or differently scoped
+package without naming any superseded one. Setup proves each proposal before
+asking; declining preserves the acpx configuration bytes.
 
 Setup builds every proposed file in memory and runs exact Agent Selection proof
 before writing. It never changes explicit Sol/high to model-managed reasoning

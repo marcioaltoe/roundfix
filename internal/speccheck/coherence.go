@@ -47,6 +47,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeConstraintSource, stage: StagePRD},
 	{code: CodeToolingUnauthorized, stage: StagePRD},
 	{code: CodeToolingUnbounded, stage: StagePRD},
+	{code: CodeToolingUntyped, stage: StagePRD},
 	{code: CodeCitationUnsupported, stage: StagePRD},
 	{code: CodeCoverageUnmapped, stage: StageTechSpec},
 	{code: CodeVocabularyUndocumented, stage: StageTechSpec},

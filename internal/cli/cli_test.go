@@ -1297,7 +1297,6 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	commands := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "commands.md"))
 	usage := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "usage.md"))
 	configuration := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "configuration.md"))
-	autonomousWork := mustRead(t, filepath.Join(repoRoot, "docs", "agents", "autonomous-work.md"))
 	releaseRunbook := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "release-runbook.md"))
 	roundfixSkill := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "SKILL.md"))
 	roundfixManifest := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "agents", "openai.yaml"))
@@ -1343,7 +1342,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 		for _, want := range []string{
 			"@agentclientprotocol/codex-acp",
 			agent.PinnedCodexAdapterVersion,
-			"@zed-industries/codex-acp",
+			"official lineage proof",
 			"exact proof",
 			"advisory",
 			"gpt-5.6-terra",
@@ -1381,13 +1380,13 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		"profiles.general",
+		"Required profiles are `general`, `backend`, `frontend`, `qa`, and `review`.",
 		"gpt-5.6-sol",
 		"gpt-5.5",
 		"Fallback Chain",
 	} {
-		if !strings.Contains(autonomousWork, want) {
-			t.Fatalf("autonomous work guidance is missing %q", want)
+		if !strings.Contains(configuration, want) {
+			t.Fatalf("profile configuration guidance is missing %q", want)
 		}
 	}
 
@@ -1415,7 +1414,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 		{name: "README", content: readme},
 		{name: "command reference", content: commands},
 		{name: "usage", content: usage},
-		{name: "autonomous work", content: autonomousWork},
+		{name: "configuration", content: configuration},
 		{name: "roundfix skill", content: roundfixSkill},
 		{name: "roundfix manifest", content: roundfixManifest},
 	} {
@@ -3731,13 +3730,13 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 		want       string
 	}{
 		{
-			name: "legacy lineage",
+			name: "unrecognized lineage",
 			adapterErr: &agent.AdapterLineageError{
 				Command: "codex-acp",
-				Package: "@zed-industries/codex-acp",
+				Package: "@example/codex-acp",
 				Version: "0.16.0",
 			},
-			want: "legacy package @zed-industries/codex-acp version 0.16.0",
+			want: "unknown package @example/codex-acp version 0.16.0",
 		},
 		{
 			name: "unsupported official version",
@@ -4074,7 +4073,6 @@ func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
 					RequiredPackage: agent.ClaudeAdapterPackage,
 					RequiredVersion: agent.PinnedClaudeAdapterVersion,
 					Install:         agent.ClaudeAdapterInstallCommand(),
-					Legacy:          true,
 				},
 			}
 			fake.confirm = func(context.Context, io.Writer, string) (bool, error) {
@@ -4141,7 +4139,6 @@ func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing
 				RequiredPackage: agent.ClaudeAdapterPackage,
 				RequiredVersion: agent.PinnedClaudeAdapterVersion,
 				Install:         agent.ClaudeAdapterInstallCommand(),
-				Legacy:          true,
 			},
 		}
 		return fake
@@ -4224,7 +4221,6 @@ func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
 			RequiredPackage: agent.ClaudeAdapterPackage,
 			RequiredVersion: agent.PinnedClaudeAdapterVersion,
 			Install:         agent.ClaudeAdapterInstallCommand(),
-			Legacy:          true,
 		},
 		"codex": &agent.AdapterVersionError{
 			Runtime:         "codex",
@@ -4585,7 +4581,6 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 		RequiredPackage: agent.ClaudeAdapterPackage,
 		RequiredVersion: agent.PinnedClaudeAdapterVersion,
 		Install:         agent.ClaudeAdapterInstallCommand(),
-		Legacy:          true,
 	}
 	checker := newHealthChecker(healthCheckDependencies{
 		nodeVersion: func(context.Context) (string, error) {

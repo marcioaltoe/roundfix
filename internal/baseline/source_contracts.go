@@ -167,14 +167,13 @@ type UpgradeRetentionAccounting struct {
 
 // UpgradeRetentionContract is one maintained clause-level transition.
 type UpgradeRetentionContract struct {
-	SchemaVersion              string                       `json:"schemaVersion"`
-	ID                         string                       `json:"id"`
-	Version                    int                          `json:"version"`
-	FromBaseline               string                       `json:"fromBaseline"`
-	ToBaseline                 string                       `json:"toBaseline"`
-	LegacyManifestFingerprints []string                     `json:"legacyManifestFingerprints"`
-	PriorClauses               []UpgradeRetentionClause     `json:"priorClauses"`
-	Accounting                 []UpgradeRetentionAccounting `json:"mappings"`
+	SchemaVersion string                       `json:"schemaVersion"`
+	ID            string                       `json:"id"`
+	Version       int                          `json:"version"`
+	FromBaseline  string                       `json:"fromBaseline"`
+	ToBaseline    string                       `json:"toBaseline"`
+	PriorClauses  []UpgradeRetentionClause     `json:"priorClauses"`
+	Accounting    []UpgradeRetentionAccounting `json:"mappings"`
 }
 
 // SourceBaseline loads and verifies one maintained Source Baseline from the

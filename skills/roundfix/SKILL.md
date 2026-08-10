@@ -174,11 +174,10 @@ The supported adapters are official `@agentclientprotocol/codex-acp` version
 `@agentclientprotocol/claude-agent-acp` version `0.63.0` or newer. When Setup
 needs explicit commands, it proposes
 `npx -y @agentclientprotocol/codex-acp@1.1.5` and
-`npx -y @agentclientprotocol/claude-agent-acp@0.63.0`. A bare `codex-acp`
-override can resolve to legacy `@zed-industries/codex-acp`. A stale or bare
-Claude override can resolve to the former `claude-code-acp` lineage or the
-wrong-scope `@zed-industries/claude-agent-acp` lineage. Setup diagnoses each
-legacy lineage, proves the replacement, and asks before migration. The
+`npx -y @agentclientprotocol/claude-agent-acp@0.63.0`. A bare or stale
+override can resolve to a package outside the official lineage. Setup proposes
+migration from the failed lineage proof rather than from recognizing a
+superseded package by name, proves the replacement, and asks before writing. The
 official install actions are
 `npm install -g @agentclientprotocol/codex-acp@1.1.5` and
 `npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`. Decline,
@@ -609,12 +608,10 @@ removing `defaults.agent` and `runtimes`, writing complete profiles with
 `roundfix profiles validate`.
 
 Legacy profile migration is separate from adapter migration. If the effective
-Codex command resolves to `@zed-industries/codex-acp`, or the effective Claude
-command resolves to the former `claude-code-acp` lineage or wrong-scope
-`@zed-industries/claude-agent-acp`, use `roundfix setup` to diagnose it and
-authorize the applicable official pinned override. Setup and Doctor use the
-same Adapter Readiness contract; legacy, unknown, or below-pin lineages fail
-with the applicable official install action, and neither command treats a
+Codex or Claude command fails official lineage proof, use `roundfix setup` to
+diagnose it and authorize the applicable official pinned override. Setup and
+Doctor use the same Adapter Readiness contract; unknown and below-pin lineages
+fail with the applicable official install action, and neither command treats a
 same-name executable as proof.
 
 Initial progress and the Live Run View show the concrete stored selection:

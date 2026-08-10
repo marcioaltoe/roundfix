@@ -4,9 +4,6 @@
   "version": 1,
   "fromBaseline": "baseline.managed-v2",
   "toBaseline": "baseline.portable-v3",
-  "legacyManifestFingerprints": [
-    "a3aa4bffa6d7a4298c3be4be8cddaae1b8bc0a516803054eda955f3aa9c2ff4d"
-  ],
   "priorClauses": [
     {"id": "clause.managed-v2.keep-root-compact", "enforcement": "mandatory", "carrier": "rule.core.compact-root", "guidanceDigest": "0561c3da2b98f2362eed8f45941250aa0021951fc670558ccf7aa6ab3245f200"},
     {"id": "clause.managed-v2.preserve-repository-authored-policy", "enforcement": "mandatory", "carrier": "rule.core.compact-root", "guidanceDigest": "a248fe2eac1643113acfa0364568361181c222722c4fe09b4298e3850088d5c5"},

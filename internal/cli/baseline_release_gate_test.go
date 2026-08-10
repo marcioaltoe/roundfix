@@ -762,6 +762,7 @@ func baselineReleaseDecisionArgs(profile, preservation string) []string {
 		"preservation.mode=" + preservation,
 		"language.generated=English",
 		"verification.gate=make verify",
+		"branch.prefix=ma/",
 		"spec.scaffold=true",
 		"domain.layout=single-context",
 		"triage.external=false",

@@ -132,6 +132,25 @@
       ]
     },
     {
+      "id": "branch.prefix",
+      "version": 1,
+      "type": "string",
+      "default": "ma/",
+      "summary": "The required prefix for agent-created branches, named by generated guidance.",
+      "effects": [
+        {
+          "when": {"present": true},
+          "renderBindings": [
+            {
+              "artifact": "guide.agent-instructions",
+              "template": "template.guide.agent-instructions",
+              "token": "branch.prefix"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "identifier.strategy",
       "version": 1,
       "type": "identifier-strategy",

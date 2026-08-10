@@ -100,6 +100,24 @@ func TestCheckToolingUnauthorizedLocatesSpecAndRecord(t *testing.T) {
 	}
 }
 
+func TestCheckToolingUntypedReportsOnlyTheProseRecord(t *testing.T) {
+	t.Parallel()
+
+	untyped := checkFixture(t, "tooling-untyped")
+	finding := requireFinding(t, untyped, speccheck.CodeToolingUntyped)
+	const record = "docs/workflow/authorizations/2026-08-11-untyped-grant.md"
+	if !hasLocation(finding, record) {
+		t.Fatalf("locations = %#v, want %q", finding.Where, record)
+	}
+
+	typed := checkFixture(t, "tooling-typed")
+	for _, found := range typed.Findings {
+		if found.Code == speccheck.CodeToolingUntyped {
+			t.Fatalf("typed authorization record reported %#v", found)
+		}
+	}
+}
+
 func TestCheckSkipMissingTechSpec(t *testing.T) {
 	t.Parallel()
 

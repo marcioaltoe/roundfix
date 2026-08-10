@@ -146,12 +146,12 @@ The deterministic install actions are
 `npm install -g @agentclientprotocol/codex-acp@1.1.5` and
 `npm install -g @agentclientprotocol/claude-agent-acp@0.63.0`.
 
-A bare `codex-acp` override can resolve to legacy
-`@zed-industries/codex-acp`; Setup diagnoses it and, after authorization,
-migrates it to `npx -y @agentclientprotocol/codex-acp@1.1.5`. Setup also
-migrates earlier explicit pins such as `1.1.4`. For Claude, Setup recognizes
-both legacy lineages — the former `claude-code-acp` package and wrong-scope
-`@zed-industries/claude-agent-acp` — and proposes
+A bare `codex-acp` override can resolve to a package that fails official
+lineage proof; Setup then migrates it, after authorization, to
+`npx -y @agentclientprotocol/codex-acp@1.1.5`. Setup also migrates earlier
+explicit pins such as `1.1.4`. Any Claude override that fails official lineage proof — including one
+resolving to a differently named or differently scoped package — is migrated
+the same way, to
 `npx -y @agentclientprotocol/claude-agent-acp@0.63.0`.
 
 ### Inspect profiles
