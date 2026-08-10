@@ -189,12 +189,19 @@ reviews:
     - ".roundfixrc.yml"
 
     # =====================================================================
-    # Arquivado — sempre por último, para vencer qualquer inclusão acima
+    # Arquivado — nunca revisado
     # =====================================================================
     # Arquivar move o arquivo sem mudar uma linha dele, e um rename aparece no
     # diff como arquivo inteiro. Sem isto, o commit que arquiva uma Spec faz o
     # CodeRabbit revisar a Spec toda outra vez — conteúdo que já foi revisado
     # quando foi escrito, e que o `docs-layout.md` trata como história imutável.
+    #
+    # O que faz estas linhas vencerem as inclusões acima é a semântica
+    # documentada do CodeRabbit, não a posição: "files not matching any
+    # exclude pattern are included by default" — uma exclusão vence onde quer
+    # que esteja. A posição no fim é só arrumação, e não pode ser mecanismo:
+    # com `inheritance: true`, os padrões da organização são apensados DEPOIS
+    # dos deste arquivo, então nada aqui tem garantia de ser o último.
     #
     # Sem sufixo `.md`: sob esses caminhos há `.excalidraw`, `.json` e `.txt` de
     # evidência de QA, e um `.tsx` em `docs/reference/archive/gss-migration/`
@@ -243,3 +250,9 @@ knowledge_base:
       # ----- Skill definitions (read as rules, and reviewed: see path_filters) -----
       - ".agents/skills/**/*.md"
       - ".claude/skills/**/*.md"
+
+      # filePatterns não documenta negação com `!`, então nada arquivado pode
+      # ser excluído daqui — a proteção é nenhum padrão acima alcançar uma
+      # árvore `_archived`. Ao adicionar um padrão, confira que ele não casa
+      # com material arquivado: um guia arquivado lido como regra injeta
+      # instrução morta em toda revisão futura.
