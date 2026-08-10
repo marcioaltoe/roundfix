@@ -1342,7 +1342,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 		for _, want := range []string{
 			"@agentclientprotocol/codex-acp",
 			agent.PinnedCodexAdapterVersion,
-			"@zed-industries/codex-acp",
+			"official lineage proof",
 			"exact proof",
 			"advisory",
 			"gpt-5.6-terra",
