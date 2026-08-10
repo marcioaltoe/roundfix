@@ -61,14 +61,16 @@ case.
    `TestRunImplementDetachPrintsReportAndCompletesRun`,
    `TestRunImplementDetachSurvivesCallerProcessGroupKill`.
 2. No test file outside `internal/agent/acpx_runner_test.go` and
-   `internal/cli/implement_test.go` changes.
+   `internal/cli/implement_test.go` changes. The Daemon audits the Task commit
+   against this boundary; a Verification command cannot prove it, because a
+   check that nothing else changed passes most easily when no work happened at
+   all.
 
 ## Verification
 
 - `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestACPXProbeSkipsEmptyReasoningEffort$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestACPXProbeSkipsEmptyReasoningEffort'` — expected: exits 0. Fails today against the unchanged tree, because the asserted sequence omits the catalogue read.
 - `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose'` — expected: exits 0. Fails today, because the diagnosis now surfaces capability evidence first.
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestRunImplementDetachSurvivesCallerProcessGroupKill$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunImplementDetachSurvivesCallerProcessGroupKill'` — expected: exits 0. Fails today, and proves the CLI half was carried too.
-- `git diff --name-only HEAD | grep -v -E '^(internal/agent/acpx_runner_test\.go|internal/cli/implement_test\.go|docs/specs/0091-a-proof-that-can-refuse/task_06\.md)$' | grep -q . && exit 1 || exit 0` — expected: exits 0, proving no file outside the declared boundary changed.
 
 ## References
 
