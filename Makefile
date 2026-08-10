@@ -53,13 +53,18 @@ deps: ## Download, tidy, and verify Go modules
 # function there; the local default stays the plain cached test target.
 VERIFY_TEST_TARGET ?= test
 
-verify: fmt-check $(VERIFY_TEST_TARGET) spec-budget skills-sync-check skills-check build spec-check ## Run the required local verification gate
+verify: fmt-check $(VERIFY_TEST_TARGET) skills-sync-check skills-check build ## Run the required local verification gate
+
+verify-docs: build docs-test spec-budget spec-check ## Validate repository markdown; required before opening a pull request
+
+docs-test: ## Run the repository-markdown contract tests
+	$(GO) test -count=1 -tags docscontract ./internal/docscontract
 
 spec-check: ## Check Spec artifact consistency
 	$(BIN) spec check
 
 spec-budget: ## Prove the Spec corpus sweep stays within its budget
-	$(GO) test -count=1 -parallel=1 ./internal/speccheck -run '^TestCheckCorpusBudget$$'
+	$(GO) test -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusBudget$$'
 
 fmt: ## Format Go files
 	$(GOFMT) -w $(GO_FILES)
@@ -131,7 +136,7 @@ baseline-digests: ## Regenerate derived Baseline digest artifacts
 	sort "$$raw" > "$$snapshot" || exit $$?; \
 	err_code="regeneration_failed"; err_retryable="false"; \
 	err_next="Read the failing test output above, fix the canonical source it validates, then rerun make baseline-digests."; \
-	for step in $(BASELINE_DIGEST_STEPS); do package=$${step%%:*}; test_spec=$${step#*:}; test_name=$${test_spec%%:*}; update_flag=$${test_spec#*:}; if [ "$$update_flag" = "$$test_spec" ]; then update_flag=-update; fi; err_stage="$$package:$$test_name"; $(GO) test "$$package" -run "$$test_name" "$$update_flag" >&2 || { status=$$?; printf 'baseline-digests: regeneration failed at %s:%s\n' "$$package" "$$test_name" >&2; exit "$$status"; }; done; \
+	for step in $(BASELINE_DIGEST_STEPS); do package=$${step%%:*}; test_spec=$${step#*:}; test_name=$${test_spec%%:*}; update_flag=$${test_spec#*:}; if [ "$$update_flag" = "$$test_spec" ]; then update_flag=-update; fi; err_stage="$$package:$$test_name"; $(GO) test "$$package" -run "$$test_name" "$$update_flag" -count=1 >&2 || { status=$$?; printf 'baseline-digests: regeneration failed at %s:%s\n' "$$package" "$$test_name" >&2; exit "$$status"; }; done; \
 	err_code="artifact_scan_failed"; err_stage="post-scan"; \
 	err_next="Verify every path in DERIVED_DIGEST_PATHS exists and is readable, then rerun make baseline-digests."; \
 	find $(DERIVED_DIGEST_PATHS) -type f -exec shasum {} + > "$$raw" || exit $$?; \
@@ -140,7 +145,7 @@ baseline-digests: ## Regenerate derived Baseline digest artifacts
 	changed=$$(sort "$$raw" | comm -3 "$$snapshot" - | awk '{print $$2}' | sort -u) || exit $$?; \
 	err_code="strict_validation_failed"; err_stage="strict-validation"; err_retryable="false"; \
 	err_next="Read the strict catalog validation output above, repair any remaining inconsistency, then rerun make baseline-digests."; \
-	$(GO) test ./internal/baseline -run TestCatalogCompatibility >&2 || { status=$$?; printf 'baseline-digests: strict validation failed\n' >&2; exit "$$status"; }; \
+	$(GO) test ./internal/baseline -run TestCatalogCompatibility -count=1 >&2 || { status=$$?; printf 'baseline-digests: strict validation failed\n' >&2; exit "$$status"; }; \
 	if [ -z "$$changed" ]; then result_changed=false; printf '%s\n' "baseline-digests: no changes; derived artifacts already match their canonical sources" >&2; else result_changed=true; printf '%s\n' "baseline-digests: regenerated" >&2; printf '%s\n' "$$changed" | sed 's/^/  /' >&2; fi; printf '{"schemaVersion":1,"type":"baseline-digests","ok":true,"changed":%s}\n' "$$result_changed"
 
 ##@ Build & Run

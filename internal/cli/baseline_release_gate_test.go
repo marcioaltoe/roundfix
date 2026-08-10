@@ -502,25 +502,6 @@ func TestBaselineFindingRegressionsHumanReview(t *testing.T) {
 	t.Run("file projection precedes canonical ledgers", TestRejectedPlanRevision)
 }
 
-func TestBaselineDocumentationContractExamples(t *testing.T) {
-	t.Parallel()
-	t.Run("public examples parse", TestBaselineExamplesParse)
-	t.Run("Decision Documents parse", TestBaselineDecisionExamples)
-}
-
-// coldBuiltBinary compiles the Roundfix CLI once per package run and hands
-// every caller the same path.
-//
-// It builds with the ambient GOCACHE. The helpers this replaces each forced an
-// empty cache, which looked like rigor and proved nothing: Go's build cache is
-// content-addressed, so a warm build produces a byte-identical binary to a
-// cold one — verified directly, same SHA-256 both ways. What the empty cache
-// actually did was recompile the entire project mid-suite, ~20s of serial
-// head on this package plus a burst of compiler CPU competing with every
-// other package's tests. On a machine with no cache at all, the first test
-// binaries populate it and this build reuses their work.
-//
-// Callers only exec the binary, never modify it, so one copy serves them all.
 var coldBuiltBinary = struct {
 	once sync.Once
 	dir  string

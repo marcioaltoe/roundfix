@@ -1290,191 +1290,6 @@ func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
 	}
 }
 
-func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
-	t.Parallel()
-	repoRoot := cliTestRepoRoot(t)
-	readme := mustRead(t, filepath.Join(repoRoot, "README.md"))
-	commands := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "commands.md"))
-	usage := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "usage.md"))
-	configuration := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "configuration.md"))
-	releaseRunbook := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "release-runbook.md"))
-	roundfixSkill := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "SKILL.md"))
-	roundfixManifest := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "agents", "openai.yaml"))
-
-	for _, doc := range []struct {
-		name    string
-		content string
-	}{
-		{name: "usage", content: usage},
-		{name: "configuration", content: configuration},
-		{name: "roundfix skill", content: roundfixSkill},
-	} {
-		for _, want := range []string{
-			"roundfix profiles show",
-			"roundfix profiles configure",
-			"roundfix profiles validate",
-			"gpt-5.6-sol",
-			"gpt-5.6-terra",
-			"sonnet",
-			"claude-fable-5",
-			"2026-08-07",
-			"category_specific: false",
-			"agent_work_started",
-			"defaults.agent",
-			"runtimes",
-			"gpt-5.5",
-			"xhigh",
-		} {
-			if !strings.Contains(doc.content, want) {
-				t.Fatalf("%s documentation is missing %q", doc.name, want)
-			}
-		}
-	}
-
-	for _, doc := range []struct {
-		name    string
-		content string
-	}{
-		{name: "configuration", content: configuration},
-		{name: "usage", content: usage},
-		{name: "roundfix skill", content: roundfixSkill},
-	} {
-		for _, want := range []string{
-			"@agentclientprotocol/codex-acp",
-			agent.PinnedCodexAdapterVersion,
-			"official lineage proof",
-			"exact proof",
-			"advisory",
-			"gpt-5.6-terra",
-			"gpt-5.6-luna",
-		} {
-			if !strings.Contains(doc.content, want) {
-				t.Fatalf("%s readiness documentation is missing %q", doc.name, want)
-			}
-		}
-		if strings.Contains(doc.content, "fallback `codex / gpt-5.6-terra / max`") {
-			t.Fatalf("%s still documents Terra/max as the generated fallback", doc.name)
-		}
-	}
-
-	for _, want := range []string{
-		"profiles: ok",
-		"roundfix profiles configure",
-		"roundfix profiles validate",
-		"does not recommend model-managed reasoning",
-	} {
-		if !strings.Contains(commands, want) {
-			t.Fatalf("command documentation is missing %q", want)
-		}
-	}
-
-	for _, want := range []string{
-		"partial Agent Selection override",
-		"omit all three selection flags",
-		"provide `--agent`, `--model`, and `--reasoning-effort` together",
-		"exit `2` before configuration, proof, or Run mutation",
-	} {
-		if !strings.Contains(releaseRunbook, want) {
-			t.Fatalf("release guidance is missing %q", want)
-		}
-	}
-
-	for _, want := range []string{
-		"Required profiles are `general`, `backend`, `frontend`, `qa`, and `review`.",
-		"gpt-5.6-sol",
-		"gpt-5.5",
-		"Fallback Chain",
-	} {
-		if !strings.Contains(configuration, want) {
-			t.Fatalf("profile configuration guidance is missing %q", want)
-		}
-	}
-
-	for _, help := range []struct {
-		name     string
-		snippets []string
-	}{
-		{name: "setup", snippets: []string{"official Codex and Claude adapters", "profile readiness", "Claude override migration requires authorization", "before writing"}},
-		{name: "doctor", snippets: []string{"Agent Selection Profiles", "profiles:", "Repository Skill Set", "skills:", "read-only", "mutates nothing"}},
-		{name: "profiles configure", snippets: []string{"exact Agent Selection", "before confirmation", "without writing"}},
-		{name: "profiles validate", snippets: []string{"exact", "Read-only", "disposable ACP Runtime session"}},
-	} {
-		content := commandUsage(help.name)
-		for _, want := range help.snippets {
-			if !strings.Contains(content, want) {
-				t.Fatalf("%s help is missing %q:\n%s", help.name, want, content)
-			}
-		}
-	}
-
-	for _, doc := range []struct {
-		name    string
-		content string
-	}{
-		{name: "README", content: readme},
-		{name: "command reference", content: commands},
-		{name: "usage", content: usage},
-		{name: "configuration", content: configuration},
-		{name: "roundfix skill", content: roundfixSkill},
-		{name: "roundfix manifest", content: roundfixManifest},
-	} {
-		assertAgentStartingExamplesUseProfilesOrCompleteOverrides(t, doc.name, doc.content)
-	}
-
-	for _, want := range []string{
-		"roundfix/profiles/v1",
-		"roundfix/profiles-configure/v1",
-		"roundfix/profiles-validate/v1",
-		"notification-first",
-		"only then activates",
-		"no fallback",
-	} {
-		if !strings.Contains(roundfixSkill, want) {
-			t.Fatalf("roundfix skill is missing %q", want)
-		}
-	}
-
-	for _, path := range []string{
-		filepath.Join(repoRoot, ".agents", "skills", "write-tasks", "SKILL.md"),
-		filepath.Join(repoRoot, "skills", "write-tasks", "SKILL.md"),
-	} {
-		content := mustRead(t, path)
-		for _, forbidden := range []string{
-			"gpt-5.6",
-			"claude-fable",
-			"roundfix profiles",
-			"profiles:",
-			"recommendation",
-			"ranking",
-			"runtime:",
-			"model:",
-		} {
-			if strings.Contains(content, forbidden) {
-				t.Fatalf("%s must not contain profile policy term %q", path, forbidden)
-			}
-		}
-	}
-}
-
-func assertAgentStartingExamplesUseProfilesOrCompleteOverrides(t *testing.T, label string, content string) {
-	t.Helper()
-	content = strings.ReplaceAll(content, "\\\n", " ")
-	for _, line := range strings.Split(content, "\n") {
-		if !strings.Contains(line, "roundfix resolve") && !strings.Contains(line, "roundfix watch") && !strings.Contains(line, "roundfix implement") {
-			continue
-		}
-		present := 0
-		for _, flag := range []string{"--agent", "--model", "--reasoning-effort"} {
-			if strings.Contains(line, flag) {
-				present++
-			}
-		}
-		if present != 0 && present != 3 {
-			t.Fatalf("%s has a partial Agent Selection example: %q", label, strings.TrimSpace(line))
-		}
-	}
-}
-
 func cliTestRepoRoot(t *testing.T) string {
 	t.Helper()
 	dir, err := os.Getwd()
@@ -16208,5 +16023,27 @@ func TestStageableReviewRootClassifiesInsideOutsideAndSymlink(t *testing.T) {
 	}
 	if _, ok := stageableReviewRoot(linkRepo, filepath.Join(linkRepo, "docs", "specs", "_reviews", "pr-9")); ok {
 		t.Fatal("expected symlink-crossing root to be unstageable")
+	}
+}
+
+// TestReadinessCommandHelpDocumentsContract asserts the binary's own help
+// output; the markdown documentation contracts live in internal/docscontract.
+func TestReadinessCommandHelpDocumentsContract(t *testing.T) {
+	t.Parallel()
+	for _, help := range []struct {
+		name     string
+		snippets []string
+	}{
+		{name: "setup", snippets: []string{"official Codex and Claude adapters", "profile readiness", "Claude override migration requires authorization", "before writing"}},
+		{name: "doctor", snippets: []string{"Agent Selection Profiles", "profiles:", "Repository Skill Set", "skills:", "read-only", "mutates nothing"}},
+		{name: "profiles configure", snippets: []string{"exact Agent Selection", "before confirmation", "without writing"}},
+		{name: "profiles validate", snippets: []string{"exact", "Read-only", "disposable ACP Runtime session"}},
+	} {
+		content := commandUsage(help.name)
+		for _, want := range help.snippets {
+			if !strings.Contains(content, want) {
+				t.Fatalf("%s help is missing %q:\n%s", help.name, want, content)
+			}
+		}
 	}
 }

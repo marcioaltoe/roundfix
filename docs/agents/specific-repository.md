@@ -15,6 +15,11 @@ Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   documented product contract.
 - **NEVER** copy names, branding, package names, comments, examples, or
   generated artifacts from reference projects into this repository.
+- **HARD RULE — docs validate at the pull request boundary**: `make verify`
+  excludes repository-markdown validation so a docs commit does not re-run the
+  code suites; `make verify-docs` runs those contracts and `roundfix spec
+  check`, and it **MUST** pass before any pull request opens. Nothing under a
+  `_archived` tree is ever validated.
 - **HARD RULE — roundfix skill sync**: before opening any PR, confirm the
   roundfix skill still matches the shipped CLI behavior; a PR that changes CLI
   behavior ships the skill update too.

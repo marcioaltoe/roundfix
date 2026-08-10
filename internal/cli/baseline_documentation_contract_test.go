@@ -5,469 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
-
-	"roundfix/internal/baseline"
 )
 
 // Suite: Baseline public documentation contract
 // Invariant: every public Baseline recipe matches the shipped parser and strict document schemas.
 // Boundary IN: CLI help, public guides, README, and canonical public skill recipes.
 // Boundary OUT: real repository adoption journeys and Python-runtime removal.
-
-func TestBaselineDocumentationContract(t *testing.T) {
-	t.Parallel()
-	helpCases := []struct {
-		command  string
-		args     []string
-		snippets []string
-	}{
-		{
-			command: "baseline",
-			args:    []string{"baseline", "--help"},
-			snippets: []string{
-				"roundfix baseline [--repo <path>] [--format <text|json>]",
-				"roundfix baseline plan (--profile <id> | --profile-file <draft.json>)",
-				"roundfix baseline apply --plan <file> --confirm-plan <digest>",
-				"roundfix baseline capabilities check [--profile <id>]",
-				"roundfix baseline profile init --id <id>",
-				"roundfix baseline skills restore --profile <id>",
-				"roundfix baseline assets sync --source-dir <path>",
-				"explicit confirmation of the displayed Plan Digest",
-			},
-		},
-		{
-			command: "baseline capabilities check",
-			args:    []string{"baseline", "capabilities", "check", "--help"},
-			snippets: []string{
-				"roundfix/baseline-capability-recheck/v1",
-				"same evaluator",
-				"divergence renderer",
-				"accepts and resolves",
-				"no decisions",
-				"never writes repository or journal bytes",
-				"no resolvable Baseline Profile",
-				"3  capability evidence evaluated with a blocking divergence",
-			},
-		},
-		{
-			command: "baseline plan",
-			args:    []string{"baseline", "plan", "--help"},
-			snippets: []string{
-				"roundfix/baseline-plan/v1",
-				"roundfix/baseline-result/v1",
-				"--profile-file",
-				"mutually exclusive",
-				"--decision-file",
-				"never prompts",
-				"never",
-				"uses the network",
-				"0  complete Baseline Plan emitted",
-				"2  invalid arguments",
-				"3  a decision",
-			},
-		},
-		{
-			command: "baseline update",
-			args:    []string{"baseline", "update", "--help"},
-			snippets: []string{
-				"roundfix baseline update [--repo <path>] [--format <text|json>]",
-				"--yes | --confirm-plan <digest>",
-				"--adopt-suggested",
-				"--no-skills",
-				"--skills-source-dir <path>",
-				"roundfix/baseline-update-result/v1",
-				"0  repository already current, or approved managed refresh applied and verified",
-				"1  apply, verification, output, rollback, or recovery failure",
-				"2  invalid input, incompatible manifest, or unsafe repository",
-				"3  adoption, a new decision, confirmation, or retention action is required",
-				"130 operation canceled",
-			},
-		},
-		{
-			command: "baseline apply",
-			args:    []string{"baseline", "apply", "--help"},
-			snippets: []string{
-				"--confirm-plan",
-				"recoverable",
-				"transaction",
-				"Repository formatter and Verification commands are reported as",
-				"never run",
-				"0  approved plan applied or already applied",
-				"1  apply, verification, output, rollback, or recovery failure",
-				"3  confirmation mismatch, stale preimage, or unrelated Git lineage",
-			},
-		},
-		{
-			command: "baseline profile",
-			args:    []string{"baseline", "profile", "--help"},
-			snippets: []string{
-				"profile init",
-				"profile show",
-				"profile validate",
-			},
-		},
-		{
-			command: "baseline skills restore",
-			args:    []string{"baseline", "skills", "restore", "--help"},
-			snippets: []string{
-				"complete preimage",
-				"--source-dir",
-				"--confirm-plan",
-				"A non-empty preview exits 3",
-				"An empty restoration is an idempotent exit 0",
-			},
-		},
-		{
-			command: "baseline assets sync",
-			args:    []string{"baseline", "assets", "sync", "--help"},
-			snippets: []string{
-				"--source-dir",
-				"--check",
-				"never installs skills",
-			},
-		},
-	}
-	for _, test := range helpCases {
-		t.Run(test.command, func(t *testing.T) {
-			var stdout, stderr bytes.Buffer
-			if code := Run(test.args, &stdout, &stderr); code != exitOK {
-				t.Fatalf("help exit = %d, want 0 stderr=%q", code, stderr.String())
-			}
-			if stderr.Len() != 0 {
-				t.Fatalf("help stderr = %q, want empty", stderr.String())
-			}
-			assertBaselineDocumentationContains(t, test.command+" help", stdout.String(), test.snippets)
-		})
-	}
-
-	root := baselineDocumentationRepoRoot()
-	docs := []struct {
-		name     string
-		path     string
-		snippets []string
-	}{
-		{
-			name: "Context-Driven user guide",
-			path: filepath.Join(root, "docs", "user-guide", "context-driven-development.md"),
-			snippets: []string{
-				"### First adoption",
-				"roundfix baseline update --repo . --yes --format json",
-				"roundfix/baseline-update-result/v1",
-				"Every byte outside managed boundaries remains byte-identical",
-				"Greenfield",
-				"Preservation",
-				"### Update, profile change, and rejected plans",
-				"### Automation",
-				"roundfix/baseline-plan/v1",
-				"roundfix/baseline-result/v1",
-				"### Profiles",
-				"### Repository Skill Set restoration",
-				"### Canonical asset synchronization",
-				"### Recovery and troubleshooting",
-				"Interrupted transaction",
-				"Incomplete rollback",
-				"### Security and execution limits",
-				"### Migrate from the script-backed setup skill",
-				"profile expectation",
-				"repository command",
-				"recommendation",
-			},
-		},
-		{
-			name: "command reference",
-			path: filepath.Join(root, "docs", "user-guide", "commands.md"),
-			snippets: []string{
-				"### baseline",
-				"roundfix baseline plan --profile <id>",
-				"roundfix baseline apply --plan <file> --confirm-plan <digest>",
-				"stdout",
-				"stderr",
-				"incomplete-rollback",
-			},
-		},
-		{
-			name: "README",
-			path: filepath.Join(root, "README.md"),
-			snippets: []string{
-				"roundfix baseline",
-				"complete Baseline adoption",
-				"migration",
-				"recovery",
-			},
-		},
-		{
-			name: "canonical setup skill",
-			path: filepath.Join(root, ".agents", "skills", "setup-context-driven", "SKILL.md"),
-			snippets: []string{
-				"public `roundfix baseline` command family",
-				"roundfix baseline update --repo . --yes --format json",
-				"only runtime authority",
-				"roundfix baseline plan",
-				"roundfix baseline apply",
-				"## Recovery",
-			},
-		},
-		{
-			name: "canonical Roundfix skill",
-			path: filepath.Join(root, ".agents", "skills", "roundfix", "SKILL.md"),
-			snippets: []string{
-				"## Context-Driven Baseline",
-				"roundfix baseline update --repo . --yes --format json",
-				"roundfix baseline plan",
-				"roundfix baseline apply",
-				"no partial plan",
-			},
-		},
-	}
-	for _, doc := range docs {
-		t.Run(doc.name, func(t *testing.T) {
-			content := readBaselineDocumentation(t, doc.path)
-			assertBaselineDocumentationContains(t, doc.name, content, doc.snippets)
-		})
-	}
-
-	guide := readBaselineDocumentation(
-		t,
-		filepath.Join(root, "docs", "user-guide", "context-driven-development.md"),
-	)
-	baselineSection := betweenBaselineDocumentation(
-		t,
-		guide,
-		"## Adopt or update the Context-Driven Baseline",
-		"## How Roundfix executes it",
-	)
-	for _, forbidden := range []string{"/Users/", "/home/", `C:\`, "context_setup.py"} {
-		if strings.Contains(baselineSection, forbidden) {
-			t.Fatalf("Baseline user guide contains environment-specific or retired runtime text %q", forbidden)
-		}
-	}
-}
-
-func TestGuidanceCompositionDocumentation(t *testing.T) {
-	t.Parallel()
-	root := baselineDocumentationRepoRoot()
-	guide := readBaselineDocumentation(
-		t,
-		filepath.Join(root, "docs", "user-guide", "context-driven-development.md"),
-	)
-	assertBaselineDocumentationContains(t, "Context-Driven user guide", guide, []string{
-		"### Instruction hierarchy",
-		"Universal instructions",
-		"Context and documentation",
-		"Spec workflow",
-		"Autonomous work",
-		"Stack guidance",
-		"Surface guidance",
-		"Optional knowledge sources",
-		"A narrower guide may add constraints",
-		"### Greenfield composition and update redistribution",
-		"exact source bytes",
-		"semantic owner",
-		"docs/agents/specific-repository.md",
-		"### ADR and Findings lifecycle",
-		"Only `accepted` is active",
-		"`pending`, `partial`, `deferred`, and `done`",
-		"### Profile alignment and adaptation",
-		"Change Baseline Profile",
-		"repository-owned Profile adaptation",
-		"Decline without writing",
-		"--profile-file",
-		"mutually exclusive",
-		"roundfix baseline skills restore --repo . --profile",
-		"--confirm-plan <digest>",
-		"Generate a fresh plan",
-	})
-
-	generated := readBaselineDocumentation(
-		t,
-		filepath.Join(
-			root,
-			"internal",
-			"baseline",
-			"assets",
-			"formatter-fixtures",
-			"standard-typescript-monorepo",
-			"golden",
-			"docs",
-			"agents",
-			"docs-layout.md",
-		),
-	)
-	tests := []struct {
-		name           string
-		guideStart     string
-		guideEnd       string
-		generatedAfter string
-	}{
-		{
-			name:           "ADR lifecycle template",
-			guideStart:     "<!-- baseline-adr-lifecycle-template:start -->",
-			guideEnd:       "<!-- baseline-adr-lifecycle-template:end -->",
-			generatedAfter: "When creating a new ADR",
-		},
-		{
-			name:           "Findings template",
-			guideStart:     "<!-- baseline-findings-template:start -->",
-			guideEnd:       "<!-- baseline-findings-template:end -->",
-			generatedAfter: "complete copyable Findings Operational Contract",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			published := markdownFenceContent(
-				t,
-				betweenBaselineDocumentation(t, guide, test.guideStart, test.guideEnd),
-			)
-			generatedStart := strings.Index(generated, test.generatedAfter)
-			if generatedStart < 0 {
-				t.Fatalf("generated guidance marker %q is missing", test.generatedAfter)
-			}
-			want := markdownFenceContent(
-				t,
-				generated[generatedStart:],
-			)
-			if published != want {
-				t.Fatalf("%s differs from generated guidance\npublished:\n%s\nwant:\n%s", test.name, published, want)
-			}
-		})
-	}
-}
-
-func TestProjectConstraintDocumentation(t *testing.T) {
-	t.Parallel()
-	root := baselineDocumentationRepoRoot()
-	guidePath := filepath.Join(
-		root,
-		"docs",
-		"user-guide",
-		"context-driven-development.md",
-	)
-	skillPath := filepath.Join(
-		root,
-		".agents",
-		"skills",
-		"setup-context-driven",
-		"SKILL.md",
-	)
-	guide := readBaselineDocumentation(t, guidePath)
-	skill := readBaselineDocumentation(t, skillPath)
-	guideContract := strings.Join(strings.Fields(guide), " ")
-	skillContract := strings.Join(strings.Fields(skill), " ")
-
-	assertBaselineDocumentationContains(t, "Context-Driven user guide", guideContract, []string{
-		"UUID version 7 is a visible suggestion",
-		"`identifier.strategy`",
-		"`auth.provider`",
-		"`GET` and `POST` under `/api/auth/*`",
-		"Session, OAuth redirect, callback, and related provider protocol",
-		"exit `3`",
-		"no partial Plan",
-		"### Project Constraints",
-		"Identifier strategy",
-		"Authentication and HTTP",
-		"Active ADR obligations",
-		"Tooling authority",
-		"express maintainer authorization",
-		"exact bounded repository-relative files",
-		"`docs/agents/agent-instructions.md`",
-		"`docs/agents/domain.md`",
-		"`docs/agents/backend.md`",
-		"`docs/agents/spec-routing.md`",
-	})
-	assertBaselineDocumentationContains(t, "thin setup skill", skillContract, []string{
-		"UUID version 7 is a visible suggestion",
-		"`identifier.strategy`",
-		"`auth.provider`",
-		"`GET` and `POST` under `/api/auth/*`",
-		"Project Constraints",
-		"express maintainer authorization",
-		"exact bounded repository-relative files",
-		"does not collect, derive, validate, or render decisions",
-	})
-
-	example := betweenBaselineDocumentation(
-		t,
-		guide,
-		"<!-- baseline-decision-document:start -->",
-		"<!-- baseline-decision-document:end -->",
-	)
-	example = strings.TrimSpace(example)
-	example = strings.TrimPrefix(example, "```json")
-	example = strings.TrimSuffix(example, "```")
-	example = strings.TrimSpace(example)
-	document, err := baseline.ParseDecisionDocument([]byte(example), guidePath)
-	if err != nil {
-		t.Fatalf("published project Decision Document does not parse: %v", err)
-	}
-	if len(document.Decisions) != 15 {
-		t.Fatalf("published project Decision Document decisions = %d, want 15", len(document.Decisions))
-	}
-
-	byID := make(map[string]any, len(document.Decisions))
-	for _, decision := range document.Decisions {
-		byID[decision.ID] = decision.Value
-	}
-	if !reflect.DeepEqual(
-		byID["identifier.strategy"],
-		map[string]any{"kind": "uuid-v7"},
-	) {
-		t.Fatalf("published identifier strategy = %#v", byID["identifier.strategy"])
-	}
-	wantAuth := map[string]any{
-		"kind": "better-auth",
-		"routeException": map[string]any{
-			"scope":   "/api/auth/*",
-			"methods": []any{"GET", "POST"},
-			"owner":   "Better Auth",
-			"reason": "Session, OAuth redirect, callback, and related provider " +
-				"protocol routes require provider-owned GET and POST semantics.",
-		},
-	}
-	if !reflect.DeepEqual(byID["auth.provider"], wantAuth) {
-		t.Fatalf("published authentication provider = %#v", byID["auth.provider"])
-	}
-
-	catalog, err := baseline.LoadEmbeddedCatalog()
-	if err != nil {
-		t.Fatal(err)
-	}
-	profile, err := baseline.ResolveProfile("", "standard-typescript-monorepo", catalog)
-	if err != nil {
-		t.Fatal(err)
-	}
-	decisions := make([]baseline.DecisionValue, 0, len(document.Decisions))
-	for _, decision := range document.Decisions {
-		if decision.ID != "preservation.mode" {
-			decisions = append(decisions, decision)
-		}
-	}
-	if _, missing, err := baseline.ResolveDecisionInput(profile, decisions, catalog); err != nil {
-		t.Fatalf("published project decisions are invalid: %v", err)
-	} else if len(missing) != 0 {
-		t.Fatalf("published project decisions are incomplete: %v", missing)
-	}
-
-	parsedPlanningExamples := 0
-	for _, content := range []string{guide, skill} {
-		for _, command := range baselineBashExamples(content) {
-			if !strings.Contains(command, "baseline plan") ||
-				!strings.Contains(command, "--decision-file") {
-				continue
-			}
-			args := strings.Fields(command)
-			if err := parsePublishedBaselineExample(args[2:], ""); err != nil {
-				t.Fatalf("project-decision command %q does not parse: %v", command, err)
-			}
-			parsedPlanningExamples++
-		}
-	}
-	if parsedPlanningExamples < 2 {
-		t.Fatalf("parsed project-decision planning examples = %d, want at least 2", parsedPlanningExamples)
-	}
-}
 
 func TestBaselineExamplesParse(t *testing.T) {
 	t.Parallel()
@@ -504,61 +49,6 @@ func TestBaselineExamplesParse(t *testing.T) {
 	}
 	if exampleCount < 20 {
 		t.Fatalf("parsed %d Baseline examples, want at least 20 public recipes", exampleCount)
-	}
-}
-
-func TestBaselineDecisionExamples(t *testing.T) {
-	t.Parallel()
-	path := filepath.Join(
-		baselineDocumentationRepoRoot(),
-		"docs",
-		"user-guide",
-		"context-driven-development.md",
-	)
-	content := readBaselineDocumentation(t, path)
-	example := betweenBaselineDocumentation(
-		t,
-		content,
-		"<!-- baseline-decision-document:start -->",
-		"<!-- baseline-decision-document:end -->",
-	)
-	example = strings.TrimSpace(example)
-	example = strings.TrimPrefix(example, "```json")
-	example = strings.TrimSuffix(example, "```")
-	example = strings.TrimSpace(example)
-
-	document, err := baseline.ParseDecisionDocument([]byte(example), path)
-	if err != nil {
-		t.Fatalf("published Decision Document does not pass the strict parser: %v", err)
-	}
-	if document.SchemaVersion != baseline.DecisionDocumentSchemaVersion ||
-		document.Version != baseline.DecisionDocumentVersion ||
-		len(document.Decisions) != 15 {
-		t.Fatalf("published Decision Document parsed unexpectedly: %#v", document)
-	}
-	catalog, err := baseline.LoadEmbeddedCatalog()
-	if err != nil {
-		t.Fatal(err)
-	}
-	profile, err := baseline.ResolveProfile("", "standard-typescript-monorepo", catalog)
-	if err != nil {
-		t.Fatal(err)
-	}
-	decisions := make([]baseline.DecisionValue, 0, len(document.Decisions))
-	for _, decision := range document.Decisions {
-		if decision.ID != "preservation.mode" {
-			decisions = append(decisions, decision)
-		}
-	}
-	if _, missing, err := baseline.ResolveDecisionInput(profile, decisions, catalog); err != nil {
-		t.Fatalf("published complete Decision Document is invalid for standard-typescript-monorepo: %v", err)
-	} else if len(missing) != 0 {
-		t.Fatalf("published complete Decision Document is missing required decisions: %v", missing)
-	}
-
-	invalid := strings.Replace(example, `"version": "0.0.1",`, `"version": "0.0.1", "unknown": true,`, 1)
-	if _, err := baseline.ParseDecisionDocument([]byte(invalid), path+"#invalid"); err == nil {
-		t.Fatal("strict parser accepted an unknown field in the published Decision Document shape")
 	}
 }
 
@@ -689,4 +179,36 @@ func markdownFenceContent(t *testing.T, content string) string {
 		t.Fatal("closing markdown fence is missing")
 	}
 	return strings.TrimSpace(content[:end])
+}
+
+// TestProjectConstraintPlanningExamplesParse keeps the parser-level half of
+// the project-constraint documentation contract beside the parsers it needs:
+// the string contracts on the same two documents live in
+// internal/docscontract.
+func TestProjectConstraintPlanningExamplesParse(t *testing.T) {
+	t.Parallel()
+	root := baselineDocumentationRepoRoot()
+	guide := readBaselineDocumentation(t, filepath.Join(
+		root, "docs", "user-guide", "context-driven-development.md",
+	))
+	skill := readBaselineDocumentation(t, filepath.Join(
+		root, ".agents", "skills", "setup-context-driven", "SKILL.md",
+	))
+	parsedPlanningExamples := 0
+	for _, content := range []string{guide, skill} {
+		for _, command := range baselineBashExamples(content) {
+			if !strings.Contains(command, "baseline plan") ||
+				!strings.Contains(command, "--decision-file") {
+				continue
+			}
+			args := strings.Fields(command)
+			if err := parsePublishedBaselineExample(args[2:], ""); err != nil {
+				t.Fatalf("project-decision command %q does not parse: %v", command, err)
+			}
+			parsedPlanningExamples++
+		}
+	}
+	if parsedPlanningExamples < 2 {
+		t.Fatalf("parsed project-decision planning examples = %d, want at least 2", parsedPlanningExamples)
+	}
 }

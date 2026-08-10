@@ -56,3 +56,9 @@ jobs:
           VERIFY_TEST_TARGET: test-budget
           SUITE_BUDGET_SECONDS: "240"
         run: make verify
+
+      # Repository-markdown contracts run at the pull request boundary. CI is
+      # that boundary's fail-closed enforcement: a PR whose prose lies about
+      # the binary, or whose Spec corpus is inconsistent, fails here.
+      - name: Verify docs
+        run: make verify-docs

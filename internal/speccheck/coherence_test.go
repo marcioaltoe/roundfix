@@ -5,7 +5,6 @@
 package speccheck_test
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -103,47 +102,6 @@ func TestStageScopeRunsTheCitationDetectorInAuthoringStages(t *testing.T) {
 				if !strings.Contains(findings[0].Summary, want) {
 					t.Errorf("CheckStage(%s) summary = %q, want %q", tt.stage, findings[0].Summary, want)
 				}
-			}
-		})
-	}
-}
-
-func TestStageScopeDefaultSweepIsUnchanged(t *testing.T) {
-	repoRoot := characterizationRepositoryRoot(t)
-	activeRoot := filepath.Join(repoRoot, "docs", "specs")
-	archivedRoot := materializeArchivedCorpus(t, filepath.Join(activeRoot, "_archived"))
-	for _, specsRoot := range []string{activeRoot, archivedRoot} {
-		assertDefaultStageSweepUnchanged(t, specsRoot, repoRoot)
-	}
-}
-
-func assertDefaultStageSweepUnchanged(t *testing.T, specsRoot, repoRoot string) {
-	t.Helper()
-
-	entries, err := os.ReadDir(specsRoot)
-	if err != nil {
-		t.Fatalf("read Spec corpus %q: %v", specsRoot, err)
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
-			continue
-		}
-		if _, err := os.Stat(filepath.Join(specsRoot, entry.Name(), "_prd.md")); errors.Is(err, os.ErrNotExist) {
-			continue
-		} else if err != nil {
-			t.Fatalf("inspect Spec %q: %v", entry.Name(), err)
-		}
-		t.Run(filepath.Base(specsRoot)+"/"+entry.Name(), func(t *testing.T) {
-			fullResult, err := speccheck.Check(specsRoot, repoRoot, entry.Name())
-			if err != nil {
-				t.Fatalf("Check(): %v", err)
-			}
-			defaultResult, err := speccheck.CheckStage(specsRoot, repoRoot, entry.Name(), speccheck.StageAll)
-			if err != nil {
-				t.Fatalf("CheckStage(StageAll): %v", err)
-			}
-			if !reflect.DeepEqual(defaultResult, fullResult) {
-				t.Errorf("default stage result = %#v, want unchanged result %#v", defaultResult, fullResult)
 			}
 		})
 	}
