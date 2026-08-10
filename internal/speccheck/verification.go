@@ -31,13 +31,20 @@ var (
 	// text inside another command's quoted argument is never taken for a
 	// success form: `grep -q 'exit 0'` is a grep that fails on empty input,
 	// not an `exit 0` success predicate.
+	//
+	// A `test -z` / `[ -z` empty-string test is a guaranteed success only when
+	// its length operand comes from a command substitution that reads the
+	// working tree at test time, so an unchanged tree yields an empty value. A
+	// bare variable or literal operand is not proof: an earlier chain segment
+	// can capture a different value (e.g. a second `git status --porcelain`
+	// snapshot after an intervening command), making the predicate fail rather
+	// than pass. Those variable-dependent forms fall through to the
+	// emptyInputUnknown branch and are never reported vacuous.
 	emptyOutputSucceedsPattern = regexp.MustCompile(
 		`^(?:rtk\s+)?(?:cat|true|:)\s*$` + // | cat | true | : succeed on empty input
 			`|^(?:rtk\s+)?exit\s+0\s*$` + // | exit 0 explicitly succeeds
-			`|^(?:rtk\s+)?test\s+-z\b` + // | test -z <expr>
-			`|^(?:rtk\s+)?\[\s*-z\s` + //   | [ -z <expr>
-			`|^(?:rtk\s+)?\[\s*"\$\{?\w+\}?"\s*=\s*"\$\{?\w+\}?"\s*\]\s*$` + // | [ "$a" = "$b" ]
-			`|^(?:rtk\s+)?(?:test\s+)?"\$\{?\w+\}?"\s*=\s*"\$\{?\w+\}?"\s*$`, // | "$a" = "$b" | test "$a" = "$b"
+			`|^(?:rtk\s+)?test\s+-z\s+(?:["']?\$\(|""|'')` + // | test -z "$(cmd)" | test -z ""
+			`|^(?:rtk\s+)?\[\s*-z\s+(?:["']?\$\(|""|'')`, // | [ -z "$(cmd)" | [ -z "" ]
 	)
 	// A terminal command that provably fails on empty input. grep finds no
 	// lines in an unchanged tree's empty output and exits nonzero, so it is

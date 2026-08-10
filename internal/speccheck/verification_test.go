@@ -117,9 +117,14 @@ func TestVacuousVerificationCommandIsCaughtBesideHonestSiblings(t *testing.T) {
 			vacuous: true,
 		},
 		{
-			name:    "a two-snapshot comparison",
+			// The equality predicate compares two snapshots captured by earlier
+			// chain segments. An intervening command (`make regen`) can change
+			// the second snapshot, so `[ "$s1" = "$s2" ]` is not a guaranteed
+			// success: its operands are variables, not statically proven
+			// values. The matcher must not report it vacuous.
+			name:    "a two-snapshot comparison with an intervening command",
 			command: `s1="$(git status --porcelain)"; make regen >/dev/null 2>&1; s2="$(git status --porcelain)"; [ "$s1" = "$s2" ]`,
-			vacuous: true,
+			vacuous: false,
 		},
 		{
 			name:    "a named test that does not exist yet",
