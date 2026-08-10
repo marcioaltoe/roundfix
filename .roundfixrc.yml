@@ -75,9 +75,10 @@ profiles:
       - runtime: opencode
         model: openrouter/deepseek/deepseek-v4-flash-0731
         reasoning_effort: max
-      - runtime: claude
-        model: opus
-        reasoning_effort: high
+      # Removed on 2026-08-10: Spec 0091 regressed claude/opus/high into
+      # effective_selection_mismatch, and preflight proves every configured
+      # tuple, so this entry blocked every Run including the one that repairs
+      # it. The chain keeps the opencode row above. Restore once F-002 is fixed.
   backend:
     preferred:
       runtime: codex
@@ -94,14 +95,15 @@ profiles:
     # 69%. Claude is kept here on design judgment no benchmark on file measures,
     # so the chain accepts the weaker codex setting at its tail rather than
     # promoting a stronger one that would only ever run in an outage.
+    # Rerouted on 2026-08-10 for the same regression: opencode is promoted from
+    # the chain into the preferred slot so the category keeps two distinct
+    # proven selections. The judgment recorded above stands and returns with
+    # the Claude entry once F-002 is fixed.
     preferred:
-      runtime: claude
-      model: opus
-      reasoning_effort: high
+      runtime: opencode
+      model: openrouter/deepseek/deepseek-v4-flash-0731
+      reasoning_effort: max
     fallbacks:
-      - runtime: opencode
-        model: openrouter/deepseek/deepseek-v4-flash-0731
-        reasoning_effort: max
       - runtime: codex
         model: gpt-5.6-sol
         reasoning_effort: high
