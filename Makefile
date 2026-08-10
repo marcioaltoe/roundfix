@@ -55,10 +55,19 @@ VERIFY_TEST_TARGET ?= test
 
 verify: fmt-check $(VERIFY_TEST_TARGET) skills-sync-check skills-check build ## Run the required local verification gate
 
-verify-docs: build docs-test spec-budget spec-check ## Validate repository markdown; required before opening a pull request
+verify-docs: build docs-test repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
 
 docs-test: ## Run the repository-markdown contract tests
 	$(GO) test -count=1 -tags docscontract ./internal/docscontract
+
+# The regeneration gates copy the whole repository, so every file under
+# internal/ is one of their inputs and any code change re-runs them. They are
+# repository-consistency gates rather than code tests, so they run here at the
+# pull request boundary instead of in every make verify.
+REPO_CONTRACT_TESTS := TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical
+
+repo-test: ## Run the derived-artifact regeneration gates
+	$(GO) test -count=1 -tags repocontract -run '^($(REPO_CONTRACT_TESTS))$$' ./internal/baseline ./skills
 
 spec-check: ## Check Spec artifact consistency
 	$(BIN) spec check

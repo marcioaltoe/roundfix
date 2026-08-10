@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"roundfix/internal/gittest"
 	"sort"
 	"strings"
 	"testing"
@@ -1542,8 +1543,9 @@ func baselineSetupDigest(
 func copyTrackedRepository(t *testing.T, repoRoot string) string {
 	t.Helper()
 
-	command := exec.Command("git", "ls-files", "-z", "--cached")
+	command := exec.Command("git", append(gittest.ConfigArgs(), "ls-files", "-z", "--cached")...)
 	command.Dir = repoRoot
+	command.Env = gittest.IsolatedEnv()
 	output, err := command.Output()
 	if err != nil {
 		t.Fatalf("list tracked repository files: %v", err)

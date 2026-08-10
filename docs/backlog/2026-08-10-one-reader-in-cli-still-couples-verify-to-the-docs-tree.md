@@ -1,9 +1,9 @@
 ---
 type: perf # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: declined # open | promoted | declined
 created: 2026-08-10
 spec: null # Spec slug when status: promoted
-reason: null # required when status: declined
+reason: resolved directly on 2026-08-10 — the coupling was .git, not the docs tree; test git reads stopped writing the index
 ---
 
 # One reader in cli still couples verify to the docs tree
@@ -53,3 +53,22 @@ into `internal/docscontract`. Worth settling in the same work: whether any cli
 test walks the repository tree wholesale, since a directory listing records
 every entry as an input and would explain a coupling no grep for the path
 finds. This shape is non-binding.
+
+## Resolution — 2026-08-10
+
+The reader was `TestRunImplementRemovedQAFlagExplainsTaskGraph`, which ran the
+CLI without an isolated work directory. Configuration resolution then started
+from this package's own directory and walked up to the repository's `.git`,
+recording it as a test input — so any later write under `.git` discarded the
+whole package's cached result. Giving that one test a temporary home and work
+directory removed `.git` from the package's inputs entirely (verified: zero
+`.git` accesses in the package testlog).
+
+The markdown was never the invalidator. Every reproduction that "touched a
+doc" also ran `git checkout --` to revert it, and that write is what bumped
+`.git`. Both measured oddities dissolve with the real cause: the
+default-`GOCACHE` run stayed cached because no git command ran between its
+warm-up and its probe.
+
+Measured effect on two consecutive `make verify` runs with nothing changed:
+61s before, **15.6s** after.

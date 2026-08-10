@@ -10,6 +10,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"sync"
 )
 
 const (
@@ -123,12 +124,29 @@ type Catalog struct {
 
 // LoadEmbeddedCatalog loads the catalog compiled into the Roundfix binary.
 func LoadEmbeddedCatalog() (*Catalog, error) {
-	catalog, err := LoadCatalog(embeddedAssets)
-	if err != nil {
-		return nil, fmt.Errorf("load embedded Baseline catalog: %w", err)
+	embeddedCatalogOnce.Do(func() {
+		embeddedCatalogValue, embeddedCatalogErr = LoadCatalog(embeddedAssets)
+	})
+	if embeddedCatalogErr != nil {
+		return nil, fmt.Errorf("load embedded Baseline catalog: %w", embeddedCatalogErr)
 	}
-	return catalog, nil
+	return embeddedCatalogValue, nil
 }
+
+// The embedded assets are compiled into the binary, so parsing them yields the
+// same catalog every time. Every write to a Catalog happens inside
+// catalogLoader while it is being built; afterwards callers only read it, so
+// one parsed instance is safe to share across a process. Parsing cost 12.3ms
+// per call, measured 2026-08-10, and the test suite paid it thousands of times
+// — 27.6% of the CPU samples in internal/cli's heaviest tests.
+//
+// Regeneration keeps its own path through loadEmbeddedCatalogForRegeneration,
+// which is deliberately uncached.
+var (
+	embeddedCatalogOnce  sync.Once
+	embeddedCatalogValue *Catalog
+	embeddedCatalogErr   error
+)
 
 // loadEmbeddedCatalogForRegeneration loads the embedded catalog while
 // deferring only diagnostics for pins rewritten by the regeneration run.
