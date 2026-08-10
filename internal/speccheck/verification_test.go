@@ -152,6 +152,35 @@ func TestVacuousVerificationCommandIsCaughtBesideHonestSiblings(t *testing.T) {
 			command: "git diff --name-status HEAD | grep -q . && exit 1",
 			vacuous: false,
 		},
+		{
+			// A success form inside another command's quoted argument is not a
+			// terminal predicate: grep finds no lines in an unchanged tree's
+			// empty output and exits 1, whatever text it was asked to match.
+			name:    "a quoted success form inside grep still fails when empty",
+			command: "git diff --name-only HEAD | grep -q 'exit 0'",
+			vacuous: false,
+		},
+		{
+			// `&&` short-circuits: grep -q . fails on an unchanged tree, so
+			// cat is skipped and never decides the exit status, which stays 1.
+			name:    "an and-chain whose tail is skipped when empty fails honestly",
+			command: "git diff --name-only HEAD | grep -q . && cat",
+			vacuous: false,
+		},
+		{
+			// `||` runs its right side when the left fails, so the terminal cat
+			// does execute on an unchanged tree and is genuinely vacuous.
+			name:    "an or-chain whose tail runs when the left fails passes when empty",
+			command: "git diff --name-only HEAD | grep -q . || cat",
+			vacuous: true,
+		},
+		{
+			// A quoted test -z form is likewise a grep of ordinary text, not an
+			// empty-string test, so it fails on an unchanged tree.
+			name:    "a quoted empty-test inside grep still fails when empty",
+			command: `git diff --name-only HEAD | grep -q 'test -z'`,
+			vacuous: false,
+		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()

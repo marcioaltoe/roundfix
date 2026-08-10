@@ -26,11 +26,28 @@ var (
 	// not vacuous; `| cat` succeeds on empty output and is. Matching the git
 	// flags alone is never enough: `--exit-code` on the git command does not
 	// change what the final predicate does when it consumes no input.
-	emptyOutputSucceedsPattern = regexp.MustCompile(`^(?:rtk\s+)?(?:cat|true|:)\s*$|\bexit\s+0\b|\btest\s+-z\b|\[\s+-z\s|"\$\{?\w+\}?"\s*=\s*"\$\{?\w+\}?"`)
-	// commandSeparatorPattern locates the top-level separators of a shell
-	// pipeline or chain; the exit status of the whole command is decided by
-	// the final segment after the last separator.
-	commandSeparatorPattern = regexp.MustCompile(`\|\||&&|[|;]`)
+	//
+	// Every alternative is anchored to the whole terminal command so that
+	// text inside another command's quoted argument is never taken for a
+	// success form: `grep -q 'exit 0'` is a grep that fails on empty input,
+	// not an `exit 0` success predicate.
+	emptyOutputSucceedsPattern = regexp.MustCompile(
+		`^(?:rtk\s+)?(?:cat|true|:)\s*$` + // | cat | true | : succeed on empty input
+			`|^(?:rtk\s+)?exit\s+0\s*$` + // | exit 0 explicitly succeeds
+			`|^(?:rtk\s+)?test\s+-z\b` + // | test -z <expr>
+			`|^(?:rtk\s+)?\[\s*-z\s` + //   | [ -z <expr>
+			`|^(?:rtk\s+)?\[\s*"\$\{?\w+\}?"\s*=\s*"\$\{?\w+\}?"\s*\]\s*$` + // | [ "$a" = "$b" ]
+			`|^(?:rtk\s+)?(?:test\s+)?"\$\{?\w+\}?"\s*=\s*"\$\{?\w+\}?"\s*$`, // | "$a" = "$b" | test "$a" = "$b"
+	)
+	// A terminal command that provably fails on empty input. grep finds no
+	// lines in an unchanged tree's empty output and exits nonzero, so it is
+	// honest Verification no matter what text sits in its arguments.
+	emptyOutputFailsPattern = regexp.MustCompile(`^(?:rtk\s+)?grep\b`)
+	// commandChainOpPattern locates the top-level short-circuit and sequence
+	// operators of a shell chain. A single `|` pipe is deliberately excluded:
+	// a pipeline's exit status is decided by its last member, and the
+	// previous members are counted by pipelineExitOutcome.
+	commandChainOpPattern = regexp.MustCompile(`\|\||&&|;`)
 )
 
 // WorkIndependentVerification reports a Task whose declared Verification
@@ -74,8 +91,8 @@ func repositoryWideGate(command string) bool {
 // tree produces. Naming the git flags is not enough: `git diff --name-only |
 // grep -q .` reads the same paths and its terminal predicate exits 1 on an
 // unchanged tree, so it fails rather than passing and is honest Verification.
-// Classification therefore reads the final segment after the last shell
-// separator, never a git flag off the earlier command.
+// Classification therefore reads the final predicate of the whole pipeline or
+// chain, never a git flag off the earlier command.
 func workingTreeCleanlinessCheck(command string) bool {
 	if !workingTreeStatePattern.MatchString(command) {
 		return false
@@ -87,19 +104,85 @@ func workingTreeCleanlinessCheck(command string) bool {
 	}
 	// Something consumes it, and whether the command passes depends on what:
 	// `| grep -q .` fails on empty output, `| cat` and `|| exit 0` succeed on
-	// it. Only the terminal segment decides the pipeline's exit status.
-	return emptyOutputSucceedsPattern.MatchString(terminalSegment(command))
+	// it. Only the effective terminal predicate decides the exit status.
+	return chainPassesOnEmptyOutput(command)
 }
 
-// terminalSegment returns the final command of a pipeline or chain: the text
-// after the last top-level shell separator. The exit status of the whole
-// command is decided by this final segment.
-func terminalSegment(command string) string {
-	indices := commandSeparatorPattern.FindAllStringIndex(command, -1)
-	if len(indices) == 0 {
-		return command
+// emptyInputOutcome is how a single command segment behaves on empty input.
+type emptyInputOutcome int
+
+const (
+	emptyInputUnknown emptyInputOutcome = iota
+	emptyInputPasses                    // exits zero on empty input
+	emptyInputFails                     // exits nonzero on empty input
+)
+
+// pipelineExitOutcome returns the empty-input outcome of a pipeline: the exit
+// status of a `|` pipeline is decided by its last member. A bare command with
+// no pipe is its own single-member pipeline.
+func pipelineExitOutcome(segment string) emptyInputOutcome {
+	if idx := strings.LastIndex(segment, "|"); idx >= 0 {
+		segment = segment[idx+1:]
 	}
-	return strings.TrimSpace(command[indices[len(indices)-1][1]:])
+	segment = strings.TrimSpace(segment)
+	switch {
+	case emptyOutputFailsPattern.MatchString(segment):
+		return emptyInputFails
+	case emptyOutputSucceedsPattern.MatchString(segment):
+		return emptyInputPasses
+	default:
+		return emptyInputUnknown
+	}
+}
+
+// chainPassesOnEmptyOutput evaluates a whole command's `&&`, `||`, and `;`
+// chain over empty input, conservatively. A chain passes on empty output only
+// when control flow provably reaches a consuming predicate that succeeds on
+// empty output; short-circuit operators can skip a later segment entirely. An
+// unknown intermediate never lets an unexecuted tail decide the result, so a
+// chain whose passing tail is not guaranteed to run is never reported vacuous.
+func chainPassesOnEmptyOutput(command string) bool {
+	indices := commandChainOpPattern.FindAllStringIndex(command, -1)
+	if len(indices) == 0 {
+		return pipelineExitOutcome(command) == emptyInputPasses
+	}
+
+	var parts []string
+	var ops []string
+	start := 0
+	for _, idx := range indices {
+		parts = append(parts, command[start:idx[0]])
+		ops = append(ops, command[idx[0]:idx[1]])
+		start = idx[1]
+	}
+	parts = append(parts, command[start:])
+
+	outcome := pipelineExitOutcome(parts[0])
+	for i, op := range ops {
+		right := pipelineExitOutcome(parts[i+1])
+		switch op {
+		case ";":
+			// Sequence: the right side always runs; only it decides the result.
+			outcome = right
+		case "&&":
+			// And: the right side runs only when the left passed; otherwise it
+			// is skipped and the left outcome stands.
+			if outcome == emptyInputPasses {
+				outcome = right
+			} else if outcome != emptyInputFails {
+				outcome = emptyInputUnknown
+			}
+		case "||":
+			// Or: the right side runs only when the left failed; otherwise it
+			// is skipped and the left outcome stands.
+			if outcome == emptyInputFails {
+				outcome = right
+			} else if outcome != emptyInputPasses {
+				outcome = emptyInputUnknown
+			}
+		}
+	}
+	return outcome == emptyInputPasses
 }
 
 // VacuousVerificationCommands reports each declared command that already passes
