@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0091-a-proof-that-can-refuse
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -73,3 +73,57 @@ outcome and not a defect to fix here.
 - QA report: `qa/qa-report-2026-08-10.md` — findings F-001 and F-002.
 - ADR: `../../adr/0119-the-refusal-that-fired-first-is-the-refusal.md` — why
   F-001 is accepted rather than fixed.
+
+## Result
+
+### Implementation
+
+- Exact Agent Selection proof now lets the existing canonical-model and
+  Selection Encoding checks decide whether observed state matches. This accepts
+  Claude normalizing the echoed adapter value `opus` to the advertised
+  `opus[1m]` when both still represent canonical `opus` and the observed effort
+  is `high`.
+- Added a five-tuple Agent Selection regression covering the repository-profile
+  shape and a negative companion that keeps a different observed effort under
+  `effective_selection_mismatch`.
+- The detach ACPX fixture now advertises both models its built-in profile can
+  reach: preferred `gpt-5.6-sol` and fallback `gpt-5.5`. The detach test bodies
+  and their Run lifecycle, process-group, Attach, and Clean assertions are
+  unchanged.
+- The pre-request Runtime Catalogue read and the catalogue membership refusal
+  are unchanged. The production diff only removes the premature raw
+  adapter-value equality guard from effective-state matching.
+
+### Focused checks
+
+- Before the production edit,
+  `GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run 'TestProof(AcceptsAMatchingSelectionAmongSiblings|StillRejectsAGenuineEffectiveMismatch)'`
+  reported the Claude alias-normalization subtest failing while the negative
+  mismatch test passed.
+- After the final edits, the same Agent selector reported 7 passed cases, and
+  `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run 'TestRunImplementDetach(PrintsReportAndCompletesRun|SurvivesCallerProcessGroupKill)'`
+  reported both detach tests passing.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/agent` reported 318 passing
+  tests after the final production and test edits.
+- `rtk git diff --check` exited 0. The changed paths are
+  `internal/agent/selection_assignment.go`,
+  `internal/agent/selection_assignment_test.go`,
+  `internal/cli/implement_test.go`, and this Task file; the pre-existing Task
+  status edit remains Daemon-owned.
+- The authored `## Verification` commands were not run; the Daemon owns them.
+
+### Acceptance evidence
+
+1. `TestProofAcceptsAMatchingSelectionAmongSiblings` exercises the five-tuple
+   profile shape and accepts observed `opus[1m]` / `high` for requested
+   `opus` / `high`; its focused check passed. Terminal live-profile evidence
+   remains with the Daemon's gate.
+2. `TestProofStillRejectsAGenuineEffectiveMismatch` supplies observed
+   `opus` / `xhigh` for requested `opus` / `high`, asserts that it does not
+   match, and retains classification `effective_selection_mismatch`; its
+   focused check passed.
+3. The combined focused CLI check passed
+   `TestRunImplementDetachPrintsReportAndCompletesRun` and
+   `TestRunImplementDetachSurvivesCallerProcessGroupKill`. Inspection of the
+   diff confirms that only their shared fake catalogue changed; both tests'
+   detach assertions remain byte-identical.

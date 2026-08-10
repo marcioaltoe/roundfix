@@ -134,6 +134,104 @@ func TestProofKeepsAdvertisedSelectionEncoding(t *testing.T) {
 	}
 }
 
+func TestProofAcceptsAMatchingSelectionAmongSiblings(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		assignment SelectionAssignment
+		state      SelectionCapabilities
+	}{
+		{
+			name: "codex sol with independent effort",
+			assignment: SelectionAssignment{
+				Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high",
+				AdapterModel: "gpt-5.6-sol", ReasoningKey: "reasoning_effort", ReasoningValue: "high", Encoding: SelectionEncodingIndependent,
+			},
+			state: matchingIndependentSelectionState("gpt-5.6-sol", "gpt-5.6-sol", "reasoning_effort", "high"),
+		},
+		{
+			name: "opencode flash with deferred effort",
+			assignment: SelectionAssignment{
+				Runtime: "opencode", Model: "openrouter/deepseek/deepseek-v4-flash-0731", ReasoningEffort: "max",
+				AdapterModel: "openrouter/deepseek/deepseek-v4-flash-0731", ReasoningKey: "effort", ReasoningValue: "max", Encoding: SelectionEncodingRuntimeDeferred,
+			},
+			state: SelectionCapabilities{
+				CurrentModel: "openrouter/deepseek/deepseek-v4-flash-0731",
+				Models: []ModelCapability{{
+					AdapterValue: "openrouter/deepseek/deepseek-v4-flash-0731", CanonicalModel: "openrouter/deepseek/deepseek-v4-flash-0731", ModelManaged: true,
+				}},
+				ReasoningOption: &SelectCapability{ID: "effort", CurrentValue: "low", Values: []string{"low", "high", "max"}},
+			},
+		},
+		{
+			name: "claude opus normalizes its echoed alias",
+			assignment: SelectionAssignment{
+				Runtime: "claude", Model: "opus", ReasoningEffort: "high",
+				AdapterModel: "opus", ReasoningKey: "effort", ReasoningValue: "high", Encoding: SelectionEncodingIndependent,
+			},
+			state: matchingIndependentSelectionState("opus[1m]", "opus", "effort", "high"),
+		},
+		{
+			name: "codex luna with independent effort",
+			assignment: SelectionAssignment{
+				Runtime: "codex", Model: "gpt-5.6-luna", ReasoningEffort: "max",
+				AdapterModel: "gpt-5.6-luna", ReasoningKey: "reasoning_effort", ReasoningValue: "max", Encoding: SelectionEncodingIndependent,
+			},
+			state: matchingIndependentSelectionState("gpt-5.6-luna", "gpt-5.6-luna", "reasoning_effort", "max"),
+		},
+		{
+			name: "claude sonnet with independent effort",
+			assignment: SelectionAssignment{
+				Runtime: "claude", Model: "sonnet", ReasoningEffort: "xhigh",
+				AdapterModel: "sonnet", ReasoningKey: "effort", ReasoningValue: "xhigh", Encoding: SelectionEncodingIndependent,
+			},
+			state: matchingIndependentSelectionState("sonnet", "sonnet", "effort", "xhigh"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !selectionStateMatches(tt.assignment, tt.state) {
+				t.Fatalf("observed state does not prove matching assignment %#v: %#v", tt.assignment, tt.state)
+			}
+		})
+	}
+}
+
+func TestProofStillRejectsAGenuineEffectiveMismatch(t *testing.T) {
+	t.Parallel()
+
+	assignment := SelectionAssignment{
+		Runtime: "claude", Model: "opus", ReasoningEffort: "high",
+		AdapterModel: "opus", ReasoningKey: "effort", ReasoningValue: "high", Encoding: SelectionEncodingIndependent,
+	}
+	state := matchingIndependentSelectionState("opus[1m]", "opus", "effort", "xhigh")
+	if selectionStateMatches(assignment, state) {
+		t.Fatalf("observed reasoning %q proved requested reasoning %q", state.ReasoningOption.CurrentValue, assignment.ReasoningValue)
+	}
+
+	err := effectiveSelectionError(assignment, state)
+	if err.Classification() != EffectiveSelectionMismatch {
+		t.Fatalf("classification = %q, want %q", err.Classification(), EffectiveSelectionMismatch)
+	}
+	if err.EffectiveModel != "opus" || err.EffectiveReasoning != "xhigh" {
+		t.Fatalf("effective selection = %q/%q, want opus/xhigh", err.EffectiveModel, err.EffectiveReasoning)
+	}
+}
+
+func matchingIndependentSelectionState(adapterModel string, canonicalModel string, reasoningKey string, reasoningValue string) SelectionCapabilities {
+	return SelectionCapabilities{
+		CurrentModel: adapterModel,
+		Models: []ModelCapability{{
+			AdapterValue: adapterModel, CanonicalModel: canonicalModel, ModelManaged: true,
+		}},
+		ReasoningOption: &SelectCapability{
+			ID: reasoningKey, CurrentValue: reasoningValue, Values: []string{"low", "medium", "high", "xhigh", "max"},
+		},
+	}
+}
+
 func TestSelectionRuntimeDeferredStateMatchesBeforeEffortApplication(t *testing.T) {
 	t.Parallel()
 

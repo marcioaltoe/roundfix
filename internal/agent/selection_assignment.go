@@ -606,9 +606,6 @@ func unsupportedSelection(kind string, assignment SelectionAssignment, capabilit
 }
 
 func selectionStateMatches(assignment SelectionAssignment, state SelectionCapabilities) bool {
-	if state.CurrentModel != assignment.AdapterModel {
-		return false
-	}
 	model, ok := modelByAdapterValue(state.Models, state.CurrentModel)
 	if !ok || !modelRepresents(model, assignment.Model) {
 		return false

@@ -184,7 +184,7 @@ case " $* " in
     if [ -z "$model" ]; then
       model="gpt-5.6-sol"
     fi
-    printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"%%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"medium","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}}\n' "$model" "$model" "$model"
+    printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"gpt-5.6-sol"},{"value":"gpt-5.5"}]},{"id":"reasoning_effort","type":"select","currentValue":"medium","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}}\n' "$model" "$model"
     exit 0
     ;;
   *" set model "*|*" set reasoning_effort "*|*" set effort "*)
@@ -211,7 +211,7 @@ case " $* " in
       model=$(cat "$state_path")
       current_reasoning="$config_value"
     fi
-    printf '{"action":"config_set","configId":"%%s","value":"%%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"%%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"%%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$model" "$current_reasoning"
+    printf '{"action":"config_set","configId":"%%s","value":"%%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"gpt-5.6-sol"},{"value":"gpt-5.5"}]},{"id":"reasoning_effort","type":"select","currentValue":"%%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$current_reasoning"
     exit 0
     ;;
   *" sessions close "*)
