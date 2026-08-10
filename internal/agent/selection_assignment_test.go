@@ -34,7 +34,7 @@ func TestProofRefusesAModelTheCatalogueDoesNotAdvertise(t *testing.T) {
 			}},
 			ReasoningOption: &SelectCapability{ID: "effort", CurrentValue: "high", Values: []string{"low", "medium", "high"}},
 		},
-		Catalogue: RuntimeCatalogue{Models: honestClaudeModels()},
+		Catalogue: RuntimeCatalogue{Models: honestClaudeModels(), Observed: true},
 	}, nil)
 	var modelErr *ModelNotAdvertisedError
 	if !errors.As(err, &modelErr) {
@@ -48,7 +48,7 @@ func TestProofRefusesAModelTheCatalogueDoesNotAdvertise(t *testing.T) {
 func TestProofRefusalNamesTheAdvertisedSet(t *testing.T) {
 	t.Parallel()
 
-	catalogue := RuntimeCatalogue{Models: honestClaudeModels()}
+	catalogue := RuntimeCatalogue{Models: honestClaudeModels(), Observed: true}
 	_, err := (ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
 		Runtime: RuntimeSpec{ID: "claude", Model: unofferedClaudeModel, ReasoningEffort: "high"},
 		Capabilities: SelectionCapabilities{
@@ -124,7 +124,7 @@ func TestProofKeepsAdvertisedSelectionEncoding(t *testing.T) {
 		Runtime:      RuntimeSpec{ID: "claude", Model: "opus", ReasoningEffort: "high"},
 		Session:      SessionRef{Name: "roundfix-live", WorkDir: harness.gitRoot},
 		Capabilities: capabilities,
-		Catalogue:    RuntimeCatalogue{Models: honestClaudeModels()},
+		Catalogue:    RuntimeCatalogue{Models: honestClaudeModels(), Observed: true},
 	})
 	if err != nil {
 		t.Fatalf("prove advertised selection: %v", err)
@@ -139,6 +139,7 @@ func TestProofAcceptsAMatchingSelectionAmongSiblings(t *testing.T) {
 
 	tests := []struct {
 		name       string
+		runtime    RuntimeSpec
 		assignment SelectionAssignment
 		state      SelectionCapabilities
 	}{
@@ -165,12 +166,9 @@ func TestProofAcceptsAMatchingSelectionAmongSiblings(t *testing.T) {
 			},
 		},
 		{
-			name: "claude opus normalizes its echoed alias",
-			assignment: SelectionAssignment{
-				Runtime: "claude", Model: "opus", ReasoningEffort: "high",
-				AdapterModel: "opus", ReasoningKey: "effort", ReasoningValue: "high", Encoding: SelectionEncodingIndependent,
-			},
-			state: matchingIndependentSelectionState("opus[1m]", "opus", "effort", "high"),
+			name:    "claude opus normalizes its echoed alias",
+			runtime: RuntimeSpec{ID: "claude", Model: "opus", ReasoningEffort: "high"},
+			state:   matchingIndependentSelectionState("opus[1m]", "opus", "effort", "high"),
 		},
 		{
 			name: "codex luna with independent effort",
@@ -192,8 +190,16 @@ func TestProofAcceptsAMatchingSelectionAmongSiblings(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if !selectionStateMatches(tt.assignment, tt.state) {
-				t.Fatalf("observed state does not prove matching assignment %#v: %#v", tt.assignment, tt.state)
+			assignment := tt.assignment
+			if tt.runtime.ID != "" {
+				planned, err := PlanSelectionAssignment(tt.runtime, tt.state)
+				if err != nil {
+					t.Fatalf("plan %s selection assignment: %v", tt.name, err)
+				}
+				assignment = planned
+			}
+			if !selectionStateMatches(assignment, tt.state) {
+				t.Fatalf("observed state does not prove matching assignment %#v: %#v", assignment, tt.state)
 			}
 		})
 	}

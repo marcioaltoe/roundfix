@@ -131,6 +131,27 @@ func TestVacuousVerificationCommandIsCaughtBesideHonestSiblings(t *testing.T) {
 			command: "grep -c 'Declared break' internal/agent/selection_test.go",
 			vacuous: false,
 		},
+		{
+			// git --exit-code does not make the terminal `grep -q .` pass on an
+			// unchanged tree; grep still receives no input and exits 1.
+			name:    "an exit-code diff piped into grep still fails when empty",
+			command: "git diff --exit-code HEAD | grep -q .",
+			vacuous: false,
+		},
+		{
+			// A terminal that consumes empty output successfully: cat exits 0
+			// on an unchanged tree, so the command passes before any work.
+			name:    "a diff piped into cat passes when empty",
+			command: "git diff --name-only HEAD | cat",
+			vacuous: true,
+		},
+		{
+			// An inverted empty-output check: it asserts changes exist, so on
+			// an unchanged tree the terminal `exit 1` fires and fails honestly.
+			name:    "an inverted empty-output check fails when empty",
+			command: "git diff --name-status HEAD | grep -q . && exit 1",
+			vacuous: false,
+		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()

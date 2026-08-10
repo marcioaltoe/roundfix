@@ -5713,6 +5713,12 @@ CODEX_MODELS = [
     "macro-review-fallback",
 ]
 CLAUDE_MODELS = ["claude-fable-5"]
+OPENCODE_MODELS = ["openrouter/deepseek/deepseek-v4-flash-0731"]
+CATALOGUES = {
+    "codex": CODEX_MODELS,
+    "claude": CLAUDE_MODELS,
+    "opencode": OPENCODE_MODELS,
+}
 
 def arg_value(argv, flag):
     for index, value in enumerate(argv):
@@ -5881,8 +5887,12 @@ if event["command"] == "sessions ensure":
         sys.exit(1)
 
 if event["command"] == "sessions show":
+    agent = event.get("agent")
+    if agent not in CATALOGUES:
+        sys.stderr.write(f"no model catalogue for agent {agent!r}\n")
+        sys.exit(2)
+    models = CATALOGUES[agent]
     model = session_model(event.get("session", ""))
-    models = CLAUDE_MODELS if event.get("agent") == "claude" else CODEX_MODELS
     if not model:
         model = models[0]
     reasoning_id = "reasoning_effort" if event.get("agent") == "codex" else "effort"

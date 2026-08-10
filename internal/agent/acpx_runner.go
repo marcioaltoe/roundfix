@@ -37,19 +37,25 @@ const (
 	acpxExitReasonPermissionsDenied = "all permissions denied"
 	acpxExitReasonUsage             = "usage error"
 	acpxExitReasonMissingSession    = "missing session"
-	acpxCodexSandboxUnavailable     = "codex_sandbox_full_access_unavailable"
-	acpxCodexSandboxModeKey         = "sandbox_mode"
-	acpxCodexFullAccessSandbox      = "danger-full-access"
-	acpxCodexReasoningEffortKey     = "reasoning_effort"
-	acpxGenericReasoningEffortKey   = "effort"
-	acpxDeferredEffortWarmupPrompt  = "Session setup."
-	acpxPreflightSessionPrefix      = "roundfix-preflight-"
-	acpxPreflightSetupTimeout       = 30 * time.Second
-	acpxPreflightCleanupTimeout     = 5 * time.Second
-	infrastructureStderrTailLines   = 10
-	infrastructureStderrTailBytes   = 1024
-	infrastructureStderrDelimiter   = "\n--- acpx stderr tail ---\n"
-	infrastructureStderrTruncated   = "[stderr truncated]\n"
+	// acpxMissingSessionStderrMarker is the stderr line the supported acpx
+	// 0.12.0 build prints for a named session it cannot find. acpx documents
+	// exit code 4 for a missing session, but the pinned 0.12.0 build also
+	// returns exit code 1 with this marker; both shapes mean the session never
+	// opened.
+	acpxMissingSessionStderrMarker = "No named session"
+	acpxCodexSandboxUnavailable    = "codex_sandbox_full_access_unavailable"
+	acpxCodexSandboxModeKey        = "sandbox_mode"
+	acpxCodexFullAccessSandbox     = "danger-full-access"
+	acpxCodexReasoningEffortKey    = "reasoning_effort"
+	acpxGenericReasoningEffortKey  = "effort"
+	acpxDeferredEffortWarmupPrompt = "Session setup."
+	acpxPreflightSessionPrefix     = "roundfix-preflight-"
+	acpxPreflightSetupTimeout      = 30 * time.Second
+	acpxPreflightCleanupTimeout    = 5 * time.Second
+	infrastructureStderrTailLines  = 10
+	infrastructureStderrTailBytes  = 1024
+	infrastructureStderrDelimiter  = "\n--- acpx stderr tail ---\n"
+	infrastructureStderrTruncated  = "[stderr truncated]\n"
 )
 
 var defaultAdapterCommands = map[string]string{
@@ -1172,7 +1178,7 @@ func (runner *ACPXRunner) CloseSession(ctx context.Context, runtime RuntimeSpec,
 		var infrastructureErr *InfrastructureError
 		if errors.As(err, &infrastructureErr) &&
 			(infrastructureErr.ExitCode == 4 ||
-				infrastructureErr.ExitCode == 1 && strings.Contains(infrastructureErr.Stderr, "No named session")) {
+				infrastructureErr.ExitCode == 1 && strings.Contains(infrastructureErr.Stderr, acpxMissingSessionStderrMarker)) {
 			err = &InfrastructureError{
 				ExitCode: infrastructureErr.ExitCode,
 				Reason:   acpxExitReasonMissingSession,

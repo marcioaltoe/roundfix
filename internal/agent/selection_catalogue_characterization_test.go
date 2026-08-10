@@ -1,7 +1,9 @@
 // Suite: Agent Selection catalogue characterization.
-// Invariant: today's proof accepts an echoed claude model and refuses it on codex.
-// Boundary IN: ProveExactSelection and the fake ACPX process boundary.
-// Boundary OUT: the membership verdict added by task_03.
+// Invariant: the pre-request Runtime Catalogue refuses an unadvertised Agent
+// Model on claude, and the codex adapter refuses it first on codex (ADR-0119).
+// Boundary IN: ProveExactSelection, applySessionSelection, and the fake ACPX
+// process boundary.
+// Boundary OUT: live ACP Runtimes and adapter binaries.
 package agent
 
 import (
@@ -73,7 +75,7 @@ func TestRuntimeCatalogueRecordsAContaminatedAdvertisement(t *testing.T) {
 				{AdapterValue: unofferedCodexModel, CanonicalModel: unofferedCodexModel, ModelManaged: true},
 			},
 		},
-		Catalogue: RuntimeCatalogue{Models: []string{"gpt-5.6-sol", "gpt-5.5"}},
+		Catalogue: RuntimeCatalogue{Models: []string{"gpt-5.6-sol", "gpt-5.5"}, Observed: true},
 	}, nil)
 	if err != nil {
 		t.Fatalf("apply selection with later advertisement: %v", err)
@@ -107,7 +109,7 @@ func TestSelectionCatalogueCharacterizationClaudeRefusesAnUnofferedModel(t *test
 			ReasoningEffort: "high",
 		},
 		Capabilities: capabilities,
-		Catalogue:    RuntimeCatalogue{Models: honestClaudeModels()},
+		Catalogue:    RuntimeCatalogue{Models: honestClaudeModels(), Observed: true},
 	}, nil)
 	var modelErr *ModelNotAdvertisedError
 	if !errors.As(err, &modelErr) {
@@ -124,8 +126,11 @@ func TestSelectionCatalogueCharacterizationCodexRefusesAnUnofferedModel(t *testi
 	t.Parallel()
 
 	harness := newFakeACPXHarness(t)
-	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{
-		"sessions ensure": 2,
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "medium", []string{"low", "medium", "high"}),
+	}))
+	harness.setEnv(fakeACPXExitByCall, mustJSONForTest(t, map[string]int{
+		"sessions ensure model=" + unofferedCodexModel: 2,
 	}))
 	harness.setEnv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{
 		"sessions ensure": "Cannot apply --model " + unofferedCodexModel + ": the ACP agent did not advertise that model.\nAvailable models: gpt-5.6-sol, gpt-5.5\n",
@@ -147,17 +152,9 @@ func TestSelectionCatalogueCharacterizationCodexRefusesAnUnofferedModel(t *testi
 	if modelErr.Classification() != SelectionModelNotAdvertised {
 		t.Fatalf("classification = %q, want %q", modelErr.Classification(), SelectionModelNotAdvertised)
 	}
-}
-
-// contaminatedClaudeCapabilityPayload records the measured response shape:
-// the requested model becomes both currentValue and an advertised option.
-// Declared break: task_02 reads the honest catalogue before accepting this
-// post-request payload as capability evidence.
-func contaminatedClaudeCapabilityPayload(t *testing.T) string {
-	t.Helper()
-
-	models := append(honestClaudeModels(), unofferedClaudeModel)
-	return sessionCapabilitySnapshotFixture(t, unofferedClaudeModel, models, "effort", "medium", []string{"low", "medium", "high"})
+	if modelErr.Err == nil {
+		t.Fatal("the adapter-owned refusal lost its underlying adapter error; want the adapter fast path, not the Roundfix membership verdict")
+	}
 }
 
 func honestClaudeCapabilityPayload(t *testing.T) string {

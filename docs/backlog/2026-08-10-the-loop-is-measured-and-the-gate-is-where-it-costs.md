@@ -11,8 +11,12 @@ reason: null # required when status: declined
 ## Opportunity
 
 Measured across five repositories on 2026-08-10, from `run_events` since
-2026-07-01. Recorded here because the numbers took a full session to gather and
-answer questions that opinion had been answering badly.
+2026-07-01 (the Run Event Stream in the Roundfix Run Database, filtered by
+`created_at >= 2026-07-01` and per repository, then totalled locally; no live
+query is shipped with this entry). Recorded here because the numbers took a
+full session to gather and answer questions that opinion had been answering
+badly. Re-derive from the stream before quoting a total: each headline number
+below is the documented sum of the components listed beside it.
 
 **Task implementation is not the problem, and roundfix is not an outlier.**
 
@@ -24,11 +28,12 @@ answer questions that opinion had been answering badly.
 | fluxus | 124 | 13.7% | 17 |
 | fiscus | 77 | 11.7% | 13 |
 
-**Of 211 failed tasks since 2026-08-03, 123 are the QA gate returning a
+**Of 201 failed tasks since 2026-08-03, 123 are the QA gate returning a
 verdict, not code breaking:** 104 `fail`, 18 `partial`, 1 unreadable. Only 46
 are a declared Verification failing — about 7% of 667 settled tasks. Twenty are
 agent or session infrastructure, seven are vacuous Verification, five are
-timeouts and worktree bootstrap.
+timeouts and worktree bootstrap. These groups are disjoint and exhaustive:
+`123 + 46 + 20 + 7 + 5 = 201`.
 
 **The gate is not the bottleneck per task.** With the model held constant at
 `codex/gpt-5.6-sol` across the whole period, the agent's median is 623–782s per
@@ -38,22 +43,25 @@ a refused task opens no Agent Session at all, confirmed by a Run that recorded
 zero `agent.*` events.
 
 **Specs mostly land first time.** Of 78 archived Specs, 51 passed with a single
-gate; 16 needed two, 5 needed three, 4 needed four, 2 needed five. First-gate
-verdicts were 54 `pass` / 16 `fail` / 7 `partial`. Final verdicts carry *more*
-failures than first ones — 23 vs 16 — because some Specs archive on
-`qa_override`, which is a maintainer decision rather than a gate defect.
+gate; 16 needed two, 5 needed three, 4 needed four, 2 needed five
+(`51 + 16 + 5 + 4 + 2 = 78`). First-gate verdicts were 54 `pass` / 16 `fail` /
+7 `partial`. These account for 77 of the 78 archived Specs; the remaining one
+reached archive on a maintainer `qa_override` and carried no first-gate
+verdict. Final verdicts carry *more* failures than first ones — 23 vs 16 —
+because some Specs archive on `qa_override`, which is a maintainer decision
+rather than a gate defect.
 
 ## Value
 
 The expensive tail is the 27 Specs that needed a gate rerun, and its cause is
-one family: **the Spec assumes the world behaves like its fakes.** Spec 0091
+one family: **the Spec assumes the world behaves like its fakes.** [Spec 0091](../specs/_archived/0091-a-proof-that-can-refuse/)
 demonstrated it end to end on 2026-08-10 — its characterization corpus ran
 against a fake harness, so a design premise survived authoring, implementation
 and every unit test, and died at the QA gate four Runs later:
 
 - F-001: the PRD promised Roundfix's membership verdict would own the refusal.
   Against live adapters, all three refuse first. Not a bug — a premise that
-  execution does not support, now recorded in ADR-0119.
+  execution does not support, now recorded in [ADR-0119](../adr/0119-the-refusal-that-fired-first-is-the-refusal.md).
 - F-002: Claude normalizes a requested `opus` to the advertised `opus[1m]`. No
   fake did that, so proof compared raw values and rejected a valid selection.
   Proved a regression by running the same command with a binary built from
@@ -72,7 +80,7 @@ Two directions, both non-binding.
 **Characterization should touch the real boundary.** When a Spec crosses an
 external surface — an ACP adapter, an HTTP contract, a database — its
 characterization Task should record what the real thing does, not what a fake
-does. On 0091 that single change would have surfaced F-001 on day one instead
+does. On [0091](../specs/_archived/0091-a-proof-that-can-refuse/) that single change would have surfaced F-001 on day one instead
 of after four Runs. For data-shaped projects the equivalent needs a prepared
 mass, which is infrastructure rather than method: the content-addressed golden
 fixture pattern used for this repository's test performance on the same day
@@ -82,7 +90,8 @@ it per test.
 **The gate's own economics deserve the same measurement this entry applied to
 the loop.** The QA gate on Spec 0091 took 27 minutes per run and three runs to
 converge. Nothing here measured how much of that is evidence-gathering versus
-re-reading artifacts a cheap check could settle, which is the question ADR-0117
+re-reading artifacts a cheap check could settle, which is the question
+[ADR-0117](../adr/0117-a-defect-is-checked-by-the-stage-that-can-produce-it.md)
 already answered for authoring defects and has not been asked of the gate.
 
 Worth settling in the same work: `SC-VERIFY-VACUOUS-COMMAND` was shipped on

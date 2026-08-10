@@ -745,6 +745,9 @@ func TestProfileProofAppliesExactReasoningAndClosesDisposableSession(t *testing.
 	if containsCommandKey(invocations, "prompt") {
 		t.Fatalf("profile proof must not send prompts, got %#v", invocations)
 	}
+	if len(invocations) != 7 {
+		t.Fatalf("expected version, catalogue ensure and show, selection ensure and show, reasoning, close invocations, got %#v", invocations)
+	}
 	sessionName := assertDisposableCatalogueEnsureInvocation(t, invocations[1], harness.gitRoot, "codex")
 	assertDisposableShowInvocation(t, invocations[2], harness.gitRoot, "codex", sessionName)
 	if selectedSession := assertDisposableEnsureInvocation(t, invocations[3], harness.gitRoot, "codex", "gpt-5.6-sol"); selectedSession != sessionName {
@@ -845,6 +848,9 @@ func TestProfileProofClosesDisposableSessionOnSelectionFailure(t *testing.T) {
 		t.Fatalf("expected SelectionRejectedError, got %T %v", err, err)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
+	if len(invocations) < 5 {
+		t.Fatalf("expected selection invocations through index 4, got %#v", invocations)
+	}
 	sessionName := assertDisposableCatalogueEnsureInvocation(t, invocations[1], harness.gitRoot, "codex")
 	assertDisposableShowInvocation(t, invocations[2], harness.gitRoot, "codex", sessionName)
 	if selectedSession := assertDisposableEnsureInvocation(t, invocations[3], harness.gitRoot, "codex", "gpt-5.6-sol"); selectedSession != sessionName {
@@ -1073,38 +1079,10 @@ func TestProveExactSelectionCleanupJoinedFailure(t *testing.T) {
 	}
 }
 
-func TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened(t *testing.T) {
-	t.Parallel()
-
-	harness := newFakeACPXHarness(t)
-	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{
-		"sessions ensure": 2,
-		"sessions close":  4,
-	}))
-	var warnings []string
-	harness.runner.warnf = func(format string, args ...any) {
-		warnings = append(warnings, fmt.Sprintf(format, args...))
-	}
-
-	_, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{
-		Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"},
-		WorkDir: harness.gitRoot,
-	})
-	if err == nil {
-		t.Fatal("expected selection failure")
-	}
-	const wantDiagnosis = `apply Agent Selection "codex"/"gpt-5.6-sol"/"high" during ensure disposable Agent Session without model override: adapter rejected selection: acpx infrastructure error after exit code 2: acpx command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection`
-	if got := err.Error(); got != wantDiagnosis {
-		t.Fatalf("selection diagnosis changed or gained a close error\nwant: %q\ngot:  %q", wantDiagnosis, got)
-	}
-	var cleanupErr *AgentSessionCleanupError
-	if errors.As(err, &cleanupErr) {
-		t.Fatalf("missing disposable session close was appended to the diagnosis: %v", err)
-	}
-	if len(warnings) != 1 || !strings.Contains(warnings[0], "close disposable Agent Session") || !strings.Contains(warnings[0], acpxExitReasonMissingSession) {
-		t.Fatalf("missing disposable session close was not recorded: %#v", warnings)
-	}
-}
+// wantCatalogueEnsureRejectionDiagnosis is the diagnosis that a disposable
+// Agent Session whose override-free catalogue ensure failed records without a
+// close error. It is shared by every missing-session exit shape.
+const wantCatalogueEnsureRejectionDiagnosis = `apply Agent Selection "codex"/"gpt-5.6-sol"/"high" during ensure disposable Agent Session without model override: adapter rejected selection: acpx infrastructure error after exit code 2: acpx command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection`
 
 func TestMissingSessionIsRecognisedFromBothExitShapes(t *testing.T) {
 	t.Parallel()
@@ -1148,9 +1126,8 @@ func TestMissingSessionIsRecognisedFromBothExitShapes(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected selection failure")
 			}
-			const wantDiagnosis = `apply Agent Selection "codex"/"gpt-5.6-sol"/"high" during ensure disposable Agent Session without model override: adapter rejected selection: acpx infrastructure error after exit code 2: acpx command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection`
-			if got := err.Error(); got != wantDiagnosis {
-				t.Fatalf("selection diagnosis changed or gained a close error\nwant: %q\ngot:  %q", wantDiagnosis, got)
+			if got := err.Error(); got != wantCatalogueEnsureRejectionDiagnosis {
+				t.Fatalf("selection diagnosis changed or gained a close error\nwant: %q\ngot:  %q", wantCatalogueEnsureRejectionDiagnosis, got)
 			}
 			var cleanupErr *AgentSessionCleanupError
 			if errors.As(err, &cleanupErr) {
@@ -1287,6 +1264,9 @@ func TestApplySessionSelectionDisposableAndLiveOrder(t *testing.T) {
 	}
 
 	disposableInvocations := readJSONInvocations(t, disposable.invocationsPath)
+	if len(disposableInvocations) < 4 {
+		t.Fatalf("expected disposable selection invocations through index 3, got %#v", disposableInvocations)
+	}
 	disposableSession := assertDisposableCatalogueEnsureInvocation(t, disposableInvocations[0], disposable.gitRoot, "codex")
 	assertDisposableShowInvocation(t, disposableInvocations[1], disposable.gitRoot, "codex", disposableSession)
 	if selectedSession := assertDisposableEnsureInvocation(t, disposableInvocations[2], disposable.gitRoot, "codex", "gpt-5.6-sol"); selectedSession != disposableSession {
