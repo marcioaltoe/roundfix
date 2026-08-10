@@ -1,0 +1,21 @@
+Build: roundfix 0.4.0 (ce7dc4ba-dirty)
+Public reproduction: run the built binary under sandbox denial from the Codex
+scratch profile, forcing failure before the disposable Session opens.
+Command: rtk <worktree>/bin/roundfix profiles validate --category backend
+Exit: 2
+
+Observed cleanup record:
+2026/08/10 15:42:25 disposable Agent Session cleanup found no Session to close:
+... acpx infrastructure error after exit code 1: missing session
+... No named session "roundfix-preflight-..."
+
+Observed returned proof diagnosis:
+roundfix: profiles failed: ... classification: selection_rejected; adapter
+error: ... Codex process has exited with code 1 ... failed to initialize sqlite
+state runtime under /Users/marcio/.codex ... recovery ... next ... fallback ...
+
+The cleanup observation is a separate warning record. The returned actionable
+diagnosis ends at the original Codex state-initialization failure and has no
+appended AgentSessionCleanupError or trailing close-disposable-session suffix.
+Prior repeated F-003 is fixed for installed ACPX's exit-1 `No named session`
+shape.

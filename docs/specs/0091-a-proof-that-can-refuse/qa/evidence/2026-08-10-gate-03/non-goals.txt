@@ -1,0 +1,18 @@
+Vendor existence: live refusals came from installed runtime adapters and their
+ACP controls. Roundfix did not query a vendor catalogue.
+
+Reasoning policy: two full repository validations retained independent for
+both Codex selections and both Claude selections, and runtime_deferred for
+OpenCode. TestProofStillRejectsAGenuineEffectiveMismatch passed.
+
+Picker/recommendation: rtk bin/roundfix profiles validate --help exposes only
+--category and --json and describes a read-only proof command. Task commit
+paths add no picker, recommendation, or configure surface.
+
+Automatic repair: three rtk git -c core.fsmonitor=false diff --no-index
+comparisons matched each executed /private/tmp scratch .roundfixrc.yml against
+its retained evidence copy byte-for-byte after validation; all exited 0.
+Invalid profiles remained invalid and were not rewritten.
+
+Persistence: valid-after-invalid commands succeeded after each runtime's
+refusal probes.

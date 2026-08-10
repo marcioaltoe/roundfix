@@ -1,0 +1,52 @@
+Build: ce7dc4ba9c992ca30969f73d3333227d7e242cf8
+
+Discarded sandbox attempt
+-------------------------
+Command: rtk make verify
+Result: blocked when the sandbox denied api.github.com after partially warming
+the cache. This attempt is not acceptance evidence.
+
+Cold-cache preparation
+----------------------
+Command: rtk proxy env GOCACHE=<worktree>/.gocache go clean -testcache
+Exit: 0
+
+Authoritative full-access gate
+------------------------------
+Command: rtk make verify
+Exit: 0
+
+go test -parallel 16 ./...
+?    roundfix/cmd/roundfix [no test files]
+ok   roundfix/internal/agent 13.696s
+ok   roundfix/internal/app 0.164s
+ok   roundfix/internal/baseline 64.231s
+ok   roundfix/internal/baselineacp 2.660s
+ok   roundfix/internal/cli 102.893s
+ok   roundfix/internal/codex 2.077s
+ok   roundfix/internal/config 3.388s
+ok   roundfix/internal/daemon 4.531s
+?    roundfix/internal/docscontract [no test files]
+ok   roundfix/internal/gittest 2.908s
+ok   roundfix/internal/notify 2.508s
+ok   roundfix/internal/preflight 3.106s
+ok   roundfix/internal/releaseplan 2.356s
+ok   roundfix/internal/reviewsource 2.219s
+ok   roundfix/internal/reviewsource/coderabbit 3.435s
+ok   roundfix/internal/rounds 3.477s
+ok   roundfix/internal/runevent 3.446s
+ok   roundfix/internal/skillhash 3.438s
+ok   roundfix/internal/spec 47.539s
+ok   roundfix/internal/specaudit 15.495s
+ok   roundfix/internal/speccheck 4.691s
+ok   roundfix/internal/store 9.987s
+ok   roundfix/internal/tui 7.035s
+ok   roundfix/internal/watch 4.168s
+ok   roundfix/internal/worktree 28.022s
+ok   roundfix/skills 16.078s
+
+Focused skills contract: exit 0, roundfix/skills 0.201s.
+Roundfix skill check: passed for all listed repository skills.
+Binary build: passed; produced bin/roundfix with BuildCommit=ce7dc4ba-dirty.
+Cache check: no package line contains `(cached)`; every tested package carries
+an execution duration.

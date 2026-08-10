@@ -1,0 +1,11 @@
+Agent command: rtk proxy env GOCACHE=<worktree>/.gocache go test ./internal/agent -run '^(TestRuntimeCatalogue|TestProof|TestSelectionCatalogueCharacterization|TestACPXProbeSelectionRejectionClosesDisposableSession|TestACPXProbeSelectionSetupUsesBoundedContext|TestACPXProbeSkipsEmptyReasoningEffort|TestACPXProbeValidatesSelectionWithDisposableSession|TestApplySessionSelectionDisposableAndLiveOrder|TestDisposableSessionClose|TestMissingSessionIsRecognisedFromBothExitShapes|TestUnrelatedExitOneKeepsItsClassification|TestProfileProofAppliesExactReasoningAndClosesDisposableSession|TestProfileProofClosesDisposableSessionOnSelectionFailure|TestProveExactSelection)' -count=1 -v
+Agent result: exit 0; every selected top-level case and subtest passed.
+
+CLI command: rtk proxy env GOCACHE=<worktree>/.gocache go test ./internal/cli -run '^(TestAgentSelectionProfilesMacro|TestRunImplementDetachPrintsReportAndCompletesRun|TestRunImplementDetachSurvivesCallerProcessGroupKill)$' -count=1 -v
+CLI result: exit 0; all three top-level cases and three macro subtests passed.
+
+Coverage includes the renamed Claude characterization; honest catalogue,
+membership, advertised set, adapter fast path, encoding, contamination,
+matching siblings, genuine mismatch, Task 04 cleanup, both Task 08 absence
+shapes, unrelated exit 1, Task 06 sequences, profile macro, and both detach
+journeys. The cold full gate passed as the adjacent regression canary.

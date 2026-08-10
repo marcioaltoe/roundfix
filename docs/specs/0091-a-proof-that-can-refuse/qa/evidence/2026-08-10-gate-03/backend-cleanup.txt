@@ -1,0 +1,13 @@
+Initial command with the macOS user Go cache was environment-blocked by a
+sandbox permission error and was discarded.
+
+Command: rtk proxy env GOCACHE=<worktree>/.gocache go test ./internal/agent -run '^(TestMissingSessionIsRecognisedFromBothExitShapes|TestUnrelatedExitOneKeepsItsClassification|TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened|TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose|TestACPXCloseSessionReturnsCloseFailure)$' -count=1 -v
+Exit: 0
+Observed: five top-level tests passed, including both
+TestMissingSessionIsRecognisedFromBothExitShapes subtests:
+- missing_session_exit_four
+- installed_missing_session_exit_one
+
+The cases compare exact leading diagnosis bytes/error types, prove the cleanup
+warning remains recorded, keep a genuine close failure appended, and keep an
+unrelated exit 1 classified as InfrastructureError.
