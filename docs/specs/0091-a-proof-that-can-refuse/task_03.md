@@ -28,8 +28,10 @@ because its wording is more precise than a membership verdict.
    as it does today, including its encoding and reasoning outcome.
 5. MUST record the contaminated case as an advisory on a passing proof, never as
    a refusal.
-6. MUST break the characterization case Task 01 declared for `claude`, and
-   update it to the new behaviour in the same commit.
+6. MUST break the characterization case Task 01 declared for `claude`, update
+   it to the new behaviour in the same commit, and rename it to
+   `TestSelectionCatalogueCharacterizationClaudeRefusesAnUnofferedModel` so the
+   name records what it now proves.
 
 ## Subtasks
 
@@ -70,7 +72,7 @@ This Task may create or modify only:
 - `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestProofRefuses' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestProofRefusesAModelTheCatalogueDoesNotAdvertise'` — expected: exits 0.
 - `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestProofRefuses' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestProofRefusalNamesTheAdvertisedSet'` — expected: exits 0.
 - `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestProofRefuses' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestProofKeepsTheAdapterRefusalFastPath'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestSelectionCatalogueCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSelectionCatalogueCharacterization'` — expected: exits 0, proving the declared break was updated to the new behaviour rather than left failing. A whole-package sweep would pass with the work absent; this names the case that must change.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestSelectionCatalogueCharacterizationClaudeRefusesAnUnofferedModel$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestSelectionCatalogueCharacterizationClaudeRefusesAnUnofferedModel'` — expected: exits 0. The declared break must be updated in place and renamed to the behaviour it now records, so this name cannot exist before the work: asserting the old name passed against the unchanged tree and was refused as vacuous on 2026-08-10.
 
 ## References
 
