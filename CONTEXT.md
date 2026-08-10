@@ -132,6 +132,10 @@ _Avoid_: Adapter found, binary check, PATH readiness
 The token-free disposable Agent Session check that maps one Agent Selection through advertised ACP capabilities, applies its exact model and reasoning assignment, observes matching effective state, and closes the Session successfully.
 _Avoid_: Model validity, catalog match, recommendation rank
 
+**Runtime Catalogue**:
+What an ACP Runtime advertises before Roundfix asks it to apply a specific Agent Selection, established from a disposable Agent Session ensured without the requested model so the answer cannot be contaminated by the question. Membership in it decides refusal where no adapter refuses first; where an adapter refuses, its own message stands (ADR-0119).
+_Avoid_: Model list, capability payload, advertised options
+
 **Selection Encoding**:
 How one Agent Selection's reasoning effort is represented in the advertised ACP controls, decided during proof and reported by readiness surfaces. `independent` assigns a separate advertised reasoning option. `model_variant` selects an advertised model identifier that already carries the effort. `model_managed` is an empty reasoning effort on an adapter advertising no reasoning control at all. `runtime_managed` is an empty reasoning effort on an ACP Runtime whose advertised reasoning control Roundfix declines to assign, so the observed value is the Agent Model's own and is not proof-relevant. `runtime_deferred` is a non-empty reasoning effort on an ACP Runtime that advertises the control only once the Agent Session holds a queue owner, so proof verifies the value is advertised and the Run applies and observes it after an inert setup turn and before the first work turn.
 _Avoid_: Effort mode, reasoning strategy, assignment style
