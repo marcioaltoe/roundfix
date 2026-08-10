@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0091-a-proof-that-can-refuse
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -66,3 +66,46 @@ This Task may create or modify only:
 - `_prd.md` → Goal 3; Core Features, a catalogue read before the request.
 - `_techspec.md` → Build Order 2; Interfaces.
 - ADR-0112.
+
+## Result
+
+### Implementation
+
+- Added `RuntimeCatalogue` with advertised Agent Models, reasoning efforts, and
+  a contamination record. `SelectionProof` and `SessionSelectionRequest` carry
+  it alongside the existing `SelectionCapabilities`.
+- `ProveExactSelection` now ensures and reads the disposable Agent Session once
+  without a model override before the existing requested-selection ensure and
+  application flow.
+- Reused the capability-retention canonical binding rule for catalogue
+  membership, so an advertised `opus[1m]` binds a requested `opus`.
+- Compared every later capability read with the pre-request catalogue and
+  retained `Contaminated` on the proof without consulting it for any verdict.
+
+### Focused checks
+
+- The pre-change `rtk rg -n '^type RuntimeCatalogue' internal/agent/selection_assignment.go`
+  exited 1, establishing that the catalogue type and behavior were absent.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/agent -run 'Test(RuntimeCatalogue|SelectionCatalogueCharacterization)' -count=1`
+  exited 0 after the final test edit.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/agent -count=1`
+  exited 0 after the final test edit.
+- `rtk git diff --check` exited 0.
+- The first focused test attempt used the sandbox-blocked macOS global Go cache;
+  the recorded checks use the isolated `/private/tmp` cache instead.
+- The authored `## Verification` commands were not run; the Daemon owns them.
+
+### Acceptance evidence
+
+- `TestRuntimeCatalogueReadsAdvertisedModelsWithoutAnOverride` asserts that the
+  first disposable ensure has no `--model`, the following command reads the
+  Agent Session, the proof carries all fixture models and efforts, and no
+  prompt command occurs.
+- `TestRuntimeCatalogueBindsCanonicalVariant` asserts that `opus[1m]`
+  advertises canonical `opus` and does not bind an absent `haiku`.
+- `TestRuntimeCatalogueRecordsAContaminatedAdvertisement` supplies a later
+  capability state containing a model absent from the catalogue, observes
+  `Contaminated`, and confirms the proof status remains `proven`.
+- The two pre-existing characterization cases still exercise their original
+  verdicts in the focused check: Claude proves its echoed unoffered model and
+  Codex refuses its unoffered model with `model_not_advertised`.

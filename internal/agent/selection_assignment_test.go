@@ -2,6 +2,18 @@ package agent
 
 import "testing"
 
+func TestRuntimeCatalogueBindsCanonicalVariant(t *testing.T) {
+	t.Parallel()
+
+	catalogue := RuntimeCatalogue{Models: []string{"default", "opus[1m]", "sonnet"}}
+	if !catalogue.AdvertisesModel("opus") {
+		t.Fatalf("catalogue models %v do not advertise canonical Agent Model %q", catalogue.Models, "opus")
+	}
+	if catalogue.AdvertisesModel("haiku") {
+		t.Fatalf("catalogue models %v advertise absent Agent Model %q", catalogue.Models, "haiku")
+	}
+}
+
 func TestSelectionRuntimeDeferredStateMatchesBeforeEffortApplication(t *testing.T) {
 	t.Parallel()
 

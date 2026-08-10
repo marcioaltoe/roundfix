@@ -1,12 +1,13 @@
 // Suite: Agent Selection catalogue characterization.
 // Invariant: today's proof accepts an echoed claude model and refuses it on codex.
 // Boundary IN: ProveExactSelection and the fake ACPX process boundary.
-// Boundary OUT: the pre-request catalogue and membership verdict added by later Tasks.
+// Boundary OUT: the membership verdict added by task_03.
 package agent
 
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -14,6 +15,77 @@ const (
 	unofferedClaudeModel = "opus-9-does-not-exist"
 	unofferedCodexModel  = "gpt-9-does-not-exist"
 )
+
+func TestRuntimeCatalogueReadsAdvertisedModelsWithoutAnOverride(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show": honestClaudeCapabilityPayload(t),
+	}))
+
+	proof, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{
+		Runtime: RuntimeSpec{
+			ID:              "claude",
+			Protocol:        ProtocolACP,
+			Model:           "default",
+			ReasoningEffort: "high",
+		},
+		WorkDir: harness.gitRoot,
+	})
+	if err != nil {
+		t.Fatalf("prove selection with runtime catalogue: %v", err)
+	}
+	wantModels := []string{"default", "opus[1m]", "claude-fable-5[1m]", "sonnet", "haiku"}
+	if !reflect.DeepEqual(proof.Catalogue.Models, wantModels) {
+		t.Fatalf("catalogue models = %v, want %v", proof.Catalogue.Models, wantModels)
+	}
+	wantEfforts := []string{"low", "medium", "high"}
+	if !reflect.DeepEqual(proof.Catalogue.Efforts, wantEfforts) {
+		t.Fatalf("catalogue efforts = %v, want %v", proof.Catalogue.Efforts, wantEfforts)
+	}
+
+	invocations := readJSONInvocations(t, harness.invocationsPath)
+	if len(invocations) < 2 || fakeACPXCommandKey(invocations[0]) != "sessions ensure" || containsArg(invocations[0], "--model") {
+		t.Fatalf("first disposable ensure applied a model override: %#v", invocations)
+	}
+	if fakeACPXCommandKey(invocations[1]) != "sessions show" {
+		t.Fatalf("runtime catalogue was not read immediately after the override-free ensure: %#v", invocations)
+	}
+	if containsCommandKey(invocations, "prompt") {
+		t.Fatalf("runtime catalogue proof sent a prompt: %#v", invocations)
+	}
+}
+
+func TestRuntimeCatalogueRecordsAContaminatedAdvertisement(t *testing.T) {
+	t.Parallel()
+
+	proof, err := (ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
+		Runtime: RuntimeSpec{
+			ID:       "codex",
+			Protocol: ProtocolACP,
+			Model:    unofferedCodexModel,
+		},
+		Capabilities: SelectionCapabilities{
+			CurrentModel: unofferedCodexModel,
+			Models: []ModelCapability{{
+				AdapterValue:   unofferedCodexModel,
+				CanonicalModel: unofferedCodexModel,
+				ModelManaged:   true,
+			}},
+		},
+		Catalogue: RuntimeCatalogue{Models: []string{"gpt-5.6-sol", "gpt-5.5"}},
+	}, nil)
+	if err != nil {
+		t.Fatalf("apply selection with later advertisement: %v", err)
+	}
+	if proof.Status != SelectionProofStatusProven {
+		t.Fatalf("proof status = %q, want unchanged status %q", proof.Status, SelectionProofStatusProven)
+	}
+	if !proof.Catalogue.Contaminated {
+		t.Fatalf("catalogue did not record later advertisement of absent model %q: %#v", unofferedCodexModel, proof.Catalogue)
+	}
+}
 
 // TestSelectionCatalogueCharacterizationClaudeProvesAnUnofferedModel records
 // the false-positive proof observed when claude echoes the requested model
@@ -82,37 +154,16 @@ func TestSelectionCatalogueCharacterizationCodexRefusesAnUnofferedModel(t *testi
 func contaminatedClaudeCapabilityPayload(t *testing.T) string {
 	t.Helper()
 
-	modelOptions := []any{
-		map[string]string{"value": "default"},
-		map[string]string{"value": "opus[1m]"},
-		map[string]string{"value": "claude-fable-5[1m]"},
-		map[string]string{"value": "sonnet"},
-		map[string]string{"value": "haiku"},
-		map[string]string{"value": unofferedClaudeModel},
-	}
-	return mustJSONForTest(t, map[string]any{
-		"schema": "acpx.session.v1",
-		"acpx": map[string]any{
-			"current_model_id": unofferedClaudeModel,
-			"config_options": []any{
-				map[string]any{
-					"id":           "model",
-					"category":     "model",
-					"type":         "select",
-					"currentValue": unofferedClaudeModel,
-					"options":      modelOptions,
-				},
-				map[string]any{
-					"id":           "effort",
-					"type":         "select",
-					"currentValue": "medium",
-					"options": []any{
-						map[string]string{"value": "low"},
-						map[string]string{"value": "medium"},
-						map[string]string{"value": "high"},
-					},
-				},
-			},
-		},
-	})
+	models := append(honestClaudeModels(), unofferedClaudeModel)
+	return sessionCapabilitySnapshotFixture(t, unofferedClaudeModel, models, "effort", "medium", []string{"low", "medium", "high"})
+}
+
+func honestClaudeCapabilityPayload(t *testing.T) string {
+	t.Helper()
+
+	return sessionCapabilitySnapshotFixture(t, "default", honestClaudeModels(), "effort", "medium", []string{"low", "medium", "high"})
+}
+
+func honestClaudeModels() []string {
+	return []string{"default", "opus[1m]", "claude-fable-5[1m]", "sonnet", "haiku"}
 }

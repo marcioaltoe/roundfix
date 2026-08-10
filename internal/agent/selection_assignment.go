@@ -44,12 +44,33 @@ type SelectionAssignment struct {
 	Encoding        string
 }
 
+// RuntimeCatalogue is what an ACP Runtime advertised before Roundfix asked it
+// to apply a specific Agent Selection.
+type RuntimeCatalogue struct {
+	Models       []string
+	Efforts      []string
+	Contaminated bool
+}
+
+// AdvertisesModel reports whether the pre-request catalogue contains the
+// requested Agent Model, including an advertised canonical variant.
+func (catalogue RuntimeCatalogue) AdvertisesModel(requested string) bool {
+	requested = strings.TrimSpace(requested)
+	for _, model := range catalogue.Models {
+		if bindsRequestedModel(model, requested) {
+			return true
+		}
+	}
+	return false
+}
+
 // SelectionProof records one exact, token-free Agent Selection proof.
 type SelectionProof struct {
 	Runtime         string
 	Model           string
 	ReasoningEffort string
 	Assignment      SelectionAssignment
+	Catalogue       RuntimeCatalogue
 	Adapter         AdapterEvidence
 	Status          string
 }
@@ -61,6 +82,7 @@ type SessionSelectionRequest struct {
 	Runtime      RuntimeSpec
 	Session      SessionRef
 	Capabilities SelectionCapabilities
+	Catalogue    RuntimeCatalogue
 }
 
 // ProveExactSelection opens one disposable Agent Session, proves the exact
@@ -99,13 +121,18 @@ func (runner ACPXRunner) ProveExactSelection(ctx context.Context, request ProbeR
 	}
 
 	session := SessionRef{Name: sessionName, WorkDir: workDir}
-	capabilities, setupErr := runner.startSessionSelection(setupCtx, request.Runtime, session, adapter, codexEnv, true)
+	catalogue, setupErr := runner.readRuntimeCatalogueWithEvidence(setupCtx, request.Runtime, session, adapter, codexEnv)
+	var capabilities SelectionCapabilities
+	if setupErr == nil {
+		capabilities, setupErr = runner.startSessionSelection(setupCtx, request.Runtime, session, adapter, codexEnv, true)
+	}
 	var proof SelectionProof
 	if setupErr == nil {
 		proof, setupErr = runner.applySessionSelection(setupCtx, SessionSelectionRequest{
 			Runtime:      request.Runtime,
 			Session:      session,
 			Capabilities: capabilities,
+			Catalogue:    catalogue,
 		}, codexEnv)
 	}
 	setupCancel()
@@ -123,6 +150,79 @@ func (runner ACPXRunner) ProveExactSelection(ctx context.Context, request ProbeR
 		return SelectionProof{}, cleanupErr
 	}
 	return proof, nil
+}
+
+// readRuntimeCatalogue ensures one disposable Agent Session without a model
+// override and reads the capabilities it advertises before any selection is
+// requested.
+func (runner ACPXRunner) readRuntimeCatalogue(ctx context.Context, runtime RuntimeSpec, sessionName, workDir string) (RuntimeCatalogue, error) {
+	if ctx == nil {
+		return RuntimeCatalogue{}, errors.New("runtime catalogue context is required")
+	}
+	adapter, err := checkAdapter(ctx, runtime, runner.baseEnv())
+	if err != nil {
+		return RuntimeCatalogue{}, err
+	}
+	codexEnv, err := runner.codexEnvForSession(ctx, runtime, sessionName)
+	if err != nil {
+		return RuntimeCatalogue{}, err
+	}
+	return runner.readRuntimeCatalogueWithEvidence(
+		ctx,
+		runtime,
+		SessionRef{Name: sessionName, WorkDir: strings.TrimSpace(workDir)},
+		adapter,
+		codexEnv,
+	)
+}
+
+func (runner ACPXRunner) readRuntimeCatalogueWithEvidence(ctx context.Context, runtime RuntimeSpec, session SessionRef, adapter AdapterEvidence, codexEnv []string) (RuntimeCatalogue, error) {
+	capabilities, err := runner.startSessionSelectionWithEnsure(
+		ctx,
+		runtime,
+		session,
+		adapter,
+		codexEnv,
+		"ensure disposable Agent Session without model override",
+		acpxRuntimeCatalogueEnsureArgs,
+	)
+	if err != nil {
+		return RuntimeCatalogue{}, err
+	}
+	return runtimeCatalogueFromCapabilities(capabilities), nil
+}
+
+func acpxRuntimeCatalogueEnsureArgs(runtime RuntimeSpec, sessionName, workDir string) ([]string, error) {
+	args, err := acpxGlobalArgs(runtime, workDir)
+	if err != nil {
+		return nil, err
+	}
+	return append(args, "sessions", "ensure", "--name", strings.TrimSpace(sessionName)), nil
+}
+
+func runtimeCatalogueFromCapabilities(capabilities SelectionCapabilities) RuntimeCatalogue {
+	models := make([]string, 0, len(capabilities.Models))
+	for _, model := range capabilities.Models {
+		models = append(models, model.AdapterValue)
+	}
+	efforts := []string(nil)
+	if capabilities.ReasoningOption != nil {
+		efforts = append(efforts, capabilities.ReasoningOption.Values...)
+	}
+	return RuntimeCatalogue{Models: models, Efforts: efforts}
+}
+
+func (catalogue RuntimeCatalogue) recordAdvertisement(capabilities SelectionCapabilities) RuntimeCatalogue {
+	if catalogue.Contaminated || len(catalogue.Models) == 0 {
+		return catalogue
+	}
+	for _, model := range capabilities.Models {
+		if !catalogue.AdvertisesModel(model.AdapterValue) {
+			catalogue.Contaminated = true
+			return catalogue
+		}
+	}
+	return catalogue
 }
 
 func (runner ACPXRunner) startSessionSelection(ctx context.Context, runtime RuntimeSpec, session SessionRef, adapter AdapterEvidence, codexEnv []string, disposable bool) (SelectionCapabilities, error) {
@@ -352,12 +452,14 @@ func (runner ACPXRunner) applySessionSelection(ctx context.Context, request Sess
 		return SelectionProof{}, err
 	}
 	state := request.Capabilities
+	catalogue := request.Catalogue.recordAdvertisement(state)
 
 	if state.CurrentModel != assignment.AdapterModel {
 		state, err = runner.applySelectionOption(ctx, request, assignment, "model", assignment.AdapterModel, codexEnv)
 		if err != nil {
 			return SelectionProof{}, err
 		}
+		catalogue = catalogue.recordAdvertisement(state)
 		replanned, planErr := PlanSelectionAssignment(request.Runtime, state)
 		if planErr != nil {
 			return SelectionProof{}, planErr
@@ -371,6 +473,7 @@ func (runner ACPXRunner) applySessionSelection(ctx context.Context, request Sess
 		if err != nil {
 			return SelectionProof{}, err
 		}
+		catalogue = catalogue.recordAdvertisement(state)
 	}
 	if !selectionStateMatches(assignment, state) {
 		return SelectionProof{}, effectiveSelectionError(assignment, state)
@@ -380,6 +483,7 @@ func (runner ACPXRunner) applySessionSelection(ctx context.Context, request Sess
 		Model:           assignment.Model,
 		ReasoningEffort: assignment.ReasoningEffort,
 		Assignment:      assignment,
+		Catalogue:       catalogue,
 		Adapter:         state.Adapter,
 		Status:          SelectionProofStatusProven,
 	}, nil
