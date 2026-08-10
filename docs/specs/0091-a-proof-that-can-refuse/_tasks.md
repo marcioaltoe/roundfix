@@ -22,9 +22,12 @@ graph:
     - id: task_07
       file: task_07.md
       needs: [task_03]
+    - id: task_08
+      file: task_08.md
+      needs: [task_04]
     - id: task_05
       file: task_05.md
-      needs: [task_07, task_04]
+      needs: [task_07, task_08]
 ---
 
 # Tasks — A proof that can refuse
@@ -37,9 +40,10 @@ graph:
 | task_03 | Let membership decide the verdict                       | backend | high       | task_06          |
 | task_04 | Stop appending a close error for a session never opened | backend | low        | —                |
 | task_07 | Stop rejecting a selection the runtime accepted          | backend | medium     | task_03          |
-| task_05 | Run the final QA gate                                   | qa      | high       | task_07, task_04 |
+| task_08 | Recognise the absence the installed acpx reports         | backend | low        | task_04          |
+| task_05 | Run the final QA gate                                   | qa      | high       | task_07, task_08 |
 
-Waves: 1 → task_01, task_04 · 2 → task_02 · 3 → task_06 · 4 → task_03 · 5 → task_07 · 6 → task_05
+Waves: 1 → task_01, task_04 · 2 → task_02 · 3 → task_06 · 4 → task_03 · 5 → task_07, task_08 · 6 → task_05
 
 Wave 1 is file-disjoint: task_01 writes only its own characterization file,
 task_04 edits `acpx_runner.go` and its existing test. The serial chain
@@ -55,3 +59,9 @@ Task 07 is the second corrective Task, minted on 2026-08-10 from the QA gate's
 F-002 and the fixture debt the membership verdict exposed. F-001 is accepted
 rather than fixed: ADR-0119 records that Roundfix takes whichever refusal fires
 first.
+
+Task 08 is the third corrective Task, minted on 2026-08-10 from the QA gate's
+repeated F-003. The loop's rule treats a third as the point to re-examine the
+decomposition; the maintainer was consulted and chose to continue, because the
+defect is a fixture that did not cover the installed acpx exit shape rather
+than a graph cut wrongly.
