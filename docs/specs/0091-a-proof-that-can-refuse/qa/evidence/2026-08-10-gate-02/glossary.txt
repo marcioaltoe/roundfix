@@ -1,0 +1,6 @@
+Command: rtk rg -n 'Runtime Catalogue|catalogue_contaminated|catalogue_unavailable' CONTEXT.md
+Exit: 1; no match.
+Producer/contract command: rtk rg -n 'RuntimeCatalogue|catalogue_contaminated|catalogue_unavailable' internal/agent/selection_assignment.go docs/specs/0091-a-proof-that-can-refuse/_techspec.md
+Exit: 0.
+Observed: production defines RuntimeCatalogue. The TechSpec declares catalogue_contaminated and a catalogue_(contaminated|unavailable) Vocabulary Contract, but CONTEXT.md documents none of the coined term or encodings. Production contains neither declared encoding string.
+Repeated finding: F-004 from qa-report-2026-08-10.md remains unresolved.

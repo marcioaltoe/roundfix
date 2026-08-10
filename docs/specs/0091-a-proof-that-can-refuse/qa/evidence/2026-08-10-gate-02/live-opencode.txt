@@ -1,0 +1,10 @@
+Build: roundfix 0.4.0 (876e83c5-dirty)
+Runtime: installed OpenCode ACP adapter through ACPX
+Scratch repository: /private/tmp/roundfix-0091-gate02-opencode
+Command: bin/roundfix profiles validate --category backend
+Fresh-process exits: 2, 2, 2.
+First and third process: selection_rejected; the live adapter reported model not found for openrouter/roundfix/model-does-not-exist.
+Second process: context deadline exceeded before an adapter verdict.
+Outside-evidence origin: the installed live OpenCode ACP adapter and its actual refusal, not a Spec fixture.
+ADR-0119 result: pass. Two independent processes observed the same adapter-first refusal; the intervening timeout is disclosed and did not replace the repeatable adapter verdict.
+Valid-after-invalid confirmation: both fresh repository-profile processes passed openrouter/deepseek/deepseek-v4-flash-0731/max as runtime_deferred.

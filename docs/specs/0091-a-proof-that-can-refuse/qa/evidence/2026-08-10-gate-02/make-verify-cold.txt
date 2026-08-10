@@ -1,0 +1,11 @@
+Precondition: GOCACHE="$PWD/.gocache" rtk go clean -testcache
+Precondition exit: 0
+Authoritative command: rtk make verify
+Exit: 0 with authorized network access
+Cold-cache proof: every tested Go package reported an execution duration; no package line reported (cached).
+Observed stages:
+- go test -parallel 16 ./...: passed
+- go test -count=1 ./skills with the four named contract cases: passed
+- go run -buildvcs=false ./cmd/roundfix skills check: passed for the required repository skill set
+- go build -buildvcs=false ... -o bin/roundfix ./cmd/roundfix: passed at 876e83c5-dirty
+Environment note: an initial sandboxed attempt was blocked from api.github.com and warmed part of the cache. Its later passing output contained cached packages and was rejected as cold evidence. The cache was cleared again immediately before this recorded run.

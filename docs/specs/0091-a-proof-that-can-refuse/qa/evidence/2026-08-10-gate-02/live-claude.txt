@@ -1,0 +1,9 @@
+Build: roundfix 0.4.0 (876e83c5-dirty)
+Runtime: installed claude-agent-acp 0.66.0 through ACPX
+Scratch repository: /private/tmp/roundfix-0091-gate02-claude
+Command: bin/roundfix profiles validate --category backend
+Fresh-process exits: 2, 2
+PRD before-state, measured 2026-08-09: claude/opus-9-does-not-exist/high passed.
+Observed both times: the exact tuple was refused as selection_rejected during the requested-model ensure; the unchanged adapter diagnostic reported Invalid value for config option model.
+ADR-0119 result: pass. The adapter fired first and its message reached the operator unchanged.
+Valid confirmation: isolated claude/opus/high plus codex/gpt-5.6-sol/high exited 0; both proofs reported independent encoding.

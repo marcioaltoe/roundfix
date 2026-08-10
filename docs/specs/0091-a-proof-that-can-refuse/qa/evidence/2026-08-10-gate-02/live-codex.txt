@@ -1,0 +1,8 @@
+Build: roundfix 0.4.0 (876e83c5-dirty)
+Runtime: installed codex-acp 1.1.14 through ACPX
+Scratch repository: /private/tmp/roundfix-0091-gate02-codex
+Command: bin/roundfix profiles validate --category backend
+Fresh-process exits: 2, 2
+Observed both times: codex/gpt-9-does-not-exist/high was refused as selection_rejected during the requested-model ensure. The unchanged adapter diagnostic reported ACP -32602 Invalid params for the model.
+ADR-0119 result: pass. The adapter fired first, so Roundfix correctly preserved its refusal instead of promising a catalogue-owned classification or advertised set.
+Valid-after-invalid confirmation: the repository profile command passed codex/gpt-5.6-sol/high as independent; the isolated repaired Claude profile also passed its Codex fallback.

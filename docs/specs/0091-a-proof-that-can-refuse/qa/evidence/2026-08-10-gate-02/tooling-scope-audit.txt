@@ -1,0 +1,14 @@
+Task commits resolved with git diff-tree --no-commit-id --name-only -r:
+- task_01 681ad14a: task_01.md; internal/agent/selection_catalogue_characterization_test.go
+- task_02 523ad06a: task_02.md; internal/agent/selection_assignment.go; selection_assignment_test.go; selection_catalogue_characterization_test.go
+- task_06 b5b4a1b: task_06.md; internal/agent/acpx_runner_test.go; internal/cli/implement_test.go
+- task_03 91873526: task_03.md; internal/agent/selection_assignment.go; selection_assignment_test.go; selection_catalogue_characterization_test.go
+- task_04 f65aac63: task_04.md; internal/agent/acpx_runner.go; acpx_runner_test.go
+- task_07 876e83c5: task_07.md; internal/agent/selection_assignment.go; selection_assignment_test.go; internal/cli/implement_test.go
+Every Task commit stayed within its authored Task boundary and changed no protected tooling path.
+Protected configuration chronology:
+- d69609af created the typed authorization, bounded to .roundfixrc.yml and the claude/opus/high entries.
+- 18ac1e9c changed only .roundfixrc.yml for the authorized prerequisite reroute.
+- merge-base --is-ancestor proved d69609af < 18ac1e9c < 876e83c5.
+The authorization explicitly says restoring the Claude entries after F-002 is fixed is the expected end state. Its absence is reported as functional/configuration finding F-006, not softened into an authorization-shape failure.
+Current worktree delta contains only this rerun's QA report and evidence.

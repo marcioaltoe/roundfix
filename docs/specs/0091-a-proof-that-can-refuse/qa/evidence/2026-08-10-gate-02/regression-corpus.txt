@@ -1,0 +1,5 @@
+Agent command: GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run '^(TestRuntimeCatalogue|TestProof|TestSelectionCatalogueCharacterization|TestACPXProbeSelectionRejectionClosesDisposableSession|TestACPXProbeSelectionSetupUsesBoundedContext|TestACPXProbeSkipsEmptyReasoningEffort|TestACPXProbeValidatesSelectionWithDisposableSession|TestApplySessionSelectionDisposableAndLiveOrder|TestDisposableSessionClose|TestProfileProofAppliesExactReasoningAndClosesDisposableSession|TestProfileProofClosesDisposableSessionOnSelectionFailure|TestProveExactSelection)' -count=1
+Agent result: exit 0, 34 tests passed.
+CLI command: GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run '^(TestAgentSelectionProfilesMacro|TestRunImplementDetachPrintsReportAndCompletesRun|TestRunImplementDetachSurvivesCallerProcessGroupKill)$' -count=1
+CLI result: exit 0, 6 tests passed.
+Coverage: the renamed Claude characterization; catalogue, membership, adapter-fast-path, encoding, contamination, matching-sibling, genuine-mismatch, cleanup, Task 06 sibling sequence, profile macro, and both detach journeys all executed. The uncached full gate passed as the adjacent regression canary.

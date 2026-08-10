@@ -1,0 +1,7 @@
+Public reproduction: run the built binary without full filesystem access from /private/tmp/roundfix-0091-gate02-codex.
+Command: bin/roundfix profiles validate --category backend
+Exit: 2
+Initial cause: Codex could not initialize sqlite state under ~/.codex, before the disposable session opened.
+Observed suffix: close disposable Agent Session ... No named session ...
+Repeated finding: F-003 from qa-report-2026-08-10.md remains reproducible.
+Root-cause evidence: CloseSession classifies absence only when ACPX exits 4. The installed ACPX close command returned exit 1 with the explicit No named session diagnostic, so IsAgentSessionAbsent remained false and closeDisposableSession appended AgentSessionCleanupError. The Task 04 fixture assumes sessions close exits 4 and does not represent this assembled exit shape.
