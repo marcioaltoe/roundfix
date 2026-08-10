@@ -6,30 +6,22 @@ package speccheck_test
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
-	"runtime"
 	"strings"
 	"testing"
-	"time"
 
-	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
 
 const (
-	replay0058QA001                 = "replay-0058-qa-001"
-	replay0058QA004                 = "replay-0058-qa-004"
-	replay0056F001                  = "replay-0056-f-001"
-	replay0056F002                  = "replay-0056-f-002"
-	replay0060Task03                = "replay-0060-task-03"
-	maxCorpusCheckOperationsPerSpec = 1
+	replay0058QA001  = "replay-0058-qa-001"
+	replay0058QA004  = "replay-0058-qa-004"
+	replay0056F001   = "replay-0056-f-001"
+	replay0056F002   = "replay-0056-f-002"
+	replay0060Task03 = "replay-0060-task-03"
 )
 
 func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {
@@ -205,101 +197,6 @@ func TestCheckReplayReadmeProvenance(t *testing.T) {
 	}
 }
 
-func TestCheckCorpusGolden(t *testing.T) {
-	repoRoot := characterizationRepositoryRoot(t)
-	activeRoot := filepath.Join(repoRoot, "docs", "specs")
-	archivedRoot := materializeArchivedCorpus(t, filepath.Join(activeRoot, "_archived"))
-	want := readCorpusGolden(t)
-
-	active := sweepCorpus(t, activeRoot, repoRoot, nil)
-	archived := sweepCorpus(t, archivedRoot, repoRoot, nil)
-	archivedReport, err := json.MarshalIndent(archived, "", "  ")
-	if err != nil {
-		t.Fatalf("render archived corpus counts: %v", err)
-	}
-	// Archived Specs are historical, so their counts move whenever authoring
-	// lands. Report the derived counts for inspection; assert only the active
-	// corpus, where a changed count is a consistency regression.
-	t.Logf("archived Spec corpus finding counts (reported, not asserted):\n%s", archivedReport)
-
-	if !reflect.DeepEqual(active, want.Active) {
-		actual, err := json.MarshalIndent(active, "", "  ")
-		if err != nil {
-			t.Fatalf("render active corpus counts: %v", err)
-		}
-		t.Errorf("active Spec corpus finding counts changed; inspect the consistency regression or intentional detector change, then deliberately update testdata/corpus-golden.json:\n%s", actual)
-	}
-}
-
-func TestCheckCorpusBudget(t *testing.T) {
-	// Operation counts are load-independent, so this check no longer needs a dedicated-run guard.
-	repoRoot := characterizationRepositoryRoot(t)
-	activeRoot := filepath.Join(repoRoot, "docs", "specs")
-	archivedRoot := materializeArchivedCorpus(t, filepath.Join(activeRoot, "_archived"))
-
-	var work corpusSweepWork
-	started := time.Now()
-	sweepCorpus(t, activeRoot, repoRoot, &work)
-	sweepCorpus(t, archivedRoot, repoRoot, &work)
-	elapsed := time.Since(started)
-	t.Logf(
-		"full Spec corpus sweep completed in %s; work: %d Check operations across %d Specs (budget: at most %d Check operation per Spec)",
-		elapsed,
-		work.checkOperations,
-		work.specs,
-		maxCorpusCheckOperationsPerSpec,
-	)
-
-	if work.specs == 0 {
-		t.Fatal("full Spec corpus sweep measured no Specs")
-	}
-	maxCheckOperations := work.specs * maxCorpusCheckOperationsPerSpec
-	if work.checkOperations > maxCheckOperations {
-		t.Errorf(
-			"full Spec corpus sweep performed %d Check operations across %d Specs, want at most %d",
-			work.checkOperations,
-			work.specs,
-			maxCheckOperations,
-		)
-	}
-}
-
-func TestCheckActiveCorpusHasNoErrors(t *testing.T) {
-	repoRoot := characterizationRepositoryRoot(t)
-	specsRoot := filepath.Join(repoRoot, "docs", "specs")
-	active, err := spec.ListActive(specsRoot)
-	if err != nil {
-		t.Fatalf("list active Specs: %v", err)
-	}
-
-	for _, activeSpec := range active {
-		result, err := speccheck.Check(specsRoot, repoRoot, activeSpec.Slug)
-		if err != nil {
-			t.Errorf("%s: check active Spec: %v", activeSpec.Slug, err)
-			continue
-		}
-		for _, finding := range result.Findings {
-			switch finding.Severity {
-			case speccheck.SeverityError:
-				t.Errorf("%s: %s: %s", activeSpec.Slug, finding.Code, finding.Summary)
-			case speccheck.SeverityGap:
-				t.Logf("%s: %s gap remains visible: %s", activeSpec.Slug, finding.Code, finding.Summary)
-			}
-		}
-	}
-}
-
-type corpusGolden struct {
-	Schema string         `json:"schema"`
-	Update string         `json:"update"`
-	Active map[string]int `json:"active"`
-}
-
-type corpusSweepWork struct {
-	specs           int
-	checkOperations int
-}
-
 func requireReplayFinding(t *testing.T, reportPath string, result speccheck.Result, code, summaryFragment string) speccheck.Finding {
 	t.Helper()
 
@@ -338,140 +235,6 @@ func readFixtureRepositoryFile(t *testing.T, pathElements ...string) string {
 		t.Fatalf("read replay fixture %q: %v", path, err)
 	}
 	return string(content)
-}
-
-func characterizationRepositoryRoot(t *testing.T) string {
-	t.Helper()
-
-	_, testFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("runtime.Caller could not locate the repository")
-	}
-	return filepath.Clean(filepath.Join(filepath.Dir(testFile), "..", ".."))
-}
-
-func readCorpusGolden(t *testing.T) corpusGolden {
-	t.Helper()
-
-	path := filepath.Join("testdata", "corpus-golden.json")
-	content, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read corpus golden %q: %v", path, err)
-	}
-	var golden corpusGolden
-	decoder := json.NewDecoder(bytes.NewReader(content))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&golden); err != nil {
-		t.Fatalf("parse corpus golden %q: %v", path, err)
-	}
-	if golden.Schema != "roundfix-speccheck-corpus/v2" || strings.TrimSpace(golden.Update) == "" {
-		t.Fatalf("corpus golden %q must declare its schema and update path", path)
-	}
-	return golden
-}
-
-func sweepCorpus(t *testing.T, specsRoot, repoRoot string, work *corpusSweepWork) map[string]int {
-	t.Helper()
-
-	counts := make(map[string]int, len(corpusFindingCodes))
-	for _, code := range corpusFindingCodes {
-		counts[code] = 0
-	}
-	entries, err := os.ReadDir(specsRoot)
-	if err != nil {
-		t.Fatalf("read Spec corpus %q: %v", specsRoot, err)
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
-			continue
-		}
-		if _, err := os.Stat(filepath.Join(specsRoot, entry.Name(), "_prd.md")); errors.Is(err, os.ErrNotExist) {
-			continue
-		} else if err != nil {
-			t.Fatalf("inspect Spec %q: %v", entry.Name(), err)
-		}
-		if work != nil {
-			work.specs++
-		}
-		result, err := checkCorpusSpec(specsRoot, repoRoot, entry.Name(), work)
-		if err != nil {
-			t.Fatalf("Check(%q) in corpus %q: %v", entry.Name(), specsRoot, err)
-		}
-		for _, finding := range result.Findings {
-			if _, known := counts[finding.Code]; !known {
-				t.Fatalf("Check(%q) returned uncharacterized code %q", entry.Name(), finding.Code)
-			}
-			counts[finding.Code]++
-		}
-	}
-	return counts
-}
-
-func checkCorpusSpec(specsRoot, repoRoot, slug string, work *corpusSweepWork) (speccheck.Result, error) {
-	if work != nil {
-		work.checkOperations++
-	}
-	return speccheck.Check(specsRoot, repoRoot, slug)
-}
-
-var corpusFindingCodes = []string{
-	speccheck.CodeCitationUnsupported,
-	speccheck.CodeConstraintMissing,
-	speccheck.CodeConstraintUnreasoned,
-	speccheck.CodeConstraintSource,
-	speccheck.CodeToolingUnauthorized,
-	speccheck.CodeToolingUnbounded,
-	speccheck.CodeADRUnlisted,
-	speccheck.CodeADRRelated,
-	speccheck.CodeCoverageUnmapped,
-	speccheck.CodeCoverageUntasked,
-	speccheck.CodeLoopOrderDivergent,
-	speccheck.CodeFindingLifecycle,
-	speccheck.CodeRollupMember,
-	speccheck.CodeArchiveLicense,
-	speccheck.CodeReferenceUnresolved,
-	speccheck.CodeVocabularyUndocumented,
-	speccheck.CodeVerifyWorkIndependent,
-	speccheck.CodeRequirementContradictory,
-	speccheck.CodeRehearsalUndeclared,
-}
-
-func materializeArchivedCorpus(t *testing.T, sourceRoot string) string {
-	t.Helper()
-
-	targetRoot := filepath.Join(t.TempDir(), "docs", "specs")
-	err := filepath.WalkDir(sourceRoot, func(sourcePath string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		relative, err := filepath.Rel(sourceRoot, sourcePath)
-		if err != nil {
-			return err
-		}
-		targetPath := filepath.Join(targetRoot, relative)
-		if entry.IsDir() {
-			return os.MkdirAll(targetPath, 0o755)
-		}
-		if entry.Name() == "_prd.md" {
-			content, err := os.ReadFile(sourcePath)
-			if err != nil {
-				return err
-			}
-			content, err = activeCorpusPRD(content)
-			if err != nil {
-				return fmt.Errorf("rehost archived PRD %q: %w", sourcePath, err)
-			}
-			return os.WriteFile(targetPath, content, 0o644)
-		}
-		if err := os.Link(sourcePath, targetPath); err == nil {
-			return nil
-		}
-		return copyCorpusFile(sourcePath, targetPath)
-	})
-	if err != nil {
-		t.Fatalf("materialize archived Spec corpus: %v", err)
-	}
-	return targetRoot
 }
 
 func activeCorpusPRD(content []byte) ([]byte, error) {

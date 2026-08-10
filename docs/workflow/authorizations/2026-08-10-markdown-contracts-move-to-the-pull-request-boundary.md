@@ -14,6 +14,7 @@ paths:
   - internal/spec/archive_test.go
   - docs/agents/specific-repository.md
   - docs/references/coverage-record.json
+  - internal/spec/coverage_test.go
 consuming: direct
 ---
 
@@ -56,6 +57,14 @@ verify-docs` passes before any pull request opens.
 
 Moving or renaming Go tests re-records `docs/references/coverage-record.json`
 with the sanctioned update command in the same commit, per the standing rule.
+
+## Addendum — 2026-08-10 — coverage enumeration sees the tagged domain
+
+The moved tests carry the `docscontract` build tag so `go test ./...` excludes
+them. `TestCoverageEquivalence` enumerates with `go test -list ./...`, which
+would silently drop the moved tests from the record — the exact loss that test
+exists to prevent. Its enumeration gains `-tags docscontract`, so the record
+keeps tracking every moved test.
 
 ## Bounded by purpose
 

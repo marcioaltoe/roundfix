@@ -150,7 +150,9 @@ func TestMarshalCoverageRecordIsDeterministic(t *testing.T) {
 // terminating `ok <pkg>` or `? <pkg>` line, so names accumulate until a
 // terminator names the package they belong to.
 func collectCoverageRecord(repoRoot string) (CoverageRecord, error) {
-	listOutput, err := runGo(repoRoot, "test", "-buildvcs=false", "-list", "^Test", "./...")
+	// -tags docscontract keeps the pull-request-boundary domain enumerated:
+	// without it the moved tests would vanish from the record silently.
+	listOutput, err := runGo(repoRoot, "test", "-buildvcs=false", "-tags", "docscontract", "-list", "^Test", "./...")
 	if err != nil {
 		return CoverageRecord{}, fmt.Errorf("list repository tests: %w", err)
 	}

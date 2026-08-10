@@ -6,7 +6,6 @@ package spec
 // Boundary OUT: command I/O and filesystem movement in internal/cli/archive_test.go.
 
 import (
-	"crypto/sha256"
 	"errors"
 	"io/fs"
 	"os"
@@ -29,17 +28,11 @@ const (
 func TestSpec0058ReplayArchivesDeclaredUnreachableRelease(t *testing.T) {
 	t.Parallel()
 	repositoryRoot := archiveTestRepositoryRoot(t)
-	archivedRoot := filepath.Join(repositoryRoot, "docs", "specs", "_archived")
-	before := archiveTestTreeSnapshot(t, archivedRoot)
 	specsRoot, specDir := prepareSpec0058Replay(t, repositoryRoot, "accepted", true)
 
 	prdBefore := archiveTestReadFile(t, filepath.Join(specDir, "_prd.md"))
 	if strings.Contains(prdBefore, "qa_override:") {
 		t.Fatalf("replay PRD retained qa_override:\n%s", prdBefore)
-	}
-	sourceReportCopy := filepath.Join(specDir, "qa", filepath.Base(spec0058SourceReport))
-	if got, want := archiveTestReadFile(t, sourceReportCopy), archiveTestReadFile(t, filepath.Join(repositoryRoot, filepath.FromSlash(spec0058SourceReport))); got != want {
-		t.Fatal("replay did not preserve the source Spec 0058 QA Report byte-for-byte")
 	}
 	report, err := ReadQAReport(specDir)
 	if err != nil {
@@ -78,9 +71,6 @@ func TestSpec0058ReplayArchivesDeclaredUnreachableRelease(t *testing.T) {
 	}
 	if !reflect.DeepEqual(frontmatter.Unproven, []string{spec0058ReleaseAction}) {
 		t.Fatalf("archived replay unproven = %q, want release action %q", frontmatter.Unproven, spec0058ReleaseAction)
-	}
-	if after := archiveTestTreeSnapshot(t, archivedRoot); !reflect.DeepEqual(after, before) {
-		t.Fatal("Spec 0058 replay modified the repository's archived Spec corpus")
 	}
 }
 
@@ -339,33 +329,6 @@ func archiveTestCopyTree(t *testing.T, source string, destination string) {
 	if err != nil {
 		t.Fatalf("copy replay artifacts from %q to %q: %v", source, destination, err)
 	}
-}
-
-func archiveTestTreeSnapshot(t *testing.T, root string) map[string][sha256.Size]byte {
-	t.Helper()
-	snapshot := make(map[string][sha256.Size]byte)
-	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() {
-			return nil
-		}
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		relative, err := filepath.Rel(root, path)
-		if err != nil {
-			return err
-		}
-		snapshot[filepath.ToSlash(relative)] = sha256.Sum256(content)
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("snapshot archived corpus %q: %v", root, err)
-	}
-	return snapshot
 }
 
 func archiveTestAssertReplayRemainsActive(t *testing.T, specsRoot string) {
