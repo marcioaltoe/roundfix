@@ -19,9 +19,12 @@ graph:
     - id: task_04
       file: task_04.md
       needs: []
+    - id: task_07
+      file: task_07.md
+      needs: [task_03]
     - id: task_05
       file: task_05.md
-      needs: [task_03, task_04]
+      needs: [task_07, task_04]
 ---
 
 # Tasks — A proof that can refuse
@@ -33,9 +36,10 @@ graph:
 | task_06 | Teach the sibling tests the catalogue read               | test    | medium     | task_02          |
 | task_03 | Let membership decide the verdict                       | backend | high       | task_06          |
 | task_04 | Stop appending a close error for a session never opened | backend | low        | —                |
-| task_05 | Run the final QA gate                                   | qa      | high       | task_03, task_04 |
+| task_07 | Stop rejecting a selection the runtime accepted          | backend | medium     | task_03          |
+| task_05 | Run the final QA gate                                   | qa      | high       | task_07, task_04 |
 
-Waves: 1 → task_01, task_04 · 2 → task_02 · 3 → task_06 · 4 → task_03 · 5 → task_05
+Waves: 1 → task_01, task_04 · 2 → task_02 · 3 → task_06 · 4 → task_03 · 5 → task_07 · 6 → task_05
 
 Wave 1 is file-disjoint: task_01 writes only its own characterization file,
 task_04 edits `acpx_runner.go` and its existing test. The serial chain
@@ -46,3 +50,8 @@ Task 06 is corrective, minted on 2026-08-10 after the first Run: task_02
 changed the acpx invocation sequence and left sixteen sibling tests asserting
 the old one. It sits between task_02 and task_03 so the chain continues from a
 green tree.
+
+Task 07 is the second corrective Task, minted on 2026-08-10 from the QA gate's
+F-002 and the fixture debt the membership verdict exposed. F-001 is accepted
+rather than fixed: ADR-0119 records that Roundfix takes whichever refusal fires
+first.

@@ -69,7 +69,7 @@ about a session they did not create.
   gate prove machine facts before spending an Agent turn, and this Spec's gate
   follows it: the live refusals are cheap command runs, not Agent work.
   ADR-0104 requires an
-  acceptance row on evidence this Spec did not author. This Spec adds ADR-0112.
+  acceptance row on evidence this Spec did not author. This Spec adds ADR-0112 and ADR-0119.
   ADR-0117 places a check with the stage that can produce its defect; it does not change what this Spec delivers, and it moves where this Spec's gate rows run only once Spec 0093 ships. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — the change lives in `internal/agent`,
   which is ordinary source. No `Makefile`, CI workflow, skill contract, ignore
@@ -79,8 +79,12 @@ about a session they did not create.
 
 1. An Agent Selection naming a model the runtime does not offer is refused at
    preflight, on every runtime, including `claude`.
-2. The refusal names the advertised set, so a maintainer can correct the profile
-   from the message alone.
+2. The refusal names the advertised set wherever Roundfix owns the verdict. Where
+   an adapter refuses first, its message reaches the operator unchanged and the
+   failure travels to whoever is orchestrating, per ADR-0119: the QA gate
+   measured all three live runtimes refusing before the membership check could
+   speak, and pre-empting every adapter is a race Roundfix loses by
+   construction.
 3. Proof stays token-free. No prompt is sent to establish what a runtime offers.
 4. A failed proof reports one actionable diagnosis, without trailing cleanup
    noise about a session that never opened.
@@ -92,8 +96,9 @@ about a session they did not create.
   from a session ensured without the requested model, so the answer cannot be
   contaminated by the question. Membership is then decided against that
   catalogue rather than against the adapter's willingness to complain.
-- **Refusal owned by Roundfix, not inherited from stderr.** An adapter that
-  declines to refuse no longer means the selection is sound. The existing
+- **Refusal owned by Roundfix where no adapter claims it.** An adapter that
+  declines to refuse no longer means the selection is sound; where an adapter
+  does refuse, its message stands (ADR-0119). The existing
   stderr-matched refusal stays as a fast path where an adapter does emit it.
 - **A diagnosis that ends where it stops being useful.** A cleanup failure for a
   session that was never created is not part of the maintainer's problem and is
