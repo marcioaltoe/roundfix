@@ -48,7 +48,6 @@ Any other path is out of scope; stop and fail the Task rather than widen it.
 
 - `grep -q '_archived' .coderabbit.yaml` — expected: exits 0, proving the archive root is named in the configuration.
 - `test "$(grep -c 'docs/specs/_archived\|docs/findings/_archived' .coderabbit.yaml)" -le 1` — expected: exits 0, proving the per-tree filters were replaced by one entry rather than added to.
-- `test -z "$(git diff --name-only -- . ':!.coderabbit.yaml' ':!docs/specs/0085-what-an-agent-reads-before-it-decides/task_07.md')"` — expected: exits 0, proving no path outside the bounded list moved.
 
 ## Context
 

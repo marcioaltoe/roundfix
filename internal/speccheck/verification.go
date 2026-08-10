@@ -10,11 +10,17 @@ import (
 const (
 	// CodeVerifyWorkIndependent identifies a Verification that cannot distinguish Task work from no work.
 	CodeVerifyWorkIndependent = "SC-VERIFY-WORK-INDEPENDENT"
+	// CodeVerifyVacuousCommand identifies one Verification command that already
+	// passes against the unchanged tree, whatever its siblings prove.
+	CodeVerifyVacuousCommand = "SC-VERIFY-VACUOUS-COMMAND"
 )
 
 var (
 	makeVerifyPattern = regexp.MustCompile(`^(?:rtk\s+)?(?:env\s+(?:\S+=\S+\s+)*)?make\s+verify$`)
 	goWideGatePattern = regexp.MustCompile(`\bgo\s+(?:build|test|vet)\b`)
+	// An assertion over which paths changed, however it is spelled. The empty
+	// set satisfies it, so it cannot distinguish Task work from no work.
+	workingTreeStatePattern = regexp.MustCompile(`git\s+(?:status|diff)\b[^|&;]*(?:--porcelain|--short|--check|--quiet|--exit-code|--name-only|--name-status|--stat)`)
 )
 
 // WorkIndependentVerification reports a Task whose declared Verification
@@ -53,17 +59,28 @@ func repositoryWideGate(command string) bool {
 	return !strings.Contains(command, " -run ") && !strings.Contains(command, " -run=")
 }
 
+// workingTreeCleanlinessCheck reports a command whose assertion is that the
+// working tree carries no unexpected change. Matching is by shape rather than
+// by a literal list: any assertion over the set of changed paths is satisfied
+// by the empty set, so it passes before the Task does anything. The Daemon's
+// pre-work probe refused exactly this shape on 2026-08-10, written as
+// `git diff --name-only HEAD | ... | grep -q .`, which no literal covered.
 func workingTreeCleanlinessCheck(command string) bool {
-	for _, check := range []string{
-		"git status --porcelain",
-		"git status --short",
-		"git diff --check",
-		"git diff --quiet",
-		"git diff --exit-code",
-	} {
-		if strings.Contains(command, check) {
-			return true
+	return workingTreeStatePattern.MatchString(command)
+}
+
+// VacuousVerificationCommands reports each declared command that already passes
+// against the unchanged tree. WorkIndependentVerification judges the Task as a
+// whole and stays silent when one honest command sits beside a vacuous one;
+// the Daemon's pre-work probe judges each command on its own and refuses the
+// Task for any single one, so this check applies the Daemon's unit.
+func VacuousVerificationCommands(task spec.Task) []string {
+	var vacuous []string
+	for _, command := range task.Verification {
+		normalized := strings.Join(strings.Fields(strings.ToLower(command)), " ")
+		if workingTreeCleanlinessCheck(normalized) {
+			vacuous = append(vacuous, command)
 		}
 	}
-	return false
+	return vacuous
 }

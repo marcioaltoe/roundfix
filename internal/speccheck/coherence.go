@@ -56,6 +56,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeCoverageUntasked, stage: StageTasks},
 	{code: CodeReferenceUnresolved, stage: StageTasks},
 	{code: CodeVerifyWorkIndependent, stage: StageTasks},
+	{code: CodeVerifyVacuousCommand, stage: StageTasks},
 	{code: CodeRequirementContradictory, stage: StageTasks},
 	{code: CodeRehearsalUndeclared, stage: StageTasks},
 }

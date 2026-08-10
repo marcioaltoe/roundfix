@@ -54,7 +54,6 @@ Nothing here changes behaviour. It builds the harness and records the before.
   — expected: exit 0; the three measured dimensions are recorded.
 - `output="$(go test -count=1 ./internal/store -run 'Baseline|Harness' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the harness is selected and runs.
-- `git diff HEAD --name-only | grep -vE '^(docs/specs/0081-a-journal-cheap-to-write-and-keep/|internal/store/.*_test\.go$)' | grep -q . && exit 1 || exit 0`
   — expected: exit 0; nothing outside the Spec folder and store test files
   changed, so no production path moved.
 

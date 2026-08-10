@@ -84,3 +84,68 @@ func TestWorkIndependentVerificationRefusesOnlyWorkIndependentCommands(t *testin
 		})
 	}
 }
+
+func TestVacuousVerificationCommandIsCaughtBesideHonestSiblings(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range []struct {
+		name    string
+		command string
+		vacuous bool
+	}{
+		{
+			name:    "an assertion over which paths changed",
+			command: "git diff --name-only HEAD | grep -v -E '^(kept)$' | grep -q . && exit 1 || exit 0",
+			vacuous: true,
+		},
+		{
+			name:    "a porcelain cleanliness check",
+			command: "git status --porcelain | grep -q . && exit 1 || exit 0",
+			vacuous: true,
+		},
+		{
+			name:    "a name-status assertion",
+			command: "git diff --name-status HEAD | grep -q .",
+			vacuous: true,
+		},
+		{
+			name:    "a named test that does not exist yet",
+			command: "go test ./internal/agent -run '^TestX$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestX'",
+			vacuous: false,
+		},
+		{
+			name:    "a grep over declared source",
+			command: "grep -c 'Declared break' internal/agent/selection_test.go",
+			vacuous: false,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			task := spec.Task{Verification: []string{testCase.command}}
+			vacuous := speccheck.VacuousVerificationCommands(task)
+			if (len(vacuous) != 0) != testCase.vacuous {
+				t.Fatalf("VacuousVerificationCommands(%q) = %#v, want vacuous %v", testCase.command, vacuous, testCase.vacuous)
+			}
+		})
+	}
+}
+
+// TestOneHonestCommandDoesNotAbsolveAVacuousSibling pins the unit of judgement:
+// the Daemon's pre-work probe refuses a Task for any single vacuous command, so
+// the static check must not stay silent because a sibling is honest.
+func TestOneHonestCommandDoesNotAbsolveAVacuousSibling(t *testing.T) {
+	t.Parallel()
+
+	task := spec.Task{Verification: []string{
+		"go test ./internal/agent -run '^TestY$' -count=1 -v 2>&1 | grep -q '^--- PASS: TestY'",
+		"git diff --name-only HEAD | grep -q .",
+	}}
+	vacuous := speccheck.VacuousVerificationCommands(task)
+	if len(vacuous) != 1 || !strings.Contains(vacuous[0], "--name-only") {
+		t.Fatalf("VacuousVerificationCommands() = %#v, want only the working-tree assertion", vacuous)
+	}
+	if _, reported := speccheck.WorkIndependentVerification(task); reported {
+		t.Fatal("WorkIndependentVerification judges the whole Task and must stay silent here")
+	}
+}

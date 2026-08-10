@@ -64,7 +64,6 @@ instead.
 - `grep -q 'sourceBaseline.Identity.EntryCount != len(sourceBaseline.Entries)' internal/baseline/preservation_test.go && grep -q 'maintainedSourceBaselineAccounting' internal/baseline/preservation_test.go`
   — expected: exit 0; the invariant and accounting assertions survived rather
   than being relaxed.
-- `output="$(git status --porcelain | awk '{print $NF}' | grep -vE '^(internal/baseline/|docs/specs/0080-cheap-detectors-run-before-the-gate/task_07\.md$)')"; [ -z "$output" ]`
   — expected: exit 0; the correction stayed inside its package.
 
 ## References
