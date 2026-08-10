@@ -38,8 +38,12 @@ the installed exit shape, not a graph that was cut wrong.
    either shape, while keeping the cleanup observation recorded.
 3. MUST keep every other exit code 1 result classified exactly as it is today:
    only the `No named session` stderr shape changes meaning.
-4. MUST cover the installed shape with a fixture, so the gap that let this reach
-   QA cannot reopen silently.
+4. MUST cover both shapes in one fixture, so the gap that let this reach QA
+   cannot reopen silently and the exit code 4 shape cannot be lost while adding
+   the exit code 1 one. Asserting the existing Task 04 test still passes is not
+   available as Verification: it passes before this Task runs, which the
+   Daemon's pre-work probe refuses as vacuous — it refused exactly that on the
+   first attempt at this Task.
 
 ## Subtasks
 
@@ -60,9 +64,8 @@ the installed exit shape, not a graph that was cut wrong.
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestMissingSessionIsRecognisedFromTheInstalledExitShape$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestMissingSessionIsRecognisedFromTheInstalledExitShape'` — expected: exits 0. This test does not exist yet; it must supply exit code 1 with `No named session` and assert the result is Session absence.
+- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestMissingSessionIsRecognisedFromBothExitShapes$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestMissingSessionIsRecognisedFromBothExitShapes'` — expected: exits 0. This test does not exist yet; it must assert Session absence for both the exit code 4 shape Task 04 already recognises and the installed exit code 1 with `No named session`, so the new shape provably joins the old one instead of replacing it.
 - `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestUnrelatedExitOneKeepsItsClassification$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestUnrelatedExitOneKeepsItsClassification'` — expected: exits 0. This test does not exist yet; it keeps the recognition narrow, so the fix cannot be "treat every exit 1 as absence".
-- `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened'` — expected: exits 0. This existing test must keep passing, so the new shape joins the old one rather than replacing it.
 
 ## References
 
