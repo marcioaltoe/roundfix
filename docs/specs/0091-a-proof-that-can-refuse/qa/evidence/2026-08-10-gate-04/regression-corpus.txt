@@ -1,0 +1,16 @@
+Agent command:
+`rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^(TestRuntimeCatalogue|TestProof|TestSelectionCatalogueCharacterization|TestACPXProbeSelectionRejectionClosesDisposableSession|TestACPXProbeSelectionSetupUsesBoundedContext|TestACPXProbeSkipsEmptyReasoningEffort|TestACPXProbeValidatesSelectionWithDisposableSession|TestApplySessionSelectionDisposableAndLiveOrder|TestDisposableSessionClose|TestMissingSessionIsRecognisedFromBothExitShapes|TestUnrelatedExitOneKeepsItsClassification|TestProfileProofAppliesExactReasoningAndClosesDisposableSession|TestProfileProofClosesDisposableSessionOnSelectionFailure|TestProveExactSelection)' -count=1 -v`
+
+Result: exit 0; all selected top-level cases and subtests passed in 2.823s.
+The output includes the renamed Claude characterization, both catalogue
+characterizations, five matching sibling tuples, the genuine mismatch canary,
+both official no-prompt fixtures, both missing-session exit shapes, the
+unrelated exit-1 canary, and all selected cleanup/order cases.
+
+CLI command:
+`rtk proxy env GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^(TestAgentSelectionProfilesMacro|TestRunImplementDetachPrintsReportAndCompletesRun|TestRunImplementDetachSurvivesCallerProcessGroupKill)$' -count=1 -v`
+
+Result: exit 0; all three top-level cases and three macro subtests passed in
+11.618s. Both detach journeys retained their named behavior.
+
+The cold `rtk make verify` exit 0 is the adjacent regression canary.

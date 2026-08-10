@@ -1,0 +1,39 @@
+Commands:
+- rtk git -c core.fsmonitor=false diff-tree --no-commit-id --name-only -r <commit>
+- rtk git -c core.fsmonitor=false merge-base --is-ancestor <older> <newer>
+
+Task commits and observed paths:
+- task_01 681ad14a: task_01.md; selection_catalogue_characterization_test.go
+- task_02 523ad06a: task_02.md; selection_assignment.go;
+  selection_assignment_test.go; selection_catalogue_characterization_test.go
+- task_06 b5b4a1b: task_06.md; acpx_runner_test.go; implement_test.go
+- task_03 91873526: task_03.md; selection_assignment.go;
+  selection_assignment_test.go; selection_catalogue_characterization_test.go
+- task_04 f65aac63: task_04.md; acpx_runner.go; acpx_runner_test.go
+- task_07 876e83c5: task_07.md; selection_assignment.go;
+  selection_assignment_test.go; implement_test.go
+- task_08 ce7dc4ba: task_08.md; acpx_runner.go; acpx_runner_test.go
+
+All seven Task commits stay within their authored boundaries and change no
+protected tooling path.
+
+Protected configuration chronology and observed paths:
+- d69609af: only the typed authorization, bounding `.roundfixrc.yml` entries
+  naming `claude` / `opus` / `high`.
+- 18ac1e9c: only `.roundfixrc.yml`, the authorized temporary reroute.
+- 061a442e: `.roundfixrc.yml` and `CONTEXT.md` in one commit.
+- cddd1aac: `.roundfixrc.yml` and `CONTEXT.md` in one revert commit.
+- af0967ec: only `.roundfixrc.yml`, the restored profile.
+- 8ec897c9: only `CONTEXT.md`, the restored glossary entry.
+- d5a8a8df: only task_05.md, reopening the Daemon-owned QA node.
+
+Every adjacent `merge-base --is-ancestor` command exited 0 for:
+d69609af < 18ac1e9c < 876e83c5 < 061a442e < cddd1aac < af0967ec <
+8ec897c9 < d5a8a8df.
+
+Finding: prior F-007 repeats. The final restoration and glossary commits are
+separate, but the immutable ancestry still contains both the original mixed
+tooling commit 061a442e and the mixed revert cddd1aac. Each edits the protected
+`.roundfixrc.yml` together with `CONTEXT.md`, which is outside the
+authorization's only bounded path and is not an assigned Task file. The exact
+commit-scope gate therefore remains red.

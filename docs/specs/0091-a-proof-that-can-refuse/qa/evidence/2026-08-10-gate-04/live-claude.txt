@@ -1,0 +1,14 @@
+Build: roundfix 0.4.0 (d5a8a8df-dirty)
+Runtime: installed claude-agent-acp 0.66.0 through ACPX 0.13.0
+Isolated scratch repository: /private/tmp/roundfix-0091-gate04-claude
+Command: rtk <worktree>/bin/roundfix profiles validate --category backend
+Fresh-process exits: 2, 2
+
+PRD before-state from 2026-08-09: claude/opus-9-does-not-exist/high passed.
+Both current processes refused that exact tuple as selection_rejected during
+requested-model ensure. The adapter's unchanged diagnostic reported `Invalid
+value for config option model`. Under ADR-0119 the adapter fired first, so its
+message reaches the operator unchanged.
+
+Valid-after-invalid confirmation: two fresh repository validations exited 0
+and passed restored claude/opus/high plus claude/sonnet/xhigh as independent.

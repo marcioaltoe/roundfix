@@ -1,0 +1,15 @@
+Command: the focused Agent command recorded in `regression-corpus.txt`.
+Exit: 0.
+
+Observed passing top-level cases:
+- TestMissingSessionIsRecognisedFromBothExitShapes
+  - missing_session_exit_four
+  - installed_missing_session_exit_one
+- TestUnrelatedExitOneKeepsItsClassification
+- TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened
+- TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose
+
+The cases compare exact leading diagnosis bytes and error types, prove the
+cleanup warning remains recorded, omit both absent-Session shapes, preserve a
+genuine close failure in the returned chain, and keep an unrelated exit 1 as
+an InfrastructureError.

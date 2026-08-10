@@ -1,0 +1,14 @@
+Build: roundfix 0.4.0 (d5a8a8df-dirty)
+Runtime: installed codex-acp 1.1.14 through ACPX 0.13.0
+Isolated scratch repository: /private/tmp/roundfix-0091-gate04-codex
+Command: rtk <worktree>/bin/roundfix profiles validate --category backend
+Fresh-process exits with full runtime access: 2, 2
+
+Both processes refused codex/gpt-9-does-not-exist/high as
+selection_rejected during requested-model ensure. The adapter's unchanged
+diagnostic reported ACP -32602 Invalid params. Under ADR-0119 the adapter fired
+first, so preserving its refusal is the accepted observable; Roundfix does not
+promise its own advertised set on this path.
+
+Valid-after-invalid confirmation: two fresh repository validations exited 0
+and passed codex/gpt-5.6-sol/high and codex/gpt-5.6-luna/max as independent.

@@ -1,0 +1,12 @@
+Focused Agent command and exact selector are recorded in regression-corpus.txt.
+Exit: 0.
+
+Named catalogue cases passed:
+- TestRuntimeCatalogueReadsAdvertisedModelsWithoutAnOverride
+- TestRuntimeCatalogueBindsCanonicalVariant
+- TestRuntimeCatalogueRecordsAContaminatedAdvertisement
+
+They prove the pre-request catalogue, canonical opus to opus[1m] binding,
+contamination recording, and no-prompt sequencing. Live restored
+claude/opus/high and two fresh five-tuple repository validations supplied the
+assembled canaries.

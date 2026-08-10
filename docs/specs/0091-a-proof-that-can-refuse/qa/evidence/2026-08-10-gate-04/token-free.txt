@@ -1,0 +1,17 @@
+Live invalid Claude proof records:
+- roundfix-preflight-cd9087fefae7002a: closed, 0/0 shown, No history
+- roundfix-preflight-629a047f7dcd0694: closed, 0/0 shown, No history
+
+Live passing repository Claude proof records from two full validations:
+- roundfix-preflight-6cfa69d95fe5c308: closed, 0/0 shown, No history
+- roundfix-preflight-706d40946d82b19b: closed, 0/0 shown, No history
+- roundfix-preflight-066ba9f787de28ae: closed, 0/0 shown, No history
+- roundfix-preflight-8fdb97bf31781ac8: closed, 0/0 shown, No history
+
+Read path:
+- `rtk proxy acpx claude sessions list --local --filter-cwd <cwd>`
+- `rtk proxy acpx --cwd <cwd> claude sessions history <name>`
+
+Focused confirmation: TestProveExactSelectionOfficialFixturesNoPrompt passed
+both Sol_high and GPT_5.5_xhigh subtests in the selected Agent command. No
+Agent work turn established any live catalogue.
