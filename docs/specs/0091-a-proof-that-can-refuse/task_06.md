@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0091-a-proof-that-can-refuse
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -76,3 +76,38 @@ case.
 
 - PRD: `_prd.md` — the proof that can refuse.
 - TechSpec: `_techspec.md` — the catalogue read introduced by Task 02.
+
+## Result
+
+Implemented the catalogue-read correction without deleting cases or weakening
+their original assertions. The Agent tests now provide capability evidence for
+the pre-selection read and assert the exact no-model `sessions ensure`,
+`sessions show`, selected ensure/show, reasoning, and cleanup order where the
+test owns that sequence. The CLI detach and macro fakes now advertise an honest
+catalogue before the requested model is applied, while their Run lifecycle,
+fallback, persistence, stream, and process-group assertions remain unchanged.
+
+Focused-check evidence:
+
+- Acceptance criterion 1: `GOCACHE="$PWD/.gocache" rtk go test
+  ./internal/agent -run
+  '^(TestACPXProbeSelectionRejectionClosesDisposableSession|TestACPXProbeSelectionSetupUsesBoundedContext|TestACPXProbeSkipsEmptyReasoningEffort|TestACPXProbeValidatesSelectionWithDisposableSession|TestApplySessionSelectionDisposableAndLiveOrder|TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose|TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened|TestProfileProofAppliesExactReasoningAndClosesDisposableSession|TestProfileProofClosesDisposableSessionOnSelectionFailure|TestProveExactSelectionCancelCleanup|TestProveExactSelectionCleanupJoinedFailure|TestProveExactSelectionEffectiveMismatchCleanup|TestProveExactSelectionOfficialFixturesNoPrompt)$'
+  -count=1` reported `15 passed` (the thirteen named Agent tests plus the two
+  official-fixture subtests). `GOCACHE="$PWD/.gocache" rtk go test
+  ./internal/cli -run
+  '^(TestAgentSelectionProfilesMacro|TestRunImplementDetachPrintsReportAndCompletesRun|TestRunImplementDetachSurvivesCallerProcessGroupKill)$'
+  -count=1` reported `6 passed` (the three named CLI tests plus macro
+  subtests).
+- Acceptance criterion 2: `rtk git diff --name-only --
+  'internal/**/*_test.go'` listed only
+  `internal/agent/acpx_runner_test.go` and
+  `internal/cli/implement_test.go`.
+- Sibling-sequence sweep: `rtk rg -n 'expected version, ensure, model
+  state|sessions ensure model=.*set reasoning|selectionCallKeys\(|exactSelectionInvocations\('
+  internal --glob '*_test.go' --glob
+  '!internal/agent/acpx_runner_test.go' --glob
+  '!internal/cli/implement_test.go'` returned no matches. A broader
+  `sessions ensure` search outside these files found only the live-session and
+  catalogue characterization tests, not the obsolete proof sequence.
+
+The authored `## Verification` commands were not run; the Daemon owns them.

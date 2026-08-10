@@ -181,6 +181,9 @@ case " $* " in
       session="$argument"
     done
     model=$(cat "$0.$session.model")
+    if [ -z "$model" ]; then
+      model="gpt-5.6-sol"
+    fi
     printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"%%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"medium","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}}\n' "$model" "$model" "$model"
     exit 0
     ;;
@@ -5698,6 +5701,18 @@ import sys
 
 PINNED = "__PINNED_ACPX_VERSION__"
 AGENTS = {"codex", "claude", "opencode"}
+CODEX_MODELS = [
+    "macro-general",
+    "macro-general-fallback",
+    "macro-backend",
+    "macro-backend-fallback",
+    "macro-frontend-preferred",
+    "macro-qa",
+    "macro-qa-fallback",
+    "macro-review",
+    "macro-review-fallback",
+]
+CLAUDE_MODELS = ["claude-fable-5"]
 
 def arg_value(argv, flag):
     for index, value in enumerate(argv):
@@ -5867,6 +5882,9 @@ if event["command"] == "sessions ensure":
 
 if event["command"] == "sessions show":
     model = session_model(event.get("session", ""))
+    models = CLAUDE_MODELS if event.get("agent") == "claude" else CODEX_MODELS
+    if not model:
+        model = models[0]
     reasoning_id = "reasoning_effort" if event.get("agent") == "codex" else "effort"
     event["model"] = model
     event["outcome"] = "ok"
@@ -5876,7 +5894,7 @@ if event["command"] == "sessions show":
         "acpx": {
             "current_model_id": model,
             "config_options": [
-                {"id": "model", "category": "model", "type": "select", "currentValue": model, "options": [{"value": model}]},
+                {"id": "model", "category": "model", "type": "select", "currentValue": model, "options": [{"value": value} for value in models]},
                 {"id": reasoning_id, "type": "select", "currentValue": "medium", "options": [{"value": value} for value in ["low", "medium", "high", "xhigh", "max", "maximum", "ultra"]]},
             ],
         },
