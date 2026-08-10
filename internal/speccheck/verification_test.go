@@ -104,8 +104,21 @@ func TestVacuousVerificationCommandIsCaughtBesideHonestSiblings(t *testing.T) {
 			vacuous: true,
 		},
 		{
-			name:    "a name-status assertion",
+			// Verified on a clean tree on 2026-08-10: git writes nothing, grep
+			// matches nothing, and the command exits 1. It fails on an
+			// unchanged tree rather than passing, so it is not vacuous.
+			name:    "a nonempty-diff assertion fails on an unchanged tree",
 			command: "git diff --name-status HEAD | grep -q .",
+			vacuous: false,
+		},
+		{
+			name:    "the same paths with a predicate that passes when empty",
+			command: "git diff --name-status HEAD | grep -q . && exit 1 || exit 0",
+			vacuous: true,
+		},
+		{
+			name:    "a two-snapshot comparison",
+			command: `s1="$(git status --porcelain)"; make regen >/dev/null 2>&1; s2="$(git status --porcelain)"; [ "$s1" = "$s2" ]`,
 			vacuous: true,
 		},
 		{
@@ -139,7 +152,7 @@ func TestOneHonestCommandDoesNotAbsolveAVacuousSibling(t *testing.T) {
 
 	task := spec.Task{Verification: []string{
 		"go test ./internal/agent -run '^TestY$' -count=1 -v 2>&1 | grep -q '^--- PASS: TestY'",
-		"git diff --name-only HEAD | grep -q .",
+		"test -z \"$(git diff --name-only HEAD)\"",
 	}}
 	vacuous := speccheck.VacuousVerificationCommands(task)
 	if len(vacuous) != 1 || !strings.Contains(vacuous[0], "--name-only") {

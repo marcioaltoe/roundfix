@@ -18,9 +18,13 @@ const (
 var (
 	makeVerifyPattern = regexp.MustCompile(`^(?:rtk\s+)?(?:env\s+(?:\S+=\S+\s+)*)?make\s+verify$`)
 	goWideGatePattern = regexp.MustCompile(`\bgo\s+(?:build|test|vet)\b`)
-	// An assertion over which paths changed, however it is spelled. The empty
-	// set satisfies it, so it cannot distinguish Task work from no work.
+	// An assertion over which paths changed.
 	workingTreeStatePattern = regexp.MustCompile(`git\s+(?:status|diff)\b[^|&;]*(?:--porcelain|--short|--check|--quiet|--exit-code|--name-only|--name-status|--stat)`)
+	// A predicate that succeeds on empty output, which is what an unchanged
+	// tree produces. Naming the git flags is not enough: `git diff --name-only
+	// | grep -q .` reads the same paths and exits 1 on an unchanged tree, so it
+	// fails rather than passing and is not vacuous.
+	emptyOutputSucceedsPattern = regexp.MustCompile(`(?:\|\|\s*exit\s+0|\btest\s+-z\b|\[\s+-z\s|--quiet\b|--exit-code\b|"\$\{?\w+\}?"\s*=\s*"\$\{?\w+\}?")`)
 )
 
 // WorkIndependentVerification reports a Task whose declared Verification
@@ -59,14 +63,24 @@ func repositoryWideGate(command string) bool {
 	return !strings.Contains(command, " -run ") && !strings.Contains(command, " -run=")
 }
 
-// workingTreeCleanlinessCheck reports a command whose assertion is that the
-// working tree carries no unexpected change. Matching is by shape rather than
-// by a literal list: any assertion over the set of changed paths is satisfied
-// by the empty set, so it passes before the Task does anything. The Daemon's
-// pre-work probe refused exactly this shape on 2026-08-10, written as
-// `git diff --name-only HEAD | ... | grep -q .`, which no literal covered.
+// workingTreeCleanlinessCheck reports a command that asserts over the set of
+// changed paths and passes when that set is empty, which is what an unchanged
+// tree produces. Naming the git flags is not enough: `git diff --name-only |
+// grep -q .` reads the same paths and exits 1 on an unchanged tree, so it
+// fails rather than passing and is honest Verification.
 func workingTreeCleanlinessCheck(command string) bool {
-	return workingTreeStatePattern.MatchString(command)
+	if !workingTreeStatePattern.MatchString(command) {
+		return false
+	}
+	if !strings.ContainsAny(command, "|&;") {
+		// Nothing consumes the output: git prints nothing and exits zero on an
+		// unchanged tree, so the command passes before any work happens.
+		return true
+	}
+	// Something does consume it, and whether the command passes depends on
+	// what: `| grep -q .` fails on empty output, `|| exit 0` and `test -z`
+	// succeed on it.
+	return emptyOutputSucceedsPattern.MatchString(command)
 }
 
 // VacuousVerificationCommands reports each declared command that already passes
