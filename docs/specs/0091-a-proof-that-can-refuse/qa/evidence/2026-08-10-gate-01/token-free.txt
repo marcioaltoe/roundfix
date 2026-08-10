@@ -1,0 +1,11 @@
+Live public path: bin/roundfix profiles validate and isolated --category backend validations.
+ACP local-session confirmation after the live commands:
+- Codex sessions list --local for the worktree: No sessions.
+- OpenCode sessions list --local for the worktree: No sessions.
+- Claude left two closed roundfix-preflight session records.
+- Claude history for roundfix-preflight-c60e5a55ac93845e: 0/0 shown; No history.
+- Claude history for roundfix-preflight-111cbf40574ffe1a: 0/0 shown; No history.
+Independent public-runner command:
+GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestProveExactSelectionOfficialFixturesNoPrompt$' -count=1
+Exit: 0; 3 cases passed.
+Conclusion: preflight created no work-turn history and the exact command corpus contains no prompt call.

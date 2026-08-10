@@ -1,0 +1,9 @@
+Build: roundfix 0.4.0 (91873526-dirty, built 2026-08-10 12:56:14 -0300)
+Runtime source: /opt/homebrew/bin/claude-agent-acp, version 0.66.0
+Scratch config: scratch/claude/.roundfixrc.yml
+Command: bin/roundfix profiles validate --category backend
+Exit: 2 on two fresh CLI processes with the same output classification.
+PRD before-state, measured 2026-08-09: claude / opus-9-does-not-exist / high — passed.
+Observed now: classification selection_rejected during the requested-model ensure; the adapter reported Invalid value for config option model.
+Missing acceptance: no model_not_advertised classification and no advertised set default, opus[1m], claude-fable-5[1m], sonnet, haiku.
+Valid-tuple divergence: repository claude/opus/high failed effective_selection_mismatch even though the diagnostic printed requested and observed as opus/high.

@@ -64,15 +64,14 @@ func TestRuntimeCatalogueRecordsAContaminatedAdvertisement(t *testing.T) {
 		Runtime: RuntimeSpec{
 			ID:       "codex",
 			Protocol: ProtocolACP,
-			Model:    unofferedCodexModel,
+			Model:    "gpt-5.6-sol",
 		},
 		Capabilities: SelectionCapabilities{
-			CurrentModel: unofferedCodexModel,
-			Models: []ModelCapability{{
-				AdapterValue:   unofferedCodexModel,
-				CanonicalModel: unofferedCodexModel,
-				ModelManaged:   true,
-			}},
+			CurrentModel: "gpt-5.6-sol",
+			Models: []ModelCapability{
+				{AdapterValue: "gpt-5.6-sol", CanonicalModel: "gpt-5.6-sol", ModelManaged: true},
+				{AdapterValue: unofferedCodexModel, CanonicalModel: unofferedCodexModel, ModelManaged: true},
+			},
 		},
 		Catalogue: RuntimeCatalogue{Models: []string{"gpt-5.6-sol", "gpt-5.5"}},
 	}, nil)
@@ -87,32 +86,35 @@ func TestRuntimeCatalogueRecordsAContaminatedAdvertisement(t *testing.T) {
 	}
 }
 
-// TestSelectionCatalogueCharacterizationClaudeProvesAnUnofferedModel records
-// the false-positive proof observed when claude echoes the requested model
-// into its own advertised capabilities.
-// Declared break: task_03 changes this success into model_not_advertised.
-func TestSelectionCatalogueCharacterizationClaudeProvesAnUnofferedModel(t *testing.T) {
+// TestSelectionCatalogueCharacterizationClaudeRefusesAnUnofferedModel records
+// that the honest pre-request catalogue now defeats claude's echoed model.
+func TestSelectionCatalogueCharacterizationClaudeRefusesAnUnofferedModel(t *testing.T) {
 	t.Parallel()
 
-	harness := newFakeACPXHarness(t)
-	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
-		"sessions show": contaminatedClaudeCapabilityPayload(t),
-	}))
-
-	proof, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{
+	capabilities, err := ParseSessionConfigOptions(
+		[]byte(selectionStateFixture(t, "model", unofferedClaudeModel, unofferedClaudeModel, append(honestClaudeModels(), unofferedClaudeModel), "effort", "high", []string{"low", "medium", "high"})),
+		AdapterEvidence{Command: "claude-agent-acp"},
+		SelectionRetention{Model: unofferedClaudeModel, ReasoningEffort: "high"},
+	)
+	if err != nil {
+		t.Fatalf("parse contaminated claude capabilities: %v", err)
+	}
+	_, err = (ACPXRunner{}).applySessionSelection(context.Background(), SessionSelectionRequest{
 		Runtime: RuntimeSpec{
 			ID:              "claude",
 			Protocol:        ProtocolACP,
 			Model:           unofferedClaudeModel,
 			ReasoningEffort: "high",
 		},
-		WorkDir: harness.gitRoot,
-	})
-	if err != nil {
-		t.Fatalf("prove today's claude selection: %v", err)
+		Capabilities: capabilities,
+		Catalogue:    RuntimeCatalogue{Models: honestClaudeModels()},
+	}, nil)
+	var modelErr *ModelNotAdvertisedError
+	if !errors.As(err, &modelErr) {
+		t.Fatalf("error = %T %v, want *ModelNotAdvertisedError", err, err)
 	}
-	if proof.Status != SelectionProofStatusProven || proof.Model != unofferedClaudeModel || proof.ReasoningEffort != "high" {
-		t.Fatalf("unexpected claude proof: %#v", proof)
+	if !reflect.DeepEqual(modelErr.Advertised, honestClaudeModels()) {
+		t.Fatalf("advertised models = %v, want %v", modelErr.Advertised, honestClaudeModels())
 	}
 }
 

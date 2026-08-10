@@ -1,0 +1,9 @@
+Cold preparation: GOCACHE="$PWD/.gocache" go clean -testcache
+Exit: 0.
+Authoritative gate: rtk make verify
+Exit: 2; no package reported (cached).
+Go suite results: every listed package passed except roundfix/internal/cli.
+Failures:
+- TestRunImplementDetachPrintsReportAndCompletesRun: fake catalogue advertised only gpt-5.6-sol, so built-in codex/gpt-5.5/xhigh was refused before Run creation.
+- TestRunImplementDetachSurvivesCallerProcessGroupKill: timed out waiting for the detach line on the same blocked path.
+The gate stopped at make target test; later verify prerequisites did not run in this command.

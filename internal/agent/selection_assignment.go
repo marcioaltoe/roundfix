@@ -447,6 +447,14 @@ func (runner ACPXRunner) ApplySessionSelection(ctx context.Context, request Sess
 }
 
 func (runner ACPXRunner) applySessionSelection(ctx context.Context, request SessionSelectionRequest, codexEnv []string) (SelectionProof, error) {
+	requestedModel := strings.TrimSpace(request.Runtime.Model)
+	if len(request.Catalogue.Models) > 0 && !request.Catalogue.AdvertisesModel(requestedModel) {
+		return SelectionProof{}, &ModelNotAdvertisedError{
+			Runtime:    strings.TrimSpace(request.Runtime.ID),
+			Model:      requestedModel,
+			Advertised: append([]string(nil), request.Catalogue.Models...),
+		}
+	}
 	assignment, err := PlanSelectionAssignment(request.Runtime, request.Capabilities)
 	if err != nil {
 		return SelectionProof{}, err

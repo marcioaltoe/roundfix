@@ -1,0 +1,9 @@
+Build: roundfix 0.4.0 (91873526-dirty, built 2026-08-10 12:56:14 -0300)
+Runtime source: /opt/homebrew/bin/codex-acp, @agentclientprotocol/codex-acp 1.1.14
+Scratch config: scratch/codex/.roundfixrc.yml
+Command: bin/roundfix profiles validate --category backend
+Exit: 2
+Observed: classification selection_rejected during the requested-model ensure.
+Adapter diagnostic: session/set_config_option rejected gpt-9-does-not-exist.
+Missing acceptance: no model_not_advertised classification and no advertised Agent Model set.
+Independent confirmation: repository JSON validation passed codex/gpt-5.6-sol/high as independent.

@@ -653,6 +653,9 @@ func TestACPXProbeValidatesSelectionWithDisposableSession(t *testing.T) {
 
 	harness := newFakeACPXHarness(t)
 	harness.setEnv(fakeACPXStdout, MinimumACPXVersion+"\n")
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "xhigh"}),
+	}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5", ReasoningEffort: "xhigh"}
 
 	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
@@ -661,20 +664,25 @@ func TestACPXProbeValidatesSelectionWithDisposableSession(t *testing.T) {
 		t.Fatalf("expected supported selection to pass, got %v", err)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if len(invocations) != 5 {
-		t.Fatalf("expected version, ensure, model state, reasoning, close invocations, got %#v", invocations)
+	if len(invocations) != 7 {
+		t.Fatalf("expected version, catalogue ensure and show, selection ensure and show, reasoning, close invocations, got %#v", invocations)
 	}
 	if !reflect.DeepEqual(invocations[0], []string{"--version"}) {
 		t.Fatalf("expected version check first, got %#v", invocations[0])
 	}
-	sessionName := assertDisposableEnsureInvocation(t, invocations[1], harness.gitRoot, "codex", "gpt-5.5")
+	sessionName := assertDisposableCatalogueEnsureInvocation(t, invocations[1], harness.gitRoot, "codex")
+	assertDisposableShowInvocation(t, invocations[2], harness.gitRoot, "codex", sessionName)
+	if selectedSession := assertDisposableEnsureInvocation(t, invocations[3], harness.gitRoot, "codex", "gpt-5.5"); selectedSession != sessionName {
+		t.Fatalf("selection ensure used session %q, want catalogue session %q", selectedSession, sessionName)
+	}
+	assertDisposableShowInvocation(t, invocations[4], harness.gitRoot, "codex", sessionName)
 	wantReasoning := []string{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "codex", "set", "reasoning_effort", "xhigh", "-s", sessionName}
-	if !reflect.DeepEqual(invocations[3], wantReasoning) {
-		t.Fatalf("unexpected reasoning invocation\nwant: %#v\ngot:  %#v", wantReasoning, invocations[3])
+	if !reflect.DeepEqual(invocations[5], wantReasoning) {
+		t.Fatalf("unexpected reasoning invocation\nwant: %#v\ngot:  %#v", wantReasoning, invocations[5])
 	}
 	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
-	if !reflect.DeepEqual(invocations[4], wantClose) {
-		t.Fatalf("unexpected disposable close invocation\nwant: %#v\ngot:  %#v", wantClose, invocations[4])
+	if !reflect.DeepEqual(invocations[6], wantClose) {
+		t.Fatalf("unexpected disposable close invocation\nwant: %#v\ngot:  %#v", wantClose, invocations[6])
 	}
 	if containsCommandKey(invocations, "prompt") {
 		t.Fatalf("selection preflight must not send prompts, got %#v", invocations)
@@ -697,16 +705,21 @@ func TestACPXProbeSkipsEmptyReasoningEffort(t *testing.T) {
 		t.Fatalf("expected model-managed reasoning selection to pass, got %v", err)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if len(invocations) != 4 {
-		t.Fatalf("expected version, ensure, model state, close invocations, got %#v", invocations)
+	if len(invocations) != 6 {
+		t.Fatalf("expected version, catalogue ensure and show, selection ensure and show, close invocations, got %#v", invocations)
 	}
 	if !reflect.DeepEqual(invocations[0], []string{"--version"}) {
 		t.Fatalf("expected version check first, got %#v", invocations[0])
 	}
-	sessionName := assertDisposableEnsureInvocation(t, invocations[1], harness.gitRoot, "codex", "gpt-5.6-sol")
+	sessionName := assertDisposableCatalogueEnsureInvocation(t, invocations[1], harness.gitRoot, "codex")
+	assertDisposableShowInvocation(t, invocations[2], harness.gitRoot, "codex", sessionName)
+	if selectedSession := assertDisposableEnsureInvocation(t, invocations[3], harness.gitRoot, "codex", "gpt-5.6-sol"); selectedSession != sessionName {
+		t.Fatalf("selection ensure used session %q, want catalogue session %q", selectedSession, sessionName)
+	}
+	assertDisposableShowInvocation(t, invocations[4], harness.gitRoot, "codex", sessionName)
 	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
-	if !reflect.DeepEqual(invocations[3], wantClose) {
-		t.Fatalf("unexpected disposable close invocation\nwant: %#v\ngot:  %#v", wantClose, invocations[3])
+	if !reflect.DeepEqual(invocations[5], wantClose) {
+		t.Fatalf("unexpected disposable close invocation\nwant: %#v\ngot:  %#v", wantClose, invocations[5])
 	}
 	if containsCommandKey(invocations, "set reasoning_effort") {
 		t.Fatalf("expected no reasoning set call for empty effort, got %#v", invocations)
@@ -718,6 +731,9 @@ func TestProfileProofAppliesExactReasoningAndClosesDisposableSession(t *testing.
 
 	harness := newFakeACPXHarness(t)
 	harness.setEnv(fakeACPXStdout, MinimumACPXVersion+"\n")
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
+	}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}
 
 	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
@@ -729,14 +745,19 @@ func TestProfileProofAppliesExactReasoningAndClosesDisposableSession(t *testing.
 	if containsCommandKey(invocations, "prompt") {
 		t.Fatalf("profile proof must not send prompts, got %#v", invocations)
 	}
-	sessionName := assertDisposableEnsureInvocation(t, invocations[1], harness.gitRoot, "codex", "gpt-5.6-sol")
+	sessionName := assertDisposableCatalogueEnsureInvocation(t, invocations[1], harness.gitRoot, "codex")
+	assertDisposableShowInvocation(t, invocations[2], harness.gitRoot, "codex", sessionName)
+	if selectedSession := assertDisposableEnsureInvocation(t, invocations[3], harness.gitRoot, "codex", "gpt-5.6-sol"); selectedSession != sessionName {
+		t.Fatalf("selection ensure used session %q, want catalogue session %q", selectedSession, sessionName)
+	}
+	assertDisposableShowInvocation(t, invocations[4], harness.gitRoot, "codex", sessionName)
 	wantReasoning := []string{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "codex", "set", "reasoning_effort", "high", "-s", sessionName}
-	if !reflect.DeepEqual(invocations[3], wantReasoning) {
-		t.Fatalf("profile proof did not apply exact reasoning\nwant: %#v\ngot:  %#v", wantReasoning, invocations[3])
+	if !reflect.DeepEqual(invocations[5], wantReasoning) {
+		t.Fatalf("profile proof did not apply exact reasoning\nwant: %#v\ngot:  %#v", wantReasoning, invocations[5])
 	}
 	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
-	if !reflect.DeepEqual(invocations[4], wantClose) {
-		t.Fatalf("profile proof did not close disposable session\nwant: %#v\ngot:  %#v", wantClose, invocations[4])
+	if !reflect.DeepEqual(invocations[6], wantClose) {
+		t.Fatalf("profile proof did not close disposable session\nwant: %#v\ngot:  %#v", wantClose, invocations[6])
 	}
 }
 
@@ -807,6 +828,9 @@ func TestProfileProofClosesDisposableSessionOnSelectionFailure(t *testing.T) {
 
 	harness := newFakeACPXHarness(t)
 	harness.setEnv(fakeACPXStdout, MinimumACPXVersion+"\n")
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
+	}))
 	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set reasoning_effort": 2}))
 	harness.setEnv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"set reasoning_effort": "reasoning rejected\n"}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}
@@ -821,7 +845,12 @@ func TestProfileProofClosesDisposableSessionOnSelectionFailure(t *testing.T) {
 		t.Fatalf("expected SelectionRejectedError, got %T %v", err, err)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	sessionName := disposableSessionFromEnsure(t, invocations[1])
+	sessionName := assertDisposableCatalogueEnsureInvocation(t, invocations[1], harness.gitRoot, "codex")
+	assertDisposableShowInvocation(t, invocations[2], harness.gitRoot, "codex", sessionName)
+	if selectedSession := assertDisposableEnsureInvocation(t, invocations[3], harness.gitRoot, "codex", "gpt-5.6-sol"); selectedSession != sessionName {
+		t.Fatalf("selection ensure used session %q, want catalogue session %q", selectedSession, sessionName)
+	}
+	assertDisposableShowInvocation(t, invocations[4], harness.gitRoot, "codex", sessionName)
 	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
 	if !reflect.DeepEqual(invocations[len(invocations)-1], wantClose) {
 		t.Fatalf("profile proof did not close disposable session after failure\nwant: %#v\ngot:  %#v", wantClose, invocations[len(invocations)-1])
@@ -938,6 +967,7 @@ func TestProveExactSelectionOfficialFixturesNoPrompt(t *testing.T) {
 			models := []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5"}
 			efforts := []string{"low", "medium", "high", "xhigh", "max", "ultra"}
 			harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+				"sessions show":                           sessionCapabilitySnapshotFixture(t, tt.model, models, "reasoning_effort", "medium", efforts),
 				"set model value=" + tt.model:             selectionStateFixture(t, "model", tt.model, tt.model, models, "reasoning_effort", "medium", efforts),
 				"set reasoning_effort value=" + tt.effort: selectionStateFixture(t, "reasoning_effort", tt.effort, tt.model, models, "reasoning_effort", tt.effort, efforts),
 			}))
@@ -956,7 +986,7 @@ func TestProveExactSelectionOfficialFixturesNoPrompt(t *testing.T) {
 			if containsCommandKey(invocations, "prompt") {
 				t.Fatalf("proof sent an Agent prompt: %#v", invocations)
 			}
-			if got, want := selectionCallKeys(invocations), []string{"sessions ensure model=" + tt.model, "set reasoning_effort value=" + tt.effort, "sessions close"}; !reflect.DeepEqual(got, want) {
+			if got, want := exactProofCallKeys(invocations), []string{"sessions ensure model=", "sessions show", "sessions ensure model=" + tt.model, "sessions show", "set reasoning_effort value=" + tt.effort, "sessions close"}; !reflect.DeepEqual(got, want) {
 				t.Fatalf("proof calls = %#v, want %#v", got, want)
 			}
 		})
@@ -995,6 +1025,7 @@ func TestProveExactSelectionEffectiveMismatchCleanup(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	efforts := []string{"medium", "high"}
 	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show":                   sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", efforts),
 		"set model value=gpt-5.6-sol":     selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", efforts),
 		"set reasoning_effort value=high": selectionStateFixture(t, "reasoning_effort", "high", "gpt-5.5", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "high", efforts),
 	}))
@@ -1026,6 +1057,7 @@ func TestProveExactSelectionCleanupJoinedFailure(t *testing.T) {
 
 	harness := newFakeACPXHarness(t)
 	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show":               sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
 		"set model value=gpt-5.6-sol": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
 	}))
 	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set reasoning_effort": 2, "sessions close": 2}))
@@ -1061,7 +1093,7 @@ func TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened(t *testing
 	if err == nil {
 		t.Fatal("expected selection failure")
 	}
-	const wantDiagnosis = `apply Agent Selection "codex"/"gpt-5.6-sol"/"high" during ensure disposable Agent Session: adapter rejected selection: acpx infrastructure error after exit code 2: acpx command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection`
+	const wantDiagnosis = `apply Agent Selection "codex"/"gpt-5.6-sol"/"high" during ensure disposable Agent Session without model override: adapter rejected selection: acpx infrastructure error after exit code 2: acpx command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection`
 	if got := err.Error(); got != wantDiagnosis {
 		t.Fatalf("selection diagnosis changed or gained a close error\nwant: %q\ngot:  %q", wantDiagnosis, got)
 	}
@@ -1079,6 +1111,7 @@ func TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose(t *testin
 
 	harness := newFakeACPXHarness(t)
 	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show":               sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
 		"set model value=gpt-5.6-sol": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
 	}))
 	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{
@@ -1101,7 +1134,7 @@ func TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose(t *testin
 	if !errors.As(err, &cleanupErr) {
 		t.Fatalf("open disposable session close was not recorded in the error chain: %T %v", err, err)
 	}
-	if got, want := selectionCallKeys(readJSONInvocations(t, harness.invocationsPath)), []string{"sessions ensure model=gpt-5.6-sol", "set reasoning_effort value=high", "sessions close"}; !reflect.DeepEqual(got, want) {
+	if got, want := selectionCallKeys(readJSONInvocations(t, harness.invocationsPath)), []string{"sessions ensure model=", "sessions ensure model=gpt-5.6-sol", "set reasoning_effort value=high", "sessions close"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("proof did not open and then attempt to close the disposable session\nwant: %#v\ngot:  %#v", want, got)
 	}
 }
@@ -1114,6 +1147,7 @@ func TestProveExactSelectionCancelCleanup(t *testing.T) {
 	harness.setEnv(fakeACPXStarted, started)
 	harness.setEnv(fakeACPXBlockCmd, "set reasoning_effort")
 	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show":               sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
 		"set model value=gpt-5.6-sol": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
 	}))
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1161,6 +1195,7 @@ func TestApplySessionSelectionDisposableAndLiveOrder(t *testing.T) {
 		harness := newFakeACPXHarness(t)
 		efforts := []string{"medium", "high"}
 		harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+			"sessions show":                   sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", efforts),
 			"set model value=gpt-5.6-sol":     selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", efforts),
 			"set reasoning_effort value=high": selectionStateFixture(t, "reasoning_effort", "high", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "high", efforts),
 		}))
@@ -1176,10 +1211,18 @@ func TestApplySessionSelectionDisposableAndLiveOrder(t *testing.T) {
 		t.Fatalf("prepare live selection: %v", err)
 	}
 
-	want := []string{"sessions ensure model=gpt-5.6-sol", "set reasoning_effort value=high"}
-	if got := selectionCallKeys(readJSONInvocations(t, disposable.invocationsPath)); !reflect.DeepEqual(got[:len(want)], want) {
-		t.Fatalf("disposable calls = %#v, want prefix %#v", got, want)
+	disposableInvocations := readJSONInvocations(t, disposable.invocationsPath)
+	disposableSession := assertDisposableCatalogueEnsureInvocation(t, disposableInvocations[0], disposable.gitRoot, "codex")
+	assertDisposableShowInvocation(t, disposableInvocations[1], disposable.gitRoot, "codex", disposableSession)
+	if selectedSession := assertDisposableEnsureInvocation(t, disposableInvocations[2], disposable.gitRoot, "codex", "gpt-5.6-sol"); selectedSession != disposableSession {
+		t.Fatalf("selection ensure used session %q, want catalogue session %q", selectedSession, disposableSession)
 	}
+	assertDisposableShowInvocation(t, disposableInvocations[3], disposable.gitRoot, "codex", disposableSession)
+	wantDisposable := []string{"sessions ensure model=", "sessions ensure model=gpt-5.6-sol", "set reasoning_effort value=high", "sessions close"}
+	if got := selectionCallKeys(disposableInvocations); !reflect.DeepEqual(got, wantDisposable) {
+		t.Fatalf("disposable calls = %#v, want %#v", got, wantDisposable)
+	}
+	want := []string{"sessions ensure model=gpt-5.6-sol", "set reasoning_effort value=high"}
 	if got := selectionCallKeys(readJSONInvocations(t, live.invocationsPath)); !reflect.DeepEqual(got, want) {
 		t.Fatalf("live calls = %#v, want %#v", got, want)
 	}
@@ -1190,6 +1233,9 @@ func TestACPXProbeSelectionSetupUsesBoundedContext(t *testing.T) {
 
 	harness := newFakeACPXHarness(t)
 	harness.setEnv(fakeACPXStdout, MinimumACPXVersion+"\n")
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "xhigh"}),
+	}))
 	harness.setEnv(codexPathEnv, "/configured/clean/codex")
 	probe := &deadlineRecordingCodexProbe{}
 	harness.runner.codexSpawn = codexSpawnDependencies{
@@ -1247,13 +1293,18 @@ func TestACPXProbeSelectionRejectionClosesDisposableSession(t *testing.T) {
 		t.Fatalf("expected adapter stderr preserved, got %q", infraErr.Stderr)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if len(invocations) != 5 {
-		t.Fatalf("expected version, ensure, model state, reasoning, close invocations, got %#v", invocations)
+	if len(invocations) != 7 {
+		t.Fatalf("expected version, catalogue ensure and show, selection ensure and show, reasoning, close invocations, got %#v", invocations)
 	}
-	sessionName := disposableSessionFromEnsure(t, invocations[1])
+	sessionName := assertDisposableCatalogueEnsureInvocation(t, invocations[1], harness.gitRoot, "codex")
+	assertDisposableShowInvocation(t, invocations[2], harness.gitRoot, "codex", sessionName)
+	if selectedSession := assertDisposableEnsureInvocation(t, invocations[3], harness.gitRoot, "codex", "gpt-5.5"); selectedSession != sessionName {
+		t.Fatalf("selection ensure used session %q, want catalogue session %q", selectedSession, sessionName)
+	}
+	assertDisposableShowInvocation(t, invocations[4], harness.gitRoot, "codex", sessionName)
 	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
-	if !reflect.DeepEqual(invocations[4], wantClose) {
-		t.Fatalf("expected cleanup close after rejection\nwant: %#v\ngot:  %#v", wantClose, invocations[4])
+	if !reflect.DeepEqual(invocations[6], wantClose) {
+		t.Fatalf("expected cleanup close after rejection\nwant: %#v\ngot:  %#v", wantClose, invocations[6])
 	}
 }
 
@@ -3796,6 +3847,27 @@ func assertDisposableEnsureInvocation(t *testing.T, got []string, workDir string
 	return sessionName
 }
 
+func assertDisposableCatalogueEnsureInvocation(t *testing.T, got []string, workDir string, runtime string) string {
+	t.Helper()
+	wantPrefix := []string{"--cwd", workDir, runtime, "sessions", "ensure", "--name"}
+	if len(got) != len(wantPrefix)+1 || !reflect.DeepEqual(got[:len(wantPrefix)], wantPrefix) {
+		t.Fatalf("unexpected disposable catalogue ensure invocation\nwant prefix: %#v + session\ngot:         %#v", wantPrefix, got)
+	}
+	sessionName := got[len(got)-1]
+	if !strings.HasPrefix(sessionName, "roundfix-preflight-") {
+		t.Fatalf("expected disposable preflight session name, got %q", sessionName)
+	}
+	return sessionName
+}
+
+func assertDisposableShowInvocation(t *testing.T, got []string, workDir string, runtime string, sessionName string) {
+	t.Helper()
+	want := []string{"--cwd", workDir, "--format", "json", "--json-strict", runtime, "sessions", "show", sessionName}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected disposable session show invocation\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
 func disposableSessionFromEnsure(t *testing.T, got []string) string {
 	t.Helper()
 	if len(got) < 2 || got[len(got)-2] != "--name" {
@@ -4136,6 +4208,19 @@ func selectionCallKeys(invocations [][]string) []string {
 			keys = append(keys, fakeACPXCallKey(invocation))
 		case "sessions close":
 			keys = append(keys, "sessions close")
+		}
+	}
+	return keys
+}
+
+func exactProofCallKeys(invocations [][]string) []string {
+	keys := make([]string, 0, len(invocations))
+	for _, invocation := range invocations {
+		switch fakeACPXCommandKey(invocation) {
+		case "sessions ensure", "set model", "set reasoning_effort", "set effort":
+			keys = append(keys, fakeACPXCallKey(invocation))
+		case "sessions show", "sessions close":
+			keys = append(keys, fakeACPXCommandKey(invocation))
 		}
 	}
 	return keys

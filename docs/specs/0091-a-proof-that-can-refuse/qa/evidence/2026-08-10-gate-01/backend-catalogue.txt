@@ -1,0 +1,4 @@
+Command: GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestRuntimeCatalogue' -count=1
+Exit: 0; 3 cases passed.
+Covered: pre-request advertised models, canonical opus to opus[1m] binding, and contamination recording.
+Assembled cross-check: the built CLI reached all three live adapters; the later membership verdict diverged as recorded in backend-membership.txt.

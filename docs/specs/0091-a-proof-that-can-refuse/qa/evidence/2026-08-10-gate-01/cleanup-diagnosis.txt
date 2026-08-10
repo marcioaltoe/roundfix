@@ -1,0 +1,6 @@
+Public reproduction: sandboxed bin/roundfix profiles validate.
+The Codex adapter failed before ensuring the disposable session because it could not initialize state under ~/.codex.
+The returned diagnosis then appended:
+close disposable Agent Session roundfix-preflight-b9accc7a2932da32: ... No named session ...
+This contradicts Goal 4 for a session that never opened.
+In the live full-access invalid-selection runs, the disposable sessions did open; their successful cleanup appended no close error.

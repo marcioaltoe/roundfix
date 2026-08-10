@@ -1,0 +1,10 @@
+profiles:
+  backend:
+    preferred:
+      runtime: claude
+      model: sonnet
+      reasoning_effort: xhigh
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high

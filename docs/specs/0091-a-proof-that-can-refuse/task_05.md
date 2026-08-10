@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0091-a-proof-that-can-refuse
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
