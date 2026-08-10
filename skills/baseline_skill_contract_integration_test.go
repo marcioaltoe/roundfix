@@ -44,8 +44,14 @@ func TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical(t *testing.T) {
 
 	command := exec.CommandContext(t.Context(), "make", "baseline-digests")
 	command.Dir = verificationRoot
+	// Reuse the suite's own warm build cache: the contract proven here is
+	// byte-identical regeneration output after an owned skill edit, not a
+	// cold compile. Result caching stays content-governed — the skill edit
+	// below changes the files those nested tests read, so the steps that
+	// consume the edit re-execute, and only checks over identical bytes may
+	// replay their verdict.
 	command.Env = append(os.Environ(),
-		"GOCACHE="+filepath.Join(verificationRoot, ".gocache"),
+		"GOCACHE="+ambientGoBuildCacheForSkills(t),
 		"GOFLAGS=-buildvcs=false",
 	)
 	if output, err := command.CombinedOutput(); err != nil {
@@ -126,4 +132,20 @@ func assertArtifactBytesEqual(t *testing.T, kind string, before map[string][]byt
 			t.Fatalf("%s %s was created by an owned skill edit", kind, path)
 		}
 	}
+}
+
+func ambientGoBuildCacheForSkills(t *testing.T) string {
+	t.Helper()
+	if dir := strings.TrimSpace(os.Getenv("GOCACHE")); dir != "" {
+		return dir
+	}
+	output, err := exec.CommandContext(t.Context(), "go", "env", "GOCACHE").Output()
+	if err != nil {
+		t.Fatalf("resolve ambient go build cache: %v", err)
+	}
+	dir := strings.TrimSpace(string(output))
+	if dir == "" {
+		t.Fatal("resolve ambient go build cache: empty path")
+	}
+	return dir
 }
