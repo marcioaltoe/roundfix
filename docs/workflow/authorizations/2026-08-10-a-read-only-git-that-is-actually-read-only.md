@@ -5,6 +5,13 @@ paths:
   - internal/gittest/gittest.go
   - skills/baseline_skill_contract_test.go
   - docs/backlog/2026-08-10-one-reader-in-cli-still-couples-verify-to-the-docs-tree.md
+  - internal/baseline/derived_ownership_test.go
+  - internal/baseline/derived_regeneration_repocontract_test.go
+  - skills/owned_skill_edit_repocontract_test.go
+  - Makefile
+  - .github/workflows/ci-verify.yml
+  - docs/agents/specific-repository.md
+  - docs/references/coverage-record.json
 consuming: direct
 ---
 
@@ -41,6 +48,26 @@ gains `-c core.fsmonitor=false`, so every test git invocation reads without
 writing the index — the same discipline the production `ExecGitRunner` already
 applies. `copyTrackedRepository` adopts the gittest helpers instead of a plain
 environment. The backlog entry is closed with the root cause written in.
+
+## Addendum — 2026-08-10 — the whole-repo regeneration tests move to the boundary
+
+Measured after the `.git` fix: changing `internal/tui`, a leaf whose own tests
+cost 1.2s, still took `make verify` 1m59 — `internal/baseline` (101s) and
+`skills` (67s) re-ran because their regeneration tests copy the repository tree
+to run `make baseline-digests` inside it, which makes every file under
+`internal/` an input of theirs.
+
+The snapshot idea recorded in the campaign does not work and is withdrawn: any
+snapshot of the whole tree changes whenever the tree changes, so the tests
+would keep invalidating. These three tests are repository-consistency gates —
+their verdict changes only when Baseline assets or owned skills change — so
+they move to the pull-request boundary behind a `repocontract` build tag,
+joining the documentation contracts already there. `go test ./...` no longer
+compiles them; `make verify-docs` runs them explicitly.
+
+The maintainer chose this route over per-test work inside `internal/cli`:
+
+> Rota A e voltamos para o trabalho nas spec.
 
 ## Bounded by purpose
 
