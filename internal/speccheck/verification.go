@@ -33,19 +33,22 @@ var (
 	// not an `exit 0` success predicate.
 	//
 	// A `test -z` / `[ -z` empty-string test is a guaranteed success only when
-	// its length operand comes from a command substitution that reads the
-	// working tree at test time, so an unchanged tree yields an empty value. A
-	// bare variable or literal operand is not proof: an earlier chain segment
-	// can capture a different value (e.g. a second `git status --porcelain`
-	// snapshot after an intervening command), making the predicate fail rather
-	// than pass. Those variable-dependent forms fall through to the
-	// emptyInputUnknown branch and are never reported vacuous.
+	// the whole length operand is a command substitution that reads the working
+	// tree at test time, so an unchanged tree yields an empty value. A
+	// substitution of arbitrary output (`$(printf x)`), a single-quoted form
+	// (which the shell treats as literal text, not a substitution), a bare
+	// variable, or a literal operand is not proof: the predicate can fail
+	// rather than pass. Those forms fall through to the emptyInputUnknown
+	// branch and are never reported vacuous.
 	emptyOutputSucceedsPattern = regexp.MustCompile(
 		`^(?:rtk\s+)?(?:cat|true|:)\s*$` + // | cat | true | : succeed on empty input
-			`|^(?:rtk\s+)?exit\s+0\s*$` + // | exit 0 explicitly succeeds
-			`|^(?:rtk\s+)?test\s+-z\s+(?:["']?\$\(|""|'')` + // | test -z "$(cmd)" | test -z ""
-			`|^(?:rtk\s+)?\[\s*-z\s+(?:["']?\$\(|""|'')`, // | [ -z "$(cmd)" | [ -z "" ]
+			`|^(?:rtk\s+)?exit\s+0\s*$`, // | exit 0 explicitly succeeds
 	)
+	// emptyTestPattern and emptyTestBracketPattern capture the single length
+	// operand of an empty-string test so it can be judged by
+	// emptyTestOperandPasses rather than matched greedily off the `$(` opener.
+	emptyTestPattern        = regexp.MustCompile(`^(?:rtk\s+)?test\s+-z\s+(.+)$`)
+	emptyTestBracketPattern = regexp.MustCompile(`^(?:rtk\s+)?\[\s*-z\s+(.+?)\s*\]\s*$`)
 	// A terminal command that provably fails on empty input. grep finds no
 	// lines in an unchanged tree's empty output and exits nonzero, so it is
 	// honest Verification no matter what text sits in its arguments.
@@ -137,9 +140,44 @@ func pipelineExitOutcome(segment string) emptyInputOutcome {
 		return emptyInputFails
 	case emptyOutputSucceedsPattern.MatchString(segment):
 		return emptyInputPasses
+	case emptyTestPattern.MatchString(segment) || emptyTestBracketPattern.MatchString(segment):
+		if emptyTestOperandPasses(segment) {
+			return emptyInputPasses
+		}
+		return emptyInputUnknown
 	default:
 		return emptyInputUnknown
 	}
+}
+
+// emptyTestOperandPasses reports whether a `test -z <operand>` or `[ -z
+// <operand> ]` terminal predicate is a guaranteed success on an unchanged tree.
+// Only a whole operand that is a command substitution over the working tree
+// qualifies: an unchanged tree yields an empty value from it. A non-empty
+// substitution of fixed output, a single-quoted form (literal text rather than
+// substitution), a variable, or a literal operand can fail and is never treated
+// as vacuous.
+func emptyTestOperandPasses(segment string) bool {
+	var operand string
+	if m := emptyTestBracketPattern.FindStringSubmatch(segment); m != nil {
+		operand = m[1]
+	} else if m := emptyTestPattern.FindStringSubmatch(segment); m != nil {
+		operand = m[1]
+	} else {
+		return false
+	}
+
+	cond := strings.TrimSpace(operand)
+	if len(cond) >= 2 && (cond[0] == '"' || cond[0] == '\'') && cond[len(cond)-1] == cond[0] {
+		cond = strings.TrimSpace(cond[1 : len(cond)-1])
+	}
+	// Only a working-tree command substitution proves emptiness on an
+	// unchanged tree; anything else may hold output.
+	if !strings.HasPrefix(cond, "$(") || !strings.HasSuffix(cond, ")") {
+		return false
+	}
+	inner := strings.TrimSpace(cond[2 : len(cond)-1])
+	return workingTreeStatePattern.MatchString(strings.Join(strings.Fields(inner), " "))
 }
 
 // chainPassesOnEmptyOutput evaluates a whole command's `&&`, `||`, and `;`

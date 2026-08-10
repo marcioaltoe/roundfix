@@ -186,6 +186,33 @@ func TestVacuousVerificationCommandIsCaughtBesideHonestSiblings(t *testing.T) {
 			command: `git diff --name-only HEAD | grep -q 'test -z'`,
 			vacuous: false,
 		},
+		{
+			// `test -z "$(printf x)"` reads a substitution of fixed non-empty
+			// output, not the working tree, so it fails on an unchanged tree.
+			name:    "an empty-test over non-empty command substitution fails",
+			command: `git diff --name-only HEAD | test -z "$(printf x)"`,
+			vacuous: false,
+		},
+		{
+			// Single quotes make the operand literal text, not a substitution;
+			// `'$(printf x)'` is a fixed non-empty string that fails the test.
+			name:    "a single-quoted command substitution is literal and fails",
+			command: `git diff --name-only HEAD | test -z '$(printf x)'`,
+			vacuous: false,
+		},
+		{
+			// A working-tree substitution is genuinely vacuous: an unchanged
+			// tree yields an empty value from it and the test passes.
+			name:    "an empty-test over a working-tree substitution passes when empty",
+			command: `git diff --name-only HEAD | test -z "$(git diff --name-only HEAD)"`,
+			vacuous: true,
+		},
+		{
+			// The bracket form behaves like the test form.
+			name:    "a bracket empty-test over a working-tree substitution passes when empty",
+			command: `git diff --name-only HEAD | [ -z "$(git diff --name-only HEAD)" ]`,
+			vacuous: true,
+		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
