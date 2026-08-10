@@ -1,3 +1,9 @@
+---
+status: pending
+created_at: 2026-08-10
+updated_at: 2026-08-10
+---
+
 # A fake adapter goes silent under a dense start
 
 The CI suite carries a flake family that predates any single branch: `main`
