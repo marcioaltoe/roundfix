@@ -17,10 +17,14 @@
         "clause.core.run-selected-verification",
         "clause.core.prohibit-verification-contract-bypass",
         "clause.core.ask-before-verification-configuration-change",
+        "clause.core.never-let-a-pipe-hide-a-gate",
+        "clause.core.assertion-reads-the-constant",
         "clause.core.require-tooling-authorization",
+        "clause.core.tooling-commit-choreography",
         "clause.core.activate-matching-skills",
         "clause.core.use-conventional-commits",
         "clause.core.use-github-pr-workflow",
+        "clause.core.request-pull-request-review",
         "clause.core.write-generated-guidance-in-english",
         "contract.research.sequence",
         "clause.core.follow-dependency-workflow",
@@ -29,6 +33,8 @@
         "clause.core.ask-before-destructive-git",
         "clause.core.ask-before-delivery",
         "clause.core.request-review-explicitly",
+        "clause.core.conventional-commit-titles",
+        "clause.core.plan-the-release-first",
         "clause.core.ask-user-answerable-decisions",
         "clause.core.prohibit-secret-exposure",
         "recommendation.capability.firecrawl",
@@ -134,9 +140,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 126,
-      "corpusDigest": "a189f9c54116640fe08a0ba0028ea0e72a829c9e4adccf9848970b417e352e1e",
-      "manifestDigest": "127eae9a3c9f9cb0ffc8ebba89f810c7781ecb001cd68a58deaa3c771134d453"
+      "entryCount": 132,
+      "corpusDigest": "9c57b6c40b621ddab43c36307360705e3f770807fa93d4c3bc9aa8693a8e03d6",
+      "manifestDigest": "08f66a3dd46148e3e796c2c1642a3da031d43c95277067bc4ef950dc6bedcd14"
     }
   ]
 }

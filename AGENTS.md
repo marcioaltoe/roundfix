@@ -19,7 +19,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 - Activate skills through `docs/agents/skill-dispatch.md` before governed work.
 
 <!-- setup-context-driven:end id=root.core -->
-
 <!-- setup-context-driven:begin id=root.context-workflow version=0.0.1 -->
 
 ### CONTEXT-driven workflow
@@ -27,7 +26,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 - Domain and documentation rules are mandatory: `docs/agents/domain.md` and `docs/agents/docs-layout.md`.
 
 <!-- setup-context-driven:end id=root.context-workflow -->
-
 <!-- setup-context-driven:begin id=root.spec-workflow version=0.0.1 -->
 
 ### Local Spec workflow
@@ -35,7 +33,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 - Route and execute local Specs through `docs/agents/spec-routing.md` and `docs/agents/issue-tracker.md`.
 
 <!-- setup-context-driven:end id=root.spec-workflow -->
-
 <!-- setup-context-driven:begin id=root.external-triage version=0.0.1 -->
 
 ### External triage
@@ -43,7 +40,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 - Before changing forge labels, follow `docs/agents/external-triage.md`.
 
 <!-- setup-context-driven:end id=root.external-triage -->
-
 <!-- setup-context-driven:begin id=root.autonomous-work version=0.0.1 -->
 
 ### Autonomous work
@@ -51,7 +47,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 - Supervisor and ACP Runtime rules are mandatory: `docs/agents/autonomous-work.md`.
 
 <!-- setup-context-driven:end id=root.autonomous-work -->
-
 <!-- setup-context-driven:begin id=root.go version=0.0.1 -->
 
 ### Go
@@ -59,7 +54,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 - Go implementation rules are mandatory: `docs/agents/go.md`.
 
 <!-- setup-context-driven:end id=root.go -->
-
 <!-- setup-context-driven:begin id=root.cli-surface version=0.0.1 -->
 
 ### CLI surface
@@ -67,7 +61,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 - CLI public-contract rules are mandatory: `docs/agents/cli.md`.
 
 <!-- setup-context-driven:end id=root.cli-surface -->
-
 <!-- setup-context-driven:begin id=root.tui-surface version=0.0.1 -->
 
 ### TUI surface
@@ -75,7 +68,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 - TUI interaction rules are mandatory: `docs/agents/tui.md`.
 
 <!-- setup-context-driven:end id=root.tui-surface -->
-
 <!-- setup-context-driven:begin id=root.secondbrain version=0.0.1 -->
 
 ### Secondbrain
@@ -83,7 +75,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 - Optional cross-project knowledge follows `docs/agents/secondbrain.md`.
 
 <!-- setup-context-driven:end id=root.secondbrain -->
-
 <!-- setup-context-driven:begin id=root.repository-extension version=0.0.1 -->
 
 ### Repository-owned rules

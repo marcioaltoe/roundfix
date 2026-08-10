@@ -122,7 +122,8 @@
   ],
   "requiredDecisions": [
     "language.generated",
-    "verification.gate"
+    "verification.gate",
+    "branch.prefix"
   ],
   "instructionHierarchy": {
     "narrowerPolicy": "strengthen-only",
@@ -377,6 +378,11 @@
           "id": "clause.core.require-fresh-evidence",
           "enforcement": "mandatory",
           "guidance": "Use fresh evidence from the current worktree before claiming work complete, fixed, passing, ready, committed, or delivered. A narrower check supports only the behavior it exercised."
+        },
+        {
+          "id": "clause.core.request-pull-request-review",
+          "enforcement": "mandatory",
+          "guidance": "A hand-opened pull request asks for its own review when it changes code. Automatic review is off by configuration, so a pull request opened directly gets none, and its review check reports that automatic review is disabled — which reads like a pass. Put the review marker in the pull request description when the pull request is opened rather than adding it afterwards; a one-shot review comment is invalidated by any later push while the check still reads green. Before merging, read the review's own result against the head that will land, and treat an absent or stale result as a block rather than a pass."
         }
       ]
     },
@@ -410,6 +416,16 @@
           "id": "clause.core.ask-before-verification-configuration-change",
           "enforcement": "stop-and-ask",
           "guidance": "Stop and ask for explicit authority before intentionally changing lint, formatter, typecheck, test-runner, architecture, or Verification configuration."
+        },
+        {
+          "id": "clause.core.never-let-a-pipe-hide-a-gate",
+          "enforcement": "mandatory",
+          "guidance": "Never let a pipe hide a gate's exit status. A pipeline exits with its last command's status, so piping Verification into a pager or filter reports that filter's success and lets `&&` proceed over a red gate. Run the gate on its own, capture its status, or redirect it to a file and read the file."
+        },
+        {
+          "id": "clause.core.assertion-reads-the-constant",
+          "enforcement": "mandatory",
+          "guidance": "An assertion reads the constant it means. A test that copies a pinned version, digest, or identifier as a literal stops testing the day a legitimate change moves it, sometimes silently. Reference the exported or package constant; when a value must be duplicated, search for every occurrence and change them in the same commit."
         }
       ]
     },
@@ -424,6 +440,11 @@
           "id": "clause.core.require-tooling-authorization",
           "enforcement": "prohibited",
           "guidance": "Do not create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization."
+        },
+        {
+          "id": "clause.core.tooling-commit-choreography",
+          "enforcement": "mandatory",
+          "guidance": "Land an authorized tooling change as its own commit, separate from the record that authorizes it. The express authorization record with its exact bounded paths, and any prerequisite fix repairing something already red before the change, are each their own commit landing before the authorized commit, in either relative order. A consequent fix, which only becomes necessary because the authorized change made something else stale, is its own commit landing after it; it cannot precede the cause that created it. Either kind folded into the authorized commit fails the tooling-authority gate. Prefer no consequent fix at all: a change's declared scope should include the tests its own edit invalidates."
         }
       ]
     },
@@ -539,6 +560,16 @@
           "id": "clause.core.request-review-explicitly",
           "enforcement": "mandatory",
           "guidance": "When a pull request changes code and the repository's review automation does not review it on its own, request the review explicitly as part of opening the pull request rather than as a follow-up. Never read a skipped or absent review check as approval."
+        },
+        {
+          "id": "clause.core.conventional-commit-titles",
+          "enforcement": "mandatory",
+          "guidance": "Write commit subjects and pull request titles as Conventional Commits subjects, and follow the scope policy the repository's commit configuration declares. A squash merge often takes the pull request title as the final commit message, so the title is held to the same contract as a commit."
+        },
+        {
+          "id": "clause.core.plan-the-release-first",
+          "enforcement": "mandatory",
+          "guidance": "Release work starts with the read-only release plan before any changelog, version, tag, push, package, asset, or published-release mutation. A generic release request authorizes only a conclusive patch plan; minor, major, version-zero breaking, and manual classification outcomes require the maintainer decisions recorded in the repository's release runbook."
         }
       ]
     },

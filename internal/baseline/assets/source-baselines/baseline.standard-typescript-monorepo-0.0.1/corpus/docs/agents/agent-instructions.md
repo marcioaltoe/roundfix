@@ -34,9 +34,21 @@
 - MUST stop and ask for explicit authority before intentionally changing lint, formatter, typecheck, test-runner, architecture, or Verification configuration.
 <!-- /source-baseline-entry: clause.core.ask-before-verification-configuration-change -->
 
+<!-- source-baseline-entry: clause.core.never-let-a-pipe-hide-a-gate -->
+- MUST NOT let a pipe hide a gate's exit status. A pipeline exits with its last command's status, so piping Verification into a pager or filter reports that filter's success and lets `&&` proceed over a red gate. Run the gate on its own, capture its status, or redirect it to a file and read the file.
+<!-- /source-baseline-entry: clause.core.never-let-a-pipe-hide-a-gate -->
+
+<!-- source-baseline-entry: clause.core.assertion-reads-the-constant -->
+- MUST make an assertion read the constant it means. A test that copies a pinned version, digest, or identifier as a literal stops testing the day a legitimate change moves it, sometimes silently. Reference the exported or package constant; when a value must be duplicated, search for every occurrence and change them in the same commit.
+<!-- /source-baseline-entry: clause.core.assertion-reads-the-constant -->
+
 <!-- source-baseline-entry: clause.core.require-tooling-authorization -->
 - MUST NOT create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization.
 <!-- /source-baseline-entry: clause.core.require-tooling-authorization -->
+
+<!-- source-baseline-entry: clause.core.tooling-commit-choreography -->
+- MUST land an authorized tooling change as its own commit, separate from the record that authorizes it. The express authorization record with its exact bounded paths, and any prerequisite fix repairing something already red before the change, are each their own commit landing before the authorized commit, in either relative order. A consequent fix, which only becomes necessary because the authorized change made something else stale, is its own commit landing after it; it cannot precede the cause that created it. Either kind folded into the authorized commit fails the tooling-authority gate. Prefer no consequent fix at all: a change's declared scope should include the tests its own edit invalidates.
+<!-- /source-baseline-entry: clause.core.tooling-commit-choreography -->
 
 <!-- source-baseline-entry: clause.core.activate-matching-skills -->
 - MUST activate every matching required skill before governed work. When one skill has distinct active-surface triggers, retain and follow each trigger.
@@ -49,6 +61,10 @@
 <!-- source-baseline-entry: clause.core.use-github-pr-workflow -->
 - MUST use the governing pull request workflow before preparing, opening, updating, or handing off a pull request.
 <!-- /source-baseline-entry: clause.core.use-github-pr-workflow -->
+
+<!-- source-baseline-entry: clause.core.request-pull-request-review -->
+- MUST ask a hand-opened pull request for its own review when it changes code: automatic review is off by configuration, so a pull request opened directly gets none and its review check reports that automatic review is disabled, which reads like a pass. Put the review marker in the pull request description when the pull request is opened rather than adding it afterwards; a one-shot review comment is invalidated by any later push while the check still reads green. Before merging, read the review's own result against the head that will land and treat an absent or stale result as a block.
+<!-- /source-baseline-entry: clause.core.request-pull-request-review -->
 
 <!-- source-baseline-entry: clause.core.write-generated-guidance-in-english -->
 - MUST write generated repository guidance, identifiers, headings, and examples in English. Preserve repository-authored language outside setup-owned markers.
@@ -86,6 +102,14 @@
 <!-- source-baseline-entry: clause.core.request-review-explicitly -->
 - MUST request the review explicitly as part of opening a pull request that changes code, when the repository's review automation does not review it on its own, and MUST NOT read a skipped or absent review check as approval.
 <!-- /source-baseline-entry: clause.core.request-review-explicitly -->
+
+<!-- source-baseline-entry: clause.core.conventional-commit-titles -->
+- MUST write commit subjects and pull request titles as Conventional Commits subjects, following the scope policy the repository's commit configuration declares. A squash merge often takes the pull request title as the final commit message, so the title is held to the same contract as a commit.
+<!-- /source-baseline-entry: clause.core.conventional-commit-titles -->
+
+<!-- source-baseline-entry: clause.core.plan-the-release-first -->
+- MUST start release work with the read-only release plan before any changelog, version, tag, push, package, asset, or published-release mutation. A generic release request authorizes only a conclusive patch plan; minor, major, version-zero breaking, and manual classification outcomes require the maintainer decisions recorded in the repository's release runbook.
+<!-- /source-baseline-entry: clause.core.plan-the-release-first -->
 
 <!-- source-baseline-entry: clause.core.ask-user-answerable-decisions -->
 - MUST NOT guess a decision the user can answer cheaply, and MUST ask it so it is answerable without rereading the session: what was found and why it forces a choice, options enumerated by number or letter with the consequence of each, and a named recommendation. Never bundle questions, ask in prose, or compress an option until only its author can read it.

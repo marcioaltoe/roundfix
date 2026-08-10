@@ -1297,7 +1297,6 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	commands := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "commands.md"))
 	usage := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "usage.md"))
 	configuration := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "configuration.md"))
-	autonomousWork := mustRead(t, filepath.Join(repoRoot, "docs", "agents", "autonomous-work.md"))
 	releaseRunbook := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "release-runbook.md"))
 	roundfixSkill := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "SKILL.md"))
 	roundfixManifest := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "agents", "openai.yaml"))
@@ -1381,13 +1380,13 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		"profiles.general",
+		"Required profiles are `general`, `backend`, `frontend`, `qa`, and `review`.",
 		"gpt-5.6-sol",
 		"gpt-5.5",
 		"Fallback Chain",
 	} {
-		if !strings.Contains(autonomousWork, want) {
-			t.Fatalf("autonomous work guidance is missing %q", want)
+		if !strings.Contains(configuration, want) {
+			t.Fatalf("profile configuration guidance is missing %q", want)
 		}
 	}
 
@@ -1415,7 +1414,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 		{name: "README", content: readme},
 		{name: "command reference", content: commands},
 		{name: "usage", content: usage},
-		{name: "autonomous work", content: autonomousWork},
+		{name: "configuration", content: configuration},
 		{name: "roundfix skill", content: roundfixSkill},
 		{name: "roundfix manifest", content: roundfixManifest},
 	} {

@@ -1504,6 +1504,7 @@ func standardTypeScriptDecisions(verification string) []DecisionValue {
 	return []DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: verification},
+		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 		{ID: "http.contract", Value: map[string]any{"mode": "REST"}},
 		{ID: "auth.provider", Value: completeAuthProviderDecision()},

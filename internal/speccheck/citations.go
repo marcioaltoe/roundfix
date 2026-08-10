@@ -94,10 +94,12 @@ var loopOrderSources = []loopOrderSource{
 		lineNeedle: "Follow one order per Spec:",
 	},
 	{
-		name:       "repository guide",
-		path:       loopOrderRepositoryGuidePath,
-		marker:     "follow one order:",
-		lineNeedle: "order: implement the graph",
+		name: "repository guide",
+		path: loopOrderRepositoryGuidePath,
+		// After greenfield adoption the guide is the rendered catalog clause, so
+		// it carries the shipped wording rather than a hand-written paraphrase.
+		marker:     "Follow one order per Spec:",
+		lineNeedle: "Follow one order per Spec:",
 	},
 	{
 		name:       "Baseline module asset",

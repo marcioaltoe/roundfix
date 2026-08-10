@@ -27,6 +27,7 @@
       "decisions": [
         "language.generated",
         "verification.gate",
+        "branch.prefix",
         "spec.scaffold",
         "domain.layout",
         "triage.external",
@@ -64,12 +65,16 @@
         "template.root.tui-surface"
       ],
       "values": {},
-      "digest": "sha256:2b8bd2acd9e79f93524954e5de32e89cd8ba9eea4145e98b06834db56e917ef7"
+      "digest": "sha256:74c30a138531e9d9f509cb8c9eeda13984ac4bb348cbb66a27c53f0754246569"
     },
     "decisions": [
       {
         "id": "autonomous.enabled",
         "value": true
+      },
+      {
+        "id": "branch.prefix",
+        "value": "ma/"
       },
       {
         "id": "domain.layout",

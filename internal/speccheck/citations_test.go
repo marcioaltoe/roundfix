@@ -37,10 +37,12 @@ func TestCheckLoopOrderDivergent(t *testing.T) {
 			divergent: "merge, open the Pull Request, watch until Clean, and archive",
 		},
 		{
-			name:      "repository guide",
-			path:      loopOrderRepositoryGuidePath,
-			current:   "archive, open the Pull\nRequest, watch until Clean, and merge",
-			divergent: "merge, open the Pull\nRequest, watch until Clean, and archive",
+			name: "repository guide",
+			path: loopOrderRepositoryGuidePath,
+			// The guide is the rendered catalog clause after greenfield adoption,
+			// so it carries the shipped wording without the paraphrase's wrap.
+			current:   "archive, open the Pull Request, watch until Clean, and merge",
+			divergent: "merge, open the Pull Request, watch until Clean, and archive",
 		},
 		{
 			name:      "Baseline module asset",

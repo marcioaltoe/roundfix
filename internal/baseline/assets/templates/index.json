@@ -130,7 +130,7 @@
       "version": 1,
       "kind": "guide",
       "path": "guides/agent-instructions.md",
-      "tokens": ["artifact.rules", "verification.gate"]
+      "tokens": ["artifact.rules", "verification.gate", "branch.prefix"]
     },
     {
       "id": "template.guide.docs-layout",

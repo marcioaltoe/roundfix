@@ -96,16 +96,23 @@ func TestReleasePlanDocumentationContract(t *testing.T) {
 			},
 		},
 		{
-			name: "repository-specific rules",
-			path: filepath.Join(repoRoot, "docs", "agents", "specific-repository.md"),
+			name: "canonical release-planning rule",
+			path: filepath.Join(repoRoot, "docs", "agents", "agent-instructions.md"),
 			snippets: []string{
-				"HARD RULE — release planning",
-				"roundfix release plan",
-				"before changelog, version, tag, push, package, asset",
+				"Release work starts with the read-only release plan",
+				"before any changelog, version, tag, push, package, asset",
 				"conclusive patch plan",
 				"minor, major, version-zero breaking",
 				"manual",
-				"classification outcomes require the decisions",
+				"classification outcomes require the maintainer decisions",
+			},
+		},
+		{
+			name: "repository-specific rules",
+			path: filepath.Join(repoRoot, "docs", "agents", "specific-repository.md"),
+			snippets: []string{
+				"roundfix release plan",
+				"docs/user-guide/release-runbook.md",
 			},
 		},
 		{

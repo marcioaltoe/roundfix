@@ -1,96 +1,3 @@
-# Docs layout
-
-<!-- Seeded by the setup-context-driven skill. Edit repo-specific notes freely;
-     a re-run regenerates this file carrying confirmed answers forward. -->
-
-How this repository uses each `docs/` folder. Every folder has one job; a file
-that fits two folders goes to the one whose job it serves now — move it
-when its job changes (triaged evidence → spec is the normal flow).
-
-**Capture does not start here.** Every new observation is born in the
-Secondbrain's inbox under the project namespace responsible for the fix,
-committed there at the moment of capture, and
-only reaches this repository once a session of this project triages it into a
-Finding or a Backlog Entry. See ADR-0095 and the mandatory clause in the
-generated section below. Writing a loose capture file straight into
-`docs/findings/` is the mistake this arrangement exists to prevent: a review
-Batch commit stages every path changed since its snapshot, so a dirty findings
-file collides with an Active Run by construction — which is how a `resolve`
-Preflight was refused on 2026-08-06.
-
-| Folder | Job | Lifecycle |
-| --- | --- | --- |
-| `docs/adr/` | Accepted decision records — `NNNN-kebab-slug.md`, 1–3 sentences each (context, decision, why). One numbering sequence for the repo's life. | Append-only. Numbers are never reused; superseding decisions name what they supersede. |
-| `docs/agents/` | Agent-facing usage guides: the files seeded by `setup-context-driven` plus repo-authored guides. `AGENTS.md`/`CLAUDE.md` hold only short pointers here, never rule bodies. | Seeded files are owned by the skill and regenerated on re-run; repo-authored guides are owned by the repo. |
-| `docs/design/` | Design artifacts: mockups, visual and interaction decisions, UI/TUI explorations, design-review notes. | Kept while the design is live; superseded explorations may be pruned or archived into the spec that consumed them. |
-| `docs/findings/` | Dated field reports **that Triage has already admitted** from the Secondbrain inbox: dogfood incidents, retrospectives, root-cause investigations. Never a capture destination — see the note above. Follow the template below. | Observations stay immutable: append root causes and Spec pointers; never rewrite what was observed. Before a Spec adopts a finding, record its status (`partial` for findings
-addressed in part, `deferred` for findings not implemented, `done` only
-when fully adopted) and Spec link, then move it to `docs/specs/<slug>/references/`, so it leaves the findings tree. Git history at the old path remains the discovery trail. |
-| `docs/handoffs/` | Session handoff documents: the state snapshot one working session leaves for the next. | Superseded by the next handoff; keep the recent few, prune the rest. |
-| `docs/references/` | Pointers to external resources, each with a one-line explanation of why it matters here. | Prune links that stop mattering. |
-| `docs/specs/` | The spec workflow tree: `NNNN-<slug>/` feature folders, `_archived/` for shipped specs, `_reviews/` for review-run artifacts. | Owned by the pipeline skills; status lives only in task files. |
-| `docs/specs/<slug>/references/` | Source documents adopted by the owning Spec. `_index.md` records each source's pre-adoption path, type, owner, adopted date, and current relative path. | Moves with the Spec through archive. One Spec owns each source; secondary Specs link the owner's copy. |
-| `docs/user-guide/` | Human-facing product documentation and runbooks. | Updated with the behavior it documents in the same PR. |
-| `docs/workflow/` | Working instructions for operating this repository's own delivery loop — supervisor discipline that needs no product change. A staging area, not a contract. | Adjusted as the loop teaches; parts that stabilize get promoted into a skill or command and removed from here. |
-
-## Findings template
-
-Findings files are named `YYYY-MM-DD-<kebab-slug>.md`. One file records one
-session or investigation.
-
-```yaml
----
-status: pending # pending | partial | deferred | done
-created_at: YYYY-MM-DD
-updated_at: YYYY-MM-DD
----
-```
-
-- `pending`: the finding is new and does not yet have an implementation Spec.
-- `partial`: a Spec covers only the portion selected for implementation because
-  the remaining observations were judged unnecessary. Record that reason and
-  link the Spec.
-- `deferred`: the finding will not be implemented. Record the reason.
-- `done`: an implementation Spec exists. Set this status as soon as the Spec is
-  created and linked; do not wait for its Tasks, QA, archive, or release.
-- `created_at` records when the document was created.
-- `updated_at` records the latest status change or evidence addendum.
-
-```markdown
-# <Area> — <short title> (YYYY-MM-DD)
-
-<!-- 2–4 sentences: session or Run context, what was being attempted,
-     and pointers to adjacent findings files instead of duplicated content. -->
-
-## 1. <Finding title — the symptom, not the guess>
-
-- **Symptom / evidence**: what was observed, verbatim where possible
-  (commands, output, run ids, file paths).
-- **Root cause**: when established — how it was proven; otherwise say
-  "unknown" and what was ruled out.
-- **Action / suggestion**: the fix, workaround applied, or the route
-  to a Spec, direct fix, or upstream report. Link the Spec or ADR once it
-  exists.
-
-## 2. <Next finding…>
-
-## What worked — keep
-
-<!-- Optional: behaviors that held up under stress, worth preserving. -->
-```
-
-Conventions:
-
-- Evidence over narrative: quote the command and output; name Run IDs, commits,
-  and paths so a later session can re-verify.
-- Append dated root-cause addenda instead of rewriting the original observation.
-- When a finding gets an implementation Spec, add the pointer and set
-  `status: done` in the same change. Use `partial` instead only for an
-  intentionally limited Spec and record why the remaining scope is
-  unnecessary.
-- Use `deferred` only with an explicit reason for not implementing the finding.
-- Update `status` and `updated_at` whenever the document's triage state changes.
-
 <!-- setup-context-driven:begin id=guide.docs-layout version=0.0.1 -->
 
 # Docs layout
@@ -273,36 +180,15 @@ absorbed_by: <rollup-basename-or-spec-slug>
 
 - **mandatory**: Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog Entry, or one recorded discard. Preserve the ADR-0092 boundary: evidence never becomes intent without a human choice. A minted Finding or Backlog Entry must cite the Inbox Entry's provenance.
 
-- **mandatory**: Route every new fleet observation through the Secondbrain's `inbox/<destination>/`; never create loose capture files in a project checkout. When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent.
+- **mandatory**: When a Finding's lifecycle closes, mint each typed Backlog Entry that its recorded actions call for, while preserving the boundary between evidence and intent. Where a fleet observation is captured before it reaches this repository is the Secondbrain guidance's concern, not this one's.
 
 <!-- setup-context-driven:end id=guide.docs-layout -->
-
 <!-- setup-context-driven:begin id=guide.spec-docs-layout version=0.0.1 -->
 
 # Spec docs layout
 
 - **mandatory**: Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `docs/specs/_archived/`.
 
+- **mandatory**: Specs are downstream results of the CONTEXT-driven workflow, never sources it depends on: an archived Spec may be deleted at any time, so durable knowledge a Spec produced must move upstream to its semantic owner — the project glossary, an accepted ADR, an agent guide, or `docs/references/` — before or at archive. The glossary and the agent guides must never reference a Spec.
+
 <!-- setup-context-driven:end id=guide.spec-docs-layout -->
-
-<!-- roundfix:repository-rule:begin id=rule.4d357b3e1dea4134655b4cb84ada6c82d7b66000aa4e98bfd4b49bf2c608f0ab -->
-### Spec artifacts
-
-Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`,
-`_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`, and adopted sources under
-`references/` with provenance recorded in `references/_index.md`). Dependencies
-live only in `_tasks.md`; task status lives only in each task file's
-frontmatter. Completed specs are archived to `docs/specs/_archived/`.
-
-
-<!-- roundfix:repository-rule:end id=rule.4d357b3e1dea4134655b4cb84ada6c82d7b66000aa4e98bfd4b49bf2c608f0ab -->
-
-<!-- roundfix:repository-rule:begin id=rule.cd6d2ee319dd816af83a745181f1499c3b739167e48af1f29fb7044220d2ba3e -->
-### Docs layout
-
-Every `docs/` folder has one job — inbox triage, ADRs, agent guides, design
-artifacts, dated findings, handoffs, external references, specs, and the user
-guide. See `docs/agents/docs-layout.md`.
-
-
-<!-- roundfix:repository-rule:end id=rule.cd6d2ee319dd816af83a745181f1499c3b739167e48af1f29fb7044220d2ba3e -->

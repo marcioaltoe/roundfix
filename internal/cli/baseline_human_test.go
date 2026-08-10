@@ -113,9 +113,9 @@ func TestBaselineHumanProfileChangeRemainsReachable(t *testing.T) {
 	// answers: change to "Decision area to revisit" (3), select
 	// "Change Baseline Profile" (1), confirm three "1" changes,
 	// decline two "2" re-ask confirmations, then answer "1" to
-	// every remaining prompt (10x) and decline recomputed Plan (2).
+	// every remaining prompt (11x) and decline recomputed Plan (2).
 	changeAnswers := []string{"3", "1", "1", "1", "2", "2"}
-	for range 10 {
+	for range 11 {
 		changeAnswers = append(changeAnswers, "1")
 	}
 	changeAnswers = append(changeAnswers, "2")
@@ -269,6 +269,7 @@ func TestHumanBaselineFirstAdoptionPromptSequenceCharacterization(t *testing.T) 
 		"Select exactly one Baseline Profile",
 		"The language used for generated repository content.",
 		"The repository verification command named by generated guidance. (verification.gate)",
+		"The required prefix for agent-created branches, named by generated guidance. (branch.prefix)",
 		"Whether the repository uses local docs/specs artifacts as its planning source.",
 		"The CONTEXT.md layout agents must read before naming domain concepts.",
 		"Whether external forge issues require triage-label guidance.",
@@ -1488,6 +1489,7 @@ func standardTypeScriptDivergenceDecisions() []baseline.DecisionValue {
 	return []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 		{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
 		{
@@ -1555,7 +1557,7 @@ func newCLIProjectDecisionRepository(t *testing.T) string {
 }
 
 func projectDecisionHumanAnswers() string {
-	return "\nmake verify\n\n\n\n\n\n\n2\n2\n2\n"
+	return "\nmake verify\n\n\n\n\n\n\n\n2\n2\n2\n"
 }
 
 func buildCLIProjectDecisionPlan(
@@ -1643,6 +1645,7 @@ func humanBaselineFixtureDecisions() []baseline.DecisionValue {
 	return []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "branch.prefix", Value: "ma/"},
 		{ID: "spec.scaffold", Value: true},
 		{ID: "domain.layout", Value: "single-context"},
 		{ID: "triage.external", Value: false},
@@ -1805,6 +1808,7 @@ func humanBaselineAdoptionAnswers(final string) string {
 		"1",
 		"1",
 		"make verify",
+		"ma/",
 		"1",
 		"1",
 		"2",
@@ -1823,7 +1827,7 @@ func humanBaselineAdoptionAnswers(final string) string {
 func humanBaselinePreservationAnswers() string {
 	answers := strings.Split(strings.TrimSuffix(humanBaselineAdoptionAnswers(""), "\n"), "\n")
 	answers[0] = "2"
-	answers[9] = "1"
+	answers[10] = "1"
 	return strings.Join(answers, "\n") + "\n1\n2\n"
 }
 
