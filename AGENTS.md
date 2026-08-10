@@ -33,13 +33,6 @@ Apply active guidance in this order. A narrower guide may add constraints for it
 - Route and execute local Specs through `docs/agents/spec-routing.md` and `docs/agents/issue-tracker.md`.
 
 <!-- setup-context-driven:end id=root.spec-workflow -->
-<!-- setup-context-driven:begin id=root.external-triage version=0.0.1 -->
-
-### External triage
-
-- Before changing forge labels, follow `docs/agents/external-triage.md`.
-
-<!-- setup-context-driven:end id=root.external-triage -->
 <!-- setup-context-driven:begin id=root.autonomous-work version=0.0.1 -->
 
 ### Autonomous work
