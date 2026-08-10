@@ -61,6 +61,7 @@ defect; do not run the gate outside that node.
 | A Project Constraint row cites an operative source. | `SC-CONSTRAINT-SOURCE` |
 | A cited tooling authorization names the Spec. | `SC-TOOLING-UNAUTHORIZED` |
 | Applicable tooling authority declares bounded files. | `SC-TOOLING-UNBOUNDED` |
+| A tooling authorization record states its grant in readable fields. | `SC-TOOLING-UNTYPED` |
 | Active ADR obligations are listed, related decisions are accounted for, and attributed claims match the cited record. | `SC-ADR-UNLISTED`, `SC-ADR-RELATED`, and `SC-CITATION-UNSUPPORTED` |
 | Task requirements do not contradict each other, rehearsals are declared, and Verification can distinguish Task work from no work. | `SC-REQUIREMENT-CONTRADICTORY`, `SC-REHEARSAL-UNDECLARED`, and `SC-VERIFY-WORK-INDEPENDENT` |
 | Emitted vocabulary is documented through the TechSpec's Vocabulary Contract. | `SC-VOCABULARY-UNDOCUMENTED` |
