@@ -1461,6 +1461,11 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 
 func TestRunImplementRemovedQAFlagExplainsTaskGraph(t *testing.T) {
 	t.Parallel()
+	// Isolated home and work directory: without them the command resolves
+	// configuration from this package's directory and walks up to the
+	// repository's own .git, recording it as a test input. Any later write
+	// under .git then discards this package's cached result.
+	setCommandEnvironmentForTest(t, t.TempDir(), t.TempDir())
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 

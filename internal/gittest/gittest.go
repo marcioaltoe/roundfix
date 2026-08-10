@@ -31,6 +31,11 @@ func ConfigArgs() []string {
 		"-c", "user.name=Roundfix Test",
 		"-c", "user.email=test@example.com",
 		"-c", "commit.gpgsign=false",
+		// Reads must not write: a filesystem monitor can refresh the index on
+		// otherwise read-only commands, and an index rename bumps the .git
+		// directory's mtime — which discards any concurrently running test
+		// result that recorded .git as an input.
+		"-c", "core.fsmonitor=false",
 	}
 }
 
@@ -50,6 +55,11 @@ func IsolatedEnv() []string {
 		"GIT_CONFIG_GLOBAL=/dev/null",
 		"GIT_CONFIG_SYSTEM=/dev/null",
 		autoDetachEnv+"=0",
+		// Read-only commands must stay read-only: without this, git may take
+		// the index lock to refresh it during reads such as ls-files, and the
+		// resulting .git mtime bump invalidates every concurrently running
+		// test that recorded .git as an input.
+		"GIT_OPTIONAL_LOCKS=0",
 	)
 }
 
