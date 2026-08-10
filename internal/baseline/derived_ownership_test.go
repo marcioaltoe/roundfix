@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"testing/fstest"
 )
@@ -487,7 +488,12 @@ func TestDerivedOwnershipValidationPreservesWholeTree(t *testing.T) {
 }
 
 func TestMeasuredSanctionedOwnershipMatchesRecords(t *testing.T) {
-	// Sequential: child commands rewrite one isolated repository fixture.
+	// Parallel with the package: the fixture below is this test's own copy.
+	// Subtests stay sequential, because child commands rewrite that one
+	// shared fixture. Serialising the two regeneration giants against each
+	// other was measured slower (91s vs 71s package wall on 2026-08-10): the
+	// second giant then runs as a solo tail after the package drains.
+	t.Parallel()
 	repository := newDerivedRegenerationFixture(t)
 	baselineRoot := filepath.Join(repository, "internal", "baseline")
 	fileSystem := os.DirFS(baselineRoot)
@@ -500,7 +506,7 @@ func TestMeasuredSanctionedOwnershipMatchesRecords(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cacheRoot := filepath.Join(repository, ".gocache")
+	cacheRoot := ambientGoBuildCache(t)
 	clean := snapshotDerivedTreeAt(t, baselineRoot, roots)
 	sanctionedProbes := declaredSanctionedProbes(t, fileSystem, roots, records, resolved)
 	if err := exerciseDeclaredRegenerationStep(
@@ -575,7 +581,10 @@ func TestMeasuredSanctionedOwnershipMatchesRecords(t *testing.T) {
 }
 
 func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
-	// Sequential: child commands deliberately rewrite one shared fixture.
+	// Parallel with the package: the fixture below is this test's own copy.
+	// Subtests stay sequential, because child commands deliberately rewrite
+	// that one shared fixture.
+	t.Parallel()
 	repository := newDerivedRegenerationFixture(t)
 	baselineRoot := filepath.Join(repository, "internal", "baseline")
 	fileSystem := os.DirFS(baselineRoot)
@@ -590,7 +599,7 @@ func TestDeclaredStepRegenerationAndFrozenBoundaries(t *testing.T) {
 	}
 	artifactsByRecord := derivedArtifactsByRecord(t, fileSystem, roots, records, resolved)
 	clean := snapshotDerivedTreeAt(t, baselineRoot, roots)
-	cacheRoot := filepath.Join(repository, ".gocache")
+	cacheRoot := ambientGoBuildCache(t)
 
 	sanctioned := declaredSanctionedProbes(t, fileSystem, roots, records, resolved)
 	frozen := declaredFrozenProbes(t, fileSystem, roots, records, resolved)
@@ -1198,6 +1207,43 @@ func exerciseDeclaredRegenerationStep(
 	}
 	return nil
 }
+
+// ambientGoBuildCache resolves the build cache the suite itself compiles
+// with, so a declared regeneration command reuses warm build artifacts
+// instead of recompiling the module from an empty cache. The declared
+// contract these tests prove is byte-identical regeneration output, not a
+// cold compile. Result caching stays content-governed: Go tracks the files a
+// cached test read, so a perturbed artifact forces re-execution, an -update
+// step never caches, and only a checking step over identical bytes may
+// legitimately replay its verdict.
+func ambientGoBuildCache(t *testing.T) string {
+	t.Helper()
+	ambientGoCacheOnce.Do(func() {
+		if dir := strings.TrimSpace(os.Getenv("GOCACHE")); dir != "" {
+			ambientGoCacheDir = dir
+			return
+		}
+		output, err := exec.Command("go", "env", "GOCACHE").Output()
+		if err != nil {
+			ambientGoCacheErr = fmt.Errorf("resolve ambient go build cache: %w", err)
+			return
+		}
+		ambientGoCacheDir = strings.TrimSpace(string(output))
+	})
+	if ambientGoCacheErr != nil {
+		t.Fatal(ambientGoCacheErr)
+	}
+	if ambientGoCacheDir == "" {
+		t.Fatal("resolve ambient go build cache: empty path")
+	}
+	return ambientGoCacheDir
+}
+
+var (
+	ambientGoCacheOnce sync.Once
+	ambientGoCacheDir  string
+	ambientGoCacheErr  error
+)
 
 func runDeclaredRegenerationStep(
 	ctx context.Context,
