@@ -1041,6 +1041,71 @@ func TestProveExactSelectionCleanupJoinedFailure(t *testing.T) {
 	}
 }
 
+func TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{
+		"sessions ensure": 2,
+		"sessions close":  4,
+	}))
+	var warnings []string
+	harness.runner.warnf = func(format string, args ...any) {
+		warnings = append(warnings, fmt.Sprintf(format, args...))
+	}
+
+	_, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{
+		Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"},
+		WorkDir: harness.gitRoot,
+	})
+	if err == nil {
+		t.Fatal("expected selection failure")
+	}
+	const wantDiagnosis = `apply Agent Selection "codex"/"gpt-5.6-sol"/"high" during ensure disposable Agent Session: adapter rejected selection: acpx infrastructure error after exit code 2: acpx command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection`
+	if got := err.Error(); got != wantDiagnosis {
+		t.Fatalf("selection diagnosis changed or gained a close error\nwant: %q\ngot:  %q", wantDiagnosis, got)
+	}
+	var cleanupErr *AgentSessionCleanupError
+	if errors.As(err, &cleanupErr) {
+		t.Fatalf("missing disposable session close was appended to the diagnosis: %v", err)
+	}
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "close disposable Agent Session") || !strings.Contains(warnings[0], acpxExitReasonMissingSession) {
+		t.Fatalf("missing disposable session close was not recorded: %#v", warnings)
+	}
+}
+
+func TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	harness.setEnv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=gpt-5.6-sol": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
+	}))
+	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{
+		"set reasoning_effort": 2,
+		"sessions close":       2,
+	}))
+
+	_, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{
+		Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"},
+		WorkDir: harness.gitRoot,
+	})
+	if err == nil {
+		t.Fatal("expected selection and cleanup failure")
+	}
+	const wantDiagnosis = `apply Agent Selection "codex"/"gpt-5.6-sol"/"high" during set reasoning_effort: adapter rejected selection: acquire Agent Selection capabilities through acpx: command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection`
+	if got := err.Error(); !strings.HasPrefix(got, wantDiagnosis+"\nclose disposable Agent Session") {
+		t.Fatalf("selection diagnosis or appended close error changed\nwant prefix: %q\ngot:         %q", wantDiagnosis+"\nclose disposable Agent Session", got)
+	}
+	var cleanupErr *AgentSessionCleanupError
+	if !errors.As(err, &cleanupErr) {
+		t.Fatalf("open disposable session close was not recorded in the error chain: %T %v", err, err)
+	}
+	if got, want := selectionCallKeys(readJSONInvocations(t, harness.invocationsPath)), []string{"sessions ensure model=gpt-5.6-sol", "set reasoning_effort value=high", "sessions close"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("proof did not open and then attempt to close the disposable session\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
 func TestProveExactSelectionCancelCleanup(t *testing.T) {
 	t.Parallel()
 

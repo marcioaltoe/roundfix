@@ -1099,7 +1099,12 @@ func (runner ACPXRunner) closeDisposableSession(ctx context.Context, runtime Run
 		(&runner).clearSessionState(sessionName)
 	}()
 	if err := runner.CloseSession(ctx, runtime, SessionRef{Name: sessionName, WorkDir: workDir}); err != nil {
-		return &AgentSessionCleanupError{Session: sessionName, Err: err}
+		cleanupErr := &AgentSessionCleanupError{Session: sessionName, Err: err}
+		if IsAgentSessionAbsent(cleanupErr) {
+			runner.warningf("disposable Agent Session cleanup found no Session to close: %v", cleanupErr)
+			return nil
+		}
+		return cleanupErr
 	}
 	return nil
 }
@@ -1164,6 +1169,14 @@ func (runner *ACPXRunner) CloseSession(ctx context.Context, runtime RuntimeSpec,
 		return err
 	}
 	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
+		var infrastructureErr *InfrastructureError
+		if errors.As(err, &infrastructureErr) && infrastructureErr.ExitCode == 4 {
+			err = &InfrastructureError{
+				ExitCode: infrastructureErr.ExitCode,
+				Reason:   acpxExitReasonMissingSession,
+				Stderr:   infrastructureErr.Stderr,
+			}
+		}
 		return fmt.Errorf("close acpx Agent Session %q: %w", sessionName, err)
 	}
 	return nil
