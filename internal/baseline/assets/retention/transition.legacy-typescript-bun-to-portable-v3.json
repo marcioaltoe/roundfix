@@ -4,9 +4,6 @@
   "version": 1,
   "fromBaseline": "baseline.legacy-typescript-bun-sample",
   "toBaseline": "baseline.portable-v3",
-  "legacyManifestFingerprints": [
-    "d05035b0120c3af96666f14f3bab1de371f685c53de6f555c8187f9727b94a2e"
-  ],
   "priorClauses": [
     {"id": "clause.legacy.read-design-before-ui", "enforcement": "mandatory", "carrier": "legacy.high-priority", "guidanceDigest": "4d373c1f835c6c83951cfc5d5c64641c1bac89ef912ef16b208b8e6697225e52"},
     {"id": "clause.legacy.block-warnings", "enforcement": "mandatory", "carrier": "legacy.high-priority", "guidanceDigest": "6b62bd774e9b65d1dba5e90e6e8ca1932bf4645ac92e4974864b4f6b7d540fe0"},

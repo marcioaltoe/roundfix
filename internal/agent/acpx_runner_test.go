@@ -464,27 +464,24 @@ func TestCheckAdapterClassifiesUnreadyClaudeAdapters(t *testing.T) {
 		wantMessagePart string
 	}{
 		{
-			name: "legacy claude code lineage with empty probe",
+			name: "unrecognized package lineage with empty probe",
 			runtime: func(t *testing.T) RuntimeSpec {
 				t.Helper()
-				command := installSymlinkedPackageAdapter(t, legacyClaudeCodeAdapterPackage, "claude-code-acp", "")
+				command := installSymlinkedPackageAdapter(t, "@example/claude-code-acp", "claude-code-acp", "")
 				return RuntimeSpec{ID: "claude-custom", Protocol: ProtocolStdio, Command: command}
 			},
-			wantPackage:     legacyClaudeCodeAdapterPackage,
 			wantLineageErr:  true,
-			wantMessagePart: "legacy package",
+			wantMessagePart: "did not prove required package lineage",
 		},
 		{
-			name: "legacy claude agent lineage",
+			name: "unrecognized package lineage at the pinned version",
 			runtime: func(t *testing.T) RuntimeSpec {
 				t.Helper()
-				command := installSymlinkedPackageAdapter(t, legacyClaudeAgentAdapterPackage, "claude-agent-acp", PinnedClaudeAdapterVersion)
+				command := installSymlinkedPackageAdapter(t, "@example/claude-agent-acp", "claude-agent-acp", PinnedClaudeAdapterVersion)
 				return RuntimeSpec{ID: "claude-custom", Protocol: ProtocolStdio, Command: command}
 			},
-			wantPackage:     legacyClaudeAgentAdapterPackage,
-			wantVersion:     PinnedClaudeAdapterVersion,
 			wantLineageErr:  true,
-			wantMessagePart: "legacy package",
+			wantMessagePart: "did not prove required package lineage",
 		},
 		{
 			name: "unproven bare executable",

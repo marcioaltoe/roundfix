@@ -349,7 +349,6 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 						RequiredPackage: agent.ClaudeAdapterPackage,
 						RequiredVersion: agent.PinnedClaudeAdapterVersion,
 						Install:         agent.ClaudeAdapterInstallCommand(),
-						Legacy:          true,
 					},
 				},
 				"codex": {

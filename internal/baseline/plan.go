@@ -1186,27 +1186,18 @@ func resolvePlanRetention(
 	}
 
 	var matches []UpgradeRetentionContract
-	fingerprint := legacyManifestFingerprint(manifest)
 	for _, transitionID := range catalog.TransitionIDs() {
 		contract, err := catalog.UpgradeRetentionContract(transitionID)
 		if err != nil {
 			return nil, nil, "", err
 		}
-		matched := declaredBaseline != "" && contract.FromBaseline == declaredBaseline
-		if declaredBaseline == "" && fingerprint != "" {
-			matched = containsString(contract.LegacyManifestFingerprints, fingerprint)
-		}
-		if matched {
+		if declaredBaseline != "" && contract.FromBaseline == declaredBaseline {
 			matches = append(matches, contract)
 		}
 	}
 	if len(matches) != 1 {
-		identity := declaredBaseline
-		if identity == "" {
-			identity = "manifest fingerprint " + fingerprint
-		}
 		return retention, nil,
-			fmt.Sprintf("the existing Setup Manifest identity %q has no unique maintained transition", identity),
+			fmt.Sprintf("the existing Setup Manifest identity %q has no unique maintained transition", declaredBaseline),
 			nil
 	}
 	return append(retention, transitionRetentionEvidence(matches[0])...), nil, "", nil
@@ -1398,40 +1389,6 @@ func transitionRetentionEvidence(contract UpgradeRetentionContract) []RetentionE
 		}
 	}
 	return result
-}
-
-func legacyManifestFingerprint(manifest document) string {
-	artifacts := objectsOrEmpty(manifest["managedArtifacts"])
-	if len(artifacts) == 0 {
-		return ""
-	}
-	normalized := make([]map[string]any, 0, len(artifacts))
-	for _, artifact := range artifacts {
-		id, idOK := stringValue(artifact, "id")
-		template, templateOK := stringValue(artifact, "template")
-		digest, digestOK := stringValue(artifact, "digest")
-		version, versionOK := artifact["version"].(json.Number)
-		if !idOK || id == "" || !templateOK || template == "" ||
-			!digestOK || !isRawSHA256(digest) || !versionOK {
-			return ""
-		}
-		versionValue, err := strconv.Atoi(version.String())
-		if err != nil || versionValue < 1 {
-			return ""
-		}
-		normalized = append(normalized, map[string]any{
-			"id": id, "version": versionValue, "template": template, "digest": digest,
-		})
-	}
-	sort.Slice(normalized, func(i, j int) bool {
-		return normalized[i]["id"].(string) < normalized[j]["id"].(string)
-	})
-	data, err := json.Marshal(normalized)
-	if err != nil {
-		return ""
-	}
-	sum := sha256.Sum256(data)
-	return hex.EncodeToString(sum[:])
 }
 
 func normalizePlanDecisions(

@@ -3730,13 +3730,13 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 		want       string
 	}{
 		{
-			name: "legacy lineage",
+			name: "unrecognized lineage",
 			adapterErr: &agent.AdapterLineageError{
 				Command: "codex-acp",
-				Package: "@zed-industries/codex-acp",
+				Package: "@example/codex-acp",
 				Version: "0.16.0",
 			},
-			want: "legacy package @zed-industries/codex-acp version 0.16.0",
+			want: "unknown package @example/codex-acp version 0.16.0",
 		},
 		{
 			name: "unsupported official version",
@@ -4073,7 +4073,6 @@ func TestRunSetupClaudeAdapterMigrationAcceptAndDecline(t *testing.T) {
 					RequiredPackage: agent.ClaudeAdapterPackage,
 					RequiredVersion: agent.PinnedClaudeAdapterVersion,
 					Install:         agent.ClaudeAdapterInstallCommand(),
-					Legacy:          true,
 				},
 			}
 			fake.confirm = func(context.Context, io.Writer, string) (bool, error) {
@@ -4140,7 +4139,6 @@ func TestRunSetupClaudeAdapterMigrationFailurePathsPreserveAllTargets(t *testing
 				RequiredPackage: agent.ClaudeAdapterPackage,
 				RequiredVersion: agent.PinnedClaudeAdapterVersion,
 				Install:         agent.ClaudeAdapterInstallCommand(),
-				Legacy:          true,
 			},
 		}
 		return fake
@@ -4223,7 +4221,6 @@ func TestRunSetupMigratesBothStaleAdapterOverrides(t *testing.T) {
 			RequiredPackage: agent.ClaudeAdapterPackage,
 			RequiredVersion: agent.PinnedClaudeAdapterVersion,
 			Install:         agent.ClaudeAdapterInstallCommand(),
-			Legacy:          true,
 		},
 		"codex": &agent.AdapterVersionError{
 			Runtime:         "codex",
@@ -4584,7 +4581,6 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 		RequiredPackage: agent.ClaudeAdapterPackage,
 		RequiredVersion: agent.PinnedClaudeAdapterVersion,
 		Install:         agent.ClaudeAdapterInstallCommand(),
-		Legacy:          true,
 	}
 	checker := newHealthChecker(healthCheckDependencies{
 		nodeVersion: func(context.Context) (string, error) {

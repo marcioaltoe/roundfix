@@ -57,7 +57,7 @@ var (
 	adrCitationPattern     = regexp.MustCompile(`\bADR-([0-9]{4})\b`)
 	adrAttributionPattern  = regexp.MustCompile(`(?i)\bADR-([0-9]{4})\s+(?:already\s+)?(?:makes?|establish(?:es|ed)?|requires?|keeps?|has|places?|puts?|says?)\s+`)
 	citationWordPattern    = regexp.MustCompile(`[a-z0-9]+`)
-	legacyInactivePattern  = regexp.MustCompile(`(?im)^\s*(?:\*\*)?status(?:\*\*)?:\s*(?:proposed|rejected|deprecated|superseded)\b`)
+	inactiveStatusPattern  = regexp.MustCompile(`(?im)^\s*(?:\*\*)?status(?:\*\*)?:\s*(?:proposed|rejected|deprecated|superseded)\b`)
 	featureRefPattern      = regexp.MustCompile(`(?i)\bCore Features?\s+`)
 	storyRefPattern        = regexp.MustCompile(`(?i)\b(?:User )?(?:Story|Stories)\s+`)
 	numberedItemPattern    = regexp.MustCompile(`^\s*([0-9]+)\.\s+`)
@@ -999,7 +999,7 @@ func adrStatusAndBody(content []byte) (string, []byte, error) {
 	text := string(content)
 	const opening = "---\n"
 	if !strings.HasPrefix(text, opening) {
-		if legacyInactivePattern.Match(content) {
+		if inactiveStatusPattern.Match(content) {
 			return "inactive", content, nil
 		}
 		return "accepted", content, nil
