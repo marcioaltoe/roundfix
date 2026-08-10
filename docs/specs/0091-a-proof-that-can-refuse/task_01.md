@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0091-a-proof-that-can-refuse
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -61,3 +61,39 @@ This Task may create or modify only:
 
 - `_prd.md` → Goal 1.
 - `_techspec.md` → Build Order 1; Testing Approach.
+
+## Result
+
+### Implementation
+
+- Added package-level characterization cases that drive `ProveExactSelection`
+  through the spawned fake ACPX process for equivalent unoffered-model
+  selections on `claude` and `codex`.
+- Added a measured-shape Claude capability fixture whose model control reports
+  `opus-9-does-not-exist` as both `currentValue` and an advertised option.
+- Kept production files unchanged.
+
+### Focused checks
+
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run 'SelectionCatalogueCharacterization(Claude|Codex)' -count=1`
+  exited 0 after the final code edit: 2 tests passed in 1 package.
+- `rtk rg -n "Declared break:|currentValue|options" internal/agent/selection_catalogue_characterization_test.go`
+  found two declared-break comments and the fixture's explicit `currentValue`
+  and `options` fields.
+- The authored `## Verification` commands were not run; the Daemon owns them.
+
+### Acceptance evidence
+
+- `TestSelectionCatalogueCharacterizationClaudeProvesAnUnofferedModel` asserts
+  that the contaminated `claude` selection returns a `proven` proof for the
+  requested model and `high` reasoning effort; the focused check exercised it.
+- `TestSelectionCatalogueCharacterizationCodexRefusesAnUnofferedModel` asserts
+  that the equivalent `codex` selection returns `ModelNotAdvertisedError` with
+  classification `model_not_advertised`; the focused check exercised it.
+- `contaminatedClaudeCapabilityPayload` places the unoffered model in both the
+  model option's `currentValue` and its advertised `options`, and the Claude
+  characterization case consumes that fixture.
+- The two intended breaks name their changing Tasks in documentation comments:
+  `task_02` owns the pre-request catalogue read and `task_03` owns the Claude
+  refusal verdict. The Codex refusal is documented as the fast-path invariant
+  `task_03` must preserve.
