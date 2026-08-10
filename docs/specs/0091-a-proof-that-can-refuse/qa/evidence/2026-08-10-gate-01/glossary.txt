@@ -1,0 +1,4 @@
+Command: grep for Runtime Catalogue, catalogue_contaminated, and catalogue_unavailable in CONTEXT.md
+Exit: 1; no matches.
+Producer check: internal/agent/selection_assignment.go defines RuntimeCatalogue, but contains neither documented emitted encoding from the TechSpec Vocabulary Contract.
+Conclusion: Runtime Catalogue is coined by this Spec but absent from the canonical glossary; the claimed public emitted terms are also absent.

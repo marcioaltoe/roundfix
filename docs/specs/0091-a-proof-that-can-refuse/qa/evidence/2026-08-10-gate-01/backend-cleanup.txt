@@ -1,0 +1,4 @@
+Command: GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestDisposableSessionClose' -count=1
+Exit: 0; 2 cases passed.
+Fixture observables: absent-session cleanup is recorded but omitted; genuine close failure remains appended.
+Assembled divergence: the built CLI appended No named session after a pre-session Codex state-initialization failure. See cleanup-diagnosis.txt.

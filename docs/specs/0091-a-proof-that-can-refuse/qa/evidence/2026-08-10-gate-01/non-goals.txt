@@ -1,0 +1,6 @@
+Public help: bin/roundfix profiles --help exited 0. Existing profile recommendations remain advisory; validation is read-only, and configuration writes require the explicit configure command and confirmation.
+Scratch invalid-profile SHA-256 values after live refusals:
+- codex: 0eaa312007885d2cef6d8a9da55d68c61082575403e86ad4e1a9ab8a8890a73a
+- claude: 4152aff35aed02c935fb249579c341d324619fb1d3f49312036dcea5fa3eda28
+- opencode: e2a3c0d2a7a8aa2850c937b9920184c23fa9b0666e6d095bee5665569a86dabe
+Git scope audit shows no production CLI/profile picker or configuration mutation path changed by this Spec. The live decisions came from adapter/catalogue behavior, not a vendor-existence query. Existing reasoning encodings remained independent or runtime_deferred except for the separate valid-Claude failure.

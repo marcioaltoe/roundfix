@@ -1,0 +1,8 @@
+Focused command:
+GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^(TestAgentSelectionProfilesMacro|TestRunImplementDetachPrintsReportAndCompletesRun|TestRunImplementDetachSurvivesCallerProcessGroupKill)$' -count=1
+Exit: 1; 4 subtests passed, 2 named tests failed.
+Failures:
+- TestRunImplementDetachPrintsReportAndCompletesRun: preflight refused built-in codex/gpt-5.5/xhigh because fake codex-custom advertised only gpt-5.6-sol.
+- TestRunImplementDetachSurvivesCallerProcessGroupKill: timed out waiting for the first detach line because the same preflight path could not create the Run.
+Commit b5b4a1b1 added a no-model fallback of gpt-5.6-sol to fakeACPXCommand. It did not advertise the built-in gpt-5.5 fallback used by these Run journeys.
+The unrelated full-suite timeout TestRunImplementQueuedCancellationStartsNoChildAndKeepsResumableTasks passed when rerun alone and did not repeat in the final cold gate.
