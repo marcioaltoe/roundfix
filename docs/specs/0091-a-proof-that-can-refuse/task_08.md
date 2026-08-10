@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0091-a-proof-that-can-refuse
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -71,3 +71,43 @@ the installed exit shape, not a graph that was cut wrong.
 
 - QA report: `qa/qa-report-2026-08-10-01.md` — repeated finding F-003.
 - Task 04: `task_04.md` — the exit code 4 shape this extends.
+
+## Result
+
+### Implementation
+
+- `CloseSession` now preserves the existing exit 4 missing-Session mapping and
+  also maps exit 1 to missing-Session only when stderr contains the installed
+  acpx marker `No named session`.
+- The combined proof fixture exercises both absence encodings through
+  disposable Session cleanup. A separate negative fixture pins an unrelated
+  exit 1 to its existing `InfrastructureError` type and exact diagnostic.
+
+### Focused checks
+
+- Red signal before the production change:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task08-gocache go test ./internal/agent -run '^(TestMissingSessionIsRecognisedFromBothExitShapes|TestUnrelatedExitOneKeepsItsClassification)$' -count=1`
+  failed because `installed_missing_session_exit_one` appended the contradictory
+  close error. The same run also showed that the first draft of the negative
+  fixture had named the wrong current error type; the fixture was corrected to
+  the observed `InfrastructureError` contract before the production edit.
+- After the production change, that same two-test command passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task08-gocache go test ./internal/agent -run '^(TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened|TestMissingSessionIsRecognisedFromBothExitShapes|TestUnrelatedExitOneKeepsItsClassification|TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose|TestACPXCloseSessionReturnsCloseFailure)$' -count=1`
+  passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task08-gocache go test ./internal/agent -count=1`
+  passed.
+
+### Acceptance criteria evidence
+
+1. `TestMissingSessionIsRecognisedFromBothExitShapes` drives a proof failure
+   through exit 4 and exit 1 with `No named session`, then compares the exact
+   leading diagnosis and proves neither case returns an
+   `AgentSessionCleanupError`.
+2. `TestUnrelatedExitOneKeepsItsClassification` proves exit 1 with
+   `close rejected` remains an `InfrastructureError` and compares the complete
+   pre-existing close diagnostic byte for byte.
+3. Each absence case captures exactly one warning containing the disposable
+   Session cleanup observation and the typed missing-Session reason while the
+   returned diagnosis remains free of the close error.
+
+The authored `## Verification` commands were not run; the Daemon owns them.

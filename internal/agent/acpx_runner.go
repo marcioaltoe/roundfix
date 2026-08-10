@@ -1170,7 +1170,9 @@ func (runner *ACPXRunner) CloseSession(ctx context.Context, runtime RuntimeSpec,
 	}
 	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
 		var infrastructureErr *InfrastructureError
-		if errors.As(err, &infrastructureErr) && infrastructureErr.ExitCode == 4 {
+		if errors.As(err, &infrastructureErr) &&
+			(infrastructureErr.ExitCode == 4 ||
+				infrastructureErr.ExitCode == 1 && strings.Contains(infrastructureErr.Stderr, "No named session")) {
 			err = &InfrastructureError{
 				ExitCode: infrastructureErr.ExitCode,
 				Reason:   acpxExitReasonMissingSession,

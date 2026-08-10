@@ -1106,6 +1106,81 @@ func TestDisposableSessionCloseIsNotAppendedWhenTheSessionNeverOpened(t *testing
 	}
 }
 
+func TestMissingSessionIsRecognisedFromBothExitShapes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		exitCode int
+		stderr   string
+	}{
+		{
+			name:     "missing session exit four",
+			exitCode: 4,
+		},
+		{
+			name:     "installed missing session exit one",
+			exitCode: 1,
+			stderr:   "No named session: roundfix-task-08\n",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			harness := newFakeACPXHarness(t)
+			harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{
+				"sessions ensure": 2,
+				"sessions close":  test.exitCode,
+			}))
+			if test.stderr != "" {
+				harness.setEnv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{
+					"sessions close": test.stderr,
+				}))
+			}
+			var warnings []string
+			harness.runner.warnf = func(format string, args ...any) {
+				warnings = append(warnings, fmt.Sprintf(format, args...))
+			}
+
+			_, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{
+				Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"},
+				WorkDir: harness.gitRoot,
+			})
+			if err == nil {
+				t.Fatal("expected selection failure")
+			}
+			const wantDiagnosis = `apply Agent Selection "codex"/"gpt-5.6-sol"/"high" during ensure disposable Agent Session without model override: adapter rejected selection: acpx infrastructure error after exit code 2: acpx command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection`
+			if got := err.Error(); got != wantDiagnosis {
+				t.Fatalf("selection diagnosis changed or gained a close error\nwant: %q\ngot:  %q", wantDiagnosis, got)
+			}
+			var cleanupErr *AgentSessionCleanupError
+			if errors.As(err, &cleanupErr) {
+				t.Fatalf("missing disposable session close was appended to the diagnosis: %v", err)
+			}
+			if len(warnings) != 1 || !strings.Contains(warnings[0], "close disposable Agent Session") || !strings.Contains(warnings[0], acpxExitReasonMissingSession) {
+				t.Fatalf("missing disposable session close was not recorded: %#v", warnings)
+			}
+		})
+	}
+}
+
+func TestUnrelatedExitOneKeepsItsClassification(t *testing.T) {
+	t.Parallel()
+
+	harness := newFakeACPXHarness(t)
+	harness.setEnv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"sessions close": 1}))
+	harness.setEnv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"sessions close": "close rejected\n"}))
+
+	err := harness.runner.CloseSession(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, SessionRef{Name: "roundfix-task-08", WorkDir: harness.gitRoot})
+	var infrastructureErr *InfrastructureError
+	if !errors.As(err, &infrastructureErr) {
+		t.Fatalf("error = %T %v, want *InfrastructureError", err, err)
+	}
+	const want = "close acpx Agent Session \"roundfix-task-08\": acpx infrastructure error after exit code 1: acpx command failed\n--- acpx stderr tail ---\nclose rejected"
+	if got := err.Error(); got != want {
+		t.Fatalf("unrelated exit 1 classification changed\nwant: %q\ngot:  %q", want, got)
+	}
+}
+
 func TestDisposableSessionCloseIsAppendedWhenAnOpenSessionWillNotClose(t *testing.T) {
 	t.Parallel()
 
