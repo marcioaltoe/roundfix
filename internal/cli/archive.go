@@ -12,14 +12,14 @@ import (
 	"roundfix/internal/spec"
 )
 
-const archiveUsage = `Usage:
+var archiveUsage = `Usage:
   roundfix archive <slug>
 
 Archives a completed Spec after verifying every Task is completed and the
 newest QA Report has verdict: pass or a partial verdict whose blocked rows are
 covered only by declared Unreachable Acceptance. Stamps archive metadata and
 moves docs/specs/<slug>/ to
-docs/specs/_archived/<slug>/. archive creates no Run and never pushes.
+` + spec.ArchiveDir(spec.ArchiveKindSpec) + `/<slug>/. archive creates no Run and never pushes.
 
 Exit codes:
   0  archived

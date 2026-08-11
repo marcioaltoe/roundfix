@@ -157,7 +157,7 @@ func detectFindingsConsistency(result *Result, repoRoot string) error {
 		detectFindingLifecycle(result, active)
 	}
 
-	const archivePath = "docs/findings/_archived"
+	archivePath := spec.ArchiveDir(spec.ArchiveKindFinding)
 	archived, archivePresent, err := readFindingDocuments(repoRoot, archivePath)
 	if err != nil {
 		return err
@@ -180,7 +180,10 @@ func detectFindingsConsistency(result *Result, repoRoot string) error {
 	if err != nil {
 		return err
 	}
-	archivedSpecs, err := repositoryDirectoryNames(filepath.Join(filepath.Clean(repoRoot), "docs", "specs", "_archived"), false)
+	archivedSpecs, err := repositoryDirectoryNames(
+		filepath.Join(filepath.Clean(repoRoot), filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec))),
+		false,
+	)
 	if err != nil {
 		return err
 	}
@@ -352,7 +355,7 @@ func detectRollupMembers(result *Result, rollups []findingDocument, active, arch
 				Severity: SeverityError,
 				Summary:  rollup.displayPath + " declares unresolved member " + strconv.Quote(member.value),
 				Where:    []Location{{Path: rollup.displayPath, Line: member.line}},
-				Fix:      "Restore the declared member " + strconv.Quote(member.value) + " under docs/findings/ or docs/findings/_archived/, or update members in " + rollup.displayPath + ".",
+				Fix:      "Restore the declared member " + strconv.Quote(member.value) + " under docs/findings/ or " + spec.ArchiveDir(spec.ArchiveKindFinding) + "/, or update members in " + rollup.displayPath + ".",
 			})
 		}
 	}

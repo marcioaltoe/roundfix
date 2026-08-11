@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0085-what-an-agent-reads-before-it-decides
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -79,3 +79,32 @@ it approves the Task before it starts. Regression is the Run-level gate's job.
 
 - `_prd.md` → the archive read path.
 - `_techspec.md` → Build Order 3; System Architecture.
+
+## Result
+
+Moved the Spec checker, Spec audit, worktree QA evidence lookup, and Archive
+Command help onto `spec.ArchiveDir`. The checker now builds its archived-spec
+and archived-finding reads and repair text from the resolver. The audit keeps
+today's configured external Spec Root behavior while accepting a future
+resolver answer outside the active Spec tree without another layout literal.
+
+- Criterion 1: a focused `ArchiveDir(` call-site sweep found resolver calls in
+  `internal/speccheck`, `internal/specaudit`, `internal/worktree`, and
+  `internal/cli/archive.go`; the audit's default and configured-external-root
+  cases both passed.
+- Criterion 2: a focused source sweep for `docs/specs/_archived`,
+  `docs/findings/_archived`, and the `_archived` string literal reported no
+  matches in the five changed production files.
+- Criterion 3: the focused consumer tests preserved the current archive move,
+  CLI output and help, checker findings, audit artifact paths, and worktree QA
+  evidence paths.
+
+Focused checks:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-spec0085-task03-gocache go test
+  ./internal/speccheck ./internal/specaudit ./internal/worktree ./internal/cli
+  -run 'Test(Check(RollupMember|ArchiveLicense|BacklogUnmoved)|Audit(ReportsUndeliveredArchiveHeldByBranch|UsesConfiguredExternalSpecRootTree)|QAReportOnlyBranch|InspectTerminalRunClassifiesSupersededQAReport|RunArchive(MovesCompletedSpecAndStampsMetadata|UsesConfiguredExternalSpecRoot|Help))$'
+  -count=1` passed in all four packages.
+- `rtk git diff --check` reported no whitespace errors.
+
+The Daemon-owned `## Verification` command was not run.

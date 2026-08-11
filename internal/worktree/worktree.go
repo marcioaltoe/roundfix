@@ -704,7 +704,7 @@ func matchesQAReportCommitMessage(message string, slug string) bool {
 func qaReportDirectories(slug string) []string {
 	return []string{
 		filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa")),
-		filepath.ToSlash(filepath.Join("docs", "specs", "_archived", slug, "qa")),
+		filepath.ToSlash(filepath.Join(filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec)), slug, "qa")),
 	}
 }
 

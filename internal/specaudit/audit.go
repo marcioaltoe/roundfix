@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 )
 
@@ -293,7 +294,7 @@ func claimedArtifacts(
 	specTree deliveryTree,
 ) ([]artifactClaim, error) {
 	activeSpec := filepath.ToSlash(filepath.Join(specTree.artifactRoot, slug))
-	archivedSpec := filepath.ToSlash(filepath.Join(specTree.artifactRoot, "_archived", slug))
+	archivedSpec := archivedSpecArtifactPath(specTree.artifactRoot, slug)
 
 	archiveClaimed, err := artifactClaimed(ctx, runner, specTree, archivedSpec)
 	if err != nil {
@@ -329,6 +330,24 @@ func claimedArtifacts(
 		return artifacts[left].path < artifacts[right].path
 	})
 	return artifacts, nil
+}
+
+func archivedSpecArtifactPath(artifactRoot, slug string) string {
+	archiveDir := filepath.ToSlash(filepath.Clean(filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec))))
+	segments := strings.Split(archiveDir, "/")
+	// A suffix after the Spec kind is relative to the configured Spec Root.
+	// Otherwise the resolver has placed the archive relative to its Git root.
+	for index, segment := range segments[:len(segments)-1] {
+		if segment != string(spec.ArchiveKindSpec) {
+			continue
+		}
+		archiveDir = filepath.ToSlash(filepath.Join(
+			filepath.FromSlash(artifactRoot),
+			filepath.Join(segments[index+1:]...),
+		))
+		break
+	}
+	return filepath.ToSlash(filepath.Join(filepath.FromSlash(archiveDir), slug))
 }
 
 func artifactClaimed(

@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/spec"
 )
 
 // CodeBacklogUnmoved identifies a Backlog Entry that declares itself promoted
@@ -51,7 +53,11 @@ func detectBacklogPromotion(result *Result, repoRoot string) error {
 	if err != nil {
 		return err
 	}
-	archivedSpecs, err := repositoryDirectoryNames(filepath.Join(filepath.Clean(repoRoot), "docs", "specs", "_archived"), false)
+	archivePath := spec.ArchiveDir(spec.ArchiveKindSpec)
+	archivedSpecs, err := repositoryDirectoryNames(
+		filepath.Join(filepath.Clean(repoRoot), filepath.FromSlash(archivePath)),
+		false,
+	)
 	if err != nil {
 		return err
 	}
@@ -79,12 +85,12 @@ func detectBacklogPromotion(result *Result, repoRoot string) error {
 				Severity: SeverityError,
 				Summary:  document.displayPath + " names unresolvable Spec " + strconv.Quote(slug),
 				Where:    []Location{{Path: document.displayPath, Line: document.frontmatter.spec.line}},
-				Fix:      "Correct the spec slug in " + document.displayPath + " to a Spec directory under docs/specs/ or docs/specs/_archived/.",
+				Fix:      "Correct the spec slug in " + document.displayPath + " to a Spec directory under docs/specs/ or " + archivePath + "/.",
 			})
 			continue
 		}
 		if archivedSpecs[slug] {
-			destination = "docs/specs/_archived/" + slug + "/references/"
+			destination = archivePath + "/" + slug + "/references/"
 		}
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeBacklogUnmoved,
