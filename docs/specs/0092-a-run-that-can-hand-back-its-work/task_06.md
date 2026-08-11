@@ -67,7 +67,11 @@ This Task may create or modify only:
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestCarryForward' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCarryForwardSettlesATaskWhoseInputsAreUnchanged'` — expected: exits 0.
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestCarryForward' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCarryForwardRefusesATaskWhoseInputsMoved'` — expected: exits 0.
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestCarryForward' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestCarryForwardRefusesRatherThanCarryingASubset'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli ./internal/spec -count=1 2>&1 | grep -c '^ok' | grep -q '^2$'` — expected: exits 0.
+Regression across `internal/cli` and `internal/spec` is the Run-level gate's
+job, not this Task's. A whole-package sweep here passes against the unchanged
+tree whenever the tree is already green, which is what the pre-work probe
+refused on 2026-08-11: it approves the Task before any work happens. The three
+commands above name cases that do not exist yet, so each can fail.
 
 ## References
 
