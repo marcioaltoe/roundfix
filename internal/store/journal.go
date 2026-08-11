@@ -583,22 +583,20 @@ func (store *Store) AppendRunEvents(ctx context.Context, events []runevent.RunEv
 	if len(events) == 0 {
 		return nil, nil
 	}
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("begin Run Event append: %w", err)
-	}
-	defer rollbackUnlessCommitted(tx)
-
-	cursors := make([]int64, 0, len(events))
-	for _, event := range events {
-		cursor, err := appendRunEvent(ctx, tx, event)
-		if err != nil {
-			return nil, err
+	var cursors []int64
+	err := store.withWriteTx(ctx, "Run Event append", func(tx *sql.Tx) error {
+		cursors = make([]int64, 0, len(events))
+		for _, event := range events {
+			cursor, err := appendRunEvent(ctx, tx, event)
+			if err != nil {
+				return err
+			}
+			cursors = append(cursors, cursor)
 		}
-		cursors = append(cursors, cursor)
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("commit Run Event append: %w", err)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return cursors, nil
 }
@@ -606,32 +604,28 @@ func (store *Store) AppendRunEvents(ctx context.Context, events []runevent.RunEv
 // PruneTerminalRuns deletes Run Event Journal rows for terminal Runs completed
 // before cutoff. It never deletes Run rows or Active Run locks.
 func (store *Store) PruneTerminalRuns(ctx context.Context, cutoff time.Time) (PruneResult, error) {
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return PruneResult{}, fmt.Errorf("begin Run Event prune: %w", err)
-	}
-	defer rollbackUnlessCommitted(tx)
-
-	candidates, err := terminalRunPruneCandidates(ctx, tx, cutoff)
-	if err != nil {
-		return PruneResult{}, err
-	}
-	runIDs := pruneCandidateRunIDs(candidates)
-	if len(runIDs) == 0 {
-		if err := tx.Commit(); err != nil {
-			return PruneResult{}, fmt.Errorf("commit Run Event prune: %w", err)
+	var result PruneResult
+	err := store.withWriteTx(ctx, "Run Event prune", func(tx *sql.Tx) error {
+		candidates, err := terminalRunPruneCandidates(ctx, tx, cutoff)
+		if err != nil {
+			return err
 		}
-		return PruneResult{}, nil
-	}
+		runIDs := pruneCandidateRunIDs(candidates)
+		if len(runIDs) == 0 {
+			return nil
+		}
 
-	deleted, err := deleteRunEventsForRuns(ctx, tx, runIDs)
+		deleted, err := deleteRunEventsForRuns(ctx, tx, runIDs)
+		if err != nil {
+			return err
+		}
+		result = PruneResult{RunIDs: runIDs, Events: deleted}
+		return nil
+	})
 	if err != nil {
 		return PruneResult{}, err
 	}
-	if err := tx.Commit(); err != nil {
-		return PruneResult{}, fmt.Errorf("commit Run Event prune: %w", err)
-	}
-	return PruneResult{RunIDs: runIDs, Events: deleted}, nil
+	return result, nil
 }
 
 // PreviewCompaction measures a compact SQLite snapshot without changing the

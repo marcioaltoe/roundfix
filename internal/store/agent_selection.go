@@ -96,40 +96,39 @@ func (store *Store) AppendAgentSelectionAttempt(ctx context.Context, req AgentSe
 	}
 	attempt := agentSelectionAttemptFromRequest(req, createdAt)
 
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return AgentSelectionAttempt{}, fmt.Errorf("begin Agent Selection attempt append: %w", err)
-	}
-	defer rollbackUnlessCommitted(tx)
-
-	if err := ensureRunExists(ctx, tx, attempt.RunID, "append Agent Selection attempt"); err != nil {
-		return AgentSelectionAttempt{}, err
-	}
-	existing, updateExisting, err := ensureNextAgentSelectionAttempt(ctx, tx, attempt)
-	if err != nil {
-		return AgentSelectionAttempt{}, err
-	}
-	if updateExisting {
-		attempt.ID = existing.ID
-		if err := updateAgentSelectionAttemptStatus(ctx, tx, attempt); err != nil {
-			return AgentSelectionAttempt{}, err
+	var persisted AgentSelectionAttempt
+	err := store.withWriteTx(ctx, "Agent Selection attempt append", func(tx *sql.Tx) error {
+		if err := ensureRunExists(ctx, tx, attempt.RunID, "append Agent Selection attempt"); err != nil {
+			return err
 		}
-	} else {
-		if err := insertAgentSelectionAttempt(ctx, tx, &attempt); err != nil {
-			return AgentSelectionAttempt{}, err
+		existing, updateExisting, err := ensureNextAgentSelectionAttempt(ctx, tx, attempt)
+		if err != nil {
+			return err
 		}
-	}
-	event, err := agentSelectionAttemptEvent(attempt)
+		if updateExisting {
+			attempt.ID = existing.ID
+			if err := updateAgentSelectionAttemptStatus(ctx, tx, attempt); err != nil {
+				return err
+			}
+		} else {
+			if err := insertAgentSelectionAttempt(ctx, tx, &attempt); err != nil {
+				return err
+			}
+		}
+		event, err := agentSelectionAttemptEvent(attempt)
+		if err != nil {
+			return err
+		}
+		if _, err := appendRunEvent(ctx, tx, event); err != nil {
+			return err
+		}
+		persisted = attempt
+		return nil
+	})
 	if err != nil {
 		return AgentSelectionAttempt{}, err
 	}
-	if _, err := appendRunEvent(ctx, tx, event); err != nil {
-		return AgentSelectionAttempt{}, err
-	}
-	if err := tx.Commit(); err != nil {
-		return AgentSelectionAttempt{}, fmt.Errorf("commit Agent Selection attempt append: %w", err)
-	}
-	return attempt, nil
+	return persisted, nil
 }
 
 func (store *Store) AppendAgentSelectionExhausted(ctx context.Context, req AgentSelectionExhaustedRequest) (int64, error) {
@@ -142,40 +141,35 @@ func (store *Store) AppendAgentSelectionExhausted(ctx context.Context, req Agent
 	}
 	runID := strings.TrimSpace(req.RunID)
 
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, fmt.Errorf("begin Agent Selection exhausted event append: %w", err)
-	}
-	defer rollbackUnlessCommitted(tx)
-
-	if err := ensureRunExists(ctx, tx, runID, "append Agent Selection exhausted event"); err != nil {
-		return 0, err
-	}
-	attempts, err := selectAgentSelectionAttemptsForScope(ctx, tx, runID, req.ScopeKind, req.ScopeID)
-	if err != nil {
-		return 0, err
-	}
-	if len(attempts) == 0 {
-		return 0, fmt.Errorf("append Agent Selection exhausted event for Run %q scope %s:%s: at least one persisted attempt is required", runID, req.ScopeKind, req.ScopeID)
-	}
-	latest := attempts[len(attempts)-1]
-	if latest.Status != AgentSelectionStatusFailed {
-		return 0, fmt.Errorf("append Agent Selection exhausted event for Run %q scope %s:%s: latest attempt %d must be failed, got %q", runID, req.ScopeKind, req.ScopeID, latest.Attempt, latest.Status)
-	}
-	if strings.TrimSpace(req.Category) != latest.Category {
-		return 0, fmt.Errorf("append Agent Selection exhausted event for Run %q scope %s:%s: category %q does not match latest failed attempt category %q", runID, req.ScopeKind, req.ScopeID, strings.TrimSpace(req.Category), latest.Category)
-	}
-	req.Category = latest.Category
-	event, err := agentSelectionExhaustedEvent(req, attempts, createdAt.UTC())
-	if err != nil {
-		return 0, err
-	}
-	cursor, err := appendRunEvent(ctx, tx, event)
+	var cursor int64
+	err := store.withWriteTx(ctx, "Agent Selection exhausted event append", func(tx *sql.Tx) error {
+		if err := ensureRunExists(ctx, tx, runID, "append Agent Selection exhausted event"); err != nil {
+			return err
+		}
+		attempts, err := selectAgentSelectionAttemptsForScope(ctx, tx, runID, req.ScopeKind, req.ScopeID)
+		if err != nil {
+			return err
+		}
+		if len(attempts) == 0 {
+			return fmt.Errorf("append Agent Selection exhausted event for Run %q scope %s:%s: at least one persisted attempt is required", runID, req.ScopeKind, req.ScopeID)
+		}
+		latest := attempts[len(attempts)-1]
+		if latest.Status != AgentSelectionStatusFailed {
+			return fmt.Errorf("append Agent Selection exhausted event for Run %q scope %s:%s: latest attempt %d must be failed, got %q", runID, req.ScopeKind, req.ScopeID, latest.Attempt, latest.Status)
+		}
+		if strings.TrimSpace(req.Category) != latest.Category {
+			return fmt.Errorf("append Agent Selection exhausted event for Run %q scope %s:%s: category %q does not match latest failed attempt category %q", runID, req.ScopeKind, req.ScopeID, strings.TrimSpace(req.Category), latest.Category)
+		}
+		req.Category = latest.Category
+		event, err := agentSelectionExhaustedEvent(req, attempts, createdAt.UTC())
+		if err != nil {
+			return err
+		}
+		cursor, err = appendRunEvent(ctx, tx, event)
+		return err
+	})
 	if err != nil {
 		return 0, err
-	}
-	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("commit Agent Selection exhausted event append: %w", err)
 	}
 	return cursor, nil
 }

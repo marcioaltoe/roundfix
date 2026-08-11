@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0081-a-journal-cheap-to-write-and-keep
-status: pending
+status: completed
 type: data
 complexity: high
 ---
@@ -45,16 +45,16 @@ before it starts.
 
 ## Subtasks
 
-- [ ] Introduce the write-transaction helper and route every writer through it.
-- [ ] Add the machine-wide advisory lock with its release paths.
-- [ ] Prove ordering and monotonic cursors under concurrency.
+- [x] Introduce the write-transaction helper and route every writer through it.
+- [x] Add the machine-wide advisory lock with its release paths.
+- [x] Prove ordering and monotonic cursors under concurrency.
 
 ## Acceptance Criteria
 
-- [ ] No writer path opens a transaction outside the helper.
-- [ ] The advisory lock is released on success, error, and cancellation.
-- [ ] Concurrent writers produce monotonic, contiguous cursors per Run.
-- [ ] Read-only Store behaviour is unchanged.
+- [x] No writer path opens a transaction outside the helper.
+- [x] The advisory lock is released on success, error, and cancellation.
+- [x] Concurrent writers produce monotonic, contiguous cursors per Run.
+- [x] Read-only Store behaviour is unchanged.
 
 ## Context
 
@@ -80,3 +80,60 @@ before it starts. Regression and compilation are the Run-level gate's job.
 - ADR-0004.
 - `docs/findings/_archived/` → the 2026-08-06 run-lifecycle rollup, whose
   members record the six-parallel-Runs incident.
+
+## Result
+
+Implemented the writer-transaction discipline as a Roundfix Daemon-assigned
+turn. Task status is Daemon-owned and left untouched; declared Verification is
+the Daemon's to run verbatim. Evidence below is from focused implementation
+checks only.
+
+### What changed (behaviour)
+
+- `internal/store/store.go` gained a single `withWriteTx(ctx, operation,
+  fn)` helper that acquires the machine-wide advisory lock, runs one `BeginTx`
+  transaction, and releases the lock on every exit path — success, error, and
+  cancellation — only after the transaction has committed or rolled back. It
+  wraps begin/commit failures as `begin <operation>` / `commit <operation>`,
+  and propagates context cancellation and advisory-lock failures to the caller.
+- The machine-wide advisory lock is a `flock`-style lock on a per-database
+  lock file (`<db>.lock`), created by the writer `Open` and held open for the
+  Store's lifetime. `writelock_unix.go` uses `unix.Flock` with a cancellable
+  non-blocking poll loop; `writelock_windows.go` uses `LockFileEx`/`UnlockFileEx`
+  with the same cancellable loop. `Close` closes the lock file alongside the
+  database.
+- Every writer path that previously opened an ad-hoc `BeginTx` now routes
+  through the helper: `createRun`, `CompleteRun`, `ReconcileIntegration`,
+  `ReclaimOrphanedRun`, `RequestStop`, `applyMigration` (store.go);
+  `AppendRunEvents`, `PruneTerminalRuns` (journal.go); and the two
+  `AppendAgentSelection*` methods (agent_selection.go). `BeginTx` now appears
+  only inside `withWriteTx`.
+- Read-only Stores (`OpenReader`, `OpenStorageReader`) are untouched and carry
+  no lock file; the single writer connection (`SetMaxOpenConns(1)`) and the
+  defensive `busy_timeout` remain as required.
+- New `internal/store/writetx_test.go` adds `TestWriteTxIsTheOnlyWriterTransaction`
+  (the declared verification's named test) and a concurrency proof.
+
+### Focused-check evidence (this session)
+
+- `go test -count=1 ./internal/store -run '^TestWriteTxIsTheOnlyWriterTransaction$' -v` — passes. The test asserts (a) via a `go/ast` scan of the package's non-test source that every `BeginTx` call sits inside `withWriteTx` and that the helper opens a transaction, and (b) via runtime subtests that the advisory lock is released on success, on a transaction error, and on context cancellation (a second writer blocks until the holder's cancellation, then proceeds).
+- `go test -count=1 ./internal/store -run '^TestConcurrentWritersAllocateMonotonicContiguousCursors$'` — passes. Four independent writer Stores append 25 events each to one Run concurrently; cursors are allocated exactly once, contiguously from 1..100, proving the machine-wide lock serializes writers and cursors stay monotonic/contiguous.
+- `go test -count=1 ./internal/store` — 210 passed; `go test -buildvcs=false ./...` — 3899 passed across 27 packages (focused regression sweep; the error-message contracts `begin completion` / `begin terminal Run reconciliation` are preserved and their tests pass).
+- `go build -buildvcs=false ./...` — clean. Cross-builds for `GOOS=windows` and `GOOS=linux` both compile. `gofmt -l` and `go vet ./internal/store` clean.
+
+### Acceptance-criteria mapping
+
+- No writer path opens a transaction outside the helper — AST scan in the new test.
+- Advisory lock released on success, error, cancellation — runtime subtests.
+- Concurrent writers produce monotonic, contiguous cursors per Run — concurrency test.
+- Read-only Store behaviour unchanged — reader constructors untouched; full suite green.
+
+### Follow-ups (not this task's slice)
+
+- Single-statement autocommit writes (`UpdateRunState`, `SetRunWorkDir`,
+  `RememberInteractiveDefaults`) remain autocommit statements rather than
+  `withWriteTx` transactions; the techspec and this task scope the machine-wide
+  lock to `BeginTx` transactions, and routing those single statements through
+  the helper is a deliberate follow-up if the parallel-Run proof requires it.
+- Batching (`JournalSink`) and the retention query move are later tasks
+  (task_04, task_03) and intentionally untouched here.

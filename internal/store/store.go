@@ -78,6 +78,10 @@ type Store struct {
 	db                *sql.DB
 	now               func() time.Time
 	temporaryCapacity func(path string) (int64, error)
+	// writeLockFile is the machine-wide advisory lock file for the Run
+	// Database. Only the single writer Store (Open) holds it; read-only
+	// Stores leave it nil and never write.
+	writeLockFile *os.File
 }
 
 type Run struct {
@@ -254,7 +258,14 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 		now:               func() time.Time { return time.Now().UTC() },
 		temporaryCapacity: availableTemporaryCapacity,
 	}
+	writeLockFile, err := openWriteLockFile(path)
+	if err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	store.writeLockFile = writeLockFile
 	if err := store.migrate(ctx); err != nil {
+		_ = writeLockFile.Close()
 		_ = db.Close()
 		return nil, err
 	}
@@ -338,8 +349,65 @@ func storageReaderDSN(path string) string {
 	return "file:" + path + "?mode=ro&immutable=1&_pragma=foreign_keys(1)"
 }
 
+// writeLockPath is the machine-wide advisory lock file for the Run Database.
+// Roundfix processes flock it before any SQLite writer, so writers serialize
+// here instead of racing inside SQLite.
+func writeLockPath(databasePath string) string {
+	return databasePath + ".lock"
+}
+
+// openWriteLockFile opens (creating if needed) the machine-wide advisory lock
+// file for the Run Database. The caller owns the returned file and must close
+// it with the writer Store.
+func openWriteLockFile(databasePath string) (*os.File, error) {
+	file, err := os.OpenFile(writeLockPath(databasePath), os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("open Run Database write lock %q: %w", writeLockPath(databasePath), err)
+	}
+	return file, nil
+}
+
+// withWriteTx serializes Roundfix processes before SQLite sees a writer, then
+// runs one write transaction. The machine-wide advisory lock is acquired
+// before BeginTx and released on every exit path — success, error, and
+// context cancellation — only after the transaction has committed or rolled
+// back. Cursor allocation, inserts, state changes, and commit all hold the
+// lock, so concurrent Runs preserve input order and monotonic per-Run cursors.
+// operation names the failed step for error wrapping; context cancellation
+// and advisory-lock failures propagate to the caller.
+func (store *Store) withWriteTx(ctx context.Context, operation string, fn func(*sql.Tx) error) error {
+	if store.writeLockFile == nil {
+		return fmt.Errorf("begin %s: Run Database has no write lock", operation)
+	}
+	if err := acquireWriteLock(store.writeLockFile, ctx); err != nil {
+		return fmt.Errorf("begin %s: %w", operation, err)
+	}
+	defer func() {
+		_ = releaseWriteLock(store.writeLockFile)
+	}()
+
+	tx, err := store.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin %s: %w", operation, err)
+	}
+	defer rollbackUnlessCommitted(tx)
+
+	if err := fn(tx); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit %s: %w", operation, err)
+	}
+	return nil
+}
+
 func (store *Store) Close() error {
-	return store.db.Close()
+	var closeErrs []error
+	if store.writeLockFile != nil {
+		closeErrs = append(closeErrs, store.writeLockFile.Close())
+	}
+	closeErrs = append(closeErrs, store.db.Close())
+	return errors.Join(closeErrs...)
 }
 
 func (store *Store) CreateFetchRun(ctx context.Context, req CreateRunRequest) (Run, error) {
@@ -366,80 +434,73 @@ func (store *Store) createRun(ctx context.Context, req CreateRunRequest, acquire
 	}
 	now := store.now()
 
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return Run{}, fmt.Errorf("begin Run creation: %w", err)
-	}
-	defer rollbackUnlessCommitted(tx)
-
-	targetKind, targetKey := lockTarget(req)
-	if acquireActiveLock {
-		existing, found, err := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
-		if err != nil {
-			return Run{}, err
+	var run Run
+	err = store.withWriteTx(ctx, "Run creation", func(tx *sql.Tx) error {
+		targetKind, targetKey := lockTarget(req)
+		if acquireActiveLock {
+			existing, found, err := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
+			if err != nil {
+				return err
+			}
+			if found {
+				return ActiveRunError{Existing: existing}
+			}
 		}
-		if found {
-			return Run{}, ActiveRunError{Existing: existing}
-		}
-	}
 
-	_, err = tx.ExecContext(ctx, `
+		if _, err := tx.ExecContext(ctx, `
 INSERT INTO runs (
 	id, kind, state, head_repository, head_branch, base_repository,
 	pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
 	spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity,
 	owner_identity_unproven, created_at, updated_at
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		runID,
-		req.Kind,
-		StateActive,
-		req.HeadRepository,
-		req.HeadBranch,
-		req.BaseRepository,
-		req.PRNumber,
-		req.GitRoot,
-		req.LocalBranch,
-		req.HeadSHA,
-		req.ArtifactDir,
-		req.WorkDir,
-		req.SpecSlug,
-		req.Agent,
-		req.Model,
-		req.ReasoningEffort,
-		nullableOwnerPID(req.OwnerPID),
-		nullableOwnerIdentity(req.OwnerIdentity),
-		req.OwnerPID > 0 && strings.TrimSpace(req.OwnerIdentity) == "",
-		formatTime(now),
-		formatTime(now),
-	)
-	if err != nil {
-		return Run{}, fmt.Errorf("insert Run record: %w", err)
-	}
+			runID,
+			req.Kind,
+			StateActive,
+			req.HeadRepository,
+			req.HeadBranch,
+			req.BaseRepository,
+			req.PRNumber,
+			req.GitRoot,
+			req.LocalBranch,
+			req.HeadSHA,
+			req.ArtifactDir,
+			req.WorkDir,
+			req.SpecSlug,
+			req.Agent,
+			req.Model,
+			req.ReasoningEffort,
+			nullableOwnerPID(req.OwnerPID),
+			nullableOwnerIdentity(req.OwnerIdentity),
+			req.OwnerPID > 0 && strings.TrimSpace(req.OwnerIdentity) == "",
+			formatTime(now),
+			formatTime(now),
+		); err != nil {
+			return fmt.Errorf("insert Run record: %w", err)
+		}
 
-	if acquireActiveLock {
-		_, err = tx.ExecContext(ctx, `
+		if acquireActiveLock {
+			if _, err := tx.ExecContext(ctx, `
 INSERT INTO active_run_locks (target_kind, target_key, run_id, created_at)
 VALUES (?, ?, ?, ?)`,
-			targetKind,
-			targetKey,
-			runID,
-			formatTime(now),
-		)
-		if err != nil {
-			existing, found, selectErr := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
-			if selectErr == nil && found {
-				return Run{}, ActiveRunError{Existing: existing}
+				targetKind,
+				targetKey,
+				runID,
+				formatTime(now),
+			); err != nil {
+				existing, found, selectErr := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
+				if selectErr == nil && found {
+					return ActiveRunError{Existing: existing}
+				}
+				return fmt.Errorf("acquire Active Run lock: %w", err)
 			}
-			return Run{}, fmt.Errorf("acquire Active Run lock: %w", err)
 		}
-	}
 
-	run, err := selectRun(ctx, tx, runID)
+		run, err = selectRun(ctx, tx, runID)
+		return err
+	})
 	if err != nil {
 		return Run{}, err
-	}
-	if err := tx.Commit(); err != nil {
-		return Run{}, fmt.Errorf("commit Run creation: %w", err)
 	}
 	return run, nil
 }
@@ -454,67 +515,64 @@ func (store *Store) CompleteRun(ctx context.Context, runID string, terminalState
 	}
 	now := store.now()
 
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return CompleteRunResult{}, fmt.Errorf("begin completion for Run %q: %w", runID, err)
-	}
-	defer rollbackUnlessCommitted(tx)
-
-	terminalClause, terminalArguments := terminalStateExclusion()
-	arguments := []any{
-		terminalState,
-		formatTime(now),
-		formatTime(now),
-		runID,
-	}
-	arguments = append(arguments, terminalArguments...)
-	result, err := tx.ExecContext(ctx, `
+	var result CompleteRunResult
+	err := store.withWriteTx(ctx, fmt.Sprintf("completion for Run %q", runID), func(tx *sql.Tx) error {
+		terminalClause, terminalArguments := terminalStateExclusion()
+		arguments := []any{
+			terminalState,
+			formatTime(now),
+			formatTime(now),
+			runID,
+		}
+		arguments = append(arguments, terminalArguments...)
+		execResult, err := tx.ExecContext(ctx, `
 UPDATE runs
 SET state = ?, updated_at = ?, completed_at = ?
 WHERE id = ?
   AND `+terminalClause,
-		arguments...,
-	)
-	if err != nil {
-		return CompleteRunResult{}, fmt.Errorf("compare-and-set terminal outcome for Run %q: %w", runID, err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return CompleteRunResult{}, fmt.Errorf("read completion result for Run %q: %w", runID, err)
-	}
-	if affected == 0 {
-		run, err := selectRun(ctx, tx, runID)
-		if errors.Is(err, sql.ErrNoRows) {
-			return CompleteRunResult{}, fmt.Errorf("complete Run %q: Run does not exist", runID)
-		}
+			arguments...,
+		)
 		if err != nil {
-			return CompleteRunResult{}, fmt.Errorf("read Run %q after completion compare-and-set: %w", runID, err)
+			return fmt.Errorf("compare-and-set terminal outcome for Run %q: %w", runID, err)
 		}
-		if run.State != terminalState {
-			return CompleteRunResult{}, TerminalOutcomeConflictError{
-				RunID:     runID,
-				Stored:    run.State,
-				Requested: terminalState,
+		affected, err := execResult.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("read completion result for Run %q: %w", runID, err)
+		}
+		if affected == 0 {
+			run, err := selectRun(ctx, tx, runID)
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("complete Run %q: Run does not exist", runID)
 			}
+			if err != nil {
+				return fmt.Errorf("read Run %q after completion compare-and-set: %w", runID, err)
+			}
+			if run.State != terminalState {
+				return TerminalOutcomeConflictError{
+					RunID:     runID,
+					Stored:    run.State,
+					Requested: terminalState,
+				}
+			}
+			result = CompleteRunResult{Run: run}
+			return nil
 		}
-		if err := tx.Commit(); err != nil {
-			return CompleteRunResult{}, fmt.Errorf("commit completion replay for Run %q: %w", runID, err)
+
+		if _, err := tx.ExecContext(ctx, `DELETE FROM active_run_locks WHERE run_id = ?`, runID); err != nil {
+			return fmt.Errorf("release Active Run lock for Run %q: %w", runID, err)
 		}
-		return CompleteRunResult{Run: run}, nil
-	}
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM active_run_locks WHERE run_id = ?`, runID); err != nil {
-		return CompleteRunResult{}, fmt.Errorf("release Active Run lock for Run %q: %w", runID, err)
-	}
-
-	run, err := selectRun(ctx, tx, runID)
+		run, err := selectRun(ctx, tx, runID)
+		if err != nil {
+			return fmt.Errorf("read completed Run %q: %w", runID, err)
+		}
+		result = CompleteRunResult{Run: run, Transitioned: true}
+		return nil
+	})
 	if err != nil {
-		return CompleteRunResult{}, fmt.Errorf("read completed Run %q: %w", runID, err)
+		return CompleteRunResult{}, err
 	}
-	if err := tx.Commit(); err != nil {
-		return CompleteRunResult{}, fmt.Errorf("commit completion for Run %q: %w", runID, err)
-	}
-	return CompleteRunResult{Run: run, Transitioned: true}, nil
+	return result, nil
 }
 
 func (store *Store) ReconcileIntegration(ctx context.Context, req IntegrationReconciliation) (Run, error) {
@@ -532,160 +590,156 @@ func (store *Store) ReconcileIntegration(ctx context.Context, req IntegrationRec
 	req.Reason = strings.TrimSpace(req.Reason)
 	req.Action = strings.TrimSpace(req.Action)
 
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return Run{}, fmt.Errorf("begin terminal Run reconciliation for Run %q: %w", req.RunID, err)
-	}
-	defer rollbackUnlessCommitted(tx)
+	var reconciled Run
+	err := store.withWriteTx(ctx, fmt.Sprintf("terminal Run reconciliation for Run %q", req.RunID), func(tx *sql.Tx) error {
+		run, err := selectRun(ctx, tx, req.RunID)
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("reconcile terminal Run %q: Run does not exist", req.RunID)
+		}
+		if err != nil {
+			return fmt.Errorf("read Run %q before terminal reconciliation: %w", req.RunID, err)
+		}
+		if run.Kind != KindImplement {
+			return fmt.Errorf(
+				"reconcile terminal Run %q: Run kind %q is not %q",
+				req.RunID,
+				run.Kind,
+				KindImplement,
+			)
+		}
+		if strings.TrimSpace(run.LocalBranch) != req.TargetBranch {
+			return fmt.Errorf(
+				"reconcile terminal Run %q: target branch %q does not match recorded target branch %q",
+				req.RunID,
+				req.TargetBranch,
+				run.LocalBranch,
+			)
+		}
+		if strings.TrimSpace(run.WorkDir) != req.Worktree {
+			return fmt.Errorf(
+				"reconcile terminal Run %q: worktree %q does not match recorded worktree %q",
+				req.RunID,
+				req.Worktree,
+				run.WorkDir,
+			)
+		}
+		expectedRunBranch := RunBranchPrefix + req.RunID
+		if req.RunBranch != expectedRunBranch {
+			return fmt.Errorf(
+				"reconcile terminal Run %q: Run Branch %q does not match recorded Run Branch %q",
+				req.RunID,
+				req.RunBranch,
+				expectedRunBranch,
+			)
+		}
 
-	run, err := selectRun(ctx, tx, req.RunID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return Run{}, fmt.Errorf("reconcile terminal Run %q: Run does not exist", req.RunID)
-	}
-	if err != nil {
-		return Run{}, fmt.Errorf("read Run %q before terminal reconciliation: %w", req.RunID, err)
-	}
-	if run.Kind != KindImplement {
-		return Run{}, fmt.Errorf(
-			"reconcile terminal Run %q: Run kind %q is not %q",
-			req.RunID,
-			run.Kind,
-			KindImplement,
-		)
-	}
-	if strings.TrimSpace(run.LocalBranch) != req.TargetBranch {
-		return Run{}, fmt.Errorf(
-			"reconcile terminal Run %q: target branch %q does not match recorded target branch %q",
-			req.RunID,
-			req.TargetBranch,
-			run.LocalBranch,
-		)
-	}
-	if strings.TrimSpace(run.WorkDir) != req.Worktree {
-		return Run{}, fmt.Errorf(
-			"reconcile terminal Run %q: worktree %q does not match recorded worktree %q",
-			req.RunID,
-			req.Worktree,
-			run.WorkDir,
-		)
-	}
-	expectedRunBranch := RunBranchPrefix + req.RunID
-	if req.RunBranch != expectedRunBranch {
-		return Run{}, fmt.Errorf(
-			"reconcile terminal Run %q: Run Branch %q does not match recorded Run Branch %q",
-			req.RunID,
-			req.RunBranch,
-			expectedRunBranch,
-		)
-	}
+		currentOutcome := req.PreviousOutcome
+		if req.PreviousOutcome == StateIntegrationPending {
+			currentOutcome = StateClean
+		}
+		payload, err := json.Marshal(map[string]string{
+			"event":            "integration_reconciliation",
+			"previous_outcome": req.PreviousOutcome,
+			"current_outcome":  currentOutcome,
+			"classification":   req.Classification,
+			"run_branch":       req.RunBranch,
+			"run_head":         req.RunHead,
+			"target_branch":    req.TargetBranch,
+			"target_head":      req.TargetHead,
+			"worktree":         req.Worktree,
+			"reason":           req.Reason,
+			"action":           req.Action,
+		})
+		if err != nil {
+			return fmt.Errorf("encode terminal reconciliation for Run %q: %w", req.RunID, err)
+		}
 
-	currentOutcome := req.PreviousOutcome
-	if req.PreviousOutcome == StateIntegrationPending {
-		currentOutcome = StateClean
-	}
-	payload, err := json.Marshal(map[string]string{
-		"event":            "integration_reconciliation",
-		"previous_outcome": req.PreviousOutcome,
-		"current_outcome":  currentOutcome,
-		"classification":   req.Classification,
-		"run_branch":       req.RunBranch,
-		"run_head":         req.RunHead,
-		"target_branch":    req.TargetBranch,
-		"target_head":      req.TargetHead,
-		"worktree":         req.Worktree,
-		"reason":           req.Reason,
-		"action":           req.Action,
-	})
-	if err != nil {
-		return Run{}, fmt.Errorf("encode terminal reconciliation for Run %q: %w", req.RunID, err)
-	}
-
-	var replay int
-	err = tx.QueryRowContext(ctx, `
+		var replay int
+		err = tx.QueryRowContext(ctx, `
 SELECT 1
 FROM run_events
 WHERE run_id = ? AND source = ? AND kind = ? AND payload = ?
 LIMIT 1`,
-		req.RunID,
-		string(runevent.SourceDaemon),
-		string(runevent.KindDaemonOutcome),
-		string(payload),
-	).Scan(&replay)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return Run{}, fmt.Errorf("inspect terminal reconciliation replay for Run %q: %w", req.RunID, err)
-	}
-	if err == nil {
-		if run.State != currentOutcome {
-			return Run{}, fmt.Errorf(
-				"reconcile terminal Run %q: recorded evidence expects outcome %q but stored outcome is %q",
+			req.RunID,
+			string(runevent.SourceDaemon),
+			string(runevent.KindDaemonOutcome),
+			string(payload),
+		).Scan(&replay)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("inspect terminal reconciliation replay for Run %q: %w", req.RunID, err)
+		}
+		if err == nil {
+			if run.State != currentOutcome {
+				return fmt.Errorf(
+					"reconcile terminal Run %q: recorded evidence expects outcome %q but stored outcome is %q",
+					req.RunID,
+					currentOutcome,
+					run.State,
+				)
+			}
+			reconciled = run
+			return nil
+		}
+		if run.State != req.PreviousOutcome {
+			if IsTerminalState(run.State) {
+				return TerminalOutcomeConflictError{
+					RunID:     req.RunID,
+					Stored:    run.State,
+					Requested: currentOutcome,
+				}
+			}
+			return fmt.Errorf(
+				"reconcile terminal Run %q: stored state %q is not terminal outcome %q",
 				req.RunID,
-				currentOutcome,
 				run.State,
+				req.PreviousOutcome,
 			)
 		}
-		if err := tx.Commit(); err != nil {
-			return Run{}, fmt.Errorf("commit terminal reconciliation replay for Run %q: %w", req.RunID, err)
-		}
-		return run, nil
-	}
-	if run.State != req.PreviousOutcome {
-		if IsTerminalState(run.State) {
-			return Run{}, TerminalOutcomeConflictError{
-				RunID:     req.RunID,
-				Stored:    run.State,
-				Requested: currentOutcome,
-			}
-		}
-		return Run{}, fmt.Errorf(
-			"reconcile terminal Run %q: stored state %q is not terminal outcome %q",
-			req.RunID,
-			run.State,
-			req.PreviousOutcome,
-		)
-	}
 
-	if req.PreviousOutcome == StateIntegrationPending {
-		result, err := tx.ExecContext(ctx, `
+		if req.PreviousOutcome == StateIntegrationPending {
+			result, err := tx.ExecContext(ctx, `
 UPDATE runs
 SET state = ?, updated_at = ?
 WHERE id = ? AND state = ?`,
-			StateClean,
-			formatTime(req.Time),
-			req.RunID,
-			StateIntegrationPending,
-		)
-		if err != nil {
-			return Run{}, fmt.Errorf("compare-and-set Integration Pending reconciliation for Run %q: %w", req.RunID, err)
-		}
-		affected, err := result.RowsAffected()
-		if err != nil {
-			return Run{}, fmt.Errorf("read Integration Pending reconciliation result for Run %q: %w", req.RunID, err)
-		}
-		if affected != 1 {
-			return Run{}, fmt.Errorf(
-				"reconcile Integration Pending Run %q: compare-and-set affected %d rows",
+				StateClean,
+				formatTime(req.Time),
 				req.RunID,
-				affected,
+				StateIntegrationPending,
 			)
+			if err != nil {
+				return fmt.Errorf("compare-and-set Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+			}
+			affected, err := result.RowsAffected()
+			if err != nil {
+				return fmt.Errorf("read Integration Pending reconciliation result for Run %q: %w", req.RunID, err)
+			}
+			if affected != 1 {
+				return fmt.Errorf(
+					"reconcile Integration Pending Run %q: compare-and-set affected %d rows",
+					req.RunID,
+					affected,
+				)
+			}
 		}
-	}
-	if _, err := appendRunEvent(ctx, tx, runevent.RunEvent{
-		RunID:   req.RunID,
-		Source:  runevent.SourceDaemon,
-		Kind:    runevent.KindDaemonOutcome,
-		Summary: runevent.BoundSummary(fmt.Sprintf("Run reconciled %s to %s before terminal cleanup.", req.PreviousOutcome, currentOutcome)),
-		Time:    req.Time,
-		Payload: payload,
-	}); err != nil {
-		return Run{}, fmt.Errorf("journal terminal reconciliation for Run %q: %w", req.RunID, err)
-	}
+		if _, err := appendRunEvent(ctx, tx, runevent.RunEvent{
+			RunID:   req.RunID,
+			Source:  runevent.SourceDaemon,
+			Kind:    runevent.KindDaemonOutcome,
+			Summary: runevent.BoundSummary(fmt.Sprintf("Run reconciled %s to %s before terminal cleanup.", req.PreviousOutcome, currentOutcome)),
+			Time:    req.Time,
+			Payload: payload,
+		}); err != nil {
+			return fmt.Errorf("journal terminal reconciliation for Run %q: %w", req.RunID, err)
+		}
 
-	reconciled, err := selectRun(ctx, tx, req.RunID)
+		reconciled, err = selectRun(ctx, tx, req.RunID)
+		if err != nil {
+			return fmt.Errorf("read reconciled Run %q: %w", req.RunID, err)
+		}
+		return nil
+	})
 	if err != nil {
-		return Run{}, fmt.Errorf("read reconciled Run %q: %w", req.RunID, err)
-	}
-	if err := tx.Commit(); err != nil {
-		return Run{}, fmt.Errorf("commit terminal reconciliation for Run %q: %w", req.RunID, err)
+		return Run{}, err
 	}
 	return reconciled, nil
 }
@@ -740,74 +794,61 @@ func (store *Store) ReclaimOrphanedRun(ctx context.Context, run Run, reason stri
 	}
 	now := store.now()
 
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("begin orphaned Run reclamation: %w", err)
-	}
-	defer rollbackUnlessCommitted(tx)
-
-	var currentState string
-	if err := tx.QueryRowContext(ctx, `SELECT state FROM runs WHERE id = ?`, runID).Scan(&currentState); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("reclaim orphaned Run: Run %q does not exist", runID)
+	return store.withWriteTx(ctx, "orphaned Run reclamation", func(tx *sql.Tx) error {
+		var currentState string
+		if err := tx.QueryRowContext(ctx, `SELECT state FROM runs WHERE id = ?`, runID).Scan(&currentState); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("reclaim orphaned Run: Run %q does not exist", runID)
+			}
+			return fmt.Errorf("read Run %q before orphaned Run reclamation: %w", runID, err)
 		}
-		return fmt.Errorf("read Run %q before orphaned Run reclamation: %w", runID, err)
-	}
-	if IsTerminalState(currentState) {
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("commit orphaned Run reclamation no-op: %w", err)
+		if IsTerminalState(currentState) {
+			return nil
 		}
-		return nil
-	}
 
-	result, err := tx.ExecContext(ctx, `
+		result, err := tx.ExecContext(ctx, `
 UPDATE runs
 SET state = ?, updated_at = ?, completed_at = ?
 WHERE id = ? AND state = ?`,
-		StateFailed,
-		formatTime(now),
-		formatTime(now),
-		runID,
-		currentState,
-	)
-	if err != nil {
-		return fmt.Errorf("mark orphaned Run %q Failed: %w", runID, err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("read orphaned Run reclamation result: %w", err)
-	}
-	if affected == 0 {
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("commit orphaned Run reclamation no-op: %w", err)
+			StateFailed,
+			formatTime(now),
+			formatTime(now),
+			runID,
+			currentState,
+		)
+		if err != nil {
+			return fmt.Errorf("mark orphaned Run %q Failed: %w", runID, err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("read orphaned Run reclamation result: %w", err)
+		}
+		if affected == 0 {
+			return nil
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM active_run_locks WHERE run_id = ?`, runID); err != nil {
+			return fmt.Errorf("release orphaned Active Run lock: %w", err)
+		}
+		payload, err := json.Marshal(map[string]any{
+			"state":     StateFailed,
+			"reason":    reason,
+			"owner_pid": *run.OwnerPID,
+		})
+		if err != nil {
+			return fmt.Errorf("encode orphaned Run reclamation event: %w", err)
+		}
+		if _, err := appendRunEvent(ctx, tx, runevent.RunEvent{
+			RunID:   runID,
+			Source:  runevent.SourceDaemon,
+			Kind:    runevent.KindDaemonOutcome,
+			Summary: runevent.BoundSummary(fmt.Sprintf("Run reclaimed orphaned Active Run lock: %s.", reason)),
+			Time:    now,
+			Payload: payload,
+		}); err != nil {
+			return err
 		}
 		return nil
-	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM active_run_locks WHERE run_id = ?`, runID); err != nil {
-		return fmt.Errorf("release orphaned Active Run lock: %w", err)
-	}
-	payload, err := json.Marshal(map[string]any{
-		"state":     StateFailed,
-		"reason":    reason,
-		"owner_pid": *run.OwnerPID,
 	})
-	if err != nil {
-		return fmt.Errorf("encode orphaned Run reclamation event: %w", err)
-	}
-	if _, err := appendRunEvent(ctx, tx, runevent.RunEvent{
-		RunID:   runID,
-		Source:  runevent.SourceDaemon,
-		Kind:    runevent.KindDaemonOutcome,
-		Summary: runevent.BoundSummary(fmt.Sprintf("Run reclaimed orphaned Active Run lock: %s.", reason)),
-		Time:    now,
-		Payload: payload,
-	}); err != nil {
-		return err
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit orphaned Run reclamation: %w", err)
-	}
-	return nil
 }
 
 func (store *Store) RequestStop(ctx context.Context, runID string) error {
@@ -817,44 +858,37 @@ func (store *Store) RequestStop(ctx context.Context, runID string) error {
 	}
 	now := store.now()
 
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("begin Stop Request: %w", err)
-	}
-	defer rollbackUnlessCommitted(tx)
-
-	var state string
-	if err := tx.QueryRowContext(ctx, `SELECT state FROM runs WHERE id = ?`, runID).Scan(&state); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fmt.Errorf("request Stop: Run %q does not exist", runID)
+	return store.withWriteTx(ctx, "Stop Request", func(tx *sql.Tx) error {
+		var state string
+		if err := tx.QueryRowContext(ctx, `SELECT state FROM runs WHERE id = ?`, runID).Scan(&state); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("request Stop: Run %q does not exist", runID)
+			}
+			return fmt.Errorf("read Run %q state before Stop Request: %w", runID, err)
 		}
-		return fmt.Errorf("read Run %q state before Stop Request: %w", runID, err)
-	}
-	if IsTerminalState(state) {
-		return fmt.Errorf("%w %q: state %s", ErrTerminalRunStopRequest, runID, state)
-	}
-	result, err := tx.ExecContext(ctx, `
+		if IsTerminalState(state) {
+			return fmt.Errorf("%w %q: state %s", ErrTerminalRunStopRequest, runID, state)
+		}
+		result, err := tx.ExecContext(ctx, `
 UPDATE runs
 SET stop_requested_at = COALESCE(stop_requested_at, ?), updated_at = ?
 WHERE id = ?`,
-		formatTime(now),
-		formatTime(now),
-		runID,
-	)
-	if err != nil {
-		return fmt.Errorf("record Stop Request for Run %q: %w", runID, err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("read Stop Request result: %w", err)
-	}
-	if affected == 0 {
-		return fmt.Errorf("request Stop: Run %q does not exist", runID)
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit Stop Request: %w", err)
-	}
-	return nil
+			formatTime(now),
+			formatTime(now),
+			runID,
+		)
+		if err != nil {
+			return fmt.Errorf("record Stop Request for Run %q: %w", runID, err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("read Stop Request result: %w", err)
+		}
+		if affected == 0 {
+			return fmt.Errorf("request Stop: Run %q does not exist", runID)
+		}
+		return nil
+	})
 }
 
 func (store *Store) StopRequested(ctx context.Context, runID string) (bool, error) {
@@ -1306,20 +1340,14 @@ func (store *Store) migrate(ctx context.Context) error {
 }
 
 func (store *Store) applyMigration(ctx context.Context, statements []string) error {
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("begin Run Database migration: %w", err)
-	}
-	defer rollbackUnlessCommitted(tx)
-	for _, statement := range statements {
-		if _, err := tx.ExecContext(ctx, statement); err != nil {
-			return fmt.Errorf("apply Run Database migration: %w", err)
+	return store.withWriteTx(ctx, "Run Database migration", func(tx *sql.Tx) error {
+		for _, statement := range statements {
+			if _, err := tx.ExecContext(ctx, statement); err != nil {
+				return fmt.Errorf("apply Run Database migration: %w", err)
+			}
 		}
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit Run Database migration: %w", err)
-	}
-	return nil
+		return nil
+	})
 }
 
 // createSchemaStatements creates schema v12 directly on a fresh Run Database.
