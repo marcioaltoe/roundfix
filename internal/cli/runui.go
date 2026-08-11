@@ -116,8 +116,11 @@ func (ui *runUI) Wait() {
 
 // Close drains the fanout, quits the cockpit, and releases the reader. It
 // is idempotent so commands can both defer it and call it before printing
-// their closing summary.
-func (ui *runUI) Close() {
+// their closing summary. The caller context is preserved for the teardown
+// flush while its cancellation is stripped: teardown must not hang on a
+// cancelled command context, but any context values the flush carries (e.g.
+// tracing metadata) ride along.
+func (ui *runUI) Close(ctx context.Context) {
 	ui.closeOnce.Do(func() {
 		if ui.fanout != nil {
 			ui.fanout.Close()
@@ -134,7 +137,7 @@ func (ui *runUI) Close() {
 			// command closes its Store. The flush backend polls for a
 			// machine-wide advisory lock, so bound it: another process holding
 			// the lock must not hang shutdown forever.
-			flushCtx, cancel := context.WithTimeout(context.WithoutCancel(context.Background()), store.JournalShutdownTimeout)
+			flushCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), store.JournalShutdownTimeout)
 			if err := ui.writer.FlushJournal(flushCtx); err != nil {
 				slog.Error("flush Run Event journal on teardown", "error", err)
 			}

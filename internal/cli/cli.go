@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -2671,7 +2672,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
 	}
-	defer ui.Close()
+	defer ui.Close(ctx)
 
 	writeGuard := reviewRunTargetGuard(ctx, run)
 	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, session, resolvePlan, collaborators, runStore, ui, writeGuard)
@@ -2680,7 +2681,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 			code := completeStoppedRunRecord(runStore, run.ID, notifier, stderr)
 			ui.Wait()
-			ui.Close()
+			ui.Close(ctx)
 			if code != exitOK {
 				printRunFailure(req.name, errors.New("complete stopped Run"), stderr)
 				return code
@@ -2695,13 +2696,13 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 			completed, completeErr := runStore.CompleteRun(context.WithoutCancel(ctx), run.ID, store.StateCheckoutMoved)
 			if completeErr != nil {
-				ui.Close()
+				ui.Close(ctx)
 				printResolveRunFailure(completeErr, stderr)
 				return exitRunFailed
 			}
 			publishTerminalCompletion(context.WithoutCancel(ctx), runStore, notifier, stderr, completed, cycleResult.Remaining)
 			ui.Wait()
-			ui.Close()
+			ui.Close(ctx)
 			fmt.Fprintf(stderr, "Resolve Run %s reached %s: %v\n", completed.ID, completed.State, checkoutMoved)
 			printReviewIssueReport(stdout, completed.State, 1, true, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 			return exitRunFailed
@@ -2709,7 +2710,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		ui.Wait()
-		ui.Close()
+		ui.Close(ctx)
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
 	}
@@ -2720,7 +2721,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
-		ui.Close()
+		ui.Close(ctx)
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		printResolveRunFailureAfterBatchCommit(err, stderr)
 		return exitRunFailed
@@ -2729,7 +2730,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	publishTerminalCompletion(ctx, runStore, notifier, stderr, completed, cycleResult.Remaining)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
-	ui.Close()
+	ui.Close(ctx)
 	fmt.Fprintf(stderr, "Resolve Run %s reached %s.\n", completed.ID, completed.State)
 	if completed.State == store.StateUnresolved {
 		fmt.Fprintf(stderr, "%d Unresolved Review Issue(s) remain; failed issues are retried by the next fetched Round.\n", cycleResult.Remaining)
@@ -3161,7 +3162,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printWatchRunFailure(err, stderr)
 		return exitRunFailed
 	}
-	defer ui.Close()
+	defer ui.Close(ctx)
 
 	watchReportIssues := []rounds.Issue{}
 	var requester reviewsource.ReviewRequester
@@ -3277,7 +3278,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	completed, completeErr := runStore.CompleteRun(completeCtx, run.ID, terminal)
 	if completeErr != nil {
-		ui.Close()
+		ui.Close(ctx)
 		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		printRunFailure(req.name, completeErr, stderr)
 		return exitRunFailed
@@ -3303,7 +3304,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
-	ui.Close()
+	ui.Close(ctx)
 
 	fmt.Fprintf(stderr, "Watch Run %s reached %s after %d Round(s).\n", completed.ID, completed.State, result.Rounds)
 	if result.Outcome == store.StateReviewSkipped {
@@ -4861,7 +4862,11 @@ func publishTerminalCompletionWithContext(
 		// the outcome appended below, so cursor order no longer matches
 		// publication order. Retry the flush once before appending the outcome.
 		if retryErr := runStore.FlushJournal(ctx); retryErr != nil {
-			fmt.Fprintf(stderr, "Warning: terminal journal flush failed; pending events will follow the outcome in cursor order: %v (retry: %v)\n", err, retryErr)
+			if _, werr := fmt.Fprintf(stderr, "Warning: terminal journal flush failed; pending events will follow the outcome in cursor order: %v (retry: %v)\n", err, retryErr); werr != nil {
+				// stderr is failing, so surface the flush failure through the
+				// structured logger instead of the same broken writer.
+				slog.Error("terminal journal flush failed", "flush_error", err, "retry_error", retryErr, "write_error", werr)
+			}
 		}
 	}
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, terminal, stderr)

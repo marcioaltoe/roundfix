@@ -172,39 +172,69 @@ func (w *journalWriter) armLingerLocked() {
 func (w *journalWriter) flush(ctx context.Context) error {
 	for {
 		w.mu.Lock()
-		batch, err := w.drainLocked()
+		batch, wait, err := w.drainLocked()
+		var done <-chan struct{}
+		if wait {
+			done = w.commitDone
+		}
 		w.mu.Unlock()
 		if err != nil {
 			return err
 		}
-		if batch == nil {
-			return nil
+		if batch != nil {
+			if err := w.commitDrained(ctx, batch); err != nil {
+				return err
+			}
+			continue
 		}
-		if err := w.commitDrained(ctx, batch); err != nil {
-			return err
+		if wait {
+			// A commit is draining concurrently. Wait for it to finish so
+			// events appended (or re-queued) behind it are not skipped; then
+			// re-run the drain loop.
+			if err := waitCommit(ctx, done); err != nil {
+				return err
+			}
+			continue
 		}
+		return nil
+	}
+}
+
+// waitCommit blocks until the in-flight commit's commitDone channel closes or
+// ctx is done. It releases the mutex before blocking so the committing
+// goroutine can finish and close the channel.
+func waitCommit(ctx context.Context, done <-chan struct{}) error {
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 
 // drainLocked takes the current pending batch out from under the mutex and
-// marks the writer in-flight, or returns nothing when there is nothing to
-// commit. It must be called with w.mu held. Databases writes happen in
-// commitDrained, after the mutex is released, so publishers are never
-// serialized behind the advisory write lock or a SQLite transaction.
-func (w *journalWriter) drainLocked() ([]runevent.RunEvent, error) {
+// marks the writer in-flight, or reports whether nothing can be drained
+// because a commit is already in flight. It must be called with w.mu held.
+// Databases writes happen in commitDrained, after the mutex is released, so
+// publishers are never serialized behind the advisory write lock or a SQLite
+// transaction.
+func (w *journalWriter) drainLocked() (batch []runevent.RunEvent, inFlight bool, err error) {
 	if len(w.pending) == 0 {
-		w.stopTimerLocked()
-		return nil, nil
+		if !w.inFlight {
+			w.stopTimerLocked()
+		}
+		return nil, false, nil
 	}
 	if w.inFlight {
-		// A linger or count flush is already committing; leave the batch to it.
-		return nil, nil
+		// A linger or count flush is already committing; tell the caller to
+		// wait on commitDone instead of skipping these pending events.
+		return nil, true, nil
 	}
 	w.inFlight = true
 	w.stopTimerLocked()
-	batch := w.pending
+	batch = w.pending
 	w.pending = nil
-	return batch, nil
+	return batch, false, nil
 }
 
 // commitDrained commits a drained batch outside the mutex, restoring the whole
@@ -215,6 +245,13 @@ func (w *journalWriter) commitDrained(ctx context.Context, batch []runevent.RunE
 	err := commitJournalBatch(ctx, w.store, batch)
 	w.mu.Lock()
 	w.inFlight = false
+	// Signal any waiter blocked in flush that the in-flight commit (and its
+	// commitDone observation) finished, then re-arm the channel for the next
+	// commit. A single drain owns this transition: only the goroutine that
+	// observed inFlight true and drained the batch reaches commitDrained, so
+	// there is exactly one close per commit.
+	close(w.commitDone)
+	w.commitDone = make(chan struct{})
 	if err != nil {
 		w.pending = append(batch, w.pending...)
 	} else if len(w.pending) > 0 && !w.closed && w.timer == nil {

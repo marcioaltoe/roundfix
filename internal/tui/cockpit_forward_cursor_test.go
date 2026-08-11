@@ -251,3 +251,65 @@ func TestCockpitTaskJournalForwardCursorKeepsSummaryFallback(t *testing.T) {
 	model.Update(cockpitTickMsg{})
 	assertTaskQueueRow(t, viewText(model), "task_02", "[skip] "+taskLabelSkipped)
 }
+
+// TestCockpitJournalHeaderRefreshBoundedToOnePage proves a single journal-header
+// refresh reads at most one page even when a large backlog spans several pages.
+// The opening fold (newCockpitModel) and each later refresh must advance the
+// cursor by exactly journalHeaderPageSize and report that more pages remain,
+// instead of draining the whole journal on one frame.
+func TestCockpitJournalHeaderRefreshBoundedToOnePage(t *testing.T) {
+	t.Parallel()
+
+	// A backlog comfortably larger than one page: two Task start events plus
+	// enough agent lines to span three pages.
+	const backlog = journalHeaderPageSize*3 + 10
+	source := &journalReadRecorder{}
+	source.run = store.Run{ID: "run-1", State: store.StateResolvingWithAgent}
+	source.version = 1
+	source.addTaskEvent(t, "task_01", "started", "", 1)
+	for index := 1; index <= backlog; index++ {
+		source.addLine(fmt.Sprintf("agent line %04d\n", index))
+	}
+	total := len(source.events)
+
+	model := newForwardCursorCockpit(t, source)
+
+	// The opening fold must read only the first page, not the whole backlog.
+	if got := model.taskJournalCursor; got != int64(journalHeaderPageSize) {
+		t.Fatalf("expected the opening fold to advance one page to %d, cursor at %d (journal length %d)", journalHeaderPageSize, got, total)
+	}
+	if got := source.headerRows; got != journalHeaderPageSize {
+		t.Fatalf("expected the opening fold to read one page of %d headers, read %d", journalHeaderPageSize, got)
+	}
+
+	// One refresh reads exactly the next page and reports more remain.
+	source.reset()
+	model.refreshTaskJournalEvents()
+	if got := source.headerRows; got != journalHeaderPageSize {
+		t.Fatalf("expected one refresh to read one page of %d headers, read %d", journalHeaderPageSize, got)
+	}
+	if got := model.taskJournalCursor; got != int64(2*journalHeaderPageSize) {
+		t.Fatalf("expected the refresh to advance to cursor %d, got %d", 2*journalHeaderPageSize, got)
+	}
+
+	// Repeated refreshes advance one page each and report more until a short
+	// page shows the journal is exhausted. Each refresh reads at most one page.
+	reads := map[int]int{} // cursor -> headers read that refresh
+	for i := 0; ; i++ {
+		source.reset()
+		more := model.refreshTaskJournalEvents()
+		reads[i] = source.headerRows
+		if reads[i] > journalHeaderPageSize {
+			t.Fatalf("refresh %d read %d headers, past one page", i, reads[i])
+		}
+		if !more {
+			break
+		}
+		if i > 10 {
+			t.Fatal("journal fold did not settle within expected page count")
+		}
+	}
+	if got := model.taskJournalCursor; got != int64(total) {
+		t.Fatalf("expected the fold to reach the journal tail %d, got %d", total, got)
+	}
+}

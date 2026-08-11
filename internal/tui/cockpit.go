@@ -60,6 +60,11 @@ const defaultCockpitPollInterval = 250 * time.Millisecond
 
 const minTwoPaneCockpitWidth = 88
 
+// journalHeaderPageSize bounds each RunEventHeadersAfter query so a single
+// fold reads at most one slice of a very large journal instead of
+// materializing every header into memory at once.
+const journalHeaderPageSize = 500
+
 type cockpitFocus int
 
 const (
@@ -68,6 +73,12 @@ const (
 )
 
 type cockpitTickMsg struct{}
+
+// cockpitJournalContinueMsg asks Update to fold another page of the active
+// journal-header cursor. Both journal folds are bounded to one page per
+// Update so a large backlog can never block rendering or input handling on a
+// single frame; a full page schedules this message to keep folding.
+type cockpitJournalContinueMsg struct{}
 
 type issueDetailView struct {
 	issue   rounds.Issue
@@ -116,13 +127,17 @@ type cockpitModel struct {
 	runState    string
 	terminal    bool
 	lastVersion int64
+	journalMore bool
 
 	width  int
 	height int
 }
 
 // newCockpitModel replays the backlog and primes the model. It is the test
-// seam: tests drive Update/View directly with synthetic messages.
+// seam: tests drive Update/View directly with synthetic messages. The opening
+// Task journal / Batch-clock fold is bounded to a single page: a journal
+// larger than one page records that more pages remain in journalMore so Init
+// can fold them on the Bubble Tea update path instead of blocking construction.
 func newCockpitModel(ctx context.Context, cfg CockpitConfig) (*cockpitModel, error) {
 	if cfg.PollInterval <= 0 {
 		cfg.PollInterval = defaultCockpitPollInterval
@@ -147,7 +162,7 @@ func newCockpitModel(ctx context.Context, cfg CockpitConfig) (*cockpitModel, err
 		model.terminal = true
 		model.viewport.SetTerminal()
 	}
-	model.refreshWorkItems()
+	model.journalMore = model.refreshWorkItems()
 	model.viewport.SetHeight(model.bodyHeight())
 	if err := model.viewport.Replay(ctx); err != nil {
 		return nil, err
@@ -177,7 +192,12 @@ func RunCockpit(ctx context.Context, output io.Writer, cfg CockpitConfig) error 
 }
 
 func (model *cockpitModel) Init() tea.Cmd {
-	return model.scheduleTick()
+	cmds := []tea.Cmd{model.scheduleTick()}
+	if model.journalMore {
+		model.journalMore = false
+		cmds = append(cmds, func() tea.Msg { return cockpitJournalContinueMsg{} })
+	}
+	return tea.Batch(cmds...)
 }
 
 func (model *cockpitModel) scheduleTick() tea.Cmd {
@@ -190,7 +210,6 @@ func (model *cockpitModel) scheduleTick() tea.Cmd {
 		return cockpitTickMsg{}
 	})
 }
-
 func (model *cockpitModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch value := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -199,32 +218,57 @@ func (model *cockpitModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		model.viewport.SetHeight(model.bodyHeight())
 		return model, nil
 	case cockpitTickMsg:
-		model.poll()
-		return model, model.scheduleTick()
+		more := model.poll()
+		cmds := []tea.Cmd{model.scheduleTick()}
+		if more {
+			cmds = append(cmds, func() tea.Msg { return cockpitJournalContinueMsg{} })
+		}
+		return model, tea.Batch(cmds...)
+	case cockpitJournalContinueMsg:
+		more := model.continueJournalPage()
+		if more {
+			return model, func() tea.Msg { return cockpitJournalContinueMsg{} }
+		}
+		return model, nil
 	case tea.KeyPressMsg:
 		return model.handleKey(tea.Key(value))
 	}
 	return model, nil
 }
 
-func (model *cockpitModel) poll() {
+// continueJournalPage folds one more page of whichever journal-header cursor
+// is active (Task journal for spec Runs, Batch clocks otherwise) and reports
+// whether a full page was read so the caller schedules another continuation.
+func (model *cockpitModel) continueJournalPage() (more bool) {
+	if model.specRun() {
+		more = model.refreshTaskJournalEvents()
+		model.applyTaskJournalStatuses()
+		return more
+	}
+	return model.refreshBatchClocks()
+}
+
+// poll refreshes the Live Run View after a data version change and reports
+// whether the active journal-header fold read a full page (more remain).
+func (model *cockpitModel) poll() (more bool) {
 	version, err := model.cfg.Source.DataVersion(model.ctx)
 	if err != nil || version == model.lastVersion {
-		return
+		return false
 	}
 	model.lastVersion = version
 	_ = model.viewport.Poll(model.ctx)
 	run, found, err := model.cfg.Source.Run(model.ctx, model.cfg.RunID)
 	if err != nil || !found {
-		return
+		return false
 	}
 	model.runState = run.State
 	if store.IsTerminalState(run.State) {
 		model.terminal = true
 		model.viewport.SetTerminal()
 	}
-	model.refreshWorkItems()
+	more = model.refreshWorkItems()
 	model.refreshOpenDetail()
+	return more
 }
 
 // specRun reports whether this cockpit renders a spec Run's Tasks; every
@@ -235,19 +279,20 @@ func (model *cockpitModel) specRun() bool {
 
 // refreshWorkItems refreshes the work-item pane keyed on the Run Kind:
 // Review Issue artifacts for review Runs, Task journal events for spec Runs.
-func (model *cockpitModel) refreshWorkItems() {
+// It reports whether a journal-header page read returned a full page so the
+// caller can schedule a continuation for the remaining pages.
+func (model *cockpitModel) refreshWorkItems() (more bool) {
 	if model.specRun() {
-		model.refreshTasks()
-		return
+		return model.refreshTasks()
 	}
-	model.refreshIssues()
+	return model.refreshIssues()
 }
 
 // refreshTasks keeps Task rows truthful under parallel execution. Task files
 // remain the fallback/post-integration status source, while daemon.task and
 // daemon.verification events are the execution source for Agent work, the
 // Verification queue, active Verification, and settlement.
-func (model *cockpitModel) refreshTasks() {
+func (model *cockpitModel) refreshTasks() (more bool) {
 	tasks := model.cfg.View.Tasks
 	if len(model.taskStatuses) != len(tasks) {
 		model.taskStatuses = make([]string, len(tasks))
@@ -261,8 +306,9 @@ func (model *cockpitModel) refreshTasks() {
 		}
 	}
 	model.refreshTaskFiles()
-	model.refreshTaskJournalEvents()
+	more = model.refreshTaskJournalEvents()
 	model.applyTaskJournalStatuses()
+	return more
 }
 
 func (model *cockpitModel) refreshTaskFiles() {
@@ -276,61 +322,57 @@ func (model *cockpitModel) refreshTaskFiles() {
 	}
 }
 
-// refreshTaskJournalEvents folds the Task journal forward, the way
-// refreshTaskJournalEvents folds the Task journal forward. The cursor only
-// moves ahead, so a poll costs the events that arrived since the last one
-// instead of the whole journal; per-Task phases are a left fold over events in
-// cursor order, so folding each event exactly once lands on the same state a
-// full rescan did. Kinds come from the payload-free header projection, and
-// only the two daemon kinds whose payload fields this fold parses are read in
-// full (ADR 0008 leaves every other payload unread here).
+// refreshTaskJournalEvents folds at most one page of the Task journal forward.
+// The cursor only moves ahead, so a poll costs the events that arrived since
+// the last one instead of the whole journal; per-Task phases are a left fold
+// over events in cursor order, so folding each event exactly once lands on the
+// same state a full rescan did. Kinds come from the payload-free header
+// projection, and only the two daemon kinds whose payload fields this fold
+// parses are read in full (ADR 0008 leaves every other payload unread here).
 //
-// journalHeaderPageSize bounds each RunEventHeadersAfter query so an opening
-// fold over a very large journal never materializes every header in one slice.
-// The cursor advances page by page until a short page shows the journal is
-// exhausted.
-const journalHeaderPageSize = 500
-
-func (model *cockpitModel) refreshTaskJournalEvents() {
+// journalHeaderPageSize bounds each RunEventHeadersAfter query. Processing at
+// most one page per invocation keeps a large backlog from blocking rendering
+// or input handling on a single Update frame; the caller schedules a
+// cockpitJournalContinueMsg when this returns a full page.
+//
+// It returns true when a full page was read (more headers may remain), false
+// otherwise.
+func (model *cockpitModel) refreshTaskJournalEvents() (more bool) {
 	runID := model.cfg.RunID
 	if strings.TrimSpace(runID) == "" {
 		runID = model.cfg.View.RunID
 	}
 	runID = strings.TrimSpace(runID)
 	if runID == "" || model.cfg.Source == nil {
-		return
+		return false
 	}
-	for {
-		headers, err := model.cfg.Source.RunEventHeadersAfter(model.ctx, runID, model.taskJournalCursor, journalHeaderPageSize)
-		if err != nil {
-			return
-		}
-		for _, header := range headers {
-			if foldsIntoTaskJournal(header.Kind) {
-				event, ok, retry := model.readTaskJournalEvent(runID, header.Cursor)
-				if retry {
-					// Transient read failure: keep the cursor behind the unread
-					// event so the next poll retries it rather than folding a
-					// gap.
-					return
-				}
-				if ok {
-					model.applyTaskJournalEvent(event)
-				} else {
-					// The event is gone (a retention delete removed the row
-					// between the header read and the payload read). The fold
-					// skips it and the cursor advances past the header below,
-					// so a permanently missing event never stalls the fold.
-				}
+	headers, err := model.cfg.Source.RunEventHeadersAfter(model.ctx, runID, model.taskJournalCursor, journalHeaderPageSize)
+	if err != nil {
+		return false
+	}
+	for _, header := range headers {
+		if foldsIntoTaskJournal(header.Kind) {
+			event, ok, retry := model.readTaskJournalEvent(runID, header.Cursor)
+			if retry {
+				// Transient read failure: keep the cursor behind the unread
+				// event so the next poll retries it rather than folding a
+				// gap. No continuation is scheduled; the next fold retries.
+				return false
 			}
-			if header.Cursor > model.taskJournalCursor {
-				model.taskJournalCursor = header.Cursor
+			if ok {
+				model.applyTaskJournalEvent(event)
+			} else {
+				// The event is gone (a retention delete removed the row
+				// between the header read and the payload read). The fold
+				// skips it and the cursor advances past the header below,
+				// so a permanently missing event never stalls the fold.
 			}
 		}
-		if len(headers) < journalHeaderPageSize {
-			return
+		if header.Cursor > model.taskJournalCursor {
+			model.taskJournalCursor = header.Cursor
 		}
 	}
+	return len(headers) == journalHeaderPageSize
 }
 
 // foldsIntoTaskJournal reports whether an event's payload is read by the Task
@@ -569,7 +611,7 @@ func (model *cockpitModel) taskIndex(taskID string) int {
 
 // refreshIssues re-reads Review Issue artifact statuses and derives which
 // Batch is executing, so the sidebar and the progress bar track the Run.
-func (model *cockpitModel) refreshIssues() {
+func (model *cockpitModel) refreshIssues() (more bool) {
 	issues := model.cfg.View.Issues
 	if len(model.issueStatuses) != len(issues) {
 		model.issueStatuses = make([]string, len(issues))
@@ -590,53 +632,52 @@ func (model *cockpitModel) refreshIssues() {
 		}
 	}
 	model.currentBatch = current
-	model.refreshBatchClocks()
+	return model.refreshBatchClocks()
 }
 
-// refreshBatchClocks folds new journal events into per-Batch timestamp
-// spans. The scan is incremental: the cursor only moves forward, and each
-// poll reads only the headers that arrived since the last one. Batch clocks
-// need cursor, Batch, and Time alone, so they read the payload-free header
-// projection instead of the full journal (ADR 0008 payloads stay unread here).
-func (model *cockpitModel) refreshBatchClocks() {
+// refreshBatchClocks folds one page of new journal events into per-Batch
+// timestamp spans. The scan is incremental: the cursor only moves forward, and
+// each poll reads only the headers that arrived since the last one. Batch
+// clocks need cursor, Batch, and Time alone, so they read the payload-free
+// header projection instead of the full journal (ADR 0008 payloads stay unread
+// here). Processing at most one page per invocation bounds a large backlog;
+// the caller schedules a cockpitJournalContinueMsg when this returns a full
+// page.
+func (model *cockpitModel) refreshBatchClocks() (more bool) {
 	if model.cfg.Source == nil {
-		return
+		return false
 	}
 	runID := strings.TrimSpace(model.cfg.RunID)
 	if runID == "" {
 		runID = strings.TrimSpace(model.cfg.View.RunID)
 	}
 	if runID == "" {
-		return
+		return false
 	}
 	if model.batchTimes == nil {
 		model.batchTimes = map[int]batchTimeSpan{}
 	}
-	for {
-		headers, err := model.cfg.Source.RunEventHeadersAfter(model.ctx, runID, model.batchTimeCursor, journalHeaderPageSize)
-		if err != nil {
-			return
-		}
-		for _, header := range headers {
-			if header.Cursor > model.batchTimeCursor {
-				model.batchTimeCursor = header.Cursor
-			}
-			if header.Batch <= 0 || header.Time.IsZero() {
-				continue
-			}
-			span, seen := model.batchTimes[header.Batch]
-			if !seen || header.Time.Before(span.first) {
-				span.first = header.Time
-			}
-			if header.Time.After(span.last) {
-				span.last = header.Time
-			}
-			model.batchTimes[header.Batch] = span
-		}
-		if len(headers) < journalHeaderPageSize {
-			return
-		}
+	headers, err := model.cfg.Source.RunEventHeadersAfter(model.ctx, runID, model.batchTimeCursor, journalHeaderPageSize)
+	if err != nil {
+		return false
 	}
+	for _, header := range headers {
+		if header.Cursor > model.batchTimeCursor {
+			model.batchTimeCursor = header.Cursor
+		}
+		if header.Batch <= 0 || header.Time.IsZero() {
+			continue
+		}
+		span, seen := model.batchTimes[header.Batch]
+		if !seen || header.Time.Before(span.first) {
+			span.first = header.Time
+		}
+		if header.Time.After(span.last) {
+			span.last = header.Time
+		}
+		model.batchTimes[header.Batch] = span
+	}
+	return len(headers) == journalHeaderPageSize
 }
 
 // batchOf maps an issue index to its 1-based Batch number; 0 means the plan
