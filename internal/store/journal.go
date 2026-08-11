@@ -1288,13 +1288,36 @@ LIMIT ?`,
 // JournalSink adapts the Run Database to the Run Event sink interface. It
 // registers as a critical sink: an append failure after Run start must fail
 // the Run, never be swallowed.
-type JournalSink struct {
-	Store *Store
+//
+// Every JournalSink handed out by one Store shares the Store's single batched
+// journal writer, so batch boundaries are global to the process rather than
+// per sink (ADR 0098: durability moves from per-event to per-batch, with
+// `synchronous` unchanged).
+func (store *Store) JournalSink() runevent.Sink {
+	return journalSink{writer: store.journal}
 }
 
-func (sink JournalSink) Publish(ctx context.Context, event runevent.RunEvent) error {
-	_, err := sink.Store.AppendRunEvent(ctx, event)
-	return err
+// FlushJournal commits any pending Run Event batch now. It is the explicit
+// flush used for error paths, Agent teardown, terminal settlement, and process
+// shutdown.
+func (store *Store) FlushJournal(ctx context.Context) error {
+	if store.journal == nil {
+		return nil
+	}
+	return store.journal.flush(ctx)
+}
+
+// CloseJournal flushes the pending batch and marks the Store's journal writer
+// closed only after that flush commits. A failed Close preserves the batch and
+// remains retryable; every later Publish through JournalSink after a
+// successful Close is rejected. The terminal path (CompleteRun) bypasses the
+// closed writer, and post-terminal notification receipts use immediate
+// withWriteTx transactions that never enter the closed batch.
+func (store *Store) CloseJournal(ctx context.Context) error {
+	if store.journal == nil {
+		return nil
+	}
+	return store.journal.close(ctx)
 }
 
 // DataVersion exposes SQLite's data_version for this connection: it changes

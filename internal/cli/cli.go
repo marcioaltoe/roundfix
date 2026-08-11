@@ -2391,7 +2391,7 @@ func journalBranchIntegrityIntegrations(ctx context.Context, runStore *store.Sto
 	if runStore == nil || len(integrated) == 0 {
 		return
 	}
-	sink := store.JournalSink{Store: runStore}
+	sink := runStore.JournalSink()
 	for _, item := range integrated {
 		payload, err := json.Marshal(map[string]any{
 			"event":         "branch_integrity_auto_integration",
@@ -2429,7 +2429,7 @@ func journalBranchIntegrityBypass(ctx context.Context, runStore *store.Store, ru
 	if err != nil {
 		return
 	}
-	_ = (store.JournalSink{Store: runStore}).Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+	_ = runStore.JournalSink().Publish(context.WithoutCancel(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,
@@ -3166,7 +3166,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	watchReportIssues := []rounds.Issue{}
 	var requester reviewsource.ReviewRequester
 	if loaded.Config.ReviewSource.RequestReview {
-		requester = commandDependenciesForContext(ctx).newReviewRequester(store.JournalSink{Store: runStore})
+		requester = commandDependenciesForContext(ctx).newReviewRequester(runStore.JournalSink())
 	}
 	writeGuard := reviewRunTargetGuard(ctx, run)
 	result, err := watch.Run(ctx, watch.Request{
@@ -3253,7 +3253,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		}),
 		Clock:   commandDependenciesForContext(ctx).watchClock,
 		Sleeper: commandDependenciesForContext(ctx).watchSleeper,
-		Sink:    store.JournalSink{Store: runStore},
+		Sink:    runStore.JournalSink(),
 		Progress: func(progress watch.WaitProgress) {
 			fmt.Fprintln(ui.progress, formatReviewWaitProgress(progress))
 		},
@@ -3487,7 +3487,7 @@ func newBootstrapOutputWriter(ctx context.Context, runID string, runStore *store
 		ctx:    ctx,
 		runID:  runID,
 		stderr: stderr,
-		sink:   store.JournalSink{Store: runStore},
+		sink:   runStore.JournalSink(),
 		mu:     &sync.Mutex{},
 	}
 }
@@ -4688,7 +4688,7 @@ func closeAgentSession(ctx context.Context, runner agent.Runner, runtime agent.R
 	closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
 	_ = runner.EndSession(closeCtx, runtime, session)
-	publishAgentSessionStatus(closeCtx, store.JournalSink{Store: runStore}, runID, agent.AgentSessionClosedStatus)
+	publishAgentSessionStatus(closeCtx, runStore.JournalSink(), runID, agent.AgentSessionClosedStatus)
 }
 
 func publishAgentSessionStatus(ctx context.Context, sink runevent.Sink, runID string, status string) {
@@ -4814,7 +4814,10 @@ func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string,
 	if err != nil {
 		return
 	}
-	if err := (store.JournalSink{Store: runStore}).Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+	// The terminal outcome must bypass the closed journal writer (requirement
+	// 7 of the batching spec): it goes straight through the direct immediate
+	// write path, never through a JournalSink that may have been closed.
+	if _, err := runStore.AppendRunEvent(context.WithoutCancel(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonOutcome,
@@ -4849,6 +4852,13 @@ func publishTerminalCompletionWithContext(
 		return
 	}
 	terminal = normalizedTerminalCompletionContext(completed.State, terminal)
+	// The journal batch must be flushed before the terminal outcome so the
+	// outcome event always follows every prior event in cursor order. The
+	// outcome and the notification receipt bypass the (possibly closed) writer
+	// through the direct immediate path.
+	if err := runStore.FlushJournal(ctx); err != nil {
+		fmt.Fprintf(stderr, "Warning: terminal journal flush failed: %v\n", err)
+	}
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, terminal, stderr)
 	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run, terminal)
 }
@@ -4865,7 +4875,7 @@ func journalStopPrimaryFailure(ctx context.Context, runStore *store.Store, runID
 	if err != nil {
 		return
 	}
-	_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+	_ = runStore.JournalSink().Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,
@@ -4899,7 +4909,7 @@ func reportSecondaryCleanupWarnings(
 		if err != nil {
 			continue
 		}
-		_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+		_ = runStore.JournalSink().Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
 			RunID:   runID,
 			Source:  runevent.SourceDaemon,
 			Kind:    runevent.KindDaemonStatus,
@@ -4924,7 +4934,7 @@ func warnCleanRunWorktreeCleanupFailed(ctx context.Context, runStore *store.Stor
 	if err != nil {
 		return
 	}
-	_ = (store.JournalSink{Store: runStore}).Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+	_ = runStore.JournalSink().Publish(context.WithoutCancel(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,
@@ -5038,7 +5048,9 @@ func journalOutcomeNotificationReceipt(
 		return
 	}
 	summary := fmt.Sprintf("Outcome notification %s via %s.", receipt.Status, receipt.Route)
-	if err := (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+	// Post-terminal receipt events always use the direct immediate path, never
+	// a JournalSink that may have been closed after terminal settlement.
+	if _, err := runStore.AppendRunEvent(withoutCancelOrBackground(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,

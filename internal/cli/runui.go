@@ -24,6 +24,7 @@ type runUI struct {
 
 	fanout        *runevent.Fanout
 	reader        *store.Store
+	writer        *store.Store
 	cockpitCancel context.CancelFunc
 	cockpitDone   chan error
 
@@ -32,10 +33,10 @@ type runUI struct {
 }
 
 func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, homeDir string, runStore *store.Store, stderr io.Writer, noAgentConsole bool) (*runUI, error) {
-	journal := store.JournalSink{Store: runStore}
+	journal := runStore.JournalSink()
 	if !liveTUIEnabled(stderr) {
 		fanout := runevent.NewFanout([]runevent.Sink{journal, selectionConsoleDisplaySink(stderr), agentConsoleDisplaySink(stderr, noAgentConsole)}, nil)
-		return &runUI{sink: fanout, progress: stderr, fanout: fanout}, nil
+		return &runUI{sink: fanout, progress: stderr, fanout: fanout, writer: runStore}, nil
 	}
 
 	reader, err := store.OpenReader(ctx, homeDir)
@@ -52,6 +53,7 @@ func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, ho
 		progress:      io.Discard,
 		fanout:        fanout,
 		reader:        reader,
+		writer:        runStore,
 		cockpitCancel: cancel,
 		cockpitDone:   make(chan error, 1),
 	}
@@ -124,6 +126,12 @@ func (ui *runUI) Close() {
 			ui.waitOnce.Do(func() {
 				<-ui.cockpitDone
 			})
+		}
+		if ui.writer != nil {
+			// Flush the shared journal writer at the Agent-teardown boundary so
+			// every event published through the sink is durable before the
+			// command closes its Store.
+			_ = ui.writer.FlushJournal(context.WithoutCancel(context.Background()))
 		}
 		if ui.reader != nil {
 			_ = ui.reader.Close()

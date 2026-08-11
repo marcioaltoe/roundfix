@@ -82,6 +82,10 @@ type Store struct {
 	// Database. Only the single writer Store (Open) holds it; read-only
 	// Stores leave it nil and never write.
 	writeLockFile *os.File
+	// journal is the Store-scoped batched Run Event writer. Every sink the
+	// Store hands out shares it, so batch boundaries are global to the process
+	// rather than per sink. Only the single writer Store (Open) owns one.
+	journal *journalWriter
 }
 
 type Run struct {
@@ -269,6 +273,7 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	store.journal = newJournalWriter(store)
 	return store, nil
 }
 
@@ -396,13 +401,16 @@ func (store *Store) withWriteTx(ctx context.Context, operation string, fn func(*
 		return err
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit %s: %w", operation, err)
+		return writeCommitError{operation: operation, cause: err}
 	}
 	return nil
 }
 
 func (store *Store) Close() error {
 	var closeErrs []error
+	if store.journal != nil {
+		closeErrs = append(closeErrs, store.journal.close(context.Background()))
+	}
 	if store.writeLockFile != nil {
 		closeErrs = append(closeErrs, store.writeLockFile.Close())
 	}
