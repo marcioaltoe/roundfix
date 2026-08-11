@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0081-a-journal-cheap-to-write-and-keep
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -85,3 +85,66 @@ before it starts. Regression and compilation are the Run-level gate's job.
 - `_techspec.md` → Build Order 8; Risks (the measurement may disprove the
   premise).
 - ADR-0008, ADR-0030, ADR-0033.
+
+## Result
+
+### Implementation
+
+- Re-ran the byte-identical task_01 harness twice against repaired production
+  commit `27e3e21a5f0b7987c45dc5ccc57fe44a5c73c2ec` and recorded both after runs
+  beside the before in `baseline/2026-08-11-repaired.md`.
+- Recorded the decision to keep only the existing terminal-only, age-based
+  Journal Retention shape. No payload is shed, rewritten, compressed, or moved
+  to a second retention window.
+- Left ADR-0008, ADR-0033, the reconcile replay probe, and
+  `docs/user-guide/run-database-lifecycle.md` untouched. The measurement does
+  not justify losing the journal's only durable raw agent payload copy, and no
+  operator-observable behavior or durable table changed.
+
+### Focused checks
+
+- Pre-change signal: `rtk rg --files
+  docs/specs/0081-a-journal-cheap-to-write-and-keep/baseline` listed only
+  `2026-08-11-before.md`; no after measurement or measured decision existed.
+- `rtk git diff 04246137..HEAD --
+  internal/store/journal_baseline_test.go` produced no output, proving the
+  repaired-code run used the task_01 harness unchanged.
+- `GOCACHE=/private/tmp/roundfix-task08-gocache rtk proxy go test -count=2
+  ./internal/store -run '^TestJournalMeasurementHarness$' -v` passed both
+  fresh runs. All 336 writes succeeded with zero typed `SQLITE_BUSY` errors.
+  At 10,000 events, Run-start p50 fell from 11.449–11.551 ms before to
+  0.041–0.047 ms after; after p50 stayed within 0.036–0.051 ms across every
+  journal size.
+- The same harness also exposed a cost rather than hiding it: four-writer
+  direct-append p95 increased from 9.222–9.529 ms before to 33.104–33.428 ms
+  after serialization. That after band is flat across 0, 1,000, and 10,000
+  events, so reducing retained payloads would not address it.
+- `rtk git diff --check` exited 0. `rtk git diff HEAD -- internal cmd` and
+  `rtk git diff HEAD -- docs/adr
+  docs/user-guide/run-database-lifecycle.md` both produced no output. The final
+  status contains only this Task file and the new Spec-local report; the
+  Task-file status transition was the pre-existing Daemon change.
+
+### Acceptance evidence
+
+1. **The after exists beside the before from the same harness.** The new
+   `baseline/2026-08-11-repaired.md` records both complete after matrices,
+   parameters, machine facts, measured commit, and before/after comparison;
+   the exact harness-source diff from its task_01 commit is empty.
+2. **The decision states whether payload is shed and explains why.** The report
+   says no payload is shed. Run-start no longer scales with retained journal
+   size, and remaining direct concurrent-write latency is also independent of
+   retained size, so payload loss buys neither measured hot-path repair.
+3. **ADR-0008 is untouched when payloads are retained.** The decision respects
+   ADR-0008 without amending it. ADR-0030 confirms the journal is the only
+   durable agent-payload copy, and ADR-0033's existing age boundary remains the
+   only retention shape.
+4. **No production code path changed in this Task.** This Task adds the
+   Spec-local after report and this Result only; the frontmatter transition to
+   `in_progress` was already present and remains Daemon-owned.
+
+### Daemon handoff
+
+- The commands under this Task's `## Verification` were not run. The Daemon
+  owns those commands, terminal status, and the Task commit.
+- No follow-up work was discovered within this Task's decision-only slice.
