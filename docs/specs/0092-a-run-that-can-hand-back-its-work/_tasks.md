@@ -31,9 +31,12 @@ graph:
     - id: task_10
       file: task_10.md
       needs: [task_05, task_06]
+    - id: task_11
+      file: task_11.md
+      needs: [task_10]
     - id: task_07
       file: task_07.md
-      needs: [task_02, task_04, task_06, task_09, task_10]
+      needs: [task_02, task_04, task_06, task_09, task_10, task_11]
 ---
 
 # Tasks — A Run that can hand back its work
@@ -49,11 +52,12 @@ graph:
 | task_06 | Hand a stopped Run's settled Tasks back                  | backend | high       | task_04, task_05          |
 | task_09 | Let the reconcile JSON contract know about carry-forward | test    | low        | task_06                   |
 | task_10 | Let the two new acts be discoverable and named           | docs    | low        | task_05, task_06          |
-| task_07 | Run the final QA gate                                    | qa      | high       | task_02, task_04, task_06, task_09, task_10 |
+| task_11 | Make the assembled tree pass its own gate                | test    | low        | task_10                   |
+| task_07 | Run the final QA gate                                    | qa      | high       | task_02, task_04, task_06, task_09, task_10, task_11 |
 
-Waves: 1 → task_01 · 2 → task_02, task_03, task_05 · 3 → task_08 · 4 → task_04 · 5 → task_06 · 6 → task_09, task_10 · 7 → task_07
+Waves: 1 → task_01 · 2 → task_02, task_03, task_05 · 3 → task_08 · 4 → task_04 · 5 → task_06 · 6 → task_09, task_10 · 7 → task_11 · 8 → task_07
 
-Three of these ten Tasks were minted after implementation began, and all three
+Four of these eleven Tasks were minted after implementation began, and all four
 have the same cause: a Task delivered a public change whose surrounding
 contract — the test pinning a payload, the help copy naming a flag, the
 glossary entry naming a term — sat outside every bounded scope, so no Task
