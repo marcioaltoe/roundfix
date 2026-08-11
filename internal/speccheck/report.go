@@ -214,6 +214,10 @@ func RenderJSON(result Result) ([]byte, error) {
 	return data, nil
 }
 
+// MechanicalRowsHeading is the section heading WriteMechanicalResult emits
+// for the mechanical rows table.
+const MechanicalRowsHeading = "## Mechanical rows\n\n"
+
 // WriteMechanicalResult writes the mechanical sections and row seeds that a
 // Daemon-owned report lifecycle can place in a new QA Report. It does not
 // choose a report path, edit an existing report, or compute a verdict.
@@ -242,7 +246,7 @@ func WriteMechanicalResult(writer io.Writer, result MechanicalResult) error {
 		report.WriteString("\n\n")
 	}
 
-	report.WriteString("## Mechanical rows\n\n")
+	report.WriteString(MechanicalRowsHeading)
 	report.WriteString("| # | Status | Provenance |\n| - | --- | --- |\n")
 	for _, row := range result.Carried {
 		status := "carried (established by: " + row.EstablishedBy + "; head: " + row.EstablishedHead + ")"

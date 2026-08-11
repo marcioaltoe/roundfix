@@ -30,6 +30,7 @@ func TestMechanicalAuthPaths(t *testing.T) {
 	redCommit := commitMechanicalFiles(t, repoRoot, "unauthorized change", "outside.txt")
 
 	t.Run("green fixture accepts exact bounded path", func(t *testing.T) {
+		t.Parallel()
 		result := runMechanical(t, speccheck.MechanicalRequest{
 			RepoRoot:          repoRoot,
 			AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
@@ -43,6 +44,7 @@ func TestMechanicalAuthPaths(t *testing.T) {
 	})
 
 	t.Run("red fixture names every path outside the bound", func(t *testing.T) {
+		t.Parallel()
 		result := runMechanical(t, speccheck.MechanicalRequest{
 			RepoRoot:          repoRoot,
 			AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
@@ -59,6 +61,7 @@ func TestMechanicalAuthPaths(t *testing.T) {
 	})
 
 	t.Run("absent authorization records a skip", func(t *testing.T) {
+		t.Parallel()
 		result := runMechanical(t, speccheck.MechanicalRequest{
 			RepoRoot:          repoRoot,
 			AuthorizationPath: "docs/workflow/authorizations/missing.md",
@@ -216,8 +219,8 @@ func TestMechanicalConsequentOrder(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result := runMechanical(t, speccheck.MechanicalRequest{
 				RepoRoot:        repoRoot,
 				ConsequentFixes: []speccheck.ConsequentFixDeclaration{tt.declaration},
@@ -230,6 +233,7 @@ func TestMechanicalConsequentOrder(t *testing.T) {
 	}
 
 	t.Run("absent declaration records a skip", func(t *testing.T) {
+		t.Parallel()
 		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot})
 		assertMechanicalSkip(t, result, speccheck.DetectorMechanicalConsequentOrder, "consequent-fix declaration")
 	})
@@ -244,11 +248,13 @@ func TestMechanicalReportShape(t *testing.T) {
 	copyMechanicalFixture(t, repoRoot, "evidence/pass.txt", "docs/specs/mechanical/qa/evidence/pass.txt")
 
 	t.Run("green fixture has terminal typed rows and exact counts", func(t *testing.T) {
+		t.Parallel()
 		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: "docs/specs/mechanical/qa/report-green.md"})
 		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalReportShape)
 	})
 
 	t.Run("red fixture reports every structural defect", func(t *testing.T) {
+		t.Parallel()
 		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: "docs/specs/mechanical/qa/report-red.md"})
 		findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
 		if len(findings) < 3 {
@@ -262,6 +268,7 @@ func TestMechanicalReportShape(t *testing.T) {
 	})
 
 	t.Run("absent report records a skip", func(t *testing.T) {
+		t.Parallel()
 		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: "docs/specs/mechanical/qa/missing.md"})
 		assertMechanicalSkip(t, result, speccheck.DetectorMechanicalReportShape, "docs/specs/mechanical/qa/missing.md")
 		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalReportShape)
@@ -455,7 +462,6 @@ func TestCarriable(t *testing.T) {
 	}
 
 	for _, tt := range refusals {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			row, established, current := valid()
 			var changed []string
@@ -659,11 +665,6 @@ func TestMaterializeMechanicalResult(t *testing.T) {
 }
 
 func TestMechanicalCorpusNonRegression(t *testing.T) {
-	t.Parallel()
-	assertMechanicalCorpusBudget(t)
-}
-
-func TestCheckCorpusBudget(t *testing.T) {
 	t.Parallel()
 	assertMechanicalCorpusBudget(t)
 }

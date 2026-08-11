@@ -38,6 +38,8 @@ type QAMechanicalStage interface {
 // citation-only mechanical detectors.
 type SpecCheckQAMechanicalStage struct{}
 
+var _ QAMechanicalStage = SpecCheckQAMechanicalStage{}
+
 func (SpecCheckQAMechanicalStage) Run(ctx context.Context, request speccheck.MechanicalRequest) (speccheck.MechanicalResult, error) {
 	return speccheck.RunMechanicalStage(ctx, request)
 }
@@ -1929,10 +1931,13 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []st
 	if strings.TrimSpace(plan.HeadSHA) == "" || len(boundedPaths) == 0 {
 		return nil, nil
 	}
-	command := exec.CommandContext(ctx, "git", "-C", plan.WorkDir, "log", "--format=%H%x1f%B%x1e", "HEAD")
+	revisionRange := strings.TrimSpace(plan.HeadSHA) + "..HEAD"
+	command := exec.CommandContext(ctx, "git", "-C", plan.WorkDir, "log", "--no-merges",
+		"--format=%(trailers:key=Roundfix-Spec,valueonly,unfold)%x1f%(trailers:key=Roundfix-Task,valueonly,unfold)%x1f%H%x1e",
+		revisionRange)
 	output, err := command.Output()
 	if err != nil {
-		return nil, fmt.Errorf("read Task commits for Spec %s: %w", plan.Spec.Slug, err)
+		return nil, fmt.Errorf("read Task commits for Spec %s: %w", plan.Spec.Slug, gitExecStderr(err))
 	}
 	tasks := make(map[string]spec.Task, len(plan.Tasks))
 	for _, task := range plan.Tasks {
@@ -1942,19 +1947,20 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []st
 	}
 	commitsByTask := make(map[string]string, len(tasks))
 	for _, record := range bytes.Split(output, []byte{0x1e}) {
-		parts := bytes.SplitN(bytes.TrimSpace(record), []byte{0x1f}, 2)
-		if len(parts) != 2 {
+		parts := bytes.SplitN(bytes.TrimSpace(record), []byte{0x1f}, 3)
+		if len(parts) != 3 {
 			continue
 		}
-		message := string(parts[1])
-		if trailerValue(message, "Roundfix-Spec") != plan.Spec.Slug {
+		specSlug := strings.TrimSpace(string(parts[0]))
+		taskID := strings.TrimSpace(string(parts[1]))
+		sha := strings.TrimSpace(string(parts[2]))
+		if specSlug != plan.Spec.Slug {
 			continue
 		}
-		taskID := trailerValue(message, "Roundfix-Task")
-		if _, known := tasks[taskID]; !known || commitsByTask[taskID] != "" {
+		if _, known := tasks[taskID]; !known || commitsByTask[taskID] != "" || sha == "" {
 			continue
 		}
-		commitsByTask[taskID] = strings.TrimSpace(string(parts[0]))
+		commitsByTask[taskID] = sha
 	}
 	bounded := make(map[string]bool, len(boundedPaths))
 	for _, path := range boundedPaths {
@@ -1989,25 +1995,25 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []st
 	return result, nil
 }
 
-func trailerValue(message, key string) string {
-	prefix := key + ":"
-	for _, line := range strings.Split(strings.ReplaceAll(message, "\r\n", "\n"), "\n") {
-		if value, found := strings.CutPrefix(strings.TrimSpace(line), prefix); found {
-			return strings.TrimSpace(value)
-		}
+// gitExecStderr surfaces the stderr bytes a failed git subprocess already
+// captured, so operators see the cause instead of only "exit status N".
+func gitExecStderr(err error) error {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && len(bytes.TrimSpace(exitErr.Stderr)) > 0 {
+		return fmt.Errorf("%w (stderr: %s)", err, bytes.TrimSpace(exitErr.Stderr))
 	}
-	return ""
+	return err
 }
 
 func mechanicalCommitPaths(ctx context.Context, repoRoot, sha string) ([]string, error) {
-	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", sha)
+	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", "-z", sha)
 	output, err := command.Output()
 	if err != nil {
-		return nil, fmt.Errorf("read changed paths for Task commit %s: %w", sha, err)
+		return nil, fmt.Errorf("read changed paths for Task commit %s: %w", sha, gitExecStderr(err))
 	}
 	paths := make([]string, 0)
-	for _, line := range strings.Split(string(output), "\n") {
-		if path := strings.TrimSpace(line); path != "" {
+	for _, entry := range bytes.Split(output, []byte{0}) {
+		if path := strings.TrimSpace(string(entry)); path != "" {
 			paths = append(paths, filepath.ToSlash(path))
 		}
 	}
@@ -2019,8 +2025,7 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 	if err := speccheck.WriteMechanicalResult(&mechanical, result); err != nil {
 		return "", err
 	}
-	const mechanicalRowsHeading = "## Mechanical rows\n"
-	mechanicalBody := bytes.Replace(mechanical.Bytes(), []byte(mechanicalRowsHeading), []byte("## Results\n"), 1)
+	mechanicalBody := bytes.Replace(mechanical.Bytes(), []byte(speccheck.MechanicalRowsHeading), []byte("## Results\n\n"), 1)
 	if bytes.Equal(mechanicalBody, mechanical.Bytes()) {
 		return "", errors.New("materialize mechanical QA Report: mechanical rows table is absent")
 	}

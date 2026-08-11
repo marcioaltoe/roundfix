@@ -1,11 +1,13 @@
 package speccheck
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -118,6 +120,7 @@ type mechanicalReport struct {
 	rowsBlockedDeclared    int
 	countLines             map[string]int
 	evidenceSnapshots      map[string]mechanicalEvidenceRecord
+	evidenceSnapshotsErr   error
 	parseError             error
 }
 
@@ -152,9 +155,10 @@ func Carriable(
 			return false
 		}
 		seenRefs[ref] = true
+		matcher := evidencePathMatcher(ref)
 		for _, changedPath := range changed {
 			clean := cleanMechanicalPath(changedPath)
-			if clean == "" || clean != changedPath || evidencePathMatches(ref, clean) {
+			if clean == "" || clean != changedPath || matcher(clean) {
 				return false
 			}
 		}
@@ -170,14 +174,18 @@ func Carriable(
 			return false
 		}
 	}
+	matchers := make([]func(string) bool, len(prior.Inputs))
+	for index := range prior.Inputs {
+		matchers[index] = evidencePathMatcher(prior.Inputs[index].Ref)
+	}
 	for _, evidencePath := range prior.EvidencePaths {
 		clean := cleanMechanicalPath(evidencePath)
 		if clean == "" || clean != evidencePath {
 			return false
 		}
 		covered := false
-		for index, input := range prior.Inputs {
-			if evidencePathMatches(input.Ref, clean) && evidenceSnapshotContains(established[index], clean) &&
+		for index := range prior.Inputs {
+			if matchers[index](clean) && evidenceSnapshotContains(established[index], clean) &&
 				evidenceSnapshotContains(current[index], clean) {
 				covered = true
 				break
@@ -194,11 +202,12 @@ func validEvidenceSnapshot(snapshot EvidenceSnapshot, ref string) bool {
 	if snapshot.Ref != ref || len(snapshot.Files) == 0 {
 		return false
 	}
+	matcher := evidencePathMatcher(ref)
 	previous := ""
 	for _, file := range snapshot.Files {
 		clean := cleanMechanicalPath(file.Path)
 		if clean == "" || clean != file.Path || clean <= previous ||
-			!evidencePathMatches(ref, clean) || !sha256DigestPattern.MatchString(file.SHA256) {
+			!matcher(clean) || !sha256DigestPattern.MatchString(file.SHA256) {
 			return false
 		}
 		previous = clean
@@ -227,10 +236,17 @@ func evidenceSnapshotContains(snapshot EvidenceSnapshot, path string) bool {
 	return false
 }
 
-func evidencePathMatches(ref, candidate string) bool {
+// evidencePathMatcher compiles one ref into a reusable matcher. A literal ref
+// compares by equality; a glob ref compiles its pattern once.
+func evidencePathMatcher(ref string) func(string) bool {
 	if !strings.ContainsAny(ref, "*?") {
-		return ref == candidate
+		return func(candidate string) bool { return ref == candidate }
 	}
+	compiled := regexp.MustCompile(evidenceGlobPattern(ref))
+	return compiled.MatchString
+}
+
+func evidenceGlobPattern(ref string) string {
 	runes := []rune(ref)
 	var pattern strings.Builder
 	pattern.WriteByte('^')
@@ -255,7 +271,7 @@ func evidencePathMatches(ref, candidate string) bool {
 		}
 	}
 	pattern.WriteByte('$')
-	return regexp.MustCompile(pattern.String()).MatchString(candidate)
+	return pattern.String()
 }
 
 // RunMechanicalStage evaluates every detector and returns all findings in one
@@ -292,6 +308,9 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 	} else {
 		detectMechanicalReportShape(&result, report)
 		detectMechanicalEvidencePaths(&result, repoRoot, report)
+		if report.evidenceSnapshotsErr != nil {
+			addMechanicalSkip(&result, DetectorMechanicalReportShape, "evidence_snapshots")
+		}
 		currentHead, headErr := mechanicalHead(ctx, repoRoot)
 		if headErr != nil {
 			return result, headErr
@@ -553,7 +572,7 @@ func parseMechanicalReport(path string, content []byte) mechanicalReport {
 		if err := yaml.Unmarshal([]byte(body), &document); err != nil {
 			report.parseError = fmt.Errorf("parse YAML frontmatter: %w", err)
 		} else {
-			report.evidenceSnapshots = mechanicalEvidenceSnapshots(document)
+			report.evidenceSnapshots, report.evidenceSnapshotsErr = mechanicalEvidenceSnapshots(document)
 			counts, lines, err := mechanicalBlockedCounts(document)
 			if err != nil {
 				report.parseError = err
@@ -609,10 +628,10 @@ func parseMechanicalReport(path string, content []byte) mechanicalReport {
 	return report
 }
 
-func mechanicalEvidenceSnapshots(document yaml.Node) map[string]mechanicalEvidenceRecord {
+func mechanicalEvidenceSnapshots(document yaml.Node) (map[string]mechanicalEvidenceRecord, error) {
 	records := make(map[string]mechanicalEvidenceRecord)
 	if len(document.Content) == 0 || document.Content[0].Kind != yaml.MappingNode {
-		return records
+		return records, nil
 	}
 	mapping := document.Content[0]
 	for index := 0; index+1 < len(mapping.Content); index += 2 {
@@ -630,7 +649,7 @@ func mechanicalEvidenceSnapshots(document yaml.Node) map[string]mechanicalEviden
 			} `yaml:"inputs"`
 		}
 		if err := mapping.Content[index+1].Decode(&raw); err != nil {
-			return make(map[string]mechanicalEvidenceRecord)
+			return nil, fmt.Errorf("decode evidence_snapshots: %w", err)
 		}
 		for rowID, snapshot := range raw {
 			record := mechanicalEvidenceRecord{head: strings.TrimSpace(snapshot.Head)}
@@ -643,9 +662,9 @@ func mechanicalEvidenceSnapshots(document yaml.Node) map[string]mechanicalEviden
 			}
 			records[strings.TrimSpace(rowID)] = record
 		}
-		return records
+		return records, nil
 	}
-	return records
+	return records, nil
 }
 
 func parseMechanicalRowInputs(lines []string, rows []mechanicalReportRow) {
@@ -887,37 +906,160 @@ func buildEvidenceSnapshots(ctx context.Context, repoRoot, head string, inputs [
 	}
 	snapshots := make([]EvidenceSnapshot, 0, len(inputs))
 	seenRefs := make(map[string]bool, len(inputs))
+	ordered := make([]mechanicalSnapshotInput, 0, len(inputs))
 	for _, input := range inputs {
 		ref := cleanMechanicalPath(input.Ref)
 		if input.Kind != EvidenceRepositoryPath || ref == "" || ref != input.Ref || seenRefs[ref] {
 			return nil, false, nil
 		}
 		seenRefs[ref] = true
+		matcher := evidencePathMatcher(ref)
 		var matches []string
 		for _, candidate := range paths {
-			if evidencePathMatches(ref, candidate) {
+			if matcher(candidate) {
 				matches = append(matches, candidate)
 			}
 		}
 		if len(matches) == 0 {
 			return nil, false, nil
 		}
-		files := make([]EvidenceFile, 0, len(matches))
-		for _, path := range matches {
-			command := exec.CommandContext(ctx, "git", "-C", repoRoot, "cat-file", "blob", head+":"+path)
-			content, err := command.Output()
-			if err != nil {
-				if ctxErr := ctx.Err(); ctxErr != nil {
-					return nil, false, ctxErr
-				}
-				return nil, false, nil
-			}
-			digest := sha256.Sum256(content)
-			files = append(files, EvidenceFile{Path: path, SHA256: fmt.Sprintf("%x", digest)})
+		ordered = append(ordered, mechanicalSnapshotInput{ref: ref, matches: matches})
+	}
+
+	digests, err := mechanicalBlobDigests(ctx, repoRoot, head, ordered)
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, false, ctxErr
 		}
-		snapshots = append(snapshots, EvidenceSnapshot{Ref: ref, Files: files})
+		return nil, false, err
+	}
+	for _, input := range ordered {
+		files := make([]EvidenceFile, 0, len(input.matches))
+		for _, path := range input.matches {
+			digest := digests[path]
+			if digest == "" {
+				return nil, false, fmt.Errorf("read blob at Git head %q for path %q: no content", head, path)
+			}
+			files = append(files, EvidenceFile{Path: path, SHA256: digest})
+		}
+		snapshots = append(snapshots, EvidenceSnapshot{Ref: input.ref, Files: files})
 	}
 	return snapshots, true, nil
+}
+
+// mechanicalSnapshotInput groups one evidence ref with the tracked paths it
+// matched, so blob contents can be read in one batched process per head.
+type mechanicalSnapshotInput struct {
+	ref     string
+	matches []string
+}
+
+// mechanicalBlobDigests reads the blob content for every matched path in one
+// git cat-file --batch process, writing each object spec to stdin and parsing
+// the length-prefixed records from stdout in match order. It returns a SHA256
+// digest per repository-relative path.
+func mechanicalBlobDigests(ctx context.Context, repoRoot, head string, inputs []mechanicalSnapshotInput) (map[string]string, error) {
+	ordered := make([]string, 0)
+	saw := make(map[string]bool)
+	for _, input := range inputs {
+		for _, path := range input.matches {
+			if !saw[path] {
+				saw[path] = true
+				ordered = append(ordered, path)
+			}
+		}
+	}
+
+	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "cat-file", "--batch")
+	stdin, err := command.StdinPipe()
+	if err != nil {
+		return nil, fmt.Errorf("open cat-file stdin: %w", err)
+	}
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("open cat-file stdout: %w", err)
+	}
+	if err := command.Start(); err != nil {
+		return nil, fmt.Errorf("start git cat-file --batch: %w", err)
+	}
+	writeErr := make(chan error, 1)
+	go func() {
+		writer := bufio.NewWriter(stdin)
+		for _, path := range ordered {
+			if _, err := writer.WriteString(head + ":" + path + "\n"); err != nil {
+				writeErr <- err
+				return
+			}
+		}
+		if err := writer.Flush(); err != nil {
+			writeErr <- err
+			return
+		}
+		if err := stdin.Close(); err != nil {
+			writeErr <- err
+			return
+		}
+		writeErr <- nil
+	}()
+
+	digests := make(map[string]string, len(ordered))
+	reader := bufio.NewReader(stdout)
+	var readErr error
+	for _, path := range ordered {
+		digest, err := readCatFileRecord(reader)
+		if err != nil {
+			readErr = fmt.Errorf("read blob at Git head %q for path %q: %w", head, path, err)
+			break
+		}
+		digests[path] = digest
+	}
+	if readErr != nil {
+		// Reap the child and stop feeding it before surfacing the failure, so an
+		// error path never leaks the batched process or its writer goroutine.
+		if command.Process != nil {
+			_ = command.Process.Kill()
+		}
+		_ = command.Wait()
+		return nil, readErr
+	}
+	if err := command.Wait(); err != nil {
+		if werr := <-writeErr; werr != nil {
+			return nil, fmt.Errorf("write cat-file specs: %w", werr)
+		}
+		return nil, fmt.Errorf("git cat-file --batch: %w", err)
+	}
+	if werr := <-writeErr; werr != nil {
+		return nil, fmt.Errorf("write cat-file specs: %w", werr)
+	}
+	return digests, nil
+}
+
+func readCatFileRecord(reader *bufio.Reader) (string, error) {
+	header, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	header = strings.TrimSuffix(header, "\n")
+	fields := strings.Split(header, " ")
+	if len(fields) != 3 {
+		return "", fmt.Errorf("unexpected record header %q", header)
+	}
+	if fields[1] != "blob" {
+		return "", fmt.Errorf("record %q is not a blob", header)
+	}
+	size, err := strconv.Atoi(fields[2])
+	if err != nil || size < 0 {
+		return "", fmt.Errorf("invalid blob size %q", fields[2])
+	}
+	content := make([]byte, size)
+	if _, err := io.ReadFull(reader, content); err != nil {
+		return "", err
+	}
+	if _, err := reader.ReadByte(); err != nil {
+		return "", err
+	}
+	digest := sha256.Sum256(content)
+	return fmt.Sprintf("%x", digest), nil
 }
 
 func mechanicalBlobPaths(ctx context.Context, repoRoot, head string) ([]string, error) {
@@ -1031,6 +1173,12 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 		"rows_blocked_environment": report.rowsBlockedEnvironment,
 		"rows_blocked_finding":     report.rowsBlockedFinding,
 		"rows_blocked_declared":    report.rowsBlockedDeclared,
+	}
+	if report.parseError != nil {
+		// The frontmatter never parsed, so the declared counts and their line
+		// numbers are unknown. The parse finding above already names the
+		// repair; absence claims here would misdirect it.
+		return
 	}
 	for _, field := range []string{"rows_blocked_environment", "rows_blocked_finding", "rows_blocked_declared"} {
 		line := report.countLines[field]

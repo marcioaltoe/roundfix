@@ -161,7 +161,10 @@ probes that fit the feature; unrelated probes create noise.
 ### Row input declaration
 
 A row opts into future evidence-scoped carry-forward by adding a non-empty,
-typed `inputs:` declaration to its detailed evidence block. Each entry has a
+typed `inputs:` declaration to its detailed evidence block. Place the block
+under a `### <row-id>` heading whose row identifier matches the row's `#` cell
+in the Results table, and use one fenced `yaml` block per row; a block under
+any other heading is ignored and the row is never carried. Each entry has a
 `kind` and a `ref`:
 
 ```yaml
@@ -184,10 +187,12 @@ input is never carriable. A row with no `inputs:` declaration or an empty list
 is also never carriable and must be re-observed, so carry-forward remains
 opt-in and fail-closed.
 
-This declaration is additive and inert until the carry-forward resolver lands:
-the gate does not read or act on it yet. A report without `inputs:` behaves
-exactly as it does today; existing rows, counts, statuses, verdict rules, and
-report naming do not change.
+A report without `inputs:` behaves exactly as it does today; existing rows,
+counts, statuses, verdict rules, and report naming do not change. When a future
+round closes, a `pass` row whose declaration carries only repository inputs,
+whose ancestry is proven, and whose evidence is byte-identical at the later
+head is materialized as `carried (established by: <report>; head: <sha>)` and
+is not re-observed.
 
 One row is the Spec's outside-evidence row: the acceptance row that rests on
 evidence originating outside the Spec's own artifacts — a repository the Spec
