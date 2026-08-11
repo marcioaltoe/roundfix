@@ -613,7 +613,7 @@ weaken that override.
 ### reconcile
 
 ```bash
-roundfix reconcile [run-id] [--apply] [--format <text|json>]
+roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
 ```
 
 The Reconcile Command classifies one terminal spec Run in the current
@@ -661,12 +661,23 @@ the Run Branch remains, Roundfix still requires an unambiguous Run Branch tip,
 the recorded target tip, and ancestry proof. Age and terminal outcome are also
 not cleanup evidence.
 
-`--apply` is the only mutation switch:
+Three switches mutate; every other invocation is a report. Each acts on a
+different disposition, and none of them bypasses the proof above:
 
 ```bash
-roundfix reconcile <run-id> --apply
+roundfix reconcile <run-id> --apply               # release safe and superseded surfaces
 roundfix reconcile --apply
+roundfix reconcile <run-id> --discard-superseded  # discard a Run Branch proven superseded
+roundfix reconcile <run-id> --carry-forward       # hand a stopped Run's settled Tasks back
 ```
+
+`--discard-superseded` writes the branch record before removing anything, so a
+discard that cannot be recorded does not happen. `--carry-forward` compares each
+settled Task's inputs byte-for-byte with the checkout and refuses the whole set
+rather than carrying part of it, so a Task whose Spec, instruction, or Context
+moved since settlement is never silently replayed.
+
+`--apply` remains the only switch that releases Run Worktrees:
 
 There is no force flag or user assertion that bypasses the proof. Apply acts
 only on entries classified `safe` during that invocation, then rechecks the
