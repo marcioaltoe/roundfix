@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0080-cheap-detectors-run-before-the-gate
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -62,3 +62,34 @@ This Task may create or modify only:
 - `_prd.md` → Goal 1.
 - `task_03.md` → the mechanical stage this fixture must satisfy.
 - `qa/qa-report-2026-08-11-01.md` → F-003.
+
+## Result
+
+The QA prompt fixture now initializes `fixture.gitRoot` through
+`gittest.InitRepo`, stages its fixture files with `gittest.Run`, and creates a
+deterministic initial commit. Production `HEAD` resolution and the real
+mechanical stage remain active. The prior-report fixture is also a minimal
+structurally valid closed fail report, so the report-shape detector can inspect
+it without blocking the prompt path; its filename, verdict, and asserted
+previous-report identity remain unchanged.
+
+Focused checks run after the implementation edit:
+
+- Pre-change signal: `rtk proxy env GOCACHE=/private/tmp/roundfix-task10-gocache go test ./internal/daemon -run 'TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity$' -count=1`
+  exited 1 with `resolve mechanical-stage Git head: exit status 128`.
+- The same focused command exited 0 after the fixture gained its committed
+  head and valid prior-report structure: `ok roundfix/internal/daemon`.
+
+Acceptance evidence:
+
+1. The focused test passes while using the default production mechanical stage;
+   no stage dependency was replaced or stubbed.
+2. The final diff preserves the complete assertion loops for Task Context
+   bundle content, previous QA Report path and head, and prior-change resolver
+   calls. The test change only strengthens fixture setup.
+3. `rtk git diff --name-only` exited 0 and listed only
+   `internal/daemon/task_context_test.go` and this Task file. `rtk git diff
+   --check` also exited 0 with no diagnostics.
+
+The command under this Task's `## Verification` was not run; the Daemon owns
+that exact command and Task settlement.

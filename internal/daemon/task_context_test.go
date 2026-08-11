@@ -230,7 +230,24 @@ func TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity(t *testing.
 	if err := os.MkdirAll(filepath.Dir(previousReportPath), 0o755); err != nil {
 		t.Fatalf("create previous QA Report directory: %v", err)
 	}
-	mustWriteForTest(t, previousReportPath, qaReportForTest(spec.VerdictFail))
+	mustWriteForTest(t, previousReportPath, `---
+verdict: fail
+rows_blocked_environment: 0
+rows_blocked_finding: 0
+rows_blocked_declared: 0
+---
+
+# QA Report
+
+## Results
+
+| # | Status | Evidence |
+| - | --- | --- |
+| R01 | fail | Previous QA result. |
+`)
+	gittest.InitRepo(t, fixture.gitRoot, "-b", "main")
+	gittest.Run(t, fixture.gitRoot, "add", ".")
+	gittest.Run(t, fixture.gitRoot, "commit", "-m", "initial fixture")
 
 	prior := &fakePriorChangedResolver{byWork: map[string][]string{
 		fixture.gitRoot: {"internal/changed.go"},
