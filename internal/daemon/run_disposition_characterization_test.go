@@ -31,7 +31,7 @@ import (
 // Outcome contract test: internal/daemon/engine_test.go::TestResolveCycleVerificationFailureFailsBatchAndContinues asserts that final Verification failure leaves the Review Issue failed and unresolved, with a failed Batch and no commit; task_04 rewrites it.
 // Outcome contract test: internal/daemon/engine_test.go::TestResolveCycleContinuesToNextBatchAfterFailedBatch asserts that a failed first Batch leaves one failed Review Issue while the second resolves, so one issue remains unresolved; task_04 rewrites it.
 
-func TestRunDispositionCharacterizationWorkStartedPrecedesTheFirstPrompt(t *testing.T) {
+func TestRunDispositionCharacterizationWorkStartedFollowsTheFirstAgentOutput(t *testing.T) {
 	t.Parallel()
 	sink := &captureEventSink{}
 	promptErr := errors.New("adapter refused the first prompt without Agent output")
@@ -62,13 +62,17 @@ func TestRunDispositionCharacterizationWorkStartedPrecedesTheFirstPrompt(t *test
 	if !errors.Is(err, promptErr) {
 		t.Fatalf("first prompt error = %v, want %v", err, promptErr)
 	}
-	if !runner.workStartedBeforePrompt {
-		t.Fatal("first prompt began before the Agent work-started status was published")
+	if runner.workStartedBeforeOutput {
+		t.Fatal("Agent work-started status was published before the first Agent output")
+	}
+	if !runner.workStartedAfterOutput {
+		t.Fatal("Agent work-started status was not published with the first Agent output")
 	}
 	events := sink.snapshot()
-	if len(events) != 1 || events[0].Kind != runevent.KindAgentStatus ||
-		!strings.Contains(string(events[0].Payload), agent.AgentWorkStartedStatus) {
-		t.Fatalf("events before a no-output first-prompt failure = %+v, want one Agent work-started status", events)
+	if len(events) != 2 || events[0].Kind != runevent.KindAgentStatus ||
+		!strings.Contains(string(events[0].Payload), agent.AgentWorkStartedStatus) ||
+		events[1].Kind != runevent.KindAgentMessage {
+		t.Fatalf("events = %+v, want work-started immediately before the first Agent message", events)
 	}
 }
 
@@ -343,7 +347,8 @@ func TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch(t 
 type dispositionPromptRunner struct {
 	sink                    *captureEventSink
 	err                     error
-	workStartedBeforePrompt bool
+	workStartedBeforeOutput bool
+	workStartedAfterOutput  bool
 }
 
 func (*dispositionPromptRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
@@ -352,10 +357,24 @@ func (runner *dispositionPromptRunner) Run(ctx context.Context, req agent.Execut
 	return runner.RunPrepared(ctx, req, sink)
 }
 
-func (runner *dispositionPromptRunner) RunPrepared(_ context.Context, req agent.ExecuteRequest, _ runevent.Sink) (agent.ExecuteResult, error) {
+func (runner *dispositionPromptRunner) RunPrepared(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	for _, event := range runner.sink.snapshot() {
 		if event.Kind == runevent.KindAgentStatus && strings.Contains(string(event.Payload), agent.AgentWorkStartedStatus) {
-			runner.workStartedBeforePrompt = true
+			runner.workStartedBeforeOutput = true
+		}
+	}
+	if err := sink.Publish(ctx, runevent.RunEvent{
+		RunID:   req.RunID,
+		Batch:   req.Batch.Number,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentMessage,
+		Summary: "first Agent output",
+	}); err != nil {
+		return agent.ExecuteResult{LogPath: req.LogPath}, err
+	}
+	for _, event := range runner.sink.snapshot() {
+		if event.Kind == runevent.KindAgentStatus && strings.Contains(string(event.Payload), agent.AgentWorkStartedStatus) {
+			runner.workStartedAfterOutput = true
 		}
 	}
 	return agent.ExecuteResult{LogPath: req.LogPath}, runner.err

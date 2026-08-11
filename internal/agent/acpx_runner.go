@@ -128,17 +128,18 @@ func ClaudeAdapterCommand() string {
 // ACPXRunner is the acpx-backed invocation core. Later migration tasks wire
 // this into Runner after Agent Session lifecycle is available.
 type ACPXRunner struct {
-	Command           string
-	Environment       []string
-	Now               func() time.Time
-	warnf             func(string, ...any)
-	cancelClock       cancellationClock
-	stateMu           sync.Mutex
-	ensuredSessions   map[string]struct{}
-	warmedSessions    map[string]struct{}
-	sessionSelections map[string]SelectionAssignment
-	codexSpawn        codexSpawnDependencies
-	codexResolutions  map[string]codexSpawnResolution
+	Command             string
+	Environment         []string
+	Now                 func() time.Time
+	warnf               func(string, ...any)
+	cancelClock         cancellationClock
+	stateMu             sync.Mutex
+	ensuredSessions     map[string]struct{}
+	warmedSessions      map[string]struct{}
+	workStartedSessions map[string]struct{}
+	sessionSelections   map[string]SelectionAssignment
+	codexSpawn          codexSpawnDependencies
+	codexResolutions    map[string]codexSpawnResolution
 }
 
 type cancellationTimer interface {
@@ -540,6 +541,7 @@ type acpxStreamResult struct {
 	output             string
 	stopReason         string
 	promptResultParsed bool
+	agentOutput        bool
 	err                error
 }
 
@@ -1120,9 +1122,6 @@ func (runner *ACPXRunner) Run(ctx context.Context, req ExecuteRequest, sink rune
 	if err := runner.PrepareSession(ctx, req, sink); err != nil {
 		return result, err
 	}
-	if err := runner.publishStatus(ctx, req, sink, AgentWorkStartedStatus); err != nil {
-		return result, err
-	}
 	return runner.RunPrepared(ctx, req, sink)
 }
 
@@ -1399,7 +1398,16 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Start(); err != nil {
-		return result, fmt.Errorf("start acpx prompt: %w", err)
+		failure := &SelectionFailure{
+			Runtime: strings.TrimSpace(req.Runtime.ID),
+			Reason:  "adapter startup",
+			Err:     fmt.Errorf("start acpx prompt: %w", err),
+		}
+		return result, runner.reportSelectionFailure(ctx, req.ExecuteRequest, sink, failure)
+	}
+	streamReq := req.ExecuteRequest
+	if strings.TrimSpace(streamReq.Session.Name) == "" {
+		streamReq.Session.Name = strings.TrimSpace(req.Session)
 	}
 
 	streamCh := make(chan acpxStreamResult, 1)
@@ -1409,7 +1417,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 		// it while the reader is mid-read races into "file already closed"
 		// and can drop tail output (observed on slow CI runners). Both
 		// channels are buffered, so this goroutine never blocks on delivery.
-		streamCh <- runner.readPromptStream(ctx, req.ExecuteRequest, sink, stdout, logWriter)
+		streamCh <- runner.readPromptStream(ctx, streamReq, sink, stdout, logWriter, !req.Inert)
 		waitCh <- cmd.Wait()
 	}()
 
@@ -1439,21 +1447,25 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 			result.TransportAnomaly = acpxTransportAnomaly(exitCode, stderr.String())
 			return result, nil
 		}
-		return result, runner.mapExitCode(ctx, req.ExecuteRequest, sink, exitCode, stderr.String(), result.Output)
+		mappedErr := runner.mapExitCode(ctx, req.ExecuteRequest, sink, exitCode, stderr.String(), result.Output)
+		return result, runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, stream.agentOutput, mappedErr)
 	}
 	if stream.err != nil {
-		return result, &BatchFailureError{Reason: stream.err.Error(), Stderr: stderr.String()}
+		failure := &BatchFailureError{Reason: stream.err.Error(), Stderr: stderr.String()}
+		return result, runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, stream.agentOutput, failure)
 	}
 	if result.StopReason == "" {
-		return result, &BatchFailureError{Reason: "missing session/prompt stop reason", Stderr: stderr.String()}
+		failure := &BatchFailureError{Reason: "missing session/prompt stop reason", Stderr: stderr.String()}
+		return result, runner.classifyNoOutputFailure(ctx, req.ExecuteRequest, sink, stream.agentOutput, failure)
 	}
 	return result, nil
 }
 
-func (runner ACPXRunner) readPromptStream(ctx context.Context, req ExecuteRequest, sink runevent.Sink, stdout io.Reader, logFile io.Writer) acpxStreamResult {
+func (runner *ACPXRunner) readPromptStream(ctx context.Context, req ExecuteRequest, sink runevent.Sink, stdout io.Reader, logFile io.Writer, publishWorkStarted bool) acpxStreamResult {
 	var output bytes.Buffer
 	var stopReason string
 	var promptResultParsed bool
+	var agentOutput bool
 	var streamErr error
 	reader := bufio.NewReader(stdout)
 	for {
@@ -1465,7 +1477,9 @@ func (runner ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReques
 			if _, err := output.Write(line); err != nil && streamErr == nil {
 				streamErr = fmt.Errorf("capture acpx stdout: %w", err)
 			}
-			if err := runner.handleStdoutLine(ctx, req, sink, line, &stopReason, &promptResultParsed); err != nil && streamErr == nil {
+			lineOutput, err := runner.handleStdoutLine(ctx, req, sink, line, &stopReason, &promptResultParsed, publishWorkStarted)
+			agentOutput = agentOutput || lineOutput
+			if err != nil && streamErr == nil {
 				streamErr = err
 			}
 		}
@@ -1476,7 +1490,7 @@ func (runner ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReques
 			break
 		}
 	}
-	return acpxStreamResult{output: output.String(), stopReason: stopReason, promptResultParsed: promptResultParsed, err: streamErr}
+	return acpxStreamResult{output: output.String(), stopReason: stopReason, promptResultParsed: promptResultParsed, agentOutput: agentOutput, err: streamErr}
 }
 
 func validateACPXPromptRequest(req ACPXPromptRequest) error {
@@ -1593,6 +1607,7 @@ func (runner *ACPXRunner) clearSessionState(sessionName string) {
 	defer unlock()
 	delete(runner.ensuredSessions, sessionName)
 	delete(runner.warmedSessions, sessionName)
+	delete(runner.workStartedSessions, sessionName)
 	delete(runner.sessionSelections, sessionName)
 	delete(runner.codexResolutions, sessionName)
 }
@@ -1781,42 +1796,95 @@ func acpxReasoningEffortConfigKey(runtime RuntimeSpec) (string, error) {
 	}
 }
 
-func (runner ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteRequest, sink runevent.Sink, line []byte, stopReason *string, promptResultParsed *bool) error {
+func (runner *ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteRequest, sink runevent.Sink, line []byte, stopReason *string, promptResultParsed *bool, publishWorkStarted bool) (bool, error) {
 	var message acpxJSONRPCMessage
 	if err := json.Unmarshal(line, &message); err != nil {
-		return fmt.Errorf("parse acpx stdout JSON-RPC line: %w", err)
+		return false, fmt.Errorf("parse acpx stdout JSON-RPC line: %w", err)
 	}
 	if message.Error != nil {
-		return fmt.Errorf("acpx JSON-RPC error %d: %s", message.Error.Code, message.Error.Message)
+		return false, fmt.Errorf("acpx JSON-RPC error %d: %s", message.Error.Code, message.Error.Message)
 	}
 	if message.Method == acpMethodSessionUpdate {
 		update, ok, err := streamUpdateFromSessionUpdatePayload(line)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if !ok {
-			return nil
+			return false, nil
+		}
+		if publishWorkStarted {
+			if err := runner.publishWorkStartedOnce(ctx, req, sink); err != nil {
+				return true, err
+			}
 		}
 		event := newAgentRunEvent(req, update, json.RawMessage(append([]byte(nil), line...)), eventClock(runner.Now)())
 		if err := sink.Publish(ctx, event); err != nil {
-			return fmt.Errorf("publish Run Events: %w", err)
+			return true, fmt.Errorf("publish Run Events: %w", err)
 		}
-		return nil
+		return true, nil
 	}
 	if len(message.Result) == 0 {
-		return nil
+		return false, nil
 	}
 	var response struct {
 		StopReason string `json:"stopReason"`
 	}
 	if err := json.Unmarshal(message.Result, &response); err != nil {
-		return fmt.Errorf("parse acpx session/prompt response: %w", err)
+		return false, fmt.Errorf("parse acpx session/prompt response: %w", err)
 	}
 	if response.StopReason != "" {
 		*stopReason = response.StopReason
 		*promptResultParsed = true
 	}
+	return false, nil
+}
+
+func (runner *ACPXRunner) publishWorkStartedOnce(ctx context.Context, req ExecuteRequest, sink runevent.Sink) error {
+	sessionName := strings.TrimSpace(req.Session.Name)
+	if sessionName == "" {
+		return errors.New("Agent Session is required to publish Agent work-started status")
+	}
+	unlock := runner.lockState()
+	defer unlock()
+	if _, ok := runner.workStartedSessions[sessionName]; ok {
+		return nil
+	}
+	if err := runner.publishStatus(ctx, req, sink, AgentWorkStartedStatus); err != nil {
+		return err
+	}
+	if runner.workStartedSessions == nil {
+		runner.workStartedSessions = map[string]struct{}{}
+	}
+	runner.workStartedSessions[sessionName] = struct{}{}
 	return nil
+}
+
+func (runner ACPXRunner) classifyNoOutputFailure(ctx context.Context, req ExecuteRequest, sink runevent.Sink, agentOutput bool, err error) error {
+	if err == nil || agentOutput {
+		return err
+	}
+	var batchErr *BatchFailureError
+	if !errors.As(err, &batchErr) {
+		return err
+	}
+	failure := &SelectionFailure{
+		Runtime: strings.TrimSpace(req.Runtime.ID),
+		Reason:  strings.TrimSpace(batchErr.Reason),
+		Err:     batchErr.Err,
+	}
+	if failure.Err == nil {
+		if detail := strings.TrimSpace(batchErr.Stderr); detail != "" {
+			failure.Err = errors.New(detail)
+		}
+	}
+	return runner.reportSelectionFailure(ctx, req, sink, failure)
+}
+
+func (runner ACPXRunner) reportSelectionFailure(ctx context.Context, req ExecuteRequest, sink runevent.Sink, failure *SelectionFailure) error {
+	if err := runner.publishStatus(ctx, req, sink, AgentSelectionFailedStatus); err != nil {
+		return errors.Join(failure, err)
+	}
+	return failure
 }
 
 func acpxTransportAnomaly(exitCode int, stderr string) string {

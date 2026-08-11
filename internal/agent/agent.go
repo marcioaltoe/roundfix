@@ -108,10 +108,43 @@ const (
 	ProtocolACP   = "acp"
 	ProtocolStdio = "stdio"
 
-	AgentSessionStartedStatus = "session_started"
-	AgentSessionClosedStatus  = "session_closed"
-	AgentWorkStartedStatus    = "agent_work_started"
+	AgentSessionStartedStatus  = "session_started"
+	AgentSessionClosedStatus   = "session_closed"
+	AgentWorkStartedStatus     = "agent_work_started"
+	AgentSelectionFailedStatus = "agent_selection_failed"
 )
+
+// SelectionFailure marks a turn that ended before the Agent produced output,
+// so a configured Fallback Selection remains eligible.
+type SelectionFailure struct {
+	Runtime string
+	Reason  string
+	Err     error
+}
+
+func (err *SelectionFailure) Error() string {
+	if err == nil {
+		return ""
+	}
+	message := "Agent Selection failed"
+	if runtime := strings.TrimSpace(err.Runtime); runtime != "" {
+		message += fmt.Sprintf(" for runtime %q", runtime)
+	}
+	if reason := strings.TrimSpace(err.Reason); reason != "" {
+		message += ": " + reason
+	}
+	if err.Err != nil {
+		message += ": " + err.Err.Error()
+	}
+	return message
+}
+
+func (err *SelectionFailure) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
 
 // DefaultRunner dispatches real Agent work through acpx. Now overrides the
 // event clock; nil means time.Now.
