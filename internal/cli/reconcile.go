@@ -10,8 +10,12 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"roundfix/internal/app"
+	roundconfig "roundfix/internal/config"
+	"roundfix/internal/daemon"
+	"roundfix/internal/runevent"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -19,9 +23,10 @@ import (
 const reconcileSchemaVersion = "roundfix-reconcile/v1"
 
 type reconcileOptions struct {
-	runID  string
-	apply  bool
-	format string
+	runID             string
+	apply             bool
+	discardSuperseded bool
+	format            string
 }
 
 type reconcileProcessController interface {
@@ -43,7 +48,8 @@ type reconcileResult struct {
 	Action            string `json:"action"`
 	RefusalReason     string `json:"refusalReason"`
 
-	inspected runworktree.RunWorktreeReconciliation
+	inspected   runworktree.RunWorktreeReconciliation
+	disposition daemon.BranchDisposition
 }
 
 type reconcileSummary struct {
@@ -103,6 +109,7 @@ type reconcileDebrisSummary struct {
 type reconcileRunSelection struct {
 	selected []store.Run
 	all      []store.Run
+	coverage []daemon.RunTaskCoverage
 }
 
 func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -151,6 +158,23 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 
 	report := inspectReconcileRuns(ctx, repository, opts, runs)
+	discardRefusals := 0
+	if opts.discardSuperseded {
+		artifactRoot, resolveErr := roundconfig.ResolveArtifactDirectory(
+			loaded.Config.Defaults.ArtifactDir,
+			repository,
+			loaded.HomeDir,
+		)
+		if resolveErr != nil {
+			printReconcileOperationalFailure(
+				fmt.Errorf("resolve Artifact Root for branch disposition records: %w", resolveErr),
+				reconcileRetryCommand(opts.runID),
+				stderr,
+			)
+			return exitRunFailed
+		}
+		discardRefusals = discardSupersededReconcileResults(ctx, artifactRoot, &report)
+	}
 	if opts.apply && (report.Summary.Safe+report.Summary.Superseded > 0 ||
 		len(report.ProcessCandidates) > 0 || len(report.RunBranchCandidates) > 0) {
 		applyReconcileReport(ctx, loaded.HomeDir, opts, &report)
@@ -171,6 +195,13 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 		)
 		return exitRunFailed
 	}
+	if discardRefusals > 0 {
+		printReconcileValidationFailure(
+			validationError{message: fmt.Sprintf("%d Run Branch disposition(s) could not be proven superseded", discardRefusals)},
+			stderr,
+		)
+		return exitPreflight
+	}
 	return exitOK
 }
 
@@ -181,6 +212,8 @@ func parseReconcileOptions(args []string) (reconcileOptions, error) {
 		switch {
 		case arg == "--apply":
 			opts.apply = true
+		case arg == "--discard-superseded":
+			opts.discardSuperseded = true
 		case arg == "--format":
 			if index+1 >= len(args) {
 				return opts, validationError{message: "flag needs an argument: --format"}
@@ -205,6 +238,9 @@ func parseReconcileOptions(args []string) (reconcileOptions, error) {
 		return opts, validationError{
 			message: fmt.Sprintf("unknown --format %q; use text or json", opts.format),
 		}
+	}
+	if opts.apply && opts.discardSuperseded {
+		return opts, validationError{message: "--apply and --discard-superseded are mutually exclusive"}
 	}
 	return opts, nil
 }
@@ -272,7 +308,59 @@ func loadReconcileRuns(ctx context.Context, homeDir, repository, runID string) (
 			selected = append(selected, run)
 		}
 	}
-	return reconcileRunSelection{selected: selected, all: all}, nil
+	coverage, err := loadReconcileTaskCoverage(ctx, reader, all)
+	if err != nil {
+		return reconcileRunSelection{}, err
+	}
+	return reconcileRunSelection{selected: selected, all: all, coverage: coverage}, nil
+}
+
+func loadReconcileTaskCoverage(
+	ctx context.Context,
+	reader *store.Store,
+	runs []store.Run,
+) ([]daemon.RunTaskCoverage, error) {
+	const pageSize = 256
+	coverage := make([]daemon.RunTaskCoverage, 0, len(runs))
+	for _, run := range runs {
+		completed := make(map[string]bool)
+		var cursor int64
+		for {
+			entries, err := reader.RunEventsAfter(ctx, run.ID, cursor, pageSize)
+			if err != nil {
+				return nil, fmt.Errorf("read Task coverage for later Run %q: %w", run.ID, err)
+			}
+			for _, entry := range entries {
+				cursor = entry.Cursor
+				if entry.Event.Kind != runevent.KindDaemonTask {
+					continue
+				}
+				var payload struct {
+					Task   string `json:"task"`
+					Phase  string `json:"phase"`
+					Status string `json:"status"`
+				}
+				if err := json.Unmarshal(entry.Event.Payload, &payload); err != nil {
+					return nil, fmt.Errorf("decode Task coverage event %d for later Run %q: %w", entry.Cursor, run.ID, err)
+				}
+				if payload.Phase == "settled" && payload.Status == "completed" {
+					if taskID := strings.TrimSpace(payload.Task); taskID != "" {
+						completed[taskID] = true
+					}
+				}
+			}
+			if len(entries) < pageSize {
+				break
+			}
+		}
+		tasks := make([]string, 0, len(completed))
+		for taskID := range completed {
+			tasks = append(tasks, taskID)
+		}
+		slices.Sort(tasks)
+		coverage = append(coverage, daemon.RunTaskCoverage{Run: run, CompletedTasks: tasks})
+	}
+	return coverage, nil
 }
 
 func inspectReconcileRuns(
@@ -284,6 +372,8 @@ func inspectReconcileRuns(
 	mode := "dry-run"
 	if opts.apply {
 		mode = "apply"
+	} else if opts.discardSuperseded {
+		mode = "discard-superseded"
 	}
 	report := reconcileReport{
 		SchemaVersion:       reconcileSchemaVersion,
@@ -304,6 +394,9 @@ func inspectReconcileRuns(
 			result.RefusalReason = err.Error()
 			result.Action = "inspect Git state and rerun: " + reconcileRetryCommand(run.ID)
 			report.Summary.OperationalFailures++
+		} else {
+			disposition, dispositionErr := daemon.ClassifySupersededBranch(ctx, run, runs.coverage)
+			applyReconcileBranchDisposition(&result, opts, disposition, dispositionErr)
 		}
 		report.Results = append(report.Results, result)
 		classifications[run.ID] = result.Classification
@@ -320,6 +413,45 @@ func inspectReconcileRuns(
 	report.DebrisSummary.RunBranchCandidates = len(report.RunBranchCandidates)
 	report.DebrisSummary.Preserved = len(report.PreservedCandidates)
 	return report
+}
+
+func applyReconcileBranchDisposition(
+	result *reconcileResult,
+	opts reconcileOptions,
+	disposition daemon.BranchDisposition,
+	dispositionErr error,
+) {
+	if result == nil {
+		return
+	}
+	result.disposition = disposition
+	if dispositionErr != nil {
+		if opts.discardSuperseded {
+			result.Action = "preserve"
+			result.RefusalReason = dispositionErr.Error()
+		}
+		return
+	}
+	if !disposition.Superseded {
+		if opts.discardSuperseded && strings.TrimSpace(disposition.RefusalReason) != "" {
+			result.Action = "preserve"
+			result.RefusalReason = disposition.RefusalReason
+		}
+		return
+	}
+	// Keep legacy --apply classification and cleanup unchanged. The named
+	// disposition reports only branches that actually held Run commits.
+	if opts.apply || (!opts.discardSuperseded && len(disposition.Commits) == 0) {
+		return
+	}
+	result.Classification = string(runworktree.ReconciliationSuperseded)
+	result.Evidence = disposition.Reason
+	result.RefusalReason = ""
+	if opts.discardSuperseded {
+		result.Action = "discard after writing branch record"
+	} else {
+		result.Action = "would discard with --discard-superseded"
+	}
 }
 
 func inspectReconcileProcesses(
@@ -607,6 +739,44 @@ func newReconcileResult(
 		result.RefusalReason = inspected.Reason
 	}
 	return result
+}
+
+func discardSupersededReconcileResults(
+	ctx context.Context,
+	artifactRoot string,
+	report *reconcileReport,
+) int {
+	if report == nil {
+		return 0
+	}
+	refusals := 0
+	for index := range report.Results {
+		result := &report.Results[index]
+		disposition := result.disposition
+		if !disposition.Superseded {
+			result.Action = "preserve"
+			if strings.TrimSpace(result.RefusalReason) == "" {
+				result.RefusalReason = disposition.RefusalReason
+			}
+			refusals++
+			continue
+		}
+		recordPath := filepath.Join(artifactRoot, "runs", result.RunID, "branch-disposition.json")
+		if err := daemon.RecordAndDiscardSupersededBranch(ctx, recordPath, disposition, time.Now().UTC()); err != nil {
+			result.Action = "preserve"
+			if _, statErr := os.Stat(recordPath); statErr == nil {
+				result.Action += "; branch record written at " + recordPath
+			}
+			result.RefusalReason = err.Error()
+			report.Summary.OperationalFailures++
+			continue
+		}
+		result.Action = "discarded"
+		result.RefusalReason = ""
+		result.Evidence = disposition.Reason + "; branch record: " + recordPath
+		report.Summary.Applied++
+	}
+	return refusals
 }
 
 func applyReconcileReport(
