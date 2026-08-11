@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 14,
+  "version": 15,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -123,6 +123,10 @@
         {
           "id": "trigger.context-workflow.knowledge-workspace",
           "when": "Consulting the configured knowledge workspace for relevant prior context."
+        },
+        {
+          "id": "trigger.context-workflow.knowledge-workspace-secondbrain-authoring",
+          "when": "Consulting the Secondbrain before authoring an Idea, PRD, or TechSpec."
         }
       ]
     },

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 7,
+  "version": 8,
   "kind": "knowledge-source",
   "title": "Secondbrain guidance",
   "dependsOn": [
@@ -32,7 +32,7 @@
   "supportingGuides": [
     {
       "id": "guide.secondbrain",
-      "version": 7,
+      "version": 8,
       "path": "docs/agents/secondbrain.md",
       "template": "template.guide.secondbrain",
       "rules": [
@@ -48,7 +48,7 @@
   "rules": [
     {
       "id": "rule.secondbrain.index-first",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.secondbrain",
         "coverage.research"
@@ -57,7 +57,7 @@
         {
           "id": "clause.secondbrain.01-consult-triggers",
           "enforcement": "mandatory",
-          "guidance": "Consult the local Secondbrain before acting when repository context does not answer business or prior-decision questions, fiscal or tax concepts, cross-project documentation, knowledge about Vortex, Tax, Visio, or Gesttione, or shared architecture patterns. Do not consult it when local code, `CONTEXT.md`, ADRs, and repository documentation fully answer the task."
+          "guidance": "Consult the local Secondbrain before making a design or architecture proposal, and before authoring an Idea, PRD, or TechSpec."
         },
         {
           "id": "clause.secondbrain.02-query-order",

@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0085-what-an-agent-reads-before-it-decides
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -90,3 +90,55 @@ it approves the Task before it starts. Regression is the Run-level gate's job.
 - `_prd.md` → the consultation obligation.
 - `_techspec.md` → Build Order 6.
 - ADR-0081.
+
+## Result
+
+Implemented the unconditional Secondbrain consultation clause at the two
+authorized moments and bound `knowledge-workspace` activation to Idea, PRD,
+and TechSpec authoring through an explicit Secondbrain authoring trigger.
+Regenerated the source-baseline manifest, catalog pins, plan fixtures, and
+rendered guide fixtures with the sanctioned Baseline digest target.
+
+Focused checks:
+
+- Exact `jq -e` assertions for the consultation clause and authoring trigger:
+  passed.
+- `cmp -s docs/agents/secondbrain.md internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/secondbrain.md`:
+  passed; the repository guide matches the generated managed guide.
+- `GOCACHE=/private/tmp/roundfix-task06-gocache go test ./internal/baseline -run '^(TestCatalogCompatibility|TestFormatterComposition|TestBaselineCompatibilityCorpus)$' -count=1`:
+  passed. The first attempt used the host Go cache and was blocked by sandbox
+  permissions; the writable-cache retry passed.
+- `make baseline-digests`: passed and regenerated the derived artifacts. A
+  second run with the writable Go cache reported `changed:false`, proving the
+  derived pins match their canonical sources.
+
+Acceptance evidence:
+
+- The catalog clause now requires consultation before a design or architecture
+  proposal and before authoring an Idea, PRD, or TechSpec, with no
+  local-documentation condition.
+- `context-workflow` now carries
+  `trigger.context-workflow.knowledge-workspace-secondbrain-authoring` for
+  Secondbrain consultation before Idea, PRD, and TechSpec authoring.
+- The generated Secondbrain and skill-dispatch guide fixtures carry the new
+  clause and authoring-stage binding, and the repository Secondbrain managed
+  region matches its generated fixture.
+- Sanctioned regeneration is idempotent after the edit, so the derived pins
+  match.
+
+Verification feedback repair, attempt 1:
+
+- Inspected the Daemon diagnostic artifact; it exists but contains no log
+  bytes. The Daemon report identifies the failed probe and exit status.
+- A pre-repair structured JSON check confirmed that `context-workflow` had no
+  lowercase `secondbrain` token: the binding used only the generic
+  `knowledge-workspace` name, so it could not satisfy the authored probe.
+- Renamed the binding to
+  `trigger.context-workflow.knowledge-workspace-secondbrain-authoring` and made
+  its activation text explicitly require consulting the Secondbrain before
+  authoring an Idea, PRD, or TechSpec.
+- Post-repair `jq -e` assertions confirmed both the lowercase `secondbrain`
+  token and the exact authoring trigger. The generated skill-dispatch guide
+  contains the same trigger.
+- The focused Baseline contract tests passed, and the post-repair sanctioned
+  regeneration rerun reported `changed:false`.

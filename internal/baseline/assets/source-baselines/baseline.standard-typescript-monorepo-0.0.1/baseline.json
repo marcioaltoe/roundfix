@@ -1,6 +1,6 @@
 {
   "corpus": "corpus",
-  "corpusDigest": "a15442beedcefe5089e30726cfc73f15e62c9bad59e3a6051515a065cb7ff117",
+  "corpusDigest": "20e53cfc8159c74644cc876bca8d509ee8ec5a500a897fc6885ca503d67b0f0a",
   "deniedProjectTokens": [
     "fluxus",
     "oraculum"
@@ -8,7 +8,7 @@
   "entryCount": 134,
   "id": "baseline.standard-typescript-monorepo-0.0.1",
   "manifest": "manifest.json",
-  "manifestDigest": "d1f79ceb3e05228e325d39d38113222bff163b6ce51dd32413ec307edaa65510",
+  "manifestDigest": "560cab2bdc8f0712910ec242232725da58b211f078be3da92a1cdec3cb619566",
   "profile": "standard-typescript-monorepo",
   "schemaVersion": "setup-context-driven/source-baseline/0.0.1",
   "version": "0.0.1"

@@ -145,6 +145,7 @@ Individual skill triggers:
   - `trigger.frontend.interface-design`: Designing frontend interface hierarchy and controls.
 - `knowledge-workspace`:
   - `trigger.context-workflow.knowledge-workspace`: Consulting the configured knowledge workspace for relevant prior context.
+  - `trigger.context-workflow.knowledge-workspace-secondbrain-authoring`: Consulting the Secondbrain before authoring an Idea, PRD, or TechSpec.
 - `logtape`:
   - `trigger.backend.logtape`: Changing structured logging through LogTape.
 - `motion`:
