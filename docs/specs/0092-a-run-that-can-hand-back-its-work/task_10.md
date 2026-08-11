@@ -65,7 +65,10 @@ This Task may create or modify only:
 - `go run -buildvcs=false ./cmd/roundfix reconcile --help 2>&1 | grep -q -- '--discard-superseded'` — expected: exits 0. The help lists only `--apply` and `--format` before this Task, so the command fails against the unchanged tree.
 - `go run -buildvcs=false ./cmd/roundfix reconcile --help 2>&1 | grep -q -- '--carry-forward'` — expected: exits 0.
 - `grep -q 'Branch Disposition' CONTEXT.md` — expected: exits 0. The term is absent before this Task.
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestRunReconcile' -count=1 2>&1 | tee /dev/stderr | grep -q '^ok'` — expected: exits 0, proving the help edit did not disturb the reconcile surface it documents.
+The reconcile suite is deliberately not listed here. It passes against the
+unchanged tree, so asserting it would approve this Task before any work
+happened — the pre-work probe refused exactly that on 2026-08-11. Proving the
+help edit disturbed nothing is the Run-level gate's job.
 
 ## References
 
