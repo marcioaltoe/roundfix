@@ -61,9 +61,14 @@ instead.
   — expected: exit 0; the named fixture test is selected and passes.
 - `go test -count=1 ./internal/baseline/...`
   — expected: exit 0; the package the correction lives in is green.
-- `grep -q 'sourceBaseline.Identity.EntryCount != len(sourceBaseline.Entries)' internal/baseline/preservation_test.go && grep -q 'maintainedSourceBaselineAccounting' internal/baseline/preservation_test.go && ! grep -q 'maintainedSourceBaselineAccounting = 51' internal/baseline/preservation_test.go` — expected: exits 0. The first two halves prove the invariant and the named
+- `grep -q 'sourceBaseline.Identity.EntryCount != len(sourceBaseline.Entries)' internal/baseline/preservation_test.go && grep -q 'maintainedSourceBaselineAccounting' internal/baseline/preservation_test.go && ! grep -q 'maintainedSourceBaselineEntries    = 132' internal/baseline/preservation_test.go` — expected: exits 0. The first two halves prove the invariant and the named
 constant survive as separate assertions; the third proves the constant actually
-moved off `51`, the value Task 06's clauses invalidated. Without it the command
+moved off `132`, the entry count Task 06's clauses invalidated. The Agent proved
+on 2026-08-11 that `maintainedSourceBaselineAccounting` legitimately stays at
+`51` — the sanctioned regeneration reports 134 entries and 51 accounting rows —
+and refused to make an assertion true that the regenerated artifacts say is
+false. This command named the wrong constant; the entry count is the one that
+moves. Without it the command
 asserts only that two strings this file already contains are still there, and
 the pre-work probe refused exactly that on 2026-08-11.
   — expected: exit 0; the invariant and accounting assertions survived rather
