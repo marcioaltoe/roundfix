@@ -25,9 +25,12 @@ graph:
     - id: task_07
       file: task_07.md
       needs: [task_04]
+    - id: task_09
+      file: task_09.md
+      needs: [task_04]
     - id: task_08
       file: task_08.md
-      needs: [task_05, task_06, task_07]
+      needs: [task_05, task_06, task_07, task_09]
 ---
 
 # Tasks — What an Agent reads before it decides
@@ -41,6 +44,7 @@ graph:
 | task_05 | Give every retired ADR a status and a forward pointer     | docs    | medium     | task_04                   |
 | task_06 | Make the Secondbrain consultation unconditional           | infra   | medium     | task_01                   |
 | task_07 | Exclude the single archive root from review               | infra   | low        | task_04                   |
+| task_09 | Move the consumers the relocation left behind | backend | high | task_04 |
 | task_08 | Run the final QA gate                                     | qa      | high       | task_05, task_06, task_07 |
 
 Waves: 1 → task_01 · 2 → task_02, task_06 · 3 → task_03 · 4 → task_04 · 5 → task_05, task_07 · 6 → task_08
