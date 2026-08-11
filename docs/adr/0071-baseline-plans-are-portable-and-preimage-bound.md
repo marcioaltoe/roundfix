@@ -1,6 +1,12 @@
-# ADR-0071: Baseline Plans are portable and preimage-bound
+---
+status: accepted
+created_at: 2026-07-24T21:27:41Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
 
-Status: Accepted
+# ADR-0071: Baseline Plans are portable and preimage-bound
 
 A `roundfix/baseline-plan/v1` document is a self-contained, path-relative
 artifact that carries the exact planned postimages, canonical managed-entry

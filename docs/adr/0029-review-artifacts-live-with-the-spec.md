@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-07-06T21:05:00Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Review artifacts live with the Spec
 
 Round and Review Issue artifacts default into the repository's spec tree instead of a loose user-scoped root, resolved by hierarchy: an explicitly configured Artifact Directory always wins; otherwise a pull request associated with a Spec (newest `Roundfix-Spec` commit trailer on its head, or an explicit spec flag) stores under `docs/specs/<slug>/reviews/`, and a spec-less review under `docs/specs/_reviews/pr-<n>/`. Run Worktree isolation keeps the artifacts out of Batch commits by construction. Supersedes ADR-0003's location default; the configurability it introduced survives as the top of the hierarchy. The never-commit clause this ADR originally carried is superseded by ADR-0036: Roundfix now commits review artifacts in a separate Daemon-owned docs commit.

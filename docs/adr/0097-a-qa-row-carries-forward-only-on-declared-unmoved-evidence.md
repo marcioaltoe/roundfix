@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-08-06T21:23:58Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # A QA row carries forward only on declared, unmoved evidence
 
 A QA Report row may be carried forward from an earlier report of the same Spec

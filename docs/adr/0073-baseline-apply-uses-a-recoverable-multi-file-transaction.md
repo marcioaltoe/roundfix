@@ -1,6 +1,12 @@
-# ADR-0073: Baseline apply uses a recoverable multi-file transaction
+---
+status: accepted
+created_at: 2026-07-24T21:27:41Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
 
-Status: Accepted
+# ADR-0073: Baseline apply uses a recoverable multi-file transaction
 
 Baseline apply acquires a repository-local exclusive lock, records a
 Git-private recovery journal, stages every postimage, revalidates the complete

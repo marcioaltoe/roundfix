@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-07-17T16:00:35Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Agent Selection encoding follows advertised ACP capabilities
 
 Roundfix represents an Agent Selection as the exact ACP Runtime, Agent Model,

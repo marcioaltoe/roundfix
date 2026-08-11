@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-06-13T00:36:33Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # ACP Runtimes can run Batches with explicit full access
 
 Roundfix keeps ACP runtime sandbox defaults unless the user explicitly opts in

@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-06-09T18:18:38Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Daemon owns batch commits and final push
 
 Roundfix creates one commit per successful Batch in the Daemon after the Agent finishes editing, updating assigned Review Issues, and passing verification. A successful Batch may be committed even when other Unresolved Review Issues remain. The Daemon never pushes per Batch or Round. It performs one Final Push only after no Unresolved Review Issues remain for the pull request.

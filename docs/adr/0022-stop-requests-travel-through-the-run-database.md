@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-07-05T22:17:04Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Stop Requests travel through the Run Database
 
 `roundfix stop` against a live Active Run records a Stop Request in the Run Database (schema v5) instead of force-completing it; the owning engine honors the flag at its next settlement boundary — the current Batch or Task still verifies and commits, then the Run ends Stopped. `--force` keeps the immediate path for dead or runaway Runs: cooperative Agent cancel through the Run's acpx Agent Session, then database completion and lock release. The database is the control channel because the Daemon already treats it as the single source of Run state (ADR-0004) and work-plan item 3 builds the long-lived daemon on the same primitive.

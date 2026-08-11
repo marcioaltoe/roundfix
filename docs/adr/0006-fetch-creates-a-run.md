@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-06-09T18:18:38Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Fetch creates a run
 
 Roundfix treats `roundfix fetch` as a tracked Fetch Run in the global Run Database rather than an untracked helper command. This gives fetched markdown artifacts a durable history and keeps Review Source access, Artifact Directory validation, and status inspection on the same path as the watch loop without starting an Agent, committing, or pushing.

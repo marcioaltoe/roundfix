@@ -1,6 +1,12 @@
-# ADR-0066: Context-Driven Baseline execution belongs to the CLI
+---
+status: accepted
+created_at: 2026-07-24T21:27:41Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
 
-Status: Accepted
+# ADR-0066: Context-Driven Baseline execution belongs to the CLI
 
 The public Roundfix CLI is the sole runtime authority for Baseline Profile
 authoring, audit, Decision Plan, Change Plan, and confirmation-gated apply.

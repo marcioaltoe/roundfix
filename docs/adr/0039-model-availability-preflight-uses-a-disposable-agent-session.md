@@ -1,6 +1,12 @@
-# ADR-0039: Model availability preflight uses a disposable Agent Session
+---
+status: accepted
+created_at: 2026-07-10T20:01:58Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
 
-Status: Accepted
+# ADR-0039: Model availability preflight uses a disposable Agent Session
 
 Before an operational command creates a Run, Roundfix opens a uniquely named
 disposable Agent Session in the Git root, assigns the effective Agent Model and

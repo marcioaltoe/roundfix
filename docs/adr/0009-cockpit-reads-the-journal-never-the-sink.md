@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-06-11T12:59:11Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Cockpit reads the Run Event Journal, never the sink
 
 The interactive Live Run View consumes Run Events exclusively from the Run Event Journal — cursor-paged replay plus data-version follow polling — even while the owning process is producing those events live. The best-effort sink path never feeds the cockpit; it remains for non-TTY text output only.

@@ -1,6 +1,12 @@
-# ADR-0040: Reasoning effort is assigned only when configured
+---
+status: accepted
+created_at: 2026-07-11T18:41:10Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
 
-Status: Accepted
+# ADR-0040: Reasoning effort is assigned only when configured
 
 Some Agent Models manage reasoning themselves and reject every
 `reasoning_effort` value through the ACP adapter (the codex gpt-5.6 family),

@@ -1,6 +1,12 @@
-# ADR-0068: Baseline Command uses one confirmation-gated workflow
+---
+status: accepted
+created_at: 2026-07-24T21:27:41Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
 
-Status: Accepted
+# ADR-0068: Baseline Command uses one confirmation-gated workflow
 
 The public `roundfix baseline` command owns one preflight-to-verification
 workflow for initial adoption and later updates. Human callers use the root

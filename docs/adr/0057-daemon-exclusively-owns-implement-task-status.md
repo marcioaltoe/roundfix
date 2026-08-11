@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-07-21T20:44:54Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Daemon exclusively owns Implement Task status
 
 During an Implement Run, the Daemon is the sole writer of a Task's status. It
