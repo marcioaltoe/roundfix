@@ -51,7 +51,7 @@ const taskExecutionInvariants = `Execution invariants:
 const qaGateContract = `QA contract:
 - Run the qa-gate process for this Spec: validate every user story and acceptance criterion from the PRD and the task files against the real application.
 - Write the QA Report to the Spec's qa/ directory as qa-report-YYYY-MM-DD.md for the day's first report and qa-report-YYYY-MM-DD-NN.md with a numeric -NN suffix for same-day reruns.
-- The QA Report frontmatter must carry the verdict: pass, fail, or partial, plus rows_blocked_environment and rows_blocked_finding. Use verdict: pass when every runnable criterion passes, every environment-blocked row records its cause and equivalent observed or supervised evidence, and no row is finding-blocked or skipped. A nonzero rows_blocked_environment does not by itself prevent pass; a nonzero rows_blocked_finding does.
+- The QA Report frontmatter must carry the verdict: pass, fail, or partial, plus rows_blocked_environment, rows_blocked_finding, and rows_blocked_declared. Use verdict: pass when every runnable criterion passes, every environment-blocked row records its cause and equivalent observed or supervised evidence, and no row is declared-blocked, finding-blocked, or skipped. A nonzero rows_blocked_environment does not by itself prevent pass; a nonzero rows_blocked_finding or rows_blocked_declared does.
 - Never commit, push, or open a pull request.
 `
 
@@ -96,7 +96,11 @@ func writeSpecContextBundle(builder *strings.Builder, bundle SpecContextBundle) 
 	writeNamedPath(builder, "Task Graph", bundle.TaskGraph)
 	writePathList(builder, "Instructions", bundle.Instructions)
 	writePathList(builder, "Interfaces", bundle.Interfaces)
-	writePathList(builder, "Prior changed files", bundle.PriorChangedFiles)
+	if len(bundle.PriorChangedFiles) == 0 {
+		builder.WriteString("- Prior changed files: none\n")
+	} else {
+		writePathList(builder, "Prior changed files", bundle.PriorChangedFiles)
+	}
 	builder.WriteString(fmt.Sprintf("- Omitted prior files: %d\n", bundle.OmittedPriorFiles))
 }
 
@@ -138,12 +142,18 @@ func writePathList(builder *strings.Builder, label string, paths []string) {
 // Open Pull Request fact and is empty when the lookup completed and found
 // none. PullRequestResolved reports whether the lookup ran at all: a failed or
 // unreadable lookup leaves PullRequest empty too, and only this flag separates
-// a proven absence from an unknown one. Inputs stay plain strings so the
-// builders never depend on the Spec parser or any store/daemon package.
+// a proven absence from an unknown one. PreviousReportPath and
+// PreviousReportHead jointly identify the previous QA Report and the head it
+// observed; both stay empty when the Spec has no previous report. Inputs stay
+// plain strings so the builders never depend on the Spec parser or any
+// store/daemon package.
 type QAPromptRequest struct {
 	SpecSlug            string
 	SpecDir             string
 	PRDPath             string
+	Context             SpecContextBundle
+	PreviousReportPath  string
+	PreviousReportHead  string
 	RunBranch           string
 	TargetBranch        string
 	UserCheckout        string
@@ -163,15 +173,37 @@ func BuildQAPrompt(req QAPromptRequest) (string, error) {
 	if strings.TrimSpace(req.PRDPath) == "" {
 		return "", errors.New("PRD path is required")
 	}
+	if req.Context.OmittedPriorFiles < 0 {
+		return "", errors.New("omitted prior file count must not be negative")
+	}
+	previousReportPath := strings.TrimSpace(req.PreviousReportPath)
+	previousReportHead := strings.TrimSpace(req.PreviousReportHead)
+	if previousReportPath == "" && previousReportHead != "" {
+		return "", errors.New("previous QA Report path is required when its head is provided")
+	}
+	if previousReportPath != "" && previousReportHead == "" {
+		return "", errors.New("previous QA Report head is required when its path is provided")
+	}
 	var builder strings.Builder
 	builder.WriteString("You are the Roundfix child Agent for one Spec QA gate.\n\n")
 	builder.WriteString(fmt.Sprintf("Spec: %s\n", req.SpecSlug))
 	builder.WriteString(fmt.Sprintf("Spec directory: %s\n", req.SpecDir))
 	builder.WriteString(fmt.Sprintf("PRD: %s\n", req.PRDPath))
 	writeQACheckoutFacts(&builder, req)
+	writePreviousQAReportIdentity(&builder, previousReportPath, previousReportHead)
+	writeSpecContextBundle(&builder, req.Context)
 	builder.WriteString("\n")
 	builder.WriteString(qaGateContract)
 	return builder.String(), nil
+}
+
+func writePreviousQAReportIdentity(builder *strings.Builder, path string, head string) {
+	if path == "" {
+		builder.WriteString("Previous QA Report: none exists for this Spec.\n")
+		return
+	}
+	builder.WriteString(fmt.Sprintf("Previous QA Report: %s\n", path))
+	builder.WriteString(fmt.Sprintf("Previous QA Report head: %s\n", head))
 }
 
 // writeQACheckoutFacts states where the QA gate runs and where the Spec's

@@ -200,6 +200,10 @@ _Avoid_: Session opened, prompt sent, turn started
 The outcome (`agent_selection_failed`) of a turn that ended before any Agent output, because the selected ACP Runtime would not serve it — exhausted quota, failed authentication, an adapter that will not start. It is a failure of the selection rather than of the work, so the Fallback Chain stays eligible.
 _Avoid_: Batch failure, agent crash, runtime error
 
+**Mechanical Refusal Code**:
+The stable token a pre-QA mechanical check emits when it can refuse from written declarations and repository facts alone, before any Agent Session opens. Four exist: `QA-AUTH-PATHS` (a tooling change outside its authorization's bounded paths), `QA-CONSEQUENT-ORDER` (a consequent fix folded into or ordered before the change that caused it), `QA-REPORT-SHAPE` (a QA Report missing a required structural element), and `QA-EVIDENCE-PATH` (an evidence path a report names but the repository does not carry). The code is the durable name a reader and a later detector both use; the human sentence beside it may be reworded, the token may not.
+_Avoid_: lint code, error code, check name
+
 **Agent Session**:
 The acpx-backed session owned by one Work Item or action. Each Implement Task owns a Task Type-selected Agent Session, requested QA owns a separate `qa` Agent Session, and review work uses a review-selected Agent Session; effective selection and fallback attempts are persisted for that owner.
 _Avoid_: ACP session, chat, conversation, thread

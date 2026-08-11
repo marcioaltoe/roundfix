@@ -21,11 +21,16 @@ import (
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
+	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
 
 const taskCycleSlug = "0001-sample-feature"
+
+func taskCycleNowForTest() time.Time {
+	return time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+}
 
 func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
 	t.Parallel()
@@ -274,6 +279,7 @@ func (fixture *taskCycleFixture) engineWithTaskWorktreesAndPriorChanges(t *testi
 		PriorChanges:  priorChanges,
 		GH:            fixture.github,
 		Sink:          fixture.sink,
+		Now:           taskCycleNowForTest,
 		Progress:      fixture.progress,
 	})
 	if err != nil {
@@ -425,8 +431,9 @@ func taskStatusInSpecRootOnDisk(t *testing.T, specsRoot string, id string) strin
 
 // taskFakeRunner scripts per-Task Agent behavior keyed by the Task id it
 // parses from the prompt, including attempted Agent status edits that the
-// Daemon must normalize. A QA prompt writes qaReport as the Spec's QA Report,
-// the way the qa-gate Agent does; an empty qaReport writes none.
+// Daemon must normalize. A QA prompt writes qaReport into the Daemon-seeded QA
+// Report, the way the qa-gate Agent does; an empty qaReport removes the seed to
+// model a deliberately missing report.
 type taskFakeRunner struct {
 	calls            *[]string
 	gitRoot          string
@@ -442,6 +449,8 @@ type taskFakeRunner struct {
 	anomalyByTask    map[string]string
 	afterTask        func(string)
 	qaReport         string
+	qaReportPath     string
+	qaSeed           string
 	qaPrompts        []string
 	seenStates       []string
 	prompts          []string
@@ -474,8 +483,24 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 	runner.taskCalls[taskID] = taskCall + 1
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
 		runner.qaPrompts = append(runner.qaPrompts, req.Prompt)
-		if runner.qaReport != "" {
-			reportPath := filepath.Join(qaSpecDirFromPromptForTest(req.Prompt, runner.gitRoot), "qa", qaReportNameForTest)
+		reportPath, reportDisplayPath, err := seededQAReportPathFromPromptForTest(req.Prompt, runner.gitRoot)
+		if err != nil {
+			return agent.ExecuteResult{}, err
+		}
+		runner.qaReportPath = reportDisplayPath
+		if seed, err := os.ReadFile(reportPath); err == nil {
+			runner.qaSeed = string(seed)
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return agent.ExecuteResult{}, err
+		}
+		if runner.qaReport == "" {
+			// An empty scripted result models an Agent that leaves no report.
+			// Remove the Daemon seed so the existing missing-verdict settlement
+			// remains exercised independently from unreadable frontmatter.
+			if err := os.Remove(reportPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return agent.ExecuteResult{}, err
+			}
+		} else {
 			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
 				return agent.ExecuteResult{}, err
 			}
@@ -615,6 +640,37 @@ func qaSpecDirFromPromptForTest(prompt string, gitRoot string) string {
 	return filepath.Join(gitRoot, "docs", "specs", taskCycleSlug)
 }
 
+func seededQAReportPathFromPromptForTest(prompt string, gitRoot string) (string, string, error) {
+	newest, err := spec.NewestQAReport(qaSpecDirFromPromptForTest(prompt, gitRoot))
+	if err != nil {
+		return "", "", fmt.Errorf("resolve Daemon-seeded QA Report: %w", err)
+	}
+	for _, line := range strings.Split(prompt, "\n") {
+		displayPath, ok := strings.CutPrefix(line, "Seeded QA Report: ")
+		if !ok {
+			continue
+		}
+		displayPath = strings.TrimSpace(displayPath)
+		seeded := displayPath
+		if !filepath.IsAbs(seeded) {
+			seeded = filepath.Join(gitRoot, seeded)
+		}
+		if filepath.Clean(seeded) != filepath.Clean(newest) {
+			return "", "", fmt.Errorf("seeded QA Report %q does not match newest report %q", seeded, newest)
+		}
+		return newest, displayPath, nil
+	}
+	return "", "", errors.New("QA prompt has no Seeded QA Report path")
+}
+
+func qaReportNameForTest() string {
+	return fmt.Sprintf("qa-report-%s.md", taskCycleNowForTest().Format("2006-01-02"))
+}
+
+func qaReportRelPathForTest() string {
+	return filepath.Join("docs", "specs", taskCycleSlug, "qa", qaReportNameForTest())
+}
+
 func setRawTaskStatusForTest(path string, status string) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -630,14 +686,303 @@ func setRawTaskStatusForTest(path string, status string) error {
 	return fmt.Errorf("task file %q has no status line", path)
 }
 
-const qaReportNameForTest = "qa-report-2026-01-01.md"
-
-func qaReportRelPathForTest() string {
-	return filepath.Join("docs", "specs", taskCycleSlug, "qa", qaReportNameForTest)
-}
-
 func qaReportForTest(verdict string) string {
 	return fmt.Sprintf("---\nverdict: %s\n---\n\n# QA Report\n", verdict)
+}
+
+type fakeQAMechanicalStage struct {
+	result   speccheck.MechanicalResult
+	err      error
+	requests []speccheck.MechanicalRequest
+	onRun    func()
+}
+
+func (stage *fakeQAMechanicalStage) Run(_ context.Context, request speccheck.MechanicalRequest) (speccheck.MechanicalResult, error) {
+	stage.requests = append(stage.requests, request)
+	if stage.onRun != nil {
+		stage.onRun()
+	}
+	return stage.result, stage.err
+}
+
+func TestMechanicalReportSatisfiesTheReportShapeContract(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	engine := fixture.engine(t, &taskFakeRunner{}, &taskFakeVerifier{}, &engineFakeCommitter{}, fixture.worktree)
+	plan := fixture.qaPlan()
+	previousReportPath := filepath.Join(plan.Spec.Dir, "qa", "qa-report-2025-12-31.md")
+	if err := os.MkdirAll(filepath.Dir(previousReportPath), 0o755); err != nil {
+		t.Fatalf("create previous QA Report directory: %v", err)
+	}
+	mustWriteForTest(t, previousReportPath, "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n# QA Report\n\n## Mechanical rows\n\n| # | Status | Provenance |\n| - | --- | --- |\n| R01 | blocked (finding: QA-FIXTURE — waits on fixture) | mechanical finding |\n")
+	gittest.InitRepo(t, fixture.gitRoot, "-b", "main")
+	gittest.AppendConfig(t, fixture.gitRoot, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
+	runGitForTest(t, fixture.gitRoot, "add", "-A")
+	runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "initial")
+	mechanical, err := speccheck.RunMechanicalStage(context.Background(), speccheck.MechanicalRequest{
+		RepoRoot:   fixture.gitRoot,
+		ReportPath: artifactCommitPath(plan, previousReportPath),
+	})
+	if err != nil {
+		t.Fatalf("RunMechanicalStage(previous report) error = %v", err)
+	}
+	if len(mechanical.Blocked) != 1 || mechanical.Blocked[0].ID != speccheck.CodeMechanicalReportShape {
+		t.Fatalf("Blocked = %#v, want one row for the unscoped report-shape findings", mechanical.Blocked)
+	}
+
+	reportPath, err := engine.writeMechanicalQAReport(plan, mechanical)
+	if err != nil {
+		t.Fatalf("writeMechanicalQAReport() error = %v", err)
+	}
+	report, err := os.ReadFile(filepath.Join(fixture.gitRoot, filepath.FromSlash(reportPath)))
+	if err != nil {
+		t.Fatalf("read mechanical QA Report: %v", err)
+	}
+	reportText := string(report)
+	for _, fragment := range []string{
+		"rows_blocked_environment: 0",
+		"rows_blocked_finding: 1",
+		"rows_blocked_declared: 0",
+		"## Results",
+		"| # | Status | Provenance |",
+		"| QA-REPORT-SHAPE | blocked (finding: QA-REPORT-SHAPE — waits on Results table has no report rows) | mechanical finding |",
+	} {
+		if !strings.Contains(reportText, fragment) {
+			t.Errorf("mechanical QA Report missing %q:\n%s", fragment, reportText)
+		}
+	}
+	if strings.Contains(reportText, "## Mechanical rows") {
+		t.Errorf("mechanical QA Report retained the non-contract row heading:\n%s", reportText)
+	}
+
+	checked, err := speccheck.RunMechanicalStage(context.Background(), speccheck.MechanicalRequest{
+		RepoRoot:   fixture.gitRoot,
+		ReportPath: reportPath,
+	})
+	if err != nil {
+		t.Fatalf("RunMechanicalStage() error = %v", err)
+	}
+	for _, finding := range checked.Findings {
+		if finding.Code == speccheck.CodeMechanicalReportShape {
+			t.Errorf("mechanical report refused its own shape: %#v", finding)
+		}
+	}
+}
+
+func TestMechanicalStageWithholdsAgentSession(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{calls: fixture.calls}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+	plan := fixture.qaPlan()
+	stage := &fakeQAMechanicalStage{
+		result: speccheck.MechanicalResult{
+			Findings: []speccheck.MechanicalFinding{{
+				Code: "QA-FIXTURE", File: "docs/specs/0001-sample-feature/_prd.md", Line: 7,
+				Detail: "fixture contradiction", Fix: "repair the fixture", RowHint: "R01",
+			}},
+			Blocked:  []speccheck.BlockedRow{{ID: "R01", FindingCode: "QA-FIXTURE", WaitingOn: "repair the fixture"}},
+			Skips:    []speccheck.MechanicalSkip{},
+			Blocking: true,
+		},
+		onRun: func() {
+			if got := taskStatusOnDisk(t, fixture.gitRoot, fixture.graph.QATaskID); got != string(spec.StatusPending) {
+				t.Fatalf("mechanical stage observed QA Task status %s, want the untouched pending status", got)
+			}
+		},
+	}
+	engine.deps.MechanicalStage = stage
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictFail {
+		t.Fatalf("blocking mechanical result settled verdict %q, want %q", result.QAVerdict, spec.VerdictFail)
+	}
+	if len(stage.requests) != 1 {
+		t.Fatalf("mechanical stage received %d requests, want 1", len(stage.requests))
+	}
+	if len(runner.requests) != 0 || len(runner.qaPrompts) != 0 {
+		t.Fatalf("blocking mechanical result created an Agent Session request: %+v", runner.requests)
+	}
+	if len(verifier.commands) != 0 {
+		t.Fatalf("mechanical stage borrowed Verification Capacity or repair execution: %v", verifier.commands)
+	}
+	if events := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification); len(events) != 0 {
+		t.Fatalf("mechanical stage emitted Verification-attempt events: %+v", events)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, fixture.graph.QATaskID); got != string(spec.StatusFailed) {
+		t.Fatalf("Daemon settled QA Task status %s, want failed", got)
+	}
+	report, err := os.ReadFile(filepath.Join(fixture.gitRoot, result.QAReportPath))
+	if err != nil {
+		t.Fatalf("read mechanical-only QA Report: %v", err)
+	}
+	reportText := string(report)
+	for _, expected := range []string{"verdict: fail", "rows_blocked_finding: 1", "### QA-FIXTURE", "blocked (finding: QA-FIXTURE"} {
+		if !strings.Contains(reportText, expected) {
+			t.Fatalf("mechanical-only QA Report missing %q:\n%s", expected, reportText)
+		}
+	}
+	if strings.Contains(strings.ToLower(reportText), "pending") {
+		t.Fatalf("mechanical-only QA Report retained a pending row:\n%s", reportText)
+	}
+	if len(committer.messages) != 1 || committer.messages[0] != QACommitMessage(taskCycleSlug, spec.VerdictFail) {
+		t.Fatalf("blocking mechanical report did not use the existing QA Report commit contract: %v", committer.messages)
+	}
+	assertMechanicalStageEvent(t, fixture.sink, true, 1, 0)
+}
+
+func TestMechanicalStageSeedsReportBeforeAgentSession(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{
+		calls: fixture.calls, gitRoot: fixture.gitRoot,
+		qaReport: qaReportForTest(spec.VerdictPass),
+	}
+	verifier := &taskFakeVerifier{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	stage := &fakeQAMechanicalStage{result: speccheck.MechanicalResult{
+		Findings: []speccheck.MechanicalFinding{},
+		Blocked:  []speccheck.BlockedRow{},
+		Skips: []speccheck.MechanicalSkip{{
+			Detector: "fixture detector", MissingArtifact: "fixture input",
+		}},
+	}}
+	engine.deps.MechanicalStage = stage
+
+	result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictPass {
+		t.Fatalf("non-blocking mechanical result settled verdict %q, want pass", result.QAVerdict)
+	}
+	if len(runner.requests) != 1 || len(runner.qaPrompts) != 1 {
+		t.Fatalf("non-blocking mechanical result ran %d Agent requests with %d QA prompts, want one of each", len(runner.requests), len(runner.qaPrompts))
+	}
+	if !strings.Contains(runner.qaPrompts[0], "Seeded QA Report: "+runner.qaReportPath) {
+		t.Fatalf("QA prompt does not name the seeded report:\n%s", runner.qaPrompts[0])
+	}
+	for _, expected := range []string{"## Mechanical skips", "fixture detector", "fixture input"} {
+		if !strings.Contains(runner.qaSeed, expected) {
+			t.Fatalf("Agent did not receive materialized mechanical seed %q:\n%s", expected, runner.qaSeed)
+		}
+	}
+	if len(verifier.commands) != 0 {
+		t.Fatalf("mechanical stage consumed Verification execution: %v", verifier.commands)
+	}
+	if events := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification); len(events) != 0 {
+		t.Fatalf("mechanical stage emitted Verification-attempt events: %+v", events)
+	}
+	assertMechanicalStageEvent(t, fixture.sink, false, 0, 1)
+}
+
+func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
+	t.Parallel()
+	repoRoot := t.TempDir()
+	gittest.InitRepo(t, repoRoot, "-b", "main")
+	gittest.AppendConfig(t, repoRoot, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
+	specDir := filepath.Join(repoRoot, "docs", "specs", taskCycleSlug)
+	authorizationPath := "docs/workflow/authorizations/mechanical.md"
+	for _, dir := range []string{filepath.Dir(filepath.Join(repoRoot, authorizationPath)), specDir, filepath.Join(repoRoot, "internal")} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("create fixture directory %q: %v", dir, err)
+		}
+	}
+	mustWriteForTest(t, filepath.Join(repoRoot, authorizationPath), "# Authorization\n\n## Bounded files\n\n- `Makefile`\n")
+	mustWriteForTest(t, filepath.Join(specDir, "_prd.md"), "# PRD\n\n## Project Constraints\n\n- Tooling authority: applicable — recorded at `"+authorizationPath+"`; bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
+	mustWriteForTest(t, filepath.Join(specDir, "task_01.md"), "ordinary task\n")
+	mustWriteForTest(t, filepath.Join(specDir, "task_02.md"), "tooling task\n")
+	mustWriteForTest(t, filepath.Join(repoRoot, "Makefile"), "verify:\n\t@true\n")
+	mustWriteForTest(t, filepath.Join(repoRoot, "internal", "ordinary.go"), "package internal\n")
+	runGitForTest(t, repoRoot, "add", "-A")
+	runGitForTest(t, repoRoot, "commit", "-q", "-m", "initial")
+	initialHead := strings.TrimSpace(runGitForTest(t, repoRoot, "rev-parse", "HEAD"))
+
+	mustWriteForTest(t, filepath.Join(repoRoot, "internal", "ordinary.go"), "package internal\n\nconst ordinary = true\n")
+	runGitForTest(t, repoRoot, "add", "-A")
+	runGitForTest(t, repoRoot, "commit", "-q", "-m", "feat: ordinary work", "-m", "Roundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_01")
+	mustWriteForTest(t, filepath.Join(repoRoot, "Makefile"), "verify:\n\t@true\nfast-verify:\n\t@true\n")
+	mustWriteForTest(t, filepath.Join(repoRoot, "outside.txt"), "folded consequence\n")
+	runGitForTest(t, repoRoot, "add", "-A")
+	runGitForTest(t, repoRoot, "commit", "-q", "-m", "chore: tooling work", "-m", "Roundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_02")
+
+	plan := TaskPlan{
+		WorkDir:   repoRoot,
+		HeadSHA:   initialHead,
+		SpecsRoot: filepath.Join(repoRoot, "docs", "specs"),
+		Spec:      spec.Spec{Slug: taskCycleSlug, Dir: specDir},
+		Tasks: []spec.Task{
+			{ID: "task_01", File: filepath.Join(taskCycleSlug, "task_01.md")},
+			{ID: "task_02", File: filepath.Join(taskCycleSlug, "task_02.md")},
+		},
+	}
+	request, err := (&Engine{}).qaMechanicalRequest(context.Background(), plan, "")
+	if err != nil {
+		t.Fatalf("qaMechanicalRequest returned error: %v", err)
+	}
+	if len(request.TaskCommits) != 1 || request.TaskCommits[0].TaskID != "task_02" {
+		t.Fatalf("qaMechanicalRequest selected Task commits %+v, want only task_02", request.TaskCommits)
+	}
+	result, err := speccheck.RunMechanicalStage(context.Background(), request)
+	if err != nil {
+		t.Fatalf("RunMechanicalStage returned error: %v", err)
+	}
+	if !result.Blocking || len(result.Findings) != 1 || !strings.Contains(result.Findings[0].Detail, "outside.txt") {
+		t.Fatalf("mechanical stage result = %+v, want the folded outside path to block", result)
+	}
+}
+
+func TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport(t *testing.T) {
+	t.Parallel()
+	repoRoot := t.TempDir()
+	specDir := filepath.Join(repoRoot, "docs", "specs", taskCycleSlug)
+	now := taskCycleNowForTest()
+	priorPath := filepath.Join(specDir, "qa", fmt.Sprintf("qa-report-%s.md", now.Format("2006-01-02")))
+	if err := os.MkdirAll(filepath.Dir(priorPath), 0o755); err != nil {
+		t.Fatalf("create prior QA Report directory: %v", err)
+	}
+	mustWriteForTest(t, priorPath, qaReportForTest(spec.VerdictPass))
+	engine := &Engine{deps: Dependencies{Now: func() time.Time { return now }}}
+	plan := TaskPlan{WorkDir: repoRoot, Spec: spec.Spec{Slug: taskCycleSlug, Dir: specDir}}
+
+	reportPath, err := engine.writeMechanicalQAReport(plan, speccheck.MechanicalResult{Blocking: true})
+
+	if err != nil {
+		t.Fatalf("writeMechanicalQAReport returned error: %v", err)
+	}
+	wantPath := filepath.Join("docs", "specs", taskCycleSlug, "qa", fmt.Sprintf("qa-report-%s-01.md", now.Format("2006-01-02")))
+	if reportPath != wantPath {
+		t.Fatalf("writeMechanicalQAReport path = %q, want %q", reportPath, wantPath)
+	}
+	prior, err := os.ReadFile(priorPath)
+	if err != nil {
+		t.Fatalf("read prior QA Report: %v", err)
+	}
+	if string(prior) != qaReportForTest(spec.VerdictPass) {
+		t.Fatalf("prior QA Report was overwritten:\n%s", prior)
+	}
+}
+
+func assertMechanicalStageEvent(t *testing.T, sink *captureEventSink, blocking bool, findings int, skips int) {
+	t.Helper()
+	for _, event := range taskEventsOfKind(sink, runevent.KindDaemonQA) {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] != "mechanical" {
+			continue
+		}
+		if payload["blocking"] != blocking || payload["findings"] != float64(findings) || payload["skips"] != float64(skips) {
+			t.Fatalf("unexpected mechanical-stage event payload: %+v", payload)
+		}
+		return
+	}
+	t.Fatal("mechanical-stage daemon.qa event was not published")
 }
 
 func TestPerWorkAgentSessionMixedTaskTypesAndQA(t *testing.T) {
@@ -909,7 +1254,10 @@ func (runner *selectionLifecycleRunner) RunPrepared(_ context.Context, req agent
 	taskID := taskIDFromPrompt(req.Prompt)
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
 		if runner.qaReport != "" {
-			reportPath := filepath.Join(qaSpecDirFromPromptForTest(req.Prompt, runner.gitRoot), "qa", qaReportNameForTest)
+			reportPath, _, resolveErr := seededQAReportPathFromPromptForTest(req.Prompt, runner.gitRoot)
+			if resolveErr != nil {
+				return agent.ExecuteResult{}, resolveErr
+			}
 			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
 				return agent.ExecuteResult{}, err
 			}
@@ -4945,7 +5293,7 @@ func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
 	if err != nil {
 		t.Fatalf("task cycle: %v", err)
 	}
-	wantReportPath := filepath.Join(externalRoot, taskCycleSlug, "qa", qaReportNameForTest)
+	wantReportPath := filepath.Join(externalRoot, taskCycleSlug, "qa", qaReportNameForTest())
 	if result.QAVerdict != spec.VerdictPass || result.QAReportPath != wantReportPath {
 		t.Fatalf("expected external QA pass report %q, got %+v", wantReportPath, result)
 	}
@@ -5053,10 +5401,10 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 				t.Fatalf("expected no repo .roundfix directory after QA step, got err=%v", err)
 			}
 			qaEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonQA)
-			if len(qaEvents) != 1 || qaEvents[0].Batch != 2 {
-				t.Fatalf("expected one daemon.qa event on the QA Batch, got %+v", qaEvents)
+			if len(qaEvents) != 2 || qaEvents[0].Batch != 2 || qaEvents[1].Batch != 2 {
+				t.Fatalf("expected mechanical and verdict daemon.qa events on the QA Batch, got %+v", qaEvents)
 			}
-			payload := string(qaEvents[0].Payload)
+			payload := string(qaEvents[1].Payload)
 			if !strings.Contains(payload, fmt.Sprintf("%q", tt.wantVerdict)) || !strings.Contains(payload, wantReportPath) {
 				t.Fatalf("expected daemon.qa payload with verdict and report path, got %s", payload)
 			}

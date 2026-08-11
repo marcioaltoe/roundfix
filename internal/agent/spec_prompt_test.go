@@ -194,6 +194,100 @@ func sampleQAPromptRequest() QAPromptRequest {
 	}
 }
 
+func TestBuildQAPromptCarriesTheSpecContextBundle(t *testing.T) {
+	t.Parallel()
+
+	t.Run("changed paths", func(t *testing.T) {
+		t.Parallel()
+
+		req := sampleQAPromptRequest()
+		req.Context = SpecContextBundle{
+			PRD:               "docs/specs/0001-implement-command/_prd.md",
+			TechSpec:          "docs/specs/0001-implement-command/_techspec.md",
+			TaskGraph:         "docs/specs/0001-implement-command/_tasks.md",
+			Instructions:      []string{"AGENTS.md", ".agents/skills/implement-task/SKILL.md"},
+			Interfaces:        []string{"internal/agent/spec_prompt.go"},
+			PriorChangedFiles: []string{"internal/daemon/task_context.go"},
+			OmittedPriorFiles: 3,
+		}
+
+		prompt, err := BuildQAPrompt(req)
+		if err != nil {
+			t.Fatalf("BuildQAPrompt returned error: %v", err)
+		}
+		for _, expected := range []string{
+			"Spec Context Bundle:",
+			"- PRD: docs/specs/0001-implement-command/_prd.md",
+			"- TechSpec: docs/specs/0001-implement-command/_techspec.md",
+			"- Task Graph: docs/specs/0001-implement-command/_tasks.md",
+			"  - AGENTS.md",
+			"  - .agents/skills/implement-task/SKILL.md",
+			"  - internal/agent/spec_prompt.go",
+			"- Prior changed files:\n  - internal/daemon/task_context.go",
+			"- Omitted prior files: 3",
+		} {
+			if !strings.Contains(prompt, expected) {
+				t.Fatalf("expected QA prompt to contain %q, got:\n%s", expected, prompt)
+			}
+		}
+	})
+
+	t.Run("no changed paths", func(t *testing.T) {
+		t.Parallel()
+
+		req := sampleQAPromptRequest()
+		req.Context = SpecContextBundle{PRD: "docs/specs/0001-implement-command/_prd.md"}
+
+		prompt, err := BuildQAPrompt(req)
+		if err != nil {
+			t.Fatalf("BuildQAPrompt returned error: %v", err)
+		}
+		if !strings.Contains(prompt, "- Prior changed files: none\n") {
+			t.Fatalf("expected QA prompt to state that no paths changed, got:\n%s", prompt)
+		}
+	})
+}
+
+func TestBuildQAPromptCarriesThePreviousReportIdentity(t *testing.T) {
+	t.Parallel()
+
+	t.Run("previous report exists", func(t *testing.T) {
+		t.Parallel()
+
+		req := sampleQAPromptRequest()
+		req.PreviousReportPath = "docs/specs/0001-implement-command/qa/qa-report-2026-08-10.md"
+		req.PreviousReportHead = "0123456789abcdef"
+
+		prompt, err := BuildQAPrompt(req)
+		if err != nil {
+			t.Fatalf("BuildQAPrompt returned error: %v", err)
+		}
+		for _, expected := range []string{
+			"Previous QA Report: docs/specs/0001-implement-command/qa/qa-report-2026-08-10.md\n",
+			"Previous QA Report head: 0123456789abcdef\n",
+		} {
+			if !strings.Contains(prompt, expected) {
+				t.Fatalf("expected QA prompt to contain %q, got:\n%s", expected, prompt)
+			}
+		}
+	})
+
+	t.Run("no previous report", func(t *testing.T) {
+		t.Parallel()
+
+		prompt, err := BuildQAPrompt(sampleQAPromptRequest())
+		if err != nil {
+			t.Fatalf("BuildQAPrompt returned error: %v", err)
+		}
+		if !strings.Contains(prompt, "Previous QA Report: none exists for this Spec.\n") {
+			t.Fatalf("expected QA prompt to state that no previous report exists, got:\n%s", prompt)
+		}
+		if strings.Contains(prompt, "Previous QA Report head:") {
+			t.Fatalf("expected no previous-report head without a report, got:\n%s", prompt)
+		}
+	})
+}
+
 func TestBuildQAPromptStatesQAGateContract(t *testing.T) {
 	t.Parallel()
 
@@ -211,7 +305,9 @@ func TestBuildQAPromptStatesQAGateContract(t *testing.T) {
 		"qa-report-YYYY-MM-DD.md for the day's first report",
 		"qa-report-YYYY-MM-DD-NN.md with a numeric -NN suffix for same-day reruns",
 		"frontmatter must carry the verdict: pass, fail, or partial",
-		"A nonzero rows_blocked_environment does not by itself prevent pass; a nonzero rows_blocked_finding does.",
+		"rows_blocked_environment, rows_blocked_finding, and rows_blocked_declared",
+		"no row is declared-blocked, finding-blocked, or skipped",
+		"A nonzero rows_blocked_environment does not by itself prevent pass; a nonzero rows_blocked_finding or rows_blocked_declared does.",
 		"Never commit, push, or open a pull request.",
 	} {
 		if !strings.Contains(prompt, expected) {
@@ -255,7 +351,7 @@ func TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget(t *testin
 	if factsEnd < 0 {
 		t.Fatalf("expected the QA contract in the prompt, got:\n%s", prompt)
 	}
-	if !strings.HasSuffix(prompt[:factsEnd], "Pull Request: #40 (owner/repo)\n\n") {
+	if !strings.HasSuffix(prompt[:factsEnd], "Pull Request: #40 (owner/repo)\nPrevious QA Report: none exists for this Spec.\n\n") {
 		t.Fatalf("expected the checkout facts to end the fact block before the QA contract, got:\n%s", prompt)
 	}
 }
@@ -330,7 +426,7 @@ func TestBuildQAPromptOmitsUnrecordedCheckoutFacts(t *testing.T) {
 			t.Fatalf("expected no %q line for an unrecorded fact, got:\n%s", forbidden, prompt)
 		}
 	}
-	if !strings.Contains(prompt, "PRD: /repo/docs/specs/0001-implement-command/_prd.md\nPull Request: #40 (owner/repo)\n\n"+qaGateContract) {
+	if !strings.Contains(prompt, "PRD: /repo/docs/specs/0001-implement-command/_prd.md\nPull Request: #40 (owner/repo)\nPrevious QA Report: none exists for this Spec.\n\n"+qaGateContract) {
 		t.Fatalf("expected a usable prompt with the Spec identity and the QA contract, got:\n%s", prompt)
 	}
 }
@@ -392,6 +488,9 @@ func TestBuildQAPromptValidatesRequiredFields(t *testing.T) {
 		{name: "empty spec slug", mutate: func(req *QAPromptRequest) { req.SpecSlug = "" }},
 		{name: "empty spec directory", mutate: func(req *QAPromptRequest) { req.SpecDir = "" }},
 		{name: "empty prd path", mutate: func(req *QAPromptRequest) { req.PRDPath = "" }},
+		{name: "negative omitted prior file count", mutate: func(req *QAPromptRequest) { req.Context.OmittedPriorFiles = -1 }},
+		{name: "previous report without head", mutate: func(req *QAPromptRequest) { req.PreviousReportPath = "qa/qa-report-2026-08-10.md" }},
+		{name: "previous report head without path", mutate: func(req *QAPromptRequest) { req.PreviousReportHead = "0123456789abcdef" }},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

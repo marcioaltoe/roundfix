@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0080-cheap-detectors-run-before-the-gate
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -76,20 +76,67 @@ Every one of those is a Git read or a file read with a written answer.
 
 ## Verification
 
-- `go build -buildvcs=false ./...` — expected: exit 0.
 - `output="$(go test -count=1 ./internal/speccheck -run 'Mechanical|AuthPaths|ConsequentOrder|ReportShape|EvidencePath' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the named detector tests exist, are selected, and pass —
   an empty selection cannot satisfy this.
 - `output="$(go test -count=1 ./internal/speccheck -run '^TestCheckCorpusBudget$' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the corpus budget guard still selects and passes.
-- `go test -count=1 ./internal/speccheck/... ./internal/daemon/...`
   — expected: exit 0; both packages the change lands in stay green.
 - `grep -rq 'MechanicalResult' internal/ && grep -rq 'MechanicalSkip' internal/`
   — expected: exit 0; the typed result and its skip record exist on the real
   surface.
+
+These commands are deliberately absent: `go build -buildvcs=false ./...` and a
+whole-package `go test` sweep both pass against a tree where no work has
+happened, so each approves the Task before it starts. Compilation and
+regression are the Run-level gate's job; the commands above name cases that
+do not exist yet.
 
 ## References
 
 - `_prd.md` → Core Features 1, 2, 3; User Story 3.
 - `_techspec.md` → Implementation Design (Interfaces); Build Order 1.
 - ADR-0096, ADR-0093, ADR-0094, ADR-0080.
+
+## Result
+
+Implemented the inert mechanical-stage capability in `internal/speccheck`.
+`RunMechanicalStage` compares exact authorization paths with real
+`git diff-tree` output, checks declared consequent-fix ancestry, validates QA
+Report row statuses and typed blocked counts, and resolves report evidence
+paths. It accumulates every diagnostic into the typed `MechanicalResult` and
+records absent inputs as `MechanicalSkip` values. `WriteMechanicalResult`
+writes finding sections, carried provenance, finding-blocked rows, and skips
+to a supplied writer without choosing a report path or verdict.
+
+Focused checks run after the final implementation edit:
+
+- `rtk go test ./internal/speccheck -run '^(TestMechanicalAuthPaths|TestMechanicalConsequentOrder|TestMechanicalReportShape|TestMechanicalEvidencePath|TestMechanicalReportsAllFindings|TestMaterializeMechanicalResult|TestMechanicalCorpusNonRegression)$' -count=1`
+  passed: 17 tests in one package.
+- `rtk go test ./internal/speccheck -run '^TestRenderResultTextAndJSON$' -count=1`
+  passed: the existing consistency-report rendering contract remains green.
+- `rtk go vet ./internal/speccheck` passed with no diagnostics.
+- `rtk grep -r -n 'RunMechanicalStage' internal/daemon internal/agent internal/cli`
+  returned no matches (exit 1), proving the gate runtime does not call the new
+  entry point in this slice.
+
+Acceptance evidence:
+
+- Each detector has file-backed green/red carriers or a real temporary Git
+  carrier and returns its own stable code: `QA-AUTH-PATHS`,
+  `QA-CONSEQUENT-ORDER`, `QA-REPORT-SHAPE`, or `QA-EVIDENCE-PATH`.
+- The focused cases cover missing authorization, consequent-fix declaration,
+  and QA Report inputs; each produces a detector-plus-artifact skip and no
+  corresponding finding.
+- `TestMechanicalReportsAllFindings` produces all four codes in one result,
+  checks `Blocking`, verifies every required Finding field, and checks known
+  row-to-finding links.
+- `TestMechanicalCorpusNonRegression` walked the pre-existing fixture corpus
+  through the same `assertMechanicalCorpusBudget` helper used by the authored
+  `TestCheckCorpusBudget` guard and reported no new mechanical diagnostics.
+- The runtime-path search above found no call. Task 03 remains the owner of
+  Daemon wiring, Agent Session withholding, report lifecycle, and verdict
+  settlement.
+
+The commands under this Task's `## Verification` were not run; the Daemon owns
+that complete selection and settlement evidence.

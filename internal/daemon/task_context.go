@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,6 +29,38 @@ func (engine *Engine) buildTaskContextBundle(ctx context.Context, plan TaskPlan,
 		prior = resolved
 	}
 	return assembleTaskContextBundle(plan, task, prior), nil
+}
+
+type qaPromptContext struct {
+	Bundle             agent.SpecContextBundle
+	PreviousReportPath string
+	PreviousReportHead string
+}
+
+func (engine *Engine) buildQAPromptContext(ctx context.Context, plan TaskPlan, task spec.Task) (qaPromptContext, error) {
+	bundle, err := engine.buildTaskContextBundle(ctx, plan, task)
+	if err != nil {
+		return qaPromptContext{}, err
+	}
+	previousReport, err := spec.NewestQAReport(plan.Spec.Dir)
+	if errors.Is(err, spec.ErrNoQAReport) {
+		return qaPromptContext{Bundle: bundle}, nil
+	}
+	if err != nil {
+		return qaPromptContext{}, fmt.Errorf("resolve previous QA Report for Spec %s: %w", plan.Spec.Slug, err)
+	}
+	// The Run starts from HeadSHA, so any report already visible in this fresh
+	// Run Worktree was the report available at that head. The shared prior-file
+	// resolver uses the same head as its changed-path base.
+	previousReportHead := strings.TrimSpace(plan.HeadSHA)
+	if previousReportHead == "" {
+		return qaPromptContext{}, fmt.Errorf("resolve previous QA Report for Spec %s: Run start head is required", plan.Spec.Slug)
+	}
+	return qaPromptContext{
+		Bundle:             bundle,
+		PreviousReportPath: taskPromptPath(plan, previousReport),
+		PreviousReportHead: previousReportHead,
+	}, nil
 }
 
 func assembleTaskContextBundle(plan TaskPlan, task spec.Task, priorFiles []string) agent.SpecContextBundle {

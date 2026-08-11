@@ -213,6 +213,82 @@ type: backend
 	}
 }
 
+func TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Implement feature"}})
+	plan := fixture.qaPlan()
+	for path, content := range map[string]string{
+		filepath.Join(fixture.gitRoot, "AGENTS.md"):                                       "AGENTS BODY SENTINEL\n",
+		filepath.Join(fixture.gitRoot, ".agents", "skills", "implement-task", "SKILL.md"): "IMPLEMENT TASK SKILL SENTINEL\n",
+	} {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("create parent for %s: %v", path, err)
+		}
+		mustWriteForTest(t, path, content)
+	}
+	previousReportPath := filepath.Join(plan.Spec.Dir, "qa", "qa-report-2025-12-31.md")
+	if err := os.MkdirAll(filepath.Dir(previousReportPath), 0o755); err != nil {
+		t.Fatalf("create previous QA Report directory: %v", err)
+	}
+	mustWriteForTest(t, previousReportPath, `---
+verdict: fail
+rows_blocked_environment: 0
+rows_blocked_finding: 0
+rows_blocked_declared: 0
+---
+
+# QA Report
+
+## Results
+
+| # | Status | Evidence |
+| - | --- | --- |
+| R01 | fail | Previous QA result. |
+`)
+	gittest.InitRepo(t, fixture.gitRoot, "-b", "main")
+	gittest.Run(t, fixture.gitRoot, "add", ".")
+	gittest.Run(t, fixture.gitRoot, "commit", "-m", "initial fixture")
+
+	prior := &fakePriorChangedResolver{byWork: map[string][]string{
+		fixture.gitRoot: {"internal/changed.go"},
+	}}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		qaReport:     qaReportForTest(spec.VerdictPass),
+	}
+	engine := fixture.engineWithTaskWorktreesAndPriorChanges(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree, nil, prior)
+	plan.HeadSHA = "previous-report-head"
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("TaskCycle: %v", err)
+	}
+	if result.Completed != 1 || result.QAVerdict != spec.VerdictPass {
+		t.Fatalf("expected completed Task and passing QA verdict, got %+v", result)
+	}
+	if len(runner.qaPrompts) != 1 {
+		t.Fatalf("QA prompts = %d, want 1", len(runner.qaPrompts))
+	}
+	prompt := runner.qaPrompts[0]
+	for _, expected := range []string{
+		"Spec Context Bundle:",
+		"- PRD: docs/specs/" + taskCycleSlug + "/_prd.md",
+		"  - internal/changed.go",
+		"Previous QA Report: docs/specs/" + taskCycleSlug + "/qa/qa-report-2025-12-31.md",
+		"Previous QA Report head: previous-report-head",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected QA prompt to contain %q, got:\n%s", expected, prompt)
+		}
+	}
+	calls := prior.seenCalls()
+	if len(calls) != 2 || calls[1].workDir != fixture.gitRoot || calls[1].initialHead != "previous-report-head" {
+		t.Fatalf("prior resolver calls = %+v, want Task and QA calls at previous-report-head", calls)
+	}
+}
+
 func TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase(t *testing.T) {
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{

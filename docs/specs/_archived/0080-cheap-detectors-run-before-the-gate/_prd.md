@@ -1,6 +1,7 @@
 ---
 spec: 0080-cheap-detectors-run-before-the-gate
-status: active
+status: archived
+archived: 2026-08-11
 created: 2026-08-06
 surfaces: [backend, docs, infra, cli]
 ---

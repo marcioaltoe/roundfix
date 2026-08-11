@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -21,9 +23,26 @@ import (
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
+	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
+
+// QAMechanicalStage is the Daemon-owned, verdict-free pass that runs before
+// the QA Agent Session. Its implementation reads repository facts only.
+type QAMechanicalStage interface {
+	Run(context.Context, speccheck.MechanicalRequest) (speccheck.MechanicalResult, error)
+}
+
+// SpecCheckQAMechanicalStage connects the Daemon to the repository's
+// citation-only mechanical detectors.
+type SpecCheckQAMechanicalStage struct{}
+
+var _ QAMechanicalStage = SpecCheckQAMechanicalStage{}
+
+func (SpecCheckQAMechanicalStage) Run(ctx context.Context, request speccheck.MechanicalRequest) (speccheck.MechanicalResult, error) {
+	return speccheck.RunMechanicalStage(ctx, request)
+}
 
 type verificationMode uint8
 
@@ -1734,14 +1753,13 @@ func lowerFirstRune(value string) string {
 }
 
 // runQAGate runs the qa-gate step as the Run's last Batch: before-snapshot,
-// Agent with the QA prompt, verdict settling from the newest QA Report
-// frontmatter, the daemon.qa Run Event, and the QA Report commit — created
-// either way, pass or fail, while a missing report commits nothing
-// (ADR 0015). The qa Task settles from that verdict before the report commit,
-// so its task file rides with the report. It returns the settled verdict and
-// the report path relative to the working tree; the returned error is reserved
-// for Stop Requests and infrastructure failures. A non-stop Agent failure
-// produces no verdict to settle and halts the cycle.
+// mechanical stage and report materialization, conditional Agent audit,
+// verdict settlement from the newest QA Report frontmatter, daemon.qa Run
+// Events, and the QA Report commit. A blocking mechanical result withholds the
+// Agent; a non-blocking result seeds the report that Agent completes. The qa
+// Task settles from the verdict before the report commit, so its task file
+// rides with the report. The returned error is reserved for Stop Requests and
+// infrastructure failures.
 func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.Task, ordinal int) (verdict string, reportPath string, err error) {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -1755,63 +1773,120 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", err
 	}
-	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
-		return "", "", fmt.Errorf("update run %q to state %q before the QA step: %w", plan.RunID, store.StateResolvingWithAgent, err)
+	promptContext, err := engine.buildQAPromptContext(ctx, plan, qaTask)
+	if err != nil {
+		return "", "", fmt.Errorf("build QA prompt context for run %q: %w", plan.RunID, err)
 	}
-	// The Run Worktree checkout, its Run Branch, and the Spec's target
-	// branch ride along as facts: the gate reasons about the user's branch,
-	// which this checkout structurally cannot name on its own.
-	pullRequest, pullRequestResolved := engine.resolveQAPullRequest(ctx, plan.WorkDir, plan.TargetBranch)
-	prompt, err := agent.BuildQAPrompt(agent.QAPromptRequest{
-		SpecSlug:     plan.Spec.Slug,
-		SpecDir:      plan.Spec.Dir,
-		PRDPath:      filepath.Join(plan.Spec.Dir, "_prd.md"),
-		RunBranch:    plan.RunWorktree.Branch,
-		TargetBranch: plan.TargetBranch,
-		UserCheckout: plan.RunWorktree.UserRoot,
+	mechanicalRequest, err := engine.qaMechanicalRequest(ctx, plan, promptContext.PreviousReportPath)
+	if err != nil {
+		return "", "", fmt.Errorf("build mechanical-stage request for run %q: %w", plan.RunID, err)
+	}
+	mechanicalStarted := time.Now()
+	mechanicalResult, err := engine.deps.MechanicalStage.Run(ctx, mechanicalRequest)
+	if err != nil {
+		payload := map[string]any{
+			"phase":       "mechanical",
+			"outcome":     "error",
+			"duration_ms": time.Since(mechanicalStarted).Milliseconds(),
+			"error":       terminalReasonLine(err.Error()),
+		}
+		if publishErr := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+			fmt.Sprintf("QA mechanical stage errored for Spec %s.", plan.Spec.Slug), payload,
+		); publishErr != nil {
+			return "", "", fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, errors.Join(err, publishErr))
+		}
+		return "", "", fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, err)
+	}
+	reportPath, err = engine.writeMechanicalQAReport(plan, mechanicalResult)
+	if err != nil {
+		return "", "", fmt.Errorf("materialize QA mechanical result for run %q: %w", plan.RunID, err)
+	}
+	mechanicalSummary := fmt.Sprintf("QA mechanical stage seeded %s for Spec %s.", reportPath, plan.Spec.Slug)
+	if mechanicalResult.Blocking {
+		mechanicalSummary = fmt.Sprintf("QA mechanical stage blocked Spec %s with %d finding(s).", plan.Spec.Slug, len(mechanicalResult.Findings))
+	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA, mechanicalSummary,
+		map[string]any{
+			"phase":        "mechanical",
+			"outcome":      "materialized",
+			"blocking":     mechanicalResult.Blocking,
+			"findings":     len(mechanicalResult.Findings),
+			"blocked_rows": len(mechanicalResult.Blocked),
+			"skips":        len(mechanicalResult.Skips),
+			"duration_ms":  time.Since(mechanicalStarted).Milliseconds(),
+			"report":       reportPath,
+		},
+	); err != nil {
+		return "", "", fmt.Errorf("publish QA mechanical event for run %q: %w", plan.RunID, err)
+	}
+	fmt.Fprintln(engine.deps.Progress, mechanicalSummary)
+	if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
+		return "", "", fmt.Errorf("stop run %q after the QA mechanical stage: %w", plan.RunID, err)
+	}
 
-		PullRequest:         pullRequest,
-		PullRequestResolved: pullRequestResolved,
-	})
-	if err != nil {
-		return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, err)
-	}
-	logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, ordinal)
-	fmt.Fprintf(engine.deps.Progress, "QA step (Batch %03d) for Spec %s\n", ordinal, plan.Spec.Slug)
-	if logPath != "" {
-		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
-	}
-	owner, err := engine.qaAgentSessionOwner(plan, ordinal)
-	if err != nil {
-		return "", "", err
-	}
-	defer func() {
-		if closeErr := owner.Close(context.WithoutCancel(ctx)); closeErr != nil && err == nil {
-			err = fmt.Errorf("close Agent Session for run %q QA step: %w", plan.RunID, closeErr)
+	if !mechanicalResult.Blocking {
+		if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
+			return "", "", fmt.Errorf("update run %q to state %q before the QA step: %w", plan.RunID, store.StateResolvingWithAgent, err)
 		}
-	}()
-	if _, runErr := engine.runAgentSession(ctx, owner, agent.ExecuteRequest{
-		Runtime:     plan.Runtime,
-		Session:     plan.Session,
-		RunID:       plan.RunID,
-		Batch:       rounds.Batch{Number: ordinal},
-		LogPath:     logPath,
-		ArtifactDir: plan.ArtifactDir,
-		Prompt:      prompt,
-		GitRoot:     plan.WorkDir,
-	}); runErr != nil {
-		return "", "", fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
-	}
-	if err := ctx.Err(); err != nil {
-		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
-			return "", "", fmt.Errorf("publish stop event for run %q after the QA step Agent: %w", plan.RunID, errors.Join(err, publishErr))
+		// The Run Worktree checkout, its Run Branch, and the Spec's target
+		// branch ride along as facts: the gate reasons about the user's branch,
+		// which this checkout structurally cannot name on its own.
+		pullRequest, pullRequestResolved := engine.resolveQAPullRequest(ctx, plan.WorkDir, plan.TargetBranch)
+		prompt, promptErr := agent.BuildQAPrompt(agent.QAPromptRequest{
+			SpecSlug:           plan.Spec.Slug,
+			SpecDir:            plan.Spec.Dir,
+			PRDPath:            filepath.Join(plan.Spec.Dir, "_prd.md"),
+			Context:            promptContext.Bundle,
+			PreviousReportPath: promptContext.PreviousReportPath,
+			PreviousReportHead: promptContext.PreviousReportHead,
+			RunBranch:          plan.RunWorktree.Branch,
+			TargetBranch:       plan.TargetBranch,
+			UserCheckout:       plan.RunWorktree.UserRoot,
+
+			PullRequest:         pullRequest,
+			PullRequestResolved: pullRequestResolved,
+		})
+		if promptErr != nil {
+			return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, promptErr)
 		}
-		return "", "", fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, err)
+		prompt += fmt.Sprintf("\nSeeded QA Report: %s\nComplete this report in place, preserving its materialized mechanical rows and skips; do not create another QA Report.\n", reportPath)
+		logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, ordinal)
+		fmt.Fprintf(engine.deps.Progress, "QA step (Batch %03d) for Spec %s\n", ordinal, plan.Spec.Slug)
+		if logPath != "" {
+			fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
+		}
+		owner, ownerErr := engine.qaAgentSessionOwner(plan, ordinal)
+		if ownerErr != nil {
+			return "", "", ownerErr
+		}
+		defer func() {
+			if closeErr := owner.Close(context.WithoutCancel(ctx)); closeErr != nil && err == nil {
+				err = fmt.Errorf("close Agent Session for run %q QA step: %w", plan.RunID, closeErr)
+			}
+		}()
+		if _, runErr := engine.runAgentSession(ctx, owner, agent.ExecuteRequest{
+			Runtime:     plan.Runtime,
+			Session:     plan.Session,
+			RunID:       plan.RunID,
+			Batch:       rounds.Batch{Number: ordinal},
+			LogPath:     logPath,
+			ArtifactDir: plan.ArtifactDir,
+			Prompt:      prompt,
+			GitRoot:     plan.WorkDir,
+		}); runErr != nil {
+			return "", "", fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
+		}
+		if err := ctx.Err(); err != nil {
+			if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
+				return "", "", fmt.Errorf("publish stop event for run %q after the QA step Agent: %w", plan.RunID, errors.Join(err, publishErr))
+			}
+			return "", "", fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, err)
+		}
 	}
 	verdict, reportPath = engine.settleQAVerdict(plan)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 		fmt.Sprintf("QA verdict %s for Spec %s.", verdict, plan.Spec.Slug),
-		map[string]any{"verdict": verdict, "report": reportPath},
+		map[string]any{"phase": "verdict", "verdict": verdict, "report": reportPath},
 	); err != nil {
 		return "", "", fmt.Errorf("publish QA event for run %q: %w", plan.RunID, err)
 	}
@@ -1829,6 +1904,168 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		return "", "", err
 	}
 	return verdict, reportPath, nil
+}
+
+func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, previousReportPath string) (speccheck.MechanicalRequest, error) {
+	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
+	authorizationPath, boundedPaths, err := speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
+	if err != nil {
+		return speccheck.MechanicalRequest{}, err
+	}
+	taskCommits, err := mechanicalTaskCommits(ctx, plan, boundedPaths)
+	if err != nil {
+		return speccheck.MechanicalRequest{}, err
+	}
+	return speccheck.MechanicalRequest{
+		RepoRoot:          plan.WorkDir,
+		AuthorizationPath: authorizationPath,
+		TaskCommits:       taskCommits,
+		// Consequent-fix declarations are optional authored inputs. Until a
+		// declaration exists, the detector records its presence-aware skip.
+		ConsequentFixes: nil,
+		ReportPath:      previousReportPath,
+	}, nil
+}
+
+func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []string) ([]speccheck.MechanicalTaskCommit, error) {
+	if strings.TrimSpace(plan.HeadSHA) == "" || len(boundedPaths) == 0 {
+		return nil, nil
+	}
+	revisionRange := strings.TrimSpace(plan.HeadSHA) + "..HEAD"
+	command := exec.CommandContext(ctx, "git", "-C", plan.WorkDir, "log", "--no-merges",
+		"--format=%(trailers:key=Roundfix-Spec,valueonly,unfold)%x1f%(trailers:key=Roundfix-Task,valueonly,unfold)%x1f%H%x1e",
+		revisionRange)
+	output, err := command.Output()
+	if err != nil {
+		return nil, fmt.Errorf("read Task commits for Spec %s: %w", plan.Spec.Slug, gitExecStderr(err))
+	}
+	tasks := make(map[string]spec.Task, len(plan.Tasks))
+	for _, task := range plan.Tasks {
+		if task.Type != spec.TaskTypeQA {
+			tasks[task.ID] = task
+		}
+	}
+	commitsByTask := make(map[string]string, len(tasks))
+	for _, record := range bytes.Split(output, []byte{0x1e}) {
+		parts := bytes.SplitN(bytes.TrimSpace(record), []byte{0x1f}, 3)
+		if len(parts) != 3 {
+			continue
+		}
+		specSlug := strings.TrimSpace(string(parts[0]))
+		taskID := strings.TrimSpace(string(parts[1]))
+		sha := strings.TrimSpace(string(parts[2]))
+		if specSlug != plan.Spec.Slug {
+			continue
+		}
+		if _, known := tasks[taskID]; !known || commitsByTask[taskID] != "" || sha == "" {
+			continue
+		}
+		commitsByTask[taskID] = sha
+	}
+	bounded := make(map[string]bool, len(boundedPaths))
+	for _, path := range boundedPaths {
+		bounded[filepath.ToSlash(filepath.Clean(filepath.FromSlash(path)))] = true
+	}
+	result := make([]speccheck.MechanicalTaskCommit, 0, len(commitsByTask))
+	for _, task := range plan.Tasks {
+		sha := commitsByTask[task.ID]
+		if sha == "" {
+			continue
+		}
+		changed, err := mechanicalCommitPaths(ctx, plan.WorkDir, sha)
+		if err != nil {
+			return nil, err
+		}
+		intersectsAuthorization := false
+		for _, path := range changed {
+			if bounded[path] {
+				intersectsAuthorization = true
+				break
+			}
+		}
+		if !intersectsAuthorization {
+			continue
+		}
+		result = append(result, speccheck.MechanicalTaskCommit{
+			TaskID:   task.ID,
+			SHA:      sha,
+			TaskFile: artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)),
+		})
+	}
+	return result, nil
+}
+
+// gitExecStderr surfaces the stderr bytes a failed git subprocess already
+// captured, so operators see the cause instead of only "exit status N".
+func gitExecStderr(err error) error {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && len(bytes.TrimSpace(exitErr.Stderr)) > 0 {
+		return fmt.Errorf("%w (stderr: %s)", err, bytes.TrimSpace(exitErr.Stderr))
+	}
+	return err
+}
+
+func mechanicalCommitPaths(ctx context.Context, repoRoot, sha string) ([]string, error) {
+	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", "-z", sha)
+	output, err := command.Output()
+	if err != nil {
+		return nil, fmt.Errorf("read changed paths for Task commit %s: %w", sha, gitExecStderr(err))
+	}
+	paths := make([]string, 0)
+	for _, entry := range bytes.Split(output, []byte{0}) {
+		if path := strings.TrimSpace(string(entry)); path != "" {
+			paths = append(paths, filepath.ToSlash(path))
+		}
+	}
+	return paths, nil
+}
+
+func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.MechanicalResult) (string, error) {
+	var mechanical bytes.Buffer
+	if err := speccheck.WriteMechanicalResult(&mechanical, result); err != nil {
+		return "", err
+	}
+	mechanicalBody := bytes.Replace(mechanical.Bytes(), []byte(speccheck.MechanicalRowsHeading), []byte("## Results\n\n"), 1)
+	if bytes.Equal(mechanicalBody, mechanical.Bytes()) {
+		return "", errors.New("materialize mechanical QA Report: mechanical rows table is absent")
+	}
+
+	var content bytes.Buffer
+	content.WriteString("---\n")
+	if result.Blocking {
+		content.WriteString("verdict: fail\n")
+	}
+	fmt.Fprintln(&content, "rows_blocked_environment: 0")
+	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", len(result.Blocked))
+	fmt.Fprintln(&content, "rows_blocked_declared: 0")
+	content.WriteString("---\n\n# QA Report\n\n")
+	content.Write(mechanicalBody)
+	reportDir := filepath.Join(plan.Spec.Dir, "qa")
+	if err := os.MkdirAll(reportDir, 0o755); err != nil {
+		return "", fmt.Errorf("create QA Report directory %q: %w", reportDir, err)
+	}
+	date := engine.deps.Now().Format("2006-01-02")
+	for sequence := 0; sequence < 10000; sequence++ {
+		name := fmt.Sprintf("qa-report-%s.md", date)
+		if sequence > 0 {
+			name = fmt.Sprintf("qa-report-%s-%02d.md", date, sequence)
+		}
+		path := filepath.Join(reportDir, name)
+		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if errors.Is(err, os.ErrExist) {
+			continue
+		}
+		if err != nil {
+			return "", fmt.Errorf("create QA Report %q: %w", path, err)
+		}
+		_, writeErr := file.Write(content.Bytes())
+		closeErr := file.Close()
+		if writeErr != nil || closeErr != nil {
+			return "", fmt.Errorf("write QA Report %q: %w", path, errors.Join(writeErr, closeErr))
+		}
+		return artifactCommitPath(plan, path), nil
+	}
+	return "", fmt.Errorf("create QA Report for %s: same-day numeric suffixes exhausted", date)
 }
 
 // resolveQAPullRequest reports the Open Pull Request fact and whether the

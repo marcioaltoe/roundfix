@@ -15,6 +15,7 @@
         "clause.core.record-acceptance-evidence",
         "clause.core.require-fresh-evidence",
         "clause.core.run-selected-verification",
+        "clause.core.verification-two-tiers",
         "clause.core.prohibit-verification-contract-bypass",
         "clause.core.ask-before-verification-configuration-change",
         "clause.core.never-let-a-pipe-hide-a-gate",
@@ -128,6 +129,7 @@
         "clause.spec.routing-03-refactor-bugfix",
         "clause.spec.routing-04-trivial-change",
         "clause.spec.routing-05-task-graph",
+        "clause.spec.verification-two-tiers",
         "clause.spec.project-constraints-06-outside-evidence",
         "clause.typescript.read-current-authoritative-docs",
         "clause.typescript.keep-type-errors-visible",
@@ -140,9 +142,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 132,
-      "corpusDigest": "9c57b6c40b621ddab43c36307360705e3f770807fa93d4c3bc9aa8693a8e03d6",
-      "manifestDigest": "08f66a3dd46148e3e796c2c1642a3da031d43c95277067bc4ef950dc6bedcd14"
+      "entryCount": 134,
+      "corpusDigest": "a15442beedcefe5089e30726cfc73f15e62c9bad59e3a6051515a065cb7ff117",
+      "manifestDigest": "d1f79ceb3e05228e325d39d38113222bff163b6ce51dd32413ec307edaa65510"
     }
   ]
 }

@@ -150,7 +150,49 @@ Add a row for:
 - every Non-Goal that needs a scope-creep check;
 - each mandatory surface sweep below.
 
-For each row record the actor, entry point, surface, steps, expected observable, independent confirmation, persistence check, evidence path, and status `pending`. Order rows by user impact and blast radius. Select 2-5 relevant behavior probes for each high-risk journey: double submit, refresh or back navigation mid-action, deep-link/reopen, invalid or out-of-order input, session expiry, offline/reconnect, concurrent tabs, or locale/accessibility changes. Choose probes that fit the feature; unrelated probes create noise.
+For each row record the actor, entry point, surface, steps, expected observable,
+independent confirmation, persistence check, evidence path, and status `pending`.
+Order rows by user impact and blast radius. Select 2-5 relevant behavior probes
+for each high-risk journey: double submit, refresh or back navigation
+mid-action, deep-link/reopen, invalid or out-of-order input, session expiry,
+offline/reconnect, concurrent tabs, or locale/accessibility changes. Choose
+probes that fit the feature; unrelated probes create noise.
+
+### Row input declaration
+
+A row opts into future evidence-scoped carry-forward by adding a non-empty,
+typed `inputs:` declaration to its detailed evidence block. Place the block
+under a `### <row-id>` heading whose row identifier matches the row's `#` cell
+in the Results table, and use one fenced `yaml` block per row; a block under
+any other heading is ignored and the row is never carried. Each entry has a
+`kind` and a `ref`:
+
+```yaml
+inputs:
+  - kind: repository_path
+    ref: <repository-relative path or glob>
+```
+
+Use one entry for every input the row's truth depends on:
+
+| Kind | Use when |
+| --- | --- |
+| `repository_path` | The evidence depends on content at a literal path or glob in the current repository. |
+| `external_repository` | The evidence depends on content or state in another repository. The row is never carriable. |
+| `live_service` | The evidence depends on state observed from a live service. The row is never carriable. |
+| `elapsed_time` | The evidence depends on elapsed time, age, duration, or a time window. The row is never carriable. |
+
+Declare every applicable kind. A mixed list containing any non-repository
+input is never carriable. A row with no `inputs:` declaration or an empty list
+is also never carriable and must be re-observed, so carry-forward remains
+opt-in and fail-closed.
+
+A report without `inputs:` behaves exactly as it does today; existing rows,
+counts, statuses, verdict rules, and report naming do not change. When a future
+round closes, a `pass` row whose declaration carries only repository inputs,
+whose ancestry is proven, and whose evidence is byte-identical at the later
+head is materialized as `carried (established by: <report>; head: <sha>)` and
+is not re-observed.
 
 One row is the Spec's outside-evidence row: the acceptance row that rests on
 evidence originating outside the Spec's own artifacts — a repository the Spec

@@ -1,0 +1,133 @@
+---
+task: task_12
+spec: 0080-cheap-detectors-run-before-the-gate
+status: completed
+type: backend
+complexity: medium
+---
+
+# Task 12: Let the mechanical report satisfy the contract it enforces
+
+## Overview
+
+The mechanical stage refuses its own output. Report `-04` raised two
+`QA-REPORT-SHAPE` findings against report `-03`, and `-03` was written by the
+mechanical stage itself: it carries `## Mechanical findings`, an empty
+`## Mechanical rows` table, and no `## Results` table at all, while declaring
+`rows_blocked_finding: 1`.
+
+Both refusals are correct readings of a real defect:
+
+- *Results table has no report rows* — the writer puts its rows under
+  `## Mechanical rows`, and every reader of a QA Report looks under
+  `## Results`.
+- *rows_blocked_finding is 1 but the Results table contains 0 matching rows* —
+  the count is declared from the findings while the rows live somewhere the
+  counter cannot see.
+
+The consequence is a loop that cannot end on its own: each mechanical refusal
+writes a report that guarantees the next mechanical stage refuses again. Expect
+one more refusal after this Task lands, because the next stage inspects the last
+malformed report before any well-formed one exists; that is convergence, not
+failure.
+
+A mechanical report is not a lesser artifact. It becomes the Spec's newest QA
+Report, and `archive-spec` and `internal/spec.QAVerdict` read it exactly like an
+Agent-written one.
+
+## Requirements
+
+1. MUST write every mechanical row into the `## Results` table the report-shape
+   detector and every downstream reader already expect.
+2. MUST make each declared `rows_blocked_*` count equal the number of matching
+   rows in that table, so the report's own header agrees with its body.
+3. MUST keep the mechanical provenance visible: a reader must still be able to
+   tell a row the mechanical stage blocked from one an Agent settled.
+4. MUST NOT relax the report-shape detector to accept the current output. The
+   detector is right; the writer is wrong. Changing the reader to match a
+   malformed writer would remove the only check that would have caught this.
+5. MUST NOT change verdict semantics or the report naming contract.
+
+## Subtasks
+
+- [ ] Write mechanical rows into `## Results`.
+- [ ] Derive the blocked counts from those rows.
+- [ ] Keep mechanical provenance readable.
+
+## Acceptance Criteria
+
+- [ ] A mechanical report carries its rows in `## Results`.
+- [ ] Every declared blocked count equals its matching row count.
+- [ ] The report-shape detector raises nothing against a mechanical report.
+- [ ] A mechanically blocked row is still distinguishable from an Agent row.
+
+## Bounded scope
+
+This Task may create or modify only:
+
+- `internal/daemon/task_engine.go`
+- `internal/daemon/task_engine_test.go`
+- `internal/speccheck/mechanical.go`
+- `internal/speccheck/mechanical_test.go`
+- `docs/specs/0080-cheap-detectors-run-before-the-gate/task_12.md`
+
+## Verification
+
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestMechanicalReportSatisfiesTheReportShapeContract$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestMechanicalReportSatisfiesTheReportShapeContract'` — expected: exits 0. The case does not exist before this Task.
+
+Asserting that the existing `TestMechanicalReportShape` cases still pass is
+deliberately absent: they pass today, so the command approves this Task before
+any work happens, and the pre-work probe refused exactly that on 2026-08-11.
+Requirement 4 is what forbids loosening the detector, and the Run-level gate is
+what proves the suite still holds.
+
+## References
+
+- `_prd.md` → Goal 1.
+- `qa/qa-report-2026-08-11-04.md` → the two `QA-REPORT-SHAPE` findings.
+- ADR-0080 → the blocked-cause counts this report declares.
+
+## Result
+
+The Daemon now publishes the mechanical row table as `## Results`. Its
+frontmatter count comes from the same `MechanicalResult.Blocked` rows that the
+writer emits. Findings without a row hint receive one deterministic blocked
+row keyed by their existing Mechanical Refusal Code, so a report-shape refusal
+can produce a non-empty, self-consistent report without minting another row
+identifier. The Results table retains its `Provenance` column and labels each
+blocked row `mechanical finding`.
+
+Red signal captured before the implementation edit:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task12-gocache go test ./internal/daemon -run '^TestMechanicalReportBodyContractRed$' -count=1`
+  failed because the generated report had no `## Results`, retained
+  `## Mechanical rows`, and raised the two expected `QA-REPORT-SHAPE`
+  findings. The case was then renamed to the Verification-owned test name.
+
+Focused checks run after the implementation edits:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task12-gocache go test ./internal/daemon -run '^TestMechanical(ReportSatisfiesTheReportShapeContract|StageWithholdsAgentSession|StageSeedsReportBeforeAgentSession)$' -count=1`
+  passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task12-gocache go test ./internal/speccheck -run '^TestMechanical(FindingsWithoutRowHintsBlockTheirRefusalCode|ReportShape)$' -count=1`
+  passed.
+
+Acceptance evidence:
+
+1. `TestMechanicalReportSatisfiesTheReportShapeContract` feeds the real
+   mechanical stage a malformed prior report, writes the resulting refusal,
+   and observes its row under `## Results` with no `## Mechanical rows`
+   heading.
+2. The same case observes `rows_blocked_environment: 0`,
+   `rows_blocked_finding: 1`, and `rows_blocked_declared: 0` for the one
+   matching finding-blocked row. The lower-layer no-hint case proves two
+   unscoped findings with the same refusal code materialize one counted row.
+3. The case runs the unchanged mechanical stage against the newly written
+   report and receives no `QA-REPORT-SHAPE` finding. The existing green and
+   red report-shape cases also passed without relaxing their assertions.
+4. The emitted Results table keeps the `Provenance` column, and the
+   finding-blocked row carries both `finding: QA-REPORT-SHAPE` in its status
+   and `mechanical finding` in provenance.
+
+Verdict calculation and the collision-safe `qa-report-YYYY-MM-DD[-NN].md`
+naming loop were not changed. The command under `## Verification` was not run;
+the Daemon owns that exact pipeline and Task settlement.

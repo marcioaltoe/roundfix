@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:74c30a138531e9d9f509cb8c9eeda13984ac4bb348cbb66a27c53f0754246569",
-  "catalogDigest": "sha256:eb0109902b38d8d4bcc53d3bffa2681ad4981a93024a07f02b610fd1a1209c30",
+  "catalogDigest": "sha256:bdde817156d46d0ffcd6ef3923199b0af2b18514d1c097d31df4236430433d7c",
   "modules": [
     "core",
     "context-workflow",
@@ -153,7 +153,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "c7b72d6478c7b66fc65b1ea592f4089c055aedb1904d880b7c9cb007bdf59bcf"
+      "digest": "603e73499086634d65b85d3343ec0f2c391f4c91a3d9b57a6fa61fb2c5fb8193"
     },
     {
       "id": "root.cli-surface",
@@ -171,7 +171,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-routing",
       "version": "0.0.1",
-      "digest": "746462f33adf3ed45956e72798cd681ce5d40b617073bf89dd09ca114b04f7f7"
+      "digest": "0e7cc98d8f552b2dcfc9ae5471f4fb341958cca05e1f11d328f31ec98931644e"
     },
     {
       "id": "guide.issue-tracker",
@@ -255,7 +255,7 @@
       "classification": "repository-command",
       "repositoryExecutable": true,
       "declarationPath": "Makefile",
-      "declarationDigest": "sha256:450c6ca32b00080001d0acf4b7ecea77dd64dc2c01302d365a357c8dd18a1a5f"
+      "declarationDigest": "sha256:c7ac8350c9f9b4f3fb3095d609c5e7c642b48a3daf4e41ff438ce893418da5d7"
     }
   ]
 }

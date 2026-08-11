@@ -25,9 +25,21 @@ graph:
     - id: task_07
       file: task_07.md
       needs: [task_06]
+    - id: task_09
+      file: task_09.md
+      needs: [task_03]
+    - id: task_10
+      file: task_10.md
+      needs: [task_09]
+    - id: task_11
+      file: task_11.md
+      needs: [task_10]
+    - id: task_12
+      file: task_12.md
+      needs: [task_11]
     - id: task_08
       file: task_08.md
-      needs: [task_05, task_07]
+      needs: [task_05, task_07, task_09, task_10, task_11, task_12]
 ---
 
 # Tasks — Cheap detectors run before the gate
@@ -41,10 +53,14 @@ graph:
 | task_05 | Carry a row forward only on unmoved evidence          | backend | high       | task_03, task_04 |
 | task_06 | Declare the two-tier verification contract            | chore   | high       | task_04          |
 | task_07 | Re-record the expectation task_06 invalidates         | test    | low        | task_06          |
-| task_08 | Run the final QA gate                                 | qa      | medium     | task_05, task_07 |
+| task_09 | Let the QA harness complete the report the Daemon seeded | test    | medium     | task_03          |
+| task_10 | Give the prompt fixture the Git precondition the stage now needs | test | low | task_09 |
+| task_11 | Let the authorization detector read the fallout it already sanctions | backend | medium | task_10 |
+| task_12 | Let the mechanical report satisfy the contract it enforces | backend | medium | task_11 |
+| task_08 | Run the final QA gate                                 | qa      | medium     | task_05, task_07, task_09, task_10, task_11, task_12 |
 
 Waves: 1 → task_01, task_02 · 2 → task_03, task_04 · 3 → task_05, task_06 ·
-4 → task_07 · 5 → task_08
+4 → task_07, task_09 · 5 → task_10 · 6 → task_11 · 7 → task_12 · 8 → task_08
 
 Three edges carry reasoning worth stating.
 

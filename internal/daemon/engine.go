@@ -59,20 +59,21 @@ var ErrStopRequested = errors.New("stop requested")
 // Dependencies are the engine's explicit collaborators, replacing the CLI
 // package globals that previously wired orchestration.
 type Dependencies struct {
-	Runner        agent.Runner
-	Verifier      Verifier
-	Committer     Committer
-	Pusher        Pusher
-	Source        ReviewSourceResolver
-	Runs          RunStateStore
-	WriteGuard    WriteBoundaryGuard
-	Worktree      WorktreeSnapshotter
-	TaskWorktrees TaskWorktreeManager
-	PriorChanges  PriorChangedResolver
-	GH            GHRunner
-	Sink          runevent.Sink
-	Now           func() time.Time
-	Progress      io.Writer
+	Runner          agent.Runner
+	Verifier        Verifier
+	Committer       Committer
+	Pusher          Pusher
+	Source          ReviewSourceResolver
+	Runs            RunStateStore
+	WriteGuard      WriteBoundaryGuard
+	Worktree        WorktreeSnapshotter
+	TaskWorktrees   TaskWorktreeManager
+	PriorChanges    PriorChangedResolver
+	MechanicalStage QAMechanicalStage
+	GH              GHRunner
+	Sink            runevent.Sink
+	Now             func() time.Time
+	Progress        io.Writer
 }
 
 // Engine executes one resolve cycle over a validated plan and exposes Final
@@ -554,6 +555,9 @@ func NewEngine(deps Dependencies) (*Engine, error) {
 	}
 	if deps.PriorChanges == nil {
 		deps.PriorChanges = GitPriorChangedResolver{}
+	}
+	if deps.MechanicalStage == nil {
+		deps.MechanicalStage = SpecCheckQAMechanicalStage{}
 	}
 	if deps.Now == nil {
 		deps.Now = time.Now

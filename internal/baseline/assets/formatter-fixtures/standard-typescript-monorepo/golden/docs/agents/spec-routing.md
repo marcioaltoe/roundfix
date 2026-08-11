@@ -12,6 +12,8 @@
 
 - **mandatory**: Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, and execute implementation from the Task Graph.
 
+- **mandatory**: For each Task, use the active Baseline Profile's declared incremental verification command to answer whether the current slice remains valid before handoff. CI must use the Profile's declared complete verification command from a fresh run to answer whether the assembled tree satisfies the repository contract. A missing incremental command leaves the Profile's two-tier contract unmet and never authorizes skipping the local tier.
+
 - **mandatory**: Before producing a Task Graph, require every active, non-archived, and not already completed Spec PRD and present TechSpec to contain complete Project Constraints: applicability with reasons for identifier strategy, authentication and HTTP, active ADR obligations, and tooling authority, each citing its operative `docs/agents/` source.
 
 - **mandatory**: Refuse a tooling Task unless the active PRD and present TechSpec record express maintainer authorization and the exact bounded repository-relative files; Task assignment, setup approval, or generic implementation approval is not authorization.
