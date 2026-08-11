@@ -28,6 +28,10 @@ import (
 
 const taskCycleSlug = "0001-sample-feature"
 
+func taskCycleNowForTest() time.Time {
+	return time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+}
+
 func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -275,7 +279,7 @@ func (fixture *taskCycleFixture) engineWithTaskWorktreesAndPriorChanges(t *testi
 		PriorChanges:  priorChanges,
 		GH:            fixture.github,
 		Sink:          fixture.sink,
-		Now:           func() time.Time { return time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC) },
+		Now:           taskCycleNowForTest,
 		Progress:      fixture.progress,
 	})
 	if err != nil {
@@ -427,8 +431,9 @@ func taskStatusInSpecRootOnDisk(t *testing.T, specsRoot string, id string) strin
 
 // taskFakeRunner scripts per-Task Agent behavior keyed by the Task id it
 // parses from the prompt, including attempted Agent status edits that the
-// Daemon must normalize. A QA prompt writes qaReport as the Spec's QA Report,
-// the way the qa-gate Agent does; an empty qaReport writes none.
+// Daemon must normalize. A QA prompt writes qaReport into the Daemon-seeded QA
+// Report, the way the qa-gate Agent does; an empty qaReport removes the seed to
+// model a deliberately missing report.
 type taskFakeRunner struct {
 	calls            *[]string
 	gitRoot          string
@@ -444,6 +449,7 @@ type taskFakeRunner struct {
 	anomalyByTask    map[string]string
 	afterTask        func(string)
 	qaReport         string
+	qaReportPath     string
 	qaSeed           string
 	qaPrompts        []string
 	seenStates       []string
@@ -477,7 +483,11 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 	runner.taskCalls[taskID] = taskCall + 1
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
 		runner.qaPrompts = append(runner.qaPrompts, req.Prompt)
-		reportPath := filepath.Join(qaSpecDirFromPromptForTest(req.Prompt, runner.gitRoot), "qa", qaReportNameForTest)
+		reportPath, reportDisplayPath, err := seededQAReportPathFromPromptForTest(req.Prompt, runner.gitRoot)
+		if err != nil {
+			return agent.ExecuteResult{}, err
+		}
+		runner.qaReportPath = reportDisplayPath
 		if seed, err := os.ReadFile(reportPath); err == nil {
 			runner.qaSeed = string(seed)
 		} else if !errors.Is(err, os.ErrNotExist) {
@@ -630,6 +640,37 @@ func qaSpecDirFromPromptForTest(prompt string, gitRoot string) string {
 	return filepath.Join(gitRoot, "docs", "specs", taskCycleSlug)
 }
 
+func seededQAReportPathFromPromptForTest(prompt string, gitRoot string) (string, string, error) {
+	newest, err := spec.NewestQAReport(qaSpecDirFromPromptForTest(prompt, gitRoot))
+	if err != nil {
+		return "", "", fmt.Errorf("resolve Daemon-seeded QA Report: %w", err)
+	}
+	for _, line := range strings.Split(prompt, "\n") {
+		displayPath, ok := strings.CutPrefix(line, "Seeded QA Report: ")
+		if !ok {
+			continue
+		}
+		displayPath = strings.TrimSpace(displayPath)
+		seeded := displayPath
+		if !filepath.IsAbs(seeded) {
+			seeded = filepath.Join(gitRoot, seeded)
+		}
+		if filepath.Clean(seeded) != filepath.Clean(newest) {
+			return "", "", fmt.Errorf("seeded QA Report %q does not match newest report %q", seeded, newest)
+		}
+		return newest, displayPath, nil
+	}
+	return "", "", errors.New("QA prompt has no Seeded QA Report path")
+}
+
+func qaReportNameForTest() string {
+	return fmt.Sprintf("qa-report-%s.md", taskCycleNowForTest().Format("2006-01-02"))
+}
+
+func qaReportRelPathForTest() string {
+	return filepath.Join("docs", "specs", taskCycleSlug, "qa", qaReportNameForTest())
+}
+
 func setRawTaskStatusForTest(path string, status string) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -643,12 +684,6 @@ func setRawTaskStatusForTest(path string, status string) error {
 		}
 	}
 	return fmt.Errorf("task file %q has no status line", path)
-}
-
-const qaReportNameForTest = "qa-report-2026-01-01.md"
-
-func qaReportRelPathForTest() string {
-	return filepath.Join("docs", "specs", taskCycleSlug, "qa", qaReportNameForTest)
 }
 
 func qaReportForTest(verdict string) string {
@@ -767,7 +802,7 @@ func TestMechanicalStageSeedsReportBeforeAgentSession(t *testing.T) {
 	if len(runner.requests) != 1 || len(runner.qaPrompts) != 1 {
 		t.Fatalf("non-blocking mechanical result ran %d Agent requests with %d QA prompts, want one of each", len(runner.requests), len(runner.qaPrompts))
 	}
-	if !strings.Contains(runner.qaPrompts[0], "Seeded QA Report: "+qaReportRelPathForTest()) {
+	if !strings.Contains(runner.qaPrompts[0], "Seeded QA Report: "+runner.qaReportPath) {
 		t.Fatalf("QA prompt does not name the seeded report:\n%s", runner.qaPrompts[0])
 	}
 	for _, expected := range []string{"## Mechanical skips", "fixture detector", "fixture input"} {
@@ -844,14 +879,13 @@ func TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport(t *testing.
 	t.Parallel()
 	repoRoot := t.TempDir()
 	specDir := filepath.Join(repoRoot, "docs", "specs", taskCycleSlug)
-	priorPath := filepath.Join(specDir, "qa", qaReportNameForTest)
+	now := taskCycleNowForTest()
+	priorPath := filepath.Join(specDir, "qa", fmt.Sprintf("qa-report-%s.md", now.Format("2006-01-02")))
 	if err := os.MkdirAll(filepath.Dir(priorPath), 0o755); err != nil {
 		t.Fatalf("create prior QA Report directory: %v", err)
 	}
 	mustWriteForTest(t, priorPath, qaReportForTest(spec.VerdictPass))
-	engine := &Engine{deps: Dependencies{Now: func() time.Time {
-		return time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	}}}
+	engine := &Engine{deps: Dependencies{Now: func() time.Time { return now }}}
 	plan := TaskPlan{WorkDir: repoRoot, Spec: spec.Spec{Slug: taskCycleSlug, Dir: specDir}}
 
 	reportPath, err := engine.writeMechanicalQAReport(plan, speccheck.MechanicalResult{Blocking: true})
@@ -859,7 +893,7 @@ func TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport(t *testing.
 	if err != nil {
 		t.Fatalf("writeMechanicalQAReport returned error: %v", err)
 	}
-	wantPath := filepath.Join("docs", "specs", taskCycleSlug, "qa", "qa-report-2026-01-01-01.md")
+	wantPath := filepath.Join("docs", "specs", taskCycleSlug, "qa", fmt.Sprintf("qa-report-%s-01.md", now.Format("2006-01-02")))
 	if reportPath != wantPath {
 		t.Fatalf("writeMechanicalQAReport path = %q, want %q", reportPath, wantPath)
 	}
@@ -1156,7 +1190,10 @@ func (runner *selectionLifecycleRunner) RunPrepared(_ context.Context, req agent
 	taskID := taskIDFromPrompt(req.Prompt)
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
 		if runner.qaReport != "" {
-			reportPath := filepath.Join(qaSpecDirFromPromptForTest(req.Prompt, runner.gitRoot), "qa", qaReportNameForTest)
+			reportPath, _, resolveErr := seededQAReportPathFromPromptForTest(req.Prompt, runner.gitRoot)
+			if resolveErr != nil {
+				return agent.ExecuteResult{}, resolveErr
+			}
 			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
 				return agent.ExecuteResult{}, err
 			}
@@ -5192,7 +5229,7 @@ func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
 	if err != nil {
 		t.Fatalf("task cycle: %v", err)
 	}
-	wantReportPath := filepath.Join(externalRoot, taskCycleSlug, "qa", qaReportNameForTest)
+	wantReportPath := filepath.Join(externalRoot, taskCycleSlug, "qa", qaReportNameForTest())
 	if result.QAVerdict != spec.VerdictPass || result.QAReportPath != wantReportPath {
 		t.Fatalf("expected external QA pass report %q, got %+v", wantReportPath, result)
 	}

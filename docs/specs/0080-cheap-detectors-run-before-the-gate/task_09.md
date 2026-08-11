@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0080-cheap-detectors-run-before-the-gate
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -71,3 +71,45 @@ This Task may create or modify only:
 - `_prd.md` → Goal 1.
 - `task_03.md` → the seeding this harness must follow.
 - `qa/qa-report-2026-08-11.md` → F-001.
+
+## Result
+
+Updated the in-process CLI and Daemon QA fakes to resolve the report selected
+by the production `qa-report-YYYY-MM-DD[-NN].md` recency contract, require it
+to match the prompt's exact `Seeded QA Report:` path, and complete that file in
+place. The CLI matrix now deletes the resolved seed deliberately for its
+missing case and writes malformed frontmatter deliberately for its unreadable
+case. The macro ACPX fake also writes the prompt-named seed, and verdict-event
+assertions select the verdict phase rather than the preceding mechanical phase.
+
+Focused checks run after the final implementation edit:
+
+- Pre-change signal: `rtk proxy env GOCACHE=/private/tmp/roundfix-task09-gocache go test ./internal/cli -run '^TestRunImplementQAVerdictMatrix$/pass$' -count=1`
+  exited 1 because the seeded `qa-report-2026-08-11.md` had no verdict while
+  the fake wrote a separate fixed-name report.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task09-gocache go test ./internal/cli -run '^TestRunImplementQAVerdictMatrix/(pass|partial|fail)$' -count=1`
+  passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task09-gocache go test ./internal/cli -run '^TestRunImplementQAVerdictMatrix/(missing_report|unreadable_verdict)$' -count=1`
+  passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task09-gocache go test ./internal/daemon -run '^(TestMechanicalStageSeedsReportBeforeAgentSession|TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport|TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport)$' -count=1`
+  passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task09-gocache go test ./internal/cli -run '^(TestRunImplementUsesConfiguredExternalSpecRootEndToEnd|TestRunImplementInteractiveInputDoesNotChooseQAGate|TestRunImplementAutoPushOutcomeMatrix|TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict|TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord|TestAttachReplaysCompletedSpecRunReadOnly)$' -count=1`
+  passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task09-gocache go test ./internal/cli -run '^TestAgentSelectionProfilesMacro/mixed_profiles_configure_validate_fallback_persist_and_stream$' -count=1`
+  passed.
+- `rtk git diff --check` passed.
+
+Acceptance evidence:
+
+1. The two focused matrix selections cover and pass all five named subtests:
+   `pass`, `partial`, `fail`, `missing_report`, and `unreadable_verdict`.
+2. `rtk proxy rg -n 'qa-report-[0-9]{4}-[0-9]{2}-[0-9]{2}' internal/cli/implement_test.go internal/daemon/task_engine_test.go`
+   found no hard-coded dated QA Report name. The old fixed-name constant is
+   removed; remaining expected names derive from the test clock and the naming
+   contract.
+3. `rtk git diff --name-only` listed only
+   `internal/cli/implement_test.go`, `internal/daemon/task_engine_test.go`, and
+   this Task file.
+
+The commands under this Task's `## Verification` were not run; the Daemon owns
+that complete selection and settlement evidence.

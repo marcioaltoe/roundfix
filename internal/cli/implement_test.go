@@ -687,8 +687,9 @@ func implementTaskPathInRoot(specsRoot string, slug string, taskID string) strin
 
 // implementFakeRunner scripts per-Task Agent behavior keyed by the Task id
 // parsed from the prompt, including attempted status edits that Implement
-// must normalize. A QA prompt writes qaReport as the Spec's QA Report, the
-// way the qa-gate Agent does; an empty qaReport writes none.
+// must normalize. A QA prompt writes qaReport into the Daemon-seeded QA Report,
+// the way the qa-gate Agent does; an empty qaReport removes the seed to model a
+// deliberately missing report.
 type implementFakeRunner struct {
 	mu            sync.Mutex
 	gitRoot       string
@@ -703,6 +704,7 @@ type implementFakeRunner struct {
 	calls         int
 	taskIDs       []string
 	qaReport      string
+	qaReportPath  string
 	qaCalls       int
 	qaPrompts     []string
 	logPaths      []string
@@ -752,12 +754,20 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 	}
 	taskID := implementTaskIDFromPrompt(req.Prompt)
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
+		reportPath, reportDisplayPath, err := implementSeededQAReportFromPrompt(req.Prompt, executionRoot)
+		if err != nil {
+			return agent.ExecuteResult{}, err
+		}
 		runner.mu.Lock()
 		runner.qaCalls++
 		runner.qaPrompts = append(runner.qaPrompts, req.Prompt)
+		runner.qaReportPath = reportDisplayPath
 		runner.mu.Unlock()
-		if qaReport != "" {
-			reportPath := filepath.Join(implementSpecDirFromPrompt(req.Prompt, executionRoot), "qa", implementQAReportName)
+		if qaReport == "" {
+			if err := os.Remove(reportPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+				return agent.ExecuteResult{}, err
+			}
+		} else {
 			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
 				return agent.ExecuteResult{}, err
 			}
@@ -796,14 +806,41 @@ func (runner *implementFakeRunner) EndSession(context.Context, agent.RuntimeSpec
 	return nil
 }
 
-const implementQAReportName = "qa-report-2026-01-01.md"
-
-func implementQAReportRelPath() string {
-	return filepath.Join("docs", "specs", implementTestSlug, "qa", implementQAReportName)
-}
-
 func implementQAReport(verdict string) string {
 	return fmt.Sprintf("---\nverdict: %s\n---\n\n# QA Report\n", verdict)
+}
+
+func implementSeededQAReportFromPrompt(prompt string, executionRoot string) (string, string, error) {
+	newest, err := spec.NewestQAReport(implementSpecDirFromPrompt(prompt, executionRoot))
+	if err != nil {
+		return "", "", fmt.Errorf("resolve Daemon-seeded QA Report: %w", err)
+	}
+	for _, line := range strings.Split(prompt, "\n") {
+		displayPath, ok := strings.CutPrefix(line, "Seeded QA Report: ")
+		if !ok {
+			continue
+		}
+		displayPath = strings.TrimSpace(displayPath)
+		seeded := displayPath
+		if !filepath.IsAbs(seeded) {
+			seeded = filepath.Join(executionRoot, seeded)
+		}
+		if filepath.Clean(seeded) != filepath.Clean(newest) {
+			return "", "", fmt.Errorf("seeded QA Report %q does not match newest report %q", seeded, newest)
+		}
+		return newest, displayPath, nil
+	}
+	return "", "", errors.New("QA prompt has no Seeded QA Report path")
+}
+
+func implementQAReportPathForTest(t *testing.T, runner *implementFakeRunner) string {
+	t.Helper()
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	if runner.qaReportPath == "" {
+		t.Fatal("fake QA Agent did not record the Daemon-seeded report path")
+	}
+	return runner.qaReportPath
 }
 
 func implementTaskIDFromPrompt(prompt string) string {
@@ -1861,7 +1898,7 @@ func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
 	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: pending") {
 		t.Fatalf("expected default-layout fixture untouched, got:\n%s", content)
 	}
-	externalReport := filepath.Join(externalRoot, implementTestSlug, "qa", implementQAReportName)
+	externalReport := implementQAReportPathForTest(t, runner)
 	assertPathExists(t, externalReport)
 	if !strings.Contains(stdout.String(), "qa pass — "+externalReport+"\n") {
 		t.Fatalf("expected QA output to name external report, got %q", stdout.String())
@@ -1960,7 +1997,10 @@ func TestRunImplementInteractiveInputDoesNotChooseQAGate(t *testing.T) {
 			if runner.qaCalls != tt.wantQACalls {
 				t.Fatalf("expected %d QA call(s), got %d", tt.wantQACalls, runner.qaCalls)
 			}
-			hasQAVerdict := strings.Contains(stdout.String(), "qa pass — "+implementQAReportRelPath())
+			hasQAVerdict := false
+			if tt.wantQACalls > 0 {
+				hasQAVerdict = strings.Contains(stdout.String(), "qa pass — "+implementQAReportPathForTest(t, runner))
+			}
 			if wantVerdict := tt.wantQACalls > 0; hasQAVerdict != wantVerdict {
 				t.Fatalf("expected QA verdict line presence %v, got stdout:\n%s", wantVerdict, stdout.String())
 			}
@@ -3181,6 +3221,7 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 		wantState       string
 		wantPushes      int
 		wantStdout      []string
+		wantQAVerdict   string
 		verificationErr error
 		graphQA         bool
 	}{
@@ -3201,10 +3242,10 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			wantState:  store.StateClean,
 			wantPushes: 1,
 			wantStdout: []string{
-				"qa pass — " + implementQAReportRelPath() + "\n",
 				"Clean: all 2 Task(s) completed.\n",
 				"pushed origin/ma/widget-flow\n",
 			},
+			wantQAVerdict: "pass",
 		},
 		{
 			name:           "clean without key does not push",
@@ -3267,10 +3308,11 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 					qaReport:     implementQAReport("fail"),
 				}
 			},
-			wantCode:   1,
-			wantState:  store.StateUnresolved,
-			wantPushes: 0,
-			wantStdout: []string{"qa fail — " + implementQAReportRelPath() + "\n", "Unresolved: 1 completed, 1 failed, 0 skipped, 0 pending.\n"},
+			wantCode:      1,
+			wantState:     store.StateUnresolved,
+			wantPushes:    0,
+			wantStdout:    []string{"Unresolved: 1 completed, 1 failed, 0 skipped, 0 pending.\n"},
+			wantQAVerdict: "fail",
 		},
 	}
 	for _, tt := range tests {
@@ -3288,7 +3330,8 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			if tt.configUpstream {
 				configureImplementUpstream(t, repoDir, "origin", "ma/widget-flow")
 			}
-			_, verifier, pusher, _ := withImplementCollaborators(t, tt.runner(repoDir))
+			runner := tt.runner(repoDir)
+			_, verifier, pusher, _ := withImplementCollaborators(t, runner)
 			verifier.err = tt.verificationErr
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
@@ -3312,6 +3355,12 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 				t.Fatalf("stdout must not include pushed line without a push, got %q", stdout.String())
 			}
 			for _, want := range tt.wantStdout {
+				if !strings.Contains(stdout.String(), want) {
+					t.Fatalf("expected stdout to contain %q, got %q", want, stdout.String())
+				}
+			}
+			if tt.wantQAVerdict != "" {
+				want := "qa " + tt.wantQAVerdict + " — " + implementQAReportPathForTest(t, runner) + "\n"
 				if !strings.Contains(stdout.String(), want) {
 					t.Fatalf("expected stdout to contain %q, got %q", want, stdout.String())
 				}
@@ -5012,8 +5061,8 @@ func requestStopForActiveRunInGitRoot(homeDir string, gitRoot string) error {
 	return runStore.RequestStop(ctx, active.ID)
 }
 
-// implementJournaledQAEvent returns the Run's daemon.qa event from the Run
-// Event Journal, and whether one was journaled at all.
+// implementJournaledQAEvent returns the Run's verdict-phase daemon.qa event
+// from the Run Event Journal, and whether one was journaled at all.
 func implementJournaledQAEvent(t *testing.T, homeDir string, runID string) (runevent.RunEvent, bool) {
 	t.Helper()
 	ctx := context.Background()
@@ -5029,7 +5078,7 @@ func implementJournaledQAEvent(t *testing.T, homeDir string, runID string) (rune
 		t.Fatalf("list journaled Run Events: %v", err)
 	}
 	for _, entry := range events {
-		if entry.Event.Kind == runevent.KindDaemonQA {
+		if entry.Event.Kind == runevent.KindDaemonQA && strings.Contains(string(entry.Event.Payload), `"phase":"verdict"`) {
 			return entry.Event, true
 		}
 	}
@@ -5038,7 +5087,6 @@ func implementJournaledQAEvent(t *testing.T, homeDir string, runID string) (rune
 
 func TestRunImplementQAVerdictMatrix(t *testing.T) {
 	t.Parallel()
-	reportRel := implementQAReportRelPath()
 	tests := []struct {
 		name        string
 		report      string
@@ -5048,11 +5096,11 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 		hasReport   bool
 		wantDetail  string
 	}{
-		{name: "pass", report: implementQAReport("pass"), wantCode: 0, wantVerdict: "pass", wantState: store.StateClean, hasReport: true, wantDetail: reportRel},
-		{name: "partial", report: implementQAReport("partial"), wantCode: 1, wantVerdict: "partial", wantState: store.StateUnresolved, hasReport: true, wantDetail: reportRel},
-		{name: "fail", report: implementQAReport("fail"), wantCode: 1, wantVerdict: "fail", wantState: store.StateUnresolved, hasReport: true, wantDetail: reportRel},
+		{name: "pass", report: implementQAReport("pass"), wantCode: 0, wantVerdict: "pass", wantState: store.StateClean, hasReport: true},
+		{name: "partial", report: implementQAReport("partial"), wantCode: 1, wantVerdict: "partial", wantState: store.StateUnresolved, hasReport: true},
+		{name: "fail", report: implementQAReport("fail"), wantCode: 1, wantVerdict: "fail", wantState: store.StateUnresolved, hasReport: true},
 		{name: "missing report", report: "", wantCode: 1, wantVerdict: "missing", wantState: store.StateUnresolved, wantDetail: "no QA Report found"},
-		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantCode: 1, wantVerdict: "unreadable", wantState: store.StateUnresolved, hasReport: true, wantDetail: reportRel},
+		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantCode: 1, wantVerdict: "unreadable", wantState: store.StateUnresolved, hasReport: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -5074,6 +5122,11 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
 			}
+			reportPath := implementQAReportPathForTest(t, runner)
+			wantDetail := tt.wantDetail
+			if tt.hasReport {
+				wantDetail = reportPath
+			}
 			gateLine := "task_qa failed — Run the QA gate\n"
 			outcomeLine := "Unresolved: 1 completed, 1 failed, 0 skipped, 0 pending.\n"
 			if tt.wantState == store.StateClean {
@@ -5082,7 +5135,7 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			}
 			expected := "task_01 completed — Build the widget core\n" +
 				gateLine +
-				"qa " + tt.wantVerdict + " — " + tt.wantDetail + "\n" +
+				"qa " + tt.wantVerdict + " — " + wantDetail + "\n" +
 				outcomeLine
 			if stdout.String() != expected {
 				t.Fatalf("expected QA report on stdout:\n%q\ngot:\n%q", expected, stdout.String())
@@ -5109,7 +5162,7 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			if !strings.Contains(string(event.Payload), fmt.Sprintf("%q", tt.wantVerdict)) {
 				t.Fatalf("expected the verdict in the daemon.qa payload, got %s", event.Payload)
 			}
-			if tt.hasReport && !strings.Contains(string(event.Payload), reportRel) {
+			if tt.hasReport && !strings.Contains(string(event.Payload), reportPath) {
 				t.Fatalf("expected the report path in the daemon.qa payload, got %s", event.Payload)
 			}
 			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
@@ -5203,7 +5256,7 @@ func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
 			expected := "task_01 completed — Write the widget guide\n" +
 				"task_02 completed — Build the widget backend\n" +
 				gateLine +
-				"qa " + tt.verdict + " — " + implementQAReportRelPath() + "\n" +
+				"qa " + tt.verdict + " — " + implementQAReportPathForTest(t, runner) + "\n" +
 				outcomeLine
 			if stdout.String() != expected {
 				t.Fatalf("expected QA-only report:\n%q\ngot:\n%q", expected, stdout.String())
@@ -5412,11 +5465,19 @@ func TestAgentSelectionProfilesMacro(t *testing.T) {
 			t.Fatalf("implement macro failed: code=%d stdout=%q stderr=%q", code, stdout, stderr)
 		}
 		runID := implementRunIDFromStderr(t, stderr)
+		qaReportPath, err := spec.NewestQAReport(filepath.Join(repoDir, "docs", "specs", implementTestSlug))
+		if err != nil {
+			t.Fatalf("resolve macro QA Report: %v", err)
+		}
+		qaReportDisplayPath, err := filepath.Rel(repoDir, qaReportPath)
+		if err != nil {
+			t.Fatalf("make macro QA Report path relative: %v", err)
+		}
 		for _, expected := range []string{
 			"task_backend completed — Build backend API",
 			"task_frontend completed — Build frontend view",
 			"task_qa completed — Run the QA gate",
-			"qa pass — docs/specs/0001-widget-flow/qa/qa-report-2026-01-01.md",
+			"qa pass — " + qaReportDisplayPath,
 			"Clean: all 3 Task(s) completed.",
 		} {
 			if !strings.Contains(stdout, expected) {
@@ -5905,8 +5966,11 @@ def write_agent_marker(cwd, task_path):
     with open(marker, "w", encoding="utf-8") as handle:
         handle.write("scripted Agent work\n")
 
-def write_qa_report(spec_dir):
-    report = os.path.join(spec_dir, "qa", "qa-report-2026-01-01.md")
+def write_qa_report(cwd, prompt):
+    report = prompt_field(prompt, "Seeded QA Report")
+    if not report:
+        raise RuntimeError("missing Seeded QA Report path")
+    report = resolve_path(cwd, report)
     os.makedirs(os.path.dirname(report), exist_ok=True)
     with open(report, "w", encoding="utf-8") as handle:
         handle.write("---\nverdict: pass\n---\n\n# QA Report\n")
@@ -6041,8 +6105,7 @@ if event["command"] == "prompt":
         set_status(task_path, "completed")
         write_agent_marker(event["cwd"], task_path)
     elif event["prompt_kind"] == "qa":
-        spec_dir = resolve_path(event["cwd"], prompt_field(stdin_data, "Spec directory"))
-        write_qa_report(spec_dir)
+        write_qa_report(event["cwd"], stdin_data)
     event["outcome"] = "ok"
     log(event)
     print('{"jsonrpc":"2.0","id":1,"result":{"stopReason":"end_turn"}}')
