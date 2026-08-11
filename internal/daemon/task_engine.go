@@ -1762,13 +1762,20 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	// branch ride along as facts: the gate reasons about the user's branch,
 	// which this checkout structurally cannot name on its own.
 	pullRequest, pullRequestResolved := engine.resolveQAPullRequest(ctx, plan.WorkDir, plan.TargetBranch)
+	promptContext, err := engine.buildQAPromptContext(ctx, plan, qaTask)
+	if err != nil {
+		return "", "", fmt.Errorf("build QA prompt context for run %q: %w", plan.RunID, err)
+	}
 	prompt, err := agent.BuildQAPrompt(agent.QAPromptRequest{
-		SpecSlug:     plan.Spec.Slug,
-		SpecDir:      plan.Spec.Dir,
-		PRDPath:      filepath.Join(plan.Spec.Dir, "_prd.md"),
-		RunBranch:    plan.RunWorktree.Branch,
-		TargetBranch: plan.TargetBranch,
-		UserCheckout: plan.RunWorktree.UserRoot,
+		SpecSlug:           plan.Spec.Slug,
+		SpecDir:            plan.Spec.Dir,
+		PRDPath:            filepath.Join(plan.Spec.Dir, "_prd.md"),
+		Context:            promptContext.Bundle,
+		PreviousReportPath: promptContext.PreviousReportPath,
+		PreviousReportHead: promptContext.PreviousReportHead,
+		RunBranch:          plan.RunWorktree.Branch,
+		TargetBranch:       plan.TargetBranch,
+		UserCheckout:       plan.RunWorktree.UserRoot,
 
 		PullRequest:         pullRequest,
 		PullRequestResolved: pullRequestResolved,

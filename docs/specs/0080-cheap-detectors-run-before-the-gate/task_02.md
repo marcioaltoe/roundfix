@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0080-cheap-detectors-run-before-the-gate
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -83,3 +83,41 @@ do not exist yet.
 - `_prd.md` → Core Features 4, 8; User Story 4.
 - `_techspec.md` → System Architecture (the QA prompt); Build Order 2.
 - ADR-0080, ADR-0096.
+
+## Result
+
+Implemented the QA prompt context without changing Task status, verdict
+evaluation, or report naming. The Daemon now builds the QA gate's
+`SpecContextBundle` through the same bounded builder used for Task prompts,
+adds the newest prior QA Report path with the Run-start head when one exists,
+and records an explicit absence otherwise. The prompt contract now names all
+three blocked-cause counts.
+
+Focused checks:
+
+- Red signal: `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/agent -run '^TestBuildQAPromptCarries(TheSpecContextBundle|ThePreviousReportIdentity)$'` exited 1 before implementation because `QAPromptRequest` had no context or previous-report fields.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/agent -run '^TestBuildQAPromptCarries(TheSpecContextBundle|ThePreviousReportIdentity)$'` exited 0 after implementation.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 ./internal/daemon -run '^(TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles|TestQAGatePromptUsesTaskContextBuilderAndPreviousReportIdentity)$'` exited 0.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test ./internal/agent -run '^TestBuildQAPrompt'` exited 0.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task02-gocache go test -count=1 ./internal/agent -run '^TestBuild(TaskPrompt|QAPrompt)'` exited 0.
+- `rtk git diff --check` exited 0.
+
+Acceptance evidence:
+
+1. `TestBuildQAPromptCarriesTheSpecContextBundle` covers both a populated
+   changed-path list and the explicit `Prior changed files: none` form. The
+   Daemon integration case proves the QA gate receives paths from the shared
+   builder and the existing 200-path limit remains its only limit.
+2. `TestBuildQAPromptStatesQAGateContract` passed with
+   `rows_blocked_environment`, `rows_blocked_finding`, and
+   `rows_blocked_declared`, including the existing pass semantics for each
+   cause.
+3. The focused `^TestBuildQAPrompt` regression selection passed all existing
+   slug, Spec directory, PRD, branch, checkout, and resolved/unresolved Pull
+   Request fact cases.
+4. Diff inspection found no change to verdict parsing, report selection or
+   naming, QA settlement, or Agent execution. The Daemon change only assembles
+   and forwards prompt context before the existing QA Agent Session.
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+them after this handoff.
