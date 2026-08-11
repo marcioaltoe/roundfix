@@ -56,6 +56,43 @@ type ConsequentFixDeclaration struct {
 	FixCommit   string
 }
 
+// MechanicalAuthorization reads the Tooling authority declaration from one
+// PRD and returns the cited authorization plus its exact bounded paths. An
+// absent declaration or artifact is represented by empty values so the
+// mechanical detector can record the corresponding presence-aware skip.
+func MechanicalAuthorization(repoRoot, prdPath string) (string, []string, error) {
+	artifact, present, err := readConstraintArtifact(repoRoot, prdPath)
+	if err != nil {
+		return "", nil, err
+	}
+	if !present {
+		return "", nil, nil
+	}
+	row, present := artifact.rows[strings.ToLower(constraintTooling)]
+	if !present || strings.TrimSpace(row.AuthorizationPath) == "" {
+		return "", nil, nil
+	}
+	authorizationPath := row.AuthorizationPath
+	resolved, ok := resolveRepositoryPath(repoRoot, authorizationPath)
+	if !ok {
+		return authorizationPath, nil, nil
+	}
+	content, err := os.ReadFile(resolved)
+	if errors.Is(err, os.ErrNotExist) {
+		return authorizationPath, nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("read mechanical authorization %q: %w", resolved, err)
+	}
+	declared := parseMechanicalAuthorizationPaths(content)
+	paths := make([]string, 0, len(declared))
+	for path := range declared {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	return authorizationPath, paths, nil
+}
+
 type mechanicalReportRow struct {
 	id       string
 	status   string

@@ -67,6 +67,35 @@ func TestMechanicalAuthPaths(t *testing.T) {
 	})
 }
 
+func TestMechanicalAuthorizationReadsThePRDBoundedDeclaration(t *testing.T) {
+	t.Parallel()
+	repoRoot := t.TempDir()
+	writeMechanicalFile(t, repoRoot, "docs/workflow/authorizations/mechanical.md", "# Authorization\n\n## Bounded files\n\n- `Makefile`\n- `docs/agents/spec-routing.md`\n")
+	prdPath := filepath.Join(repoRoot, "docs", "specs", "mechanical", "_prd.md")
+	writeMechanicalFile(t, repoRoot, "docs/specs/mechanical/_prd.md", "# PRD\n\n## Project Constraints\n\n- Tooling authority: applicable — recorded at `docs/workflow/authorizations/mechanical.md`; bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
+
+	path, bounded, err := speccheck.MechanicalAuthorization(repoRoot, prdPath)
+
+	if err != nil {
+		t.Fatalf("MechanicalAuthorization returned error: %v", err)
+	}
+	if path != "docs/workflow/authorizations/mechanical.md" {
+		t.Fatalf("MechanicalAuthorization path = %q", path)
+	}
+	want := []string{"Makefile", "docs/agents/spec-routing.md"}
+	if !reflect.DeepEqual(bounded, want) {
+		t.Fatalf("MechanicalAuthorization bounded paths = %v, want %v", bounded, want)
+	}
+
+	missingPath, missingBounded, err := speccheck.MechanicalAuthorization(repoRoot, filepath.Join(repoRoot, "docs", "specs", "absent", "_prd.md"))
+	if err != nil {
+		t.Fatalf("MechanicalAuthorization(absent) returned error: %v", err)
+	}
+	if missingPath != "" || missingBounded != nil {
+		t.Fatalf("MechanicalAuthorization(absent) = %q, %v; want empty presence-aware input", missingPath, missingBounded)
+	}
+}
+
 func TestMechanicalConsequentOrder(t *testing.T) {
 	t.Parallel()
 
