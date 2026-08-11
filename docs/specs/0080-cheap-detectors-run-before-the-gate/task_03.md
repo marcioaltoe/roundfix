@@ -65,7 +65,6 @@ exclusively the Daemon's, and the stage is not the Daemon's settlement path.
 
 ## Verification
 
-- `output="$(go test -count=1 ./internal/daemon -run 'MechanicalStage|QAGate' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the stage and gate tests are selected and pass.
 - `output="$(go test -count=1 ./internal/daemon -run 'MechanicalStageWithholdsAgentSession' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the withholding behaviour is proven by a named test, not
@@ -78,6 +77,11 @@ whole-package `go test` sweep both pass against a tree where no work has
 happened, so each approves the Task before it starts. Compilation and
 regression are the Run-level gate's job; the commands above name cases that
 do not exist yet.
+
+The broad `MechanicalStage|QAGate` pattern is deliberately absent: by the time
+this Task is dispatched, Task 01's cases already match it and pass, so it would
+approve this Task before any work happened. The command above names the one case
+this Task must create.
 
 ## References
 
