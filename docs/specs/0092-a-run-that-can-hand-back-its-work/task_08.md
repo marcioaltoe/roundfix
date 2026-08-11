@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0092-a-run-that-can-hand-back-its-work
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -79,3 +79,53 @@ This Task may create or modify only:
 - `_techspec.md` → Build Order 2.
 - `task_01.md` → the six-test enumeration this Task corrects to seven.
 - `task_02.md` → Requirements 2, 3 and 4.
+
+## Result
+
+Implemented the two distinct fallback contracts without changing production
+code:
+
+- `a selection failure activates the fallback chain` drives the preferred
+  backend selection through a no-output model refusal, then observes the
+  configured fallback prompt, durable notification, persisted fallback
+  attempt, Task completion, and Clean Run outcome.
+- `agent output before failure keeps the chain ineligible` emits an ACP Agent
+  message before a configured prompt exit, then observes an Unresolved Run with
+  no fallback invocation, notification, or persisted attempt.
+- The bounded macro fake now honors the established
+  `ROUNDFIX_FAKE_ACPX_EXIT_BY_CALL` and
+  `ROUNDFIX_FAKE_ACPX_EXIT_BY_COMMAND` controls. Its fallback-notification
+  ordering guard derives the active Task scope and model instead of being
+  hard-coded to the pre-existing frontend case.
+- The declared-break corpus now contains a seventh `Outcome contract test:`
+  entry naming the legacy macro case, its former assertion, and the two guards
+  that replace it.
+
+Focused checks:
+
+- The Daemon diagnostic artifact showed the stale
+  `post_start_failure_never_activates_fallback` case failing after the
+  no-output selection failure activated a fallback session.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run '^TestAgentSelectionProfilesMacro$/(a_selection_failure_activates_the_fallback_chain|agent_output_before_failure_keeps_the_chain_ineligible)$' -count=1 -v`
+  passed the parent and both focused contract cases after the final test edit.
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run '^TestAgentSelectionProfilesMacro$/mixed_profiles_configure_validate_fallback_persist_and_stream$' -count=1 -v`
+  passed the pre-existing fallback macro case after the notification-order
+  guard was generalized.
+- `rtk rg -c 'Outcome contract test:' internal/daemon/run_disposition_characterization_test.go`
+  reported `7`.
+- `rtk git -c core.fsmonitor=false diff --check` exited `0`, and
+  `rtk git -c core.fsmonitor=false diff --name-only` listed only the three
+  bounded Task paths.
+
+Acceptance evidence:
+
+- The selection-failure case proves fallback eligibility through the public Run
+  outcome plus invocation, Run Event, and persisted-attempt evidence.
+- The post-output case proves chain ineligibility after an observable
+  `agent_message_chunk`, checking all three fallback surfaces remain absent.
+- The corpus inspection reports exactly seven outcome-contract declarations.
+- The changed-file inspection contains only `internal/cli/implement_test.go`,
+  `internal/daemon/run_disposition_characterization_test.go`, and this Task
+  file.
+
+The authored `## Verification` commands were not run; the Daemon owns them.
