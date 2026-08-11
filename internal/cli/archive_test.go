@@ -15,6 +15,15 @@ import (
 	"roundfix/internal/spec"
 )
 
+func archiveTestPath(kind spec.ArchiveKind, elements ...string) string {
+	parts := append([]string{filepath.FromSlash(spec.ArchiveDir(kind))}, elements...)
+	return filepath.ToSlash(filepath.Join(parts...))
+}
+
+func archiveTestRepositoryPath(repoRoot string, kind spec.ArchiveKind, elements ...string) string {
+	return filepath.Join(repoRoot, filepath.FromSlash(archiveTestPath(kind, elements...)))
+}
+
 func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
@@ -31,7 +40,7 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	wantStdout := "archived " + implementTestSlug + " -> docs/specs/_archived/" + implementTestSlug + "\n"
+	wantStdout := "archived " + implementTestSlug + " -> " + archiveTestPath(spec.ArchiveKindSpec, implementTestSlug) + "\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected stdout %q, got %q", wantStdout, stdout.String())
 	}
@@ -39,7 +48,7 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 		t.Fatalf("expected archive stderr empty, got %q", stderr.String())
 	}
 	assertPathMissing(t, filepath.Join(repoDir, "docs", "specs", implementTestSlug))
-	archivedDir := filepath.Join(repoDir, "docs", "specs", "_archived", implementTestSlug)
+	archivedDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug)
 	assertPathExists(t, archivedDir)
 	assertPathExists(t, filepath.Join(archivedDir, "task_01.md"))
 	prd := mustRead(t, filepath.Join(archivedDir, "_prd.md"))
@@ -155,7 +164,7 @@ func TestRunArchiveDeclaredUnreachableContract(t *testing.T) {
 			code := runCLIContext(t, context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
 
 			activeDir := filepath.Join(repoDir, "docs", "specs", implementTestSlug)
-			archivedDir := filepath.Join(repoDir, "docs", "specs", "_archived", implementTestSlug)
+			archivedDir := archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug)
 			if len(tt.wantStderr) > 0 {
 				if code != exitPreflight {
 					t.Fatalf("expected archive refusal exit %d, got %d stderr=%q stdout=%q", exitPreflight, code, stderr.String(), stdout.String())
@@ -219,7 +228,7 @@ func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	archivedDir := filepath.Join(externalRoot, "_archived", implementTestSlug)
+	archivedDir := filepath.Join(spec.ArchiveSpecRoot(externalRoot), implementTestSlug)
 	wantStdout := "archived " + implementTestSlug + " -> " + filepath.ToSlash(archivedDir) + "\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected stdout %q, got %q", wantStdout, stdout.String())
@@ -260,7 +269,7 @@ func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
 		}
 	}
 	assertPathExists(t, filepath.Join(repoDir, "docs", "specs", implementTestSlug))
-	assertPathMissing(t, filepath.Join(repoDir, "docs", "specs", "_archived", implementTestSlug))
+	assertPathMissing(t, archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug))
 	prd := mustRead(t, filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_prd.md"))
 	if strings.Contains(prd, "status: archived") || strings.Contains(prd, "source_slug: "+implementTestSlug) {
 		t.Fatalf("expected active PRD left unstamped, got:\n%s", prd)
@@ -340,7 +349,7 @@ func TestRunArchiveRefusesMissingOrNonPassingQA(t *testing.T) {
 				}
 			}
 			assertPathExists(t, filepath.Join(repoDir, "docs", "specs", implementTestSlug))
-			assertPathMissing(t, filepath.Join(repoDir, "docs", "specs", "_archived", implementTestSlug))
+			assertPathMissing(t, archiveTestRepositoryPath(repoDir, spec.ArchiveKindSpec, implementTestSlug))
 			assertNoRunDatabase(t, homeDir)
 		})
 	}

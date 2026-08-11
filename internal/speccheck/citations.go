@@ -144,23 +144,24 @@ func detectFindingsConsistency(result *Result, repoRoot string) error {
 	if err != nil {
 		return err
 	}
-	if !present {
-		addSkip(result, CodeFindingLifecycle, findingsPath)
-		addSkip(result, CodeRollupMember, findingsPath)
-		addSkip(result, CodeArchiveLicense, findingsPath)
-		return nil
-	}
-
-	if len(active) == 0 {
-		addSkip(result, CodeFindingLifecycle, findingsPath+" Finding")
-	} else {
-		detectFindingLifecycle(result, active)
-	}
-
 	archivePath := spec.ArchiveDir(spec.ArchiveKindFinding)
 	archived, archivePresent, err := readFindingDocuments(repoRoot, archivePath)
 	if err != nil {
 		return err
+	}
+	if !present && !archivePresent {
+		addSkip(result, CodeFindingLifecycle, findingsPath)
+		addSkip(result, CodeRollupMember, findingsPath)
+		addSkip(result, CodeArchiveLicense, archivePath)
+		return nil
+	}
+
+	if !present {
+		addSkip(result, CodeFindingLifecycle, findingsPath)
+	} else if len(active) == 0 {
+		addSkip(result, CodeFindingLifecycle, findingsPath+" Finding")
+	} else {
+		detectFindingLifecycle(result, active)
 	}
 
 	activeNames := findingDocumentNames(active)

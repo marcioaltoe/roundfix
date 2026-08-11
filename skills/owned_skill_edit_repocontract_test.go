@@ -29,7 +29,7 @@ func TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical(t *testing.T) {
 	}
 	derivedBefore := artifactBytes(t, verificationRoot, derivedPaths)
 	characterizationBefore := artifactBytes(t, verificationRoot, characterizationPaths)
-	archivedBefore := artifactBytes(t, verificationRoot, []string{"docs/specs/_archived"})
+	archivedBefore := artifactBytes(t, verificationRoot, []string{"_archived/specs"})
 
 	for _, relative := range []string{
 		filepath.Join(".agents", "skills", "roundfix", "SKILL.md"),
@@ -65,5 +65,5 @@ func TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical(t *testing.T) {
 
 	assertArtifactBytesEqual(t, "derived Baseline artifact", derivedBefore, artifactBytes(t, verificationRoot, derivedPaths))
 	assertArtifactBytesEqual(t, "characterization corpus artifact", characterizationBefore, artifactBytes(t, verificationRoot, characterizationPaths))
-	assertArtifactBytesEqual(t, "archived Spec artifact", archivedBefore, artifactBytes(t, verificationRoot, []string{"docs/specs/_archived"}))
+	assertArtifactBytesEqual(t, "archived Spec artifact", archivedBefore, artifactBytes(t, verificationRoot, []string{"_archived/specs"}))
 }

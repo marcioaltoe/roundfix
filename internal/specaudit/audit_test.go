@@ -352,7 +352,7 @@ func TestAuditReportsUndeliveredArchiveHeldByBranch(t *testing.T) {
 
 	branch := "ma/spec-close-archive"
 	fixture.git("switch", "-c", branch)
-	archivedPath := filepath.ToSlash(filepath.Join("docs", "specs", "_archived", auditFixtureSlug))
+	archivedPath := archivedSpecArtifactPath("docs/specs", auditFixtureSlug)
 	if err := os.MkdirAll(filepath.Dir(filepath.Join(fixture.repoDir, archivedPath)), 0o755); err != nil {
 		t.Fatalf("create archived Spec fixture root: %v", err)
 	}
@@ -458,7 +458,7 @@ func TestAuditUsesConfiguredExternalSpecRootTree(t *testing.T) {
 
 	branch := "ma/spec-close-external-archive"
 	gittest.Run(t, externalRepo, "switch", "-c", branch)
-	archivedPath := filepath.ToSlash(filepath.Join("specs", "_archived", auditFixtureSlug))
+	archivedPath := archivedSpecArtifactPath("specs", auditFixtureSlug)
 	if err := os.MkdirAll(filepath.Dir(filepath.Join(externalRepo, archivedPath)), 0o755); err != nil {
 		t.Fatalf("create external archived Spec root: %v", err)
 	}

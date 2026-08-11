@@ -216,7 +216,7 @@ func TestArchivedQAReportCorpusRemainsReadable(t *testing.T) {
 	if !ok {
 		t.Fatal("runtime.Caller could not locate the repository")
 	}
-	pattern := filepath.Join(filepath.Dir(testFile), "..", "..", "docs", "specs", "_archived", "*", "qa", "qa-report-*.md")
+	pattern := archiveTestRepositoryPath(filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveKindSpec, "*", "qa", "qa-report-*.md")
 	reports, err := filepath.Glob(pattern)
 	if err != nil {
 		t.Fatalf("find archived QA Reports: %v", err)

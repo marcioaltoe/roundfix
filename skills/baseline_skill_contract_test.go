@@ -725,7 +725,7 @@ func TestSpecReferenceLifecycleSkillContracts(t *testing.T) {
 				"destination path already exists",
 				"before changing any finding status",
 				"complete `_index.md`",
-				"Exclude `docs/specs/_archived/` from automatic link rewrites",
+				"Exclude `_archived/specs/` from automatic link rewrites",
 				"Report links from archived Specs separately",
 				"only Markdown link destinations",
 			},

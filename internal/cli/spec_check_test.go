@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"roundfix/internal/gittest"
+	"roundfix/internal/spec"
 	"roundfix/internal/specaudit"
 	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
@@ -391,7 +392,7 @@ func TestRunSpecAuditUndeliveredTextNamesHoldingBranch(t *testing.T) {
 	_, repoDir := newSpecAuditWorkspace(t)
 	const branch = "ma/spec-audit-archive"
 	gitImplement(t, repoDir, "checkout", "-b", branch)
-	archivedPath := filepath.ToSlash(filepath.Join("docs", "specs", "_archived", specAuditFixtureSlug))
+	archivedPath := archiveTestPath(spec.ArchiveKindSpec, specAuditFixtureSlug)
 	if err := os.MkdirAll(filepath.Dir(filepath.Join(repoDir, archivedPath)), 0o755); err != nil {
 		t.Fatalf("create archived Spec parent: %v", err)
 	}
@@ -604,7 +605,7 @@ func newSpecAuditWorkspace(t *testing.T) (string, string) {
 func archiveSpecAuditFixture(t *testing.T, repoDir string) {
 	t.Helper()
 	activePath := filepath.ToSlash(filepath.Join("docs", "specs", specAuditFixtureSlug))
-	archivedPath := filepath.ToSlash(filepath.Join("docs", "specs", "_archived", specAuditFixtureSlug))
+	archivedPath := archiveTestPath(spec.ArchiveKindSpec, specAuditFixtureSlug)
 	if err := os.MkdirAll(filepath.Dir(filepath.Join(repoDir, archivedPath)), 0o755); err != nil {
 		t.Fatalf("create archived Spec parent: %v", err)
 	}

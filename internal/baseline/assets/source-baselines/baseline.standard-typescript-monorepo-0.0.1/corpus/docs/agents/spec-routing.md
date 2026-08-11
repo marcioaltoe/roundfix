@@ -19,7 +19,7 @@ Use the smaller sufficient route when two routes fit. Use brainstorming before c
 3. Local Task files are the planning issues. External issue trackers are unsupported by this baseline.
 4. An Agent executing one Task changes only that Task's slice and records fresh acceptance evidence in that Task file.
 5. Final QA begins only after every Task is completed.
-6. Archive only a completed Spec with a passing QA verdict under `docs/specs/_archived/`.
+6. Archive only a completed Spec with a passing QA verdict under `_archived/specs/`.
 <!-- /source-baseline-entry: contract.spec.task-ownership -->
 
 <!-- source-baseline-entry: clause.spec.routing-01-large-initiative -->

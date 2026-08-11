@@ -78,7 +78,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", err)
 	}
 
-	archiveRoot := archiveSpecRoot(req.SpecsRoot)
+	archiveRoot := ArchiveSpecRoot(req.SpecsRoot)
 	archivedDir := filepath.Join(archiveRoot, req.Slug)
 	if _, err := os.Stat(archivedDir); err == nil {
 		return ArchiveResult{}, fmt.Errorf("archived Spec destination %q already exists", archivedDir)
@@ -104,7 +104,10 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	}, nil
 }
 
-func archiveSpecRoot(specsRoot string) string {
+// ArchiveSpecRoot returns the filesystem directory holding retired Specs for
+// one configured Spec Root. The default repository layout uses ArchiveDir;
+// external Spec Roots keep their archive beside the active root.
+func ArchiveSpecRoot(specsRoot string) string {
 	cleanSpecsRoot := filepath.Clean(specsRoot)
 	docsRoot := filepath.Dir(cleanSpecsRoot)
 	if filepath.Base(cleanSpecsRoot) != string(ArchiveKindSpec) || filepath.Base(docsRoot) != "docs" {

@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0085-what-an-agent-reads-before-it-decides
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -51,16 +51,16 @@ leaves two layouts, one true and one taught.
 
 ## Subtasks
 
-- [ ] Move every consumer and fixture onto the resolver.
-- [ ] Populate `_archived/adr/` and leave the successor active.
-- [ ] Update the guides, skills, catalog sources, and baselines.
+- [x] Move every consumer and fixture onto the resolver.
+- [x] Populate `_archived/adr/` and leave the successor active.
+- [x] Update the guides, skills, catalog sources, and baselines.
 
 ## Acceptance Criteria
 
 - [ ] `make verify` exits 0 on a cold cache.
-- [ ] No active file composes `docs/specs/_archived` or `docs/findings/_archived`.
-- [ ] `_archived/adr/` holds the retired ADRs.
-- [ ] Every derived pin the change invalidated is re-recorded.
+- [x] No active file composes `docs/specs/_archived` or `docs/findings/_archived`.
+- [x] `_archived/adr/` holds the retired ADRs.
+- [x] Every derived pin the change invalidated is re-recorded.
 
 ## Bounded scope
 
@@ -92,3 +92,60 @@ archive layout: the path an artifact retires to, and nothing else.
 - `_prd.md` → Goal 1.
 - `task_04.md` → the relocation this Task completes.
 - `qa/qa-report-2026-08-11.md` → F-01, F-02, F-03.
+
+## Result
+
+Implementation:
+
+- Exported the configured-Spec-root resolver and moved the remaining CLI audit
+  lookup and Spec audit artifact classification onto it. Default repositories
+  resolve `_archived/specs`; configured external Spec Roots retain their
+  beside-root archive contract.
+- Replaced archive-path composition in the affected Go suites with helpers
+  backed by `spec.ArchiveDir` or `spec.ArchiveSpecRoot`. Assertions still cover
+  the same archive, citation, audit, QA-report, and reconciliation behavior.
+- Moved superseded ADR-0106 byte-for-byte to `_archived/adr/`; accepted
+  successor ADR-0108 remains under `docs/adr/`.
+- Updated active guides, the six owned Skill sources, replay provenance,
+  catalog modules, formatter fixtures, and source-baseline corpora to the
+  single archive root. Ran the sanctioned Skill mirror and Baseline digest
+  regeneration commands.
+
+Acceptance evidence:
+
+- Criterion 1: the Daemon-owned cold `make verify` gate was not run in this
+  Agent turn. Focused package checks passed for `internal/spec`,
+  `internal/speccheck`, `internal/specaudit`, `internal/worktree`, and
+  `skills`; the archive and Spec-audit CLI subset also passed. The complete
+  configured Verification remains with the Daemon.
+- Criterion 2: `rtk rg -l 'docs/(specs|findings)/_archived' internal
+  docs/agents .agents skills` exited 1 with no matches. A Go-only composition
+  sweep found only `archivedDirName = "_archived"` inside the resolver owner.
+- Criterion 3: the archived ADR's current blob hash and its `HEAD` source blob
+  hash both equal `05f3daa511c7677c18fc05228cdf29e38b2788be`.
+  No superseded or deprecated ADR remains under `docs/adr/`, and ADR-0108
+  reports `status: accepted` there.
+- Criterion 4: the first `rtk make baseline-digests` run reported
+  `changed:true` and listed the regenerated profile, source-baseline index and
+  manifest, catalog digest/normalization artifacts, and plan-characterization
+  goldens. A second run exited 0 with `changed:false`. `rtk make
+  skills-sync-check` exited 0 after `rtk make skills-sync` refreshed the
+  mirrors.
+
+Focused checks:
+
+- Before repair, the five named archive resolver, CLI, Spec audit, Spec check,
+  and Worktree reconciliation tests each failed on the retired layout. The
+  same five focused tests passed after repair.
+- `rtk env GOCACHE=/private/tmp/roundfix-task09-gocache go test` passed for
+  each of `./internal/spec`, `./internal/speccheck`, `./internal/specaudit`,
+  and `./internal/worktree` with `-count=1`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task09-gocache go test
+  ./internal/cli -run '^(TestRunArchive|TestRunSpecAudit)' -count=1` passed.
+  A broader sandboxed CLI package attempt reached the expected external
+  `api.github.com` boundary, so it is not used as behavioral evidence.
+- `rtk env GOCACHE=/private/tmp/roundfix-task09-gocache go test ./skills
+  -count=1` and the focused docs-contract corpus-golden test passed.
+- `rtk git diff --check` reported no whitespace errors.
+
+The Daemon Verification commands were not rerun in this Agent turn.

@@ -372,7 +372,7 @@ func validateSpecAuditSlug(specsRoot, slug string) error {
 	}
 	for _, path := range []string{
 		filepath.Join(specsRoot, slug),
-		filepath.Join(specsRoot, "_archived", slug),
+		filepath.Join(spec.ArchiveSpecRoot(specsRoot), slug),
 	} {
 		info, err := os.Stat(path)
 		if err == nil {

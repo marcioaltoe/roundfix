@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
 
@@ -102,7 +103,7 @@ func TestCheckRollupMember(t *testing.T) {
 		const rollup = "2026-08-06-rollup.md"
 		writeFindingsArtifact(t, repoRoot, "docs/findings/"+rollup, "---\nstatus: pending\nkind: rollup\nmembers:\n  - 2026-08-06-active.md\n  - 2026-08-06-archived.md\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Rollup\n")
 		writeFindingsArtifact(t, repoRoot, "docs/findings/2026-08-06-active.md", "---\nstatus: deferred\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Active\n")
-		writeFindingsArtifact(t, repoRoot, "docs/findings/_archived/2026-08-06-archived.md", "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\nabsorbed_by: "+rollup+"\n---\n\n# Archived\n")
+		writeFindingsArtifact(t, repoRoot, archivedSpeccheckPath(spec.ArchiveKindFinding, "2026-08-06-archived.md"), "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\nabsorbed_by: "+rollup+"\n---\n\n# Archived\n")
 
 		result := checkFindingsCarrier(t, repoRoot)
 		if findings := findingsWithCode(result, speccheck.CodeRollupMember); len(findings) != 0 {
@@ -153,7 +154,7 @@ func TestCheckArchiveLicense(t *testing.T) {
 			t.Parallel()
 
 			repoRoot := writeFindingsCarrier(t)
-			const archivedPath = "docs/findings/_archived/2026-08-06-archived.md"
+			archivedPath := archivedSpeccheckPath(spec.ArchiveKindFinding, "2026-08-06-archived.md")
 			writeFindingsArtifact(t, repoRoot, archivedPath, tt.frontmatter+"\n# Archived\n")
 
 			result := checkFindingsCarrier(t, repoRoot)
@@ -170,13 +171,13 @@ func TestCheckArchiveLicense(t *testing.T) {
 		repoRoot := writeFindingsCarrier(t)
 		const rollup = "2026-08-06-rollup.md"
 		writeFindingsArtifact(t, repoRoot, "docs/findings/"+rollup, "---\nstatus: pending\nkind: rollup\nmembers:\n  - 2026-08-06-rollup-owned.md\n  - 2026-08-06-active-spec-owned.md\n  - 2026-08-06-archived-spec-owned.md\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\n---\n\n# Rollup\n")
-		writeFindingsArtifact(t, repoRoot, "docs/specs/_archived/archived-spec/_prd.md", "---\nspec: archived-spec\nstatus: archived\n---\n\n# Archived Spec\n")
+		writeFindingsArtifact(t, repoRoot, archivedSpeccheckPath(spec.ArchiveKindSpec, "archived-spec", "_prd.md"), "---\nspec: archived-spec\nstatus: archived\n---\n\n# Archived Spec\n")
 		for name, owner := range map[string]string{
 			"2026-08-06-rollup-owned.md":        rollup,
 			"2026-08-06-active-spec-owned.md":   findingsCarrierSlug,
 			"2026-08-06-archived-spec-owned.md": "archived-spec",
 		} {
-			writeFindingsArtifact(t, repoRoot, "docs/findings/_archived/"+name, "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\nabsorbed_by: "+owner+"\n---\n\n# Archived\n")
+			writeFindingsArtifact(t, repoRoot, archivedSpeccheckPath(spec.ArchiveKindFinding, name), "---\nstatus: done\ncreated_at: 2026-08-06\nupdated_at: 2026-08-06\nabsorbed_by: "+owner+"\n---\n\n# Archived\n")
 		}
 
 		result := checkFindingsCarrier(t, repoRoot)
@@ -195,10 +196,15 @@ func TestCheckArchiveLicense(t *testing.T) {
 		if findings := findingsWithCode(result, speccheck.CodeArchiveLicense); len(findings) != 0 {
 			t.Fatalf("%s findings = %#v, want silent skip", speccheck.CodeArchiveLicense, findings)
 		}
-		if !hasSkip(result, speccheck.CodeArchiveLicense, "docs/findings/_archived") {
+		if !hasSkip(result, speccheck.CodeArchiveLicense, spec.ArchiveDir(spec.ArchiveKindFinding)) {
 			t.Fatalf("Skipped = %#v, want %s missing archive", result.Skipped, speccheck.CodeArchiveLicense)
 		}
 	})
+}
+
+func archivedSpeccheckPath(kind spec.ArchiveKind, elements ...string) string {
+	parts := append([]string{filepath.FromSlash(spec.ArchiveDir(kind))}, elements...)
+	return filepath.ToSlash(filepath.Join(parts...))
 }
 
 func writeFindingsCarrier(t *testing.T) string {

@@ -1,9 +1,9 @@
 # Spec 0058 replay provenance
 
 The replay copies its base artifacts at test runtime from
-`docs/specs/_archived/0058-npm-trusted-publishing-and-release-preflight/`.
+`_archived/specs/0058-npm-trusted-publishing-and-release-preflight/`.
 Its accepted QA Report reproduces
-`docs/specs/_archived/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-04.md`
+`_archived/specs/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-04.md`
 after the normal integration and review journey, leaving the real tagged OIDC
 release as the only unmet row.
 

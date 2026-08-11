@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"roundfix/internal/gittest"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 )
 
@@ -2653,7 +2654,7 @@ func commitQAReport(t *testing.T, workDir, slug, reportName string, archived boo
 
 func qaReportTestPath(slug, reportName string, archived bool) string {
 	if archived {
-		return filepath.ToSlash(filepath.Join("docs", "specs", "_archived", slug, "qa", reportName))
+		return filepath.ToSlash(filepath.Join(filepath.FromSlash(spec.ArchiveDir(spec.ArchiveKindSpec)), slug, "qa", reportName))
 	}
 	return filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa", reportName))
 }

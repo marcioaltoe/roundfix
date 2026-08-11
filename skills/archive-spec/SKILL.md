@@ -1,6 +1,6 @@
 ---
 name: archive-spec
-description: Archive a completed spec — verify every task completed, QA passed, and indexed references are self-contained, then stamp the archive metadata and move docs/specs/<slug>/ to docs/specs/_archived/<slug>/. Runs automatically at the end of the implement-spec loop after a QA pass, or whenever the user asks to archive a spec.
+description: Archive a completed spec — verify every task completed, QA passed, and indexed references are self-contained, then stamp the archive metadata and move docs/specs/<slug>/ to _archived/specs/<slug>/. Runs automatically at the end of the implement-spec loop after a QA pass, or whenever the user asks to archive a spec.
 argument-hint: "<spec slug> [--release <tag or PR URL>]"
 metadata:
   category: delivery
@@ -13,7 +13,7 @@ version: 0.0.2
 
 # Archive Spec
 
-Move a completed spec out of the active set: `docs/specs/<slug>/` → `docs/specs/_archived/<slug>/`, with the completion stamped in its frontmatter. Archived means _implemented, verified, and self-contained_ — every task done, QA passed, and every indexed reference owned by the Spec — after this, one `ls docs/specs/` separates live work from history, and the archive stays greppable as the record of what was built and why.
+Move a completed spec out of the active set: `docs/specs/<slug>/` → `_archived/specs/<slug>/`, with the completion stamped in its frontmatter. Archived means _implemented, verified, and self-contained_ — every task done, QA passed, and every indexed reference owned by the Spec — after this, one `ls docs/specs/` separates live work from history, and the archive stays greppable as the record of what was built and why.
 
 The trigger is spec completion, not publication: run this automatically at the end of the `implement-spec` loop once the QA gate passes, or whenever the user asks. Merge and release are separate, user-driven steps — the archive commit simply travels with the branch and ships inside the feature's own PR.
 
@@ -217,8 +217,8 @@ active.
 2. **Move** with history preserved:
 
    ```bash
-   mkdir -p docs/specs/_archived
-   git mv docs/specs/<slug> docs/specs/_archived/<slug>
+   mkdir -p _archived/specs
+   git mv docs/specs/<slug> _archived/specs/<slug>
    ```
 
 3. **Commit** — `chore(specs): archive <slug>` (Conventional Commits). Do not push unless asked.

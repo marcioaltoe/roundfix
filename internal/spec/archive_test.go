@@ -27,10 +27,10 @@ func TestArchiveDirAnswersEveryRetiredKind(t *testing.T) {
 		kind ArchiveKind
 		want string
 	}{
-		{name: "Specs", kind: ArchiveKindSpec, want: "docs/specs/_archived"},
-		{name: "findings", kind: ArchiveKindFinding, want: "docs/findings/_archived"},
-		{name: "ADRs", kind: ArchiveKindADR, want: "docs/adr"},
-		{name: "backlog entries", kind: ArchiveKindBacklog, want: "docs/backlog"},
+		{name: "Specs", kind: ArchiveKindSpec, want: "_archived/specs"},
+		{name: "findings", kind: ArchiveKindFinding, want: "_archived/findings"},
+		{name: "ADRs", kind: ArchiveKindADR, want: "_archived/adr"},
+		{name: "backlog entries", kind: ArchiveKindBacklog, want: "_archived/backlog"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -54,8 +54,14 @@ func TestArchiveDirRejectsAnUnknownKind(t *testing.T) {
 
 const (
 	spec0058ReplaySlug    = "0058-npm-trusted-publishing-and-release-preflight"
-	spec0058SourceReport  = "docs/specs/_archived/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-04.md"
 	spec0058ReleaseAction = "a maintainer publishes a tagged release and records the run"
+)
+
+var spec0058SourceReport = archiveTestPath(
+	ArchiveKindSpec,
+	spec0058ReplaySlug,
+	"qa",
+	"qa-report-2026-08-01-04.md",
 )
 
 func TestSpec0058ReplayArchivesDeclaredUnreachableRelease(t *testing.T) {
@@ -172,7 +178,7 @@ func TestArchivedPassCorpusRemainsArchiveEligible(t *testing.T) {
 	if !ok {
 		t.Fatal("runtime.Caller could not locate the repository")
 	}
-	pattern := filepath.Join(filepath.Dir(testFile), "..", "..", "docs", "specs", "_archived", "*", "qa", "qa-report-*.md")
+	pattern := archiveTestRepositoryPath(filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveKindSpec, "*", "qa", "qa-report-*.md")
 	reportPaths, err := filepath.Glob(pattern)
 	if err != nil {
 		t.Fatalf("find archived QA Reports: %v", err)
@@ -246,7 +252,7 @@ func TestArchivedQAOverrideCorpusIncludesFailedSpec(t *testing.T) {
 	if !ok {
 		t.Fatal("runtime.Caller could not locate the repository")
 	}
-	pattern := filepath.Join(filepath.Dir(testFile), "..", "..", "docs", "specs", "_archived", "*", "_prd.md")
+	pattern := archiveTestRepositoryPath(filepath.Join(filepath.Dir(testFile), "..", ".."), ArchiveKindSpec, "*", "_prd.md")
 	prdPaths, err := filepath.Glob(pattern)
 	if err != nil {
 		t.Fatalf("find archived Spec PRDs: %v", err)
@@ -367,11 +373,20 @@ func archiveTestCopyTree(t *testing.T, source string, destination string) {
 func archiveTestAssertReplayRemainsActive(t *testing.T, specsRoot string) {
 	t.Helper()
 	activeDir := filepath.Join(specsRoot, spec0058ReplaySlug)
-	archivedDir := filepath.Join(specsRoot, "_archived", spec0058ReplaySlug)
+	archivedDir := filepath.Join(ArchiveSpecRoot(specsRoot), spec0058ReplaySlug)
 	if _, err := os.Stat(activeDir); err != nil {
 		t.Fatalf("refused replay active directory: %v", err)
 	}
 	if _, err := os.Stat(archivedDir); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("refused replay archived directory exists: %v", err)
 	}
+}
+
+func archiveTestPath(kind ArchiveKind, elements ...string) string {
+	parts := append([]string{filepath.FromSlash(ArchiveDir(kind))}, elements...)
+	return filepath.ToSlash(filepath.Join(parts...))
+}
+
+func archiveTestRepositoryPath(repoRoot string, kind ArchiveKind, elements ...string) string {
+	return filepath.Join(repoRoot, filepath.FromSlash(archiveTestPath(kind, elements...)))
 }
