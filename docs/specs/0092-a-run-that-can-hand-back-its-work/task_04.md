@@ -68,7 +68,7 @@ This Task may create or modify only:
 
 - `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunOutcomeDerived' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunOutcomeDerivedFromUnresolvedIssues'` — expected: exits 0.
 - `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunOutcomeDerived' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunOutcomeDerivedStaysUnresolvedAfterAFailedBatch'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/cli ./internal/daemon -count=1 2>&1 | grep -c '^ok' | grep -q '^2$'` — expected: exits 0, proving both packages pass rather than one being skipped.
+- `GOCACHE="$PWD/.gocache" go test ./internal/cli ./internal/daemon -count=1 2>&1 | tee /dev/stderr | grep -c '^ok' | grep -q '^2$'` — expected: exits 0, proving both packages pass rather than one being skipped. The `tee /dev/stderr` is load-bearing: without it the counting pipeline swallows every failing test name, and the Daemon records an empty diagnostic that names no failure to repair.
 - `test "$(grep -c 'New contract:' internal/cli/cli_test.go internal/daemon/engine_test.go | awk -F: '{s+=$2} END {print s}')" -ge 6` — expected: exits 0, proving all six rewritten tests state their new contract.
 
 ## References
