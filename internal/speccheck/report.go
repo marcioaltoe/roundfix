@@ -116,6 +116,33 @@ type EvidenceInput struct {
 	Ref  string
 }
 
+// EvidenceFile identifies one tracked Git blob by repository-relative path and
+// the SHA-256 digest of its bytes.
+type EvidenceFile struct {
+	Path   string
+	SHA256 string
+}
+
+// EvidenceSnapshot is the canonical expansion of one repository_path input at
+// one Git head. Files must be sorted by path and contain no duplicates.
+type EvidenceSnapshot struct {
+	Ref   string
+	Files []EvidenceFile
+}
+
+// ReportRow contains the carry-forward facts for one prior QA Report row.
+// AncestryVerified is set only by the repository resolver after Git proves
+// EstablishedHead is an ancestor of the current head.
+type ReportRow struct {
+	ID               string
+	Status           string
+	EstablishedBy    string
+	EstablishedHead  string
+	AncestryVerified bool
+	Inputs           []EvidenceInput
+	EvidencePaths    []string
+}
+
 type jsonDocument struct {
 	Schema   string            `json:"schema"`
 	Slug     string            `json:"slug"`

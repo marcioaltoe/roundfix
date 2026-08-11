@@ -1,7 +1,9 @@
 package speccheck
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -13,6 +15,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/worktree"
 )
 
 const (
@@ -56,11 +60,54 @@ type ConsequentFixDeclaration struct {
 	FixCommit   string
 }
 
+// MechanicalAuthorization reads the Tooling authority declaration from one
+// PRD and returns the cited authorization plus its exact bounded paths. An
+// absent declaration or artifact is represented by empty values so the
+// mechanical detector can record the corresponding presence-aware skip.
+func MechanicalAuthorization(repoRoot, prdPath string) (string, []string, error) {
+	artifact, present, err := readConstraintArtifact(repoRoot, prdPath)
+	if err != nil {
+		return "", nil, err
+	}
+	if !present {
+		return "", nil, nil
+	}
+	row, present := artifact.rows[strings.ToLower(constraintTooling)]
+	if !present || strings.TrimSpace(row.AuthorizationPath) == "" {
+		return "", nil, nil
+	}
+	authorizationPath := row.AuthorizationPath
+	resolved, ok := resolveRepositoryPath(repoRoot, authorizationPath)
+	if !ok {
+		return authorizationPath, nil, nil
+	}
+	content, err := os.ReadFile(resolved)
+	if errors.Is(err, os.ErrNotExist) {
+		return authorizationPath, nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("read mechanical authorization %q: %w", resolved, err)
+	}
+	declared := parseMechanicalAuthorizationPaths(content)
+	paths := make([]string, 0, len(declared))
+	for path := range declared {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	return authorizationPath, paths, nil
+}
+
 type mechanicalReportRow struct {
 	id       string
 	status   string
 	evidence string
+	inputs   []EvidenceInput
 	line     int
+}
+
+type mechanicalEvidenceRecord struct {
+	head      string
+	snapshots []EvidenceSnapshot
 }
 
 type mechanicalReport struct {
@@ -70,13 +117,146 @@ type mechanicalReport struct {
 	rowsBlockedFinding     int
 	rowsBlockedDeclared    int
 	countLines             map[string]int
+	evidenceSnapshots      map[string]mechanicalEvidenceRecord
 	parseError             error
 }
 
 var (
 	markdownLinkTargetPattern = regexp.MustCompile(`\[[^\]]*\]\(([^)]+)\)`)
 	evidencePathPattern       = regexp.MustCompile(`(?:^|[[:space:],;])((?:qa/)?evidence/[A-Za-z0-9._/-]+)`)
+	sha256DigestPattern       = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	mechanicalRowHeading      = regexp.MustCompile(`^###\s+([A-Za-z0-9._-]+)(?:\s|$)`)
+	carriedRowStatusPattern   = regexp.MustCompile(`^carried \(established by: ([^;]+); head: ([^)]+)\)$`)
 )
+
+// Carriable reports whether a passing row has only repository inputs, proven
+// ancestry, no intersecting changed path, complete snapshots, and byte-identical
+// evidence at the current head. It never computes a QA verdict.
+func Carriable(
+	prior ReportRow,
+	head string,
+	changed []string,
+	established []EvidenceSnapshot,
+	current []EvidenceSnapshot,
+) bool {
+	if prior.Status != "pass" || strings.TrimSpace(prior.EstablishedBy) == "" ||
+		strings.TrimSpace(prior.EstablishedHead) == "" || strings.TrimSpace(head) == "" ||
+		!prior.AncestryVerified || len(prior.Inputs) == 0 {
+		return false
+	}
+
+	seenRefs := make(map[string]bool, len(prior.Inputs))
+	for _, input := range prior.Inputs {
+		ref := cleanMechanicalPath(input.Ref)
+		if input.Kind != EvidenceRepositoryPath || ref == "" || ref != input.Ref || seenRefs[ref] {
+			return false
+		}
+		seenRefs[ref] = true
+		for _, changedPath := range changed {
+			clean := cleanMechanicalPath(changedPath)
+			if clean == "" || clean != changedPath || evidencePathMatches(ref, clean) {
+				return false
+			}
+		}
+	}
+
+	if len(established) != len(prior.Inputs) || len(current) != len(prior.Inputs) {
+		return false
+	}
+	for index, input := range prior.Inputs {
+		if !validEvidenceSnapshot(established[index], input.Ref) ||
+			!validEvidenceSnapshot(current[index], input.Ref) ||
+			!sameEvidenceFiles(established[index].Files, current[index].Files) {
+			return false
+		}
+	}
+	for _, evidencePath := range prior.EvidencePaths {
+		clean := cleanMechanicalPath(evidencePath)
+		if clean == "" || clean != evidencePath {
+			return false
+		}
+		covered := false
+		for index, input := range prior.Inputs {
+			if evidencePathMatches(input.Ref, clean) && evidenceSnapshotContains(established[index], clean) &&
+				evidenceSnapshotContains(current[index], clean) {
+				covered = true
+				break
+			}
+		}
+		if !covered {
+			return false
+		}
+	}
+	return true
+}
+
+func validEvidenceSnapshot(snapshot EvidenceSnapshot, ref string) bool {
+	if snapshot.Ref != ref || len(snapshot.Files) == 0 {
+		return false
+	}
+	previous := ""
+	for _, file := range snapshot.Files {
+		clean := cleanMechanicalPath(file.Path)
+		if clean == "" || clean != file.Path || clean <= previous ||
+			!evidencePathMatches(ref, clean) || !sha256DigestPattern.MatchString(file.SHA256) {
+			return false
+		}
+		previous = clean
+	}
+	return true
+}
+
+func sameEvidenceFiles(established, current []EvidenceFile) bool {
+	if len(established) != len(current) {
+		return false
+	}
+	for index := range established {
+		if established[index] != current[index] {
+			return false
+		}
+	}
+	return true
+}
+
+func evidenceSnapshotContains(snapshot EvidenceSnapshot, path string) bool {
+	for _, file := range snapshot.Files {
+		if file.Path == path {
+			return true
+		}
+	}
+	return false
+}
+
+func evidencePathMatches(ref, candidate string) bool {
+	if !strings.ContainsAny(ref, "*?") {
+		return ref == candidate
+	}
+	runes := []rune(ref)
+	var pattern strings.Builder
+	pattern.WriteByte('^')
+	for index := 0; index < len(runes); index++ {
+		switch runes[index] {
+		case '*':
+			if index+1 < len(runes) && runes[index+1] == '*' {
+				index++
+				if index+1 < len(runes) && runes[index+1] == '/' {
+					index++
+					pattern.WriteString(`(?:.*/)?`)
+				} else {
+					pattern.WriteString(`.*`)
+				}
+			} else {
+				pattern.WriteString(`[^/]*`)
+			}
+		case '?':
+			pattern.WriteString(`[^/]`)
+		default:
+			pattern.WriteString(regexp.QuoteMeta(string(runes[index])))
+		}
+	}
+	pattern.WriteByte('$')
+	return regexp.MustCompile(pattern.String()).MatchString(candidate)
+}
 
 // RunMechanicalStage evaluates every detector and returns all findings in one
 // pass. It reads Git and files only; it writes no report and settles no Task.
@@ -112,6 +292,14 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 	} else {
 		detectMechanicalReportShape(&result, report)
 		detectMechanicalEvidencePaths(&result, repoRoot, report)
+		currentHead, headErr := mechanicalHead(ctx, repoRoot)
+		if headErr != nil {
+			return result, headErr
+		}
+		result.Carried, err = resolveCarriedRows(ctx, repoRoot, report, currentHead)
+		if err != nil {
+			return result, err
+		}
 	}
 
 	result.Blocking = len(result.Findings) > 0
@@ -309,7 +497,11 @@ func loadMechanicalReport(repoRoot, reportPath string) (mechanicalReport, bool, 
 }
 
 func parseMechanicalReport(path string, content []byte) mechanicalReport {
-	report := mechanicalReport{path: path, countLines: make(map[string]int)}
+	report := mechanicalReport{
+		path:              path,
+		countLines:        make(map[string]int),
+		evidenceSnapshots: make(map[string]mechanicalEvidenceRecord),
+	}
 	text := strings.ReplaceAll(string(content), "\r\n", "\n")
 	if !strings.HasPrefix(text, "---\n") {
 		report.parseError = errors.New("missing YAML frontmatter")
@@ -320,6 +512,7 @@ func parseMechanicalReport(path string, content []byte) mechanicalReport {
 		if err := yaml.Unmarshal([]byte(body), &document); err != nil {
 			report.parseError = fmt.Errorf("parse YAML frontmatter: %w", err)
 		} else {
+			report.evidenceSnapshots = mechanicalEvidenceSnapshots(document)
 			counts, lines, err := mechanicalBlockedCounts(document)
 			if err != nil {
 				report.parseError = err
@@ -371,7 +564,342 @@ func parseMechanicalReport(path string, content []byte) mechanicalReport {
 		}
 		report.rows = append(report.rows, row)
 	}
+	parseMechanicalRowInputs(allLines, report.rows)
 	return report
+}
+
+func mechanicalEvidenceSnapshots(document yaml.Node) map[string]mechanicalEvidenceRecord {
+	records := make(map[string]mechanicalEvidenceRecord)
+	if len(document.Content) == 0 || document.Content[0].Kind != yaml.MappingNode {
+		return records
+	}
+	mapping := document.Content[0]
+	for index := 0; index+1 < len(mapping.Content); index += 2 {
+		if mapping.Content[index].Value != "evidence_snapshots" {
+			continue
+		}
+		var raw map[string]struct {
+			Head   string `yaml:"head"`
+			Inputs []struct {
+				Ref   string `yaml:"ref"`
+				Files []struct {
+					Path   string `yaml:"path"`
+					SHA256 string `yaml:"sha256"`
+				} `yaml:"files"`
+			} `yaml:"inputs"`
+		}
+		if err := mapping.Content[index+1].Decode(&raw); err != nil {
+			return make(map[string]mechanicalEvidenceRecord)
+		}
+		for rowID, snapshot := range raw {
+			record := mechanicalEvidenceRecord{head: strings.TrimSpace(snapshot.Head)}
+			for _, input := range snapshot.Inputs {
+				files := make([]EvidenceFile, 0, len(input.Files))
+				for _, file := range input.Files {
+					files = append(files, EvidenceFile{Path: strings.TrimSpace(file.Path), SHA256: strings.TrimSpace(file.SHA256)})
+				}
+				record.snapshots = append(record.snapshots, EvidenceSnapshot{Ref: strings.TrimSpace(input.Ref), Files: files})
+			}
+			records[strings.TrimSpace(rowID)] = record
+		}
+		return records
+	}
+	return records
+}
+
+func parseMechanicalRowInputs(lines []string, rows []mechanicalReportRow) {
+	rowIndexes := make(map[string]int, len(rows))
+	for index := range rows {
+		rowIndexes[rows[index].id] = index
+	}
+	currentRow := -1
+	seen := make(map[int]bool)
+	invalid := make(map[int]bool)
+	for index := 0; index < len(lines); index++ {
+		trimmed := strings.TrimSpace(lines[index])
+		if match := mechanicalRowHeading.FindStringSubmatch(trimmed); len(match) == 2 {
+			currentRow = -1
+			if rowIndex, ok := rowIndexes[match[1]]; ok {
+				currentRow = rowIndex
+			}
+			continue
+		}
+		if currentRow < 0 || trimmed != "```yaml" {
+			continue
+		}
+		start := index + 1
+		for index++; index < len(lines) && strings.TrimSpace(lines[index]) != "```"; index++ {
+		}
+		if index >= len(lines) {
+			invalid[currentRow] = true
+			break
+		}
+		block := strings.Join(lines[start:index], "\n")
+		var declaration struct {
+			Inputs *[]struct {
+				Kind EvidenceInputKind `yaml:"kind"`
+				Ref  string            `yaml:"ref"`
+			} `yaml:"inputs"`
+		}
+		if err := yaml.Unmarshal([]byte(block), &declaration); err != nil {
+			if strings.HasPrefix(strings.TrimSpace(block), "inputs:") {
+				invalid[currentRow] = true
+			}
+			continue
+		}
+		if declaration.Inputs == nil {
+			continue
+		}
+		if seen[currentRow] {
+			invalid[currentRow] = true
+			continue
+		}
+		seen[currentRow] = true
+		inputs := make([]EvidenceInput, 0, len(*declaration.Inputs))
+		for _, input := range *declaration.Inputs {
+			inputs = append(inputs, EvidenceInput{Kind: input.Kind, Ref: strings.TrimSpace(input.Ref)})
+		}
+		rows[currentRow].inputs = inputs
+	}
+	for rowIndex := range invalid {
+		rows[rowIndex].inputs = nil
+	}
+}
+
+func resolveCarriedRows(ctx context.Context, repoRoot string, priorReport mechanicalReport, currentHead string) ([]CarriedRow, error) {
+	carried := make([]CarriedRow, 0)
+	for _, priorRow := range priorReport.rows {
+		establishingReport := priorReport
+		establishingRow := priorRow
+		establishedBy := priorReport.path
+		requiredHead := ""
+
+		if reportPath, head, ok := carriedRowCitation(priorRow.status); ok {
+			if reportPath == priorReport.path {
+				continue
+			}
+			loaded, present, err := loadMechanicalReport(repoRoot, reportPath)
+			if err != nil {
+				return nil, err
+			}
+			if !present {
+				continue
+			}
+			row, found := mechanicalReportRowByID(loaded.rows, priorRow.id)
+			if !found {
+				continue
+			}
+			establishingReport = loaded
+			establishingRow = row
+			establishedBy = reportPath
+			requiredHead = head
+		}
+
+		if establishingRow.status != "pass" || len(establishingRow.inputs) == 0 {
+			continue
+		}
+		if !mechanicalSnapshotKeysNamePassingRows(establishingReport) {
+			continue
+		}
+		record, ok := establishingReport.evidenceSnapshots[priorRow.id]
+		if !ok || strings.TrimSpace(record.head) == "" || requiredHead != "" && requiredHead != record.head {
+			continue
+		}
+		exists, err := mechanicalCommitExists(ctx, repoRoot, record.head)
+		if err != nil {
+			return nil, err
+		}
+		if !exists {
+			continue
+		}
+		ancestor, err := mechanicalIsAncestor(ctx, repoRoot, record.head, currentHead)
+		if err != nil {
+			return nil, err
+		}
+		if !ancestor {
+			continue
+		}
+		changed, err := worktree.PriorChangedFiles(ctx, repoRoot, record.head)
+		if err != nil {
+			return nil, fmt.Errorf("resolve carry-forward changed paths from %q: %w", record.head, err)
+		}
+		currentSnapshots, resolved, err := buildEvidenceSnapshots(ctx, repoRoot, currentHead, establishingRow.inputs)
+		if err != nil {
+			return nil, err
+		}
+		if !resolved {
+			continue
+		}
+		row := ReportRow{
+			ID:               priorRow.id,
+			Status:           establishingRow.status,
+			EstablishedBy:    establishedBy,
+			EstablishedHead:  record.head,
+			AncestryVerified: true,
+			Inputs:           append([]EvidenceInput(nil), establishingRow.inputs...),
+		}
+		evidencePaths, resolved := mechanicalEvidenceRepositoryPaths(repoRoot, establishingReport.path, establishingRow.evidence)
+		if !resolved {
+			continue
+		}
+		row.EvidencePaths = evidencePaths
+		if !Carriable(row, currentHead, changed, record.snapshots, currentSnapshots) {
+			continue
+		}
+		carried = append(carried, CarriedRow{
+			ID:              priorRow.id,
+			EstablishedBy:   establishedBy,
+			EstablishedHead: record.head,
+			Inputs:          append([]EvidenceInput(nil), establishingRow.inputs...),
+		})
+	}
+	return carried, nil
+}
+
+func mechanicalEvidenceRepositoryPaths(repoRoot, reportPath, evidence string) ([]string, bool) {
+	reportDirectory := filepath.Dir(filepath.Join(repoRoot, filepath.FromSlash(reportPath)))
+	seen := make(map[string]bool)
+	var paths []string
+	for _, target := range mechanicalEvidenceTargets(evidence) {
+		target = strings.TrimSpace(strings.Split(target, "#")[0])
+		if target == "" || strings.Contains(target, "://") || strings.HasPrefix(target, "mailto:") {
+			continue
+		}
+		if filepath.IsAbs(target) || strings.Contains(target, `\`) {
+			return nil, false
+		}
+		base := reportDirectory
+		switch {
+		case strings.HasPrefix(target, "qa/"):
+			base = filepath.Dir(reportDirectory)
+		case strings.HasPrefix(target, "docs/"):
+			base = repoRoot
+		}
+		resolved := filepath.Clean(filepath.Join(base, filepath.FromSlash(target)))
+		relative, err := filepath.Rel(repoRoot, resolved)
+		if err != nil {
+			return nil, false
+		}
+		clean := cleanMechanicalPath(filepath.ToSlash(relative))
+		if clean == "" || seen[clean] {
+			if clean == "" {
+				return nil, false
+			}
+			continue
+		}
+		seen[clean] = true
+		paths = append(paths, clean)
+	}
+	sort.Strings(paths)
+	return paths, true
+}
+
+func mechanicalSnapshotKeysNamePassingRows(report mechanicalReport) bool {
+	for rowID := range report.evidenceSnapshots {
+		row, found := mechanicalReportRowByID(report.rows, rowID)
+		if !found || row.status != "pass" {
+			return false
+		}
+	}
+	return true
+}
+
+func carriedRowCitation(status string) (string, string, bool) {
+	match := carriedRowStatusPattern.FindStringSubmatch(strings.TrimSpace(status))
+	if len(match) != 3 {
+		return "", "", false
+	}
+	reportPath := cleanMechanicalPath(match[1])
+	head := strings.TrimSpace(match[2])
+	if reportPath == "" || reportPath != strings.TrimSpace(match[1]) || head == "" {
+		return "", "", false
+	}
+	return reportPath, head, true
+}
+
+func mechanicalReportRowByID(rows []mechanicalReportRow, id string) (mechanicalReportRow, bool) {
+	for _, row := range rows {
+		if row.id == id {
+			return row, true
+		}
+	}
+	return mechanicalReportRow{}, false
+}
+
+func mechanicalHead(ctx context.Context, repoRoot string) (string, error) {
+	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "rev-parse", "--verify", "HEAD^{commit}")
+	output, err := command.Output()
+	if err != nil {
+		return "", fmt.Errorf("resolve mechanical-stage Git head: %w", err)
+	}
+	head := strings.TrimSpace(string(output))
+	if head == "" {
+		return "", errors.New("resolve mechanical-stage Git head: empty commit")
+	}
+	return head, nil
+}
+
+func buildEvidenceSnapshots(ctx context.Context, repoRoot, head string, inputs []EvidenceInput) ([]EvidenceSnapshot, bool, error) {
+	paths, err := mechanicalBlobPaths(ctx, repoRoot, head)
+	if err != nil {
+		return nil, false, err
+	}
+	snapshots := make([]EvidenceSnapshot, 0, len(inputs))
+	seenRefs := make(map[string]bool, len(inputs))
+	for _, input := range inputs {
+		ref := cleanMechanicalPath(input.Ref)
+		if input.Kind != EvidenceRepositoryPath || ref == "" || ref != input.Ref || seenRefs[ref] {
+			return nil, false, nil
+		}
+		seenRefs[ref] = true
+		var matches []string
+		for _, candidate := range paths {
+			if evidencePathMatches(ref, candidate) {
+				matches = append(matches, candidate)
+			}
+		}
+		if len(matches) == 0 {
+			return nil, false, nil
+		}
+		files := make([]EvidenceFile, 0, len(matches))
+		for _, path := range matches {
+			command := exec.CommandContext(ctx, "git", "-C", repoRoot, "cat-file", "blob", head+":"+path)
+			content, err := command.Output()
+			if err != nil {
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					return nil, false, ctxErr
+				}
+				return nil, false, nil
+			}
+			digest := sha256.Sum256(content)
+			files = append(files, EvidenceFile{Path: path, SHA256: fmt.Sprintf("%x", digest)})
+		}
+		snapshots = append(snapshots, EvidenceSnapshot{Ref: ref, Files: files})
+	}
+	return snapshots, true, nil
+}
+
+func mechanicalBlobPaths(ctx context.Context, repoRoot, head string) ([]string, error) {
+	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "ls-tree", "-r", "-z", "--full-tree", head)
+	output, err := command.Output()
+	if err != nil {
+		return nil, fmt.Errorf("list tracked blobs at Git head %q: %w", head, err)
+	}
+	var paths []string
+	for _, record := range bytes.Split(output, []byte{0}) {
+		parts := bytes.SplitN(record, []byte{'\t'}, 2)
+		if len(parts) != 2 || !bytes.Contains(parts[0], []byte(" blob ")) {
+			continue
+		}
+		path := string(parts[1])
+		clean := cleanMechanicalPath(path)
+		if clean == "" || clean != path {
+			return nil, fmt.Errorf("list tracked blobs at Git head %q: invalid path %q", head, path)
+		}
+		paths = append(paths, clean)
+	}
+	sort.Strings(paths)
+	return paths, nil
 }
 
 func mechanicalBlockedCounts(document yaml.Node) (map[string]int, map[string]int, error) {

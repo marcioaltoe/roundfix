@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0080-cheap-detectors-run-before-the-gate
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -89,3 +89,55 @@ this Task must create.
 - `_techspec.md` → System Architecture; Build Order 3.
 - ADR-0096, ADR-0091, ADR-0088, ADR-0015, ADR-0014, ADR-0057, ADR-0038,
   ADR-0056.
+
+## Result
+
+Implemented the Daemon-owned mechanical stage inside `runQAGate`. The stage
+now reads the PRD's tooling authorization, selects the Spec's applicable Task
+commits from their Roundfix trailers, evaluates the real mechanical detectors,
+and atomically creates the next collision-safe QA Report. A blocking result
+materializes `verdict: fail`, publishes its mechanical Run Event, and reaches
+the existing verdict settlement and report commit without creating an Agent
+Session. A non-blocking result seeds the same report path that the QA prompt
+requires the Agent to complete in place.
+
+Focused checks run after the final implementation edit:
+
+- Pre-change signal: `rtk rg -n 'TestMechanicalStageWithholdsAgentSession' internal/daemon/task_engine_test.go`
+  exited 1 because the required withholding case did not exist. The first
+  focused compile then failed on the deliberately introduced test reference to
+  the absent `Dependencies.MechanicalStage` seam.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/daemon -run '^(TestMechanicalStage|TestQAMechanicalRequest|TestWriteMechanicalQAReport|TestTaskCycleQA|TestPerWorkAgentSessionMixedTaskTypesAndQA|TestQAPullRequest)' -count=1`
+  passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/speccheck -run '^(TestMechanicalAuthorizationReadsThePRDBoundedDeclaration|TestMaterializeMechanicalResult)$' -count=1`
+  passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/spec -run '^Test(QAVerdict|NewestQAReport)' -count=1`
+  passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go vet ./internal/daemon ./internal/speccheck`
+  passed with no diagnostics.
+- `rtk git diff --check` passed.
+
+Acceptance evidence:
+
+1. `TestMechanicalStageWithholdsAgentSession` observes the QA Task still
+   pending while the stage runs, then proves the blocking result writes a
+   closed fail report with its finding-blocked row, no pending text, no Agent
+   request, and the existing QA Report commit message.
+2. `TestMechanicalStageSeedsReportBeforeAgentSession` proves the Agent sees
+   the materialized skips in the exact seeded path, runs once, and returns the
+   existing passing verdict. The prompt forbids creating a second report.
+3. Both stage-branch cases assert zero Verifier calls and zero
+   `daemon.verification` events. The mechanical path never calls the
+   Verification-capacity or Verification-repair functions.
+4. The blocking fake reads Task status during the stage and observes the
+   original pending value; only the existing Daemon settlement path later
+   writes failed.
+5. The existing QA verdict matrix remains green for pass, partial, fail,
+   missing, and unreadable reports. The report writer's same-day collision
+   case produces `qa-report-2026-01-01-01.md` without overwriting the prior
+   report, and the existing `internal/spec` recency and verdict cases pass.
+   Both branches publish a `daemon.qa` mechanical event containing blocking,
+   finding, skip, duration, and report-path facts.
+
+The commands under this Task's `## Verification` were not run; the Daemon owns
+that complete selection and settlement evidence.
