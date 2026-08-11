@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"roundfix/internal/runevent"
@@ -82,6 +83,13 @@ type Store struct {
 	// Database. Only the single writer Store (Open) holds it; read-only
 	// Stores leave it nil and never write.
 	writeLockFile *os.File
+	// writeMu serializes in-process calls to withWriteTx. flock ownership is
+	// per open file description, not per goroutine: concurrent withWriteTx on
+	// the same descriptor would each "acquire" the lock and one descriptor's
+	// LOCK_UN would release it for the whole process, losing the cross-process
+	// guarantee. Holding writeMu for the whole lock/unlock pair keeps only one
+	// goroutine per process performing the flock pair.
+	writeMu sync.Mutex
 	// journal is the Store-scoped batched Run Event writer. Every sink the
 	// Store hands out shares it, so batch boundaries are global to the process
 	// rather than per sink. Only the single writer Store (Open) owns one.
@@ -384,7 +392,9 @@ func (store *Store) withWriteTx(ctx context.Context, operation string, fn func(*
 	if store.writeLockFile == nil {
 		return fmt.Errorf("begin %s: Run Database has no write lock", operation)
 	}
-	if err := acquireWriteLock(store.writeLockFile, ctx); err != nil {
+	store.writeMu.Lock()
+	defer store.writeMu.Unlock()
+	if err := acquireWriteLock(ctx, store.writeLockFile); err != nil {
 		return fmt.Errorf("begin %s: %w", operation, err)
 	}
 	defer func() {
@@ -406,10 +416,20 @@ func (store *Store) withWriteTx(ctx context.Context, operation string, fn func(*
 	return nil
 }
 
+// JournalShutdownTimeout bounds the final journal flush run during Store
+// Close and command teardown. FlushJournal runs a write transaction whose
+// acquireWriteLock polls until the machine-wide advisory lock is free or the
+// context is cancelled; a lock held by another Roundfix process would
+// otherwise make shutdown hang with no way out. A bounded context turns that
+// into a bounded, reported error instead.
+const JournalShutdownTimeout = 5 * time.Second
+
 func (store *Store) Close() error {
 	var closeErrs []error
 	if store.journal != nil {
-		closeErrs = append(closeErrs, store.journal.close(context.Background()))
+		flushCtx, cancel := context.WithTimeout(context.Background(), JournalShutdownTimeout)
+		closeErrs = append(closeErrs, store.journal.close(flushCtx))
+		cancel()
 	}
 	if store.writeLockFile != nil {
 		closeErrs = append(closeErrs, store.writeLockFile.Close())

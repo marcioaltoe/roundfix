@@ -27,39 +27,49 @@ func TestWriteTxIsTheOnlyWriterTransaction(t *testing.T) {
 	// must live inside the withWriteTx helper. A broad pattern over this
 	// package fails before the work (direct BeginTx call sites) and passes
 	// only once every writer routes through the helper.
+	// ParseFile is used instead of the deprecated ParseDir (Go 1.26 marks it
+	// SA1019 because it ignores build tags); the explicit per-file parse keeps
+	// the intended exclusion of _test.go files.
 	fset := token.NewFileSet()
-	parsedPackages, err := parser.ParseDir(fset, ".", func(info os.FileInfo) bool {
-		return !strings.HasSuffix(info.Name(), "_test.go")
-	}, 0)
+	entries, err := os.ReadDir(".")
 	if err != nil {
-		t.Fatalf("parse store package source: %v", err)
+		t.Fatalf("read store package directory: %v", err)
+	}
+	files := make([]*ast.File, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		file, err := parser.ParseFile(fset, entry.Name(), nil, 0)
+		if err != nil {
+			t.Fatalf("parse store package source %q: %v", entry.Name(), err)
+		}
+		files = append(files, file)
 	}
 	var helperStart, helperEnd token.Pos
 	var helperCount int
 	var beginTxCalls int
 	var beginTxOutsideHelper []string
-	for _, pkg := range parsedPackages {
-		for _, file := range pkg.Files {
-			ast.Inspect(file, func(node ast.Node) bool {
-				switch node := node.(type) {
-				case *ast.FuncDecl:
-					if node.Name.Name == "withWriteTx" {
-						helperStart, helperEnd = node.Pos(), node.End()
-						helperCount++
-					}
-				case *ast.CallExpr:
-					selector, ok := node.Fun.(*ast.SelectorExpr)
-					if !ok || selector.Sel.Name != "BeginTx" {
-						return true
-					}
-					beginTxCalls++
-					if helperStart == 0 || node.Pos() < helperStart || node.End() > helperEnd {
-						beginTxOutsideHelper = append(beginTxOutsideHelper, fset.Position(node.Pos()).String())
-					}
+	for _, file := range files {
+		ast.Inspect(file, func(node ast.Node) bool {
+			switch node := node.(type) {
+			case *ast.FuncDecl:
+				if node.Name.Name == "withWriteTx" {
+					helperStart, helperEnd = node.Pos(), node.End()
+					helperCount++
 				}
-				return true
-			})
-		}
+			case *ast.CallExpr:
+				selector, ok := node.Fun.(*ast.SelectorExpr)
+				if !ok || selector.Sel.Name != "BeginTx" {
+					return true
+				}
+				beginTxCalls++
+				if helperStart == 0 || node.Pos() < helperStart || node.End() > helperEnd {
+					beginTxOutsideHelper = append(beginTxOutsideHelper, fset.Position(node.Pos()).String())
+				}
+			}
+			return true
+		})
 	}
 	if helperCount != 1 {
 		t.Fatalf("expected exactly one withWriteTx helper, got %d", helperCount)
@@ -185,12 +195,11 @@ func TestConcurrentWritersAllocateMonotonicContiguousCursors(t *testing.T) {
 
 	results := make(chan []int64, writers)
 	errs := make(chan error, writers)
-	for _, store := range stores {
-		store := store
+	for _, testStore := range stores {
 		go func() {
 			var cursors []int64
-			for i := 0; i < eventsPerWriter; i++ {
-				cursor, err := store.AppendRunEvents(ctx, []runevent.RunEvent{
+			for range eventsPerWriter {
+				cursor, err := testStore.AppendRunEvents(ctx, []runevent.RunEvent{
 					sampleRunEvent(run.ID, "concurrent append"),
 				})
 				if err != nil {

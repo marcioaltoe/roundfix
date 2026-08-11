@@ -19,7 +19,9 @@ const writeLockPollInterval = 10 * time.Millisecond
 // acquireWriteLock takes the machine-wide advisory write lock on file,
 // waiting until it is free or ctx is cancelled. Roundfix processes serialize
 // here before SQLite ever sees a writer.
-func acquireWriteLock(file *os.File, ctx context.Context) error {
+func acquireWriteLock(ctx context.Context, file *os.File) error {
+	timer := time.NewTimer(writeLockPollInterval)
+	defer timer.Stop()
 	for {
 		overlapped := &windows.Overlapped{}
 		err := windows.LockFileEx(
@@ -36,10 +38,17 @@ func acquireWriteLock(file *os.File, ctx context.Context) error {
 		if !errors.Is(err, windows.ERROR_LOCK_VIOLATION) {
 			return fmt.Errorf("acquire machine-wide write lock: %w", err)
 		}
+		if !timer.Stop() {
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
+		timer.Reset(writeLockPollInterval)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(writeLockPollInterval):
+		case <-timer.C:
 		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -156,7 +157,14 @@ func (w *journalWriter) armLingerLocked() {
 		return
 	}
 	w.timer = time.AfterFunc(w.maxLinger, func() {
-		_ = w.flush(context.Background())
+		w.mu.Lock()
+		pending := len(w.pending)
+		w.mu.Unlock()
+		if err := w.flush(context.Background()); err != nil {
+			slog.Error("journal linger flush failed",
+				slog.Int("pending_events", pending),
+				slog.Any("error", err))
+		}
 	})
 }
 

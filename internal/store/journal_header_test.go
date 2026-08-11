@@ -41,7 +41,7 @@ func TestHeaderProjectionProjectsOnlyHeaderColumns(t *testing.T) {
 
 	runID := mustHeaderRun(t, ctx, s, []string{"one", "two", "three"})
 
-	headers, err := s.RunEventHeadersAfter(ctx, runID, 0)
+	headers, err := s.RunEventHeadersAfter(ctx, runID, 0, 1000)
 	if err != nil {
 		t.Fatalf("list headers after cursor: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestHeaderProjectionMatchesFullReadHeaders(t *testing.T) {
 
 	runID := mustHeaderRun(t, ctx, s, []string{"one", "two", "three"})
 
-	headers, err := s.RunEventHeadersAfter(ctx, runID, 0)
+	headers, err := s.RunEventHeadersAfter(ctx, runID, 0, 1000)
 	if err != nil {
 		t.Fatalf("list headers: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestRunEventHeadersAfterCursorSkipsOlder(t *testing.T) {
 
 	runID := mustHeaderRun(t, ctx, s, []string{"one", "two", "three"})
 
-	page, err := s.RunEventHeadersAfter(ctx, runID, 2)
+	page, err := s.RunEventHeadersAfter(ctx, runID, 2, 1000)
 	if err != nil {
 		t.Fatalf("list headers after cursor: %v", err)
 	}
@@ -121,7 +121,7 @@ func TestRunEventHeadersAfterCursorSkipsOlder(t *testing.T) {
 		t.Fatalf("expected cursor [3], got %+v", page)
 	}
 
-	empty, err := s.RunEventHeadersAfter(ctx, runID, 3)
+	empty, err := s.RunEventHeadersAfter(ctx, runID, 3, 1000)
 	if err != nil {
 		t.Fatalf("list headers at tail: %v", err)
 	}
@@ -136,10 +136,10 @@ func TestRunEventHeadersAfterRequiresRunAndCursorForward(t *testing.T) {
 	s := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, s)
 
-	if _, err := s.RunEventHeadersAfter(ctx, "   ", 0); err == nil {
+	if _, err := s.RunEventHeadersAfter(ctx, "   ", 0, 1000); err == nil {
 		t.Fatal("expected blank Run ID to be rejected")
 	}
-	missing, err := s.RunEventHeadersAfter(ctx, "run_missing", 0)
+	missing, err := s.RunEventHeadersAfter(ctx, "run_missing", 0, 1000)
 	if err != nil {
 		t.Fatalf("list headers for missing Run: %v", err)
 	}
@@ -148,8 +148,11 @@ func TestRunEventHeadersAfterRequiresRunAndCursorForward(t *testing.T) {
 	}
 
 	runID := mustHeaderRun(t, ctx, s, []string{"one", "two"})
-	if _, err := s.RunEventHeadersAfter(ctx, runID, -1); err != nil {
+	if _, err := s.RunEventHeadersAfter(ctx, runID, -1, 1000); err != nil {
 		t.Fatalf("expected negative cursor to list all headers, got %v", err)
+	}
+	if _, err := s.RunEventHeadersAfter(ctx, runID, 0, 0); err == nil {
+		t.Fatal("expected a non-positive limit to be rejected")
 	}
 }
 
@@ -176,7 +179,7 @@ func TestEventHeadersOrderAscendingAcrossBatches(t *testing.T) {
 		t.Fatalf("append second event: %v", err)
 	}
 
-	headers, err := s.RunEventHeadersAfter(ctx, run.ID, 0)
+	headers, err := s.RunEventHeadersAfter(ctx, run.ID, 0, 1000)
 	if err != nil {
 		t.Fatalf("list headers: %v", err)
 	}

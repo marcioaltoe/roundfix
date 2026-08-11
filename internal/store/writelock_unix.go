@@ -22,7 +22,9 @@ const writeLockPollInterval = 10 * time.Millisecond
 // waiting until it is free or ctx is cancelled. Roundfix processes serialize
 // here before SQLite ever sees a writer, so no Roundfix writer races another
 // Roundfix writer inside SQLite.
-func acquireWriteLock(file *os.File, ctx context.Context) error {
+func acquireWriteLock(ctx context.Context, file *os.File) error {
+	timer := time.NewTimer(writeLockPollInterval)
+	defer timer.Stop()
 	for {
 		err := unix.Flock(int(file.Fd()), unix.LOCK_EX|unix.LOCK_NB)
 		if err == nil {
@@ -31,10 +33,17 @@ func acquireWriteLock(file *os.File, ctx context.Context) error {
 		if !errors.Is(err, unix.EWOULDBLOCK) && !errors.Is(err, unix.EAGAIN) {
 			return fmt.Errorf("acquire machine-wide write lock: %w", err)
 		}
+		if !timer.Stop() {
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
+		timer.Reset(writeLockPollInterval)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(writeLockPollInterval):
+		case <-timer.C:
 		}
 	}
 }

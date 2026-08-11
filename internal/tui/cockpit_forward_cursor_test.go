@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
@@ -33,8 +34,8 @@ type journalReadRecorder struct {
 	payloadBytes  int
 }
 
-func (source *journalReadRecorder) RunEventHeadersAfter(ctx context.Context, runID string, cursor int64) ([]store.RunEventHeader, error) {
-	headers, err := source.cockpitFakeSource.RunEventHeadersAfter(ctx, runID, cursor)
+func (source *journalReadRecorder) RunEventHeadersAfter(ctx context.Context, runID string, cursor int64, limit int) ([]store.RunEventHeader, error) {
+	headers, err := source.cockpitFakeSource.RunEventHeadersAfter(ctx, runID, cursor, limit)
 	source.headerCursors = append(source.headerCursors, cursor)
 	source.headerRows += len(headers)
 	return headers, err
@@ -90,6 +91,10 @@ func newForwardCursorCockpit(t *testing.T, source *journalReadRecorder) *cockpit
 	if err != nil {
 		t.Fatalf("new cockpit model: %v", err)
 	}
+	// The cockpit renders Batch clocks and elapsed values from model.now. A
+	// fixed clock keeps the render before and after an idle poll identical,
+	// so the equality assertion never flukes on a wall-clock second boundary.
+	model.now = func() time.Time { return time.Date(2026, 8, 11, 12, 0, 0, 0, time.UTC) }
 	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	return model
 }

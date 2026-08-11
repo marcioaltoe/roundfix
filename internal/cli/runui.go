@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"io"
+	"log/slog"
 	"os"
 	"sync"
 
@@ -130,8 +131,14 @@ func (ui *runUI) Close() {
 		if ui.writer != nil {
 			// Flush the shared journal writer at the Agent-teardown boundary so
 			// every event published through the sink is durable before the
-			// command closes its Store.
-			_ = ui.writer.FlushJournal(context.WithoutCancel(context.Background()))
+			// command closes its Store. The flush backend polls for a
+			// machine-wide advisory lock, so bound it: another process holding
+			// the lock must not hang shutdown forever.
+			flushCtx, cancel := context.WithTimeout(context.WithoutCancel(context.Background()), store.JournalShutdownTimeout)
+			if err := ui.writer.FlushJournal(flushCtx); err != nil {
+				slog.Error("flush Run Event journal on teardown", "error", err)
+			}
+			cancel()
 		}
 		if ui.reader != nil {
 			_ = ui.reader.Close()

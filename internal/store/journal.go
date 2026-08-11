@@ -1065,42 +1065,56 @@ ORDER BY r.completed_at, r.id`,
 	return candidates, nil
 }
 
+// sqliteBindBatchSize keeps each IN (...) bind list comfortably under
+// SQLite's host-parameter limit (SQLITE_MAX_VARIABLE_NUMBER, 32766 by default
+// and 999 in older versions). Retention candidates are unbounded, so a very
+// large terminal-Run set must not build a single bind list that exceeds the
+// limit and fails the whole prune.
+const sqliteBindBatchSize = 900
+
 // countPruneCandidateEvents fills each candidate's event count from a bounded
 // query scoped to the candidate Run IDs, keeping eligibility independent of the
 // event table's total size. It runs on the read connection, never inside a
-// write transaction.
+// write transaction. Candidates are processed in chunks so each IN (...) list
+// stays within SQLite's host-parameter limit.
 func countPruneCandidateEvents(ctx context.Context, querier queryContextRunner, candidates []PruneCandidate) error {
 	if len(candidates) == 0 {
 		return nil
 	}
-	placeholders := strings.TrimRight(strings.Repeat("?,", len(candidates)), ",")
-	args := make([]any, 0, len(candidates))
-	for _, candidate := range candidates {
-		args = append(args, candidate.RunID)
-	}
-	rows, err := querier.QueryContext(ctx, `
+	counts := map[string]int{}
+	for start := 0; start < len(candidates); start += sqliteBindBatchSize {
+		end := start + sqliteBindBatchSize
+		if end > len(candidates) {
+			end = len(candidates)
+		}
+		batch := candidates[start:end]
+		placeholders := strings.TrimRight(strings.Repeat("?,", len(batch)), ",")
+		args := make([]any, 0, len(batch))
+		for _, candidate := range batch {
+			args = append(args, candidate.RunID)
+		}
+		rows, err := querier.QueryContext(ctx, `
 SELECT run_id, COUNT(*)
 FROM run_events
 WHERE run_id IN (`+placeholders+`)
 GROUP BY run_id`, args...)
-	if err != nil {
-		return fmt.Errorf("count Run Events for terminal Runs: %w", err)
-	}
-	defer func() {
-		_ = rows.Close()
-	}()
-
-	counts := map[string]int{}
-	for rows.Next() {
-		var runID string
-		var count int
-		if err := rows.Scan(&runID, &count); err != nil {
-			return fmt.Errorf("scan Run Event count for terminal Run: %w", err)
+		if err != nil {
+			return fmt.Errorf("count Run Events for terminal Runs: %w", err)
 		}
-		counts[runID] = count
-	}
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("iterate Run Event counts for terminal Runs: %w", err)
+		for rows.Next() {
+			var runID string
+			var count int
+			if err := rows.Scan(&runID, &count); err != nil {
+				_ = rows.Close()
+				return fmt.Errorf("scan Run Event count for terminal Run: %w", err)
+			}
+			counts[runID] = count
+		}
+		if err := rows.Err(); err != nil {
+			_ = rows.Close()
+			return fmt.Errorf("iterate Run Event counts for terminal Runs: %w", err)
+		}
+		_ = rows.Close()
 	}
 	for index := range candidates {
 		candidates[index].Events = counts[candidates[index].RunID]
@@ -1120,20 +1134,29 @@ func deleteRunEventsForRuns(ctx context.Context, tx *sql.Tx, runIDs []string) (i
 	if len(runIDs) == 0 {
 		return 0, nil
 	}
-	placeholders := strings.TrimRight(strings.Repeat("?,", len(runIDs)), ",")
-	args := make([]any, 0, len(runIDs))
-	for _, runID := range runIDs {
-		args = append(args, runID)
+	total := 0
+	for start := 0; start < len(runIDs); start += sqliteBindBatchSize {
+		end := start + sqliteBindBatchSize
+		if end > len(runIDs) {
+			end = len(runIDs)
+		}
+		batch := runIDs[start:end]
+		placeholders := strings.TrimRight(strings.Repeat("?,", len(batch)), ",")
+		args := make([]any, 0, len(batch))
+		for _, runID := range batch {
+			args = append(args, runID)
+		}
+		result, err := tx.ExecContext(ctx, `DELETE FROM run_events WHERE run_id IN (`+placeholders+`)`, args...)
+		if err != nil {
+			return 0, fmt.Errorf("delete Run Events for terminal Runs: %w", err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return 0, fmt.Errorf("read Run Event prune result: %w", err)
+		}
+		total += int(affected)
 	}
-	result, err := tx.ExecContext(ctx, `DELETE FROM run_events WHERE run_id IN (`+placeholders+`)`, args...)
-	if err != nil {
-		return 0, fmt.Errorf("delete Run Events for terminal Runs: %w", err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return 0, fmt.Errorf("read Run Event prune result: %w", err)
-	}
-	return int(affected), nil
+	return total, nil
 }
 
 func appendRunEvent(ctx context.Context, tx *sql.Tx, event runevent.RunEvent) (int64, error) {
@@ -1221,21 +1244,27 @@ LIMIT ?`,
 
 // RunEventHeadersAfter projects cursor, batch, source, kind, summary, and
 // created_at (as Time) for one Run with cursors strictly greater than the
-// given cursor, oldest first. It reads no payload column, so a consumer that
-// pages headers pays none of the payload I/O it would on RunEventsAfter.
-// Consumers that read payload fields keep using RunEventsAfter unchanged.
-func (store *Store) RunEventHeadersAfter(ctx context.Context, runID string, cursor int64) ([]RunEventHeader, error) {
+// given cursor, oldest first, bounded by limit. It reads no payload column, so
+// a consumer that pages headers pays none of the payload I/O it would on
+// RunEventsAfter. Consumers that read payload fields keep using RunEventsAfter
+// unchanged.
+func (store *Store) RunEventHeadersAfter(ctx context.Context, runID string, cursor int64, limit int) ([]RunEventHeader, error) {
 	runID = strings.TrimSpace(runID)
 	if runID == "" {
 		return nil, errors.New("list Run Event headers: Run ID is required")
+	}
+	if limit <= 0 {
+		return nil, errors.New("list Run Event headers: a positive limit is required")
 	}
 	rows, err := store.db.QueryContext(ctx, `
 SELECT cursor, batch, source, kind, summary, created_at
 FROM run_events
 WHERE run_id = ? AND cursor > ?
-ORDER BY cursor ASC`,
+ORDER BY cursor ASC
+LIMIT ?`,
 		runID,
 		cursor,
+		limit,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("list Run Event headers for Run %q: %w", runID, err)
@@ -1354,6 +1383,18 @@ LIMIT ?`,
 	return events, nil
 }
 
+// journalSinkError is returned by JournalSink when the Store has no journal
+// writer (a read-only Store opened through OpenReader or OpenStorageReader).
+// Publishing through a sink wrapping a nil writer would panic; this sink
+// reports the unsupported call as an ordinary error instead.
+type journalSinkError struct {
+	err error
+}
+
+func (sink journalSinkError) Publish(context.Context, runevent.RunEvent) error {
+	return sink.err
+}
+
 // JournalSink adapts the Run Database to the Run Event sink interface. It
 // registers as a critical sink: an append failure after Run start must fail
 // the Run, never be swallowed.
@@ -1363,6 +1404,9 @@ LIMIT ?`,
 // per sink (ADR 0098: durability moves from per-event to per-batch, with
 // `synchronous` unchanged).
 func (store *Store) JournalSink() runevent.Sink {
+	if store.journal == nil {
+		return journalSinkError{err: errors.New("publish Run Event: Run Database has no journal writer")}
+	}
 	return journalSink{writer: store.journal}
 }
 

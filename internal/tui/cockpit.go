@@ -34,7 +34,7 @@ const (
 // live sink.
 type CockpitSource interface {
 	TimelineSource
-	RunEventHeadersAfter(ctx context.Context, runID string, cursor int64) ([]store.RunEventHeader, error)
+	RunEventHeadersAfter(ctx context.Context, runID string, cursor int64, limit int) ([]store.RunEventHeader, error)
 	DataVersion(ctx context.Context) (int64, error)
 	Run(ctx context.Context, runID string) (store.Run, bool, error)
 }
@@ -277,13 +277,20 @@ func (model *cockpitModel) refreshTaskFiles() {
 }
 
 // refreshTaskJournalEvents folds the Task journal forward, the way
-// refreshBatchClocks folds Batch clocks. The cursor only moves ahead, so a
-// poll costs the events that arrived since the last one instead of the whole
-// journal; per-Task phases are a left fold over events in cursor order, so
-// folding each event exactly once lands on the same state a full rescan did.
-// Kinds come from the payload-free header projection, and only the two daemon
-// kinds whose payload fields this fold parses are read in full (ADR 0008
-// leaves every other payload unread here).
+// refreshTaskJournalEvents folds the Task journal forward. The cursor only
+// moves ahead, so a poll costs the events that arrived since the last one
+// instead of the whole journal; per-Task phases are a left fold over events in
+// cursor order, so folding each event exactly once lands on the same state a
+// full rescan did. Kinds come from the payload-free header projection, and
+// only the two daemon kinds whose payload fields this fold parses are read in
+// full (ADR 0008 leaves every other payload unread here).
+//
+// journalHeaderPageSize bounds each RunEventHeadersAfter query so an opening
+// fold over a very large journal never materializes every header in one slice.
+// The cursor advances page by page until a short page shows the journal is
+// exhausted.
+const journalHeaderPageSize = 500
+
 func (model *cockpitModel) refreshTaskJournalEvents() {
 	runID := model.cfg.RunID
 	if strings.TrimSpace(runID) == "" {
@@ -293,22 +300,35 @@ func (model *cockpitModel) refreshTaskJournalEvents() {
 	if runID == "" || model.cfg.Source == nil {
 		return
 	}
-	headers, err := model.cfg.Source.RunEventHeadersAfter(model.ctx, runID, model.taskJournalCursor)
-	if err != nil {
-		return
-	}
-	for _, header := range headers {
-		if foldsIntoTaskJournal(header.Kind) {
-			event, ok := model.readTaskJournalEvent(runID, header.Cursor)
-			if !ok {
-				// The cursor stays behind the unread event, so the next poll
-				// retries it rather than folding a gap.
-				return
-			}
-			model.applyTaskJournalEvent(event)
+	for {
+		headers, err := model.cfg.Source.RunEventHeadersAfter(model.ctx, runID, model.taskJournalCursor, journalHeaderPageSize)
+		if err != nil {
+			return
 		}
-		if header.Cursor > model.taskJournalCursor {
-			model.taskJournalCursor = header.Cursor
+		for _, header := range headers {
+			if foldsIntoTaskJournal(header.Kind) {
+				event, ok, retry := model.readTaskJournalEvent(runID, header.Cursor)
+				if retry {
+					// Transient read failure: keep the cursor behind the unread
+					// event so the next poll retries it rather than folding a
+					// gap.
+					return
+				}
+				if ok {
+					model.applyTaskJournalEvent(event)
+				} else {
+					// The event is gone (a retention delete removed the row
+					// between the header read and the payload read). The fold
+					// skips it and the cursor advances past the header below,
+					// so a permanently missing event never stalls the fold.
+				}
+			}
+			if header.Cursor > model.taskJournalCursor {
+				model.taskJournalCursor = header.Cursor
+			}
+		}
+		if len(headers) < journalHeaderPageSize {
+			return
 		}
 	}
 }
@@ -321,12 +341,20 @@ func foldsIntoTaskJournal(kind runevent.Kind) bool {
 
 // readTaskJournalEvent reads one event whole. The fold parses payload fields
 // and the Review Issue column, neither of which the header projection carries.
-func (model *cockpitModel) readTaskJournalEvent(runID string, cursor int64) (runevent.RunEvent, bool) {
+// The second result reports whether the event was read; the third reports
+// whether the caller should retry the same cursor on the next poll (true for
+// a transient read error or an empty page) instead of advancing past it.
+func (model *cockpitModel) readTaskJournalEvent(runID string, cursor int64) (runevent.RunEvent, bool, bool) {
 	page, err := model.cfg.Source.RunEventsAfter(model.ctx, runID, cursor-1, 1)
-	if err != nil || len(page) == 0 || page[0].Cursor != cursor {
-		return runevent.RunEvent{}, false
+	if err != nil || len(page) == 0 {
+		return runevent.RunEvent{}, false, true
 	}
-	return page[0].Event, true
+	if page[0].Cursor != cursor {
+		// The requested event no longer exists (the row was deleted after the
+		// header read), so the fold skips it instead of stalling.
+		return runevent.RunEvent{}, false, false
+	}
+	return page[0].Event, true, false
 }
 
 type taskJournalEvent struct {
@@ -584,25 +612,30 @@ func (model *cockpitModel) refreshBatchClocks() {
 	if model.batchTimes == nil {
 		model.batchTimes = map[int]batchTimeSpan{}
 	}
-	headers, err := model.cfg.Source.RunEventHeadersAfter(model.ctx, runID, model.batchTimeCursor)
-	if err != nil {
-		return
-	}
-	for _, header := range headers {
-		if header.Cursor > model.batchTimeCursor {
-			model.batchTimeCursor = header.Cursor
+	for {
+		headers, err := model.cfg.Source.RunEventHeadersAfter(model.ctx, runID, model.batchTimeCursor, journalHeaderPageSize)
+		if err != nil {
+			return
 		}
-		if header.Batch <= 0 || header.Time.IsZero() {
-			continue
+		for _, header := range headers {
+			if header.Cursor > model.batchTimeCursor {
+				model.batchTimeCursor = header.Cursor
+			}
+			if header.Batch <= 0 || header.Time.IsZero() {
+				continue
+			}
+			span, seen := model.batchTimes[header.Batch]
+			if !seen || header.Time.Before(span.first) {
+				span.first = header.Time
+			}
+			if header.Time.After(span.last) {
+				span.last = header.Time
+			}
+			model.batchTimes[header.Batch] = span
 		}
-		span, seen := model.batchTimes[header.Batch]
-		if !seen || header.Time.Before(span.first) {
-			span.first = header.Time
+		if len(headers) < journalHeaderPageSize {
+			return
 		}
-		if header.Time.After(span.last) {
-			span.last = header.Time
-		}
-		model.batchTimes[header.Batch] = span
 	}
 }
 

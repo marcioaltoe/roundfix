@@ -154,7 +154,6 @@ func TestParallelRuns(t *testing.T) {
 		var ready sync.WaitGroup
 		ready.Add(parallelRunsCount - 1)
 		for runIndex := 1; runIndex < len(fixtures); runIndex++ {
-			runIndex := runIndex
 			go func() {
 				ready.Done()
 				<-startFlush
@@ -213,14 +212,13 @@ func runParallelRunScenario(t *testing.T, ctx context.Context) parallelRunScenar
 	var ready sync.WaitGroup
 	ready.Add(parallelRunsCount)
 	for runIndex := range fixtures {
-		runIndex := runIndex
 		go func() {
 			ready.Done()
 			<-start
 			started := time.Now()
 			result := parallelRunWriteResult{runIndex: runIndex}
 			sink := fixtures[runIndex].store.JournalSink()
-			for eventIndex := 0; eventIndex < parallelRunEvents; eventIndex++ {
+			for eventIndex := range parallelRunEvents {
 				event := parallelRunEvent(fixtures[runIndex].runID, runIndex, eventIndex)
 				fixtures[runIndex].summaries = append(fixtures[runIndex].summaries, event.Summary)
 				result.attempts++

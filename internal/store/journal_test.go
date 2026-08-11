@@ -490,7 +490,7 @@ func TestRetentionScanOutsideWriteTransaction(t *testing.T) {
 		_ = releaseWriteLock(holder)
 		_ = holder.Close()
 	}()
-	if err := acquireWriteLock(holder, ctx); err != nil {
+	if err := acquireWriteLock(ctx, holder); err != nil {
 		t.Fatalf("acquire write lock: %v", err)
 	}
 
@@ -1018,6 +1018,28 @@ func TestRunEventPayloadRoundTripsByteExact(t *testing.T) {
 	}
 	if !got.Time.Equal(event.Time) {
 		t.Fatalf("expected timestamp preserved, got %v", got.Time)
+	}
+}
+
+// TestJournalSinkOnReaderStoreReturnsError proves a read-only Store (opened
+// through OpenReader, which leaves journal nil) never hands out a JournalSink
+// that panics on Publish; it returns an explicit error instead.
+func TestJournalSinkOnReaderStoreReturnsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	writer := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, writer)
+
+	reader, err := OpenReader(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open reader: %v", err)
+	}
+	defer closeStore(t, reader)
+
+	sink := reader.JournalSink()
+	if err := sink.Publish(ctx, sampleRunEvent("run", "should not publish")); err == nil {
+		t.Fatal("expected JournalSink on a reader Store to return an error")
 	}
 }
 

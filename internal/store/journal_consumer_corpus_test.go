@@ -233,7 +233,7 @@ func TestReplayCorpusHeaderMatchesFullRead(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load corpus full read: %v", err)
 	}
-	headers, err := s.RunEventHeadersAfter(ctx, runID, 0)
+	headers, err := s.RunEventHeadersAfter(ctx, runID, 0, consumerCorpusTotal)
 	if err != nil {
 		t.Fatalf("load corpus header projection: %v", err)
 	}
@@ -265,7 +265,7 @@ func TestReplayCorpusBatchClockMatchesFullEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load corpus full read: %v", err)
 	}
-	headers, err := s.RunEventHeadersAfter(ctx, runID, 0)
+	headers, err := s.RunEventHeadersAfter(ctx, runID, 0, consumerCorpusTotal)
 	if err != nil {
 		t.Fatalf("load corpus header projection: %v", err)
 	}
