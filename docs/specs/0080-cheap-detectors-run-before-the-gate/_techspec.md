@@ -6,6 +6,18 @@ created: 2026-08-06
 
 # Cheap detectors run before the gate — Technical Spec
 
+## Vocabulary Contract
+
+- emits: `internal/speccheck/mechanical.go`
+  pattern: `QA-(AUTH-PATHS|CONSEQUENT-ORDER|REPORT-SHAPE|EVIDENCE-PATH)`
+  documented-in: `CONTEXT.md`
+
+The four codes are the Spec's coined vocabulary: they reach a maintainer reading
+a refusal, and a later detector matching on them. Declaring them here is what
+makes `SC-VOCABULARY-UNDOCUMENTED` run instead of skip, so a token that ships
+without a durable owner fails mechanically rather than waiting for a gate round
+to notice. `Mechanical Refusal Code` is the glossary entry that owns them.
+
 ## Executive Summary
 
 The design accepts one primary trade-off: the mechanical stage duplicates
