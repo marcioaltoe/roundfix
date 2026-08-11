@@ -5477,31 +5477,67 @@ func TestAgentSelectionProfilesMacro(t *testing.T) {
 		assertNoMacroRunWorktreeOrBranch(t, homeDir, repoDir)
 	})
 
-	t.Run("post start failure never activates fallback", func(t *testing.T) {
-		fake := newMacroFakeACPX(t)
-		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
-			{id: "task_backend", title: "Backend fails after start", taskType: "backend"},
-		})
-		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
-		mustWrite(t, configPath, "worktree:\n  concurrency: 1\n")
-		fragmentPath := filepath.Join(t.TempDir(), "profiles.yml")
-		mustWrite(t, fragmentPath, macroProfilesYAML())
-		stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "y\n", fake.env(), "profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json")
-		if code != exitOK {
-			t.Fatalf("profiles configure failed: code=%d stdout=%q stderr=%q", code, stdout, stderr)
-		}
-		gitImplement(t, repoDir, "add", ".roundfixrc.yml")
-		gitImplement(t, repoDir, "commit", "-m", "configure agent selection profiles")
-
+	t.Run("a selection failure activates the fallback chain", func(t *testing.T) {
+		fake, homeDir, repoDir := configureMacroBackendProfile(t, binary, "Backend selection falls back")
 		env := fake.env()
 		env["ROUNDFIX_FAKE_ACPX_FAIL_PROMPT_MODEL"] = "macro-backend"
-		stdout, stderr, code = runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", env, "implement", "--spec", implementTestSlug, "--no-input")
+		stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", env, "implement", "--spec", implementTestSlug, "--no-input")
+
+		if code != exitOK {
+			t.Fatalf("expected fallback recovery exit %d, got %d stdout=%q stderr=%q", exitOK, code, stdout, stderr)
+		}
+		runID := implementRunIDFromStderr(t, stderr)
+		if !strings.Contains(stdout, "task_backend completed — Backend selection falls back") ||
+			!strings.Contains(stdout, "Clean: all 1 Task(s) completed.") {
+			t.Fatalf("expected task completion through fallback recovery, got stdout:\n%s", stdout)
+		}
+		if !strings.Contains(stderr, "task task_backend (backend) Agent Selection failed") ||
+			!strings.Contains(stderr, "activating fallback 1 codex/macro-backend-fallback/max") {
+			t.Fatalf("expected caller-visible fallback notification, got stderr:\n%s", stderr)
+		}
+
+		fallbackPrompt := false
+		for _, invocation := range readMacroACPXLog(t, fake.logPath) {
+			if invocation.Command == "prompt" && invocation.Model == "macro-backend-fallback" {
+				fallbackPrompt = true
+			}
+		}
+		if !fallbackPrompt {
+			t.Fatal("selection failure did not invoke the configured fallback prompt")
+		}
+		fallbackNotification := false
+		for _, entry := range runEventsForRun(t, homeDir, runID) {
+			if entry.Event.Kind == runevent.KindDaemonAgentSelectionFallback &&
+				strings.Contains(string(entry.Event.Payload), `"scope_id":"task_backend"`) &&
+				strings.Contains(string(entry.Event.Payload), `"next_selection"`) {
+				fallbackNotification = true
+			}
+		}
+		if !fallbackNotification {
+			t.Fatal("selection failure did not publish the fallback notification")
+		}
+		fallbackAttempt := false
+		for _, attempt := range agentSelectionAttemptsForRun(t, homeDir, runID) {
+			if attempt.ScopeID == "task_backend" && attempt.SelectionRole == store.AgentSelectionRoleFallback {
+				fallbackAttempt = true
+			}
+		}
+		if !fallbackAttempt {
+			t.Fatal("selection failure did not persist the fallback attempt")
+		}
+	})
+
+	t.Run("agent output before failure keeps the chain ineligible", func(t *testing.T) {
+		fake, homeDir, repoDir := configureMacroBackendProfile(t, binary, "Backend fails after output")
+		env := fake.env()
+		env["ROUNDFIX_FAKE_ACPX_EXIT_BY_CALL"] = `{"prompt":1}`
+		stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", env, "implement", "--spec", implementTestSlug, "--no-input")
 
 		if code != exitRunFailed {
 			t.Fatalf("expected unresolved exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
 		}
 		runID := implementRunIDFromStderr(t, stderr)
-		if !strings.Contains(stdout, "task_backend failed — Backend fails after start") ||
+		if !strings.Contains(stdout, "task_backend failed — Backend fails after output") ||
 			!strings.Contains(stdout, "Unresolved: 0 completed, 1 failed, 0 skipped, 0 pending.") {
 			t.Fatalf("expected task failure report without fallback recovery, got stdout:\n%s", stdout)
 		}
@@ -5513,20 +5549,47 @@ func TestAgentSelectionProfilesMacro(t *testing.T) {
 				t.Fatalf("post-start failure must not activate fallback, got invocation %#v", invocation)
 			}
 		}
+		sawAgentOutput := false
 		for _, entry := range runEventsForRun(t, homeDir, runID) {
+			if entry.Event.Kind == runevent.KindAgentMessage &&
+				strings.Contains(string(entry.Event.Payload), "Agent output before configured failure") {
+				sawAgentOutput = true
+			}
 			if entry.Event.Kind == runevent.KindDaemonAgentSelectionFallback &&
 				strings.Contains(string(entry.Event.Payload), `"scope_id":"task_backend"`) &&
 				strings.Contains(string(entry.Event.Payload), `"next_selection"`) {
-				t.Fatalf("post-start failure must not publish fallback notification, got event payload %s", string(entry.Event.Payload))
+				t.Fatalf("post-output failure must not publish fallback notification, got event payload %s", string(entry.Event.Payload))
 			}
+		}
+		if !sawAgentOutput {
+			t.Fatal("configured failure did not follow observable Agent output")
 		}
 		attempts := agentSelectionAttemptsForRun(t, homeDir, runID)
 		for _, attempt := range attempts {
 			if attempt.ScopeID == "task_backend" && attempt.SelectionRole == store.AgentSelectionRoleFallback {
-				t.Fatalf("post-start failure must not persist fallback attempt, got %#v", attempt)
+				t.Fatalf("post-output failure must not persist fallback attempt, got %#v", attempt)
 			}
 		}
 	})
+}
+
+func configureMacroBackendProfile(t *testing.T, binary string, taskTitle string) (macroFakeACPX, string, string) {
+	t.Helper()
+	fake := newMacroFakeACPX(t)
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_backend", title: taskTitle, taskType: "backend"},
+	})
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	mustWrite(t, configPath, "worktree:\n  concurrency: 1\n")
+	fragmentPath := filepath.Join(t.TempDir(), "profiles.yml")
+	mustWrite(t, fragmentPath, macroProfilesYAML())
+	stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "y\n", fake.env(), "profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json")
+	if code != exitOK {
+		t.Fatalf("profiles configure failed: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure agent selection profiles")
+	return fake, homeDir, repoDir
 }
 
 type macroFakeACPX struct {
@@ -5785,6 +5848,18 @@ def session_model(session):
             return record["model"]
     return ""
 
+def configured_exit(event):
+    call_key = event.get("command", "")
+    if call_key == "sessions ensure":
+        call_key += " model=" + event.get("model", "")
+    elif call_key == "set":
+        call_key += " " + event.get("config_id", "") + " value=" + event.get("config_value", "")
+    exit_by_call = json.loads(os.environ.get("ROUNDFIX_FAKE_ACPX_EXIT_BY_CALL", "{}"))
+    if call_key in exit_by_call:
+        return exit_by_call[call_key]
+    exit_by_command = json.loads(os.environ.get("ROUNDFIX_FAKE_ACPX_EXIT_BY_COMMAND", "{}"))
+    return exit_by_command.get(event.get("command", ""))
+
 def prompt_field(prompt, label):
     match = re.search(r"^" + re.escape(label) + r":\s*(.+)$", prompt, re.M)
     return match.group(1).strip() if match else ""
@@ -5840,6 +5915,12 @@ def require_durable_fallback_notification(event):
     session = event.get("session", "")
     if "-fallback-" not in session:
         return
+    scope_match = re.search(r"-(task_[^-]+)-fallback-", session)
+    scope_id = scope_match.group(1) if scope_match else ""
+    model = event.get("model", "")
+    if not scope_id or not model:
+        sys.stderr.write("cannot identify fallback scope and model\n")
+        sys.exit(1)
     home = os.environ.get("HOME", "")
     db_path = os.path.join(home, ".roundfix", "roundfix.db")
     if not os.path.exists(db_path):
@@ -5850,7 +5931,7 @@ def require_durable_fallback_notification(event):
         try:
             cursor = connection.execute(
                 "SELECT COUNT(*) FROM run_events WHERE kind = ? AND payload LIKE ? AND payload LIKE ?",
-                ("daemon.agent_selection_fallback", "%task_frontend%", "%claude-fable-5%"),
+                ("daemon.agent_selection_fallback", "%" + scope_id + "%", "%" + model + "%"),
             )
             count = cursor.fetchone()[0]
         finally:
@@ -5938,6 +6019,23 @@ if event["command"] == "prompt":
         log(event)
         sys.stderr.write("agent work rejected\n")
         sys.exit(1)
+    exit_code = configured_exit(event)
+    if exit_code is not None:
+        print(json.dumps({
+            "jsonrpc": "2.0",
+            "method": "session/update",
+            "params": {
+                "sessionId": event.get("session", ""),
+                "update": {
+                    "sessionUpdate": "agent_message_chunk",
+                    "content": {"type": "text", "text": "Agent output before configured failure"},
+                },
+            },
+        }, sort_keys=True))
+        event["outcome"] = "failed"
+        log(event)
+        sys.stderr.write("agent work failed after output\n")
+        sys.exit(exit_code)
     if event["prompt_kind"] == "task":
         task_path = resolve_path(event["cwd"], prompt_field(stdin_data, "Task file"))
         set_status(task_path, "completed")

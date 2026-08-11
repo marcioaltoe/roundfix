@@ -1680,9 +1680,9 @@ func TestModelNotAdvertisedPromptExitYieldsTypedError(t *testing.T) {
 		exitCode: 1,
 	})
 
-	var batchErr *BatchFailureError
-	if !errors.As(run.err, &batchErr) {
-		t.Fatalf("expected BatchFailureError, got %T %v", run.err, run.err)
+	var selectionErr *SelectionFailureError
+	if !errors.As(run.err, &selectionErr) {
+		t.Fatalf("expected SelectionFailureError, got %T %v", run.err, run.err)
 	}
 	var modelErr *ModelNotAdvertisedError
 	if !errors.As(run.err, &modelErr) {
@@ -3021,25 +3021,155 @@ func TestACPXRunPromptPublishesUpdateLinesAndCapturesStopReason(t *testing.T) {
 		t.Fatalf("expected stop reason end_turn, got %q", run.result.StopReason)
 	}
 	events := run.sink.Events()
-	if len(events) != 2 {
-		t.Fatalf("expected only update events to be journaled, got %d: %+v", len(events), events)
+	if len(events) != 3 {
+		t.Fatalf("expected work-started then two update events, got %d: %+v", len(events), events)
+	}
+	if events[0].Kind != runevent.KindAgentStatus || !strings.Contains(string(events[0].Payload), AgentWorkStartedStatus) {
+		t.Fatalf("expected work-started status before Agent output, got %+v", events[0])
 	}
 	expectedKinds := []runevent.Kind{runevent.KindAgentMessage, runevent.KindAgentThought}
 	expectedPayloads := []string{messageLine, thoughtLine}
-	for index, event := range events {
+	for index, event := range events[1:] {
 		if event.Kind != expectedKinds[index] {
-			t.Fatalf("expected event %d kind %q, got %q", index, expectedKinds[index], event.Kind)
+			t.Fatalf("expected event %d kind %q, got %q", index+1, expectedKinds[index], event.Kind)
 		}
 		if event.RunID != "run-acpx" || event.Batch != 7 || event.Source != runevent.SourceAgent {
-			t.Fatalf("expected Run identity on event %d, got %+v", index, event)
+			t.Fatalf("expected Run identity on event %d, got %+v", index+1, event)
 		}
 		if string(event.Payload) != expectedPayloads[index] {
-			t.Fatalf("expected byte-identical payload for event %d\nwant: %q\ngot:  %q", index, expectedPayloads[index], string(event.Payload))
+			t.Fatalf("expected byte-identical payload for event %d\nwant: %q\ngot:  %q", index+1, expectedPayloads[index], string(event.Payload))
 		}
 	}
 	if logContent := readFile(t, run.logPath); logContent != stdout {
 		t.Fatalf("expected agent log to contain every stdout line in order\nwant: %q\ngot:  %q", stdout, logContent)
 	}
+}
+
+func TestWorkStartedBoundaryPublishesOnFirstAgentOutput(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	messageLine := acpxUpdateLine(`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hello"}}}`)
+	runner := &ACPXRunner{
+		Command: os.Args[0],
+		Environment: environmentForTest(
+			fakeACPXEnv+"=1",
+			fakeACPXStdout+"="+messageLine+acpxPromptResponseLine("end_turn"),
+		),
+		Now: func() time.Time {
+			return time.Date(2026, 8, 10, 12, 0, 0, 0, time.UTC)
+		},
+		codexSpawn: codexSpawnDependencies{goos: "linux"},
+	}
+	sink := newCaptureSink("")
+	req := ACPXPromptRequest{
+		ExecuteRequest: ExecuteRequest{
+			Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP},
+			RunID:   "run-boundary",
+			Batch:   rounds.Batch{Number: 2},
+			Prompt:  "prompt",
+			GitRoot: dir,
+		},
+		Session: "roundfix-run-boundary",
+	}
+
+	for turn := 0; turn < 2; turn++ {
+		if _, err := runner.RunPrompt(context.Background(), req, sink); err != nil {
+			t.Fatalf("turn %d: RunPrompt() error = %v", turn+1, err)
+		}
+	}
+
+	events := sink.Events()
+	if len(events) != 3 {
+		t.Fatalf("events = %+v, want one work-started status followed by two Agent messages", events)
+	}
+	if events[0].Kind != runevent.KindAgentStatus || !strings.Contains(string(events[0].Payload), AgentWorkStartedStatus) {
+		t.Fatalf("first event = %+v, want Agent work-started status", events[0])
+	}
+	for index := 1; index < len(events); index++ {
+		if events[index].Kind != runevent.KindAgentMessage {
+			t.Fatalf("event %d kind = %q, want %q", index, events[index].Kind, runevent.KindAgentMessage)
+		}
+	}
+}
+
+func TestWorkStartedBoundaryReportsSelectionFailureWithoutOutput(t *testing.T) {
+	t.Parallel()
+
+	run := runFakeACPXPrompt(t, fakeACPXPrompt{
+		stderr:   "usage limit exhausted\n",
+		exitCode: 1,
+	})
+
+	var selectionErr *SelectionFailureError
+	if !errors.As(run.err, &selectionErr) {
+		t.Fatalf("RunPrompt() error = %T %v, want *SelectionFailureError", run.err, run.err)
+	}
+	var batchErr *BatchFailureError
+	if errors.As(run.err, &batchErr) {
+		t.Fatalf("RunPrompt() error = %T %v, must be distinct from *BatchFailureError", run.err, run.err)
+	}
+	events := run.sink.Events()
+	if len(events) != 1 || events[0].Kind != runevent.KindAgentStatus ||
+		!strings.Contains(string(events[0].Payload), AgentSelectionFailedStatus) {
+		t.Fatalf("events = %+v, want one Agent selection-failed status", events)
+	}
+	if run.sink.HasStatus(AgentWorkStartedStatus) {
+		t.Fatalf("events = %+v, must not publish Agent work-started without Agent output", events)
+	}
+}
+
+func TestWorkStartedBoundaryIgnoresInertSessionSetup(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	messageLine := acpxUpdateLine(`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hello"}}}`)
+	runner := &ACPXRunner{
+		Command: os.Args[0],
+		Environment: environmentForTest(
+			fakeACPXEnv+"=1",
+			fakeACPXStdout+"="+messageLine+acpxPromptResponseLine("end_turn"),
+		),
+		Now:        func() time.Time { return time.Date(2026, 8, 10, 12, 0, 0, 0, time.UTC) },
+		codexSpawn: codexSpawnDependencies{goos: "linux"},
+	}
+	sink := newCaptureSink("")
+	req := ACPXPromptRequest{
+		ExecuteRequest: ExecuteRequest{
+			Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP},
+			RunID:   "run-boundary",
+			Batch:   rounds.Batch{Number: 2},
+			Prompt:  acpxDeferredEffortWarmupPrompt,
+			GitRoot: dir,
+		},
+		Session: "roundfix-run-boundary",
+		Inert:   true,
+	}
+
+	if _, err := runner.RunPrompt(context.Background(), req, sink); err != nil {
+		t.Fatalf("inert RunPrompt() error = %v", err)
+	}
+	if sink.HasStatus(AgentWorkStartedStatus) {
+		t.Fatalf("inert Session setup published Agent work-started: %+v", sink.Events())
+	}
+	req.Inert = false
+	req.Prompt = "do the work"
+	if _, err := runner.RunPrompt(context.Background(), req, sink); err != nil {
+		t.Fatalf("work RunPrompt() error = %v", err)
+	}
+	if got := countStatusEventsForTest(sink.Events(), AgentWorkStartedStatus); got != 1 {
+		t.Fatalf("work-started statuses = %d, want one after inert Session setup", got)
+	}
+}
+
+func countStatusEventsForTest(events []runevent.RunEvent, status string) int {
+	count := 0
+	for _, event := range events {
+		if event.Kind == runevent.KindAgentStatus && strings.Contains(string(event.Payload), status) {
+			count++
+		}
+	}
+	return count
 }
 
 func TestACPXRunPromptAllowsEmptyLogPathAndStillJournals(t *testing.T) {
@@ -3067,11 +3197,11 @@ func TestACPXRunPromptAllowsEmptyLogPathAndStillJournals(t *testing.T) {
 		t.Fatalf("expected no Agent log files, got %#v", matches)
 	}
 	events := run.sink.Events()
-	if len(events) != 1 || events[0].Kind != runevent.KindAgentMessage {
-		t.Fatalf("expected Agent message event without log file, got %+v", events)
+	if len(events) != 2 || events[0].Kind != runevent.KindAgentStatus || events[1].Kind != runevent.KindAgentMessage {
+		t.Fatalf("expected work-started then Agent message without log file, got %+v", events)
 	}
-	if !strings.Contains(string(events[0].Payload), "hello") {
-		t.Fatalf("expected raw Agent payload preserved, got %s", events[0].Payload)
+	if !strings.Contains(string(events[1].Payload), "hello") {
+		t.Fatalf("expected raw Agent payload preserved, got %s", events[1].Payload)
 	}
 }
 
@@ -3117,16 +3247,16 @@ func TestACPXPromptExitClassificationMatrix(t *testing.T) {
 			},
 		},
 		{
-			name:     "no result exit one remains Batch failure",
+			name:     "no result exit one becomes selection failure",
 			exitCode: 1,
 			assertErr: func(t *testing.T, err error) {
 				t.Helper()
-				var batchErr *BatchFailureError
-				if !errors.As(err, &batchErr) {
-					t.Fatalf("expected BatchFailureError, got %T %v", err, err)
+				var selectionErr *SelectionFailureError
+				if !errors.As(err, &selectionErr) {
+					t.Fatalf("expected SelectionFailureError, got %T %v", err, err)
 				}
-				if got := err.Error(); got != "Agent Batch failed after acpx exited with code 1: agent/protocol error" {
-					t.Fatalf("expected byte-identical Batch failure, got %q", got)
+				if selectionErr.Reason != acpxExitReasonAgentProtocol {
+					t.Fatalf("selection failure reason = %q, want %q", selectionErr.Reason, acpxExitReasonAgentProtocol)
 				}
 			},
 		},
@@ -3174,6 +3304,22 @@ func TestACPXPromptExitClassificationMatrix(t *testing.T) {
 			},
 		},
 		{
+			name:     "Agent output exit one remains Batch failure",
+			stdout:   acpxUpdateLine(`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"started"}}}`),
+			exitCode: 1,
+			assertErr: func(t *testing.T, err error) {
+				t.Helper()
+				var batchErr *BatchFailureError
+				if !errors.As(err, &batchErr) {
+					t.Fatalf("expected BatchFailureError after Agent output, got %T %v", err, err)
+				}
+				var selectionErr *SelectionFailureError
+				if errors.As(err, &selectionErr) {
+					t.Fatalf("error after Agent output = %T %v, must not be SelectionFailure", err, err)
+				}
+			},
+		},
+		{
 			name:     "result exit one thirty remains stop",
 			stdout:   acpxPromptResponseLine("end_turn"),
 			exitCode: 130,
@@ -3186,17 +3332,14 @@ func TestACPXPromptExitClassificationMatrix(t *testing.T) {
 			},
 		},
 		{
-			name:     "partial stream exit one remains Batch failure",
+			name:     "partial stream without Agent output becomes selection failure",
 			stdout:   `{"jsonrpc":"2.0","id":1,"result":`,
 			exitCode: 1,
 			assertErr: func(t *testing.T, err error) {
 				t.Helper()
-				var batchErr *BatchFailureError
-				if !errors.As(err, &batchErr) {
-					t.Fatalf("expected BatchFailureError, got %T %v", err, err)
-				}
-				if got := err.Error(); got != "Agent Batch failed after acpx exited with code 1: agent/protocol error" {
-					t.Fatalf("expected byte-identical Batch failure, got %q", got)
+				var selectionErr *SelectionFailureError
+				if !errors.As(err, &selectionErr) {
+					t.Fatalf("expected SelectionFailureError, got %T %v", err, err)
 				}
 			},
 		},
@@ -3285,12 +3428,12 @@ func TestACPXExitCodeMapping(t *testing.T) {
 			stderr:   "protocol exploded\n",
 			assertErr: func(t *testing.T, err error) {
 				t.Helper()
-				var batchErr *BatchFailureError
-				if !errors.As(err, &batchErr) {
-					t.Fatalf("expected BatchFailureError, got %T %v", err, err)
+				var selectionErr *SelectionFailureError
+				if !errors.As(err, &selectionErr) {
+					t.Fatalf("expected SelectionFailureError, got %T %v", err, err)
 				}
-				if batchErr.Reason != acpxExitReasonAgentProtocol {
-					t.Fatalf("expected protocol reason, got %q", batchErr.Reason)
+				if selectionErr.Reason != acpxExitReasonAgentProtocol {
+					t.Fatalf("expected protocol reason, got %q", selectionErr.Reason)
 				}
 				if !strings.Contains(err.Error(), "protocol exploded") {
 					t.Fatalf("expected stderr in error context, got %q", err.Error())
@@ -3302,12 +3445,12 @@ func TestACPXExitCodeMapping(t *testing.T) {
 			exitCode: 3,
 			assertErr: func(t *testing.T, err error) {
 				t.Helper()
-				var batchErr *BatchFailureError
-				if !errors.As(err, &batchErr) {
-					t.Fatalf("expected BatchFailureError, got %T %v", err, err)
+				var selectionErr *SelectionFailureError
+				if !errors.As(err, &selectionErr) {
+					t.Fatalf("expected SelectionFailureError, got %T %v", err, err)
 				}
-				if batchErr.Reason != acpxExitReasonTimeout {
-					t.Fatalf("expected timeout reason, got %q", batchErr.Reason)
+				if selectionErr.Reason != acpxExitReasonTimeout {
+					t.Fatalf("expected timeout reason, got %q", selectionErr.Reason)
 				}
 			},
 		},
@@ -3316,12 +3459,12 @@ func TestACPXExitCodeMapping(t *testing.T) {
 			exitCode: 5,
 			assertErr: func(t *testing.T, err error) {
 				t.Helper()
-				var batchErr *BatchFailureError
-				if !errors.As(err, &batchErr) {
-					t.Fatalf("expected BatchFailureError, got %T %v", err, err)
+				var selectionErr *SelectionFailureError
+				if !errors.As(err, &selectionErr) {
+					t.Fatalf("expected SelectionFailureError, got %T %v", err, err)
 				}
-				if batchErr.Reason != acpxExitReasonPermissionsDenied {
-					t.Fatalf("expected permissions denied reason, got %q", batchErr.Reason)
+				if selectionErr.Reason != acpxExitReasonPermissionsDenied {
+					t.Fatalf("expected permissions denied reason, got %q", selectionErr.Reason)
 				}
 			},
 			assertPost: func(t *testing.T, run fakeACPXRun) {

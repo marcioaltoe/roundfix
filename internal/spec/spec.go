@@ -101,6 +101,20 @@ type Task struct {
 	NegativeControl  []string
 }
 
+// CarryForward is one completed Task commit a stopped Run can hand back to
+// the checkout. MovedInputs names every declared input whose bytes no longer
+// match the tree the Task saw before its settlement commit.
+type CarryForward struct {
+	TaskID        string   `json:"taskId"`
+	RunID         string   `json:"runId"`
+	Commit        string   `json:"commit"`
+	TaskFile      string   `json:"taskFile"`
+	InputsMoved   bool     `json:"inputsMoved"`
+	MovedInputs   []string `json:"movedInputs"`
+	Action        string   `json:"action"`
+	RefusalReason string   `json:"refusalReason"`
+}
+
 // TaskDeclaration is one author-written Task declaration and its 1-based
 // Markdown source line.
 type TaskDeclaration struct {
@@ -865,6 +879,125 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		Verification:     document.Verification,
 		NegativeControl:  append([]string(nil), document.NegativeControl...),
 	}, nil
+}
+
+// CarryForwardInputs returns the repository paths whose bytes declare the
+// Task Roundfix handed to the Agent: the Task and Spec contracts, the root
+// instructions, the canonical domain context, the implementation skill, and
+// every Task-authored Context reference.
+func CarryForwardInputs(specDir string, taskFile string, taskContent []byte) ([]string, error) {
+	cleanSpecDir, err := cleanCarryForwardPath(specDir)
+	if err != nil {
+		return nil, fmt.Errorf("carry-forward Spec directory: %w", err)
+	}
+	cleanTaskFile, err := cleanCarryForwardPath(taskFile)
+	if err != nil {
+		return nil, fmt.Errorf("carry-forward Task file: %w", err)
+	}
+	document, err := parseTaskDocument(taskContent, cleanTaskFile)
+	if err != nil {
+		return nil, fmt.Errorf("parse carry-forward Task input %q: %w", cleanTaskFile, err)
+	}
+
+	inputs := []string{
+		cleanTaskFile,
+		filepath.ToSlash(filepath.Join(cleanSpecDir, "_prd.md")),
+		filepath.ToSlash(filepath.Join(cleanSpecDir, "_techspec.md")),
+		filepath.ToSlash(filepath.Join(cleanSpecDir, "_tasks.md")),
+		"AGENTS.md",
+		"CONTEXT.md",
+		".agents/skills/implement-task/SKILL.md",
+	}
+	seen := make(map[string]bool, len(inputs)+len(document.Context))
+	unique := make([]string, 0, len(inputs)+len(document.Context))
+	for _, path := range inputs {
+		if !seen[path] {
+			seen[path] = true
+			unique = append(unique, path)
+		}
+	}
+	for _, ref := range document.Context {
+		clean, cleanErr := cleanCarryForwardPath(ref.Path)
+		if cleanErr != nil {
+			return nil, fmt.Errorf("carry-forward Context path %q: %w", ref.Path, cleanErr)
+		}
+		if !seen[clean] {
+			seen[clean] = true
+			unique = append(unique, clean)
+		}
+	}
+	return unique, nil
+}
+
+// CarryForwardStatus reads the Task status from committed Task bytes.
+func CarryForwardStatus(taskFile string, content []byte) (Status, error) {
+	document, err := parseTaskDocument(content, taskFile)
+	if err != nil {
+		return "", fmt.Errorf("parse carry-forward Task status %q: %w", taskFile, err)
+	}
+	return Status(document.Frontmatter.Status), nil
+}
+
+// RecordCarryForward marks a Task completed and appends the source Run and
+// settlement commit to the Task file. Every pre-existing byte other than the
+// status value is preserved exactly.
+func RecordCarryForward(taskPath string, runID string, commit string) error {
+	runID = strings.TrimSpace(runID)
+	commit = strings.TrimSpace(commit)
+	if err := validateCarryForwardRecordValue("Run ID", runID); err != nil {
+		return err
+	}
+	if err := validateCarryForwardRecordValue("commit", commit); err != nil {
+		return err
+	}
+	info, err := os.Stat(taskPath)
+	if err != nil {
+		return fmt.Errorf("stat carry-forward Task file %q: %w", taskPath, err)
+	}
+	content, err := os.ReadFile(taskPath)
+	if err != nil {
+		return fmt.Errorf("read carry-forward Task file %q: %w", taskPath, err)
+	}
+	const heading = "## Carry-forward provenance"
+	if strings.Contains(string(content), "\n"+heading+"\n") {
+		return fmt.Errorf("carry-forward Task file %q already records provenance", taskPath)
+	}
+	updated, err := rewriteStatus(content, StatusCompleted)
+	if err != nil {
+		return fmt.Errorf("rewrite carry-forward status in Task file %q: %w", taskPath, err)
+	}
+	updated = append(updated, []byte(fmt.Sprintf(
+		"\n%s\n\n- Source Run: `%s`\n- Source commit: `%s`\n",
+		heading,
+		runID,
+		commit,
+	))...)
+	if err := os.WriteFile(taskPath, updated, info.Mode().Perm()); err != nil {
+		return fmt.Errorf("write carry-forward Task file %q: %w", taskPath, err)
+	}
+	return nil
+}
+
+func cleanCarryForwardPath(path string) (string, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return "", errors.New("path is empty")
+	}
+	clean := filepath.Clean(path)
+	if clean == "." || filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return "", errors.New("path must stay repository-relative")
+	}
+	return filepath.ToSlash(clean), nil
+}
+
+func validateCarryForwardRecordValue(label string, value string) error {
+	if value == "" {
+		return fmt.Errorf("carry-forward %s is required", label)
+	}
+	if strings.ContainsAny(value, "\r\n`") {
+		return fmt.Errorf("carry-forward %s contains an unsupported character", label)
+	}
+	return nil
 }
 
 // splitFrontmatter mirrors the Round artifact frontmatter contract: an

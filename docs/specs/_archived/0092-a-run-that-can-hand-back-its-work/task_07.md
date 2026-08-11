@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0092-a-run-that-can-hand-back-its-work
-status: pending
+status: completed
 type: qa
 complexity: high
 ---

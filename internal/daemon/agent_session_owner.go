@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
@@ -33,12 +34,14 @@ type agentSessionOwner struct {
 	profile        roundconfig.ResolvedProfile
 	runtimeFactory AgentRuntimeFactory
 
-	activeRuntime agent.RuntimeSpec
-	activeSession agent.SessionRef
-	active        bool
-	workStarted   bool
-	attemptNumber int
-	attempts      []agentSelectionAttempt
+	activeRuntime             agent.RuntimeSpec
+	activeSession             agent.SessionRef
+	active                    bool
+	workStarted               atomic.Bool
+	candidateIndex            int
+	selectionFailurePublished atomic.Bool
+	attemptNumber             int
+	attempts                  []agentSelectionAttempt
 }
 
 func (plan TaskPlan) hasAgentSelectionProfiles() bool {
@@ -168,20 +171,36 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 	if owner == nil || owner.engine == nil {
 		return agent.ExecuteResult{LogPath: req.LogPath}, errors.New("Agent Session owner is required")
 	}
-	if !owner.active {
-		if err := owner.activate(ctx, req); err != nil {
-			return agent.ExecuteResult{LogPath: req.LogPath}, err
+	for {
+		if !owner.active {
+			if err := owner.activate(ctx, req); err != nil {
+				return agent.ExecuteResult{LogPath: req.LogPath}, err
+			}
+		}
+		activeReq := owner.activeRequest(req)
+		result, err := owner.runPrepared(ctx, activeReq)
+		if err == nil {
+			if strings.TrimSpace(result.Output) != "" {
+				if publishErr := owner.publishWorkStartedOnce(ctx, activeReq); publishErr != nil {
+					owner.closeActive(context.WithoutCancel(ctx))
+					return result, publishErr
+				}
+			}
+			return result, nil
+		}
+		var selectionErr *agent.SelectionFailureError
+		if !errors.As(err, &selectionErr) || owner.workStarted.Load() {
+			return result, err
+		}
+		if !owner.selectionFailurePublished.Load() {
+			if publishErr := owner.publishSelectionFailed(context.WithoutCancel(ctx), activeReq); publishErr != nil {
+				return result, publishErr
+			}
+		}
+		if fallbackErr := owner.fallbackAfterSelectionFailure(ctx, req, selectionErr); fallbackErr != nil {
+			return result, fallbackErr
 		}
 	}
-	activeReq := owner.activeRequest(req)
-	if !owner.workStarted {
-		if err := owner.publishWorkStarted(ctx, activeReq); err != nil {
-			owner.closeActive(context.WithoutCancel(ctx))
-			return agent.ExecuteResult{LogPath: req.LogPath}, err
-		}
-		owner.workStarted = true
-	}
-	return owner.runPrepared(ctx, activeReq)
 }
 
 func (owner *agentSessionOwner) Close(ctx context.Context) error {
@@ -197,9 +216,14 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 		return fmt.Errorf("Agent Selection Profile for category %q has no selections", owner.scope.Category)
 	}
 	for index, candidate := range candidates {
+		if index < owner.candidateIndex {
+			continue
+		}
 		if err := ctx.Err(); err != nil {
 			return err
 		}
+		owner.candidateIndex = index
+		owner.selectionFailurePublished.Store(false)
 		runtime, err := owner.runtimeFactory(candidate.Selection)
 		if err != nil {
 			return err
@@ -213,6 +237,12 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 			prepareReq.GitRoot = req.GitRoot
 		}
 		if err := owner.prepareSession(ctx, prepareReq); err != nil {
+			if failure := selectionFailureForStart(runtime, err); failure != nil {
+				err = failure
+				if publishErr := owner.publishSelectionFailed(context.WithoutCancel(ctx), prepareReq); publishErr != nil {
+					return publishErr
+				}
+			}
 			owner.closeAttempt(context.WithoutCancel(ctx), runtime, session)
 			if !isSelectionStartFailure(err) || index == len(candidates)-1 {
 				owner.attempts = append(owner.attempts, agentSelectionAttempt{Candidate: candidate, Err: err})
@@ -303,10 +333,55 @@ func (owner *agentSessionOwner) prepareSession(ctx context.Context, req agent.Ex
 }
 
 func (owner *agentSessionOwner) runPrepared(ctx context.Context, req agent.ExecuteRequest) (agent.ExecuteResult, error) {
+	sink := &agentSessionEventSink{owner: owner, req: req, next: owner.engine.deps.Sink}
 	if runner, ok := owner.engine.deps.Runner.(agent.PreparedPromptRunner); ok {
-		return runner.RunPrepared(ctx, req, owner.engine.deps.Sink)
+		return runner.RunPrepared(ctx, req, sink)
 	}
-	return owner.engine.deps.Runner.Run(ctx, req, owner.engine.deps.Sink)
+	return owner.engine.deps.Runner.Run(ctx, req, sink)
+}
+
+func (owner *agentSessionOwner) fallbackAfterSelectionFailure(ctx context.Context, req agent.ExecuteRequest, cause error) error {
+	candidates := owner.candidates()
+	failedIndex := owner.candidateIndex
+	if failedIndex < 0 || failedIndex >= len(candidates) {
+		return cause
+	}
+	failed := candidates[failedIndex]
+	owner.closeAttempt(context.WithoutCancel(ctx), owner.activeRuntime, owner.activeSession)
+	owner.active = false
+	owner.attempts = append(owner.attempts, agentSelectionAttempt{Candidate: failed, Err: cause})
+	if err := owner.persistSelectionAttempt(context.WithoutCancel(ctx), failed, store.AgentSelectionStatusFailed, cause); err != nil {
+		return err
+	}
+	nextIndex := failedIndex + 1
+	if nextIndex >= len(candidates) {
+		if err := owner.publishExhausted(context.WithoutCancel(ctx)); err != nil {
+			return err
+		}
+		return &AgentSelectionExhaustedError{
+			ScopeKind: owner.scope.Kind,
+			ScopeID:   owner.scope.ID,
+			Category:  owner.scope.Category,
+			Attempts:  append([]agentSelectionAttempt(nil), owner.attempts...),
+		}
+	}
+	if err := owner.publishFallback(ctx, failed, candidates[nextIndex], cause); err != nil {
+		return err
+	}
+	owner.candidateIndex = nextIndex
+	owner.selectionFailurePublished.Store(false)
+	return nil
+}
+
+func (owner *agentSessionOwner) publishWorkStartedOnce(ctx context.Context, req agent.ExecuteRequest) error {
+	if !owner.workStarted.CompareAndSwap(false, true) {
+		return nil
+	}
+	if err := owner.publishWorkStarted(ctx, req); err != nil {
+		owner.workStarted.Store(false)
+		return err
+	}
+	return nil
 }
 
 func (owner *agentSessionOwner) publishWorkStarted(ctx context.Context, req agent.ExecuteRequest) error {
@@ -327,6 +402,28 @@ func (owner *agentSessionOwner) publishWorkStarted(ctx context.Context, req agen
 	}); err != nil {
 		return fmt.Errorf("publish Agent work-started Run Event: %w", err)
 	}
+	return nil
+}
+
+func (owner *agentSessionOwner) publishSelectionFailed(ctx context.Context, req agent.ExecuteRequest) error {
+	raw, err := json.Marshal(struct {
+		Status string `json:"status"`
+	}{Status: agent.AgentSelectionFailedStatus})
+	if err != nil {
+		return err
+	}
+	if err := owner.engine.deps.Sink.Publish(ctx, runevent.RunEvent{
+		RunID:   req.RunID,
+		Batch:   req.Batch.Number,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentStatus,
+		Summary: "SESSION AGENT_SELECTION_FAILED\n",
+		Time:    owner.engine.deps.Now(),
+		Payload: raw,
+	}); err != nil {
+		return fmt.Errorf("publish Agent selection-failed Run Event: %w", err)
+	}
+	owner.selectionFailurePublished.Store(true)
 	return nil
 }
 
@@ -497,6 +594,9 @@ func (owner *agentSessionOwner) nextSelectionAttemptNumber(ctx context.Context) 
 
 func (owner *agentSessionOwner) activeCandidate() agentSelectionCandidate {
 	candidates := owner.candidates()
+	if owner.candidateIndex >= 0 && owner.candidateIndex < len(candidates) {
+		return candidates[owner.candidateIndex]
+	}
 	active := selectionPayload(roundconfig.AgentSelection{
 		Runtime:         owner.activeRuntime.ID,
 		Model:           owner.activeRuntime.Model,
@@ -542,11 +642,41 @@ func (owner *agentSessionOwner) publishSessionClosed(ctx context.Context) error 
 }
 
 func isSelectionStartFailure(err error) bool {
+	var failure *agent.SelectionFailureError
+	if errors.As(err, &failure) {
+		return true
+	}
 	var selectionErr *agent.SelectionPreflightError
-	return errors.As(err, &selectionErr)
+	if errors.As(err, &selectionErr) {
+		return true
+	}
+	var adapterErr agent.AdapterProbeError
+	return errors.As(err, &adapterErr)
+}
+
+func selectionFailureForStart(runtime agent.RuntimeSpec, err error) *agent.SelectionFailureError {
+	var failure *agent.SelectionFailureError
+	if errors.As(err, &failure) {
+		return failure
+	}
+	if !isSelectionStartFailure(err) {
+		return nil
+	}
+	return &agent.SelectionFailureError{
+		Runtime: strings.TrimSpace(runtime.ID),
+		Reason:  selectionReasonCode(err),
+		Err:     err,
+	}
 }
 
 func selectionReasonCode(err error) string {
+	var failure *agent.SelectionFailureError
+	if errors.As(err, &failure) {
+		if failure.Err != nil {
+			return selectionReasonCode(failure.Err)
+		}
+		return "selection_failed"
+	}
 	var modelErr *agent.ModelNotAdvertisedError
 	if errors.As(err, &modelErr) {
 		return "model_not_advertised"
@@ -566,6 +696,60 @@ func selectionReasonCode(err error) string {
 		}
 	}
 	return "selection_start_failed"
+}
+
+type agentSessionEventSink struct {
+	owner *agentSessionOwner
+	req   agent.ExecuteRequest
+	next  runevent.Sink
+}
+
+func (sink *agentSessionEventSink) Publish(ctx context.Context, event runevent.RunEvent) error {
+	if sink == nil || sink.owner == nil {
+		return errors.New("Agent Session event sink owner is required")
+	}
+	if agentStatusEventIs(event, agent.AgentWorkStartedStatus) {
+		sink.owner.workStarted.Store(true)
+	}
+	if agentStatusEventIs(event, agent.AgentSelectionFailedStatus) {
+		sink.owner.selectionFailurePublished.Store(true)
+	}
+	if agentOutputEvent(event) {
+		if err := sink.owner.publishWorkStartedOnce(ctx, sink.req); err != nil {
+			return err
+		}
+	}
+	if sink.next == nil {
+		return nil
+	}
+	return sink.next.Publish(ctx, event)
+}
+
+func agentOutputEvent(event runevent.RunEvent) bool {
+	if event.Source != runevent.SourceAgent {
+		return false
+	}
+	switch event.Kind {
+	case runevent.KindAgentMessage,
+		runevent.KindAgentThought,
+		runevent.KindAgentToolStarted,
+		runevent.KindAgentToolUpdated,
+		runevent.KindAgentPlan,
+		runevent.KindAgentRaw:
+		return true
+	default:
+		return false
+	}
+}
+
+func agentStatusEventIs(event runevent.RunEvent, want string) bool {
+	if event.Source != runevent.SourceAgent || event.Kind != runevent.KindAgentStatus {
+		return false
+	}
+	var payload struct {
+		Status string `json:"status"`
+	}
+	return json.Unmarshal(event.Payload, &payload) == nil && payload.Status == want
 }
 
 func selectionPayload(selection roundconfig.AgentSelection) map[string]string {

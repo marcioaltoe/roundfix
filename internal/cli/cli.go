@@ -48,7 +48,7 @@ Usage:
   roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
   roundfix implement --spec <slug>
   roundfix settle --spec <slug> --task <task_id>
-  roundfix reconcile [run-id] [--apply] [--format <text|json>]
+  roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
   roundfix spec check [<slug> ...] [--format <text|json>] [--strict]
@@ -5293,7 +5293,7 @@ Options:
 		return settleUsage
 	case "reconcile":
 		return `Usage:
-  roundfix reconcile [run-id] [--apply] [--format <text|json>]
+  roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
 
 Inspects one terminal spec Run in the current repository, or every terminal
 spec Run in the current repository when no Run ID is supplied. The default is
@@ -5302,8 +5302,10 @@ safe or superseded during the current invocation; dirty, unintegrated, unknown,
 and already released entries remain successful preserved results.
 
 Options:
-  --apply   Release freshly revalidated safe and superseded Run Worktrees and Run Branches
-  --format  Output format: text (default) or json
+  --apply                 Release freshly revalidated safe and superseded Run Worktrees and Run Branches
+  --discard-superseded    Discard Run Branches proven superseded
+  --carry-forward         Hand a stopped Run's settled Tasks back to the checkout
+  --format                Output format: text (default) or json
 `
 	case "release":
 		return `Usage:

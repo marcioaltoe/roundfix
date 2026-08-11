@@ -1,6 +1,7 @@
 ---
 spec: 0092-a-run-that-can-hand-back-its-work
-status: active
+status: archived
+archived: 2026-08-11
 created: 2026-08-09
 surfaces: [backend, cli]
 ---

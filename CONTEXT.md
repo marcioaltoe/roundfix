@@ -236,6 +236,10 @@ _Avoid_: Sandbox, scratch dir, user checkout
 The named branch (`roundfix/run-<id>`) that carries a spec Run's commits inside its Run Worktree until integration moves them to the user's branch. Review Runs use the user's checkout branch directly; older pending Run Branch work is handled by Branch Integrity Preflight before review work starts.
 _Avoid_: Temp branch, detached HEAD, feature branch
 
+**Branch Disposition**:
+A recorded terminal reason a Run Branch no longer needs integration and may be discarded. A superseded Branch Disposition means every branch commit is already reachable from the target, or a later integrated Run covered the same Tasks.
+_Avoid_: Branch cleanup, forced deletion, reconcile result
+
 **Run Worktree Reconciliation**:
 The proof-based classification of a terminal spec Run's retained Git surfaces: `safe` when the Run Branch and recorded target resolve, any present Run Worktree is registered and clean, and the Run Branch tip is an ancestor of the target tip; `superseded` when a QA-report-only Run Branch is older than the target branch's QA Report for the same Spec; `unintegrated` when the same evidence resolves but ancestry is false; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only freshly revalidated `safe` or `superseded` work can be cleaned up.
 _Avoid_: GC, force cleanup, manual branch deletion

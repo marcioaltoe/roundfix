@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -1540,6 +1541,144 @@ func TestListActiveDetailedReportsSkippedSpecFolders(t *testing.T) {
 	}
 	if len(simple) != 1 || simple[0].Slug != specs[0].Slug {
 		t.Fatalf("ListActive = %+v, want active list unchanged from detailed result %+v", simple, specs)
+	}
+}
+
+func TestCarryForwardInputsIncludesSpecContractsAndTaskContext(t *testing.T) {
+	t.Parallel()
+	taskFile := filepath.ToSlash(filepath.Join("docs", "specs", "0001-widget", "task_01.md"))
+	content := taskFixture("task_01", "Build widget", "pending", "backend", md(`## Context
+
+- instruction: 'docs/agents/go.md'
+- interface: 'internal/widget/widget.go'
+
+`)+defaultVerificationSection)
+
+	inputs, err := CarryForwardInputs("docs/specs/0001-widget", taskFile, []byte(content))
+	if err != nil {
+		t.Fatalf("CarryForwardInputs: %v", err)
+	}
+	want := []string{
+		taskFile,
+		"docs/specs/0001-widget/_prd.md",
+		"docs/specs/0001-widget/_techspec.md",
+		"docs/specs/0001-widget/_tasks.md",
+		"AGENTS.md",
+		"CONTEXT.md",
+		".agents/skills/implement-task/SKILL.md",
+		"docs/agents/go.md",
+		"internal/widget/widget.go",
+	}
+	if !slices.Equal(inputs, want) {
+		t.Fatalf("CarryForwardInputs = %v, want %v", inputs, want)
+	}
+}
+
+func TestRecordCarryForwardPreservesTaskAndRecordsSource(t *testing.T) {
+	t.Parallel()
+	taskPath := filepath.Join(t.TempDir(), "task_01.md")
+	original := taskFixture("task_01", "Build widget", "pending", "backend", defaultVerificationSection)
+	writeFile(t, taskPath, original)
+
+	if err := RecordCarryForward(taskPath, "run_20260811", "0123456789abcdef"); err != nil {
+		t.Fatalf("RecordCarryForward: %v", err)
+	}
+	carried, err := os.ReadFile(taskPath)
+	if err != nil {
+		t.Fatalf("read carried Task: %v", err)
+	}
+	wantPrefix := strings.Replace(original, "status: pending", "status: completed", 1)
+	if !strings.HasPrefix(string(carried), wantPrefix) {
+		t.Fatalf("carried Task changed bytes outside status/provenance:\n%s", carried)
+	}
+	for _, want := range []string{"## Carry-forward provenance", "`run_20260811`", "`0123456789abcdef`"} {
+		if !bytes.Contains(carried, []byte(want)) {
+			t.Fatalf("carried Task does not contain %q:\n%s", want, carried)
+		}
+	}
+}
+
+func TestRecordCarryForwardRefusesExistingProvenance(t *testing.T) {
+	t.Parallel()
+	taskPath := filepath.Join(t.TempDir(), "task_01.md")
+	already := taskFixture("task_01", "Build widget", "completed", "backend", defaultVerificationSection) +
+		"\n## Carry-forward provenance\n\n- Source Run: `run_old`\n- Source commit: `deadbeef`\n"
+	writeFile(t, taskPath, already)
+
+	if err := RecordCarryForward(taskPath, "run_20260811", "0123456789abcdef"); err == nil {
+		t.Fatalf("RecordCarryForward with existing provenance succeeded, want refusal")
+	}
+	carried, err := os.ReadFile(taskPath)
+	if err != nil {
+		t.Fatalf("read Task: %v", err)
+	}
+	if string(carried) != already {
+		t.Fatalf("RecordCarryForward mutated the Task on refusal:\n%s", carried)
+	}
+}
+
+func TestRecordCarryForwardRejectsUnsupportedRecordValues(t *testing.T) {
+	t.Parallel()
+	taskPath := filepath.Join(t.TempDir(), "task_01.md")
+	writeFile(t, taskPath, taskFixture("task_01", "Build widget", "pending", "backend", defaultVerificationSection))
+	original, err := os.ReadFile(taskPath)
+	if err != nil {
+		t.Fatalf("read Task: %v", err)
+	}
+
+	for _, record := range []struct {
+		label  string
+		runID  string
+		commit string
+	}{
+		{"Run ID newline", "run_2026\n0811", "0123456789abcdef"},
+		{"Run ID carriage return", "run_2026\r0811", "0123456789abcdef"},
+		{"Run ID backtick", "run_`20260811", "0123456789abcdef"},
+		{"commit newline", "run_20260811", "01234567\n89abcdef"},
+		{"commit backtick", "run_20260811", "`0123456789abcdef"},
+	} {
+		t.Run(record.label, func(t *testing.T) {
+			if err := RecordCarryForward(taskPath, record.runID, record.commit); err == nil {
+				t.Fatal("RecordCarryForward succeeded, want refusal")
+			}
+			carried, readErr := os.ReadFile(taskPath)
+			if readErr != nil {
+				t.Fatalf("read Task: %v", readErr)
+			}
+			if !bytes.Equal(carried, original) {
+				t.Fatalf("RecordCarryForward mutated the Task on refusal:\n%s", carried)
+			}
+		})
+	}
+}
+
+func TestCarryForwardInputsRejectsEscapingContextPaths(t *testing.T) {
+	t.Parallel()
+	taskFile := filepath.ToSlash(filepath.Join("docs", "specs", "0001-widget", "task_01.md"))
+	for _, ref := range []string{
+		"../../outside.md",
+		"/absolute/path.md",
+	} {
+		content := taskFixture("task_01", "Build widget", "pending", "backend", md("## Context\n\n- interface: '"+ref+"'\n\n")+defaultVerificationSection)
+		if _, err := CarryForwardInputs("docs/specs/0001-widget", taskFile, []byte(content)); err == nil {
+			t.Fatalf("CarryForwardInputs with escaping Context path %q succeeded, want refusal", ref)
+		}
+	}
+}
+
+func TestCarryForwardStatusReadsAndRejects(t *testing.T) {
+	t.Parallel()
+	taskFile := filepath.ToSlash(filepath.Join("docs", "specs", "0001-widget", "task_01.md"))
+	content := taskFixture("task_01", "Build widget", "completed", "backend", defaultVerificationSection)
+	status, err := CarryForwardStatus(taskFile, []byte(content))
+	if err != nil {
+		t.Fatalf("CarryForwardStatus: %v", err)
+	}
+	if status != StatusCompleted {
+		t.Fatalf("CarryForwardStatus = %q, want completed", status)
+	}
+	if _, err := CarryForwardStatus(taskFile, []byte("not a task document")); err == nil {
+		t.Fatalf("CarryForwardStatus on malformed bytes succeeded, want parse refusal")
 	}
 }
 

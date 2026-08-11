@@ -1,8 +1,8 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: promoted # open | promoted | declined
 created: 2026-08-09
-spec: null # Spec slug when status: promoted
+spec: 0092-a-run-that-can-hand-back-its-work # Spec slug when status: promoted
 reason: null # required when status: declined
 ---
 

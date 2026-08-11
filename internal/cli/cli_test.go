@@ -429,7 +429,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "reconcile",
 			args:     []string{"reconcile", "--help"},
-			contains: []string{"roundfix reconcile [run-id] [--apply] [--format <text|json>]", "read-only report", "--apply", "--format"},
+			contains: []string{"roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]", "read-only report", "--apply", "--format"},
 		},
 		{
 			name:     "profiles",
@@ -559,6 +559,7 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 	}
 	assertJSONFieldNames(t, rawReport, []string{
 		"applyCommand",
+		"carryForwards",
 		"debrisSummary",
 		"mode",
 		"preservedCandidates",
@@ -7782,6 +7783,7 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }
 
+// New contract: a failed Verification with every Review Issue already resolved ends Clean because the unresolved count is zero; preserving achieved outcomes is better than manufacturing retry work from the Batch failure.
 func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
@@ -7801,14 +7803,13 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 
 	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
-	if code != 1 {
-		t.Fatalf("expected Run failure exit 1, got %d", code)
+	if code != 0 {
+		t.Fatalf("expected Clean exit 0 after the only issue stayed resolved, got %d", code)
 	}
-	if !strings.Contains(stdout.String(), "issue 001 failed — major: handle test issue — reason: Verification failed") ||
-		!strings.Contains(stdout.String(), "tests failed") ||
-		!strings.Contains(stdout.String(), "This Run (Unresolved after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.") ||
-		!strings.Contains(stdout.String(), "Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.") {
-		t.Fatalf("expected failed stdout report with reason, got %q", stdout.String())
+	if !strings.Contains(stdout.String(), "issue 001 resolved — major: handle test issue") ||
+		!strings.Contains(stdout.String(), "This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.") ||
+		!strings.Contains(stdout.String(), "Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.") {
+		t.Fatalf("expected Clean stdout report for the preserved resolved issue, got %q", stdout.String())
 	}
 	if verifier.calls != 2 {
 		t.Fatalf("expected initial and final verification calls, got %d", verifier.calls)
@@ -7816,27 +7817,27 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	if committer.calls != 0 {
 		t.Fatalf("expected no Batch commit after verification failure, got %d", committer.calls)
 	}
-	if len(sourceResolver.resolveRequests) != 0 {
-		t.Fatalf("expected failed Review Issue to stay unresolved on Review Source, got %+v", sourceResolver.resolveRequests)
+	if len(sourceResolver.resolveRequests) != 1 {
+		t.Fatalf("expected the preserved resolved Review Issue to resolve on the Review Source, got %+v", sourceResolver.resolveRequests)
 	}
-	if len(sourceResolver.commentRequests) == 0 {
-		t.Fatal("expected failed Review Issue outcome comment after verification failure")
+	if len(sourceResolver.commentRequests) != 0 {
+		t.Fatalf("expected no failed outcome comment for the resolved Review Issue, got %+v", sourceResolver.commentRequests)
 	}
-	if pusher.calls != 0 {
-		t.Fatalf("expected no Final Push after verification failure, got %d", pusher.calls)
+	if pusher.calls != 1 {
+		t.Fatalf("expected Final Push after the unresolved count reached zero, got %d", pusher.calls)
 	}
 	if !strings.Contains(stderr.String(), "tests failed") {
 		t.Fatalf("expected verification failure, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "reached Unresolved") {
-		t.Fatalf("expected Unresolved outcome after failed verification, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "reached Clean") {
+		t.Fatalf("expected Clean outcome after failed verification left no unresolved work, got %q", stderr.String())
 	}
 	issue, err := rounds.ParseIssue(result.IssuePaths[0])
 	if err != nil {
 		t.Fatalf("parse issue: %v", err)
 	}
-	if issue.Status != rounds.StatusFailed {
-		t.Fatalf("expected failed issue status, got %q", issue.Status)
+	if issue.Status != rounds.StatusResolved {
+		t.Fatalf("expected resolved issue status to survive failed Verification, got %q", issue.Status)
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
@@ -8704,6 +8705,7 @@ func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
 	}
 }
 
+// New contract: an Agent crash after resolving its only Review Issue ends Clean because no unresolved work remains; retaining the resolution is better than erasing evidence of completed work.
 func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
@@ -8716,43 +8718,45 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 
 	code := runCLI(t, []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
-	if code != 1 {
-		t.Fatalf("expected Run failure exit 1, got %d", code)
+	if code != 0 {
+		t.Fatalf("expected Clean exit 0 after the only issue stayed resolved, got %d", code)
 	}
-	if !strings.Contains(stdout.String(), "issue 001 failed — major: handle test issue — reason: Agent failed") ||
-		!strings.Contains(stdout.String(), "agent crashed") ||
-		!strings.Contains(stdout.String(), "This Run (Unresolved after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.") ||
-		!strings.Contains(stdout.String(), "Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.") {
-		t.Fatalf("expected failed stdout report with reason, got %q", stdout.String())
+	if !strings.Contains(stdout.String(), "issue 001 resolved — major: handle test issue") ||
+		!strings.Contains(stdout.String(), "This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.") ||
+		!strings.Contains(stdout.String(), "Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.") {
+		t.Fatalf("expected Clean stdout report for the preserved resolved issue, got %q", stdout.String())
 	}
 	if !strings.Contains(stderr.String(), "agent crashed") {
 		t.Fatalf("expected Agent failure, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "reached Unresolved") {
-		t.Fatalf("expected Unresolved outcome after Agent failure, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "reached Clean") {
+		t.Fatalf("expected Clean outcome after Agent failure left no unresolved work, got %q", stderr.String())
 	}
 	issue, err := rounds.ParseIssue(result.IssuePaths[0])
 	if err != nil {
 		t.Fatalf("parse issue: %v", err)
 	}
-	if issue.Status != rounds.StatusFailed {
-		t.Fatalf("expected failed issue status, got %q", issue.Status)
+	if issue.Status != rounds.StatusResolved {
+		t.Fatalf("expected resolved issue status to survive Agent failure, got %q", issue.Status)
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 }
 
+// New contract: an Agent that resolves one Review Issue and crashes with another unfinished ends Unresolved with exit 1; counting the remaining issue prevents the false Clean outcome produced by the reverted attempt.
 func TestRunResolveAgentFailureContinuesWithLaterBatches(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
-	runner := &fakeAgentRunner{runErr: errors.New("agent crashed")}
+	runner := &fakeAgentRunner{
+		runErr: errors.New("agent crashed"),
+		statusBySourceRef: map[string]string{
+			"thread:PRRT_first,comment:PRRC_first":   rounds.StatusResolved,
+			"thread:PRRT_second,comment:PRRC_second": rounds.StatusPending,
+		},
+	}
 	withAgentRunner(t, runner)
 	withFakeWorktree(t)
-	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
-resolve:
-  batch_size: 1
-`)
 	result := persistCLIReviewItems(t, repoDir, 1, "feature/review", []reviewsource.ReviewItem{
 		{
 			Title:                   "major: handle first issue",
@@ -8787,8 +8791,8 @@ resolve:
 	if code != 1 {
 		t.Fatalf("expected Unresolved exit 1, got %d", code)
 	}
-	if runner.calls != 2 {
-		t.Fatalf("expected later Batches to run after the first failed, got %d Agent calls", runner.calls)
+	if runner.calls != 1 {
+		t.Fatalf("expected both issues in the crashed Batch, got %d Agent calls", runner.calls)
 	}
 	first, err := rounds.ParseIssue(result.IssuePaths[0])
 	if err != nil {
@@ -8798,14 +8802,17 @@ resolve:
 	if err != nil {
 		t.Fatalf("parse second issue: %v", err)
 	}
-	if first.Status != rounds.StatusFailed {
-		t.Fatalf("expected first Batch issue failed, got %q", first.Status)
+	if first.Status != rounds.StatusResolved {
+		t.Fatalf("expected the first issue resolution to survive the crash, got %q", first.Status)
 	}
 	if second.Status != rounds.StatusFailed {
-		t.Fatalf("expected second Batch issue failed after its own Agent failure, got %q", second.Status)
+		t.Fatalf("expected the unfinished second issue to become failed, got %q", second.Status)
 	}
-	if !strings.Contains(stderr.String(), "Batch 001 failed") || !strings.Contains(stderr.String(), "Batch 002 failed") {
-		t.Fatalf("expected both Batch failures reported, got %q", stderr.String())
+	if !strings.Contains(stdout.String(), "This Run (Unresolved after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.") {
+		t.Fatalf("expected the Run report to count the remaining failed issue, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "Batch 001 failed") {
+		t.Fatalf("expected the Batch failure reported, got %q", stderr.String())
 	}
 	if !strings.Contains(stderr.String(), "reached Unresolved") {
 		t.Fatalf("expected Unresolved outcome, got %q", stderr.String())
@@ -8887,8 +8894,9 @@ func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 			closeErr:  errors.New("close failed"),
 		},
 		{
+			// New contract: an Agent crash is Unresolved only when its Review Issue remains unresolved; this keeps session cleanup coverage without treating the crash itself as the Run outcome.
 			name:      "unresolved",
-			inner:     &fakeAgentRunner{runErr: errors.New("agent crashed")},
+			inner:     &fakeAgentRunner{status: rounds.StatusFailed, runErr: errors.New("agent crashed")},
 			wantCode:  1,
 			wantState: store.StateUnresolved,
 		},
@@ -13446,23 +13454,24 @@ func publishFakeAgentOutput(ctx context.Context, sink runevent.Sink, req agent.E
 }
 
 type fakeAgentRunner struct {
-	probeErr       error
-	probe          func(agent.ProbeRequest) error
-	fallback       agent.FallbackSelection
-	fallbackOK     bool
-	fallbackErr    error
-	runErr         error
-	status         string
-	terminalReason string
-	statuses       []string
-	onRun          func(agent.ExecuteRequest) error
-	calls          int
-	gitRoots       []string
-	probeRequests  []agent.ProbeRequest
-	fallbackModels []agent.FallbackCandidateSet
-	fallbackRuns   []agent.RuntimeSpec
-	probedRuntimes []agent.RuntimeSpec
-	runRuntimes    []agent.RuntimeSpec
+	probeErr          error
+	probe             func(agent.ProbeRequest) error
+	fallback          agent.FallbackSelection
+	fallbackOK        bool
+	fallbackErr       error
+	runErr            error
+	status            string
+	statusBySourceRef map[string]string
+	terminalReason    string
+	statuses          []string
+	onRun             func(agent.ExecuteRequest) error
+	calls             int
+	gitRoots          []string
+	probeRequests     []agent.ProbeRequest
+	fallbackModels    []agent.FallbackCandidateSet
+	fallbackRuns      []agent.RuntimeSpec
+	probedRuntimes    []agent.RuntimeSpec
+	runRuntimes       []agent.RuntimeSpec
 }
 
 type profileReadinessExactRunner struct {
@@ -13517,7 +13526,17 @@ func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest
 		}
 	}
 	for _, issue := range req.Batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, status, "", runner.terminalReason); err != nil {
+		nextStatus := status
+		if runner.statusBySourceRef != nil {
+			current, err := rounds.ParseIssue(issue.Path)
+			if err != nil {
+				return agent.ExecuteResult{}, err
+			}
+			if override := runner.statusBySourceRef[current.SourceRef]; override != "" {
+				nextStatus = override
+			}
+		}
+		if err := rounds.SetIssueStatus(issue.Path, nextStatus, "", runner.terminalReason); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
@@ -15850,6 +15869,7 @@ func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
 	assertOutcomeFollowedByNotificationReceipt(t, events, store.StateStopped)
 }
 
+// Event contract: a failed Verification stays journaled without a Batch commit even when every Review Issue is resolved and the derived Run outcome is Clean; this preserves both the failure evidence and the work outcome.
 func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
@@ -15861,11 +15881,12 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 
 	code := runCLIContext(t, context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
-	if code == 0 {
-		t.Fatal("expected failed verification to fail the Run")
+	if code != 0 {
+		t.Fatalf("expected resolved work to produce Clean exit 0 despite the failed Verification, got %d", code)
 	}
 	_, events := journaledRunEvents(t, homeDir, stderr.String())
 	failed := false
+	pushed := 0
 	for _, entry := range events {
 		if entry.Event.Kind == runevent.KindDaemonVerification && strings.Contains(string(entry.Event.Payload), `"failed"`) {
 			failed = true
@@ -15874,13 +15895,16 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 			t.Fatalf("expected no commit events after failed verification, got %+v", entry.Event)
 		}
 		if entry.Event.Kind == runevent.KindDaemonPush && strings.Contains(string(entry.Event.Payload), `"pushed"`) {
-			t.Fatalf("expected no push after failed verification, got %+v", entry.Event)
+			pushed++
 		}
 	}
 	if !failed {
 		t.Fatalf("expected verification failure event journaled, got %+v", events)
 	}
-	assertOutcomeFollowedByNotificationReceipt(t, events, store.StateUnresolved)
+	if pushed != 1 {
+		t.Fatalf("expected one Final Push after the unresolved count reached zero, got %d", pushed)
+	}
+	assertOutcomeFollowedByNotificationReceipt(t, events, store.StateClean)
 }
 
 func assertOutcomeFollowedByNotificationReceipt(t *testing.T, events []store.JournalEvent, state string) {

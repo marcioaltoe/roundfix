@@ -917,7 +917,7 @@ func (runner *selectionLifecycleRunner) RunPrepared(_ context.Context, req agent
 				return agent.ExecuteResult{}, err
 			}
 		}
-		return agent.ExecuteResult{LogPath: req.LogPath}, nil
+		return agent.ExecuteResult{LogPath: req.LogPath, Output: "agent work complete"}, nil
 	}
 	if taskID == "" && len(req.Batch.Issues) > 0 {
 		for _, issue := range req.Batch.Issues {
@@ -925,14 +925,14 @@ func (runner *selectionLifecycleRunner) RunPrepared(_ context.Context, req agent
 				return agent.ExecuteResult{}, err
 			}
 		}
-		return agent.ExecuteResult{LogPath: req.LogPath}, nil
+		return agent.ExecuteResult{LogPath: req.LogPath, Output: "agent work complete"}, nil
 	}
 	if status, ok := runner.statusByTask[taskID]; ok {
 		if err := spec.SetStatus(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID), status); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
-	return agent.ExecuteResult{LogPath: req.LogPath}, nil
+	return agent.ExecuteResult{LogPath: req.LogPath, Output: "agent work complete"}, nil
 }
 
 func (runner *selectionLifecycleRunner) EndSession(_ context.Context, _ agent.RuntimeSpec, session agent.SessionRef) error {

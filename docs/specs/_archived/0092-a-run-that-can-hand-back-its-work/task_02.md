@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0092-a-run-that-can-hand-back-its-work
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -82,3 +82,54 @@ This Task may create or modify only:
 - `_techspec.md` → Build Order 2; System Architecture.
 - ADR-0050, ADR-0114.
 - `docs/backlog/2026-08-08-a-session-that-never-opened-is-a-selection-failure.md`
+
+## Result
+
+Implemented the first-Agent-output boundary and kept fallback behavior bounded
+to selections that produced no output:
+
+- `ACPXRunner` now publishes `agent_work_started` immediately before the first
+  recognized Agent stream event and records that publication per Agent Session.
+  Later turns in the same Session do not publish it again, and the inert
+  runtime-deferred setup turn remains outside the boundary.
+- A no-output adapter refusal now returns the distinct `SelectionFailure` type
+  and publishes `agent_selection_failed`; it no longer arrives as a Batch
+  failure. Adapter commands missing at Session preparation receive the same
+  selection disposition.
+- `agentSessionOwner` activates the next configured Fallback Selection after a
+  `SelectionFailure` only while no Agent output exists. Its event sink records
+  the first message, thought, plan, tool, or raw Agent event as work started, so
+  even a misclassified post-output `SelectionFailure` cannot widen fallback.
+- The Task 01 characterization was deliberately changed from
+  `WorkStartedPrecedesTheFirstPrompt` to
+  `WorkStartedFollowsTheFirstAgentOutput`; it now proves event order at the new
+  boundary.
+
+Focused checks:
+
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/agent ./internal/daemon -count=1`
+  passed 519 tests.
+- `GOCACHE="$PWD/.gocache" rtk go test -race ./internal/agent ./internal/daemon -run '(WorkStartedBoundary|FallbackEligibility|RunDispositionCharacterizationWorkStartedFollows)' -count=1`
+  passed seven focused boundary, fallback, and characterization cases under the
+  race detector.
+
+Acceptance evidence:
+
+- `TestWorkStartedBoundaryReportsSelectionFailureWithoutOutput` observes one
+  `agent_selection_failed` status, no `agent_work_started` status, and a
+  `SelectionFailure` that is distinct from `BatchFailureError` after a
+  no-output protocol refusal.
+- `TestFallbackEligibilitySurvivesASelectionFailure` observes the preferred
+  `codex` selection fail without output, the fallback notification publish, and
+  the configured `claude` selection run. The adapter-start rehearsal is covered
+  by `TestFallbackEligibilitySurvivesAdapterStartFailure`.
+- `TestFallbackEligibilityEndsAfterAnyAgentOutput` publishes an Agent message
+  before the failure and observes no fallback attempt. The ACPX exit matrix also
+  keeps an exit-one failure after an Agent message classified as a Batch
+  failure.
+- `TestWorkStartedBoundaryPublishesOnFirstAgentOutput` runs two turns in one
+  Session and observes exactly one work-started status before the first Agent
+  message. `TestWorkStartedBoundaryIgnoresInertSessionSetup` proves the inert
+  setup turn does not consume that one publication.
+
+The authored `## Verification` commands were not run; the Daemon owns them.

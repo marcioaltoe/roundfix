@@ -1236,8 +1236,18 @@ func TestResolveCycleModelNotAdvertisedFailureSettlesReviewIssueReason(t *testin
 	}
 }
 
+// New contract: a failed Batch with only resolved Review Issues has zero unresolved work; deriving the Run outcome from that count preserves useful Agent results instead of forcing a retry.
 func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	t.Parallel()
+	testRunOutcomeDerivedFromUnresolvedIssues(t)
+}
+
+func TestRunOutcomeDerivedFromUnresolvedIssues(t *testing.T) {
+	t.Parallel()
+	testRunOutcomeDerivedFromUnresolvedIssues(t)
+}
+
+func testRunOutcomeDerivedFromUnresolvedIssues(t *testing.T) {
 	fixture := newEngineFixture(t)
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, err: errors.New("exit status 7")}
 	committer := &engineFakeCommitter{calls: fixture.calls}
@@ -1250,11 +1260,11 @@ func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected verification failure to fail only the Batch, got cycle error %v", err)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>source>source" {
-		t.Fatalf("expected one repair attempt, failed-thread comment, and run-end idempotency check after final failed verification, got %q", got)
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>source" {
+		t.Fatalf("expected one repair attempt and resolved-thread propagation after final failed verification, got %q", got)
 	}
-	if len(source.resolveRequests) != 0 {
-		t.Fatalf("expected failed Review Issue to remain unresolved, got resolves %+v", source.resolveRequests)
+	if len(source.resolveRequests) != 1 {
+		t.Fatalf("expected the preserved resolved Review Issue to resolve on the Review Source, got %+v", source.resolveRequests)
 	}
 	if len(result.Batches) != 1 || !result.Batches[0].Failed {
 		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
@@ -1262,24 +1272,15 @@ func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	if !strings.Contains(result.Batches[0].FailureReason, "exit status 7") {
 		t.Fatalf("expected verification failure reason, got %q", result.Batches[0].FailureReason)
 	}
-	if result.Remaining != 1 {
-		t.Fatalf("expected failed issue to stay Unresolved, got remaining %d", result.Remaining)
+	if result.Remaining != 0 {
+		t.Fatalf("expected no unresolved work after the resolved issue survived, got remaining %d", result.Remaining)
 	}
 	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
 	if parseErr != nil {
 		t.Fatalf("parse issue: %v", parseErr)
 	}
-	if issue.Status != rounds.StatusFailed {
-		t.Fatalf("expected failed Batch issue status, got %q", issue.Status)
-	}
-	finalOutputPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 2)
-	for _, expected := range []string{"Verification failed", "make verify", "exit status 7", finalOutputPath} {
-		if !strings.Contains(issue.TerminalReason, expected) {
-			t.Fatalf("expected terminal reason to contain %q, got %q", expected, issue.TerminalReason)
-		}
-	}
-	if strings.Contains(issue.TerminalReason, "\n") {
-		t.Fatalf("expected single-line terminal reason, got %q", issue.TerminalReason)
+	if issue.Status != rounds.StatusResolved {
+		t.Fatalf("expected failed Batch to preserve the resolved issue, got %q", issue.Status)
 	}
 	if len(runner.requests) != 2 {
 		t.Fatalf("expected initial Agent request plus one Verification Feedback request, got %d", len(runner.requests))
@@ -1503,8 +1504,18 @@ func TestResolveCycleStopRequestAfterAttemptOneFailureDoesNotRepair(t *testing.T
 	}
 }
 
+// New contract: a failed Batch with a failed Review Issue keeps the Run unresolved even when a later Batch resolves; counting unresolved work prevents Clean while any issue remains.
 func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 	t.Parallel()
+	testRunOutcomeDerivedStaysUnresolvedAfterAFailedBatch(t)
+}
+
+func TestRunOutcomeDerivedStaysUnresolvedAfterAFailedBatch(t *testing.T) {
+	t.Parallel()
+	testRunOutcomeDerivedStaysUnresolvedAfterAFailedBatch(t)
+}
+
+func testRunOutcomeDerivedStaysUnresolvedAfterAFailedBatch(t *testing.T) {
 	fixture := newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
 		{
 			Title:                   "major: handle nil cache",
@@ -1538,16 +1549,7 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 		{"src/batch-one-residue.go"},
 		{"src/batch-one-residue.go", "src/batch-two-change.go"},
 	}}
-	verifier := &engineFakeVerifier{
-		calls: fixture.calls,
-		store: fixture.store,
-		runID: fixture.run.ID,
-		script: []error{
-			errors.New("attempt 1 failed"),
-			errors.New("attempt 2 failed"),
-			nil,
-		},
-	}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	source := &engineFakeSource{calls: fixture.calls}
 	plan := fixture.plan()
@@ -1556,7 +1558,11 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 		{Number: 1, Issues: []rounds.Issue{{Path: fixture.issuePaths[0]}}},
 		{Number: 2, Issues: []rounds.Issue{{Path: fixture.issuePaths[1]}}},
 	}
-	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store}
+	runner := &engineFakeRunner{
+		calls:     fixture.calls,
+		store:     fixture.store,
+		errByCall: []error{errors.New("agent crashed"), nil},
+	}
 	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, source)
 
 	result, err := engine.ResolveCycle(context.Background(), plan)
@@ -1564,7 +1570,7 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve cycle: %v", err)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>source>agent>verify>commit>source>source" {
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>source>agent>verify>commit>source>source" {
 		t.Fatalf("expected second Batch to run after the first failed, got %q", got)
 	}
 	if len(result.Batches) != 2 {
@@ -1596,8 +1602,8 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 	if len(committer.paths) != 1 || strings.Join(committer.paths[0], ",") != "src/batch-two-change.go" {
 		t.Fatalf("expected second Batch commit to exclude first Batch residue, got %v", committer.paths)
 	}
-	if len(runner.requests) != 3 {
-		t.Fatalf("expected initial+repair for first Batch and initial for second Batch, got %d", len(runner.requests))
+	if len(runner.requests) != 2 {
+		t.Fatalf("expected one Agent attempt per Batch, got %d", len(runner.requests))
 	}
 	for _, req := range runner.requests {
 		if req.Session != plan.Session {

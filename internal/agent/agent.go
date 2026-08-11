@@ -108,10 +108,43 @@ const (
 	ProtocolACP   = "acp"
 	ProtocolStdio = "stdio"
 
-	AgentSessionStartedStatus = "session_started"
-	AgentSessionClosedStatus  = "session_closed"
-	AgentWorkStartedStatus    = "agent_work_started"
+	AgentSessionStartedStatus  = "session_started"
+	AgentSessionClosedStatus   = "session_closed"
+	AgentWorkStartedStatus     = "agent_work_started"
+	AgentSelectionFailedStatus = "agent_selection_failed"
 )
+
+// SelectionFailureError marks a turn that ended before the Agent produced output,
+// so a configured Fallback Selection remains eligible.
+type SelectionFailureError struct {
+	Runtime string
+	Reason  string
+	Err     error
+}
+
+func (err *SelectionFailureError) Error() string {
+	if err == nil {
+		return ""
+	}
+	message := "Agent Selection failed"
+	if runtime := strings.TrimSpace(err.Runtime); runtime != "" {
+		message += fmt.Sprintf(" for runtime %q", runtime)
+	}
+	if reason := strings.TrimSpace(err.Reason); reason != "" {
+		message += ": " + reason
+	}
+	if err.Err != nil {
+		message += ": " + err.Err.Error()
+	}
+	return message
+}
+
+func (err *SelectionFailureError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
 
 // DefaultRunner dispatches real Agent work through acpx. Now overrides the
 // event clock; nil means time.Now.
@@ -326,8 +359,15 @@ func SettleAssignedIssues(ctx context.Context, batch rounds.Batch, terminalReaso
 }
 
 func MarkBatchFailed(batch rounds.Batch, terminalReason string) error {
-	for _, issue := range batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusFailed, "", terminalReason); err != nil {
+	for _, assigned := range batch.Issues {
+		issue, err := rounds.ParseIssue(assigned.Path)
+		if err != nil {
+			return err
+		}
+		if rounds.IsTerminalStatus(issue.Status) {
+			continue
+		}
+		if err := rounds.SetIssueStatus(assigned.Path, rounds.StatusFailed, "", terminalReason); err != nil {
 			return err
 		}
 	}
