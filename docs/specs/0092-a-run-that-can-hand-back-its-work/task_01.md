@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0092-a-run-that-can-hand-back-its-work
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -63,3 +63,45 @@ This Task may create or modify only:
 
 - `_prd.md` → every Goal.
 - `_techspec.md` → Build Order 1; Testing Approach.
+
+## Result
+
+Implemented the current-disposition corpus without changing production code:
+
+- `TestRunDispositionCharacterizationWorkStartedPrecedesTheFirstPrompt` records
+  that `agent_work_started` is published before a first prompt that fails
+  without Agent output. Task 02 owns the declared break.
+- `TestRunDispositionCharacterizationFailedBatchOverwritesSettledIssues`
+  records that `MarkBatchFailed` overwrites an already-resolved Review Issue.
+  Task 03 owns the declared break.
+- `TestRunDispositionCharacterizationStoppedRunLeavesTasksPending` drives a
+  Task through Verification and a real settlement commit, then records that a
+  Stopped Run leaves the checkout Task `pending` while the Run Worktree Task is
+  `completed` in that commit. Task 06 owns the declared break.
+- `TestRunDispositionCharacterizationPreflightRefusesOnAnUnintegratedBranch`
+  drives the public CLI against a diverged, unintegrated Run Branch and records
+  Branch Integrity exit 2, its integration command, and the absence of a new
+  Run. Task 05 owns the declared break.
+- Six `Outcome contract test:` declarations name the four `internal/cli`
+  contracts and two `internal/daemon` contracts that currently derive an
+  Unresolved Run from a failed Batch. Each declaration states its assertion and
+  names Task 04 as its rewrite owner.
+
+Focused checks:
+
+- `rtk go test ./internal/daemon -run '^TestRunDispositionCharacterization(WorkStartedPrecedesTheFirstPrompt|FailedBatchOverwritesSettledIssues|StoppedRunLeavesTasksPending|PreflightRefusesOnAnUnintegratedBranch)$' -count=1`
+  passed all four named cases.
+- `rtk rg -c 'Outcome contract test:' internal/daemon/run_disposition_characterization_test.go`
+  reported `6`.
+
+Acceptance evidence:
+
+- Each of the four behaviours has a named test asserting today's observable
+  outcome; the focused four-case command passed after the last test edit.
+- The declaration corpus contains exactly six current tests, with the assertion
+  each makes written beside its fully qualified test name.
+- Every declared break names its changing Task: Tasks 02, 03, 05, and 06 own
+  the four characterization breaks, and Task 04 owns all six outcome-contract
+  rewrites.
+
+The authored `## Verification` commands were not run; the Daemon owns them.
