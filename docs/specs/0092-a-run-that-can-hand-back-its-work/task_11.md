@@ -36,11 +36,11 @@ is still pinned to the pre-Spec text.
 ## Subtasks
 
 - [ ] Update the pinned `reconcile` synopsis.
-- [ ] Run the repository gate and resolve whatever else it names.
+- [ ] Confirm no other contract pins text this Spec changed.
 
 ## Acceptance Criteria
 
-- [ ] `make verify` exits 0 on the assembled tree.
+- [ ] `TestRunCommandHelp` passes against the help copy Task 10 wrote.
 - [ ] Every updated assertion still compares exact text.
 - [ ] `git diff --name-only` lists only test files and this Task file.
 
@@ -55,7 +55,12 @@ This Task may create or modify only:
 
 - `go run -buildvcs=false ./cmd/roundfix reconcile --help 2>&1 | grep -q -- '--carry-forward'` — expected: exits 0, proving the help copy Task 10 wrote is still the copy the contract pins.
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestRunCommandHelp$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunCommandHelp'` — expected: exits 0. The assertion pins the pre-Spec synopsis and fails against the unchanged tree.
-- `make verify` — expected: exits 0. It fails against the unchanged tree, which is what makes this command a proof rather than a formality: this Task is done when the assembled work passes the gate it currently fails.
+`make verify` is deliberately not declared here. The Daemon recognises it as the
+repository gate and refuses to dispatch a Task while it is red — "repository not
+green on entry" — so that a pre-existing failure is never attributed to the Task
+being started. That refusal fired on 2026-08-11 and is correct; it simply means
+the gate cannot be a Task's own proof at the moment the gate is failing. The
+Run-level gate still proves the assembled tree after this Task settles.
 
 ## References
 
