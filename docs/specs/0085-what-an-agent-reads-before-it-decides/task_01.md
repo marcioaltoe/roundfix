@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0085-what-an-agent-reads-before-it-decides
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -58,3 +58,31 @@ This Task may create or modify only:
 
 - `_prd.md` → the archive read path.
 - `_techspec.md` → Build Order 1; System Architecture.
+
+## Result
+
+Implemented a test-only characterization corpus; no production behavior or
+artifact location changed. The target test file was absent before this Task.
+
+- Criterion 1: `TestArchiveLayoutCharacterizationRecordsEveryRetiredFamily`
+  records and resolves today's four directories: `docs/specs/_archived`,
+  `docs/findings/_archived`, `docs/adr`, and `docs/backlog`.
+- Criterion 2: `TestArchiveLayoutCharacterizationEnumeratesEveryPathComposer`
+  records `internal/spec`, `internal/speccheck`, `internal/specaudit`,
+  `internal/worktree`, and `internal/cli`, including the Spec checker's
+  `docs/specs/_archived` and `docs/findings/_archived` literals.
+- Criterion 3:
+  `TestArchiveLayoutCharacterizationCapturesConditionalSecondbrainClause`
+  preserves the Baseline catalog clause verbatim and asserts its local-context
+  exemption.
+- Criterion 4:
+  `TestArchiveLayoutCharacterizationPinsCorpusGoldenBeforeRelocation` reads the
+  live `roundfix-speccheck-corpus/v2` golden, pins all 19 active finding-code
+  counts at zero, and declares `task_04` as the intentional break owner.
+
+Focused check:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-spec0085-task01-gocache go test ./internal/spec -run 'ArchiveLayoutCharacterization' -count=1`
+  — passed (`ok roundfix/internal/spec`).
+
+The Daemon-owned `## Verification` commands were not run.
