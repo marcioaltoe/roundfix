@@ -1,0 +1,72 @@
+package tui
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"roundfix/internal/store"
+
+	tea "charm.land/bubbletea/v2"
+)
+
+func TestTask10PrechangeJournalCockpitConsumer(t *testing.T) {
+	fixture := os.Getenv("TASK10_CORPUS_DB")
+	expectation := os.Getenv("TASK10_COCKPIT_EXPECTATION")
+	if fixture == "" || expectation == "" {
+		t.Fatal("TASK10_CORPUS_DB and TASK10_COCKPIT_EXPECTATION are required")
+	}
+	home := t.TempDir()
+	destination := store.DatabasePath(home)
+	data, err := os.ReadFile(fixture)
+	if err != nil {
+		t.Fatalf("read corpus: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		t.Fatalf("create corpus home: %v", err)
+	}
+	if err := os.WriteFile(destination, data, 0o644); err != nil {
+		t.Fatalf("copy corpus: %v", err)
+	}
+	ctx := context.Background()
+	reader, err := store.OpenReader(ctx, home)
+	if err != nil {
+		t.Fatalf("open recorded journal: %v", err)
+	}
+	defer func() { _ = reader.Close() }()
+	runs, err := reader.ListRuns(ctx, store.ListRunsQuery{States: store.StatesAll})
+	if err != nil || len(runs) != 1 {
+		t.Fatalf("load recorded Run: runs=%d err=%v", len(runs), err)
+	}
+	run := runs[0]
+	model, err := newCockpitModel(ctx, CockpitConfig{
+		Mode: CockpitAttach,
+		View: LiveRunView{
+			Command: "attach", HeadBranch: run.HeadBranch, RunID: run.ID,
+			PipelineState: run.State, RunKind: run.Kind, SpecSlug: run.SpecSlug,
+			Width: 120,
+		},
+		RunID: run.ID, Source: reader, ColorEnabled: false,
+		Now: func() time.Time { return time.Date(2026, 8, 11, 10, 0, 10, 0, time.UTC) },
+	})
+	if err != nil {
+		t.Fatalf("cockpit consumer: %v", err)
+	}
+	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	got := viewText(model) + "\n"
+	if os.Getenv("TASK10_RECORD") == "1" {
+		if err := os.WriteFile(expectation, []byte(got), 0o644); err != nil {
+			t.Fatalf("write cockpit expectation: %v", err)
+		}
+		return
+	}
+	want, err := os.ReadFile(expectation)
+	if err != nil {
+		t.Fatalf("read cockpit expectation: %v", err)
+	}
+	if got != string(want) {
+		t.Fatalf("pre-change Cockpit rendering changed\nwant:\n%s\n\ngot:\n%s", want, got)
+	}
+}

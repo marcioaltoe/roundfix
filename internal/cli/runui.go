@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"io"
+	"log/slog"
 	"os"
 	"sync"
 
@@ -24,6 +25,7 @@ type runUI struct {
 
 	fanout        *runevent.Fanout
 	reader        *store.Store
+	writer        *store.Store
 	cockpitCancel context.CancelFunc
 	cockpitDone   chan error
 
@@ -32,10 +34,10 @@ type runUI struct {
 }
 
 func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, homeDir string, runStore *store.Store, stderr io.Writer, noAgentConsole bool) (*runUI, error) {
-	journal := store.JournalSink{Store: runStore}
+	journal := runStore.JournalSink()
 	if !liveTUIEnabled(stderr) {
 		fanout := runevent.NewFanout([]runevent.Sink{journal, selectionConsoleDisplaySink(stderr), agentConsoleDisplaySink(stderr, noAgentConsole)}, nil)
-		return &runUI{sink: fanout, progress: stderr, fanout: fanout}, nil
+		return &runUI{sink: fanout, progress: stderr, fanout: fanout, writer: runStore}, nil
 	}
 
 	reader, err := store.OpenReader(ctx, homeDir)
@@ -52,6 +54,7 @@ func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, ho
 		progress:      io.Discard,
 		fanout:        fanout,
 		reader:        reader,
+		writer:        runStore,
 		cockpitCancel: cancel,
 		cockpitDone:   make(chan error, 1),
 	}
@@ -113,8 +116,11 @@ func (ui *runUI) Wait() {
 
 // Close drains the fanout, quits the cockpit, and releases the reader. It
 // is idempotent so commands can both defer it and call it before printing
-// their closing summary.
-func (ui *runUI) Close() {
+// their closing summary. The caller context is preserved for the teardown
+// flush while its cancellation is stripped: teardown must not hang on a
+// cancelled command context, but any context values the flush carries (e.g.
+// tracing metadata) ride along.
+func (ui *runUI) Close(ctx context.Context) {
 	ui.closeOnce.Do(func() {
 		if ui.fanout != nil {
 			ui.fanout.Close()
@@ -124,6 +130,18 @@ func (ui *runUI) Close() {
 			ui.waitOnce.Do(func() {
 				<-ui.cockpitDone
 			})
+		}
+		if ui.writer != nil {
+			// Flush the shared journal writer at the Agent-teardown boundary so
+			// every event published through the sink is durable before the
+			// command closes its Store. The flush backend polls for a
+			// machine-wide advisory lock, so bound it: another process holding
+			// the lock must not hang shutdown forever.
+			flushCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), store.JournalShutdownTimeout)
+			if err := ui.writer.FlushJournal(flushCtx); err != nil {
+				slog.Error("flush Run Event journal on teardown", "error", err)
+			}
+			cancel()
 		}
 		if ui.reader != nil {
 			_ = ui.reader.Close()

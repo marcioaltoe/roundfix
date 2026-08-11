@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -2391,7 +2392,7 @@ func journalBranchIntegrityIntegrations(ctx context.Context, runStore *store.Sto
 	if runStore == nil || len(integrated) == 0 {
 		return
 	}
-	sink := store.JournalSink{Store: runStore}
+	sink := runStore.JournalSink()
 	for _, item := range integrated {
 		payload, err := json.Marshal(map[string]any{
 			"event":         "branch_integrity_auto_integration",
@@ -2429,7 +2430,7 @@ func journalBranchIntegrityBypass(ctx context.Context, runStore *store.Store, ru
 	if err != nil {
 		return
 	}
-	_ = (store.JournalSink{Store: runStore}).Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+	_ = runStore.JournalSink().Publish(context.WithoutCancel(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,
@@ -2671,7 +2672,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
 	}
-	defer ui.Close()
+	defer ui.Close(ctx)
 
 	writeGuard := reviewRunTargetGuard(ctx, run)
 	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, session, resolvePlan, collaborators, runStore, ui, writeGuard)
@@ -2680,7 +2681,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 			code := completeStoppedRunRecord(runStore, run.ID, notifier, stderr)
 			ui.Wait()
-			ui.Close()
+			ui.Close(ctx)
 			if code != exitOK {
 				printRunFailure(req.name, errors.New("complete stopped Run"), stderr)
 				return code
@@ -2695,13 +2696,13 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 			completed, completeErr := runStore.CompleteRun(context.WithoutCancel(ctx), run.ID, store.StateCheckoutMoved)
 			if completeErr != nil {
-				ui.Close()
+				ui.Close(ctx)
 				printResolveRunFailure(completeErr, stderr)
 				return exitRunFailed
 			}
 			publishTerminalCompletion(context.WithoutCancel(ctx), runStore, notifier, stderr, completed, cycleResult.Remaining)
 			ui.Wait()
-			ui.Close()
+			ui.Close(ctx)
 			fmt.Fprintf(stderr, "Resolve Run %s reached %s: %v\n", completed.ID, completed.State, checkoutMoved)
 			printReviewIssueReport(stdout, completed.State, 1, true, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 			return exitRunFailed
@@ -2709,7 +2710,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		ui.Wait()
-		ui.Close()
+		ui.Close(ctx)
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
 	}
@@ -2720,7 +2721,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
-		ui.Close()
+		ui.Close(ctx)
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		printResolveRunFailureAfterBatchCommit(err, stderr)
 		return exitRunFailed
@@ -2729,7 +2730,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	publishTerminalCompletion(ctx, runStore, notifier, stderr, completed, cycleResult.Remaining)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
-	ui.Close()
+	ui.Close(ctx)
 	fmt.Fprintf(stderr, "Resolve Run %s reached %s.\n", completed.ID, completed.State)
 	if completed.State == store.StateUnresolved {
 		fmt.Fprintf(stderr, "%d Unresolved Review Issue(s) remain; failed issues are retried by the next fetched Round.\n", cycleResult.Remaining)
@@ -3161,12 +3162,12 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printWatchRunFailure(err, stderr)
 		return exitRunFailed
 	}
-	defer ui.Close()
+	defer ui.Close(ctx)
 
 	watchReportIssues := []rounds.Issue{}
 	var requester reviewsource.ReviewRequester
 	if loaded.Config.ReviewSource.RequestReview {
-		requester = commandDependenciesForContext(ctx).newReviewRequester(store.JournalSink{Store: runStore})
+		requester = commandDependenciesForContext(ctx).newReviewRequester(runStore.JournalSink())
 	}
 	writeGuard := reviewRunTargetGuard(ctx, run)
 	result, err := watch.Run(ctx, watch.Request{
@@ -3253,7 +3254,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		}),
 		Clock:   commandDependenciesForContext(ctx).watchClock,
 		Sleeper: commandDependenciesForContext(ctx).watchSleeper,
-		Sink:    store.JournalSink{Store: runStore},
+		Sink:    runStore.JournalSink(),
 		Progress: func(progress watch.WaitProgress) {
 			fmt.Fprintln(ui.progress, formatReviewWaitProgress(progress))
 		},
@@ -3277,7 +3278,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	completed, completeErr := runStore.CompleteRun(completeCtx, run.ID, terminal)
 	if completeErr != nil {
-		ui.Close()
+		ui.Close(ctx)
 		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		printRunFailure(req.name, completeErr, stderr)
 		return exitRunFailed
@@ -3303,7 +3304,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
-	ui.Close()
+	ui.Close(ctx)
 
 	fmt.Fprintf(stderr, "Watch Run %s reached %s after %d Round(s).\n", completed.ID, completed.State, result.Rounds)
 	if result.Outcome == store.StateReviewSkipped {
@@ -3487,7 +3488,7 @@ func newBootstrapOutputWriter(ctx context.Context, runID string, runStore *store
 		ctx:    ctx,
 		runID:  runID,
 		stderr: stderr,
-		sink:   store.JournalSink{Store: runStore},
+		sink:   runStore.JournalSink(),
 		mu:     &sync.Mutex{},
 	}
 }
@@ -4688,7 +4689,7 @@ func closeAgentSession(ctx context.Context, runner agent.Runner, runtime agent.R
 	closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
 	_ = runner.EndSession(closeCtx, runtime, session)
-	publishAgentSessionStatus(closeCtx, store.JournalSink{Store: runStore}, runID, agent.AgentSessionClosedStatus)
+	publishAgentSessionStatus(closeCtx, runStore.JournalSink(), runID, agent.AgentSessionClosedStatus)
 }
 
 func publishAgentSessionStatus(ctx context.Context, sink runevent.Sink, runID string, status string) {
@@ -4814,7 +4815,10 @@ func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string,
 	if err != nil {
 		return
 	}
-	if err := (store.JournalSink{Store: runStore}).Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+	// The terminal outcome must bypass the closed journal writer (requirement
+	// 7 of the batching spec): it goes straight through the direct immediate
+	// write path, never through a JournalSink that may have been closed.
+	if _, err := runStore.AppendRunEvent(context.WithoutCancel(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonOutcome,
@@ -4849,6 +4853,22 @@ func publishTerminalCompletionWithContext(
 		return
 	}
 	terminal = normalizedTerminalCompletionContext(completed.State, terminal)
+	// The journal batch must be flushed before the terminal outcome so the
+	// outcome event always follows every prior event in cursor order. The
+	// outcome and the notification receipt bypass the (possibly closed) writer
+	// through the direct immediate path.
+	if err := runStore.FlushJournal(ctx); err != nil {
+		// The preserved batch commits later and receives higher cursors than
+		// the outcome appended below, so cursor order no longer matches
+		// publication order. Retry the flush once before appending the outcome.
+		if retryErr := runStore.FlushJournal(ctx); retryErr != nil {
+			if _, werr := fmt.Fprintf(stderr, "Warning: terminal journal flush failed; pending events will follow the outcome in cursor order: %v (retry: %v)\n", err, retryErr); werr != nil {
+				// stderr is failing, so surface the flush failure through the
+				// structured logger instead of the same broken writer.
+				slog.Error("terminal journal flush failed", "flush_error", err, "retry_error", retryErr, "write_error", werr)
+			}
+		}
+	}
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, terminal, stderr)
 	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run, terminal)
 }
@@ -4865,7 +4885,7 @@ func journalStopPrimaryFailure(ctx context.Context, runStore *store.Store, runID
 	if err != nil {
 		return
 	}
-	_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+	_ = runStore.JournalSink().Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,
@@ -4899,7 +4919,7 @@ func reportSecondaryCleanupWarnings(
 		if err != nil {
 			continue
 		}
-		_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+		_ = runStore.JournalSink().Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
 			RunID:   runID,
 			Source:  runevent.SourceDaemon,
 			Kind:    runevent.KindDaemonStatus,
@@ -4924,7 +4944,7 @@ func warnCleanRunWorktreeCleanupFailed(ctx context.Context, runStore *store.Stor
 	if err != nil {
 		return
 	}
-	_ = (store.JournalSink{Store: runStore}).Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+	_ = runStore.JournalSink().Publish(context.WithoutCancel(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,
@@ -5038,7 +5058,9 @@ func journalOutcomeNotificationReceipt(
 		return
 	}
 	summary := fmt.Sprintf("Outcome notification %s via %s.", receipt.Status, receipt.Route)
-	if err := (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+	// Post-terminal receipt events always use the direct immediate path, never
+	// a JournalSink that may have been closed after terminal settlement.
+	if _, err := runStore.AppendRunEvent(withoutCancelOrBackground(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,

@@ -23,6 +23,19 @@ type JournalEvent struct {
 	Event  runevent.RunEvent
 }
 
+// RunEventHeader is the payload-free projection of one persisted Run Event:
+// the columns a consumer that never reads the payload needs. It lets read
+// paths that only page headers avoid paying for the payload column (ADR 0008
+// keeps that payload raw and read-as-blob for the consumers that do need it).
+type RunEventHeader struct {
+	Cursor  int64
+	Batch   int
+	Source  runevent.Source
+	Kind    runevent.Kind
+	Summary string
+	Time    time.Time
+}
+
 // PruneResult reports the Run Event Journal rows removed for eligible Runs.
 type PruneResult struct {
 	RunIDs []string
@@ -583,55 +596,54 @@ func (store *Store) AppendRunEvents(ctx context.Context, events []runevent.RunEv
 	if len(events) == 0 {
 		return nil, nil
 	}
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("begin Run Event append: %w", err)
-	}
-	defer rollbackUnlessCommitted(tx)
-
-	cursors := make([]int64, 0, len(events))
-	for _, event := range events {
-		cursor, err := appendRunEvent(ctx, tx, event)
-		if err != nil {
-			return nil, err
+	var cursors []int64
+	err := store.withWriteTx(ctx, "Run Event append", func(tx *sql.Tx) error {
+		cursors = make([]int64, 0, len(events))
+		for _, event := range events {
+			cursor, err := appendRunEvent(ctx, tx, event)
+			if err != nil {
+				return err
+			}
+			cursors = append(cursors, cursor)
 		}
-		cursors = append(cursors, cursor)
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("commit Run Event append: %w", err)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return cursors, nil
 }
 
 // PruneTerminalRuns deletes Run Event Journal rows for terminal Runs completed
 // before cutoff. It never deletes Run rows or Active Run locks.
+//
+// The eligibility scan runs outside the write transaction, so the machine-wide
+// write lock is only taken when rows are actually eligible — never to discover
+// that nothing is. The event count reported is the number of rows the DELETE
+// actually removed.
 func (store *Store) PruneTerminalRuns(ctx context.Context, cutoff time.Time) (PruneResult, error) {
-	tx, err := store.db.BeginTx(ctx, nil)
-	if err != nil {
-		return PruneResult{}, fmt.Errorf("begin Run Event prune: %w", err)
-	}
-	defer rollbackUnlessCommitted(tx)
-
-	candidates, err := terminalRunPruneCandidates(ctx, tx, cutoff)
+	candidates, err := terminalRunPruneCandidates(ctx, store.db, cutoff)
 	if err != nil {
 		return PruneResult{}, err
 	}
 	runIDs := pruneCandidateRunIDs(candidates)
 	if len(runIDs) == 0 {
-		if err := tx.Commit(); err != nil {
-			return PruneResult{}, fmt.Errorf("commit Run Event prune: %w", err)
-		}
 		return PruneResult{}, nil
 	}
 
-	deleted, err := deleteRunEventsForRuns(ctx, tx, runIDs)
+	var result PruneResult
+	err = store.withWriteTx(ctx, "Run Event prune", func(tx *sql.Tx) error {
+		deleted, err := deleteRunEventsForRuns(ctx, tx, runIDs)
+		if err != nil {
+			return err
+		}
+		result = PruneResult{RunIDs: runIDs, Events: deleted}
+		return nil
+	})
 	if err != nil {
 		return PruneResult{}, err
 	}
-	if err := tx.Commit(); err != nil {
-		return PruneResult{}, fmt.Errorf("commit Run Event prune: %w", err)
-	}
-	return PruneResult{RunIDs: runIDs, Events: deleted}, nil
+	return result, nil
 }
 
 // PreviewCompaction measures a compact SQLite snapshot without changing the
@@ -979,23 +991,37 @@ func checkedMultiply(left int64, right int64) (int64, error) {
 }
 
 // TerminalRunPruneCandidates lists terminal Runs whose completed_at is before
-// cutoff without mutating the Run Database.
+// cutoff without mutating the Run Database. The cutoff is a SQL predicate that
+// bounds eligibility to the candidate set — terminal Runs — rather than to the
+// event table, and each candidate's event count is derived from a bounded
+// query over that candidate set, never from an aggregate over the whole table.
 func (store *Store) TerminalRunPruneCandidates(ctx context.Context, cutoff time.Time) ([]PruneCandidate, error) {
-	return terminalRunPruneCandidates(ctx, store.db, cutoff)
+	candidates, err := terminalRunPruneCandidates(ctx, store.db, cutoff)
+	if err != nil {
+		return nil, err
+	}
+	if err := countPruneCandidateEvents(ctx, store.db, candidates); err != nil {
+		return nil, err
+	}
+	return candidates, nil
 }
 
 type queryContextRunner interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
+// terminalRunPruneCandidates selects terminal Runs and applies the retention
+// cutoff. The cutoff is expressed as a SQL predicate over completed_at so the
+// scan is bounded by the candidate set rather than by the event table; the
+// authoritative exact comparison stays in Go, so the retention boundary keeps
+// its precise meaning.
 func terminalRunPruneCandidates(ctx context.Context, querier queryContextRunner, cutoff time.Time) ([]PruneCandidate, error) {
 	rows, err := querier.QueryContext(ctx, `
-SELECT r.id, r.completed_at, COUNT(e.run_id)
+SELECT r.id, r.completed_at
 FROM runs r
-LEFT JOIN run_events e ON e.run_id = r.id
 WHERE r.state IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   AND TRIM(r.completed_at) <> ''
-GROUP BY r.id, r.completed_at
+  AND julianday(r.completed_at) <= julianday(?)
 ORDER BY r.completed_at, r.id`,
 		StateFetched,
 		StateStopped,
@@ -1009,6 +1035,7 @@ ORDER BY r.completed_at, r.id`,
 		StateCheckoutMoved,
 		StateIntegrationPending,
 		StateUnresolved,
+		formatTime(cutoff),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("select terminal Runs for Run Event prune: %w", err)
@@ -1021,7 +1048,7 @@ ORDER BY r.completed_at, r.id`,
 	for rows.Next() {
 		var candidate PruneCandidate
 		var completedAtRaw string
-		if err := rows.Scan(&candidate.RunID, &completedAtRaw, &candidate.Events); err != nil {
+		if err := rows.Scan(&candidate.RunID, &completedAtRaw); err != nil {
 			return nil, fmt.Errorf("scan terminal Run for Run Event prune: %w", err)
 		}
 		completedAt, err := parseTime(completedAtRaw)
@@ -1038,6 +1065,63 @@ ORDER BY r.completed_at, r.id`,
 	return candidates, nil
 }
 
+// sqliteBindBatchSize keeps each IN (...) bind list comfortably under
+// SQLite's host-parameter limit (SQLITE_MAX_VARIABLE_NUMBER, 32766 by default
+// and 999 in older versions). Retention candidates are unbounded, so a very
+// large terminal-Run set must not build a single bind list that exceeds the
+// limit and fails the whole prune.
+const sqliteBindBatchSize = 900
+
+// countPruneCandidateEvents fills each candidate's event count from a bounded
+// query scoped to the candidate Run IDs, keeping eligibility independent of the
+// event table's total size. It runs on the read connection, never inside a
+// write transaction. Candidates are processed in chunks so each IN (...) list
+// stays within SQLite's host-parameter limit.
+func countPruneCandidateEvents(ctx context.Context, querier queryContextRunner, candidates []PruneCandidate) error {
+	if len(candidates) == 0 {
+		return nil
+	}
+	counts := map[string]int{}
+	for start := 0; start < len(candidates); start += sqliteBindBatchSize {
+		end := start + sqliteBindBatchSize
+		if end > len(candidates) {
+			end = len(candidates)
+		}
+		batch := candidates[start:end]
+		placeholders := strings.TrimRight(strings.Repeat("?,", len(batch)), ",")
+		args := make([]any, 0, len(batch))
+		for _, candidate := range batch {
+			args = append(args, candidate.RunID)
+		}
+		rows, err := querier.QueryContext(ctx, `
+SELECT run_id, COUNT(*)
+FROM run_events
+WHERE run_id IN (`+placeholders+`)
+GROUP BY run_id`, args...)
+		if err != nil {
+			return fmt.Errorf("count Run Events for terminal Runs: %w", err)
+		}
+		for rows.Next() {
+			var runID string
+			var count int
+			if err := rows.Scan(&runID, &count); err != nil {
+				_ = rows.Close()
+				return fmt.Errorf("scan Run Event count for terminal Run: %w", err)
+			}
+			counts[runID] = count
+		}
+		if err := rows.Err(); err != nil {
+			_ = rows.Close()
+			return fmt.Errorf("iterate Run Event counts for terminal Runs: %w", err)
+		}
+		_ = rows.Close()
+	}
+	for index := range candidates {
+		candidates[index].Events = counts[candidates[index].RunID]
+	}
+	return nil
+}
+
 func pruneCandidateRunIDs(candidates []PruneCandidate) []string {
 	runIDs := make([]string, 0, len(candidates))
 	for _, candidate := range candidates {
@@ -1050,20 +1134,29 @@ func deleteRunEventsForRuns(ctx context.Context, tx *sql.Tx, runIDs []string) (i
 	if len(runIDs) == 0 {
 		return 0, nil
 	}
-	placeholders := strings.TrimRight(strings.Repeat("?,", len(runIDs)), ",")
-	args := make([]any, 0, len(runIDs))
-	for _, runID := range runIDs {
-		args = append(args, runID)
+	total := 0
+	for start := 0; start < len(runIDs); start += sqliteBindBatchSize {
+		end := start + sqliteBindBatchSize
+		if end > len(runIDs) {
+			end = len(runIDs)
+		}
+		batch := runIDs[start:end]
+		placeholders := strings.TrimRight(strings.Repeat("?,", len(batch)), ",")
+		args := make([]any, 0, len(batch))
+		for _, runID := range batch {
+			args = append(args, runID)
+		}
+		result, err := tx.ExecContext(ctx, `DELETE FROM run_events WHERE run_id IN (`+placeholders+`)`, args...)
+		if err != nil {
+			return 0, fmt.Errorf("delete Run Events for terminal Runs: %w", err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return 0, fmt.Errorf("read Run Event prune result: %w", err)
+		}
+		total += int(affected)
 	}
-	result, err := tx.ExecContext(ctx, `DELETE FROM run_events WHERE run_id IN (`+placeholders+`)`, args...)
-	if err != nil {
-		return 0, fmt.Errorf("delete Run Events for terminal Runs: %w", err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return 0, fmt.Errorf("read Run Event prune result: %w", err)
-	}
-	return int(affected), nil
+	return total, nil
 }
 
 func appendRunEvent(ctx context.Context, tx *sql.Tx, event runevent.RunEvent) (int64, error) {
@@ -1149,6 +1242,68 @@ LIMIT ?`,
 	return events, nil
 }
 
+// RunEventHeadersAfter projects cursor, batch, source, kind, summary, and
+// created_at (as Time) for one Run with cursors strictly greater than the
+// given cursor, oldest first, bounded by limit. It reads no payload column, so
+// a consumer that pages headers pays none of the payload I/O it would on
+// RunEventsAfter. Consumers that read payload fields keep using RunEventsAfter
+// unchanged.
+func (store *Store) RunEventHeadersAfter(ctx context.Context, runID string, cursor int64, limit int) ([]RunEventHeader, error) {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return nil, errors.New("list Run Event headers: Run ID is required")
+	}
+	if limit <= 0 {
+		return nil, errors.New("list Run Event headers: a positive limit is required")
+	}
+	rows, err := store.db.QueryContext(ctx, `
+SELECT cursor, batch, source, kind, summary, created_at
+FROM run_events
+WHERE run_id = ? AND cursor > ?
+ORDER BY cursor ASC
+LIMIT ?`,
+		runID,
+		cursor,
+		limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list Run Event headers for Run %q: %w", runID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	headers := []RunEventHeader{}
+	for rows.Next() {
+		var header RunEventHeader
+		var source string
+		var kind string
+		var createdAt string
+		if err := rows.Scan(
+			&header.Cursor,
+			&header.Batch,
+			&source,
+			&kind,
+			&header.Summary,
+			&createdAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan Run Event header for Run %q: %w", runID, err)
+		}
+		parsedAt, err := parseTime(createdAt)
+		if err != nil {
+			return nil, err
+		}
+		header.Source = runevent.Source(source)
+		header.Kind = runevent.Kind(kind)
+		header.Time = parsedAt
+		headers = append(headers, header)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate Run Event headers for Run %q: %w", runID, err)
+	}
+	return headers, nil
+}
+
 func scanJournalEvent(rows *sql.Rows, runID string) (JournalEvent, error) {
 	var entry JournalEvent
 	var source string
@@ -1228,16 +1383,54 @@ LIMIT ?`,
 	return events, nil
 }
 
+// journalSinkError is returned by JournalSink when the Store has no journal
+// writer (a read-only Store opened through OpenReader or OpenStorageReader).
+// Publishing through a sink wrapping a nil writer would panic; this sink
+// reports the unsupported call as an ordinary error instead.
+type journalSinkError struct {
+	err error
+}
+
+func (sink journalSinkError) Publish(context.Context, runevent.RunEvent) error {
+	return sink.err
+}
+
 // JournalSink adapts the Run Database to the Run Event sink interface. It
 // registers as a critical sink: an append failure after Run start must fail
 // the Run, never be swallowed.
-type JournalSink struct {
-	Store *Store
+//
+// Every JournalSink handed out by one Store shares the Store's single batched
+// journal writer, so batch boundaries are global to the process rather than
+// per sink (ADR 0098: durability moves from per-event to per-batch, with
+// `synchronous` unchanged).
+func (store *Store) JournalSink() runevent.Sink {
+	if store.journal == nil {
+		return journalSinkError{err: errors.New("publish Run Event: Run Database has no journal writer")}
+	}
+	return journalSink{writer: store.journal}
 }
 
-func (sink JournalSink) Publish(ctx context.Context, event runevent.RunEvent) error {
-	_, err := sink.Store.AppendRunEvent(ctx, event)
-	return err
+// FlushJournal commits any pending Run Event batch now. It is the explicit
+// flush used for error paths, Agent teardown, terminal settlement, and process
+// shutdown.
+func (store *Store) FlushJournal(ctx context.Context) error {
+	if store.journal == nil {
+		return nil
+	}
+	return store.journal.flush(ctx)
+}
+
+// CloseJournal flushes the pending batch and marks the Store's journal writer
+// closed only after that flush commits. A failed Close preserves the batch and
+// remains retryable; every later Publish through JournalSink after a
+// successful Close is rejected. The terminal path (CompleteRun) bypasses the
+// closed writer, and post-terminal notification receipts use immediate
+// withWriteTx transactions that never enter the closed batch.
+func (store *Store) CloseJournal(ctx context.Context) error {
+	if store.journal == nil {
+		return nil
+	}
+	return store.journal.close(ctx)
 }
 
 // DataVersion exposes SQLite's data_version for this connection: it changes

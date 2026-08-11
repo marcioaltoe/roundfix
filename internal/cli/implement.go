@@ -276,7 +276,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
 	}
-	defer ui.Close()
+	defer ui.Close(ctx)
 
 	// The Spec's target branch comes off the Run record, not from git in the
 	// Run Worktree: the Run Worktree is checked out on the Run Branch.
@@ -289,7 +289,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			code := completeStoppedRunRecord(runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
-			ui.Close()
+			ui.Close(ctx)
 			if code != exitOK {
 				printRunFailure("implement", errors.New("complete stopped Run"), stderr)
 				return code
@@ -304,7 +304,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		ui.Wait()
-		ui.Close()
+		ui.Close(ctx)
 		printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -326,7 +326,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
-			ui.Close()
+			ui.Close(ctx)
 			printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
 			return exitRunFailed
 		}
@@ -344,14 +344,14 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
-			ui.Close()
+			ui.Close(ctx)
 			printImplementRunPushFailure(err, stderr)
 			return exitRunFailed
 		}
 	}
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
-		ui.Close()
+		ui.Close(ctx)
 		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
@@ -360,7 +360,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	publishTerminalCompletion(ctx, runStore, outcomeNotifier, stderr, completed, cycleResult.Failed+cycleResult.Skipped)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
-	ui.Close()
+	ui.Close(ctx)
 	fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", completed.ID, completed.State)
 	if completed.State != store.StateClean {
 		printKeptRunWorktree(stderr, runRef.Path)

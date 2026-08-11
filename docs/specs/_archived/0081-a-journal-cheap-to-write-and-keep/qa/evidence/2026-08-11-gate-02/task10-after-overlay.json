@@ -1,0 +1,6 @@
+{
+  "Replace": {
+    "/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260811T172206Z_68e47a0298ed4a0e/internal/store/task10_measurement_test.go": "/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260811T172206Z_68e47a0298ed4a0e/docs/specs/0081-a-journal-cheap-to-write-and-keep/baseline/task10-measurement-harness_test.go.txt",
+    "/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260811T172206Z_68e47a0298ed4a0e/internal/store/task10_measurement_adapter_test.go": "/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260811T172206Z_68e47a0298ed4a0e/docs/specs/0081-a-journal-cheap-to-write-and-keep/baseline/task10-measurement-after-adapter_test.go.txt"
+  }
+}

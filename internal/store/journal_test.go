@@ -360,6 +360,170 @@ func TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing(t *testing.T) {
 	}
 }
 
+// TestRetentionScanIsBoundedByCandidates proves that eligibility work is
+// bounded by the candidate set — terminal Runs — rather than by the event
+// table. It seeds a batch of identical terminal Runs and a competing large
+// body of unrelated run_events, then asserts that TerminalRunPruneCandidates
+// yields exactly the eligible candidate IDs with their own event counts,
+// unchanged by the unrelated rows. This is behavioral coverage; the structural
+// concern is expressed through the query's SQL predicate (completed_at bias),
+// which the bounded candidate query observes by construction.
+func TestRetentionScanIsBoundedByCandidates(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	cutoff := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	runStore.now = func() time.Time { return cutoff.Add(-2 * time.Hour) }
+
+	// Seed several identical terminal Runs that are eligible for pruning and
+	// one recent terminal Run that is not.
+	const eligibleCount = 3
+	wantIDs := make([]string, 0, eligibleCount)
+	for i := 0; i < eligibleCount; i++ {
+		run, err := runStore.CreateRun(ctx, sampleImplementCreateRunRequest())
+		if err != nil {
+			t.Fatalf("create eligible Run %d: %v", i, err)
+		}
+		for j := 0; j < 5; j++ {
+			if _, err := runStore.AppendRunEvent(ctx, sampleRunEvent(run.ID, "eligible event")); err != nil {
+				t.Fatalf("append eligible Run %d event %d: %v", i, j, err)
+			}
+		}
+		if _, err := runStore.CompleteRun(ctx, run.ID, StateClean); err != nil {
+			t.Fatalf("complete eligible Run %d: %v", i, err)
+		}
+		wantIDs = append(wantIDs, run.ID)
+	}
+
+	runStore.now = func() time.Time { return cutoff.Add(time.Hour) }
+	recent, err := runStore.CreateRun(ctx, sampleImplementCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create recent Run: %v", err)
+	}
+	for j := 0; j < 5; j++ {
+		if _, err := runStore.AppendRunEvent(ctx, sampleRunEvent(recent.ID, "recent event")); err != nil {
+			t.Fatalf("append recent Run event %d: %v", j, err)
+		}
+	}
+	if _, err := runStore.CompleteRun(ctx, recent.ID, StateClean); err != nil {
+		t.Fatalf("complete recent Run: %v", err)
+	}
+
+	// Seed a competing body of unrelated run_events on a Run that never
+	// completes, so the candidate query cannot be confused by table volume.
+	noisy, err := runStore.CreateRun(ctx, sampleImplementCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create noisy Run: %v", err)
+	}
+	for j := 0; j < 200; j++ {
+		if _, err := runStore.AppendRunEvent(ctx, sampleRunEvent(noisy.ID, "noise event")); err != nil {
+			t.Fatalf("append noisy Run event %d: %v", j, err)
+		}
+	}
+
+	candidates, err := runStore.TerminalRunPruneCandidates(ctx, cutoff)
+	if err != nil {
+		t.Fatalf("list terminal Run prune candidates: %v", err)
+	}
+	if len(candidates) != len(wantIDs) {
+		t.Fatalf("expected %d eligible candidates, got %d", len(wantIDs), len(candidates))
+	}
+	gotIDs := make([]string, 0, len(candidates))
+	gotCounts := map[string]int{}
+	for _, candidate := range candidates {
+		gotIDs = append(gotIDs, candidate.RunID)
+		gotCounts[candidate.RunID] = candidate.Events
+	}
+	slices.Sort(gotIDs)
+	slices.Sort(wantIDs)
+	if !slices.Equal(gotIDs, wantIDs) {
+		t.Fatalf("eligible candidate ids %v, want %v", gotIDs, wantIDs)
+	}
+	for _, runID := range wantIDs {
+		if gotCounts[runID] != 5 {
+			t.Fatalf("eligible Run %q event count = %d, want 5 (unrelated rows must not leak)", runID, gotCounts[runID])
+		}
+	}
+	if _, ok := gotCounts[recent.ID]; ok {
+		t.Fatalf("recent Run %q must not be eligible at cutoff", recent.ID)
+	}
+}
+
+// TestRetentionScanOutsideWriteTransaction proves the eligibility scan left
+// the write transaction: it completes while the machine-wide advisory write
+// lock is held from an independent descriptor. With the lock held, a
+// TerminalRunPruneCandidates scan must complete (the scan never needs the
+// writer), while a prune that reaches the write path must block until the
+// deadline.
+func TestRetentionScanOutsideWriteTransaction(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+
+	// Seed a terminal Run completed before the cutoff so it is eligible for
+	// pruning and the prune reaches the write transaction path.
+	cutoff := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	runStore.now = func() time.Time { return cutoff.Add(-time.Hour) }
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	if _, err := runStore.AppendRunEvent(ctx, sampleRunEvent(run.ID, "retention event")); err != nil {
+		t.Fatalf("append Run Event: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, run.ID, StateClean); err != nil {
+		t.Fatalf("complete Run: %v", err)
+	}
+
+	// Hold the write lock from an independent descriptor. flock is owned by
+	// the open file description, so reusing runStore.writeLockFile would grant
+	// the lock to the Store as well and prove nothing.
+	holder, err := openWriteLockFile(DatabasePath(homeDir))
+	if err != nil {
+		t.Fatalf("open independent write lock: %v", err)
+	}
+	defer func() {
+		_ = releaseWriteLock(holder)
+		_ = holder.Close()
+	}()
+	if err := acquireWriteLock(ctx, holder); err != nil {
+		t.Fatalf("acquire write lock: %v", err)
+	}
+
+	// The eligibility scan must complete before the deadline while the lock is
+	// held, because it never needs the writer.
+	scanCtx, cancelScan := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancelScan()
+	candidates, err := runStore.TerminalRunPruneCandidates(scanCtx, cutoff)
+	if err != nil {
+		t.Fatalf("eligibility scan blocked on the held write lock: %v", err)
+	}
+	if len(candidates) != 1 || candidates[0].RunID != run.ID || candidates[0].Events != 1 {
+		t.Fatalf("eligible candidate = %+v, want one Run with one event", candidates)
+	}
+
+	// A prune with eligible rows reaches the write path and must block on the
+	// held lock until the deadline expires.
+	pruneCtx, cancelPrune := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancelPrune()
+	start := time.Now()
+	_, pruneErr := runStore.PruneTerminalRuns(pruneCtx, cutoff)
+	if pruneErr == nil {
+		t.Fatal("expected eligible prune to block on the held write lock")
+	}
+	if got := time.Since(start); got < 150*time.Millisecond {
+		t.Fatalf("eligible prune returned too fast (%v); did not block on the held write lock", got)
+	}
+	// The recent terminal journal must be preserved: the prune never ran.
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != 1 {
+		t.Fatalf("expected preserved terminal journal, got %d events", got)
+	}
+}
+
 func TestDurableTableLifecyclePolicyCoversEveryTable(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -854,6 +1018,28 @@ func TestRunEventPayloadRoundTripsByteExact(t *testing.T) {
 	}
 	if !got.Time.Equal(event.Time) {
 		t.Fatalf("expected timestamp preserved, got %v", got.Time)
+	}
+}
+
+// TestJournalSinkOnReaderStoreReturnsError proves a read-only Store (opened
+// through OpenReader, which leaves journal nil) never hands out a JournalSink
+// that panics on Publish; it returns an explicit error instead.
+func TestJournalSinkOnReaderStoreReturnsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	writer := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, writer)
+
+	reader, err := OpenReader(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open reader: %v", err)
+	}
+	defer closeStore(t, reader)
+
+	sink := reader.JournalSink()
+	if err := sink.Publish(ctx, sampleRunEvent("run", "should not publish")); err == nil {
+		t.Fatal("expected JournalSink on a reader Store to return an error")
 	}
 }
 

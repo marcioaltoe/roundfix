@@ -1,0 +1,66 @@
+{
+  "events": [
+    {
+      "batch": 1,
+      "category": "task-status",
+      "cursor": 2,
+      "phase": "started",
+      "run_id": "run_20260811T163706Z_9af1f9318dd64751",
+      "schema": "roundfix-events/v1",
+      "summary": "Task task_02 phase started.",
+      "time": "2026-08-11T10:00:01Z",
+      "work_item": "task_02"
+    },
+    {
+      "attempt": 1,
+      "batch": 1,
+      "category": "verification",
+      "cursor": 3,
+      "phase": "verdict",
+      "run_id": "run_20260811T163706Z_9af1f9318dd64751",
+      "schema": "roundfix-events/v1",
+      "summary": "Verification attempt 1 verdict: passed.",
+      "time": "2026-08-11T10:00:02Z",
+      "verdict": "passed",
+      "work_item": "task_02"
+    },
+    {
+      "batch": 1,
+      "category": "task-status",
+      "cursor": 4,
+      "phase": "settled",
+      "run_id": "run_20260811T163706Z_9af1f9318dd64751",
+      "schema": "roundfix-events/v1",
+      "status": "completed",
+      "summary": "Task task_02 phase settled status completed.",
+      "time": "2026-08-11T10:00:03Z",
+      "work_item": "task_02"
+    },
+    {
+      "batch": 2,
+      "category": "outcome",
+      "cursor": 6,
+      "outcome": "integration_pending",
+      "run_id": "run_20260811T163706Z_9af1f9318dd64751",
+      "schema": "roundfix-events/v1",
+      "summary": "Run reached integration_pending.",
+      "time": "2026-08-11T10:00:05Z"
+    }
+  ],
+  "attach_timeline": [
+    "Task task_02 started as Batch 001.",
+    "Verification attempt 1 for Task task_02 passed.",
+    "Task task_02 settled completed.",
+    "Daemon status.",
+    "Run reached IntegrationPending."
+  ],
+  "reconcile_completed_tasks": [
+    "task_02"
+  ],
+  "reconcile_verification_passed": true,
+  "reconcile_settled_completed": true,
+  "gc_run_ids": [
+    "run_20260811T163706Z_9af1f9318dd64751"
+  ],
+  "gc_journal_rows": 6
+}

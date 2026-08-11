@@ -13874,7 +13874,7 @@ func TestAgentConsoleDisplaySinkUsesStatefulSinkForNonTTYAndDetachedLogWriter(t 
 			t.Fatalf("publish Run Event through non-TTY UI: %v", err)
 		}
 	}
-	ui.Close()
+	ui.Close(ctx)
 
 	if err := consoleLog.Close(); err != nil {
 		t.Fatalf("close Console Log file: %v", err)

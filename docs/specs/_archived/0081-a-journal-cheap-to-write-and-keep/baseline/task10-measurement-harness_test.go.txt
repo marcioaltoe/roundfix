@@ -1,0 +1,102 @@
+package store
+
+import (
+	"context"
+	"fmt"
+	"sync"
+	"testing"
+	"time"
+
+	"roundfix/internal/runevent"
+)
+
+const (
+	task10RunCount      = 6
+	task10EventsPerRun  = 256
+	task10BusyTimeoutMS = 5_000
+)
+
+type task10Run struct {
+	store *Store
+	id    string
+}
+
+type task10Result struct {
+	run int
+	err error
+}
+
+func TestTask10SameBoundaryMeasurement(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	home := t.TempDir()
+	runs := make([]task10Run, task10RunCount)
+	for i := range runs {
+		runStore := openTestStore(t, ctx, home)
+		t.Cleanup(func() { _ = runStore.Close() })
+		if _, err := runStore.db.ExecContext(ctx, fmt.Sprintf("PRAGMA busy_timeout = %d", task10BusyTimeoutMS)); err != nil {
+			t.Fatalf("set busy timeout for Run %d: %v", i+1, err)
+		}
+		req := sampleCreateRunRequest()
+		req.HeadBranch = fmt.Sprintf("task10-run-%d", i+1)
+		req.LocalBranch = req.HeadBranch
+		req.PRNumber = fmt.Sprintf("task10-%d", i+1)
+		run, err := runStore.CreateRunSkippingActiveLock(ctx, req)
+		if err != nil {
+			t.Fatalf("create Run %d: %v", i+1, err)
+		}
+		runs[i] = task10Run{store: runStore, id: run.ID}
+	}
+
+	start := make(chan struct{})
+	results := make(chan task10Result, task10RunCount)
+	var ready sync.WaitGroup
+	ready.Add(task10RunCount)
+	for i := range runs {
+		i := i
+		go func() {
+			ready.Done()
+			<-start
+			for eventIndex := 0; eventIndex < task10EventsPerRun; eventIndex++ {
+				event := runevent.RunEvent{
+					RunID:   runs[i].id,
+					Batch:   eventIndex/128 + 1,
+					Source:  runevent.SourceAgent,
+					Kind:    runevent.KindAgentMessage,
+					Summary: fmt.Sprintf("task10 Run %d event %d", i+1, eventIndex+1),
+					Time:    time.Date(2026, 8, 11, 12, 0, 0, 0, time.UTC).Add(time.Duration(eventIndex) * time.Millisecond),
+					Payload: []byte(fmt.Sprintf(`{"run":%d,"sequence":%d}`, i+1, eventIndex+1)),
+				}
+				if err := task10Publish(ctx, runs[i].store, event); err != nil {
+					results <- task10Result{run: i, err: err}
+					return
+				}
+			}
+			results <- task10Result{run: i, err: task10Flush(ctx, runs[i].store)}
+		}()
+	}
+	ready.Wait()
+	started := time.Now()
+	close(start)
+	for range task10RunCount {
+		result := <-results
+		if result.err != nil {
+			t.Fatalf("Run %d append: %v", result.run+1, result.err)
+		}
+	}
+	elapsed := time.Since(started)
+	total := task10RunCount * task10EventsPerRun
+
+	for i, run := range runs {
+		events, err := run.store.RunEventsAfter(ctx, run.id, 0, task10EventsPerRun+1)
+		if err != nil {
+			t.Fatalf("read Run %d: %v", i+1, err)
+		}
+		if len(events) != task10EventsPerRun {
+			t.Fatalf("Run %d events = %d, want %d", i+1, len(events), task10EventsPerRun)
+		}
+	}
+
+	t.Logf("TASK10 runs=%d events_per_run=%d total_events=%d busy_timeout_ms=%d elapsed_us=%d wall_per_1000_events_us=%d", task10RunCount, task10EventsPerRun, total, task10BusyTimeoutMS, elapsed.Microseconds(), (elapsed * 1_000 / time.Duration(total)).Microseconds())
+}

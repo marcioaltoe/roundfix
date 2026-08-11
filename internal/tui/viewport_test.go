@@ -17,6 +17,10 @@ import (
 type fakeTimelineSource struct {
 	events []store.JournalEvent
 	reads  int
+	// headerReads counts RunEventHeadersAfter calls separately from reads so
+	// assertions stay specific: reads counts only full event reads, and
+	// cockpit polling draws headers through the header projection.
+	headerReads int
 }
 
 func (source *fakeTimelineSource) RunEventsAfter(_ context.Context, _ string, cursor int64, limit int) ([]store.JournalEvent, error) {
@@ -28,6 +32,29 @@ func (source *fakeTimelineSource) RunEventsAfter(_ context.Context, _ string, cu
 		}
 	}
 	return page, nil
+}
+
+// RunEventHeadersAfter serves the payload-free header projection from the
+// same in-memory journal, mirroring the store's forward-cursor contract.
+func (source *fakeTimelineSource) RunEventHeadersAfter(_ context.Context, _ string, cursor int64, limit int) ([]store.RunEventHeader, error) {
+	source.headerReads++
+	headers := []store.RunEventHeader{}
+	for _, entry := range source.events {
+		if entry.Cursor > cursor {
+			headers = append(headers, store.RunEventHeader{
+				Cursor:  entry.Cursor,
+				Batch:   entry.Event.Batch,
+				Source:  entry.Event.Source,
+				Kind:    entry.Event.Kind,
+				Summary: entry.Event.Summary,
+				Time:    entry.Event.Time,
+			})
+			if len(headers) == limit {
+				break
+			}
+		}
+	}
+	return headers, nil
 }
 
 func (source *fakeTimelineSource) RunEventsBefore(_ context.Context, _ string, cursor int64, limit int) ([]store.JournalEvent, error) {
