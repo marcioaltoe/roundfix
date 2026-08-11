@@ -28,12 +28,12 @@ type JournalEvent struct {
 // paths that only page headers avoid paying for the payload column (ADR 0008
 // keeps that payload raw and read-as-blob for the consumers that do need it).
 type RunEventHeader struct {
-	Cursor int64
-	Batch  int
-	Source runevent.Source
-	Kind   runevent.Kind
+	Cursor  int64
+	Batch   int
+	Source  runevent.Source
+	Kind    runevent.Kind
 	Summary string
-	Time   time.Time
+	Time    time.Time
 }
 
 // PruneResult reports the Run Event Journal rows removed for eligible Runs.

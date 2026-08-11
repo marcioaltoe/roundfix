@@ -28,9 +28,12 @@ graph:
     - id: task_08
       file: task_08.md
       needs: [task_07]
+    - id: task_10
+      file: task_10.md
+      needs: [task_04, task_05]
     - id: task_09
       file: task_09.md
-      needs: [task_06, task_08]
+      needs: [task_06, task_08, task_10]
 ---
 
 # Tasks — A journal cheap to write and cheap to keep
@@ -45,6 +48,7 @@ graph:
 | task_06 | Make cockpit cost track new events                  | frontend | medium     | task_05          |
 | task_07 | Prove parallel Runs at the pre-raise timeout        | test     | medium     | task_04          |
 | task_08 | Decide the retention shape on the measurement       | docs     | medium     | task_07          |
+| task_10 | Measure and record the before that the after is compared against | test | high | task_04, task_05 |
 | task_09 | Run the final QA gate                               | qa       | medium     | task_06, task_08 |
 
 Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05,

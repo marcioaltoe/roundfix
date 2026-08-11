@@ -46,14 +46,14 @@ func consumerCorpusEvent(runID string, index int, cursor int64) runevent.RunEven
 	case 3:
 		return runevent.RunEvent{
 			RunID: runID, Batch: 1 + index%2, Source: runevent.SourceDaemon,
-			Kind: runevent.KindDaemonStatus,
+			Kind:    runevent.KindDaemonStatus,
 			Summary: "Daemon status.",
 			Time:    base, Payload: []byte(`{"phase":"reviewing","task_capacity":2,"verification_capacity":1}`),
 		}
 	default:
 		return runevent.RunEvent{
 			RunID: runID, Batch: 1 + index%2, Source: runevent.SourceDaemon,
-			Kind: runevent.KindDaemonOutcome,
+			Kind:    runevent.KindDaemonOutcome,
 			Summary: "Run reached Clean.",
 			Time:    base, Payload: []byte(`{"outcome":"clean","state":"clean"}`),
 		}
