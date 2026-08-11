@@ -108,6 +108,7 @@ type cockpitModel struct {
 	issueStatuses     []string
 	taskStatuses      []string
 	taskJournalStates []taskJournalState
+	taskJournalCursor int64
 	currentBatch      int
 	batchTimes        map[int]batchTimeSpan
 	batchTimeCursor   int64
@@ -251,6 +252,10 @@ func (model *cockpitModel) refreshTasks() {
 	if len(model.taskStatuses) != len(tasks) {
 		model.taskStatuses = make([]string, len(tasks))
 		model.taskJournalStates = make([]taskJournalState, len(tasks))
+		// The folded phases are discarded with the rows they belonged to, so
+		// the cursor rewinds and the next refresh rebuilds them from the
+		// journal's start.
+		model.taskJournalCursor = 0
 		for index, task := range tasks {
 			model.taskStatuses[index] = string(task.Status)
 		}
@@ -271,33 +276,57 @@ func (model *cockpitModel) refreshTaskFiles() {
 	}
 }
 
+// refreshTaskJournalEvents folds the Task journal forward, the way
+// refreshBatchClocks folds Batch clocks. The cursor only moves ahead, so a
+// poll costs the events that arrived since the last one instead of the whole
+// journal; per-Task phases are a left fold over events in cursor order, so
+// folding each event exactly once lands on the same state a full rescan did.
+// Kinds come from the payload-free header projection, and only the two daemon
+// kinds whose payload fields this fold parses are read in full (ADR 0008
+// leaves every other payload unread here).
 func (model *cockpitModel) refreshTaskJournalEvents() {
-	for index := range model.taskJournalStates {
-		model.taskJournalStates[index] = taskJournalState{}
-	}
 	runID := model.cfg.RunID
 	if strings.TrimSpace(runID) == "" {
 		runID = model.cfg.View.RunID
 	}
-	if strings.TrimSpace(runID) == "" || model.cfg.Source == nil {
+	runID = strings.TrimSpace(runID)
+	if runID == "" || model.cfg.Source == nil {
 		return
 	}
-	cursor := int64(0)
-	for {
-		page, err := model.cfg.Source.RunEventsAfter(model.ctx, runID, cursor, 200)
-		if err != nil {
-			return
-		}
-		for _, entry := range page {
-			if entry.Cursor > cursor {
-				cursor = entry.Cursor
+	headers, err := model.cfg.Source.RunEventHeadersAfter(model.ctx, runID, model.taskJournalCursor)
+	if err != nil {
+		return
+	}
+	for _, header := range headers {
+		if foldsIntoTaskJournal(header.Kind) {
+			event, ok := model.readTaskJournalEvent(runID, header.Cursor)
+			if !ok {
+				// The cursor stays behind the unread event, so the next poll
+				// retries it rather than folding a gap.
+				return
 			}
-			model.applyTaskJournalEvent(entry.Event)
+			model.applyTaskJournalEvent(event)
 		}
-		if len(page) < 200 {
-			return
+		if header.Cursor > model.taskJournalCursor {
+			model.taskJournalCursor = header.Cursor
 		}
 	}
+}
+
+// foldsIntoTaskJournal reports whether an event's payload is read by the Task
+// fold. Every other kind changes no Task row, so its payload is never loaded.
+func foldsIntoTaskJournal(kind runevent.Kind) bool {
+	return kind == runevent.KindDaemonTask || kind == runevent.KindDaemonVerification
+}
+
+// readTaskJournalEvent reads one event whole. The fold parses payload fields
+// and the Review Issue column, neither of which the header projection carries.
+func (model *cockpitModel) readTaskJournalEvent(runID string, cursor int64) (runevent.RunEvent, bool) {
+	page, err := model.cfg.Source.RunEventsAfter(model.ctx, runID, cursor-1, 1)
+	if err != nil || len(page) == 0 || page[0].Cursor != cursor {
+		return runevent.RunEvent{}, false
+	}
+	return page[0].Event, true
 }
 
 type taskJournalEvent struct {
