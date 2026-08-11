@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0092-a-run-that-can-hand-back-its-work
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -76,3 +76,83 @@ This Task may create or modify only:
 - `_prd.md` → Goals 2 and 5.
 - `_techspec.md` → Build Order 4; Risks.
 - ADR-0010, ADR-0113.
+
+## Result
+
+Implemented the derived Run-outcome contract on top of Task 03's preserved
+Review Issue outcomes:
+
+- `ResolveCycle` documents that a failed Batch preserves Terminal Review Issue
+  outcomes, marks only unfinished issues failed, and exposes the recomputed
+  unresolved count as the caller's sole Run-outcome input.
+- Rewrote the four enumerated CLI contracts and two enumerated daemon contracts.
+  Each carries a `New contract:` statement explaining both the asserted outcome
+  and why unresolved-work derivation is safer than Batch-failure derivation.
+  The daemon contracts retain their established discovery names and also expose
+  the two `TestRunOutcomeDerived...` entry points authored by this Task.
+- Extended the CLI fake Agent only enough to model one Batch where the Agent
+  resolves one Review Issue, leaves the other unfinished, then crashes. The
+  resulting public flow preserves `resolved`, marks the unfinished issue
+  `failed`, reports `Unresolved`, and exits 1.
+
+Pre-change signal:
+
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run '^TestRunResolveAgentFailureMarksBatchFailed$' -count=1`
+  reached the existing test and failed with `expected Run failure exit 1, got
+  0`, proving Task 03 had exposed the old outcome-contract assertion.
+
+Focused checks after the last implementation edit:
+
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/daemon -run '^(TestRunOutcomeDerivedFromUnresolvedIssues|TestRunOutcomeDerivedStaysUnresolvedAfterAFailedBatch|TestResolveCycleVerificationFailureFailsBatchAndContinues|TestResolveCycleContinuesToNextBatchAfterFailedBatch)$' -count=1`
+  passed the two daemon outcome-count contracts through both their established
+  discovery names and the Task-authored entry points (`4 passed`).
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run '^(TestRunResolveVerificationFailureDoesNotCommit|TestRunResolveAgentFailureMarksBatchFailed|TestRunResolveAgentFailureContinuesWithLaterBatches|TestRunResolveClosesAgentSessionForTerminalOutcomes)$' -count=1`
+  passed all selected CLI functions and their subtests (`8 passed`). The CLI
+  test environment required authorized access after the sandbox blocked
+  `api.github.com`.
+- `rtk grep -c 'New contract:' internal/cli/cli_test.go internal/daemon/engine_test.go`
+  reported `4` CLI statements and `2` daemon statements.
+- `rtk git diff --check` passed.
+
+Acceptance evidence:
+
+- A failed Batch with unresolved work stays `Unresolved`: the daemon case keeps
+  the crashed first Batch's issue `failed` while the second Batch resolves, and
+  returns `Remaining == 1`; the CLI mixed-status crash case reports Unresolved
+  and exits 1.
+- A failed Batch with every issue resolved reaches `Clean`: the daemon case
+  returns `Remaining == 0` after failed Verification preserves `resolved`; the
+  CLI Agent-crash and Verification-failure cases report Clean and exit 0.
+- All six rewritten contracts passed in the focused package selections, and the
+  source contains exactly six `New contract:` statements describing the safer
+  behavior.
+- No exercised path reports Clean with unresolved work: both negative cases
+  retain a positive unresolved count, while every Clean case asserts a resolved
+  issue set and zero unresolved work.
+
+The authored `## Verification` commands were not run; the Daemon owns them and
+terminal settlement.
+
+### Verification Feedback repair — attempt 1
+
+The Daemon diagnostic identified one additional CLI event test whose first
+assertion still derived the Run outcome from failed Verification. Its Review
+Issue was already `resolved`, so the implementation correctly computed zero
+unresolved work and returned Clean under ADR-0113.
+
+The repair keeps the test's event invariant: failed Verification must be
+journaled and must not create a Batch commit. It now also requires the derived
+Clean outcome and exactly one Final Push because no unresolved Review Issue
+remains.
+
+Focused checks after the repair:
+
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run '^TestFailedVerificationJournalsFailureWithoutCommitEvents$' -count=1`
+  passed the diagnostic's failing case (`1 passed`).
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run '^(TestRunResolveVerificationFailureDoesNotCommit|TestRunResolveAgentFailureMarksBatchFailed|TestRunResolveAgentFailureContinuesWithLaterBatches|TestRunResolveClosesAgentSessionForTerminalOutcomes|TestFailedVerificationJournalsFailureWithoutCommitEvents)$' -count=1`
+  passed the affected CLI outcome and event cases (`9 passed`).
+- `GOCACHE="$PWD/.gocache" rtk go test ./internal/daemon -run '^(TestRunOutcomeDerivedFromUnresolvedIssues|TestRunOutcomeDerivedStaysUnresolvedAfterAFailedBatch|TestResolveCycleVerificationFailureFailsBatchAndContinues|TestResolveCycleContinuesToNextBatchAfterFailedBatch)$' -count=1`
+  passed the daemon outcome-count contracts (`4 passed`).
+
+The Daemon's declared Verification command was not rerun during this repair
+turn; the Daemon owns the single post-repair attempt and terminal settlement.

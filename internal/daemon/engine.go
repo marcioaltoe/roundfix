@@ -579,11 +579,13 @@ func (writer *lockedWriter) Write(data []byte) (int, error) {
 // ResolveCycle executes one resolve cycle: for each Batch it runs the
 // Agent, settles assigned issue statuses, creates the Batch commit when
 // auto-commit is enabled, and propagates settled Review Issue outcomes to the
-// Review Source. A failed Batch (Agent error or failed verification) marks
-// its assigned issues failed and the cycle continues with the next Batch; only
-// Stop Requests and infrastructure errors halt the cycle. A Stop Request halts
-// before any new Batch, verification, commit, or Review Source mutation; Agent
-// worktree changes are preserved.
+// Review Source. A failed Batch (Agent error or failed verification) preserves
+// Terminal Review Issue outcomes, marks only unfinished assigned issues failed,
+// and continues with the next Batch. Remaining is recomputed from unresolved
+// Review Issues after each Batch and is the sole input to the caller's Run
+// outcome. Only Stop Requests and infrastructure errors halt the cycle. A Stop
+// Request halts before any new Batch, verification, commit, or Review Source
+// mutation; Agent worktree changes are preserved.
 func (engine *Engine) ResolveCycle(ctx context.Context, plan CyclePlan) (CycleResult, error) {
 	if err := validateCyclePlan(plan); err != nil {
 		return CycleResult{}, err
