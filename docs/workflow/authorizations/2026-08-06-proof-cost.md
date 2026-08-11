@@ -29,6 +29,33 @@ fails and returns here for a widened grant, which is the intended cost.
 Deterministic digest fallout of these edits is sanctioned by ADR-0081 and
 needs no separate authorization. A hand-edited pin remains unauthorized.
 
+## Sanctioned regeneration
+
+The detector may treat these exact paths only as outputs of the declared
+command. This declaration does not make any output a freely editable bounded
+file; the QA gate still verifies that its bytes match the canonical sources.
+
+```yaml
+command: make baseline-digests
+outputs:
+  - docs/agents/setup-context.json
+  - internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md
+  - internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md
+  - internal/baseline/assets/profiles/standard-typescript-monorepo.json
+  - internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/baseline.json
+  - internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/agent-instructions.md
+  - internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/spec-routing.md
+  - internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json
+  - internal/baseline/assets/source-baselines/index.json
+  - internal/baseline/testdata/catalog.diagnostics.golden.json
+  - internal/baseline/testdata/catalog.digest
+  - internal/baseline/testdata/catalog.normalized.json
+  - internal/baseline/testdata/plan-characterization/advisory-only-divergences.golden.json
+  - internal/baseline/testdata/plan-characterization/clean-adoption.golden.json
+  - internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply.golden.json
+  - internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests.golden.json
+```
+
 ## Outside this grant
 
 - The Run Database, its schema, GC, and config keys — those belong to

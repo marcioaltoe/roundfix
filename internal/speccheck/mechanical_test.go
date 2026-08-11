@@ -69,6 +69,87 @@ func TestMechanicalAuthPaths(t *testing.T) {
 	})
 }
 
+func TestMechanicalAuthPathsAcceptsDeclaredRegenerationOutput(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := newMechanicalGitRepo(t)
+	writeMechanicalFile(t, repoRoot, "docs/workflow/authorizations/mechanical.md", mechanicalRegenerationAuthorization("command: make baseline-digests\noutputs:\n  - internal/baseline/testdata/catalog.digest\n"))
+	writeMechanicalFile(t, repoRoot, "internal/baseline/testdata/catalog.digest", "generated\n")
+	commit := commitMechanicalFiles(t, repoRoot, "regenerate baseline digest", "internal/baseline/testdata/catalog.digest")
+
+	result := runMechanical(t, speccheck.MechanicalRequest{
+		RepoRoot:          repoRoot,
+		AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
+		TaskCommits: []speccheck.MechanicalTaskCommit{{
+			TaskID:   "task_06",
+			SHA:      commit,
+			TaskFile: "docs/specs/mechanical/task_06.md",
+		}},
+	})
+
+	assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+}
+
+func TestMechanicalAuthPathsStillRefusesAnUndeclaredPath(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := newMechanicalGitRepo(t)
+	writeMechanicalFile(t, repoRoot, "docs/workflow/authorizations/mechanical.md", mechanicalRegenerationAuthorization("command: make baseline-digests\noutputs:\n  - internal/baseline/testdata/catalog.digest\n"))
+	writeMechanicalFile(t, repoRoot, "outside.txt", "outside\n")
+	commit := commitMechanicalFiles(t, repoRoot, "change undeclared path", "outside.txt")
+
+	result := runMechanical(t, speccheck.MechanicalRequest{
+		RepoRoot:          repoRoot,
+		AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
+		TaskCommits: []speccheck.MechanicalTaskCommit{{
+			TaskID:   "task_06",
+			SHA:      commit,
+			TaskFile: "docs/specs/mechanical/task_06.md",
+		}},
+	})
+
+	findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalAuthPaths)
+	if len(findings) != 1 || !strings.Contains(findings[0].Detail, "outside.txt") {
+		t.Fatalf("%s findings = %#v, want outside.txt", speccheck.CodeMechanicalAuthPaths, findings)
+	}
+}
+
+func TestMechanicalAuthPathsRefusesInvalidRegenerationDeclaration(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		declaration string
+	}{
+		{name: "output without command", declaration: "outputs:\n  - internal/baseline/testdata/catalog.digest\n"},
+		{name: "output glob", declaration: "command: make baseline-digests\noutputs:\n  - internal/baseline/testdata/*.digest\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			writeMechanicalFile(t, repoRoot, "docs/workflow/authorizations/mechanical.md", mechanicalRegenerationAuthorization(tt.declaration))
+			writeMechanicalFile(t, repoRoot, "internal/baseline/testdata/catalog.digest", "hand edited\n")
+			commit := commitMechanicalFiles(t, repoRoot, "hand edit baseline digest", "internal/baseline/testdata/catalog.digest")
+
+			result := runMechanical(t, speccheck.MechanicalRequest{
+				RepoRoot:          repoRoot,
+				AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
+				TaskCommits: []speccheck.MechanicalTaskCommit{{
+					TaskID:   "task_06",
+					SHA:      commit,
+					TaskFile: "docs/specs/mechanical/task_06.md",
+				}},
+			})
+
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalAuthPaths)
+			if len(findings) != 1 || !strings.Contains(findings[0].Detail, "internal/baseline/testdata/catalog.digest") {
+				t.Fatalf("%s findings = %#v, want invalid regeneration declaration refused", speccheck.CodeMechanicalAuthPaths, findings)
+			}
+		})
+	}
+}
+
 func TestMechanicalAuthorizationReadsThePRDBoundedDeclaration(t *testing.T) {
 	t.Parallel()
 	repoRoot := t.TempDir()
@@ -600,6 +681,10 @@ func runMechanical(t *testing.T, request speccheck.MechanicalRequest) speccheck.
 		t.Fatalf("RunMechanicalStage() error = %v", err)
 	}
 	return result
+}
+
+func mechanicalRegenerationAuthorization(declaration string) string {
+	return "# Tooling authorization\n\n## Bounded files\n\n- `Makefile`\n\n## Sanctioned regeneration\n\n```yaml\n" + declaration + "```\n"
 }
 
 func newMechanicalGitRepo(t *testing.T) string {

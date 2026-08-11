@@ -1,7 +1,7 @@
 ---
 task: task_11
 spec: 0080-cheap-detectors-run-before-the-gate
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -85,3 +85,65 @@ This Task may create or modify only:
 - `docs/workflow/authorizations/2026-08-06-proof-cost.md` → the sanction in prose.
 - ADR-0081.
 - `qa/qa-report-2026-08-11-02.md` → the five `QA-AUTH-PATHS` refusals.
+
+## Result
+
+### Implementation
+
+- Added a machine-readable `## Sanctioned regeneration` YAML declaration that
+  binds `make baseline-digests` to exact output files. The declaration lists
+  all sixteen deterministic outputs present in the actual `task_06` commit;
+  the live failure report contains more fallout than the five paths summarized
+  in this Task's overview.
+- Kept bounded files and regeneration outputs as separate authorization
+  classes. The detector accepts a regeneration output only when its declaration
+  names a non-empty command and an exact repository-relative file; missing
+  commands, globs, invalid paths, and undeclared paths remain unauthorized.
+- The detector reads the declaration only. It does not execute the regeneration
+  command or otherwise add baseline rebuild work to the mechanical stage.
+
+### Focused checks
+
+- Before the production edit,
+  `GOCACHE=/private/tmp/roundfix-task11-gocache rtk proxy go test ./internal/speccheck -run '^TestMechanicalAuthPaths' -count=1`
+  exited 1 because the new declared-output case still raised
+  `QA-AUTH-PATHS` for `internal/baseline/testdata/catalog.digest`.
+- After the production edit,
+  `GOCACHE=/private/tmp/roundfix-task11-gocache rtk go test ./internal/speccheck -run '^TestMechanicalAuthPaths' -count=1`
+  exited 0 with nine passing cases. The group includes the declared-output
+  acceptance, the undeclared-path refusal, commandless and glob declaration
+  refusals, and the pre-existing no-declaration refusal.
+- `GOCACHE=/private/tmp/roundfix-task11-gocache rtk go test ./internal/speccheck -count=1`
+  exited 0 with 176 passing package tests.
+- A temporary Go overlay invoked `RunMechanicalStage` against the actual
+  `task_06` commit `9d36349ac0060a4cff5ad1cbe1f782e4d6605e20` and the amended
+  authorization. With repository-local fsmonitor disabled through Git's
+  process environment, the focused check exited 0 and found no
+  `QA-AUTH-PATHS` finding.
+
+### Acceptance-criterion evidence
+
+1. `TestMechanicalAuthPathsAcceptsDeclaredRegenerationOutput` exercises a real
+   temporary Git commit and raises no `QA-AUTH-PATHS` finding for an exact
+   declared output.
+2. `TestMechanicalAuthPathsStillRefusesAnUndeclaredPath` keeps a valid
+   regeneration declaration present and proves an unrelated changed path still
+   raises exactly one `QA-AUTH-PATHS` finding.
+3. The existing red subtest in `TestMechanicalAuthPaths`, included in the
+   nine-case focused run, uses an authorization with no regeneration
+   declaration and still refuses its unbounded path.
+4. The overlay check exercised the real `task_06` SHA and authorization record;
+   all sixteen formerly unbounded generated paths were accepted.
+
+### Follow-up note
+
+- The first live-commit overlay attempt exposed a separate existing issue:
+  this worktree's fsmonitor IPC diagnostic entered `git diff-tree` combined
+  output and the detector treated that diagnostic text as a changed path. The
+  same actual-commit check passed with `core.fsmonitor=false`. Repairing Git
+  stderr handling is outside this Task's bounded slice.
+
+### Handoff boundary
+
+- The Daemon-owned commands under `## Verification` were not run. Task status
+  remains Daemon-owned; no commit, push, or pull request was created.
