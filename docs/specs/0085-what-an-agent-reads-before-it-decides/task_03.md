@@ -54,7 +54,7 @@ This Task may create or modify only:
 
 ## Verification
 
-- `test -z "$(grep -rnE '"_archived"|_archived/' internal/speccheck/*.go internal/specaudit/*.go internal/worktree/*.go internal/cli/archive.go | grep -v '_test.go')"` — expected: exits 0, proving no consumer still expresses the layout itself.
+- `test -z "$(grep -rnE '"_archived"|_archived/' internal/speccheck/*.go internal/specaudit/*.go internal/worktree/*.go internal/cli/archive.go | grep -v '_test.go' | grep -vE ':[0-9]+:[[:space:]]*//')"` — expected: exits 0. Comment lines are excluded because a doc comment cannot call a resolver; every other occurrence, including the text of a `Fix:` message that tells a reader where an artifact belongs, must come from the resolver, since a message naming a layout goes stale the moment Task 04 moves it.
 
 Asserting the layout characterization still passes is deliberately absent: this
 Task changes no observable path, so the case passes before and after, and a
