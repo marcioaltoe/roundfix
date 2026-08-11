@@ -25,9 +25,12 @@ graph:
     - id: task_06
       file: task_06.md
       needs: [task_04, task_05]
+    - id: task_09
+      file: task_09.md
+      needs: [task_06]
     - id: task_07
       file: task_07.md
-      needs: [task_02, task_04, task_06]
+      needs: [task_02, task_04, task_06, task_09]
 ---
 
 # Tasks — A Run that can hand back its work
@@ -41,7 +44,8 @@ graph:
 | task_04 | Derive the Run outcome from unresolved work              | backend | high       | task_03, task_08          |
 | task_05 | Give a superseded Run Branch a disposition               | backend | high       | task_01                   |
 | task_06 | Hand a stopped Run's settled Tasks back                  | backend | high       | task_04, task_05          |
-| task_07 | Run the final QA gate                                    | qa      | high       | task_02, task_04, task_06 |
+| task_09 | Let the reconcile JSON contract know about carry-forward | test    | low        | task_06                   |
+| task_07 | Run the final QA gate                                    | qa      | high       | task_02, task_04, task_06, task_09 |
 
 Waves: 1 → task_01 · 2 → task_02, task_03, task_05 · 3 → task_08 · 4 → task_04 · 5 → task_06 · 6 → task_07
 
