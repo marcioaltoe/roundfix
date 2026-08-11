@@ -46,8 +46,21 @@ Any other path is out of scope; stop and fail the Task rather than widen it.
 
 ## Verification
 
-- `grep -q '_archived' .coderabbit.yaml` — expected: exits 0, proving the archive root is named in the configuration.
-- `test "$(grep -c 'docs/specs/_archived\|docs/findings/_archived' .coderabbit.yaml)" -le 1` — expected: exits 0, proving the per-tree filters were replaced by one entry rather than added to.
+- `grep -q 'archive root: ' .coderabbit.yaml` — expected: exits 0. The configuration carries no line naming the root it excludes today, so this fails before the work.
+
+A guard that no per-tree filter was introduced is not declared either: there are
+zero today, so it passes before any work. Requirement 2 carries it.
+
+The two commands this Task first declared — that `_archived` appears and that
+per-tree filters number at most one — both passed before any work. The
+configuration already excludes archives through the `!**/_archived/**` glob and
+carries zero per-tree filters, work that landed after this Spec was authored. So
+the Task's premise moved: what it must now produce is a configuration whose
+exclusion is tied to the root `internal/spec.ArchiveDir` resolves, stated in a
+line a reader and this check can both find. If Task 04 leaves the root where the
+glob already matches, say so in the Result and record why nothing else changed —
+the marker line is still the deliverable, because a configuration and a resolver
+that must agree with nothing linking them is the defect this Spec exists to end.
 
 ## Context
 

@@ -52,8 +52,11 @@ This Task may create or modify only:
 
 - `test -z "$(grep -Lq '^status:' docs/adr/*.md 2>/dev/null; for f in docs/adr/*.md; do head -8 "$f" | grep -q '^status:' || echo "$f"; done)"` — expected: exits 0, proving every ADR carries a frontmatter status.
 - `test -z "$(grep -lE '^\*?\*?Status: ' docs/adr/*.md)"` — expected: exits 0, proving no legacy body-line status remains.
-- `test -z "$(for f in $(grep -lE '^status: (deprecated|superseded)' docs/adr/*.md); do head -8 "$f" | grep -q '^superseded_by:' || echo "$f"; done)"` — expected: exits 0, proving every retired record carries a forward pointer field.
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -count=1 2>&1 | grep -q '^ok'` — expected: exits 0, proving the ADR corpus still parses for the consistency checks that read it.
+- `test "$(c=0; for f in docs/adr/*.md; do head -8 "$f" | grep -q '^status:' || c=$((c+1)); done; echo $c)" -eq 0` — expected: exits 0. Seventy-three ADRs carry no `status:` in their frontmatter today, so this is the gap the Task closes; the guard it replaces asked whether every *retired* ADR names a replacement, and zero ADRs are retired, so it passed before any work.
+
+Whole-package sweeps, `go build`, `go clean -testcache` and `make verify` are
+deliberately absent: each passes against a tree where no work has happened, so
+it approves the Task before it starts. Regression is the Run-level gate's job.
 
 ## References
 

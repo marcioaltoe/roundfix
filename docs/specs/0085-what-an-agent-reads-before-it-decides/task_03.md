@@ -55,8 +55,15 @@ This Task may create or modify only:
 ## Verification
 
 - `test -z "$(grep -rnE '"_archived"|_archived/' internal/speccheck/*.go internal/specaudit/*.go internal/worktree/*.go internal/cli/archive.go | grep -v '_test.go')"` — expected: exits 0, proving no consumer still expresses the layout itself.
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck ./internal/specaudit ./internal/worktree ./internal/cli -count=1 2>&1 | grep -c '^ok' | grep -q '^4$'` — expected: exits 0, proving all four packages pass rather than some being skipped.
-- `GOCACHE="$PWD/.gocache" go test ./internal/spec -run '^TestArchiveLayoutCharacterization' -count=1 2>&1 | grep -q '^ok'` — expected: exits 0, proving the recorded paths did not move in this Task.
+
+Asserting the layout characterization still passes is deliberately absent: this
+Task changes no observable path, so the case passes before and after, and a
+command that cannot fail cannot prove anything. Keeping it passing is the
+Run-level gate's job.
+
+Whole-package sweeps, `go build`, `go clean -testcache` and `make verify` are
+deliberately absent: each passes against a tree where no work has happened, so
+it approves the Task before it starts. Regression is the Run-level gate's job.
 
 ## References
 

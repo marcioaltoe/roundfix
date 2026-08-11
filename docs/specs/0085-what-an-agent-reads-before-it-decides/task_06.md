@@ -66,14 +66,24 @@ Any other path is out of scope; stop and fail the Task rather than widen it.
 
 ## Verification
 
-- `test -z "$(grep -nE 'when (relevant|useful|applicable)|if it helps' internal/baseline/assets/modules/secondbrain.json)"` — expected: exits 0, proving the clause carries no condition.
 - `grep -q 'secondbrain' internal/baseline/assets/modules/context-workflow.json` — expected: exits 0, proving the consultation is bound in the workflow module.
-- `GOCACHE="$PWD/.gocache" go test ./internal/baseline -count=1 2>&1 | grep -q '^ok'` — expected: exits 0, proving the catalog and its corpus agree after regeneration.
-- `GOCACHE="$PWD/.gocache" go test ./internal/spec -run '^TestArchiveLayoutCharacterization' -count=1 2>&1 | grep -q '^ok'` — expected: exits 0, proving the declared break was updated.
 
 ## Context
 
 - instruction: `docs/workflow/authorizations/2026-08-09-what-an-agent-reads-before-it-decides.md`
+
+A guard asserting the conditional wording is absent is deliberately absent too:
+the module carries no such wording today, so the check passes before any work.
+Requirement 1 is what obliges the unconditional clause.
+
+Asserting the layout characterization still passes is deliberately absent: this
+Task changes no observable path, so the case passes before and after, and a
+command that cannot fail cannot prove anything. Keeping it passing is the
+Run-level gate's job.
+
+Whole-package sweeps, `go build`, `go clean -testcache` and `make verify` are
+deliberately absent: each passes against a tree where no work has happened, so
+it approves the Task before it starts. Regression is the Run-level gate's job.
 
 ## References
 

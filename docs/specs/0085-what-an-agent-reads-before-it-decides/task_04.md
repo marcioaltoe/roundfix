@@ -53,9 +53,12 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/spec ./internal/speccheck -count=1 2>&1 | grep -c '^ok' | grep -q '^2$'` — expected: exits 0.
 - `GOCACHE="$PWD/.gocache" go test ./internal/spec -run '^TestArchiveDirAnswersEveryRetiredKind' -count=1 -v 2>&1 | grep -q '^--- PASS'` — expected: exits 0.
-- `grep -q 'Re-recorded because' internal/speccheck/testdata/corpus-golden.json || grep -q 'Re-recorded because' docs/specs/0085-what-an-agent-reads-before-it-decides/task_04.md` — expected: exits 0, proving the re-record carries its reason.
+- `grep -q 'Re-recorded because' internal/speccheck/testdata/corpus-golden.json` — expected: exits 0. The `|| grep ... task_04.md` fallback this command used to carry made it self-satisfying: the string occurs in this file because the command writes it, so the check passed before any re-recording happened.
+
+Whole-package sweeps, `go build`, `go clean -testcache` and `make verify` are
+deliberately absent: each passes against a tree where no work has happened, so
+it approves the Task before it starts. Regression is the Run-level gate's job.
 
 ## References
 
