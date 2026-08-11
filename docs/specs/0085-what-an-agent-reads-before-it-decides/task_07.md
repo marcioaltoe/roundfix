@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0085-what-an-agent-reads-before-it-decides
-status: pending
+status: completed
 type: infra
 complexity: low
 ---
@@ -70,3 +70,29 @@ that must agree with nothing linking them is the defect this Spec exists to end.
 
 - `_prd.md` → the archive read path.
 - `_techspec.md` → Build Order 7.
+
+## Result
+
+Added an `archive root: _archived/` marker beside the existing
+`!**/_archived/**` exclusion and tied it explicitly to
+`internal/spec.ArchiveDir`. The resolver returns `_archived/<kind>`, so the
+existing glob already excludes the single root. No filter changed: there were
+no per-tree archive filters to remove, and every non-archive filter remains
+byte-identical.
+
+Focused-check evidence:
+
+- Archive root excluded — `rtk rg -n "archive root: |!.*_archived|docs/(specs|findings|adr|backlog)/_archived" .coderabbit.yaml`
+  exited 0 and returned only the root marker and `!**/_archived/**`; it returned
+  no per-tree archive path.
+- No per-tree archive filter remains — the same focused scan found only the
+  single generic archive exclusion.
+- Non-archive filters unchanged — `rtk git diff -- .coderabbit.yaml` showed one
+  added comment and no path-filter edit.
+- Configuration syntax — `rtk ruby -e 'require "yaml"; YAML.safe_load(File.read(".coderabbit.yaml"), aliases: true)'`
+  exited 0. An earlier optional probe using `YAML.safe_load_file` could not run
+  because this host's Psych version does not provide that helper; the supported
+  `safe_load` API parsed the same file successfully.
+- Patch hygiene — `rtk git diff --check` exited 0.
+
+The declared `## Verification` command was not run; the Daemon owns that check.

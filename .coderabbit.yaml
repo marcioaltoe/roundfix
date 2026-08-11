@@ -211,6 +211,7 @@ reviews:
     # convenção deste repositório para "não é código". `archive` fica preso a
     # `docs/` de propósito — sem underscore, é nome plausível de módulo real, e
     # excluir código por causa do nome de uma pasta é pior que revisar história.
+    # archive root: _archived/ (must match internal/spec.ArchiveDir)
     - "!**/_archived/**"
     - "!**/_reviews/**"
     - "!docs/**/archive/**"
