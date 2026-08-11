@@ -53,8 +53,12 @@ This Task may create or modify only:
 
 ## Verification
 
-- `go run -buildvcs=false ./cmd/roundfix reconcile --help 2>&1 | grep -q -- '--carry-forward'` — expected: exits 0, proving the help copy Task 10 wrote is still the copy the contract pins.
 - `GOCACHE="$PWD/.gocache" go test ./internal/cli -run '^TestRunCommandHelp$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunCommandHelp'` — expected: exits 0. The assertion pins the pre-Spec synopsis and fails against the unchanged tree.
+
+Asserting that the help still contains `--carry-forward` is deliberately absent:
+Task 10 already delivered that copy, so the check passes before this Task does
+anything. The pre-work probe refused it on 2026-08-11. A command that guards a
+predecessor's work cannot prove this Task's own.
 `make verify` is deliberately not declared here. The Daemon recognises it as the
 repository gate and refuses to dispatch a Task while it is red — "repository not
 green on entry" — so that a pre-existing failure is never attributed to the Task
