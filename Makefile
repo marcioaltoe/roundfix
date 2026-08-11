@@ -29,7 +29,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify spec-check spec-budget fmt fmt-check test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
+.PHONY: help bootstrap verify verify-incremental spec-check spec-budget fmt fmt-check test test-race baseline-digests build install run version clean deps skills-check skills-install skills-link skills-sync skills-version-check skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -54,6 +54,8 @@ deps: ## Download, tidy, and verify Go modules
 VERIFY_TEST_TARGET ?= test
 
 verify: fmt-check $(VERIFY_TEST_TARGET) skills-sync-check skills-check build ## Run the required local verification gate
+
+verify-incremental: fmt-check test skills-sync-check skills-check build ## Run fast local verification with reusable caches
 
 verify-docs: build docs-test repo-test spec-budget spec-check ## Validate repository markdown and derived artifacts; required before opening a pull request
 

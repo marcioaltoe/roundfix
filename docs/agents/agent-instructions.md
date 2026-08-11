@@ -23,6 +23,8 @@ branches **MUST** use the selected `ma/` prefix.
 
 - **mandatory**: Run the selected repository Verification before completion claims. Treat every failure as blocking and report the command plus its actionable diagnostic.
 
+- **mandatory**: Use the incremental verification command declared by the active Baseline Profile for fast local checks; it answers whether the current change remains valid while reusing safe local state. CI must run the complete verification command declared by that Profile from a fresh run; it answers whether the complete tree satisfies the repository contract. If the Profile declares no incremental command, this clause is unmet rather than satisfied by omission.
+
 - **stop-and-ask**: Stop and ask for explicit authority before intentionally changing lint, formatter, typecheck, test-runner, architecture, or Verification configuration.
 
 - **mandatory**: An assertion reads the constant it means. A test that copies a pinned version, digest, or identifier as a literal stops testing the day a legitimate change moves it, sometimes silently. Reference the exported or package constant; when a value must be duplicated, search for every occurrence and change them in the same commit.

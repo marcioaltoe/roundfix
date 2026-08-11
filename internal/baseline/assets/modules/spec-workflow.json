@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 7,
+  "version": 8,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -38,7 +38,7 @@
   "supportingGuides": [
     {
       "id": "guide.spec-routing",
-      "version": 5,
+      "version": 6,
       "path": "docs/agents/spec-routing.md",
       "template": "template.guide.spec-routing",
       "rules": [
@@ -71,7 +71,7 @@
   "rules": [
     {
       "id": "rule.spec.routing",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -100,6 +100,11 @@
           "id": "clause.spec.routing-05-task-graph",
           "enforcement": "mandatory",
           "guidance": "Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, and execute implementation from the Task Graph."
+        },
+        {
+          "id": "clause.spec.verification-two-tiers",
+          "enforcement": "mandatory",
+          "guidance": "For each Task, use the active Baseline Profile's declared incremental verification command to answer whether the current slice remains valid before handoff. CI must use the Profile's declared complete verification command from a fresh run to answer whether the assembled tree satisfies the repository contract. A missing incremental command leaves the Profile's two-tier contract unmet and never authorizes skipping the local tier."
         }
       ]
     },

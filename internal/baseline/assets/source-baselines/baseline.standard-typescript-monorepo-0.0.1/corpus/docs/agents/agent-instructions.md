@@ -26,6 +26,10 @@
 - MUST run the selected repository Verification before completion claims. Every failure blocks completion and must be reported with the command and actionable diagnostic.
 <!-- /source-baseline-entry: clause.core.run-selected-verification -->
 
+<!-- source-baseline-entry: clause.core.verification-two-tiers -->
+- MUST use the incremental verification command declared by the active Baseline Profile for fast local checks; it answers whether the current change remains valid while reusing safe local state. CI MUST run the complete verification command declared by that Profile from a fresh run; it answers whether the complete tree satisfies the repository contract. If the Profile declares no incremental command, this clause is unmet rather than satisfied by omission.
+<!-- /source-baseline-entry: clause.core.verification-two-tiers -->
+
 <!-- source-baseline-entry: clause.core.prohibit-verification-contract-bypass -->
 - MUST NOT edit Verification configuration, tests, fixtures, golden files, or generated expectations merely to make a failure disappear. Change them only when the repository contract intentionally changes, and prove the new contract.
 <!-- /source-baseline-entry: clause.core.prohibit-verification-contract-bypass -->
