@@ -74,7 +74,12 @@ This Task may create or modify only:
 ## Verification
 
 - `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestMechanicalReportSatisfiesTheReportShapeContract$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestMechanicalReportSatisfiesTheReportShapeContract'` — expected: exits 0. The case does not exist before this Task.
-- `GOCACHE="$PWD/.gocache" go test ./internal/speccheck -run '^TestMechanicalReportShape' -count=1 -v 2>&1 | tee /dev/stderr | grep -q -- '--- PASS'` — expected: exits 0, proving the detector still refuses a malformed report rather than being loosened.
+
+Asserting that the existing `TestMechanicalReportShape` cases still pass is
+deliberately absent: they pass today, so the command approves this Task before
+any work happens, and the pre-work probe refused exactly that on 2026-08-11.
+Requirement 4 is what forbids loosening the detector, and the Run-level gate is
+what proves the suite still holds.
 
 ## References
 
