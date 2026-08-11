@@ -1,0 +1,5 @@
+{
+  "Replace": {
+    "/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260811T172206Z_68e47a0298ed4a0e/internal/tui/r05_qa_10000_event_test.go": "/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260811T172206Z_68e47a0298ed4a0e/docs/specs/0081-a-journal-cheap-to-write-and-keep/qa/evidence/2026-08-11-gate-02/r05-10000-event-harness_test.go.txt"
+  }
+}
