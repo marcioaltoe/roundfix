@@ -268,6 +268,27 @@ func TestMechanicalReportShape(t *testing.T) {
 	})
 }
 
+func TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode(t *testing.T) {
+	t.Parallel()
+	repoRoot := newMechanicalGitRepo(t)
+	reportPath := "docs/specs/mechanical/qa/report-without-results.md"
+	writeMechanicalFile(t, repoRoot, reportPath, "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n# QA Report\n\n## Mechanical rows\n\n| # | Status | Provenance |\n| - | --- | --- |\n| R01 | blocked (finding: QA-FIXTURE — waits on fixture) | mechanical finding |\n")
+
+	result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+	findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+	if len(findings) != 2 {
+		t.Fatalf("%s findings = %#v, want missing Results rows and count mismatch", speccheck.CodeMechanicalReportShape, findings)
+	}
+	if len(result.Blocked) != 1 {
+		t.Fatalf("Blocked = %#v, want one row for the unscoped refusal code", result.Blocked)
+	}
+	blocked := result.Blocked[0]
+	if blocked.ID != speccheck.CodeMechanicalReportShape || blocked.FindingCode != speccheck.CodeMechanicalReportShape {
+		t.Fatalf("Blocked[0] = %#v, want the existing refusal code as row identity and provenance", blocked)
+	}
+}
+
 func TestMechanicalEvidencePath(t *testing.T) {
 	t.Parallel()
 

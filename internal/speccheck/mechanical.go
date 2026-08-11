@@ -1184,16 +1184,17 @@ func addMechanicalSkip(result *MechanicalResult, detector, missing string) {
 func materializeBlockedRows(result *MechanicalResult) {
 	seen := make(map[string]bool)
 	for _, finding := range result.Findings {
-		if finding.RowHint == "" {
-			continue
+		rowID := strings.TrimSpace(finding.RowHint)
+		if rowID == "" {
+			rowID = finding.Code
 		}
-		key := finding.RowHint + "\x00" + finding.Code
+		key := rowID + "\x00" + finding.Code
 		if seen[key] {
 			continue
 		}
 		seen[key] = true
 		result.Blocked = append(result.Blocked, BlockedRow{
-			ID:          finding.RowHint,
+			ID:          rowID,
 			FindingCode: finding.Code,
 			WaitingOn:   finding.Detail,
 		})

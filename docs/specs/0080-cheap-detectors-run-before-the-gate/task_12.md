@@ -1,7 +1,7 @@
 ---
 task: task_12
 spec: 0080-cheap-detectors-run-before-the-gate
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -86,3 +86,48 @@ what proves the suite still holds.
 - `_prd.md` → Goal 1.
 - `qa/qa-report-2026-08-11-04.md` → the two `QA-REPORT-SHAPE` findings.
 - ADR-0080 → the blocked-cause counts this report declares.
+
+## Result
+
+The Daemon now publishes the mechanical row table as `## Results`. Its
+frontmatter count comes from the same `MechanicalResult.Blocked` rows that the
+writer emits. Findings without a row hint receive one deterministic blocked
+row keyed by their existing Mechanical Refusal Code, so a report-shape refusal
+can produce a non-empty, self-consistent report without minting another row
+identifier. The Results table retains its `Provenance` column and labels each
+blocked row `mechanical finding`.
+
+Red signal captured before the implementation edit:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task12-gocache go test ./internal/daemon -run '^TestMechanicalReportBodyContractRed$' -count=1`
+  failed because the generated report had no `## Results`, retained
+  `## Mechanical rows`, and raised the two expected `QA-REPORT-SHAPE`
+  findings. The case was then renamed to the Verification-owned test name.
+
+Focused checks run after the implementation edits:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task12-gocache go test ./internal/daemon -run '^TestMechanical(ReportSatisfiesTheReportShapeContract|StageWithholdsAgentSession|StageSeedsReportBeforeAgentSession)$' -count=1`
+  passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task12-gocache go test ./internal/speccheck -run '^TestMechanical(FindingsWithoutRowHintsBlockTheirRefusalCode|ReportShape)$' -count=1`
+  passed.
+
+Acceptance evidence:
+
+1. `TestMechanicalReportSatisfiesTheReportShapeContract` feeds the real
+   mechanical stage a malformed prior report, writes the resulting refusal,
+   and observes its row under `## Results` with no `## Mechanical rows`
+   heading.
+2. The same case observes `rows_blocked_environment: 0`,
+   `rows_blocked_finding: 1`, and `rows_blocked_declared: 0` for the one
+   matching finding-blocked row. The lower-layer no-hint case proves two
+   unscoped findings with the same refusal code materialize one counted row.
+3. The case runs the unchanged mechanical stage against the newly written
+   report and receives no `QA-REPORT-SHAPE` finding. The existing green and
+   red report-shape cases also passed without relaxing their assertions.
+4. The emitted Results table keeps the `Provenance` column, and the
+   finding-blocked row carries both `finding: QA-REPORT-SHAPE` in its status
+   and `mechanical finding` in provenance.
+
+Verdict calculation and the collision-safe `qa-report-YYYY-MM-DD[-NN].md`
+naming loop were not changed. The command under `## Verification` was not run;
+the Daemon owns that exact pipeline and Task settlement.

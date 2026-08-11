@@ -2015,6 +2015,16 @@ func mechanicalCommitPaths(ctx context.Context, repoRoot, sha string) ([]string,
 }
 
 func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.MechanicalResult) (string, error) {
+	var mechanical bytes.Buffer
+	if err := speccheck.WriteMechanicalResult(&mechanical, result); err != nil {
+		return "", err
+	}
+	const mechanicalRowsHeading = "## Mechanical rows\n"
+	mechanicalBody := bytes.Replace(mechanical.Bytes(), []byte(mechanicalRowsHeading), []byte("## Results\n"), 1)
+	if bytes.Equal(mechanicalBody, mechanical.Bytes()) {
+		return "", errors.New("materialize mechanical QA Report: mechanical rows table is absent")
+	}
+
 	var content bytes.Buffer
 	content.WriteString("---\n")
 	if result.Blocking {
@@ -2024,9 +2034,7 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", len(result.Blocked))
 	fmt.Fprintln(&content, "rows_blocked_declared: 0")
 	content.WriteString("---\n\n# QA Report\n\n")
-	if err := speccheck.WriteMechanicalResult(&content, result); err != nil {
-		return "", err
-	}
+	content.Write(mechanicalBody)
 	reportDir := filepath.Join(plan.Spec.Dir, "qa")
 	if err := os.MkdirAll(reportDir, 0o755); err != nil {
 		return "", fmt.Errorf("create QA Report directory %q: %w", reportDir, err)

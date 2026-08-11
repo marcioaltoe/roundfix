@@ -705,6 +705,70 @@ func (stage *fakeQAMechanicalStage) Run(_ context.Context, request speccheck.Mec
 	return stage.result, stage.err
 }
 
+func TestMechanicalReportSatisfiesTheReportShapeContract(t *testing.T) {
+	t.Parallel()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	engine := fixture.engine(t, &taskFakeRunner{}, &taskFakeVerifier{}, &engineFakeCommitter{}, fixture.worktree)
+	plan := fixture.qaPlan()
+	previousReportPath := filepath.Join(plan.Spec.Dir, "qa", "qa-report-2025-12-31.md")
+	if err := os.MkdirAll(filepath.Dir(previousReportPath), 0o755); err != nil {
+		t.Fatalf("create previous QA Report directory: %v", err)
+	}
+	mustWriteForTest(t, previousReportPath, "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n# QA Report\n\n## Mechanical rows\n\n| # | Status | Provenance |\n| - | --- | --- |\n| R01 | blocked (finding: QA-FIXTURE — waits on fixture) | mechanical finding |\n")
+	gittest.InitRepo(t, fixture.gitRoot, "-b", "main")
+	gittest.AppendConfig(t, fixture.gitRoot, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
+	runGitForTest(t, fixture.gitRoot, "add", "-A")
+	runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "initial")
+	mechanical, err := speccheck.RunMechanicalStage(context.Background(), speccheck.MechanicalRequest{
+		RepoRoot:   fixture.gitRoot,
+		ReportPath: artifactCommitPath(plan, previousReportPath),
+	})
+	if err != nil {
+		t.Fatalf("RunMechanicalStage(previous report) error = %v", err)
+	}
+	if len(mechanical.Blocked) != 1 || mechanical.Blocked[0].ID != speccheck.CodeMechanicalReportShape {
+		t.Fatalf("Blocked = %#v, want one row for the unscoped report-shape findings", mechanical.Blocked)
+	}
+
+	reportPath, err := engine.writeMechanicalQAReport(plan, mechanical)
+	if err != nil {
+		t.Fatalf("writeMechanicalQAReport() error = %v", err)
+	}
+	report, err := os.ReadFile(filepath.Join(fixture.gitRoot, filepath.FromSlash(reportPath)))
+	if err != nil {
+		t.Fatalf("read mechanical QA Report: %v", err)
+	}
+	reportText := string(report)
+	for _, fragment := range []string{
+		"rows_blocked_environment: 0",
+		"rows_blocked_finding: 1",
+		"rows_blocked_declared: 0",
+		"## Results",
+		"| # | Status | Provenance |",
+		"| QA-REPORT-SHAPE | blocked (finding: QA-REPORT-SHAPE — waits on Results table has no report rows) | mechanical finding |",
+	} {
+		if !strings.Contains(reportText, fragment) {
+			t.Errorf("mechanical QA Report missing %q:\n%s", fragment, reportText)
+		}
+	}
+	if strings.Contains(reportText, "## Mechanical rows") {
+		t.Errorf("mechanical QA Report retained the non-contract row heading:\n%s", reportText)
+	}
+
+	checked, err := speccheck.RunMechanicalStage(context.Background(), speccheck.MechanicalRequest{
+		RepoRoot:   fixture.gitRoot,
+		ReportPath: reportPath,
+	})
+	if err != nil {
+		t.Fatalf("RunMechanicalStage() error = %v", err)
+	}
+	for _, finding := range checked.Findings {
+		if finding.Code == speccheck.CodeMechanicalReportShape {
+			t.Errorf("mechanical report refused its own shape: %#v", finding)
+		}
+	}
+}
+
 func TestMechanicalStageWithholdsAgentSession(t *testing.T) {
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
