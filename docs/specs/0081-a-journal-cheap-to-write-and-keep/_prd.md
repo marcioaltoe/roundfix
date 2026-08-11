@@ -1,7 +1,6 @@
 ---
 spec: 0081-a-journal-cheap-to-write-and-keep
-status: archived
-archived: 2026-08-11
+status: active
 created: 2026-08-06
 surfaces: [backend, data, docs, cli]
 ---
