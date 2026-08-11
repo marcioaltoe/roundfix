@@ -28,7 +28,13 @@ report `Clean` on a crashed Agent — which is why the two are ordered.
 4. MUST NOT change the Run outcome in this Task; the six outcome-contract tests
    Task 01 enumerated stay as they are until Task 04.
 5. MUST break the characterization case Task 01 declared for the overwrite, and
-   update it in the same commit.
+   update it in the same commit. Task 01 recorded it as
+   `TestRunDispositionCharacterizationFailedBatchOverwritesSettledIssues`, whose
+   name states the behaviour this Task removes; the updated case is
+   `TestRunDispositionCharacterizationFailedBatchKeepsSettledIssues` and asserts
+   the settled issue keeps its status and reason. Renaming is what makes the
+   update visible: a case that keeps its old name cannot be told apart from one
+   that was never touched.
 
 ## Subtasks
 
@@ -55,7 +61,7 @@ This Task may create or modify only:
 
 - `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestMarkBatchFailedKeeps' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestMarkBatchFailedKeepsAlreadySettledIssues/keeps_resolved_issue_untouched'` — expected: exits 0.
 - `GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^TestMarkBatchFailedKeeps' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestMarkBatchFailedKeepsAlreadySettledIssues/marks_pending_issue_failed'` — expected: exits 0.
-- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunDispositionCharacterization' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunDispositionCharacterization'` — expected: exits 0, proving the declared break was updated to the new behaviour rather than left failing. A whole-package sweep would pass with the work absent; this names the case that must change.
+- `GOCACHE="$PWD/.gocache" go test ./internal/daemon -run '^TestRunDispositionCharacterizationFailedBatch' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestRunDispositionCharacterizationFailedBatchKeepsSettledIssues'` — expected: exits 0, proving the declared break was updated to the new behaviour rather than left failing or deleted. Naming the post-update case is what makes this command able to fail: the pre-work name asserts today's overwrite and passes against the unchanged tree, so asserting it would approve the Task before any work happened.
 
 ## References
 
