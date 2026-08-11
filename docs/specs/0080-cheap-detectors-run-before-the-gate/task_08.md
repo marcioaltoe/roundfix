@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0080-cheap-detectors-run-before-the-gate
-status: pending
+status: completed
 type: qa
 complexity: medium
 ---
