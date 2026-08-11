@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0081-a-journal-cheap-to-write-and-keep
-status: completed
+status: pending
 type: qa
 complexity: medium
 ---

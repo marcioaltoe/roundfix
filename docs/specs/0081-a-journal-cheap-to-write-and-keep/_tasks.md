@@ -31,9 +31,12 @@ graph:
     - id: task_10
       file: task_10.md
       needs: [task_04, task_05]
+    - id: task_11
+      file: task_11.md
+      needs: [task_10]
     - id: task_09
       file: task_09.md
-      needs: [task_06, task_08, task_10]
+      needs: [task_06, task_08, task_10, task_11]
 ---
 
 # Tasks — A journal cheap to write and cheap to keep
@@ -49,6 +52,7 @@ graph:
 | task_07 | Prove parallel Runs at the pre-raise timeout        | test     | medium     | task_04          |
 | task_08 | Decide the retention shape on the measurement       | docs     | medium     | task_07          |
 | task_10 | Measure and record the before that the after is compared against | test | high | task_04, task_05 |
+| task_11 | Stop a production test from reading a Spec that will move | test | low | task_10 |
 | task_09 | Run the final QA gate                               | qa       | medium     | task_06, task_08 |
 
 Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05,
