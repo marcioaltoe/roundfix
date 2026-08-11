@@ -326,11 +326,8 @@ func TestReplayCorpusBatchClockMatchesFullEvents(t *testing.T) {
 // without adding test hooks to production code or rewriting the fixture.
 func TestJournalConsumerCorpusReplaysEveryConsumer(t *testing.T) {
 	repositoryRoot := journalConsumerCorpusRepositoryRoot(t)
-	baselineDir := filepath.Join(
-		repositoryRoot,
-		"docs", "specs", "0081-a-journal-cheap-to-write-and-keep", "baseline",
-	)
-	fixture := filepath.Join(baselineDir, "2026-08-11-prechange-roundfix.db")
+	testdataDir := filepath.Join(repositoryRoot, "internal", "store", "testdata")
+	fixture := filepath.Join(testdataDir, "2026-08-11-prechange-roundfix.db")
 
 	tests := []struct {
 		name        string
@@ -344,11 +341,11 @@ func TestJournalConsumerCorpusReplaysEveryConsumer(t *testing.T) {
 			name:        "events Attach reconcile and gc preserve pre-change observations",
 			packagePath: "./internal/cli",
 			virtualFile: filepath.Join(repositoryRoot, "internal", "cli", "task10_consumer_observation_test.go"),
-			harness:     filepath.Join(baselineDir, "task10-cli-consumer-harness_test.go.txt"),
+			harness:     filepath.Join(testdataDir, "task10-cli-consumer-harness_test.go.txt"),
 			testName:    "TestTask10PrechangeJournalCLIConsumers",
 			environment: []string{
 				"TASK10_CORPUS_DB=" + fixture,
-				"TASK10_EXPECTATIONS=" + filepath.Join(baselineDir, "2026-08-11-prechange-consumer-expectations.json"),
+				"TASK10_EXPECTATIONS=" + filepath.Join(testdataDir, "2026-08-11-prechange-consumer-expectations.json"),
 				"TASK10_RECORD=0",
 			},
 		},
@@ -356,11 +353,11 @@ func TestJournalConsumerCorpusReplaysEveryConsumer(t *testing.T) {
 			name:        "Cockpit rendering preserves the pre-change frame",
 			packagePath: "./internal/tui",
 			virtualFile: filepath.Join(repositoryRoot, "internal", "tui", "task10_cockpit_observation_test.go"),
-			harness:     filepath.Join(baselineDir, "task10-cockpit-consumer-harness_test.go.txt"),
+			harness:     filepath.Join(testdataDir, "task10-cockpit-consumer-harness_test.go.txt"),
 			testName:    "TestTask10PrechangeJournalCockpitConsumer",
 			environment: []string{
 				"TASK10_CORPUS_DB=" + fixture,
-				"TASK10_COCKPIT_EXPECTATION=" + filepath.Join(baselineDir, "2026-08-11-prechange-cockpit.golden"),
+				"TASK10_COCKPIT_EXPECTATION=" + filepath.Join(testdataDir, "2026-08-11-prechange-cockpit.golden"),
 				"TASK10_RECORD=0",
 			},
 		},
