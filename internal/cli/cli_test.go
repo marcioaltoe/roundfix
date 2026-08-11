@@ -559,6 +559,7 @@ func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
 	}
 	assertJSONFieldNames(t, rawReport, []string{
 		"applyCommand",
+		"carryForwards",
 		"debrisSummary",
 		"mode",
 		"preservedCandidates",

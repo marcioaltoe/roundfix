@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0092-a-run-that-can-hand-back-its-work
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -34,14 +34,14 @@ public payload needs the test pinning that payload inside its boundary.
 
 ## Subtasks
 
-- [ ] Add the field to the expected set.
-- [ ] Confirm the assertion remains exact equality.
+- [x] Add the field to the expected set.
+- [x] Confirm the assertion remains exact equality.
 
 ## Acceptance Criteria
 
-- [ ] `TestRunReconcileJSONMatchesTextFields` passes.
-- [ ] The expected set is still compared by exact equality.
-- [ ] `git diff --name-only` lists only this Task's bounded paths.
+- [x] `TestRunReconcileJSONMatchesTextFields` passes.
+- [x] The expected set is still compared by exact equality.
+- [x] `git diff --name-only` lists only this Task's bounded paths.
 
 ## Bounded scope
 
@@ -59,3 +59,25 @@ This Task may create or modify only:
 
 - `_prd.md` → Goal 3.
 - `task_06.md` → the `carryForwards` payload this contract pins.
+
+## Result
+
+Added `carryForwards` to the expected top-level reconcile JSON field set. The
+existing `assertJSONFieldNames` helper remains unchanged: it rejects a field
+count mismatch before requiring every named field, so an unannounced field
+still fails the contract test.
+
+Acceptance evidence:
+
+- `TestRunReconcileJSONMatchesTextFields`: focused
+  `GOCACHE="$PWD/.gocache" rtk go test ./internal/cli -run '^TestRunReconcileJSONMatchesTextFields$' -count=1`
+  passed after the edit with one passing test.
+- Exact equality: focused inspection of `assertJSONFieldNames` confirmed the
+  unchanged length comparison and expected-member loop; inspection of the call
+  confirmed `carryForwards` is named in the expected set.
+- Bounded paths: `rtk git diff --name-only` listed only
+  `internal/cli/cli_test.go` and this Task file.
+- Whitespace: `rtk git diff --check` exited 0 with no diagnostics.
+
+The commands under `## Verification` were not run; they remain owned by the
+Daemon.
