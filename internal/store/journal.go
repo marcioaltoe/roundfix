@@ -603,18 +603,23 @@ func (store *Store) AppendRunEvents(ctx context.Context, events []runevent.RunEv
 
 // PruneTerminalRuns deletes Run Event Journal rows for terminal Runs completed
 // before cutoff. It never deletes Run rows or Active Run locks.
+//
+// The eligibility scan runs outside the write transaction, so the machine-wide
+// write lock is only taken when rows are actually eligible — never to discover
+// that nothing is. The event count reported is the number of rows the DELETE
+// actually removed.
 func (store *Store) PruneTerminalRuns(ctx context.Context, cutoff time.Time) (PruneResult, error) {
-	var result PruneResult
-	err := store.withWriteTx(ctx, "Run Event prune", func(tx *sql.Tx) error {
-		candidates, err := terminalRunPruneCandidates(ctx, tx, cutoff)
-		if err != nil {
-			return err
-		}
-		runIDs := pruneCandidateRunIDs(candidates)
-		if len(runIDs) == 0 {
-			return nil
-		}
+	candidates, err := terminalRunPruneCandidates(ctx, store.db, cutoff)
+	if err != nil {
+		return PruneResult{}, err
+	}
+	runIDs := pruneCandidateRunIDs(candidates)
+	if len(runIDs) == 0 {
+		return PruneResult{}, nil
+	}
 
+	var result PruneResult
+	err = store.withWriteTx(ctx, "Run Event prune", func(tx *sql.Tx) error {
 		deleted, err := deleteRunEventsForRuns(ctx, tx, runIDs)
 		if err != nil {
 			return err
@@ -973,23 +978,37 @@ func checkedMultiply(left int64, right int64) (int64, error) {
 }
 
 // TerminalRunPruneCandidates lists terminal Runs whose completed_at is before
-// cutoff without mutating the Run Database.
+// cutoff without mutating the Run Database. The cutoff is a SQL predicate that
+// bounds eligibility to the candidate set — terminal Runs — rather than to the
+// event table, and each candidate's event count is derived from a bounded
+// query over that candidate set, never from an aggregate over the whole table.
 func (store *Store) TerminalRunPruneCandidates(ctx context.Context, cutoff time.Time) ([]PruneCandidate, error) {
-	return terminalRunPruneCandidates(ctx, store.db, cutoff)
+	candidates, err := terminalRunPruneCandidates(ctx, store.db, cutoff)
+	if err != nil {
+		return nil, err
+	}
+	if err := countPruneCandidateEvents(ctx, store.db, candidates); err != nil {
+		return nil, err
+	}
+	return candidates, nil
 }
 
 type queryContextRunner interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
+// terminalRunPruneCandidates selects terminal Runs and applies the retention
+// cutoff. The cutoff is expressed as a SQL predicate over completed_at so the
+// scan is bounded by the candidate set rather than by the event table; the
+// authoritative exact comparison stays in Go, so the retention boundary keeps
+// its precise meaning.
 func terminalRunPruneCandidates(ctx context.Context, querier queryContextRunner, cutoff time.Time) ([]PruneCandidate, error) {
 	rows, err := querier.QueryContext(ctx, `
-SELECT r.id, r.completed_at, COUNT(e.run_id)
+SELECT r.id, r.completed_at
 FROM runs r
-LEFT JOIN run_events e ON e.run_id = r.id
 WHERE r.state IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   AND TRIM(r.completed_at) <> ''
-GROUP BY r.id, r.completed_at
+  AND julianday(r.completed_at) <= julianday(?)
 ORDER BY r.completed_at, r.id`,
 		StateFetched,
 		StateStopped,
@@ -1003,6 +1022,7 @@ ORDER BY r.completed_at, r.id`,
 		StateCheckoutMoved,
 		StateIntegrationPending,
 		StateUnresolved,
+		formatTime(cutoff),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("select terminal Runs for Run Event prune: %w", err)
@@ -1015,7 +1035,7 @@ ORDER BY r.completed_at, r.id`,
 	for rows.Next() {
 		var candidate PruneCandidate
 		var completedAtRaw string
-		if err := rows.Scan(&candidate.RunID, &completedAtRaw, &candidate.Events); err != nil {
+		if err := rows.Scan(&candidate.RunID, &completedAtRaw); err != nil {
 			return nil, fmt.Errorf("scan terminal Run for Run Event prune: %w", err)
 		}
 		completedAt, err := parseTime(completedAtRaw)
@@ -1030,6 +1050,49 @@ ORDER BY r.completed_at, r.id`,
 		return nil, fmt.Errorf("iterate terminal Runs for Run Event prune: %w", err)
 	}
 	return candidates, nil
+}
+
+// countPruneCandidateEvents fills each candidate's event count from a bounded
+// query scoped to the candidate Run IDs, keeping eligibility independent of the
+// event table's total size. It runs on the read connection, never inside a
+// write transaction.
+func countPruneCandidateEvents(ctx context.Context, querier queryContextRunner, candidates []PruneCandidate) error {
+	if len(candidates) == 0 {
+		return nil
+	}
+	placeholders := strings.TrimRight(strings.Repeat("?,", len(candidates)), ",")
+	args := make([]any, 0, len(candidates))
+	for _, candidate := range candidates {
+		args = append(args, candidate.RunID)
+	}
+	rows, err := querier.QueryContext(ctx, `
+SELECT run_id, COUNT(*)
+FROM run_events
+WHERE run_id IN (`+placeholders+`)
+GROUP BY run_id`, args...)
+	if err != nil {
+		return fmt.Errorf("count Run Events for terminal Runs: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	counts := map[string]int{}
+	for rows.Next() {
+		var runID string
+		var count int
+		if err := rows.Scan(&runID, &count); err != nil {
+			return fmt.Errorf("scan Run Event count for terminal Run: %w", err)
+		}
+		counts[runID] = count
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate Run Event counts for terminal Runs: %w", err)
+	}
+	for index := range candidates {
+		candidates[index].Events = counts[candidates[index].RunID]
+	}
+	return nil
 }
 
 func pruneCandidateRunIDs(candidates []PruneCandidate) []string {

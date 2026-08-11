@@ -7,6 +7,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -357,6 +360,112 @@ func TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing(t *testing.T) {
 	}
 	if count, err := runStore.RunCount(ctx); err != nil || count != 1 {
 		t.Fatalf("expected Run row to survive, count=%d err=%v", count, err)
+	}
+}
+
+// TestRetentionScanIsBoundedByCandidates proves that eligibility work is
+// bounded by the candidate set — terminal Runs — rather than by the event
+// table. The eligibility query must not aggregate over `run_events`, and it
+// must express the retention cutoff as a SQL predicate. The query is inspected
+// directly so the claim is a property of the code, not a prose assertion.
+func TestRetentionScanIsBoundedByCandidates(t *testing.T) {
+	t.Parallel()
+
+	fset := token.NewFileSet()
+	parsedPackages, err := parser.ParseDir(fset, ".", func(info os.FileInfo) bool {
+		return !strings.HasSuffix(info.Name(), "_test.go")
+	}, 0)
+	if err != nil {
+		t.Fatalf("parse store package source: %v", err)
+	}
+
+	var eligibilitySQL string
+	found := false
+	for _, pkg := range parsedPackages {
+		for _, file := range pkg.Files {
+			ast.Inspect(file, func(node ast.Node) bool {
+				funcDecl, ok := node.(*ast.FuncDecl)
+				if !ok || funcDecl.Name.Name != "terminalRunPruneCandidates" {
+					return true
+				}
+				found = true
+				ast.Inspect(funcDecl.Body, func(node ast.Node) bool {
+					call, ok := node.(*ast.CallExpr)
+					if !ok {
+						return true
+					}
+					selector, ok := call.Fun.(*ast.SelectorExpr)
+					if !ok || selector.Sel.Name != "QueryContext" {
+						return true
+					}
+					query, ok := call.Args[1].(*ast.BasicLit)
+					if !ok || query.Kind != token.STRING {
+						return true
+					}
+					eligibilitySQL = query.Value
+					return true
+				})
+				return true
+			})
+		}
+	}
+	if !found {
+		t.Fatal("retention eligibility query terminalRunPruneCandidates not found")
+	}
+	if strings.Contains(eligibilitySQL, "run_events") {
+		t.Fatal("retention eligibility scan aggregates the event table; eligibility must be bounded by the candidate set")
+	}
+	if !strings.Contains(eligibilitySQL, "completed_at") {
+		t.Fatal("retention eligibility scan must predicate on completed_at")
+	}
+	if !strings.Contains(eligibilitySQL, "julianday") {
+		t.Fatal("retention eligibility scan must express the cutoff as a SQL predicate")
+	}
+}
+
+// TestRetentionScanOutsideWriteTransaction proves the eligibility scan left
+// the write transaction. With the machine-wide advisory write lock held, a
+// no-op prune must complete immediately: nothing is eligible, so the scan must
+// not need the writer. A scan that regressed inside the write transaction
+// would block on the held lock until the deadline expires.
+func TestRetentionScanOutsideWriteTransaction(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	// Seed a terminal Run completed after the cutoff so nothing is eligible.
+	cutoff := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	runStore.now = func() time.Time { return cutoff.Add(time.Hour) }
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	if _, err := runStore.AppendRunEvent(ctx, sampleRunEvent(run.ID, "recent retention event")); err != nil {
+		t.Fatalf("append Run Event: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, run.ID, StateClean); err != nil {
+		t.Fatalf("complete Run: %v", err)
+	}
+
+	if err := acquireWriteLock(runStore.writeLockFile, ctx); err != nil {
+		t.Fatalf("acquire write lock: %v", err)
+	}
+	defer func() {
+		_ = releaseWriteLock(runStore.writeLockFile)
+	}()
+
+	pruneCtx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancel()
+	pruned, err := runStore.PruneTerminalRuns(pruneCtx, cutoff)
+	if err != nil {
+		t.Fatalf("no-op prune blocked on the held write lock (eligibility scan inside write transaction): %v", err)
+	}
+	if len(pruned.RunIDs) != 0 || pruned.Events != 0 {
+		t.Fatalf("expected no-op prune result, got %#v", pruned)
+	}
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != 1 {
+		t.Fatalf("expected recent terminal journal preserved, got %d events", got)
 	}
 }
 

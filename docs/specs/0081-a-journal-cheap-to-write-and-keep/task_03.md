@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0081-a-journal-cheap-to-write-and-keep
-status: pending
+status: completed
 type: data
 complexity: medium
 ---
@@ -80,3 +80,69 @@ before it starts. Regression and compilation are the Run-level gate's job.
 - `_techspec.md` → System Architecture (the retention path); Build Order 3.
 - ADR-0033.
 - `references/2026-08-06-event-journal-payload-economics.md`.
+
+## Result
+
+Implementation-ready for Daemon Verification. No Task status was edited; no
+commit was made.
+
+### What changed (behavior)
+
+- `terminalRunPruneCandidates` now selects only `runs` rows — the cutoff is a
+  SQL predicate (`julianday(r.completed_at) <= julianday(?)`) that bounds
+  eligibility to the candidate set, and the old `LEFT JOIN run_events` with
+  `COUNT(e.run_id)` aggregate is gone from the eligibility query entirely. The
+  authoritative exact boundary check (`parseTime(completed_at).Before(cutoff)`)
+  still runs in Go over now-bounded candidates, so the retention policy's
+  meaning is preserved exactly.
+- `PruneTerminalRuns` runs the eligibility scan on the read connection first
+  and only takes the machine-wide write lock — and only when rows are actually
+  eligible. A no-op prune no longer opens a write transaction.
+- The reported event count is **derived cheaply from the candidate set**
+  (requirement 3's option a), via a bounded `COUNT(*) ... WHERE run_id IN (<candidates>)`
+  query that runs on the read connection outside any write transaction. The
+  Run-start sweep's reported `journal_rows` already came from the actual DELETE
+  `RowsAffected`, which is unchanged and never touched a full-table aggregate.
+- Schema, `run_events`/`runs` rows, Active Run locks, and VACUUM are untouched.
+
+### Acceptance-criterion evidence
+
+- **Eligibility bounded by candidate set, not the event table** — new
+  `TestRetentionScanIsBoundedByCandidates` inspects the eligibility query via
+  the package AST and asserts it contains no `run_events` reference and that
+  the cutoff is a SQL predicate (on `completed_at` via `julianday`).
+- **No aggregate over the event table inside a write transaction** — the
+  eligibility query has no `run_events` aggregate; the only `run_events`
+  aggregate (the candidate-set event count) lives in
+  `countPruneCandidateEvents`, which runs on the read connection. New
+  `TestRetentionScanOutsideWriteTransaction` holds the machine-wide advisory
+  write lock and asserts a no-op `PruneTerminalRuns` completes immediately
+  instead of blocking on a write transaction.
+- **Policy meaning unchanged** — existing `TestPruneTerminalRunsDeletesOnlyEligibleJournalRows`,
+  `TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing`,
+  `TestRetentionPreservesRunLifecycleRecords`, and `TestPruneTerminalRunsNeverVacuumsAllocatedPages`
+  pass focused (excluded from this run only the two declared Verification
+  commands that the Daemon owns).
+- **`gc` behavior unchanged** — `TestRunGCDryRunListsEligibleRunsAndChangesNothing`,
+  `TestRunGCPrunesEligibleJournalsArtifactsAndOrphans`, `TestRunGCSkipsWhenJournalRetentionIsZero`,
+  and the implement preflight sweep tests pass. Output shapes are unchanged for
+  every case that has rows; for the no-eligible-rows case both the dry-run
+  `Journal rows eligible: 0` and the sweep's skip-printing behavior are
+  byte-identical to before, so **no output change** applies there.
+
+### Focused checks run (declared Verification not run, Daemon-owned)
+
+- `go build -buildvcs=false ./...` → build OK.
+- `go vet -buildvcs=false ./internal/store` → OK.
+- `gofmt -l internal/store/journal.go internal/store/journal_test.go` → clean.
+- Per-package compile of `./internal/store ./internal/cli` test binaries → OK.
+- Existing store retention/lifecycle suites and cli `gc`/preflight suites pass
+  as listed above; `TestJournalMeasurementHarness` passes (self-seeded Active
+  Run remains ineligible).
+
+### Follow-ups
+
+None in scope. The candidate-set event count is currently a bounded per-candidate
+`IN` query; it exists only to keep the `gc` dry-run "Journal rows eligible" line
+byte-identical, and could be dropped entirely if that report line were ever
+retired.
