@@ -42,15 +42,25 @@ five.
 
 This Task may create or modify only:
 
-- `internal/speccheck/speccheck.go`
-- `internal/speccheck/speccheck_test.go`
-- `internal/specaudit/specaudit.go`
-- `internal/specaudit/specaudit_test.go`
+- `internal/speccheck/citations.go`
+- `internal/speccheck/citations_test.go`
+- `internal/speccheck/backlog.go`
+- `internal/speccheck/backlog_test.go`
+- `internal/specaudit/audit.go`
+- `internal/specaudit/audit_test.go`
 - `internal/worktree/worktree.go`
 - `internal/worktree/worktree_test.go`
 - `internal/cli/archive.go`
 - `internal/cli/archive_test.go`
 - `docs/specs/0085-what-an-agent-reads-before-it-decides/task_03.md`
+
+This list was corrected on 2026-08-11. It first named `internal/speccheck/speccheck.go`
+and `internal/specaudit/specaudit.go`, which do not exist: the archive-layout
+expressions live in `citations.go`, `backlog.go` and `audit.go`. The Agent
+refused the Task rather than migrate part of it, and named the missing files —
+the right call, because a partial migration leaves the one-owner criterion false
+while looking like progress. Enumerating a boundary from guessed filenames is
+what cost this Run.
 
 ## Verification
 
