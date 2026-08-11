@@ -85,10 +85,16 @@ type AgentSelectionExhaustedRequest struct {
 // AppendAgentSelectionAttempt appends one durable Agent Selection attempt and
 // its matching Run Event in the same transaction. Attempts are strictly
 // contiguous per Run scope: the first attempt is 1 and each next attempt is
-// exactly previous+1.
+// exactly previous+1. The Run Event is appended directly in the transaction
+// rather than through the batched journal writer because it must be atomic
+// with the attempt row; the pending journal batch is flushed first so earlier
+// events for this Run keep lower cursors than the event this method commits.
 func (store *Store) AppendAgentSelectionAttempt(ctx context.Context, req AgentSelectionAttemptRequest) (AgentSelectionAttempt, error) {
 	if err := validateAgentSelectionAttemptRequest(req); err != nil {
 		return AgentSelectionAttempt{}, err
+	}
+	if err := store.FlushJournal(ctx); err != nil {
+		return AgentSelectionAttempt{}, fmt.Errorf("flush pending journal before Agent Selection attempt append: %w", err)
 	}
 	createdAt := req.Time
 	if createdAt.IsZero() {
@@ -134,6 +140,9 @@ func (store *Store) AppendAgentSelectionAttempt(ctx context.Context, req AgentSe
 func (store *Store) AppendAgentSelectionExhausted(ctx context.Context, req AgentSelectionExhaustedRequest) (int64, error) {
 	if err := validateAgentSelectionExhaustedRequest(req); err != nil {
 		return 0, err
+	}
+	if err := store.FlushJournal(ctx); err != nil {
+		return 0, fmt.Errorf("flush pending journal before Agent Selection exhausted event append: %w", err)
 	}
 	createdAt := req.Time
 	if createdAt.IsZero() {

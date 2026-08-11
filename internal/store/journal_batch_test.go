@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -38,9 +39,9 @@ func openTestStoreBatch(t *testing.T, ctx context.Context, homeDir string, batch
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
-	// Replace the production writer with a test-sized one. The word before
-	// newJournalWriter ran inside Open, so the Store-scoped writer is recreated
-	// here at the test boundary.
+	// Open already built the Store-scoped writer with the production
+	// constants. Replace it here, at the test boundary, with a test-sized
+	// writer so the batch limits are observable without timing.
 	writer := newJournalWriter(store)
 	writer.batchSize = batchSize
 	writer.maxLinger = linger
@@ -102,7 +103,9 @@ func TestBatchClosesOnCountLingerAndImmediate(t *testing.T) {
 	t.Run("count closes a batch", func(t *testing.T) {
 		w := newBatchTestWriter(t, 3, time.Hour)
 		defer w.close(t)
-		w.store.FlushJournal(context.Background())
+		if err := w.store.FlushJournal(context.Background()); err != nil {
+			t.Fatalf("flush journal: %v", err)
+		}
 		runID := newRunForBatch(t, w.store)
 
 		for i := 0; i < 3; i++ {
@@ -282,7 +285,9 @@ func TestBatchAmbiguousCommit(t *testing.T) {
 
 	newFixture := func(t *testing.T) *batchTestWriter {
 		w := newBatchTestWriter(t, 100, time.Hour)
-		w.store.FlushJournal(context.Background())
+		if err := w.store.FlushJournal(context.Background()); err != nil {
+			t.Fatalf("flush journal: %v", err)
+		}
 		t.Cleanup(func() { w.close(t) })
 		return w
 	}
@@ -360,6 +365,27 @@ func TestBatchAmbiguousCommit(t *testing.T) {
 	})
 }
 
+// TestCommitJournalBatchClassifiesAmbiguousCommit guards the production router
+// `commitJournalBatch` uses to reach reconciliation. The suite's direct calls
+// to reconcileBatchCommit cannot catch a regression in that router, which is
+// exactly the defect the other cases would miss: withWriteTx returns a
+// writeCommitError *value*, so the router must match the value type, not a
+// pointer to it. Asserting the classifier here keeps the pointer/value trap
+// from silently becoming dead code again.
+func TestCommitJournalBatchClassifiesAmbiguousCommit(t *testing.T) {
+	t.Parallel()
+
+	if !isWriteCommitError(writeCommitError{operation: "Run Event batch append", cause: errors.New("boom")}) {
+		t.Fatal("expected a writeCommitError value to be classified as an ambiguous commit")
+	}
+	if isWriteCommitError(errors.New("begin Run Event batch append: ...")) {
+		t.Fatal("begin/insert errors must not be classified as an ambiguous commit")
+	}
+	if !isWriteCommitError(fmt.Errorf("wrap a commit error: %w", writeCommitError{operation: "Run Event batch append", cause: errors.New("boom")})) {
+		t.Fatal("a wrapped writeCommitError must reach the classifier through its Unwrap chain")
+	}
+}
+
 func TestBatchBeginInsertCommitFailurePreservesBatch(t *testing.T) {
 	t.Parallel()
 
@@ -403,8 +429,13 @@ func TestBatchBeginInsertCommitFailurePreservesBatch(t *testing.T) {
 		if err := w.store.CloseJournal(context.Background()); err == nil {
 			t.Fatal("expected CloseInt to preserve the unflushable batch with an error")
 		}
-		w.store.db.Close()
-		w.store.writeLockFile.Close()
+		// Shut down through Store.Close so the lock and database closes follow
+		// the Store's own ordering, and assert the error rather than discarding
+		// the two descriptors: the preserved batch still fails the terminal
+		// flush, but the close completes the lock and DB release.
+		if err := w.store.Close(); err == nil {
+			t.Fatal("expected Store close to surface the preserved unflushable batch with an error")
+		}
 	})
 
 	t.Run("multiple sinks share one store-scoped writer", func(t *testing.T) {
@@ -432,24 +463,31 @@ func TestBatchBeginInsertCommitFailurePreservesBatch(t *testing.T) {
 		}
 	})
 
-	t.Run("concurrent publishers keep order and contiguous cursors", func(t *testing.T) {
+	t.Run("concurrent publishers keep contiguous cursors", func(t *testing.T) {
 		w := newBatchTestWriter(t, 5, time.Hour)
 		defer w.close(t)
 		runID := newRunForBatch(t, w.store)
 
 		const publishers = 4
 		const each = 25
+		publishErrs := make(chan error, publishers*each)
 		var wg sync.WaitGroup
-		for p := 0; p < publishers; p++ {
+		for p := range publishers {
 			wg.Add(1)
-			go func(p int) {
+			go func() {
 				defer wg.Done()
-				for i := 0; i < each; i++ {
-					_ = w.sink.Publish(context.Background(), batchAgentEvent(runID, fmt.Sprintf("p%d-%d", p, i)))
+				for i := range each {
+					if err := w.sink.Publish(context.Background(), batchAgentEvent(runID, fmt.Sprintf("p%d-%d", p, i))); err != nil {
+						publishErrs <- err
+					}
 				}
-			}(p)
+			}()
 		}
 		wg.Wait()
+		close(publishErrs)
+		for err := range publishErrs {
+			t.Fatalf("concurrent publish: %v", err)
+		}
 		if err := w.store.FlushJournal(context.Background()); err != nil {
 			t.Fatalf("flush after concurrent publish: %v", err)
 		}

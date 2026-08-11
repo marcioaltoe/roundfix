@@ -296,6 +296,7 @@ func newParallelRunFixtures(t *testing.T, ctx context.Context) []parallelRunFixt
 
 func setParallelRunsBusyTimeout(t *testing.T, ctx context.Context, runStore *Store) {
 	t.Helper()
+	//nolint:sql-injection-exec-sprintf-go // PRAGMA does not accept bind parameters; the value is an internal integer constant.
 	if _, err := runStore.db.ExecContext(ctx, fmt.Sprintf("PRAGMA busy_timeout = %d", parallelRunsPreRaiseBusyTimeoutMillis)); err != nil {
 		t.Fatalf("set pre-raise busy timeout: %v", err)
 	}

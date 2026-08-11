@@ -56,6 +56,9 @@ type journalHarnessWriteSample struct {
 }
 
 func TestJournalMeasurementHarness(t *testing.T) {
+	if testing.Short() {
+		t.Skip("journal measurement harness seeds large journals; run without -short")
+	}
 	params := journalHarnessParameters{
 		JournalSizes:    []int{0, 1_000, 10_000},
 		WriterCounts:    []int{1, 2, 4},

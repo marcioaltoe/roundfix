@@ -82,13 +82,20 @@ type journalWriter struct {
 	inFlight bool
 	closed   bool
 	timer    *time.Timer
+
+	// commitDone is closed when the in-flight commit completes and is
+	// re-allocated on each commit so waiters can observe progress. It lets an
+	// immediate-durability publish order its event after a commit that is
+	// already draining, without holding the mutex across the database write.
+	commitDone chan struct{}
 }
 
 func newJournalWriter(store *Store) *journalWriter {
 	return &journalWriter{
-		store:     store,
-		batchSize: journalBatchSize,
-		maxLinger: journalMaxLinger,
+		store:      store,
+		batchSize:  journalBatchSize,
+		maxLinger:  journalMaxLinger,
+		commitDone: make(chan struct{}),
 	}
 }
 
@@ -102,85 +109,112 @@ func (sink journalSink) Publish(ctx context.Context, event runevent.RunEvent) er
 }
 
 // publish appends one event to the pending batch, closing the batch before an
-// immediate-durability event and on count flush.
+// immediate-durability event and on count flush. The database commit runs
+// outside the mutex (see flush), so a publish never blocks behind another
+// publisher's acquireWriteLock wait or SQLite transaction.
 func (w *journalWriter) publish(ctx context.Context, event runevent.RunEvent) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if w.closed {
-		return errJournalClosed
-	}
 	if journalImmediate(event) {
 		// Flush whatever is pending first (requiring its own commit), then
 		// append this event to a fresh batch and flush it immediately so it is
 		// durable on its own.
-		if err := w.flushLocked(ctx); err != nil {
+		if err := w.flush(ctx); err != nil {
 			return err
 		}
+		w.mu.Lock()
+		if w.closed {
+			w.mu.Unlock()
+			return errJournalClosed
+		}
 		w.pending = append(w.pending, event)
-		return w.flushLocked(ctx)
+		w.mu.Unlock()
+		return w.flush(ctx)
+	}
+	w.mu.Lock()
+	if w.closed {
+		w.mu.Unlock()
+		return errJournalClosed
 	}
 	w.pending = append(w.pending, event)
 	if len(w.pending) >= w.batchSize {
-		return w.flushLocked(ctx)
+		w.mu.Unlock()
+		return w.flush(ctx)
 	}
 	w.armLingerLocked()
+	w.mu.Unlock()
 	return nil
 }
 
 // armLingerLocked schedules a commit after journalMaxLinger since the current
 // batch's first event, so a quiet publisher's last line is not held
-// indefinitely.
+// indefinitely. A batch's deadline runs from its first event, so a later event
+// in the same batch must not extend it: once armed, the timer is left running.
 func (w *journalWriter) armLingerLocked() {
 	if w.inFlight {
 		return
 	}
-	w.stopTimerLocked()
+	if w.timer != nil {
+		return
+	}
 	w.timer = time.AfterFunc(w.maxLinger, func() {
-		w.mu.Lock()
-		defer w.mu.Unlock()
-		if w.closed || w.inFlight {
-			return
-		}
-		_ = w.flushLocked(context.Background())
+		_ = w.flush(context.Background())
 	})
 }
 
 // FlushJournal commits any pending batch now.
 func (w *journalWriter) flush(ctx context.Context) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	return w.flushLocked(ctx)
+	for {
+		w.mu.Lock()
+		batch, err := w.drainLocked()
+		w.mu.Unlock()
+		if err != nil {
+			return err
+		}
+		if batch == nil {
+			return nil
+		}
+		if err := w.commitDrained(ctx, batch); err != nil {
+			return err
+		}
+	}
 }
 
-// flushLocked drains the pending batch, commits it, and only clears the batch
-// after a successful commit. On any begin, insert, or commit failure the whole
-// batch is preserved and the error is returned through the caller.
-func (w *journalWriter) flushLocked(ctx context.Context) error {
+// drainLocked takes the current pending batch out from under the mutex and
+// marks the writer in-flight, or returns nothing when there is nothing to
+// commit. It must be called with w.mu held. Databases writes happen in
+// commitDrained, after the mutex is released, so publishers are never
+// serialized behind the advisory write lock or a SQLite transaction.
+func (w *journalWriter) drainLocked() ([]runevent.RunEvent, error) {
 	if len(w.pending) == 0 {
 		w.stopTimerLocked()
-		return nil
+		return nil, nil
 	}
 	if w.inFlight {
 		// A linger or count flush is already committing; leave the batch to it.
-		return nil
+		return nil, nil
 	}
 	w.inFlight = true
 	w.stopTimerLocked()
 	batch := w.pending
 	w.pending = nil
-	maybeUnwind := func(keep bool) {
-		if keep {
-			w.pending = append(batch, w.pending...)
-		}
-		w.inFlight = false
-	}
+	return batch, nil
+}
+
+// commitDrained commits a drained batch outside the mutex, restoring the whole
+// batch (plus anything published meanwhile) on failure. Committing outside the
+// mutex keeps the write lock wait and SQLite transaction out of the mutex
+// critical section.
+func (w *journalWriter) commitDrained(ctx context.Context, batch []runevent.RunEvent) error {
 	err := commitJournalBatch(ctx, w.store, batch)
+	w.mu.Lock()
+	w.inFlight = false
 	if err != nil {
-		maybeUnwind(true)
-		return err
+		w.pending = append(batch, w.pending...)
+	} else if len(w.pending) > 0 && !w.closed && w.timer == nil {
+		// Re-arm the linger timer for events committed into a fresh batch.
+		w.armLingerLocked()
 	}
-	maybeUnwind(false)
-	return nil
+	w.mu.Unlock()
+	return err
 }
 
 func (w *journalWriter) stopTimerLocked() {
@@ -194,16 +228,20 @@ func (w *journalWriter) stopTimerLocked() {
 // flush commits. A failed Close preserves the batch and remains retryable;
 // every later Publish after a successful Close is rejected.
 func (w *journalWriter) close(ctx context.Context) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if w.closed {
-		return nil
+	for {
+		w.mu.Lock()
+		idle := len(w.pending) == 0 && !w.inFlight && w.timer == nil
+		if w.closed || idle {
+			w.closed = true
+			w.stopTimerLocked()
+			w.mu.Unlock()
+			return nil
+		}
+		w.mu.Unlock()
+		if err := w.flush(ctx); err != nil {
+			return err
+		}
 	}
-	if err := w.flushLocked(ctx); err != nil {
-		return err
-	}
-	w.closed = true
-	return nil
 }
 
 // batchAssignment records the contiguous cursor range a Run received inside a
@@ -219,19 +257,25 @@ type batchAssignment struct {
 // commit by reading the assigned range back.
 func commitJournalBatch(ctx context.Context, store *Store, batch []runevent.RunEvent) error {
 	var assignment []batchAssignment
-	var commitErr *writeCommitError
 	err := store.withWriteTx(ctx, "Run Event batch append", func(tx *sql.Tx) error {
 		var err error
 		assignment, err = planAndInsertBatch(ctx, tx, batch)
 		return err
 	})
 	if err != nil {
-		if errors.As(err, &commitErr) {
+		if isWriteCommitError(err) {
 			return reconcileBatchCommit(ctx, store, batch, assignment)
 		}
 		return err
 	}
 	return nil
+}
+
+// isWriteCommitError reports whether err is a writeCommitError value, the
+// marker withWriteTx returns when the transaction commit itself failed.
+func isWriteCommitError(err error) bool {
+	var commitErr writeCommitError
+	return errors.As(err, &commitErr)
 }
 
 // planAndInsertBatch inserts events in publisher order, allocating one
@@ -321,7 +365,6 @@ func reconcileBatchCommit(ctx context.Context, store *Store, batch []runevent.Ru
 		return fmt.Errorf("commit Run Event batch append: ambiguous commit left a partial or different cursor range")
 	}
 	// No rows committed: one retry with the same cursor range.
-	var commitErr *writeCommitError
 	err = store.withWriteTx(ctx, "Run Event batch append retry", func(tx *sql.Tx) error {
 		for _, a := range assignment {
 			for index, event := range a.events {
@@ -333,7 +376,7 @@ func reconcileBatchCommit(ctx context.Context, store *Store, batch []runevent.Ru
 		return nil
 	})
 	if err != nil {
-		if errors.As(err, &commitErr) {
+		if isWriteCommitError(err) {
 			settled, anyRows, rerr := readBatchAssignment(ctx, store, assignment)
 			if rerr != nil {
 				return rerr

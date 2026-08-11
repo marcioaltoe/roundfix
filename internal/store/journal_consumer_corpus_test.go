@@ -65,44 +65,58 @@ func consumerCorpusEvent(runID string, index int, cursor int64) runevent.RunEven
 	}
 }
 
-func assertCorpus(events []JournalEvent, wantCursor int64) {
+// consumerCorpusTotal is the shared fixed-size corpus every consumer replay
+// seeds and replays.
+const consumerCorpusTotal = 12
+
+func assertCorpus(t *testing.T, events []JournalEvent, wantCursor int64) {
+	t.Helper()
 	if len(events) == 0 {
-		panic("corpus replay: expected recorded events")
+		t.Fatal("corpus replay: expected recorded events")
+	}
+	if int64(len(events)) != wantCursor {
+		t.Fatalf("corpus replay: recorded %d events, want %d", len(events), wantCursor)
 	}
 	for index, entry := range events {
-		if entry.Cursor != int64(index+1) || entry.Cursor > wantCursor {
-			panic("corpus replay: unexpected cursor order")
+		if entry.Cursor != int64(index+1) {
+			t.Fatalf("corpus replay: event %d has cursor %d, want %d", index, entry.Cursor, index+1)
 		}
 	}
+}
+
+// seedConsumerCorpus opens a store, creates a run, and records the shared
+// pre-change corpus of consumerCorpusTotal events.
+func seedConsumerCorpus(t *testing.T, ctx context.Context) (*Store, string) {
+	t.Helper()
+	s := openTestStore(t, ctx, t.TempDir())
+	t.Cleanup(func() { closeStore(t, s) })
+	run, err := s.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	for index := range consumerCorpusTotal {
+		if _, err := s.AppendRunEvent(ctx, consumerCorpusEvent(run.ID, index, int64(index+1))); err != nil {
+			t.Fatalf("append corpus event %d: %v", index, err)
+		}
+	}
+	return s, run.ID
 }
 
 func TestConsumerCorpusFullReadReplaysIdentically(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	s := openTestStore(t, ctx, t.TempDir())
-	defer closeStore(t, s)
+	s, runID := seedConsumerCorpus(t, ctx)
 
-	run, err := s.CreateRun(ctx, sampleCreateRunRequest())
-	if err != nil {
-		t.Fatalf("create run: %v", err)
-	}
-	const total = 12
-	for index := 0; index < total; index++ {
-		if _, err := s.AppendRunEvent(ctx, consumerCorpusEvent(run.ID, index, int64(index+1))); err != nil {
-			t.Fatalf("append corpus event %d: %v", index, err)
-		}
-	}
-
-	recorded, err := s.RunEventsAfter(ctx, run.ID, 0, total)
+	recorded, err := s.RunEventsAfter(ctx, runID, 0, consumerCorpusTotal)
 	if err != nil {
 		t.Fatalf("record corpus via full read: %v", err)
 	}
-	assertCorpus(recorded, total)
+	assertCorpus(t, recorded, consumerCorpusTotal)
 
 	paged := []JournalEvent{}
 	cursor := int64(0)
 	for {
-		page, err := s.RunEventsAfter(ctx, run.ID, cursor, 5)
+		page, err := s.RunEventsAfter(ctx, runID, cursor, 5)
 		if err != nil {
 			t.Fatalf("replay corpus page at %d: %v", cursor, err)
 		}
@@ -139,25 +153,25 @@ func TestConsumerCorpusFullReadReplaysIdentically(t *testing.T) {
 func TestConsumerCorpusEventsStreamReplaysIdentically(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	s := openTestStore(t, ctx, t.TempDir())
-	defer closeStore(t, s)
+	s, runID := seedConsumerCorpus(t, ctx)
 
-	run, err := s.CreateRun(ctx, sampleCreateRunRequest())
-	if err != nil {
-		t.Fatalf("create run: %v", err)
-	}
-	const total = 12
-	for index := 0; index < total; index++ {
-		if _, err := s.AppendRunEvent(ctx, consumerCorpusEvent(run.ID, index, int64(index+1))); err != nil {
-			t.Fatalf("append corpus event %d: %v", index, err)
-		}
-	}
-
-	events, err := s.RunEventsAfter(ctx, run.ID, 0, total)
+	events, err := s.RunEventsAfter(ctx, runID, 0, consumerCorpusTotal)
 	if err != nil {
 		t.Fatalf("load corpus: %v", err)
 	}
 
+	// The fixed corpus is deterministic, so the projected envelope lines are
+	// stable. Only daemon kinds project a record; agent chunks and Daemon
+	// status events are skipped by the stream consumer.
+	wantLines := []string{
+		"task-status|started||||task_02",
+		"verification|verdict||passed||task_02",
+		"outcome||||clean|",
+		"task-status|started||||task_02",
+		"verification|verdict||passed||task_02",
+		"outcome||||clean|",
+		"task-status|started||||task_02",
+	}
 	lines := []string{}
 	for _, entry := range events {
 		record, ok, err := runevent.ProjectStreamEvent(entry.Cursor, entry.Event, runevent.AllStreamCategories())
@@ -181,8 +195,13 @@ func TestConsumerCorpusEventsStreamReplaysIdentically(t *testing.T) {
 			record.WorkItem,
 		}, "|"))
 	}
-	if len(lines) == 0 {
-		t.Fatal("expected the events stream consumer to produce records")
+	if len(lines) != len(wantLines) {
+		t.Fatalf("events stream produced %d records, want %d", len(lines), len(wantLines))
+	}
+	for index := range wantLines {
+		if lines[index] != wantLines[index] {
+			t.Fatalf("events stream record %d = %q, want %q", index, lines[index], wantLines[index])
+		}
 	}
 	// The corpus must exercise every projected category so the replay is not a
 	// rehearsal of a single category.
@@ -208,25 +227,13 @@ func TestConsumerCorpusEventsStreamReplaysIdentically(t *testing.T) {
 func TestReplayCorpusHeaderMatchesFullRead(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	s := openTestStore(t, ctx, t.TempDir())
-	defer closeStore(t, s)
+	s, runID := seedConsumerCorpus(t, ctx)
 
-	run, err := s.CreateRun(ctx, sampleCreateRunRequest())
-	if err != nil {
-		t.Fatalf("create run: %v", err)
-	}
-	const total = 12
-	for index := 0; index < total; index++ {
-		if _, err := s.AppendRunEvent(ctx, consumerCorpusEvent(run.ID, index, int64(index+1))); err != nil {
-			t.Fatalf("append corpus event %d: %v", index, err)
-		}
-	}
-
-	events, err := s.RunEventsAfter(ctx, run.ID, 0, total)
+	events, err := s.RunEventsAfter(ctx, runID, 0, consumerCorpusTotal)
 	if err != nil {
 		t.Fatalf("load corpus full read: %v", err)
 	}
-	headers, err := s.RunEventHeadersAfter(ctx, run.ID, 0)
+	headers, err := s.RunEventHeadersAfter(ctx, runID, 0)
 	if err != nil {
 		t.Fatalf("load corpus header projection: %v", err)
 	}
@@ -252,59 +259,44 @@ func TestReplayCorpusHeaderMatchesFullRead(t *testing.T) {
 func TestReplayCorpusBatchClockMatchesFullEvents(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	s := openTestStore(t, ctx, t.TempDir())
-	defer closeStore(t, s)
+	s, runID := seedConsumerCorpus(t, ctx)
 
-	run, err := s.CreateRun(ctx, sampleCreateRunRequest())
-	if err != nil {
-		t.Fatalf("create run: %v", err)
-	}
-	const total = 12
-	for index := 0; index < total; index++ {
-		if _, err := s.AppendRunEvent(ctx, consumerCorpusEvent(run.ID, index, int64(index+1))); err != nil {
-			t.Fatalf("append corpus event %d: %v", index, err)
-		}
-	}
-
-	events, err := s.RunEventsAfter(ctx, run.ID, 0, total)
+	events, err := s.RunEventsAfter(ctx, runID, 0, consumerCorpusTotal)
 	if err != nil {
 		t.Fatalf("load corpus full read: %v", err)
 	}
-	headers, err := s.RunEventHeadersAfter(ctx, run.ID, 0)
+	headers, err := s.RunEventHeadersAfter(ctx, runID, 0)
 	if err != nil {
 		t.Fatalf("load corpus header projection: %v", err)
 	}
 
 	type span struct{ first, last time.Time }
-	fullSpans := map[int]span{}
-	for _, entry := range events {
-		event := entry.Event
-		if event.Batch <= 0 || event.Time.IsZero() {
-			continue
+	// foldSpans collapses per-Batch first/last times for both the full events
+	// and the header projection with one shared lookup shape.
+	foldSpans := func(count int, at func(index int) (batch int, when time.Time)) map[int]span {
+		spans := map[int]span{}
+		for index := range count {
+			batch, when := at(index)
+			if batch <= 0 || when.IsZero() {
+				continue
+			}
+			current, seen := spans[batch]
+			if !seen || when.Before(current.first) {
+				current.first = when
+			}
+			if when.After(current.last) {
+				current.last = when
+			}
+			spans[batch] = current
 		}
-		current := fullSpans[event.Batch]
-		if _, ok := fullSpans[event.Batch]; !ok || event.Time.Before(current.first) {
-			current.first = event.Time
-		}
-		if event.Time.After(current.last) {
-			current.last = event.Time
-		}
-		fullSpans[event.Batch] = current
+		return spans
 	}
-	headerSpans := map[int]span{}
-	for _, header := range headers {
-		if header.Batch <= 0 || header.Time.IsZero() {
-			continue
-		}
-		current := headerSpans[header.Batch]
-		if _, ok := headerSpans[header.Batch]; !ok || header.Time.Before(current.first) {
-			current.first = header.Time
-		}
-		if header.Time.After(current.last) {
-			current.last = header.Time
-		}
-		headerSpans[header.Batch] = current
-	}
+	fullSpans := foldSpans(len(events), func(index int) (int, time.Time) {
+		return events[index].Event.Batch, events[index].Event.Time
+	})
+	headerSpans := foldSpans(len(headers), func(index int) (int, time.Time) {
+		return headers[index].Batch, headers[index].Time
+	})
 	if len(fullSpans) != len(headerSpans) {
 		t.Fatalf("batch-clock span count from full %d != header %d", len(fullSpans), len(headerSpans))
 	}
@@ -325,6 +317,9 @@ func TestReplayCorpusBatchClockMatchesFullEvents(t *testing.T) {
 // with Go overlays, so the characterization crosses the real consumer seams
 // without adding test hooks to production code or rewriting the fixture.
 func TestJournalConsumerCorpusReplaysEveryConsumer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("consumer corpus replay runs a nested go test; run without -short")
+	}
 	repositoryRoot := journalConsumerCorpusRepositoryRoot(t)
 	testdataDir := filepath.Join(repositoryRoot, "internal", "store", "testdata")
 	fixture := filepath.Join(testdataDir, "2026-08-11-prechange-roundfix.db")
@@ -377,7 +372,8 @@ func TestJournalConsumerCorpusReplaysEveryConsumer(t *testing.T) {
 				t.Fatalf("write %s overlay: %v", test.name, err)
 			}
 
-			command := exec.Command(
+			command := exec.CommandContext(
+				t.Context(),
 				"go", "test",
 				"-overlay="+overlayPath,
 				"-count=1",

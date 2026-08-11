@@ -139,8 +139,12 @@ func TestRunEventHeadersAfterRequiresRunAndCursorForward(t *testing.T) {
 	if _, err := s.RunEventHeadersAfter(ctx, "   ", 0); err == nil {
 		t.Fatal("expected blank Run ID to be rejected")
 	}
-	if _, err := s.RunEventHeadersAfter(ctx, "run_missing", 0); err != nil {
-		t.Fatalf("expected missing Run to list no headers, got %v", err)
+	missing, err := s.RunEventHeadersAfter(ctx, "run_missing", 0)
+	if err != nil {
+		t.Fatalf("list headers for missing Run: %v", err)
+	}
+	if len(missing) != 0 {
+		t.Fatalf("expected missing Run to list no headers, got %d", len(missing))
 	}
 
 	runID := mustHeaderRun(t, ctx, s, []string{"one", "two"})

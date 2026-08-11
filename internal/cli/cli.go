@@ -4857,7 +4857,12 @@ func publishTerminalCompletionWithContext(
 	// outcome and the notification receipt bypass the (possibly closed) writer
 	// through the direct immediate path.
 	if err := runStore.FlushJournal(ctx); err != nil {
-		fmt.Fprintf(stderr, "Warning: terminal journal flush failed: %v\n", err)
+		// The preserved batch commits later and receives higher cursors than
+		// the outcome appended below, so cursor order no longer matches
+		// publication order. Retry the flush once before appending the outcome.
+		if retryErr := runStore.FlushJournal(ctx); retryErr != nil {
+			fmt.Fprintf(stderr, "Warning: terminal journal flush failed; pending events will follow the outcome in cursor order: %v (retry: %v)\n", err, retryErr)
+		}
 	}
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, terminal, stderr)
 	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run, terminal)
