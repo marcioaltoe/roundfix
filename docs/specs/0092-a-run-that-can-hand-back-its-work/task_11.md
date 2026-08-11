@@ -1,7 +1,7 @@
 ---
 task: task_11
 spec: 0092-a-run-that-can-hand-back-its-work
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -70,3 +70,35 @@ Run-level gate still proves the assembled tree after this Task settles.
 
 - `_prd.md` → Goals 3 and 4.
 - `task_10.md` → the help copy this contract pins.
+
+## Result
+
+Updated the `reconcile` row in `TestRunCommandHelp` to pin the complete synopsis
+Task 10 added, including the mutually exclusive `--discard-superseded` and
+`--carry-forward` acts. The assertion still uses the existing exact string
+literal; no matcher, production code, help copy, or behavior changed.
+
+Acceptance evidence:
+
+- Help contract: before the edit,
+  `rtk proxy rg -n -C 20 'TestRunCommandHelp|reconcile \\[--apply\\]|discard-superseded|carry-forward' internal/cli/cli_test.go internal/cli/cli.go`
+  showed the pre-Spec synopsis in `internal/cli/cli_test.go:432` and the Task 10
+  synopsis in `internal/cli/cli.go:51` and `internal/cli/cli.go:5296`. After the
+  edit, `rtk proxy rg -n -F 'roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]' internal/cli/cli.go internal/cli/cli_test.go`
+  found the same complete literal at all three locations.
+- Focused behavior: `rtk proxy env GOCACHE=/private/tmp/roundfix-task11-go-cache rtk go test ./internal/cli -run '^TestRunCommandHelp$/^reconcile$' -count=1`
+  exited 0 and reported `2 passed in 1 packages`.
+- Exactness and sweep: a repository-wide `*_test.go` search for the three help
+  strings Task 10 removed — the old synopsis and the two old aligned option
+  rows — exited 1 with no matches. Inspection of `rtk git diff --
+  internal/cli/cli_test.go` showed only the exact expected synopsis literal
+  changed; the `strings.Contains` assertion and surrounding test are unchanged.
+- Bounded scope: `rtk git diff --name-only` listed only
+  `internal/cli/cli_test.go` and this Task file.
+
+Follow-up: `docs/user-guide/commands.md:616` still contains the pre-Spec
+synopsis. It is not a contract assertion and is outside this Task's bounded
+scope, so this Task did not edit it.
+
+The command under `## Verification` and the repository gate were not run; they
+remain owned by the Daemon.

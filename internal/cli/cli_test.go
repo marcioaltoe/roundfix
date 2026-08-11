@@ -429,7 +429,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "reconcile",
 			args:     []string{"reconcile", "--help"},
-			contains: []string{"roundfix reconcile [run-id] [--apply] [--format <text|json>]", "read-only report", "--apply", "--format"},
+			contains: []string{"roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]", "read-only report", "--apply", "--format"},
 		},
 		{
 			name:     "profiles",
