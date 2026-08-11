@@ -26,13 +26,13 @@ const (
 func ArchiveDir(kind ArchiveKind) string {
 	switch kind {
 	case ArchiveKindSpec:
-		return "docs/specs/_archived"
+		return "_archived/specs"
 	case ArchiveKindFinding:
-		return "docs/findings/_archived"
+		return "_archived/findings"
 	case ArchiveKindADR:
-		return "docs/adr"
+		return "_archived/adr"
 	case ArchiveKindBacklog:
-		return "docs/backlog"
+		return "_archived/backlog"
 	default:
 		return ""
 	}
@@ -53,8 +53,9 @@ type ArchiveResult struct {
 }
 
 // Archive verifies completion and QA evidence, stamps archive metadata in the
-// PRD frontmatter, and moves the Spec under <Spec Root>/_archived/. A partial
-// QA Report is eligible only when its blocked rows are declared unreachable.
+// PRD frontmatter, and moves the Spec under the resolved archived Spec root. A
+// partial QA Report is eligible only when its blocked rows are declared
+// unreachable.
 func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	graph, err := Load(req.SpecsRoot, req.Slug)
 	if err != nil {
@@ -77,7 +78,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", err)
 	}
 
-	archiveRoot := filepath.Join(req.SpecsRoot, archivedDirName)
+	archiveRoot := archiveSpecRoot(req.SpecsRoot)
 	archivedDir := filepath.Join(archiveRoot, req.Slug)
 	if _, err := os.Stat(archivedDir); err == nil {
 		return ArchiveResult{}, fmt.Errorf("archived Spec destination %q already exists", archivedDir)
@@ -101,6 +102,17 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		ArchivedDir: archivedDir,
 		ArchivedOn:  archivedOn,
 	}, nil
+}
+
+func archiveSpecRoot(specsRoot string) string {
+	cleanSpecsRoot := filepath.Clean(specsRoot)
+	docsRoot := filepath.Dir(cleanSpecsRoot)
+	if filepath.Base(cleanSpecsRoot) != string(ArchiveKindSpec) || filepath.Base(docsRoot) != "docs" {
+		// A configured non-default Spec Root owns its archive beside its active
+		// Specs; this request does not carry a repository root for resolving it.
+		return filepath.Join(cleanSpecsRoot, archivedDirName)
+	}
+	return filepath.Join(filepath.Dir(docsRoot), filepath.FromSlash(ArchiveDir(ArchiveKindSpec)))
 }
 
 func archiveUnprovenActions(specDir string, report QAReport) ([]string, error) {

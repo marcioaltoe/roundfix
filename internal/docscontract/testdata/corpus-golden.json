@@ -1,6 +1,6 @@
 {
   "schema": "roundfix-speccheck-corpus/v2",
-  "update": "Only active-corpus counts are pinned. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change. Archived counts are derived and reported because historical authoring changes them.",
+  "update": "Re-recorded because Spec 0085 Task 04 moved archived Specs and findings from their active-document trees to _archived/specs and _archived/findings. Active-corpus counts remain unchanged because retired artifacts are excluded. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change.",
   "active": {
     "SC-ADR-RELATED": 0,
     "SC-ADR-UNLISTED": 0,

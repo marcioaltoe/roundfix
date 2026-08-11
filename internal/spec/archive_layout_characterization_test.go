@@ -1,12 +1,12 @@
 package spec
 
-// Suite: archive layout characterization before Spec 0085
-// Invariant: the retired-artifact paths, their distributed owners, the
-// conditional Secondbrain clause, and the corpus golden remain recorded until
-// the Spec Task that owns each intentional break updates its contract.
+// Suite: archive layout characterization through Spec 0085
+// Invariant: each retired-artifact path, its single owner, the conditional
+// Secondbrain clause, and the deliberately re-recorded corpus golden remain
+// explicit while the Spec moves each contract in its assigned Task.
 // Boundary IN: repository documentation directories and the docscontract corpus golden.
-// Boundary OUT: the archive resolver, consumer migration, artifact relocation,
-// and the unconditional Secondbrain clause assigned to later Tasks.
+// Boundary OUT: retired ADR relocation and the unconditional Secondbrain clause
+// assigned to later Tasks.
 
 import (
 	"encoding/json"
@@ -23,9 +23,9 @@ type retiredFamilyLocation struct {
 	directory string
 }
 
-var archiveLayoutBeforeSpec0085 = []retiredFamilyLocation{
-	{family: "Specs", directory: "docs/specs/_archived"},
-	{family: "findings", directory: "docs/findings/_archived"},
+var archiveLayoutAfterTask04 = []retiredFamilyLocation{
+	{family: "Specs", directory: "_archived/specs"},
+	{family: "findings", directory: "_archived/findings"},
 	{family: "ADRs", directory: "docs/adr"},
 	{family: "backlog entries", directory: "docs/backlog"},
 }
@@ -34,17 +34,17 @@ func TestArchiveLayoutCharacterizationRecordsEveryRetiredFamily(t *testing.T) {
 	t.Parallel()
 
 	want := []retiredFamilyLocation{
-		{family: "Specs", directory: "docs/specs/_archived"},
-		{family: "findings", directory: "docs/findings/_archived"},
+		{family: "Specs", directory: "_archived/specs"},
+		{family: "findings", directory: "_archived/findings"},
 		{family: "ADRs", directory: "docs/adr"},
 		{family: "backlog entries", directory: "docs/backlog"},
 	}
-	if !reflect.DeepEqual(archiveLayoutBeforeSpec0085, want) {
-		t.Fatalf("archive layout characterization = %#v, want %#v", archiveLayoutBeforeSpec0085, want)
+	if !reflect.DeepEqual(archiveLayoutAfterTask04, want) {
+		t.Fatalf("archive layout characterization = %#v, want %#v", archiveLayoutAfterTask04, want)
 	}
 
 	repositoryRoot := archiveLayoutCharacterizationRepositoryRoot(t)
-	for _, retiredFamily := range archiveLayoutBeforeSpec0085 {
+	for _, retiredFamily := range archiveLayoutAfterTask04 {
 		t.Run(retiredFamily.family, func(t *testing.T) {
 			t.Parallel()
 
@@ -64,40 +64,20 @@ type archivePathComposer struct {
 	literals    []string
 }
 
-// These are historical resolved path literals. Some callers spell the value
-// as filepath.Join fragments, but each still owns the resulting layout.
-var archivePathComposersBeforeSpec0085 = []archivePathComposer{
-	{packagePath: "internal/spec", literals: []string{"_archived"}},
-	{packagePath: "internal/speccheck", literals: []string{"docs/specs/_archived", "docs/findings/_archived"}},
-	{packagePath: "internal/specaudit", literals: []string{"_archived"}},
-	{packagePath: "internal/worktree", literals: []string{"docs/specs/_archived"}},
-	{packagePath: "internal/cli", literals: []string{"docs/specs/_archived"}},
+// The resolver is now the only package that owns the repository-relative
+// layout. Consumers ask it for these answers rather than composing paths.
+var archivePathComposersAfterTask04 = []archivePathComposer{
+	{packagePath: "internal/spec", literals: []string{"_archived/specs", "_archived/findings", "_archived/adr", "_archived/backlog"}},
 }
 
 func TestArchiveLayoutCharacterizationEnumeratesEveryPathComposer(t *testing.T) {
 	t.Parallel()
 
 	want := []archivePathComposer{
-		{packagePath: "internal/spec", literals: []string{"_archived"}},
-		{packagePath: "internal/speccheck", literals: []string{"docs/specs/_archived", "docs/findings/_archived"}},
-		{packagePath: "internal/specaudit", literals: []string{"_archived"}},
-		{packagePath: "internal/worktree", literals: []string{"docs/specs/_archived"}},
-		{packagePath: "internal/cli", literals: []string{"docs/specs/_archived"}},
+		{packagePath: "internal/spec", literals: []string{"_archived/specs", "_archived/findings", "_archived/adr", "_archived/backlog"}},
 	}
-	if !reflect.DeepEqual(archivePathComposersBeforeSpec0085, want) {
-		t.Fatalf("archive path composers = %#v, want %#v", archivePathComposersBeforeSpec0085, want)
-	}
-
-	var specCheckerLiterals []string
-	for _, composer := range archivePathComposersBeforeSpec0085 {
-		if composer.packagePath == "internal/speccheck" {
-			specCheckerLiterals = composer.literals
-			break
-		}
-	}
-	wantSpecCheckerLiterals := []string{"docs/specs/_archived", "docs/findings/_archived"}
-	if !reflect.DeepEqual(specCheckerLiterals, wantSpecCheckerLiterals) {
-		t.Fatalf("internal/speccheck archive literals = %q, want %q", specCheckerLiterals, wantSpecCheckerLiterals)
+	if !reflect.DeepEqual(archivePathComposersAfterTask04, want) {
+		t.Fatalf("archive path composers = %#v, want %#v", archivePathComposersAfterTask04, want)
 	}
 }
 
@@ -136,7 +116,7 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenBeforeRelocation(t *testin
 
 	want := archiveLayoutCorpusGolden{
 		Schema: "roundfix-speccheck-corpus/v2",
-		Update: "Only active-corpus counts are pinned. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change. Archived counts are derived and reported because historical authoring changes them.",
+		Update: "Re-recorded because Spec 0085 Task 04 moved archived Specs and findings from their active-document trees to _archived/specs and _archived/findings. Active-corpus counts remain unchanged because retired artifacts are excluded. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change.",
 		Active: map[string]int{
 			"SC-ADR-RELATED":               0,
 			"SC-ADR-UNLISTED":              0,
@@ -159,10 +139,8 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenBeforeRelocation(t *testin
 			"SC-VOCABULARY-UNDOCUMENTED":   0,
 		},
 	}
-	// Declared break: task_04 relocates archived Specs and findings, then
-	// re-records this golden and updates this characterization in the same Task.
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("corpus golden before task_04 = %#v, want %#v", got, want)
+		t.Fatalf("corpus golden after task_04 = %#v, want %#v", got, want)
 	}
 }
 

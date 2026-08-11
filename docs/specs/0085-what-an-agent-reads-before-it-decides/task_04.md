@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0085-what-an-agent-reads-before-it-decides
-status: pending
+status: completed
 type: docs
 complexity: high
 ---
@@ -76,3 +76,54 @@ it approves the Task before it starts. Regression is the Run-level gate's job.
 
 - `_prd.md` → the archive read path.
 - `_techspec.md` → Build Order 4.
+
+## Result
+
+Relocated the existing archived Spec and finding trees to
+`_archived/specs/` and `_archived/findings/`. The archive resolver now owns the
+four `_archived/<kind>` answers, and the default Archive Command destination
+uses that resolver while a configured non-default Spec Root retains its
+colocated archive behavior. Re-recorded the active-corpus golden with the
+reason for its intentional update and updated Task 01's characterization at
+the declared break.
+
+- Criterion 1: the updated archive-layout characterization passed and observed
+  the relocated Spec and finding directories. Raw destination counts are 2,142
+  Spec files and 65 finding files.
+- Criterion 2: a production-source search for the four new literal paths found
+  them only in `internal/spec/archive.go`; the consumer packages continue to
+  ask `ArchiveDir` for the layout.
+- Criterion 3: changing only the golden first made
+  `TestArchiveLayoutCharacterizationPinsCorpusGoldenBeforeRelocation` fail on
+  the old `update` explanation. After the characterization update, the focused
+  characterization and docs-contract golden tests passed. The golden now
+  starts its explanation with `Re-recorded because` and names this relocation.
+- Criterion 4: the pre-move Git trees were
+  `1781d09ecf5f525fb3d4231fe1d83435ea14c34b` for Specs and
+  `d506a2f8d845fb3fbabcc0317100ef44b00be3ce` for findings. After extracting
+  those `HEAD` trees to
+  `/private/tmp/roundfix-spec0085-task04.SXZOOB`, `rtk diff -qr` against each
+  relocated destination exited 0 with no output, proving every moved file is
+  byte-identical at the same relative path.
+
+Focused checks:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-spec0085-task04-gocache go test
+  ./internal/spec -run '^TestArchiveLayoutCharacterizationPinsCorpusGoldenBeforeRelocation$'
+  -count=1` failed before the characterization update with the intentional
+  old-versus-new golden explanation mismatch.
+- `rtk env GOCACHE=/private/tmp/roundfix-spec0085-task04-gocache go test
+  ./internal/spec -run '^TestArchiveLayoutCharacterization' -count=1` passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-spec0085-task04-gocache go test -tags
+  docscontract ./internal/docscontract -run '^TestCheckCorpusGolden$' -count=1`
+  passed.
+- `rtk git diff --check` reported no whitespace errors.
+- A changed-path inspection reported 4,404 old/new move entries and bounded
+  file edits, with zero paths outside this Task's scope.
+
+Follow-up boundary note: predecessor unit and fixture tests outside this Task's
+bounded paths still contain the old archive layout. They were not edited here;
+the Run-level regression gate owns surfacing and routing any required
+follow-up.
+
+The Daemon-owned `## Verification` commands were not run.
