@@ -1637,16 +1637,18 @@ func TestRecordCarryForwardRejectsUnsupportedRecordValues(t *testing.T) {
 		{"commit newline", "run_20260811", "01234567\n89abcdef"},
 		{"commit backtick", "run_20260811", "`0123456789abcdef"},
 	} {
-		if err := RecordCarryForward(taskPath, record.runID, record.commit); err == nil {
-			t.Fatalf("%s: RecordCarryForward succeeded, want refusal", record.label)
-		}
-		carried, readErr := os.ReadFile(taskPath)
-		if readErr != nil {
-			t.Fatalf("%s: read Task: %v", record.label, readErr)
-		}
-		if !bytes.Equal(carried, original) {
-			t.Fatalf("%s: RecordCarryForward mutated the Task on refusal:\n%s", record.label, carried)
-		}
+		t.Run(record.label, func(t *testing.T) {
+			if err := RecordCarryForward(taskPath, record.runID, record.commit); err == nil {
+				t.Fatal("RecordCarryForward succeeded, want refusal")
+			}
+			carried, readErr := os.ReadFile(taskPath)
+			if readErr != nil {
+				t.Fatalf("read Task: %v", readErr)
+			}
+			if !bytes.Equal(carried, original) {
+				t.Fatalf("RecordCarryForward mutated the Task on refusal:\n%s", carried)
+			}
+		})
 	}
 }
 

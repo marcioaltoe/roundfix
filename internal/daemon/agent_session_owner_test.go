@@ -125,6 +125,29 @@ func TestFallbackEligibilitySurvivesAdapterStartFailure(t *testing.T) {
 	}
 }
 
+func TestNoWorkStartedForEmptySuccessfulResult(t *testing.T) {
+	t.Parallel()
+
+	sink := &captureEventSink{}
+	runner := &fallbackBoundaryRunner{}
+	owner := fallbackBoundaryOwner(t, sink, runner)
+
+	result, err := owner.Run(context.Background(), agent.ExecuteRequest{
+		RunID:  "run-fallback-boundary",
+		Prompt: "do the work",
+	})
+
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if result.Output != "" {
+		t.Fatalf("Run() output = %q, want empty", result.Output)
+	}
+	if got := countAgentStatusEvents(sink, agent.AgentWorkStartedStatus); got != 0 {
+		t.Fatalf("work-started statuses = %d, want 0 for a successful RunPrepared with no Agent output", got)
+	}
+}
+
 func fallbackBoundaryOwner(t *testing.T, sink *captureEventSink, runner agent.Runner) *agentSessionOwner {
 	t.Helper()
 	engine := &Engine{deps: Dependencies{

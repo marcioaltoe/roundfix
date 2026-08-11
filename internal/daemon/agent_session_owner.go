@@ -180,9 +180,11 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 		activeReq := owner.activeRequest(req)
 		result, err := owner.runPrepared(ctx, activeReq)
 		if err == nil {
-			if publishErr := owner.publishWorkStartedOnce(ctx, activeReq); publishErr != nil {
-				owner.closeActive(context.WithoutCancel(ctx))
-				return result, publishErr
+			if strings.TrimSpace(result.Output) != "" {
+				if publishErr := owner.publishWorkStartedOnce(ctx, activeReq); publishErr != nil {
+					owner.closeActive(context.WithoutCancel(ctx))
+					return result, publishErr
+				}
 			}
 			return result, nil
 		}
