@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0081-a-journal-cheap-to-write-and-keep
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -64,3 +64,61 @@ Nothing here changes behaviour. It builds the harness and records the before.
 - `_techspec.md` → Testing Approach; Build Order 1.
 - `references/2026-08-06-event-journal-payload-economics.md` → the intent this
   measurement serves.
+
+## Result
+
+### Implementation
+
+- Added a rerunnable store-test harness that creates a fresh temporary Roundfix
+  Home for each journal size, migrates and seeds its own Run Database, and
+  never opens the operator database.
+- Measured real `AppendRunEvent` wall time across 0, 1,000, and 10,000 seeded
+  events with 1, 2, and 4 synchronized Store writers. The harness records p50
+  and p95 latency, a same-size uncontended-baseline lock-wait estimate, and
+  typed `SQLITE_BUSY` counts.
+- Measured the no-candidate Run-start retention sequence at each journal size:
+  `TerminalRunPruneCandidates` followed by the immediate-transaction
+  `PruneTerminalRuns` path.
+- Recorded the before in
+  `baseline/2026-08-11-before.md`, including production commit
+  `685d201b658cc46e944634a3c072da2a7d1d83c3`, fixed harness parameters,
+  machine and SQLite facts, two fresh result sets, the lock-wait definition,
+  repeatability evidence, and measurement limits.
+
+### Focused checks
+
+- Pre-change signal: `rtk rg --files internal/store
+  docs/specs/0081-a-journal-cheap-to-write-and-keep | rtk grep -Ei
+  'baseline|harness'` returned no matching path before implementation.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache rtk proxy go test -count=2
+  ./internal/store -run '^TestJournalMeasurementHarness$' -v` passed two fresh
+  executions. Across both executions all 336 writes succeeded and typed
+  `SQLITE_BUSY` frequency was zero. Four-writer p95 latency differed by less
+  than 2% at each journal size; Run-start p50 differed by 1.6% at 1,000 events
+  and 0.9% at 10,000 events.
+- `GOCACHE=/private/tmp/roundfix-task01-gocache rtk proxy go test -count=1
+  ./internal/store -run
+  '^TestJournalMeasurementHarnessRejectsInvalidParameters$' -v` passed all
+  three negative parameter cases.
+- `rtk git -c core.fsmonitor=false diff --check` passed.
+- The first focused attempt without a task-local `GOCACHE` did not compile: the
+  sandbox refused writes under `~/Library/Caches/go-build`. Repointing only the
+  disposable Go build cache to `/private/tmp` removed that environment boundary.
+
+### Acceptance evidence
+
+1. **Baseline artifact exists and names the measured commit.**
+   `baseline/2026-08-11-before.md` names the full production commit and records
+   both measurement runs.
+2. **The harness reproduces comparable numbers on the same commit.** The fresh
+   `-count=2` run passed twice; the stable tail-latency and Run-start bands are
+   quantified in the baseline report rather than inferred from one run.
+3. **No production path or default changed.** The Task adds only
+   `internal/store/journal_baseline_test.go`, the Spec-local baseline report,
+   and this Result. The pre-existing `pending` to `in_progress` frontmatter
+   change remains Daemon-owned.
+
+### Daemon handoff
+
+- The commands under this Task's `## Verification` were not run. The Daemon
+  owns those commands, terminal status, and the Task commit.
