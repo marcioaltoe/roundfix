@@ -61,7 +61,11 @@ instead.
   — expected: exit 0; the named fixture test is selected and passes.
 - `go test -count=1 ./internal/baseline/...`
   — expected: exit 0; the package the correction lives in is green.
-- `grep -q 'sourceBaseline.Identity.EntryCount != len(sourceBaseline.Entries)' internal/baseline/preservation_test.go && grep -q 'maintainedSourceBaselineAccounting' internal/baseline/preservation_test.go`
+- `grep -q 'sourceBaseline.Identity.EntryCount != len(sourceBaseline.Entries)' internal/baseline/preservation_test.go && grep -q 'maintainedSourceBaselineAccounting' internal/baseline/preservation_test.go && ! grep -q 'maintainedSourceBaselineAccounting = 51' internal/baseline/preservation_test.go` — expected: exits 0. The first two halves prove the invariant and the named
+constant survive as separate assertions; the third proves the constant actually
+moved off `51`, the value Task 06's clauses invalidated. Without it the command
+asserts only that two strings this file already contains are still there, and
+the pre-work probe refused exactly that on 2026-08-11.
   — expected: exit 0; the invariant and accounting assertions survived rather
   than being relaxed.
   — expected: exit 0; the correction stayed inside its package.
