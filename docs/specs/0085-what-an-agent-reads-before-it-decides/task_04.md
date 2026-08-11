@@ -44,18 +44,29 @@ reflex.
 
 This Task may create or modify only:
 
+- `_archived/specs/**`
+- `_archived/findings/**`
+
 - `internal/spec/archive.go`
 - `internal/spec/archive_layout_characterization_test.go`
-- `internal/speccheck/testdata/corpus-golden.json`
+- `internal/docscontract/testdata/corpus-golden.json`
 - `docs/specs/_archived/**`
 - `docs/findings/_archived/**`
 - `docs/specs/0085-what-an-agent-reads-before-it-decides/task_04.md`
+
+Corrected on 2026-08-11. The list first named
+`internal/speccheck/testdata/corpus-golden.json`, which does not exist — the
+live golden is under `internal/docscontract/` — and omitted the destinations
+`_archived/specs/**` and `_archived/findings/**` that Requirements 1 and 4
+oblige. The Agent refused rather than move files outside its boundary and named
+both gaps. Enumerating a boundary from guessed paths is what cost this Run, for
+the second time in this Spec.
 
 ## Verification
 
 - `grep -q '"_archived/specs"' internal/spec/archive.go` — expected: exits 0. The resolver answers `docs/specs/_archived` today; this Task is what moves its answer to the single root, so asserting the resolver test passes proves nothing — Task 02 created that test and it already passes.
 - `test -d _archived/specs && test -d _archived/findings` — expected: exits 0, proving the artifacts moved rather than only the resolver's answer.
-- `grep -q 'Re-recorded because' internal/speccheck/testdata/corpus-golden.json` — expected: exits 0. The `|| grep ... task_04.md` fallback this command used to carry made it self-satisfying: the string occurs in this file because the command writes it, so the check passed before any re-recording happened.
+- `grep -q 'Re-recorded because' internal/docscontract/testdata/corpus-golden.json` — expected: exits 0. The `|| grep ... task_04.md` fallback this command used to carry made it self-satisfying: the string occurs in this file because the command writes it, so the check passed before any re-recording happened.
 
 Whole-package sweeps, `go build`, `go clean -testcache` and `make verify` are
 deliberately absent: each passes against a tree where no work has happened, so
