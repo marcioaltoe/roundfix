@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0092-a-run-that-can-hand-back-its-work
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -78,3 +78,45 @@ commands above name cases that do not exist yet, so each can fail.
 - `_prd.md` → Goal 3.
 - `_techspec.md` → Build Order 6; Risks.
 - `docs/backlog/2026-08-09-a-stopped-run-discards-the-tasks-it-already-proved.md`
+
+## Result
+
+Implemented the explicit `reconcile --carry-forward` disposition for one
+stopped Run. Reconcile now joins passing Verification verdicts, completed Task
+settlements, and the Run Worktree's Task commit trailers; compares each Task's
+pre-settlement Task, Spec, instruction, domain, skill, and declared Context
+inputs byte-for-byte with the checkout; and reports every eligible or refused
+Task. Applying the flag stages every source commit and its provenance amendment
+in a detached temporary Worktree, then fast-forwards the checkout only after the
+whole set succeeds. Each carried Task records its source Run and settlement
+commit under `## Carry-forward provenance`.
+
+Acceptance evidence:
+
+- Settled Task with unchanged inputs: focused
+  `TestCarryForwardSettlesATaskWhoseInputsAreUnchanged` passed. It observed the
+  implementation commit in the checkout, `status: completed`, and the exact
+  source Run and commit in the Task file.
+- Moved input refusal: focused
+  `TestCarryForwardRefusesATaskWhoseInputsMoved` passed. It changed the PRD
+  after settlement, observed an exit-2 refusal naming `task_01` and that PRD,
+  and proved the checkout HEAD, Task file, and implementation path stayed
+  unchanged.
+- Explicit flag: focused
+  `TestCarryForwardWithoutTheFlagReportsAndChangesNothing` passed. It observed
+  the carry-forward candidate in JSON while the checkout HEAD and Task file
+  remained byte-identical.
+- Atomic mixed set: focused
+  `TestCarryForwardRefusesRatherThanCarryingASubset` passed. It moved only
+  `task_02.md`, observed a refusal naming that Task and input, and proved neither
+  Task's implementation commit reached the checkout.
+
+Focused checks run after the final implementation edit:
+
+- `GOCACHE="$PWD/.gocache" rtk proxy go test ./internal/cli ./internal/spec -run '^(TestCarryForwardSettlesATaskWhoseInputsAreUnchanged|TestCarryForwardRefusesATaskWhoseInputsMoved|TestCarryForwardRefusesRatherThanCarryingASubset|TestCarryForwardWithoutTheFlagReportsAndChangesNothing|TestCarryForwardInputsIncludesSpecContractsAndTaskContext|TestRecordCarryForwardPreservesTaskAndRecordsSource)$' -count=1 -v` — passed all six selected tests.
+- `GOCACHE="$PWD/.gocache" rtk proxy go test ./internal/cli -run '^(TestReconcileDiscardWritesTheRecordBeforeRemoving|TestReconcileDiscardRefusesAnUnreachableCommit|TestReconcileDiscardKeepsSurfaceWhenRecordCannotBeWritten|TestReconcileWithoutTheFlagRemovesNothing)$' -count=1` — passed the four existing reconcile disposition regressions.
+- `rtk git diff --check` — passed after this Result-only edit; no whitespace
+  errors were reported.
+
+The three commands under `## Verification` were not run; they remain owned by
+the Daemon.

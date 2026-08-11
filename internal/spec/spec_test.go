@@ -1543,6 +1543,60 @@ func TestListActiveDetailedReportsSkippedSpecFolders(t *testing.T) {
 	}
 }
 
+func TestCarryForwardInputsIncludesSpecContractsAndTaskContext(t *testing.T) {
+	t.Parallel()
+	taskFile := filepath.ToSlash(filepath.Join("docs", "specs", "0001-widget", "task_01.md"))
+	content := taskFixture("task_01", "Build widget", "pending", "backend", md(`## Context
+
+- instruction: 'docs/agents/go.md'
+- interface: 'internal/widget/widget.go'
+
+`)+defaultVerificationSection)
+
+	inputs, err := CarryForwardInputs("docs/specs/0001-widget", taskFile, []byte(content))
+	if err != nil {
+		t.Fatalf("CarryForwardInputs: %v", err)
+	}
+	want := []string{
+		taskFile,
+		"docs/specs/0001-widget/_prd.md",
+		"docs/specs/0001-widget/_techspec.md",
+		"docs/specs/0001-widget/_tasks.md",
+		"AGENTS.md",
+		"CONTEXT.md",
+		".agents/skills/implement-task/SKILL.md",
+		"docs/agents/go.md",
+		"internal/widget/widget.go",
+	}
+	if strings.Join(inputs, "|") != strings.Join(want, "|") {
+		t.Fatalf("CarryForwardInputs = %v, want %v", inputs, want)
+	}
+}
+
+func TestRecordCarryForwardPreservesTaskAndRecordsSource(t *testing.T) {
+	t.Parallel()
+	taskPath := filepath.Join(t.TempDir(), "task_01.md")
+	original := taskFixture("task_01", "Build widget", "pending", "backend", defaultVerificationSection)
+	writeFile(t, taskPath, original)
+
+	if err := RecordCarryForward(taskPath, "run_20260811", "0123456789abcdef"); err != nil {
+		t.Fatalf("RecordCarryForward: %v", err)
+	}
+	carried, err := os.ReadFile(taskPath)
+	if err != nil {
+		t.Fatalf("read carried Task: %v", err)
+	}
+	wantPrefix := strings.Replace(original, "status: pending", "status: completed", 1)
+	if !strings.HasPrefix(string(carried), wantPrefix) {
+		t.Fatalf("carried Task changed bytes outside status/provenance:\n%s", carried)
+	}
+	for _, want := range []string{"## Carry-forward provenance", "`run_20260811`", "`0123456789abcdef`"} {
+		if !bytes.Contains(carried, []byte(want)) {
+			t.Fatalf("carried Task does not contain %q:\n%s", want, carried)
+		}
+	}
+}
+
 func TestListActiveWithoutSpecsRootReturnsNothing(t *testing.T) {
 	t.Parallel()
 	specs, err := ListActive(t.TempDir())
