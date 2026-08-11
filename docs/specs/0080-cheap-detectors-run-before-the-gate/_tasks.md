@@ -34,9 +34,12 @@ graph:
     - id: task_11
       file: task_11.md
       needs: [task_10]
+    - id: task_12
+      file: task_12.md
+      needs: [task_11]
     - id: task_08
       file: task_08.md
-      needs: [task_05, task_07, task_09, task_10, task_11]
+      needs: [task_05, task_07, task_09, task_10, task_11, task_12]
 ---
 
 # Tasks — Cheap detectors run before the gate
@@ -53,10 +56,11 @@ graph:
 | task_09 | Let the QA harness complete the report the Daemon seeded | test    | medium     | task_03          |
 | task_10 | Give the prompt fixture the Git precondition the stage now needs | test | low | task_09 |
 | task_11 | Let the authorization detector read the fallout it already sanctions | backend | medium | task_10 |
-| task_08 | Run the final QA gate                                 | qa      | medium     | task_05, task_07, task_09, task_10, task_11 |
+| task_12 | Let the mechanical report satisfy the contract it enforces | backend | medium | task_11 |
+| task_08 | Run the final QA gate                                 | qa      | medium     | task_05, task_07, task_09, task_10, task_11, task_12 |
 
 Waves: 1 → task_01, task_02 · 2 → task_03, task_04 · 3 → task_05, task_06 ·
-4 → task_07, task_09 · 5 → task_10 · 6 → task_11 · 7 → task_08
+4 → task_07, task_09 · 5 → task_10 · 6 → task_11 · 7 → task_12 · 8 → task_08
 
 Three edges carry reasoning worth stating.
 
