@@ -231,6 +231,8 @@ func runBranchChangedFiles(ctx context.Context, gitRoot string, commits []string
 			gitRoot,
 			"diff-tree",
 			"--root",
+			"-m",
+			"--first-parent",
 			"--no-commit-id",
 			"--name-only",
 			"-r",

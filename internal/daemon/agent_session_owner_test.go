@@ -24,7 +24,7 @@ func TestFallbackEligibilitySurvivesASelectionFailure(t *testing.T) {
 	sink := &captureEventSink{}
 	runner := &fallbackBoundaryRunner{
 		runErrByModel: map[string]error{
-			"preferred-model": &agent.SelectionFailure{Runtime: "codex", Reason: "usage limit exhausted"},
+			"preferred-model": &agent.SelectionFailureError{Runtime: "codex", Reason: "usage limit exhausted"},
 		},
 		emitOutputByModel: map[string]bool{"fallback-model": true},
 	}
@@ -61,7 +61,7 @@ func TestFallbackEligibilityEndsAfterAnyAgentOutput(t *testing.T) {
 	sink := &captureEventSink{}
 	runner := &fallbackBoundaryRunner{
 		runErrByModel: map[string]error{
-			"preferred-model": &agent.SelectionFailure{Runtime: "codex", Reason: "adapter exited after output"},
+			"preferred-model": &agent.SelectionFailureError{Runtime: "codex", Reason: "adapter exited after output"},
 		},
 		emitOutputByModel: map[string]bool{"preferred-model": true},
 	}
@@ -72,9 +72,9 @@ func TestFallbackEligibilityEndsAfterAnyAgentOutput(t *testing.T) {
 		Prompt: "do the work",
 	})
 
-	var selectionErr *agent.SelectionFailure
+	var selectionErr *agent.SelectionFailureError
 	if !errors.As(err, &selectionErr) {
-		t.Fatalf("Run() error = %T %v, want original *agent.SelectionFailure", err, err)
+		t.Fatalf("Run() error = %T %v, want original *agent.SelectionFailureError", err, err)
 	}
 	if got := strings.Join(runner.runModels(), ","); got != "preferred-model" {
 		t.Fatalf("run models = %q, want only preferred-model", got)
@@ -164,6 +164,12 @@ type fallbackBoundaryRunner struct {
 	prepared          []string
 	ran               []string
 }
+
+var (
+	_ agent.Runner               = (*fallbackBoundaryRunner)(nil)
+	_ agent.SessionPreparer      = (*fallbackBoundaryRunner)(nil)
+	_ agent.PreparedPromptRunner = (*fallbackBoundaryRunner)(nil)
+)
 
 func (*fallbackBoundaryRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
 

@@ -933,7 +933,7 @@ func CarryForwardInputs(specDir string, taskFile string, taskContent []byte) ([]
 func CarryForwardStatus(taskFile string, content []byte) (Status, error) {
 	document, err := parseTaskDocument(content, taskFile)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("parse carry-forward Task status %q: %w", taskFile, err)
 	}
 	return Status(document.Frontmatter.Status), nil
 }

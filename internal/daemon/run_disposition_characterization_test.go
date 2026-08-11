@@ -24,12 +24,12 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
-// Outcome contract test: internal/cli/cli_test.go::TestRunResolveVerificationFailureDoesNotCommit asserts that a failed Verification produces exit 1, an Unresolved Run report, and a failed Review Issue without a commit, source resolution, or Final Push; task_04 rewrites it.
-// Outcome contract test: internal/cli/cli_test.go::TestRunResolveAgentFailureMarksBatchFailed asserts that an Agent crash produces exit 1, an Unresolved Run report, and a failed Review Issue; task_04 rewrites it.
-// Outcome contract test: internal/cli/cli_test.go::TestRunResolveAgentFailureContinuesWithLaterBatches asserts that every crashed Batch leaves failed Review Issues, later Batches still run, and the Run exits 1 as Unresolved; task_04 rewrites it.
-// Outcome contract test: internal/cli/cli_test.go::TestRunResolveClosesAgentSessionForTerminalOutcomes/unresolved asserts that an Agent crash closes the Agent Session and leaves the Run in store.StateUnresolved with exit 1; task_04 rewrites it.
-// Outcome contract test: internal/daemon/engine_test.go::TestResolveCycleVerificationFailureFailsBatchAndContinues asserts that final Verification failure leaves the Review Issue failed and unresolved, with a failed Batch and no commit; task_04 rewrites it.
-// Outcome contract test: internal/daemon/engine_test.go::TestResolveCycleContinuesToNextBatchAfterFailedBatch asserts that a failed first Batch leaves one failed Review Issue while the second resolves, so one issue remains unresolved; task_04 rewrites it.
+// Outcome contract test: internal/cli/cli_test.go::TestRunResolveVerificationFailureDoesNotCommit asserts that a failed Verification preserves the resolved Review Issue and leaves the Run Clean with exit 0, without a Batch commit or a failed-outcome comment; task_04's rewrite is complete.
+// Outcome contract test: internal/cli/cli_test.go::TestRunResolveAgentFailureMarksBatchFailed asserts that an Agent crash preserves the resolved Review Issue and leaves the Run Clean with exit 0, without a failed Review Issue; task_04's rewrite is complete.
+// Outcome contract test: internal/cli/cli_test.go::TestRunResolveAgentFailureContinuesWithLaterBatches asserts that a crashed Batch keeps what its Agent resolved while the unfinished Review Issue becomes failed, so the Run ends Unresolved with exit 1 because unresolved work remains; task_04's rewrite is complete.
+// Outcome contract test: internal/cli/cli_test.go::TestRunResolveClosesAgentSessionForTerminalOutcomes/unresolved asserts that an Agent crash closes the Agent Session and leaves the Run in store.StateUnresolved with exit 1 when the Review Issue remains unresolved; task_04's rewrite is complete.
+// Outcome contract test: internal/daemon/engine_test.go::TestResolveCycleVerificationFailureFailsBatchAndContinues asserts that final Verification failure preserves the resolved Review Issue with no unresolved work remaining, so the Run derives Clean from the resolved issue; task_04's rewrite is complete.
+// Outcome contract test: internal/daemon/engine_test.go::TestResolveCycleContinuesToNextBatchAfterFailedBatch asserts that a failed first Batch leaves its Review Issue failed and unresolved while the second resolves, so one issue remains unresolved after the cycle; task_04's rewrite is complete.
 // Outcome contract test: internal/cli/implement_test.go::TestAgentSelectionProfilesMacro/post_start_failure_never_activates_fallback asserts that a model-application failure before Agent output leaves the Fallback Chain ineligible; task_08 replaces it with separate guards that activate fallback after a no-output selection failure and keep fallback ineligible only after Agent output.
 
 func TestRunDispositionCharacterizationWorkStartedFollowsTheFirstAgentOutput(t *testing.T) {
@@ -51,7 +51,6 @@ func TestRunDispositionCharacterizationWorkStartedFollowsTheFirstAgentOutput(t *
 		activeRuntime: agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
 		activeSession: agent.SessionRef{Name: "task-session", WorkDir: t.TempDir()},
 		active:        true,
-		workStarted:   false,
 		attemptNumber: 1,
 	}
 

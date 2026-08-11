@@ -677,7 +677,7 @@ settled Task's inputs byte-for-byte with the checkout and refuses the whole set
 rather than carrying part of it, so a Task whose Spec, instruction, or Context
 moved since settlement is never silently replayed.
 
-`--apply` remains the only switch that releases Run Worktrees:
+`--apply` remains the only switch that releases Run Worktrees.
 
 There is no force flag or user assertion that bypasses the proof. Apply acts
 only on entries classified `safe` during that invocation, then rechecks the

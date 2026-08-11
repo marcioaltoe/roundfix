@@ -1680,9 +1680,9 @@ func TestModelNotAdvertisedPromptExitYieldsTypedError(t *testing.T) {
 		exitCode: 1,
 	})
 
-	var selectionErr *SelectionFailure
+	var selectionErr *SelectionFailureError
 	if !errors.As(run.err, &selectionErr) {
-		t.Fatalf("expected SelectionFailure, got %T %v", run.err, run.err)
+		t.Fatalf("expected SelectionFailureError, got %T %v", run.err, run.err)
 	}
 	var modelErr *ModelNotAdvertisedError
 	if !errors.As(run.err, &modelErr) {
@@ -3101,9 +3101,9 @@ func TestWorkStartedBoundaryReportsSelectionFailureWithoutOutput(t *testing.T) {
 		exitCode: 1,
 	})
 
-	var selectionErr *SelectionFailure
+	var selectionErr *SelectionFailureError
 	if !errors.As(run.err, &selectionErr) {
-		t.Fatalf("RunPrompt() error = %T %v, want *SelectionFailure", run.err, run.err)
+		t.Fatalf("RunPrompt() error = %T %v, want *SelectionFailureError", run.err, run.err)
 	}
 	var batchErr *BatchFailureError
 	if errors.As(run.err, &batchErr) {
@@ -3251,9 +3251,9 @@ func TestACPXPromptExitClassificationMatrix(t *testing.T) {
 			exitCode: 1,
 			assertErr: func(t *testing.T, err error) {
 				t.Helper()
-				var selectionErr *SelectionFailure
+				var selectionErr *SelectionFailureError
 				if !errors.As(err, &selectionErr) {
-					t.Fatalf("expected SelectionFailure, got %T %v", err, err)
+					t.Fatalf("expected SelectionFailureError, got %T %v", err, err)
 				}
 				if selectionErr.Reason != acpxExitReasonAgentProtocol {
 					t.Fatalf("selection failure reason = %q, want %q", selectionErr.Reason, acpxExitReasonAgentProtocol)
@@ -3313,7 +3313,7 @@ func TestACPXPromptExitClassificationMatrix(t *testing.T) {
 				if !errors.As(err, &batchErr) {
 					t.Fatalf("expected BatchFailureError after Agent output, got %T %v", err, err)
 				}
-				var selectionErr *SelectionFailure
+				var selectionErr *SelectionFailureError
 				if errors.As(err, &selectionErr) {
 					t.Fatalf("error after Agent output = %T %v, must not be SelectionFailure", err, err)
 				}
@@ -3337,9 +3337,9 @@ func TestACPXPromptExitClassificationMatrix(t *testing.T) {
 			exitCode: 1,
 			assertErr: func(t *testing.T, err error) {
 				t.Helper()
-				var selectionErr *SelectionFailure
+				var selectionErr *SelectionFailureError
 				if !errors.As(err, &selectionErr) {
-					t.Fatalf("expected SelectionFailure, got %T %v", err, err)
+					t.Fatalf("expected SelectionFailureError, got %T %v", err, err)
 				}
 			},
 		},
@@ -3428,9 +3428,9 @@ func TestACPXExitCodeMapping(t *testing.T) {
 			stderr:   "protocol exploded\n",
 			assertErr: func(t *testing.T, err error) {
 				t.Helper()
-				var selectionErr *SelectionFailure
+				var selectionErr *SelectionFailureError
 				if !errors.As(err, &selectionErr) {
-					t.Fatalf("expected SelectionFailure, got %T %v", err, err)
+					t.Fatalf("expected SelectionFailureError, got %T %v", err, err)
 				}
 				if selectionErr.Reason != acpxExitReasonAgentProtocol {
 					t.Fatalf("expected protocol reason, got %q", selectionErr.Reason)
@@ -3445,9 +3445,9 @@ func TestACPXExitCodeMapping(t *testing.T) {
 			exitCode: 3,
 			assertErr: func(t *testing.T, err error) {
 				t.Helper()
-				var selectionErr *SelectionFailure
+				var selectionErr *SelectionFailureError
 				if !errors.As(err, &selectionErr) {
-					t.Fatalf("expected SelectionFailure, got %T %v", err, err)
+					t.Fatalf("expected SelectionFailureError, got %T %v", err, err)
 				}
 				if selectionErr.Reason != acpxExitReasonTimeout {
 					t.Fatalf("expected timeout reason, got %q", selectionErr.Reason)
@@ -3459,9 +3459,9 @@ func TestACPXExitCodeMapping(t *testing.T) {
 			exitCode: 5,
 			assertErr: func(t *testing.T, err error) {
 				t.Helper()
-				var selectionErr *SelectionFailure
+				var selectionErr *SelectionFailureError
 				if !errors.As(err, &selectionErr) {
-					t.Fatalf("expected SelectionFailure, got %T %v", err, err)
+					t.Fatalf("expected SelectionFailureError, got %T %v", err, err)
 				}
 				if selectionErr.Reason != acpxExitReasonPermissionsDenied {
 					t.Fatalf("expected permissions denied reason, got %q", selectionErr.Reason)

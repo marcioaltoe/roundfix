@@ -182,17 +182,19 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 			)
 			return exitRunFailed
 		}
-	} else if !resolvedSpecsRoot.External && carryForwardRefusal == "" {
-		carryForwards, inspectErr := inspectCarryForwards(ctx, repository, resolvedSpecsRoot, runs)
-		if inspectErr != nil {
-			if opts.carryForward {
-				printReconcileOperationalFailure(inspectErr, reconcileRetryCommand(opts.runID), stderr)
-				return exitRunFailed
+	} else if !resolvedSpecsRoot.External {
+		if carryForwardRefusal == "" {
+			carryForwards, inspectErr := inspectCarryForwards(ctx, repository, resolvedSpecsRoot, runs)
+			if inspectErr != nil {
+				if opts.carryForward {
+					printReconcileOperationalFailure(inspectErr, reconcileRetryCommand(opts.runID), stderr)
+					return exitRunFailed
+				}
+			} else {
+				report.CarryForwards = carryForwards
 			}
-		} else {
-			report.CarryForwards = carryForwards
 		}
-	} else if opts.carryForward {
+	} else if opts.carryForward && carryForwardRefusal == "" {
 		carryForwardRefusal = "carry-forward requires a repository-local Specs Root"
 	}
 	if opts.carryForward && carryForwardRefusal == "" {
@@ -604,7 +606,7 @@ func inspectCarryForwardCandidate(ctx context.Context, repository string, candid
 	}
 	moved := make([]string, 0)
 	for _, input := range inputs {
-		established, existed, err := reconcileGitBlob(ctx, repository, parent, input)
+		_, existed, err := reconcileGitBlob(ctx, repository, parent, input)
 		if err != nil {
 			return fmt.Errorf("read Task %s input %s from %s: %w", candidate.TaskID, input, parent, err)
 		}
@@ -615,8 +617,11 @@ func inspectCarryForwardCandidate(ctx context.Context, repository string, candid
 			moved = append(moved, input)
 			continue
 		}
-		current, err := os.ReadFile(filepath.Join(repository, filepath.FromSlash(input)))
-		if err != nil || string(current) != string(established) {
+		changed, err := reconcileGitInputChanged(ctx, repository, parent, input)
+		if err != nil {
+			return fmt.Errorf("compare Task %s input %s against %s: %w", candidate.TaskID, input, parent, err)
+		}
+		if changed {
 			moved = append(moved, input)
 		}
 	}
@@ -755,6 +760,43 @@ func reconcileGitBlob(ctx context.Context, workDir string, revision string, path
 		return nil, false, err
 	}
 	return content, true, nil
+}
+
+// reconcileGitInputChanged reports whether the working-tree bytes for path
+// differ from the bytes recorded at revision, applying Git's conversion rules
+// (core.autocrlf, text/eol, and clean/smudge filters) rather than comparing raw
+// bytes. A difference is reported as changed; nonexistent inputs and
+// symlink-crossing paths are handled by the caller. Exit 1 from git diff means
+// the path differs; any other Git error is returned.
+func reconcileGitInputChanged(ctx context.Context, workDir string, revision string, path string) (bool, error) {
+	output, err := reconcileGitRawDiff(ctx, workDir, "diff", "--quiet", revision, "--", filepath.ToSlash(path))
+	if err != nil {
+		return false, err
+	}
+	return output, nil
+}
+
+// reconcileGitRawDiff runs a git subcommand and maps a nonzero exit to a diff
+// result without failing the whole helper: exit 1 signals a difference, other
+// errors carry the diagnostic.
+func reconcileGitRawDiff(ctx context.Context, workDir string, args ...string) (bool, error) {
+	commandArgs := append([]string{"-c", "core.fsmonitor=false", "-c", "commit.gpgSign=false"}, args...)
+	command := exec.CommandContext(ctx, "git", commandArgs...)
+	command.Dir = workDir
+	command.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	output, err := command.CombinedOutput()
+	if err == nil {
+		return false, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+		return true, nil
+	}
+	diagnostic := strings.TrimSpace(string(output))
+	if diagnostic == "" {
+		return false, fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
+	}
+	return false, fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, diagnostic)
 }
 
 func reconcileGitText(ctx context.Context, workDir string, args ...string) (string, error) {

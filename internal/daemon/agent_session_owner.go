@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
@@ -36,9 +37,9 @@ type agentSessionOwner struct {
 	activeRuntime             agent.RuntimeSpec
 	activeSession             agent.SessionRef
 	active                    bool
-	workStarted               bool
+	workStarted               atomic.Bool
 	candidateIndex            int
-	selectionFailurePublished bool
+	selectionFailurePublished atomic.Bool
 	attemptNumber             int
 	attempts                  []agentSelectionAttempt
 }
@@ -179,20 +180,17 @@ func (owner *agentSessionOwner) Run(ctx context.Context, req agent.ExecuteReques
 		activeReq := owner.activeRequest(req)
 		result, err := owner.runPrepared(ctx, activeReq)
 		if err == nil {
-			if !owner.workStarted {
-				if publishErr := owner.publishWorkStarted(ctx, activeReq); publishErr != nil {
-					owner.closeActive(context.WithoutCancel(ctx))
-					return result, publishErr
-				}
-				owner.workStarted = true
+			if publishErr := owner.publishWorkStartedOnce(ctx, activeReq); publishErr != nil {
+				owner.closeActive(context.WithoutCancel(ctx))
+				return result, publishErr
 			}
 			return result, nil
 		}
-		var selectionErr *agent.SelectionFailure
-		if !errors.As(err, &selectionErr) || owner.workStarted {
+		var selectionErr *agent.SelectionFailureError
+		if !errors.As(err, &selectionErr) || owner.workStarted.Load() {
 			return result, err
 		}
-		if !owner.selectionFailurePublished {
+		if !owner.selectionFailurePublished.Load() {
 			if publishErr := owner.publishSelectionFailed(context.WithoutCancel(ctx), activeReq); publishErr != nil {
 				return result, publishErr
 			}
@@ -223,7 +221,7 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 			return err
 		}
 		owner.candidateIndex = index
-		owner.selectionFailurePublished = false
+		owner.selectionFailurePublished.Store(false)
 		runtime, err := owner.runtimeFactory(candidate.Selection)
 		if err != nil {
 			return err
@@ -369,7 +367,18 @@ func (owner *agentSessionOwner) fallbackAfterSelectionFailure(ctx context.Contex
 		return err
 	}
 	owner.candidateIndex = nextIndex
-	owner.selectionFailurePublished = false
+	owner.selectionFailurePublished.Store(false)
+	return nil
+}
+
+func (owner *agentSessionOwner) publishWorkStartedOnce(ctx context.Context, req agent.ExecuteRequest) error {
+	if !owner.workStarted.CompareAndSwap(false, true) {
+		return nil
+	}
+	if err := owner.publishWorkStarted(ctx, req); err != nil {
+		owner.workStarted.Store(false)
+		return err
+	}
 	return nil
 }
 
@@ -412,7 +421,7 @@ func (owner *agentSessionOwner) publishSelectionFailed(ctx context.Context, req 
 	}); err != nil {
 		return fmt.Errorf("publish Agent selection-failed Run Event: %w", err)
 	}
-	owner.selectionFailurePublished = true
+	owner.selectionFailurePublished.Store(true)
 	return nil
 }
 
@@ -631,7 +640,7 @@ func (owner *agentSessionOwner) publishSessionClosed(ctx context.Context) error 
 }
 
 func isSelectionStartFailure(err error) bool {
-	var failure *agent.SelectionFailure
+	var failure *agent.SelectionFailureError
 	if errors.As(err, &failure) {
 		return true
 	}
@@ -643,15 +652,15 @@ func isSelectionStartFailure(err error) bool {
 	return errors.As(err, &adapterErr)
 }
 
-func selectionFailureForStart(runtime agent.RuntimeSpec, err error) *agent.SelectionFailure {
-	var failure *agent.SelectionFailure
+func selectionFailureForStart(runtime agent.RuntimeSpec, err error) *agent.SelectionFailureError {
+	var failure *agent.SelectionFailureError
 	if errors.As(err, &failure) {
 		return failure
 	}
 	if !isSelectionStartFailure(err) {
 		return nil
 	}
-	return &agent.SelectionFailure{
+	return &agent.SelectionFailureError{
 		Runtime: strings.TrimSpace(runtime.ID),
 		Reason:  selectionReasonCode(err),
 		Err:     err,
@@ -659,7 +668,7 @@ func selectionFailureForStart(runtime agent.RuntimeSpec, err error) *agent.Selec
 }
 
 func selectionReasonCode(err error) string {
-	var failure *agent.SelectionFailure
+	var failure *agent.SelectionFailureError
 	if errors.As(err, &failure) {
 		if failure.Err != nil {
 			return selectionReasonCode(failure.Err)
@@ -698,16 +707,15 @@ func (sink *agentSessionEventSink) Publish(ctx context.Context, event runevent.R
 		return errors.New("Agent Session event sink owner is required")
 	}
 	if agentStatusEventIs(event, agent.AgentWorkStartedStatus) {
-		sink.owner.workStarted = true
+		sink.owner.workStarted.Store(true)
 	}
 	if agentStatusEventIs(event, agent.AgentSelectionFailedStatus) {
-		sink.owner.selectionFailurePublished = true
+		sink.owner.selectionFailurePublished.Store(true)
 	}
-	if agentOutputEvent(event) && !sink.owner.workStarted {
-		if err := sink.owner.publishWorkStarted(ctx, sink.req); err != nil {
+	if agentOutputEvent(event) {
+		if err := sink.owner.publishWorkStartedOnce(ctx, sink.req); err != nil {
 			return err
 		}
-		sink.owner.workStarted = true
 	}
 	if sink.next == nil {
 		return nil

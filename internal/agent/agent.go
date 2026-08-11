@@ -114,15 +114,15 @@ const (
 	AgentSelectionFailedStatus = "agent_selection_failed"
 )
 
-// SelectionFailure marks a turn that ended before the Agent produced output,
+// SelectionFailureError marks a turn that ended before the Agent produced output,
 // so a configured Fallback Selection remains eligible.
-type SelectionFailure struct {
+type SelectionFailureError struct {
 	Runtime string
 	Reason  string
 	Err     error
 }
 
-func (err *SelectionFailure) Error() string {
+func (err *SelectionFailureError) Error() string {
 	if err == nil {
 		return ""
 	}
@@ -139,7 +139,7 @@ func (err *SelectionFailure) Error() string {
 	return message
 }
 
-func (err *SelectionFailure) Unwrap() error {
+func (err *SelectionFailureError) Unwrap() error {
 	if err == nil {
 		return nil
 	}

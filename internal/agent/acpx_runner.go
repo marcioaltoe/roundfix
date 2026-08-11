@@ -1398,7 +1398,7 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Start(); err != nil {
-		failure := &SelectionFailure{
+		failure := &SelectionFailureError{
 			Runtime: strings.TrimSpace(req.Runtime.ID),
 			Reason:  "adapter startup",
 			Err:     fmt.Errorf("start acpx prompt: %w", err),
@@ -1844,22 +1844,37 @@ func (runner *ACPXRunner) publishWorkStartedOnce(ctx context.Context, req Execut
 	if sessionName == "" {
 		return errors.New("Agent Session is required to publish Agent work-started status")
 	}
-	unlock := runner.lockState()
-	defer unlock()
-	if _, ok := runner.workStartedSessions[sessionName]; ok {
+	if !runner.claimWorkStarted(sessionName) {
 		return nil
 	}
 	if err := runner.publishStatus(ctx, req, sink, AgentWorkStartedStatus); err != nil {
+		runner.releaseWorkStarted(sessionName)
 		return err
+	}
+	return nil
+}
+
+// claimWorkStarted reserves the one work-started publication for a Session.
+func (runner *ACPXRunner) claimWorkStarted(sessionName string) bool {
+	unlock := runner.lockState()
+	defer unlock()
+	if _, ok := runner.workStartedSessions[sessionName]; ok {
+		return false
 	}
 	if runner.workStartedSessions == nil {
 		runner.workStartedSessions = map[string]struct{}{}
 	}
 	runner.workStartedSessions[sessionName] = struct{}{}
-	return nil
+	return true
 }
 
-func (runner ACPXRunner) classifyNoOutputFailure(ctx context.Context, req ExecuteRequest, sink runevent.Sink, agentOutput bool, err error) error {
+func (runner *ACPXRunner) releaseWorkStarted(sessionName string) {
+	unlock := runner.lockState()
+	defer unlock()
+	delete(runner.workStartedSessions, sessionName)
+}
+
+func (runner *ACPXRunner) classifyNoOutputFailure(ctx context.Context, req ExecuteRequest, sink runevent.Sink, agentOutput bool, err error) error {
 	if err == nil || agentOutput {
 		return err
 	}
@@ -1867,7 +1882,7 @@ func (runner ACPXRunner) classifyNoOutputFailure(ctx context.Context, req Execut
 	if !errors.As(err, &batchErr) {
 		return err
 	}
-	failure := &SelectionFailure{
+	failure := &SelectionFailureError{
 		Runtime: strings.TrimSpace(req.Runtime.ID),
 		Reason:  strings.TrimSpace(batchErr.Reason),
 		Err:     batchErr.Err,
@@ -1880,7 +1895,7 @@ func (runner ACPXRunner) classifyNoOutputFailure(ctx context.Context, req Execut
 	return runner.reportSelectionFailure(ctx, req, sink, failure)
 }
 
-func (runner ACPXRunner) reportSelectionFailure(ctx context.Context, req ExecuteRequest, sink runevent.Sink, failure *SelectionFailure) error {
+func (runner *ACPXRunner) reportSelectionFailure(ctx context.Context, req ExecuteRequest, sink runevent.Sink, failure *SelectionFailureError) error {
 	if err := runner.publishStatus(ctx, req, sink, AgentSelectionFailedStatus); err != nil {
 		return errors.Join(failure, err)
 	}
