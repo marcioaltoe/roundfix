@@ -53,7 +53,8 @@ This Task may create or modify only:
 
 ## Verification
 
-- `GOCACHE="$PWD/.gocache" go test ./internal/spec -run '^TestArchiveDirAnswersEveryRetiredKind' -count=1 -v 2>&1 | grep -q '^--- PASS'` — expected: exits 0.
+- `grep -q '"_archived/specs"' internal/spec/archive.go` — expected: exits 0. The resolver answers `docs/specs/_archived` today; this Task is what moves its answer to the single root, so asserting the resolver test passes proves nothing — Task 02 created that test and it already passes.
+- `test -d _archived/specs && test -d _archived/findings` — expected: exits 0, proving the artifacts moved rather than only the resolver's answer.
 - `grep -q 'Re-recorded because' internal/speccheck/testdata/corpus-golden.json` — expected: exits 0. The `|| grep ... task_04.md` fallback this command used to carry made it self-satisfying: the string occurs in this file because the command writes it, so the check passed before any re-recording happened.
 
 Whole-package sweeps, `go build`, `go clean -testcache` and `make verify` are
