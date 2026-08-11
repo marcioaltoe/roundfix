@@ -1,0 +1,13 @@
+package store
+
+import (
+	"context"
+
+	"roundfix/internal/runevent"
+)
+
+func task10Publish(ctx context.Context, store *Store, event runevent.RunEvent) error {
+	return store.JournalSink().Publish(ctx, event)
+}
+
+func task10Flush(ctx context.Context, store *Store) error { return store.FlushJournal(ctx) }

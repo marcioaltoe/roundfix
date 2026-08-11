@@ -1,0 +1,104 @@
+package store
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"roundfix/internal/runevent"
+)
+
+func TestTask10RecordPrechangeJournal(t *testing.T) {
+	output := os.Getenv("TASK10_CORPUS_OUTPUT")
+	if output == "" {
+		t.Fatal("TASK10_CORPUS_OUTPUT is required")
+	}
+	ctx := context.Background()
+	home := t.TempDir()
+	runStore := openTestStore(t, ctx, home)
+	req := sampleCreateRunRequest()
+	req.Kind = KindImplement
+	req.SpecSlug = "task10-consumer-corpus"
+	req.GitRoot = "/task10/repository"
+	req.WorkDir = "/task10/worktree"
+	req.HeadBranch = "ma/task10-consumer-corpus"
+	req.LocalBranch = req.HeadBranch
+	req.HeadSHA = "a2a4c86b"
+	run, err := runStore.CreateRunSkippingActiveLock(ctx, req)
+	if err != nil {
+		t.Fatalf("create corpus Run: %v", err)
+	}
+
+	base := time.Date(2026, 8, 11, 10, 0, 0, 0, time.UTC)
+	events := []runevent.RunEvent{
+		{
+			RunID: run.ID, Batch: 1, Source: runevent.SourceAgent,
+			Kind: runevent.KindAgentMessage, Summary: "pre-change agent message",
+			Time:    base,
+			Payload: []byte(`{"sessionId":"prechange","update":{"sessionUpdate":"agent_message_chunk","content":[{"type":"text","text":"pre-change agent message"}]}}`),
+		},
+		{
+			RunID: run.ID, Batch: 1, Source: runevent.SourceDaemon,
+			Kind: runevent.KindDaemonTask, ReviewIssue: "task_02",
+			Summary: "Task task_02 started as Batch 001.", Time: base.Add(time.Second),
+			Payload: []byte(`{"task":"task_02","phase":"started","batch":1}`),
+		},
+		{
+			RunID: run.ID, Batch: 1, Source: runevent.SourceDaemon,
+			Kind: runevent.KindDaemonVerification, ReviewIssue: "task_02",
+			Summary: "Verification attempt 1 for Task task_02 passed.", Time: base.Add(2 * time.Second),
+			Payload: []byte(`{"attempt":1,"phase":"verdict","task":"task_02","verdict":"passed"}`),
+		},
+		{
+			RunID: run.ID, Batch: 1, Source: runevent.SourceDaemon,
+			Kind: runevent.KindDaemonTask, ReviewIssue: "task_02",
+			Summary: "Task task_02 settled completed.", Time: base.Add(3 * time.Second),
+			Payload: []byte(`{"task":"task_02","phase":"settled","status":"completed"}`),
+		},
+		{
+			RunID: run.ID, Batch: 1, Source: runevent.SourceDaemon,
+			Kind: runevent.KindDaemonStatus, Summary: "Daemon status.", Time: base.Add(4 * time.Second),
+			Payload: []byte(`{"phase":"reviewing","task_capacity":2,"verification_capacity":1}`),
+		},
+		{
+			RunID: run.ID, Batch: 2, Source: runevent.SourceDaemon,
+			Kind: runevent.KindDaemonOutcome, Summary: "Run reached IntegrationPending.", Time: base.Add(5 * time.Second),
+			Payload: []byte(`{"outcome":"integration_pending","state":"integration_pending"}`),
+		},
+	}
+	sink := JournalSink{Store: runStore}
+	for index, event := range events {
+		if err := sink.Publish(ctx, event); err != nil {
+			t.Fatalf("publish corpus event %d: %v", index+1, err)
+		}
+	}
+	if _, err := runStore.db.ExecContext(ctx, `
+UPDATE runs SET state = ?, updated_at = ?, completed_at = ? WHERE id = ?`,
+		StateIntegrationPending,
+		formatTime(time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)),
+		formatTime(time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)),
+		run.ID,
+	); err != nil {
+		t.Fatalf("mark corpus Run terminal: %v", err)
+	}
+	if _, err := runStore.db.ExecContext(ctx, `DELETE FROM active_run_locks WHERE run_id = ?`, run.ID); err != nil {
+		t.Fatalf("release corpus Active Run lock: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close corpus Store: %v", err)
+	}
+
+	data, err := os.ReadFile(DatabasePath(home))
+	if err != nil {
+		t.Fatalf("read recorded corpus: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(output), 0o755); err != nil {
+		t.Fatalf("create corpus output directory: %v", err)
+	}
+	if err := os.WriteFile(output, data, 0o644); err != nil {
+		t.Fatalf("write recorded corpus: %v", err)
+	}
+	t.Logf("TASK10_CORPUS run_id=%s events=%d commit=a2a4c86b output=%s", run.ID, len(events), output)
+}

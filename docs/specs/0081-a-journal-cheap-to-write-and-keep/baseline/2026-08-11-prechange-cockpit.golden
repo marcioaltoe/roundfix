@@ -1,0 +1,40 @@
+ROUNDFIX // LIVE RUN VIEW // SPEC task10-consumer-corpus                    RUN 8dd64751 [INTEGRATION PENDING] READ-ONLY
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ AGENT [done]  >  VERIFY [done]  >  COMMIT [wait]                                                                     │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────┐┌─────────────────────────────────────────────────────────────────────┐
+│ WORK QUEUE (0)                             ││ SESSION.TIMELINE                               Live · detail hidden │
+│                                            ││                                                                     │
+│ No Tasks yet.                              ││ ▼ BATCH 001/002 00:04                                               │
+│ An implement Run queues its Spec's         ││ 10:00:01 TASK Task task_02 started as Batch 001.                    │
+│ Task Graph here.                           ││ 10:00:02 VERIFY Verification attempt 1 for Task task_02 passed.     │
+│                                            ││ 10:00:03 TASK Task task_02 settled completed.                       │
+│                                            ││ 10:00:04 STATUS Daemon status.                                      │
+│                                            ││ ▼ BATCH 002/002 00:00                                               │
+│                                            ││ 10:00:05 OUTCOME Run reached IntegrationPending.                    │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│ 0 Tasks total · 0 completed · 0 unresolved ││                                                                     │
+└────────────────────────────────────────────┘└─────────────────────────────────────────────────────────────────────┘
+Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter Task · D show detail · End follow · q detach                  

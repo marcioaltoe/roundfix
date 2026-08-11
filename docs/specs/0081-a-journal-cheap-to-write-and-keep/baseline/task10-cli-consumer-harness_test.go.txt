@@ -1,0 +1,143 @@
+package cli
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"reflect"
+	"testing"
+	"time"
+
+	"roundfix/internal/runevent"
+	"roundfix/internal/store"
+	roundtui "roundfix/internal/tui"
+)
+
+type task10CLIObservations struct {
+	Events             []map[string]any `json:"events"`
+	AttachTimeline     []string         `json:"attach_timeline"`
+	ReconcileCompleted []string         `json:"reconcile_completed_tasks"`
+	VerificationPassed bool             `json:"reconcile_verification_passed"`
+	SettledCompleted   bool             `json:"reconcile_settled_completed"`
+	GCRunIDs           []string         `json:"gc_run_ids"`
+	GCJournalRows      int              `json:"gc_journal_rows"`
+}
+
+func TestTask10PrechangeJournalCLIConsumers(t *testing.T) {
+	fixture := os.Getenv("TASK10_CORPUS_DB")
+	expectations := os.Getenv("TASK10_EXPECTATIONS")
+	if fixture == "" || expectations == "" {
+		t.Fatal("TASK10_CORPUS_DB and TASK10_EXPECTATIONS are required")
+	}
+	ctx := context.Background()
+	home := task10CopyCorpus(t, fixture)
+	reader, err := store.OpenReader(ctx, home)
+	if err != nil {
+		t.Fatalf("open recorded journal: %v", err)
+	}
+	defer func() { _ = reader.Close() }()
+	runs, err := reader.ListRuns(ctx, store.ListRunsQuery{States: store.StatesAll})
+	if err != nil || len(runs) != 1 {
+		t.Fatalf("load recorded Run: runs=%d err=%v", len(runs), err)
+	}
+	run := runs[0]
+
+	var eventOutput bytes.Buffer
+	if _, err := replayEventStream(ctx, reader, run.ID, 0, runevent.AllStreamCategories(), json.NewEncoder(&eventOutput)); err != nil {
+		t.Fatalf("events consumer: %v", err)
+	}
+	eventLines := bytes.Split(bytes.TrimSpace(eventOutput.Bytes()), []byte("\n"))
+	events := make([]map[string]any, 0, len(eventLines))
+	for _, line := range eventLines {
+		var record map[string]any
+		if err := json.Unmarshal(line, &record); err != nil {
+			t.Fatalf("decode events consumer record: %v", err)
+		}
+		events = append(events, record)
+	}
+
+	timeline := roundtui.NewRunTimeline(100)
+	if _, err := replayRunEvents(ctx, reader, run.ID, 0, timeline); err != nil {
+		t.Fatalf("attach consumer: %v", err)
+	}
+
+	coverage, evidenceByRun, err := loadReconcileTaskCoverage(ctx, reader, runs)
+	if err != nil || len(coverage) != 1 {
+		t.Fatalf("reconcile replay consumer: coverage=%d err=%v", len(coverage), err)
+	}
+	taskEvidence := evidenceByRun[run.ID]["task_02"]
+
+	gcHome := task10CopyCorpus(t, fixture)
+	gcStore, err := store.Open(ctx, gcHome)
+	if err != nil {
+		t.Fatalf("open GC corpus: %v", err)
+	}
+	report, err := pruneRunRetention(ctx, gcStore, t.TempDir(), time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
+	if closeErr := gcStore.Close(); err == nil {
+		err = closeErr
+	}
+	if err != nil {
+		t.Fatalf("gc consumer: %v", err)
+	}
+
+	got := task10CLIObservations{
+		Events:             events,
+		AttachTimeline:     timeline.Lines(),
+		ReconcileCompleted: coverage[0].CompletedTasks,
+		VerificationPassed: taskEvidence.verificationPassed,
+		SettledCompleted:   taskEvidence.settledCompleted,
+		GCRunIDs:           report.RunIDs,
+		GCJournalRows:      report.JournalRows,
+	}
+	if os.Getenv("TASK10_RECORD") == "1" {
+		task10WriteJSON(t, expectations, got)
+		return
+	}
+	var want task10CLIObservations
+	task10ReadJSON(t, expectations, &want)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("pre-change consumer observations changed\nwant: %#v\n got: %#v", want, got)
+	}
+}
+
+func task10CopyCorpus(t *testing.T, source string) string {
+	t.Helper()
+	home := t.TempDir()
+	destination := store.DatabasePath(home)
+	data, err := os.ReadFile(source)
+	if err != nil {
+		t.Fatalf("read corpus: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		t.Fatalf("create corpus home: %v", err)
+	}
+	if err := os.WriteFile(destination, data, 0o644); err != nil {
+		t.Fatalf("copy corpus: %v", err)
+	}
+	return home
+}
+
+func task10WriteJSON(t *testing.T, path string, value any) {
+	t.Helper()
+	data, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal observations: %v", err)
+	}
+	data = append(data, '\n')
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write observations: %v", err)
+	}
+}
+
+func task10ReadJSON(t *testing.T, path string, value any) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read observations: %v", err)
+	}
+	if err := json.Unmarshal(data, value); err != nil {
+		t.Fatalf("decode observations: %v", err)
+	}
+}

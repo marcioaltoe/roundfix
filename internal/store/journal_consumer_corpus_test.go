@@ -2,6 +2,11 @@ package store
 
 import (
 	"context"
+	"encoding/json"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -312,4 +317,97 @@ func TestReplayCorpusBatchClockMatchesFullEvents(t *testing.T) {
 			t.Fatalf("batch %d span from headers %+v != full %+v", batch, got, want)
 		}
 	}
+}
+
+// TestJournalConsumerCorpusReplaysEveryConsumer replays one SQLite journal
+// written by the pre-Spec build through the current events, Attach, Cockpit,
+// reconcile, and GC consumers. The package-specific harnesses are installed
+// with Go overlays, so the characterization crosses the real consumer seams
+// without adding test hooks to production code or rewriting the fixture.
+func TestJournalConsumerCorpusReplaysEveryConsumer(t *testing.T) {
+	repositoryRoot := journalConsumerCorpusRepositoryRoot(t)
+	baselineDir := filepath.Join(
+		repositoryRoot,
+		"docs", "specs", "0081-a-journal-cheap-to-write-and-keep", "baseline",
+	)
+	fixture := filepath.Join(baselineDir, "2026-08-11-prechange-roundfix.db")
+
+	tests := []struct {
+		name        string
+		packagePath string
+		virtualFile string
+		harness     string
+		testName    string
+		environment []string
+	}{
+		{
+			name:        "events Attach reconcile and gc preserve pre-change observations",
+			packagePath: "./internal/cli",
+			virtualFile: filepath.Join(repositoryRoot, "internal", "cli", "task10_consumer_observation_test.go"),
+			harness:     filepath.Join(baselineDir, "task10-cli-consumer-harness_test.go.txt"),
+			testName:    "TestTask10PrechangeJournalCLIConsumers",
+			environment: []string{
+				"TASK10_CORPUS_DB=" + fixture,
+				"TASK10_EXPECTATIONS=" + filepath.Join(baselineDir, "2026-08-11-prechange-consumer-expectations.json"),
+				"TASK10_RECORD=0",
+			},
+		},
+		{
+			name:        "Cockpit rendering preserves the pre-change frame",
+			packagePath: "./internal/tui",
+			virtualFile: filepath.Join(repositoryRoot, "internal", "tui", "task10_cockpit_observation_test.go"),
+			harness:     filepath.Join(baselineDir, "task10-cockpit-consumer-harness_test.go.txt"),
+			testName:    "TestTask10PrechangeJournalCockpitConsumer",
+			environment: []string{
+				"TASK10_CORPUS_DB=" + fixture,
+				"TASK10_COCKPIT_EXPECTATION=" + filepath.Join(baselineDir, "2026-08-11-prechange-cockpit.golden"),
+				"TASK10_RECORD=0",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			overlay := struct {
+				Replace map[string]string `json:"Replace"`
+			}{Replace: map[string]string{test.virtualFile: test.harness}}
+			overlayData, err := json.Marshal(overlay)
+			if err != nil {
+				t.Fatalf("encode %s overlay: %v", test.name, err)
+			}
+			overlayPath := filepath.Join(t.TempDir(), "overlay.json")
+			if err := os.WriteFile(overlayPath, overlayData, 0o644); err != nil {
+				t.Fatalf("write %s overlay: %v", test.name, err)
+			}
+
+			command := exec.Command(
+				"go", "test",
+				"-overlay="+overlayPath,
+				"-count=1",
+				test.packagePath,
+				"-run", "^"+test.testName+"$",
+				"-v",
+			)
+			command.Dir = repositoryRoot
+			command.Env = append(os.Environ(), test.environment...)
+			output, err := command.CombinedOutput()
+			if err != nil {
+				t.Fatalf("replay %s: %v\n%s", test.name, err, output)
+			}
+			t.Logf("%s", output)
+		})
+	}
+}
+
+func journalConsumerCorpusRepositoryRoot(t *testing.T) string {
+	t.Helper()
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("resolve journal consumer corpus source path")
+	}
+	root, err := filepath.Abs(filepath.Join(filepath.Dir(filename), "..", ".."))
+	if err != nil {
+		t.Fatalf("resolve repository root: %v", err)
+	}
+	return root
 }
