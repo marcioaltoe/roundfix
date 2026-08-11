@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0081-a-journal-cheap-to-write-and-keep
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -86,3 +86,84 @@ before it starts. Regression and compilation are the Run-level gate's job.
   (`SQLITE_BUSY` at the pre-change timeout).
 - `_techspec.md` → Testing Approach; Build Order 7.
 - ADR-0004, ADR-0098.
+
+## Result
+
+Implementation-ready for Daemon Verification. This is a Roundfix
+Daemon-assigned turn: Task status remains Daemon-owned, neither declared
+`## Verification` command was run, and no commit was made. Evidence below is
+from focused implementation checks only.
+
+### What changed (behavior)
+
+- Added the dedicated `internal/store/journal_parallel_runs_test.go` service-
+  integration suite; no production path changed. The suite opens six
+  independent writer Stores against one temporary Run Database, sets and reads
+  back `PRAGMA busy_timeout = 5000` on every single-connection Store, then
+  starts all publishers through one barrier.
+- Each Run publishes 256 ordered events through its real Store-scoped
+  `JournalSink`: two production-sized 128-event batches per Run, for 1,536
+  events across the scenario. Returned errors are classified with the SQLite
+  driver's typed result code, and the scenario requires an exact busy count of
+  zero plus all six publishers completing.
+- The read-back rehearsal queries every Run independently and requires exactly
+  cursors `1..256` in ascending order. Each stored summary must match the
+  publisher's sequence at the same index, so cursor contiguity and publisher
+  order are separate observable assertions.
+- The cancellation rehearsal starts six Runs, holds the real advisory writer
+  lock in a write transaction on the first Run's Store, starts the other five
+  journal flushes, cancels the holder, and requires `context.Canceled`. All five
+  remaining Runs then persist their queued event with cursor 1 and zero typed
+  `SQLITE_BUSY` errors. Channel/context observations bound the coordination;
+  the rehearsal uses no sleeps.
+
+### Acceptance-criterion evidence
+
+- **The scenario runs at the pre-raise timeout and reports zero
+  `SQLITE_BUSY`** — the focused six-Run sample read back 5,000 ms on each
+  connection and reported `runs=6`, `events_per_run=256`,
+  `total_events=1536`, `sqlite_busy=0`, and `completed_runs=6`.
+- **Cursors are monotonic and contiguous per Run, and order is preserved** —
+  the focused read-back subtest passed for all six Runs, checking every cursor
+  against `index+1` and every stored summary against the publisher sequence.
+- **The measured comparison against the baseline is recorded** — Task 01's
+  committed baseline observed zero busy errors only with the production
+  30,000 ms timeout and at most four writers (336 attempts across its two full
+  samples); its four-writer per-append p95 was 9.222–9.529 ms. This focused
+  six-Run sample lowered the timeout to 5,000 ms, increased concurrency to six,
+  and completed 1,536 batched events with zero busy errors in 57.275 ms wall
+  time; per-Run p50/p95 was 25.123/57.273 ms and concurrent wall time normalized
+  to 37.288 ms per 1,000 events. The workloads have different latency
+  boundaries (one direct append in the baseline versus a Run's two batched
+  appends here), so the comparison supports the higher-concurrency,
+  lower-timeout zero-busy claim and does not claim a direct p95 speedup.
+- **The production `busy_timeout` default is unchanged** — the suite overrides
+  the timeout only with connection-local test setup. A post-change exact
+  `HEAD` diff of `internal/store/store.go` is empty; its production default
+  remains 30,000 ms. The only Task-created code path is the new `_test.go`
+  file.
+
+### Focused checks run (declared Verification not run, Daemon-owned)
+
+- `rtk proxy go test -count=1 ./internal/store -run '^TestParallelRuns/six_concurrent_Runs_append_events_at_the_pre-raise_timeout$' -v`
+  → pass; measured output is recorded above.
+- `rtk proxy go test -count=1 ./internal/store -run '^TestParallelRuns/events_read_back_per_Run_keep_cursor_and_publisher_order$' -v`
+  → pass.
+- `rtk proxy go test -count=1 ./internal/store -run '^TestParallelRuns/cancelling_one_Run_releases_the_writer_lock$' -v`
+  → pass after the last cancellation-path edit.
+- `rtk proxy go test -race -count=1 ./internal/store -run '^TestParallelRuns/six_concurrent_Runs_append_events_at_the_pre-raise_timeout$'`
+  → pass; no race was reported.
+- `rtk proxy go test -race -count=1 ./internal/store -run '^TestParallelRuns/cancelling_one_Run_releases_the_writer_lock$'`
+  → pass; no race was reported.
+- `rtk git -c core.fsmonitor=false diff --check` → clean after the Result edit.
+
+### Not run
+
+- The two commands under this Task's `## Verification` are reserved for the
+  Daemon and were not run.
+- The whole-package and repository-wide gates were not run; the Task explicitly
+  delegates regression and compilation gates to the Run-level Verification.
+
+### Follow-ups
+
+None in this Task's slice.
