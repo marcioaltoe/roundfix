@@ -28,9 +28,12 @@ graph:
     - id: task_09
       file: task_09.md
       needs: [task_03]
+    - id: task_10
+      file: task_10.md
+      needs: [task_09]
     - id: task_08
       file: task_08.md
-      needs: [task_05, task_07, task_09]
+      needs: [task_05, task_07, task_09, task_10]
 ---
 
 # Tasks — Cheap detectors run before the gate
@@ -45,10 +48,11 @@ graph:
 | task_06 | Declare the two-tier verification contract            | chore   | high       | task_04          |
 | task_07 | Re-record the expectation task_06 invalidates         | test    | low        | task_06          |
 | task_09 | Let the QA harness complete the report the Daemon seeded | test    | medium     | task_03          |
-| task_08 | Run the final QA gate                                 | qa      | medium     | task_05, task_07, task_09 |
+| task_10 | Give the prompt fixture the Git precondition the stage now needs | test | low | task_09 |
+| task_08 | Run the final QA gate                                 | qa      | medium     | task_05, task_07, task_09, task_10 |
 
 Waves: 1 → task_01, task_02 · 2 → task_03, task_04 · 3 → task_05, task_06 ·
-4 → task_07, task_09 · 5 → task_08
+4 → task_07, task_09 · 5 → task_10 · 6 → task_08
 
 Three edges carry reasoning worth stating.
 
