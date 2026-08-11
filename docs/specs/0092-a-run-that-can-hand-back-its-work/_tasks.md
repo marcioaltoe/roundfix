@@ -28,9 +28,12 @@ graph:
     - id: task_09
       file: task_09.md
       needs: [task_06]
+    - id: task_10
+      file: task_10.md
+      needs: [task_05, task_06]
     - id: task_07
       file: task_07.md
-      needs: [task_02, task_04, task_06, task_09]
+      needs: [task_02, task_04, task_06, task_09, task_10]
 ---
 
 # Tasks — A Run that can hand back its work
@@ -45,9 +48,17 @@ graph:
 | task_05 | Give a superseded Run Branch a disposition               | backend | high       | task_01                   |
 | task_06 | Hand a stopped Run's settled Tasks back                  | backend | high       | task_04, task_05          |
 | task_09 | Let the reconcile JSON contract know about carry-forward | test    | low        | task_06                   |
-| task_07 | Run the final QA gate                                    | qa      | high       | task_02, task_04, task_06, task_09 |
+| task_10 | Let the two new acts be discoverable and named           | docs    | low        | task_05, task_06          |
+| task_07 | Run the final QA gate                                    | qa      | high       | task_02, task_04, task_06, task_09, task_10 |
 
-Waves: 1 → task_01 · 2 → task_02, task_03, task_05 · 3 → task_08 · 4 → task_04 · 5 → task_06 · 6 → task_07
+Waves: 1 → task_01 · 2 → task_02, task_03, task_05 · 3 → task_08 · 4 → task_04 · 5 → task_06 · 6 → task_09, task_10 · 7 → task_07
+
+Three of these ten Tasks were minted after implementation began, and all three
+have the same cause: a Task delivered a public change whose surrounding
+contract — the test pinning a payload, the help copy naming a flag, the
+glossary entry naming a term — sat outside every bounded scope, so no Task
+could complete it. task_05's own Result recorded its instance while it happened.
+Enumerating a boundary is not the same as enumerating what the change obliges.
 
 task_08 was minted on 2026-08-11, after task_04's whole-package gate found a
 seventh test broken by task_02's boundary where task_01 had enumerated six. It
