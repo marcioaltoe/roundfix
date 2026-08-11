@@ -1285,6 +1285,19 @@ func detectTaskCoverageAndContextReferences(
 			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
 			result.Findings = append(result.Findings, finding)
 		}
+		for _, command := range VacuousVerificationCommands(task) {
+			result.Findings = append(result.Findings, Finding{
+				Code:     CodeVerifyVacuousCommand,
+				Severity: SeverityError,
+				Summary: artifactDisplayPath(repoRoot, taskPath) +
+					" declares a Verification command that already passes against the unchanged tree: " + command,
+				Where: []Location{{
+					Path: artifactDisplayPath(repoRoot, taskPath),
+					Line: sectionLineContaining(content, "Verification", command),
+				}},
+				Fix: "Replace it with a command that names this Task's own effect, or drop it: a boundary is proved by auditing the Task commit, not by a command that runs before the commit exists.",
+			})
+		}
 		if finding, ok := ContradictoryRequirements(task); ok {
 			for index := range finding.Where {
 				finding.Where[index].Path = artifactDisplayPath(repoRoot, taskPath)

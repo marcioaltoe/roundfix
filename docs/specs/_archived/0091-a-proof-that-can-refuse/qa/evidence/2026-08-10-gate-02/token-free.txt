@@ -1,0 +1,7 @@
+Public live read:
+- acpx --cwd /private/tmp/roundfix-0091-gate02-claude claude sessions history roundfix-preflight-893b97a1bfe840a1
+- acpx --cwd /private/tmp/roundfix-0091-gate02-claude-opus claude sessions history roundfix-preflight-c496b0ab656b068d
+Result: each closed Session reported 0/0 history entries and No history. The first is an invalid-model refusal; the second is a passing opus/high proof.
+Focused command: GOCACHE="$PWD/.gocache" rtk go test ./internal/agent -run '^TestProveExactSelectionOfficialFixturesNoPrompt$' -count=1
+Result: exit 0, 3 tests passed.
+Independent confirmation: the broader Agent selection passed 34 cases including catalogue sequencing and no-prompt assertions. No Agent work turn was used to establish any live catalogue.

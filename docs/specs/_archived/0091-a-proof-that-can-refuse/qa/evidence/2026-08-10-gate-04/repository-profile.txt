@@ -1,0 +1,13 @@
+Build: roundfix 0.4.0 (d5a8a8df-dirty)
+Command: rtk bin/roundfix profiles validate --json
+Fresh-process exits: 0, 0
+
+Both processes returned the same five distinct passing tuples and encodings:
+- codex/gpt-5.6-sol/high: independent, codex-acp 1.1.14
+- opencode/openrouter/deepseek/deepseek-v4-flash-0731/max: runtime_deferred
+- claude/opus/high: independent, claude-agent-acp 0.66.0
+- codex/gpt-5.6-luna/max: independent, codex-acp 1.1.14
+- claude/sonnet/xhigh: independent, claude-agent-acp 0.66.0
+
+No proof reported effective_selection_mismatch. The two complete fresh runs
+also confirm valid-after-invalid recovery for all three live refusal probes.

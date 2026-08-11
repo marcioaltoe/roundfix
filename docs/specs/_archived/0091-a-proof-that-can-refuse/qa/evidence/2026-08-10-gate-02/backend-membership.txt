@@ -1,0 +1,3 @@
+Focused Agent result: exit 0, 34 selected tests passed, including membership refusal, advertised set, adapter refusal fast path, advertised encoding, contamination advisory, and Claude characterization.
+Live comparison: Codex and Claude each refused the invented model twice through the adapter-first path; OpenCode produced one adapter refusal and one timeout. ADR-0119 accepts the first refusal unchanged and keeps the membership check as the net for an adapter that remains silent.
+Valid paths: repository validation exited 0 for four configured tuples; isolated claude/opus/high and its Codex fallback both passed as independent.

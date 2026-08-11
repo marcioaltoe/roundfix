@@ -87,9 +87,6 @@ profiles:
       - runtime: opencode
         model: openrouter/deepseek/deepseek-v4-flash-0731
         reasoning_effort: max
-      - runtime: claude
-        model: opus
-        reasoning_effort: high
   frontend:
     # The one category Claude still leads, and the one place it runs by default
     # during the low week. Opus 5 at high scores 73% in 73 steps; the codex row
@@ -151,9 +148,6 @@ profiles:
       - runtime: codex
         model: gpt-5.6-sol
         reasoning_effort: high
-      - runtime: claude
-        model: opus
-        reasoning_effort: high
   qa:
     preferred:
       runtime: codex
@@ -163,9 +157,6 @@ profiles:
       - runtime: opencode
         model: openrouter/deepseek/deepseek-v4-flash-0731
         reasoning_effort: max
-      - runtime: claude
-        model: opus
-        reasoning_effort: high
   review:
     # The second category the OpenCode runtime leads, and the safest one. Review
     # work is bounded, has no dependency graph, and blocks nobody, so extra

@@ -1,0 +1,14 @@
+Live invalid Claude proof records:
+- roundfix-preflight-6880bdddd33749fe: closed, 0/0 shown, No history
+- roundfix-preflight-e21d7c75bb76d6e0: closed, 0/0 shown, No history
+
+Live passing Claude proof record:
+- roundfix-preflight-3460a2d134707764: closed, 0/0 shown, No history
+
+Read path: rtk proxy acpx <claude> sessions list --local --filter-cwd <cwd>,
+then rtk proxy acpx --cwd <cwd> claude sessions history <name>.
+
+Focused confirmation: TestProveExactSelectionOfficialFixturesNoPrompt ran in
+the selected Agent command and passed both Sol_high and GPT_5.5_xhigh
+subtests. The broader selection also passed the exact catalogue sequencing
+cases. No Agent work turn was used to establish any live catalogue.

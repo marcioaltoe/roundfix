@@ -1,0 +1,26 @@
+Commands:
+- `rtk proxy env GOCACHE="$PWD/.gocache" go clean -testcache` — exit 0
+- `rtk make verify` — exit 0
+
+The Makefile exports `GOCACHE ?= $(CURDIR)/.gocache`. The cache was cleared
+immediately before the authoritative run. Every Go package reported an
+execution duration rather than `(cached)`.
+
+Observed authoritative output:
+```
+go test -parallel 16 ./...
+ok  roundfix/internal/agent 29.434s
+ok  roundfix/internal/baseline 88.266s
+ok  roundfix/internal/cli 141.965s
+ok  roundfix/internal/spec 72.682s
+ok  roundfix/internal/worktree 44.765s
+ok  roundfix/skills 35.192s
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  roundfix/skills 0.219s
+go run -buildvcs=false ./cmd/roundfix skills check
+Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, implement-spec, brainstorming, council, business-analyst, archive-spec, qa-gate, evidence-gate
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=d5a8a8df-dirty' -X 'roundfix/internal/app.BuildTime=2026-08-10 16:10:30 -0300'" -o bin/roundfix ./cmd/roundfix
+```
+
+All omitted package lines also reported `ok` with durations; no package line
+contained `(cached)`.

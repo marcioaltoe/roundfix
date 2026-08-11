@@ -10,11 +10,54 @@ import (
 const (
 	// CodeVerifyWorkIndependent identifies a Verification that cannot distinguish Task work from no work.
 	CodeVerifyWorkIndependent = "SC-VERIFY-WORK-INDEPENDENT"
+	// CodeVerifyVacuousCommand identifies one Verification command that already
+	// passes against the unchanged tree, whatever its siblings prove.
+	CodeVerifyVacuousCommand = "SC-VERIFY-VACUOUS-COMMAND"
 )
 
 var (
 	makeVerifyPattern = regexp.MustCompile(`^(?:rtk\s+)?(?:env\s+(?:\S+=\S+\s+)*)?make\s+verify$`)
 	goWideGatePattern = regexp.MustCompile(`\bgo\s+(?:build|test|vet)\b`)
+	// An assertion over which paths changed.
+	workingTreeStatePattern = regexp.MustCompile(`git\s+(?:status|diff)\b[^|&;]*(?:--porcelain|--short|--check|--quiet|--exit-code|--name-only|--name-status|--stat)`)
+	// A terminal predicate that succeeds on empty input, which is what an
+	// unchanged tree produces. `git diff --name-only | grep -q .` reads the
+	// same paths and its terminal `grep -q .` fails on empty output, so it is
+	// not vacuous; `| cat` succeeds on empty output and is. Matching the git
+	// flags alone is never enough: `--exit-code` on the git command does not
+	// change what the final predicate does when it consumes no input.
+	//
+	// Every alternative is anchored to the whole terminal command so that
+	// text inside another command's quoted argument is never taken for a
+	// success form: `grep -q 'exit 0'` is a grep that fails on empty input,
+	// not an `exit 0` success predicate.
+	//
+	// A `test -z` / `[ -z` empty-string test is a guaranteed success only when
+	// the whole length operand is a command substitution that reads the working
+	// tree at test time, so an unchanged tree yields an empty value. A
+	// substitution of arbitrary output (`$(printf x)`), a single-quoted form
+	// (which the shell treats as literal text, not a substitution), a bare
+	// variable, or a literal operand is not proof: the predicate can fail
+	// rather than pass. Those forms fall through to the emptyInputUnknown
+	// branch and are never reported vacuous.
+	emptyOutputSucceedsPattern = regexp.MustCompile(
+		`^(?:rtk\s+)?(?:cat|true|:)\s*$` + // | cat | true | : succeed on empty input
+			`|^(?:rtk\s+)?exit\s+0\s*$`, // | exit 0 explicitly succeeds
+	)
+	// emptyTestPattern and emptyTestBracketPattern capture the single length
+	// operand of an empty-string test so it can be judged by
+	// emptyTestOperandPasses rather than matched greedily off the `$(` opener.
+	emptyTestPattern        = regexp.MustCompile(`^(?:rtk\s+)?test\s+-z\s+(.+)$`)
+	emptyTestBracketPattern = regexp.MustCompile(`^(?:rtk\s+)?\[\s*-z\s+(.+?)\s*\]\s*$`)
+	// A terminal command that provably fails on empty input. grep finds no
+	// lines in an unchanged tree's empty output and exits nonzero, so it is
+	// honest Verification no matter what text sits in its arguments.
+	emptyOutputFailsPattern = regexp.MustCompile(`^(?:rtk\s+)?grep\b`)
+	// commandChainOpPattern locates the top-level short-circuit and sequence
+	// operators of a shell chain. A single `|` pipe is deliberately excluded:
+	// a pipeline's exit status is decided by its last member, and the
+	// previous members are counted by pipelineExitOutcome.
+	commandChainOpPattern = regexp.MustCompile(`\|\||&&|;`)
 )
 
 // WorkIndependentVerification reports a Task whose declared Verification
@@ -53,17 +96,152 @@ func repositoryWideGate(command string) bool {
 	return !strings.Contains(command, " -run ") && !strings.Contains(command, " -run=")
 }
 
+// workingTreeCleanlinessCheck reports a command that asserts over the set of
+// changed paths and passes when that set is empty, which is what an unchanged
+// tree produces. Naming the git flags is not enough: `git diff --name-only |
+// grep -q .` reads the same paths and its terminal predicate exits 1 on an
+// unchanged tree, so it fails rather than passing and is honest Verification.
+// Classification therefore reads the final predicate of the whole pipeline or
+// chain, never a git flag off the earlier command.
 func workingTreeCleanlinessCheck(command string) bool {
-	for _, check := range []string{
-		"git status --porcelain",
-		"git status --short",
-		"git diff --check",
-		"git diff --quiet",
-		"git diff --exit-code",
-	} {
-		if strings.Contains(command, check) {
-			return true
+	if !workingTreeStatePattern.MatchString(command) {
+		return false
+	}
+	if !strings.ContainsAny(command, "|&;") {
+		// Nothing consumes the output: git prints nothing and exits zero on an
+		// unchanged tree, so the command passes before any work happens.
+		return true
+	}
+	// Something consumes it, and whether the command passes depends on what:
+	// `| grep -q .` fails on empty output, `| cat` and `|| exit 0` succeed on
+	// it. Only the effective terminal predicate decides the exit status.
+	return chainPassesOnEmptyOutput(command)
+}
+
+// emptyInputOutcome is how a single command segment behaves on empty input.
+type emptyInputOutcome int
+
+const (
+	emptyInputUnknown emptyInputOutcome = iota
+	emptyInputPasses                    // exits zero on empty input
+	emptyInputFails                     // exits nonzero on empty input
+)
+
+// pipelineExitOutcome returns the empty-input outcome of a pipeline: the exit
+// status of a `|` pipeline is decided by its last member. A bare command with
+// no pipe is its own single-member pipeline.
+func pipelineExitOutcome(segment string) emptyInputOutcome {
+	if idx := strings.LastIndex(segment, "|"); idx >= 0 {
+		segment = segment[idx+1:]
+	}
+	segment = strings.TrimSpace(segment)
+	switch {
+	case emptyOutputFailsPattern.MatchString(segment):
+		return emptyInputFails
+	case emptyOutputSucceedsPattern.MatchString(segment):
+		return emptyInputPasses
+	case emptyTestPattern.MatchString(segment) || emptyTestBracketPattern.MatchString(segment):
+		if emptyTestOperandPasses(segment) {
+			return emptyInputPasses
+		}
+		return emptyInputUnknown
+	default:
+		return emptyInputUnknown
+	}
+}
+
+// emptyTestOperandPasses reports whether a `test -z <operand>` or `[ -z
+// <operand> ]` terminal predicate is a guaranteed success on an unchanged tree.
+// Only a whole operand that is a command substitution over the working tree
+// qualifies: an unchanged tree yields an empty value from it. A non-empty
+// substitution of fixed output, a single-quoted form (literal text rather than
+// substitution), a variable, or a literal operand can fail and is never treated
+// as vacuous.
+func emptyTestOperandPasses(segment string) bool {
+	var operand string
+	if m := emptyTestBracketPattern.FindStringSubmatch(segment); m != nil {
+		operand = m[1]
+	} else if m := emptyTestPattern.FindStringSubmatch(segment); m != nil {
+		operand = m[1]
+	} else {
+		return false
+	}
+
+	cond := strings.TrimSpace(operand)
+	if len(cond) >= 2 && (cond[0] == '"' || cond[0] == '\'') && cond[len(cond)-1] == cond[0] {
+		cond = strings.TrimSpace(cond[1 : len(cond)-1])
+	}
+	// Only a working-tree command substitution proves emptiness on an
+	// unchanged tree; anything else may hold output.
+	if !strings.HasPrefix(cond, "$(") || !strings.HasSuffix(cond, ")") {
+		return false
+	}
+	inner := strings.TrimSpace(cond[2 : len(cond)-1])
+	return workingTreeStatePattern.MatchString(strings.Join(strings.Fields(inner), " "))
+}
+
+// chainPassesOnEmptyOutput evaluates a whole command's `&&`, `||`, and `;`
+// chain over empty input, conservatively. A chain passes on empty output only
+// when control flow provably reaches a consuming predicate that succeeds on
+// empty output; short-circuit operators can skip a later segment entirely. An
+// unknown intermediate never lets an unexecuted tail decide the result, so a
+// chain whose passing tail is not guaranteed to run is never reported vacuous.
+func chainPassesOnEmptyOutput(command string) bool {
+	indices := commandChainOpPattern.FindAllStringIndex(command, -1)
+	if len(indices) == 0 {
+		return pipelineExitOutcome(command) == emptyInputPasses
+	}
+
+	var parts []string
+	var ops []string
+	start := 0
+	for _, idx := range indices {
+		parts = append(parts, command[start:idx[0]])
+		ops = append(ops, command[idx[0]:idx[1]])
+		start = idx[1]
+	}
+	parts = append(parts, command[start:])
+
+	outcome := pipelineExitOutcome(parts[0])
+	for i, op := range ops {
+		right := pipelineExitOutcome(parts[i+1])
+		switch op {
+		case ";":
+			// Sequence: the right side always runs; only it decides the result.
+			outcome = right
+		case "&&":
+			// And: the right side runs only when the left passed; otherwise it
+			// is skipped and the left outcome stands.
+			if outcome == emptyInputPasses {
+				outcome = right
+			} else if outcome != emptyInputFails {
+				outcome = emptyInputUnknown
+			}
+		case "||":
+			// Or: the right side runs only when the left failed; otherwise it
+			// is skipped and the left outcome stands.
+			if outcome == emptyInputFails {
+				outcome = right
+			} else if outcome != emptyInputPasses {
+				outcome = emptyInputUnknown
+			}
 		}
 	}
-	return false
+	return outcome == emptyInputPasses
+}
+
+// VacuousVerificationCommands reports each declared command that already passes
+// against the unchanged tree. WorkIndependentVerification judges the Task as a
+// whole and stays silent when one honest command sits beside a vacuous one;
+// the Daemon's pre-work probe judges each command on its own and refuses the
+// Task for any single one, so this check applies the Daemon's unit.
+func VacuousVerificationCommands(task spec.Task) []string {
+	var vacuous []string
+	for _, command := range task.Verification {
+		normalized := strings.Join(strings.Fields(strings.ToLower(command)), " ")
+		if workingTreeCleanlinessCheck(normalized) {
+			vacuous = append(vacuous, command)
+		}
+	}
+	return vacuous
 }

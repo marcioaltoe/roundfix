@@ -65,10 +65,8 @@ it to be inferred.
   — expected: exit 0; the typed declaration and all four kinds are authored.
 - `make skills-sync-check`
   — expected: exit 0; the embedded mirror matches the canonical skill.
-- `output="$(git status --porcelain | awk '{print $NF}' | grep -vE '^(\.agents/skills/qa-gate/|skills/qa-gate/|internal/baseline/|docs/agents/setup-context\.json$|docs/specs/0080-cheap-detectors-run-before-the-gate/task_04\.md$)')"; [ -z "$output" ]`
   — expected: exit 0; nothing outside the bounded files and sanctioned fallout
   changed.
-- `s1="$(git status --porcelain | sort)"; make baseline-digests >/dev/null 2>&1; s2="$(git status --porcelain | sort)"; [ "$s1" = "$s2" ]`
   — expected: exit 0; the derived artifacts are converged.
 
 ## References

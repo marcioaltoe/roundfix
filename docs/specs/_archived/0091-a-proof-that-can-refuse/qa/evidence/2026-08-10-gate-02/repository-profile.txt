@@ -1,0 +1,9 @@
+Command: bin/roundfix profiles validate --json from the repository root
+Fresh-process exits: 0, 0; both returned the same four proofs and encodings.
+Observed four distinct configured tuples, all passed:
+- codex/gpt-5.6-sol/high: independent, codex-acp 1.1.14
+- opencode/openrouter/deepseek/deepseek-v4-flash-0731/max: runtime_deferred
+- codex/gpt-5.6-luna/max: independent, codex-acp 1.1.14
+- claude/sonnet/xhigh: independent, claude-agent-acp 0.66.0
+Isolated repaired tuple: claude/opus/high passed as independent beside codex/gpt-5.6-sol/high.
+Acceptance divergence: Task 05 requires this repository's five distinct tuples to prove. Commit 18ac1e9c temporarily removed claude/opus/high from the project profile until F-002 was fixed, and build 876e83c5 fixes F-002 without restoring that fifth tuple.

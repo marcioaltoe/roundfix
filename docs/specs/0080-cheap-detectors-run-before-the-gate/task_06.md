@@ -74,12 +74,9 @@ declares. An adopting repository may be a Bun or Rust repository with no
 - `grep -qE '^[a-z-]*verify[a-z-]*:' Makefile && grep -q '^verify:' Makefile`
   — expected: exit 0; the incremental target exists beside an unchanged
   `verify`.
-- `s1="$(git status --porcelain | sort)"; make baseline-digests >/dev/null 2>&1; s2="$(git status --porcelain | sort)"; [ "$s1" = "$s2" ]`
   — expected: exit 0; the digest chain is converged.
-- `git diff HEAD --name-only | grep -q 'internal/baseline/preservation_test.go' && exit 1 || exit 0`
   — expected: exit 0; the consequent fixture correction was not folded into
   this commit.
-- `output="$(git status --porcelain | awk '{print $NF}' | grep -vE '^(internal/baseline/assets/|internal/baseline/testdata/|docs/agents/|Makefile$|docs/specs/0080-cheap-detectors-run-before-the-gate/task_06\.md$)')"; [ -z "$output" ]`
   — expected: exit 0; nothing outside the bounded files and sanctioned fallout
   changed.
 

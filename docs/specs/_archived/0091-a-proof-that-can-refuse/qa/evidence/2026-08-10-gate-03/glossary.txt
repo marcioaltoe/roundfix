@@ -1,0 +1,18 @@
+Build: ce7dc4ba9c992ca30969f73d3333227d7e242cf8
+
+Command: rtk rg -n "Runtime Catalogue|catalogue_contaminated|catalogue_unavailable" CONTEXT.md docs/specs/0091-a-proof-that-can-refuse/_techspec.md internal/agent/selection_assignment.go
+Exit: 0
+Observed:
+- CONTEXT.md:135 names Runtime Catalogue and defines the pre-request,
+  uncontaminated read plus ADR-0119 refusal ordering.
+- The TechSpec describes catalogue_contaminated as an advisory.
+- Production carries RuntimeCatalogue.Contaminated as proof evidence and emits
+  neither catalogue_contaminated nor catalogue_unavailable as a public token.
+
+Command: rtk roundfix spec check 0091-a-proof-that-can-refuse --strict
+Exit: 0
+Observed: No findings, including no SC-VOCABULARY-UNDOCUMENTED finding.
+
+Glossary result: the Spec coined Runtime Catalogue, and the canonical glossary
+now carries it. It changed no existing term and dropped none. Prior F-004's
+missing coined term is fixed.

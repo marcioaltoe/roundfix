@@ -1,0 +1,8 @@
+Build: roundfix 0.4.0 (91873526-dirty, built 2026-08-10 12:56:14 -0300)
+Runtime source: /Users/marcio/.opencode/bin/opencode, version 1.18.15; ACP client /opt/homebrew/bin/acpx 0.13.0
+Scratch config: scratch/opencode/.roundfixrc.yml
+Command: bin/roundfix profiles validate --category backend
+Exit: 2
+Observed: classification selection_rejected during requested-model ensure; adapter reported model not found.
+Missing acceptance: no model_not_advertised classification and no advertised Agent Model set.
+This is outside evidence from the installed live adapter catalogue and refusal, not a Spec fixture.

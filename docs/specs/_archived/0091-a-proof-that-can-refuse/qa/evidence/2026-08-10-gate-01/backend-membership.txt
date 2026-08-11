@@ -1,0 +1,3 @@
+Command: GOCACHE="$PWD/.gocache" go test ./internal/agent -run '^(TestProofRefusesAModelTheCatalogueDoesNotAdvertise|TestProofRefusalNamesTheAdvertisedSet|TestProofKeepsTheAdapterRefusalFastPath|TestProofKeepsAdvertisedSelectionEncoding|TestRuntimeCatalogueRecordsAContaminatedAdvertisement|TestSelectionCatalogueCharacterizationClaudeRefusesAnUnofferedModel)$' -count=1
+Exit: 0; 6 cases passed.
+Assembled divergence: live Codex, Claude, and OpenCode invalid-model CLI journeys all reached the adapter application step and returned selection_rejected without an advertised set. The live product contradicts the fixture-backed membership cases.

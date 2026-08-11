@@ -1,0 +1,8 @@
+Command form: git diff-tree --no-commit-id --name-status -r <commit>
+Task 01 681ad14a: task_01.md and selection_catalogue_characterization_test.go.
+Task 04 f65aac63: task_04.md, acpx_runner.go, acpx_runner_test.go.
+Task 02 523ad06a: task_02.md and three declared internal/agent files.
+Corrective authoring d15e3f04 and 9007b7c3: Spec Task artifacts only.
+Task 06 b5b4a1b1: task_06.md, acpx_runner_test.go, implement_test.go.
+Task 03 91873526: task_03.md and three declared internal/agent files.
+No commit changed a linter, formatter, typechecker, test-runner, build, package-manager, generator, CI, ignore, plugin, or version-pin path. Implementation commits respect their declared bounded paths. Current non-QA tree is clean; only this report and its evidence are untracked.

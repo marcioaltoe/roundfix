@@ -1,0 +1,29 @@
+Commands: rtk git -c core.fsmonitor=false diff-tree --no-commit-id --name-only -r <commit>
+
+Task commits and paths:
+- task_01 681ad14a: task_01.md; selection_catalogue_characterization_test.go
+- task_02 523ad06a: task_02.md; selection_assignment.go;
+  selection_assignment_test.go; selection_catalogue_characterization_test.go
+- task_06 b5b4a1b: task_06.md; acpx_runner_test.go; implement_test.go
+- task_03 91873526: task_03.md; selection_assignment.go;
+  selection_assignment_test.go; selection_catalogue_characterization_test.go
+- task_04 f65aac63: task_04.md; acpx_runner.go; acpx_runner_test.go
+- task_07 876e83c5: task_07.md; selection_assignment.go;
+  selection_assignment_test.go; implement_test.go
+- task_08 ce7dc4ba: task_08.md; acpx_runner.go; acpx_runner_test.go
+
+All seven Task commits stay within their authored boundaries and change no
+protected tooling path.
+
+Protected configuration chronology:
+- d69609af creates only the typed authorization, exactly bounding
+  .roundfixrc.yml and claude/opus/high entries.
+- 18ac1e9c changes only .roundfixrc.yml for the authorized reroute.
+- 061a442e restores .roundfixrc.yml after Task 07, but also changes CONTEXT.md.
+- merge-base --is-ancestor exits 0 prove d69609af < 18ac1e9c < 876e83c5 <
+  061a442e < ce7dc4ba.
+
+Finding: the restoration commit is not an exact bounded tooling-change commit.
+CONTEXT.md lies outside the authorization's sole path, .roundfixrc.yml, and is
+not an assigned Task file. The glossary correction must be separated from the
+authorized restoration so the tooling audit can trace exact scope.

@@ -71,7 +71,6 @@ it is bought with a measurement or not at all.
 - `report="$(ls docs/specs/0081-a-journal-cheap-to-write-and-keep/baseline/*.md | tail -1)"; grep -qiE 'payload' "$report" && grep -qi 'ADR-0008' "$report"`
   — expected: exit 0; the decision addresses payload shedding and names the
   ADR it either respects or amends.
-- `git diff HEAD --name-only | grep -E '^internal/' | grep -v '_test\.go$' | grep -q . && exit 1 || exit 0`
   — expected: exit 0; no production code path changed in this Task.
 - `go test -count=1 ./internal/store/...`
   — expected: exit 0; the store is still green after the re-measurement.

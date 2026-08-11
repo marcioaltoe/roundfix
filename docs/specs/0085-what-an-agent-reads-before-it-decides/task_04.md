@@ -53,7 +53,6 @@ This Task may create or modify only:
 
 ## Verification
 
-- `test -z "$(git status --porcelain -- docs/specs/_archived docs/findings/_archived | grep -vE '^R')"` — expected: exits 0, proving every archived artifact was moved rather than rewritten.
 - `GOCACHE="$PWD/.gocache" go test ./internal/spec ./internal/speccheck -count=1 2>&1 | grep -c '^ok' | grep -q '^2$'` — expected: exits 0.
 - `GOCACHE="$PWD/.gocache" go test ./internal/spec -run '^TestArchiveDirAnswersEveryRetiredKind' -count=1 -v 2>&1 | grep -q '^--- PASS'` — expected: exits 0.
 - `grep -q 'Re-recorded because' internal/speccheck/testdata/corpus-golden.json || grep -q 'Re-recorded because' docs/specs/0085-what-an-agent-reads-before-it-decides/task_04.md` — expected: exits 0, proving the re-record carries its reason.

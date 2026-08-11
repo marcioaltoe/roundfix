@@ -1,0 +1,5 @@
+Vendor existence: live refusals came from installed runtime adapters and their advertised/accepted controls; Roundfix did not query a vendor catalogue.
+Reasoning policy: two fresh repository validations retained independent for both Codex selections and Claude sonnet, and runtime_deferred for OpenCode. The genuine-mismatch regression passed in the 34-case Agent selection.
+Picker/recommendation: profiles validate --help exposed only --category and --json, and described a read-only proof command. Task commit path inspection found no picker or recommendation surface.
+Automatic repair: five cmp checks compared the executed temporary .roundfixrc.yml files byte-for-byte with their retained evidence copies after validation; all exited 0. Invalid profiles remained invalid and were not rewritten.
+Persistence: valid-after-invalid processes succeeded for Codex, Claude, and OpenCode after the refusal probes.

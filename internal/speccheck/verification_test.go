@@ -84,3 +84,163 @@ func TestWorkIndependentVerificationRefusesOnlyWorkIndependentCommands(t *testin
 		})
 	}
 }
+
+func TestVacuousVerificationCommandIsCaughtBesideHonestSiblings(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range []struct {
+		name    string
+		command string
+		vacuous bool
+	}{
+		{
+			name:    "an assertion over which paths changed",
+			command: "git diff --name-only HEAD | grep -v -E '^(kept)$' | grep -q . && exit 1 || exit 0",
+			vacuous: true,
+		},
+		{
+			name:    "a porcelain cleanliness check",
+			command: "git status --porcelain | grep -q . && exit 1 || exit 0",
+			vacuous: true,
+		},
+		{
+			// Verified on a clean tree on 2026-08-10: git writes nothing, grep
+			// matches nothing, and the command exits 1. It fails on an
+			// unchanged tree rather than passing, so it is not vacuous.
+			name:    "a nonempty-diff assertion fails on an unchanged tree",
+			command: "git diff --name-status HEAD | grep -q .",
+			vacuous: false,
+		},
+		{
+			name:    "the same paths with a predicate that passes when empty",
+			command: "git diff --name-status HEAD | grep -q . && exit 1 || exit 0",
+			vacuous: true,
+		},
+		{
+			// The equality predicate compares two snapshots captured by earlier
+			// chain segments. An intervening command (`make regen`) can change
+			// the second snapshot, so `[ "$s1" = "$s2" ]` is not a guaranteed
+			// success: its operands are variables, not statically proven
+			// values. The matcher must not report it vacuous.
+			name:    "a two-snapshot comparison with an intervening command",
+			command: `s1="$(git status --porcelain)"; make regen >/dev/null 2>&1; s2="$(git status --porcelain)"; [ "$s1" = "$s2" ]`,
+			vacuous: false,
+		},
+		{
+			name:    "a named test that does not exist yet",
+			command: "go test ./internal/agent -run '^TestX$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestX'",
+			vacuous: false,
+		},
+		{
+			name:    "a grep over declared source",
+			command: "grep -c 'Declared break' internal/agent/selection_test.go",
+			vacuous: false,
+		},
+		{
+			// git --exit-code does not make the terminal `grep -q .` pass on an
+			// unchanged tree; grep still receives no input and exits 1.
+			name:    "an exit-code diff piped into grep still fails when empty",
+			command: "git diff --exit-code HEAD | grep -q .",
+			vacuous: false,
+		},
+		{
+			// A terminal that consumes empty output successfully: cat exits 0
+			// on an unchanged tree, so the command passes before any work.
+			name:    "a diff piped into cat passes when empty",
+			command: "git diff --name-only HEAD | cat",
+			vacuous: true,
+		},
+		{
+			// An inverted empty-output check: it asserts changes exist, so on
+			// an unchanged tree the terminal `exit 1` fires and fails honestly.
+			name:    "an inverted empty-output check fails when empty",
+			command: "git diff --name-status HEAD | grep -q . && exit 1",
+			vacuous: false,
+		},
+		{
+			// A success form inside another command's quoted argument is not a
+			// terminal predicate: grep finds no lines in an unchanged tree's
+			// empty output and exits 1, whatever text it was asked to match.
+			name:    "a quoted success form inside grep still fails when empty",
+			command: "git diff --name-only HEAD | grep -q 'exit 0'",
+			vacuous: false,
+		},
+		{
+			// `&&` short-circuits: grep -q . fails on an unchanged tree, so
+			// cat is skipped and never decides the exit status, which stays 1.
+			name:    "an and-chain whose tail is skipped when empty fails honestly",
+			command: "git diff --name-only HEAD | grep -q . && cat",
+			vacuous: false,
+		},
+		{
+			// `||` runs its right side when the left fails, so the terminal cat
+			// does execute on an unchanged tree and is genuinely vacuous.
+			name:    "an or-chain whose tail runs when the left fails passes when empty",
+			command: "git diff --name-only HEAD | grep -q . || cat",
+			vacuous: true,
+		},
+		{
+			// A quoted test -z form is likewise a grep of ordinary text, not an
+			// empty-string test, so it fails on an unchanged tree.
+			name:    "a quoted empty-test inside grep still fails when empty",
+			command: `git diff --name-only HEAD | grep -q 'test -z'`,
+			vacuous: false,
+		},
+		{
+			// `test -z "$(printf x)"` reads a substitution of fixed non-empty
+			// output, not the working tree, so it fails on an unchanged tree.
+			name:    "an empty-test over non-empty command substitution fails",
+			command: `git diff --name-only HEAD | test -z "$(printf x)"`,
+			vacuous: false,
+		},
+		{
+			// Single quotes make the operand literal text, not a substitution;
+			// `'$(printf x)'` is a fixed non-empty string that fails the test.
+			name:    "a single-quoted command substitution is literal and fails",
+			command: `git diff --name-only HEAD | test -z '$(printf x)'`,
+			vacuous: false,
+		},
+		{
+			// A working-tree substitution is genuinely vacuous: an unchanged
+			// tree yields an empty value from it and the test passes.
+			name:    "an empty-test over a working-tree substitution passes when empty",
+			command: `git diff --name-only HEAD | test -z "$(git diff --name-only HEAD)"`,
+			vacuous: true,
+		},
+		{
+			// The bracket form behaves like the test form.
+			name:    "a bracket empty-test over a working-tree substitution passes when empty",
+			command: `git diff --name-only HEAD | [ -z "$(git diff --name-only HEAD)" ]`,
+			vacuous: true,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			task := spec.Task{Verification: []string{testCase.command}}
+			vacuous := speccheck.VacuousVerificationCommands(task)
+			if (len(vacuous) != 0) != testCase.vacuous {
+				t.Fatalf("VacuousVerificationCommands(%q) = %#v, want vacuous %v", testCase.command, vacuous, testCase.vacuous)
+			}
+		})
+	}
+}
+
+// TestOneHonestCommandDoesNotAbsolveAVacuousSibling pins the unit of judgement:
+// the Daemon's pre-work probe refuses a Task for any single vacuous command, so
+// the static check must not stay silent because a sibling is honest.
+func TestOneHonestCommandDoesNotAbsolveAVacuousSibling(t *testing.T) {
+	t.Parallel()
+
+	task := spec.Task{Verification: []string{
+		"go test ./internal/agent -run '^TestY$' -count=1 -v 2>&1 | grep -q '^--- PASS: TestY'",
+		"test -z \"$(git diff --name-only HEAD)\"",
+	}}
+	vacuous := speccheck.VacuousVerificationCommands(task)
+	if len(vacuous) != 1 || !strings.Contains(vacuous[0], "--name-only") {
+		t.Fatalf("VacuousVerificationCommands() = %#v, want only the working-tree assertion", vacuous)
+	}
+	if _, reported := speccheck.WorkIndependentVerification(task); reported {
+		t.Fatal("WorkIndependentVerification judges the whole Task and must stay silent here")
+	}
+}

@@ -181,7 +181,10 @@ case " $* " in
       session="$argument"
     done
     model=$(cat "$0.$session.model")
-    printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"%%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"medium","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}}\n' "$model" "$model" "$model"
+    if [ -z "$model" ]; then
+      model="gpt-5.6-sol"
+    fi
+    printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"gpt-5.6-sol"},{"value":"gpt-5.5"}]},{"id":"reasoning_effort","type":"select","currentValue":"medium","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}}\n' "$model" "$model"
     exit 0
     ;;
   *" set model "*|*" set reasoning_effort "*|*" set effort "*)
@@ -208,7 +211,7 @@ case " $* " in
       model=$(cat "$state_path")
       current_reasoning="$config_value"
     fi
-    printf '{"action":"config_set","configId":"%%s","value":"%%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"%%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"%%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$model" "$current_reasoning"
+    printf '{"action":"config_set","configId":"%%s","value":"%%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"gpt-5.6-sol"},{"value":"gpt-5.5"}]},{"id":"reasoning_effort","type":"select","currentValue":"%%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$current_reasoning"
     exit 0
     ;;
   *" sessions close "*)
@@ -5698,6 +5701,24 @@ import sys
 
 PINNED = "__PINNED_ACPX_VERSION__"
 AGENTS = {"codex", "claude", "opencode"}
+CODEX_MODELS = [
+    "macro-general",
+    "macro-general-fallback",
+    "macro-backend",
+    "macro-backend-fallback",
+    "macro-frontend-preferred",
+    "macro-qa",
+    "macro-qa-fallback",
+    "macro-review",
+    "macro-review-fallback",
+]
+CLAUDE_MODELS = ["claude-fable-5"]
+OPENCODE_MODELS = ["openrouter/deepseek/deepseek-v4-flash-0731"]
+CATALOGUES = {
+    "codex": CODEX_MODELS,
+    "claude": CLAUDE_MODELS,
+    "opencode": OPENCODE_MODELS,
+}
 
 def arg_value(argv, flag):
     for index, value in enumerate(argv):
@@ -5866,7 +5887,14 @@ if event["command"] == "sessions ensure":
         sys.exit(1)
 
 if event["command"] == "sessions show":
+    agent = event.get("agent")
+    if agent not in CATALOGUES:
+        sys.stderr.write(f"no model catalogue for agent {agent!r}\n")
+        sys.exit(2)
+    models = CATALOGUES[agent]
     model = session_model(event.get("session", ""))
+    if not model:
+        model = models[0]
     reasoning_id = "reasoning_effort" if event.get("agent") == "codex" else "effort"
     event["model"] = model
     event["outcome"] = "ok"
@@ -5876,7 +5904,7 @@ if event["command"] == "sessions show":
         "acpx": {
             "current_model_id": model,
             "config_options": [
-                {"id": "model", "category": "model", "type": "select", "currentValue": model, "options": [{"value": model}]},
+                {"id": "model", "category": "model", "type": "select", "currentValue": model, "options": [{"value": value} for value in models]},
                 {"id": reasoning_id, "type": "select", "currentValue": "medium", "options": [{"value": value} for value in ["low", "medium", "high", "xhigh", "max", "maximum", "ultra"]]},
             ],
         },

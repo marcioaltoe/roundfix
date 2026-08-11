@@ -1,0 +1,12 @@
+Focused Agent command and exact selector are recorded in regression-corpus.txt.
+Exit: 0.
+
+Passed cases cover catalogue-owned refusal, complete advertised set, adapter
+refusal fast path, unchanged advertised-selection encoding, contamination
+record, Claude characterization, five matching sibling tuples, and genuine
+effective_selection_mismatch.
+
+Live comparison: Codex, Claude, and OpenCode each refused the invented model
+twice through the adapter-first path. ADR-0119 accepts that first refusal and
+keeps catalogue membership as the net for an adapter that remains silent. All
+five configured valid tuples passed twice with their established encodings.

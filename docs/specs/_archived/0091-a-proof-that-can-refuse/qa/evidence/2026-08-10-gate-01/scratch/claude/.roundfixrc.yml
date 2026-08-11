@@ -1,0 +1,10 @@
+profiles:
+  backend:
+    preferred:
+      runtime: claude
+      model: opus-9-does-not-exist
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high

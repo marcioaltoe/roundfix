@@ -1,0 +1,12 @@
+Command: bin/roundfix profiles validate --json
+Exit: 2
+Observed proofs in order:
+- codex / gpt-5.6-sol / high: passed, independent, codex-acp 1.1.14
+- opencode / openrouter/deepseek/deepseek-v4-flash-0731 / max: passed, runtime_deferred
+- claude / opus / high: failed, effective_selection_mismatch; diagnostic prints requested and observed opus/high
+- codex / gpt-5.6-luna / max: pending after the failure
+- claude / sonnet / xhigh: pending after the failure
+Independent isolated reads:
+- scratch/codex-luna: codex/luna/max passed as independent; OpenCode fallback passed as runtime_deferred
+- scratch/claude-sonnet: claude/sonnet/xhigh passed as independent; Codex fallback passed as independent
+Conclusion: four distinct configured tuples prove with their established encodings when isolated; valid claude/opus/high blocks the assembled repository validation.

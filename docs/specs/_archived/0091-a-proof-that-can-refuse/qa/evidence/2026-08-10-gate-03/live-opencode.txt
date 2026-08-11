@@ -1,0 +1,14 @@
+Build: roundfix 0.4.0 (ce7dc4ba-dirty)
+Outside-evidence origin: installed OpenCode 1.18.15 ACP adapter through ACPX
+0.13.0, observed live rather than through a Spec fixture.
+Isolated scratch repository: /private/tmp/roundfix-0091-gate03-opencode
+Command: rtk <worktree>/bin/roundfix profiles validate --category backend
+Fresh-process exits: 2, 2
+
+Both processes refused
+opencode/openrouter/roundfix/model-does-not-exist/max as selection_rejected.
+The live adapter reported ACP -32602 and `model not found` for the exact model.
+Under ADR-0119 the adapter's first refusal reaches the operator unchanged.
+
+Valid-after-invalid confirmation: a fresh repository backend validation exited
+0 and passed the configured OpenCode Flash/max fallback as runtime_deferred.
