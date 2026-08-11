@@ -33,7 +33,11 @@ declares. An adopting repository may be a Bun or Rust repository with no
 4. MUST adopt the regenerated managed-block postimages into the corresponding
    `docs/agents/` guides.
 5. MUST add this repository's own incremental verification target to the
-   `Makefile`, and MUST NOT change what `make verify` means for CI.
+   `Makefile` under the name `verify-incremental`, and MUST NOT change what
+   `make verify` means for CI. The name is fixed here because the declared
+   Verification has to be able to fail: `verify:` already exists, so asserting
+   that some verify-shaped target is present approves this Task before any work
+   happens.
 6. MUST run the module chain per the measured choreography: bootstrap the
    Source Baseline manifest rows for the new clauses, then run
    `make baseline-digests` twice, since the maintained fixture is the chain's
@@ -71,7 +75,7 @@ declares. An adopting repository may be a Bun or Rust repository with no
 
 - `grep -rqi 'incremental' docs/agents/ && grep -rqi 'complete' docs/agents/`
   — expected: exit 0; the two tiers are adopted into the guides.
-- `grep -qE '^[a-z-]*verify[a-z-]*:' Makefile && grep -q '^verify:' Makefile`
+- `grep -q '^verify-incremental:' Makefile`
   — expected: exit 0; the incremental target exists beside an unchanged
   `verify`.
   — expected: exit 0; the digest chain is converged.
