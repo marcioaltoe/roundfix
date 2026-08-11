@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0092-a-run-that-can-hand-back-its-work
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -76,3 +76,35 @@ help edit disturbed nothing is the Run-level gate's job.
 - `task_05.md` → the `--discard-superseded` act and its recorded help gap.
 - `task_06.md` → the `--carry-forward` act.
 - `task_07.md` → Requirement 10 and the two coined terms.
+
+## Result
+
+Documented both accepted disposition flags in the global and command-specific
+`reconcile` usage, with descriptions in Run Branch and Task language. Added
+`Branch Disposition` beside `Run Branch` in the glossary as the recorded
+terminal reason a branch no longer needs integration and may be discarded.
+
+Acceptance evidence:
+
+- Help discoverability: the pre-change
+  `rtk proxy rg -n -- '--discard-superseded|--carry-forward' internal/cli/cli.go`
+  exited 1 with no matches. After the edit,
+  `rtk proxy rg -n -- '--apply|--discard-superseded|--carry-forward|--format' internal/cli/cli.go`
+  found both names in the global synopsis and command synopsis, plus the
+  descriptions `Discard Run Branches proven superseded` and `Hand a stopped
+  Run's settled Tasks back to the checkout` in the command options.
+- Glossary: the pre-change
+  `rtk proxy rg -n 'Branch Disposition' CONTEXT.md` exited 1. After the edit,
+  `rtk proxy rg -n -C 2 '^\*\*Branch Disposition\*\*:' CONTEXT.md` found the
+  term, its two-sentence domain definition, and its `_Avoid_` vocabulary.
+- Behavior and tests: inspection of
+  `rtk git diff -- internal/cli/cli.go CONTEXT.md` showed that the Go change is
+  confined to the raw help string and the other implementation change is the
+  glossary entry. `rtk git diff -- '*_test.go'` exited 0 with no output.
+
+Focused check:
+
+- `rtk gofmt -d internal/cli/cli.go` exited 0 with no output.
+
+The commands under `## Verification` were not run; they remain owned by the
+Daemon.
