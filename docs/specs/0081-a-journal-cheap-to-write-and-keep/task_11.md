@@ -61,8 +61,14 @@ This Task may create or modify only:
 
 ## Verification
 
-- `! grep -rq 'docs/specs/0081-a-journal-cheap-to-write-and-keep' internal/store/` — expected: exits 0. The test names that path today.
-- `GOCACHE="$PWD/.gocache" go test ./internal/store -run '^TestJournalConsumerCorpusReplaysEveryConsumer$' -count=1 -v 2>&1 | tee /dev/stderr | grep -q '^--- PASS: TestJournalConsumerCorpusReplaysEveryConsumer'` — expected: exits 0, proving the move preserved the comparison.
+- `! grep -rq '0081-a-journal-cheap-to-write-and-keep' internal/store/` — expected: exits 0. The slug appears as a `filepath.Join` argument today, so the whole path never occurs as one literal; the slug alone is what has to disappear.
+- `test -f internal/store/testdata/2026-08-11-prechange-roundfix.db` — expected: exits 0. `internal/store/testdata/` does not exist today, so this is what proves the fixtures moved rather than being copied by path alone.
+
+Asserting that the corpus test passes is deliberately absent: it passes right
+now, because the Spec is still at its active path. The proof that matters is
+that it keeps passing once the Spec is archived, and no command can state that
+before the archive exists. Requirement 2 carries it, and the Run-level gate
+proves the test after this Task settles.
 
 ## References
 
