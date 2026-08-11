@@ -44,6 +44,11 @@ events a post-mortem needs most never sit in one.
 8. MUST NOT rewrite, prune, or compress any payload — ADR-0008 binds, and this
    Task changes only when bytes reach the database, never what they contain.
 
+The declared Verification names `TestBatchClosesOnCountLingerAndImmediate`, which does not exist yet, so it can
+fail before the work. Create it to assert that a batch closes on count, on linger, and before an immediate event. A broad pattern over
+this package matches cases that already pass and would approve the Task
+before it starts.
+
 ## Subtasks
 
 - [ ] Make the writer Store-scoped with its boundaries.
@@ -85,14 +90,16 @@ events a post-mortem needs most never sit in one.
 
 ## Verification
 
-- `go build -buildvcs=false ./...` — expected: exit 0.
-- `output="$(go test -count=1 ./internal/store -run 'Batch|Journal|AmbiguousCommit' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
+- `output="$(go test -count=1 ./internal/store -run '^TestBatchClosesOnCountLingerAndImmediate$' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the batching tests are selected and pass.
 - `output="$(go test -count=1 ./internal/store -run 'Batch|AmbiguousCommit' -v 2>&1)"; printf '%s\n' "$output" | grep -cE -- '--- PASS: [^ ]+/' | { read count; [ "$count" -ge 8 ]; }`
   — expected: exit 0; at least the eight rehearsal cases exist as passing
   subtests, so the boundary suite cannot collapse to a happy path.
-- `go test -count=1 ./internal/store/... ./internal/runevent/... ./internal/daemon/... ./internal/tui/...`
   — expected: exit 0; every package that reads or writes events stays green.
+
+A whole-package `go test` sweep and `go build ./...` are deliberately absent:
+both pass against a tree where no work has happened, so each approves the Task
+before it starts. Regression and compilation are the Run-level gate's job.
 
 ## References
 

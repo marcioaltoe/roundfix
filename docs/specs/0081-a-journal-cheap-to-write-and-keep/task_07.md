@@ -69,10 +69,16 @@ thirty seconds would prove only that waiting works.
   — expected: exit 0; the parallel-Run scenario is selected and passes.
 - `output="$(go test -count=1 ./internal/store -run 'ParallelRuns' -v 2>&1)"; printf '%s\n' "$output" | grep -cE -- '--- PASS: [^ ]+/' | { read count; [ "$count" -ge 3 ]; }`
   — expected: exit 0; the three rehearsal cases exist as passing subtests.
-- `grep -q 'busyTimeoutMillis = 30000' internal/store/store.go`
   — expected: exit 0; the production default is untouched by this Task.
-- `go test -count=1 ./internal/store/...`
   — expected: exit 0; the package stays green.
+
+The `busyTimeoutMillis` guard is deliberately absent too: it asserts a constant
+that is already 30000, so it passes before any work. Keeping the production
+default unchanged is a Requirement, and the Run-level gate proves it.
+
+A whole-package `go test` sweep and `go build ./...` are deliberately absent:
+both pass against a tree where no work has happened, so each approves the Task
+before it starts. Regression and compilation are the Run-level gate's job.
 
 ## References
 

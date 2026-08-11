@@ -30,6 +30,11 @@ learned it.
    missing.
 5. MUST NOT change the stream contract, the poll trigger, or any keybinding.
 
+The declared Verification names `TestCockpitRefreshCostTracksNewEvents`, which does not exist yet, so it can
+fail before the work. Create it to assert that refresh cost tracks new events rather than total events. A broad pattern over
+this package matches cases that already pass and would approve the Task
+before it starts.
+
 ## Subtasks
 
 - [ ] Give the task journal refresh a forward-only cursor.
@@ -49,14 +54,16 @@ learned it.
 
 ## Verification
 
-- `go build -buildvcs=false ./...` — expected: exit 0.
-- `output="$(go test -count=1 ./internal/tui -run 'Cockpit|Journal|Cursor' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
+- `output="$(go test -count=1 ./internal/tui -run '^TestCockpitRefreshCostTracksNewEvents$' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the cockpit tests are selected and pass.
 - `output="$(go test -count=1 ./internal/tui -run 'ForwardCursor' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; a named test proves the refresh advances rather than
   rescanning.
-- `go test -count=1 ./internal/tui/...`
   — expected: exit 0; the snapshot fixtures confirm rendering is unchanged.
+
+A whole-package `go test` sweep and `go build ./...` are deliberately absent:
+both pass against a tree where no work has happened, so each approves the Task
+before it starts. Regression and compilation are the Run-level gate's job.
 
 ## References
 

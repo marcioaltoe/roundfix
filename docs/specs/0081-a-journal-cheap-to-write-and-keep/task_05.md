@@ -56,13 +56,15 @@ all payloads alike would break the stream contract supervisors depend on.
 
 ## Verification
 
-- `go build -buildvcs=false ./...` — expected: exit 0.
 - `output="$(go test -count=1 ./internal/store -run 'HeaderProjection|EventHeaders' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the projection tests are selected and pass.
 - `output="$(go test -count=1 ./internal/... -run 'ConsumerCorpus|ReplayCorpus' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the recorded-corpus replay exists and passes.
-- `go test -count=1 ./internal/store/... ./internal/runevent/... ./internal/tui/... ./internal/cli/...`
   — expected: exit 0; every reader package stays green.
+
+A whole-package `go test` sweep and `go build ./...` are deliberately absent:
+both pass against a tree where no work has happened, so each approves the Task
+before it starts. Regression and compilation are the Run-level gate's job.
 
 ## References
 

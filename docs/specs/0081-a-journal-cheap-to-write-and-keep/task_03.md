@@ -37,6 +37,11 @@ The event count that scan produces is used for reporting only.
 6. MUST NOT change the schema or vacuum anything — compaction stays the
    separate, explicitly fenced command it already is.
 
+The declared Verification names `TestRetentionScanIsBoundedByCandidates`, which does not exist yet, so it can
+fail before the work. Create it to assert that eligibility work is bounded by the candidate set rather than the event table, with no aggregate over that table inside a write transaction. A broad pattern over
+this package matches cases that already pass and would approve the Task
+before it starts.
+
 ## Subtasks
 
 - [ ] Move the cutoff into SQL and the scan out of the write transaction.
@@ -58,14 +63,16 @@ The event count that scan produces is used for reporting only.
 
 ## Verification
 
-- `go build -buildvcs=false ./...` — expected: exit 0.
-- `output="$(go test -count=1 ./internal/store -run 'Retention|PruneCandidates' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
+- `output="$(go test -count=1 ./internal/store -run '^TestRetentionScanIsBoundedByCandidates$' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the retention tests are selected and pass.
 - `output="$(go test -count=1 ./internal/store -run 'RetentionScanOutsideWriteTransaction' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; a named test proves the scan left the write transaction,
   rather than the property being asserted in prose.
-- `go test -count=1 ./internal/store/... ./internal/cli/...`
   — expected: exit 0; the store and the `gc` command stay green.
+
+A whole-package `go test` sweep and `go build ./...` are deliberately absent:
+both pass against a tree where no work has happened, so each approves the Task
+before it starts. Regression and compilation are the Run-level gate's job.
 
 ## References
 

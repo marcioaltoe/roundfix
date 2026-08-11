@@ -72,8 +72,11 @@ it is bought with a measurement or not at all.
   — expected: exit 0; the decision addresses payload shedding and names the
   ADR it either respects or amends.
   — expected: exit 0; no production code path changed in this Task.
-- `go test -count=1 ./internal/store/...`
   — expected: exit 0; the store is still green after the re-measurement.
+
+A whole-package `go test` sweep and `go build ./...` are deliberately absent:
+both pass against a tree where no work has happened, so each approves the Task
+before it starts. Regression and compilation are the Run-level gate's job.
 
 ## References
 

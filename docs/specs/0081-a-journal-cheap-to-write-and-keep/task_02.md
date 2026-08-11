@@ -38,6 +38,11 @@ This Task does.
    Runs preserve input order and monotonic cursors.
 7. MUST NOT change the schema, the stream contract, or any command's output.
 
+The declared Verification names `TestWriteTxIsTheOnlyWriterTransaction`, which does not exist yet, so it can
+fail before the work. Create it to assert that every writer path opens its transaction through the helper and releases the advisory lock on success, error and cancellation. A broad pattern over
+this package matches cases that already pass and would approve the Task
+before it starts.
+
 ## Subtasks
 
 - [ ] Introduce the write-transaction helper and route every writer through it.
@@ -58,13 +63,15 @@ This Task does.
 
 ## Verification
 
-- `go build -buildvcs=false ./...` — expected: exit 0.
-- `output="$(go test -count=1 ./internal/store -run 'WriteTx|AdvisoryLock|Concurrent' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
+- `output="$(go test -count=1 ./internal/store -run '^TestWriteTxIsTheOnlyWriterTransaction$' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the discipline tests are selected and pass.
 - `output="$(grep -c 'BeginTx' internal/store/*.go)"; printf '%s' "$output" | grep -q . && grep -q 'withWriteTx' internal/store/store.go`
   — expected: exit 0; the helper exists on the real surface.
-- `go test -count=1 ./internal/store/... ./internal/cli/...`
   — expected: exit 0; the store and the commands that open it stay green.
+
+A whole-package `go test` sweep and `go build ./...` are deliberately absent:
+both pass against a tree where no work has happened, so each approves the Task
+before it starts. Regression and compilation are the Run-level gate's job.
 
 ## References
 
