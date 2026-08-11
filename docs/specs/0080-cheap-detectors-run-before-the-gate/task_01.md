@@ -76,17 +76,21 @@ Every one of those is a Git read or a file read with a written answer.
 
 ## Verification
 
-- `go build -buildvcs=false ./...` — expected: exit 0.
 - `output="$(go test -count=1 ./internal/speccheck -run 'Mechanical|AuthPaths|ConsequentOrder|ReportShape|EvidencePath' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the named detector tests exist, are selected, and pass —
   an empty selection cannot satisfy this.
 - `output="$(go test -count=1 ./internal/speccheck -run '^TestCheckCorpusBudget$' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the corpus budget guard still selects and passes.
-- `go test -count=1 ./internal/speccheck/... ./internal/daemon/...`
   — expected: exit 0; both packages the change lands in stay green.
 - `grep -rq 'MechanicalResult' internal/ && grep -rq 'MechanicalSkip' internal/`
   — expected: exit 0; the typed result and its skip record exist on the real
   surface.
+
+These commands are deliberately absent: `go build -buildvcs=false ./...` and a
+whole-package `go test` sweep both pass against a tree where no work has
+happened, so each approves the Task before it starts. Compilation and
+regression are the Run-level gate's job; the commands above name cases that
+do not exist yet.
 
 ## References
 

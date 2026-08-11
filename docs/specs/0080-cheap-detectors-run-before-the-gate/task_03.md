@@ -65,15 +65,19 @@ exclusively the Daemon's, and the stage is not the Daemon's settlement path.
 
 ## Verification
 
-- `go build -buildvcs=false ./...` — expected: exit 0.
 - `output="$(go test -count=1 ./internal/daemon -run 'MechanicalStage|QAGate' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the stage and gate tests are selected and pass.
 - `output="$(go test -count=1 ./internal/daemon -run 'MechanicalStageWithholdsAgentSession' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the withholding behaviour is proven by a named test, not
   inferred from the absence of a session.
-- `go test -count=1 ./internal/daemon/... ./internal/spec/...`
   — expected: exit 0; the packages carrying gate behaviour and verdict
   semantics stay green.
+
+These commands are deliberately absent: `go build -buildvcs=false ./...` and a
+whole-package `go test` sweep both pass against a tree where no work has
+happened, so each approves the Task before it starts. Compilation and
+regression are the Run-level gate's job; the commands above name cases that
+do not exist yet.
 
 ## References
 

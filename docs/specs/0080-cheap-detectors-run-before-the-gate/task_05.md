@@ -79,15 +79,19 @@ says so in the report.
 
 ## Verification
 
-- `go build -buildvcs=false ./...` — expected: exit 0.
-- `output="$(go test -count=1 ./internal/... -run 'Carriable|CarryForward' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
+- `output="$(go test -count=1 ./internal/... -run 'Carriable' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the carry-forward tests are selected and pass.
-- `output="$(go test -count=1 ./internal/... -run 'Carriable|CarryForward' -v 2>&1)"; printf '%s\n' "$output" | grep -cE -- '--- PASS: [^ ]+/' | { read count; [ "$count" -ge 7 ]; }`
+- `output="$(go test -count=1 ./internal/... -run 'Carriable' -v 2>&1)"; printf '%s\n' "$output" | grep -cE -- '--- PASS: [^ ]+/' | { read count; [ "$count" -ge 7 ]; }`
   — expected: exit 0; at least the seven rehearsal cases are present as
   passing subtests, so the refusal suite cannot be reduced to one happy path.
-- `grep -rq 'PriorChangedFiles' internal/ && go test -count=1 ./internal/daemon/... ./internal/speccheck/...`
   — expected: exit 0; the existing changed-path primitive is the one in use and
   both packages stay green.
+
+These commands are deliberately absent: `go build -buildvcs=false ./...` and a
+whole-package `go test` sweep both pass against a tree where no work has
+happened, so each approves the Task before it starts. Compilation and
+regression are the Run-level gate's job; the commands above name cases that
+do not exist yet.
 
 ## References
 

@@ -35,6 +35,11 @@ skill, not from the contract it was handed.
    introducing a second one.
 6. MUST NOT change verdict semantics, report naming, or anything the gate does
    with the information.
+7. MUST name the two new cases `TestBuildQAPromptCarriesTheSpecContextBundle`
+   and `TestBuildQAPromptCarriesThePreviousReportIdentity`. A bare `QAPrompt`
+   pattern matches the five cases that already pass, so it would approve this
+   Task before any work happened; the declared Verification names cases that do
+   not exist yet.
 
 ## Subtasks
 
@@ -58,15 +63,20 @@ skill, not from the contract it was handed.
 
 ## Verification
 
-- `go build -buildvcs=false ./...` — expected: exit 0.
-- `output="$(go test -count=1 ./internal/agent -run 'QAPrompt' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
+- `output="$(go test -count=1 ./internal/agent -run '^TestBuildQAPromptCarriesTheSpecContextBundle$' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
+- `output="$(go test -count=1 ./internal/agent -run '^TestBuildQAPromptCarriesThePreviousReportIdentity$' -v 2>&1)"; st=$?; printf '%s\n' "$output" | grep -q -- '--- PASS' && [ "$st" -eq 0 ]`
   — expected: exit 0; the QA prompt tests are selected and pass.
 - `grep -q 'rows_blocked_declared' internal/agent/spec_prompt.go && grep -q 'rows_blocked_environment' internal/agent/spec_prompt.go && grep -q 'rows_blocked_finding' internal/agent/spec_prompt.go`
   — expected: exit 0; all three counts are named in the prompt contract, which
   is false on the current surface.
-- `grep -q 'SpecContextBundle' internal/agent/spec_prompt.go && go test -count=1 ./internal/agent/... ./internal/daemon/...`
   — expected: exit 0; the bundle reaches the QA prompt and both packages stay
   green.
+
+These commands are deliberately absent: `go build -buildvcs=false ./...` and a
+whole-package `go test` sweep both pass against a tree where no work has
+happened, so each approves the Task before it starts. Compilation and
+regression are the Run-level gate's job; the commands above name cases that
+do not exist yet.
 
 ## References
 
