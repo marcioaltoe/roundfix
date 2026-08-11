@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0085-what-an-agent-reads-before-it-decides
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -55,3 +55,32 @@ This Task may create or modify only:
 
 - `_prd.md` → the archive read path.
 - `_techspec.md` → Build Order 2; Interfaces.
+
+## Result
+
+Implemented the closed retired-artifact kind set and its repository-relative
+directory resolver. The resolver preserves the four locations characterized by
+Task 01 and returns an empty directory for an unknown kind. No consumer moved
+onto the resolver in this slice.
+
+- Criterion 1: `TestArchiveDirAnswersEveryRetiredKind` exercises Specs,
+  findings, ADRs, and backlog entries and pins their recorded directories.
+- Criterion 2: the resolver accepts only the four `ArchiveKind` constants in
+  its switch; `TestArchiveDirRejectsAnUnknownKind` proves a fabricated kind
+  resolves to no directory.
+- Criterion 3: a focused `ArchiveDir(` call-site sweep across `internal/spec`,
+  `internal/speccheck`, `internal/specaudit`, `internal/worktree`, and
+  `internal/cli` reported only the resolver and its two tests, with no consumer
+  call.
+
+Focused checks:
+
+- Before implementation,
+  `rtk env GOCACHE=/private/tmp/roundfix-spec0085-task02-gocache go test ./internal/spec -run 'ArchiveDir' -count=1`
+  failed because the new type, constants, and resolver were undefined.
+- After implementation, the same focused command passed
+  (`ok roundfix/internal/spec`).
+- `rtk grep -n "ArchiveDir(" internal/spec/*.go internal/speccheck/*.go internal/specaudit/*.go internal/worktree/*.go internal/cli/*.go`
+  reported only `internal/spec/archive.go` and `internal/spec/archive_test.go`.
+
+The Daemon-owned `## Verification` commands were not run.

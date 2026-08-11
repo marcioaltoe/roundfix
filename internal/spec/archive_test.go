@@ -19,6 +19,39 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func TestArchiveDirAnswersEveryRetiredKind(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		kind ArchiveKind
+		want string
+	}{
+		{name: "Specs", kind: ArchiveKindSpec, want: "docs/specs/_archived"},
+		{name: "findings", kind: ArchiveKindFinding, want: "docs/findings/_archived"},
+		{name: "ADRs", kind: ArchiveKindADR, want: "docs/adr"},
+		{name: "backlog entries", kind: ArchiveKindBacklog, want: "docs/backlog"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := ArchiveDir(test.kind); got != test.want {
+				t.Fatalf("ArchiveDir(%q) = %q, want %q", test.kind, got, test.want)
+			}
+		})
+	}
+}
+
+func TestArchiveDirRejectsAnUnknownKind(t *testing.T) {
+	t.Parallel()
+
+	const unknown ArchiveKind = "invented"
+	if got := ArchiveDir(unknown); got != "" {
+		t.Fatalf("ArchiveDir(%q) = %q, want empty rejection", unknown, got)
+	}
+}
+
 const (
 	spec0058ReplaySlug    = "0058-npm-trusted-publishing-and-release-preflight"
 	spec0058SourceReport  = "docs/specs/_archived/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01-04.md"

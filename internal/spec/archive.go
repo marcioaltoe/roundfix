@@ -11,6 +11,33 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ArchiveKind names a retired artifact family.
+type ArchiveKind string
+
+const (
+	ArchiveKindSpec    ArchiveKind = "specs"
+	ArchiveKindFinding ArchiveKind = "findings"
+	ArchiveKindADR     ArchiveKind = "adr"
+	ArchiveKindBacklog ArchiveKind = "backlog"
+)
+
+// ArchiveDir returns the repository-relative directory holding retired
+// artifacts of kind. Unknown kinds return an empty directory.
+func ArchiveDir(kind ArchiveKind) string {
+	switch kind {
+	case ArchiveKindSpec:
+		return "docs/specs/_archived"
+	case ArchiveKindFinding:
+		return "docs/findings/_archived"
+	case ArchiveKindADR:
+		return "docs/adr"
+	case ArchiveKindBacklog:
+		return "docs/backlog"
+	default:
+		return ""
+	}
+}
+
 // ArchiveRequest asks the Spec package to retire one completed Spec.
 type ArchiveRequest struct {
 	SpecsRoot  string
