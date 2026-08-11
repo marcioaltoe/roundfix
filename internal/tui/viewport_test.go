@@ -30,6 +30,26 @@ func (source *fakeTimelineSource) RunEventsAfter(_ context.Context, _ string, cu
 	return page, nil
 }
 
+// RunEventHeadersAfter serves the payload-free header projection from the
+// same in-memory journal, mirroring the store's forward-cursor contract.
+func (source *fakeTimelineSource) RunEventHeadersAfter(_ context.Context, _ string, cursor int64) ([]store.RunEventHeader, error) {
+	source.reads++
+	headers := []store.RunEventHeader{}
+	for _, entry := range source.events {
+		if entry.Cursor > cursor {
+			headers = append(headers, store.RunEventHeader{
+				Cursor:  entry.Cursor,
+				Batch:   entry.Event.Batch,
+				Source:  entry.Event.Source,
+				Kind:    entry.Event.Kind,
+				Summary: entry.Event.Summary,
+				Time:    entry.Event.Time,
+			})
+		}
+	}
+	return headers, nil
+}
+
 func (source *fakeTimelineSource) RunEventsBefore(_ context.Context, _ string, cursor int64, limit int) ([]store.JournalEvent, error) {
 	source.reads++
 	page := []store.JournalEvent{}

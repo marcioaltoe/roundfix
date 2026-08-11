@@ -23,6 +23,19 @@ type JournalEvent struct {
 	Event  runevent.RunEvent
 }
 
+// RunEventHeader is the payload-free projection of one persisted Run Event:
+// the columns a consumer that never reads the payload needs. It lets read
+// paths that only page headers avoid paying for the payload column (ADR 0008
+// keeps that payload raw and read-as-blob for the consumers that do need it).
+type RunEventHeader struct {
+	Cursor int64
+	Batch  int
+	Source runevent.Source
+	Kind   runevent.Kind
+	Summary string
+	Time   time.Time
+}
+
 // PruneResult reports the Run Event Journal rows removed for eligible Runs.
 type PruneResult struct {
 	RunIDs []string
@@ -1204,6 +1217,62 @@ LIMIT ?`,
 		return nil, fmt.Errorf("iterate Run Events for Run %q: %w", runID, err)
 	}
 	return events, nil
+}
+
+// RunEventHeadersAfter projects cursor, batch, source, kind, summary, and
+// created_at (as Time) for one Run with cursors strictly greater than the
+// given cursor, oldest first. It reads no payload column, so a consumer that
+// pages headers pays none of the payload I/O it would on RunEventsAfter.
+// Consumers that read payload fields keep using RunEventsAfter unchanged.
+func (store *Store) RunEventHeadersAfter(ctx context.Context, runID string, cursor int64) ([]RunEventHeader, error) {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return nil, errors.New("list Run Event headers: Run ID is required")
+	}
+	rows, err := store.db.QueryContext(ctx, `
+SELECT cursor, batch, source, kind, summary, created_at
+FROM run_events
+WHERE run_id = ? AND cursor > ?
+ORDER BY cursor ASC`,
+		runID,
+		cursor,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list Run Event headers for Run %q: %w", runID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	headers := []RunEventHeader{}
+	for rows.Next() {
+		var header RunEventHeader
+		var source string
+		var kind string
+		var createdAt string
+		if err := rows.Scan(
+			&header.Cursor,
+			&header.Batch,
+			&source,
+			&kind,
+			&header.Summary,
+			&createdAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan Run Event header for Run %q: %w", runID, err)
+		}
+		parsedAt, err := parseTime(createdAt)
+		if err != nil {
+			return nil, err
+		}
+		header.Source = runevent.Source(source)
+		header.Kind = runevent.Kind(kind)
+		header.Time = parsedAt
+		headers = append(headers, header)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate Run Event headers for Run %q: %w", runID, err)
+	}
+	return headers, nil
 }
 
 func scanJournalEvent(rows *sql.Rows, runID string) (JournalEvent, error) {

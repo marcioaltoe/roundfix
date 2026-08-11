@@ -34,6 +34,7 @@ const (
 // live sink.
 type CockpitSource interface {
 	TimelineSource
+	RunEventHeadersAfter(ctx context.Context, runID string, cursor int64) ([]store.RunEventHeader, error)
 	DataVersion(ctx context.Context) (int64, error)
 	Run(ctx context.Context, runID string) (store.Run, bool, error)
 }
@@ -536,8 +537,10 @@ func (model *cockpitModel) refreshIssues() {
 }
 
 // refreshBatchClocks folds new journal events into per-Batch timestamp
-// spans. The scan is incremental: the cursor only moves forward, so each
-// poll reads only the events that arrived since the last one.
+// spans. The scan is incremental: the cursor only moves forward, and each
+// poll reads only the headers that arrived since the last one. Batch clocks
+// need cursor, Batch, and Time alone, so they read the payload-free header
+// projection instead of the full journal (ADR 0008 payloads stay unread here).
 func (model *cockpitModel) refreshBatchClocks() {
 	if model.cfg.Source == nil {
 		return
@@ -552,31 +555,25 @@ func (model *cockpitModel) refreshBatchClocks() {
 	if model.batchTimes == nil {
 		model.batchTimes = map[int]batchTimeSpan{}
 	}
-	for {
-		page, err := model.cfg.Source.RunEventsAfter(model.ctx, runID, model.batchTimeCursor, 200)
-		if err != nil {
-			return
+	headers, err := model.cfg.Source.RunEventHeadersAfter(model.ctx, runID, model.batchTimeCursor)
+	if err != nil {
+		return
+	}
+	for _, header := range headers {
+		if header.Cursor > model.batchTimeCursor {
+			model.batchTimeCursor = header.Cursor
 		}
-		for _, entry := range page {
-			if entry.Cursor > model.batchTimeCursor {
-				model.batchTimeCursor = entry.Cursor
-			}
-			event := entry.Event
-			if event.Batch <= 0 || event.Time.IsZero() {
-				continue
-			}
-			span, seen := model.batchTimes[event.Batch]
-			if !seen || event.Time.Before(span.first) {
-				span.first = event.Time
-			}
-			if event.Time.After(span.last) {
-				span.last = event.Time
-			}
-			model.batchTimes[event.Batch] = span
+		if header.Batch <= 0 || header.Time.IsZero() {
+			continue
 		}
-		if len(page) < 200 {
-			return
+		span, seen := model.batchTimes[header.Batch]
+		if !seen || header.Time.Before(span.first) {
+			span.first = header.Time
 		}
+		if header.Time.After(span.last) {
+			span.last = header.Time
+		}
+		model.batchTimes[header.Batch] = span
 	}
 }
 
