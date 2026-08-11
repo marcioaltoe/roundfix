@@ -76,11 +76,12 @@ func TestRunDispositionCharacterizationWorkStartedFollowsTheFirstAgentOutput(t *
 	}
 }
 
-func TestRunDispositionCharacterizationFailedBatchOverwritesSettledIssues(t *testing.T) {
+func TestRunDispositionCharacterizationFailedBatchKeepsSettledIssues(t *testing.T) {
 	t.Parallel()
 	fixture := newEngineFixture(t)
 	const failureReason = "Verification failed after the Agent settled this issue"
-	if err := rounds.SetIssueStatus(fixture.issuePaths[0], rounds.StatusResolved, "", ""); err != nil {
+	const settledReason = "invalid: the requested change is not applicable"
+	if err := rounds.SetIssueStatus(fixture.issuePaths[0], rounds.StatusInvalid, "", settledReason); err != nil {
 		t.Fatalf("settle Review Issue before Batch failure: %v", err)
 	}
 
@@ -96,11 +97,11 @@ func TestRunDispositionCharacterizationFailedBatchOverwritesSettledIssues(t *tes
 	if err != nil {
 		t.Fatalf("parse Review Issue after Batch failure: %v", err)
 	}
-	if issue.Status != rounds.StatusFailed {
-		t.Fatalf("settled Review Issue status after Batch failure = %q, want %q", issue.Status, rounds.StatusFailed)
+	if issue.Status != rounds.StatusInvalid {
+		t.Fatalf("settled Review Issue status after Batch failure = %q, want %q", issue.Status, rounds.StatusInvalid)
 	}
-	if issue.TerminalReason != failureReason {
-		t.Fatalf("settled Review Issue reason after Batch failure = %q, want %q", issue.TerminalReason, failureReason)
+	if issue.TerminalReason != settledReason {
+		t.Fatalf("settled Review Issue reason after Batch failure = %q, want %q", issue.TerminalReason, settledReason)
 	}
 }
 

@@ -538,31 +538,59 @@ func TestSettleAssignedIssuesStopsOnCanceledContext(t *testing.T) {
 	}
 }
 
-func TestMarkBatchFailed(t *testing.T) {
+func TestMarkBatchFailedKeepsAlreadySettledIssues(t *testing.T) {
 	t.Parallel()
 
 	const reason = "Agent failed: runtime crashed"
-	artifactDir := t.TempDir()
-	result := persistTestRound(t, artifactDir)
-	batch := rounds.Batch{
-		Number: 1,
-		Issues: []rounds.Issue{
-			{Path: result.IssuePaths[0]},
-		},
+	tests := []struct {
+		name            string
+		diskStatus      string
+		batchStatus     string
+		seedReason      string
+		duplicateOf     string
+		wantStatus      string
+		wantReason      string
+		wantDuplicateOf string
+	}{
+		{name: "keeps resolved issue untouched", diskStatus: rounds.StatusResolved, batchStatus: rounds.StatusPending, wantStatus: rounds.StatusResolved},
+		{name: "keeps invalid issue untouched", diskStatus: rounds.StatusInvalid, batchStatus: rounds.StatusPending, seedReason: "invalid: no change required", wantStatus: rounds.StatusInvalid, wantReason: "invalid: no change required"},
+		{name: "keeps duplicated issue untouched", diskStatus: rounds.StatusDuplicated, batchStatus: rounds.StatusPending, seedReason: "canonical thread: round-002/issue_001.md", duplicateOf: "round-002/issue_001.md", wantStatus: rounds.StatusDuplicated, wantReason: "canonical thread: round-002/issue_001.md", wantDuplicateOf: "round-002/issue_001.md"},
+		{name: "marks pending issue failed", diskStatus: rounds.StatusPending, batchStatus: rounds.StatusResolved, wantStatus: rounds.StatusFailed, wantReason: reason},
+		{name: "marks valid issue failed", diskStatus: rounds.StatusValid, batchStatus: rounds.StatusInvalid, wantStatus: rounds.StatusFailed, wantReason: reason},
+		{name: "refreshes failed issue reason", diskStatus: rounds.StatusFailed, batchStatus: rounds.StatusResolved, seedReason: "previous failure", wantStatus: rounds.StatusFailed, wantReason: reason},
 	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			artifactDir := t.TempDir()
+			result := persistTestRound(t, artifactDir)
+			if err := rounds.SetIssueStatus(result.IssuePaths[0], test.diskStatus, test.duplicateOf, test.seedReason); err != nil {
+				t.Fatalf("set on-disk issue status: %v", err)
+			}
+			batch := rounds.Batch{
+				Number: 1,
+				Issues: []rounds.Issue{{
+					Path:   result.IssuePaths[0],
+					Status: test.batchStatus,
+				}},
+			}
 
-	if err := MarkBatchFailed(batch, reason); err != nil {
-		t.Fatalf("mark batch failed: %v", err)
-	}
-	issue, err := rounds.ParseIssue(result.IssuePaths[0])
-	if err != nil {
-		t.Fatalf("parse issue: %v", err)
-	}
-	if issue.Status != rounds.StatusFailed {
-		t.Fatalf("expected failed status, got %q", issue.Status)
-	}
-	if issue.TerminalReason != reason {
-		t.Fatalf("expected terminal reason %q, got %q", reason, issue.TerminalReason)
+			if err := MarkBatchFailed(batch, reason); err != nil {
+				t.Fatalf("mark batch failed: %v", err)
+			}
+			issue, err := rounds.ParseIssue(result.IssuePaths[0])
+			if err != nil {
+				t.Fatalf("parse issue: %v", err)
+			}
+			if issue.Status != test.wantStatus {
+				t.Fatalf("expected status %q, got %q", test.wantStatus, issue.Status)
+			}
+			if issue.TerminalReason != test.wantReason {
+				t.Fatalf("expected terminal reason %q, got %q", test.wantReason, issue.TerminalReason)
+			}
+			if issue.DuplicateOf != test.wantDuplicateOf {
+				t.Fatalf("expected duplicate path %q, got %q", test.wantDuplicateOf, issue.DuplicateOf)
+			}
+		})
 	}
 }
 

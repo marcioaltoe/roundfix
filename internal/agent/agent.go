@@ -359,8 +359,15 @@ func SettleAssignedIssues(ctx context.Context, batch rounds.Batch, terminalReaso
 }
 
 func MarkBatchFailed(batch rounds.Batch, terminalReason string) error {
-	for _, issue := range batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusFailed, "", terminalReason); err != nil {
+	for _, assigned := range batch.Issues {
+		issue, err := rounds.ParseIssue(assigned.Path)
+		if err != nil {
+			return err
+		}
+		if rounds.IsTerminalStatus(issue.Status) {
+			continue
+		}
+		if err := rounds.SetIssueStatus(assigned.Path, rounds.StatusFailed, "", terminalReason); err != nil {
 			return err
 		}
 	}
