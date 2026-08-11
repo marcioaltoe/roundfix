@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0080-cheap-detectors-run-before-the-gate
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -99,3 +99,60 @@ do not exist yet.
 - `_techspec.md` → Implementation Design (Carry-forward); Testing Approach;
   Build Order 5.
 - ADR-0097, ADR-0080.
+
+## Result
+
+Implemented evidence-scoped carry-forward inside the existing pre-QA
+mechanical stage. `Carriable` now refuses every non-pass status, absent or
+mixed inputs, unproven ancestry, intersecting changed paths, incomplete or
+malformed snapshots, changed path sets or digests, and cited evidence outside
+the declared snapshots. The repository resolver parses typed row declarations
+and canonical snapshot frontmatter, proves the establishing head's ancestry,
+reuses `worktree.PriorChangedFiles` for the exact establishing-head-to-`HEAD`
+range, expands literal and `*`/`?`/`**` repository inputs from tracked Git
+blobs, and hashes their bytes at the current head. A carried row retains the
+original report and head even when the immediately previous report already
+carried it.
+
+Focused checks run after the final implementation edit:
+
+- Pre-change signal: `rtk rg -n '^func Carriable|TestCarriable' internal/speccheck`
+  exited 1 because neither the API nor its named suite existed. After the
+  refusal suite was authored first,
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/speccheck -run '^TestCarriable$' -count=1`
+  failed to compile on the deliberately missing `ReportRow`, snapshot types,
+  and `Carriable` implementation.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/speccheck -run '^(TestCarriable|TestMechanical.*|TestMaterializeMechanicalResult|TestCheckCorpusBudget)$' -count=1 -v`
+  passed. It reported fourteen named refusal subtests, two happy-path subtests,
+  four real-Git resolver cases, the existing detector cases, materialization,
+  and corpus non-regression.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/daemon -run '^(TestMechanicalStage|TestQAMechanicalRequest|TestWriteMechanicalQAReport|TestTaskCycleQA|TestPerWorkAgentSessionMixedTaskTypesAndQA|TestQAPullRequest|TestPriorChangedFilesUseCurrentWorktreeHeadAndIgnoreSiblingBranch)' -count=1`
+  passed, including the shared changed-path primitive's current-worktree-head
+  behavior and the existing Daemon QA-stage boundaries.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/spec -run '^TestQAVerdict' -count=1`
+  passed, preserving the existing pass, partial, fail, missing-report,
+  unreadable-report, blocked-count, and report-recency semantics.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task05-gocache go vet ./internal/speccheck ./internal/worktree ./internal/daemon`
+  passed with no diagnostics.
+- `rtk git -c core.fsmonitor=false diff --check` passed.
+
+Acceptance evidence:
+
+1. `TestCarriable` names and refuses failed, blocked, skipped, inputless,
+   changed-path, non-ancestor, changed-content, mixed-input, missing-snapshot,
+   missing-citation, uncovered-citation, glob-intersection, and changed-path-set
+   cases independently.
+2. `TestMechanicalStageCarriableCarriesUnchangedEvidenceWithCitation` proves
+   an unchanged row carries across an unrelated commit and materializes the
+   establishing report path and head. The recursive-glob happy path also
+   carries, and `TestMechanicalStageCarriablePreservesOriginalEstablishingCitation`
+   proves a later carry does not replace the original citation.
+3. `TestCarriable/mixed_repository_and_elapsed_inputs_refuse_carry` proves a
+   repository path combined with `elapsed_time` never carries; the production
+   predicate rejects every non-`repository_path` kind.
+4. No verdict package or verdict computation changed. The focused
+   `TestQAVerdict*` selection passed, while carry-forward only populates the
+   verdict-free `MechanicalResult.Carried` rows.
+
+The commands under this Task's `## Verification` were not run; the Daemon owns
+that complete selection and settlement evidence.

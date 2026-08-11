@@ -1,12 +1,14 @@
 // Suite: pre-QA mechanical facts
-// Invariant: written QA declarations are compared with repository facts, and absent inputs are recorded as skips.
+// Invariant: written QA declarations are compared with repository facts, and only unchanged repository evidence carries.
 // Boundary IN: public speccheck mechanical API, real temporary Git histories, and report carrier fixtures
-// Boundary OUT: Daemon scheduling, QA verdict computation, and carry-forward eligibility
+// Boundary OUT: Daemon scheduling and QA verdict computation
 package speccheck_test
 
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -214,6 +216,267 @@ func TestMechanicalEvidencePath(t *testing.T) {
 	assertMechanicalSkip(t, missing, speccheck.DetectorMechanicalEvidencePath, "docs/specs/mechanical/qa/missing.md")
 }
 
+func TestCarriable(t *testing.T) {
+	t.Parallel()
+
+	const (
+		establishedHead = "established-head"
+		currentHead     = "current-head"
+		reportPath      = "docs/specs/mechanical/qa/qa-report-2026-08-11.md"
+	)
+	valid := func() (speccheck.ReportRow, []speccheck.EvidenceSnapshot, []speccheck.EvidenceSnapshot) {
+		inputs := []speccheck.EvidenceInput{{Kind: speccheck.EvidenceRepositoryPath, Ref: "internal/speccheck/report.go"}}
+		established := []speccheck.EvidenceSnapshot{{
+			Ref: inputs[0].Ref,
+			Files: []speccheck.EvidenceFile{{
+				Path:   inputs[0].Ref,
+				SHA256: strings.Repeat("a", 64),
+			}},
+		}}
+		current := []speccheck.EvidenceSnapshot{{
+			Ref: inputs[0].Ref,
+			Files: []speccheck.EvidenceFile{{
+				Path:   inputs[0].Ref,
+				SHA256: strings.Repeat("a", 64),
+			}},
+		}}
+		return speccheck.ReportRow{
+			ID:               "R01",
+			Status:           "pass",
+			EstablishedBy:    reportPath,
+			EstablishedHead:  establishedHead,
+			AncestryVerified: true,
+			Inputs:           inputs,
+			EvidencePaths:    []string{inputs[0].Ref},
+		}, established, current
+	}
+
+	refusals := []struct {
+		name    string
+		arrange func(*speccheck.ReportRow, *[]string, *[]speccheck.EvidenceSnapshot, *[]speccheck.EvidenceSnapshot)
+	}{
+		{
+			name: "prior status failed refuses carry",
+			arrange: func(row *speccheck.ReportRow, _ *[]string, _, _ *[]speccheck.EvidenceSnapshot) {
+				row.Status = "fail"
+			},
+		},
+		{
+			name: "prior status blocked refuses carry",
+			arrange: func(row *speccheck.ReportRow, _ *[]string, _, _ *[]speccheck.EvidenceSnapshot) {
+				row.Status = "blocked (environment: fixture)"
+			},
+		},
+		{
+			name: "prior status skipped refuses carry",
+			arrange: func(row *speccheck.ReportRow, _ *[]string, _, _ *[]speccheck.EvidenceSnapshot) {
+				row.Status = "skipped"
+			},
+		},
+		{
+			name: "no declared inputs refuses carry",
+			arrange: func(row *speccheck.ReportRow, _ *[]string, _, _ *[]speccheck.EvidenceSnapshot) {
+				row.Inputs = nil
+			},
+		},
+		{
+			name: "changed repository path refuses carry",
+			arrange: func(_ *speccheck.ReportRow, changed *[]string, _, _ *[]speccheck.EvidenceSnapshot) {
+				*changed = []string{"internal/speccheck/report.go"}
+			},
+		},
+		{
+			name: "establishing head not ancestor refuses carry",
+			arrange: func(row *speccheck.ReportRow, _ *[]string, _, _ *[]speccheck.EvidenceSnapshot) {
+				row.AncestryVerified = false
+			},
+		},
+		{
+			name: "changed evidence content refuses carry",
+			arrange: func(_ *speccheck.ReportRow, _ *[]string, _, current *[]speccheck.EvidenceSnapshot) {
+				(*current)[0].Files[0].SHA256 = strings.Repeat("b", 64)
+			},
+		},
+		{
+			name: "mixed repository and elapsed inputs refuse carry",
+			arrange: func(row *speccheck.ReportRow, _ *[]string, established, current *[]speccheck.EvidenceSnapshot) {
+				row.Inputs = append(row.Inputs, speccheck.EvidenceInput{Kind: speccheck.EvidenceElapsedTime, Ref: "thirty-day window"})
+				*established = append(*established, speccheck.EvidenceSnapshot{Ref: "thirty-day window"})
+				*current = append(*current, speccheck.EvidenceSnapshot{Ref: "thirty-day window"})
+			},
+		},
+		{
+			name: "missing established snapshot refuses carry",
+			arrange: func(_ *speccheck.ReportRow, _ *[]string, established, _ *[]speccheck.EvidenceSnapshot) {
+				*established = nil
+			},
+		},
+		{
+			name: "missing current snapshot refuses carry",
+			arrange: func(_ *speccheck.ReportRow, _ *[]string, _, current *[]speccheck.EvidenceSnapshot) {
+				*current = nil
+			},
+		},
+		{
+			name: "missing establishing report citation refuses carry",
+			arrange: func(row *speccheck.ReportRow, _ *[]string, _, _ *[]speccheck.EvidenceSnapshot) {
+				row.EstablishedBy = ""
+			},
+		},
+		{
+			name: "cited evidence outside declared inputs refuses carry",
+			arrange: func(row *speccheck.ReportRow, _ *[]string, _, _ *[]speccheck.EvidenceSnapshot) {
+				row.EvidencePaths = []string{"qa/evidence/R01.txt"}
+			},
+		},
+		{
+			name: "changed path entering recursive glob refuses carry",
+			arrange: func(row *speccheck.ReportRow, changed *[]string, established, current *[]speccheck.EvidenceSnapshot) {
+				row.Inputs[0].Ref = "internal/speccheck/**"
+				(*established)[0].Ref = row.Inputs[0].Ref
+				(*current)[0].Ref = row.Inputs[0].Ref
+				*changed = []string{"internal/speccheck/mechanical.go"}
+			},
+		},
+		{
+			name: "expanded path set changed refuses carry",
+			arrange: func(row *speccheck.ReportRow, _ *[]string, established, current *[]speccheck.EvidenceSnapshot) {
+				row.Inputs[0].Ref = "internal/speccheck/**"
+				(*established)[0].Ref = row.Inputs[0].Ref
+				(*current)[0].Ref = row.Inputs[0].Ref
+				(*current)[0].Files = append((*current)[0].Files, speccheck.EvidenceFile{
+					Path:   "internal/speccheck/mechanical.go",
+					SHA256: strings.Repeat("c", 64),
+				})
+			},
+		},
+	}
+
+	for _, tt := range refusals {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			row, established, current := valid()
+			var changed []string
+			tt.arrange(&row, &changed, &established, &current)
+			if speccheck.Carriable(row, currentHead, changed, established, current) {
+				t.Fatal("Carriable() = true, want false")
+			}
+		})
+	}
+
+	t.Run("every condition holds and carries", func(t *testing.T) {
+		row, established, current := valid()
+		if !speccheck.Carriable(row, currentHead, nil, established, current) {
+			t.Fatal("Carriable() = false, want true")
+		}
+	})
+
+	t.Run("unchanged recursive glob carries", func(t *testing.T) {
+		row, _, _ := valid()
+		row.Inputs[0].Ref = "internal/speccheck/**"
+		files := []speccheck.EvidenceFile{
+			{Path: "internal/speccheck/mechanical.go", SHA256: strings.Repeat("a", 64)},
+			{Path: "internal/speccheck/report.go", SHA256: strings.Repeat("b", 64)},
+		}
+		established := []speccheck.EvidenceSnapshot{{Ref: row.Inputs[0].Ref, Files: append([]speccheck.EvidenceFile(nil), files...)}}
+		current := []speccheck.EvidenceSnapshot{{Ref: row.Inputs[0].Ref, Files: append([]speccheck.EvidenceFile(nil), files...)}}
+		if !speccheck.Carriable(row, currentHead, []string{"docs/specs/task_01.md"}, established, current) {
+			t.Fatal("Carriable() = false, want unchanged recursive glob to carry")
+		}
+	})
+}
+
+func TestMechanicalStageCarriableCarriesUnchangedEvidenceWithCitation(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := newMechanicalGitRepo(t)
+	const evidenceContent = "stable evidence\n"
+	writeMechanicalFile(t, repoRoot, "evidence.txt", evidenceContent)
+	establishedHead := commitMechanicalFiles(t, repoRoot, "establish evidence", "evidence.txt")
+	reportPath := "docs/specs/mechanical/qa/qa-report-2026-08-11.md"
+	writeMechanicalFile(t, repoRoot, reportPath, mechanicalCarryReport(establishedHead, evidenceContent))
+	commitMechanicalFiles(t, repoRoot, "record QA report", reportPath)
+	writeMechanicalFile(t, repoRoot, "unrelated.txt", "unrelated\n")
+	commitMechanicalFiles(t, repoRoot, "change unrelated input", "unrelated.txt")
+
+	result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+	if len(result.Carried) != 1 {
+		t.Fatalf("Carried = %#v, want one unchanged row", result.Carried)
+	}
+	carried := result.Carried[0]
+	if carried.ID != "R01" || carried.EstablishedBy != reportPath || carried.EstablishedHead != establishedHead {
+		t.Fatalf("Carried[0] = %#v, want report %q at %q", carried, reportPath, establishedHead)
+	}
+	var materialized bytes.Buffer
+	if err := speccheck.WriteMechanicalResult(&materialized, result); err != nil {
+		t.Fatalf("WriteMechanicalResult() error = %v", err)
+	}
+	wantCitation := "carried (established by: " + reportPath + "; head: " + establishedHead + ")"
+	if !strings.Contains(materialized.String(), wantCitation) {
+		t.Fatalf("materialized carried row omits citation %q:\n%s", wantCitation, materialized.String())
+	}
+}
+
+func TestMechanicalStageCarriableRefusesNonAncestorEstablishingHead(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := newMechanicalGitRepo(t)
+	mainBranch := strings.TrimSpace(runMechanicalGit(t, repoRoot, "branch", "--show-current"))
+	runMechanicalGit(t, repoRoot, "checkout", "--quiet", "-b", "establishing-side")
+	const evidenceContent = "stable evidence\n"
+	writeMechanicalFile(t, repoRoot, "evidence.txt", evidenceContent)
+	nonAncestorHead := commitMechanicalFiles(t, repoRoot, "side evidence", "evidence.txt")
+	runMechanicalGit(t, repoRoot, "checkout", "--quiet", mainBranch)
+	writeMechanicalFile(t, repoRoot, "evidence.txt", evidenceContent)
+	reportPath := "docs/specs/mechanical/qa/qa-report-2026-08-11.md"
+	writeMechanicalFile(t, repoRoot, reportPath, mechanicalCarryReport(nonAncestorHead, evidenceContent))
+	commitMechanicalFiles(t, repoRoot, "record unrelated QA report", "evidence.txt", reportPath)
+
+	result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+	if len(result.Carried) != 0 {
+		t.Fatalf("Carried = %#v, want non-ancestor evidence re-observed", result.Carried)
+	}
+}
+
+func TestMechanicalStageCarriableRefusesChangedDeclaredInput(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := newMechanicalGitRepo(t)
+	const evidenceContent = "stable evidence\n"
+	writeMechanicalFile(t, repoRoot, "evidence.txt", evidenceContent)
+	establishedHead := commitMechanicalFiles(t, repoRoot, "establish evidence", "evidence.txt")
+	reportPath := "docs/specs/mechanical/qa/qa-report-2026-08-11.md"
+	writeMechanicalFile(t, repoRoot, reportPath, mechanicalCarryReport(establishedHead, evidenceContent))
+	commitMechanicalFiles(t, repoRoot, "record QA report", reportPath)
+	writeMechanicalFile(t, repoRoot, "evidence.txt", "changed evidence\n")
+	commitMechanicalFiles(t, repoRoot, "change declared evidence", "evidence.txt")
+
+	result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+	if len(result.Carried) != 0 {
+		t.Fatalf("Carried = %#v, want changed declared input re-observed", result.Carried)
+	}
+}
+
+func TestMechanicalStageCarriablePreservesOriginalEstablishingCitation(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := newMechanicalGitRepo(t)
+	const evidenceContent = "stable evidence\n"
+	writeMechanicalFile(t, repoRoot, "evidence.txt", evidenceContent)
+	establishedHead := commitMechanicalFiles(t, repoRoot, "establish evidence", "evidence.txt")
+	originalReport := "docs/specs/mechanical/qa/qa-report-2026-08-10.md"
+	writeMechanicalFile(t, repoRoot, originalReport, mechanicalCarryReport(establishedHead, evidenceContent))
+	commitMechanicalFiles(t, repoRoot, "record original QA report", originalReport)
+	previousReport := "docs/specs/mechanical/qa/qa-report-2026-08-11.md"
+	writeMechanicalFile(t, repoRoot, previousReport, mechanicalCarriedReport(originalReport, establishedHead))
+	commitMechanicalFiles(t, repoRoot, "record carried QA report", previousReport)
+
+	result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: previousReport})
+	if len(result.Carried) != 1 || result.Carried[0].EstablishedBy != originalReport || result.Carried[0].EstablishedHead != establishedHead {
+		t.Fatalf("Carried = %#v, want original report and head citation", result.Carried)
+	}
+}
+
 func TestMechanicalReportsAllFindings(t *testing.T) {
 	t.Parallel()
 
@@ -345,6 +608,7 @@ func newMechanicalGitRepo(t *testing.T) string {
 	runMechanicalGit(t, repoRoot, "init", "--quiet")
 	runMechanicalGit(t, repoRoot, "config", "user.name", "Roundfix Test")
 	runMechanicalGit(t, repoRoot, "config", "user.email", "roundfix@example.invalid")
+	runMechanicalGit(t, repoRoot, "config", "commit.gpgsign", "false")
 	writeMechanicalFile(t, repoRoot, ".keep", "fixture\n")
 	commitMechanicalFiles(t, repoRoot, "initial", ".keep")
 	return repoRoot
@@ -386,6 +650,48 @@ func writeMechanicalFile(t *testing.T, repoRoot, relative, content string) {
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write fixture %q: %v", relative, err)
 	}
+}
+
+func mechanicalCarryReport(establishedHead, evidenceContent string) string {
+	digest := fmt.Sprintf("%x", sha256.Sum256([]byte(evidenceContent)))
+	return fmt.Sprintf("---\n"+
+		"spec: mechanical-carrier\n"+
+		"status: closed\n"+
+		"verdict: pass\n"+
+		"rows_blocked_environment: 0\n"+
+		"rows_blocked_finding: 0\n"+
+		"rows_blocked_declared: 0\n"+
+		"evidence_snapshots:\n"+
+		"  R01:\n"+
+		"    head: %s\n"+
+		"    inputs:\n"+
+		"      - ref: evidence.txt\n"+
+		"        files:\n"+
+		"          - path: evidence.txt\n"+
+		"            sha256: %s\n"+
+		"---\n\n"+
+		"# QA report — carry fixture\n\n"+
+		"## Results\n\n"+
+		"| # | Story / criterion / sweep | Actor and surface | Status | Evidence |\n"+
+		"| - | --- | --- | --- | --- |\n"+
+		"| R01 | Unchanged evidence | maintainer / backend | pass | [evidence](../../../../evidence.txt) |\n\n"+
+		"### R01 evidence\n\n"+
+		"```yaml\n"+
+		"inputs:\n"+
+		"  - kind: repository_path\n"+
+		"    ref: evidence.txt\n"+
+		"```\n", establishedHead, digest)
+}
+
+func mechanicalCarriedReport(establishedBy, establishedHead string) string {
+	return fmt.Sprintf("---\n"+
+		"spec: mechanical-carrier\nstatus: closed\nverdict: pass\n"+
+		"rows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n"+
+		"---\n\n# QA report — carried fixture\n\n## Results\n\n"+
+		"| # | Story / criterion / sweep | Actor and surface | Status | Evidence |\n"+
+		"| - | --- | --- | --- | --- |\n"+
+		"| R01 | Unchanged evidence | maintainer / backend | carried (established by: %s; head: %s) | inherited |\n",
+		establishedBy, establishedHead)
 }
 
 func mechanicalFindingsWithCode(result speccheck.MechanicalResult, code string) []speccheck.MechanicalFinding {
