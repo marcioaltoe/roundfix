@@ -59,39 +59,6 @@ func TestArchiveLayoutCharacterizationRecordsEveryRetiredFamily(t *testing.T) {
 	}
 }
 
-type archivePathComposer struct {
-	packagePath string
-	literals    []string
-}
-
-// The resolver is now the only package that owns the repository-relative
-// layout. Consumers ask it for these answers rather than composing paths.
-var archivePathComposersAfterTask04 = []archivePathComposer{
-	{packagePath: "internal/spec", literals: []string{"_archived/specs", "_archived/findings", "_archived/adr", "_archived/backlog"}},
-}
-
-func TestArchiveLayoutCharacterizationEnumeratesEveryPathComposer(t *testing.T) {
-	t.Parallel()
-
-	want := []archivePathComposer{
-		{packagePath: "internal/spec", literals: []string{"_archived/specs", "_archived/findings", "_archived/adr", "_archived/backlog"}},
-	}
-	if !reflect.DeepEqual(archivePathComposersAfterTask04, want) {
-		t.Fatalf("archive path composers = %#v, want %#v", archivePathComposersAfterTask04, want)
-	}
-}
-
-const conditionalSecondbrainClauseBeforeSpec0085 = "Consult the local Secondbrain before acting when repository context does not answer business or prior-decision questions, fiscal or tax concepts, cross-project documentation, knowledge about Vortex, Tax, Visio, or Gesttione, or shared architecture patterns. Do not consult it when local code, `CONTEXT.md`, ADRs, and repository documentation fully answer the task."
-
-func TestArchiveLayoutCharacterizationCapturesConditionalSecondbrainClause(t *testing.T) {
-	t.Parallel()
-
-	const escapeHatch = "Do not consult it when local code, `CONTEXT.md`, ADRs, and repository documentation fully answer the task."
-	if !strings.Contains(conditionalSecondbrainClauseBeforeSpec0085, escapeHatch) {
-		t.Fatalf("conditional Secondbrain clause = %q, want escape hatch %q", conditionalSecondbrainClauseBeforeSpec0085, escapeHatch)
-	}
-}
-
 type archiveLayoutCorpusGolden struct {
 	Schema string         `json:"schema"`
 	Update string         `json:"update"`

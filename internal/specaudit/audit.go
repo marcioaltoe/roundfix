@@ -333,7 +333,9 @@ func claimedArtifacts(
 }
 
 func archivedSpecArtifactPath(artifactRoot, slug string) string {
-	archiveDir := spec.ArchiveSpecRoot(filepath.FromSlash(artifactRoot))
+	// artifactRoot is a repo-relative path inside the owning git tree, so the
+	// default-layout heuristic resolves the archive location within that tree.
+	archiveDir := spec.ArchiveSpecRoot(filepath.FromSlash(artifactRoot), false)
 	return filepath.ToSlash(filepath.Join(archiveDir, slug))
 }
 

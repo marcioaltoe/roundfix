@@ -52,6 +52,73 @@ func TestArchiveDirRejectsAnUnknownKind(t *testing.T) {
 	}
 }
 
+func TestArchiveSpecRootDefaultLayout(t *testing.T) {
+	t.Parallel()
+
+	// The built-in <repo>/docs/specs root resolves to the repository's default
+	// _archived/specs directory, whether the path is repository-relative or an
+	// absolute path belonging to the repository.
+	tests := []struct {
+		name      string
+		specsRoot string
+		want      string
+	}{
+		{
+			name:      "repository-relative default root",
+			specsRoot: "docs/specs",
+			want:      filepath.ToSlash(filepath.Join("_archived", "specs")),
+		},
+		{
+			name:      "absolute repository default root",
+			specsRoot: filepath.Join("/repo", "docs", "specs"),
+			want:      filepath.ToSlash(filepath.Join("/repo", "_archived", "specs")),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := ArchiveSpecRoot(test.specsRoot, false); got != test.want {
+				t.Fatalf("ArchiveSpecRoot(%q, false) = %q, want %q", test.specsRoot, got, test.want)
+			}
+		})
+	}
+}
+
+func TestArchiveSpecRootExternalKeepsArchiveBesideActiveRoot(t *testing.T) {
+	t.Parallel()
+
+	// An external Spec Root keeps its archive beside the active root rather
+	// than under the referring repository's default _archived/specs. Issue 009:
+	// an external root whose path happens to end in docs/specs must NOT be
+	// misclassified as the repository default.
+	tests := []struct {
+		name      string
+		specsRoot string
+		want      string
+	}{
+		{
+			name:      "external root ending in docs specs",
+			specsRoot: filepath.FromSlash("/tmp/other/docs/specs"),
+			want:      filepath.ToSlash(filepath.Join("/tmp/other/docs/specs", "_archived")),
+		},
+		{
+			name:      "external root with a plain name",
+			specsRoot: filepath.FromSlash("/tmp/other/external-specs"),
+			want:      filepath.ToSlash(filepath.Join("/tmp/other/external-specs", "_archived")),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := ArchiveSpecRoot(test.specsRoot, true); got != test.want {
+				t.Fatalf("ArchiveSpecRoot(%q, true) = %q, want %q", test.specsRoot, got, test.want)
+			}
+		})
+	}
+}
+
 const (
 	spec0058ReplaySlug    = "0058-npm-trusted-publishing-and-release-preflight"
 	spec0058ReleaseAction = "a maintainer publishes a tagged release and records the run"
@@ -373,7 +440,7 @@ func archiveTestCopyTree(t *testing.T, source string, destination string) {
 func archiveTestAssertReplayRemainsActive(t *testing.T, specsRoot string) {
 	t.Helper()
 	activeDir := filepath.Join(specsRoot, spec0058ReplaySlug)
-	archivedDir := filepath.Join(ArchiveSpecRoot(specsRoot), spec0058ReplaySlug)
+	archivedDir := filepath.Join(ArchiveSpecRoot(specsRoot, false), spec0058ReplaySlug)
 	if _, err := os.Stat(activeDir); err != nil {
 		t.Fatalf("refused replay active directory: %v", err)
 	}

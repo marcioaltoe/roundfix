@@ -41,6 +41,7 @@ func ArchiveDir(kind ArchiveKind) string {
 // ArchiveRequest asks the Spec package to retire one completed Spec.
 type ArchiveRequest struct {
 	SpecsRoot  string
+	External   bool
 	Slug       string
 	ArchivedAt time.Time
 }
@@ -78,7 +79,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", err)
 	}
 
-	archiveRoot := ArchiveSpecRoot(req.SpecsRoot)
+	archiveRoot := ArchiveSpecRoot(req.SpecsRoot, req.External)
 	archivedDir := filepath.Join(archiveRoot, req.Slug)
 	if _, err := os.Stat(archivedDir); err == nil {
 		return ArchiveResult{}, fmt.Errorf("archived Spec destination %q already exists", archivedDir)
@@ -105,14 +106,18 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 }
 
 // ArchiveSpecRoot returns the filesystem directory holding retired Specs for
-// one configured Spec Root. The default repository layout uses ArchiveDir;
-// external Spec Roots keep their archive beside the active root.
-func ArchiveSpecRoot(specsRoot string) string {
+// one configured Spec Root. The default repository layout uses ArchiveDir and
+// is selected only when the Spec Root is not external; an external Spec Root
+// keeps its archive beside the active root.
+func ArchiveSpecRoot(specsRoot string, external bool) string {
 	cleanSpecsRoot := filepath.Clean(specsRoot)
+	if external {
+		// An external Spec Root owns its archive beside its active Specs rather
+		// than under the referring repository's default archive root.
+		return filepath.Join(cleanSpecsRoot, archivedDirName)
+	}
 	docsRoot := filepath.Dir(cleanSpecsRoot)
 	if filepath.Base(cleanSpecsRoot) != string(ArchiveKindSpec) || filepath.Base(docsRoot) != "docs" {
-		// A configured non-default Spec Root owns its archive beside its active
-		// Specs; this request does not carry a repository root for resolving it.
 		return filepath.Join(cleanSpecsRoot, archivedDirName)
 	}
 	return filepath.Join(filepath.Dir(docsRoot), filepath.FromSlash(ArchiveDir(ArchiveKindSpec)))

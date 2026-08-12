@@ -23,7 +23,10 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 
 Run this preflight before deriving or approving a breakdown:
 
-1. Classify the Spec. A Spec under `_archived/specs/`, or one proven to
+1. Classify the Spec. A Spec under the resolved archive directory (the
+   `_archived/specs/` that corresponds to the configured Spec Root — `_archived/specs`
+   for the built-in `docs/specs` root, or `<spec-root>/_archived/` for an
+   external or non-default root), or one proven to
    have completed before this contract applied, is a completed or archived
    legacy Spec. Leave every legacy artifact byte-identical: do not backfill,
    reformat, regenerate, or otherwise rewrite it.
