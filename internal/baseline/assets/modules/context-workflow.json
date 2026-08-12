@@ -322,17 +322,17 @@
         {
           "id": "clause.context.findings-08-rollup",
           "enforcement": "mandatory",
-          "guidance": "A Rollup is a Finding of `kind: rollup` that consolidates related Findings. It lives beside active Findings under `docs/findings/`, shares their lifecycle contract, and declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `_archived/findings/`. Use this extension:\n\n```yaml\nkind: rollup\nmembers:\n  - YYYY-MM-DD-<finding-slug>.md\n```"
+          "guidance": "A Rollup is a Finding of `kind: rollup` that consolidates related Findings. It lives beside active Findings under `docs/findings/`, shares their lifecycle contract, and declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `docs/findings/_archived/`. Use this extension:\n\n```yaml\nkind: rollup\nmembers:\n  - YYYY-MM-DD-<finding-slug>.md\n```"
         },
         {
           "id": "clause.context.findings-09-archive",
           "enforcement": "mandatory",
-          "guidance": "Use `_archived/findings/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:\n\n```yaml\nabsorbed_by: <rollup-basename-or-spec-slug>\n```"
+          "guidance": "Use `docs/findings/_archived/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:\n\n```yaml\nabsorbed_by: <rollup-basename-or-spec-slug>\n```"
         },
         {
           "id": "clause.context.findings-10-live-work-health",
           "enforcement": "mandatory",
-          "guidance": "Read a findings directory holding only live work as `health`, not loss: Rollups and `_archived/findings/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory."
+          "guidance": "Read a findings directory holding only live work as `health`, not loss: Rollups and `docs/findings/_archived/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory."
         },
         {
           "id": "clause.context.findings-11-rollup-closure",
