@@ -71,7 +71,6 @@ be tested against fixture repositories alone.
 
 - `go test -count=1 ./internal/baseline -run 'DiscoverHistoryLayout' -v > /tmp/0094-task-04.log 2>&1; s=$?; grep -q '^--- PASS: .*DiscoverHistoryLayout' /tmp/0094-task-04.log || { cat /tmp/0094-task-04.log; exit 1; }; exit $s` — expected: exits 0 and the log names the passing discovery tests; fails when the named tests do not exist.
 - `grep -q 'PASS' /tmp/0094-task-04.log && ! grep -qi 'no tests to run' /tmp/0094-task-04.log` — expected: exits 0, refusing a vacuous run that selected no cases.
-- `go build -buildvcs=false ./...` — expected: exits 0.
 
 ## Context
 

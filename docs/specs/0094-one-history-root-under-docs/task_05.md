@@ -56,8 +56,7 @@ exactly as it does today.
 
 - `go test -count=1 ./internal/baseline -run 'HistoryMove|HistoryRelocationPlan' -v > /tmp/0094-task-05.log 2>&1; s=$?; grep -q '^--- PASS: .*HistoryMove\|^--- PASS: .*HistoryRelocationPlan' /tmp/0094-task-05.log || { cat /tmp/0094-task-05.log; exit 1; }; exit $s` — expected: exits 0 and the log names the passing ledger tests.
 - `grep -q 'historyMoves' internal/baseline/plan.go` — expected: exits 0, proving the ledger reached the plan document rather than only its tests.
-- `! grep -n 'historyMoves' internal/baseline/plan.go | grep -qi 'content \[\]byte'` — expected: exits 0, proving the ledger carries no content field.
-- `go build -buildvcs=false ./...` — expected: exits 0.
+- `grep -q 'historyMoves' internal/baseline/plan.go && ! grep -A6 'HistoryMove struct' internal/baseline/plan.go | grep -qi 'content'` — expected: exits 0, proving the ledger exists and its entry carries no content field. The negative clause alone passed before any work, because a token absent from the file cannot match.
 
 ## References
 

@@ -73,7 +73,7 @@ is the one whose failure modes a content write does not already exercise.
 
 - `go test -count=1 ./internal/baseline -run 'HistoryMoveApply|HistoryMoveRollback|HistoryMoveCollision' -v > /tmp/0094-task-06.log 2>&1; s=$?; grep -q '^--- PASS: .*HistoryMoveApply' /tmp/0094-task-06.log && grep -q '^--- PASS: .*HistoryMoveRollback' /tmp/0094-task-06.log && grep -q '^--- PASS: .*HistoryMoveCollision' /tmp/0094-task-06.log || { cat /tmp/0094-task-06.log; exit 1; }; exit $s` — expected: exits 0 and the log names all three passing groups; fails when any one is missing.
 - `! grep -qi 'no tests to run' /tmp/0094-task-06.log` — expected: exits 0, refusing a vacuous run.
-- `go test -count=1 ./internal/baseline > /tmp/0094-task-06b.log 2>&1 || { cat /tmp/0094-task-06b.log; exit 1; }` — expected: exits 0, proving the existing transaction contract still holds in the one package this Task changes.
+- `go test -count=1 ./internal/baseline > /tmp/0094-task-06b.log 2>&1 && grep -q 'HistoryMove' internal/baseline/transaction.go || { cat /tmp/0094-task-06b.log; exit 1; }` — expected: exits 0, proving the existing transaction contract still holds once the ledger reaches the transaction. The suite alone passed before any work, so it is anchored to the change it is guarding.
 
 ## Context
 
