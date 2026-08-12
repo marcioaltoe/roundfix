@@ -160,7 +160,7 @@ updated_at: YYYY-MM-DD
 
 - **mandatory**: Update `updated_at` whenever status changes or an evidence addendum is appended; keep `created_at` as the document creation date.
 
-- **mandatory**: A Rollup is a Finding of `kind: rollup` that consolidates related Findings. It lives beside active Findings under `docs/findings/`, shares their lifecycle contract, and declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `_archived/findings/`. Use this extension:
+- **mandatory**: A Rollup is a Finding of `kind: rollup` that consolidates related Findings. It lives beside active Findings under `docs/findings/`, shares their lifecycle contract, and declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `docs/history/findings/`. Use this extension:
 
 ```yaml
 kind: rollup
@@ -168,13 +168,13 @@ members:
   - YYYY-MM-DD-<finding-slug>.md
 ```
 
-- **mandatory**: Use `_archived/findings/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` value that resolves to an active Rollup basename or a Spec slug. Use this extension:
+- **mandatory**: Use `docs/history/findings/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` value that resolves to an active Rollup basename or a Spec slug. Use this extension:
 
 ```yaml
 absorbed_by: <rollup-basename-or-spec-slug>
 ```
 
-- **mandatory**: Read a findings directory holding only live work as `health`, not loss: Rollups and `_archived/findings/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory.
+- **mandatory**: Read a findings directory holding only live work as `health`, not loss: Rollups and `docs/history/findings/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory.
 
 - **mandatory**: When a Rollup has `no open members`, review it as a candidate for its own closure and close it through the existing Finding lifecycle contract when its work is settled.
 
@@ -187,7 +187,7 @@ absorbed_by: <rollup-basename-or-spec-slug>
 
 # Spec docs layout
 
-- **mandatory**: Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under the resolved archive directory: `_archived/specs/` for the built-in `docs/specs` Spec Root, or `<spec-root>/_archived/` beside the active root for an external or configured non-default Spec Root.
+- **mandatory**: Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under the resolved archive directory: `docs/history/specs/` for the built-in `docs/specs` Spec Root, or `<spec-root>/_archived/` beside the active root for an external or configured non-default Spec Root.
 
 - **mandatory**: Specs are downstream results of the CONTEXT-driven workflow, never sources it depends on: an archived Spec may be deleted at any time, so durable knowledge a Spec produced must move upstream to its semantic owner — the project glossary, an accepted ADR, an agent guide, or `docs/references/` — before or at archive. The glossary and the agent guides must never reference a Spec.
 

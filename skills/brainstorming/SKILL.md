@@ -26,7 +26,7 @@ A todo list, a single-function utility, a config change — all of them go throu
 
 - **One question per message.** A topic that needs depth becomes a sequence of questions, never a questionnaire.
 - **Multiple choice preferred** when the options are enumerable — `A/B/C` plus `D) Other — describe` — always with a suggested default and a one-line reason. Open-ended is fine when options genuinely can't be predetermined.
-- **Explore before asking.** Check project state first — files, docs, `CONTEXT.md`, `docs/specs/` (including `_archived/`), recent commits. A question the codebase can answer is wasted user time.
+- **Explore before asking.** Check project state first — files, docs, `CONTEXT.md`, active Specs under `docs/specs/`, retired Specs under `docs/history/specs/`, recent commits. A question the codebase can answer is wasted user time.
 - **WHAT, WHY, WHO — not HOW.** Databases, APIs, frameworks, and architecture belong to the tech-spec stage; raising them here derails the product conversation.
 - **YAGNI ruthlessly.** Challenge every feature against the smallest version that delivers the value.
 

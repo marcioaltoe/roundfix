@@ -749,8 +749,8 @@
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
       "start": 9087,
-      "end": 9478,
-      "digest": "33dc5d3bfa137e6334a3757adb3efd4735de5e81c3c564560998c58915237755"
+      "end": 9481,
+      "digest": "739eccc2bc400f5275a40249d9bac7162310f9b92c90b0abf85c963c186f4f5f"
     },
     {
       "id": "clause.context.findings-09-archive",
@@ -759,9 +759,9 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 9613,
-      "end": 9868,
-      "digest": "3c9ec788993fcfd01942275930bc049b264b1746b05fb1083c294de2fe7125ed"
+      "start": 9616,
+      "end": 9874,
+      "digest": "1396359967fc31c02a69d0c996fc551baa8402fcecd1ad4c47be48648daa1499"
     },
     {
       "id": "clause.context.findings-10-live-work-health",
@@ -770,9 +770,9 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 10013,
-      "end": 10218,
-      "digest": "e45fcc3cebedf8773e0b23432d311fa2f60ea302a0b9d0607aa07b21dea78b6f"
+      "start": 10019,
+      "end": 10227,
+      "digest": "c42787b797072a630ee8e83e231fd8a5069fce22dba60a264a48352eebf3f128"
     },
     {
       "id": "clause.context.findings-11-rollup-closure",
@@ -781,8 +781,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 10370,
-      "end": 10539,
+      "start": 10379,
+      "end": 10548,
       "digest": "eeffe1baf79ee96744104d33e0a6c745eb69a983b4df0cad384a160b3496be6e"
     },
     {
@@ -792,8 +792,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 10682,
-      "end": 10752,
+      "start": 10691,
+      "end": 10761,
       "digest": "0d99156813f494d0b8a2d6395403eaad5385c00c19294ad845030c49f395a39b"
     },
     {
@@ -803,8 +803,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 10888,
-      "end": 11057,
+      "start": 10897,
+      "end": 11066,
       "digest": "4103cbc86cc981f2b06a452fd108041df2495ea5a155561617666e0dfd627f90"
     },
     {
@@ -814,8 +814,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 11194,
-      "end": 11288,
+      "start": 11203,
+      "end": 11297,
       "digest": "113d93416da3b170dd3933085ebbc206d7b224b0e8eabf58b8f652d7ad3ab25f"
     },
     {
@@ -825,8 +825,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 11422,
-      "end": 11536,
+      "start": 11431,
+      "end": 11545,
       "digest": "7e5c26885c289a99db7fc1b57993412aa0efca85b858394835423110d8b737ac"
     },
     {
@@ -836,8 +836,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 11677,
-      "end": 11813,
+      "start": 11686,
+      "end": 11822,
       "digest": "fe598da7ea176f88cc991791977de07d1494f0da10b2e0d3584ff7456ecc767c"
     },
     {
@@ -847,8 +847,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 11966,
-      "end": 12096,
+      "start": 11975,
+      "end": 12105,
       "digest": "becee1d41ae620ddf8856f8231d04d728b2869f784529d4851744a86f35c142b"
     },
     {
@@ -858,8 +858,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 12237,
-      "end": 12507,
+      "start": 12246,
+      "end": 12516,
       "digest": "e6f4e77aa8f456c4c7d9e2c2e25c5b9f9141d052ee30abfe44c00e12c3a600d7"
     },
     {
@@ -869,8 +869,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 12639,
-      "end": 12886,
+      "start": 12648,
+      "end": 12895,
       "digest": "ac5e756c7cb8cbae76bb1e5699c2e12a94ba61875737ecdf3b0d226f20ca91b0"
     },
     {
@@ -880,9 +880,9 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 13029,
-      "end": 13221,
-      "digest": "f5a532e3cee104c3be2d7d2a130e1bada7cec2634818c1bff63c3e204cc726a7"
+      "start": 13038,
+      "end": 13233,
+      "digest": "18356abb102fbe15989e30b192c48b76c587124c757c2321c83b3816f6eb3b37"
     },
     {
       "id": "clause.spec.specs-are-downstream-artifacts",
@@ -891,8 +891,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/docs-layout.md",
       "structure": null,
-      "start": 13372,
-      "end": 13755,
+      "start": 13384,
+      "end": 13767,
       "digest": "437de61f4c3b444f6509517f1d8994432bb99adaf8edaf17394e611ec04e0dbc"
     },
     {
