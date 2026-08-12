@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -71,3 +71,61 @@ network and no caller yet.
 `_techspec.md` → Build Order 3; Interfaces: `ClassifyReview`, `ReviewLiveness`;
 Testing Approach: review liveness; Integration Points. `_prd.md` → Core Feature 4;
 Goal 4; User Story 4. ADR-0123.
+
+## Result
+
+### Implementation
+
+- `ClassifyReview` returns `finished`, `live`, or `undecidable` with a non-empty
+  reason. Expected metadata and local-Git uncertainty returns `undecidable`
+  without an operational error, so downstream discovery leaves the Review
+  Artifact live.
+- Classification reads the highest-numbered `round-*` directory and its
+  `round.md` frontmatter. A missing head, unreadable or malformed metadata,
+  ambiguous Round numbering, an invalid head, or a Git answer that cannot be
+  established remains undecidable.
+- Local Git resolves the default through `origin/HEAD`, preferring the matching
+  up-to-date local branch, then falls back to local `main` or `master`. It checks
+  ancestry, refs containing the recorded head, and local or remote-tracking refs
+  for the recorded PR Head Branch.
+- An unmerged head stays live when any local ref reaches it. An unreachable head
+  retires only when its recorded branch is also absent; a rewritten branch that
+  still exists remains undecidable.
+- The implementation invokes only read-only local `git` commands with optional
+  locks and filesystem-monitor refresh disabled. It has no hosting-provider,
+  credential, HTTP, or network dependency.
+
+### Focused-check evidence
+
+- The pre-change focused run,
+  `GOCACHE=/tmp/roundfix-0094-task-03-gocache rtk go test ./internal/spec -run
+  '^TestClassifyReviewLocalGit$'`, failed to compile because `ClassifyReview` and
+  the three `ReviewLiveness` constants did not exist.
+- The same focused command passed 11 tests after implementation. Named fixtures
+  cover a head merged into `main`, a nonstandard default named by `origin/HEAD`,
+  an unreachable head after branch deletion, a reachable live branch, a deleted
+  branch whose head remains reachable through a tag, and a rewritten branch that
+  still exists.
+- The focused suite also passed the several-Round fixture, where Round 001's
+  default-branch head is finished but Round 002's head is live, proving the
+  newest Round decides.
+- The no-head fixture asserts both `ReviewUndecidable` and explicitly refuses
+  `ReviewFinished`. Malformed newest metadata and a repository with no locally
+  identifiable default branch also return `ReviewUndecidable`.
+- Every fixture routes through an assertion that rejects an empty reason; the
+  no-head negative case performs the same check directly.
+- `GOCACHE=/tmp/roundfix-0094-task-03-gocache rtk go test ./internal/spec`
+  passed all 298 package tests.
+- `GOCACHE=/tmp/roundfix-0094-task-03-gocache rtk go test -race
+  ./internal/spec -run '^TestClassifyReviewLocalGit$'` passed all 11 focused
+  tests with the race detector.
+- Source inspection with `rtk rg -n
+  'exec\.Command|runGH|gh api|net/http|https?://'` over the new source and test
+  files found only `exec.Command("git", gitArgs...)`; no provider or transport
+  call is present.
+- `rtk git diff --check` exited 0, `rtk gofmt -d` reported no diff for the two
+  new Go files, and `GOCACHE=/tmp/roundfix-0094-task-03-gocache rtk make
+  verify-incremental` exited 0 after the implementation and Result edits,
+  covering formatting, the Go suite, skill checks, and the build.
+
+The Daemon-owned commands in `## Verification` were not run in this Agent turn.
