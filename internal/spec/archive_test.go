@@ -78,6 +78,40 @@ func TestArchiveSpecRootDefaultLayout(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
+			if got := ArchiveSpecRoot(test.specsRoot, true); got != test.want {
+				t.Fatalf("ArchiveSpecRoot(%q, true) = %q, want %q", test.specsRoot, got, test.want)
+			}
+		})
+	}
+}
+
+func TestArchiveSpecRootNonDefaultKeepsArchiveBesideActiveRoot(t *testing.T) {
+	t.Parallel()
+
+	// A configured non-default Spec Root keeps its archive beside the active
+	// root rather than under the repository's default _archived/specs. Even a
+	// non-default root whose path ends in docs/specs must NOT be classified as
+	// the repository default.
+	tests := []struct {
+		name      string
+		specsRoot string
+		want      string
+	}{
+		{
+			name:      "configured non-default root ending in docs specs",
+			specsRoot: filepath.FromSlash("nested/docs/specs"),
+			want:      filepath.ToSlash(filepath.Join("nested/docs/specs", "_archived")),
+		},
+		{
+			name:      "configured non-default root with a plain name",
+			specsRoot: filepath.FromSlash("configured-specs"),
+			want:      filepath.ToSlash(filepath.Join("configured-specs", "_archived")),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			if got := ArchiveSpecRoot(test.specsRoot, false); got != test.want {
 				t.Fatalf("ArchiveSpecRoot(%q, false) = %q, want %q", test.specsRoot, got, test.want)
 			}
@@ -112,8 +146,8 @@ func TestArchiveSpecRootExternalKeepsArchiveBesideActiveRoot(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := ArchiveSpecRoot(test.specsRoot, true); got != test.want {
-				t.Fatalf("ArchiveSpecRoot(%q, true) = %q, want %q", test.specsRoot, got, test.want)
+			if got := ArchiveSpecRoot(test.specsRoot, false); got != test.want {
+				t.Fatalf("ArchiveSpecRoot(%q, false) = %q, want %q", test.specsRoot, got, test.want)
 			}
 		})
 	}

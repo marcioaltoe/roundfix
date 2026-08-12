@@ -57,9 +57,9 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		return exitPreflight
 	}
 	result, err := spec.Archive(spec.ArchiveRequest{
-		SpecsRoot: resolvedSpecsRoot.Path,
-		External:  resolvedSpecsRoot.External,
-		Slug:      slug,
+		SpecsRoot:   resolvedSpecsRoot.Path,
+		BuiltInRoot: resolvedSpecsRoot.BuiltInRoot,
+		Slug:        slug,
 	})
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)

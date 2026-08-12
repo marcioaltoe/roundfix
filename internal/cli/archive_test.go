@@ -228,7 +228,7 @@ func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	archivedDir := filepath.Join(spec.ArchiveSpecRoot(externalRoot, true), implementTestSlug)
+	archivedDir := filepath.Join(spec.ArchiveSpecRoot(externalRoot, false), implementTestSlug)
 	wantStdout := "archived " + implementTestSlug + " -> " + filepath.ToSlash(archivedDir) + "\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected stdout %q, got %q", wantStdout, stdout.String())

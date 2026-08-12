@@ -133,7 +133,7 @@ func runSpecAuditCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printSpecAuditFailure(err, stderr, true)
 		return exitPreflight
 	}
-	if err := validateSpecAuditSlug(resolvedSpecsRoot.Path, resolvedSpecsRoot.External, req.slug); err != nil {
+	if err := validateSpecAuditSlug(resolvedSpecsRoot.Path, resolvedSpecsRoot.BuiltInRoot, req.slug); err != nil {
 		printSpecAuditFailure(err, stderr, true)
 		return exitPreflight
 	}
@@ -366,13 +366,13 @@ func validateSpecCheckSlug(specsRoot, slug string) error {
 	return nil
 }
 
-func validateSpecAuditSlug(specsRoot string, external bool, slug string) error {
+func validateSpecAuditSlug(specsRoot string, builtInRoot bool, slug string) error {
 	if slug == "" || filepath.Base(slug) != slug || slug == "." {
 		return validationError{message: fmt.Sprintf("invalid Spec slug %q", slug)}
 	}
 	for _, path := range []string{
 		filepath.Join(specsRoot, slug),
-		filepath.Join(spec.ArchiveSpecRoot(specsRoot, external), slug),
+		filepath.Join(spec.ArchiveSpecRoot(specsRoot, builtInRoot), slug),
 	} {
 		info, err := os.Stat(path)
 		if err == nil {
