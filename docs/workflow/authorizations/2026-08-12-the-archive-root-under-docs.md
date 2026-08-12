@@ -22,6 +22,7 @@ paths:
   - .agents/skills/roundfix/SKILL.md
   - .coderabbit.yaml
   - .roundfixrc.yml
+  - skills/baseline_skill_contract_test.go
 ---
 
 # Tooling authorization — the archive root under `docs/` (2026-08-12)
@@ -117,6 +118,18 @@ only protection — and correcting the stale comment naming the old root.
 - `internal/config/config.go`, limited to the Review Artifact root resolution.
   This is production Go rather than protected tooling and needs no grant; it is
   listed so the Spec's bounded-scope audit has one complete set to read.
+- `skills/baseline_skill_contract_test.go`, limited to the assertion that pins
+  the archive path literal. Added 2026-08-12 after the authorized skill edits
+  landed and left it stale, on the maintainer's decision:
+
+  > Estender o grant em um arquivo
+
+  The test asserts that `write-prd`'s skill contains
+  ``Exclude `_archived/specs/` from automatic link rewrites``. The authorized
+  edit correctly moved that path, so the assertion now names a location the
+  contract no longer has. This is a consequent fix of an authorized change and
+  lands in its own commit after it, never folded into it. It is not a licence to
+  change what the contract requires — only where it says the archive lives.
 
 Derived Baseline pins and skill mirrors rewritten by `make baseline-digests` and
 `make skills-sync` are sanctioned fallout under ADR-0081, not separate targets.

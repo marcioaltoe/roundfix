@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0094-one-history-root-under-docs
-status: completed # pending | in_progress | completed | failed — only implement-task changes this
+status: pending # pending | in_progress | completed | failed — only implement-task changes this
 type: docs
 complexity: medium
 ---
@@ -27,8 +27,12 @@ authorized tooling Task and may change only its bounded files.
 4. MUST NOT repair the Setup Manifest's recorded catalog digest, which this
    Task's edits leave stale. That path is outside the grant, and the drift is a
    defect owned by its own backlog entry rather than something to fix here.
-5. MUST keep the archive's four families and their names unchanged; this Task
+5. MUST keep the archive's families and their names unchanged; this Task
    changes where the carriers say they live, not what they are.
+6. MUST update the skill contract test's pinned archive-path assertion in the
+   same change, because moving the path in the skill leaves that assertion
+   naming a location the contract no longer has. Change only where the assertion
+   says the archive lives; do not change what the contract requires.
 
 ## Subtasks
 
@@ -36,6 +40,7 @@ authorized tooling Task and may change only its bounded files.
 - [ ] Update the two catalog modules and the source-baseline corpus and manifest.
 - [ ] Update the setup-owned guide's managed region.
 - [ ] Regenerate the derived pins and skill mirrors through their commands.
+- [ ] Update the pinned archive-path assertion in the skill contract test.
 
 ## Acceptance Criteria
 
@@ -45,6 +50,8 @@ authorized tooling Task and may change only its bounded files.
 - [ ] The derived pins match their canonical sources.
 - [ ] The changed-file set is a subset of the bounded scope plus this Task file.
 - [ ] The Setup Manifest's recorded catalog digest is unchanged by this Task.
+- [ ] The skill contract test passes and still asserts the reference-lifecycle
+      contract, with only the archive location updated.
 
 ## Bounded scope
 
@@ -71,6 +78,8 @@ are fallout of these edits under ADR-0081, not separate targets.
 
 - `! grep -rn '\b_archived/specs\b' .agents/skills docs/agents/docs-layout.md internal/baseline/assets/modules | grep -v 'docs/_archived'` — expected: exits 0, proving no bounded carrier still names the old location.
 - `grep -q 'docs/history/specs' .agents/skills/archive-spec/SKILL.md && grep -q 'docs/history/specs' .agents/skills/write-prd/SKILL.md && grep -q 'docs/history/specs' .agents/skills/write-tasks/SKILL.md` — expected: exits 0, proving the new location reached the skills rather than only being removed from them.
+- `go test -count=1 ./skills -run 'TestSpecReferenceLifecycleSkillContracts' -v > /tmp/0094-task-07c.log 2>&1; s=$?; grep -q '^--- PASS: TestSpecReferenceLifecycleSkillContracts' /tmp/0094-task-07c.log || { cat /tmp/0094-task-07c.log; exit 1; }; exit $s` — expected: exits 0, proving the contract test passes against the relocated path. It fails today, where the assertion still pins `_archived/specs/` while the skill names the new root.
+- `grep -q 'docs/history/specs' skills/baseline_skill_contract_test.go` — expected: exits 0, proving the assertion was updated rather than deleted.
 - `grep -q 'docs/history/specs' skills/archive-spec/SKILL.md && make skills-sync-check > /tmp/0094-task-07.log 2>&1 || { cat /tmp/0094-task-07.log; exit 1; }` — expected: exits 0, proving the mirror carries the new location and matches its source. The sync check alone passed before any work, because an untouched mirror is trivially in sync.
 - `git diff --name-only HEAD > /tmp/0094-task-07-all.txt; test -s /tmp/0094-task-07-all.txt || { echo 'no file changed; this Task edits carriers'; exit 1; }; grep -v -e '^internal/baseline/assets/' -e '^internal/baseline/testdata/catalog\.diagnostics\.golden\.json$' -e '^internal/baseline/testdata/catalog\.digest$' -e '^internal/baseline/testdata/catalog\.normalized\.json$' -e '^internal/baseline/testdata/plan-characterization/advisory-only-divergences\.golden\.json$' -e '^internal/baseline/testdata/plan-characterization/clean-adoption\.golden\.json$' -e '^internal/baseline/testdata/plan-characterization/idempotent-replan-after-verified-apply\.golden\.json$' -e '^internal/baseline/testdata/plan-characterization/same-baseline-changed-profile-and-catalog-digests\.golden\.json$' -e '^docs/agents/docs-layout.md$' -e '^\.agents/skills/' -e '^skills/' -e '^docs/specs/0094-one-history-root-under-docs/task_07\.md$' /tmp/0094-task-07-all.txt > /tmp/0094-task-07-scope.txt; test ! -s /tmp/0094-task-07-scope.txt || { cat /tmp/0094-task-07-scope.txt; exit 1; }` — expected: exits 0, proving files changed and every one of them is inside the bounded scope or is an exact derived output of `make baseline-digests`. Requiring a non-empty change set is what stops this from passing on a tree where nothing happened. The exact derived-output allowlist preserves the bounded-scope detector without admitting arbitrary Baseline testdata.
 - `git diff --name-only HEAD > /tmp/0094-task-07-m-all.txt; git diff --name-only HEAD -- docs/agents/setup-context.json > /tmp/0094-task-07-manifest.txt; test -s /tmp/0094-task-07-m-all.txt && test ! -s /tmp/0094-task-07-manifest.txt || { echo 'no work, or the manifest was touched:'; cat /tmp/0094-task-07-manifest.txt; exit 1; }` — expected: exits 0, proving work happened and the unauthorized manifest path was left alone. It computes its own change set rather than reading a sibling command's file, so it cannot pass on stale state.
