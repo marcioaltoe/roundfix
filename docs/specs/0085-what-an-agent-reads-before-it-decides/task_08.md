@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0085-what-an-agent-reads-before-it-decides
-status: failed
+status: pending
 type: qa
 complexity: high
 ---
