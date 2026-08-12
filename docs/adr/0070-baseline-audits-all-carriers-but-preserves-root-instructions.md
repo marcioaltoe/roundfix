@@ -1,6 +1,12 @@
-# ADR-0070: Baseline audits all carriers but preserves root instructions
+---
+status: accepted
+created_at: 2026-07-24T21:27:41Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
 
-Status: Accepted
+# ADR-0070: Baseline audits all carriers but preserves root instructions
 
 Baseline adoption inventories every bounded instruction and agent-document
 carrier, but automatic backup, classification, and mutation of pre-existing

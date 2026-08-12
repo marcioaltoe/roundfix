@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 )
 
@@ -167,7 +168,7 @@ func Audit(ctx context.Context, repoRoot, homeDir, slug string) (result Result, 
 	}
 
 	runner := execGitRunner{}
-	return audit(ctx, runner, repoRoot, resolvedSpecsRoot.Path, slug, specRuns)
+	return audit(ctx, runner, repoRoot, resolvedSpecsRoot.Path, resolvedSpecsRoot.BuiltInRoot, slug, specRuns)
 }
 
 func audit(
@@ -175,6 +176,7 @@ func audit(
 	runner gitRunner,
 	repoRoot string,
 	specsRoot string,
+	builtInRoot bool,
 	slug string,
 	runs []store.Run,
 ) (Result, error) {
@@ -267,6 +269,7 @@ func audit(
 	claimed, err := claimedArtifacts(
 		ctx,
 		runner,
+		builtInRoot,
 		slug,
 		codeTree,
 		specTree,
@@ -288,12 +291,13 @@ func audit(
 func claimedArtifacts(
 	ctx context.Context,
 	runner gitRunner,
+	builtInRoot bool,
 	slug string,
 	codeTree deliveryTree,
 	specTree deliveryTree,
 ) ([]artifactClaim, error) {
 	activeSpec := filepath.ToSlash(filepath.Join(specTree.artifactRoot, slug))
-	archivedSpec := filepath.ToSlash(filepath.Join(specTree.artifactRoot, "_archived", slug))
+	archivedSpec := archivedSpecArtifactPath(builtInRoot, specTree.artifactRoot, slug)
 
 	archiveClaimed, err := artifactClaimed(ctx, runner, specTree, archivedSpec)
 	if err != nil {
@@ -329,6 +333,14 @@ func claimedArtifacts(
 		return artifacts[left].path < artifacts[right].path
 	})
 	return artifacts, nil
+}
+
+func archivedSpecArtifactPath(builtInRoot bool, artifactRoot, slug string) string {
+	// artifactRoot is a repo-relative path inside the owning git tree, so the
+	// archive location is resolved within that tree using the Spec Root's
+	// built-in classification.
+	archiveDir := spec.ArchiveSpecRoot(filepath.FromSlash(artifactRoot), builtInRoot)
+	return filepath.ToSlash(filepath.Join(archiveDir, slug))
 }
 
 func artifactClaimed(

@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0085-what-an-agent-reads-before-it-decides
-status: pending
+status: completed
 type: qa
 complexity: high
 ---
@@ -70,8 +70,10 @@ through the real update path. This node also carries the glossary check.
 - `grep -lq 'rows_blocked_declared' docs/specs/0085-what-an-agent-reads-before-it-decides/qa/qa-report-*.md` — expected: exits 0.
 - `grep -lqE 'verdict: (pass|fail|partial)' docs/specs/0085-what-an-agent-reads-before-it-decides/qa/qa-report-*.md` — expected: exits 0, proving a verdict was written rather than left pending.
 - `grep -lq 'baseline' docs/specs/0085-what-an-agent-reads-before-it-decides/qa/qa-report-*.md` — expected: exits 0, proving the Baseline row was recorded.
-- `GOCACHE="$PWD/.gocache" go clean -testcache` — expected: exits 0.
-- `make verify` — expected: exits 0 on a genuinely cold cache, with no Go package line reporting `(cached)`.
+
+Whole-package sweeps, `go build`, `go clean -testcache` and `make verify` are
+deliberately absent: each passes against a tree where no work has happened, so
+it approves the Task before it starts. Regression is the Run-level gate's job.
 
 ## References
 

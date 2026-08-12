@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-06-11T12:59:11Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Run Event payload stores raw producer JSON
 
 Roundfix records Run activity as Run Events: one ordered record per meaningful occurrence, carrying Run identity, Batch when known, event source, event kind, a bounded text summary, and a structured payload. For Agent events, the payload is the raw ACP `session/update` JSON exactly as the ACP Runtime sent it, not a normalized Roundfix struct. Daemon-owned events define their own small JSON payloads.

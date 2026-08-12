@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-08-06T21:23:58Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # The QA gate proves machine facts before it spends an agent turn
 
 The QA gate runs a Daemon-owned mechanical stage before its Agent Session: a

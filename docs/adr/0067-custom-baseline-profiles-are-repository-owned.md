@@ -1,6 +1,12 @@
-# ADR-0067: Custom Baseline Profiles are repository-owned
+---
+status: accepted
+created_at: 2026-07-24T21:27:41Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
 
-Status: Accepted
+# ADR-0067: Custom Baseline Profiles are repository-owned
 
 Roundfix ships built-in Baseline Profiles, while every custom Baseline Profile
 lives in and is versioned with the repository that uses it. User-scoped custom

@@ -3108,21 +3108,24 @@ func TestResolveSpecsRoot(t *testing.T) {
 	repoRoot := t.TempDir()
 	mustMkdir(t, filepath.Join(repoRoot, "docs", "specs"))
 	mustMkdir(t, filepath.Join(repoRoot, "configured-specs"))
+	mustMkdir(t, filepath.Join(repoRoot, "nested", "docs", "specs"))
 	absoluteInternal := filepath.Join(repoRoot, "absolute-specs")
 	mustMkdir(t, absoluteInternal)
 	externalRoot := filepath.Join(t.TempDir(), "external-specs")
 	mustMkdir(t, externalRoot)
 
 	tests := []struct {
-		name     string
-		root     string
-		wantPath string
-		wantExt  bool
+		name        string
+		root        string
+		wantPath    string
+		wantExt     bool
+		wantBuiltIn bool
 	}{
 		{
-			name:     "builtin default is internal docs specs",
-			root:     Builtin().Specs.Root,
-			wantPath: filepath.Join(repoRoot, "docs", "specs"),
+			name:        "builtin default is internal docs specs",
+			root:        Builtin().Specs.Root,
+			wantPath:    filepath.Join(repoRoot, "docs", "specs"),
+			wantBuiltIn: true,
 		},
 		{
 			name:     "relative root resolves against repository root",
@@ -3133,6 +3136,11 @@ func TestResolveSpecsRoot(t *testing.T) {
 			name:     "absolute root is used as is",
 			root:     absoluteInternal,
 			wantPath: absoluteInternal,
+		},
+		{
+			name:     "configured non-default root ending in docs specs is not built-in",
+			root:     "nested/docs/specs",
+			wantPath: filepath.Join(repoRoot, "nested", "docs", "specs"),
 		},
 		{
 			name:     "absolute external root is classified external",
@@ -3156,6 +3164,9 @@ func TestResolveSpecsRoot(t *testing.T) {
 			}
 			if got.External != tt.wantExt {
 				t.Fatalf("ResolveSpecsRoot().External = %t, want %t", got.External, tt.wantExt)
+			}
+			if got.BuiltInRoot != tt.wantBuiltIn {
+				t.Fatalf("ResolveSpecsRoot().BuiltInRoot = %t, want %t", got.BuiltInRoot, tt.wantBuiltIn)
 			}
 		})
 	}

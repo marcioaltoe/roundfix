@@ -13,7 +13,7 @@
 <!-- /source-baseline-entry: contract.secondbrain.protocol -->
 
 <!-- source-baseline-entry: clause.secondbrain.01-consult-triggers -->
-Consult the local Secondbrain before acting when repository context does not answer business or prior-decision questions, fiscal or tax concepts, cross-project documentation, knowledge about Vortex, Tax, Visio, or Gesttione, or shared architecture patterns. Do not consult it when local code, `CONTEXT.md`, ADRs, and repository documentation fully answer the task.
+Consult the local Secondbrain before making a design or architecture proposal, and before authoring an Idea, PRD, or TechSpec.
 <!-- /source-baseline-entry: clause.secondbrain.01-consult-triggers -->
 
 <!-- source-baseline-entry: clause.secondbrain.02-query-order -->

@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-07-06T21:05:00Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Spec Runs schedule ready Tasks into concurrent Task Worktrees
 
 The Implement Command replaces its sequential walk with a ready-set scheduler: Tasks whose `needs` are all completed form the current Wave, and up to `worktree.concurrency` of them (default 2, `1` reproducing today's sequential behavior) execute simultaneously, each in its own Task Worktree created from the Run Branch tip, with its own Agent Session prompt, verbatim Verification, and settlement. The review path stays sequential for now — review Batches carry no independence declaration, while the Task Graph's `needs` make spec concurrency safe by construction. Ownership semantics (ADRs 0010/0013/0014) apply per Task unchanged.

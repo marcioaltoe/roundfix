@@ -1,6 +1,12 @@
-# ADR-0069: Baseline semantic analysis is read-only and supervised
+---
+status: accepted
+created_at: 2026-07-24T21:27:41Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
 
-Status: Accepted
+# ADR-0069: Baseline semantic analysis is read-only and supervised
 
 Ambiguous root-instruction classification and free-form plan suggestions use
 Codex `gpt-5.6-sol` with `xhigh` reasoning after Exact Agent Selection Proof.

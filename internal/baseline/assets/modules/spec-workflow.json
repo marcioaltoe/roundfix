@@ -181,7 +181,7 @@
         {
           "id": "clause.spec.keep-artifacts-in-spec-folder",
           "enforcement": "mandatory",
-          "guidance": "Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `docs/specs/_archived/`."
+          "guidance": "Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `_archived/specs/`."
         },
         {
           "id": "clause.spec.specs-are-downstream-artifacts",

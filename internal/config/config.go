@@ -165,8 +165,9 @@ type Loaded struct {
 }
 
 type SpecsRoot struct {
-	Path     string
-	External bool
+	Path        string
+	External    bool
+	BuiltInRoot bool
 }
 
 type LoadOptions struct {
@@ -980,9 +981,13 @@ func ResolveSpecsRoot(loaded Loaded, repoRoot string) (SpecsRoot, error) {
 		return SpecsRoot{}, fmt.Errorf("evaluate repository root %q: %w", absoluteRepoRoot, err)
 	}
 
+	external := !pathInsideOrSame(evaluatedRoot, evaluatedRepoRoot)
+	builtInRoot := !external && filepath.Clean(resolved) == filepath.Clean(filepath.Join(absoluteRepoRoot, filepath.FromSlash(defaultSpecsRoot)))
+
 	return SpecsRoot{
-		Path:     resolved,
-		External: !pathInsideOrSame(evaluatedRoot, evaluatedRepoRoot),
+		Path:        resolved,
+		External:    external,
+		BuiltInRoot: builtInRoot,
 	}, nil
 }
 

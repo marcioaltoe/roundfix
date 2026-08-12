@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
 
@@ -27,7 +28,7 @@ const (
 func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {
 	t.Parallel()
 
-	const findingPath = "docs/findings/_archived/2026-07-31-a-rehearsal-task-can-settle-completed-without-rehearsing.md"
+	findingPath := archivedSpeccheckPath(spec.ArchiveKindFinding, "2026-07-31-a-rehearsal-task-can-settle-completed-without-rehearsing.md")
 	result := checkFixture(t, replay0060Task03)
 	finding := requireReplayFinding(t, findingPath, result, "SC-VERIFY-WORK-INDEPENDENT", "cannot distinguish Task work from no work")
 	assertReplayLocations(t, findingPath, finding,
@@ -72,7 +73,7 @@ func TestCheckReplay0060Task03RefusesContradictoryRequirementsAndUndeclaredRehea
 func TestCheckReplay0058QA001FromReport(t *testing.T) {
 	t.Parallel()
 
-	const reportPath = "docs/specs/_archived/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-07-31.md"
+	reportPath := archivedSpeccheckPath(spec.ArchiveKindSpec, "0058-npm-trusted-publishing-and-release-preflight", "qa", "qa-report-2026-07-31.md")
 	result := checkFixture(t, replay0058QA001)
 	finding := requireReplayFinding(t, reportPath, result, speccheck.CodeCoverageUnmapped, "Core Feature 2")
 	assertReplayLocations(t, reportPath, finding,
@@ -84,7 +85,7 @@ func TestCheckReplay0058QA001FromReport(t *testing.T) {
 func TestCheckReplay0058QA004FromReport(t *testing.T) {
 	t.Parallel()
 
-	const reportPath = "docs/specs/_archived/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01.md"
+	reportPath := archivedSpeccheckPath(spec.ArchiveKindSpec, "0058-npm-trusted-publishing-and-release-preflight", "qa", "qa-report-2026-08-01.md")
 	result := checkFixture(t, replay0058QA004)
 	finding := requireReplayFinding(t, reportPath, result, speccheck.CodeVocabularyUndocumented, "publish:")
 	assertReplayLocations(t, reportPath, finding,
@@ -111,7 +112,7 @@ func TestCheckReplay0058QA004FromReport(t *testing.T) {
 func TestCheckReplay0056F001FromReport(t *testing.T) {
 	t.Parallel()
 
-	const reportPath = "docs/specs/_archived/0056-profiles-configure-merge-semantics/qa/qa-report-2026-08-01.md"
+	reportPath := archivedSpeccheckPath(spec.ArchiveKindSpec, "0056-profiles-configure-merge-semantics", "qa", "qa-report-2026-08-01.md")
 	result := checkFixture(t, replay0056F001)
 
 	unlisted := requireReplayFinding(t, reportPath, result, speccheck.CodeADRUnlisted, "ADR-0086")
@@ -136,7 +137,7 @@ func TestCheckReplay0056F001FromReport(t *testing.T) {
 func TestCheckReplay0056F002FromReport(t *testing.T) {
 	t.Parallel()
 
-	const reportPath = "docs/specs/_archived/0056-profiles-configure-merge-semantics/qa/qa-report-2026-08-01.md"
+	reportPath := archivedSpeccheckPath(spec.ArchiveKindSpec, "0056-profiles-configure-merge-semantics", "qa", "qa-report-2026-08-01.md")
 	result := checkFixture(t, replay0056F002)
 	finding := requireReplayFinding(t, reportPath, result, speccheck.CodeCoverageUnmapped, "Core Feature 6")
 	assertReplayLocations(t, reportPath, finding,
@@ -159,22 +160,22 @@ func TestCheckReplayReadmeProvenance(t *testing.T) {
 		{
 			name:       "0058 QA-001 report",
 			slug:       replay0058QA001,
-			reportPath: "docs/specs/_archived/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-07-31.md",
+			reportPath: archivedSpeccheckPath(spec.ArchiveKindSpec, "0058-npm-trusted-publishing-and-release-preflight", "qa", "qa-report-2026-07-31.md"),
 		},
 		{
 			name:       "0058 QA-004 report",
 			slug:       replay0058QA004,
-			reportPath: "docs/specs/_archived/0058-npm-trusted-publishing-and-release-preflight/qa/qa-report-2026-08-01.md",
+			reportPath: archivedSpeccheckPath(spec.ArchiveKindSpec, "0058-npm-trusted-publishing-and-release-preflight", "qa", "qa-report-2026-08-01.md"),
 		},
 		{
 			name:       "0056 F-001 report",
 			slug:       replay0056F001,
-			reportPath: "docs/specs/_archived/0056-profiles-configure-merge-semantics/qa/qa-report-2026-08-01.md",
+			reportPath: archivedSpeccheckPath(spec.ArchiveKindSpec, "0056-profiles-configure-merge-semantics", "qa", "qa-report-2026-08-01.md"),
 		},
 		{
 			name:       "0056 F-002 report",
 			slug:       replay0056F002,
-			reportPath: "docs/specs/_archived/0056-profiles-configure-merge-semantics/qa/qa-report-2026-08-01.md",
+			reportPath: archivedSpeccheckPath(spec.ArchiveKindSpec, "0056-profiles-configure-merge-semantics", "qa", "qa-report-2026-08-01.md"),
 		},
 	}
 

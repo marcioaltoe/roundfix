@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-07-06T21:05:00Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # The Run Event Journal is pruned by a retention window
 
 The Run Event Journal (ADR-0008) is append-only and never pruned, so `run_events`

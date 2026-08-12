@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-07-05T22:17:04Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Runs execute in per-Run git worktrees
 
 **Partially superseded by ADR-0042 (2026-07-15): review Runs (fetch, resolve, watch) now execute in the user's checkout; this decision keeps governing spec Runs (implement).**

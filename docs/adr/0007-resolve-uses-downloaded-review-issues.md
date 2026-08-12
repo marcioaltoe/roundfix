@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-06-09T18:18:38Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Resolve uses downloaded review issues
 
 Roundfix treats `roundfix resolve --pr <n>` as work over all downloaded Unresolved Review Issues for an Open Pull Request by default, not as a Review Source fetch. Without an explicit Round, `resolve` processes all Compatible Artifact Rounds instead of choosing only the latest Round. A Round is only an optional filter. This keeps `fetch`, `resolve`, and `watch` on one durable history while preserving a clear command boundary: `fetch` downloads, `resolve` resolves downloaded issues, and `watch` automates both across review rounds.

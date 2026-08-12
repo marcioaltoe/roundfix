@@ -2052,7 +2052,7 @@ of the archived record learns what was never verified. It then moves
 Spec Root, stdout carries the deterministic report:
 
 ```text
-archived <slug> -> docs/specs/_archived/<slug>
+archived <slug> -> _archived/specs/<slug>
 ```
 
 Refusals exit `2` through Preflight Validation, name the first unmet condition

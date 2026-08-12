@@ -1295,7 +1295,7 @@ func waitImplementAgentStarts(t *testing.T, probe *implementAgentOverlapProbe, c
 		select {
 		case name := <-probe.started:
 			started = append(started, name)
-		case <-time.After(5 * time.Second):
+		case <-time.After(implementWaitBudget):
 			t.Fatalf(
 				"timed out waiting for %d Agent starts; got %d (%v)",
 				count,

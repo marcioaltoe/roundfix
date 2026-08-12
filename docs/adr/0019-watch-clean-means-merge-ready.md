@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-07-05T22:17:04Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Watch ends Clean only when the pull request is merge-ready
 
 Watch's until-clean semantics generalize from "the local Review Issue set is empty" to merge-readiness: after the Final Push, the Run keeps watching — still bounded by Max Rounds and the review timeout — until the Review Source's status check on the pushed head commit reports success with no new Review Issues, and only then ends Clean. An empty local queue with a pending or failing head check continues the loop or ends at the existing bounds, because the product's promise is a pull request ready for the developer's merge decision, not an empty local queue. Observed motivation: the first review dogfood ended Clean while the pull request still showed the CodeRabbit check re-reviewing the just-pushed commit.

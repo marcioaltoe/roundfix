@@ -11,11 +11,39 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// ArchiveKind names a retired artifact family.
+type ArchiveKind string
+
+const (
+	ArchiveKindSpec    ArchiveKind = "specs"
+	ArchiveKindFinding ArchiveKind = "findings"
+	ArchiveKindADR     ArchiveKind = "adr"
+	ArchiveKindBacklog ArchiveKind = "backlog"
+)
+
+// ArchiveDir returns the repository-relative directory holding retired
+// artifacts of kind. Unknown kinds return an empty directory.
+func ArchiveDir(kind ArchiveKind) string {
+	switch kind {
+	case ArchiveKindSpec:
+		return "_archived/specs"
+	case ArchiveKindFinding:
+		return "_archived/findings"
+	case ArchiveKindADR:
+		return "_archived/adr"
+	case ArchiveKindBacklog:
+		return "_archived/backlog"
+	default:
+		return ""
+	}
+}
+
 // ArchiveRequest asks the Spec package to retire one completed Spec.
 type ArchiveRequest struct {
-	SpecsRoot  string
-	Slug       string
-	ArchivedAt time.Time
+	SpecsRoot   string
+	BuiltInRoot bool
+	Slug        string
+	ArchivedAt  time.Time
 }
 
 // ArchiveResult reports the filesystem paths touched by Archive.
@@ -26,8 +54,9 @@ type ArchiveResult struct {
 }
 
 // Archive verifies completion and QA evidence, stamps archive metadata in the
-// PRD frontmatter, and moves the Spec under <Spec Root>/_archived/. A partial
-// QA Report is eligible only when its blocked rows are declared unreachable.
+// PRD frontmatter, and moves the Spec under the resolved archived Spec root. A
+// partial QA Report is eligible only when its blocked rows are declared
+// unreachable.
 func Archive(req ArchiveRequest) (ArchiveResult, error) {
 	graph, err := Load(req.SpecsRoot, req.Slug)
 	if err != nil {
@@ -50,7 +79,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		return ArchiveResult{}, fmt.Errorf("no passing QA verdict: %w", err)
 	}
 
-	archiveRoot := filepath.Join(req.SpecsRoot, archivedDirName)
+	archiveRoot := ArchiveSpecRoot(req.SpecsRoot, req.BuiltInRoot)
 	archivedDir := filepath.Join(archiveRoot, req.Slug)
 	if _, err := os.Stat(archivedDir); err == nil {
 		return ArchiveResult{}, fmt.Errorf("archived Spec destination %q already exists", archivedDir)
@@ -74,6 +103,21 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		ArchivedDir: archivedDir,
 		ArchivedOn:  archivedOn,
 	}, nil
+}
+
+// ArchiveSpecRoot returns the filesystem directory holding retired Specs for
+// one configured Spec Root. The repository's built-in Spec Root uses the
+// repository-level default layout (ArchiveDir). An external or configured
+// non-default Spec Root keeps its archive beside the active root.
+func ArchiveSpecRoot(specsRoot string, builtInRoot bool) string {
+	cleanSpecsRoot := filepath.Clean(specsRoot)
+	if !builtInRoot {
+		// An external or configured non-default Spec Root owns its archive
+		// beside its active Specs.
+		return filepath.Join(cleanSpecsRoot, archivedDirName)
+	}
+	docsRoot := filepath.Dir(cleanSpecsRoot)
+	return filepath.Join(filepath.Dir(docsRoot), filepath.FromSlash(ArchiveDir(ArchiveKindSpec)))
 }
 
 func archiveUnprovenActions(specDir string, report QAReport) ([]string, error) {

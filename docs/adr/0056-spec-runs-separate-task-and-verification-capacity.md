@@ -1,3 +1,11 @@
+---
+status: accepted
+created_at: 2026-07-21T20:44:54Z
+updated_at: 2026-08-11T21:35:56Z
+deprecated_at: null
+superseded_by: null
+---
+
 # Spec Runs separate Task Capacity and Verification Capacity
 
 `worktree.concurrency` remains the Task Capacity: the maximum number of Task

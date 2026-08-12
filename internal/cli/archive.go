@@ -12,14 +12,16 @@ import (
 	"roundfix/internal/spec"
 )
 
-const archiveUsage = `Usage:
+var archiveUsage = `Usage:
   roundfix archive <slug>
 
 Archives a completed Spec after verifying every Task is completed and the
 newest QA Report has verdict: pass or a partial verdict whose blocked rows are
 covered only by declared Unreachable Acceptance. Stamps archive metadata and
-moves docs/specs/<slug>/ to
-docs/specs/_archived/<slug>/. archive creates no Run and never pushes.
+moves the Spec from the configured Spec Root to its resolved archive root: the
+repository's default _archived/specs/<slug>/ when the Spec Root is the built-in
+docs/specs, otherwise <spec-root>/_archived/<slug>/ beside the configured Spec
+Root. archive creates no Run and never pushes.
 
 Exit codes:
   0  archived
@@ -55,8 +57,9 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		return exitPreflight
 	}
 	result, err := spec.Archive(spec.ArchiveRequest{
-		SpecsRoot: resolvedSpecsRoot.Path,
-		Slug:      slug,
+		SpecsRoot:   resolvedSpecsRoot.Path,
+		BuiltInRoot: resolvedSpecsRoot.BuiltInRoot,
+		Slug:        slug,
 	})
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
