@@ -23,6 +23,7 @@ paths:
   - .coderabbit.yaml
   - .roundfixrc.yml
   - skills/baseline_skill_contract_test.go
+  - internal/docscontract/publicdocs_test.go
 ---
 
 # Tooling authorization — the archive root under `docs/` (2026-08-12)
@@ -130,6 +131,17 @@ only protection — and correcting the stale comment naming the old root.
   contract no longer has. This is a consequent fix of an authorized change and
   lands in its own commit after it, never folded into it. It is not a licence to
   change what the contract requires — only where it says the archive lives.
+- `internal/docscontract/publicdocs_test.go`, limited to the check that no
+  configured review rule-source pattern reaches the history tree or a Spec-owned
+  review directory. Added 2026-08-12 on the maintainer's decision:
+
+  > Estender o grant ao teste
+
+  Task 08 refused twice rather than create a test file the grant did not name,
+  which is the correct behaviour: the boundary is the maintainer's to widen.
+  This is the package's existing canonical suite for contracts that read the
+  repository's published review configuration, so the check extends a suite
+  rather than inventing a home for itself.
 
 Derived Baseline pins and skill mirrors rewritten by `make baseline-digests` and
 `make skills-sync` are sanctioned fallout under ADR-0081, not separate targets.

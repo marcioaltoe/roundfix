@@ -67,6 +67,21 @@ slice replaces the comment with a check.
 - Case: a configuration whose history exclusion is absent; Observation: the check
   fails.
 
+## Bounded scope
+
+This Task may create or modify only:
+
+- `.coderabbit.yaml`
+- `internal/docscontract/publicdocs_test.go`
+- `docs/specs/0094-one-history-root-under-docs/task_08.md`
+
+Express maintainer authorization:
+`docs/workflow/authorizations/2026-08-12-the-archive-root-under-docs.md`,
+extended on 2026-08-12 to cover the reachability check in this package's existing
+canonical suite for contracts that read the published review configuration. An
+earlier draft of this Task named no test path, and the Agent correctly refused
+twice rather than widen the boundary itself.
+
 ## Verification
 
 - `go test -count=1 -tags docscontract ./internal/docscontract -run 'ReviewHistory|ReviewArchiv' -v > /tmp/0094-task-08.log 2>&1; s=$?; grep -q '^--- PASS: .*Review' /tmp/0094-task-08.log || { cat /tmp/0094-task-08.log; exit 1; }; exit $s` — expected: exits 0 and the log names the passing check; fails when the check does not exist or selects no cases.

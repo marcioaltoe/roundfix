@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: docs
 complexity: medium
 ---
