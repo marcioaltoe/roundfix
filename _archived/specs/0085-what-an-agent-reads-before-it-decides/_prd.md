@@ -1,6 +1,7 @@
 ---
 spec: 0085-what-an-agent-reads-before-it-decides
-status: active
+status: archived
+archived: 2026-08-12
 created: 2026-08-09
 surfaces: [backend, infra, docs]
 ---

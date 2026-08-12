@@ -67,7 +67,23 @@ func TestCheckCorpusBudget(t *testing.T) {
 	)
 
 	if work.specs == 0 {
-		t.Fatal("active Spec corpus sweep measured no Specs")
+		// Zero measured Specs means either a broken sweep or an empty active
+		// set, and only the first is a defect. The repository reached the
+		// second state on 2026-08-12, when the last active Spec archived.
+		entries, err := os.ReadDir(activeRoot)
+		if err != nil {
+			t.Fatalf("read active Spec Root: %v", err)
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
+				continue
+			}
+			if _, err := os.Stat(filepath.Join(activeRoot, entry.Name(), "_prd.md")); err == nil {
+				t.Fatalf("active Spec corpus sweep measured no Specs while %s carries one", entry.Name())
+			}
+		}
+		t.Log("active Spec Root holds no Spec; the sweep is correctly empty")
+		return
 	}
 	maxCheckOperations := work.specs * maxCorpusCheckOperationsPerSpec
 	if work.checkOperations > maxCheckOperations {
