@@ -97,3 +97,32 @@ closes is unchanged for every other subject.
 `docs/adr/**` needs no widening. The maintainer's own direction quoted above
 names `_archived/specs|findings|adr|backlog`, so moving retired ADRs into that
 root is the grant's original subject rather than an extension of it.
+
+## Subject clarified on 2026-08-11
+
+The QA gate found `context-workflow.json` changing archive-layout clauses while
+this record limited that file to the Secondbrain binding. The file was already
+authorized; its recorded *subject* was not. The clauses in question say where an
+archived Finding lives, and the maintainer's direction quoted at the top of this
+record names exactly that:
+
+> mudar a estrutura dos arquiveds de pastas dentro dos folders findings, specs,
+> backlog e outras para uma estrutura com _archived/specs|findings|adr|backlog
+
+So the archive layout is this grant's original subject for Findings too. This
+paragraph records that reading rather than extending authority: the per-file
+subject line was written before anyone knew the Findings archival clause lived
+in `context-workflow.json`.
+
+`internal/baseline/assets/modules/context-workflow.json` is therefore limited to
+two subjects: binding the Secondbrain consultation to the Idea, PRD, and
+TechSpec authoring stages, and the archive layout. Nothing else.
+
+The two root Skill contract tests, `skills/baseline_skill_contract_test.go` and
+`skills/owned_skill_edit_repocontract_test.go`, are ordinary Go tests rather
+than protected tooling; they needed a Task boundary, not a grant, and Task 09's
+bounded scope now names them.
+
+The edits to all three paths were unwound and are re-applied after this record,
+because a record that arrives late cannot authorize a commit that already
+happened.
