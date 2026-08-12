@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: test
 complexity: low
 ---
@@ -69,3 +69,31 @@ pins the archive path.
 `_techspec.md` → Build Order 7. This Task is the consequent fix the tooling
 chronology rule requires to land after the authorized change that made it
 necessary, never folded into it.
+
+## Result
+
+The `PRD adoption` contract now requires
+``Exclude `docs/history/specs/` from automatic link rewrites``. The edit changes
+only the archive-location token; the reference-lifecycle requirement, its
+neighboring required strings, and the ordered lifecycle steps are unchanged.
+
+Focused checks and acceptance evidence:
+
+- `GOCACHE=/tmp/roundfix-0094-task-10-gocache go test ./skills -run '^TestSpecReferenceLifecycleSkillContracts$/^PRD_adoption$' -count=1 -v`
+  exited 0 and reported both
+  `TestSpecReferenceLifecycleSkillContracts` and its `PRD_adoption` subtest as
+  passing. This is focused evidence for the changed assertion; the Daemon-owned
+  full contract-test command remains unrun.
+- `git diff --no-ext-diff -- skills/baseline_skill_contract_test.go` showed one
+  substitution: `_archived/specs/` became `docs/history/specs/` inside the same
+  required-string entry. No expectation was removed, skipped, or made
+  conditional.
+- `rg -n 'Exclude `docs/history/specs/` from automatic link rewrites|Report links from archived Specs separately|only Markdown link destinations' skills/baseline_skill_contract_test.go`
+  found all three consecutive requirements at lines 728–730, preserving the
+  same reference-lifecycle contract around the relocated archive path.
+- `git status --short` listed only
+  `skills/baseline_skill_contract_test.go` and this Task file, which is the
+  authorized bounded scope.
+
+The commands under `## Verification` were not run during this Daemon-assigned
+turn.
