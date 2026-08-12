@@ -501,6 +501,13 @@ func printBaselinePlanText(plan baseline.PlanDocument, stdout io.Writer) {
 		fmt.Fprintf(stdout, "- %s %s (%d managed entries)\n",
 			change.Action, change.Path, len(change.ManagedEntries))
 	}
+	if len(plan.HistoryMoves) != 0 {
+		fmt.Fprintf(stdout, "History moves: %d\n", len(plan.HistoryMoves))
+		for _, move := range plan.HistoryMoves {
+			fmt.Fprintf(stdout, "- move %s -> %s (%s)\n",
+				move.From, move.To, move.ContentIdentity)
+		}
+	}
 	for _, warning := range plan.Warnings {
 		fmt.Fprintf(stdout, "Warning: %s: %s: %s\n", warning.Code, warning.Path, warning.Message)
 	}

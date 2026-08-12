@@ -141,6 +141,18 @@ type FileChange struct {
 	ManagedEntries []string `json:"managedEntries"`
 }
 
+// HistoryMove records one planned relocation without carrying the file bytes.
+type HistoryMove struct {
+	// Ordinal binds the move to its position in the ordered ledger.
+	Ordinal int `json:"ordinal"`
+	// From is the repository-relative path in a legacy history layout.
+	From string `json:"from"`
+	// To is the repository-relative path under the current history root.
+	To string `json:"to"`
+	// ContentIdentity binds the move to the source bytes observed by planning.
+	ContentIdentity string `json:"contentIdentity"`
+}
+
 // ManifestDecision records one normalized owner decision without a volatile
 // confirmation timestamp.
 type ManifestDecision struct {
@@ -194,6 +206,7 @@ type PlanDocument struct {
 	ClauseDelta              *ClauseDelta              `json:"clauseDelta,omitempty"`
 	Preimages                []Preimage                `json:"preimages"`
 	Postimages               []Postimage               `json:"postimages"`
+	HistoryMoves             []HistoryMove             `json:"historyMoves,omitempty"`
 	Warnings                 []Finding                 `json:"warnings"`
 	SetupManifest            SetupManifest             `json:"setupManifest"`
 	ManagedEntries           []ManagedEntry            `json:"managedEntries"`
@@ -564,6 +577,10 @@ func buildPlanWithCatalog(
 			return PlanOutcome{}, err
 		}
 	}
+	historyMoves, err := planHistoryMoves(initial.Root)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
 	doc := PlanDocument{
 		SchemaVersion:  PlanSchemaVersion,
 		Repository:     initial.Identity,
@@ -574,6 +591,7 @@ func buildPlanWithCatalog(
 		ClauseDelta:    clauseDelta,
 		Preimages:      snapshot.Preimages,
 		Postimages:     postimages,
+		HistoryMoves:   historyMoves,
 		Warnings:       cloneFindings(preservation.Warnings),
 		SetupManifest:  manifest,
 		ManagedEntries: ledger,
@@ -595,6 +613,26 @@ func buildPlanWithCatalog(
 	}
 	result := readyResult(doc.PlanDigest, doc.Warnings, alignment.Verification)
 	return PlanOutcome{Plan: &doc, Result: result}, nil
+}
+
+func planHistoryMoves(root string) ([]HistoryMove, error) {
+	relocations, _, err := DiscoverHistoryLayout(root)
+	if err != nil {
+		return nil, fmt.Errorf("discover history layout for Baseline Plan: %w", err)
+	}
+	if len(relocations) == 0 {
+		return nil, nil
+	}
+	moves := make([]HistoryMove, len(relocations))
+	for index, relocation := range relocations {
+		moves[index] = HistoryMove{
+			Ordinal:         index,
+			From:            relocation.From,
+			To:              relocation.To,
+			ContentIdentity: relocation.ContentIdentity,
+		}
+	}
+	return moves, nil
 }
 
 func alignmentEvidencePaths(alignment ProfileAlignment) []string {
@@ -2613,6 +2651,9 @@ func validatePlanDocumentShape(document PlanDocument) error {
 		document.UnrecordedManagedRegions != nil {
 		return errors.New("unrecorded managed regions require managed-refresh preservation mode")
 	}
+	if err := validatePlanHistoryMoves(document.HistoryMoves); err != nil {
+		return err
+	}
 	if err := validatePlanUnrecordedManagedRegions(document.UnrecordedManagedRegions); err != nil {
 		return err
 	}
@@ -2620,6 +2661,49 @@ func validatePlanDocumentShape(document PlanDocument) error {
 		return err
 	}
 	return nil
+}
+
+func validatePlanHistoryMoves(moves []HistoryMove) error {
+	if moves != nil && len(moves) == 0 {
+		return errors.New("empty Baseline Plan historyMoves ledger must be omitted")
+	}
+	fromPaths := make(map[string]struct{}, len(moves))
+	toPaths := make(map[string]struct{}, len(moves))
+	for index, move := range moves {
+		if move.Ordinal != index {
+			return fmt.Errorf("history move at index %d has ordinal %d", index, move.Ordinal)
+		}
+		if !safeRelative(move.From) || !safeRelative(move.To) || move.From == move.To {
+			return fmt.Errorf("history move %d has invalid source or destination", index)
+		}
+		if !validPlanContentIdentity(move.ContentIdentity) {
+			return fmt.Errorf("history move %d has invalid content identity", index)
+		}
+		if _, duplicate := fromPaths[move.From]; duplicate {
+			return fmt.Errorf("duplicate history move source %q", move.From)
+		}
+		if _, duplicate := toPaths[move.To]; duplicate {
+			return fmt.Errorf("duplicate history move destination %q", move.To)
+		}
+		fromPaths[move.From] = struct{}{}
+		toPaths[move.To] = struct{}{}
+		if index > 0 {
+			previous := moves[index-1]
+			if previous.From > move.From || previous.From == move.From && previous.To >= move.To {
+				return errors.New("Baseline Plan history moves must be in source and destination order")
+			}
+		}
+	}
+	return nil
+}
+
+func validPlanContentIdentity(identity string) bool {
+	digest := strings.TrimPrefix(identity, "sha256:")
+	if digest == identity || len(digest) != sha256.Size*2 {
+		return false
+	}
+	_, err := hex.DecodeString(digest)
+	return err == nil
 }
 
 func validatePlanUnrecordedManagedRegions(regions []UnrecordedManagedRegion) error {
@@ -2767,6 +2851,19 @@ func validatePlanDocumentAgainstCatalog(document PlanDocument, catalog *Catalog)
 	for relative := range postimagePaths {
 		if _, represented := ledgerPaths[relative]; !represented {
 			return fmt.Errorf("postimage %q has no canonical managed entry", relative)
+		}
+	}
+	for _, move := range document.HistoryMoves {
+		for _, relative := range []string{move.From, move.To} {
+			if _, represented := preimagePaths[relative]; represented {
+				return fmt.Errorf("history move path %q appears in Baseline Plan preimages", relative)
+			}
+			if _, represented := postimagePaths[relative]; represented {
+				return fmt.Errorf("history move path %q appears in Baseline Plan postimages", relative)
+			}
+			if _, represented := ledgerPaths[relative]; represented {
+				return fmt.Errorf("history move path %q appears in managed-entry ledger", relative)
+			}
 		}
 	}
 	if err := validateSetupManifest(document, catalog); err != nil {

@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -63,3 +63,47 @@ exactly as it does today.
 `_techspec.md` → Build Order 4; Interfaces: `HistoryMove`; Data Models; API
 Contracts: `roundfix baseline plan`. `_prd.md` → Core Features 6 and 8.
 ADR-0121.
+
+## Result
+
+Implemented an optional, digest-bound `historyMoves` ledger in the Baseline Plan.
+Planning maps the ordered output of history-layout discovery to source,
+destination, and content identity only; validation rejects malformed, unordered,
+duplicate, or rendered-carrier-overlapping entries. Text plans list each move
+with both paths and its identity, while JSON plans expose the ledger under its
+own key and omit it for a current-layout repository.
+
+Focused evidence:
+
+- Acceptance 1: `TestHistoryRelocationPlanCarriesOrderedIdentitiesOutsideRenderedCarriers`
+  passed. It planned two legacy files, asserted their ordered identities, and
+  decoded each JSON entry to prove it contains only `ordinal`, `from`, `to`, and
+  `contentIdentity`.
+- Acceptance 2: `TestHistoryMoveLedgerIsOmittedForCurrentLayout` passed and
+  confirmed serialized current-layout plans contain no `historyMoves` key.
+- Acceptance 3: the populated-plan test planned the same tree twice and compared
+  the complete serialized documents byte for byte.
+- Acceptance 4: `TestBaselinePlanHistoryRelocationTextAndExitStatus` passed and
+  found the move count, source, destination, and SHA-256 identity in text output.
+- Acceptance 5: the populated-plan test asserted neither relocation path appears
+  in `ManagedEntries`, `Preimages`, `Postimages`, or `FileChanges`; plan validation
+  also enforces that separation.
+- Acceptance 6: the CLI test compared current-layout and legacy-layout planning
+  and observed `exitOK` for both.
+
+Commands run:
+
+- `rtk env GOCACHE=/tmp/roundfix-task-05-go-cache go test ./internal/baseline ./internal/cli -run 'TestHistory(RelocationPlan|MoveLedger)|TestBaselinePlanHistoryRelocation' -count=1`
+  — passed after the implementation in both packages. Before the implementation,
+  the same focused command failed because `HistoryMove` and
+  `PlanDocument.HistoryMoves` did not exist and text output lacked the move.
+- `rtk env GOCACHE=/tmp/roundfix-task-05-go-cache go test ./internal/baseline ./internal/cli -count=1`
+  — passed (`internal/baseline` in 47.107s and `internal/cli` in 78.478s).
+- `rtk env GOCACHE=/tmp/roundfix-task-05-go-cache make verify-incremental`
+  — reached the repository-wide test stage, where all Go packages in this task's
+  scope passed, then failed in the pre-existing `roundfix/skills` contract test:
+  `.agents/skills/write-prd/SKILL.md` is missing `Exclude
+  \`_archived/specs/\` from automatic link rewrites`. This task does not modify
+  that prior-work file.
+
+The Daemon-owned commands under `## Verification` were not run during this turn.
