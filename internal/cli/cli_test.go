@@ -4820,7 +4820,7 @@ func TestRunFetchWritesReviewArtifactsUnderSpeclessRoot(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
-	issuePath := filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-123", "round-001", "issue_001.md")
+	issuePath := filepath.Join(repoDir, "docs", "specs", "reviews", "pr-123", "round-001", "issue_001.md")
 	if _, err := os.Stat(issuePath); err != nil {
 		t.Fatalf("expected spec-less Review Issue artifact %s: %v", issuePath, err)
 	}
@@ -7174,7 +7174,7 @@ func TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused(t *testing.T) {
 				return reviewsource.ArtifactCommit{
 					CommitSHA:  strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")),
 					ParentSHA:  parent,
-					ReviewRoot: filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-other"),
+					ReviewRoot: filepath.Join(repoDir, "docs", "specs", "reviews", "pr-other"),
 					Message:    message,
 				}
 			},
@@ -13156,7 +13156,7 @@ func persistCLIReviewItems(t *testing.T, repoDir string, roundNumber int, headBr
 }
 
 func defaultReviewRootForRepo(repoDir string, prNumber string) string {
-	return filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-"+prNumber)
+	return filepath.Join(repoDir, "docs", "specs", "reviews", "pr-"+prNumber)
 }
 
 func builtinArtifactDirForRepo(t *testing.T, repoDir string) string {
@@ -16030,14 +16030,14 @@ func TestStageableReviewRootClassifiesInsideOutsideAndSymlink(t *testing.T) {
 	t.Parallel()
 	repoDir := t.TempDir()
 	external := t.TempDir()
-	mustMkdir(t, filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-9"))
-	mustMkdir(t, filepath.Join(external, "specs", "_reviews", "pr-9"))
+	mustMkdir(t, filepath.Join(repoDir, "docs", "specs", "reviews", "pr-9"))
+	mustMkdir(t, filepath.Join(external, "specs", "reviews", "pr-9"))
 
-	relative, ok := stageableReviewRoot(repoDir, filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-9"))
-	if !ok || relative != "docs/specs/_reviews/pr-9" {
-		t.Fatalf("expected inside root to stage as docs/specs/_reviews/pr-9, got %q ok=%v", relative, ok)
+	relative, ok := stageableReviewRoot(repoDir, filepath.Join(repoDir, "docs", "specs", "reviews", "pr-9"))
+	if !ok || relative != "docs/specs/reviews/pr-9" {
+		t.Fatalf("expected inside root to stage as docs/specs/reviews/pr-9, got %q ok=%v", relative, ok)
 	}
-	if _, ok := stageableReviewRoot(repoDir, filepath.Join(external, "specs", "_reviews", "pr-9")); ok {
+	if _, ok := stageableReviewRoot(repoDir, filepath.Join(external, "specs", "reviews", "pr-9")); ok {
 		t.Fatal("expected external root to be unstageable")
 	}
 	linkRepo := t.TempDir()
@@ -16045,7 +16045,7 @@ func TestStageableReviewRootClassifiesInsideOutsideAndSymlink(t *testing.T) {
 	if err := os.Symlink(filepath.Join(external, "specs"), filepath.Join(linkRepo, "docs", "specs")); err != nil {
 		t.Fatalf("create specs symlink: %v", err)
 	}
-	if _, ok := stageableReviewRoot(linkRepo, filepath.Join(linkRepo, "docs", "specs", "_reviews", "pr-9")); ok {
+	if _, ok := stageableReviewRoot(linkRepo, filepath.Join(linkRepo, "docs", "specs", "reviews", "pr-9")); ok {
 		t.Fatal("expected symlink-crossing root to be unstageable")
 	}
 }

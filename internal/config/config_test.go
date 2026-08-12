@@ -3304,7 +3304,7 @@ func TestResolveReviewRoot(t *testing.T) {
 				RepoRoot: repoRoot,
 				PRNumber: 123,
 			},
-			want: filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-123"),
+			want: filepath.Join(repoRoot, "docs", "specs", "reviews", "pr-123"),
 		},
 		{
 			name: "existing spec under external root stores rounds under external spec reviews",
@@ -3323,7 +3323,7 @@ func TestResolveReviewRoot(t *testing.T) {
 				SpecSlug: "9999-missing",
 				PRNumber: 123,
 			},
-			want: filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-123"),
+			want: filepath.Join(repoRoot, "docs", "specs", "reviews", "pr-123"),
 		},
 	}
 
@@ -3338,6 +3338,49 @@ func TestResolveReviewRoot(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReviewArtifactRootNeverResolvesIntoHistory(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	t.Run("retired Spec falls back to the live orphan root", func(t *testing.T) {
+		specSlug := "0001-retired-widget-flow"
+		historySpecsRoot := filepath.Join(repoRoot, "docs", "history", "specs")
+		mustMkdir(t, filepath.Join(historySpecsRoot, specSlug))
+
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			RepoRoot:  repoRoot,
+			SpecsRoot: historySpecsRoot,
+			SpecSlug:  specSlug,
+			PRNumber:  123,
+		})
+		if err != nil {
+			t.Fatalf("ResolveReviewRoot() error = %v", err)
+		}
+		want := filepath.Join(repoRoot, "docs", "specs", "reviews", "pr-123")
+		if got != want {
+			t.Fatalf("ResolveReviewRoot() = %q, want live root %q", got, want)
+		}
+		if reviewRootInsideHistory(repoRoot, got) {
+			t.Fatalf("ResolveReviewRoot() = %q under repository history", got)
+		}
+	})
+
+	t.Run("explicit artifact directory inside history is refused", func(t *testing.T) {
+		historyArtifactDir := filepath.Join(repoRoot, "docs", "history", "artifacts")
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			ExplicitArtifactDir: historyArtifactDir,
+			RepoRoot:            repoRoot,
+			PRNumber:            123,
+		})
+		if err == nil {
+			t.Fatalf("ResolveReviewRoot() = %q, want history refusal", got)
+		}
+		if got != "" {
+			t.Fatalf("ResolveReviewRoot() returned %q with history refusal", got)
+		}
+	})
 }
 
 func mustMkdir(t *testing.T, path string) {

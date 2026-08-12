@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -82,3 +82,77 @@ against an empty directory, so splitting them would settle a Task on a red tree.
 Review Artifact root; Decisions: `os.Rename` rather than `git mv`, and the
 Spec-owned path left unchanged. `_prd.md` → Core Features 1, 3 and 5; Goal 1;
 User Story 1. ADR-0120, ADR-0123.
+
+## Result
+
+### Implementation
+
+- `ArchiveDir` now resolves Specs, findings, ADRs, backlog entries, and Review
+  Artifacts under `docs/history/`; external and configured non-default Spec Roots
+  keep their existing beside-root archive behavior.
+- The live orphan Review Artifact root is `reviews` without an underscore. A
+  Spec Root under repository history falls back to `docs/specs/reviews`, and an
+  explicit Artifact Directory under repository history is refused. The
+  Spec-owned `<spec>/reviews` path is unchanged.
+- The repository's 2,225 tracked retired files moved from `_archived/{specs,
+  findings,adr}` to `docs/history/{specs,findings,adr}`. `_archived/` no longer
+  exists. No orphan Review Artifact moved.
+- Both archive-layout characterization tests now pin the five new resolver
+  answers, the three retired families present in this repository, and the Spec
+  0094 corpus re-record reason. The focused Spec tests also stopped deriving an
+  in-tree `_archived` fixture name from the repository history resolver.
+- Verification-feedback repair separates current replay source lookup from
+  frozen replay provenance: consistency checks still resolve source reports via
+  `ArchiveDir`, while README assertions deliberately pin the historical
+  `_archived/...` text. Replay fixtures and retired artifacts remain unchanged.
+- Fourteen relocated `.log` files match ignore rules at their new paths. They
+  are force-staged as additions so the Daemon's normal staging cannot retain
+  their old deletions without their replacements; no path outside
+  `docs/history/` is staged.
+
+### Focused-check evidence
+
+- All five resolver criteria: `GOCACHE=/tmp/roundfix-0094-task-02-gocache rtk
+  go test ./internal/spec` passed all 275 tests, including the updated resolver,
+  built-in/non-default root, characterization, and historical replay cases.
+- Orphan-root and history-refusal criteria: `GOCACHE=/tmp/roundfix-0094-task-02-gocache
+  rtk go test ./internal/config -run '^(TestResolveReviewRoot|TestReviewArtifactRootNeverResolvesIntoHistory)$'`
+  passed all 9 tests. The negative test covers a slug found only under
+  `docs/history/specs` and an explicit Artifact Directory under history.
+- CLI consumer evidence: `GOCACHE=/tmp/roundfix-0094-task-02-gocache rtk go test
+  ./internal/cli -run '^(TestRunFetchWritesReviewArtifactsUnderSpeclessRoot|TestReviewArtifactEvidenceMixedParentEmptyUserRootRefused|TestStageableReviewRootClassifiesInsideOutsideAndSymlink)$'`
+  passed all 8 tests.
+- Consistency-detector evidence: `GOCACHE=/tmp/roundfix-0094-task-02-gocache rtk
+  go test ./internal/speccheck -run '^(TestCheckFindingLifecycle|TestCheckRollupMember|TestCheckArchiveLicense|TestCheckReplay0058QA001FromReport|TestCheckReplay0058QA004FromReport|TestCheckReplay0056F001FromReport|TestCheckReplay0056F002FromReport)$'`
+  passed all 18 tests against the relocated Spec and finding roots.
+- Verification-feedback evidence: `GOCACHE=/tmp/roundfix-0094-task-02-gocache
+  rtk go test -count=1 ./internal/speccheck -run
+  '^(TestCheckReplay0060Task03RefusesWorkIndependentVerification|TestCheckReplayReadmeProvenance)$'
+  -v` passed all 6 tests, including the four provenance cases reported by the
+  Daemon. A broader focused `-run '^TestCheckReplay'` check passed all 11 replay
+  tests.
+- Corpus-golden evidence: `GOCACHE=/tmp/roundfix-0094-task-02-gocache rtk go test
+  -tags docscontract ./internal/docscontract -run '^TestCheckCorpusGolden$'`
+  exited 0. The `update` field names Spec 0094 Task 02 and the active counts stay
+  unchanged.
+- Byte-identity evidence: sorted per-file SHA-1 manifests before and after the
+  move both produced `ea29d6a45ba959753730b7a213864d7fc822446e`; both trees
+  contained 2,225 files. The post-move staging audit reports 14 staged ignored
+  replacements, 0 ignored unstaged replacements, and 2,211 normal unstaged
+  replacements.
+- Diff hygiene: `rtk git diff --check` and `rtk git diff --cached --check` both
+  exited 0.
+
+### Checks not used as evidence
+
+- Initial focused Go checks did not reach test execution because the sandbox
+  denied writes to the default Go build cache. The recorded passing reruns use
+  the Task-specific cache under `/tmp`.
+- A broader `rtk go test ./internal/cli` probe produced no output for more than
+  five minutes and was interrupted with exit 130. The three affected CLI seams
+  were then run directly and passed as recorded above.
+- The Daemon-owned commands in `## Verification` were not run in this Agent
+  turn.
+- Daemon attempt 1 exposed replay provenance assertions that followed the live
+  resolver after relocation. Its diagnostic artifact was inspected; the
+  declared full-package command was not rerun during this repair.

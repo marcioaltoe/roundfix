@@ -1,12 +1,12 @@
 package spec
 
-// Suite: archive layout characterization through Spec 0085
+// Suite: archive layout characterization through Spec 0094 Task 02
 // Invariant: each retired-artifact path, its single owner, the conditional
 // Secondbrain clause, and the deliberately re-recorded corpus golden remain
 // explicit while the Spec moves each contract in its assigned Task.
 // Boundary IN: repository documentation directories and the docscontract corpus golden.
-// Boundary OUT: retired ADR relocation and the unconditional Secondbrain clause
-// assigned to later Tasks.
+// Boundary OUT: retirement classification, fleet relocation, and documentation
+// carriers assigned to other Tasks.
 
 import (
 	"encoding/json"
@@ -19,35 +19,45 @@ import (
 )
 
 type retiredFamilyLocation struct {
-	family    string
-	directory string
+	family              string
+	kind                ArchiveKind
+	directory           string
+	presentInRepository bool
 }
 
-var archiveLayoutAfterTask04 = []retiredFamilyLocation{
-	{family: "Specs", directory: "_archived/specs"},
-	{family: "findings", directory: "_archived/findings"},
-	{family: "ADRs", directory: "docs/adr"},
-	{family: "backlog entries", directory: "docs/backlog"},
+var archiveLayoutAfterSpec0094Task02 = []retiredFamilyLocation{
+	{family: "Specs", kind: ArchiveKindSpec, directory: "docs/history/specs", presentInRepository: true},
+	{family: "findings", kind: ArchiveKindFinding, directory: "docs/history/findings", presentInRepository: true},
+	{family: "ADRs", kind: ArchiveKindADR, directory: "docs/history/adr", presentInRepository: true},
+	{family: "backlog entries", kind: ArchiveKindBacklog, directory: "docs/history/backlog"},
+	{family: "Review Artifacts", kind: ArchiveKindReview, directory: "docs/history/reviews"},
 }
 
 func TestArchiveLayoutCharacterizationRecordsEveryRetiredFamily(t *testing.T) {
 	t.Parallel()
 
 	want := []retiredFamilyLocation{
-		{family: "Specs", directory: "_archived/specs"},
-		{family: "findings", directory: "_archived/findings"},
-		{family: "ADRs", directory: "docs/adr"},
-		{family: "backlog entries", directory: "docs/backlog"},
+		{family: "Specs", kind: ArchiveKindSpec, directory: "docs/history/specs", presentInRepository: true},
+		{family: "findings", kind: ArchiveKindFinding, directory: "docs/history/findings", presentInRepository: true},
+		{family: "ADRs", kind: ArchiveKindADR, directory: "docs/history/adr", presentInRepository: true},
+		{family: "backlog entries", kind: ArchiveKindBacklog, directory: "docs/history/backlog"},
+		{family: "Review Artifacts", kind: ArchiveKindReview, directory: "docs/history/reviews"},
 	}
-	if !reflect.DeepEqual(archiveLayoutAfterTask04, want) {
-		t.Fatalf("archive layout characterization = %#v, want %#v", archiveLayoutAfterTask04, want)
+	if !reflect.DeepEqual(archiveLayoutAfterSpec0094Task02, want) {
+		t.Fatalf("archive layout characterization = %#v, want %#v", archiveLayoutAfterSpec0094Task02, want)
 	}
 
 	repositoryRoot := archiveLayoutCharacterizationRepositoryRoot(t)
-	for _, retiredFamily := range archiveLayoutAfterTask04 {
+	for _, retiredFamily := range archiveLayoutAfterSpec0094Task02 {
 		t.Run(retiredFamily.family, func(t *testing.T) {
 			t.Parallel()
 
+			if got := ArchiveDir(retiredFamily.kind); got != retiredFamily.directory {
+				t.Fatalf("ArchiveDir(%q) = %q, want %q", retiredFamily.kind, got, retiredFamily.directory)
+			}
+			if !retiredFamily.presentInRepository {
+				return
+			}
 			info, err := os.Stat(filepath.Join(repositoryRoot, filepath.FromSlash(retiredFamily.directory)))
 			if err != nil {
 				t.Fatalf("stat current %s directory %q: %v", retiredFamily.family, retiredFamily.directory, err)
@@ -65,7 +75,7 @@ type archiveLayoutCorpusGolden struct {
 	Active map[string]int `json:"active"`
 }
 
-func TestArchiveLayoutCharacterizationPinsCorpusGoldenBeforeRelocation(t *testing.T) {
+func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterRelocation(t *testing.T) {
 	t.Parallel()
 
 	repositoryRoot := archiveLayoutCharacterizationRepositoryRoot(t)
@@ -83,7 +93,7 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenBeforeRelocation(t *testin
 
 	want := archiveLayoutCorpusGolden{
 		Schema: "roundfix-speccheck-corpus/v2",
-		Update: "Re-recorded because Spec 0085 Task 04 moved archived Specs and findings from their active-document trees to _archived/specs and _archived/findings. Active-corpus counts remain unchanged because retired artifacts are excluded. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change.",
+		Update: "Re-recorded because Spec 0094 Task 02 moved retired Specs, findings, and ADRs from _archived into docs/history and changed every retired-family resolver to that root. Active-corpus counts remain unchanged because retired artifacts are excluded. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change.",
 		Active: map[string]int{
 			"SC-ADR-RELATED":               0,
 			"SC-ADR-UNLISTED":              0,
@@ -107,7 +117,7 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenBeforeRelocation(t *testin
 		},
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("corpus golden after task_04 = %#v, want %#v", got, want)
+		t.Fatalf("corpus golden after Spec 0094 Task 02 = %#v, want %#v", got, want)
 	}
 }
 

@@ -1119,7 +1119,11 @@ func ResolveReviewRoot(ctx ReviewArtifactContext) (string, error) {
 	}
 	prDir := fmt.Sprintf("pr-%d", ctx.PRNumber)
 	if explicit := strings.TrimSpace(ctx.ExplicitArtifactDir); explicit != "" {
-		return filepath.Join(explicit, "reviews", prDir), nil
+		resolved := filepath.Join(explicit, "reviews", prDir)
+		if reviewRootInsideHistory(ctx.RepoRoot, resolved) {
+			return "", fmt.Errorf("Review artifact root %q must not be inside repository history", resolved)
+		}
+		return resolved, nil
 	}
 
 	specsRoot := strings.TrimSpace(ctx.SpecsRoot)
@@ -1130,10 +1134,25 @@ func ResolveReviewRoot(ctx ReviewArtifactContext) (string, error) {
 		}
 		specsRoot = filepath.Join(repoRoot, "docs", "specs")
 	}
+	if reviewRootInsideHistory(ctx.RepoRoot, specsRoot) {
+		repoRoot := strings.TrimSpace(ctx.RepoRoot)
+		if repoRoot == "" {
+			return "", errors.New("repository root is required to keep Review artifacts out of history")
+		}
+		specsRoot = filepath.Join(repoRoot, "docs", "specs")
+	}
 	if slug := strings.TrimSpace(ctx.SpecSlug); slug != "" && reviewSpecDirExists(specsRoot, slug) {
 		return filepath.Join(specsRoot, slug, "reviews"), nil
 	}
-	return filepath.Join(specsRoot, "_reviews", prDir), nil
+	return filepath.Join(specsRoot, "reviews", prDir), nil
+}
+
+func reviewRootInsideHistory(repoRoot string, path string) bool {
+	repoRoot = strings.TrimSpace(repoRoot)
+	if repoRoot == "" {
+		return false
+	}
+	return pathInsideOrSame(filepath.Clean(path), filepath.Join(filepath.Clean(repoRoot), "docs", "history"))
 }
 
 func reviewSpecDirExists(specsRoot string, slug string) bool {

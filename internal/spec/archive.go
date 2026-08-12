@@ -19,6 +19,7 @@ const (
 	ArchiveKindFinding ArchiveKind = "findings"
 	ArchiveKindADR     ArchiveKind = "adr"
 	ArchiveKindBacklog ArchiveKind = "backlog"
+	ArchiveKindReview  ArchiveKind = "reviews"
 )
 
 // ArchiveDir returns the repository-relative directory holding retired
@@ -26,13 +27,15 @@ const (
 func ArchiveDir(kind ArchiveKind) string {
 	switch kind {
 	case ArchiveKindSpec:
-		return "_archived/specs"
+		return "docs/history/specs"
 	case ArchiveKindFinding:
-		return "_archived/findings"
+		return "docs/history/findings"
 	case ArchiveKindADR:
-		return "_archived/adr"
+		return "docs/history/adr"
 	case ArchiveKindBacklog:
-		return "_archived/backlog"
+		return "docs/history/backlog"
+	case ArchiveKindReview:
+		return "docs/history/reviews"
 	default:
 		return ""
 	}
@@ -107,7 +110,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 
 // ArchiveSpecRoot returns the filesystem directory holding retired Specs for
 // one configured Spec Root. The repository's built-in Spec Root uses the
-// repository-level default layout (ArchiveDir). An external or configured
+// documentation history layout (ArchiveDir). An external or configured
 // non-default Spec Root keeps its archive beside the active root.
 func ArchiveSpecRoot(specsRoot string, builtInRoot bool) string {
 	cleanSpecsRoot := filepath.Clean(specsRoot)
