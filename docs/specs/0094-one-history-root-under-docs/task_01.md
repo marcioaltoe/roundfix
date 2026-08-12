@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: low
 ---
@@ -53,9 +53,53 @@ tests over frontmatter fixtures, with no filesystem and no caller yet.
 
 - `grep -q 'func ClassifyADR' internal/spec/*.go && grep -q 'func ClassifyBacklogEntry' internal/spec/*.go` — expected: exits 0, proving both classifications exist. Fails on a tree where no work has happened, because neither function is declared today.
 - `go test -count=1 ./internal/spec -run 'TestClassifyADRRetirement|TestClassifyBacklogEntryRetirement' -v > /tmp/0094-task-01.log 2>&1; s=$?; grep -q '^--- PASS: TestClassifyADRRetirement' /tmp/0094-task-01.log && grep -q '^--- PASS: TestClassifyBacklogEntryRetirement' /tmp/0094-task-01.log || { cat /tmp/0094-task-01.log; exit 1; }; exit $s` — expected: exits 0 and the log names both passing tests. The names are exact rather than substring patterns: `-run 'Retire'` matches the existing `…EveryRetiredFamily` and `…EveryRetiredKind` tests, which is how an earlier draft of this gate passed before any work was done.
-- `grep -q '^--- PASS: TestClassifyADRRetirement/proposed' /tmp/0094-task-01.log` — expected: exits 0, proving the pending-proposal case named by ADR-0122 is exercised as its own named subtest rather than only declared. Reads the log the previous command wrote, so no pipeline can hide a test's exit status.
+- `grep -q '^[[:space:]]*--- PASS: TestClassifyADRRetirement/proposed' /tmp/0094-task-01.log` — expected: exits 0, proving the pending-proposal case named by ADR-0122 is exercised as its own named subtest rather than only declared. The leading-whitespace allowance matches Go's standard indentation for nested subtest results. Reads the log the previous command wrote, so no pipeline can hide a test's exit status.
 
 ## References
 
 `_techspec.md` → Interfaces: `ClassifyADR`, `ClassifyBacklogEntry`; Build Order 1;
 Testing Approach: retirement classification. `_prd.md` → Core Feature 2. ADR-0122.
+
+## Result
+
+Implemented a pure `Retirement` classifier for decision records and typed intent
+entries. Decision records retire only for `rejected`, `deprecated`, and
+`superseded`; typed intent entries retire only for `declined`. A retired result
+names its lifecycle status in `Reason`, while active and pending records return an
+empty result. Legacy decision records remain active unless a body status line
+marks one with a retiring decision status.
+
+Focused checks and acceptance evidence:
+
+- `rtk go test ./internal/spec -run '^TestClassify(ADR|BacklogEntry)Retirement$' -count=1`
+  passed with 12 tests. The table exercises all five decision lifecycle statuses,
+  all three typed intent statuses, the legacy no-status record, and the legacy
+  body-marked record.
+- `rtk go test ./internal/spec -run '^TestClassifyADRRetirement$/^proposed$' -count=1 -v`
+  passed with the parent and named `proposed` subtest selected, proving the pending
+  proposal remains active.
+- Source inspection confirms the retired decision rows expect their own status as
+  `Reason`, the `declined` row expects `Reason: "declined"`, and active rows expect
+  an empty `Retirement`.
+- The implementation and tests accept in-memory `[]byte`/string content and import
+  no filesystem packages. The focused Go test compiles and exercises both public
+  classifiers without creating fixtures on disk.
+- `rtk git diff --check` exited 0 after the implementation edit.
+- `rtk make verify-incremental` exited 0, covering formatting, the Go suite,
+  skill sync and validation, and the build with reusable caches.
+
+Verification feedback repair:
+
+- Attempt 1's classifier tests passed, including the named `proposed` subtest,
+  but the final detector required a nested Go subtest result at column 1. Go
+  indents nested `--- PASS` lines, so the detector could not match genuine test
+  output.
+- The detector now permits Go's leading subtest indentation while retaining the
+  exact `TestClassifyADRRetirement/proposed` name. No production or test behavior
+  changed.
+- `rtk go test ./internal/spec -run '^TestClassifyADRRetirement$/^proposed$' -count=1`
+  passed with 2 tests after the detector repair.
+- `rtk make verify-incremental` exited 0 after the detector repair; the Go suite,
+  skill checks, and build passed.
+
+The Daemon-owned Verification commands were not run.
