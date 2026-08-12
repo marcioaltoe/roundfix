@@ -55,8 +55,7 @@ pins the archive path.
 ## Verification
 
 - `go test -count=1 ./skills -run 'TestSpecReferenceLifecycleSkillContracts' -v > /tmp/0094-task-10.log 2>&1; s=$?; grep -q '^--- PASS: TestSpecReferenceLifecycleSkillContracts' /tmp/0094-task-10.log || { cat /tmp/0094-task-10.log; exit 1; }; exit $s` — expected: exits 0. Fails today, where the assertion pins a path the skills no longer name.
-- `grep -q 'docs/history/specs' skills/baseline_skill_contract_test.go` — expected: exits 0, proving the assertion was repointed rather than removed.
-- `grep -c 'reference-lifecycle contract' skills/baseline_skill_contract_test.go` — expected: exits 0 with a non-zero count, proving the contract assertion still exists.
+- `grep -q 'from automatic link rewrites' skills/baseline_skill_contract_test.go && grep -q 'docs/history/specs' skills/baseline_skill_contract_test.go` — expected: exits 0, proving the assertion still requires the reference-lifecycle contract and now names the relocated path. Both clauses are one command because either alone is satisfiable without the other: the contract text is present today with the wrong path, and a bare path match would pass on an assertion that had been gutted. A `grep -c` stood here and was vacuous — it exits 0 whenever it prints a count, including a count that proves nothing changed.
 - `git diff --name-only HEAD > /tmp/0094-task-10-all.txt; test -s /tmp/0094-task-10-all.txt || { echo 'no file changed'; exit 1; }; grep -v -e '^skills/baseline_skill_contract_test\.go$' -e '^docs/specs/0094-one-history-root-under-docs/task_10\.md$' /tmp/0094-task-10-all.txt > /tmp/0094-task-10-scope.txt; test ! -s /tmp/0094-task-10-scope.txt || { cat /tmp/0094-task-10-scope.txt; exit 1; }` — expected: exits 0, proving work happened and every changed path is in bounds.
 
 ## Context
