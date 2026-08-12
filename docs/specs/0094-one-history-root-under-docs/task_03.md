@@ -58,8 +58,8 @@ network and no caller yet.
 
 - `go test -count=1 ./internal/spec -run 'ReviewLiveness|ClassifyReview' -v > /tmp/0094-task-03.log 2>&1; s=$?; grep -q '^--- PASS: .*ReviewLiveness\|^--- PASS: .*ClassifyReview' /tmp/0094-task-03.log || { cat /tmp/0094-task-03.log; exit 1; }; exit $s` — expected: exits 0 and the log names the passing liveness tests; fails when the named tests do not exist.
 - `! grep -qi 'no tests to run' /tmp/0094-task-03.log` — expected: exits 0, refusing a vacuous run.
-- `! grep -rn 'runGH\|gh api\|net/http' internal/spec` — expected: exits 0, proving the classification takes no provider or network dependency.
-- `go build -buildvcs=false ./...` — expected: exits 0.
+- `grep -q 'func ClassifyReview' internal/spec/*.go && ! grep -rn 'runGH\|gh api\|net/http' internal/spec` — expected: exits 0, proving the classification exists and takes no provider or network dependency. The two clauses are one command on purpose: the negative guard alone passes on a tree where nothing was written, so it proves nothing until it is anchored to the code it guards.
+- `grep -q 'ReviewUndecidable' internal/spec/*.go` — expected: exits 0, proving the third answer ADR-0123 requires exists rather than a boolean that can only say finished or live.
 
 ## Context
 

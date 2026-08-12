@@ -39,8 +39,8 @@ tests over frontmatter fixtures, with no filesystem and no caller yet.
 
 ## Acceptance Criteria
 
-- [ ] A `proposed` decision record classifies as active, with a test that fails
-      if it is ever classified retired.
+- [ ] A `proposed` decision record classifies as active, exercised as a named
+      `proposed` subtest that fails if it is ever classified retired.
 - [ ] Each of `rejected`, `deprecated`, and `superseded` classifies as retired
       and names itself as the reason.
 - [ ] A decision record with no lifecycle status classifies as active.
@@ -51,9 +51,9 @@ tests over frontmatter fixtures, with no filesystem and no caller yet.
 
 ## Verification
 
-- `go test -count=1 ./internal/spec -run 'Retire|Classif' -v > /tmp/0094-task-01.log 2>&1; s=$?; grep -q '^--- PASS: .*Retire\|^--- PASS: .*Classif' /tmp/0094-task-01.log || { cat /tmp/0094-task-01.log; exit 1; }; exit $s` — expected: exits 0 and the log shows at least one passing classification test; fails when the named tests do not exist or do not run.
-- `! grep -rn 'inactiveStatusPattern' internal/spec` — expected: exits 0, proving the narrower rule is its own predicate rather than the in-force one reused.
-- `go build -buildvcs=false ./...` — expected: exits 0.
+- `grep -q 'func ClassifyADR' internal/spec/*.go && grep -q 'func ClassifyBacklogEntry' internal/spec/*.go` — expected: exits 0, proving both classifications exist. Fails on a tree where no work has happened, because neither function is declared today.
+- `go test -count=1 ./internal/spec -run 'TestClassifyADRRetirement|TestClassifyBacklogEntryRetirement' -v > /tmp/0094-task-01.log 2>&1; s=$?; grep -q '^--- PASS: TestClassifyADRRetirement' /tmp/0094-task-01.log && grep -q '^--- PASS: TestClassifyBacklogEntryRetirement' /tmp/0094-task-01.log || { cat /tmp/0094-task-01.log; exit 1; }; exit $s` — expected: exits 0 and the log names both passing tests. The names are exact rather than substring patterns: `-run 'Retire'` matches the existing `…EveryRetiredFamily` and `…EveryRetiredKind` tests, which is how an earlier draft of this gate passed before any work was done.
+- `grep -q '^--- PASS: TestClassifyADRRetirement/proposed' /tmp/0094-task-01.log` — expected: exits 0, proving the pending-proposal case named by ADR-0122 is exercised as its own named subtest rather than only declared. Reads the log the previous command wrote, so no pipeline can hide a test's exit status.
 
 ## References
 
