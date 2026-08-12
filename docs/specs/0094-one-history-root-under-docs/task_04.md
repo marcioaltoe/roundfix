@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -82,3 +82,70 @@ be tested against fixture repositories alone.
 `HistoryRelocation`; Testing Approach: layout discovery; Risks: fifty orphan
 folders, one decision each. `_prd.md` → Core Features 2, 4, 6 and 7; Goals 2, 3
 and 4; User Stories 2, 3 and 4. ADR-0122, ADR-0123.
+
+## Result
+
+### Implementation
+
+- `DiscoverHistoryLayout` performs a read-only repository walk and returns one
+  source-sorted `HistoryRelocation` per regular file. Each relocation carries
+  repository-relative source and destination paths plus a `sha256:` content
+  identity read from the source bytes.
+- Discovery recognizes both prior archive layouts:
+  `docs/specs/_archived` and `docs/findings/_archived`, plus the interim
+  repository-root `_archived/{specs,findings,adr,backlog}` tree. Every file keeps
+  its path relative to the retired-family root at the corresponding
+  `docs/history/` destination.
+- Active `docs/adr` and `docs/backlog` files route through `ClassifyADR` and
+  `ClassifyBacklogEntry`. Retired or declined documents relocate; proposed,
+  accepted, open, and otherwise active documents do not.
+- Orphan Review Artifacts under both `docs/specs/_reviews` and
+  `docs/specs/reviews` route through `ClassifyReview`. Only a `finished` review
+  contributes its files. The walk never enters `<spec>/reviews`, so Spec-owned
+  Review Artifacts remain with their Spec.
+- An occupied destination produces a `HistoryCollision` with both paths, the
+  source identity, and the refusal reason while unaffected siblings remain
+  relocations. Two legacy sources claiming the same destination are also
+  collisions rather than an ambiguous plan.
+- Discovery uses only filesystem reads and the existing read-only local-Git
+  liveness check. It creates, moves, rewrites, and deletes nothing.
+
+### Focused-check evidence
+
+- The pre-implementation command, `rtk go test -count=1 ./internal/baseline
+  -run '^TestDiscoverHistoryLayout'`, failed to compile because
+  `DiscoverHistoryLayout`, `HistoryRelocation`, and `HistoryCollision` did not
+  exist.
+- The same focused command passed seven tests after implementation. The nested
+  archive fixture reports three per-file relocations; the repository-root
+  archive fixture reports four, covering Specs, findings, ADRs, and backlog
+  entries. Exact expected slices prove source ordering and destination routing,
+  and a second discovery over each unchanged fixture returns identical results.
+- `TestDiscoverHistoryLayoutCurrentLayoutReportsNothing` passed with all five
+  retired families under `docs/history/` and active documents in their live
+  directories, returning no relocation or collision.
+- `TestDiscoverHistoryLayoutClassifiesActiveDocuments` passed: a superseded ADR
+  and declined backlog entry relocate, while a proposed ADR and open backlog
+  entry do not.
+- `TestDiscoverHistoryLayoutClassifiesOrphanReviews` passed against an isolated
+  real Git repository. It reports all three files belonging to finished orphan
+  reviews across the current and underscored roots, and reports none from the
+  live, undecidable, or Spec-owned Review Artifacts.
+- `TestDiscoverHistoryLayoutReportsCollisionWithoutHidingSiblings` passed: the
+  occupied `_prd.md` destination reports one collision naming source,
+  destination, and `destination already exists`, while `task_01.md` remains a
+  relocation.
+- Every exact relocation expectation includes the SHA-256 identity independently
+  computed from its fixture bytes. The collision fixture also checks its source
+  identity.
+- Every fixture snapshots the path-to-content-identity map before discovery and
+  compares it after discovery. The Review fixture includes the repository's
+  `.git` files, so the local-Git liveness reads are covered by the same
+  no-mutation assertion.
+- `rtk go test -count=1 ./internal/baseline` exited 0 for the complete package,
+  and `rtk go vet ./internal/baseline` exited 0.
+- `rtk make verify-incremental` exited 0 after the implementation and Result
+  edits, covering formatting, the Go suite, skill checks, and the build with
+  reusable caches.
+
+The Daemon-owned commands in `## Verification` were not run in this Agent turn.
