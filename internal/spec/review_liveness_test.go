@@ -6,6 +6,7 @@ package spec
 // Boundary OUT: hosting-provider state, credentials, network access, and history relocation.
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -127,7 +128,7 @@ func TestClassifyReviewLocalGit(t *testing.T) {
 			t.Fatalf("remove recorded head from Round metadata fixture: %v", err)
 		}
 
-		got, reason, err := ClassifyReview(repo, reviewDir)
+		got, reason, err := ClassifyReview(context.Background(), repo, reviewDir)
 		if err != nil {
 			t.Fatalf("ClassifyReview() error = %v", err)
 		}
@@ -172,7 +173,7 @@ func TestClassifyReviewLocalGit(t *testing.T) {
 func assertReviewLiveness(t *testing.T, repo string, reviewDir string, want ReviewLiveness) {
 	t.Helper()
 
-	got, reason, err := ClassifyReview(repo, reviewDir)
+	got, reason, err := ClassifyReview(context.Background(), repo, reviewDir)
 	if err != nil {
 		t.Fatalf("ClassifyReview() error = %v", err)
 	}

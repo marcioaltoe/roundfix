@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"bytes"
 	"regexp"
 	"strings"
 
@@ -20,7 +21,7 @@ type Retirement struct {
 func ClassifyADR(content []byte) Retirement {
 	status, body := retirementStatus(content)
 	if status == "" {
-		match := legacyADRStatusPattern.FindSubmatch(body)
+		match := legacyADRStatusPattern.FindSubmatch(legacyADRHeader(body))
 		if len(match) == 2 {
 			status = strings.ToLower(string(match[1]))
 		}
@@ -55,4 +56,18 @@ func retirementStatus(content []byte) (string, []byte) {
 		return "", body
 	}
 	return strings.ToLower(strings.TrimSpace(document.Status)), body
+}
+
+// legacyADRHeader returns the leading block of a legacy decision record, where
+// an unfenced status marker is recorded. Legacy status markers appear in the
+// header of the record, so the fallback scans only the leading lines instead of
+// the whole body; a stray `status:` line inside a fenced example deep in the
+// document never retires an active record.
+func legacyADRHeader(body []byte) []byte {
+	const headerLines = 20
+	lines := bytes.SplitN(body, []byte("\n"), headerLines+1)
+	if len(lines) > headerLines {
+		lines = lines[:headerLines]
+	}
+	return bytes.Join(lines, []byte("\n"))
 }

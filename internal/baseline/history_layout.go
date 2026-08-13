@@ -1,6 +1,7 @@
 package baseline
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -33,6 +34,7 @@ const (
 	historyReviewLiveCode        = "baseline.history.review.live"
 	historyReviewUndecidableCode = "baseline.history.review.undecidable"
 	historyDestinationOccupied   = "destination already exists"
+	historyCollisionCode         = "baseline.history.collision"
 )
 
 type historyLayoutReport struct {
@@ -87,15 +89,15 @@ func historyMoveSourceRoot(source string) string {
 // DiscoverHistoryLayout returns the relocations that bring a repository to the
 // current layout, sorted by From, and the collisions that refuse to move. It
 // reads repository and local Git state but never changes either.
-func DiscoverHistoryLayout(root string) ([]HistoryRelocation, []HistoryCollision, error) {
-	report, err := discoverHistoryLayout(root)
+func DiscoverHistoryLayout(ctx context.Context, root string) ([]HistoryRelocation, []HistoryCollision, error) {
+	report, err := discoverHistoryLayout(ctx, root)
 	if err != nil {
 		return nil, nil, err
 	}
 	return report.relocations, report.collisions, nil
 }
 
-func discoverHistoryLayout(root string) (historyLayoutReport, error) {
+func discoverHistoryLayout(ctx context.Context, root string) (historyLayoutReport, error) {
 	root = filepath.Clean(root)
 	info, err := os.Stat(root)
 	if err != nil {
@@ -134,7 +136,7 @@ func discoverHistoryLayout(root string) (historyLayoutReport, error) {
 
 	retainedReviews := make([]Finding, 0)
 	for _, reviewRoot := range []string{"docs/specs/_reviews", "docs/specs/reviews"} {
-		if err := historyLayoutAppendReviews(root, reviewRoot, &sources, &retainedReviews); err != nil {
+		if err := historyLayoutAppendReviews(ctx, root, reviewRoot, &sources, &retainedReviews); err != nil {
 			return historyLayoutReport{}, err
 		}
 	}
@@ -176,18 +178,18 @@ func historyLayoutAppendTree(root string, fromRoot string, toRoot string, source
 		if entry.IsDir() {
 			return nil
 		}
-		entryInfo, err := entry.Info()
-		if err != nil {
-			return err
-		}
-		if !entryInfo.Mode().IsRegular() {
-			return fmt.Errorf("history source %q is not a regular file", absolutePath)
-		}
 		relative, err := filepath.Rel(absoluteRoot, absolutePath)
 		if err != nil {
 			return err
 		}
 		relative = filepath.ToSlash(relative)
+		entryInfo, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if !entryInfo.Mode().IsRegular() {
+			return fmt.Errorf("history source %q is not a regular file", path.Join(fromRoot, relative))
+		}
 		*sources = append(*sources, historyLayoutSource{
 			from: path.Join(fromRoot, relative),
 			to:   path.Join(toRoot, relative),
@@ -224,6 +226,7 @@ func historyLayoutAppendRetiredDocuments(
 }
 
 func historyLayoutAppendReviews(
+	ctx context.Context,
 	root string,
 	reviewRoot string,
 	sources *[]historyLayoutSource,
@@ -243,7 +246,7 @@ func historyLayoutAppendReviews(
 			continue
 		}
 		reviewDir := filepath.Join(absoluteRoot, entry.Name())
-		liveness, reason, err := spec.ClassifyReview(root, reviewDir)
+		liveness, reason, err := spec.ClassifyReview(ctx, root, reviewDir)
 		if err != nil {
 			return fmt.Errorf("classify Review Artifact %q: %w", path.Join(reviewRoot, entry.Name()), err)
 		}

@@ -2,6 +2,7 @@ package spec
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -31,7 +32,7 @@ type reviewRoundMetadata struct {
 // ClassifyReview reads the newest Round's recorded head and classifies the
 // orphan Review Artifact from local Git only. An undecidable answer is not an
 // error: callers leave that Review Artifact live and can report reason.
-func ClassifyReview(repoRoot, reviewDir string) (ReviewLiveness, string, error) {
+func ClassifyReview(ctx context.Context, repoRoot, reviewDir string) (ReviewLiveness, string, error) {
 	metadata, roundName, err := newestReviewRoundMetadata(reviewDir)
 	if err != nil {
 		return ReviewUndecidable, fmt.Sprintf("newest Round metadata cannot be read: %v", err), nil
@@ -45,18 +46,18 @@ func ClassifyReview(repoRoot, reviewDir string) (ReviewLiveness, string, error) 
 		return ReviewUndecidable, fmt.Sprintf("newest Round %q records invalid head_sha %q", roundName, head), nil
 	}
 
-	defaultRef, err := reviewDefaultBranch(repoRoot)
+	defaultRef, err := reviewDefaultBranch(ctx, repoRoot)
 	if err != nil {
 		return ReviewUndecidable, fmt.Sprintf("local Git cannot identify the default branch: %v", err), nil
 	}
 
-	resolvedHead, _, err := runReviewGit(repoRoot, "rev-parse", "--verify", head+"^{commit}")
+	resolvedHead, _, err := runReviewGit(ctx, repoRoot, "rev-parse", "--verify", head+"^{commit}")
 	if err != nil {
 		return ReviewUndecidable, fmt.Sprintf("local Git cannot resolve recorded head %s: %v", head, err), nil
 	}
 	resolvedHead = strings.TrimSpace(resolvedHead)
 
-	_, exitCode, ancestryErr := runReviewGit(repoRoot, "merge-base", "--is-ancestor", resolvedHead, defaultRef)
+	_, exitCode, ancestryErr := runReviewGit(ctx, repoRoot, "merge-base", "--is-ancestor", resolvedHead, defaultRef)
 	switch exitCode {
 	case 0:
 		return ReviewFinished, fmt.Sprintf("recorded head %s is an ancestor of default branch %s", resolvedHead, defaultRef), nil
@@ -67,7 +68,7 @@ func ClassifyReview(repoRoot, reviewDir string) (ReviewLiveness, string, error) 
 		return ReviewUndecidable, fmt.Sprintf("local Git cannot compare recorded head %s with default branch %s: %v", resolvedHead, defaultRef, ancestryErr), nil
 	}
 
-	containingRefs, _, err := runReviewGit(repoRoot, "for-each-ref", "--format=%(refname)", "--contains="+resolvedHead)
+	containingRefs, _, err := runReviewGit(ctx, repoRoot, "for-each-ref", "--format=%(refname)", "--contains="+resolvedHead)
 	if err != nil {
 		return ReviewUndecidable, fmt.Sprintf("local Git cannot inspect refs containing recorded head %s: %v", resolvedHead, err), nil
 	}
@@ -80,7 +81,7 @@ func ClassifyReview(repoRoot, reviewDir string) (ReviewLiveness, string, error) 
 	if branch == "" {
 		return ReviewUndecidable, fmt.Sprintf("recorded head %s is unreachable, but newest Round %q records no head_branch", resolvedHead, roundName), nil
 	}
-	branchExists, err := reviewBranchExists(repoRoot, branch)
+	branchExists, err := reviewBranchExists(ctx, repoRoot, branch)
 	if err != nil {
 		return ReviewUndecidable, fmt.Sprintf("local Git cannot determine whether PR Head Branch %q exists: %v", branch, err), nil
 	}
@@ -134,13 +135,13 @@ func newestReviewRoundMetadata(reviewDir string) (reviewRoundMetadata, string, e
 	return metadata, newestName, nil
 }
 
-func reviewDefaultBranch(repoRoot string) (string, error) {
-	target, exitCode, err := runReviewGit(repoRoot, "symbolic-ref", "-q", "refs/remotes/origin/HEAD")
+func reviewDefaultBranch(ctx context.Context, repoRoot string) (string, error) {
+	target, exitCode, err := runReviewGit(ctx, repoRoot, "symbolic-ref", "-q", "refs/remotes/origin/HEAD")
 	if exitCode == 0 {
 		target = strings.TrimSpace(target)
 		if branch, ok := strings.CutPrefix(target, "refs/remotes/origin/"); ok && branch != "" {
 			localRef := "refs/heads/" + branch
-			localExists, localErr := reviewRefExists(repoRoot, localRef)
+			localExists, localErr := reviewRefExists(ctx, repoRoot, localRef)
 			if localErr != nil {
 				return "", localErr
 			}
@@ -148,7 +149,7 @@ func reviewDefaultBranch(repoRoot string) (string, error) {
 				return localRef, nil
 			}
 
-			exists, existsErr := reviewRefExists(repoRoot, target)
+			exists, existsErr := reviewRefExists(ctx, repoRoot, target)
 			if existsErr != nil {
 				return "", existsErr
 			}
@@ -161,7 +162,7 @@ func reviewDefaultBranch(repoRoot string) (string, error) {
 	}
 
 	for _, candidate := range []string{"refs/heads/main", "refs/heads/master"} {
-		exists, err := reviewRefExists(repoRoot, candidate)
+		exists, err := reviewRefExists(ctx, repoRoot, candidate)
 		if err != nil {
 			return "", err
 		}
@@ -172,8 +173,8 @@ func reviewDefaultBranch(repoRoot string) (string, error) {
 	return "", errors.New("neither origin/HEAD nor a local main or master branch resolves")
 }
 
-func reviewRefExists(repoRoot string, ref string) (bool, error) {
-	_, exitCode, err := runReviewGit(repoRoot, "show-ref", "--verify", "--quiet", ref)
+func reviewRefExists(ctx context.Context, repoRoot string, ref string) (bool, error) {
+	_, exitCode, err := runReviewGit(ctx, repoRoot, "show-ref", "--verify", "--quiet", ref)
 	switch exitCode {
 	case 0:
 		return true, nil
@@ -184,8 +185,8 @@ func reviewRefExists(repoRoot string, ref string) (bool, error) {
 	}
 }
 
-func reviewBranchExists(repoRoot string, branch string) (bool, error) {
-	output, _, err := runReviewGit(repoRoot, "for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes")
+func reviewBranchExists(ctx context.Context, repoRoot string, branch string) (bool, error) {
+	output, _, err := runReviewGit(ctx, repoRoot, "for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes")
 	if err != nil {
 		return false, err
 	}
@@ -227,9 +228,9 @@ func nonEmptyReviewLines(output string) []string {
 	return lines
 }
 
-func runReviewGit(repoRoot string, args ...string) (string, int, error) {
+func runReviewGit(ctx context.Context, repoRoot string, args ...string) (string, int, error) {
 	gitArgs := append([]string{"-C", repoRoot, "-c", "core.fsmonitor=false"}, args...)
-	command := exec.Command("git", gitArgs...)
+	command := exec.CommandContext(ctx, "git", gitArgs...)
 	command.Env = reviewGitEnv()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

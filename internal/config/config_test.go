@@ -3362,8 +3362,9 @@ func TestReviewArtifactRootNeverResolvesIntoHistory(t *testing.T) {
 		if got != want {
 			t.Fatalf("ResolveReviewRoot() = %q, want live root %q", got, want)
 		}
-		if reviewRootInsideHistory(repoRoot, got) {
-			t.Fatalf("ResolveReviewRoot() = %q under repository history", got)
+		historyRoot := filepath.Join(repoRoot, "docs", "history")
+		if strings.HasPrefix(got, historyRoot+string(filepath.Separator)) {
+			t.Fatalf("ResolveReviewRoot() = %q under repository history %q", got, historyRoot)
 		}
 	})
 
@@ -3379,6 +3380,75 @@ func TestReviewArtifactRootNeverResolvesIntoHistory(t *testing.T) {
 		}
 		if got != "" {
 			t.Fatalf("ResolveReviewRoot() returned %q with history refusal", got)
+		}
+	})
+
+	t.Run("explicit artifact directory requires a repository root", func(t *testing.T) {
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			ExplicitArtifactDir: filepath.Join(repoRoot, "docs", "history", "artifacts"),
+			PRNumber:            123,
+		})
+		if err == nil {
+			t.Fatalf("ResolveReviewRoot() = %q, want repository-root refusal", got)
+		}
+		if !strings.Contains(err.Error(), "repository root") {
+			t.Fatalf("ResolveReviewRoot() error = %q, want repository-root requirement", err)
+		}
+	})
+
+	t.Run("explicit specs root requires a repository root", func(t *testing.T) {
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			SpecsRoot: filepath.Join(repoRoot, "docs", "history", "specs"),
+			PRNumber:  123,
+		})
+		if err == nil {
+			t.Fatalf("ResolveReviewRoot() = %q, want repository-root refusal", got)
+		}
+		if !strings.Contains(err.Error(), "repository root") {
+			t.Fatalf("ResolveReviewRoot() error = %q, want repository-root requirement", err)
+		}
+	})
+}
+
+func TestResolveReviewRootPrefersLegacyReviewsUntilMigration(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	prNumber := 246
+
+	t.Run("falls back to legacy _reviews root before migration", func(t *testing.T) {
+		legacy := filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-246")
+		mustMkdir(t, legacy)
+
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			RepoRoot:  repoRoot,
+			SpecsRoot: filepath.Join(repoRoot, "docs", "specs"),
+			PRNumber:  prNumber,
+		})
+		if err != nil {
+			t.Fatalf("ResolveReviewRoot() error = %v", err)
+		}
+		want := legacy
+		if got != want {
+			t.Fatalf("ResolveReviewRoot() = %q, want legacy root %q", got, want)
+		}
+	})
+
+	t.Run("prefers the live reviews root when both exist", func(t *testing.T) {
+		mustMkdir(t, filepath.Join(repoRoot, "docs", "specs", "reviews", "pr-246"))
+		mustMkdir(t, filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-246"))
+
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			RepoRoot:  repoRoot,
+			SpecsRoot: filepath.Join(repoRoot, "docs", "specs"),
+			PRNumber:  prNumber,
+		})
+		if err != nil {
+			t.Fatalf("ResolveReviewRoot() error = %v", err)
+		}
+		want := filepath.Join(repoRoot, "docs", "specs", "reviews", "pr-246")
+		if got != want {
+			t.Fatalf("ResolveReviewRoot() = %q, want live root %q", got, want)
 		}
 	})
 }

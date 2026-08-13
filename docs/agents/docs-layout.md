@@ -187,7 +187,7 @@ absorbed_by: <rollup-basename-or-spec-slug>
 
 # Spec docs layout
 
-- **mandatory**: Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under the resolved archive directory: `docs/history/specs/` for the built-in `docs/specs` Spec Root, or `<spec-root>/_archived/` beside the active root for an external or configured non-default Spec Root.
+- **mandatory**: Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with an archive-eligible QA outcome under the resolved archive directory: `pass`, the declared-only `partial` case whose unmet rows are all declared unreachable under `## Unreachable Acceptance`, or an explicitly authorized `qa_override`: `docs/history/specs/` for the built-in `docs/specs` Spec Root, or `<spec-root>/_archived/` beside the active root for an external or configured non-default Spec Root.
 
 - **mandatory**: Specs are downstream results of the CONTEXT-driven workflow, never sources it depends on: an archived Spec may be deleted at any time, so durable knowledge a Spec produced must move upstream to its semantic owner — the project glossary, an accepted ADR, an agent guide, or `docs/references/` — before or at archive. The glossary and the agent guides must never reference a Spec.
 

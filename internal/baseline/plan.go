@@ -578,7 +578,7 @@ func buildPlanWithCatalog(
 			return PlanOutcome{}, err
 		}
 	}
-	historyMoves, retainedReviewFindings, err := planHistoryMoves(initial.Root)
+	historyMoves, retainedReviewFindings, err := planHistoryMoves(ctx, initial.Root)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -617,8 +617,8 @@ func buildPlanWithCatalog(
 	return PlanOutcome{Plan: &doc, Result: result}, nil
 }
 
-func planHistoryMoves(root string) ([]HistoryMove, []Finding, error) {
-	report, err := discoverHistoryLayout(root)
+func planHistoryMoves(ctx context.Context, root string) ([]HistoryMove, []Finding, error) {
+	report, err := discoverHistoryLayout(ctx, root)
 	if err != nil {
 		return nil, nil, fmt.Errorf("discover history layout for Baseline Plan: %w", err)
 	}
@@ -633,8 +633,9 @@ func planHistoryMoves(root string) ([]HistoryMove, []Finding, error) {
 			ContentIdentity: collision.ContentIdentity,
 		})
 	}
+	warnings := append(cloneFindings(report.retainedReviews), historyCollisionFindings(report.collisions)...)
 	if len(candidates) == 0 {
-		return nil, cloneFindings(report.retainedReviews), nil
+		return nil, warnings, nil
 	}
 	sort.Slice(candidates, func(left int, right int) bool {
 		if candidates[left].From == candidates[right].From {
@@ -651,7 +652,25 @@ func planHistoryMoves(root string) ([]HistoryMove, []Finding, error) {
 			ContentIdentity: relocation.ContentIdentity,
 		}
 	}
-	return moves, cloneFindings(report.retainedReviews), nil
+	return moves, warnings, nil
+}
+
+// historyCollisionFindings reports every unplanned history collision as a
+// warning Finding. Occupied-destination collisions have a planned path and are
+// omitted here.
+func historyCollisionFindings(collisions []HistoryCollision) []Finding {
+	findings := make([]Finding, 0, len(collisions))
+	for _, collision := range collisions {
+		if collision.Reason == historyDestinationOccupied {
+			continue
+		}
+		findings = append(findings, Finding{
+			Code:    historyCollisionCode,
+			Path:    collision.From,
+			Message: fmt.Sprintf("history collision at %s: %s", collision.To, collision.Reason),
+		})
+	}
+	return findings
 }
 
 func alignmentEvidencePaths(alignment ProfileAlignment) []string {

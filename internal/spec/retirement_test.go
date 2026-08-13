@@ -22,6 +22,7 @@ func TestClassifyADRRetirement(t *testing.T) {
 		{name: "superseded", content: retirementDocument("superseded"), want: Retirement{Retired: true, Reason: "superseded"}},
 		{name: "legacy-no-status", content: "# Legacy decision\n\nThis decision remains active.\n", want: Retirement{}},
 		{name: "legacy-body-marked", content: "# Legacy decision\n\nStatus: Deprecated\n", want: Retirement{Retired: true, Reason: "deprecated"}},
+		{name: "legacy-fenced-status-deep", content: legacyFencedStatusBeyondHeader, want: Retirement{}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -60,3 +61,33 @@ func TestClassifyBacklogEntryRetirement(t *testing.T) {
 func retirementDocument(status string) string {
 	return "---\nstatus: " + status + "\n---\n\n# Document\n"
 }
+
+// legacyFencedStatusBeyondHeader carries a fenced `Status: Deprecated` line
+// deep in the body, past the leading header lines that the legacy fallback
+// scans. The marker must not retire the record.
+var legacyFencedStatusBeyondHeader = "# Legacy decision\n\n" +
+	"## Context\n" +
+	"\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"Long narrative line.\n" +
+	"```text\n" +
+	"Status: Deprecated\n" +
+	"```\n"

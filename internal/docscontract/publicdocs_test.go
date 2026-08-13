@@ -874,27 +874,31 @@ func reviewGlobCanReach(pattern, protectedRoot string) (bool, error) {
 		}
 	}
 
-	var search func(int, int) bool
-	search = func(patternIndex, rootIndex int) bool {
+	var search func(int, int) (bool, error)
+	search = func(patternIndex, rootIndex int) (bool, error) {
 		if rootIndex == len(rootSegments) {
-			return patternIndex < len(patternSegments)
+			return patternIndex < len(patternSegments), nil
 		}
 		if patternIndex == len(patternSegments) {
-			return false
+			return false, nil
 		}
 
 		patternSegment := patternSegments[patternIndex]
 		if patternSegment == "**" {
-			return search(patternIndex+1, rootIndex) || search(patternIndex, rootIndex+1)
+			skipped, err := search(patternIndex+1, rootIndex)
+			if err != nil || skipped {
+				return skipped, err
+			}
+			return search(patternIndex, rootIndex+1)
 		}
 
-		matched, _ := path.Match(patternSegment, rootSegments[rootIndex])
-		if !matched {
-			return false
+		matched, err := path.Match(patternSegment, rootSegments[rootIndex])
+		if err != nil || !matched {
+			return false, err
 		}
 		return search(patternIndex+1, rootIndex+1)
 	}
-	return search(0, 0), nil
+	return search(0, 0)
 }
 
 func matchReviewGlob(pattern, candidate string) (bool, error) {
@@ -909,26 +913,33 @@ func matchReviewGlob(pattern, candidate string) (bool, error) {
 		}
 	}
 
-	var match func(int, int) bool
-	match = func(patternIndex, candidateIndex int) bool {
+	var match func(int, int) (bool, error)
+	match = func(patternIndex, candidateIndex int) (bool, error) {
 		if patternIndex == len(patternSegments) {
-			return candidateIndex == len(candidateSegments)
+			return candidateIndex == len(candidateSegments), nil
 		}
 		if patternSegments[patternIndex] == "**" {
 			for index := candidateIndex; index <= len(candidateSegments); index++ {
-				if match(patternIndex+1, index) {
-					return true
+				matched, err := match(patternIndex+1, index)
+				if err != nil {
+					return false, err
+				}
+				if matched {
+					return true, nil
 				}
 			}
-			return false
+			return false, nil
 		}
 		if candidateIndex == len(candidateSegments) {
-			return false
+			return false, nil
 		}
-		matched, _ := path.Match(patternSegments[patternIndex], candidateSegments[candidateIndex])
-		return matched && match(patternIndex+1, candidateIndex+1)
+		matched, err := path.Match(patternSegments[patternIndex], candidateSegments[candidateIndex])
+		if err != nil || !matched {
+			return false, err
+		}
+		return match(patternIndex+1, candidateIndex+1)
 	}
-	return match(0, 0), nil
+	return match(0, 0)
 }
 
 func assertAgentStartingExamplesUseProfilesOrCompleteOverrides(t *testing.T, label string, content string) {

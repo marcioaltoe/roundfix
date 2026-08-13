@@ -8,6 +8,7 @@ package baseline
 // Boundary OUT: Baseline plan serialization, relocation apply, rollback, and reporting.
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
@@ -67,7 +68,7 @@ func TestDiscoverHistoryLayoutLegacyArchiveShapes(t *testing.T) {
 			historyWriteFiles(t, repo, test.files)
 			before := historySnapshot(t, repo)
 
-			got, collisions, err := DiscoverHistoryLayout(repo)
+			got, collisions, err := DiscoverHistoryLayout(context.Background(), repo)
 			if err != nil {
 				t.Fatalf("DiscoverHistoryLayout() error = %v", err)
 			}
@@ -78,7 +79,7 @@ func TestDiscoverHistoryLayoutLegacyArchiveShapes(t *testing.T) {
 				t.Fatalf("DiscoverHistoryLayout() collisions = %#v, want none", collisions)
 			}
 
-			again, againCollisions, err := DiscoverHistoryLayout(repo)
+			again, againCollisions, err := DiscoverHistoryLayout(context.Background(), repo)
 			if err != nil {
 				t.Fatalf("second DiscoverHistoryLayout() error = %v", err)
 			}
@@ -105,7 +106,7 @@ func TestDiscoverHistoryLayoutCurrentLayoutReportsNothing(t *testing.T) {
 	})
 	before := historySnapshot(t, repo)
 
-	relocations, collisions, err := DiscoverHistoryLayout(repo)
+	relocations, collisions, err := DiscoverHistoryLayout(context.Background(), repo)
 	if err != nil {
 		t.Fatalf("DiscoverHistoryLayout() error = %v", err)
 	}
@@ -127,7 +128,7 @@ func TestDiscoverHistoryLayoutClassifiesActiveDocuments(t *testing.T) {
 	})
 	before := historySnapshot(t, repo)
 
-	got, collisions, err := DiscoverHistoryLayout(repo)
+	got, collisions, err := DiscoverHistoryLayout(context.Background(), repo)
 	if err != nil {
 		t.Fatalf("DiscoverHistoryLayout() error = %v", err)
 	}
@@ -171,7 +172,7 @@ func TestDiscoverHistoryLayoutClassifiesOrphanReviews(t *testing.T) {
 	historyPersistRound(t, specOwnedReview, "feature/merged", mainHead)
 
 	before := historySnapshot(t, repo)
-	got, collisions, err := DiscoverHistoryLayout(repo)
+	got, collisions, err := DiscoverHistoryLayout(context.Background(), repo)
 	if err != nil {
 		t.Fatalf("DiscoverHistoryLayout() error = %v", err)
 	}
@@ -215,7 +216,7 @@ func TestRetainedReviewReport(t *testing.T) {
 	historyReplaceRoundHead(t, undecidableReview, liveHead, "")
 
 	before := historySnapshot(t, repo)
-	relocations, collisions, err := DiscoverHistoryLayout(repo)
+	relocations, collisions, err := DiscoverHistoryLayout(context.Background(), repo)
 	if err != nil {
 		t.Fatalf("DiscoverHistoryLayout() error = %v", err)
 	}
@@ -223,7 +224,7 @@ func TestRetainedReviewReport(t *testing.T) {
 		t.Fatalf("retained reviews changed layout decisions: relocations=%#v collisions=%#v", relocations, collisions)
 	}
 
-	moves, findings, err := planHistoryMoves(repo)
+	moves, findings, err := planHistoryMoves(context.Background(), repo)
 	if err != nil {
 		t.Fatalf("planHistoryMoves() error = %v", err)
 	}
@@ -267,7 +268,7 @@ func TestDiscoverHistoryLayoutReportsCollisionWithoutHidingSiblings(t *testing.T
 	})
 	before := historySnapshot(t, repo)
 
-	relocations, collisions, err := DiscoverHistoryLayout(repo)
+	relocations, collisions, err := DiscoverHistoryLayout(context.Background(), repo)
 	if err != nil {
 		t.Fatalf("DiscoverHistoryLayout() error = %v", err)
 	}
@@ -402,7 +403,11 @@ func historyReplaceRoundHead(t *testing.T, reviewDir string, oldHead string, new
 	if err != nil {
 		t.Fatalf("read Review Artifact metadata fixture: %v", err)
 	}
-	content = []byte(strings.Replace(string(content), "head_sha: "+oldHead, "head_sha: \""+newHead+"\"", 1))
+	replaced := strings.Replace(string(content), "head_sha: "+oldHead, "head_sha: \""+newHead+"\"", 1)
+	if replaced == string(content) {
+		t.Fatalf("Review Artifact metadata fixture %q has no %q head record", path, oldHead)
+	}
+	content = []byte(replaced)
 	if err := os.WriteFile(path, content, 0o644); err != nil {
 		t.Fatalf("write Review Artifact metadata fixture: %v", err)
 	}

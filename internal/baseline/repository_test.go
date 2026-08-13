@@ -54,6 +54,7 @@ func TestInventoryBudget(t *testing.T) {
 	)
 
 	t.Run("measured fleet archive plans and applies", func(t *testing.T) {
+		t.Parallel()
 		repository := newPlanRepository(t)
 		sources := writeInventoryFiles(
 			t,
@@ -87,6 +88,7 @@ func TestInventoryBudget(t *testing.T) {
 	})
 
 	t.Run("inventory beyond budget refuses and names limit", func(t *testing.T) {
+		t.Parallel()
 		repository := t.TempDir()
 		paths := writeInventoryFiles(
 			t,

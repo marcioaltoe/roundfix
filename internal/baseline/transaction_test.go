@@ -335,7 +335,7 @@ func TestHistoryMoveRemovesEmptiedSource(t *testing.T) {
 			t.Fatalf("live Review Artifact root = (%v, %v), want surviving directory", info, err)
 		}
 
-		moves, findings, err := planHistoryMoves(repo)
+		moves, findings, err := planHistoryMoves(context.Background(), repo)
 		if err != nil {
 			t.Fatalf("planHistoryMoves() rerun: %v", err)
 		}
