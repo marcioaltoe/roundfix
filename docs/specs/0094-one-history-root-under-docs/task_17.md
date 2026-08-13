@@ -61,7 +61,7 @@ forever.
 
 - `go test -count=1 ./internal/baseline -run 'TestHistoryMoveRemovesEmptiedSource' -v > /tmp/0094-task-17.log 2>&1; s=$?; grep -q '^--- PASS: TestHistoryMoveRemovesEmptiedSource' /tmp/0094-task-17.log || { cat /tmp/0094-task-17.log; exit 1; }; exit $s` — expected: exits 0 and the log names the passing test; fails today, where no such test exists.
 - `! grep -qi 'no tests to run' /tmp/0094-task-17.log` — expected: exits 0, refusing a vacuous run.
-- `go test -count=1 ./internal/baseline -run 'TestHistoryMoveRollback|TestHistoryMoveCollision' -v > /tmp/0094-task-17b.log 2>&1; s=$?; grep -q '^--- PASS: .*HistoryMoveRollback' /tmp/0094-task-17b.log && grep -q '^--- PASS: .*HistoryMoveCollision' /tmp/0094-task-17b.log || { cat /tmp/0094-task-17b.log; exit 1; }; exit $s` — expected: exits 0, proving rollback and collision still hold once sources are removed. These pass today, so this command is the guard and the one above is what proves the Task's own effect.
+- `go test -count=1 ./internal/baseline -run 'TestHistoryMoveRollback|TestHistoryMoveCollision' -v > /tmp/0094-task-17b.log 2>&1; s=$?; grep -q '^--- PASS: .*HistoryMoveRollback' /tmp/0094-task-17b.log && grep -q '^--- PASS: .*HistoryMoveCollision' /tmp/0094-task-17b.log && grep -rq 'RemovesEmptiedSource' internal/baseline || { cat /tmp/0094-task-17b.log; exit 1; }; exit $s` — expected: exits 0, proving rollback and collision still hold once the removal exists. The suite alone passes before any work, so it is anchored to the change it guards; an unanchored guard is refused as vacuous, which is what happened to an earlier draft of this command.
 
 ## Context
 
