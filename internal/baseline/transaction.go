@@ -591,6 +591,9 @@ func (transaction *fileTransaction) relocateHistoryMove(
 	if err := transaction.syncHistoryMoveParents(move.From, move.To); err != nil {
 		return nil, err
 	}
+	if err := transaction.removeEmptyHistorySourceDirectories(move.From); err != nil {
+		return nil, err
+	}
 	if err := transaction.runPhaseHook(transactionFaultPoint{
 		Phase: transactionPhaseReplaced,
 		Path:  move.To,
@@ -693,6 +696,17 @@ func (transaction *fileTransaction) createDestinationTemporary(
 }
 
 func (transaction *fileTransaction) ensureParentDirectories(relative string) error {
+	return transaction.makeParentDirectories(relative, transaction.recordCreatedDirectory)
+}
+
+func (transaction *fileTransaction) restoreParentDirectories(relative string) error {
+	return transaction.makeParentDirectories(relative, nil)
+}
+
+func (transaction *fileTransaction) makeParentDirectories(
+	relative string,
+	record func(string) error,
+) error {
 	parent := path.Dir(relative)
 	if parent == "." {
 		return nil
@@ -711,8 +725,10 @@ func (transaction *fileTransaction) ensureParentDirectories(relative string) err
 				return fmt.Errorf("Baseline transaction parent %q must be a real directory", current)
 			}
 		case errors.Is(err, fs.ErrNotExist):
-			if err := transaction.recordCreatedDirectory(current); err != nil {
-				return err
+			if record != nil {
+				if err := record(current); err != nil {
+					return err
+				}
 			}
 			if err := transaction.anchored.Mkdir(current, 0o755); err != nil && !errors.Is(err, fs.ErrExist) {
 				return fmt.Errorf("create Baseline destination parent %q: %w", current, err)
@@ -847,7 +863,7 @@ func restoreHistoryMove(
 		return fmt.Errorf("roll back Baseline history move: source %q changed", move.From)
 	}
 	if destinationMatchesHistoryMove(destination, move) {
-		if err := transaction.ensureParentDirectories(move.From); err != nil {
+		if err := transaction.restoreParentDirectories(move.From); err != nil {
 			return err
 		}
 		if err := transaction.anchored.Rename(move.To, move.From); err != nil {
@@ -879,7 +895,7 @@ func restoreHistoryMoveSource(
 	index int,
 	move transactionJournalHistoryMove,
 ) error {
-	if err := transaction.ensureParentDirectories(move.From); err != nil {
+	if err := transaction.restoreParentDirectories(move.From); err != nil {
 		return err
 	}
 	temporary := transaction.destinationTemporaryPath(index, move.From, "history-restore")
@@ -973,6 +989,62 @@ func (transaction *fileTransaction) syncHistoryMoveParents(from, to string) erro
 		return nil
 	}
 	return transaction.syncRepositoryParent(to)
+}
+
+func (transaction *fileTransaction) removeEmptyHistorySourceDirectories(from string) error {
+	boundary := historyMoveSourceRoot(from)
+	current := path.Dir(from)
+	if current != boundary && !strings.HasPrefix(current, boundary+"/") {
+		boundary = current
+	}
+	for {
+		empty, err := transaction.historySourceDirectoryEmpty(current)
+		if err != nil {
+			return err
+		}
+		if !empty {
+			return nil
+		}
+		if err := transaction.anchored.Remove(current); err != nil {
+			return fmt.Errorf("remove empty Baseline history source directory %q: %w", current, err)
+		}
+		if err := transaction.syncRepositoryParent(current); err != nil {
+			return err
+		}
+		if current == boundary {
+			return nil
+		}
+		current = path.Dir(current)
+	}
+}
+
+func (transaction *fileTransaction) historySourceDirectoryEmpty(relative string) (bool, error) {
+	info, err := transaction.anchored.Lstat(relative)
+	if err != nil {
+		return false, fmt.Errorf("inspect Baseline history source directory %q: %w", relative, err)
+	}
+	if info.Mode()&fs.ModeSymlink != 0 || !info.IsDir() {
+		return false, fmt.Errorf("Baseline history source parent %q must be a real directory", relative)
+	}
+	directory, err := transaction.anchored.Open(relative)
+	if err != nil {
+		return false, fmt.Errorf("open Baseline history source directory %q: %w", relative, err)
+	}
+	entries, readErr := directory.ReadDir(1)
+	closeErr := directory.Close()
+	if len(entries) != 0 {
+		if closeErr != nil {
+			return false, fmt.Errorf("close Baseline history source directory %q: %w", relative, closeErr)
+		}
+		return false, nil
+	}
+	if readErr != nil && !errors.Is(readErr, io.EOF) {
+		return false, fmt.Errorf("read Baseline history source directory %q: %w", relative, readErr)
+	}
+	if closeErr != nil {
+		return false, fmt.Errorf("close Baseline history source directory %q: %w", relative, closeErr)
+	}
+	return true, nil
 }
 
 func (transaction *fileTransaction) runPhaseHook(point transactionFaultPoint) error {

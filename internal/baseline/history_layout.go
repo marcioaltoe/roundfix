@@ -60,6 +60,30 @@ var legacyHistoryLayoutTrees = []historyLayoutTree{
 	{from: "_archived/backlog", kind: spec.ArchiveKindBacklog},
 }
 
+func historyMoveSourceRoot(source string) string {
+	for _, reviewRoot := range []string{"docs/specs/_reviews", "docs/specs/reviews"} {
+		remainder, ok := strings.CutPrefix(source, reviewRoot+"/")
+		if !ok {
+			continue
+		}
+		review, _, nested := strings.Cut(remainder, "/")
+		if nested && review != "" {
+			return path.Join(reviewRoot, review)
+		}
+	}
+	for _, tree := range legacyHistoryLayoutTrees {
+		if strings.HasPrefix(source, tree.from+"/") {
+			return tree.from
+		}
+	}
+	for _, documentRoot := range []string{"docs/adr", "docs/backlog"} {
+		if strings.HasPrefix(source, documentRoot+"/") {
+			return documentRoot
+		}
+	}
+	return path.Dir(source)
+}
+
 // DiscoverHistoryLayout returns the relocations that bring a repository to the
 // current layout, sorted by From, and the collisions that refuse to move. It
 // reads repository and local Git state but never changes either.

@@ -1,7 +1,7 @@
 ---
 task: task_17
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: low
 ---
@@ -73,3 +73,46 @@ forever.
 `_prd.md` → Core Features 3, 6 and 7; Goal 4, a finished review stops
 accumulating beside live work. QA report `qa/qa-report-2026-08-13.md` → F-002,
 which names `relocateHistoryMove` as the root cause. ADR-0123.
+
+## Result
+
+Implementation:
+
+- A performed History Relocation now removes empty source directories from the
+  moved file's parent through the source tree where discovery began. It stops at
+  the first directory that contains an entry and never removes the source tree's
+  parent.
+- Rollback recreates source parents removed by relocation without recording them
+  as apply-created destination directories, so the later rollback cleanup leaves
+  the restored source and its directories in place.
+- The transaction regression suite exercises a finished orphan Review Artifact,
+  a source directory with an unmoved file, and rollback after source pruning.
+
+Focused checks:
+
+- Before the implementation, `GOCACHE=/tmp/roundfix-task-17-go-cache rtk go
+  test ./internal/baseline -run '^TestHistoryMoveRemovesEmptiedSource$'
+  -count=1` failed because the finished Review Artifact directory still existed.
+- After the implementation, `GOCACHE=/tmp/roundfix-task-17-go-cache rtk go
+  test ./internal/baseline -run
+  '^(TestHistoryMoveRemovesEmptiedSource|TestHistoryMoveRollback|TestHistoryMoveCollision)$'
+  -count=1` exited 0 with 9 passing tests.
+- `rtk git diff --check` exited 0 with no diagnostics.
+- The daemon-owned commands under `## Verification` were not run.
+
+Acceptance evidence:
+
+- `TestHistoryMoveRemovesEmptiedSource/finished_Review_Artifact_leaves_no_source_shell_or_rerun_finding`
+  verifies that the Review Artifact and Round directories are absent while the
+  live Review Artifact root survives.
+- `TestHistoryMoveRemovesEmptiedSource/unmoved_file_keeps_its_source_directory`
+  verifies that a directory containing an unmoved file survives with the file's
+  original bytes.
+- The finished-Review subtest calls `planHistoryMoves` after apply and verifies
+  that the rerun returns neither moves nor retained-review findings.
+- `TestHistoryMoveRollback/failure_after_source_pruning_recreates_source_directories`
+  injects a post-pruning failure and verifies the source bytes and directory are
+  restored.
+- The focused run includes the existing collision refusal, destination identity
+  mismatch, and interrupted-recovery cases; all passed without weakening their
+  path, byte-identity, or refusal assertions.

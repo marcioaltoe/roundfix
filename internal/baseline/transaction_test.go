@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"roundfix/internal/gittest"
 	"sort"
 	"strings"
 	"testing"
@@ -308,6 +309,66 @@ func TestHistoryMoveApply(t *testing.T) {
 	})
 }
 
+func TestHistoryMoveRemovesEmptiedSource(t *testing.T) {
+	t.Parallel()
+
+	t.Run("finished Review Artifact leaves no source shell or rerun finding", func(t *testing.T) {
+		t.Parallel()
+
+		repo := newPlanRepository(t)
+		head := strings.TrimSpace(gittest.Run(t, repo, "rev-parse", "HEAD"))
+		const reviewPath = "docs/specs/reviews/pr-201"
+		reviewDir := filepath.Join(repo, filepath.FromSlash(reviewPath))
+		historyPersistRound(t, reviewDir, "feature/merged", head)
+		historyWriteFiles(t, repo, map[string]string{
+			path.Join(reviewPath, "issues/001.md"): "finished issue\n",
+		})
+
+		plan := buildTestPlan(t, repo)
+		if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err != nil {
+			t.Fatalf("ApplyPlan(): %v", err)
+		}
+		if _, err := os.Lstat(reviewDir); !errors.Is(err, fs.ErrNotExist) {
+			t.Fatalf("finished Review Artifact directory error = %v, want not exist", err)
+		}
+		if info, err := os.Stat(filepath.Dir(reviewDir)); err != nil || !info.IsDir() {
+			t.Fatalf("live Review Artifact root = (%v, %v), want surviving directory", info, err)
+		}
+
+		moves, findings, err := planHistoryMoves(repo)
+		if err != nil {
+			t.Fatalf("planHistoryMoves() rerun: %v", err)
+		}
+		if len(moves) != 0 || len(findings) != 0 {
+			t.Fatalf("planHistoryMoves() rerun = (%#v, %#v), want no relocated Review Artifact", moves, findings)
+		}
+	})
+
+	t.Run("unmoved file keeps its source directory", func(t *testing.T) {
+		t.Parallel()
+
+		const source = "docs/specs/reviews/pr-202/round-001/round.md"
+		const unmoved = "docs/specs/reviews/pr-202/round-001/keep.txt"
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+			source: "round metadata\n",
+		})
+		writeTransactionFile(t, repo, unmoved, "keep me\n", 0o644)
+
+		tx := beginTestTransaction(t, repo, plan)
+		if _, err := tx.Apply(context.Background()); err != nil {
+			t.Fatalf("Apply(): %v", err)
+		}
+		if err := tx.Close(); err != nil {
+			t.Fatalf("Close(): %v", err)
+		}
+		content, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(unmoved)))
+		if err != nil || string(content) != "keep me\n" {
+			t.Fatalf("unmoved source file = %q error=%v, want original bytes", content, err)
+		}
+		assertHistoryMoveState(t, repo, plan.HistoryMoves[0], "round metadata\n", true)
+	})
+}
+
 func TestHistoryMoveCollision(t *testing.T) {
 	t.Parallel()
 
@@ -408,6 +469,33 @@ func TestHistoryMoveRollback(t *testing.T) {
 			t.Fatalf("Close(): %v", err)
 		}
 		assertHistoryMoveState(t, repo, move, "alpha prd\n", false)
+	})
+
+	t.Run("failure after source pruning recreates source directories", func(t *testing.T) {
+		t.Parallel()
+
+		const source = "docs/specs/reviews/pr-203/round-001/round.md"
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+			source: "round metadata\n",
+		})
+		move := plan.HistoryMoves[0]
+		tx := beginTestTransaction(t, repo, plan)
+		tx.phaseHook = failTransactionOnce(
+			transactionPhaseVerifying,
+			move.To,
+			errors.New("injected failure after source pruning"),
+		)
+		if _, err := tx.Apply(context.Background()); err == nil ||
+			!strings.Contains(err.Error(), "injected failure after source pruning") {
+			t.Fatalf("Apply() error = %v, want injected post-pruning failure", err)
+		}
+		if err := tx.Close(); err != nil {
+			t.Fatalf("Close(): %v", err)
+		}
+		assertHistoryMoveState(t, repo, move, "round metadata\n", false)
+		if info, err := os.Stat(filepath.Join(repo, filepath.FromSlash(path.Dir(source)))); err != nil || !info.IsDir() {
+			t.Fatalf("restored source directory = (%v, %v), want directory", info, err)
+		}
 	})
 
 	t.Run("interrupted relocation recovers from the journal", func(t *testing.T) {
