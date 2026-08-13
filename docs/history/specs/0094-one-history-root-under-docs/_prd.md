@@ -1,9 +1,12 @@
 ---
 spec: 0094-one-history-root-under-docs
-status: active
+status: archived
 created: 2026-08-12
 surfaces: [cli, docs]
+archived: "2026-08-13"
+source_slug: 0094-one-history-root-under-docs
 ---
+
 
 # One history root under `docs/`
 
