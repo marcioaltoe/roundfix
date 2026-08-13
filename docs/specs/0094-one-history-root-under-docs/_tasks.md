@@ -49,9 +49,12 @@ graph:
     - id: task_16
       file: task_16.md
       needs: [task_07]
+    - id: task_17
+      file: task_17.md
+      needs: [task_14]
     - id: task_09
       file: task_09.md
-      needs: [task_06, task_07, task_08, task_10, task_11, task_12, task_13, task_14, task_15, task_16]
+      needs: [task_06, task_07, task_08, task_10, task_11, task_12, task_13, task_14, task_15, task_16, task_17]
 ---
 
 # Tasks — One history root under `docs/`
@@ -73,6 +76,7 @@ graph:
 | task_14 | Refuse a collision and stop calling the tree current          | backend | high       | task_13                   |
 | task_15 | Correct the Archive Command's help text                       | docs    | low        | task_07                   |
 | task_16 | Correct the Source Baseline carrier                           | docs    | low        | task_07                   |
-| task_09 | Run the final QA gate                                        | qa      | high       | task_06…task_08, task_10…task_16 |
+| task_17 | Leave no empty shell where a relocation started               | backend | low        | task_14                   |
+| task_09 | Run the final QA gate                                        | qa      | high       | task_06…task_08, task_10…task_17 |
 
-Waves: 1 → task_01, task_02 · 2 → task_03, task_07, task_08 · 3 → task_04, task_10 · 4 → task_05, task_11 · 5 → task_06 · 6 → task_12, task_13 · 7 → task_14, task_15, task_16 · 8 → task_09
+Waves: 1 → task_01, task_02 · 2 → task_03, task_07, task_08 · 3 → task_04, task_10 · 4 → task_05, task_11 · 5 → task_06 · 6 → task_12, task_13 · 7 → task_14, task_15, task_16 · 8 → task_17 · 9 → task_09
