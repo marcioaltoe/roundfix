@@ -455,7 +455,7 @@ The single repository directory holding every retired documentation family — S
 _Avoid_: Archive folder, `_archived`, attic, trash
 
 **History Relocation**:
-One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity — `HistoryMove` in Go, `historyMoves` in a serialized plan. It never carries file content, so a plan's size tracks the change it makes rather than the history it moves, and the recorded identity is what proves the bytes survived the move.
+One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity — `HistoryRelocation` when discovery reports one, `HistoryMove` once the plan records it, and `historyMoves` in a serialized plan. It never carries file content, so a plan's size tracks the change it makes rather than the history it moves, and the recorded identity is what proves the bytes survived the move. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
 _Avoid_: Archive move, file migration, relocation payload
 
 **GC Command**:
