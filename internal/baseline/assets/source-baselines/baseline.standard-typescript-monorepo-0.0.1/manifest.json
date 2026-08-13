@@ -1288,8 +1288,8 @@
       "carrier": "docs/agents/spec-routing.md",
       "structure": "protocol",
       "start": 924,
-      "end": 1545,
-      "digest": "5bf286eda24c2dacb33532fa8ec9a1d5a0cd7766d08c9723c0359d052c7cc7a8"
+      "end": 1548,
+      "digest": "b36a01f6fd37cf121a1b1a424fc202a68ffa607e5d1fb040726f0e2fdabdeb4e"
     },
     {
       "id": "clause.spec.routing-01-large-initiative",
@@ -1298,8 +1298,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 1680,
-      "end": 1788,
+      "start": 1683,
+      "end": 1791,
       "digest": "7ca102ed5a2d60caae2160f239c6ca0b25291ff21bfe0ccb061031eca36b8032"
     },
     {
@@ -1309,8 +1309,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 1934,
-      "end": 2108,
+      "start": 1937,
+      "end": 2111,
       "digest": "1e73fbbdb6043e3251080c15392dfb08b670560ccbb8cd6170e8525667b1fef9"
     },
     {
@@ -1320,8 +1320,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 2253,
-      "end": 2424,
+      "start": 2256,
+      "end": 2427,
       "digest": "bc6b6f8d2a7a51866e398e6eb880f2dc0a7ff961b6f1f64170a5ee0e6b9129da"
     },
     {
@@ -1331,8 +1331,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 2567,
-      "end": 2722,
+      "start": 2570,
+      "end": 2725,
       "digest": "3530996d49cd1f64e971191cf90bf52aad08c7b546de50738691bdf9a06848be"
     },
     {
@@ -1342,8 +1342,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 2860,
-      "end": 3022,
+      "start": 2863,
+      "end": 3025,
       "digest": "8633487060f2243dd17056b0b52415882c48bb108258366e336a0a24d3c19879"
     },
     {
@@ -1353,8 +1353,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 3157,
-      "end": 3595,
+      "start": 3160,
+      "end": 3598,
       "digest": "4997374227082fa4f1768cf09b62831f0c21e2cce2cf7fc77dadb2762e4bc35b"
     },
     {
@@ -1364,8 +1364,8 @@
       "enforcement": "mandatory",
       "carrier": "docs/agents/spec-routing.md",
       "structure": null,
-      "start": 3748,
-      "end": 4169,
+      "start": 3751,
+      "end": 4172,
       "digest": "aa3aa853f82b6cdce783e0f74f1270c62eaa0c32d34b141f1c8f4a19ceef9afb"
     },
     {
