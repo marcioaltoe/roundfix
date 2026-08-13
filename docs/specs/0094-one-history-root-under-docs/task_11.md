@@ -1,7 +1,7 @@
 ---
 task: task_11
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: test
 complexity: low
 ---
@@ -75,3 +75,37 @@ archive-path literals.
 `_prd.md` → Core Feature 10; Project Constraints: Tooling authority.
 `_techspec.md` → Build Order 7. Like Task 10, this is a consequent fix landing
 after the authorized change that made it necessary, in its own commit.
+
+## Result
+
+The test now resolves the Spec archive with
+`spec.ArchiveDir(spec.ArchiveKindSpec)` once and reuses that path for the before
+and after byte snapshots. The unconditional `archived Spec artifact` equality
+assertion remains in place.
+
+Focused checks:
+
+- `rtk go test -tags repocontract ./skills -run '^$'` compiled the tagged
+  package successfully without executing the daemon-owned test. The first
+  sandboxed attempt could not read the external Go build cache; the approved
+  rerun exited 0.
+- `rtk go test ./internal/spec -run '^TestArchiveDirAnswersEveryRetiredKind$'`
+  exited 0 with six passing cases, including the Spec archive directory.
+- `rtk gofmt -d skills/owned_skill_edit_repocontract_test.go` exited 0 with no
+  output.
+- `rtk git diff --check` exited 0.
+
+Acceptance evidence:
+
+1. The declared derived-artifact test remains pending Daemon Verification; it
+   was not run in this Agent turn. Its tagged package compiles in the focused
+   check above.
+2. `rtk rg -n '_archived/specs' skills/owned_skill_edit_repocontract_test.go`
+   returned no matches, while inspection found the resolver call at line 32.
+3. Diff inspection shows `archivedBefore` still captures bytes before the owned
+   Skill edit and the unchanged, unconditional `archived Spec artifact`
+   assertion compares them with bytes read after regeneration.
+4. `rtk git status --short` lists only
+   `skills/owned_skill_edit_repocontract_test.go` and this Task file. The
+   pre-existing Task-file change was the Daemon-owned `pending` to
+   `in_progress` status transition.
