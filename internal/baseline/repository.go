@@ -27,7 +27,11 @@ const (
 
 	maxInventoryCarriers  = 256
 	maxInventoryFileBytes = 2 * 1024 * 1024
-	maxInventoryBytes     = 8 * 1024 * 1024
+	// Measured 2026-08-13 across adopted repositories this Spec did not build:
+	// vortex 12.4 MiB, conexus 10.2 MiB, fluxus 8.1 MiB, and oraculum 3.4 MiB.
+	// 16 MiB admits the measured fleet maximum with growth headroom while still
+	// refusing an implausibly large bounded inventory.
+	maxInventoryBytes = 16 * 1024 * 1024
 )
 
 type PreimageKind string

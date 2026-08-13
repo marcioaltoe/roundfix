@@ -1,7 +1,7 @@
 ---
 task: task_12
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -70,3 +70,66 @@ vortex 413 files at 12.4 MiB, conexus 173 at 10.2 MiB, fluxus 458 at 8.1 MiB,
 oraculum 735 at 3.4 MiB. File count does not predict bytes — oraculum holds the
 most files and the fewest bytes — so the budget is sized on bytes, and an archive
 only grows, so the value needs headroom rather than a fit.
+
+## Result
+
+### Implementation
+
+- Raised only the cumulative inventory ceiling from 8 MiB to 16 MiB. The
+  adjacent comment records the 2026-08-13 measurements for vortex (12.4 MiB),
+  conexus (10.2 MiB), fluxus (8.1 MiB), and oraculum (3.4 MiB), and explains the
+  growth headroom and remaining hostile-tree bound.
+- Added `TestInventoryBudget` to the canonical repository inspection suite. Its
+  positive case builds and applies a real Baseline Plan over 413 legacy archive
+  files totaling 12.4 MiB; its negative case inventories
+  `maxInventoryBytes + 1` and requires the refusal to name
+  `maxInventoryBytes`.
+- Left `maxInventoryFileBytes` at 2 MiB and `maxInventoryCarriers` at 256; the
+  production diff changes no other inventory bound.
+
+### Focused-check evidence
+
+- Red signal before the production edit:
+  `GOCACHE=/tmp/roundfix-task-12-go-cache go test ./internal/baseline -run '^TestInventoryBudget$' -count=1`
+  exited 1. The measured-fleet subtest reached apply and refused
+  `carrier-0266.md` with `carrier bytes exceed 8388608`.
+- After the production edit, the same focused command exited 0 in 26.826s.
+- `GOCACHE=/tmp/roundfix-task-12-go-cache go test ./internal/baseline -run '^(TestInventoryBudget|TestHistoryRelocationPlanCarriesOrderedIdentitiesOutsideRenderedCarriers|TestHistoryMoveApply)$' -count=1`
+  exited 0 in 26.486s.
+- `GOCACHE=/tmp/roundfix-task-12-go-cache make verify-incremental` exited 0.
+  All Go packages, the focused skill contract, `roundfix skills check`, and the
+  production build passed.
+- `git diff --check` exited 0.
+
+### Outside-fleet evidence
+
+- Source: vortex at `07826b268be7e77fbe2f6231fd5d151b54362cc8`, an adopted
+  repository this Spec did not build. The source checkout
+  `/Users/marcio/dev/vortex` remained unchanged.
+- A local `--no-local` clone at
+  `/tmp/roundfix-task-12-fleet.svEDBV/vortex-copy` was the only migration
+  target. The current Task binary's unconfirmed `baseline update
+  --adopt-suggested --no-skills` produced a plan digest and exited 3 with
+  `repository bytes are unchanged`, as the approval contract requires.
+- The approved disposable-clone run with `--yes` exited 0 with `Baseline
+  update: verified`. Post-apply inspection found no
+  `docs/specs/_archived`, found 413 files under `docs/history/specs`, and
+  measured 13,600 KiB allocated at the destination.
+
+### Acceptance evidence
+
+1. The measured fleet maximum plans and applies: the positive subtest passed,
+   and the independent vortex disposable-clone plan/apply exited as expected.
+2. The ceiling's adjacent comment names the measurement date, all four measured
+   repositories, each measured size, and the 16 MiB headroom decision.
+3. The negative subtest passed with one extra byte and asserted the exact
+   `carrier bytes exceed 16777216` refusal.
+4. Diff inspection confirms the 2 MiB per-file and 256-carrier bounds are
+   unchanged; only `maxInventoryBytes` moved.
+5. The new test failed against the previous 8 MiB value at the same apply
+   boundary that blocked QA, then passed after the cumulative ceiling changed.
+
+### Not run
+
+- The commands under this Task's `## Verification` section were not run; the
+  Roundfix Daemon owns declared Verification and Task settlement.
