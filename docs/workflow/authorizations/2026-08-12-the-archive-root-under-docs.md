@@ -25,6 +25,9 @@ paths:
   - skills/baseline_skill_contract_test.go
   - internal/docscontract/publicdocs_test.go
   - skills/owned_skill_edit_repocontract_test.go
+  - internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/spec-routing.md
+  - internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/baseline.json
+  - internal/baseline/assets/source-baselines/index.json
 ---
 
 # Tooling authorization — the archive root under `docs/` (2026-08-12)
@@ -195,3 +198,16 @@ A repository-wide sweep found no other broken pin. Every remaining `_archived`
 occurrence in Go is deliberate: `internal/baseline/history_layout.go` and its
 tests discover the legacy layout, which is the migration's whole purpose, and
 `internal/spec` keeps the name for an external or non-default Spec Root.
+
+## Extended 2026-08-13 — the routing carrier and its derived fallout
+
+`.../corpus/docs/agents/spec-routing.md` joins the corpus carriers already
+granted, for the same subject: it names the archive destination an adopting
+repository consumes, and the QA gate found it still naming the old one.
+
+`baseline.json` and `index.json` are listed although ADR-0081 already makes them
+sanctioned fallout of that edit. The changed-path audit reads this record's exact
+paths and does not implement the fallout rule, so a tooling Task regenerating
+them is refused unless they appear here. That gap is recorded in
+`docs/backlog/2026-08-13-the-changed-path-audit-does-not-know-sanctioned-fallout.md`;
+listing them is the workaround, not the fix.
