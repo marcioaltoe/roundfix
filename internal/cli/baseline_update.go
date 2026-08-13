@@ -89,6 +89,7 @@ type baselineUpdateResult struct {
 	UnresolvedProfile        *baseline.UnresolvedProfileDiagnosis `json:"unresolvedProfile,omitempty"`
 	PlanDigest               string                               `json:"planDigest,omitempty"`
 	ApprovedPlanDigest       string                               `json:"approvedPlanDigest,omitempty"`
+	VerifiedHistoryMoves     []baseline.HistoryMove               `json:"verifiedHistoryMoves,omitempty"`
 	StatusMatrix             *baseline.ResultStatusMatrix         `json:"statusMatrix,omitempty"`
 	Skills                   baselineUpdateSkillsResult           `json:"skills"`
 }
@@ -264,6 +265,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 	result.Message = applyResult.Message
 	result.NextAction = applyResult.NextAction
 	result.ApprovedPlanDigest = applyResult.PlanDigest
+	result.VerifiedHistoryMoves = append(result.VerifiedHistoryMoves, applyResult.VerifiedHistoryMoves...)
 	result.StatusMatrix = applyResult.StatusMatrix
 	if request.skipSkills {
 		result.Skills.Status = baselineUpdateSkillsSkipped
@@ -712,6 +714,12 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	}
 	if result.ApprovedPlanDigest != "" {
 		fmt.Fprintf(stdout, "Approved Plan Digest: %s\n", result.ApprovedPlanDigest)
+	}
+	if len(result.VerifiedHistoryMoves) != 0 {
+		fmt.Fprintf(stdout, "Verified history moves: %d\n", len(result.VerifiedHistoryMoves))
+		for _, move := range result.VerifiedHistoryMoves {
+			fmt.Fprintf(stdout, "- move %s -> %s (%s)\n", move.From, move.To, move.ContentIdentity)
+		}
 	}
 	if result.NextAction != "" {
 		fmt.Fprintf(stdout, "Next action: %s\n", result.NextAction)

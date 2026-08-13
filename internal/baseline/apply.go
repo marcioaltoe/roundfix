@@ -108,7 +108,7 @@ func applyPlan(
 		return Result{}, err
 	}
 	if state == applyPreimagePostimage {
-		return verifiedApplyResult(document, document.Postimages, true), nil
+		return verifiedApplyResult(document, document.Postimages, nil, true), nil
 	}
 	if state == applyPreimageApproved &&
 		document.PreservationMode == PreservationModeManagedRefresh {
@@ -179,7 +179,12 @@ func applyPlan(
 			),
 		)
 	}
-	return verifiedApplyResult(document, evidence.VerifiedPostimages, false), nil
+	return verifiedApplyResult(
+		document,
+		evidence.VerifiedPostimages,
+		evidence.VerifiedHistoryMoves,
+		false,
+	), nil
 }
 
 func formatHistoryMoveRefusals(refusals []HistoryMoveRefusal) string {
@@ -334,7 +339,12 @@ func preimageMatchesPostimage(preimage Preimage, postimage Postimage) bool {
 	}
 }
 
-func verifiedApplyResult(document PlanDocument, verified []Postimage, alreadyApplied bool) Result {
+func verifiedApplyResult(
+	document PlanDocument,
+	verified []Postimage,
+	verifiedHistoryMoves []HistoryMove,
+	alreadyApplied bool,
+) Result {
 	recommendations := make([]string, 0, len(document.SetupManifest.Verification))
 	for _, verification := range document.SetupManifest.Verification {
 		if verification.RepositoryExecutable && verification.Command != "" {
@@ -361,16 +371,24 @@ func verifiedApplyResult(document PlanDocument, verified []Postimage, alreadyApp
 		matrix.Idempotence,
 	)
 	return Result{
-		SchemaVersion:      ResultSchemaVersion,
-		Operation:          "apply",
-		State:              "verified",
-		Message:            message,
-		PlanDigest:         document.PlanDigest,
-		VerifiedPostimages: clonePostimages(verified),
-		Warnings:           cloneFindings(document.Warnings),
-		Recommendations:    recommendations,
-		StatusMatrix:       &matrix,
+		SchemaVersion:        ResultSchemaVersion,
+		Operation:            "apply",
+		State:                "verified",
+		Message:              message,
+		PlanDigest:           document.PlanDigest,
+		VerifiedPostimages:   clonePostimages(verified),
+		VerifiedHistoryMoves: cloneHistoryMoves(verifiedHistoryMoves),
+		Warnings:             cloneFindings(document.Warnings),
+		Recommendations:      recommendations,
+		StatusMatrix:         &matrix,
 	}
+}
+
+func cloneHistoryMoves(moves []HistoryMove) []HistoryMove {
+	if len(moves) == 0 {
+		return nil
+	}
+	return append([]HistoryMove(nil), moves...)
 }
 
 func resultStatusMatrix(

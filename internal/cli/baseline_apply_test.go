@@ -50,6 +50,47 @@ func TestBaselineApplyCommand(t *testing.T) {
 	}
 }
 
+func TestBaselineApplyTextReportsHistoryMoves(t *testing.T) {
+	t.Parallel()
+
+	move := baseline.HistoryMove{
+		Ordinal:         0,
+		From:            "docs/specs/_archived/0001-widget/_prd.md",
+		To:              "docs/history/specs/0001-widget/_prd.md",
+		ContentIdentity: "sha256:" + strings.Repeat("a", 64),
+	}
+	result := baseline.Result{
+		SchemaVersion:        baseline.ResultSchemaVersion,
+		Operation:            "apply",
+		State:                "verified",
+		VerifiedPostimages:   []baseline.Postimage{},
+		VerifiedHistoryMoves: []baseline.HistoryMove{move},
+		Warnings:             []baseline.Finding{},
+		Recommendations:      []string{},
+		StatusMatrix: &baseline.ResultStatusMatrix{
+			ApprovedPostimages:     baseline.EvidenceStatusNotRun,
+			SemanticRetention:      baseline.EvidenceStatusNotRun,
+			ProfileAlignment:       baseline.EvidenceStatusNotRun,
+			RepositoryVerification: baseline.EvidenceStatusNotRun,
+			Idempotence:            baseline.EvidenceStatusNotRun,
+		},
+	}
+	var stdout bytes.Buffer
+	if err := writeBaselineApplyResult(result, false, &stdout); err != nil {
+		t.Fatalf("writeBaselineApplyResult() error = %v", err)
+	}
+	for _, want := range []string{
+		"Verified history moves: 1",
+		move.From,
+		move.To,
+		move.ContentIdentity,
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("apply text omits %q:\n%s", want, stdout.String())
+		}
+	}
+}
+
 func TestBaselineApplyStdoutStderrAndExitCodes(t *testing.T) {
 	t.Parallel()
 	t.Run("confirmation refusal is actionable JSON", func(t *testing.T) {

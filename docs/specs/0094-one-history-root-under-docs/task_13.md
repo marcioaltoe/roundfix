@@ -1,7 +1,7 @@
 ---
 task: task_13
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -62,3 +62,52 @@ without changing what happens.
 `_prd.md` → Core Features 5 and 8; User Experience, the retained-review sentence.
 `_techspec.md` → API Contracts. QA report `qa/qa-report-2026-08-13.md` → F-002,
 the silent-relocation half. ADR-0123.
+
+## Result
+
+Apply results now carry the transaction's verified History Relocation ledger.
+Both `baseline apply` and the apply phase of `baseline update` render every
+performed move with its source, destination, and content identity; an idempotent
+reapply reports no newly performed move. The existing plan History Relocation
+block is unchanged.
+
+Layout discovery now records each retained orphan Review Artifact as a Baseline
+finding. Live and undecidable reviews use distinct finding codes, and each
+finding names the Review Artifact path, the liveness answer, and the reason
+returned by the existing local-Git classifier. These findings flow through the
+Plan and apply result warning collections without influencing relocation or
+retention decisions.
+
+Focused checks:
+
+- Before implementation,
+  `rtk env GOCACHE=/tmp/roundfix-task-13-gocache go test -count=1 ./internal/baseline -run '^TestHistoryMoveApplyReport$'`
+  and the corresponding `'^TestRetainedReviewReport$'` run both failed to build:
+  `Result.VerifiedHistoryMoves` did not exist and `planHistoryMoves` returned no
+  report collection.
+- After implementation, each focused command above exited 0 independently.
+- `rtk env GOCACHE=/tmp/roundfix-task-13-gocache go test -count=1 ./internal/baseline`
+  exited 0 (`ok roundfix/internal/baseline`, 115.641s).
+- `rtk env GOCACHE=/tmp/roundfix-task-13-gocache go test -count=1 ./internal/cli -run '^TestBaseline(ApplyTextReportsHistoryMoves|UpdateTextReportsHistoryMoves)$' -v`
+  exited 0 and named both passing renderer tests.
+- `rtk env GOCACHE=/tmp/roundfix-task-13-gocache go test -count=1 ./internal/cli`
+  exited 0 (`ok roundfix/internal/cli`, 139.463s).
+- `rtk git diff --check` exited 0. The task's declared `## Verification`
+  commands remain pending Daemon execution and were not run in this Agent turn.
+
+Acceptance evidence:
+
+1. `TestHistoryMoveApplyReport` fixes two planned moves, applies them, and proves
+   the result's `verifiedHistoryMoves` contains each source, destination, and
+   content identity. Its negative control reapplies the same Plan and proves no
+   move is reported as newly performed.
+2. `TestRetainedReviewReport` fixes a reachable non-ancestor review, proves it
+   remains unmoved, and verifies the `baseline.history.review.live` finding
+   includes the classifier's recorded-head reason.
+3. The same test fixes a no-head review, proves it remains unmoved, and verifies
+   the distinct `baseline.history.review.undecidable` finding includes the newest
+   Round reason. The production switch names `spec.ReviewUndecidable` explicitly.
+4. The retention test first captures the public relocation and collision sets,
+   then obtains the added report and proves both retained states still produce no
+   moves or collisions. `DiscoverHistoryLayout` continues to project only the
+   unchanged relocation and collision decisions from the internal report.

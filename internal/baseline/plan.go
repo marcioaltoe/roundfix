@@ -235,18 +235,19 @@ type ResultStatusMatrix struct {
 // Result is the strict automation result used when no complete plan can be
 // emitted and by later Baseline operations.
 type Result struct {
-	SchemaVersion      string              `json:"schemaVersion"`
-	Operation          string              `json:"operation"`
-	State              string              `json:"state"`
-	Category           string              `json:"category,omitempty"`
-	Message            string              `json:"message,omitempty"`
-	NextAction         string              `json:"nextAction,omitempty"`
-	PlanDigest         string              `json:"planDigest,omitempty"`
-	VerifiedPostimages []Postimage         `json:"verifiedPostimages"`
-	Warnings           []Finding           `json:"warnings"`
-	Recommendations    []string            `json:"recommendations"`
-	ClauseDelta        *ClauseDelta        `json:"clauseDelta,omitempty"`
-	StatusMatrix       *ResultStatusMatrix `json:"statusMatrix,omitempty"`
+	SchemaVersion        string              `json:"schemaVersion"`
+	Operation            string              `json:"operation"`
+	State                string              `json:"state"`
+	Category             string              `json:"category,omitempty"`
+	Message              string              `json:"message,omitempty"`
+	NextAction           string              `json:"nextAction,omitempty"`
+	PlanDigest           string              `json:"planDigest,omitempty"`
+	VerifiedPostimages   []Postimage         `json:"verifiedPostimages"`
+	VerifiedHistoryMoves []HistoryMove       `json:"verifiedHistoryMoves,omitempty"`
+	Warnings             []Finding           `json:"warnings"`
+	Recommendations      []string            `json:"recommendations"`
+	ClauseDelta          *ClauseDelta        `json:"clauseDelta,omitempty"`
+	StatusMatrix         *ResultStatusMatrix `json:"statusMatrix,omitempty"`
 }
 
 type plannedArtifact struct {
@@ -577,10 +578,11 @@ func buildPlanWithCatalog(
 			return PlanOutcome{}, err
 		}
 	}
-	historyMoves, err := planHistoryMoves(initial.Root)
+	historyMoves, retainedReviewFindings, err := planHistoryMoves(initial.Root)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
+	warnings := append(cloneFindings(preservation.Warnings), retainedReviewFindings...)
 	doc := PlanDocument{
 		SchemaVersion:  PlanSchemaVersion,
 		Repository:     initial.Identity,
@@ -592,7 +594,7 @@ func buildPlanWithCatalog(
 		Preimages:      snapshot.Preimages,
 		Postimages:     postimages,
 		HistoryMoves:   historyMoves,
-		Warnings:       cloneFindings(preservation.Warnings),
+		Warnings:       warnings,
 		SetupManifest:  manifest,
 		ManagedEntries: ledger,
 	}
@@ -615,16 +617,16 @@ func buildPlanWithCatalog(
 	return PlanOutcome{Plan: &doc, Result: result}, nil
 }
 
-func planHistoryMoves(root string) ([]HistoryMove, error) {
-	relocations, _, err := DiscoverHistoryLayout(root)
+func planHistoryMoves(root string) ([]HistoryMove, []Finding, error) {
+	report, err := discoverHistoryLayout(root)
 	if err != nil {
-		return nil, fmt.Errorf("discover history layout for Baseline Plan: %w", err)
+		return nil, nil, fmt.Errorf("discover history layout for Baseline Plan: %w", err)
 	}
-	if len(relocations) == 0 {
-		return nil, nil
+	if len(report.relocations) == 0 {
+		return nil, cloneFindings(report.retainedReviews), nil
 	}
-	moves := make([]HistoryMove, len(relocations))
-	for index, relocation := range relocations {
+	moves := make([]HistoryMove, len(report.relocations))
+	for index, relocation := range report.relocations {
 		moves[index] = HistoryMove{
 			Ordinal:         index,
 			From:            relocation.From,
@@ -632,7 +634,7 @@ func planHistoryMoves(root string) ([]HistoryMove, error) {
 			ContentIdentity: relocation.ContentIdentity,
 		}
 	}
-	return moves, nil
+	return moves, cloneFindings(report.retainedReviews), nil
 }
 
 func alignmentEvidencePaths(alignment ProfileAlignment) []string {

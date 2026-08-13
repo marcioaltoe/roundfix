@@ -180,6 +180,41 @@ func TestApplyExactDigest(t *testing.T) {
 	}
 }
 
+func TestHistoryMoveApplyReport(t *testing.T) {
+	t.Parallel()
+
+	repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+		"_archived/specs/0001-alpha/_prd.md": "alpha prd\n",
+		"_archived/specs/0002-beta/_prd.md":  "beta prd\n",
+	})
+	result, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("ApplyPlan() history moves: %v", err)
+	}
+	if !reflect.DeepEqual(result.VerifiedHistoryMoves, plan.HistoryMoves) {
+		t.Fatalf("verified history moves = %#v, want %#v", result.VerifiedHistoryMoves, plan.HistoryMoves)
+	}
+	encoded, err := MarshalResult(result)
+	if err != nil {
+		t.Fatalf("MarshalResult() history moves: %v", err)
+	}
+	for _, move := range plan.HistoryMoves {
+		for _, detail := range []string{move.From, move.To, move.ContentIdentity} {
+			if !bytes.Contains(encoded, []byte(detail)) {
+				t.Errorf("apply result omits performed history move detail %q:\n%s", detail, encoded)
+			}
+		}
+	}
+
+	reapplied, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("ApplyPlan() already-applied history moves: %v", err)
+	}
+	if len(reapplied.VerifiedHistoryMoves) != 0 {
+		t.Fatalf("already-applied result reports performed history moves = %#v, want none", reapplied.VerifiedHistoryMoves)
+	}
+}
+
 func TestResultStatusMatrix(t *testing.T) {
 	t.Parallel()
 
@@ -270,7 +305,7 @@ func TestCompletionLanguageRequiresRetention(t *testing.T) {
 	t.Run("retention and idempotence without approved postimages", func(t *testing.T) {
 		plan := planWithVerifiedRetention(t, buildTestPlan(t, newPlanRepository(t)))
 		plan.Postimages = nil
-		result := verifiedApplyResult(plan, nil, true)
+		result := verifiedApplyResult(plan, nil, nil, true)
 		assertResultStatusMatrix(t, result, ResultStatusMatrix{
 			ApprovedPostimages:     EvidenceStatusNotRun,
 			SemanticRetention:      EvidenceStatusVerified,

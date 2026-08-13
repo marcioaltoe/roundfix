@@ -176,6 +176,12 @@ func writeBaselineApplyResult(result baseline.Result, jsonOutput bool, stdout io
 		fmt.Fprintf(stdout, "Next action: %s\n", result.NextAction)
 	}
 	fmt.Fprintf(stdout, "Verified postimages: %d\n", len(result.VerifiedPostimages))
+	if len(result.VerifiedHistoryMoves) != 0 {
+		fmt.Fprintf(stdout, "Verified history moves: %d\n", len(result.VerifiedHistoryMoves))
+		for _, move := range result.VerifiedHistoryMoves {
+			fmt.Fprintf(stdout, "- move %s -> %s (%s)\n", move.From, move.To, move.ContentIdentity)
+		}
+	}
 	for _, recommendation := range result.Recommendations {
 		fmt.Fprintf(stdout, "Recommendation (not run): %s\n", recommendation)
 	}

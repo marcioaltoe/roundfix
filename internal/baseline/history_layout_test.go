@@ -201,6 +201,61 @@ func TestDiscoverHistoryLayoutClassifiesOrphanReviews(t *testing.T) {
 	historyAssertUnchanged(t, repo, before)
 }
 
+func TestRetainedReviewReport(t *testing.T) {
+	t.Parallel()
+
+	repo, _ := historyGitRepo(t)
+	liveHead := historyBranchCommit(t, repo, "feature/live-report")
+	gittest.Run(t, repo, "switch", "main")
+
+	liveReview := filepath.Join(repo, "docs", "specs", "reviews", "pr-201")
+	historyPersistRound(t, liveReview, "feature/live-report", liveHead)
+	undecidableReview := filepath.Join(repo, "docs", "specs", "reviews", "pr-202")
+	historyPersistRound(t, undecidableReview, "feature/unknown", liveHead)
+	historyReplaceRoundHead(t, undecidableReview, liveHead, "")
+
+	before := historySnapshot(t, repo)
+	relocations, collisions, err := DiscoverHistoryLayout(repo)
+	if err != nil {
+		t.Fatalf("DiscoverHistoryLayout() error = %v", err)
+	}
+	if len(relocations) != 0 || len(collisions) != 0 {
+		t.Fatalf("retained reviews changed layout decisions: relocations=%#v collisions=%#v", relocations, collisions)
+	}
+
+	moves, findings, err := planHistoryMoves(repo)
+	if err != nil {
+		t.Fatalf("planHistoryMoves() error = %v", err)
+	}
+	if len(moves) != 0 {
+		t.Fatalf("retained review report changed move decisions = %#v, want none", moves)
+	}
+	want := []Finding{
+		{
+			Code: historyReviewLiveCode,
+			Path: "docs/specs/reviews/pr-201",
+		},
+		{
+			Code: historyReviewUndecidableCode,
+			Path: "docs/specs/reviews/pr-202",
+		},
+	}
+	if len(findings) != len(want) {
+		t.Fatalf("retained review findings = %#v, want %d", findings, len(want))
+	}
+	for index, finding := range findings {
+		if finding.Code != want[index].Code || finding.Path != want[index].Path {
+			t.Errorf("retained review finding %d = %#v, want code %q path %q", index, finding, want[index].Code, want[index].Path)
+		}
+		if !strings.Contains(finding.Message, strings.TrimPrefix(finding.Code, "baseline.history.review.")) ||
+			!strings.Contains(finding.Message, "newest Round") &&
+				!strings.Contains(finding.Message, "recorded head") {
+			t.Errorf("retained review finding %d lacks liveness answer or classifier reason: %#v", index, finding)
+		}
+	}
+	historyAssertUnchanged(t, repo, before)
+}
+
 func TestDiscoverHistoryLayoutReportsCollisionWithoutHidingSiblings(t *testing.T) {
 	t.Parallel()
 

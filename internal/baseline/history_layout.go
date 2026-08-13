@@ -29,6 +29,17 @@ type HistoryCollision struct {
 	Reason          string
 }
 
+const (
+	historyReviewLiveCode        = "baseline.history.review.live"
+	historyReviewUndecidableCode = "baseline.history.review.undecidable"
+)
+
+type historyLayoutReport struct {
+	relocations     []HistoryRelocation
+	collisions      []HistoryCollision
+	retainedReviews []Finding
+}
+
 type historyLayoutSource struct {
 	from string
 	to   string
@@ -52,20 +63,28 @@ var legacyHistoryLayoutTrees = []historyLayoutTree{
 // current layout, sorted by From, and the collisions that refuse to move. It
 // reads repository and local Git state but never changes either.
 func DiscoverHistoryLayout(root string) ([]HistoryRelocation, []HistoryCollision, error) {
+	report, err := discoverHistoryLayout(root)
+	if err != nil {
+		return nil, nil, err
+	}
+	return report.relocations, report.collisions, nil
+}
+
+func discoverHistoryLayout(root string) (historyLayoutReport, error) {
 	root = filepath.Clean(root)
 	info, err := os.Stat(root)
 	if err != nil {
-		return nil, nil, fmt.Errorf("stat repository root %q: %w", root, err)
+		return historyLayoutReport{}, fmt.Errorf("stat repository root %q: %w", root, err)
 	}
 	if !info.IsDir() {
-		return nil, nil, fmt.Errorf("repository root %q is not a directory", root)
+		return historyLayoutReport{}, fmt.Errorf("repository root %q is not a directory", root)
 	}
 
 	sources := make([]historyLayoutSource, 0)
 	for _, tree := range legacyHistoryLayoutTrees {
 		to := spec.ArchiveDir(tree.kind)
 		if err := historyLayoutAppendTree(root, tree.from, to, &sources); err != nil {
-			return nil, nil, err
+			return historyLayoutReport{}, err
 		}
 	}
 
@@ -76,7 +95,7 @@ func DiscoverHistoryLayout(root string) ([]HistoryRelocation, []HistoryCollision
 		spec.ClassifyADR,
 		&sources,
 	); err != nil {
-		return nil, nil, err
+		return historyLayoutReport{}, err
 	}
 	if err := historyLayoutAppendRetiredDocuments(
 		root,
@@ -85,16 +104,31 @@ func DiscoverHistoryLayout(root string) ([]HistoryRelocation, []HistoryCollision
 		spec.ClassifyBacklogEntry,
 		&sources,
 	); err != nil {
-		return nil, nil, err
+		return historyLayoutReport{}, err
 	}
 
+	retainedReviews := make([]Finding, 0)
 	for _, reviewRoot := range []string{"docs/specs/_reviews", "docs/specs/reviews"} {
-		if err := historyLayoutAppendFinishedReviews(root, reviewRoot, &sources); err != nil {
-			return nil, nil, err
+		if err := historyLayoutAppendReviews(root, reviewRoot, &sources, &retainedReviews); err != nil {
+			return historyLayoutReport{}, err
 		}
 	}
 
-	return historyLayoutClassifySources(root, sources)
+	relocations, collisions, err := historyLayoutClassifySources(root, sources)
+	if err != nil {
+		return historyLayoutReport{}, err
+	}
+	sort.Slice(retainedReviews, func(left int, right int) bool {
+		if retainedReviews[left].Path == retainedReviews[right].Path {
+			return retainedReviews[left].Code < retainedReviews[right].Code
+		}
+		return retainedReviews[left].Path < retainedReviews[right].Path
+	})
+	return historyLayoutReport{
+		relocations:     relocations,
+		collisions:      collisions,
+		retainedReviews: retainedReviews,
+	}, nil
 }
 
 func historyLayoutAppendTree(root string, fromRoot string, toRoot string, sources *[]historyLayoutSource) error {
@@ -164,7 +198,12 @@ func historyLayoutAppendRetiredDocuments(
 	return nil
 }
 
-func historyLayoutAppendFinishedReviews(root string, reviewRoot string, sources *[]historyLayoutSource) error {
+func historyLayoutAppendReviews(
+	root string,
+	reviewRoot string,
+	sources *[]historyLayoutSource,
+	retainedReviews *[]Finding,
+) error {
 	absoluteRoot := filepath.Join(root, filepath.FromSlash(reviewRoot))
 	entries, err := os.ReadDir(absoluteRoot)
 	if errors.Is(err, os.ErrNotExist) {
@@ -179,14 +218,34 @@ func historyLayoutAppendFinishedReviews(root string, reviewRoot string, sources 
 			continue
 		}
 		reviewDir := filepath.Join(absoluteRoot, entry.Name())
-		liveness, _, err := spec.ClassifyReview(root, reviewDir)
+		liveness, reason, err := spec.ClassifyReview(root, reviewDir)
 		if err != nil {
 			return fmt.Errorf("classify Review Artifact %q: %w", path.Join(reviewRoot, entry.Name()), err)
 		}
-		if liveness != spec.ReviewFinished {
+		reviewPath := path.Join(reviewRoot, entry.Name())
+		switch liveness {
+		case spec.ReviewLive:
+			*retainedReviews = append(*retainedReviews, Finding{
+				Code:    historyReviewLiveCode,
+				Path:    reviewPath,
+				Message: fmt.Sprintf("Review Artifact retained as %s: %s", liveness, reason),
+			})
+			continue
+		case spec.ReviewUndecidable:
+			*retainedReviews = append(*retainedReviews, Finding{
+				Code:    historyReviewUndecidableCode,
+				Path:    reviewPath,
+				Message: fmt.Sprintf("Review Artifact retained as %s: %s", liveness, reason),
+			})
+			continue
+		case spec.ReviewFinished:
+			// Finished orphan reviews relocate below.
+		default:
+			// Preserve the prior non-finished decision if ReviewLiveness gains
+			// another answer before Baseline reporting learns how to name it.
 			continue
 		}
-		from := path.Join(reviewRoot, entry.Name())
+		from := reviewPath
 		to := path.Join(spec.ArchiveDir(spec.ArchiveKindReview), entry.Name())
 		if err := historyLayoutAppendTree(root, from, to, sources); err != nil {
 			return err
