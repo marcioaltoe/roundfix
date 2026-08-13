@@ -1,7 +1,7 @@
 ---
 task: task_14
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: high
 ---
@@ -79,3 +79,75 @@ real and stops the follow-up run from asserting something false.
 `_techspec.md` → API Contracts, the collision paragraph; Risks: a repository
 holding both layouts. QA report `qa/qa-report-2026-08-13.md` → F-002, the
 self-certifying half.
+
+## Result
+
+### Implementation
+
+- Occupied-destination collisions now enter the ordered `historyMoves` ledger
+  with their source identity. The existing transaction therefore refuses each
+  occupied move after continuing through its siblings, and the public apply
+  path returns the existing actionable `stale` error with both paths and the
+  `already exists` reason.
+- `baseline update` now treats either managed file changes or planned History
+  Relocations as pending work. Its text and JSON results carry the outstanding
+  `historyMoves`, so a follow-up run names the unresolved source and destination
+  and cannot report `current` while the dual layout remains.
+- The no-collision path still applies every History Relocation and reports the
+  same verified result. The production change reuses the existing transaction
+  refusal and verification behavior rather than adding another mutation path.
+
+### Focused-check evidence
+
+- Red signal before the production edit:
+  `rtk go test -count=1 ./internal/baseline -run '^TestHistoryMoveCollisionRefusesPublicly$'`
+  exited 1 because the generated Plan omitted the occupied relocation and held
+  only its sibling.
+- Red signal before the production edit:
+  `rtk go test -count=1 ./internal/baseline -run '^TestUnresolvedLayoutIsNotCurrent$'`
+  exited 1 because `ApplyPlan` returned nil for the collision-only tree.
+- Red signal before the production edit:
+  `rtk go test -count=1 ./internal/cli -run '^TestBaselineApplyCollisionExitStatus$'`
+  exited 1 because public apply exited 0 and reported `verified`.
+- After implementation,
+  `rtk go test -count=1 ./internal/baseline -run '^TestHistoryMoveCollisionRefusesPublicly$|^TestUnresolvedLayoutIsNotCurrent$'`
+  exited 0 with four passing tests/subtests.
+- After implementation,
+  `rtk go test -count=1 ./internal/cli -run '^TestBaselineApplyCollisionExitStatus$'`
+  exited 0.
+- The adjacent baseline check
+  `rtk go test -count=1 ./internal/baseline -run 'TestHistoryMove|TestUnresolvedLayout|TestDiscoverHistoryLayoutReportsCollision'`
+  exited 0 with 15 passing tests/subtests.
+- The adjacent CLI check
+  `rtk go test -count=1 ./internal/cli -run 'TestBaselineApply|TestBaselineUpdate(IdempotenceReportsZeroFileChanges|TextReportsHistoryMoves)'`
+  exited 0 with 13 passing tests/subtests.
+- `rtk make verify-incremental` exited 0. All Go packages passed, including
+  `internal/baseline` and `internal/cli`; the focused skill contract,
+  `roundfix skills check`, and the production build also passed.
+- `rtk git diff --check` exited 0 before this Result was recorded.
+
+### Acceptance evidence
+
+1. `TestHistoryMoveCollisionRefusesPublicly` and
+   `TestBaselineApplyCollisionExitStatus` require the refusal output to contain
+   the source, destination, `already exists`, and the statement that not every
+   History Relocation was performed.
+2. Both tests inspect the real filesystem after refusal and prove the sibling
+   source is absent and its destination contains the original bytes, while both
+   colliding files remain unchanged.
+3. `TestBaselineApplyCollisionExitStatus` proves the public command exits 3
+   (`exitUnverified`) rather than 0.
+4. The same CLI test performs a second public `baseline update` and requires
+   `plan ready`, `History moves: 1`, and both outstanding paths while forbidding
+   `Baseline update: current`. `TestUnresolvedLayoutIsNotCurrent` independently
+   proves the follow-up Plan retains the outstanding identity ledger entry when
+   managed file changes are zero.
+5. The table-driven no-collision companion fixes the same source tree while
+   varying only destination occupancy. It proves both files relocate, both moves
+   are verified, and apply returns no error. The existing current-layout
+   idempotence test also passed in the adjacent CLI check.
+
+### Not run
+
+- The commands under this Task's `## Verification` section were not run; the
+  Roundfix Daemon owns declared Verification and Task settlement.

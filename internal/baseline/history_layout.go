@@ -32,6 +32,7 @@ type HistoryCollision struct {
 const (
 	historyReviewLiveCode        = "baseline.history.review.live"
 	historyReviewUndecidableCode = "baseline.history.review.undecidable"
+	historyDestinationOccupied   = "destination already exists"
 )
 
 type historyLayoutReport struct {
@@ -294,7 +295,7 @@ func historyLayoutClassifySources(root string, sources []historyLayoutSource) ([
 				From:            source.from,
 				To:              source.to,
 				ContentIdentity: identity,
-				Reason:          "destination already exists",
+				Reason:          historyDestinationOccupied,
 			})
 			continue
 		case !errors.Is(err, os.ErrNotExist):

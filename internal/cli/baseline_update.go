@@ -89,6 +89,7 @@ type baselineUpdateResult struct {
 	UnresolvedProfile        *baseline.UnresolvedProfileDiagnosis `json:"unresolvedProfile,omitempty"`
 	PlanDigest               string                               `json:"planDigest,omitempty"`
 	ApprovedPlanDigest       string                               `json:"approvedPlanDigest,omitempty"`
+	HistoryMoves             []baseline.HistoryMove               `json:"historyMoves,omitempty"`
 	VerifiedHistoryMoves     []baseline.HistoryMove               `json:"verifiedHistoryMoves,omitempty"`
 	StatusMatrix             *baseline.ResultStatusMatrix         `json:"statusMatrix,omitempty"`
 	Skills                   baselineUpdateSkillsResult           `json:"skills"`
@@ -240,8 +241,9 @@ func runBaselineUpdateCommandWithSkillsStage(
 	result.Retention = append(result.Retention, plan.Retention...)
 	result.ClauseDelta = plan.ClauseDelta
 	result.Warnings = append(result.Warnings, plan.Warnings...)
+	result.HistoryMoves = append(result.HistoryMoves, plan.HistoryMoves...)
 	if !request.yes && request.confirmation == "" {
-		if len(plan.FileChanges) == 0 {
+		if len(plan.FileChanges) == 0 && len(plan.HistoryMoves) == 0 {
 			result.State = "current"
 			result.Message = "the repository already matches the current Baseline catalog"
 			return writeBaselineUpdateOutcome(result, exitOK, jsonOutput, stdout, stderr)
@@ -644,6 +646,12 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	fmt.Fprintf(stdout, "File changes: %d\n", len(result.FileChanges))
 	for _, change := range result.FileChanges {
 		fmt.Fprintf(stdout, "- %s %s (%d managed entries)\n", change.Action, change.Path, len(change.ManagedEntries))
+	}
+	if len(result.HistoryMoves) != 0 {
+		fmt.Fprintf(stdout, "History moves: %d\n", len(result.HistoryMoves))
+		for _, move := range result.HistoryMoves {
+			fmt.Fprintf(stdout, "- move %s -> %s (%s)\n", move.From, move.To, move.ContentIdentity)
+		}
 	}
 	if len(result.UnrecordedManagedRegions) != 0 {
 		fmt.Fprintf(stdout, "Unrecorded managed regions: %d\n", len(result.UnrecordedManagedRegions))

@@ -622,11 +622,28 @@ func planHistoryMoves(root string) ([]HistoryMove, []Finding, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("discover history layout for Baseline Plan: %w", err)
 	}
-	if len(report.relocations) == 0 {
+	candidates := append([]HistoryRelocation(nil), report.relocations...)
+	for _, collision := range report.collisions {
+		if collision.Reason != historyDestinationOccupied {
+			continue
+		}
+		candidates = append(candidates, HistoryRelocation{
+			From:            collision.From,
+			To:              collision.To,
+			ContentIdentity: collision.ContentIdentity,
+		})
+	}
+	if len(candidates) == 0 {
 		return nil, cloneFindings(report.retainedReviews), nil
 	}
-	moves := make([]HistoryMove, len(report.relocations))
-	for index, relocation := range report.relocations {
+	sort.Slice(candidates, func(left int, right int) bool {
+		if candidates[left].From == candidates[right].From {
+			return candidates[left].To < candidates[right].To
+		}
+		return candidates[left].From < candidates[right].From
+	})
+	moves := make([]HistoryMove, len(candidates))
+	for index, relocation := range candidates {
 		moves[index] = HistoryMove{
 			Ordinal:         index,
 			From:            relocation.From,
