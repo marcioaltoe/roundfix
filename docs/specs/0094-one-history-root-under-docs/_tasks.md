@@ -31,9 +31,12 @@ graph:
     - id: task_10
       file: task_10.md
       needs: [task_07]
+    - id: task_11
+      file: task_11.md
+      needs: [task_10]
     - id: task_09
       file: task_09.md
-      needs: [task_06, task_07, task_08, task_10]
+      needs: [task_06, task_07, task_08, task_10, task_11]
 ---
 
 # Tasks — One history root under `docs/`
@@ -49,6 +52,7 @@ graph:
 | task_07 | State the history location in every carrier that names it    | docs    | medium     | task_02                   |
 | task_08 | Prove review reaches no history tree                         | test    | low        | task_02                   |
 | task_10 | Repoint the pinned archive-path assertion                     | test    | low        | task_07                   |
-| task_09 | Run the final QA gate                                        | qa      | high       | task_06, task_07, task_08, task_10 |
+| task_11 | Repoint the derived-artifact test's archive path              | test    | low        | task_10                   |
+| task_09 | Run the final QA gate                                        | qa      | high       | task_06, task_07, task_08, task_10, task_11 |
 
-Waves: 1 → task_01, task_02 · 2 → task_03, task_07, task_08 · 3 → task_04, task_10 · 4 → task_05 · 5 → task_06 · 6 → task_09
+Waves: 1 → task_01, task_02 · 2 → task_03, task_07, task_08 · 3 → task_04, task_10 · 4 → task_05, task_11 · 5 → task_06 · 6 → task_09
