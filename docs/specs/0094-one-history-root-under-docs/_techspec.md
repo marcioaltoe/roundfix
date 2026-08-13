@@ -83,7 +83,8 @@ provider it refuses to call.
   `.agents/skills/brainstorming/SKILL.md`,
   `.agents/skills/roundfix/SKILL.md`,
   `.coderabbit.yaml`, `.roundfixrc.yml`, `skills/baseline_skill_contract_test.go`,
-  and `internal/docscontract/publicdocs_test.go`. Source:
+  `internal/docscontract/publicdocs_test.go`, and
+  `skills/owned_skill_edit_repocontract_test.go`. Source:
   `docs/agents/agent-instructions.md`.
 
 ## System Architecture

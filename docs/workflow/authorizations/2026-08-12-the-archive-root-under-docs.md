@@ -24,6 +24,7 @@ paths:
   - .roundfixrc.yml
   - skills/baseline_skill_contract_test.go
   - internal/docscontract/publicdocs_test.go
+  - skills/owned_skill_edit_repocontract_test.go
 ---
 
 # Tooling authorization — the archive root under `docs/` (2026-08-12)
@@ -177,3 +178,20 @@ supersession in its PRD; leaving it unstated would establish the exception by
 precedent. Goals 1 and 3 — one archive root, one path filter — are preserved
 unchanged, which is why this is a correction to where 0085 anchored the root
 rather than a reversal of what it built.
+
+## Extended 2026-08-13 — the last pinned archive path
+
+`skills/owned_skill_edit_repocontract_test.go`, limited to the two
+`"_archived/specs"` literals it passes to its artifact-bytes helper. The test
+proves that editing an owned Skill leaves archived artifacts byte-identical, and
+it names the archive by literal rather than through the resolver, so the
+authorized relocation left it reading a directory that no longer exists.
+
+On the maintainer's decision:
+
+> Estender o grant a este arquivo
+
+A repository-wide sweep found no other broken pin. Every remaining `_archived`
+occurrence in Go is deliberate: `internal/baseline/history_layout.go` and its
+tests discover the legacy layout, which is the migration's whole purpose, and
+`internal/spec` keeps the name for an external or non-default Spec Root.
