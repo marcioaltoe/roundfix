@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0095-a-verification-that-ran-before-anyone-believed-it
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -33,17 +33,17 @@ probe later refuses.
 
 ## Subtasks
 
-- [ ] Add the shared prober with its verdict type.
-- [ ] Make the Daemon's pre-work probe call it.
-- [ ] Cover ordering, the three verdicts, and an empty command list.
+- [x] Add the shared prober with its verdict type.
+- [x] Make the Daemon's pre-work probe call it.
+- [x] Cover ordering, the three verdicts, and an empty command list.
 
 ## Acceptance Criteria
 
-- [ ] A command that exits zero against the unchanged tree returns vacuous.
-- [ ] A command that exits non-zero returns honest, not unknown.
-- [ ] A command that could not run returns unknown carrying its cause.
-- [ ] Verdicts come back in the order the commands were given.
-- [ ] The Daemon's existing probe tests pass unedited.
+- [x] A command that exits zero against the unchanged tree returns vacuous.
+- [x] A command that exits non-zero returns honest, not unknown.
+- [x] A command that could not run returns unknown carrying its cause.
+- [x] Verdicts come back in the order the commands were given.
+- [x] The Daemon's existing probe tests pass unedited.
 
 ## Verification
 
@@ -61,3 +61,40 @@ probe later refuses.
 `_techspec.md` → Build Order 1; Interfaces: `ProbeCommands`, `CommandVerdict`;
 Testing Approach, the shared prober. `_prd.md` → Core Feature 1. ADR-0124,
 ADR-0111, ADR-0014.
+
+## Result
+
+### Implementation
+
+- Added `ProbeCommands` and `CommandVerdict`. The prober invokes the supplied
+  verifier once per command, preserves command order, delegates each diagnostic
+  path to `outputFor`, and owns no Run state, capacity, or artifact-path policy.
+- `verifyTaskPreWork` now keeps its existing Run-state transition and
+  Verification Capacity acquisition around `ProbeCommands`, and still constructs
+  the same numbered probe log paths before publishing or settling the result.
+- Added the source-matched prober suite without changing
+  `internal/daemon/task_engine_test.go`.
+
+### Acceptance evidence
+
+| Criterion | Focused evidence |
+| --- | --- |
+| Exit zero is vacuous | `TestProbeCommands/classifies_ordered_command_outcomes` asserts the zero-error verifier result sets only `Vacuous`. |
+| Observed non-zero is honest | The same subtest returns `VerificationCommandError` and asserts `Vacuous`, `Unknown`, and `Cause` remain unset. |
+| A command that cannot run is unknown with its cause | The same subtest returns `VerificationUnknownError`, asserts `Unknown`, verifies `errors.Is` reaches the runner cause, and verifies the command and diagnostic path are retained. |
+| Verdict order matches command order | The same subtest compares every verdict and verifier request with the ordered input and checks the zero-based `outputFor` destinations. |
+| Existing Daemon probe behavior is unchanged | `GOCACHE=/tmp/roundfix-0095-t01-gocache rtk go test ./internal/daemon -run '^(TestPreWorkProbe|TestVerificationProbeCharacterization)' -count=1` passed 9 tests. `rtk git status --short -- internal/daemon/task_engine_test.go` produced no changed path. |
+
+### Focused checks
+
+- Red signal: `GOCACHE=/tmp/roundfix-0095-t01-gocache rtk go test ./internal/daemon -run '^TestProbeCommands$' -count=1` failed to compile before the implementation because `ProbeCommands` was undefined.
+- After implementation, the same focused command passed 3 test executions,
+  including the empty-command-list case.
+- The final combined prober check, `GOCACHE=/tmp/roundfix-0095-t01-gocache rtk go test ./internal/daemon -run '^(TestProbeCommands|TestPreWorkProbe|TestVerificationProbeCharacterization)' -count=1`, passed 12 test executions.
+- `rtk git diff --check` passed.
+- The first `GOCACHE=/tmp/roundfix-0095-t01-gocache rtk make verify-incremental`
+  attempt hit the unrelated 120-second context deadline in
+  `internal/store/TestJournalMeasurementHarness` while another suite process was
+  active. The test passed in isolation, and the fresh incremental rerun then
+  passed all tests, skill checks, and the build; `internal/daemon` passed in
+  3.782 seconds on that rerun.
