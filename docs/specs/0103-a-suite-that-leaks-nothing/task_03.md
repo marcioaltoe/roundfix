@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0103-a-suite-that-leaks-nothing
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: test
 complexity: medium
 ---
@@ -31,19 +31,19 @@ and name every path that moved.
 
 ## Subtasks
 
-- [ ] Build the fingerprint and the comparison.
-- [ ] Report violations with their change kind.
-- [ ] Cover a violating package and a clean one.
-- [ ] Measure the guard's own cost.
+- [x] Build the fingerprint and the comparison.
+- [x] Report violations with their change kind.
+- [x] Cover a violating package and a clean one.
+- [x] Measure the guard's own cost.
 
 ## Acceptance Criteria
 
-- [ ] A test that writes inside the repository root fails its package, and the
+- [x] A test that writes inside the repository root fails its package, and the
       failure names the path and the change kind.
-- [ ] A test that writes only inside its temporary directory passes.
-- [ ] A path excluded by the repository's ignore rules is not reported.
-- [ ] The guard reads no Git index.
-- [ ] The guard's measured cost is recorded in its own test output.
+- [x] A test that writes only inside its temporary directory passes.
+- [x] A path excluded by the repository's ignore rules is not reported.
+- [x] The guard reads no Git index.
+- [x] The guard's measured cost is recorded in its own test output.
 
 ## Verification
 
@@ -61,3 +61,50 @@ and name every path that moved.
 `_techspec.md` → Build Order 3; System Architecture, the suite guard;
 Implementation Design, Interfaces. `_prd.md` → Core Feature 1; Goal 1; User
 Story 1; Open Questions. ADR-0126.
+
+## Result
+
+Implemented `suiteguard.Main` as the package-level `TestMain` boundary. It reads
+the repository's hierarchical `.gitignore` rules once, fingerprints non-ignored
+paths by type, mode, and content before and after the package tests, and returns
+a failing exit code with a sorted `created`, `modified`, or `removed` line for
+each changed path. The guard never invokes Git and prints the path count and both
+fingerprint durations on every successful measurement.
+
+Focused checks:
+
+- Pre-change: `rtk go test -run '^TestGuardNamesTheViolatingPath$' ./internal/suiteguard`
+  failed because the package did not exist, establishing the missing boundary.
+- `GOCACHE=<worktree>/.gocache rtk proxy go test -run '^TestGuard(NamesTheViolatingPath|PassesOnAnIsolatedWrite|IgnoresRepositoryRules)$' -count=1 -v ./internal/suiteguard`
+  passed all three cases. The violating subprocess returned non-zero and named
+  `created: created.txt`, `modified: modified.txt`, and `removed: removed.txt`;
+  the isolated and ignored-write subprocesses returned zero.
+- The same verbose run recorded `guard cost: measured ... paths; fingerprint
+  took ... before and ... after`. Against this repository it measured 4,852
+  paths in 257.770292ms before the isolated write and 109.886ms after it.
+- `GOCACHE=<worktree>/.gocache rtk go test -race -run '^TestGuard' ./internal/suiteguard`
+  passed all three selected guard cases under the race detector.
+- `rtk go vet ./internal/suiteguard` reported no issues.
+- `rtk make verify-incremental` exited 0: all Go packages, skill checks, and the
+  repository build passed; `internal/suiteguard` passed within the full package
+  sweep.
+- `rtk rg -n '"os/exec"|exec\.Command|ls-files|git.*index' internal/suiteguard/suiteguard.go`
+  exited 1 with no matches, confirming the production guard has no Git process
+  or index-reading path.
+
+Acceptance evidence:
+
+- Repository violations: `TestGuardNamesTheViolatingPath` exercises a real
+  guarded `TestMain` subprocess, observes its non-zero exit, and asserts every
+  path and change kind.
+- Isolated writes: `TestGuardPassesOnAnIsolatedWrite` writes through
+  `testing.T.TempDir` and observes a zero exit.
+- Ignore rules: `TestGuardIgnoresRepositoryRules` writes under a root-anchored
+  ignored directory and observes a zero exit with no reported path.
+- No index dependency: the guard uses only filesystem traversal and hashing;
+  the focused source scan found no Git invocation or index access.
+- Measured cost: each guarded subprocess emits the measured path count and the
+  before/after fingerprint durations, and the clean-case test asserts those
+  fields are present.
+
+The Daemon-owned Verification commands were not run in this turn.
