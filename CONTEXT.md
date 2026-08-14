@@ -184,6 +184,14 @@ _Avoid_: Failing test, mutation, sanity check
 The Run Event classification (`verification_vacuous`) recorded when a Task's Verification command exits zero against the tree as it stands before the Agent runs. A command that passes before the work happened cannot be evidence that the work happened, so the Task is refused at dispatch with the offending command named and no Agent turn spent.
 _Avoid_: Weak test, trivial gate, false green
 
+**Inverted Verification Exit**:
+The Spec Consistency Check error (`SC-VERIFY-INVERTED-EXIT`) raised when an authored Verification command uses a measured shell form whose exit status reverses or ignores the condition its output appears to assert. The finding names the matched form and a replacement that exits zero when the asserted condition holds.
+_Avoid_: Verification failure, shell lint, non-zero result
+
+**Non-Hermetic Verification**:
+The Spec Consistency Check error (`SC-VERIFY-NON-HERMETIC`) raised when an authored Verification command depends on an undeclared environment variable or a pre-existing path outside the repository. A command-local variable or a path the Task creates before reading is not an external dependency.
+_Avoid_: External-state Verification, environment guard, temporary-path check
+
 **Unobserved Verification**:
 The Run Event classification (`verification_unknown`) recorded when a Verification command's verdict could not be observed — a timeout, a partial execution, or a runner error that is not the command's answer. It is distinct from a command that ran and exited non-zero, which has a verdict, and it keeps "the work is wrong" separable from "we did not find out".
 _Avoid_: Flaky test, transient failure, retry

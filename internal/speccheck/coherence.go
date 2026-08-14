@@ -56,13 +56,9 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeCoverageUntasked, stage: StageTasks},
 	{code: CodeReferenceUnresolved, stage: StageTasks},
 	{code: CodeVerifyWorkIndependent, stage: StageTasks},
-	// SC-VERIFY-VACUOUS-COMMAND is registered but not staged: disabled by
-	// maintainer decision on 2026-08-10 until the loop-performance work in
-	// docs/backlog/2026-08-10-the-loop-is-measured-and-the-gate-is-where-it-costs.md
-	// happens. The Daemon's pre-work probe still refuses these commands, so the
-	// discovery moves back to Run time rather than disappearing. Re-enable by
-	// restoring the line below.
-	// {code: CodeVerifyVacuousCommand, stage: StageTasks},
+	{code: CodeVerifyInvertedExit, stage: StageTasks},
+	{code: CodeVerifyNonHermetic, stage: StageTasks},
+	{code: CodeVerifyVacuousCommand, stage: StageTasks},
 	{code: CodeRequirementContradictory, stage: StageTasks},
 	{code: CodeRehearsalUndeclared, stage: StageTasks},
 }

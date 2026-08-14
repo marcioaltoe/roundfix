@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -42,6 +43,121 @@ func TestRunSpecCheckCleanText(t *testing.T) {
 	if stderr.String() != "" {
 		t.Fatalf("stderr = %q, want no diagnostics", stderr.String())
 	}
+}
+
+func TestSpecCheckRunVerification(t *testing.T) {
+	t.Run("executes commands for every requested Spec", func(t *testing.T) {
+		_, _ = newSpecCheckWorkspace(t, "coverage-range", "coverage-untasked")
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{
+			"spec", "check", "coverage-range", "coverage-untasked", "--run-verification",
+		}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("multi-Spec run-verification exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+		}
+		if got := strings.Count(stdout.String(), "Verification tree: HEAD"); got != 2 {
+			t.Fatalf("HEAD report count = %d, want 2:\n%s", got, stdout.String())
+		}
+		if got := strings.Count(stdout.String(), `- task_01: vacuous — "true"`); got != 2 {
+			t.Fatalf("executed command report count = %d, want 2:\n%s", got, stdout.String())
+		}
+	})
+
+	t.Run("reports vacuous and honest commands against HEAD", func(t *testing.T) {
+		_, repoDir := newSpecCheckVerificationWorkspace(t, []string{
+			"test -f committed-marker.txt",
+			"test -f task-output.txt",
+		})
+		mustWrite(t, filepath.Join(repoDir, "committed-marker.txt"), "present at HEAD\n")
+		gitImplement(t, repoDir, "add", "committed-marker.txt")
+		gitImplement(t, repoDir, "commit", "-m", "test: seed pre-work marker")
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{
+			"spec", "check", "clean", "--run-verification",
+		}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("run-verification exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+		}
+		for _, want := range []string{
+			"Verification tree: HEAD",
+			`- task_01: vacuous — "test -f committed-marker.txt" (exited zero before work)`,
+			`- task_01: honest — "test -f task-output.txt" (exited non-zero before work)`,
+		} {
+			if !strings.Contains(stdout.String(), want) {
+				t.Errorf("stdout does not contain %q:\n%s", want, stdout.String())
+			}
+		}
+		if stderr.String() != "" {
+			t.Fatalf("stderr = %q, want no diagnostics", stderr.String())
+		}
+	})
+
+	t.Run("exits zero when every command honestly fails", func(t *testing.T) {
+		_, _ = newSpecCheckVerificationWorkspace(t, []string{
+			"test -f task-output-one.txt",
+			"test -f task-output-two.txt",
+		})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{
+			"spec", "check", "clean", "--run-verification",
+		}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("honest run-verification exit = %d, want %d; stderr=%q\nstdout=%s", code, exitOK, stderr.String(), stdout.String())
+		}
+		if got := strings.Count(stdout.String(), ": honest — "); got != 2 {
+			t.Fatalf("honest verdict count = %d, want 2:\n%s", got, stdout.String())
+		}
+	})
+
+	t.Run("does not execute commands without the flag", func(t *testing.T) {
+		marker := filepath.Join(t.TempDir(), "verification-ran")
+		_, _ = newSpecCheckVerificationWorkspace(t, []string{"touch " + marker})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"spec", "check", "clean"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("spec check exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+		}
+		if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("Verification command ran without opt-in: %v", err)
+		}
+		if !strings.Contains(stdout.String(), "Verification: not run (use --run-verification).") {
+			t.Fatalf("stdout does not report unexecuted Verification:\n%s", stdout.String())
+		}
+	})
+
+	t.Run("reports a command that cannot run as unknown", func(t *testing.T) {
+		const command = "roundfix-verification-binary-that-does-not-exist"
+		_, _ = newSpecCheckVerificationWorkspace(t, []string{command})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{
+			"spec", "check", "clean", "--run-verification",
+		}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("unknown run-verification exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+		}
+		want := `- task_01: unknown — "` + command + `" (command could not be executed (exit 127)`
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("stdout does not report unknown command and cause %q:\n%s", want, stdout.String())
+		}
+		if strings.Contains(stdout.String(), ": vacuous —") || strings.Contains(stdout.String(), ": honest —") {
+			t.Fatalf("unknown command received another verdict:\n%s", stdout.String())
+		}
+	})
 }
 
 func TestRunSpecCheckErrorText(t *testing.T) {
@@ -155,7 +271,7 @@ func TestSpecCheckWithoutStageIsUnchanged(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("unscoped spec check exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
 	}
-	if want := speccheck.RenderText(wantResult); stdout.String() != want {
+	if want := renderSpecCheckText(wantResult, specCheckVerificationReport{Commands: []specCheckVerificationCommandReport{}}); stdout.String() != want {
 		t.Fatalf("unscoped stdout = %q, want existing report %q", stdout.String(), want)
 	}
 	if stderr.String() != "" {
@@ -213,14 +329,21 @@ func TestRunSpecCheckJSONWritesOneObjectPerSpec(t *testing.T) {
 	}
 	for index, wantSlug := range []string{"clean", "tooling-unauthorized"} {
 		var document struct {
-			Schema string `json:"schema"`
-			Slug   string `json:"slug"`
+			Schema       string `json:"schema"`
+			Slug         string `json:"slug"`
+			Verification struct {
+				Executed bool  `json:"executed"`
+				Commands []any `json:"commands"`
+			} `json:"verification"`
 		}
 		if err := json.Unmarshal([]byte(lines[index]), &document); err != nil {
 			t.Fatalf("line %d is not JSON: %v; line=%q", index+1, err, lines[index])
 		}
 		if document.Schema != speccheck.SchemaVersion || document.Slug != wantSlug {
 			t.Errorf("line %d document = %#v, want schema %q slug %q", index+1, document, speccheck.SchemaVersion, wantSlug)
+		}
+		if document.Verification.Executed || document.Verification.Commands == nil || len(document.Verification.Commands) != 0 {
+			t.Errorf("line %d Verification = %#v, want explicit not-run state", index+1, document.Verification)
 		}
 	}
 	if stderr.String() != "" {
@@ -303,7 +426,7 @@ func TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList(t *testing.T) {
 		t.Fatalf("top-level help exit = %d, want %d", code, exitOK)
 	}
 	for _, want := range []string{
-		"roundfix spec check [<slug> ...] [--format <text|json>] [--strict]",
+		"roundfix spec check [<slug> ...] [--format <text|json>] [--strict] [--run-verification]",
 		"spec       Check Spec artifact consistency",
 	} {
 		if !strings.Contains(stdout.String(), want) {
@@ -317,7 +440,7 @@ func TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("spec check help exit = %d, want %d", code, exitOK)
 	}
-	for _, want := range []string{"--stage", "prd, techspec, or tasks", "--format", "--strict", "0  no errors", "1  at least one error", "2  usage error"} {
+	for _, want := range []string{"--stage", "prd, techspec, or tasks", "--format", "--strict", "--run-verification", "HEAD", "0  no errors", "1  at least one error", "2  usage error"} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Errorf("spec check help does not contain %q:\n%s", want, stdout.String())
 		}
@@ -645,4 +768,43 @@ func newSpecCheckWorkspace(t *testing.T, slugs ...string) (string, string) {
 	}
 	setCommandEnvironmentForTest(t, homeDir, resolved)
 	return homeDir, resolved
+}
+
+func newSpecCheckVerificationWorkspace(t *testing.T, commands []string) (string, string) {
+	t.Helper()
+	homeDir, repoDir := newSpecCheckWorkspace(t, "clean")
+	specDir := filepath.Join(repoDir, "docs", "specs", "clean")
+	mustWrite(t, filepath.Join(specDir, "_tasks.md"), `---
+schema: spec-tasks/v1
+spec: clean
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+---
+
+# Clean fixture Task Graph
+`)
+	var task strings.Builder
+	task.WriteString(`---
+task: task_01
+spec: clean
+status: pending
+type: backend
+complexity: low
+---
+
+# Task 01: Exercise Verification reporting
+
+## Verification
+
+`)
+	for _, command := range commands {
+		fmt.Fprintf(&task, "- `%s`\n", command)
+	}
+	mustWrite(t, filepath.Join(specDir, "task_01.md"), task.String())
+	gitImplement(t, repoDir, "add", "docs/specs/clean/_tasks.md", "docs/specs/clean/task_01.md")
+	gitImplement(t, repoDir, "commit", "-m", "test: seed Verification fixture")
+	return homeDir, repoDir
 }

@@ -49,6 +49,8 @@ var (
 		CodeCoverageUntasked,
 		CodeReferenceUnresolved,
 		CodeVerifyWorkIndependent,
+		CodeVerifyInvertedExit,
+		CodeVerifyNonHermetic,
 		CodeRequirementContradictory,
 		CodeRehearsalUndeclared,
 	}
@@ -873,6 +875,8 @@ func detectCitationCoverageAndReferences(
 		manifestDisplayPath := artifactDisplayPath(repoRoot, filepath.Join(specDir, "_tasks.md"))
 		addSkip(result, CodeCoverageUntasked, manifestDisplayPath)
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
+		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
+		addSkip(result, CodeVerifyNonHermetic, manifestDisplayPath)
 	}
 
 	if err := detectReferenceIndex(result, repoRoot, specDir); err != nil {
@@ -1289,6 +1293,31 @@ func detectTaskCoverageAndContextReferences(
 			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
 			result.Findings = append(result.Findings, finding)
 		}
+		createdPaths := make(map[string]bool)
+		for _, command := range task.Verification {
+			commandFindings := InvertedExitVerification(spec.Task{
+				File:         task.File,
+				Verification: []string{command},
+			})
+			for _, finding := range commandFindings {
+				finding.Where[0] = Location{
+					Path: artifactDisplayPath(repoRoot, taskPath),
+					Line: sectionLineContaining(content, "Verification", command),
+				}
+				finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+				result.Findings = append(result.Findings, finding)
+			}
+			form, matched := nonHermeticVerificationCommand(command, createdPaths)
+			if matched {
+				finding := nonHermeticFinding(task.File, command, form)
+				finding.Where[0] = Location{
+					Path: artifactDisplayPath(repoRoot, taskPath),
+					Line: sectionLineContaining(content, "Verification", command),
+				}
+				finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+				result.Findings = append(result.Findings, finding)
+			}
+		}
 		for _, command := range VacuousVerificationCommands(task) {
 			result.Findings = append(result.Findings, Finding{
 				Code:     CodeVerifyVacuousCommand,
@@ -1339,6 +1368,9 @@ func detectTaskCoverageAndContextReferences(
 func detectTaskContextReferences(result *Result, repoRoot, taskPath string, content []byte, refs []spec.TaskContextRef) {
 	taskDisplayPath := artifactDisplayPath(repoRoot, taskPath)
 	for _, ref := range refs {
+		if ref.Kind == spec.ContextKindCreates {
+			continue
+		}
 		if repositoryPathExists(repoRoot, ref.Path) {
 			continue
 		}

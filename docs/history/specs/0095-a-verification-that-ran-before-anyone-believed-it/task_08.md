@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0095-a-verification-that-ran-before-anyone-believed-it
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: docs
 complexity: low
 ---
@@ -27,16 +27,16 @@ vacuity rule it belongs next to, with the working forms as the worked answer.
 
 ## Subtasks
 
-- [ ] Add the exit-zero rule beside the vacuity rule.
-- [ ] Record the working forms.
+- [x] Add the exit-zero rule beside the vacuity rule.
+- [x] Record the working forms.
 
 ## Acceptance Criteria
 
-- [ ] The authoring contract states the exit-zero rule.
-- [ ] It gives at least the three working forms an author needs for an
+- [x] The authoring contract states the exit-zero rule.
+- [x] It gives at least the three working forms an author needs for an
       empty-result assertion.
-- [ ] No other clause changed.
-- [ ] The changed-file set is the bounded scope plus this Task file.
+- [x] No other clause changed.
+- [x] The changed-file set is the bounded scope plus this Task file.
 
 ## Bounded scope
 
@@ -66,3 +66,38 @@ ADR-0081.
 
 `_techspec.md` → Build Order 8. `_prd.md` → Core Feature 6; Goal 2; User
 Story 2; Project Constraints, Tooling authority. ADR-0081.
+
+## Result
+
+### Implementation
+
+- Added the rule that a Verification command passes only by exiting zero directly
+  after the existing vacuity rule in the Verification decomposition clause.
+- Added three copyable forms: `test -z` for empty output, `! grep -rq` for an
+  absent string, and an output-file assertion ending in `|| { cat ...; exit 1; }`
+  when a failure must print the non-empty result.
+- Regenerated `skills/write-tasks/SKILL.md` with the sanctioned
+  `make skills-sync` command. The generated mirror is byte-identical to the
+  canonical skill.
+
+### Acceptance evidence
+
+| Criterion | Focused evidence |
+| --- | --- |
+| The authoring contract states the exit-zero rule | Focused phrase inspection found `A Verification command passes only by exiting zero.` in the canonical skill beside the existing sentence that defines a vacuous command. |
+| At least three working forms are present | Focused phrase inspection found `test -z`, `! grep -rq`, and `|| { cat` in both the canonical skill and its generated mirror. |
+| No other authoring clause changed | The focused skill diff contains one changed decomposition-rule line in each copy; the added text is confined to the existing Verification clause. |
+| The changed-file set stays bounded | `git status --short` and `git diff --name-only HEAD` listed only the canonical skill, its ADR-0081-sanctioned generated mirror, and this Task file. |
+
+### Focused checks
+
+- Red signal: before the edit, focused phrase inspection of the canonical skill
+  found none of `exiting zero`, `test -z`, `! grep -rq`, or `|| { cat` and exited
+  1.
+- `rtk make skills-sync` exited 0.
+- `rtk cmp -s .agents/skills/write-tasks/SKILL.md skills/write-tasks/SKILL.md`
+  exited 0.
+- `rtk git diff --check` exited 0.
+- `rtk make verify-incremental` exited 0; the Go suite, skill checks, and build
+  passed.
+- The Daemon-owned commands under `## Verification` were not run.

@@ -12,13 +12,14 @@ import (
 
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/daemon"
 	"roundfix/internal/spec"
 	"roundfix/internal/specaudit"
 	"roundfix/internal/speccheck"
 )
 
 const specUsage = `Usage:
-  roundfix spec check [<slug> ...] [--stage <prd|techspec|tasks>] [--format <text|json>] [--strict]
+  roundfix spec check [<slug> ...] [--stage <prd|techspec|tasks>] [--format <text|json>] [--strict] [--run-verification]
   roundfix spec audit <slug> [--format <text|json>]
 
 Commands:
@@ -27,7 +28,7 @@ Commands:
 `
 
 const specCheckUsage = `Usage:
-  roundfix spec check [<slug> ...] [--stage <prd|techspec|tasks>] [--format <text|json>] [--strict]
+  roundfix spec check [<slug> ...] [--stage <prd|techspec|tasks>] [--format <text|json>] [--strict] [--run-verification]
 
 Checks the declarations and citations in the requested Specs without changing
 their artifacts. With no slug, checks every active Spec in the Spec Root.
@@ -36,10 +37,12 @@ Options:
   --stage   Limit checks to the prd, techspec, or tasks authoring stage
   --format  Output format: text or json (default: text)
   --strict  Promote gap findings to errors
+  --run-verification
+            Execute authored Verification commands in a disposable checkout at HEAD
 
 Exit codes:
   0  no errors (clean or gaps only)
-  1  at least one error
+  1  at least one error, vacuous command, or unknown command verdict
   2  usage error or unreadable Spec Root
 `
 
@@ -67,11 +70,40 @@ const (
 )
 
 type specCheckRequest struct {
-	slugs        []string
-	stage        speccheck.Stage
-	outputFormat string
-	strict       bool
+	slugs           []string
+	stage           speccheck.Stage
+	outputFormat    string
+	strict          bool
+	runVerification bool
 }
+
+type specCheckVerificationReport struct {
+	Executed bool                                 `json:"executed"`
+	Tree     string                               `json:"tree,omitempty"`
+	Commands []specCheckVerificationCommandReport `json:"commands"`
+}
+
+type specCheckVerificationCommandReport struct {
+	Task    string `json:"task"`
+	Command string `json:"command"`
+	Verdict string `json:"verdict"`
+	Cause   string `json:"cause,omitempty"`
+}
+
+type specCheckDocument struct {
+	Schema       string                      `json:"schema"`
+	Slug         string                      `json:"slug"`
+	Findings     []speccheck.Finding         `json:"findings"`
+	Skipped      []speccheck.SkippedDetector `json:"skipped"`
+	Verification specCheckVerificationReport `json:"verification"`
+}
+
+const (
+	specCheckVerificationTreeHEAD       = "HEAD"
+	specCheckVerificationVerdictVacuous = "vacuous"
+	specCheckVerificationVerdictHonest  = "honest"
+	specCheckVerificationVerdictUnknown = "unknown"
+)
 
 type specAuditRequest struct {
 	slug         string
@@ -226,8 +258,21 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 		results = append(results, result)
 	}
 
+	verificationReports := make([]specCheckVerificationReport, len(slugs))
+	for index := range verificationReports {
+		verificationReports[index].Commands = []specCheckVerificationCommandReport{}
+	}
+	if req.runVerification {
+		verificationReports, err = probeSpecVerifications(ctx, loaded.GitRoot, resolvedSpecsRoot.Path, slugs)
+		if err != nil {
+			printSpecCheckFailure(err, stderr)
+			return exitRunFailed
+		}
+	}
+
 	hasError := false
-	for _, result := range results {
+	hasVerificationRefusal := false
+	for index, result := range results {
 		for _, finding := range result.Findings {
 			if finding.Severity == speccheck.SeverityError {
 				hasError = true
@@ -236,17 +281,22 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 		}
 		switch req.outputFormat {
 		case specCheckFormatText:
-			fmt.Fprint(stdout, speccheck.RenderText(result))
+			fmt.Fprint(stdout, renderSpecCheckText(result, verificationReports[index]))
 		case specCheckFormatJSON:
-			data, err := speccheck.RenderJSON(result)
+			data, err := renderSpecCheckJSON(result, verificationReports[index])
 			if err != nil {
 				fmt.Fprintf(stderr, "%s: spec check failed: %v\n", app.Name, err)
 				return exitRunFailed
 			}
 			fmt.Fprintln(stdout, string(data))
 		}
+		for _, command := range verificationReports[index].Commands {
+			if command.Verdict == specCheckVerificationVerdictVacuous || command.Verdict == specCheckVerificationVerdictUnknown {
+				hasVerificationRefusal = true
+			}
+		}
 	}
-	if hasError {
+	if hasError || hasVerificationRefusal {
 		return exitRunFailed
 	}
 	return exitOK
@@ -260,6 +310,8 @@ func parseSpecCheckCommand(args []string) (specCheckRequest, error) {
 		switch {
 		case arg == "--strict":
 			req.strict = true
+		case arg == "--run-verification":
+			req.runVerification = true
 		case arg == "--stage":
 			index++
 			if index >= len(args) {
@@ -314,6 +366,143 @@ func parseSpecCheckStage(value string) (speccheck.Stage, error) {
 			message: fmt.Sprintf("unsupported --stage %q; use prd, techspec, or tasks", value),
 		}
 	}
+}
+
+func probeSpecVerifications(
+	ctx context.Context,
+	repoRoot string,
+	specsRoot string,
+	slugs []string,
+) (reports []specCheckVerificationReport, returnErr error) {
+	checkoutDir, cleanup, err := speccheck.DisposableCheckout(ctx, repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("prepare Verification tree at HEAD: %w", err)
+	}
+	defer func() {
+		returnErr = errors.Join(returnErr, cleanup())
+	}()
+
+	diagnosticDir, err := os.MkdirTemp("", "roundfix-spec-check-verification-")
+	if err != nil {
+		return nil, fmt.Errorf("prepare Verification diagnostics: %w", err)
+	}
+	defer func() {
+		returnErr = errors.Join(returnErr, os.RemoveAll(diagnosticDir))
+	}()
+
+	reports = make([]specCheckVerificationReport, len(slugs))
+	verifier := daemon.ExecVerifier{}
+	for specIndex, slug := range slugs {
+		report := specCheckVerificationReport{
+			Executed: true,
+			Tree:     specCheckVerificationTreeHEAD,
+			Commands: []specCheckVerificationCommandReport{},
+		}
+		manifestPath := filepath.Join(specsRoot, slug, "_tasks.md")
+		if _, err := os.Stat(manifestPath); errors.Is(err, os.ErrNotExist) {
+			reports[specIndex] = report
+			continue
+		} else if err != nil {
+			return nil, fmt.Errorf("inspect Task Graph for Spec %q: %w", slug, err)
+		}
+
+		graph, err := spec.Load(specsRoot, slug)
+		if err != nil {
+			return nil, fmt.Errorf("load Verification commands for Spec %q: %w", slug, err)
+		}
+		for taskIndex, task := range graph.Tasks {
+			verdicts, err := daemon.ProbeCommands(ctx, verifier, checkoutDir, task.Verification, func(commandIndex int) string {
+				return filepath.Join(
+					diagnosticDir,
+					fmt.Sprintf("spec-%03d-task-%03d-command-%03d.log", specIndex+1, taskIndex+1, commandIndex+1),
+				)
+			})
+			if err != nil {
+				return nil, fmt.Errorf("probe Spec %q Task %s Verification: %w", slug, task.ID, err)
+			}
+			for _, verdict := range verdicts {
+				report.Commands = append(report.Commands, specCheckVerificationCommand(task.ID, verdict))
+			}
+		}
+		reports[specIndex] = report
+	}
+	return reports, nil
+}
+
+func specCheckVerificationCommand(taskID string, verdict daemon.CommandVerdict) specCheckVerificationCommandReport {
+	report := specCheckVerificationCommandReport{
+		Task:    taskID,
+		Command: verdict.Command,
+		Verdict: specCheckVerificationVerdictHonest,
+	}
+	switch {
+	case verdict.Unknown:
+		report.Verdict = specCheckVerificationVerdictUnknown
+		if verdict.Cause != nil {
+			report.Cause = verdict.Cause.Error()
+			var unknownErr *daemon.VerificationUnknownError
+			if errors.As(verdict.Cause, &unknownErr) && unknownErr.Err != nil {
+				report.Cause = unknownErr.Err.Error()
+			}
+		}
+	case verdict.Vacuous:
+		report.Verdict = specCheckVerificationVerdictVacuous
+	}
+	return report
+}
+
+func renderSpecCheckText(result speccheck.Result, verification specCheckVerificationReport) string {
+	var report strings.Builder
+	report.WriteString(speccheck.RenderText(result))
+	if !verification.Executed {
+		report.WriteString("Verification: not run (use --run-verification).\n")
+		return report.String()
+	}
+	fmt.Fprintf(&report, "Verification tree: %s\n", verification.Tree)
+	if len(verification.Commands) == 0 {
+		report.WriteString("No authored Verification commands.\n")
+		return report.String()
+	}
+	for _, command := range verification.Commands {
+		fmt.Fprintf(&report, "- %s: %s — %q", command.Task, command.Verdict, command.Command)
+		switch command.Verdict {
+		case specCheckVerificationVerdictVacuous:
+			report.WriteString(" (exited zero before work)")
+		case specCheckVerificationVerdictHonest:
+			report.WriteString(" (exited non-zero before work)")
+		case specCheckVerificationVerdictUnknown:
+			if command.Cause != "" {
+				fmt.Fprintf(&report, " (%s)", command.Cause)
+			}
+		}
+		report.WriteByte('\n')
+	}
+	return report.String()
+}
+
+func renderSpecCheckJSON(result speccheck.Result, verification specCheckVerificationReport) ([]byte, error) {
+	findings := result.Findings
+	if findings == nil {
+		findings = []speccheck.Finding{}
+	}
+	skipped := result.Skipped
+	if skipped == nil {
+		skipped = []speccheck.SkippedDetector{}
+	}
+	if verification.Commands == nil {
+		verification.Commands = []specCheckVerificationCommandReport{}
+	}
+	data, err := json.Marshal(specCheckDocument{
+		Schema:       speccheck.SchemaVersion,
+		Slug:         result.Slug,
+		Findings:     findings,
+		Skipped:      skipped,
+		Verification: verification,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("render Spec Consistency Check JSON: %w", err)
+	}
+	return data, nil
 }
 
 func parseSpecAuditCommand(args []string) (specAuditRequest, error) {

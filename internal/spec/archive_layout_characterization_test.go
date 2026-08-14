@@ -75,7 +75,7 @@ type archiveLayoutCorpusGolden struct {
 	Active map[string]int `json:"active"`
 }
 
-func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterRelocation(t *testing.T) {
+func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095(t *testing.T) {
 	t.Parallel()
 
 	repositoryRoot := archiveLayoutCharacterizationRepositoryRoot(t)
@@ -93,7 +93,7 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterRelocation(t *testing
 
 	want := archiveLayoutCorpusGolden{
 		Schema: "roundfix-speccheck-corpus/v2",
-		Update: "Re-recorded because Spec 0094 Task 02 moved retired Specs, findings, and ADRs from _archived into docs/history and changed every retired-family resolver to that root. Active-corpus counts remain unchanged because retired artifacts are excluded. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change.",
+		Update: "Re-recorded because Spec 0095 restored SC-VERIFY-VACUOUS-COMMAND at the tasks stage and added all three of its Verification refusal codes to the characterization corpus. The active corpus reports zero findings for SC-VERIFY-INVERTED-EXIT, SC-VERIFY-NON-HERMETIC, and SC-VERIFY-VACUOUS-COMMAND after their authored commands were accounted. After an intentional detector change, run the focused corpus test, inspect its actual active counts, and update this file in the same change.",
 		Active: map[string]int{
 			"SC-ADR-RELATED":               0,
 			"SC-ADR-UNLISTED":              0,
@@ -112,12 +112,15 @@ func TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterRelocation(t *testing
 			"SC-ROLLUP-MEMBER":             0,
 			"SC-TOOLING-UNAUTHORIZED":      0,
 			"SC-TOOLING-UNBOUNDED":         0,
+			"SC-VERIFY-INVERTED-EXIT":      0,
+			"SC-VERIFY-NON-HERMETIC":       0,
+			"SC-VERIFY-VACUOUS-COMMAND":    0,
 			"SC-VERIFY-WORK-INDEPENDENT":   0,
 			"SC-VOCABULARY-UNDOCUMENTED":   0,
 		},
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("corpus golden after Spec 0094 Task 02 = %#v, want %#v", got, want)
+		t.Fatalf("corpus golden after Spec 0095 = %#v, want %#v", got, want)
 	}
 }
 

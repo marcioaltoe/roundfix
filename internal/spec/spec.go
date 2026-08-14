@@ -128,6 +128,7 @@ type ContextKind string
 const (
 	ContextKindInstruction ContextKind = "instruction"
 	ContextKindInterface   ContextKind = "interface"
+	ContextKindCreates     ContextKind = "creates"
 )
 
 // TaskContextRef is one labeled repository-relative path from a Task's

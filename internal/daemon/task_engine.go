@@ -244,14 +244,7 @@ type TaskPlan struct {
 // against the unchanged tree before the Agent Session owner exists.
 type VerificationProbe struct {
 	TaskID   string
-	Commands []VerificationProbeResult
-}
-
-type VerificationProbeResult struct {
-	Command      string
-	Vacuous      bool
-	Unknown      bool
-	UnknownCause *VerificationUnknownError
+	Commands []CommandVerdict
 }
 
 func (probe VerificationProbe) Vacuous() []string {
@@ -1001,7 +994,7 @@ func repositoryPreconditionFailureReason(outcome verificationAttemptOutcome) str
 }
 
 func (engine *Engine) verifyTaskPreWork(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int) (VerificationProbe, error) {
-	probe := VerificationProbe{TaskID: task.ID, Commands: make([]VerificationProbeResult, 0, len(task.Verification))}
+	probe := VerificationProbe{TaskID: task.ID, Commands: make([]CommandVerdict, 0, len(task.Verification))}
 	if len(task.Verification) == 0 {
 		return probe, nil
 	}
@@ -1025,37 +1018,17 @@ func (engine *Engine) verifyTaskPreWork(ctx context.Context, plan TaskPlan, task
 	}
 	defer release()
 
-	for index, command := range task.Verification {
-		outputPath := verificationProbeOutputPath(plan.ArtifactDir, plan.RunID, ordinal, index+1)
-		result, verifyErr := engine.deps.Verifier.Verify(ctx, VerifyRequest{
-			WorkDir:    plan.WorkDir,
-			Command:    command,
-			OutputPath: outputPath,
-		})
-		probeResult := VerificationProbeResult{Command: command}
-		if verifyErr == nil {
-			probeResult.Vacuous = true
-			probe.Commands = append(probe.Commands, probeResult)
-			continue
+	verdicts, probeErr := ProbeCommands(ctx, engine.deps.Verifier, plan.WorkDir, task.Verification, func(index int) string {
+		return verificationProbeOutputPath(plan.ArtifactDir, plan.RunID, ordinal, index+1)
+	})
+	if probeErr != nil {
+		var commandErr *commandProbeError
+		if errors.As(probeErr, &commandErr) {
+			return VerificationProbe{}, fmt.Errorf("probe run %q Task %s command %q: %w", plan.RunID, task.ID, commandErr.command, commandErr.err)
 		}
-		if verificationStopRequested(ctx, verifyErr) {
-			return VerificationProbe{}, fmt.Errorf("probe run %q Task %s command %q: %w", plan.RunID, task.ID, command, verifyErr)
-		}
-		var commandErr *VerificationCommandError
-		if errors.As(verifyErr, &commandErr) {
-			probe.Commands = append(probe.Commands, probeResult)
-			continue
-		}
-		var unknownErr *VerificationUnknownError
-		if errors.As(verifyErr, &unknownErr) {
-			unknownErr = completeVerificationUnknownCause(unknownErr, command, result.OutputPath)
-			probeResult.Unknown = true
-			probeResult.UnknownCause = unknownErr
-			probe.Commands = append(probe.Commands, probeResult)
-			continue
-		}
-		return VerificationProbe{}, fmt.Errorf("probe run %q Task %s command %q: %w", plan.RunID, task.ID, command, verifyErr)
+		return VerificationProbe{}, fmt.Errorf("probe run %q Task %s: %w", plan.RunID, task.ID, probeErr)
 	}
+	probe.Commands = verdicts
 	return probe, nil
 }
 
@@ -1082,14 +1055,15 @@ func (engine *Engine) publishPreWorkProbeFindings(ctx context.Context, plan Task
 		if !result.Unknown {
 			continue
 		}
+		unknownCause := commandVerdictUnknownCause(result)
 		reason := "reason unavailable"
 		diagnosticPath := "unavailable"
-		if result.UnknownCause != nil {
-			if result.UnknownCause.Err != nil && strings.TrimSpace(result.UnknownCause.Err.Error()) != "" {
-				reason = result.UnknownCause.Err.Error()
+		if unknownCause != nil {
+			if unknownCause.Err != nil && strings.TrimSpace(unknownCause.Err.Error()) != "" {
+				reason = unknownCause.Err.Error()
 			}
-			if strings.TrimSpace(result.UnknownCause.DiagnosticPath) != "" {
-				diagnosticPath = result.UnknownCause.DiagnosticPath
+			if strings.TrimSpace(unknownCause.DiagnosticPath) != "" {
+				diagnosticPath = unknownCause.DiagnosticPath
 			}
 		}
 		summary := fmt.Sprintf("Pre-work Verification could not observe Task %s command %q.", task.ID, result.Command)
@@ -1120,10 +1094,18 @@ func preWorkProbeFailureReason(probe VerificationProbe) string {
 	}
 	for _, result := range probe.Commands {
 		if result.Unknown {
-			reasons = append(reasons, "Pre-work "+verificationUnknownTerminalReason(result.UnknownCause))
+			reasons = append(reasons, "Pre-work "+verificationUnknownTerminalReason(commandVerdictUnknownCause(result)))
 		}
 	}
 	return terminalReasonLine(strings.Join(reasons, "; "))
+}
+
+func commandVerdictUnknownCause(verdict CommandVerdict) *VerificationUnknownError {
+	var unknownErr *VerificationUnknownError
+	if errors.As(verdict.Cause, &unknownErr) {
+		return unknownErr
+	}
+	return nil
 }
 
 func verificationOutputTail(path string, limit int) string {

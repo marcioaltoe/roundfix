@@ -114,6 +114,37 @@ pin. Derived Baseline pins and skill mirrors rewritten by `make baseline-digests
 and `make skills-sync` are sanctioned fallout under ADR-0081, not separate
 targets.
 
+## Sanctioned regeneration
+
+The clause above states this in prose; the block below states it in the form the
+changed-path audit reads. The detector may treat these exact paths only as
+outputs of the declared command. This declaration does not make any output a
+freely editable bounded file; the QA gate still verifies that its bytes match the
+canonical sources under `.agents/skills/`.
+
+```yaml
+command: make skills-sync
+outputs:
+  - skills/archive-spec/SKILL.md
+  - skills/implement-task/SKILL.md
+  - skills/qa-gate/SKILL.md
+  - skills/roundfix/SKILL.md
+  - skills/roundfix/agents/openai.yaml
+  - skills/write-idea/SKILL.md
+  - skills/write-idea/references/idea-template.md
+  - skills/write-idea/references/opportunity-scan.md
+  - skills/write-prd/SKILL.md
+  - skills/write-prd/references/prd-template.md
+  - skills/write-tasks/SKILL.md
+  - skills/write-tasks/references/task-template.md
+  - skills/write-techspec/SKILL.md
+  - skills/write-techspec/references/techspec-template.md
+```
+
+Only the eight skills this grant bounds have their mirrors declared. A mirror
+whose canonical source is outside the frontmatter above is not covered, so a
+Task cannot reach an unauthorized skill by regenerating the bundle.
+
 ## Chronology
 
 This record lands as its own commit, before any commit that consumes it. A

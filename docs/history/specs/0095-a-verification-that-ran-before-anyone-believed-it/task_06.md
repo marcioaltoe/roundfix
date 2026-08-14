@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0095-a-verification-that-ran-before-anyone-believed-it
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -56,3 +56,49 @@ deliberately rather than regenerating a golden on reflex.
 corpus golden. `_prd.md` → Core Feature 4. Related:
 `docs/backlog/2026-08-10-the-loop-is-measured-and-the-gate-is-where-it-costs.md`,
 which records the decision that disabled it.
+
+## Result
+
+Restored `CodeVerifyVacuousCommand` to the tasks-stage detector registry and
+removed the obsolete suspension comment. The characterization corpus now owns
+all three Spec 0095 Verification refusal codes. Its golden records zero active
+findings for inverted-exit, non-hermetic, and vacuous commands and states that
+Spec 0095 caused the re-record. No active Task command needed a correction:
+the active-corpus error sweep reported no finding after the registry was
+restored.
+
+Focused checks:
+
+- Pre-change source inspection found the tasks-stage registry entry commented
+  out while `VacuousVerificationCommands` and its detector tests remained.
+- After adding the three Spec 0095 codes to the corpus contract,
+  `GOCACHE=/tmp/0095-t06-gocache rtk proxy go test -tags docscontract ./internal/docscontract -run '^TestCheckCorpusGolden$' -count=1`
+  exited 1 and printed the deliberate new zero-count entries. This was the
+  stale-golden signal inspected before re-recording.
+- After re-recording,
+  `GOCACHE=/tmp/0095-t06-gocache rtk go test ./internal/speccheck -run '^(TestVacuousVerificationCommandIsCaughtBesideHonestSiblings|TestOneHonestCommandDoesNotAbsolveAVacuousSibling)$' -count=1`
+  exited 0 with 20 passing cases.
+- `GOCACHE=/tmp/0095-t06-gocache rtk go test -tags docscontract ./internal/docscontract -run '^(TestCheckCorpusGolden|TestCheckActiveCorpusHasNoErrors)$' -count=1`
+  exited 0 with both focused corpus checks passing.
+- The first `GOCACHE=/tmp/0095-t06-gocache rtk make verify-incremental`
+  reached the repository tests and exposed one stale exact-golden expectation
+  in `internal/spec`; production packages and the detector suite were green.
+  After updating that characterization without loosening its equality check,
+  `TestArchiveLayoutCharacterizationPinsCorpusGoldenAfterSpec0095` exited 0.
+- The final `GOCACHE=/tmp/0095-t06-gocache rtk make verify-incremental`
+  exited 0. It ran all Go package tests, the focused skill contract tests, the
+  Roundfix skill check, and the build.
+- `rtk git diff --check` exited 0 with no diagnostics.
+
+Acceptance evidence:
+
+- The staged registry now places `CodeVerifyVacuousCommand` at `StageTasks`.
+- `TestCheckActiveCorpusHasNoErrors` passed with the restored registry, so the
+  active Spec corpus has no unaccounted vacuity finding.
+- `TestCheckCorpusGolden` passed after the golden's `update` sentence named
+  Spec 0095 and its active map recorded the three refusal codes at zero.
+- `internal/speccheck/verification.go` is unchanged; the focused detector suite
+  still passes all existing positive and negative cases.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.

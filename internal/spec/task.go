@@ -294,11 +294,12 @@ func firstBacktickSpan(line string) (string, bool) {
 }
 
 // parseTaskContextRefs extracts labeled repository-relative paths from the
-// optional ## Context section. Duplicate entries are ignored without changing
-// the order of first occurrence.
+// optional ## Context section. Duplicate input entries are ignored without
+// changing the order of first occurrence; a declared output must be unique.
 func parseTaskContextRefs(body []byte) ([]TaskContextRef, error) {
 	var refs []TaskContextRef
 	seen := map[string]bool{}
+	pathKinds := map[string]ContextKind{}
 	inSection := false
 	for _, line := range strings.Split(string(body), "\n") {
 		trimmed := strings.TrimSpace(line)
@@ -320,11 +321,20 @@ func parseTaskContextRefs(body []byte) ([]TaskContextRef, error) {
 		if err != nil {
 			return nil, err
 		}
+		if previousKind, ok := pathKinds[ref.Path]; ok &&
+			(ref.Kind == ContextKindCreates || previousKind == ContextKindCreates) {
+			return nil, TaskContextError{
+				Kind:   string(ref.Kind),
+				Path:   ref.Path,
+				Reason: "path must be unique within Task Context",
+			}
+		}
 		key := string(ref.Kind) + "\x00" + ref.Path
 		if seen[key] {
 			continue
 		}
 		seen[key] = true
+		pathKinds[ref.Path] = ref.Kind
 		refs = append(refs, ref)
 		if len(refs) > maxTaskContextRefs {
 			return nil, TaskContextError{Reason: fmt.Sprintf("declares more than %d unique entries", maxTaskContextRefs)}
@@ -337,13 +347,13 @@ func parseTaskContextLine(line string) (TaskContextRef, error) {
 	entry := strings.TrimSpace(strings.TrimPrefix(line, "- "))
 	label, rest, ok := strings.Cut(entry, ":")
 	if !ok {
-		return TaskContextRef{}, TaskContextError{Kind: entry, Reason: `expected "instruction" or "interface" label`}
+		return TaskContextRef{}, TaskContextError{Kind: entry, Reason: `expected "instruction", "interface", or "creates" label`}
 	}
 	kind := ContextKind(strings.TrimSpace(label))
 	switch kind {
-	case ContextKindInstruction, ContextKindInterface:
+	case ContextKindInstruction, ContextKindInterface, ContextKindCreates:
 	default:
-		return TaskContextRef{}, TaskContextError{Kind: strings.TrimSpace(label), Reason: `expected "instruction" or "interface" label`}
+		return TaskContextRef{}, TaskContextError{Kind: strings.TrimSpace(label), Reason: `expected "instruction", "interface", or "creates" label`}
 	}
 	path := strings.TrimSpace(rest)
 	if span, ok := firstBacktickSpan(path); ok {
