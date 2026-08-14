@@ -1,9 +1,12 @@
 ---
 spec: 0095-a-verification-that-ran-before-anyone-believed-it
-status: active
+status: archived
 created: 2026-08-12
 surfaces: [backend, cli, docs]
+archived: "2026-08-14"
+source_slug: 0095-a-verification-that-ran-before-anyone-believed-it
 ---
+
 
 # A Verification that ran before anyone believed it
 
