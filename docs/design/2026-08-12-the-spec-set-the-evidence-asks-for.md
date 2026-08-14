@@ -771,8 +771,11 @@ rollup's own summary.
 
 ## Implementation order and release points
 
-Updated 2026-08-14, after Spec 0094 shipped as v0.6.0 and after triaging nine
-Inbox Entries the fleet captured while it was being built.
+Updated 2026-08-14, after Spec 0094 shipped as v0.6.0, after triaging nine
+Inbox Entries the fleet captured while it was being built, after Spec 0095
+shipped, and after the spawn-density flake refused four consecutive gate
+attempts on Spec 0095's own Pull Request — which moved Spec 0103 from position
+14 into Wave A.
 
 A Spec's number is its identity and never moves; this section is the order, and
 it is revisable. Four Specs joined the set — 0112 through 0115 — from defects the
@@ -789,11 +792,12 @@ the fleet. Each is small, and together they remove the friction that made Spec
 
 | Order | Spec | Why here |
 | --- | --- | --- |
-| 1 | 0095 | Verification executed at authoring. Eleven vacuous gates in 0094, eight more in fluxus past a clean checker — this is the single largest measured cost, and it makes every later Spec cheaper. |
-| 2 | 0114 | The changed-path audit reads its grant correctly, and the PRD template stops contradicting the checker. Both bit this session repeatedly. |
-| 3 | 0113 | A refused gate stops blocking its own successor, which cost two evidence deletions in one Spec. |
-| 4 | 0096 | An Agent gets a diagnostic it can act on, including a vacuity event that names what it means. |
-| 5 | 0104 | The gate stops certifying its own cache. Needs a tooling grant. |
+| 1 | 0095 | Verification executed at authoring. Eleven vacuous gates in 0094, eight more in fluxus past a clean checker — this is the single largest measured cost, and it makes every later Spec cheaper. **Shipped 2026-08-14.** |
+| 2 | 0103 | Moved here from position 14 on 2026-08-14, by maintainer direction. The spawn-density flake cost four consecutive gate attempts on one Pull Request, and 0095's own delivery raised the pressure that feeds it — ten new checkout sites and a command that executes authored shell. Every Spec behind it pays a rerun per delivery until this lands. |
+| 3 | 0114 | The changed-path audit reads its grant correctly, and the PRD template stops contradicting the checker. Both bit this session repeatedly. |
+| 4 | 0113 | A refused gate stops blocking its own successor, which cost two evidence deletions in one Spec. |
+| 5 | 0096 | An Agent gets a diagnostic it can act on, including a vacuity event that names what it means. |
+| 6 | 0104 | The gate stops certifying its own cache. Needs a tooling grant. |
 
 **Release point — patch.** Nothing here changes a public contract; all five
 remove false signal from the loop. Cutting here means every later Spec is
@@ -819,7 +823,8 @@ with other conventions become usable. This is the wave the fleet feels.
 | --- | --- | --- |
 | 12 | 0112 | Review retirement stops depending on the local object store. Directly repairs what 0094 shipped. |
 | 13 | 0115 | An archive survives its own move: links resolve, one destination rule, and archival ordered against the evidence that can refuse it. |
-| 14 | 0103 | The suite leaks nothing, and Roundfix can see its own residue. |
+
+0103 left this wave for Wave A on 2026-08-14; see the note there.
 
 **Release point — minor.** 0112 and 0115 change behaviour adopters already have,
 so they ship together with their migration rather than trickling.

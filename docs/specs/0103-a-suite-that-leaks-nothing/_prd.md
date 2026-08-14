@@ -35,9 +35,15 @@ execution has no command that answers what it detached that is still running.
   Daemon exclusive ownership of Implement Task status, ADR-0056 separates Task
   Capacity from Verification Capacity, and ADR-0096 with ADR-0117 place the gate's
   mechanical stage and its checks — this Spec reports residue and settles nothing,
-  so it changes none of them. No accepted ADR governs test isolation or process
-  residue, which is why the invariants this Spec establishes are new. Source:
-  `docs/agents/domain.md`.
+  so it changes none of them. No accepted ADR governed test isolation or process
+  residue when this Spec was written, which is why the invariants it establishes
+  are new: ADR-0125 makes a spawned fixture a compiled binary, ADR-0126 places the
+  isolation guard per package rather than once around the suite, and ADR-0127
+  makes residue a readiness fact rather than a Run record. The closing node rests
+  on two more that it follows rather than changes: ADR-0091 makes the QA gate a
+  Task node of its own type, and ADR-0104 makes a Spec accept on evidence it did
+  not author, which is what the upstream diagnosis and the 2026-08-06 process
+  measurement supply here. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized. The work changes Go test code, test fixtures, and production Go
   in the process-ownership and CLI packages. It edits no linter, formatter,

@@ -37,7 +37,7 @@ failed.
   the runtime's exit code, ADR-0057 gives the Daemon exclusive ownership of
   Implement Task status, ADR-0056 separates Task Capacity from Verification
   Capacity, and ADR-0096 with ADR-0117 place the gate's mechanical stage and its
-  checks. Source: `docs/agents/domain.md`.
+  checks. ADR-0127 places process residue in the readiness diagnostic; this Spec governs the commit step and reports no residue, so it does not apply. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the autonomous-work module gains the
   hook-strictness invariant and the recovery ladder. Express maintainer
   authorization:
