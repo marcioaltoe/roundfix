@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -18,16 +19,18 @@ func TestProbeCommands(t *testing.T) {
 
 	t.Run("classifies ordered command outcomes", func(t *testing.T) {
 		const (
-			vacuousCommand = "gate already passes"
-			honestCommand  = "gate rejects unchanged tree"
-			unknownCommand = "gate could not run"
+			vacuousCommand      = "gate already passes"
+			honestCommand       = "gate rejects unchanged tree"
+			unknownCommand      = "gate could not run"
+			unexecutableCommand = "gate binary is unavailable"
 		)
 		unknownCause := errors.New("runner unavailable")
 		verifier := &probeScriptVerifier{errorsByCommand: map[string]error{
-			honestCommand:  &VerificationCommandError{Err: errors.New("exit status 1")},
-			unknownCommand: &VerificationUnknownError{Err: unknownCause},
+			honestCommand:       &VerificationCommandError{Err: probeExitError(1)},
+			unknownCommand:      &VerificationUnknownError{Err: unknownCause},
+			unexecutableCommand: &VerificationCommandError{Err: probeExitError(127)},
 		}}
-		commands := []string{vacuousCommand, honestCommand, unknownCommand}
+		commands := []string{vacuousCommand, honestCommand, unknownCommand, unexecutableCommand}
 		workDir := t.TempDir()
 		outputDir := t.TempDir()
 
@@ -62,6 +65,12 @@ func TestProbeCommands(t *testing.T) {
 		if unknownErr.Command != unknownCommand || unknownErr.DiagnosticPath != filepath.Join(outputDir, "command-3.log") {
 			t.Fatalf("unobserved command cause = %+v, want completed command and diagnostic path", unknownErr)
 		}
+		if verdicts[3].Vacuous || !verdicts[3].Unknown || verdicts[3].Cause == nil {
+			t.Fatalf("unexecutable command verdict = %+v, want unknown", verdicts[3])
+		}
+		if !strings.Contains(verdicts[3].Cause.Error(), "could not be executed (exit 127)") {
+			t.Fatalf("unexecutable command cause = %v, want exit 127 reason", verdicts[3].Cause)
+		}
 
 		gotCommands := make([]string, 0, len(verifier.requests))
 		gotOutputPaths := make([]string, 0, len(verifier.requests))
@@ -79,6 +88,7 @@ func TestProbeCommands(t *testing.T) {
 			filepath.Join(outputDir, "command-1.log"),
 			filepath.Join(outputDir, "command-2.log"),
 			filepath.Join(outputDir, "command-3.log"),
+			filepath.Join(outputDir, "command-4.log"),
 		}
 		if !slices.Equal(gotOutputPaths, wantOutputPaths) {
 			t.Fatalf("verifier output paths = %q, want %q", gotOutputPaths, wantOutputPaths)
@@ -104,6 +114,16 @@ func TestProbeCommands(t *testing.T) {
 			t.Fatalf("empty command list called verifier %d times and outputFor %d times", len(verifier.requests), outputCalls)
 		}
 	})
+}
+
+type probeExitError int
+
+func (err probeExitError) Error() string {
+	return fmt.Sprintf("exit status %d", err)
+}
+
+func (err probeExitError) ExitCode() int {
+	return int(err)
 }
 
 type probeScriptVerifier struct {

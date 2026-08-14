@@ -63,6 +63,14 @@ func ProbeCommands(
 		}
 		var commandErr *VerificationCommandError
 		if errors.As(verifyErr, &commandErr) {
+			if exitCode, couldNotExecute := verificationCommandCouldNotExecute(commandErr); couldNotExecute {
+				verdict.Unknown = true
+				verdict.Cause = completeVerificationUnknownCause(&VerificationUnknownError{
+					Err: fmt.Errorf("command could not be executed (exit %d): %w", exitCode, commandErr.Err),
+				}, command, result.OutputPath)
+				verdicts = append(verdicts, verdict)
+				continue
+			}
 			verdicts = append(verdicts, verdict)
 			continue
 		}
@@ -76,4 +84,13 @@ func ProbeCommands(
 		return nil, &commandProbeError{command: command, err: verifyErr}
 	}
 	return verdicts, nil
+}
+
+func verificationCommandCouldNotExecute(err error) (int, bool) {
+	var exitErr interface{ ExitCode() int }
+	if !errors.As(err, &exitErr) {
+		return 0, false
+	}
+	exitCode := exitErr.ExitCode()
+	return exitCode, exitCode == 126 || exitCode == 127
 }

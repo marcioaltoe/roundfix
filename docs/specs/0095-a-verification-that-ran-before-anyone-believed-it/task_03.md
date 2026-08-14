@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0095-a-verification-that-ran-before-anyone-believed-it
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: high
 ---
@@ -71,3 +71,55 @@ visible before a Run starts rather than after one is spent.
 `_techspec.md` → Build Order 3; API Contracts; Risks: the probe runs against
 `HEAD`, and a partial detector reads as a gate. `_prd.md` → Core Feature 1;
 Goal 1; User Story 1. ADR-0124, ADR-0111.
+
+## Result
+
+### Implementation
+
+- `spec check` accepts `--run-verification`, creates one disposable checkout at
+  `HEAD`, loads every requested Spec's Task Graph, and sends every authored
+  Verification command through the same prober used by the Daemon.
+- Text output reports one Task-qualified line per command as `vacuous`, `honest`,
+  or `unknown`; JSON output carries the same command records in each Spec's
+  existing JSONL document. Both formats expose an explicit not-run state when
+  the flag is absent.
+- A shell exit of 126 or 127 is classified as unknown with its cause because the
+  authored command could not execute. Vacuous and unknown results exit non-zero;
+  a set of entirely honest non-zero results exits zero.
+
+### Focused checks
+
+- Pre-change signal: the focused vacuous/honest CLI subtest exited 1 because
+  `--run-verification` was an unknown flag.
+- `rtk go test ./internal/cli -run '^TestSpecCheckRunVerification$/executes_commands_for_every_requested_Spec$' -count=1` — passed.
+- `rtk go test ./internal/cli -run '^TestSpecCheckRunVerification$/reports_vacuous_and_honest_commands_against_HEAD$' -count=1` — passed.
+- `rtk go test ./internal/cli -run '^TestSpecCheckRunVerification$/exits_zero_when_every_command_honestly_fails$' -count=1` — passed.
+- `rtk go test ./internal/cli -run '^TestSpecCheckRunVerification$/does_not_execute_commands_without_the_flag$' -count=1` — passed.
+- `rtk go test ./internal/cli -run '^TestSpecCheckRunVerification$/reports_a_command_that_cannot_run_as_unknown$' -count=1` — passed.
+- `rtk go test ./internal/daemon -run '^TestProbeCommands$' -count=1` — passed.
+- Focused existing CLI compatibility tests for clean text, unchanged stage
+  behavior, JSONL, and help — 4 passed.
+- `rtk make verify-incremental` — passed, including formatting, all Go package
+  tests, skill checks, and the binary build.
+- The commands under this Task's `## Verification` were not run; the Daemon owns
+  those commands and settlement.
+
+### Acceptance evidence
+
+- Vacuous command refusal: `reports_vacuous_and_honest_commands_against_HEAD`
+  observed the committed-marker command as vacuous, named it, observed the
+  task-output command as honest, and received exit 1.
+- Honest-only success: `exits_zero_when_every_command_honestly_fails` observed
+  two honest verdicts and received exit 0.
+- Opt-in execution: `does_not_execute_commands_without_the_flag` proved an
+  absolute marker side effect did not occur and found the explicit not-run line.
+- Unknown execution: `reports_a_command_that_cannot_run_as_unknown` observed a
+  missing binary as unknown with exit-127 cause text and no vacuous or honest
+  label.
+- `HEAD` disclosure: the multi-Spec and vacuous/honest checks each found
+  `Verification tree: HEAD`; the multi-Spec check found one executed command
+  report for each requested Spec.
+
+### Follow-ups
+
+None discovered within this Task's slice.
