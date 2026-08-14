@@ -10,6 +10,8 @@ import (
 const (
 	// CodeVerifyWorkIndependent identifies a Verification that cannot distinguish Task work from no work.
 	CodeVerifyWorkIndependent = "SC-VERIFY-WORK-INDEPENDENT"
+	// CodeVerifyInvertedExit identifies a Verification whose shell status reverses or ignores its asserted condition.
+	CodeVerifyInvertedExit = "SC-VERIFY-INVERTED-EXIT"
 	// CodeVerifyVacuousCommand identifies one Verification command that already
 	// passes against the unchanged tree, whatever its siblings prove.
 	CodeVerifyVacuousCommand = "SC-VERIFY-VACUOUS-COMMAND"
@@ -53,6 +55,27 @@ var (
 	// lines in an unchanged tree's empty output and exits nonzero, so it is
 	// honest Verification no matter what text sits in its arguments.
 	emptyOutputFailsPattern = regexp.MustCompile(`^(?:rtk\s+)?grep\b`)
+	// These patterns deliberately cover only the reversed forms measured in
+	// authored Verification. They match command positions, not quoted examples,
+	// and leave general shell correctness to command execution.
+	grepCountExitPattern = regexp.MustCompile(
+		`(?:^|(?:&&|\|\||;)\s*)(?:rtk\s+)?grep\s+` +
+			`(?:(?:-[a-z]+|--[a-z-]+)\s+)*(?:-[a-z]*c[a-z]*|--count)(?:\s|$)`,
+	)
+	filteredCountExitPattern = regexp.MustCompile(
+		`(?:^|(?:&&|\|\||;)\s*)(?:rtk\s+)?grep\s+` +
+			`(?:(?:-[a-z]+|--[a-z-]+)\s+)*(?:-[a-z]*v[a-z]*|--invert-match)(?:\s|$)` +
+			`[^;&]*\|\s*(?:rtk\s+)?wc\s+` +
+			`(?:(?:-[a-z]+|--[a-z-]+)\s+)*(?:-[a-z]*l[a-z]*|--lines)(?:\s|$)`,
+	)
+	bareTestSubstitutionPattern = regexp.MustCompile(
+		`(?:^|(?:&&|\|\||;)\s*)(?:rtk\s+)?test\s+` +
+			`(?:"\$\([^)]*\)"|'\$\([^)]*\)'|\$\([^)]*\))\s*(?:$|&&|\|\||;)`,
+	)
+	testComparisonPattern = regexp.MustCompile(
+		`(?:^|(?:&&|\|\||;)\s*)(?:rtk\s+)?test\b[^;&|]*` +
+			`(?:-(?:eq|ne|gt|ge|lt|le)\b|(?:^|\s)(?:=|==|!=)(?:\s|$))`,
+	)
 	// commandChainOpPattern locates the top-level short-circuit and sequence
 	// operators of a shell chain. A single `|` pipe is deliberately excluded:
 	// a pipeline's exit status is decided by its last member, and the
@@ -94,6 +117,54 @@ func repositoryWideGate(command string) bool {
 		return false
 	}
 	return !strings.Contains(command, " -run ") && !strings.Contains(command, " -run=")
+}
+
+type invertedExitForm struct {
+	name        string
+	replacement string
+}
+
+// InvertedExitVerification reports authored commands whose effective shell
+// status is a known reversal of the condition their output appears to assert.
+func InvertedExitVerification(task spec.Task) []Finding {
+	var findings []Finding
+	for _, command := range task.Verification {
+		form, matched := invertedExitVerificationCommand(command)
+		if !matched {
+			continue
+		}
+		findings = append(findings, Finding{
+			Code:     CodeVerifyInvertedExit,
+			Severity: SeverityError,
+			Summary:  task.File + " declares a Verification command using the " + form.name + " form: " + command,
+			Where:    []Location{{Path: task.File, Line: 1}},
+			Fix:      "Replace it with the working form " + form.replacement + ".",
+		})
+	}
+	return findings
+}
+
+func invertedExitVerificationCommand(command string) (invertedExitForm, bool) {
+	normalized := strings.Join(strings.Fields(strings.ToLower(command)), " ")
+	switch {
+	case bareTestSubstitutionPattern.MatchString(normalized):
+		return invertedExitForm{
+			name:        "test $(...) without a comparison",
+			replacement: "`test -z \"$(cmd)\"`",
+		}, true
+	case filteredCountExitPattern.MatchString(normalized):
+		return invertedExitForm{
+			name:        "grep -v ... | wc -l filtered count",
+			replacement: "`test \"$(grep -v ... | wc -l)\" -eq 0`",
+		}, true
+	case grepCountExitPattern.MatchString(normalized) && !testComparisonPattern.MatchString(normalized):
+		return invertedExitForm{
+			name:        "grep -c count-and-exit",
+			replacement: "`grep -q ...` for presence, or `test \"$(grep -c ...)\" -eq <expected>` for a count",
+		}, true
+	default:
+		return invertedExitForm{}, false
+	}
 }
 
 // workingTreeCleanlinessCheck reports a command that asserts over the set of

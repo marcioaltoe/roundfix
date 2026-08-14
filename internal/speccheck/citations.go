@@ -49,6 +49,7 @@ var (
 		CodeCoverageUntasked,
 		CodeReferenceUnresolved,
 		CodeVerifyWorkIndependent,
+		CodeVerifyInvertedExit,
 		CodeRequirementContradictory,
 		CodeRehearsalUndeclared,
 	}
@@ -873,6 +874,7 @@ func detectCitationCoverageAndReferences(
 		manifestDisplayPath := artifactDisplayPath(repoRoot, filepath.Join(specDir, "_tasks.md"))
 		addSkip(result, CodeCoverageUntasked, manifestDisplayPath)
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
+		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
 	}
 
 	if err := detectReferenceIndex(result, repoRoot, specDir); err != nil {
@@ -1288,6 +1290,20 @@ func detectTaskCoverageAndContextReferences(
 			}
 			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
 			result.Findings = append(result.Findings, finding)
+		}
+		for _, command := range task.Verification {
+			commandFindings := InvertedExitVerification(spec.Task{
+				File:         task.File,
+				Verification: []string{command},
+			})
+			for _, finding := range commandFindings {
+				finding.Where[0] = Location{
+					Path: artifactDisplayPath(repoRoot, taskPath),
+					Line: sectionLineContaining(content, "Verification", command),
+				}
+				finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+				result.Findings = append(result.Findings, finding)
+			}
 		}
 		for _, command := range VacuousVerificationCommands(task) {
 			result.Findings = append(result.Findings, Finding{

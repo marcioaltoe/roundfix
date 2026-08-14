@@ -85,6 +85,101 @@ func TestWorkIndependentVerificationRefusesOnlyWorkIndependentCommands(t *testin
 	}
 }
 
+func TestVerifyInvertedExit(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		command         string
+		wantForm        string
+		wantReplacement string
+	}{
+		{
+			name:            "grep count uses match status instead of the printed count",
+			command:         "grep -c 'PASS' /tmp/task.log",
+			wantForm:        "grep -c count-and-exit",
+			wantReplacement: "grep -q",
+		},
+		{
+			name:            "filtered count uses wc pipeline status",
+			command:         "grep -v '^PASS' /tmp/task.log | wc -l",
+			wantForm:        "grep -v ... | wc -l filtered count",
+			wantReplacement: `test "$(grep -v ... | wc -l)" -eq 0`,
+		},
+		{
+			name:            "test command substitution has no comparison",
+			command:         `test "$(grep -v '^PASS' /tmp/task.log)"`,
+			wantForm:        "test $(...) without a comparison",
+			wantReplacement: `test -z "$(cmd)"`,
+		},
+		{
+			name:    "grep q uses match status intentionally",
+			command: "grep -q 'PASS' /tmp/task.log",
+		},
+		{
+			name:    "test command substitution compares the count",
+			command: `test "$(grep -c 'PASS' /tmp/task.log)" -ge 4`,
+		},
+		{
+			name:    "redirected grep count is compared by the terminal test",
+			command: `grep -c 'PASS' /tmp/task.log > /tmp/pass-count; test "$(cat /tmp/pass-count)" -ge 4`,
+		},
+		{
+			name:    "filtered count is compared by the enclosing test",
+			command: `test "$(grep -v '^PASS' /tmp/task.log | wc -l)" -eq 0`,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			findings := speccheck.InvertedExitVerification(spec.Task{
+				File:         "fixture/task_01.md",
+				Verification: []string{tt.command},
+			})
+			if tt.wantForm == "" {
+				if len(findings) != 0 {
+					t.Fatalf("InvertedExitVerification(%q) = %#v, want no finding", tt.command, findings)
+				}
+				return
+			}
+			if len(findings) != 1 {
+				t.Fatalf("InvertedExitVerification(%q) = %#v, want one finding", tt.command, findings)
+			}
+			finding := findings[0]
+			if finding.Code != speccheck.CodeVerifyInvertedExit || finding.Severity != speccheck.SeverityError {
+				t.Errorf("finding identity = %s/%s, want %s/%s", finding.Code, finding.Severity, speccheck.CodeVerifyInvertedExit, speccheck.SeverityError)
+			}
+			if !strings.Contains(finding.Summary, tt.wantForm) {
+				t.Errorf("finding summary = %q, want form %q", finding.Summary, tt.wantForm)
+			}
+			if !strings.Contains(finding.Fix, tt.wantReplacement) {
+				t.Errorf("finding fix = %q, want replacement %q", finding.Fix, tt.wantReplacement)
+			}
+			if len(finding.Where) != 1 || finding.Where[0].Path != "fixture/task_01.md" {
+				t.Errorf("finding locations = %#v, want the declaring Task", finding.Where)
+			}
+		})
+	}
+}
+
+func TestVerifyInvertedExitSkipsWithoutTaskGraph(t *testing.T) {
+	t.Parallel()
+
+	result, err := speccheck.Check(fixtureSpecRoot, "testdata/repo", "no-taskgraph")
+	if err != nil {
+		t.Fatalf("Check(no-taskgraph): %v", err)
+	}
+	if findings := findingsWithCode(result, speccheck.CodeVerifyInvertedExit); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want detector skipped", speccheck.CodeVerifyInvertedExit, findings)
+	}
+	if !hasSkip(result, speccheck.CodeVerifyInvertedExit, "_tasks.md") {
+		t.Fatalf("Skipped = %#v, want %s missing _tasks.md", result.Skipped, speccheck.CodeVerifyInvertedExit)
+	}
+}
+
 func TestVacuousVerificationCommandIsCaughtBesideHonestSiblings(t *testing.T) {
 	t.Parallel()
 

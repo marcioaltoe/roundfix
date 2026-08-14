@@ -30,6 +30,7 @@ func TestStageScopeRunsOnlyDetectorsTheStageCanDecide(t *testing.T) {
 		speccheck.CodeCoverageUnmapped,
 		speccheck.CodeCoverageUntasked,
 		speccheck.CodeVerifyWorkIndependent,
+		speccheck.CodeVerifyInvertedExit,
 	} {
 		if findings := findingsWithCode(prdResult, code); len(findings) != 0 {
 			t.Errorf("StagePRD %s findings = %#v, want detector not run", code, findings)
@@ -46,6 +47,7 @@ func TestStageScopeRunsOnlyDetectorsTheStageCanDecide(t *testing.T) {
 	for _, code := range []string{
 		speccheck.CodeCoverageUntasked,
 		speccheck.CodeVerifyWorkIndependent,
+		speccheck.CodeVerifyInvertedExit,
 		speccheck.CodeRequirementContradictory,
 	} {
 		if findings := findingsWithCode(techSpecResult, code); len(findings) != 0 {
@@ -123,6 +125,7 @@ func TestStageScopeNamesTheDetectorsItSkipped(t *testing.T) {
 		speccheck.CodeCoverageUntasked,
 		speccheck.CodeReferenceUnresolved,
 		speccheck.CodeVerifyWorkIndependent,
+		speccheck.CodeVerifyInvertedExit,
 		speccheck.CodeRequirementContradictory,
 		speccheck.CodeRehearsalUndeclared,
 	} {
