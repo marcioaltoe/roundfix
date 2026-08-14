@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0103-a-suite-that-leaks-nothing
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: test
 complexity: medium
 ---
@@ -59,3 +59,53 @@ that declaration rather than carry an exemption list of its own.
 `_techspec.md` → Build Order 9; Risks & Considerations, the sanctioned
 regeneration. `_prd.md` → Core Feature 7; Success Metrics. ADR-0128, ADR-0126,
 ADR-0081.
+
+## Result
+
+Implemented one sanctioned-regeneration reader in `internal/suiteguardcontract`.
+The changed-path audit and suite guard now parse that reader's command-to-output
+declarations. The guard removes a changed path only when its declaring command
+is the current process or an observed ancestor; every remaining violation keeps
+the existing comparison order and diagnostic shape. Baseline regeneration
+fixtures now copy the repository authorization records, and the synthetic
+plan-characterization command writes a fixture authorization record for its
+derived outputs.
+
+Focused evidence by acceptance criterion:
+
+- `make baseline-digests` with the guard installed: the focused
+  `go test -count=1 ./internal/baseline -tags repocontract -run
+  '^TestMeasuredSanctionedOwnershipMatchesRecords$' -v` exercise progressed
+  through the nested command without `repository boundary violated`. The outer
+  contract then failed its byte-restoration assertion because the two
+  pre-existing modified catalog artifacts contain digest `be1796...`, while the
+  command regenerated tracked digest `9773fe...`; this is not a Task 10 guard
+  failure.
+- Plan-characterization update behavior: the Baseline fixture now materializes
+  an authorization declaration for the exact synthetic command and enumerates
+  its exact outputs. The Daemon-owned declared Verification that exercises this
+  path was not run in this turn.
+- Wrong command: `go test -count=1 ./internal/suiteguard -run
+  'TestSanctionedRegeneration' -v` passed
+  `TestSanctionedRegenerationIsNotAViolationWrongCommandIsRefused`; its guarded
+  subprocess named `created: declared.txt`.
+- Undeclared path: the same focused command passed
+  `TestSanctionedRegenerationIsNotAViolationUndeclaredPathIsRefused`; its guarded
+  subprocess named `created: undeclared.txt`.
+- Single declaration source: `go test -count=1 ./internal/speccheck` passed all
+  210 tests after `mechanical.go` switched to
+  `suiteguardcontract.ParseSanctionedRegenerations`. A source scan found
+  `Sanctioned regeneration` only in the shared reader and test declarations,
+  with no private exemption-list identifier in either guard package.
+
+Additional focused checks:
+
+- `go test -count=1 ./internal/suiteguard ./internal/suiteguardcontract` — passed
+  6 tests across 2 packages.
+- `go test -count=1 ./internal/baseline -run
+  '^TestDerivedOwnershipIsExhaustive$'` — passed.
+- `git diff --check` — passed.
+- `make verify-incremental` — failed outside this slice: two `internal/agent`
+  tests encountered an ACP adapter that does not advertise `sandbox_mode`, and
+  `internal/baseline` rejected the two pre-existing modified catalog artifacts.
+  The gate's `internal/suiteguard` package passed.

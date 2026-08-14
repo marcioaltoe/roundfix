@@ -9,12 +9,16 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"roundfix/internal/suiteguardcontract"
 )
 
 // Violation is one path the suite touched inside the repository root.
@@ -79,6 +83,11 @@ func run(runTests func() int, repoRoot string, output io.Writer) int {
 		len(before), beforeDuration, afterDuration,
 	)
 	violations := compare(before, after)
+	violations, err = removeSanctionedRegeneration(root, violations)
+	if err != nil {
+		fmt.Fprintf(output, "suiteguard: read sanctioned-regeneration declaration: %v\n", err)
+		return 1
+	}
 	if len(violations) == 0 {
 		return testCode
 	}
@@ -88,6 +97,95 @@ func run(runTests func() int, repoRoot string, output io.Writer) int {
 		fmt.Fprintf(output, "suiteguard: %s: %s\n", violation.Change, violation.Path)
 	}
 	return 1
+}
+
+func removeSanctionedRegeneration(root string, violations []Violation) ([]Violation, error) {
+	if len(violations) == 0 {
+		return violations, nil
+	}
+	declarations, err := suiteguardcontract.ReadSanctionedRegenerations(root)
+	if err != nil {
+		return nil, err
+	}
+	if len(declarations) == 0 {
+		return violations, nil
+	}
+
+	commands := activeCommands()
+	sanctioned := make(map[string]bool)
+	for _, declaration := range declarations {
+		if !commandIsActive(declaration.Command, commands) {
+			continue
+		}
+		for _, output := range declaration.Outputs {
+			sanctioned[output] = true
+		}
+	}
+	if len(sanctioned) == 0 {
+		return violations, nil
+	}
+
+	remaining := make([]Violation, 0, len(violations))
+	for _, violation := range violations {
+		if !sanctioned[violation.Path] {
+			remaining = append(remaining, violation)
+		}
+	}
+	return remaining, nil
+}
+
+func activeCommands() []string {
+	commands := []string{strings.Join(os.Args, " ")}
+	seen := make(map[int]bool)
+	for pid := os.Getppid(); pid > 1 && len(seen) < 64; {
+		if seen[pid] {
+			break
+		}
+		seen[pid] = true
+		output, err := exec.Command("ps", "-o", "ppid=", "-o", "command=", "-p", strconv.Itoa(pid)).Output()
+		if err != nil {
+			// Losing an ancestor can only remove permissions: no declaration is
+			// selected unless its command remains observable.
+			break
+		}
+		line := strings.TrimSpace(string(output))
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			break
+		}
+		parent, err := strconv.Atoi(fields[0])
+		if err != nil {
+			break
+		}
+		command := strings.TrimSpace(strings.TrimPrefix(line, fields[0]))
+		if command != "" {
+			commands = append(commands, command)
+		}
+		pid = parent
+	}
+	return commands
+}
+
+func commandIsActive(declared string, active []string) bool {
+	declared = normalizeCommand(declared)
+	if declared == "" {
+		return false
+	}
+	for _, command := range active {
+		if normalizeCommand(command) == declared {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeCommand(command string) string {
+	fields := strings.Fields(strings.TrimSpace(command))
+	if len(fields) == 0 {
+		return ""
+	}
+	fields[0] = filepath.Base(fields[0])
+	return strings.Join(fields, " ")
 }
 
 func fingerprint(root string, rules []ignoreRule) (map[string]fileState, error) {

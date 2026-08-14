@@ -18,6 +18,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"roundfix/internal/suiteguardcontract"
 	"roundfix/internal/worktree"
 )
 
@@ -435,39 +436,9 @@ func parseMechanicalAuthorizationPaths(content []byte) map[string]bool {
 
 func parseMechanicalRegenerationOutputs(content []byte) map[string]bool {
 	outputs := make(map[string]bool)
-	text := strings.ReplaceAll(string(content), "\r\n", "\n")
-	lines := strings.Split(text, "\n")
-	inSanctionedRegeneration := false
-	for index := 0; index < len(lines); index++ {
-		trimmed := strings.TrimSpace(lines[index])
-		if strings.HasPrefix(trimmed, "## ") {
-			inSanctionedRegeneration = strings.EqualFold(strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")), "Sanctioned regeneration")
-			continue
-		}
-		if !inSanctionedRegeneration || trimmed != "```yaml" {
-			continue
-		}
-
-		start := index + 1
-		for index++; index < len(lines) && strings.TrimSpace(lines[index]) != "```"; index++ {
-		}
-		if index >= len(lines) {
-			return outputs
-		}
-		var declaration struct {
-			Command string   `yaml:"command"`
-			Outputs []string `yaml:"outputs"`
-		}
-		if err := yaml.Unmarshal([]byte(strings.Join(lines[start:index], "\n")), &declaration); err != nil || strings.TrimSpace(declaration.Command) == "" {
-			continue
-		}
-		for _, declared := range declaration.Outputs {
-			declared = strings.TrimSpace(declared)
-			clean := cleanMechanicalPath(declared)
-			if clean == "" || clean != declared || strings.ContainsAny(clean, "*?") {
-				continue
-			}
-			outputs[clean] = true
+	for _, declaration := range suiteguardcontract.ParseSanctionedRegenerations(content) {
+		for _, output := range declaration.Outputs {
+			outputs[output] = true
 		}
 	}
 	return outputs

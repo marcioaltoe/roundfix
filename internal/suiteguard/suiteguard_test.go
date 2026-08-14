@@ -18,6 +18,7 @@ import (
 const (
 	fixtureModeEnv = "ROUNDFIX_SUITEGUARD_FIXTURE_MODE"
 	fixtureRootEnv = "ROUNDFIX_SUITEGUARD_FIXTURE_ROOT"
+	fixturePathEnv = "ROUNDFIX_SUITEGUARD_FIXTURE_PATH"
 )
 
 func TestMain(m *testing.M) {
@@ -76,6 +77,45 @@ func TestGuardIgnoresRepositoryRules(t *testing.T) {
 	}
 }
 
+func TestSanctionedRegenerationIsNotAViolation(t *testing.T) {
+	repository := t.TempDir()
+	writeSanctionedAuthorization(t, repository, guardedFixtureCommand(), "declared.txt")
+
+	output, exitCode := runGuardedFixture(t, repository, "regeneration", "declared.txt")
+	t.Log(output)
+	if exitCode != 0 {
+		t.Fatalf("guarded package exit code = %d, want success; output:\n%s", exitCode, output)
+	}
+}
+
+func TestSanctionedRegenerationIsNotAViolationWrongCommandIsRefused(t *testing.T) {
+	repository := t.TempDir()
+	writeSanctionedAuthorization(t, repository, "roundfix-not-the-running-command", "declared.txt")
+
+	output, exitCode := runGuardedFixture(t, repository, "regeneration", "declared.txt")
+	t.Log(output)
+	if exitCode == 0 {
+		t.Fatalf("guarded package exit code = 0, want failure; output:\n%s", output)
+	}
+	if !strings.Contains(output, "created: declared.txt") {
+		t.Fatalf("guarded package did not name the wrong-command write:\n%s", output)
+	}
+}
+
+func TestSanctionedRegenerationIsNotAViolationUndeclaredPathIsRefused(t *testing.T) {
+	repository := t.TempDir()
+	writeSanctionedAuthorization(t, repository, guardedFixtureCommand(), "declared.txt")
+
+	output, exitCode := runGuardedFixture(t, repository, "regeneration", "undeclared.txt")
+	t.Log(output)
+	if exitCode == 0 {
+		t.Fatalf("guarded package exit code = 0, want failure; output:\n%s", output)
+	}
+	if !strings.Contains(output, "created: undeclared.txt") {
+		t.Fatalf("guarded package did not name the undeclared write:\n%s", output)
+	}
+}
+
 func TestGuardFixture(t *testing.T) {
 	mode := os.Getenv(fixtureModeEnv)
 	root := os.Getenv(fixtureRootEnv)
@@ -94,18 +134,27 @@ func TestGuardFixture(t *testing.T) {
 		mustWrite(t, filepath.Join(t.TempDir(), "isolated.txt"), "isolated")
 	case "ignored":
 		mustWrite(t, filepath.Join(root, "ignored", "build.log"), "ignored")
+	case "regeneration":
+		filePath := os.Getenv(fixturePathEnv)
+		if filePath == "" {
+			t.Fatal("regeneration fixture path is empty")
+		}
+		mustWrite(t, filepath.Join(root, filePath), "regenerated")
 	default:
 		t.Fatalf("unknown fixture mode %q", mode)
 	}
 }
 
-func runGuardedFixture(t *testing.T, repository, mode string) (string, int) {
+func runGuardedFixture(t *testing.T, repository, mode string, filePath ...string) (string, int) {
 	t.Helper()
 	command := exec.Command(os.Args[0], "-test.run=^TestGuardFixture$", "-test.v=true")
-	command.Env = append(environmentWithout(os.Environ(), fixtureModeEnv, fixtureRootEnv),
+	command.Env = append(environmentWithout(os.Environ(), fixtureModeEnv, fixtureRootEnv, fixturePathEnv),
 		fixtureModeEnv+"="+mode,
 		fixtureRootEnv+"="+repository,
 	)
+	if len(filePath) != 0 {
+		command.Env = append(command.Env, fixturePathEnv+"="+filePath[0])
+	}
 	output, err := command.CombinedOutput()
 	if err == nil {
 		return string(output), 0
@@ -115,6 +164,29 @@ func runGuardedFixture(t *testing.T, repository, mode string) (string, int) {
 		t.Fatalf("run guarded fixture: %v", err)
 	}
 	return string(output), exitError.ExitCode()
+}
+
+func guardedFixtureCommand() string {
+	return strings.Join([]string{
+		filepath.Base(os.Args[0]),
+		"-test.run=^TestGuardFixture$",
+		"-test.v=true",
+	}, " ")
+}
+
+func writeSanctionedAuthorization(t *testing.T, repository, command string, outputs ...string) {
+	t.Helper()
+	var declaration strings.Builder
+	declaration.WriteString("# Fixture authorization\n\n## Sanctioned regeneration\n\n```yaml\ncommand: ")
+	declaration.WriteString(command)
+	declaration.WriteString("\noutputs:\n")
+	for _, output := range outputs {
+		declaration.WriteString("  - ")
+		declaration.WriteString(output)
+		declaration.WriteByte('\n')
+	}
+	declaration.WriteString("```\n")
+	mustWrite(t, filepath.Join(repository, "docs", "workflow", "authorizations", "fixture.md"), declaration.String())
 }
 
 func environmentWithout(environment []string, keys ...string) []string {
