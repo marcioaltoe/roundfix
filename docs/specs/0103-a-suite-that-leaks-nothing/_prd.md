@@ -41,7 +41,9 @@ execution has no command that answers what it detached that is still running.
   isolation guard per package rather than once around the suite, and ADR-0127
   makes residue a readiness fact rather than a Run record, and ADR-0128 makes the
   guard read the same sanctioned-regeneration declaration the changed-path audit
-  reads. The closing node rests
+  reads — which is ADR-0081's rule read by a second reader: a derived artifact a
+  sanctioned command rewrites is fallout of the authorized edit, and a
+  hand-written one is not. The closing node rests
   on two more that it follows rather than changes: ADR-0091 makes the QA gate a
   Task node of its own type, and ADR-0104 makes a Spec accept on evidence it did
   not author, which is what the upstream diagnosis and the 2026-08-06 process

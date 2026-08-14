@@ -47,7 +47,7 @@ a reference to a tree nobody else has.
 
 ## References
 
-`_techspec.md` → Build Order 8. `_prd.md` → Core Feature 7; Goal 5; User
+`_techspec.md` → Build Order 8. `_prd.md` → Core Feature 8; Goal 5; User
 Story 5; Success Metrics.
 
 ## Result
