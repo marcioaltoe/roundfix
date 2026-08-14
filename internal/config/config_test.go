@@ -3453,6 +3453,52 @@ func TestResolveReviewRootPrefersLegacyReviewsUntilMigration(t *testing.T) {
 	})
 }
 
+func TestReviewArtifactRootRejectsHistoryAliasedBySymlink(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	mustMkdir(t, filepath.Join(repoRoot, "docs", "history"))
+
+	t.Run("explicit artifact directory aliasing history is refused", func(t *testing.T) {
+		alias := filepath.Join(t.TempDir(), "artifacts-alias")
+		if err := os.Symlink(filepath.Join(repoRoot, "docs", "history"), alias); err != nil {
+			t.Fatalf("create artifact symlink: %v", err)
+		}
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			ExplicitArtifactDir: alias,
+			RepoRoot:            repoRoot,
+			PRNumber:            123,
+		})
+		if err == nil {
+			t.Fatalf("ResolveReviewRoot() = %q, want history refusal through symlink", got)
+		}
+		if !strings.Contains(err.Error(), "must not be inside repository history") {
+			t.Fatalf("ResolveReviewRoot() error = %q, want history-refusal message", err)
+		}
+	})
+
+	t.Run("specs root aliasing history falls back out of history", func(t *testing.T) {
+		alias := filepath.Join(t.TempDir(), "specs-root-alias")
+		if err := os.Symlink(filepath.Join(repoRoot, "docs", "history"), alias); err != nil {
+			t.Fatalf("create specs-root symlink: %v", err)
+		}
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			RepoRoot:  repoRoot,
+			SpecsRoot: alias,
+			SpecSlug:  "0001-retired-widget-flow",
+			PRNumber:  123,
+		})
+		if err != nil {
+			t.Fatalf("ResolveReviewRoot() error = %v", err)
+		}
+		historyRoot := filepath.Join(repoRoot, "docs", "history")
+		if strings.HasPrefix(got, historyRoot+string(filepath.Separator)) ||
+			got == historyRoot {
+			t.Fatalf("ResolveReviewRoot() = %q under history aliased by specs root %q", got, alias)
+		}
+	})
+}
+
 func mustMkdir(t *testing.T, path string) {
 	t.Helper()
 	if err := os.MkdirAll(path, 0o755); err != nil {

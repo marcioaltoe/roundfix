@@ -1173,7 +1173,34 @@ func reviewRootInsideHistory(repoRoot string, path string) bool {
 	if repoRoot == "" {
 		return false
 	}
-	return pathInsideOrSame(filepath.Clean(path), filepath.Join(filepath.Clean(repoRoot), "docs", "history"))
+	canonicalPath := canonicalizeResolvedPath(path)
+	canonicalRepoRoot := canonicalizeResolvedPath(repoRoot)
+	return pathInsideOrSame(canonicalPath, filepath.Join(canonicalRepoRoot, "docs", "history"))
+}
+
+// canonicalizeResolvedPath resolves every symbolic link on the longest existing
+// prefix of path and rejoins the remaining components verbatim, so containment
+// checks reject a configured root that aliases a protected directory even when
+// the review subdirectory below it does not exist yet.
+func canonicalizeResolvedPath(path string) string {
+	original := filepath.Clean(path)
+	candidate := original
+	var tail []string
+	for {
+		resolved, err := filepath.EvalSymlinks(candidate)
+		if err == nil {
+			for index := len(tail) - 1; index >= 0; index-- {
+				resolved = filepath.Join(resolved, tail[index])
+			}
+			return filepath.Clean(resolved)
+		}
+		parent := filepath.Dir(candidate)
+		if parent == candidate {
+			return original
+		}
+		tail = append(tail, filepath.Base(candidate))
+		candidate = parent
+	}
 }
 
 func reviewSpecDirExists(specsRoot string, slug string) bool {

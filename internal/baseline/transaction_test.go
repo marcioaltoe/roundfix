@@ -520,6 +520,40 @@ func TestHistoryMoveRollback(t *testing.T) {
 		}
 		assertHistoryMoveState(t, repo, move, "alpha prd\n", false)
 	})
+
+	t.Run("corrupted history move sidecar is rejected on rollback", func(t *testing.T) {
+		t.Parallel()
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+			"_archived/specs/0001-alpha/_prd.md": "alpha prd\n",
+		})
+		move := plan.HistoryMoves[0]
+		interrupted := beginTestTransaction(t, repo, plan)
+		if err := interrupted.revalidatePreimages(context.Background()); err != nil {
+			t.Fatalf("revalidate interrupted transaction: %v", err)
+		}
+		if refusal, err := interrupted.relocateHistoryMove(context.Background(), 0); err != nil || refusal != nil {
+			t.Fatalf("relocate interrupted history move = (%+v, %v)", refusal, err)
+		}
+		if err := os.Remove(filepath.Join(repo, filepath.FromSlash(move.To))); err != nil {
+			t.Fatalf("remove interrupted history move destination: %v", err)
+		}
+		sidecar := filepath.Join(interrupted.stateDir, historyMoveContentName(move.Ordinal))
+		if err := os.WriteFile(sidecar, []byte("corrupted sidecar bytes\n"), 0o600); err != nil {
+			t.Fatalf("corrupt history move sidecar: %v", err)
+		}
+		abandonTestTransaction(t, interrupted)
+
+		recovered, err := BeginTransaction(context.Background(), repo, plan)
+		if recovered != nil {
+			t.Fatalf("BeginTransaction() returned a transaction for a corrupted sidecar")
+		}
+		if err == nil || !strings.Contains(err.Error(), "sidecar for ordinal 0 does not match the journal") {
+			t.Fatalf("BeginTransaction() error = %v, want sidecar mismatch", err)
+		}
+		if _, lerr := os.Lstat(filepath.Join(repo, filepath.FromSlash(move.From))); !errors.Is(lerr, fs.ErrNotExist) {
+			t.Fatalf("corrupted sidecar restored source=%q lerr=%v, want source absent", move.From, lerr)
+		}
+	})
 }
 
 func newTransactionRepository(t *testing.T) (string, PlanDocument) {

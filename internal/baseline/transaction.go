@@ -921,6 +921,12 @@ func restoreHistoryMoveSource(
 		_ = removeTransactionTemporary(transaction.anchored, temporary)
 		return err
 	}
+	if int64(len(content)) != move.Before.Bytes ||
+		transactionContentIdentity(content) != move.ContentIdentity {
+		_ = file.Close()
+		_ = removeTransactionTemporary(transaction.anchored, temporary)
+		return fmt.Errorf("history rollback sidecar for ordinal %d does not match the journal", move.Ordinal)
+	}
 	_, writeErr := file.Write(content)
 	chmodErr := file.Chmod(fs.FileMode(move.Before.Mode))
 	syncErr := file.Sync()
