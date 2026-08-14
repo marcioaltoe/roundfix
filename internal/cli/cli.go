@@ -693,7 +693,7 @@ type OwnerProcessController interface {
 	// ProveOwner proves the recorded owner identity without side effects so
 	// Force Stop can fail closed before touching anything the Run owns.
 	ProveOwner(ctx context.Context, pid int, recordedIdentity string) error
-	TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error
+	TerminateTreeAndWait(ctx context.Context, pid int, recordedIdentity string) ([]store.TerminationOutcome, error)
 }
 
 type forceStopOwnerError struct {
@@ -971,11 +971,20 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 		return stopResult{Run: active}, validationError{message: "--owner-identity-unreadable may be used only when the owner identity is unreadable"}
 	}
 	warnings := bestEffortForceStopAgentSessions(ctx, runStore, active)
-	if err := commandDependenciesForContext(ctx).ownerProcesses.TerminateAndWait(ctx, pid, terminationIdentity); err != nil {
+	outcomes, err := commandDependenciesForContext(ctx).ownerProcesses.TerminateTreeAndWait(ctx, pid, terminationIdentity)
+	if err != nil {
 		return stopResult{Run: active, Warnings: warnings}, forceStopOwnerError{
 			RunID: active.ID,
 			PID:   pid,
-			Step:  forceStopOwnerStep(err, "prove owner exit"),
+			Step:  forceStopOwnerStep(err, "prove owned process tree exit"),
+			Err:   err,
+		}
+	}
+	if err := unprovenProcessTreeExit(outcomes); err != nil {
+		return stopResult{Run: active, Warnings: warnings}, forceStopOwnerError{
+			RunID: active.ID,
+			PID:   pid,
+			Step:  "prove owned process tree exit",
 			Err:   err,
 		}
 	}
@@ -1000,6 +1009,24 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 		Transitioned: run.Transitioned,
 		Warnings:     warnings,
 	}, nil
+}
+
+func unprovenProcessTreeExit(outcomes []store.TerminationOutcome) error {
+	unproven := make([]string, 0)
+	for _, outcome := range outcomes {
+		if outcome.Proven {
+			continue
+		}
+		reason := strings.TrimSpace(outcome.Reason)
+		if reason == "" {
+			reason = "process absence was not proven"
+		}
+		unproven = append(unproven, fmt.Sprintf("PID %d: %s", outcome.PID, reason))
+	}
+	if len(unproven) == 0 {
+		return nil
+	}
+	return fmt.Errorf("owned process tree exit was not proven: %s", strings.Join(unproven, "; "))
 }
 
 // forceStopOwnerStep names the owner-control step that failed, preferring the
