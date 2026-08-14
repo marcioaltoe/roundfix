@@ -60,3 +60,30 @@ branch-specific: it is not. It also raises the cost of the flake beyond wasted
 CI minutes — a docs-only Pull Request cannot be merged without a rerun, so the
 loop pays for it at every delivery, not only at every code change.
 
+## 2026-08-14 — the kernel names the race: `text file busy`
+
+PR #162's verification gate failed at
+`TestProjectDecisionJourney/affected_Profile_apply_audit_and_empty_reapply`
+with a message this record has been circling for four days:
+
+    run fixture tool oxfmt --version: fork/exec /tmp/.../004/bin/oxfmt: text file busy
+
+`ETXTBSY`. The kernel refuses to execute a file that some process still holds
+open for writing. That converts the write-then-exec window from a hypothesis
+into a named errno, and it settles the "silent probe" signature above: an
+adapter that returns empty output and a fixture that refuses to start are the
+same race caught at two different instants.
+
+It also narrows the remedy. Retrying the probe treats the symptom. Closing the
+file before exec, or replacing the shell fixtures with an `os.Args[0]` re-exec
+the way the ACPX harness already does elsewhere, removes the window itself —
+there is no descriptor left open to conflict with. The `os.WriteFile` call in
+`installFakeAdapter` and its siblings do close their handle, so the open writer
+is more likely a `cp`, an archive extraction, or a sibling test writing the same
+fixture path concurrently; whichever it is, the fix is to stop executing a file
+that was written moments earlier in a process tree that is still forking.
+
+Two failures on two consecutive Pull Requests, in two different tests, on
+branches whose changes cannot produce either signature. Both were green on
+rerun.
+
