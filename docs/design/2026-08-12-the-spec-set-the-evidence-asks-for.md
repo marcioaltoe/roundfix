@@ -3,8 +3,14 @@
 This is a routing document, not a Spec. It reads every live Finding and Backlog
 Entry in this repository, plus the nine Inbox Entries addressed to Roundfix that
 were triaged into `docs/findings/` and `docs/backlog/` on 2026-08-12, and groups
-them into eighteen proposed Specs ordered by measured cost, plus one priority
-correction the maintainer directed on 2026-08-12 that ships before the rest.
+them into a Spec set ordered by measured cost. Spec 0094 shipped on 2026-08-14
+as v0.6.0; the twenty-one that remain are ordered in the final section, which
+also names the release points between them.
+
+Updated 2026-08-14: four Specs joined the set from what implementing 0094
+exposed and from nine Inbox Entries the fleet captured while it ran. A Spec's
+number is its identity and never moves — the implementation order lives in the
+final section instead.
 
 The coverage audit near the end of this document is the honest answer to "does
 this set cover everything": it did not, on the first pass. Nine items were
@@ -763,26 +769,84 @@ rollup's own summary.
   lifecycle contract rather than as work of its own. Their live edges are not
   left implicit: every one is mapped in the coverage audit below.
 
-## Suggested order
+## Implementation order and release points
 
-Waves are sequential in value, not in scheduling. Within them:
+Updated 2026-08-14, after Spec 0094 shipped as v0.6.0 and after triaging nine
+Inbox Entries the fleet captured while it was being built.
 
-0. **0094 before everything**, by maintainer direction on 2026-08-12, with a fix
-   release after it and before Wave 1 starts.
-1. **0095** first and alone — it changes what every later Spec's Tasks are allowed
-   to assert, and it is the only item two independent repositories named as their
-   top priority.
-2. **0096, 0098, 0099** next — each is small, each removes a class of Run that
-   delivers nothing.
-3. **0097 and 0103** together — both are about parallelism, and 0103's harness is
-   what proves 0097 did not make things worse.
-4. **0100, 0101, 0102** — the delivery surfaces; independent of each other.
-5. **0104** early if a tooling authorization is convenient, since every claim made
-   through `make verify` inherits its answer.
-6. **0105, 0106, 0107, 0108, 0109** — the largest and the least urgent, and 0107
-   should follow whichever of 0095–0103 lands first so its clauses cite shipped
-   behaviour rather than intent.
-7. **0110** anywhere after 0095; its first Task is a reproduction, so it can be
-   cheap or can dissolve entirely if the timeout observation no longer holds.
-8. **0111 last.** It depends on 0097, 0101, 0102 and 0103, and authoring it
-   earlier would model seams that are about to move.
+A Spec's number is its identity and never moves; this section is the order, and
+it is revisable. Four Specs joined the set — 0112 through 0115 — from defects the
+0094 session exposed and from what the fleet reported. Three existing Specs
+widened rather than spawning siblings: 0096 took the vacuity event's naming, 0098
+took the staging failure that loses verified work the same way a hook refusal
+does, and 0102 took Preflight starvation under load.
+
+### Wave A — stop paying for the same defect (fix release)
+
+The loop's own contradictions, every one of them measured by this session or by
+the fleet. Each is small, and together they remove the friction that made Spec
+0094 cost sixteen Runs.
+
+| Order | Spec | Why here |
+| --- | --- | --- |
+| 1 | 0095 | Verification executed at authoring. Eleven vacuous gates in 0094, eight more in fluxus past a clean checker — this is the single largest measured cost, and it makes every later Spec cheaper. |
+| 2 | 0114 | The changed-path audit reads its grant correctly, and the PRD template stops contradicting the checker. Both bit this session repeatedly. |
+| 3 | 0113 | A refused gate stops blocking its own successor, which cost two evidence deletions in one Spec. |
+| 4 | 0096 | An Agent gets a diagnostic it can act on, including a vacuity event that names what it means. |
+| 5 | 0104 | The gate stops certifying its own cache. Needs a tooling grant. |
+
+**Release point — patch.** Nothing here changes a public contract; all five
+remove false signal from the loop. Cutting here means every later Spec is
+authored and executed against the corrected tooling.
+
+### Wave B — deliver what the loop already promises (minor release)
+
+| Order | Spec | Why here |
+| --- | --- | --- |
+| 6 | 0097 | Wave collisions detected before dispatch. One cost a full Agent turn in this session. |
+| 7 | 0098 | Verified work survives the commit step, whether a hook or a pathspec is what refuses it. |
+| 8 | 0102 | Preflight proves what a Run needs and reads saturation as unknown rather than unavailable. |
+| 9 | 0100 | Every head the loop waits on has been asked for a review. |
+| 10 | 0101 | A terminal branch has one disposition, proven by content rather than ancestry. |
+| 11 | 0099 | The tool meets a repository's conventions instead of prescribing its own. |
+
+**Release point — minor.** Runs stop dying on mechanical states, and repositories
+with other conventions become usable. This is the wave the fleet feels.
+
+### Wave C — finish what 0094 started (minor release)
+
+| Order | Spec | Why here |
+| --- | --- | --- |
+| 12 | 0112 | Review retirement stops depending on the local object store. Directly repairs what 0094 shipped. |
+| 13 | 0115 | An archive survives its own move: links resolve, one destination rule, and archival ordered against the evidence that can refuse it. |
+| 14 | 0103 | The suite leaks nothing, and Roundfix can see its own residue. |
+
+**Release point — minor.** 0112 and 0115 change behaviour adopters already have,
+so they ship together with their migration rather than trickling.
+
+### Wave D — the expensive and least urgent
+
+| Order | Spec | Why here |
+| --- | --- | --- |
+| 15 | 0105 | The gate's own economics. Large, and cheaper after 0113 and 0095 land. |
+| 16 | 0106 | A decision reaches every artifact, including the manifest digest nothing checks. |
+| 17 | 0107 | The authoring rules the guides do not carry — best written after Waves A and B, so its clauses cite shipped behaviour. |
+| 18 | 0108 | What an Agent loads to answer one question. Gated on dispatch becoming checkable. |
+| 19 | 0109 | What a Session consumed. Independent; settle adapter support first. |
+| 20 | 0110 | The refresh that does not re-interview. Starts with a reproduction and may dissolve. |
+| 21 | 0111 | One terminal audit across a Run's surfaces. Last by construction: it consumes what 0097, 0101, 0102 and 0103 settle. |
+
+**Release point — minor at the end of the wave**, or patch releases as each
+lands. 0106 and 0108 touch the Baseline catalog, so their release notes matter to
+every adopting repository.
+
+### What this order optimises for
+
+Wave A first because the measured cost of this set is not implementation — it is
+authoring and diagnosis. Sixteen Runs delivered one Spec, and every execution
+failure came from an authored artifact rather than from the executor. Spec 0095
+alone would have caught eleven of them before a single Run started.
+
+The alternative order — deliver user-visible value first — is defensible and
+costs more: every Spec in Waves B, C and D pays the same authoring tax until
+Wave A lands.

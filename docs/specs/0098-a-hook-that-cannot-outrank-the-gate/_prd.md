@@ -75,7 +75,12 @@ failed.
 2. **Recovery covers verified-but-uncommitted work.** The recovery contract
    accepts a Work Item that is completed and uncommitted, not only one that
    failed.
-3. **The invariant is written where a repository reads it.** The autonomous-work
+3. **Staging covers what a Task deleted.** A Task that correctly removes a file
+   is committed rather than refused: the staging call records a deletion instead
+   of failing on a pathspec that matches nothing. This is the same loss as a hook
+   refusal — verified work discarded at the commit step — reached through a
+   different call.
+4. **The invariant is written where a repository reads it.** The autonomous-work
    guidance states that a commit hook may never be stricter than the authoritative
    Verification, so a repository adopting the loop configures the two
    consistently.

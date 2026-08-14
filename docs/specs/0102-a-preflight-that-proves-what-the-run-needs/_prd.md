@@ -71,7 +71,13 @@ not exist rather than at the model identifier that is actually wrong.
    cleanup error that only reports a session absent, when the setup error already
    explains why no session exists, is not joined into the surfaced error and never
    supplies the printed next action.
-4. **One next action per refusal.** A failed readiness check surfaces exactly one
+4. **A starved proof is unknown, not unavailable.** A proof that exceeded its
+   deadline while the host was saturated is reported as undetermined rather than
+   as a rejected Selection, so an operator reads a machine under load rather than
+   a broken configuration. Measured across three occasions: at load average 23 the
+   refusal widened from two categories to six, and at 4.9 every tuple passed on the
+   first attempt with nothing else changed.
+5. **One next action per refusal.** A failed readiness check surfaces exactly one
    deterministic next action, and it addresses the cause the check found.
 
 ## User Experience
