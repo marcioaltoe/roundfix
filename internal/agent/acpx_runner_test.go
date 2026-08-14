@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -61,10 +62,15 @@ func TestMain(m *testing.M) {
 
 func TestFixtureBinarySurvivesConcurrentExec(t *testing.T) {
 	const (
-		workers    = 16
-		executions = 32
-		wantOutput = "fixture-version"
+		targetExecutions = 32
+		wantOutput       = "fixture-version"
 	)
+	workers := max(2, runtime.GOMAXPROCS(0)/2)
+	executions := max(2, targetExecutions/workers)
+	binaryInfo, err := os.Stat(os.Args[0])
+	if err != nil {
+		t.Fatalf("stat compiled test binary: %v", err)
+	}
 
 	dirs := make([]string, workers)
 	for index := range dirs {
@@ -83,6 +89,15 @@ func TestFixtureBinarySurvivesConcurrentExec(t *testing.T) {
 				output := wantOutput
 				if err := provisionFakeAdapter(path, fakeAdapterFixture{Output: &output}); err != nil {
 					errors <- fmt.Errorf("provision worker %d execution %d: %w", worker, execution, err)
+					return
+				}
+				fixtureInfo, err := os.Stat(path)
+				if err != nil {
+					errors <- fmt.Errorf("stat worker %d execution %d: %w", worker, execution, err)
+					return
+				}
+				if !os.SameFile(binaryInfo, fixtureInfo) {
+					errors <- fmt.Errorf("worker %d execution %d fixture is not linked to the compiled test binary", worker, execution)
 					return
 				}
 				probe, err := exec.Command(path, "--version").CombinedOutput()

@@ -1,7 +1,7 @@
 ---
 task: task_12
 spec: 0103-a-suite-that-leaks-nothing
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: test
 complexity: low
 ---
@@ -55,3 +55,52 @@ measures the machine, not the fix.
 `_techspec.md` → Testing Approach, the compiled fixture. `_prd.md` → Core
 Feature 4; Non-Goals, no retry or loosened assertion. ADR-0125.
 Evidence: this Spec's QA report `qa/qa-report-2026-08-14-02.md`, finding F-01.
+
+## Result
+
+### Implementation
+
+- The stress case now derives its worker count from `runtime.GOMAXPROCS(0)`,
+  keeps a two-worker floor, and divides a 32-cycle target across those workers.
+  This preserves a simultaneous start while leaving capacity for the suite that
+  runs beside it.
+- Each provisioned fixture must identify as the same file as the compiled test
+  binary before execution. This makes a regression to a written executable a
+  deterministic assertion failure rather than relying on the old race to
+  reproduce.
+
+### Focused checks
+
+- Pre-change source inspection found the fixed `workers = 16` and
+  `executions = 32` constants responsible for 512 provision-and-exec cycles.
+- `rtk env GOCACHE=/private/tmp/roundfix-0103-task12-gocache GOMAXPROCS=2 go test -count=2 ./internal/agent -run '^TestFixtureBinarySurvivesConcurrentExec$'`
+  passed with the two-worker floor and 16 executions per worker.
+- `rtk env GOCACHE=/private/tmp/roundfix-0103-task12-gocache GOMAXPROCS=8 go test -count=2 ./internal/agent -run '^TestFixtureBinarySurvivesConcurrentExec$'`
+  passed with four workers and eight executions per worker. A fresh repeat
+  after restoring the negative control also passed.
+- A temporary negative control replaced `os.Link` with `os.WriteFile`; the
+  focused test exited 1 at execution zero for both workers with `fixture is not
+  linked to the compiled test binary`. The hard-link implementation was then
+  restored before the fresh passing run.
+- Source inspection found no retry, sleep, or skip in the changed stress case;
+  its concurrent start channel, worker goroutines, exec error check, and output
+  assertion remain in place.
+- `rtk env GOCACHE=/private/tmp/roundfix-0103-task12-gocache make verify-incremental`
+  reached the changed test without reporting it, but exited
+  nonzero on unrelated existing adapter-selection cases
+  `TestACPXRunAppliesSelectionBeforePrompt/opencode_model-managed_reasoning_issues_no_effort_set`
+  and
+  `TestCheckAdapterProvesOfficialClaudePackageAndVersion/newer_version`.
+- `git diff --check` passed after the final code edit.
+
+### Acceptance evidence
+
+- Authoritative `make verify`: not run in this Agent turn; the Daemon owns the
+  authored Verification and this criterion's verdict.
+- Concurrent execution: the worker floor is two, and focused runs passed at two
+  and four workers with a shared start barrier.
+- No shortcut: the target block contains no retry, sleep, or skip, and retains
+  every execution and output assertion.
+- Written-executable negative: the temporary `os.WriteFile` mutation failed
+  deterministically before exec, while the restored hard-link implementation
+  passed the same focused test.
