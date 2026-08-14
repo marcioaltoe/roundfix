@@ -31,9 +31,15 @@ graph:
     - id: task_10
       file: task_10.md
       needs: [task_04]
+    - id: task_11
+      file: task_11.md
+      needs: [task_10]
+    - id: task_12
+      file: task_12.md
+      needs: [task_01]
     - id: task_09
       file: task_09.md
-      needs: [task_02, task_05, task_07, task_08, task_10]
+      needs: [task_02, task_05, task_07, task_08, task_10, task_11, task_12]
 ---
 
 # Tasks — A suite that leaks nothing
@@ -49,7 +55,9 @@ graph:
 | task_07 | Prove the tree exited, not only its owner                   | backend | medium     | task_06                                |
 | task_08 | Keep a gate's scratch state out of the evidence             | backend | low        | —                                      |
 | task_10 | Let a sanctioned regeneration write what it declares         | test    | medium     | task_04                                |
-| task_09 | Run the final QA gate                                       | qa      | high       | task_02, task_05, task_07, task_08, task_10 |
+| task_11 | Let the declared command name itself                         | test    | medium     | task_10                                |
+| task_12 | Size the stress case to the suite it runs inside             | test    | low        | task_01                                |
+| task_09 | Run the final QA gate                                       | qa      | high       | task_02, task_05, task_07, task_08, task_10, task_11, task_12 |
 
 Wave plan: `1 → task_01, task_03, task_06, task_08 · 2 → task_02, task_04, task_07 · 3 → task_05, task_10 · 4 → task_09`.
 
