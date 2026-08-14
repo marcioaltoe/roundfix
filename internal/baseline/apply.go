@@ -108,7 +108,7 @@ func applyPlan(
 		return Result{}, err
 	}
 	if state == applyPreimagePostimage {
-		return verifiedApplyResult(document, document.Postimages, true), nil
+		return verifiedApplyResult(document, document.Postimages, nil, true), nil
 	}
 	if state == applyPreimageApproved &&
 		document.PreservationMode == PreservationModeManagedRefresh {
@@ -169,7 +169,35 @@ func applyPlan(
 			fmt.Errorf("close Baseline apply transaction: %w", closeErr),
 		)
 	}
-	return verifiedApplyResult(document, evidence.VerifiedPostimages, false), nil
+	if len(evidence.RefusedHistoryMoves) != 0 {
+		return Result{}, applyError(
+			ApplyErrorStale,
+			"resolve every occupied history destination, generate a new Baseline Plan, and apply it",
+			fmt.Errorf(
+				"not every history relocation was performed: %s",
+				formatHistoryMoveRefusals(evidence.RefusedHistoryMoves),
+			),
+		)
+	}
+	return verifiedApplyResult(
+		document,
+		evidence.VerifiedPostimages,
+		evidence.VerifiedHistoryMoves,
+		false,
+	), nil
+}
+
+func formatHistoryMoveRefusals(refusals []HistoryMoveRefusal) string {
+	formatted := make([]string, len(refusals))
+	for index, refusal := range refusals {
+		formatted[index] = fmt.Sprintf(
+			"source %q, destination %q: %s",
+			refusal.From,
+			refusal.To,
+			refusal.Reason,
+		)
+	}
+	return strings.Join(formatted, "; ")
 }
 
 type applyPreimageState int
@@ -200,9 +228,12 @@ func inspectApplyPreimage(
 			errors.New("Baseline Plan repository identity does not match"),
 		)
 	}
-	paths := make([]string, len(document.Preimages))
-	for index, preimage := range document.Preimages {
-		paths[index] = preimage.Path
+	paths := make([]string, 0, len(document.Preimages)+2*len(document.HistoryMoves))
+	for _, preimage := range document.Preimages {
+		paths = append(paths, preimage.Path)
+	}
+	for _, move := range document.HistoryMoves {
+		paths = append(paths, move.From, move.To)
 	}
 	snapshot, err := inspectRepositorySnapshot(root, InventoryRequest{MutablePaths: paths})
 	if err != nil {
@@ -253,6 +284,34 @@ func inspectApplyPreimage(
 			)
 		}
 	}
+	for _, move := range document.HistoryMoves {
+		source := current[move.From]
+		destination := current[move.To]
+		sourceApproved := source.Exists &&
+			source.Kind == PreimageRegular &&
+			source.ContentIdentity == move.ContentIdentity
+		destinationApplied := destination.Exists &&
+			destination.Kind == PreimageRegular &&
+			destination.ContentIdentity == move.ContentIdentity
+		switch {
+		case sourceApproved:
+			// An occupied destination is still an approved source state. The
+			// transaction records a per-file refusal and continues its siblings.
+			allPostimages = false
+		case source.Kind == PreimageMissing && destinationApplied:
+			allApproved = false
+		default:
+			stalePath := move.From
+			if source.Kind == PreimageMissing {
+				stalePath = move.To
+			}
+			return applyPreimageApproved, applyError(
+				ApplyErrorStale,
+				"run roundfix baseline plan again and approve the new Plan Digest",
+				fmt.Errorf("Baseline history move is stale at %q", stalePath),
+			)
+		}
+	}
 	if allPostimages {
 		return applyPreimagePostimage, nil
 	}
@@ -280,7 +339,12 @@ func preimageMatchesPostimage(preimage Preimage, postimage Postimage) bool {
 	}
 }
 
-func verifiedApplyResult(document PlanDocument, verified []Postimage, alreadyApplied bool) Result {
+func verifiedApplyResult(
+	document PlanDocument,
+	verified []Postimage,
+	verifiedHistoryMoves []HistoryMove,
+	alreadyApplied bool,
+) Result {
 	recommendations := make([]string, 0, len(document.SetupManifest.Verification))
 	for _, verification := range document.SetupManifest.Verification {
 		if verification.RepositoryExecutable && verification.Command != "" {
@@ -307,16 +371,24 @@ func verifiedApplyResult(document PlanDocument, verified []Postimage, alreadyApp
 		matrix.Idempotence,
 	)
 	return Result{
-		SchemaVersion:      ResultSchemaVersion,
-		Operation:          "apply",
-		State:              "verified",
-		Message:            message,
-		PlanDigest:         document.PlanDigest,
-		VerifiedPostimages: clonePostimages(verified),
-		Warnings:           cloneFindings(document.Warnings),
-		Recommendations:    recommendations,
-		StatusMatrix:       &matrix,
+		SchemaVersion:        ResultSchemaVersion,
+		Operation:            "apply",
+		State:                "verified",
+		Message:              message,
+		PlanDigest:           document.PlanDigest,
+		VerifiedPostimages:   clonePostimages(verified),
+		VerifiedHistoryMoves: cloneHistoryMoves(verifiedHistoryMoves),
+		Warnings:             cloneFindings(document.Warnings),
+		Recommendations:      recommendations,
+		StatusMatrix:         &matrix,
 	}
+}
+
+func cloneHistoryMoves(moves []HistoryMove) []HistoryMove {
+	if len(moves) == 0 {
+		return nil
+	}
+	return append([]HistoryMove(nil), moves...)
 }
 
 func resultStatusMatrix(

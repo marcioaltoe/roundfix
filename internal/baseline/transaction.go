@@ -31,7 +31,17 @@ var ErrTransactionLocked = errors.New("another Baseline transaction owns this wo
 // VerificationEvidence records the exact postimages verified by a completed
 // file transaction.
 type VerificationEvidence struct {
-	VerifiedPostimages []Postimage
+	VerifiedPostimages   []Postimage
+	VerifiedHistoryMoves []HistoryMove
+	RefusedHistoryMoves  []HistoryMoveRefusal
+}
+
+// HistoryMoveRefusal records one relocation that was left untouched because
+// its destination was occupied.
+type HistoryMoveRefusal struct {
+	From   string
+	To     string
+	Reason string
 }
 
 // Transaction is the recoverable mutation boundary for one confirmed
@@ -115,15 +125,34 @@ type transactionJournalEntry struct {
 	After  Postimage            `json:"after"`
 }
 
+type transactionJournalHistoryMove struct {
+	Ordinal         int                  `json:"ordinal"`
+	From            string               `json:"from"`
+	To              string               `json:"to"`
+	ContentIdentity string               `json:"contentIdentity"`
+	Before          transactionFileState `json:"before"`
+}
+
+func (move transactionJournalHistoryMove) planned() HistoryMove {
+	return HistoryMove{
+		Ordinal:         move.Ordinal,
+		From:            move.From,
+		To:              move.To,
+		ContentIdentity: move.ContentIdentity,
+	}
+}
+
 type transactionJournal struct {
-	SchemaVersion      string                       `json:"schemaVersion"`
-	PlanDigest         string                       `json:"planDigest"`
-	Phase              transactionJournalPhase      `json:"phase"`
-	Preimages          []transactionJournalPreimage `json:"preimages"`
-	Entries            []transactionJournalEntry    `json:"entries"`
-	MutationOrder      []int                        `json:"mutationOrder"`
-	CreatedDirectories []string                     `json:"createdDirectories"`
-	TemporaryPaths     []string                     `json:"temporaryPaths"`
+	SchemaVersion        string                          `json:"schemaVersion"`
+	PlanDigest           string                          `json:"planDigest"`
+	Phase                transactionJournalPhase         `json:"phase"`
+	Preimages            []transactionJournalPreimage    `json:"preimages"`
+	Entries              []transactionJournalEntry       `json:"entries"`
+	MutationOrder        []int                           `json:"mutationOrder"`
+	HistoryMoves         []transactionJournalHistoryMove `json:"historyMoves,omitempty"`
+	HistoryMutationOrder []int                           `json:"historyMutationOrder,omitempty"`
+	CreatedDirectories   []string                        `json:"createdDirectories"`
+	TemporaryPaths       []string                        `json:"temporaryPaths"`
 }
 
 type fileTransaction struct {
@@ -256,7 +285,7 @@ func beginFileTransaction(
 		release()
 		return nil, err
 	}
-	preimages, entries, err := captureTransactionEntries(anchored, document)
+	preimages, entries, historyMoves, moveContents, err := captureTransactionEntries(anchored, document)
 	if err != nil {
 		_ = anchored.Close()
 		release()
@@ -283,11 +312,18 @@ func beginFileTransaction(
 			Preimages:          preimages,
 			Entries:            entries,
 			MutationOrder:      []int{},
+			HistoryMoves:       historyMoves,
 			CreatedDirectories: []string{},
 			TemporaryPaths:     []string{},
 		},
 	}
 	if err := transaction.writeJournal(); err != nil {
+		_ = os.RemoveAll(stateDir)
+		_ = anchored.Close()
+		release()
+		return nil, err
+	}
+	if err := writeHistoryMoveSidecars(stateDir, historyMoves, moveContents); err != nil {
 		_ = os.RemoveAll(stateDir)
 		_ = anchored.Close()
 		release()
@@ -327,6 +363,22 @@ func (transaction *fileTransaction) Apply(ctx context.Context) (VerificationEvid
 			return VerificationEvidence{}, transaction.failApply(ctx, err)
 		}
 	}
+	var verifiedHistoryMoves []HistoryMove
+	var refusedHistoryMoves []HistoryMoveRefusal
+	for index := range transaction.journal.HistoryMoves {
+		refusal, err := transaction.relocateHistoryMove(ctx, index)
+		if err != nil {
+			return VerificationEvidence{}, transaction.failApply(ctx, err)
+		}
+		if refusal != nil {
+			refusedHistoryMoves = append(refusedHistoryMoves, *refusal)
+			continue
+		}
+		verifiedHistoryMoves = append(
+			verifiedHistoryMoves,
+			transaction.journal.HistoryMoves[index].planned(),
+		)
+	}
 	transaction.journal.Phase = transactionJournalVerifying
 	if err := transaction.writeJournal(); err != nil {
 		return VerificationEvidence{}, transaction.failApply(ctx, err)
@@ -361,7 +413,11 @@ func (transaction *fileTransaction) Apply(ctx context.Context) (VerificationEvid
 	for index, entry := range transaction.journal.Entries {
 		verified[index] = clonePostimage(entry.After)
 	}
-	return VerificationEvidence{VerifiedPostimages: verified}, nil
+	return VerificationEvidence{
+		VerifiedPostimages:   verified,
+		VerifiedHistoryMoves: verifiedHistoryMoves,
+		RefusedHistoryMoves:  refusedHistoryMoves,
+	}, nil
 }
 
 func (transaction *fileTransaction) Rollback(ctx context.Context) error {
@@ -464,6 +520,18 @@ func (transaction *fileTransaction) revalidatePreimages(ctx context.Context) err
 			return fmt.Errorf("Baseline transaction preimage is stale at %q", preimage.Path)
 		}
 	}
+	for _, move := range transaction.journal.HistoryMoves {
+		if err := validatePathParents(transaction.anchored, move.From); err != nil {
+			return fmt.Errorf("revalidate Baseline history move source %q: %w", move.From, err)
+		}
+		current, err := captureTransactionState(transaction.anchored, move.From)
+		if err != nil {
+			return fmt.Errorf("revalidate Baseline history move source %q: %w", move.From, err)
+		}
+		if !sameHistoryMoveState(current, move.Before) {
+			return fmt.Errorf("Baseline history move source is stale at %q", move.From)
+		}
+	}
 	if err := validateTransactionPostimages(transaction.anchored, transactionPostimages(transaction.journal)); err != nil {
 		return err
 	}
@@ -471,6 +539,83 @@ func (transaction *fileTransaction) revalidatePreimages(ctx context.Context) err
 		return err
 	}
 	return nil
+}
+
+func (transaction *fileTransaction) relocateHistoryMove(
+	ctx context.Context,
+	index int,
+) (*HistoryMoveRefusal, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	move := transaction.journal.HistoryMoves[index]
+	source, err := captureTransactionState(transaction.anchored, move.From)
+	if err != nil {
+		return nil, fmt.Errorf("inspect Baseline history move source %q: %w", move.From, err)
+	}
+	if !sameHistoryMoveState(source, move.Before) {
+		return nil, fmt.Errorf("Baseline history move source is stale at %q", move.From)
+	}
+	destination, err := captureTransactionState(transaction.anchored, move.To)
+	if err != nil {
+		return nil, fmt.Errorf("inspect Baseline history move destination %q: %w", move.To, err)
+	}
+	if destination.Kind != PreimageMissing {
+		return &HistoryMoveRefusal{
+			From: move.From,
+			To:   move.To,
+			Reason: fmt.Sprintf(
+				"destination %q already exists; source %q was not moved",
+				move.To,
+				move.From,
+			),
+		}, nil
+	}
+	if err := transaction.ensureParentDirectories(move.To); err != nil {
+		return nil, err
+	}
+	point := transactionFaultPoint{Phase: transactionPhaseReplacing, Path: move.To}
+	if err := transaction.runPhaseHook(point); err != nil {
+		return nil, err
+	}
+	transaction.journal.Phase = transactionJournalReplacing
+	transaction.journal.HistoryMutationOrder = append(
+		transaction.journal.HistoryMutationOrder,
+		index,
+	)
+	if err := transaction.writeJournal(); err != nil {
+		return nil, err
+	}
+	if err := transaction.anchored.Rename(move.From, move.To); err != nil {
+		return nil, fmt.Errorf(
+			"relocate Baseline history file %q to %q: %w",
+			move.From,
+			move.To,
+			err,
+		)
+	}
+	if err := transaction.syncHistoryMoveParents(move.From, move.To); err != nil {
+		return nil, err
+	}
+	if err := transaction.removeEmptyHistorySourceDirectories(move.From); err != nil {
+		return nil, err
+	}
+	if err := transaction.runPhaseHook(transactionFaultPoint{
+		Phase: transactionPhaseReplaced,
+		Path:  move.To,
+	}); err != nil {
+		return nil, err
+	}
+	if err := transaction.runPhaseHook(transactionFaultPoint{
+		Phase: transactionPhaseVerifying,
+		Path:  move.To,
+	}); err != nil {
+		return nil, err
+	}
+	if err := verifyHistoryMoveDestination(transaction.anchored, move); err != nil {
+		return nil, err
+	}
+	return nil, nil
 }
 
 func (transaction *fileTransaction) replacePostimage(ctx context.Context, index int) error {
@@ -557,6 +702,17 @@ func (transaction *fileTransaction) createDestinationTemporary(
 }
 
 func (transaction *fileTransaction) ensureParentDirectories(relative string) error {
+	return transaction.makeParentDirectories(relative, transaction.recordCreatedDirectory)
+}
+
+func (transaction *fileTransaction) restoreParentDirectories(relative string) error {
+	return transaction.makeParentDirectories(relative, nil)
+}
+
+func (transaction *fileTransaction) makeParentDirectories(
+	relative string,
+	record func(string) error,
+) error {
 	parent := path.Dir(relative)
 	if parent == "." {
 		return nil
@@ -575,8 +731,10 @@ func (transaction *fileTransaction) ensureParentDirectories(relative string) err
 				return fmt.Errorf("Baseline transaction parent %q must be a real directory", current)
 			}
 		case errors.Is(err, fs.ErrNotExist):
-			if err := transaction.recordCreatedDirectory(current); err != nil {
-				return err
+			if record != nil {
+				if err := record(current); err != nil {
+					return err
+				}
 			}
 			if err := transaction.anchored.Mkdir(current, 0o755); err != nil && !errors.Is(err, fs.ErrExist) {
 				return fmt.Errorf("create Baseline destination parent %q: %w", current, err)
@@ -615,6 +773,25 @@ func (transaction *fileTransaction) rollback(ctx context.Context) error {
 	transaction.journal.Phase = transactionJournalRollingBack
 	if err := transaction.writeJournal(); err != nil {
 		return err
+	}
+	for len(transaction.journal.HistoryMutationOrder) > 0 {
+		position := len(transaction.journal.HistoryMutationOrder) - 1
+		index := transaction.journal.HistoryMutationOrder[position]
+		move := transaction.journal.HistoryMoves[index]
+		if err := transaction.runPhaseHook(transactionFaultPoint{
+			Phase: transactionPhaseRollingBack,
+			Path:  move.To,
+		}); err != nil {
+			return err
+		}
+		if err := restoreHistoryMove(transaction, index, move); err != nil {
+			return err
+		}
+		transaction.journal.HistoryMutationOrder =
+			transaction.journal.HistoryMutationOrder[:position]
+		if err := transaction.writeJournal(); err != nil {
+			return err
+		}
 	}
 	for len(transaction.journal.MutationOrder) > 0 {
 		position := len(transaction.journal.MutationOrder) - 1
@@ -663,6 +840,104 @@ func (transaction *fileTransaction) rollback(ctx context.Context) error {
 		return fmt.Errorf("complete Baseline rollback after cancellation: %w", err)
 	}
 	return transaction.cleanupState()
+}
+
+func restoreHistoryMove(
+	transaction *fileTransaction,
+	index int,
+	move transactionJournalHistoryMove,
+) error {
+	source, err := captureTransactionState(transaction.anchored, move.From)
+	if err != nil {
+		return fmt.Errorf("inspect rolled-back Baseline history source %q: %w", move.From, err)
+	}
+	destination, err := captureTransactionState(transaction.anchored, move.To)
+	if err != nil {
+		return fmt.Errorf("inspect rolled-back Baseline history destination %q: %w", move.To, err)
+	}
+	if sameHistoryMoveState(source, move.Before) {
+		if destination.Kind != PreimageMissing {
+			return fmt.Errorf(
+				"roll back Baseline history move %q to %q: destination appeared while source remained",
+				move.From,
+				move.To,
+			)
+		}
+		return nil
+	}
+	if source.Kind != PreimageMissing {
+		return fmt.Errorf("roll back Baseline history move: source %q changed", move.From)
+	}
+	if destinationMatchesHistoryMove(destination, move) {
+		if err := transaction.restoreParentDirectories(move.From); err != nil {
+			return err
+		}
+		if err := transaction.anchored.Rename(move.To, move.From); err != nil {
+			return fmt.Errorf(
+				"restore Baseline history move %q from %q: %w",
+				move.From,
+				move.To,
+				err,
+			)
+		}
+		return transaction.syncHistoryMoveParents(move.From, move.To)
+	}
+	if destination.Kind != PreimageMissing {
+		if err := transaction.anchored.Remove(move.To); err != nil {
+			return fmt.Errorf("remove invalid Baseline history destination %q: %w", move.To, err)
+		}
+		if err := transaction.syncRepositoryParent(move.To); err != nil {
+			return err
+		}
+	}
+	if err := restoreHistoryMoveSource(transaction, index, move); err != nil {
+		return err
+	}
+	return transaction.syncRepositoryParent(move.From)
+}
+
+func restoreHistoryMoveSource(
+	transaction *fileTransaction,
+	index int,
+	move transactionJournalHistoryMove,
+) error {
+	if err := transaction.restoreParentDirectories(move.From); err != nil {
+		return err
+	}
+	temporary := transaction.destinationTemporaryPath(index, move.From, "history-restore")
+	if err := transaction.recordTemporaryPath(temporary); err != nil {
+		return err
+	}
+	if err := removeTransactionTemporary(transaction.anchored, temporary); err != nil {
+		return err
+	}
+	file, err := transaction.anchored.OpenFile(temporary, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return fmt.Errorf("create Baseline history rollback temporary %q: %w", temporary, err)
+	}
+	content, err := transaction.readHistoryMoveContent(move.Ordinal)
+	if err != nil {
+		_ = file.Close()
+		_ = removeTransactionTemporary(transaction.anchored, temporary)
+		return err
+	}
+	if int64(len(content)) != move.Before.Bytes ||
+		transactionContentIdentity(content) != move.ContentIdentity {
+		_ = file.Close()
+		_ = removeTransactionTemporary(transaction.anchored, temporary)
+		return fmt.Errorf("history rollback sidecar for ordinal %d does not match the journal", move.Ordinal)
+	}
+	_, writeErr := file.Write(content)
+	chmodErr := file.Chmod(fs.FileMode(move.Before.Mode))
+	syncErr := file.Sync()
+	closeErr := file.Close()
+	if err := errors.Join(writeErr, chmodErr, syncErr, closeErr); err != nil {
+		return fmt.Errorf("write Baseline history rollback temporary %q: %w", temporary, err)
+	}
+	if err := transaction.anchored.Rename(temporary, move.From); err != nil {
+		return fmt.Errorf("restore Baseline history source %q: %w", move.From, err)
+	}
+	return nil
 }
 
 func restoreTransactionPreimage(
@@ -722,6 +997,72 @@ func (transaction *fileTransaction) syncRepositoryParent(relative string) error 
 		return fmt.Errorf("sync Baseline destination directory %q: %w", parent, err)
 	}
 	return nil
+}
+
+func (transaction *fileTransaction) syncHistoryMoveParents(from, to string) error {
+	if err := transaction.syncRepositoryParent(from); err != nil {
+		return err
+	}
+	if path.Dir(from) == path.Dir(to) {
+		return nil
+	}
+	return transaction.syncRepositoryParent(to)
+}
+
+func (transaction *fileTransaction) removeEmptyHistorySourceDirectories(from string) error {
+	boundary := historyMoveSourceRoot(from)
+	current := path.Dir(from)
+	if current != boundary && !strings.HasPrefix(current, boundary+"/") {
+		boundary = current
+	}
+	for {
+		empty, err := transaction.historySourceDirectoryEmpty(current)
+		if err != nil {
+			return err
+		}
+		if !empty {
+			return nil
+		}
+		if err := transaction.anchored.Remove(current); err != nil {
+			return fmt.Errorf("remove empty Baseline history source directory %q: %w", current, err)
+		}
+		if err := transaction.syncRepositoryParent(current); err != nil {
+			return err
+		}
+		if current == boundary {
+			return nil
+		}
+		current = path.Dir(current)
+	}
+}
+
+func (transaction *fileTransaction) historySourceDirectoryEmpty(relative string) (bool, error) {
+	info, err := transaction.anchored.Lstat(relative)
+	if err != nil {
+		return false, fmt.Errorf("inspect Baseline history source directory %q: %w", relative, err)
+	}
+	if info.Mode()&fs.ModeSymlink != 0 || !info.IsDir() {
+		return false, fmt.Errorf("Baseline history source parent %q must be a real directory", relative)
+	}
+	directory, err := transaction.anchored.Open(relative)
+	if err != nil {
+		return false, fmt.Errorf("open Baseline history source directory %q: %w", relative, err)
+	}
+	entries, readErr := directory.ReadDir(1)
+	closeErr := directory.Close()
+	if len(entries) != 0 {
+		if closeErr != nil {
+			return false, fmt.Errorf("close Baseline history source directory %q: %w", relative, closeErr)
+		}
+		return false, nil
+	}
+	if readErr != nil && !errors.Is(readErr, io.EOF) {
+		return false, fmt.Errorf("read Baseline history source directory %q: %w", relative, readErr)
+	}
+	if closeErr != nil {
+		return false, fmt.Errorf("close Baseline history source directory %q: %w", relative, closeErr)
+	}
+	return true, nil
 }
 
 func (transaction *fileTransaction) runPhaseHook(point transactionFaultPoint) error {
@@ -785,6 +1126,33 @@ func (transaction *fileTransaction) writeJournal() error {
 		return fmt.Errorf("sync Baseline transaction journal directory: %w", err)
 	}
 	return nil
+}
+
+// historyMoveContentName returns the state-dir-relative name of the sidecar
+// that holds a history move source's bytes outside the journal.
+func historyMoveContentName(ordinal int) string {
+	return fmt.Sprintf("history-move-%d.content", ordinal)
+}
+
+func writeHistoryMoveSidecars(stateDir string, moves []transactionJournalHistoryMove, contents [][]byte) error {
+	for index, content := range contents {
+		if content == nil {
+			continue
+		}
+		name := filepath.Join(stateDir, historyMoveContentName(moves[index].Ordinal))
+		if err := writeSyncedFile(name, content, 0o600); err != nil {
+			return fmt.Errorf("write Baseline history move content for %q: %w", moves[index].From, err)
+		}
+	}
+	return nil
+}
+
+func (transaction *fileTransaction) readHistoryMoveContent(ordinal int) ([]byte, error) {
+	content, err := os.ReadFile(filepath.Join(transaction.stateDir, historyMoveContentName(ordinal)))
+	if err != nil {
+		return nil, fmt.Errorf("read Baseline history move content for ordinal %d: %w", ordinal, err)
+	}
+	return content, nil
 }
 
 func (transaction *fileTransaction) cleanupState() error {
@@ -870,6 +1238,11 @@ func recoverInterruptedTransaction(
 	if journal.Phase == transactionJournalCommitted {
 		for _, entry := range journal.Entries {
 			if err := verifyTransactionPostimage(anchored, entry.After); err != nil {
+				return fmt.Errorf("committed Baseline transaction cannot be conclusively recovered: %w", err)
+			}
+		}
+		for _, index := range journal.HistoryMutationOrder {
+			if err := verifyHistoryMoveDestination(anchored, journal.HistoryMoves[index]); err != nil {
 				return fmt.Errorf("committed Baseline transaction cannot be conclusively recovered: %w", err)
 			}
 		}
@@ -988,6 +1361,26 @@ func validateTransactionJournal(journal transactionJournal) error {
 		}
 		previous = index
 	}
+	var plannedHistoryMoves []HistoryMove
+	if len(journal.HistoryMoves) != 0 {
+		plannedHistoryMoves = make([]HistoryMove, len(journal.HistoryMoves))
+	}
+	for index, move := range journal.HistoryMoves {
+		plannedHistoryMoves[index] = move.planned()
+		if err := validateHistoryMoveJournalState(move); err != nil {
+			return fmt.Errorf("history move %q preimage: %w", move.From, err)
+		}
+	}
+	if err := validatePlanHistoryMoves(plannedHistoryMoves); err != nil {
+		return fmt.Errorf("history moves: %w", err)
+	}
+	previous = -1
+	for _, index := range journal.HistoryMutationOrder {
+		if index < 0 || index >= len(journal.HistoryMoves) || index <= previous {
+			return errors.New("history mutation order is invalid")
+		}
+		previous = index
+	}
 	if err := validateSafeUniquePaths(journal.CreatedDirectories, false); err != nil {
 		return fmt.Errorf("created directories: %w", err)
 	}
@@ -1010,6 +1403,24 @@ func validateSafeUniquePaths(paths []string, temporary bool) error {
 			return fmt.Errorf("duplicate path %q", relative)
 		}
 		seen[relative] = struct{}{}
+	}
+	return nil
+}
+
+// validateHistoryMoveJournalState validates a journaled history move's source
+// preimage metadata. History moves never persist raw bytes in the journal, so
+// the recorded preimage carries only move metadata and its content identity;
+// the bytes live in a sidecar for the fallback restore path.
+func validateHistoryMoveJournalState(move transactionJournalHistoryMove) error {
+	state := move.Before
+	if !state.Exists || state.Kind != PreimageRegular || !validTransactionMode(state.Mode) {
+		return errors.New("history move has no regular source preimage")
+	}
+	if state.Bytes < 0 || len(state.Content) != 0 {
+		return errors.New("history move source preimage is invalid")
+	}
+	if state.ContentIdentity != move.ContentIdentity {
+		return errors.New("history move source preimage identity mismatch")
 	}
 	return nil
 }
@@ -1131,19 +1542,19 @@ func validateMutationDestination(root *os.Root, relative string) error {
 func captureTransactionEntries(
 	root *os.Root,
 	document PlanDocument,
-) ([]transactionJournalPreimage, []transactionJournalEntry, error) {
+) ([]transactionJournalPreimage, []transactionJournalEntry, []transactionJournalHistoryMove, [][]byte, error) {
 	preimages := make([]transactionJournalPreimage, len(document.Preimages))
 	exactByPath := make(map[string]transactionFileState, len(document.Preimages))
 	for index, approved := range document.Preimages {
 		if err := validatePathParents(root, approved.Path); err != nil {
-			return nil, nil, fmt.Errorf("journal Baseline preimage %q: %w", approved.Path, err)
+			return nil, nil, nil, nil, fmt.Errorf("journal Baseline preimage %q: %w", approved.Path, err)
 		}
 		current, err := captureTransactionState(root, approved.Path)
 		if err != nil {
-			return nil, nil, fmt.Errorf("journal Baseline preimage %q: %w", approved.Path, err)
+			return nil, nil, nil, nil, fmt.Errorf("journal Baseline preimage %q: %w", approved.Path, err)
 		}
 		if !transactionStateMatchesPreimage(current, approved) {
-			return nil, nil, fmt.Errorf("Baseline transaction preimage is stale at %q", approved.Path)
+			return nil, nil, nil, nil, fmt.Errorf("Baseline transaction preimage is stale at %q", approved.Path)
 		}
 		preimages[index] = transactionJournalPreimage{Path: approved.Path, State: current}
 		exactByPath[approved.Path] = current
@@ -1152,7 +1563,7 @@ func captureTransactionEntries(
 	for index, postimage := range document.Postimages {
 		current := exactByPath[postimage.Path]
 		if current.Kind != PreimageMissing && current.Kind != PreimageRegular {
-			return nil, nil, fmt.Errorf("Baseline destination %q has unsafe preimage kind %q", postimage.Path, current.Kind)
+			return nil, nil, nil, nil, fmt.Errorf("Baseline destination %q has unsafe preimage kind %q", postimage.Path, current.Kind)
 		}
 		entries[index] = transactionJournalEntry{
 			Path:   postimage.Path,
@@ -1163,7 +1574,36 @@ func captureTransactionEntries(
 	sort.Slice(entries, func(left, right int) bool {
 		return entries[left].Path < entries[right].Path
 	})
-	return preimages, entries, nil
+	historyMoves := make([]transactionJournalHistoryMove, len(document.HistoryMoves))
+	moveContents := make([][]byte, len(document.HistoryMoves))
+	for index, move := range document.HistoryMoves {
+		if err := validatePathParents(root, move.From); err != nil {
+			return nil, nil, nil, nil, fmt.Errorf("journal Baseline history move source %q: %w", move.From, err)
+		}
+		if err := validatePathParents(root, move.To); err != nil {
+			return nil, nil, nil, nil, fmt.Errorf("journal Baseline history move destination %q: %w", move.To, err)
+		}
+		current, err := captureTransactionState(root, move.From)
+		if err != nil {
+			return nil, nil, nil, nil, fmt.Errorf("journal Baseline history move source %q: %w", move.From, err)
+		}
+		if current.Kind != PreimageRegular || current.ContentIdentity != move.ContentIdentity {
+			return nil, nil, nil, nil, fmt.Errorf(
+				"Baseline history move source %q does not match recorded content identity",
+				move.From,
+			)
+		}
+		moveContents[index] = current.Content
+		current.Content = nil
+		historyMoves[index] = transactionJournalHistoryMove{
+			Ordinal:         move.Ordinal,
+			From:            move.From,
+			To:              move.To,
+			ContentIdentity: move.ContentIdentity,
+			Before:          current,
+		}
+	}
+	return preimages, entries, historyMoves, moveContents, nil
 }
 
 func captureTransactionState(root *os.Root, relative string) (transactionFileState, error) {
@@ -1238,6 +1678,19 @@ func sameTransactionState(left, right transactionFileState) bool {
 		bytes.Equal(left.Content, right.Content)
 }
 
+// sameHistoryMoveState reports whether state carries the same move-source
+// metadata and content identity as the journaled move. History moves persist
+// move metadata and content identity in the journal, never the raw bytes, so
+// the comparison is identity-based rather than byte-based.
+func sameHistoryMoveState(state, before transactionFileState) bool {
+	return state.Exists == before.Exists &&
+		state.Kind == before.Kind &&
+		state.Mode == before.Mode &&
+		state.LinkTarget == before.LinkTarget &&
+		state.Bytes == before.Bytes &&
+		state.ContentIdentity == before.ContentIdentity
+}
+
 func postimageMatchesState(postimage Postimage, state transactionFileState) bool {
 	switch postimage.Kind {
 	case PreimageMissing:
@@ -1281,6 +1734,41 @@ func verifyTransactionPostimage(root *os.Root, postimage Postimage) error {
 		return fmt.Errorf("verify Baseline postimage %q: bytes, kind, or mode differ", postimage.Path)
 	}
 	return nil
+}
+
+func verifyHistoryMoveDestination(root *os.Root, move transactionJournalHistoryMove) error {
+	if err := validatePathParents(root, move.From); err != nil {
+		return fmt.Errorf("verify Baseline history move source %q: %w", move.From, err)
+	}
+	if err := validatePathParents(root, move.To); err != nil {
+		return fmt.Errorf("verify Baseline history move destination %q: %w", move.To, err)
+	}
+	source, err := captureTransactionState(root, move.From)
+	if err != nil {
+		return fmt.Errorf("verify Baseline history move source %q: %w", move.From, err)
+	}
+	if source.Kind != PreimageMissing {
+		return fmt.Errorf("verify Baseline history move source %q: source still exists", move.From)
+	}
+	destination, err := captureTransactionState(root, move.To)
+	if err != nil {
+		return fmt.Errorf("verify Baseline history move destination %q: %w", move.To, err)
+	}
+	if !destinationMatchesHistoryMove(destination, move) {
+		return fmt.Errorf(
+			"verify Baseline history move destination %q: content identity differs from recorded source %q",
+			move.To,
+			move.From,
+		)
+	}
+	return nil
+}
+
+func destinationMatchesHistoryMove(
+	state transactionFileState,
+	move transactionJournalHistoryMove,
+) bool {
+	return state.Kind == PreimageRegular && state.ContentIdentity == move.ContentIdentity
 }
 
 func writeSyncedFile(name string, content []byte, mode fs.FileMode) error {

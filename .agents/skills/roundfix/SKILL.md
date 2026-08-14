@@ -2048,11 +2048,11 @@ For a passing verdict, archive stamps `_prd.md` with `status: archived`,
 `archived`, and `source_slug`. For the declared-only `partial` case, it also
 stamps the declarations' `satisfied-by` actions under `unproven`, so a reader
 of the archived record learns what was never verified. It then moves
-`<specs.root>/<slug>/` to `<specs.root>/_archived/<slug>/`. With the default
+`<specs.root>/<slug>/` to its resolved archive directory. With the default
 Spec Root, stdout carries the deterministic report:
 
 ```text
-archived <slug> -> _archived/specs/<slug>
+archived <slug> -> docs/history/specs/<slug>
 ```
 
 Refusals exit `2` through Preflight Validation, name the first unmet condition

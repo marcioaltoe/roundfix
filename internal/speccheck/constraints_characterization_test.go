@@ -45,7 +45,8 @@ func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {
 		}
 	}
 	provenance := readReplayFile(t, replay0060Task03, "README.md")
-	for _, want := range []string{findingPath, "exact Verification commands", "status is `pending`"} {
+	provenancePath := historicalReplayArchivePath(spec.ArchiveKindFinding, "2026-07-31-a-rehearsal-task-can-settle-completed-without-rehearsing.md")
+	for _, want := range []string{provenancePath, "exact Verification commands", "status is `pending`"} {
 		if !strings.Contains(provenance, want) {
 			t.Errorf("replay provenance does not contain %q:\n%s", want, provenance)
 		}
@@ -160,22 +161,22 @@ func TestCheckReplayReadmeProvenance(t *testing.T) {
 		{
 			name:       "0058 QA-001 report",
 			slug:       replay0058QA001,
-			reportPath: archivedSpeccheckPath(spec.ArchiveKindSpec, "0058-npm-trusted-publishing-and-release-preflight", "qa", "qa-report-2026-07-31.md"),
+			reportPath: historicalReplayArchivePath(spec.ArchiveKindSpec, "0058-npm-trusted-publishing-and-release-preflight", "qa", "qa-report-2026-07-31.md"),
 		},
 		{
 			name:       "0058 QA-004 report",
 			slug:       replay0058QA004,
-			reportPath: archivedSpeccheckPath(spec.ArchiveKindSpec, "0058-npm-trusted-publishing-and-release-preflight", "qa", "qa-report-2026-08-01.md"),
+			reportPath: historicalReplayArchivePath(spec.ArchiveKindSpec, "0058-npm-trusted-publishing-and-release-preflight", "qa", "qa-report-2026-08-01.md"),
 		},
 		{
 			name:       "0056 F-001 report",
 			slug:       replay0056F001,
-			reportPath: archivedSpeccheckPath(spec.ArchiveKindSpec, "0056-profiles-configure-merge-semantics", "qa", "qa-report-2026-08-01.md"),
+			reportPath: historicalReplayArchivePath(spec.ArchiveKindSpec, "0056-profiles-configure-merge-semantics", "qa", "qa-report-2026-08-01.md"),
 		},
 		{
 			name:       "0056 F-002 report",
 			slug:       replay0056F002,
-			reportPath: archivedSpeccheckPath(spec.ArchiveKindSpec, "0056-profiles-configure-merge-semantics", "qa", "qa-report-2026-08-01.md"),
+			reportPath: historicalReplayArchivePath(spec.ArchiveKindSpec, "0056-profiles-configure-merge-semantics", "qa", "qa-report-2026-08-01.md"),
 		},
 	}
 
@@ -196,6 +197,15 @@ func TestCheckReplayReadmeProvenance(t *testing.T) {
 			}
 		})
 	}
+}
+
+// historicalReplayArchivePath pins provenance authored before the docs/history
+// relocation; unlike replay source lookup, it must not follow ArchiveDir.
+func historicalReplayArchivePath(kind spec.ArchiveKind, elements ...string) string {
+	parts := make([]string, 0, len(elements)+2)
+	parts = append(parts, "_archived", string(kind))
+	parts = append(parts, elements...)
+	return filepath.ToSlash(filepath.Join(parts...))
 }
 
 func requireReplayFinding(t *testing.T, reportPath string, result speccheck.Result, code, summaryFragment string) speccheck.Finding {

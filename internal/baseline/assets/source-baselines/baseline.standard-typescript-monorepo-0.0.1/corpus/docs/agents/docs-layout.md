@@ -217,7 +217,7 @@ updated_at: YYYY-MM-DD
 <!-- /source-baseline-entry: clause.context.findings-01-frontmatter -->
 
 <!-- source-baseline-entry: clause.context.findings-08-rollup -->
-A Rollup is a Finding of `kind: rollup` that consolidates related Findings. It lives beside active Findings under `docs/findings/`, shares their lifecycle contract, and declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `_archived/findings/`. Use this extension:
+A Rollup is a Finding of `kind: rollup` that consolidates related Findings. It lives beside active Findings under `docs/findings/`, shares their lifecycle contract, and declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `docs/history/findings/`. Use this extension:
 
 ```yaml
 kind: rollup
@@ -227,7 +227,7 @@ members:
 <!-- /source-baseline-entry: clause.context.findings-08-rollup -->
 
 <!-- source-baseline-entry: clause.context.findings-09-archive -->
-Use `_archived/findings/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:
+Use `docs/history/findings/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:
 
 ```yaml
 absorbed_by: <rollup-basename-or-spec-slug>
@@ -235,7 +235,7 @@ absorbed_by: <rollup-basename-or-spec-slug>
 <!-- /source-baseline-entry: clause.context.findings-09-archive -->
 
 <!-- source-baseline-entry: clause.context.findings-10-live-work-health -->
-Read a findings directory holding only live work as `health`, not loss: Rollups and `_archived/findings/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory.
+Read a findings directory holding only live work as `health`, not loss: Rollups and `docs/history/findings/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory.
 <!-- /source-baseline-entry: clause.context.findings-10-live-work-health -->
 
 <!-- source-baseline-entry: clause.context.findings-11-rollup-closure -->
@@ -275,7 +275,7 @@ Triage resolves one pending Inbox Entry into exactly one Finding, one Backlog En
 <!-- /source-baseline-entry: clause.context.inbox-02-fleet-flow -->
 
 <!-- source-baseline-entry: clause.spec.keep-artifacts-in-spec-folder -->
-Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `_archived/specs/`.
+Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `docs/history/specs/`.
 <!-- /source-baseline-entry: clause.spec.keep-artifacts-in-spec-folder -->
 
 <!-- source-baseline-entry: clause.spec.specs-are-downstream-artifacts -->

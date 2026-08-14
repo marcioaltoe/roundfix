@@ -1,9 +1,12 @@
 ---
 spec: 0094-one-history-root-under-docs
-status: active
+status: archived
 created: 2026-08-12
 surfaces: [cli, docs]
+archived: "2026-08-13"
+source_slug: 0094-one-history-root-under-docs
 ---
+
 
 # One history root under `docs/`
 
@@ -71,7 +74,9 @@ is history rather than work in flight.
   `.agents/skills/write-idea/SKILL.md`,
   `.agents/skills/brainstorming/SKILL.md`,
   `.agents/skills/roundfix/SKILL.md`,
-  `.coderabbit.yaml`, and `.roundfixrc.yml`. Source:
+  `.coderabbit.yaml`, `.roundfixrc.yml`, `skills/baseline_skill_contract_test.go`,
+  `internal/docscontract/publicdocs_test.go`, and
+  `skills/owned_skill_edit_repocontract_test.go`. Source:
   `docs/agents/agent-instructions.md`.
 
 ## Goals

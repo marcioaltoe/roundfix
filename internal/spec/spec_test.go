@@ -1479,7 +1479,7 @@ func TestListActiveFiltersInactiveArchivedAndNonSpecDirectories(t *testing.T) {
 	writeSpecDir(t, specsRoot, "0002-later", map[string]string{"_prd.md": prdFixture("active")})
 	writeSpecDir(t, specsRoot, "0001-early", map[string]string{"_prd.md": prdFixture("active")})
 	writeSpecDir(t, specsRoot, "0003-shipped", map[string]string{"_prd.md": prdFixture("shipped")})
-	writeSpecDir(t, specsRoot, filepath.Base(filepath.Dir(filepath.FromSlash(ArchiveDir(ArchiveKindSpec)))), map[string]string{"_prd.md": prdFixture("active")})
+	writeSpecDir(t, specsRoot, archivedDirName, map[string]string{"_prd.md": prdFixture("active")})
 	writeSpecDir(t, specsRoot, "0004-broken", map[string]string{"_prd.md": "no frontmatter"})
 	if err := os.MkdirAll(filepath.Join(specsRoot, "0005-no-prd"), 0o755); err != nil {
 		t.Fatalf("create directory: %v", err)
@@ -1512,7 +1512,7 @@ func TestListActiveDetailedReportsSkippedSpecFolders(t *testing.T) {
 	}
 	writeSpecDir(t, specsRoot, "0003-broken-frontmatter", map[string]string{"_prd.md": "no frontmatter\n"})
 	writeSpecDir(t, specsRoot, "0004-archived-status", map[string]string{"_prd.md": prdFixture("archived")})
-	writeSpecDir(t, specsRoot, filepath.Base(filepath.Dir(filepath.FromSlash(ArchiveDir(ArchiveKindSpec)))), map[string]string{"0005-old/_prd.md": prdFixture("broken")})
+	writeSpecDir(t, specsRoot, archivedDirName, map[string]string{"0005-old/_prd.md": prdFixture("broken")})
 
 	specs, skipped, err := ListActiveDetailed(specsRoot)
 	if err != nil {

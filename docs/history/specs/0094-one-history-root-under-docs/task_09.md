@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: qa
 complexity: high
 ---
@@ -64,7 +64,7 @@ implementation branch settles and before any Pull Request exists.
 
 ## Verification
 
-- `ls docs/specs/0094-one-history-root-under-docs/qa/qa-report-*.md > /tmp/0094-task-09.log 2>&1; test -s /tmp/0094-task-09.log || { echo 'no QA report written'; exit 1; }` — expected: exits 0, proving the gate wrote its report.
+- `ls docs/specs/0094-one-history-root-under-docs/qa/qa-report-*.md > /dev/null 2>&1 || { echo 'no QA report written'; exit 1; }` — expected: exits 0, proving the gate wrote its report. An earlier draft redirected stderr into the log it then tested for content, so `ls` failing wrote its own error message and satisfied the check.
 - `grep -q '^verdict:' $(ls -t docs/specs/0094-one-history-root-under-docs/qa/qa-report-*.md | head -1)` — expected: exits 0, proving the newest report carries a verdict.
 - `! git ls-files -s docs/specs/0094-one-history-root-under-docs/qa | grep -q '^160000'` — expected: exits 0, proving no scratch repository was committed as a gitlink.
 

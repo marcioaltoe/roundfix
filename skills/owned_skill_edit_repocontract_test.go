@@ -17,6 +17,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"roundfix/internal/spec"
 )
 
 func TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical(t *testing.T) {
@@ -27,9 +29,10 @@ func TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical(t *testing.T) {
 		"internal/baseline/testdata/catalog.diagnostics.golden.json",
 		"internal/baseline/testdata/plan-characterization",
 	}
+	archivedPaths := []string{spec.ArchiveDir(spec.ArchiveKindSpec)}
 	derivedBefore := artifactBytes(t, verificationRoot, derivedPaths)
 	characterizationBefore := artifactBytes(t, verificationRoot, characterizationPaths)
-	archivedBefore := artifactBytes(t, verificationRoot, []string{"_archived/specs"})
+	archivedBefore := artifactBytes(t, verificationRoot, archivedPaths)
 
 	for _, relative := range []string{
 		filepath.Join(".agents", "skills", "roundfix", "SKILL.md"),
@@ -65,5 +68,5 @@ func TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical(t *testing.T) {
 
 	assertArtifactBytesEqual(t, "derived Baseline artifact", derivedBefore, artifactBytes(t, verificationRoot, derivedPaths))
 	assertArtifactBytesEqual(t, "characterization corpus artifact", characterizationBefore, artifactBytes(t, verificationRoot, characterizationPaths))
-	assertArtifactBytesEqual(t, "archived Spec artifact", archivedBefore, artifactBytes(t, verificationRoot, []string{"_archived/specs"}))
+	assertArtifactBytesEqual(t, "archived Spec artifact", archivedBefore, artifactBytes(t, verificationRoot, archivedPaths))
 }

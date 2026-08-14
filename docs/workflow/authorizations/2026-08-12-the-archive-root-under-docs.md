@@ -22,6 +22,12 @@ paths:
   - .agents/skills/roundfix/SKILL.md
   - .coderabbit.yaml
   - .roundfixrc.yml
+  - skills/baseline_skill_contract_test.go
+  - internal/docscontract/publicdocs_test.go
+  - skills/owned_skill_edit_repocontract_test.go
+  - internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/spec-routing.md
+  - internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/baseline.json
+  - internal/baseline/assets/source-baselines/index.json
 ---
 
 # Tooling authorization — the archive root under `docs/` (2026-08-12)
@@ -117,6 +123,29 @@ only protection — and correcting the stale comment naming the old root.
 - `internal/config/config.go`, limited to the Review Artifact root resolution.
   This is production Go rather than protected tooling and needs no grant; it is
   listed so the Spec's bounded-scope audit has one complete set to read.
+- `skills/baseline_skill_contract_test.go`, limited to the assertion that pins
+  the archive path literal. Added 2026-08-12 after the authorized skill edits
+  landed and left it stale, on the maintainer's decision:
+
+  > Estender o grant em um arquivo
+
+  The test asserts that `write-prd`'s skill contains
+  ``Exclude `_archived/specs/` from automatic link rewrites``. The authorized
+  edit correctly moved that path, so the assertion now names a location the
+  contract no longer has. This is a consequent fix of an authorized change and
+  lands in its own commit after it, never folded into it. It is not a licence to
+  change what the contract requires — only where it says the archive lives.
+- `internal/docscontract/publicdocs_test.go`, limited to the check that no
+  configured review rule-source pattern reaches the history tree or a Spec-owned
+  review directory. Added 2026-08-12 on the maintainer's decision:
+
+  > Estender o grant ao teste
+
+  Task 08 refused twice rather than create a test file the grant did not name,
+  which is the correct behaviour: the boundary is the maintainer's to widen.
+  This is the package's existing canonical suite for contracts that read the
+  repository's published review configuration, so the check extends a suite
+  rather than inventing a home for itself.
 
 Derived Baseline pins and skill mirrors rewritten by `make baseline-digests` and
 `make skills-sync` are sanctioned fallout under ADR-0081, not separate targets.
@@ -152,3 +181,33 @@ supersession in its PRD; leaving it unstated would establish the exception by
 precedent. Goals 1 and 3 — one archive root, one path filter — are preserved
 unchanged, which is why this is a correction to where 0085 anchored the root
 rather than a reversal of what it built.
+
+## Extended 2026-08-13 — the last pinned archive path
+
+`skills/owned_skill_edit_repocontract_test.go`, limited to the two
+`"_archived/specs"` literals it passes to its artifact-bytes helper. The test
+proves that editing an owned Skill leaves archived artifacts byte-identical, and
+it names the archive by literal rather than through the resolver, so the
+authorized relocation left it reading a directory that no longer exists.
+
+On the maintainer's decision:
+
+> Estender o grant a este arquivo
+
+A repository-wide sweep found no other broken pin. Every remaining `_archived`
+occurrence in Go is deliberate: `internal/baseline/history_layout.go` and its
+tests discover the legacy layout, which is the migration's whole purpose, and
+`internal/spec` keeps the name for an external or non-default Spec Root.
+
+## Extended 2026-08-13 — the routing carrier and its derived fallout
+
+`.../corpus/docs/agents/spec-routing.md` joins the corpus carriers already
+granted, for the same subject: it names the archive destination an adopting
+repository consumes, and the QA gate found it still naming the old one.
+
+`baseline.json` and `index.json` are listed although ADR-0081 already makes them
+sanctioned fallout of that edit. The changed-path audit reads this record's exact
+paths and does not implement the fallout rule, so a tooling Task regenerating
+them is refused unless they appear here. That gap is recorded in
+`docs/backlog/2026-08-13-the-changed-path-audit-does-not-know-sanctioned-fallout.md`;
+listing them is the workaround, not the fix.

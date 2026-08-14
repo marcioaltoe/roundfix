@@ -58,6 +58,33 @@ func TestBaselineUpdateAppliesManifestPlanAndReportsJSON(t *testing.T) {
 	}
 }
 
+func TestBaselineUpdateTextReportsHistoryMoves(t *testing.T) {
+	move := baseline.HistoryMove{
+		Ordinal:         0,
+		From:            "docs/specs/_archived/0001-widget/_prd.md",
+		To:              "docs/history/specs/0001-widget/_prd.md",
+		ContentIdentity: "sha256:" + strings.Repeat("b", 64),
+	}
+	result := newBaselineUpdateResult()
+	result.State = "verified"
+	result.VerifiedHistoryMoves = []baseline.HistoryMove{move}
+
+	var stdout bytes.Buffer
+	if err := writeBaselineUpdateResult(result, false, &stdout); err != nil {
+		t.Fatalf("writeBaselineUpdateResult() error = %v", err)
+	}
+	for _, want := range []string{
+		"Verified history moves: 1",
+		move.From,
+		move.To,
+		move.ContentIdentity,
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("update text omits %q:\n%s", want, stdout.String())
+		}
+	}
+}
+
 func TestBaselineUpdateUnrecordedManagedRegionTextOutput(t *testing.T) {
 	tests := []struct {
 		name      string

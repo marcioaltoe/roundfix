@@ -19,7 +19,7 @@ Archives a completed Spec after verifying every Task is completed and the
 newest QA Report has verdict: pass or a partial verdict whose blocked rows are
 covered only by declared Unreachable Acceptance. Stamps archive metadata and
 moves the Spec from the configured Spec Root to its resolved archive root: the
-repository's default _archived/specs/<slug>/ when the Spec Root is the built-in
+repository's default docs/history/specs/<slug>/ when the Spec Root is the built-in
 docs/specs, otherwise <spec-root>/_archived/<slug>/ beside the configured Spec
 Root. archive creates no Run and never pushes.
 

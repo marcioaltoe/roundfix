@@ -27,10 +27,11 @@ func TestArchiveDirAnswersEveryRetiredKind(t *testing.T) {
 		kind ArchiveKind
 		want string
 	}{
-		{name: "Specs", kind: ArchiveKindSpec, want: "_archived/specs"},
-		{name: "findings", kind: ArchiveKindFinding, want: "_archived/findings"},
-		{name: "ADRs", kind: ArchiveKindADR, want: "_archived/adr"},
-		{name: "backlog entries", kind: ArchiveKindBacklog, want: "_archived/backlog"},
+		{name: "Specs", kind: ArchiveKindSpec, want: "docs/history/specs"},
+		{name: "findings", kind: ArchiveKindFinding, want: "docs/history/findings"},
+		{name: "ADRs", kind: ArchiveKindADR, want: "docs/history/adr"},
+		{name: "backlog entries", kind: ArchiveKindBacklog, want: "docs/history/backlog"},
+		{name: "Review Artifacts", kind: ArchiveKindReview, want: "docs/history/reviews"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -56,7 +57,7 @@ func TestArchiveSpecRootDefaultLayout(t *testing.T) {
 	t.Parallel()
 
 	// The built-in <repo>/docs/specs root resolves to the repository's default
-	// _archived/specs directory, whether the path is repository-relative or an
+	// docs/history/specs directory, whether the path is repository-relative or an
 	// absolute path belonging to the repository.
 	tests := []struct {
 		name      string
@@ -66,12 +67,12 @@ func TestArchiveSpecRootDefaultLayout(t *testing.T) {
 		{
 			name:      "repository-relative default root",
 			specsRoot: "docs/specs",
-			want:      filepath.ToSlash(filepath.Join("_archived", "specs")),
+			want:      filepath.ToSlash(filepath.Join("docs", "history", "specs")),
 		},
 		{
 			name:      "absolute repository default root",
 			specsRoot: filepath.Join("/repo", "docs", "specs"),
-			want:      filepath.ToSlash(filepath.Join("/repo", "_archived", "specs")),
+			want:      filepath.ToSlash(filepath.Join("/repo", "docs", "history", "specs")),
 		},
 	}
 	for _, test := range tests {
@@ -89,7 +90,7 @@ func TestArchiveSpecRootNonDefaultKeepsArchiveBesideActiveRoot(t *testing.T) {
 	t.Parallel()
 
 	// A configured non-default Spec Root keeps its archive beside the active
-	// root rather than under the repository's default _archived/specs. Even a
+	// root rather than under the repository's default docs/history/specs. Even a
 	// non-default root whose path ends in docs/specs must NOT be classified as
 	// the repository default.
 	tests := []struct {
@@ -123,7 +124,7 @@ func TestArchiveSpecRootExternalKeepsArchiveBesideActiveRoot(t *testing.T) {
 	t.Parallel()
 
 	// An external Spec Root keeps its archive beside the active root rather
-	// than under the referring repository's default _archived/specs. Issue 009:
+	// than under the referring repository's default docs/history/specs. Issue 009:
 	// an external root whose path happens to end in docs/specs must NOT be
 	// misclassified as the repository default.
 	tests := []struct {
@@ -164,6 +165,14 @@ var spec0058SourceReport = archiveTestPath(
 	"qa",
 	"qa-report-2026-08-01-04.md",
 )
+
+var spec0058SourceReportProvenance = filepath.ToSlash(filepath.Join(
+	"_archived",
+	"specs",
+	spec0058ReplaySlug,
+	"qa",
+	"qa-report-2026-08-01-04.md",
+))
 
 func TestSpec0058ReplayArchivesDeclaredUnreachableRelease(t *testing.T) {
 	t.Parallel()
@@ -219,7 +228,7 @@ func TestSpec0058ReplayRecordsFixtureProvenance(t *testing.T) {
 	repositoryRoot := archiveTestRepositoryRoot(t)
 	provenance := archiveTestReadFile(t, filepath.Join(repositoryRoot, "internal", "spec", "testdata", "archive-replay-0058", "PROVENANCE.md"))
 	for _, want := range []string{
-		spec0058SourceReport,
+		spec0058SourceReportProvenance,
 		"The original Spec 0058 PRD has no `## Unreachable Acceptance` section",
 		"The declaration overlay is added by Spec 0070",
 	} {

@@ -89,6 +89,8 @@ type baselineUpdateResult struct {
 	UnresolvedProfile        *baseline.UnresolvedProfileDiagnosis `json:"unresolvedProfile,omitempty"`
 	PlanDigest               string                               `json:"planDigest,omitempty"`
 	ApprovedPlanDigest       string                               `json:"approvedPlanDigest,omitempty"`
+	HistoryMoves             []baseline.HistoryMove               `json:"historyMoves,omitempty"`
+	VerifiedHistoryMoves     []baseline.HistoryMove               `json:"verifiedHistoryMoves,omitempty"`
 	StatusMatrix             *baseline.ResultStatusMatrix         `json:"statusMatrix,omitempty"`
 	Skills                   baselineUpdateSkillsResult           `json:"skills"`
 }
@@ -239,8 +241,9 @@ func runBaselineUpdateCommandWithSkillsStage(
 	result.Retention = append(result.Retention, plan.Retention...)
 	result.ClauseDelta = plan.ClauseDelta
 	result.Warnings = append(result.Warnings, plan.Warnings...)
+	result.HistoryMoves = append(result.HistoryMoves, plan.HistoryMoves...)
 	if !request.yes && request.confirmation == "" {
-		if len(plan.FileChanges) == 0 {
+		if len(plan.FileChanges) == 0 && len(plan.HistoryMoves) == 0 {
 			result.State = "current"
 			result.Message = "the repository already matches the current Baseline catalog"
 			return writeBaselineUpdateOutcome(result, exitOK, jsonOutput, stdout, stderr)
@@ -264,6 +267,7 @@ func runBaselineUpdateCommandWithSkillsStage(
 	result.Message = applyResult.Message
 	result.NextAction = applyResult.NextAction
 	result.ApprovedPlanDigest = applyResult.PlanDigest
+	result.VerifiedHistoryMoves = append(result.VerifiedHistoryMoves, applyResult.VerifiedHistoryMoves...)
 	result.StatusMatrix = applyResult.StatusMatrix
 	if request.skipSkills {
 		result.Skills.Status = baselineUpdateSkillsSkipped
@@ -643,6 +647,12 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	for _, change := range result.FileChanges {
 		fmt.Fprintf(stdout, "- %s %s (%d managed entries)\n", change.Action, change.Path, len(change.ManagedEntries))
 	}
+	if len(result.HistoryMoves) != 0 {
+		fmt.Fprintf(stdout, "History moves: %d\n", len(result.HistoryMoves))
+		for _, move := range result.HistoryMoves {
+			fmt.Fprintf(stdout, "- move %s -> %s (%s)\n", move.From, move.To, move.ContentIdentity)
+		}
+	}
 	if len(result.UnrecordedManagedRegions) != 0 {
 		fmt.Fprintf(stdout, "Unrecorded managed regions: %d\n", len(result.UnrecordedManagedRegions))
 		for _, region := range result.UnrecordedManagedRegions {
@@ -712,6 +722,12 @@ func writeBaselineUpdateResult(result baselineUpdateResult, jsonOutput bool, std
 	}
 	if result.ApprovedPlanDigest != "" {
 		fmt.Fprintf(stdout, "Approved Plan Digest: %s\n", result.ApprovedPlanDigest)
+	}
+	if len(result.VerifiedHistoryMoves) != 0 {
+		fmt.Fprintf(stdout, "Verified history moves: %d\n", len(result.VerifiedHistoryMoves))
+		for _, move := range result.VerifiedHistoryMoves {
+			fmt.Fprintf(stdout, "- move %s -> %s (%s)\n", move.From, move.To, move.ContentIdentity)
+		}
 	}
 	if result.NextAction != "" {
 		fmt.Fprintf(stdout, "Next action: %s\n", result.NextAction)

@@ -68,6 +68,106 @@ func TestPlanDocumentStrictCodecs(t *testing.T) {
 	}
 }
 
+func TestHistoryRelocationPlanCarriesOrderedIdentitiesOutsideRenderedCarriers(t *testing.T) {
+	t.Parallel()
+
+	repository := newPlanRepository(t)
+	files := map[string]string{
+		"docs/specs/_archived/0002-zeta/task_01.md": "zeta task\n",
+		"docs/specs/_archived/0001-alpha/_prd.md":   "alpha PRD\n",
+	}
+	for relative, content := range files {
+		writeInspectionFile(t, repository, relative, content)
+	}
+	commitInspectionRepository(t, repository, "seed legacy history layout")
+
+	first := buildTestPlan(t, repository)
+	second := buildTestPlan(t, repository)
+	want := []HistoryMove{
+		{
+			Ordinal:         0,
+			From:            "docs/specs/_archived/0001-alpha/_prd.md",
+			To:              "docs/history/specs/0001-alpha/_prd.md",
+			ContentIdentity: planContentIdentity([]byte("alpha PRD\n")),
+		},
+		{
+			Ordinal:         1,
+			From:            "docs/specs/_archived/0002-zeta/task_01.md",
+			To:              "docs/history/specs/0002-zeta/task_01.md",
+			ContentIdentity: planContentIdentity([]byte("zeta task\n")),
+		},
+	}
+	if !reflect.DeepEqual(first.HistoryMoves, want) {
+		t.Fatalf("HistoryMoves = %#v, want %#v", first.HistoryMoves, want)
+	}
+
+	firstJSON, err := MarshalPlanDocument(first)
+	if err != nil {
+		t.Fatalf("MarshalPlanDocument(first) error = %v", err)
+	}
+	secondJSON, err := MarshalPlanDocument(second)
+	if err != nil {
+		t.Fatalf("MarshalPlanDocument(second) error = %v", err)
+	}
+	if !bytes.Equal(firstJSON, secondJSON) {
+		t.Fatal("planning the same legacy history tree produced different documents")
+	}
+
+	var document map[string]json.RawMessage
+	if err := json.Unmarshal(firstJSON, &document); err != nil {
+		t.Fatalf("decode Plan Document fields: %v", err)
+	}
+	var moves []map[string]json.RawMessage
+	if err := json.Unmarshal(document["historyMoves"], &moves); err != nil {
+		t.Fatalf("decode historyMoves: %v", err)
+	}
+	for index, move := range moves {
+		if len(move) != 4 || move["ordinal"] == nil || move["from"] == nil ||
+			move["to"] == nil || move["contentIdentity"] == nil || move["content"] != nil {
+			t.Fatalf("historyMoves[%d] fields = %v, want identity-only ledger entry", index, move)
+		}
+	}
+
+	for _, move := range first.HistoryMoves {
+		for _, entry := range first.ManagedEntries {
+			if entry.Path == move.From || entry.Path == move.To {
+				t.Fatalf("history move appears in managed-entry ledger: %+v", entry)
+			}
+		}
+		for _, preimage := range first.Preimages {
+			if preimage.Path == move.From || preimage.Path == move.To {
+				t.Fatalf("history move appears in preimages: %+v", preimage)
+			}
+		}
+		for _, postimage := range first.Postimages {
+			if postimage.Path == move.From || postimage.Path == move.To {
+				t.Fatalf("history move appears in postimages: %+v", postimage)
+			}
+		}
+		for _, change := range first.FileChanges {
+			if change.Path == move.From || change.Path == move.To {
+				t.Fatalf("history move appears in file-change projection: %+v", change)
+			}
+		}
+	}
+}
+
+func TestHistoryMoveLedgerIsOmittedForCurrentLayout(t *testing.T) {
+	t.Parallel()
+
+	plan := buildTestPlan(t, newPlanRepository(t))
+	if len(plan.HistoryMoves) != 0 {
+		t.Fatalf("HistoryMoves = %#v, want none", plan.HistoryMoves)
+	}
+	encoded, err := MarshalPlanDocument(plan)
+	if err != nil {
+		t.Fatalf("MarshalPlanDocument() error = %v", err)
+	}
+	if bytes.Contains(encoded, []byte(`"historyMoves"`)) {
+		t.Fatalf("current-layout Plan Document includes historyMoves:\n%s", encoded)
+	}
+}
+
 func TestFileChangesProjectionRejectsMismatch(t *testing.T) {
 	t.Parallel()
 

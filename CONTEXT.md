@@ -450,6 +450,14 @@ _Avoid_: QA verdict, priority, confidence
 The support command that archives a completed Spec: it verifies every Task is completed and QA passed, stamps archive metadata, and moves the Spec folder to the archived spec root. Refuses a Spec with incomplete Tasks or no passing QA verdict.
 _Avoid_: Move command, retire run, cleanup command
 
+**History Root**:
+The single repository directory holding every retired documentation family — Specs, findings, decision records, intent entries, and Review Artifacts. Retired material leaves the directory an Agent loads by default and stays greppable as the record of what was built and why; one path filter excludes the whole tree from review. Resolved in exactly one place, so no consumer carries a path of its own.
+_Avoid_: Archive folder, `_archived`, attic, trash
+
+**History Relocation**:
+One retired file that belongs under the History Root and is not there, carried in the Baseline Plan as an ordered ledger entry of source, destination, and content identity rather than file bytes. A relocation whose destination is occupied is a collision: it is refused by name, its siblings still move, and the repository is not current until it is resolved.
+_Avoid_: Archive move, file migration, relocation payload
+
 **GC Command**:
 The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. Never touches Active Runs, `runs` rows, or active-run locks.
 _Avoid_: Clean command, vacuum, purge

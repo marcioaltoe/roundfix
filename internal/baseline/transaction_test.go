@@ -11,8 +11,10 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
+	"roundfix/internal/gittest"
 	"sort"
 	"strings"
 	"testing"
@@ -261,12 +263,355 @@ func TestTransactionFailureMatrix(t *testing.T) {
 	})
 }
 
+func TestHistoryMoveApply(t *testing.T) {
+	t.Parallel()
+
+	t.Run("moves every recorded identity", func(t *testing.T) {
+		t.Parallel()
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+			"_archived/specs/0001-alpha/_prd.md": "alpha prd\n",
+			"docs/findings/_archived/beta.md":    "beta finding\n",
+		})
+
+		tx := beginTestTransaction(t, repo, plan)
+		evidence, err := tx.Apply(context.Background())
+		if err != nil {
+			t.Fatalf("Apply(): %v", err)
+		}
+		if err := tx.Close(); err != nil {
+			t.Fatalf("Close(): %v", err)
+		}
+		if !reflect.DeepEqual(evidence.VerifiedHistoryMoves, plan.HistoryMoves) ||
+			len(evidence.RefusedHistoryMoves) != 0 {
+			t.Fatalf("history move evidence = %+v, want every move verified", evidence)
+		}
+		assertHistoryMoveState(t, repo, plan.HistoryMoves[0], "alpha prd\n", true)
+		assertHistoryMoveState(t, repo, plan.HistoryMoves[1], "beta finding\n", true)
+	})
+
+	t.Run("empty ledger preserves the existing transaction result", func(t *testing.T) {
+		t.Parallel()
+		repo, plan := newTransactionRepository(t)
+		tx := beginTestTransaction(t, repo, plan)
+		evidence, err := tx.Apply(context.Background())
+		if err != nil {
+			t.Fatalf("Apply(): %v", err)
+		}
+		if err := tx.Close(); err != nil {
+			t.Fatalf("Close(): %v", err)
+		}
+		if evidence.VerifiedHistoryMoves != nil || evidence.RefusedHistoryMoves != nil {
+			t.Fatalf("empty history move evidence = %+v, want omitted ledgers", evidence)
+		}
+		if !verifiedPostimagesMatch(plan.Postimages, evidence.VerifiedPostimages) {
+			t.Fatalf("verified postimages = %+v, want the approved postimages", evidence.VerifiedPostimages)
+		}
+	})
+}
+
+func TestHistoryMoveRemovesEmptiedSource(t *testing.T) {
+	t.Parallel()
+
+	t.Run("finished Review Artifact leaves no source shell or rerun finding", func(t *testing.T) {
+		t.Parallel()
+
+		repo := newPlanRepository(t)
+		head := strings.TrimSpace(gittest.Run(t, repo, "rev-parse", "HEAD"))
+		const reviewPath = "docs/specs/reviews/pr-201"
+		reviewDir := filepath.Join(repo, filepath.FromSlash(reviewPath))
+		historyPersistRound(t, reviewDir, "feature/merged", head)
+		historyWriteFiles(t, repo, map[string]string{
+			path.Join(reviewPath, "issues/001.md"): "finished issue\n",
+		})
+
+		plan := buildTestPlan(t, repo)
+		if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err != nil {
+			t.Fatalf("ApplyPlan(): %v", err)
+		}
+		if _, err := os.Lstat(reviewDir); !errors.Is(err, fs.ErrNotExist) {
+			t.Fatalf("finished Review Artifact directory error = %v, want not exist", err)
+		}
+		if info, err := os.Stat(filepath.Dir(reviewDir)); err != nil || !info.IsDir() {
+			t.Fatalf("live Review Artifact root = (%v, %v), want surviving directory", info, err)
+		}
+
+		moves, findings, err := planHistoryMoves(context.Background(), repo)
+		if err != nil {
+			t.Fatalf("planHistoryMoves() rerun: %v", err)
+		}
+		if len(moves) != 0 || len(findings) != 0 {
+			t.Fatalf("planHistoryMoves() rerun = (%#v, %#v), want no relocated Review Artifact", moves, findings)
+		}
+	})
+
+	t.Run("unmoved file keeps its source directory", func(t *testing.T) {
+		t.Parallel()
+
+		const source = "docs/specs/reviews/pr-202/round-001/round.md"
+		const unmoved = "docs/specs/reviews/pr-202/round-001/keep.txt"
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+			source: "round metadata\n",
+		})
+		writeTransactionFile(t, repo, unmoved, "keep me\n", 0o644)
+
+		tx := beginTestTransaction(t, repo, plan)
+		if _, err := tx.Apply(context.Background()); err != nil {
+			t.Fatalf("Apply(): %v", err)
+		}
+		if err := tx.Close(); err != nil {
+			t.Fatalf("Close(): %v", err)
+		}
+		content, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(unmoved)))
+		if err != nil || string(content) != "keep me\n" {
+			t.Fatalf("unmoved source file = %q error=%v, want original bytes", content, err)
+		}
+		assertHistoryMoveState(t, repo, plan.HistoryMoves[0], "round metadata\n", true)
+	})
+}
+
+func TestHistoryMoveCollision(t *testing.T) {
+	t.Parallel()
+
+	repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+		"_archived/specs/0001-alpha/_prd.md": "alpha prd\n",
+		"_archived/specs/0002-beta/_prd.md":  "beta prd\n",
+	})
+	collision := plan.HistoryMoves[0]
+	sibling := plan.HistoryMoves[1]
+	writeTransactionFile(t, repo, collision.To, "occupied destination\n", 0o644)
+
+	tx := beginTestTransaction(t, repo, plan)
+	evidence, err := tx.Apply(context.Background())
+	if err != nil {
+		t.Fatalf("Apply(): %v", err)
+	}
+	if err := tx.Close(); err != nil {
+		t.Fatalf("Close(): %v", err)
+	}
+	if !reflect.DeepEqual(evidence.VerifiedHistoryMoves, []HistoryMove{sibling}) ||
+		len(evidence.RefusedHistoryMoves) != 1 {
+		t.Fatalf("history move evidence = %+v, want one verified sibling and one refusal", evidence)
+	}
+	refusal := evidence.RefusedHistoryMoves[0]
+	if refusal.From != collision.From || refusal.To != collision.To ||
+		!strings.Contains(refusal.Reason, "already exists") {
+		t.Fatalf("collision refusal = %+v, want both paths and occupied reason", refusal)
+	}
+	collisionSource, readErr := os.ReadFile(filepath.Join(repo, filepath.FromSlash(collision.From)))
+	if readErr != nil || string(collisionSource) != "alpha prd\n" ||
+		transactionContentIdentity(collisionSource) != collision.ContentIdentity {
+		t.Fatalf("collision source = %q error=%v, want recorded source bytes", collisionSource, readErr)
+	}
+	if content, readErr := os.ReadFile(filepath.Join(repo, filepath.FromSlash(collision.To))); readErr != nil ||
+		string(content) != "occupied destination\n" {
+		t.Fatalf("collision destination = %q error=%v, want original bytes", content, readErr)
+	}
+	assertHistoryMoveState(t, repo, sibling, "beta prd\n", true)
+
+	reportRepo, reportPlan := newHistoryMoveTransactionRepository(t, map[string]string{
+		"_archived/specs/0003-gamma/_prd.md": "gamma prd\n",
+		"_archived/specs/0004-delta/_prd.md": "delta prd\n",
+	})
+	writeTransactionFile(t, reportRepo, reportPlan.HistoryMoves[0].To, "occupied report destination\n", 0o644)
+	_, err = ApplyPlan(context.Background(), reportRepo, reportPlan, reportPlan.PlanDigest)
+	if err == nil || !strings.Contains(err.Error(), "not every history relocation was performed") ||
+		!strings.Contains(err.Error(), reportPlan.HistoryMoves[0].From) ||
+		!strings.Contains(err.Error(), reportPlan.HistoryMoves[0].To) {
+		t.Fatalf("ApplyPlan() error = %v, want incomplete relocation report naming both paths", err)
+	}
+	assertHistoryMoveState(t, reportRepo, reportPlan.HistoryMoves[1], "delta prd\n", true)
+}
+
+func TestHistoryMoveRollback(t *testing.T) {
+	t.Parallel()
+
+	t.Run("failure after a partial relocation restores every source", func(t *testing.T) {
+		t.Parallel()
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+			"_archived/specs/0001-alpha/_prd.md": "alpha prd\n",
+			"_archived/specs/0002-beta/_prd.md":  "beta prd\n",
+		})
+		tx := beginTestTransaction(t, repo, plan)
+		tx.phaseHook = failTransactionOnce(
+			transactionPhaseReplacing,
+			plan.HistoryMoves[1].To,
+			errors.New("injected history move failure"),
+		)
+		if _, err := tx.Apply(context.Background()); err == nil ||
+			!strings.Contains(err.Error(), "injected history move failure") {
+			t.Fatalf("Apply() error = %v, want injected history move failure", err)
+		}
+		if err := tx.Close(); err != nil {
+			t.Fatalf("Close(): %v", err)
+		}
+		assertHistoryMoveState(t, repo, plan.HistoryMoves[0], "alpha prd\n", false)
+		assertHistoryMoveState(t, repo, plan.HistoryMoves[1], "beta prd\n", false)
+	})
+
+	t.Run("destination identity mismatch fails and restores the recorded bytes", func(t *testing.T) {
+		t.Parallel()
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+			"_archived/specs/0001-alpha/_prd.md": "alpha prd\n",
+		})
+		move := plan.HistoryMoves[0]
+		tx := beginTestTransaction(t, repo, plan)
+		tx.phaseHook = func(point transactionFaultPoint) error {
+			if point.Phase == transactionPhaseVerifying && point.Path == move.To {
+				writeTransactionFile(t, repo, move.To, "tampered destination\n", 0o644)
+			}
+			return nil
+		}
+		if _, err := tx.Apply(context.Background()); err == nil ||
+			!strings.Contains(err.Error(), "content identity") {
+			t.Fatalf("Apply() error = %v, want destination identity failure", err)
+		}
+		if err := tx.Close(); err != nil {
+			t.Fatalf("Close(): %v", err)
+		}
+		assertHistoryMoveState(t, repo, move, "alpha prd\n", false)
+	})
+
+	t.Run("failure after source pruning recreates source directories", func(t *testing.T) {
+		t.Parallel()
+
+		const source = "docs/specs/reviews/pr-203/round-001/round.md"
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+			source: "round metadata\n",
+		})
+		move := plan.HistoryMoves[0]
+		tx := beginTestTransaction(t, repo, plan)
+		tx.phaseHook = failTransactionOnce(
+			transactionPhaseVerifying,
+			move.To,
+			errors.New("injected failure after source pruning"),
+		)
+		if _, err := tx.Apply(context.Background()); err == nil ||
+			!strings.Contains(err.Error(), "injected failure after source pruning") {
+			t.Fatalf("Apply() error = %v, want injected post-pruning failure", err)
+		}
+		if err := tx.Close(); err != nil {
+			t.Fatalf("Close(): %v", err)
+		}
+		assertHistoryMoveState(t, repo, move, "round metadata\n", false)
+		if info, err := os.Stat(filepath.Join(repo, filepath.FromSlash(path.Dir(source)))); err != nil || !info.IsDir() {
+			t.Fatalf("restored source directory = (%v, %v), want directory", info, err)
+		}
+	})
+
+	t.Run("interrupted relocation recovers from the journal", func(t *testing.T) {
+		t.Parallel()
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+			"_archived/specs/0001-alpha/_prd.md": "alpha prd\n",
+		})
+		move := plan.HistoryMoves[0]
+		interrupted := beginTestTransaction(t, repo, plan)
+		if err := interrupted.revalidatePreimages(context.Background()); err != nil {
+			t.Fatalf("revalidate interrupted transaction: %v", err)
+		}
+		if refusal, err := interrupted.relocateHistoryMove(context.Background(), 0); err != nil || refusal != nil {
+			t.Fatalf("relocate interrupted history move = (%+v, %v)", refusal, err)
+		}
+		assertHistoryMoveState(t, repo, move, "alpha prd\n", true)
+		abandonTestTransaction(t, interrupted)
+
+		recovered := beginTestTransaction(t, repo, plan)
+		if err := recovered.Close(); err != nil {
+			t.Fatalf("close recovered transaction: %v", err)
+		}
+		assertHistoryMoveState(t, repo, move, "alpha prd\n", false)
+	})
+
+	t.Run("corrupted history move sidecar is rejected on rollback", func(t *testing.T) {
+		t.Parallel()
+		repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+			"_archived/specs/0001-alpha/_prd.md": "alpha prd\n",
+		})
+		move := plan.HistoryMoves[0]
+		interrupted := beginTestTransaction(t, repo, plan)
+		if err := interrupted.revalidatePreimages(context.Background()); err != nil {
+			t.Fatalf("revalidate interrupted transaction: %v", err)
+		}
+		if refusal, err := interrupted.relocateHistoryMove(context.Background(), 0); err != nil || refusal != nil {
+			t.Fatalf("relocate interrupted history move = (%+v, %v)", refusal, err)
+		}
+		if err := os.Remove(filepath.Join(repo, filepath.FromSlash(move.To))); err != nil {
+			t.Fatalf("remove interrupted history move destination: %v", err)
+		}
+		sidecar := filepath.Join(interrupted.stateDir, historyMoveContentName(move.Ordinal))
+		if err := os.WriteFile(sidecar, []byte("corrupted sidecar bytes\n"), 0o600); err != nil {
+			t.Fatalf("corrupt history move sidecar: %v", err)
+		}
+		abandonTestTransaction(t, interrupted)
+
+		recovered, err := BeginTransaction(context.Background(), repo, plan)
+		if recovered != nil {
+			t.Fatalf("BeginTransaction() returned a transaction for a corrupted sidecar")
+		}
+		if err == nil || !strings.Contains(err.Error(), "sidecar for ordinal 0 does not match the journal") {
+			t.Fatalf("BeginTransaction() error = %v, want sidecar mismatch", err)
+		}
+		if _, lerr := os.Lstat(filepath.Join(repo, filepath.FromSlash(move.From))); !errors.Is(lerr, fs.ErrNotExist) {
+			t.Fatalf("corrupted sidecar restored source=%q lerr=%v, want source absent", move.From, lerr)
+		}
+	})
+}
+
 func newTransactionRepository(t *testing.T) (string, PlanDocument) {
 	t.Helper()
 	repo := newPlanRepository(t)
 	writeTransactionFile(t, repo, "AGENTS.md", "original instructions\n", 0o600)
 	commitInspectionRepository(t, repo, "seed transaction preimage")
 	return repo, buildTestPlan(t, repo)
+}
+
+func newHistoryMoveTransactionRepository(t *testing.T, sources map[string]string) (string, PlanDocument) {
+	t.Helper()
+	repo, plan := newTransactionRepository(t)
+	fromPaths := make([]string, 0, len(sources))
+	for from, content := range sources {
+		writeTransactionFile(t, repo, from, content, 0o644)
+		fromPaths = append(fromPaths, from)
+	}
+	sort.Strings(fromPaths)
+	plan.HistoryMoves = make([]HistoryMove, len(fromPaths))
+	for index, from := range fromPaths {
+		content := sources[from]
+		plan.HistoryMoves[index] = HistoryMove{
+			Ordinal:         index,
+			From:            from,
+			To:              historyMoveTestDestination(from),
+			ContentIdentity: transactionContentIdentity([]byte(content)),
+		}
+	}
+	var err error
+	plan.PlanDigest, err = computePlanDigest(plan)
+	if err != nil {
+		t.Fatalf("compute history move Plan Digest: %v", err)
+	}
+	return repo, plan
+}
+
+func historyMoveTestDestination(from string) string {
+	base := strings.TrimPrefix(from, "_archived/")
+	base = strings.Replace(base, "docs/findings/_archived/", "findings/", 1)
+	return path.Join("docs/history", base)
+}
+
+func assertHistoryMoveState(t *testing.T, repo string, move HistoryMove, content string, moved bool) {
+	t.Helper()
+	from := filepath.Join(repo, filepath.FromSlash(move.From))
+	to := filepath.Join(repo, filepath.FromSlash(move.To))
+	wantPresent, wantAbsent := to, from
+	if !moved {
+		wantPresent, wantAbsent = from, to
+	}
+	got, err := os.ReadFile(wantPresent)
+	if err != nil || string(got) != content || transactionContentIdentity(got) != move.ContentIdentity {
+		t.Fatalf("history move present path %q = %q error=%v, want recorded identity", wantPresent, got, err)
+	}
+	if _, err := os.Lstat(wantAbsent); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("history move absent path %q error = %v, want not exist", wantAbsent, err)
+	}
 }
 
 func beginTestTransaction(t *testing.T, repo string, plan PlanDocument) *fileTransaction {

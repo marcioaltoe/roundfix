@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0094-one-history-root-under-docs
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: test
 complexity: low
 ---
@@ -67,6 +67,21 @@ slice replaces the comment with a check.
 - Case: a configuration whose history exclusion is absent; Observation: the check
   fails.
 
+## Bounded scope
+
+This Task may create or modify only:
+
+- `.coderabbit.yaml`
+- `internal/docscontract/publicdocs_test.go`
+- `docs/specs/0094-one-history-root-under-docs/task_08.md`
+
+Express maintainer authorization:
+`docs/workflow/authorizations/2026-08-12-the-archive-root-under-docs.md`,
+extended on 2026-08-12 to cover the reachability check in this package's existing
+canonical suite for contracts that read the published review configuration. An
+earlier draft of this Task named no test path, and the Agent correctly refused
+twice rather than widen the boundary itself.
+
 ## Verification
 
 - `go test -count=1 -tags docscontract ./internal/docscontract -run 'ReviewHistory|ReviewArchiv' -v > /tmp/0094-task-08.log 2>&1; s=$?; grep -q '^--- PASS: .*Review' /tmp/0094-task-08.log || { cat /tmp/0094-task-08.log; exit 1; }; exit $s` — expected: exits 0 and the log names the passing check; fails when the check does not exist or selects no cases.
@@ -83,3 +98,44 @@ slice replaces the comment with a check.
 `_techspec.md` → Build Order 8; Integration Points: the review tool; Testing
 Approach: the rule-source reachability check. `_prd.md` → Core Feature 9; Goal 5;
 User Story 5.
+
+## Result
+
+Implemented the two path-anchored review exclusions and replaced the unsafe
+repository-wide rule-source globs with root-anchored patterns. The canonical
+docs-contract suite now reads `.coderabbit.yaml`, resolves its path filters,
+checks whether any rule-source glob can reach either protected tree, and derives
+the expected history-root comment from `internal/spec.ArchiveDir`.
+
+Focused checks:
+
+- Before the configuration edit,
+  `rtk go test -tags docscontract ./internal/docscontract -run '^TestReviewHistoryConfiguration$'`
+  failed because `!docs/history/**` was absent.
+- After the edits,
+  `rtk go test -tags docscontract ./internal/docscontract -run '^TestReviewHistoryConfiguration'`
+  passed all seven selected cases. These include injected `**/AGENTS.md` and
+  `docs/specs/**/reviews/**/*.md` rule sources, plus configurations with each
+  required exclusion removed.
+- `rtk go test -tags docscontract ./internal/docscontract` ran 62 tests: 60
+  passed and the two existing Spec-wide corpus checks failed on the planned,
+  out-of-scope `HistoryMove` and `historyMoves` glossary findings and their
+  golden count. No Task 08 review-history case failed.
+- The Task's declared `## Verification` commands were not run; the Daemon owns
+  those commands and settlement.
+
+Acceptance evidence:
+
+- The shipped `!docs/history/**` pattern resolves against
+  `docs/history/specs/example/_prd.md` and excludes it.
+- The shipped `!docs/specs/**/reviews/**` pattern resolves against
+  `docs/specs/example/reviews/round-01/issue.md`; removing that pattern proves
+  the pre-Task filters do not exclude the path.
+- Each injected unsafe rule-source pattern is rejected, and the error names the
+  offending pattern.
+- Removing either required exclusion makes the protected path reachable and
+  makes validation fail with the missing pattern and path named.
+- `readReviewConfiguration` loads the repository-root `.coderabbit.yaml`; no
+  copied pattern list is used as the configuration under test.
+- The configuration comment names `docs/history/`, derived in the check from
+  the resolver's `docs/history/specs` answer.

@@ -1119,7 +1119,14 @@ func ResolveReviewRoot(ctx ReviewArtifactContext) (string, error) {
 	}
 	prDir := fmt.Sprintf("pr-%d", ctx.PRNumber)
 	if explicit := strings.TrimSpace(ctx.ExplicitArtifactDir); explicit != "" {
-		return filepath.Join(explicit, "reviews", prDir), nil
+		resolved := filepath.Join(explicit, "reviews", prDir)
+		if strings.TrimSpace(ctx.RepoRoot) == "" {
+			return "", errors.New("repository root is required to keep Review artifacts out of history")
+		}
+		if reviewRootInsideHistory(ctx.RepoRoot, resolved) {
+			return "", fmt.Errorf("Review artifact root %q must not be inside repository history", resolved)
+		}
+		return resolved, nil
 	}
 
 	specsRoot := strings.TrimSpace(ctx.SpecsRoot)
@@ -1129,11 +1136,71 @@ func ResolveReviewRoot(ctx ReviewArtifactContext) (string, error) {
 			return "", errors.New("Spec Root is required to resolve Review artifact root")
 		}
 		specsRoot = filepath.Join(repoRoot, "docs", "specs")
+	} else if strings.TrimSpace(ctx.RepoRoot) == "" {
+		return "", errors.New("repository root is required to keep Review artifacts out of history")
+	}
+	if reviewRootInsideHistory(ctx.RepoRoot, specsRoot) {
+		repoRoot := strings.TrimSpace(ctx.RepoRoot)
+		if repoRoot == "" {
+			return "", errors.New("repository root is required to keep Review artifacts out of history")
+		}
+		specsRoot = filepath.Join(repoRoot, "docs", "specs")
 	}
 	if slug := strings.TrimSpace(ctx.SpecSlug); slug != "" && reviewSpecDirExists(specsRoot, slug) {
 		return filepath.Join(specsRoot, slug, "reviews"), nil
 	}
-	return filepath.Join(specsRoot, "_reviews", prDir), nil
+	live := filepath.Join(specsRoot, "reviews", prDir)
+	if reviewPRDirExists(specsRoot, prDir) {
+		return live, nil
+	}
+	if legacy := filepath.Join(specsRoot, "_reviews", prDir); reviewPRDirExistsAt(legacy) {
+		return legacy, nil
+	}
+	return live, nil
+}
+
+func reviewPRDirExists(specsRoot string, prDir string) bool {
+	return reviewPRDirExistsAt(filepath.Join(specsRoot, "reviews", prDir))
+}
+
+func reviewPRDirExistsAt(prDirPath string) bool {
+	info, err := os.Stat(prDirPath)
+	return err == nil && info.IsDir()
+}
+
+func reviewRootInsideHistory(repoRoot string, path string) bool {
+	repoRoot = strings.TrimSpace(repoRoot)
+	if repoRoot == "" {
+		return false
+	}
+	canonicalPath := canonicalizeResolvedPath(path)
+	canonicalRepoRoot := canonicalizeResolvedPath(repoRoot)
+	return pathInsideOrSame(canonicalPath, filepath.Join(canonicalRepoRoot, "docs", "history"))
+}
+
+// canonicalizeResolvedPath resolves every symbolic link on the longest existing
+// prefix of path and rejoins the remaining components verbatim, so containment
+// checks reject a configured root that aliases a protected directory even when
+// the review subdirectory below it does not exist yet.
+func canonicalizeResolvedPath(path string) string {
+	original := filepath.Clean(path)
+	candidate := original
+	var tail []string
+	for {
+		resolved, err := filepath.EvalSymlinks(candidate)
+		if err == nil {
+			for index := len(tail) - 1; index >= 0; index-- {
+				resolved = filepath.Join(resolved, tail[index])
+			}
+			return filepath.Clean(resolved)
+		}
+		parent := filepath.Dir(candidate)
+		if parent == candidate {
+			return original
+		}
+		tail = append(tail, filepath.Base(candidate))
+		candidate = parent
+	}
 }
 
 func reviewSpecDirExists(specsRoot string, slug string) bool {

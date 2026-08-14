@@ -420,6 +420,73 @@ func TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles(t *testi
 	}
 }
 
+func TestBaselinePlanHistoryRelocationTextAndExitStatus(t *testing.T) {
+	t.Parallel()
+
+	repository := newBaselinePlanTestRepository(t)
+	writeBaselinePlanTestFile(t, repository, ".agents/skills/context7/SKILL.md", "# context7\n")
+	writeBaselinePlanTestFile(t, repository, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
+	writeBaselinePlanTestFile(t, repository, "Makefile", "verify:\n\t@true\n")
+	commitBaselinePlanTestRepository(t, repository)
+
+	currentArgs := baselinePlanCharacterizationArgs(repository, "greenfield")
+	currentArgs[len(currentArgs)-1] = "--format=text"
+	var currentOut bytes.Buffer
+	var currentErr bytes.Buffer
+	currentExit := RunContext(
+		context.Background(),
+		currentArgs,
+		&currentOut,
+		&currentErr,
+	)
+	if currentExit != exitOK || currentErr.Len() != 0 {
+		t.Fatalf(
+			"current-layout plan exit = %d stdout=%s stderr=%s",
+			currentExit,
+			currentOut.String(),
+			currentErr.String(),
+		)
+	}
+	if strings.Contains(currentOut.String(), "History moves:") {
+		t.Fatalf("current-layout text reports history moves:\n%s", currentOut.String())
+	}
+
+	const source = "docs/specs/_archived/0001-widget/_prd.md"
+	const destination = "docs/history/specs/0001-widget/_prd.md"
+	const content = "legacy PRD\n"
+	writeBaselinePlanTestFile(t, repository, source, content)
+	commitBaselinePlanTestRepository(t, repository)
+
+	legacyArgs := baselinePlanCharacterizationArgs(repository, "greenfield")
+	legacyArgs[len(legacyArgs)-1] = "--format=text"
+	var legacyOut bytes.Buffer
+	var legacyErr bytes.Buffer
+	legacyExit := RunContext(
+		context.Background(),
+		legacyArgs,
+		&legacyOut,
+		&legacyErr,
+	)
+	if legacyExit != currentExit || legacyErr.Len() != 0 {
+		t.Fatalf(
+			"legacy-layout plan exit = %d, want %d stdout=%s stderr=%s",
+			legacyExit,
+			currentExit,
+			legacyOut.String(),
+			legacyErr.String(),
+		)
+	}
+	for _, want := range []string{
+		"History moves: 1",
+		"- move " + source + " -> " + destination,
+		"sha256:",
+	} {
+		if !strings.Contains(legacyOut.String(), want) {
+			t.Fatalf("legacy-layout text missing %q:\n%s", want, legacyOut.String())
+		}
+	}
+}
+
 func TestBaselinePlanAdoptionAndDecisionCharacterizationCorpus(t *testing.T) {
 	t.Parallel()
 

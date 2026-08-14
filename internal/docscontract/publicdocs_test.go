@@ -13,15 +13,19 @@ package docscontract
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
+	"gopkg.in/yaml.v3"
 	"roundfix/internal/agent"
 	"roundfix/internal/baseline"
 	"roundfix/internal/cli"
+	"roundfix/internal/spec"
 )
 
 func TestBaselineDocumentationContract(t *testing.T) {
@@ -661,6 +665,281 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestReviewHistoryConfiguration(t *testing.T) {
+	t.Parallel()
+	configurationPath := filepath.Join(baselineDocumentationRepoRoot(), ".coderabbit.yaml")
+	historyRoot := path.Dir(spec.ArchiveDir(spec.ArchiveKindSpec))
+	wantComment := "# history root: " + historyRoot + "/ (must match internal/spec.ArchiveDir)"
+	if content := mustRead(t, configurationPath); !strings.Contains(content, wantComment) {
+		t.Fatalf("%s does not name the resolved history root in comment %q", configurationPath, wantComment)
+	}
+	if err := validateReviewHistoryConfiguration(readReviewConfiguration(t)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestReviewHistoryConfigurationRejectsReachableRuleSources(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		pattern string
+	}{
+		{
+			name:    "history root",
+			pattern: "**/AGENTS.md",
+		},
+		{
+			name:    "Spec-owned review directory",
+			pattern: "docs/specs/**/reviews/**/*.md",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			configuration := readReviewConfiguration(t)
+			configuration.KnowledgeBase.CodeGuidelines.FilePatterns = append(
+				append([]string(nil), configuration.KnowledgeBase.CodeGuidelines.FilePatterns...),
+				test.pattern,
+			)
+			err := validateReviewHistoryConfiguration(configuration)
+			if err == nil {
+				t.Fatalf("rule-source pattern %q unexpectedly passed", test.pattern)
+			}
+			if !strings.Contains(err.Error(), test.pattern) {
+				t.Fatalf("error %q does not name offending pattern %q", err, test.pattern)
+			}
+		})
+	}
+}
+
+func TestReviewHistoryConfigurationRequiresExclusions(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		pattern string
+		path    string
+	}{
+		{
+			name:    "history root",
+			pattern: "!docs/history/**",
+			path:    "docs/history/specs/example/_prd.md",
+		},
+		{
+			name:    "Spec-owned review directory",
+			pattern: "!docs/specs/**/reviews/**",
+			path:    "docs/specs/example/reviews/round-01/issue.md",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			configuration := readReviewConfiguration(t)
+			configuration.Reviews.PathFilters = reviewPatternsWithout(
+				configuration.Reviews.PathFilters,
+				test.pattern,
+			)
+			excluded, matchErr := reviewPathExcluded(configuration.Reviews.PathFilters, test.path)
+			if matchErr != nil {
+				t.Fatal(matchErr)
+			}
+			if excluded {
+				t.Fatalf("path %q remains excluded without %q", test.path, test.pattern)
+			}
+			err := validateReviewHistoryConfiguration(configuration)
+			if err == nil {
+				t.Fatalf("configuration without %q unexpectedly passed", test.pattern)
+			}
+			if !strings.Contains(err.Error(), test.pattern) || !strings.Contains(err.Error(), test.path) {
+				t.Fatalf("error %q does not name required pattern %q and protected path %q", err, test.pattern, test.path)
+			}
+		})
+	}
+}
+
+type reviewConfiguration struct {
+	Reviews struct {
+		PathFilters []string `yaml:"path_filters"`
+	} `yaml:"reviews"`
+	KnowledgeBase struct {
+		CodeGuidelines struct {
+			FilePatterns []string `yaml:"filePatterns"`
+		} `yaml:"code_guidelines"`
+	} `yaml:"knowledge_base"`
+}
+
+func readReviewConfiguration(t *testing.T) reviewConfiguration {
+	t.Helper()
+	configurationPath := filepath.Join(baselineDocumentationRepoRoot(), ".coderabbit.yaml")
+	var configuration reviewConfiguration
+	if err := yaml.Unmarshal([]byte(mustRead(t, configurationPath)), &configuration); err != nil {
+		t.Fatalf("parse %s: %v", configurationPath, err)
+	}
+	return configuration
+}
+
+func validateReviewHistoryConfiguration(configuration reviewConfiguration) error {
+	historyRoot := path.Dir(spec.ArchiveDir(spec.ArchiveKindSpec))
+	requiredExclusions := []struct {
+		pattern string
+		path    string
+	}{
+		{
+			pattern: "!" + historyRoot + "/**",
+			path:    spec.ArchiveDir(spec.ArchiveKindSpec) + "/example/_prd.md",
+		},
+		{
+			pattern: "!docs/specs/**/reviews/**",
+			path:    "docs/specs/example/reviews/round-01/issue.md",
+		},
+	}
+	for _, required := range requiredExclusions {
+		if !reviewPatternPresent(configuration.Reviews.PathFilters, required.pattern) {
+			return fmt.Errorf("reviews.path_filters must contain %q to exclude %q", required.pattern, required.path)
+		}
+		excluded, err := reviewPathExcluded(configuration.Reviews.PathFilters, required.path)
+		if err != nil {
+			return err
+		}
+		if !excluded {
+			return fmt.Errorf("reviews.path_filters do not exclude %q", required.path)
+		}
+	}
+
+	protectedRoots := []string{
+		historyRoot,
+		"docs/specs/example/reviews",
+	}
+	for _, pattern := range configuration.KnowledgeBase.CodeGuidelines.FilePatterns {
+		for _, root := range protectedRoots {
+			matched, err := reviewGlobCanReach(pattern, root)
+			if err != nil {
+				return fmt.Errorf("knowledge_base.code_guidelines.filePatterns pattern %q: %w", pattern, err)
+			}
+			if matched {
+				return fmt.Errorf(
+					"knowledge_base.code_guidelines.filePatterns pattern %q reaches protected review tree under %q",
+					pattern,
+					root,
+				)
+			}
+		}
+	}
+	return nil
+}
+
+func reviewPatternPresent(patterns []string, required string) bool {
+	for _, pattern := range patterns {
+		if pattern == required {
+			return true
+		}
+	}
+	return false
+}
+
+func reviewPatternsWithout(patterns []string, removed string) []string {
+	result := make([]string, 0, len(patterns))
+	for _, pattern := range patterns {
+		if pattern != removed {
+			result = append(result, pattern)
+		}
+	}
+	return result
+}
+
+func reviewPathExcluded(patterns []string, candidate string) (bool, error) {
+	for _, pattern := range patterns {
+		if !strings.HasPrefix(pattern, "!") {
+			continue
+		}
+		matched, err := matchReviewGlob(strings.TrimPrefix(pattern, "!"), candidate)
+		if err != nil {
+			return false, fmt.Errorf("reviews.path_filters pattern %q: %w", pattern, err)
+		}
+		if matched {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func reviewGlobCanReach(pattern, protectedRoot string) (bool, error) {
+	patternSegments := strings.Split(strings.Trim(pattern, "/"), "/")
+	rootSegments := strings.Split(strings.Trim(protectedRoot, "/"), "/")
+	for _, segment := range patternSegments {
+		if segment == "**" {
+			continue
+		}
+		if _, err := path.Match(segment, ""); err != nil {
+			return false, err
+		}
+	}
+
+	var search func(int, int) (bool, error)
+	search = func(patternIndex, rootIndex int) (bool, error) {
+		if rootIndex == len(rootSegments) {
+			return patternIndex < len(patternSegments), nil
+		}
+		if patternIndex == len(patternSegments) {
+			return false, nil
+		}
+
+		patternSegment := patternSegments[patternIndex]
+		if patternSegment == "**" {
+			skipped, err := search(patternIndex+1, rootIndex)
+			if err != nil || skipped {
+				return skipped, err
+			}
+			return search(patternIndex, rootIndex+1)
+		}
+
+		matched, err := path.Match(patternSegment, rootSegments[rootIndex])
+		if err != nil || !matched {
+			return false, err
+		}
+		return search(patternIndex+1, rootIndex+1)
+	}
+	return search(0, 0)
+}
+
+func matchReviewGlob(pattern, candidate string) (bool, error) {
+	patternSegments := strings.Split(strings.Trim(pattern, "/"), "/")
+	candidateSegments := strings.Split(strings.Trim(candidate, "/"), "/")
+	for _, segment := range patternSegments {
+		if segment == "**" {
+			continue
+		}
+		if _, err := path.Match(segment, ""); err != nil {
+			return false, err
+		}
+	}
+
+	var match func(int, int) (bool, error)
+	match = func(patternIndex, candidateIndex int) (bool, error) {
+		if patternIndex == len(patternSegments) {
+			return candidateIndex == len(candidateSegments), nil
+		}
+		if patternSegments[patternIndex] == "**" {
+			for index := candidateIndex; index <= len(candidateSegments); index++ {
+				matched, err := match(patternIndex+1, index)
+				if err != nil {
+					return false, err
+				}
+				if matched {
+					return true, nil
+				}
+			}
+			return false, nil
+		}
+		if candidateIndex == len(candidateSegments) {
+			return false, nil
+		}
+		matched, err := path.Match(patternSegments[patternIndex], candidateSegments[candidateIndex])
+		if err != nil || !matched {
+			return false, err
+		}
+		return match(patternIndex+1, candidateIndex+1)
+	}
+	return match(0, 0)
 }
 
 func assertAgentStartingExamplesUseProfilesOrCompleteOverrides(t *testing.T, label string, content string) {

@@ -3304,7 +3304,7 @@ func TestResolveReviewRoot(t *testing.T) {
 				RepoRoot: repoRoot,
 				PRNumber: 123,
 			},
-			want: filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-123"),
+			want: filepath.Join(repoRoot, "docs", "specs", "reviews", "pr-123"),
 		},
 		{
 			name: "existing spec under external root stores rounds under external spec reviews",
@@ -3323,7 +3323,7 @@ func TestResolveReviewRoot(t *testing.T) {
 				SpecSlug: "9999-missing",
 				PRNumber: 123,
 			},
-			want: filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-123"),
+			want: filepath.Join(repoRoot, "docs", "specs", "reviews", "pr-123"),
 		},
 	}
 
@@ -3338,6 +3338,165 @@ func TestResolveReviewRoot(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReviewArtifactRootNeverResolvesIntoHistory(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	t.Run("retired Spec falls back to the live orphan root", func(t *testing.T) {
+		specSlug := "0001-retired-widget-flow"
+		historySpecsRoot := filepath.Join(repoRoot, "docs", "history", "specs")
+		mustMkdir(t, filepath.Join(historySpecsRoot, specSlug))
+
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			RepoRoot:  repoRoot,
+			SpecsRoot: historySpecsRoot,
+			SpecSlug:  specSlug,
+			PRNumber:  123,
+		})
+		if err != nil {
+			t.Fatalf("ResolveReviewRoot() error = %v", err)
+		}
+		want := filepath.Join(repoRoot, "docs", "specs", "reviews", "pr-123")
+		if got != want {
+			t.Fatalf("ResolveReviewRoot() = %q, want live root %q", got, want)
+		}
+		historyRoot := filepath.Join(repoRoot, "docs", "history")
+		if strings.HasPrefix(got, historyRoot+string(filepath.Separator)) {
+			t.Fatalf("ResolveReviewRoot() = %q under repository history %q", got, historyRoot)
+		}
+	})
+
+	t.Run("explicit artifact directory inside history is refused", func(t *testing.T) {
+		historyArtifactDir := filepath.Join(repoRoot, "docs", "history", "artifacts")
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			ExplicitArtifactDir: historyArtifactDir,
+			RepoRoot:            repoRoot,
+			PRNumber:            123,
+		})
+		if err == nil {
+			t.Fatalf("ResolveReviewRoot() = %q, want history refusal", got)
+		}
+		if got != "" {
+			t.Fatalf("ResolveReviewRoot() returned %q with history refusal", got)
+		}
+	})
+
+	t.Run("explicit artifact directory requires a repository root", func(t *testing.T) {
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			ExplicitArtifactDir: filepath.Join(repoRoot, "docs", "history", "artifacts"),
+			PRNumber:            123,
+		})
+		if err == nil {
+			t.Fatalf("ResolveReviewRoot() = %q, want repository-root refusal", got)
+		}
+		if !strings.Contains(err.Error(), "repository root") {
+			t.Fatalf("ResolveReviewRoot() error = %q, want repository-root requirement", err)
+		}
+	})
+
+	t.Run("explicit specs root requires a repository root", func(t *testing.T) {
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			SpecsRoot: filepath.Join(repoRoot, "docs", "history", "specs"),
+			PRNumber:  123,
+		})
+		if err == nil {
+			t.Fatalf("ResolveReviewRoot() = %q, want repository-root refusal", got)
+		}
+		if !strings.Contains(err.Error(), "repository root") {
+			t.Fatalf("ResolveReviewRoot() error = %q, want repository-root requirement", err)
+		}
+	})
+}
+
+func TestResolveReviewRootPrefersLegacyReviewsUntilMigration(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	prNumber := 246
+
+	t.Run("falls back to legacy _reviews root before migration", func(t *testing.T) {
+		legacy := filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-246")
+		mustMkdir(t, legacy)
+
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			RepoRoot:  repoRoot,
+			SpecsRoot: filepath.Join(repoRoot, "docs", "specs"),
+			PRNumber:  prNumber,
+		})
+		if err != nil {
+			t.Fatalf("ResolveReviewRoot() error = %v", err)
+		}
+		want := legacy
+		if got != want {
+			t.Fatalf("ResolveReviewRoot() = %q, want legacy root %q", got, want)
+		}
+	})
+
+	t.Run("prefers the live reviews root when both exist", func(t *testing.T) {
+		mustMkdir(t, filepath.Join(repoRoot, "docs", "specs", "reviews", "pr-246"))
+		mustMkdir(t, filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-246"))
+
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			RepoRoot:  repoRoot,
+			SpecsRoot: filepath.Join(repoRoot, "docs", "specs"),
+			PRNumber:  prNumber,
+		})
+		if err != nil {
+			t.Fatalf("ResolveReviewRoot() error = %v", err)
+		}
+		want := filepath.Join(repoRoot, "docs", "specs", "reviews", "pr-246")
+		if got != want {
+			t.Fatalf("ResolveReviewRoot() = %q, want live root %q", got, want)
+		}
+	})
+}
+
+func TestReviewArtifactRootRejectsHistoryAliasedBySymlink(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := t.TempDir()
+	mustMkdir(t, filepath.Join(repoRoot, "docs", "history"))
+
+	t.Run("explicit artifact directory aliasing history is refused", func(t *testing.T) {
+		alias := filepath.Join(t.TempDir(), "artifacts-alias")
+		if err := os.Symlink(filepath.Join(repoRoot, "docs", "history"), alias); err != nil {
+			t.Fatalf("create artifact symlink: %v", err)
+		}
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			ExplicitArtifactDir: alias,
+			RepoRoot:            repoRoot,
+			PRNumber:            123,
+		})
+		if err == nil {
+			t.Fatalf("ResolveReviewRoot() = %q, want history refusal through symlink", got)
+		}
+		if !strings.Contains(err.Error(), "must not be inside repository history") {
+			t.Fatalf("ResolveReviewRoot() error = %q, want history-refusal message", err)
+		}
+	})
+
+	t.Run("specs root aliasing history falls back out of history", func(t *testing.T) {
+		alias := filepath.Join(t.TempDir(), "specs-root-alias")
+		if err := os.Symlink(filepath.Join(repoRoot, "docs", "history"), alias); err != nil {
+			t.Fatalf("create specs-root symlink: %v", err)
+		}
+		got, err := ResolveReviewRoot(ReviewArtifactContext{
+			RepoRoot:  repoRoot,
+			SpecsRoot: alias,
+			SpecSlug:  "0001-retired-widget-flow",
+			PRNumber:  123,
+		})
+		if err != nil {
+			t.Fatalf("ResolveReviewRoot() error = %v", err)
+		}
+		historyRoot := filepath.Join(repoRoot, "docs", "history")
+		if strings.HasPrefix(got, historyRoot+string(filepath.Separator)) ||
+			got == historyRoot {
+			t.Fatalf("ResolveReviewRoot() = %q under history aliased by specs root %q", got, alias)
+		}
+	})
 }
 
 func mustMkdir(t *testing.T, path string) {

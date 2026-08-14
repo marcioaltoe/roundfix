@@ -50,6 +50,128 @@ func TestBaselineApplyCommand(t *testing.T) {
 	}
 }
 
+func TestBaselineApplyTextReportsHistoryMoves(t *testing.T) {
+	t.Parallel()
+
+	move := baseline.HistoryMove{
+		Ordinal:         0,
+		From:            "docs/specs/_archived/0001-widget/_prd.md",
+		To:              "docs/history/specs/0001-widget/_prd.md",
+		ContentIdentity: "sha256:" + strings.Repeat("a", 64),
+	}
+	result := baseline.Result{
+		SchemaVersion:        baseline.ResultSchemaVersion,
+		Operation:            "apply",
+		State:                "verified",
+		VerifiedPostimages:   []baseline.Postimage{},
+		VerifiedHistoryMoves: []baseline.HistoryMove{move},
+		Warnings:             []baseline.Finding{},
+		Recommendations:      []string{},
+		StatusMatrix: &baseline.ResultStatusMatrix{
+			ApprovedPostimages:     baseline.EvidenceStatusNotRun,
+			SemanticRetention:      baseline.EvidenceStatusNotRun,
+			ProfileAlignment:       baseline.EvidenceStatusNotRun,
+			RepositoryVerification: baseline.EvidenceStatusNotRun,
+			Idempotence:            baseline.EvidenceStatusNotRun,
+		},
+	}
+	var stdout bytes.Buffer
+	if err := writeBaselineApplyResult(result, false, &stdout); err != nil {
+		t.Fatalf("writeBaselineApplyResult() error = %v", err)
+	}
+	for _, want := range []string{
+		"Verified history moves: 1",
+		move.From,
+		move.To,
+		move.ContentIdentity,
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("apply text omits %q:\n%s", want, stdout.String())
+		}
+	}
+}
+
+func TestBaselineApplyCollisionExitStatus(t *testing.T) {
+	t.Parallel()
+
+	repo := newBaselineApplyTestRepository(t)
+	const source = "docs/specs/_archived/0001-widget/_prd.md"
+	const destination = "docs/history/specs/0001-widget/_prd.md"
+	const siblingSource = "docs/specs/_archived/0001-widget/task_01.md"
+	const siblingDestination = "docs/history/specs/0001-widget/task_01.md"
+	writeBaselinePlanTestFile(t, repo, source, "colliding source\n")
+	writeBaselinePlanTestFile(t, repo, destination, "occupied destination\n")
+	writeBaselinePlanTestFile(t, repo, siblingSource, "movable sibling\n")
+	commitBaselinePlanTestRepository(t, repo)
+	plan, planPath := baselineApplyTestPlan(t, repo)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"baseline", "apply",
+		"--repo", repo,
+		"--plan", planPath,
+		"--confirm-plan", plan.PlanDigest,
+		"--format=text",
+	}, &stdout, &stderr)
+	if code != exitUnverified {
+		t.Fatalf("collision apply exit = %d, want %d stdout=%s stderr=%s", code, exitUnverified, stdout.String(), stderr.String())
+	}
+	combined := stdout.String() + stderr.String()
+	for _, want := range []string{
+		"not every history relocation was performed",
+		source,
+		destination,
+		"already exists",
+	} {
+		if !strings.Contains(combined, want) {
+			t.Errorf("collision apply output omits %q:\n%s", want, combined)
+		}
+	}
+	assertBaselineApplyHistoryFile(t, repo, source, "colliding source\n", true)
+	assertBaselineApplyHistoryFile(t, repo, destination, "occupied destination\n", true)
+	assertBaselineApplyHistoryFile(t, repo, siblingSource, "", false)
+	assertBaselineApplyHistoryFile(t, repo, siblingDestination, "movable sibling\n", true)
+
+	stdout.Reset()
+	stderr.Reset()
+	followUpCode := RunContext(context.Background(), []string{
+		"baseline", "update",
+		"--repo", repo,
+		"--no-skills",
+		"--format=text",
+	}, &stdout, &stderr)
+	if followUpCode != exitUnverified || stderr.Len() != 0 {
+		t.Fatalf("collision follow-up exit = %d, want %d stdout=%s stderr=%s", followUpCode, exitUnverified, stdout.String(), stderr.String())
+	}
+	for _, want := range []string{"Baseline update: plan ready", "History moves: 1", source, destination} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("collision follow-up output omits %q:\n%s", want, stdout.String())
+		}
+	}
+	if strings.Contains(stdout.String(), "Baseline update: current") {
+		t.Fatalf("collision follow-up reports current:\n%s", stdout.String())
+	}
+}
+
+func assertBaselineApplyHistoryFile(t *testing.T, repo, relative, want string, exists bool) {
+	t.Helper()
+
+	content, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(relative)))
+	if !exists {
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("read absent history file %q error = %v", relative, err)
+		}
+		return
+	}
+	if err != nil {
+		t.Fatalf("read history file %q: %v", relative, err)
+	}
+	if string(content) != want {
+		t.Fatalf("history file %q = %q, want %q", relative, content, want)
+	}
+}
+
 func TestBaselineApplyStdoutStderrAndExitCodes(t *testing.T) {
 	t.Parallel()
 	t.Run("confirmation refusal is actionable JSON", func(t *testing.T) {

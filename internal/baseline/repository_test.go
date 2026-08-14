@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"reflect"
 	"roundfix/internal/gittest"
@@ -40,6 +41,84 @@ func TestInventoryWalkIgnoresTransientErrorsInsideExcludedTrees(t *testing.T) {
 		builder.blocking[0].Code != "baseline.inventory.path-unreadable" {
 		t.Fatalf("bounded transient path findings = %+v", builder.blocking)
 	}
+}
+
+func TestInventoryBudget(t *testing.T) {
+	t.Parallel()
+
+	const (
+		measuredFleetFiles = 413
+		// vortex measured 12.4 MiB on 2026-08-13. Integer division rounds the
+		// one-decimal measurement down to the nearest whole byte.
+		measuredFleetBytes = 124 * 1024 * 1024 / 10
+	)
+
+	t.Run("measured fleet archive plans and applies", func(t *testing.T) {
+		t.Parallel()
+		repository := newPlanRepository(t)
+		sources := writeInventoryFiles(
+			t,
+			repository,
+			"docs/specs/_archived/fleet-maximum",
+			measuredFleetFiles,
+			measuredFleetBytes,
+		)
+		commitInspectionRepository(t, repository, "seed measured fleet archive")
+
+		plan := buildTestPlan(t, repository)
+		if len(plan.HistoryMoves) != measuredFleetFiles {
+			t.Fatalf("HistoryMoves count = %d, want %d", len(plan.HistoryMoves), measuredFleetFiles)
+		}
+		result, err := ApplyPlan(context.Background(), repository, plan, plan.PlanDigest)
+		if err != nil {
+			t.Fatalf("apply measured fleet archive: %v", err)
+		}
+		if result.State != "verified" {
+			t.Fatalf("apply measured fleet archive state = %q, want verified", result.State)
+		}
+		for _, source := range sources {
+			if _, err := os.Lstat(filepath.Join(repository, filepath.FromSlash(source))); !errors.Is(err, fs.ErrNotExist) {
+				t.Fatalf("archive source %q remains after apply: %v", source, err)
+			}
+			destination := strings.Replace(source, "docs/specs/_archived/", "docs/history/specs/", 1)
+			if info, err := os.Stat(filepath.Join(repository, filepath.FromSlash(destination))); err != nil || !info.Mode().IsRegular() {
+				t.Fatalf("archive destination %q is not a regular file: %v", destination, err)
+			}
+		}
+	})
+
+	t.Run("inventory beyond budget refuses and names limit", func(t *testing.T) {
+		t.Parallel()
+		repository := t.TempDir()
+		paths := writeInventoryFiles(
+			t,
+			repository,
+			"archive",
+			(maxInventoryBytes/maxInventoryFileBytes)+1,
+			maxInventoryBytes+1,
+		)
+
+		snapshot, err := inspectRepositorySnapshot(
+			repository,
+			InventoryRequest{MutablePaths: paths},
+		)
+		if err != nil {
+			t.Fatalf("inspect over-budget inventory: %v", err)
+		}
+		var limit *Finding
+		for index := range snapshot.Blocking {
+			if snapshot.Blocking[index].Code == "baseline.inventory.limit.total-bytes" {
+				limit = &snapshot.Blocking[index]
+				break
+			}
+		}
+		if limit == nil {
+			t.Fatalf("over-budget inventory findings = %+v, want total-byte refusal", snapshot.Blocking)
+		}
+		if want := fmt.Sprintf("carrier bytes exceed %d", maxInventoryBytes); limit.Message != want {
+			t.Fatalf("over-budget inventory message = %q, want %q", limit.Message, want)
+		}
+	})
 }
 
 func TestRepositoryIdentityEquivalentClones(t *testing.T) {
@@ -386,6 +465,31 @@ func writeInspectionFile(t *testing.T, root, relative, content string) {
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write %s: %v", relative, err)
 	}
+}
+
+func writeInventoryFiles(t *testing.T, root, directory string, count, totalBytes int) []string {
+	t.Helper()
+	if count <= 0 || totalBytes < count || totalBytes > count*maxInventoryFileBytes {
+		t.Fatalf("invalid inventory fixture: count=%d totalBytes=%d", count, totalBytes)
+	}
+
+	paths := make([]string, count)
+	remaining := totalBytes
+	for index := range count {
+		filesLeft := count - index
+		size := remaining / filesLeft
+		relative := path.Join(directory, fmt.Sprintf("carrier-%04d.md", index))
+		absolute := filepath.Join(root, filepath.FromSlash(relative))
+		if err := os.MkdirAll(filepath.Dir(absolute), 0o755); err != nil {
+			t.Fatalf("create inventory parent for %s: %v", relative, err)
+		}
+		if err := os.WriteFile(absolute, bytes.Repeat([]byte{'a' + byte(index%26)}, size), 0o644); err != nil {
+			t.Fatalf("write inventory file %s: %v", relative, err)
+		}
+		paths[index] = relative
+		remaining -= size
+	}
+	return paths
 }
 
 func mustInspectionSymlink(t *testing.T, target, path string) {

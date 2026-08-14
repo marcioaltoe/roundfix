@@ -180,6 +180,151 @@ func TestApplyExactDigest(t *testing.T) {
 	}
 }
 
+func TestHistoryMoveApplyReport(t *testing.T) {
+	t.Parallel()
+
+	repo, plan := newHistoryMoveTransactionRepository(t, map[string]string{
+		"_archived/specs/0001-alpha/_prd.md": "alpha prd\n",
+		"_archived/specs/0002-beta/_prd.md":  "beta prd\n",
+	})
+	result, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("ApplyPlan() history moves: %v", err)
+	}
+	if !reflect.DeepEqual(result.VerifiedHistoryMoves, plan.HistoryMoves) {
+		t.Fatalf("verified history moves = %#v, want %#v", result.VerifiedHistoryMoves, plan.HistoryMoves)
+	}
+	encoded, err := MarshalResult(result)
+	if err != nil {
+		t.Fatalf("MarshalResult() history moves: %v", err)
+	}
+	for _, move := range plan.HistoryMoves {
+		for _, detail := range []string{move.From, move.To, move.ContentIdentity} {
+			if !bytes.Contains(encoded, []byte(detail)) {
+				t.Errorf("apply result omits performed history move detail %q:\n%s", detail, encoded)
+			}
+		}
+	}
+
+	reapplied, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("ApplyPlan() already-applied history moves: %v", err)
+	}
+	if len(reapplied.VerifiedHistoryMoves) != 0 {
+		t.Fatalf("already-applied result reports performed history moves = %#v, want none", reapplied.VerifiedHistoryMoves)
+	}
+}
+
+func TestHistoryMoveCollisionRefusesPublicly(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		collision bool
+	}{
+		{name: "occupied destination refuses only its relocation", collision: true},
+		{name: "unoccupied destination keeps apply behavior", collision: false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := newPlanRepository(t)
+			const collisionSource = "docs/specs/_archived/0001-widget/_prd.md"
+			const collisionDestination = "docs/history/specs/0001-widget/_prd.md"
+			const siblingSource = "docs/specs/_archived/0001-widget/task_01.md"
+			const siblingDestination = "docs/history/specs/0001-widget/task_01.md"
+			writeInspectionFile(t, repo, collisionSource, "colliding source\n")
+			writeInspectionFile(t, repo, siblingSource, "movable sibling\n")
+			if test.collision {
+				writeInspectionFile(t, repo, collisionDestination, "occupied destination\n")
+			}
+			commitInspectionRepository(t, repo, "seed history relocation collision")
+
+			plan := buildTestPlan(t, repo)
+			if len(plan.HistoryMoves) != 2 {
+				t.Fatalf("HistoryMoves = %#v, want both outstanding relocations", plan.HistoryMoves)
+			}
+			result, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+			if !test.collision {
+				if err != nil {
+					t.Fatalf("ApplyPlan() without collision error = %v", err)
+				}
+				if len(result.VerifiedHistoryMoves) != 2 {
+					t.Fatalf("verified history moves = %#v, want both relocations", result.VerifiedHistoryMoves)
+				}
+				assertHistoryFile(t, repo, collisionSource, "", false)
+				assertHistoryFile(t, repo, collisionDestination, "colliding source\n", true)
+				assertHistoryFile(t, repo, siblingSource, "", false)
+				assertHistoryFile(t, repo, siblingDestination, "movable sibling\n", true)
+				return
+			}
+
+			var applyErr *ApplyError
+			if !errors.As(err, &applyErr) || applyErr.Kind != ApplyErrorStale {
+				t.Fatalf("ApplyPlan() collision error = %v, want stale action-required refusal", err)
+			}
+			for _, want := range []string{
+				"not every history relocation was performed",
+				collisionSource,
+				collisionDestination,
+				"already exists",
+			} {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("ApplyPlan() collision error omits %q: %v", want, err)
+				}
+			}
+			assertHistoryFile(t, repo, collisionSource, "colliding source\n", true)
+			assertHistoryFile(t, repo, collisionDestination, "occupied destination\n", true)
+			assertHistoryFile(t, repo, siblingSource, "", false)
+			assertHistoryFile(t, repo, siblingDestination, "movable sibling\n", true)
+		})
+	}
+}
+
+func TestUnresolvedLayoutIsNotCurrent(t *testing.T) {
+	t.Parallel()
+
+	repo := newPlanRepository(t)
+	const source = "docs/specs/_archived/0001-widget/_prd.md"
+	const destination = "docs/history/specs/0001-widget/_prd.md"
+	writeInspectionFile(t, repo, source, "colliding source\n")
+	writeInspectionFile(t, repo, destination, "occupied destination\n")
+	commitInspectionRepository(t, repo, "seed unresolved history layout")
+
+	plan := buildTestPlan(t, repo)
+	if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err == nil {
+		t.Fatal("ApplyPlan() collision error = nil, want refused relocation")
+	}
+	followUp := buildTestPlan(t, repo)
+	if len(followUp.FileChanges) != 0 {
+		t.Fatalf("follow-up file changes = %#v, want only the unresolved history relocation", followUp.FileChanges)
+	}
+	if len(followUp.HistoryMoves) != 1 ||
+		followUp.HistoryMoves[0].From != source ||
+		followUp.HistoryMoves[0].To != destination {
+		t.Fatalf("follow-up HistoryMoves = %#v, want outstanding %s -> %s", followUp.HistoryMoves, source, destination)
+	}
+}
+
+func assertHistoryFile(t *testing.T, repo, relative, want string, exists bool) {
+	t.Helper()
+
+	content, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(relative)))
+	if !exists {
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("read absent history file %q error = %v", relative, err)
+		}
+		return
+	}
+	if err != nil {
+		t.Fatalf("read history file %q: %v", relative, err)
+	}
+	if string(content) != want {
+		t.Fatalf("history file %q = %q, want %q", relative, content, want)
+	}
+}
+
 func TestResultStatusMatrix(t *testing.T) {
 	t.Parallel()
 
@@ -270,7 +415,7 @@ func TestCompletionLanguageRequiresRetention(t *testing.T) {
 	t.Run("retention and idempotence without approved postimages", func(t *testing.T) {
 		plan := planWithVerifiedRetention(t, buildTestPlan(t, newPlanRepository(t)))
 		plan.Postimages = nil
-		result := verifiedApplyResult(plan, nil, true)
+		result := verifiedApplyResult(plan, nil, nil, true)
 		assertResultStatusMatrix(t, result, ResultStatusMatrix{
 			ApprovedPostimages:     EvidenceStatusNotRun,
 			SemanticRetention:      EvidenceStatusVerified,
