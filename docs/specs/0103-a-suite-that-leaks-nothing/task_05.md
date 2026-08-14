@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0103-a-suite-that-leaks-nothing
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: test
 complexity: medium
 ---
@@ -55,3 +55,64 @@ late waiter is stranded by construction.
 `_techspec.md` → Build Order 5; Testing Approach, the detach teardown.
 `_prd.md` → Core Feature 2; Goal 2; User Story 2; Non-Goals, the survival
 property.
+
+## Result
+
+### Implementation
+
+- The successful detach fixture now records its PID before reporting Run
+  creation and waits on a release sentinel. The parent confirms that PID still
+  exists after `runDetachedCommand` returns, preserving the survival property
+  while giving teardown an exact process to own.
+- Each proven survivor has a `t.Cleanup` that sends an unconditional kill,
+  writes the cooperative sentinel as a fallback for a late waiter, reaps the
+  child, and fails the test if the PID remains alive. The PID file and sentinel
+  live under a manually managed `os.MkdirTemp("", ...)` directory, which is
+  removed only after exit is proven rather than by the test framework.
+- `TestDetachedChildIsTerminatedAtTeardown` starts a child that deliberately
+  ignores the sentinel. Its cleanup uses the same non-cooperative termination
+  path and asserts that the process is absent afterward.
+
+### Focused checks
+
+- Pre-change source inspection found neither
+  `TestDetachedChildIsTerminatedAtTeardown` nor a detach-test sentinel, which
+  established the missing teardown contract.
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 ./internal/cli -run
+  '^TestDetachedChildIsTerminatedAtTeardown$'` passed in 0.579s after the final
+  teardown implementation.
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 ./internal/cli -run
+  '^(TestRunDetachedCommand|TestRunDetachedReview|TestDetachedChild)'` passed in
+  1.591s, covering all detach tests in the target file and the new teardown
+  assertion together.
+- `GOCACHE=/tmp/roundfix-task05-gocache go test -count=1 ./internal/cli` passed
+  in 41.420s with the package-level suite guard active.
+- `git diff --check` passed after the final code and Result edits.
+
+### Acceptance evidence
+
+- Every spawned process has an exit path: timeout and failed-handshake cases
+  retain their existing kill/wait behavior, while the successful released child
+  is now PID-recorded, killed, reaped, and checked during test cleanup. The
+  complete CLI package check passed with no surviving-child assertion.
+- Termination does not depend on cooperation:
+  `TestDetachedChildIsTerminatedAtTeardown` uses a child mode that never reads
+  the sentinel and still observes the PID absent after cleanup.
+- The sentinel outlives framework cleanup: its path is created below a
+  manually owned OS temporary directory, and that directory is removed only
+  after the child is absent.
+- The survival property remains in the original success-path test unchanged;
+  its helper additionally confirms that the recorded PID is alive after the
+  detached caller returns. The detach-focused sweep passed.
+
+### Not run
+
+- The commands under `## Verification` were not run; the Daemon owns those
+  commands and Task settlement.
+
+### Follow-up
+
+- A Windows test-binary cross-compile remains blocked by pre-existing
+  Unix-specific calls in `internal/cli/implement_test.go` (`syscall.Mkfifo`,
+  `SysProcAttr.Setpgid`, and `syscall.Kill`). This Task does not own that test
+  portability work.
