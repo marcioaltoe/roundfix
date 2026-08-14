@@ -325,6 +325,72 @@ func TestMechanicalEvidencePath(t *testing.T) {
 	assertMechanicalSkip(t, missing, speccheck.DetectorMechanicalEvidencePath, "docs/specs/mechanical/qa/missing.md")
 }
 
+const (
+	evidenceScratchReportPath = "docs/specs/mechanical/qa/qa-report.md"
+	evidenceScratchRoot       = "docs/specs/mechanical/qa/evidence"
+)
+
+func TestEvidenceRefusesScratchStateBinary(t *testing.T) {
+	t.Parallel()
+	repoRoot := newMechanicalGitRepo(t)
+	binaryPath := evidenceScratchRoot + "/roundfix"
+	writeMechanicalFile(t, repoRoot, evidenceScratchReportPath, mechanicalEvidenceReport())
+	writeMechanicalFile(t, repoRoot, binaryPath, "\x7fELF\x00fixture")
+	commitMechanicalFiles(t, repoRoot, "record binary evidence", evidenceScratchReportPath, binaryPath)
+
+	result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: evidenceScratchReportPath})
+
+	findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalEvidencePath)
+	if len(findings) != 1 || !strings.Contains(findings[0].Detail, binaryPath) ||
+		!strings.Contains(findings[0].Detail, "binary") {
+		t.Fatalf("%s findings = %#v, want named binary %s", speccheck.CodeMechanicalEvidencePath, findings, binaryPath)
+	}
+}
+
+func TestEvidenceRefusesScratchStateGitlink(t *testing.T) {
+	t.Parallel()
+	repoRoot := newMechanicalGitRepo(t)
+	gitlinkPath := evidenceScratchRoot + "/scratch-repository"
+	writeMechanicalFile(t, repoRoot, evidenceScratchReportPath, mechanicalEvidenceReport())
+	commitMechanicalFiles(t, repoRoot, "record QA report", evidenceScratchReportPath)
+	target := strings.TrimSpace(runMechanicalGit(t, repoRoot, "rev-parse", "HEAD"))
+	runMechanicalGit(t, repoRoot, "update-index", "--add", "--cacheinfo", "160000,"+target+","+gitlinkPath)
+	runMechanicalGit(t, repoRoot, "commit", "--quiet", "-m", "record gitlink evidence")
+
+	result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: evidenceScratchReportPath})
+
+	findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalEvidencePath)
+	if len(findings) != 1 || !strings.Contains(findings[0].Detail, gitlinkPath) ||
+		!strings.Contains(findings[0].Detail, "gitlink") {
+		t.Fatalf("%s findings = %#v, want named gitlink %s", speccheck.CodeMechanicalEvidencePath, findings, gitlinkPath)
+	}
+}
+
+func TestEvidenceRefusesScratchStateOrdinaryArtifact(t *testing.T) {
+	t.Parallel()
+	repoRoot := newMechanicalGitRepo(t)
+	artifactPath := evidenceScratchRoot + "/result.json"
+	writeMechanicalFile(t, repoRoot, evidenceScratchReportPath, mechanicalEvidenceReport())
+	writeMechanicalFile(t, repoRoot, artifactPath, "{\"result\":\"pass\"}\n")
+	commitMechanicalFiles(t, repoRoot, "record readable evidence", evidenceScratchReportPath, artifactPath)
+
+	result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: evidenceScratchReportPath})
+
+	assertNoMechanicalCode(t, result, speccheck.CodeMechanicalEvidencePath)
+}
+
+func TestEvidenceRefusesScratchStateAbsentDirectory(t *testing.T) {
+	t.Parallel()
+	repoRoot := newMechanicalGitRepo(t)
+	writeMechanicalFile(t, repoRoot, evidenceScratchReportPath, mechanicalEvidenceReport())
+	commitMechanicalFiles(t, repoRoot, "record QA report", evidenceScratchReportPath)
+
+	result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: evidenceScratchReportPath})
+
+	assertNoMechanicalCode(t, result, speccheck.CodeMechanicalEvidencePath)
+	assertMechanicalSkip(t, result, speccheck.DetectorMechanicalEvidencePath, evidenceScratchRoot)
+}
+
 func TestCarriable(t *testing.T) {
 	t.Parallel()
 
@@ -799,6 +865,16 @@ func mechanicalCarriedReport(establishedBy, establishedHead string) string {
 		"| - | --- | --- | --- | --- |\n"+
 		"| R01 | Unchanged evidence | maintainer / backend | carried (established by: %s; head: %s) | inherited |\n",
 		establishedBy, establishedHead)
+}
+
+func mechanicalEvidenceReport() string {
+	return "---\n" +
+		"spec: mechanical-carrier\nstatus: closed\nverdict: pass\n" +
+		"rows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n" +
+		"---\n\n# QA report — evidence fixture\n\n## Results\n\n" +
+		"| # | Story / criterion / sweep | Actor and surface | Status | Evidence |\n" +
+		"| - | --- | --- | --- | --- |\n" +
+		"| R01 | Evidence hygiene | maintainer / backend | pass | observed inline |\n"
 }
 
 func mechanicalFindingsWithCode(result speccheck.MechanicalResult, code string) []speccheck.MechanicalFinding {

@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0103-a-suite-that-leaks-nothing
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: low
 ---
@@ -49,3 +49,49 @@ a reference to a tree nobody else has.
 
 `_techspec.md` → Build Order 8. `_prd.md` → Core Feature 7; Goal 5; User
 Story 5; Success Metrics.
+
+## Result
+
+Implementation:
+
+- The mechanical QA stage now inspects tracked entries under the report's
+  sibling `evidence/` directory. It reports mode `160000` entries as Gitlinks
+  and blobs containing binary data as built binaries, naming the offending
+  repository-relative path in each finding.
+- The detector keeps the existing `QA-EVIDENCE-PATH` refusal and presence-aware
+  skip contract. A missing evidence directory records a skip; tracked text and
+  JSON blobs remain accepted.
+
+Focused checks:
+
+- Before the implementation, `GOCACHE=/tmp/roundfix-t08-gocache go test
+  ./internal/speccheck -run '^TestEvidenceRefusesScratchState$'` failed in the
+  binary, Gitlink, and absent-directory cases, establishing the pre-change
+  signal.
+- After the implementation and before Verification feedback,
+  `GOCACHE=/tmp/roundfix-t08-gocache make verify-incremental` exited 0 after
+  format checking, the repository test suite, skill checks, and the build.
+- Verification attempt 1 showed that all four behavioral cases passed but Go
+  indented their nested subtest pass records, so the column-zero count saw only
+  the parent. The cases now use four top-level test functions with the shared
+  `TestEvidenceRefusesScratchState` prefix.
+- After the repair, `GOCACHE=/tmp/roundfix-t08-gocache go test -json
+  ./internal/speccheck -run '^TestEvidenceRefusesScratchState'` exited 0 and
+  emitted four top-level test pass actions.
+- After the repair, `GOCACHE=/tmp/roundfix-t08-gocache go test
+  ./internal/speccheck` exited 0.
+- `git diff --check` exited 0.
+
+Acceptance evidence:
+
+- `TestEvidenceRefusesScratchStateBinary` commits an ELF-shaped blob and
+  requires one finding containing both its path and `binary`.
+- `TestEvidenceRefusesScratchStateGitlink` commits a real mode `160000` index
+  entry and requires one finding containing both its path and `gitlink`.
+- `TestEvidenceRefusesScratchStateOrdinaryArtifact` commits JSON and requires no
+  `QA-EVIDENCE-PATH` finding.
+- `TestEvidenceRefusesScratchStateAbsentDirectory` commits a QA Report without
+  an evidence directory and requires a non-blocking skip naming that directory.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.
