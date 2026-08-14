@@ -101,3 +101,27 @@ Worth settling when this is picked up: whether a gate whose recorded status is
 `failed` should invalidate anything at all, since a failed gate has no result to
 protect; and whether adding a node to a graph should reset a gate that already
 ran, rather than refusing the graph that contains it.
+
+## 2026-08-14, third refusal — Spec 0113's defect, blocking
+
+The corrective Run settled `task_10` and the gate refused again, this time on the
+report the *first* refusal had written:
+
+```text
+QA-REPORT-SHAPE
+  location: docs/specs/0103-.../qa/qa-report-2026-08-14.md:1
+  detail: Results table has no report rows
+  fix: Materialize every planned QA row with one terminal status.
+```
+
+That is Spec 0113's problem statement word for word: a refused gate leaves a
+report its own contract calls malformed, the next run reads it and refuses on it,
+and the prescribed fix is impossible because the refused run never built a matrix
+to materialize rows from. Three consecutive Specs have now met it — 0078, 0095's
+sibling case, and this one — and the pattern is stable enough to design against.
+
+The exit taken here was not deletion. The empty table was given the terminal row
+that records the refusal which produced it, which is exactly what Spec 0113's
+Core Feature 1 proposes a precondition refusal should write in the first place. It
+was applied by hand to one artifact; Spec 0113 is what makes the gate write it.
+
