@@ -1259,7 +1259,7 @@ func TestProveExactSelectionCancelCleanup(t *testing.T) {
 		_, err := harness.runner.ProveExactSelection(ctx, ProbeRequest{Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}, WorkDir: harness.gitRoot})
 		result <- err
 	}()
-	waitForFile(t, started)
+	waitForFile(t, "fake acpx set reasoning_effort fixture", started, result)
 	cancel()
 
 	if err := receiveError(t, result); !errors.Is(err, context.Canceled) {
@@ -1282,7 +1282,7 @@ func TestProveExactSelectionTimeoutCleanup(t *testing.T) {
 		_, err := harness.runner.ProveExactSelection(ctx, ProbeRequest{Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}, WorkDir: harness.gitRoot})
 		result <- err
 	}()
-	waitForFile(t, started)
+	waitForFile(t, "fake acpx sessions show fixture", started, result)
 	ctx.expire()
 	err := receiveError(t, result)
 	if !errors.Is(err, context.DeadlineExceeded) {
@@ -1494,7 +1494,7 @@ func TestACPXProbeCancellationStillClosesDisposableSession(t *testing.T) {
 	go func() {
 		resultCh <- harness.runner.Probe(ctx, ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
 	}()
-	waitForFile(t, startedPath)
+	waitForFile(t, "fake acpx sessions ensure fixture", startedPath, resultCh)
 	cancel()
 
 	err := receiveError(t, resultCh)
@@ -1639,7 +1639,7 @@ func TestACPXProbeFallbackCancellationStillClosesCandidateSession(t *testing.T) 
 		_, _, err := harness.runner.ProbeFallback(ctx, runtime, FallbackCandidateSet{Models: []string{"gpt-working"}})
 		resultCh <- err
 	}()
-	waitForFile(t, startedPath)
+	waitForFile(t, "fake acpx sessions ensure fallback fixture", startedPath, resultCh)
 	cancel()
 
 	err := receiveError(t, resultCh)
@@ -2761,11 +2761,11 @@ func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 		_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
 		resultCh <- err
 	}()
-	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
+	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted, resultCh)
 	cancel()
-	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted, resultCh)
 	graceTimer := clock.waitForTimer(t, 0)
-	harness.waitForMilestone(t, "prompt completion", harness.milestones.promptCompleted)
+	harness.waitForMilestone(t, "prompt completion", harness.milestones.promptCompleted, resultCh)
 
 	err := receiveError(t, resultCh)
 	if !IsStopError(err) {
@@ -2813,9 +2813,9 @@ func TestACPXRunClosesSessionAfterCancelGracePeriod(t *testing.T) {
 		_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
 		resultCh <- err
 	}()
-	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
+	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted, resultCh)
 	cancel()
-	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted, resultCh)
 	graceTimer := clock.waitForTimer(t, 0)
 	if graceTimer.Duration() != harness.stopGrace {
 		t.Fatalf("expected grace timer duration %s, got %s", harness.stopGrace, graceTimer.Duration())
@@ -2823,7 +2823,7 @@ func TestACPXRunClosesSessionAfterCancelGracePeriod(t *testing.T) {
 	if !graceTimer.Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
 		t.Fatal("expected first grace timer fire to trigger fallback close")
 	}
-	harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted)
+	harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted, resultCh)
 	postCloseTimer := clock.waitForTimer(t, 1)
 
 	err := receiveError(t, resultCh)
@@ -2895,15 +2895,22 @@ func TestACPXRunCancellationCommandFailuresWarnAndContinue(t *testing.T) {
 			}()
 			select {
 			case <-promptStarted.done:
+			case err := <-resultCh:
+				select {
+				case <-promptStarted.done:
+					resultCh <- err
+				default:
+					failSpawnedFixtureExit(t, "fake acpx prompt fixture", err, "prompt start event")
+				}
 			case <-time.After(agentWaitBudget):
 				t.Fatalf("timed out waiting for prompt start event; Agent did not start within %s", agentWaitBudget)
 			}
 			cancel()
-			harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+			harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted, resultCh)
 			if !clock.waitForTimer(t, 0).Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
 				t.Fatal("expected grace timer fire to trigger fallback close")
 			}
-			harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted)
+			harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted, resultCh)
 			postCloseTimer := clock.waitForTimer(t, 1)
 
 			err := receiveError(t, resultCh)
@@ -3877,9 +3884,9 @@ func newFakeACPXMilestones(t *testing.T, dir string) fakeACPXMilestones {
 	}
 }
 
-func (harness *fakeACPXHarness) waitForMilestone(t *testing.T, name string, path string) {
+func (harness *fakeACPXHarness) waitForMilestone(t *testing.T, name string, path string, fixtureExit chan error) {
 	t.Helper()
-	waitForACPXMilestone(t, name, path, harness.invocationsPath)
+	waitForACPXMilestone(t, "fake acpx prompt fixture", name, path, harness.invocationsPath, fixtureExit)
 }
 
 func assertCancellationFixturePaths(t *testing.T, harness *fakeACPXHarness) {
@@ -4382,7 +4389,7 @@ func containsInvocation(invocations [][]string, want []string) bool {
 // cancellation clock keeps its own scale.
 const agentWaitBudget = 90 * time.Second
 
-func waitForFile(t *testing.T, path string) {
+func waitForFile(t *testing.T, fixtureName string, path string, fixtureExit chan error) {
 	t.Helper()
 	deadline := time.After(agentWaitBudget)
 	ticker := time.NewTicker(5 * time.Millisecond)
@@ -4394,12 +4401,18 @@ func waitForFile(t *testing.T, path string) {
 		select {
 		case <-deadline:
 			t.Fatalf("timed out waiting for %s", path)
+		case err := <-fixtureExit:
+			if _, statErr := os.Stat(path); statErr == nil {
+				fixtureExit <- err
+				return
+			}
+			failSpawnedFixtureExit(t, fixtureName, err, path)
 		case <-ticker.C:
 		}
 	}
 }
 
-func waitForACPXMilestone(t *testing.T, name string, path string, invocationsPath string) {
+func waitForACPXMilestone(t *testing.T, fixtureName string, name string, path string, invocationsPath string, fixtureExit chan error) {
 	t.Helper()
 	deadline := time.After(agentWaitBudget)
 	ticker := time.NewTicker(5 * time.Millisecond)
@@ -4415,9 +4428,29 @@ func waitForACPXMilestone(t *testing.T, name string, path string, invocationsPat
 				invocations = string(content)
 			}
 			t.Fatalf("timed out waiting for fake acpx %s milestone at %s; invocations so far:\n%s", name, path, invocations)
+		case err := <-fixtureExit:
+			if _, statErr := os.Stat(path); statErr == nil {
+				fixtureExit <- err
+				return
+			}
+			failSpawnedFixtureExit(t, fixtureName, err, name+" milestone at "+path)
 		case <-ticker.C:
 		}
 	}
+}
+
+func failSpawnedFixtureExit(t *testing.T, fixtureName string, err error, awaited string) {
+	t.Helper()
+	status := "exit status 0"
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ProcessState != nil {
+			status = exitErr.ProcessState.String()
+		} else {
+			status = fmt.Sprintf("exit status unavailable (%v)", err)
+		}
+	}
+	t.Fatalf("spawned fixture %q exited with %s before %s", fixtureName, status, awaited)
 }
 
 func receiveError(t *testing.T, resultCh <-chan error) error {
