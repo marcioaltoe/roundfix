@@ -23,7 +23,7 @@ const (
 func TestMain(m *testing.M) {
 	root := os.Getenv(fixtureRootEnv)
 	if root == "" {
-		os.Exit(m.Run())
+		root = filepath.Join("..", "..")
 	}
 	os.Exit(suiteguard.Main(m, root))
 }

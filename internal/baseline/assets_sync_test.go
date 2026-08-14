@@ -14,10 +14,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"roundfix/internal/gittest"
 	"strings"
 	"sync"
 	"testing"
+
+	"roundfix/internal/gittest"
+	"roundfix/internal/suiteguard"
 )
 
 func TestInspectAssetsSyncCheckoutCombinesResolutionQueries(t *testing.T) {
@@ -821,7 +823,7 @@ func assetsSyncOwnedMinimum(t *testing.T, snapshotPath string) string {
 // finish. The template outlives every individual test that copies it, so no
 // single test can own its cleanup.
 func TestMain(m *testing.M) {
-	code := m.Run()
+	code := suiteguard.Main(m, filepath.Join("..", ".."))
 	removeAssetsSyncTemplate()
 	os.Exit(code)
 }

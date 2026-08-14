@@ -19,6 +19,7 @@ import (
 	"roundfix/internal/codex"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/suiteguard"
 )
 
 const (
@@ -55,7 +56,7 @@ func TestMain(m *testing.M) {
 	if os.Getenv(fakeACPXEnv) == "1" {
 		os.Exit(runFakeACPXProcess())
 	}
-	os.Exit(m.Run())
+	os.Exit(suiteguard.Main(m, filepath.Join("..", "..")))
 }
 
 func TestFixtureBinarySurvivesConcurrentExec(t *testing.T) {
