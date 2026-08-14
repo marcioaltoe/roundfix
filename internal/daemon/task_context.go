@@ -100,7 +100,7 @@ func assembleTaskContextBundle(plan TaskPlan, task spec.Task, priorFiles []strin
 			if path, ok := add(ref.Path); ok {
 				bundle.Instructions = append(bundle.Instructions, path)
 			}
-		case spec.ContextKindInterface:
+		case spec.ContextKindInterface, spec.ContextKindCreates:
 			if path, ok := add(ref.Path); ok {
 				bundle.Interfaces = append(bundle.Interfaces, path)
 			}

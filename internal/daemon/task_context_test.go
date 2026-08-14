@@ -25,6 +25,7 @@ func TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFile
 		Context: []spec.TaskContextRef{
 			{Kind: spec.ContextKindInstruction, Path: ".agents/skills/golang-testing/SKILL.md"},
 			{Kind: spec.ContextKindInterface, Path: "internal/spec/task.go"},
+			{Kind: spec.ContextKindCreates, Path: "internal/generated/client.go"},
 		},
 	}
 	prior := make([]string, 0, 205)
@@ -49,22 +50,23 @@ func TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFile
 		".agents/skills/implement-task/SKILL.md",
 		".agents/skills/golang-testing/SKILL.md",
 		"internal/spec/task.go",
+		"internal/generated/client.go",
 	} {
 		if !bundleContainsPath(bundle, expected) {
 			t.Fatalf("expected reserved path %q in bundle, got %+v", expected, bundle)
 		}
 	}
-	if len(bundle.PriorChangedFiles) != specContextBundlePathLimit-7 {
-		t.Fatalf("prior file count = %d, want %d", len(bundle.PriorChangedFiles), specContextBundlePathLimit-7)
+	if len(bundle.PriorChangedFiles) != specContextBundlePathLimit-8 {
+		t.Fatalf("prior file count = %d, want %d", len(bundle.PriorChangedFiles), specContextBundlePathLimit-8)
 	}
-	if bundle.OmittedPriorFiles != 12 {
-		t.Fatalf("OmittedPriorFiles = %d, want 12", bundle.OmittedPriorFiles)
+	if bundle.OmittedPriorFiles != 13 {
+		t.Fatalf("OmittedPriorFiles = %d, want 13", bundle.OmittedPriorFiles)
 	}
 	if bundle.PriorChangedFiles[0] != "prior/file_000.go" {
 		t.Fatalf("prior files not sorted, first = %q", bundle.PriorChangedFiles[0])
 	}
-	if got := bundle.PriorChangedFiles[len(bundle.PriorChangedFiles)-1]; got != "prior/file_192.go" {
-		t.Fatalf("prior cap ended at %q, want prior/file_192.go", got)
+	if got := bundle.PriorChangedFiles[len(bundle.PriorChangedFiles)-1]; got != "prior/file_191.go" {
+		t.Fatalf("prior cap ended at %q, want prior/file_191.go", got)
 	}
 }
 

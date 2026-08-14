@@ -10,7 +10,8 @@ complexity: low
 
 ## Context
 
-- instruction: `missing/guide.md`
+- creates: `generated/client.go`
+- interface: `missing/guide.md`
 
 ## Verification
 

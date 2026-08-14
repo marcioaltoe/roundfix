@@ -1355,6 +1355,9 @@ func detectTaskCoverageAndContextReferences(
 func detectTaskContextReferences(result *Result, repoRoot, taskPath string, content []byte, refs []spec.TaskContextRef) {
 	taskDisplayPath := artifactDisplayPath(repoRoot, taskPath)
 	for _, ref := range refs {
+		if ref.Kind == spec.ContextKindCreates {
+			continue
+		}
 		if repositoryPathExists(repoRoot, ref.Path) {
 			continue
 		}

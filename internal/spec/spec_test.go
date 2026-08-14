@@ -981,6 +981,93 @@ func TestLoadParsesOptionalTaskContext(t *testing.T) {
 	}
 }
 
+func TestContextDeclaredOutput(t *testing.T) {
+	t.Parallel()
+
+	load := func(t *testing.T, contextSection string) (*Graph, error) {
+		t.Helper()
+		gitRoot := t.TempDir()
+		specsRoot := defaultSpecsRoot(gitRoot)
+		writeSpecDir(t, specsRoot, "demo", map[string]string{
+			"_prd.md": prdFixture("active"),
+			"_tasks.md": manifestFixture("spec-tasks/v1", `    - id: task_01
+      file: task_01.md
+      needs: []
+`),
+			"task_01.md": taskFixture(
+				"task_01",
+				"Declared output",
+				"pending",
+				"backend",
+				md(contextSection)+defaultVerificationSection,
+			),
+		})
+		return Load(specsRoot, "demo")
+	}
+
+	t.Run("accepts a clean repository-relative output", func(t *testing.T) {
+		graph, err := load(t, "## Context\n\n- creates: 'internal/generated/client.go'\n\n")
+		if err != nil {
+			t.Fatalf("Load: %v", err)
+		}
+		want := []TaskContextRef{{Kind: ContextKindCreates, Path: "internal/generated/client.go"}}
+		if !slices.Equal(graph.Tasks[0].Context, want) {
+			t.Fatalf("Context = %+v, want %+v", graph.Tasks[0].Context, want)
+		}
+	})
+
+	tooMany := strings.Builder{}
+	tooMany.WriteString("## Context\n\n")
+	for index := 0; index < maxTaskContextRefs; index++ {
+		tooMany.WriteString(fmt.Sprintf("- interface: 'internal/input_%02d.go'\n", index))
+	}
+	tooMany.WriteString("- creates: 'internal/generated/client.go'\n")
+
+	tests := []struct {
+		name    string
+		context string
+		want    string
+	}{
+		{
+			name:    "refuses an absolute output",
+			context: "## Context\n\n- creates: '/tmp/client.go'\n\n",
+			want:    "repository-relative",
+		},
+		{
+			name:    "refuses an unclean output",
+			context: "## Context\n\n- creates: 'internal/../client.go'\n\n",
+			want:    "clean",
+		},
+		{
+			name: "refuses a duplicate output",
+			context: "## Context\n\n" +
+				"- creates: 'internal/generated/client.go'\n" +
+				"- creates: 'internal/generated/client.go'\n\n",
+			want: "unique",
+		},
+		{
+			name:    "counts the output in the entry ceiling",
+			context: tooMany.String(),
+			want:    "more than 50",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := load(t, tt.context)
+			if err == nil {
+				t.Fatal("Load succeeded, want Task Context validation error")
+			}
+			var contextErr TaskContextError
+			if !errors.As(err, &contextErr) {
+				t.Fatalf("error = %v, want TaskContextError", err)
+			}
+			if !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("error %q does not contain %q", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestLoadRejectsInvalidTaskContext(t *testing.T) {
 	t.Parallel()
 	tooMany := strings.Builder{}

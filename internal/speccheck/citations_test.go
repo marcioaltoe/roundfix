@@ -494,6 +494,22 @@ func TestCheckReferenceUnresolved(t *testing.T) {
 	}
 }
 
+func TestContextDeclaredOutput(t *testing.T) {
+	t.Parallel()
+
+	result := checkFixture(t, "reference-unresolved")
+	findings := findingsWithCode(result, speccheck.CodeReferenceUnresolved)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want only the mistyped input", speccheck.CodeReferenceUnresolved, findings)
+	}
+	if !strings.Contains(findings[0].Summary, "missing/guide.md") {
+		t.Fatalf("summary = %q, want mistyped input path", findings[0].Summary)
+	}
+	if strings.Contains(findings[0].Summary, "generated/client.go") {
+		t.Fatalf("summary = %q, declared output must not require existence", findings[0].Summary)
+	}
+}
+
 func TestCheckReferenceIndexUnresolved(t *testing.T) {
 	t.Parallel()
 
