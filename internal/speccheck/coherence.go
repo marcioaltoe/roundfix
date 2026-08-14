@@ -57,6 +57,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeReferenceUnresolved, stage: StageTasks},
 	{code: CodeVerifyWorkIndependent, stage: StageTasks},
 	{code: CodeVerifyInvertedExit, stage: StageTasks},
+	{code: CodeVerifyNonHermetic, stage: StageTasks},
 	// SC-VERIFY-VACUOUS-COMMAND is registered but not staged: disabled by
 	// maintainer decision on 2026-08-10 until the loop-performance work in
 	// docs/backlog/2026-08-10-the-loop-is-measured-and-the-gate-is-where-it-costs.md

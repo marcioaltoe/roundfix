@@ -1,10 +1,11 @@
-// Suite: work-independent Task Verification classification
-// Invariant: Tasks whose declared commands are all repository gates or clean-tree checks are classified independently of prose or status.
+// Suite: static Task Verification classification
+// Invariant: Authored commands are classified from their declared shell form, independently of prose or status.
 // Boundary IN: parsed Task Verification commands and the public detector
 // Boundary OUT: Markdown parsing, CLI rendering, and Daemon Verification execution
 package speccheck_test
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -83,6 +84,21 @@ func TestWorkIndependentVerificationRefusesOnlyWorkIndependentCommands(t *testin
 			}
 		})
 	}
+
+	t.Run("task creates temporary artifact in an earlier command", func(t *testing.T) {
+		t.Parallel()
+
+		findings := speccheck.NonHermeticVerification(spec.Task{
+			File: "fixture/task_01.md",
+			Verification: []string{
+				`go test ./internal/store > /tmp/task.log 2>&1`,
+				`grep -q '^ok' /tmp/task.log`,
+			},
+		})
+		if len(findings) != 0 {
+			t.Fatalf("NonHermeticVerification() = %#v, want Task-created path permitted", findings)
+		}
+	})
 }
 
 func TestVerifyInvertedExit(t *testing.T) {
@@ -177,6 +193,164 @@ func TestVerifyInvertedExitSkipsWithoutTaskGraph(t *testing.T) {
 	}
 	if !hasSkip(result, speccheck.CodeVerifyInvertedExit, "_tasks.md") {
 		t.Fatalf("Skipped = %#v, want %s missing _tasks.md", result.Skipped, speccheck.CodeVerifyInvertedExit)
+	}
+}
+
+func TestVerifyNonHermetic(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		command  string
+		wantForm string
+	}{
+		{
+			name:     "undeclared environment variable",
+			command:  `go test ./internal/store -run "$TASK_04_BASELINE"`,
+			wantForm: "undeclared environment variable TASK_04_BASELINE",
+		},
+		{
+			name:     "environment presence guard",
+			command:  `test -n "$VORTEX_POSTGRES_INTEGRATION_URL" && go test ./internal/store`,
+			wantForm: "environment-presence guard VORTEX_POSTGRES_INTEGRATION_URL",
+		},
+		{
+			name:     "external temporary tree snapshot",
+			command:  `diff /tmp/task-before.tree current.tree`,
+			wantForm: "external path /tmp/task-before.tree",
+		},
+		{
+			name:    "redirect creates temporary artifact before reading it",
+			command: `go test ./internal/store -run '^TestStore$' -v > /tmp/task.log 2>&1; s=$?; grep -q '^--- PASS: TestStore' /tmp/task.log || { cat /tmp/task.log; exit 1; }; exit $s`,
+		},
+		{
+			name:    "command declares its own shell variable",
+			command: `expected=PASS; test "$expected" = PASS`,
+		},
+		{
+			name:    "single quoted variable text is literal",
+			command: `grep -q '$DOCUMENTED_VARIABLE' docs/contract.md`,
+		},
+		{
+			name:    "read declares a command local variable",
+			command: `printf 4 | { read n; test "$n" -ge 4; }`,
+		},
+		{
+			name:    "for declares its iteration variable",
+			command: `for form in alpha beta; do test -n "$form"; done`,
+		},
+		{
+			name:    "command creates external directory before reading it",
+			command: `mkdir -p /tmp/task-fixture; test -d /tmp/task-fixture`,
+		},
+		{
+			name:    "output flag creates executable before running it",
+			command: `go build -o /tmp/task-binary ./cmd/roundfix && /tmp/task-binary version`,
+		},
+		{
+			name:     "external path is read before a later write",
+			command:  `cat /tmp/task.log; go test ./internal/store > /tmp/task.log`,
+			wantForm: "external path /tmp/task.log",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			findings := speccheck.NonHermeticVerification(spec.Task{
+				File:         "fixture/task_01.md",
+				Verification: []string{tt.command},
+			})
+			if tt.wantForm == "" {
+				if len(findings) != 0 {
+					t.Fatalf("NonHermeticVerification(%q) = %#v, want no finding", tt.command, findings)
+				}
+				return
+			}
+			if len(findings) != 1 {
+				t.Fatalf("NonHermeticVerification(%q) = %#v, want one finding", tt.command, findings)
+			}
+			finding := findings[0]
+			if finding.Code != speccheck.CodeVerifyNonHermetic || finding.Severity != speccheck.SeverityError {
+				t.Errorf("finding identity = %s/%s, want %s/%s", finding.Code, finding.Severity, speccheck.CodeVerifyNonHermetic, speccheck.SeverityError)
+			}
+			if !strings.Contains(finding.Summary, tt.wantForm) {
+				t.Errorf("finding summary = %q, want form %q", finding.Summary, tt.wantForm)
+			}
+			if len(finding.Where) != 1 || finding.Where[0].Path != "fixture/task_01.md" {
+				t.Errorf("finding locations = %#v, want the declaring Task", finding.Where)
+			}
+		})
+	}
+}
+
+func TestVerifyNonHermeticRegistersAtTasksStage(t *testing.T) {
+	t.Parallel()
+
+	const slug = "non-hermetic-stage"
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", `---
+spec: non-hermetic-stage
+status: active
+created: 2026-08-14
+surfaces: [backend]
+---
+
+# Non-hermetic stage fixture
+`)
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_tasks.md", `---
+schema: spec-tasks/v1
+spec: non-hermetic-stage
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+---
+`)
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/task_01.md", `---
+task: task_01
+spec: non-hermetic-stage
+status: pending
+type: backend
+complexity: low
+---
+
+# Task 01: Refuse external state
+
+## Verification
+
+- `+"`test -n \"$UNDECLARED_FIXTURE\" && go test ./internal/store`"+`
+`)
+
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks): %v", err)
+	}
+	findings := findingsWithCode(result, speccheck.CodeVerifyNonHermetic)
+	if len(findings) != 1 {
+		t.Fatalf("StageTasks %s findings = %#v, want one", speccheck.CodeVerifyNonHermetic, findings)
+	}
+	if !strings.Contains(findings[0].Summary, "environment-presence guard UNDECLARED_FIXTURE") {
+		t.Errorf("finding summary = %q, want named guard", findings[0].Summary)
+	}
+}
+
+func TestVerifyNonHermeticSkipsWithoutTaskGraph(t *testing.T) {
+	t.Parallel()
+
+	result, err := speccheck.Check(fixtureSpecRoot, "testdata/repo", "no-taskgraph")
+	if err != nil {
+		t.Fatalf("Check(no-taskgraph): %v", err)
+	}
+	if findings := findingsWithCode(result, speccheck.CodeVerifyNonHermetic); len(findings) != 0 {
+		t.Fatalf("%s findings = %#v, want detector skipped", speccheck.CodeVerifyNonHermetic, findings)
+	}
+	if !hasSkip(result, speccheck.CodeVerifyNonHermetic, "_tasks.md") {
+		t.Fatalf("Skipped = %#v, want %s missing _tasks.md", result.Skipped, speccheck.CodeVerifyNonHermetic)
 	}
 }
 

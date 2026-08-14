@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0095-a-verification-that-ran-before-anyone-believed-it
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -53,3 +53,52 @@ dependency on a temporary directory or tree snapshot outside the repository.
 
 `_techspec.md` → Build Order 5; Testing Approach, the static detectors.
 `_prd.md` → Core Feature 3; User Story 4. ADR-0093, ADR-0094.
+
+## Result
+
+Implemented `SC-VERIFY-NON-HERMETIC` as a tasks-stage Spec Consistency Check
+detector. It names undeclared environment-variable references, prioritizes the
+measured `test -n "$VAR" &&` presence-guard diagnosis, and refuses reads from
+paths outside the repository unless an earlier command-local action or Task
+Verification command creates the path. Shell assignments, `read`, and `for`
+variables remain command-local rather than being mistaken for environment
+dependencies. The stable finding code is documented as Non-Hermetic
+Verification in `CONTEXT.md`.
+
+Focused checks:
+
+- Before implementation,
+  `rtk env GOCACHE=/tmp/roundfix-0095-task05-go-cache go test ./internal/speccheck -run '^TestVerifyNonHermetic$/undeclared_environment_variable$' -count=1`
+  exited 1 because `CodeVerifyNonHermetic` and
+  `NonHermeticVerification` did not exist.
+- After the final edits,
+  `rtk env GOCACHE=/tmp/roundfix-0095-task05-go-cache go test ./internal/speccheck -run '^TestVerifyNonHermetic' -count=1`
+  exited 0: `ok roundfix/internal/speccheck 0.419s`.
+- `rtk env GOCACHE=/tmp/roundfix-0095-task05-go-cache go test ./internal/speccheck -count=1`
+  exited 0: `ok roundfix/internal/speccheck 0.879s`.
+- `rtk env GOCACHE=/tmp/roundfix-0095-task05-go-cache go run -buildvcs=false ./cmd/roundfix spec check 0095-a-verification-that-ran-before-anyone-believed-it`
+  exited 0 with `No findings.` The only recorded skip was the existing absent
+  `references/_index.md`; the new detector did not reject this Spec's valid
+  temporary-output chains.
+- `rtk git diff --check` exited 0 with no diagnostics.
+
+Acceptance evidence:
+
+- `TestVerifyNonHermetic` has independent refusal cases for an undeclared
+  environment variable, the environment-presence guard, and an external tree
+  snapshot. Each case asserts `CodeVerifyNonHermetic`, error severity, the
+  declaring Task location, and the named matched form.
+- The same test permits the working redirect that writes and then reads its
+  log in one command. Companion cases permit an output created in an earlier
+  Verification command, an explicit temporary-directory creation, and a
+  binary created with `-o`; a read before a later write remains refused.
+- `TestVerifyNonHermeticSkipsWithoutTaskGraph` checks that the existing
+  `no-taskgraph` fixture produces no finding and records the detector as skipped
+  for missing `_tasks.md`.
+- `TestVerifyNonHermeticRegistersAtTasksStage` loads a complete temporary Task
+  Graph through `CheckStage(StageTasks)` and observes the named refusal. The
+  stage-scope tests also require the code to stay absent from earlier-stage
+  findings and present in their named skip sets.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.

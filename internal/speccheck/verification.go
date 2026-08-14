@@ -12,6 +12,8 @@ const (
 	CodeVerifyWorkIndependent = "SC-VERIFY-WORK-INDEPENDENT"
 	// CodeVerifyInvertedExit identifies a Verification whose shell status reverses or ignores its asserted condition.
 	CodeVerifyInvertedExit = "SC-VERIFY-INVERTED-EXIT"
+	// CodeVerifyNonHermetic identifies a Verification that depends on state outside the repository.
+	CodeVerifyNonHermetic = "SC-VERIFY-NON-HERMETIC"
 	// CodeVerifyVacuousCommand identifies one Verification command that already
 	// passes against the unchanged tree, whatever its siblings prove.
 	CodeVerifyVacuousCommand = "SC-VERIFY-VACUOUS-COMMAND"
@@ -76,6 +78,13 @@ var (
 		`(?:^|(?:&&|\|\||;)\s*)(?:rtk\s+)?test\b[^;&|]*` +
 			`(?:-(?:eq|ne|gt|ge|lt|le)\b|(?:^|\s)(?:=|==|!=)(?:\s|$))`,
 	)
+	shellAssignmentPattern  = regexp.MustCompile(`(?:^|[;&]\s*|\s)([A-Za-z_][A-Za-z0-9_]*)=`)
+	shellReadPattern        = regexp.MustCompile(`(?:^|[;&|{]\s*)read(?:\s+-[A-Za-z]+)*\s+([A-Za-z_][A-Za-z0-9_]*)`)
+	shellForPattern         = regexp.MustCompile(`(?:^|[;&|{]\s*)for\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\b`)
+	environmentGuardPattern = regexp.MustCompile(
+		`(?:^|(?:&&|\|\||;)\s*)(?:rtk\s+)?(?:test\s+-n|\[\s*-n)\s+` +
+			`"?\$(?:\{([A-Za-z_][A-Za-z0-9_]*)[^}]*\}|([A-Za-z_][A-Za-z0-9_]*))`,
+	)
 	// commandChainOpPattern locates the top-level short-circuit and sequence
 	// operators of a shell chain. A single `|` pipe is deliberately excluded:
 	// a pipeline's exit status is decided by its last member, and the
@@ -124,6 +133,11 @@ type invertedExitForm struct {
 	replacement string
 }
 
+type nonHermeticForm struct {
+	name string
+	fix  string
+}
+
 // InvertedExitVerification reports authored commands whose effective shell
 // status is a known reversal of the condition their output appears to assert.
 func InvertedExitVerification(task spec.Task) []Finding {
@@ -165,6 +179,252 @@ func invertedExitVerificationCommand(command string) (invertedExitForm, bool) {
 	default:
 		return invertedExitForm{}, false
 	}
+}
+
+// NonHermeticVerification reports authored commands whose success depends on
+// undeclared environment state or a path outside the repository. A path first
+// created by the same command is command-local state and remains permitted.
+func NonHermeticVerification(task spec.Task) []Finding {
+	var findings []Finding
+	createdPaths := make(map[string]bool)
+	for _, command := range task.Verification {
+		form, matched := nonHermeticVerificationCommand(command, createdPaths)
+		if !matched {
+			continue
+		}
+		findings = append(findings, nonHermeticFinding(task.File, command, form))
+	}
+	return findings
+}
+
+func nonHermeticFinding(taskFile, command string, form nonHermeticForm) Finding {
+	return Finding{
+		Code:     CodeVerifyNonHermetic,
+		Severity: SeverityError,
+		Summary:  taskFile + " declares a Verification command using the " + form.name + " form: " + command,
+		Where:    []Location{{Path: taskFile, Line: 1}},
+		Fix:      form.fix,
+	}
+}
+
+func nonHermeticVerificationCommand(command string, createdPaths map[string]bool) (nonHermeticForm, bool) {
+	assignments := shellAssignments(command)
+	var environmentForm nonHermeticForm
+	if variable, index, ok := environmentGuard(command); ok && !declaredBefore(assignments, variable, index) {
+		environmentForm = nonHermeticForm{
+			name: "environment-presence guard " + variable,
+			fix:  "Remove the presence guard and make the command run from repository-carried state.",
+		}
+	}
+	for _, reference := range shellVariableReferences(command) {
+		if environmentForm.name != "" {
+			break
+		}
+		if declaredBefore(assignments, reference.name, reference.index) {
+			continue
+		}
+		environmentForm = nonHermeticForm{
+			name: "undeclared environment variable " + reference.name,
+			fix:  "Declare " + reference.name + " within the command or replace it with repository-carried input.",
+		}
+	}
+	path, pathDependent := externalDependencyPath(command, createdPaths)
+	if environmentForm.name != "" {
+		return environmentForm, true
+	}
+	if pathDependent {
+		return nonHermeticForm{
+			name: "external path " + path,
+			fix:  "Create " + path + " earlier in the same command before reading it, or use a repository path.",
+		}, true
+	}
+	return nonHermeticForm{}, false
+}
+
+type shellVariableReference struct {
+	name  string
+	index int
+}
+
+func shellVariableReferences(command string) []shellVariableReference {
+	var references []shellVariableReference
+	singleQuoted := false
+	doubleQuoted := false
+	for index := 0; index < len(command); index++ {
+		switch command[index] {
+		case '\\':
+			if !singleQuoted && index+1 < len(command) {
+				index++
+			}
+			continue
+		case '\'':
+			if !doubleQuoted {
+				singleQuoted = !singleQuoted
+			}
+			continue
+		case '"':
+			if !singleQuoted {
+				doubleQuoted = !doubleQuoted
+			}
+			continue
+		case '$':
+			if singleQuoted {
+				continue
+			}
+		}
+		if command[index] != '$' || index+1 >= len(command) {
+			continue
+		}
+		nameStart := index + 1
+		if command[nameStart] == '{' {
+			nameStart++
+		}
+		if nameStart >= len(command) || !shellNameStart(command[nameStart]) {
+			continue
+		}
+		nameEnd := nameStart + 1
+		for nameEnd < len(command) && shellNamePart(command[nameEnd]) {
+			nameEnd++
+		}
+		references = append(references, shellVariableReference{
+			name:  command[nameStart:nameEnd],
+			index: index,
+		})
+	}
+	return references
+}
+
+func shellNameStart(char byte) bool {
+	return char == '_' || char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z'
+}
+
+func shellNamePart(char byte) bool {
+	return shellNameStart(char) || char >= '0' && char <= '9'
+}
+
+func shellAssignments(command string) map[string]int {
+	assignments := make(map[string]int)
+	for _, pattern := range []*regexp.Regexp{shellAssignmentPattern, shellReadPattern, shellForPattern} {
+		for _, match := range pattern.FindAllStringSubmatchIndex(command, -1) {
+			name := command[match[2]:match[3]]
+			if previous, exists := assignments[name]; !exists || match[2] < previous {
+				assignments[name] = match[2]
+			}
+		}
+	}
+	return assignments
+}
+
+func environmentGuard(command string) (string, int, bool) {
+	match := environmentGuardPattern.FindStringSubmatchIndex(command)
+	if match == nil {
+		return "", 0, false
+	}
+	return firstCapturedText(command, match, 2, 4), match[0], true
+}
+
+func firstCapturedText(input string, indexes []int, pairs ...int) string {
+	for _, pair := range pairs {
+		if indexes[pair] >= 0 {
+			return input[indexes[pair]:indexes[pair+1]]
+		}
+	}
+	return ""
+}
+
+func declaredBefore(assignments map[string]int, name string, reference int) bool {
+	assignment, ok := assignments[name]
+	return ok && assignment < reference
+}
+
+type shellWord struct {
+	text string
+}
+
+func externalDependencyPath(command string, created map[string]bool) (string, bool) {
+	words := shellWords(command)
+	createCommand := false
+	for index, word := range words {
+		switch word.text {
+		case ";", "&&", "||", "|":
+			createCommand = false
+			continue
+		case "mkdir", "touch", "mktemp":
+			createCommand = true
+			continue
+		}
+
+		path, ok := externalPath(word.text)
+		if !ok {
+			continue
+		}
+		redirectTarget := index > 0 && (words[index-1].text == ">" || words[index-1].text == ">>" ||
+			words[index-1].text == "-o" || words[index-1].text == "--output")
+		if redirectTarget || createCommand {
+			created[path] = true
+			continue
+		}
+		if !created[path] {
+			return path, true
+		}
+	}
+	return "", false
+}
+
+func externalPath(word string) (string, bool) {
+	if equals := strings.IndexByte(word, '='); equals >= 0 {
+		word = word[equals+1:]
+	}
+	if strings.HasPrefix(word, "/dev/") || strings.HasPrefix(word, "/proc/self/fd/") {
+		return "", false
+	}
+	if strings.HasPrefix(word, "/") || word == ".." || strings.HasPrefix(word, "../") || word == "~" || strings.HasPrefix(word, "~/") {
+		return word, true
+	}
+	return "", false
+}
+
+func shellWords(command string) []shellWord {
+	var words []shellWord
+	var current strings.Builder
+	quote := rune(0)
+	flush := func() {
+		if current.Len() == 0 {
+			return
+		}
+		words = append(words, shellWord{text: current.String()})
+		current.Reset()
+	}
+	for _, char := range command {
+		if quote != 0 {
+			if char == quote {
+				quote = 0
+				continue
+			}
+			current.WriteRune(char)
+			continue
+		}
+		switch char {
+		case '\'', '"':
+			quote = char
+		case ' ', '\t', '\n', '\r':
+			flush()
+		case ';', '|', '&', '<', '>', '(', ')', '{', '}':
+			flush()
+			operator := string(char)
+			if len(words) > 0 && ((char == '>' && words[len(words)-1].text == ">") ||
+				(char == '|' && words[len(words)-1].text == "|") ||
+				(char == '&' && words[len(words)-1].text == "&")) {
+				words[len(words)-1].text += operator
+			} else {
+				words = append(words, shellWord{text: operator})
+			}
+		default:
+			current.WriteRune(char)
+		}
+	}
+	flush()
+	return words
 }
 
 // workingTreeCleanlinessCheck reports a command that asserts over the set of
