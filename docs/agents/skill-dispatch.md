@@ -77,6 +77,7 @@ Individual skill triggers:
   - `trigger.context-workflow.implement-task`: Executing exactly one assigned Spec Task.
 - `knowledge-workspace`:
   - `trigger.context-workflow.knowledge-workspace`: Consulting the configured knowledge workspace for relevant prior context.
+  - `trigger.context-workflow.knowledge-workspace-secondbrain-authoring`: Consulting the Secondbrain before authoring an Idea, PRD, or TechSpec.
 - `no-workarounds`:
   - `trigger.core.no-workarounds`: Fixing defects, regressions, or verification failures at their root cause.
 - `qa-gate`:

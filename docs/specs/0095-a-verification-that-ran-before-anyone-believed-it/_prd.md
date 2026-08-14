@@ -36,8 +36,24 @@ Task for doing the right thing.
   authoring. ADR-0094 makes the consistency check artifact-presence aware, so a
   detector must skip rather than fail where its artifact is absent. ADR-0111 makes
   an unobserved Verification unknown rather than a verdict, which is what an
-  execution mode must report when it could not run a command at all. Source:
-  `docs/agents/domain.md`.
+  execution mode must report when it could not run a command at all. ADR-0124
+  makes authoring and Run time share one prober, so the earlier check cannot
+  approve what the later one refuses; ADR-0014 keeps the Daemon the owner of task
+  verification and settlement, which sharing the prober moves code around rather
+  than changes; ADR-0081 keeps a grant drawn around the authorized cause with its
+  sanctioned regeneration following as fallout, which is how the skill edit and
+  its mirror are accounted; ADR-0091 makes the QA gate a Task node of its own type
+  and ADR-0104 makes a Spec accept on evidence it did not author, which together
+  shape the closing node. The decisions built on the Daemon's ownership are
+  accounted and unchanged: ADR-0020 ranks a parsed prompt result above the acpx
+  exit code, ADR-0038 allows one Verification repair per Task, and ADR-0057 makes
+  the Daemon the sole writer of Task status — all three govern a Run, and the
+  authoring caller this Spec adds starts no Run, so none of them applies to it;
+  ADR-0096 proves machine facts before the gate spends an Agent turn, which is the
+  same economy one stage earlier and is followed rather than altered. ADR-0056
+  separates Task Capacity from Verification Capacity, which is Run bookkeeping the
+  Daemon keeps around the shared prober rather than inside it, so the authoring
+  caller acquires neither. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the authoring contract in the task-authoring
   skill gains the exit-zero rule. Express maintainer authorization:
   `docs/workflow/authorizations/2026-08-12-the-authoring-and-baseline-corrections.md`,

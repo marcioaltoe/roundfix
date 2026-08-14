@@ -79,7 +79,12 @@ human.
 4. **The surface a task file came from is named.** Recovery output states which
    surface the task file was read from, so a fix is applied once rather than
    discovered by trial to be needed in two places.
-5. **The run budget says what it bounds.** Whether the configured maximum Run
+5. **A vacuity refusal names what it means.** The event that reports a
+   Verification refused as vacuous lists the commands that *passed* against the
+   unchanged tree, and a reader takes that list for what the tool ran. It names
+   the offenders explicitly, or reports every command with its own verdict, and
+   points at the probe log that settles it.
+6. **The run budget says what it bounds.** Whether the configured maximum Run
    duration is evaluated at Work Item boundaries is settled and stated, so a
    maintainer configuring a window knows what it promises.
 

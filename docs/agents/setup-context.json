@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:74c30a138531e9d9f509cb8c9eeda13984ac4bb348cbb66a27c53f0754246569",
-  "catalogDigest": "sha256:bdde817156d46d0ffcd6ef3923199b0af2b18514d1c097d31df4236430433d7c",
+  "catalogDigest": "sha256:9773febec6236b9ea81ca32d927efb3d93f0a0563ad3a32c67b07827f81bc645",
   "modules": [
     "core",
     "context-workflow",
@@ -63,7 +63,7 @@
       "module": "core",
       "template": "template.guide.skill-dispatch",
       "version": "0.0.1",
-      "digest": "6a09cf7631b6c7e92df1b884a63c6c637e2d74f79789166b7223cbcef100fdf5"
+      "digest": "a1234683631b40f0b2566a876eb2019444cb2ed57fd639a4b3d384ea5b29f427"
     },
     {
       "id": "root.core",
@@ -81,7 +81,7 @@
       "module": "context-workflow",
       "template": "template.guide.docs-layout",
       "version": "0.0.1",
-      "digest": "f2b4375602ea708b6efcb0781e16b11c2df83c1b8591db46a41688883ccca883"
+      "digest": "b21b0897ff18ee70889399bf54d8194495d36421df1307cd35f501e05ce12cff"
     },
     {
       "id": "root.context-workflow",
@@ -189,7 +189,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-docs-layout",
       "version": "0.0.1",
-      "digest": "7441e3110833e8dfa39cf48a580df17e1275621a4bb795c98ca119b51c70ad21"
+      "digest": "34c8478dcd04a454d14f1c223ecbf5522873aa80ebc14a64afe48915755282fd"
     },
     {
       "id": "guide.domain",
@@ -234,7 +234,7 @@
       "module": "secondbrain",
       "template": "template.guide.secondbrain",
       "version": "0.0.1",
-      "digest": "f0c9e8ee15fc5c66c2a68d7e401fe41ee1e87813ab79933978c85570b506dcc5"
+      "digest": "3ef49f6657221b06d7a19943a88511afe6210223c0ddca6f83d3d86a3638849c"
     },
     {
       "id": "root.repository-extension",
