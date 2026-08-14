@@ -96,6 +96,10 @@ sends a reader hunting a counting bug that does not exist.
   declared literal — each produce a diagnostic naming what to change, proven by
   replaying both.
 - A parse failure reports once rather than as two findings.
+- The empty-Results-table refusal is reproduced from the run that produced it on
+  2026-08-14, where Spec 0103's gate stopped at the static precondition and wrote
+  a report with no rows. Evidence:
+  `docs/backlog/2026-08-14-a-spec-that-coins-a-term-cannot-pass-its-own-gate.md`.
 
 ## Decisions
 

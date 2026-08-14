@@ -28,6 +28,10 @@ _Avoid_: Pause, retry, failure
 The Stop Command mode that proves owner identity, cancels registered Agent Sessions, terminates the recorded owning process, and completes the Run as Stopped only after owner exit is proven. A proven identity mismatch always refuses; only the explicit `--owner-identity-unreadable` last-resort flag permits PID-only termination after the host reports the identity unreadable.
 _Avoid_: Lock release, best-effort stop, orphan reclamation
 
+**Process Residue**:
+A process Roundfix started that outlived the Run that started it, so no live Run record owns it. The readiness diagnostic reports residue with each process's age, its consumed CPU time, and its originating Run when the Run Database still knows it; reporting settles nothing and creates no Run record.
+_Avoid_: Orphan, zombie, leaked run, stale process
+
 **PR Head Branch**:
 The branch on GitHub that supplies the pull request's head commits.
 _Avoid_: Local branch, checkout branch

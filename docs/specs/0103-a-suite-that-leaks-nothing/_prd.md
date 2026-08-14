@@ -39,7 +39,9 @@ execution has no command that answers what it detached that is still running.
   residue when this Spec was written, which is why the invariants it establishes
   are new: ADR-0125 makes a spawned fixture a compiled binary, ADR-0126 places the
   isolation guard per package rather than once around the suite, and ADR-0127
-  makes residue a readiness fact rather than a Run record. The closing node rests
+  makes residue a readiness fact rather than a Run record, and ADR-0128 makes the
+  guard read the same sanctioned-regeneration declaration the changed-path audit
+  reads. The closing node rests
   on two more that it follows rather than changes: ADR-0091 makes the QA gate a
   Task node of its own type, and ADR-0104 makes a Spec accept on evidence it did
   not author, which is what the upstream diagnosis and the 2026-08-06 process
@@ -95,7 +97,11 @@ execution has no command that answers what it detached that is still running.
    no live Run record, so detached execution has an inventory rather than a habit.
 6. **Force Stop proves the tree.** Stopping a Run proves the exit of the processes
    it spawned, not only of the registered owner.
-7. **A gate's scratch state stays out of the evidence.** Scratch repositories and
+7. **A sanctioned regeneration is not a violation.** A command whose declared
+   purpose is rewriting derived artifacts writes into the repository by contract,
+   and the guard reads the declaration that says so rather than holding an
+   exemption list of its own.
+8. **A gate's scratch state stays out of the evidence.** Scratch repositories and
    built binaries a gate produces are not committed as Spec evidence, and a
    submodule-shaped directory reference never reaches a commit.
 
@@ -127,6 +133,9 @@ printing an empty table.
   2026-08-06, measured outside this Spec by a process table nobody in the tool
   could see.
 - No Spec evidence directory holds a built binary or a submodule-shaped reference.
+- Every sanctioned regeneration command declared by an authorization record runs
+  to completion with the guard installed, measured against the two that failed on
+  2026-08-14: `make baseline-digests` and the plan-characterization update flag.
 
 ## Decisions
 

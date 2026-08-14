@@ -51,7 +51,9 @@ loop, which hides a race rather than removing it.
   `docs/agents/specific-repository.md`.
 - Active ADR obligations: applicable — ADR-0125 makes a spawned fixture a
   compiled binary, ADR-0126 places the isolation guard per package, and ADR-0127
-  makes residue a readiness fact; those three are this design's decisions.
+  makes residue a readiness fact, and ADR-0128 makes the guard and the
+  changed-path audit read one regeneration declaration; those four are this
+  design's decisions.
   ADR-0014 gives the Daemon ownership of task verification and status settlement,
   which bounds the inventory to reporting. The decisions extending that ownership
   are accounted and none changes: ADR-0020 ranks a parsed prompt result above the
@@ -181,7 +183,8 @@ success when a descendant survives.
 - Core Feature 4 → the compiled fixture.
 - Core Feature 5 → the residue inventory.
 - Core Feature 6 → Force Stop proving the tree.
-- Core Feature 7 → the evidence hygiene check.
+- Core Feature 7 → the guard's regeneration exemption.
+- Core Feature 8 → the evidence hygiene check.
 
 ## Integration Points
 
@@ -235,10 +238,26 @@ No network, no hosting provider.
 7. Force Stop proving the tree (depends on: 6, which builds the process-table
    reader it needs).
 8. The evidence hygiene check (depends on: nothing).
+9. The guard reads the sanctioned-regeneration declaration, so a command that
+   exists to rewrite declared derived artifacts is not reported as a violation
+   (depends on: 4, because the exemption is only observable once the guard is
+   installed where those commands run).
 
-Steps 1, 2, 3, 6 and 8 are independent of each other.
+Steps 1, 2, 3, 6 and 8 are independent of each other. Step 9 was added on
+2026-08-14 after step 4 landed: installing the guard made `make baseline-digests`
+and the characterization update flags fail, each naming paths their own
+authorization record already declares as sanctioned outputs. The design had
+assumed no test writes into the repository on purpose; two commands do, by
+contract.
 
 ## Risks & Considerations
+
+**A sanctioned regeneration writes into the repository by design.** Measured on
+2026-08-14, once the guard was installed: `make baseline-digests` and the
+characterization update flags each rewrite derived artifacts their own
+authorization record declares. The guard reads that declaration rather than
+holding a list of its own (ADR-0128), so an exemption cannot drift from the
+authorization that justifies it.
 
 **The guard can fail a package for a race it did not cause.** Two packages run
 concurrently under `go test ./...`, so a file one writes is visible to another's
@@ -274,3 +293,5 @@ did not establish.
   a fabricated Run row. See ADR-0127.
 - The build order leads with the fixture repair rather than with the guard,
   because the flake is currently blocking delivery and the guard is not.
+- The guard reads the same sanctioned-regeneration declaration as the changed-path
+  audit rather than carrying its own exemption list. See ADR-0128.
