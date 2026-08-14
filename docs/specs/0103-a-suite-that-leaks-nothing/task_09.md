@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0103-a-suite-that-leaks-nothing
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: failed # pending | in_progress | completed | failed — only implement-task changes this
 type: qa
 complexity: high
 ---
