@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0095-a-verification-that-ran-before-anyone-believed-it
-status: failed # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: qa
 complexity: high
 ---
