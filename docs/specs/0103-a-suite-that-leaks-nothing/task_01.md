@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0103-a-suite-that-leaks-nothing
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: test
 complexity: high
 ---
@@ -68,3 +68,55 @@ window rather than retrying inside it.
 Testing Approach. `_prd.md` → Core Feature 4; Goal 3; Decisions. ADR-0125.
 Evidence: `docs/findings/2026-08-10-a-fake-adapter-goes-silent-under-a-dense-start.md`,
 both 2026-08-14 addenda.
+
+## Result
+
+### Implementation
+
+- The ACPX adapter fixtures now hard-link the package's compiled Go test binary
+  and read observable behavior from non-executable JSON sidecars. `TestMain`
+  dispatches those re-executions before the fake ACPX mode, including bare
+  commands resolved through the harness's explicit environment.
+- `testfixture.FixtureBinary` compiles Go fixture source through `go build`; the
+  release-gate formatter uses it instead of writing a mode-0755 shell script.
+- `TestFixtureBinarySurvivesConcurrentExec` runs 16 workers with 32 fixture
+  provision-and-exec cycles each and rejects both exec errors and empty version
+  probes.
+- The adapter fixture comment cites Go issue 22315 as the upstream account of
+  the write-then-execute `ETXTBSY` hazard.
+
+### Focused checks
+
+- Pre-change inspection found the adapter and formatter helpers writing shell
+  scripts with mode `0o755`; the stress test and `FixtureBinary` constructor did
+  not exist.
+- `env GOCACHE=/private/tmp/roundfix-0103-task01-gocache go test ./internal/agent -run '^TestFixtureBinarySurvivesConcurrentExec$' -count=1`
+  passed; all 512 concurrent cycles returned `fixture-version`.
+- `env GOCACHE=/private/tmp/roundfix-0103-task01-gocache go test ./internal/agent -run '^(TestACPXRunAppliesSelectionBeforePrompt|TestCheckAdapterProvesOfficialClaudePackageAndVersion)$' -count=1`
+  passed.
+- `env GOCACHE=/private/tmp/roundfix-0103-task01-gocache go test ./internal/cli -run '^TestGuidanceCompositionJourney$/^standard-typescript-monorepo$' -count=1`
+  passed, exercising the compiled formatter's version probe, check invocation,
+  and marker behavior.
+- `env GOCACHE=/private/tmp/roundfix-0103-task01-gocache go test ./internal/agent -count=1`
+  passed after the fixture change.
+- `env GOCACHE=/private/tmp/roundfix-0103-task01-gocache rtk make verify-incremental`
+  passed, including formatting, the full Go suite, skill checks, and the build.
+- `git diff --check` passed. Added-line inspection found no retry, sleep,
+  deadline change, or executable-mode `os.WriteFile` in either named interface.
+
+### Acceptance evidence
+
+1. The executed adapter path is a hard link to the already-compiled test binary;
+   the formatter executable is emitted by `go build`. Tests write only source,
+   configuration, markers, and other non-executable data.
+2. The named adapter regression checks and the full `internal/agent` package
+   passed with their existing assertions.
+3. The concurrent-exec stress check passed without an exec error or empty probe.
+4. Diff inspection found no added retry, sleep, or deadline change.
+5. `internal/agent/acpx_runner_test.go` cites Go issue 22315 next to the compiled
+   fixture implementation.
+
+The slice introduces no new product-domain term, so `CONTEXT.md` needs no
+glossary change. No follow-up work was discovered inside this Task's scope.
+
+The Daemon-owned Verification commands were not run in this Agent turn.

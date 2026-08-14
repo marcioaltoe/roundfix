@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -44,13 +45,63 @@ const (
 	fakeACPXExitCancel = "ROUNDFIX_FAKE_ACPX_EXIT_AFTER_CANCEL"
 	fakeACPXCodexPath  = "ROUNDFIX_FAKE_ACPX_CODEX_PATH"
 	fakeACPXThoughtLen = "ROUNDFIX_FAKE_ACPX_THOUGHT_LENGTH"
+	fakeAdapterDirEnv  = "ROUNDFIX_FAKE_ADAPTER_DIR"
 )
 
 func TestMain(m *testing.M) {
+	if code, ok := runFakeAdapterProcess(); ok {
+		os.Exit(code)
+	}
 	if os.Getenv(fakeACPXEnv) == "1" {
 		os.Exit(runFakeACPXProcess())
 	}
 	os.Exit(m.Run())
+}
+
+func TestFixtureBinarySurvivesConcurrentExec(t *testing.T) {
+	const (
+		workers    = 16
+		executions = 32
+		wantOutput = "fixture-version"
+	)
+
+	dirs := make([]string, workers)
+	for index := range dirs {
+		dirs[index] = t.TempDir()
+	}
+	start := make(chan struct{})
+	errors := make(chan error, workers)
+	var group sync.WaitGroup
+	group.Add(workers)
+	for worker := range workers {
+		go func() {
+			defer group.Done()
+			<-start
+			for execution := range executions {
+				path := filepath.Join(dirs[worker], fmt.Sprintf("adapter-%d", execution))
+				output := wantOutput
+				if err := provisionFakeAdapter(path, fakeAdapterFixture{Output: &output}); err != nil {
+					errors <- fmt.Errorf("provision worker %d execution %d: %w", worker, execution, err)
+					return
+				}
+				probe, err := exec.Command(path, "--version").CombinedOutput()
+				if err != nil {
+					errors <- fmt.Errorf("exec worker %d execution %d: %w: %s", worker, execution, err, probe)
+					return
+				}
+				if got := strings.TrimSpace(string(probe)); got != wantOutput {
+					errors <- fmt.Errorf("probe worker %d execution %d = %q, want %q", worker, execution, got, wantOutput)
+					return
+				}
+			}
+		}()
+	}
+	close(start)
+	group.Wait()
+	close(errors)
+	for err := range errors {
+		t.Error(err)
+	}
 }
 
 func TestACPXProbePassesWhenVersionMatchesPin(t *testing.T) {
@@ -3601,6 +3652,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 			Command: os.Args[0],
 			Environment: environmentForTest(
 				"HOME="+homeDir,
+				fakeAdapterDirEnv+"="+adapterDir,
 				fakeACPXEnv+"=1",
 				fakeACPXInvokes+"="+invocationsPath,
 				fakeACPXPrompts+"="+promptsPath,
@@ -3625,18 +3677,23 @@ func (harness *fakeACPXHarness) setEnv(key string, value string) {
 func installFakeAdapter(t *testing.T, dir string, command string) {
 	t.Helper()
 	path := filepath.Join(dir, command)
-	content := "#!/bin/sh\nexit 0\n"
+	fixture := fakeAdapterFixture{}
 	if command == "codex-acp" {
-		content = "#!/bin/sh\nprintf '%s\\n' '" + CodexAdapterPackage + " " + PinnedCodexAdapterVersion + "'\n"
+		output := CodexAdapterPackage + " " + PinnedCodexAdapterVersion
+		fixture.Output = &output
 	}
 	if command == "claude-agent-acp" {
-		content = "#!/bin/sh\nprintf '%s\\n' '" + PinnedClaudeAdapterVersion + "'\n"
+		output := PinnedClaudeAdapterVersion
+		fixture.Output = &output
 	}
 	if command == "npx" {
-		content = "#!/bin/sh\ncase \"$*\" in\n  *claude-agent-acp*) printf '%s\\n' '" + PinnedClaudeAdapterVersion + "' ;;\n  *) printf '%s\\n' '" + CodexAdapterPackage + " " + PinnedCodexAdapterVersion + "' ;;\nesac\n"
+		output := CodexAdapterPackage + " " + PinnedCodexAdapterVersion
+		claudeOutput := PinnedClaudeAdapterVersion
+		fixture.Output = &output
+		fixture.ClaudeOutput = &claudeOutput
 	}
-	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
-		t.Fatalf("write fake adapter %s: %v", command, err)
+	if err := provisionFakeAdapter(path, fixture); err != nil {
+		t.Fatalf("provision fake adapter %s: %v", command, err)
 	}
 }
 
@@ -3649,9 +3706,8 @@ func installFakeNamedVersionAdapter(t *testing.T, name string, output string) st
 	t.Helper()
 	dir := t.TempDir()
 	path := filepath.Join(dir, name)
-	content := "#!/bin/sh\nprintf '%s\\n' '" + output + "'\n"
-	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
-		t.Fatalf("write fake version adapter: %v", err)
+	if err := provisionFakeAdapter(path, fakeAdapterFixture{Output: &output}); err != nil {
+		t.Fatalf("provision fake version adapter: %v", err)
 	}
 	return path
 }
@@ -3664,9 +3720,8 @@ func installSymlinkedPackageAdapter(t *testing.T, packageName string, executable
 		t.Fatalf("create fake package adapter directory: %v", err)
 	}
 	target := filepath.Join(packageDir, "adapter")
-	content := "#!/bin/sh\nprintf '%s\\n' '" + output + "'\n"
-	if err := os.WriteFile(target, []byte(content), 0o755); err != nil {
-		t.Fatalf("write fake package adapter: %v", err)
+	if err := os.Link(os.Args[0], target); err != nil {
+		t.Fatalf("link compiled fake package adapter: %v", err)
 	}
 	binDir := filepath.Join(root, "bin")
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
@@ -3676,7 +3731,74 @@ func installSymlinkedPackageAdapter(t *testing.T, packageName string, executable
 	if err := os.Symlink(target, command); err != nil {
 		t.Fatalf("symlink fake package adapter: %v", err)
 	}
+	if err := writeFakeAdapterFixture(command, fakeAdapterFixture{Output: &output}); err != nil {
+		t.Fatalf("configure fake package adapter: %v", err)
+	}
 	return command
+}
+
+// The adapter fixture re-executes the compiled test binary. Its behavior lives
+// in a non-executable sidecar, so tests never write the file they execute. This
+// removes the ETXTBSY window documented by https://go.dev/issue/22315.
+type fakeAdapterFixture struct {
+	Output       *string `json:"output,omitempty"`
+	ClaudeOutput *string `json:"claude_output,omitempty"`
+}
+
+func provisionFakeAdapter(path string, fixture fakeAdapterFixture) error {
+	if err := os.Link(os.Args[0], path); err != nil {
+		return fmt.Errorf("link compiled test binary: %w", err)
+	}
+	if err := writeFakeAdapterFixture(path, fixture); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeFakeAdapterFixture(path string, fixture fakeAdapterFixture) error {
+	payload, err := json.Marshal(fixture)
+	if err != nil {
+		return fmt.Errorf("marshal adapter fixture: %w", err)
+	}
+	if err := os.WriteFile(path+".fixture.json", payload, 0o600); err != nil {
+		return fmt.Errorf("write adapter fixture behavior: %w", err)
+	}
+	return nil
+}
+
+func runFakeAdapterProcess() (int, bool) {
+	fixturePath := os.Args[0] + ".fixture.json"
+	payload, err := os.ReadFile(fixturePath)
+	if errors.Is(err, os.ErrNotExist) {
+		if resolved, resolveErr := exec.LookPath(os.Args[0]); resolveErr == nil && resolved != os.Args[0] {
+			fixturePath = resolved + ".fixture.json"
+			payload, err = os.ReadFile(fixturePath)
+		}
+	}
+	if errors.Is(err, os.ErrNotExist) && os.Getenv(fakeAdapterDirEnv) != "" {
+		fixturePath = filepath.Join(os.Getenv(fakeAdapterDirEnv), filepath.Base(os.Args[0])) + ".fixture.json"
+		payload, err = os.ReadFile(fixturePath)
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return 0, false
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read adapter fixture behavior %s: %v\n", fixturePath, err)
+		return 2, true
+	}
+	var fixture fakeAdapterFixture
+	if err := json.Unmarshal(payload, &fixture); err != nil {
+		fmt.Fprintf(os.Stderr, "decode adapter fixture behavior: %v\n", err)
+		return 2, true
+	}
+	output := fixture.Output
+	if fixture.ClaudeOutput != nil && strings.Contains(strings.Join(os.Args[1:], " "), "claude-agent-acp") {
+		output = fixture.ClaudeOutput
+	}
+	if output != nil {
+		fmt.Fprintln(os.Stdout, *output)
+	}
+	return 0, true
 }
 
 func writeACPXConfigForTest(t *testing.T, content string) []string {
