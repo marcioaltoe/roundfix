@@ -11,11 +11,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"roundfix/internal/agent"
 	"roundfix/internal/app"
 	"roundfix/internal/baseline"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/store"
 	"roundfix/skills"
 )
 
@@ -25,6 +27,7 @@ type doctorDependencies struct {
 	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
 	resolveExternal  func(string) ([]string, bool, error)
 	checkSkills      func(context.Context, string, []string) (skills.RepositoryReadiness, error)
+	residue          func(context.Context, string) []CheckResult
 }
 
 func defaultDoctorDependencies() doctorDependencies {
@@ -38,6 +41,7 @@ func defaultDoctorDependencies() doctorDependencies {
 		},
 		resolveExternal: resolveExternalSkillRequirement,
 		checkSkills:     skills.CheckRepositoryWithExternal,
+		residue:         defaultDoctorResidueResults,
 	}
 }
 
@@ -76,7 +80,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	// Keep independent checks eager and ordered.
-	results := make([]CheckResult, 0, 6)
+	results := make([]CheckResult, 0, 8)
 	results = append(results, checker.Node(ctx))
 	results = append(results, checker.ACPX(ctx))
 	runtimes, runtimeErr := doctorAdapterRuntimes(loaded.Config)
@@ -98,6 +102,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 			}
 		}
 	}
+	results = append(results, dependencies.residue(ctx, loaded.HomeDir)...)
 	results = append(results, checker.Codex(ctx))
 
 	failed := false
@@ -111,6 +116,161 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+// RunStore is the read-only Run Database surface needed by Residue.
+type RunStore interface {
+	ListRuns(context.Context, store.ListRunsQuery) ([]store.Run, error)
+}
+
+// ProcessLineage is the recorded ownership proof for one Roundfix spawn tree.
+type ProcessLineage struct {
+	OwnerPID      int
+	OwnerIdentity string
+}
+
+// ProcessTable reads details only from a proven Roundfix spawn lineage.
+type ProcessTable interface {
+	ReadLineage(context.Context, ProcessLineage) ([]store.OwnedProcess, error)
+}
+
+// ResidualProcess is a live process whose originating Run is terminal.
+type ResidualProcess struct {
+	PID     int
+	Started time.Time
+	CPUTime time.Duration
+	RunID   string
+	Command string
+}
+
+type ownerProcessTable struct {
+	controller *store.OwnerProcessControl
+}
+
+func (table ownerProcessTable) ReadLineage(ctx context.Context, lineage ProcessLineage) ([]store.OwnedProcess, error) {
+	return table.controller.InspectTreeProcesses(ctx, lineage.OwnerPID, lineage.OwnerIdentity)
+}
+
+// Residue reports live processes from terminal Roundfix Run lineages. Active
+// Runs are excluded before their process lineage is inspected, and the Run
+// Database surface is read-only by construction.
+func Residue(ctx context.Context, runStore RunStore, table ProcessTable) ([]ResidualProcess, error) {
+	runs, err := runStore.ListRuns(ctx, store.ListRunsQuery{States: store.StatesAll})
+	if err != nil {
+		return nil, fmt.Errorf("read Run Database for process residue: %w", err)
+	}
+
+	residueByPID := make(map[int]ResidualProcess)
+	var readErrors []error
+	for _, run := range runs {
+		if !store.IsTerminalState(run.State) || run.OwnerPID == nil || *run.OwnerPID <= 0 {
+			continue
+		}
+		if run.OwnerIdentityUnproven || strings.TrimSpace(run.OwnerIdentity) == "" {
+			readErrors = append(readErrors, fmt.Errorf(
+				"could not read process table for Run %s: recorded owner identity is unproven",
+				run.ID,
+			))
+			continue
+		}
+		processes, processErr := table.ReadLineage(ctx, ProcessLineage{
+			OwnerPID:      *run.OwnerPID,
+			OwnerIdentity: run.OwnerIdentity,
+		})
+		if processErr != nil {
+			readErrors = append(readErrors, fmt.Errorf("could not read process table for Run %s: %w", run.ID, processErr))
+		}
+		for _, process := range processes {
+			if process.PID <= 0 {
+				continue
+			}
+			if _, alreadyReported := residueByPID[process.PID]; alreadyReported {
+				continue
+			}
+			residueByPID[process.PID] = ResidualProcess{
+				PID:     process.PID,
+				Started: process.Started,
+				CPUTime: process.CPUTime,
+				RunID:   run.ID,
+				Command: process.Command,
+			}
+		}
+	}
+
+	residue := make([]ResidualProcess, 0, len(residueByPID))
+	for _, process := range residueByPID {
+		residue = append(residue, process)
+	}
+	sort.Slice(residue, func(i, j int) bool {
+		if residue[i].Started.Equal(residue[j].Started) {
+			return residue[i].PID < residue[j].PID
+		}
+		return residue[i].Started.Before(residue[j].Started)
+	})
+	return residue, errors.Join(readErrors...)
+}
+
+func defaultDoctorResidueResults(ctx context.Context, homeDir string) []CheckResult {
+	runStore, err := store.OpenReader(ctx, homeDir)
+	if err != nil {
+		return []CheckResult{{
+			Name:   HealthCheckResidue,
+			Status: CheckStatusPartial,
+			Detail: fmt.Sprintf("could not read Run Database: %v", err),
+		}}
+	}
+	results := doctorResidueResults(
+		ctx,
+		runStore,
+		ownerProcessTable{controller: store.NewOwnerProcessController()},
+		time.Now(),
+	)
+	if err := runStore.Close(); err != nil {
+		results = append(results, CheckResult{
+			Name:   HealthCheckResidue,
+			Status: CheckStatusPartial,
+			Detail: fmt.Sprintf("could not close Run Database reader: %v", err),
+		})
+	}
+	return results
+}
+
+func doctorResidueResults(ctx context.Context, runStore RunStore, table ProcessTable, now time.Time) []CheckResult {
+	processes, err := Residue(ctx, runStore, table)
+	results := make([]CheckResult, 0, len(processes)+1)
+	for _, process := range processes {
+		age := now.Sub(process.Started)
+		if age < 0 {
+			age = 0
+		}
+		detail := fmt.Sprintf(
+			"PID %d; age %s; CPU %s; originating Run %s; next: inspect the Run and terminate PID %d if it is no longer needed",
+			process.PID,
+			formatResidueDuration(age),
+			formatResidueDuration(process.CPUTime),
+			process.RunID,
+			process.PID,
+		)
+		results = append(results, CheckResult{Name: HealthCheckResidue, Status: CheckStatusFound, Detail: detail})
+	}
+	if err != nil {
+		results = append(results, CheckResult{Name: HealthCheckResidue, Status: CheckStatusPartial, Detail: err.Error()})
+	}
+	if len(results) == 0 {
+		results = append(results, CheckResult{
+			Name:   HealthCheckResidue,
+			Status: CheckStatusOK,
+			Detail: "no process residue found",
+		})
+	}
+	return results
+}
+
+func formatResidueDuration(duration time.Duration) string {
+	if duration <= 0 {
+		return "0s"
+	}
+	return duration.Truncate(time.Second).String()
 }
 
 const doctorSetupManifestPath = "docs/agents/setup-context.json"
