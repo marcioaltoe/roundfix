@@ -822,6 +822,12 @@ func assetsSyncOwnedMinimum(t *testing.T, snapshotPath string) string {
 // TestMain drops the shared Assets Sync fixture after the package's tests
 // finish. The template outlives every individual test that copies it, so no
 // single test can own its cleanup.
+const baselineDigestRegenerationCommand = "make baseline-digests"
+
+func declareBaselineDigestRegeneration() {
+	suiteguard.DeclareSanctionedRegeneration(baselineDigestRegenerationCommand)
+}
+
 func TestMain(m *testing.M) {
 	code := suiteguard.Main(m, filepath.Join("..", ".."))
 	removeAssetsSyncTemplate()

@@ -53,6 +53,8 @@ func TestBaselinePlanCharacterization(t *testing.T) {
 	// Sequential: can rewrite shared plan goldens when the update flag is enabled.
 	if !*updateBaselinePlanCharacterization {
 		t.Parallel()
+	} else {
+		declareBaselineDigestRegeneration()
 	}
 	characterizationBin := baselinePlanCharacterizationBin(t)
 	gitPath, err := exec.LookPath("git")

@@ -9,12 +9,11 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,6 +24,19 @@ import (
 type Violation struct {
 	Path   string
 	Change string
+}
+
+var sanctionedRegenerationDeclaration struct {
+	sync.RWMutex
+	command string
+}
+
+// DeclareSanctionedRegeneration identifies the sanctioned command running in
+// this process. Regeneration tests call it before writing declared outputs.
+func DeclareSanctionedRegeneration(command string) {
+	sanctionedRegenerationDeclaration.Lock()
+	defer sanctionedRegenerationDeclaration.Unlock()
+	sanctionedRegenerationDeclaration.command = normalizeCommand(command)
 }
 
 // Main fingerprints repoRoot, runs the package's tests, fingerprints again,
@@ -111,10 +123,13 @@ func removeSanctionedRegeneration(root string, violations []Violation) ([]Violat
 		return violations, nil
 	}
 
-	commands := activeCommands()
+	command := declaredSanctionedRegenerationCommand()
+	if command == "" {
+		return violations, nil
+	}
 	sanctioned := make(map[string]bool)
 	for _, declaration := range declarations {
-		if !commandIsActive(declaration.Command, commands) {
+		if normalizeCommand(declaration.Command) != command {
 			continue
 		}
 		for _, output := range declaration.Outputs {
@@ -134,49 +149,10 @@ func removeSanctionedRegeneration(root string, violations []Violation) ([]Violat
 	return remaining, nil
 }
 
-func activeCommands() []string {
-	commands := []string{strings.Join(os.Args, " ")}
-	seen := make(map[int]bool)
-	for pid := os.Getppid(); pid > 1 && len(seen) < 64; {
-		if seen[pid] {
-			break
-		}
-		seen[pid] = true
-		output, err := exec.Command("ps", "-o", "ppid=", "-o", "command=", "-p", strconv.Itoa(pid)).Output()
-		if err != nil {
-			// Losing an ancestor can only remove permissions: no declaration is
-			// selected unless its command remains observable.
-			break
-		}
-		line := strings.TrimSpace(string(output))
-		fields := strings.Fields(line)
-		if len(fields) < 2 {
-			break
-		}
-		parent, err := strconv.Atoi(fields[0])
-		if err != nil {
-			break
-		}
-		command := strings.TrimSpace(strings.TrimPrefix(line, fields[0]))
-		if command != "" {
-			commands = append(commands, command)
-		}
-		pid = parent
-	}
-	return commands
-}
-
-func commandIsActive(declared string, active []string) bool {
-	declared = normalizeCommand(declared)
-	if declared == "" {
-		return false
-	}
-	for _, command := range active {
-		if normalizeCommand(command) == declared {
-			return true
-		}
-	}
-	return false
+func declaredSanctionedRegenerationCommand() string {
+	sanctionedRegenerationDeclaration.RLock()
+	defer sanctionedRegenerationDeclaration.RUnlock()
+	return sanctionedRegenerationDeclaration.command
 }
 
 func normalizeCommand(command string) string {

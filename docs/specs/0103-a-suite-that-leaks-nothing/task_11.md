@@ -1,7 +1,7 @@
 ---
 task: task_11
 spec: 0103-a-suite-that-leaks-nothing
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: test
 complexity: medium
 ---
@@ -64,3 +64,55 @@ guessed at.
 `_techspec.md` → Build Order 9; Risks & Considerations, the sanctioned
 regeneration. `_prd.md` → Core Feature 7. ADR-0128, ADR-0126.
 Evidence: this Spec's QA report `qa/qa-report-2026-08-14-02.md`, finding F-02.
+
+## Result
+
+Implemented an in-process sanctioned-regeneration declaration in `suiteguard`.
+The guard now matches the declared command against the existing authorization
+records and exempts only that record's exact outputs. It no longer inspects its
+process ancestry. The guarded Baseline tests declare `make baseline-digests`
+before each update mode writes derived artifacts, including the plan and catalog
+characterization flags.
+
+Focused-check evidence:
+
+- Red signal: `GOCACHE=/private/tmp/roundfix-task11-go-cache go test
+  ./internal/suiteguard -run '^TestSanctionedRegenerationIsDeclaredInProcess$'`
+  failed to compile because `suiteguard.DeclareSanctionedRegeneration` did not
+  exist.
+- `GOCACHE=/private/tmp/roundfix-task11-go-cache go test
+  ./internal/suiteguard -run '^TestSanctionedRegenerationIsDeclaredInProcess$'`
+  exited 0 after the implementation.
+- `GOCACHE=/private/tmp/roundfix-task11-go-cache go test
+  ./internal/suiteguard -run
+  '^TestSanctionedRegenerationIsNotAViolation(WrongCommandIsRefused|UndeclaredCommandIsRefused)$'`
+  exited 0, proving a wrong or absent in-process command does not exempt an
+  authorization record's declared output.
+- `GOCACHE=/private/tmp/roundfix-task11-go-cache go test
+  ./internal/baseline -run
+  '^TestBaselinePlanCharacterizationDiffNamesShapeAndField$'` exited 0, compiling
+  the Baseline package with all regeneration declaration call sites.
+- `GOCACHE=/private/tmp/roundfix-task11-go-cache go test
+  ./internal/suiteguard` exited 0.
+- `rg -n '"ps"|kern\.proc\.all|pgrep' internal/suiteguard
+  internal/suiteguardcontract` found no matches (exit 1), so the guard no longer
+  contains a host-wide process-table lookup.
+- `git diff --quiet HEAD -- Makefile` exited 0; the Makefile is unchanged.
+- `git diff --check` exited 0.
+
+Acceptance evidence:
+
+- Baseline digest regeneration: every guarded `-update` test invoked by
+  `BASELINE_DIGEST_STEPS` now calls the shared in-process declaration. The
+  Daemon-owned `make baseline-digests` Verification remains pending.
+- Plan-characterization update: its update branch calls the same declaration,
+  and the Baseline package compiled in the focused check. The Daemon owns the
+  mutating acceptance run.
+- Missing declaration: the focused undeclared-command subprocess test exited 0
+  while asserting that `declared.txt` was refused and named as a violation.
+- Process-table independence: the ancestry walk and its `ps` execution were
+  removed; the focused source scan found no forbidden process-table token.
+- Protected tooling: the focused Git inspection found no Makefile change.
+
+The commands under `## Verification` were not run; the Roundfix Daemon owns
+those commands and Task settlement.

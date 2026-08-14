@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	fixtureModeEnv = "ROUNDFIX_SUITEGUARD_FIXTURE_MODE"
-	fixtureRootEnv = "ROUNDFIX_SUITEGUARD_FIXTURE_ROOT"
-	fixturePathEnv = "ROUNDFIX_SUITEGUARD_FIXTURE_PATH"
+	fixtureModeEnv              = "ROUNDFIX_SUITEGUARD_FIXTURE_MODE"
+	fixtureRootEnv              = "ROUNDFIX_SUITEGUARD_FIXTURE_ROOT"
+	fixturePathEnv              = "ROUNDFIX_SUITEGUARD_FIXTURE_PATH"
+	fixtureSanctionedCommandEnv = "ROUNDFIX_SUITEGUARD_FIXTURE_SANCTIONED_COMMAND"
 )
 
 func TestMain(m *testing.M) {
@@ -34,7 +35,7 @@ func TestGuardNamesTheViolatingPath(t *testing.T) {
 	mustWrite(t, filepath.Join(repository, "modified.txt"), "before")
 	mustWrite(t, filepath.Join(repository, "removed.txt"), "before")
 
-	output, exitCode := runGuardedFixture(t, repository, "violating")
+	output, exitCode := runGuardedFixture(t, repository, "violating", "")
 	t.Log(output)
 	if exitCode == 0 {
 		t.Fatalf("guarded package exit code = 0, want failure; output:\n%s", output)
@@ -53,7 +54,7 @@ func TestGuardNamesTheViolatingPath(t *testing.T) {
 func TestGuardPassesOnAnIsolatedWrite(t *testing.T) {
 	repository := repositoryRoot(t)
 
-	output, exitCode := runGuardedFixture(t, repository, "isolated")
+	output, exitCode := runGuardedFixture(t, repository, "isolated", "")
 	t.Log(output)
 	if exitCode != 0 {
 		t.Fatalf("guarded package exit code = %d, want success; output:\n%s", exitCode, output)
@@ -67,7 +68,7 @@ func TestGuardIgnoresRepositoryRules(t *testing.T) {
 	repository := t.TempDir()
 	mustWrite(t, filepath.Join(repository, ".gitignore"), "/ignored/\n")
 
-	output, exitCode := runGuardedFixture(t, repository, "ignored")
+	output, exitCode := runGuardedFixture(t, repository, "ignored", "")
 	t.Log(output)
 	if exitCode != 0 {
 		t.Fatalf("guarded package exit code = %d, want success; output:\n%s", exitCode, output)
@@ -77,11 +78,12 @@ func TestGuardIgnoresRepositoryRules(t *testing.T) {
 	}
 }
 
-func TestSanctionedRegenerationIsNotAViolation(t *testing.T) {
+func TestSanctionedRegenerationIsDeclaredInProcess(t *testing.T) {
 	repository := t.TempDir()
-	writeSanctionedAuthorization(t, repository, guardedFixtureCommand(), "declared.txt")
+	const declaredCommand = "roundfix-fixture-regeneration"
+	writeSanctionedAuthorization(t, repository, declaredCommand, "declared.txt")
 
-	output, exitCode := runGuardedFixture(t, repository, "regeneration", "declared.txt")
+	output, exitCode := runGuardedFixture(t, repository, "regeneration", declaredCommand, "declared.txt")
 	t.Log(output)
 	if exitCode != 0 {
 		t.Fatalf("guarded package exit code = %d, want success; output:\n%s", exitCode, output)
@@ -90,9 +92,9 @@ func TestSanctionedRegenerationIsNotAViolation(t *testing.T) {
 
 func TestSanctionedRegenerationIsNotAViolationWrongCommandIsRefused(t *testing.T) {
 	repository := t.TempDir()
-	writeSanctionedAuthorization(t, repository, "roundfix-not-the-running-command", "declared.txt")
+	writeSanctionedAuthorization(t, repository, "roundfix-fixture-regeneration", "declared.txt")
 
-	output, exitCode := runGuardedFixture(t, repository, "regeneration", "declared.txt")
+	output, exitCode := runGuardedFixture(t, repository, "regeneration", "roundfix-wrong-regeneration", "declared.txt")
 	t.Log(output)
 	if exitCode == 0 {
 		t.Fatalf("guarded package exit code = 0, want failure; output:\n%s", output)
@@ -102,17 +104,17 @@ func TestSanctionedRegenerationIsNotAViolationWrongCommandIsRefused(t *testing.T
 	}
 }
 
-func TestSanctionedRegenerationIsNotAViolationUndeclaredPathIsRefused(t *testing.T) {
+func TestSanctionedRegenerationIsNotAViolationUndeclaredCommandIsRefused(t *testing.T) {
 	repository := t.TempDir()
-	writeSanctionedAuthorization(t, repository, guardedFixtureCommand(), "declared.txt")
+	writeSanctionedAuthorization(t, repository, "roundfix-fixture-regeneration", "declared.txt")
 
-	output, exitCode := runGuardedFixture(t, repository, "regeneration", "undeclared.txt")
+	output, exitCode := runGuardedFixture(t, repository, "regeneration", "", "declared.txt")
 	t.Log(output)
 	if exitCode == 0 {
 		t.Fatalf("guarded package exit code = 0, want failure; output:\n%s", output)
 	}
-	if !strings.Contains(output, "created: undeclared.txt") {
-		t.Fatalf("guarded package did not name the undeclared write:\n%s", output)
+	if !strings.Contains(output, "created: declared.txt") {
+		t.Fatalf("guarded package did not name the undeclared-command write:\n%s", output)
 	}
 }
 
@@ -135,6 +137,9 @@ func TestGuardFixture(t *testing.T) {
 	case "ignored":
 		mustWrite(t, filepath.Join(root, "ignored", "build.log"), "ignored")
 	case "regeneration":
+		if command := os.Getenv(fixtureSanctionedCommandEnv); command != "" {
+			suiteguard.DeclareSanctionedRegeneration(command)
+		}
 		filePath := os.Getenv(fixturePathEnv)
 		if filePath == "" {
 			t.Fatal("regeneration fixture path is empty")
@@ -145,13 +150,22 @@ func TestGuardFixture(t *testing.T) {
 	}
 }
 
-func runGuardedFixture(t *testing.T, repository, mode string, filePath ...string) (string, int) {
+func runGuardedFixture(t *testing.T, repository, mode, sanctionedCommand string, filePath ...string) (string, int) {
 	t.Helper()
 	command := exec.Command(os.Args[0], "-test.run=^TestGuardFixture$", "-test.v=true")
-	command.Env = append(environmentWithout(os.Environ(), fixtureModeEnv, fixtureRootEnv, fixturePathEnv),
+	command.Env = append(environmentWithout(
+		os.Environ(),
+		fixtureModeEnv,
+		fixtureRootEnv,
+		fixturePathEnv,
+		fixtureSanctionedCommandEnv,
+	),
 		fixtureModeEnv+"="+mode,
 		fixtureRootEnv+"="+repository,
 	)
+	if sanctionedCommand != "" {
+		command.Env = append(command.Env, fixtureSanctionedCommandEnv+"="+sanctionedCommand)
+	}
 	if len(filePath) != 0 {
 		command.Env = append(command.Env, fixturePathEnv+"="+filePath[0])
 	}
@@ -164,14 +178,6 @@ func runGuardedFixture(t *testing.T, repository, mode string, filePath ...string
 		t.Fatalf("run guarded fixture: %v", err)
 	}
 	return string(output), exitError.ExitCode()
-}
-
-func guardedFixtureCommand() string {
-	return strings.Join([]string{
-		filepath.Base(os.Args[0]),
-		"-test.run=^TestGuardFixture$",
-		"-test.v=true",
-	}, " ")
 }
 
 func writeSanctionedAuthorization(t *testing.T, repository, command string, outputs ...string) {
