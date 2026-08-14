@@ -2,6 +2,58 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.6.0] - 2026-08-14
+
+Retired documentation gets one home, and a repository still on the old layout
+reaches the new one by running Roundfix rather than by moving files by hand.
+
+### Added
+
+- **One history root.** `docs/history/` holds every retired family — specs,
+  findings, decision records, declined intent, and Review Artifacts. Before
+  this, retired material sat inside the active directories it was retired from,
+  one archive folder per tree, so history and live work shared a parent and
+  excluding history meant knowing each tree separately. The resolver stays the
+  single place that knows where a family lives, so no consumer carries a path of
+  its own. See ADR-0120.
+
+- **The Baseline migrates a repository it finds on an older layout.** Running it
+  detects retired material wherever a previous layout put it and moves it into
+  the new root. Relocations enter the Plan as an ordered ledger of source,
+  destination, and content identity, carrying no bytes — a plan's size tracks
+  the change it makes rather than the history it moves. They apply inside the
+  existing transaction, verify each destination against its recorded identity,
+  and roll back completely. See ADR-0121.
+
+  Proven against a repository this work did not build: a disposable clone of an
+  adopted repository with 413 archived files and 12.4 MiB migrated with its
+  bytes intact and its second run reporting nothing left to do.
+
+- **Review Artifacts become a retired family.** A review whose Spec is known
+  already travelled with that Spec; the orphan case — a pull request with no
+  owning Spec — now has a terminal home. Which orphan is finished is decided by
+  local Git reachability, never by the hosting provider, because the migration
+  must run offline. A head the repository cannot decide stays live: keeping a
+  finished artifact costs a directory, while retiring a live one breaks the
+  Round still running. See ADR-0123.
+
+### Fixed
+
+- **A collision no longer passes silently.** A relocation whose destination is
+  occupied is refused by name, its siblings still move, the run does not report
+  success, and the next run stops calling a repository with a pending migration
+  current.
+
+- **A retired decision is not a pending one.** The layout guide treats
+  `proposed`, `rejected`, `deprecated` and `superseded` alike as inactive, which
+  is right for whether a decision is in force and wrong as a retirement rule.
+  Only the last three retire a record; a proposal stays where an author can find
+  it. See ADR-0122.
+
+- **Review never reads history.** The exclusion is path-anchored, which also
+  closes a hole the previous prefix match never covered: a review directory
+  inside an active Spec was not excluded at all.
+
 ## [0.4.0] - 2026-08-06
 
 This release closes a gate that failed open, and then makes the loop that
