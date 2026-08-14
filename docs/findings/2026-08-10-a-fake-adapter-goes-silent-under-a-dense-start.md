@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-08-10
-updated_at: 2026-08-10
+updated_at: 2026-08-14
 ---
 
 # A fake adapter goes silent under a dense start
@@ -43,3 +43,20 @@ child process so a dead fake fails in milliseconds instead of 90 seconds, and
 whether the fakes should be compiled test binaries (`os.Args[0]` re-exec, which
 the harness already uses elsewhere) instead of shell scripts, removing the
 write-then-exec window entirely.
+
+## 2026-08-14 — the silent-probe signature again, on a docs-only branch
+
+`TestACPXRunAppliesSelectionBeforePrompt/codex_reasoning_effort` failed on
+PR #161, a branch that changes nothing but Markdown. The message is the
+silent-probe signature exactly: the fake `npx` written by `installFakeAdapter`
+produced no parseable `--version` output, so `inspectAdapter` returned an
+`AdapterLineageError` naming the package it could not prove. The same test
+passes locally under `-count=1`, and the run's other twenty-four packages were
+green.
+
+This is the fourth month-to-date occurrence and the first on a branch that
+cannot have caused it, which settles the question of whether the family is
+branch-specific: it is not. It also raises the cost of the flake beyond wasted
+CI minutes — a docs-only Pull Request cannot be merged without a rerun, so the
+loop pays for it at every delivery, not only at every code change.
+
