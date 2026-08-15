@@ -78,6 +78,144 @@ func TestGateAcceptsItsOwnDeclaredTerm(t *testing.T) {
 	})
 }
 
+func TestGatePerformsAssignedRepairs(t *testing.T) {
+	t.Parallel()
+
+	t.Run("assigned repair is performed verified and recorded", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		const repairPath = "docs/specs/mechanical/_prd.md"
+		writeMechanicalFile(t, repoRoot, repairPath, "Tooling authority: not applicable\n")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:        repoRoot,
+			TaskRepairPaths: []string{repairPath},
+			AssignedRepairs: []speccheck.AssignedRepair{{
+				ID:     "restore-tooling-authority",
+				Path:   repairPath,
+				Before: "Tooling authority: not applicable",
+				After:  "Tooling authority: applicable",
+			}},
+		})
+
+		content, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(repairPath)))
+		if err != nil {
+			t.Fatalf("read repaired path: %v", err)
+		}
+		if got := string(content); got != "Tooling authority: applicable\n" {
+			t.Fatalf("repaired content = %q, want assigned replacement", got)
+		}
+		if len(result.Performed) != 1 || result.Performed[0].ID != "restore-tooling-authority" ||
+			result.Performed[0].Path != repairPath {
+			t.Fatalf("Performed = %#v, want the verified assigned repair", result.Performed)
+		}
+		if len(result.RepairFailures) != 0 {
+			t.Fatalf("RepairFailures = %#v, want none", result.RepairFailures)
+		}
+
+		var report bytes.Buffer
+		if err := speccheck.WriteMechanicalResult(&report, result); err != nil {
+			t.Fatalf("WriteMechanicalResult: %v", err)
+		}
+		for _, want := range []string{"## Performed repairs", "restore-tooling-authority", repairPath, "verified after write"} {
+			if !strings.Contains(report.String(), want) {
+				t.Fatalf("mechanical report does not record %q:\n%s", want, report.String())
+			}
+		}
+	})
+
+	t.Run("skipped assigned repair blocks", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		const repairPath = "CONTEXT.md"
+		writeMechanicalFile(t, repoRoot, repairPath, "# Glossary\n")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:        repoRoot,
+			TaskRepairPaths: []string{repairPath},
+			AssignedRepairs: []speccheck.AssignedRepair{{
+				ID:     "document-governed-path",
+				Path:   repairPath,
+				Before: "**Governed Path**: pending",
+				After:  "**Governed Path**: documented",
+			}},
+		})
+
+		if !result.Blocking || len(result.RepairFailures) != 1 || !strings.Contains(result.RepairFailures[0].Detail, "was not performed") {
+			t.Fatalf("assigned repair result = %#v, want one blocking skipped-repair failure", result)
+		}
+		if len(result.Findings) != 0 {
+			t.Fatalf("Findings = %#v, want assigned work kept out of observations", result.Findings)
+		}
+		if len(result.Performed) != 0 {
+			t.Fatalf("Performed = %#v, want none", result.Performed)
+		}
+	})
+
+	t.Run("unassigned finding is reported without a repair", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		const reportPath = "docs/specs/mechanical/qa/report.md"
+		original := "# QA Report without frontmatter or Results rows\n"
+		writeMechanicalFile(t, repoRoot, reportPath, original)
+
+		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+		if findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape); len(findings) == 0 {
+			t.Fatalf("%s findings = %#v, want the unassigned observation reported", speccheck.CodeMechanicalReportShape, findings)
+		}
+		content, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(reportPath)))
+		if err != nil {
+			t.Fatalf("read observed report: %v", err)
+		}
+		if string(content) != original {
+			t.Fatalf("unassigned finding changed report to %q", content)
+		}
+		if len(result.Performed) != 0 {
+			t.Fatalf("Performed = %#v, want none for an unassigned finding", result.Performed)
+		}
+	})
+
+	t.Run("repair outside Task named paths is refused before writing", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		const (
+			allowedPath = "docs/specs/mechanical/_prd.md"
+			outsidePath = "CONTEXT.md"
+		)
+		writeMechanicalFile(t, repoRoot, allowedPath, "allowed\n")
+		writeMechanicalFile(t, repoRoot, outsidePath, "original\n")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:        repoRoot,
+			TaskRepairPaths: []string{allowedPath},
+			AssignedRepairs: []speccheck.AssignedRepair{{
+				ID:     "out-of-bounds",
+				Path:   outsidePath,
+				Before: "original",
+				After:  "changed",
+			}},
+		})
+
+		if !result.Blocking || len(result.RepairFailures) != 1 || !strings.Contains(result.RepairFailures[0].Detail, "outside the Task-named repair paths") {
+			t.Fatalf("out-of-bounds result = %#v, want one blocking scope failure", result)
+		}
+		if len(result.Findings) != 0 {
+			t.Fatalf("Findings = %#v, want assigned work kept out of observations", result.Findings)
+		}
+		content, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(outsidePath)))
+		if err != nil {
+			t.Fatalf("read out-of-bounds path: %v", err)
+		}
+		if got := string(content); got != "original\n" {
+			t.Fatalf("out-of-bounds content = %q, want unchanged", got)
+		}
+		if len(result.Performed) != 0 {
+			t.Fatalf("Performed = %#v, want none", result.Performed)
+		}
+	})
+}
+
 func TestMechanicalAuthPaths(t *testing.T) {
 	t.Parallel()
 

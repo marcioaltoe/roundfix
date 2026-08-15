@@ -1083,6 +1083,23 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 		}
 	})
 
+	t.Run("unperformed assigned repair records its blocking cause", func(t *testing.T) {
+		report := writeReport(t, speccheck.MechanicalResult{
+			RepairFailures: []speccheck.RepairFailure{{
+				ID: "document-governed-path", Path: "CONTEXT.md",
+				Detail: "assigned repair document-governed-path was not performed",
+			}},
+			Blocking: true,
+		})
+
+		if !strings.Contains(report, "| document-governed-path | CONTEXT.md | assigned repair document-governed-path was not performed |") {
+			t.Fatalf("mechanical QA Report omitted the assigned repair failure:\n%s", report)
+		}
+		if !strings.Contains(report, "| QA-PRECONDITION | fail | mechanical refusal: document-governed-path: assigned repair document-governed-path was not performed; no other checks executed |") {
+			t.Fatalf("mechanical QA Report did not fail on the unperformed repair:\n%s", report)
+		}
+	})
+
 	t.Run("populated blocking result preserves its bytes", func(t *testing.T) {
 		result := speccheck.MechanicalResult{
 			Findings: []speccheck.MechanicalFinding{{
@@ -1095,7 +1112,8 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 
 		report := writeReport(t, result)
 		want := "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
-			"# QA Report\n\n## Mechanical findings\n\n### QA-FIXTURE\n\n" +
+			"# QA Report\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n" +
+			"## Mechanical findings\n\n### QA-FIXTURE\n\n" +
 			"- location: `fixture.md:7`\n- detail: fixture mismatch\n- fix: repair fixture\n- blocked row: `R01`\n\n" +
 			"## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n" +
 			"| R01 | blocked (finding: QA-FIXTURE — waits on fixture mismatch) | mechanical finding |\n\n" +

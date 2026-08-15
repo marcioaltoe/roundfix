@@ -2065,7 +2065,17 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 }
 
 func mechanicalRefusalCause(result speccheck.MechanicalResult) string {
-	causes := make([]string, 0, len(result.Findings)+len(result.Skips))
+	causes := make([]string, 0, len(result.RepairFailures)+len(result.Findings)+len(result.Skips))
+	for _, failure := range result.RepairFailures {
+		cause := strings.TrimSpace(failure.ID)
+		if cause == "" {
+			cause = "assigned repair"
+		}
+		if detail := strings.TrimSpace(failure.Detail); detail != "" {
+			cause += ": " + detail
+		}
+		causes = append(causes, cause)
+	}
 	for _, finding := range result.Findings {
 		cause := strings.TrimSpace(finding.Code)
 		if detail := strings.TrimSpace(finding.Detail); detail != "" {

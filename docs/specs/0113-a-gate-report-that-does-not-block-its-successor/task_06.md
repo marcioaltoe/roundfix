@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: high
 ---
@@ -29,18 +29,18 @@ performs and then verifies, bounded to what the Task names.
 
 ## Subtasks
 
-- [ ] Distinguish an assigned repair from an observation.
-- [ ] Perform, verify, and record it.
-- [ ] Keep unassigned findings reported.
-- [ ] Cover the performed, the skipped, and the unassigned cases.
+- [x] Distinguish an assigned repair from an observation.
+- [x] Perform, verify, and record it.
+- [x] Keep unassigned findings reported.
+- [x] Cover the performed, the skipped, and the unassigned cases.
 
 ## Acceptance Criteria
 
-- [ ] A gate whose Task names a repair performs it, and the report records what
+- [x] A gate whose Task names a repair performs it, and the report records what
       was performed.
-- [ ] A gate that leaves a named repair unmade fails.
-- [ ] A finding the Task did not assign is reported, not performed.
-- [ ] The gate writes nothing outside the paths its Task names.
+- [x] A gate that leaves a named repair unmade fails.
+- [x] A finding the Task did not assign is reported, not performed.
+- [x] The gate writes nothing outside the paths its Task names.
 
 ## Verification
 
@@ -57,3 +57,51 @@ performs and then verifies, bounded to what the Task names.
 
 `_techspec.md` → Build Order 6; Risks & Considerations, a gate that writes.
 `_prd.md` → Core Feature 7; Goal 5; User Story 5; Non-Goals. ADR-0134.
+
+## Result
+
+Implemented a declarative assigned-repair phase in the pre-QA mechanical stage.
+Each repair names an exact Task repair path and one unambiguous before/after
+replacement. The stage preflights the complete repair batch before writing,
+preserves file modes, reads each changed file back, and records only verified
+writes under `## Performed repairs`. Work it cannot safely perform or verify is
+kept separate from observations as an assigned repair failure and blocks the
+mechanical result. The Daemon includes that failure in the terminal refusal row.
+
+Unassigned detector output remains a `MechanicalFinding` and is never used as a
+repair instruction. Non-canonical paths, paths absent from the Task's exact
+repair-path set, symlinks and other non-regular targets, missing before/after
+text, duplicate identifiers, and ambiguous replacements fail before the repair
+batch writes any file.
+
+Focused evidence:
+
+- Before implementation,
+  `rtk env GOCACHE=/tmp/roundfix-0113-task06-gocache go test ./internal/speccheck -run '^TestGatePerformsAssignedRepairs$/assigned_repair_is_performed_verified_and_recorded$'`
+  failed to compile because the repair request, result, and report contract did
+  not exist.
+- `rtk env GOCACHE=/tmp/roundfix-0113-task06-gocache go test -count=1 ./internal/speccheck -run '^TestGatePerformsAssignedRepairs$/'`
+  passed the performed-and-recorded, skipped-and-blocking, unassigned-finding,
+  and out-of-bounds-no-write cases.
+- `rtk env GOCACHE=/tmp/roundfix-0113-task06-gocache go test -count=1 ./internal/daemon -run '^TestWriteMechanicalQAReportRecordsTheRefusal$/'`
+  passed, including the assigned-repair failure's terminal refusal provenance.
+- `rtk env GOCACHE=/tmp/roundfix-0113-task06-gocache go test -count=1 ./internal/speccheck -run '^(TestMaterializeMechanicalResult|TestMechanicalReportShape)$'`
+  passed, covering the changed report carrier beside the existing shape rules.
+- `rtk git diff --check` exited 0.
+
+Acceptance evidence:
+
+- Performed and recorded: the positive subtest observes the changed file, the
+  `PerformedRepair` record, and its `verified after write` report row.
+- Unmade repair fails: the skipped subtest observes an unchanged file, one
+  `RepairFailure`, no `MechanicalFinding`, and `Blocking: true`; the Daemon
+  subtest observes the matching failed terminal row.
+- Unassigned observation stays reported: the malformed-report subtest receives
+  `QA-REPORT-SHAPE`, leaves the report byte-identical, and records no performed
+  repair.
+- Exact write bound: the out-of-bounds subtest assigns only the PRD path,
+  attempts a repair to `CONTEXT.md`, observes a blocking repair failure, and
+  confirms `CONTEXT.md` remains byte-identical.
+
+The Task's declared `## Verification` commands were not run; the Daemon owns
+those commands and settlement.
