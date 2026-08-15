@@ -35,7 +35,16 @@ third disagreement sits beside them: the PRD template tells an author to record
   drawn around the cause with its computable effects following it. ADR-0096 places
   this audit in the gate's mechanical stage, and ADR-0117 puts a check with the
   stage that can produce its defect, which is what moving the tooling-row
-  contradiction to authoring time would honour. Source: `docs/agents/domain.md`.
+  contradiction to authoring time honours. This Spec's own decisions are ADR-0129,
+  which lets a grant name the command while the tree names its outputs, ADR-0130,
+  which makes the audit judge governed paths and holds the declared set to every
+  path an authorization has ever bounded, and ADR-0131, which settles the tooling
+  row as a statement of applicability rather than of mutation. ADR-0128 already
+  made the audit and the suite guard read one regeneration declaration, and this
+  Spec depends on it unchanged. The closing node rests on two more it follows
+  rather than changes: ADR-0091 makes the QA gate a Task node of its own type, and
+  ADR-0104 makes a Spec accept on evidence it did not author, which is what the
+  two replayed historical refusals supply here. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — the audit and detector corrections are
   production Go, which no tooling grant governs. If the TechSpec resolves the
   template-versus-detector disagreement by changing the `write-prd` template
