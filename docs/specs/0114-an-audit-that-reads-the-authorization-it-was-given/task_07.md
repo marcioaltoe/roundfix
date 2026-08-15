@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0114-an-audit-that-reads-the-authorization-it-was-given
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: test
 complexity: low
 ---
@@ -57,3 +57,50 @@ assert the new contract in both directions rather than the old one in one.
 `_techspec.md` → Risks & Considerations, the direction that loses safety.
 `_prd.md` → Core Feature 2; Goal 2; User Story 2. ADR-0130.
 Evidence: this Spec's QA report `qa/qa-report-2026-08-15-01.md`, finding F-001.
+
+## Result
+
+Implementation:
+
+- Split the Daemon's mechanical-request fixture into two named cases that each
+  create and audit a real Task commit.
+- The refusal case folds `.golangci.yml` beside the granted `Makefile` change
+  and still requires a blocking result with exactly one finding whose detail
+  names `.golangci.yml`.
+- The permission case folds `internal/ordinary.go` into the same Task commit as
+  the granted `Makefile` change and requires a non-blocking result with no
+  findings.
+
+Focused evidence:
+
+- Before the edit, `rtk proxy go test -run
+  '^TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit$' -count=1
+  ./internal/daemon` failed because the ordinary `outside.txt` path produced no
+  findings while the stale fixture expected it to block.
+- After the edit, `rtk env GOCACHE=/tmp/roundfix-0114-task07-gocache go test -v -run
+  '^TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit$' -count=1
+  ./internal/daemon` passed and reported both
+  `ungranted_governed_path_blocks` and `ordinary_path_does_not_block` as passing
+  subtests.
+- `rtk env GOCACHE=/tmp/roundfix-0114-task07-gocache go test -count=1
+  ./internal/daemon` passed.
+- `rtk git diff --check` passed. Source inspection found no `outside.txt`
+  refusal fixture and confirmed both `result.Blocking` assertions remain: the
+  governed case requires blocking, while the ordinary case requires the
+  opposite and zero findings.
+
+Acceptance evidence:
+
+- The ungranted governed-path criterion is exercised by `.golangci.yml`; the
+  focused test passed with the exact-one-finding, named-path assertion intact.
+- The ordinary-path criterion is exercised by `internal/ordinary.go`; the
+  focused test passed with an explicit zero-finding assertion.
+- The `internal/daemon` package passed its fresh focused package run.
+- Assertion strength was preserved: the refusal case still checks
+  `result.Blocking`, an exact finding count, and the governed path in the
+  finding detail.
+
+Not run:
+
+- The commands under this Task's `## Verification` section and the repository
+  Verification were not run; the Daemon owns those checks after handoff.

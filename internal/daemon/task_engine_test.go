@@ -885,58 +885,77 @@ func TestMechanicalStageSeedsReportBeforeAgentSession(t *testing.T) {
 
 func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 	t.Parallel()
-	repoRoot := t.TempDir()
-	gittest.InitRepo(t, repoRoot, "-b", "main")
-	gittest.AppendConfig(t, repoRoot, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
-	specDir := filepath.Join(repoRoot, "docs", "specs", taskCycleSlug)
-	authorizationPath := "docs/workflow/authorizations/mechanical.md"
-	for _, dir := range []string{filepath.Dir(filepath.Join(repoRoot, authorizationPath)), specDir, filepath.Join(repoRoot, "internal")} {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			t.Fatalf("create fixture directory %q: %v", dir, err)
+
+	runMechanicalRequest := func(t *testing.T, foldedPath string, foldedContent string) speccheck.MechanicalResult {
+		t.Helper()
+		repoRoot := t.TempDir()
+		gittest.InitRepo(t, repoRoot, "-b", "main")
+		gittest.AppendConfig(t, repoRoot, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
+		specDir := filepath.Join(repoRoot, "docs", "specs", taskCycleSlug)
+		authorizationPath := "docs/workflow/authorizations/mechanical.md"
+		for _, dir := range []string{filepath.Dir(filepath.Join(repoRoot, authorizationPath)), specDir, filepath.Join(repoRoot, "internal")} {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatalf("create fixture directory %q: %v", dir, err)
+			}
 		}
-	}
-	mustWriteForTest(t, filepath.Join(repoRoot, authorizationPath), "# Authorization\n\n## Bounded files\n\n- `Makefile`\n")
-	mustWriteForTest(t, filepath.Join(specDir, "_prd.md"), "# PRD\n\n## Project Constraints\n\n- Tooling authority: applicable — recorded at `"+authorizationPath+"`; bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
-	mustWriteForTest(t, filepath.Join(specDir, "task_01.md"), "ordinary task\n")
-	mustWriteForTest(t, filepath.Join(specDir, "task_02.md"), "tooling task\n")
-	mustWriteForTest(t, filepath.Join(repoRoot, "Makefile"), "verify:\n\t@true\n")
-	mustWriteForTest(t, filepath.Join(repoRoot, "internal", "ordinary.go"), "package internal\n")
-	runGitForTest(t, repoRoot, "add", "-A")
-	runGitForTest(t, repoRoot, "commit", "-q", "-m", "initial")
-	initialHead := strings.TrimSpace(runGitForTest(t, repoRoot, "rev-parse", "HEAD"))
+		mustWriteForTest(t, filepath.Join(repoRoot, authorizationPath), "# Authorization\n\n## Bounded files\n\n- `Makefile`\n")
+		mustWriteForTest(t, filepath.Join(specDir, "_prd.md"), "# PRD\n\n## Project Constraints\n\n- Tooling authority: applicable — recorded at `"+authorizationPath+"`; bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
+		mustWriteForTest(t, filepath.Join(specDir, "task_01.md"), "ordinary task\n")
+		mustWriteForTest(t, filepath.Join(specDir, "task_02.md"), "tooling task\n")
+		mustWriteForTest(t, filepath.Join(repoRoot, "Makefile"), "verify:\n\t@true\n")
+		mustWriteForTest(t, filepath.Join(repoRoot, "internal", "ordinary.go"), "package internal\n")
+		runGitForTest(t, repoRoot, "add", "-A")
+		runGitForTest(t, repoRoot, "commit", "-q", "-m", "initial")
+		initialHead := strings.TrimSpace(runGitForTest(t, repoRoot, "rev-parse", "HEAD"))
 
-	mustWriteForTest(t, filepath.Join(repoRoot, "internal", "ordinary.go"), "package internal\n\nconst ordinary = true\n")
-	runGitForTest(t, repoRoot, "add", "-A")
-	runGitForTest(t, repoRoot, "commit", "-q", "-m", "feat: ordinary work", "-m", "Roundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_01")
-	mustWriteForTest(t, filepath.Join(repoRoot, "Makefile"), "verify:\n\t@true\nfast-verify:\n\t@true\n")
-	mustWriteForTest(t, filepath.Join(repoRoot, "outside.txt"), "folded consequence\n")
-	runGitForTest(t, repoRoot, "add", "-A")
-	runGitForTest(t, repoRoot, "commit", "-q", "-m", "chore: tooling work", "-m", "Roundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_02")
+		mustWriteForTest(t, filepath.Join(repoRoot, "internal", "ordinary.go"), "package internal\n\nconst ordinary = true\n")
+		runGitForTest(t, repoRoot, "add", "-A")
+		runGitForTest(t, repoRoot, "commit", "-q", "-m", "feat: ordinary work", "-m", "Roundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_01")
+		mustWriteForTest(t, filepath.Join(repoRoot, "Makefile"), "verify:\n\t@true\nfast-verify:\n\t@true\n")
+		mustWriteForTest(t, filepath.Join(repoRoot, foldedPath), foldedContent)
+		runGitForTest(t, repoRoot, "add", "-A")
+		runGitForTest(t, repoRoot, "commit", "-q", "-m", "chore: tooling work", "-m", "Roundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_02")
 
-	plan := TaskPlan{
-		WorkDir:   repoRoot,
-		HeadSHA:   initialHead,
-		SpecsRoot: filepath.Join(repoRoot, "docs", "specs"),
-		Spec:      spec.Spec{Slug: taskCycleSlug, Dir: specDir},
-		Tasks: []spec.Task{
-			{ID: "task_01", File: filepath.Join(taskCycleSlug, "task_01.md")},
-			{ID: "task_02", File: filepath.Join(taskCycleSlug, "task_02.md")},
-		},
+		plan := TaskPlan{
+			WorkDir:   repoRoot,
+			HeadSHA:   initialHead,
+			SpecsRoot: filepath.Join(repoRoot, "docs", "specs"),
+			Spec:      spec.Spec{Slug: taskCycleSlug, Dir: specDir},
+			Tasks: []spec.Task{
+				{ID: "task_01", File: filepath.Join(taskCycleSlug, "task_01.md")},
+				{ID: "task_02", File: filepath.Join(taskCycleSlug, "task_02.md")},
+			},
+		}
+		request, err := (&Engine{}).qaMechanicalRequest(context.Background(), plan, "")
+		if err != nil {
+			t.Fatalf("qaMechanicalRequest returned error: %v", err)
+		}
+		if len(request.TaskCommits) != 1 || request.TaskCommits[0].TaskID != "task_02" {
+			t.Fatalf("qaMechanicalRequest selected Task commits %+v, want only task_02", request.TaskCommits)
+		}
+		result, err := speccheck.RunMechanicalStage(context.Background(), request)
+		if err != nil {
+			t.Fatalf("RunMechanicalStage returned error: %v", err)
+		}
+		return result
 	}
-	request, err := (&Engine{}).qaMechanicalRequest(context.Background(), plan, "")
-	if err != nil {
-		t.Fatalf("qaMechanicalRequest returned error: %v", err)
-	}
-	if len(request.TaskCommits) != 1 || request.TaskCommits[0].TaskID != "task_02" {
-		t.Fatalf("qaMechanicalRequest selected Task commits %+v, want only task_02", request.TaskCommits)
-	}
-	result, err := speccheck.RunMechanicalStage(context.Background(), request)
-	if err != nil {
-		t.Fatalf("RunMechanicalStage returned error: %v", err)
-	}
-	if !result.Blocking || len(result.Findings) != 1 || !strings.Contains(result.Findings[0].Detail, "outside.txt") {
-		t.Fatalf("mechanical stage result = %+v, want the folded outside path to block", result)
-	}
+
+	t.Run("ungranted governed path blocks", func(t *testing.T) {
+		const governedPath = ".golangci.yml"
+		result := runMechanicalRequest(t, governedPath, "linters: {}\n")
+
+		if !result.Blocking || len(result.Findings) != 1 || !strings.Contains(result.Findings[0].Detail, governedPath) {
+			t.Fatalf("mechanical stage result = %+v, want the folded governed path %s to block", result, governedPath)
+		}
+	})
+
+	t.Run("ordinary path does not block", func(t *testing.T) {
+		result := runMechanicalRequest(t, filepath.Join("internal", "ordinary.go"), "package internal\n\nconst foldedOrdinary = true\n")
+
+		if result.Blocking || len(result.Findings) != 0 {
+			t.Fatalf("mechanical stage result = %+v, want the folded ordinary path to produce no finding", result)
+		}
+	})
 }
 
 func TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport(t *testing.T) {
