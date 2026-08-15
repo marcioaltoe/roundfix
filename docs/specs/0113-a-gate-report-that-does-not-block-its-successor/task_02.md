@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -55,3 +55,52 @@ completes.
 
 `_techspec.md` → Build Order 2; Testing Approach, the successor. `_prd.md` →
 Core Feature 2; Goal 1; Success Metrics. ADR-0132, ADR-0096.
+
+## Result
+
+### Implementation
+
+- The daemon integration test now replays four report-writer-to-mechanical-stage
+  sequences under `TestRefusedReportDoesNotBlockItsSuccessor`.
+- The blocking and environmental cases pass the real writer's unchanged output
+  to the mechanical stage and assert that it produces no `QA-REPORT-SHAPE`
+  finding.
+- The negative controls start from the same real writer output, then introduce a
+  non-terminal row status or replace the `Status` table header so the reader
+  cannot parse any row. Both assert a specific `QA-REPORT-SHAPE` finding.
+
+### Focused checks
+
+- Before the edit, repository search found no test named
+  `TestRefusedReportDoesNotBlockItsSuccessor`; the existing integration seam
+  covered only the blocking sequence under another name.
+- `rtk env GOCACHE=/tmp/roundfix-task02-go-cache go test -v
+  ./internal/daemon -run '^TestRefusedReportDoesNotBlockItsSuccessor$'
+  -count=1` passed the parent test and all four named subtests.
+- `rtk env GOCACHE=/tmp/roundfix-task02-go-cache go test
+  ./internal/daemon -run
+  '^(TestRefusedReportDoesNotBlockItsSuccessor|TestWriteMechanicalQAReportRecordsTheRefusal)$'
+  -count=1` passed the sequence and adjacent writer tests.
+- `rtk git diff --check` passed.
+- The first focused invocation without the task-local `GOCACHE` did not compile
+  because the sandbox denied Go's host cache path; rerunning with the writable
+  `/tmp` cache above passed.
+- The Task's declared Verification commands were not run; the Daemon owns that
+  gate.
+
+### Evidence per acceptance criterion
+
+1. `blocking precondition refusal is readable` writes a blocking precondition
+   result through `writeMechanicalQAReport`, confirms the refusal cause in the
+   emitted report, and observes no `QA-REPORT-SHAPE` finding on the successor
+   mechanical-stage read.
+2. `environmental precondition refusal is readable` writes a result whose skipped
+   external-evidence detector names missing environment access, confirms that
+   cause in the emitted report, and observes no `QA-REPORT-SHAPE` finding.
+3. `non-terminal row status is refused` changes the writer-emitted terminal
+   status to `running` and observes a `QA-REPORT-SHAPE` finding naming the
+   non-terminal status. `unreadable results table is refused` changes the emitted
+   status header to `Outcome` and observes the empty-parsed-table shape finding.
+4. Every subtest calls `writeMechanicalQAReport`. No positive report is assembled
+   from a fixture string; only the two negative controls alter the emitted bytes
+   to introduce their named malformed condition.
