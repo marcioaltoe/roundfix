@@ -1,9 +1,12 @@
 ---
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: active
+status: archived
 created: 2026-08-14
 surfaces: [backend, docs]
+archived: "2026-08-15"
+source_slug: 0113-a-gate-report-that-does-not-block-its-successor
 ---
+
 
 # A gate report that does not block its successor
 
