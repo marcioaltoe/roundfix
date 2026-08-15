@@ -6,6 +6,19 @@ created: 2026-08-15
 
 # A gate report that does not block its successor — Technical Spec
 
+## Vocabulary Contract
+
+- emits: `internal/speccheck/mechanical.go`
+  pattern: `[Aa]ssigned [Rr]epair`
+  documented-in: `CONTEXT.md`
+
+Assigned Repair is this Spec's coined term: it names a repair a gate's own Task
+file instructs it to make, as distinct from a finding it reports. The distinction
+is the whole of ADR-0134, and it reaches a Supervisor through the gate's report,
+so it needs the durable owner the glossary gives. Declaring it makes
+`SC-VOCABULARY-UNDOCUMENTED` run instead of skip — which this Spec's own gate then
+proved, by finding the term emitted and undocumented.
+
 ## Executive Summary
 
 Four defects sit in one node, and every one is a few lines from where it is

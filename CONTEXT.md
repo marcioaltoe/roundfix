@@ -28,6 +28,10 @@ _Avoid_: Pause, retry, failure
 The Stop Command mode that proves owner identity, cancels registered Agent Sessions, terminates the recorded owning process, and completes the Run as Stopped only after owner exit is proven. A proven identity mismatch always refuses; only the explicit `--owner-identity-unreadable` last-resort flag permits PID-only termination after the host reports the identity unreadable.
 _Avoid_: Lock release, best-effort stop, orphan reclamation
 
+**Assigned Repair**:
+A repair a QA gate's own Task file instructs it to make, as opposed to a finding it observes and reports. The gate performs an Assigned Repair, verifies it, and records what it performed; it may write only the paths its Task names. Anything the Task did not assign stays reported rather than performed. In code and in a report's audit trail the same idea appears lowercase, as an assigned repair.
+_Avoid_: Auto-fix, gate edit, remediation
+
 **Governed Path**:
 A repository path the tooling-authority rules bind — the configuration, scripts, ignore files, plugin declarations, and version pins of linters, formatters, typecheckers, test runners, architecture checkers, build tools, package managers, and code generators. The changed-path audit judges a Task commit only against its governed paths; an ordinary source, test, or documentation file is not governed and needs no grant. The declared set is held to the record: every path any authorization has ever bounded stays governed.
 _Avoid_: Protected file, restricted path, tooling file
