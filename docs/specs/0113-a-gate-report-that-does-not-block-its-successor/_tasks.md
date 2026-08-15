@@ -25,9 +25,12 @@ graph:
     - id: task_08
       file: task_08.md
       needs: [task_06]
+    - id: task_09
+      file: task_09.md
+      needs: [task_08]
     - id: task_07
       file: task_07.md
-      needs: [task_02, task_04, task_06, task_08]
+      needs: [task_02, task_04, task_06, task_08, task_09]
 ---
 
 # Tasks — A gate report that does not block its successor
@@ -41,7 +44,8 @@ graph:
 | task_05 | Let a Spec's own coined term reach its gate                  | backend | medium     | —                         |
 | task_06 | Perform the repairs the Task names                           | backend | high       | task_05                   |
 | task_08 | Wire the gate's new inputs into the request it receives      | backend | high       | task_06                   |
-| task_07 | Run the final QA gate                                        | qa      | high       | task_02, task_04, task_06, task_08 |
+| task_09 | A refusal row records a refusal, and the precondition breaks no journey | backend | high | task_08 |
+| task_07 | Run the final QA gate                                        | qa      | high       | task_02, task_04, task_06, task_08, task_09 |
 
 Wave plan: `1 → task_01, task_03, task_05 · 2 → task_02, task_04, task_06 · 3 → task_07`.
 
