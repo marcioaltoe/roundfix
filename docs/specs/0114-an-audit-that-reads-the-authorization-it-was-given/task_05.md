@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0114-an-audit-that-reads-the-authorization-it-was-given
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: high
 ---
@@ -67,3 +67,64 @@ all still fail.
 `_techspec.md` → Build Order 5; Coverage Map; Risks & Considerations, the
 direction that loses safety. `_prd.md` → Core Features 1 and 2; Goals 1 and 2;
 Success Metrics. ADR-0129, ADR-0130, ADR-0081.
+
+## Result
+
+The changed-path audit now ignores ordinary paths, resolves every declared
+regeneration command through `baseline.OutputsFor`, and unions those paths with
+any outputs the authorization record still enumerates. A command-only
+`Sanctioned regeneration` declaration is retained by the shared parser so the
+audit can resolve it from the repository tree. The authorization record itself
+remains governed even if its path does not match `GovernedPath`, which keeps a
+Task from landing its grant in the commit that consumes it. Git diagnostics are
+also kept off the `diff-tree` stdout stream so a warning cannot become a
+fabricated offending path.
+
+Focused checks:
+
+- Before implementation,
+  `rtk env GOCACHE=/tmp/roundfix-0114-task05-gocache go test ./internal/speccheck -count=1 -run '^TestAuditJudgesTheGrant$/historical_authorized_asset_and_ordinary_Go_split_now_share_one_audit$'`
+  failed with the ordinary `internal/cli/archive.go` path refused. The same run
+  also exposed an fsmonitor diagnostic parsed as a path.
+- Before implementation,
+  `rtk env GOCACHE=/tmp/roundfix-0114-task05-gocache go test ./internal/speccheck -count=1 -run '^TestAuditJudgesTheGrant$/historical_regeneration_resolves_outputs_absent_from_the_grant$'`
+  failed with nine regenerated paths refused when the record named only
+  `make baseline-digests`.
+- `rtk env GOCACHE=/tmp/roundfix-0114-task05-gocache go test -json ./internal/speccheck -count=1 -run '^TestAuditJudgesTheGrant$'`
+  passed the two historical acceptance cases and the four refusal cases as six
+  separately reported subtests.
+- `rtk env GOCACHE=/tmp/roundfix-0114-task05-gocache go test ./internal/speccheck -count=1`
+  passed the complete package after the final production edit.
+- `rtk env GOCACHE=/tmp/roundfix-0114-task05-gocache go test ./internal/suiteguard ./internal/suiteguardcontract -count=1`
+  passed; `suiteguardcontract` has no direct test files.
+- `rtk env GOCACHE=/tmp/roundfix-0114-task05-gocache go test ./internal/baseline -count=1 -run '^TestOutputsForCommand$'`
+  passed the resolver suite.
+- `rtk git diff --check` exited 0, and source inspection found both
+  `GovernedPath` and `baseline.OutputsFor` in `internal/speccheck/mechanical.go`.
+- No command from this Task's `## Verification` section was run.
+
+Acceptance evidence:
+
+- The ordinary-path case replays the actual split commits
+  `419a4661ac769ff7ee6ce5423bd795185c859d01` and
+  `65c51ebf2e19220ff50d25fe03be809fcdf353f0`; the same subtest also replays
+  Spec 0095 Task commit `28acf39cc193ad490646cb5a1d23500e0c08c273`
+  against its authorization. All three commits resolved from this repository's
+  Git object database, so the outside-evidence row is not blocked.
+- The command-resolution case replays the 2026-08-13 corrective commit
+  `c80e1266658929f68e8046af82f88e13392dc56d` against a command-only grant.
+  The commit resolved from Git and its nine derived paths passed without an
+  enumerated `outputs` list, so this outside-evidence row is not blocked.
+- `governed path outside the grant is refused by name` changes a bounded
+  `Makefile` beside unbounded `.golangci.yml` and asserts exactly one
+  `QA-AUTH-PATHS` finding whose detail names the path and whose file names the
+  escaped grant.
+- `hand edited derived value without a command is refused` asserts exactly one
+  finding for `internal/baseline/assets/source-baselines/index.json` when the
+  grant declares no regeneration command.
+- `record that does not name the Spec is refused` preserves the existing
+  `SC-TOOLING-UNAUTHORIZED` refusal and requires its summary to name the
+  omitted Spec.
+- `Task commit cannot carry its own authorization` changes a bounded path and
+  its authorization record together, then asserts exactly one finding naming
+  the record and grant.

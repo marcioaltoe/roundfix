@@ -16,7 +16,9 @@ import (
 
 const sanctionedRegenerationHeading = "Sanctioned regeneration"
 
-// SanctionedRegeneration binds one declared command to its exact outputs.
+// SanctionedRegeneration binds one declared command to any outputs the record
+// still enumerates. An empty Outputs slice leaves output resolution to the
+// command's repository-owned declaration.
 type SanctionedRegeneration struct {
 	Command string
 	Outputs []string
@@ -79,8 +81,8 @@ func ParseSanctionedRegenerations(content []byte) []SanctionedRegeneration {
 			return declarations
 		}
 		var declaration struct {
-			Command string   `yaml:"command"`
-			Outputs []string `yaml:"outputs"`
+			Command string    `yaml:"command"`
+			Outputs *[]string `yaml:"outputs"`
 		}
 		if err := yaml.Unmarshal([]byte(strings.Join(lines[start:index], "\n")), &declaration); err != nil {
 			continue
@@ -90,21 +92,24 @@ func ParseSanctionedRegenerations(content []byte) []SanctionedRegeneration {
 			continue
 		}
 
-		outputs := make([]string, 0, len(declaration.Outputs))
-		seen := make(map[string]bool, len(declaration.Outputs))
-		for _, output := range declaration.Outputs {
-			output = strings.TrimSpace(output)
-			clean := cleanRepositoryPath(output)
-			if clean == "" || clean != output || strings.ContainsAny(clean, "*?") || seen[clean] {
+		var outputs []string
+		if declaration.Outputs != nil {
+			outputs = make([]string, 0, len(*declaration.Outputs))
+			seen := make(map[string]bool, len(*declaration.Outputs))
+			for _, output := range *declaration.Outputs {
+				output = strings.TrimSpace(output)
+				clean := cleanRepositoryPath(output)
+				if clean == "" || clean != output || strings.ContainsAny(clean, "*?") || seen[clean] {
+					continue
+				}
+				seen[clean] = true
+				outputs = append(outputs, clean)
+			}
+			if len(outputs) == 0 {
 				continue
 			}
-			seen[clean] = true
-			outputs = append(outputs, clean)
+			sort.Strings(outputs)
 		}
-		if len(outputs) == 0 {
-			continue
-		}
-		sort.Strings(outputs)
 		declarations = append(declarations, SanctionedRegeneration{
 			Command: declaration.Command,
 			Outputs: outputs,
