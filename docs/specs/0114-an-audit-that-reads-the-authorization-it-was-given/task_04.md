@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0114-an-audit-that-reads-the-authorization-it-was-given
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: high
 ---
@@ -60,3 +60,30 @@ command and the audit read the outputs from the tree.
 `_techspec.md` → Build Order 4; Implementation Design, Interfaces; Risks &
 Considerations, trusting the ownership records. `_prd.md` → Core Feature 1;
 Goal 1; User Stories 1 and 4. ADR-0129, ADR-0081.
+
+## Result
+
+`baseline.OutputsFor` now reads `DERIVED_DIGEST_PATHS`, resolves the existing
+ownership records, and returns the sorted repository-relative regular files
+owned by the named sanctioned or dedicated command. Records without a command
+never match, so an unknown or empty command exempts nothing. The 2026-08-06
+transition authorization's enumeration was reconciled from 28 to the 48 paths
+the pre-existing ownership records assign to `make baseline-digests`; no
+`_ownership.yml` file changed.
+
+Focused checks:
+
+- Inspected the daemon's attempt-1 diagnostic artifact; it reported a vacuous package pass because `TestOutputsForCommand` did not exist.
+- `rtk env GOCACHE=/tmp/roundfix-task04-gocache go test ./internal/baseline -run '^TestOutputsForCommand$/unknown_command_owns_nothing$' -count=1` failed before implementation with `undefined: OutputsFor`, establishing the focused red signal.
+- `rtk env GOCACHE=/tmp/roundfix-task04-gocache go test ./internal/baseline -run '^TestOutputsForCommand$/(command_owns_a_tree|unknown_command_owns_nothing|path_owned_by_another_command_is_excluded)$' -count=1 -v` passed all three ownership-behavior cases.
+- The isolated equality subtest first exposed 20 paths missing from the 2026-08-06 transition enumeration, then passed after that enumeration was reconciled to the ownership-derived set.
+- `rtk env GOCACHE=/tmp/roundfix-task04-gocache go test ./internal/baseline -run '^TestOutputsForCommand$' -count=1` passed the complete focused resolver suite after the final implementation edit.
+- No command from this Task's `## Verification` section was run.
+
+Acceptance evidence:
+
+- `command owns a tree` proves the resolver returns a known formatter output of `make baseline-digests`.
+- `make baseline-digests matches the 2026-08-06 enumeration` compares both complete sorted slices and passes with 48 paths.
+- `unknown command owns nothing` proves an unrecorded command returns an empty set without error.
+- `path owned by another command is excluded` uses two dedicated ownership records and proves only the requested command's file is returned.
+- Changed-path inspection found no `_ownership.yml` or `_ownership.yaml` mutation.
