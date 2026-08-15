@@ -2,12 +2,16 @@ package speccheck
 
 import "regexp"
 
-const toolingAuthorityClause = "docs/agents/agent-instructions.md: linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator configuration and scripts, ignore files, plugin declarations, and version pins"
+const (
+	toolingAuthorityClause           = "docs/agents/agent-instructions.md: linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator configuration and scripts, ignore files, plugin declarations, and version pins"
+	historicalToolingAuthorityClause = "docs/adr/0130-the-audit-judges-governed-paths-and-history-keeps-the-set-honest.md: every path an authorization has bounded remains governed"
+)
 
 type governedPathSetEntry struct {
 	kind    string
 	clause  string
 	pattern *regexp.Regexp
+	paths   map[string]struct{}
 }
 
 // governedPathSet is compiled into the checker so changing the governed class
@@ -79,6 +83,60 @@ var governedPathSet = []governedPathSetEntry{
 			`(^|/)(\.tool-versions|\.(go|node|python|ruby|java)-version|\.nvmrc|rust-toolchain(\.toml)?)$`,
 		),
 	},
+	{
+		kind:   "historically bounded path",
+		clause: historicalToolingAuthorityClause,
+		paths: exactGovernedPaths(
+			"docs/agents/agent-instructions.md",
+			"docs/agents/autonomous-work.md",
+			"docs/agents/docs-layout.md",
+			"docs/agents/secondbrain.md",
+			"docs/agents/setup-context.json",
+			"docs/agents/skill-dispatch.md",
+			"docs/agents/spec-routing.md",
+			"docs/agents/specific-repository.md",
+			"docs/backlog/2026-08-03-verification-performance-contract.md",
+			"docs/backlog/2026-08-06-event-journal-payload-economics.md",
+			"docs/backlog/2026-08-06-two-stage-qa-gate-economics.md",
+			"docs/backlog/2026-08-10-one-reader-in-cli-still-couples-verify-to-the-docs-tree.md",
+			"docs/findings/2026-08-06-a-promoted-backlog-entry-has-nowhere-valid-to-go.md",
+			"docs/references/coverage-record.json",
+			"docs/specs/0080-cheap-detectors-run-before-the-gate/references/2026-08-03-verification-performance-contract.md",
+			"docs/specs/0080-cheap-detectors-run-before-the-gate/references/2026-08-06-two-stage-qa-gate-economics.md",
+			"docs/specs/0080-cheap-detectors-run-before-the-gate/references/_index.md",
+			"docs/specs/0081-a-journal-cheap-to-write-and-keep/references/2026-08-06-event-journal-payload-economics.md",
+			"docs/specs/0081-a-journal-cheap-to-write-and-keep/references/_index.md",
+			"docs/workflow/authorizations/2026-08-06-promoted-backlog-destination.md",
+			"internal/baseline/derived_ownership_test.go",
+			"internal/baseline/derived_regeneration_repocontract_test.go",
+			"internal/baseline/plan_test.go",
+			"internal/baseline/repository_test.go",
+			"internal/cli/baseline_documentation_contract_test.go",
+			"internal/cli/baseline_human_test.go",
+			"internal/cli/baseline_plan_test.go",
+			"internal/cli/baseline_release_gate_test.go",
+			"internal/cli/cli_test.go",
+			"internal/cli/releaseplan_documentation_contract_test.go",
+			"internal/docscontract",
+			"internal/docscontract/doc.go",
+			"internal/docscontract/publicdocs_test.go",
+			"internal/docscontract/testdata/corpus-golden.json",
+			"internal/gittest/gittest.go",
+			"internal/spec/archive.go",
+			"internal/spec/archive_layout_characterization_test.go",
+			"internal/spec/archive_test.go",
+			"internal/spec/coverage_test.go",
+			"internal/speccheck/backlog.go",
+			"internal/speccheck/backlog_test.go",
+			"internal/speccheck/coherence.go",
+			"internal/speccheck/constraints.go",
+			"internal/speccheck/constraints_characterization_test.go",
+			"internal/speccheck/testdata/corpus-golden.json",
+			"skills/baseline_skill_contract_integration_test.go",
+			"skills/baseline_skill_contract_test.go",
+			"skills/owned_skill_edit_repocontract_test.go",
+		),
+	},
 }
 
 // GovernedPath reports whether the tooling rules bind path. An ordinary source
@@ -99,5 +157,20 @@ func GovernedPath(path string) bool {
 }
 
 func (entry governedPathSetEntry) matches(path string) bool {
-	return entry.kind != "" && entry.clause != "" && entry.pattern.MatchString(path)
+	if entry.kind == "" || entry.clause == "" {
+		return false
+	}
+	if entry.pattern != nil && entry.pattern.MatchString(path) {
+		return true
+	}
+	_, ok := entry.paths[path]
+	return ok
+}
+
+func exactGovernedPaths(paths ...string) map[string]struct{} {
+	set := make(map[string]struct{}, len(paths))
+	for _, path := range paths {
+		set[path] = struct{}{}
+	}
+	return set
 }

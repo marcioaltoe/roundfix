@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0114-an-audit-that-reads-the-authorization-it-was-given
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -52,3 +52,59 @@ test, so the set can grow deliberately and cannot silently narrow.
 
 `_techspec.md` → Build Order 3; Risks & Considerations, the declared set.
 `_prd.md` → Core Feature 2; Open Questions. ADR-0130.
+
+## Result
+
+### Implementation
+
+- Added a repository-contract test that scans every Markdown authorization
+  record under `docs/workflow/authorizations/` and reads bounded paths through
+  the checker’s existing typed-frontmatter and legacy `Bounded files` parser.
+- The contract reports every unmatched path with the authorization record that
+  bounded it. A synthetic record proves the diagnostic names both values.
+- Added the exact historical exceptions exposed by the live authorization
+  corpus to the compiled governed set. The entry cites ADR-0130, and exact
+  matching keeps neighboring ordinary Go and documentation paths ungoverned.
+- Added an explicit no-records subtest that records a Go test skip when the
+  authorization directory is absent.
+
+### Focused-check evidence
+
+- Before the governed set changed, `rtk env
+  GOCACHE=/tmp/roundfix-task-03-go-cache go test -tags repocontract
+  ./internal/speccheck -run
+  '^TestEveryBoundedPathIsGoverned/repository_records_are_governed$'` exited 1
+  and named every historical path missing from the declared set together with
+  its authorization record.
+- After the governed set changed, the same focused repository-record command
+  exited 0 and reported `ok roundfix/internal/speccheck`.
+- `rtk env GOCACHE=/tmp/roundfix-task-03-go-cache go test -tags repocontract
+  ./internal/speccheck -run
+  '^TestEveryBoundedPathIsGoverned/(unmatched_path_names_path_and_record|no_authorization_records_skips)$'
+  -v` exited 0. The unmatched case passed after observing one finding naming
+  `README.md` and `docs/workflow/authorizations/synthetic.md`; the no-records
+  case reported `SKIP`.
+- `rtk env GOCACHE=/tmp/roundfix-task-03-go-cache go test
+  ./internal/speccheck -run '^TestGovernedPath$'` exited 0, retaining the
+  original kind-based and ordinary-path behavior.
+- `rtk env GOCACHE=/tmp/roundfix-task-03-go-cache go test
+  ./internal/speccheck` exited 0 for the complete package suite.
+- The sandboxed `rtk env GOCACHE=/tmp/roundfix-task-03-go-cache make
+  verify-incremental` reached `ok roundfix/internal/speccheck` but exited 2
+  because two existing force-stop integration tests could not read the host
+  process table. The rerun with host process-table access exited 0; all Go
+  packages, skill checks, and the build succeeded.
+
+### Acceptance evidence
+
+- The live-corpus subtest reads the authorization directory and exited 0 only
+  after every currently parsed bounded path matched `GovernedPath`.
+- The synthetic unmatched-path subtest observed exactly one finding and checked
+  that it named both the unmatched path and its source record.
+- The empty-repository subtest exercised the absent-directory branch and
+  reported a skip rather than a failure.
+
+### Not run
+
+- The three commands under `## Verification` are reserved for the Roundfix
+  Daemon and were not run in this Agent turn.
