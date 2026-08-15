@@ -989,6 +989,96 @@ func TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport(t *testing.
 	}
 }
 
+func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
+	t.Parallel()
+	writeReport := func(t *testing.T, result speccheck.MechanicalResult) string {
+		t.Helper()
+		repoRoot := t.TempDir()
+		specDir := filepath.Join(repoRoot, "docs", "specs", taskCycleSlug)
+		engine := &Engine{deps: Dependencies{Now: taskCycleNowForTest}}
+		plan := TaskPlan{WorkDir: repoRoot, Spec: spec.Spec{Slug: taskCycleSlug, Dir: specDir}}
+
+		reportPath, err := engine.writeMechanicalQAReport(plan, result)
+		if err != nil {
+			t.Fatalf("writeMechanicalQAReport returned error: %v", err)
+		}
+		report, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(reportPath)))
+		if err != nil {
+			t.Fatalf("read mechanical QA Report: %v", err)
+		}
+		return string(report)
+	}
+
+	t.Run("empty result records its blocking cause", func(t *testing.T) {
+		report := writeReport(t, speccheck.MechanicalResult{
+			Findings: []speccheck.MechanicalFinding{{
+				Code: "QA-FIXTURE", File: "fixture.md", Line: 7,
+				Detail: "fixture precondition refused the gate", Fix: "repair fixture",
+			}},
+			Blocking: true,
+		})
+
+		wantResults := "## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n" +
+			"| QA-PRECONDITION | fail | mechanical refusal: QA-FIXTURE: fixture precondition refused the gate; no other checks executed |\n\n" +
+			"## Mechanical skips"
+		if !strings.Contains(report, wantResults) {
+			t.Fatalf("mechanical QA Report did not record exactly one refusal row:\n%s", report)
+		}
+		for _, count := range []string{
+			"rows_blocked_environment: 0",
+			"rows_blocked_finding: 0",
+			"rows_blocked_declared: 0",
+		} {
+			if !strings.Contains(report, count) {
+				t.Errorf("mechanical QA Report missing %q:\n%s", count, report)
+			}
+		}
+	})
+
+	t.Run("populated blocking result preserves its bytes", func(t *testing.T) {
+		result := speccheck.MechanicalResult{
+			Findings: []speccheck.MechanicalFinding{{
+				Code: "QA-FIXTURE", File: "fixture.md", Line: 7,
+				Detail: "fixture mismatch", Fix: "repair fixture", RowHint: "R01",
+			}},
+			Blocked:  []speccheck.BlockedRow{{ID: "R01", FindingCode: "QA-FIXTURE", WaitingOn: "fixture mismatch"}},
+			Blocking: true,
+		}
+
+		report := writeReport(t, result)
+		want := "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
+			"# QA Report\n\n## Mechanical findings\n\n### QA-FIXTURE\n\n" +
+			"- location: `fixture.md:7`\n- detail: fixture mismatch\n- fix: repair fixture\n- blocked row: `R01`\n\n" +
+			"## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n" +
+			"| R01 | blocked (finding: QA-FIXTURE — waits on fixture mismatch) | mechanical finding |\n\n" +
+			"## Mechanical skips\n\nNone.\n"
+		if report != want {
+			t.Fatalf("populated mechanical QA Report changed:\n%s", report)
+		}
+	})
+
+	t.Run("non-blocking result carries a verdict", func(t *testing.T) {
+		report := writeReport(t, speccheck.MechanicalResult{
+			Carried: []speccheck.CarriedRow{{
+				ID: "R01", EstablishedBy: "qa-report-2025-12-31.md", EstablishedHead: "abc123",
+			}},
+		})
+
+		if !strings.Contains(report, "\nverdict: pass\n") {
+			t.Fatalf("non-blocking mechanical QA Report has no pass verdict:\n%s", report)
+		}
+		for _, count := range []string{
+			"rows_blocked_environment: 0",
+			"rows_blocked_finding: 0",
+			"rows_blocked_declared: 0",
+		} {
+			if !strings.Contains(report, count) {
+				t.Errorf("non-blocking mechanical QA Report missing %q:\n%s", count, report)
+			}
+		}
+	})
+}
+
 func assertMechanicalStageEvent(t *testing.T, sink *captureEventSink, blocking bool, findings int, skips int) {
 	t.Helper()
 	for _, event := range taskEventsOfKind(sink, runevent.KindDaemonQA) {

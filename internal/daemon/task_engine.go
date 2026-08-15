@@ -2011,15 +2011,29 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 	if bytes.Equal(mechanicalBody, mechanical.Bytes()) {
 		return "", errors.New("materialize mechanical QA Report: mechanical rows table is absent")
 	}
+	if len(result.Carried)+len(result.Blocked) == 0 {
+		const skipsHeading = "\n## Mechanical skips"
+		refusalRow := fmt.Sprintf(
+			"| QA-PRECONDITION | fail | mechanical refusal: %s; no other checks executed |\n\n## Mechanical skips",
+			mechanicalReportCell(mechanicalRefusalCause(result)),
+		)
+		withRefusal := bytes.Replace(mechanicalBody, []byte(skipsHeading), []byte(refusalRow), 1)
+		if bytes.Equal(withRefusal, mechanicalBody) {
+			return "", errors.New("materialize mechanical QA Report: mechanical skips section is absent")
+		}
+		mechanicalBody = withRefusal
+	}
 
 	var content bytes.Buffer
 	content.WriteString("---\n")
+	verdict := spec.VerdictPass
 	if result.Blocking {
-		content.WriteString("verdict: fail\n")
+		verdict = spec.VerdictFail
 	}
-	fmt.Fprintln(&content, "rows_blocked_environment: 0")
-	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", len(result.Blocked))
-	fmt.Fprintln(&content, "rows_blocked_declared: 0")
+	fmt.Fprintf(&content, "verdict: %s\n", verdict)
+	fmt.Fprintf(&content, "rows_blocked_environment: %d\n", mechanicalBlockedRowCount(mechanicalBody, "environment"))
+	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", mechanicalBlockedRowCount(mechanicalBody, "finding"))
+	fmt.Fprintf(&content, "rows_blocked_declared: %d\n", mechanicalBlockedRowCount(mechanicalBody, "declared"))
 	content.WriteString("---\n\n# QA Report\n\n")
 	content.Write(mechanicalBody)
 	reportDir := filepath.Join(plan.Spec.Dir, "qa")
@@ -2048,6 +2062,61 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 		return artifactCommitPath(plan, path), nil
 	}
 	return "", fmt.Errorf("create QA Report for %s: same-day numeric suffixes exhausted", date)
+}
+
+func mechanicalRefusalCause(result speccheck.MechanicalResult) string {
+	causes := make([]string, 0, len(result.Findings)+len(result.Skips))
+	for _, finding := range result.Findings {
+		cause := strings.TrimSpace(finding.Code)
+		if detail := strings.TrimSpace(finding.Detail); detail != "" {
+			if cause != "" {
+				cause += ": "
+			}
+			cause += detail
+		}
+		if cause != "" {
+			causes = append(causes, cause)
+		}
+	}
+	if len(causes) > 0 {
+		return strings.Join(causes, "; ")
+	}
+	for _, skip := range result.Skips {
+		cause := strings.TrimSpace(skip.Detector)
+		if missing := strings.TrimSpace(skip.MissingArtifact); missing != "" {
+			if cause != "" {
+				cause += ": "
+			}
+			cause += "missing " + missing
+		}
+		if cause != "" {
+			causes = append(causes, cause)
+		}
+	}
+	if len(causes) > 0 {
+		return strings.Join(causes, "; ")
+	}
+	if result.Blocking {
+		return "mechanical stage blocked without a finding row"
+	}
+	return "mechanical stage produced no report rows"
+}
+
+func mechanicalReportCell(value string) string {
+	return strings.ReplaceAll(strings.Join(strings.Fields(value), " "), "|", "\\|")
+}
+
+func mechanicalBlockedRowCount(report []byte, cause string) int {
+	const resultsHeading = "## Results\n\n"
+	start := bytes.Index(report, []byte(resultsHeading))
+	if start < 0 {
+		return 0
+	}
+	rows := report[start+len(resultsHeading):]
+	if end := bytes.Index(rows, []byte("\n## Mechanical skips")); end >= 0 {
+		rows = rows[:end]
+	}
+	return bytes.Count(rows, []byte(" | blocked ("+cause+":"))
 }
 
 // resolveQAPullRequest reports the Open Pull Request fact and whether the

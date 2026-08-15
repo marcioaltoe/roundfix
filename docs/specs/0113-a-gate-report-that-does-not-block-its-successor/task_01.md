@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -59,3 +59,46 @@ hard-coded to zero.
 `_techspec.md` → Build Order 1; System Architecture, the report writer; Risks &
 Considerations, the hard-coded counts. `_prd.md` → Core Feature 1; Goal 1; User
 Story 1. ADR-0132, ADR-0080.
+
+## Result
+
+### Implementation
+
+- When the rendered mechanical result has no carried or blocked rows, the writer
+  now adds one `QA-PRECONDITION` terminal row. Its provenance names the mechanical
+  finding that stopped the gate and records that no other checks executed.
+- The writer now emits `verdict: fail` for blocking results and `verdict: pass`
+  for non-blocking results.
+- All three typed blocked-cause counts now come from the statuses in the rendered
+  Results table. No frontmatter field or count meaning changed.
+- The populated blocking case has an exact-byte assertion for the pre-Task report
+  body.
+
+### Focused checks
+
+- Red baseline: `rtk go test ./internal/daemon -run
+  '^TestWriteMechanicalQAReportRecordsTheRefusal$/empty_result_records_its_blocking_cause$'
+  -count=1` failed because the Results table contained no refusal row.
+- `rtk go test ./internal/daemon -run
+  '^TestWriteMechanicalQAReportRecordsTheRefusal$' -count=1` passed with four
+  tests.
+- `rtk go test ./internal/daemon -run
+  '^(TestWriteMechanicalQAReportRecordsTheRefusal|TestMechanicalReportSatisfiesTheReportShapeContract|TestMechanicalStageWithholdsAgentSession|TestMechanicalStageSeedsReportBeforeAgentSession|TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport)$'
+  -count=1` passed with eight tests.
+- The Task's declared Verification commands were not run; the Daemon owns that
+  gate.
+
+### Evidence per acceptance criterion
+
+1. `empty result records its blocking cause` asserts the report contains exactly
+   one `QA-PRECONDITION` row with status `fail`, the finding code and detail, and
+   the fact that no other checks executed.
+2. `non-blocking result carries a verdict` asserts a non-blocking report contains
+   `verdict: pass`; the populated blocking byte assertion includes
+   `verdict: fail`.
+3. The writer counts `blocked (environment: ...)`, `blocked (finding: ...)`, and
+   `blocked (declared: ...)` statuses from the rendered Results table. The empty,
+   populated, and non-blocking cases assert the resulting frontmatter counts.
+4. `populated blocking result preserves its bytes` compares the complete report
+   against the pre-Task output, including frontmatter, findings, Results, and
+   skips.
