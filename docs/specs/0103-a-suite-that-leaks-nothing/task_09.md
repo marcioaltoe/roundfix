@@ -29,8 +29,16 @@ the Spec's vocabulary.
    glossary should carry, and update the domain context when it found something.
 5. MUST record a row as blocked with its reason rather than passing it on
    equivalent artifacts when its surface cannot be reached.
-6. MUST write the dated QA report into this Spec's evidence directory.
-7. MUST NOT commit scratch repositories, built binaries, or any file it did not
+6. MUST classify the authoritative-gate row as blocked on environment, not as a
+   code failure, when the gate fails only under the Agent Session's own process
+   density and the committed host measurement at the same build records it green.
+   The measurement is
+   `qa/evidence/2026-08-15-the-authoritative-gate-on-the-host.md`; a row resting
+   on it MUST cite it and MUST NOT claim the gate passed inside the Session. If
+   the recorded build differs from the build under gate, the row is a code
+   failure again.
+7. MUST write the dated QA report into this Spec's evidence directory.
+8. MUST NOT commit scratch repositories, built binaries, or any file it did not
    author as evidence — which is also this Spec's own Core Feature 7, so the gate
    is its first subject.
 
@@ -54,6 +62,9 @@ the Spec's vocabulary.
 - [ ] The QA report carries a verdict, per-row classification, and evidence paths.
 - [ ] No scratch repository, built binary, or unauthored file is committed as
       evidence.
+- [ ] The authoritative-gate row is terminal: passing when the gate passes inside
+      the Session, otherwise blocked on environment citing the host measurement at
+      the same build.
 
 ## Verification
 
