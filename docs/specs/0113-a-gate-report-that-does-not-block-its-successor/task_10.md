@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -68,3 +68,48 @@ precondition in the path that starts a Run.
 Core Feature 6; Goal 4; User Story 4. ADR-0134.
 Evidence: this Spec's QA reports `qa/qa-report-2026-08-15.md` finding F-001 and
 `qa/qa-report-2026-08-15-02.md` finding F-001.
+
+## Result
+
+The CLI now treats `--strict` with no `--stage` as the gate's full-sweep
+boundary. After the ordinary strict promotion, that boundary calls
+`GatePrecondition`, keeps its blocking findings in the Spec Consistency Check
+result, and renders its declared-term inputs separately. Text output labels each
+one `[repair input]`; JSON exposes `repairInputs` without an error severity. A
+stage-scoped strict check and a non-strict full check keep their authoring
+behaviour.
+
+Acceptance evidence:
+
+- `TestSpecCheckClassifiesTheGateBoundary/authoring_stage_keeps_a_declared_term_as_an_error`
+  observed exit `1`, the `SC-VOCABULARY-UNDOCUMENTED` error, and no repair-input
+  label for `--stage techspec --strict`.
+- `TestSpecCheckClassifiesTheGateBoundary/strict_full_sweep_reports_a_declared_term_as_repair_input`
+  observed exit `0`, named `publish:` as a repair input in text and JSON, left
+  `findings` empty, and emitted no severity on the JSON repair input.
+- `TestSpecCheckClassifiesTheGateBoundary/term_with_no_Spec_declaration_remains_an_error_in_both_modes`
+  fed the established synthetic `orphan:` negative control through both boundary
+  modes; each retained the error and produced no repair input. The lower
+  `TestGateAcceptsItsOwnDeclaredTerm` suite also passed.
+- `rtk rg -n 'GatePrecondition\\(' internal --glob '*.go'` resolved the
+  classifier declaration in `internal/speccheck/mechanical.go` and its production
+  caller in `internal/cli/spec_check.go`, in addition to tests.
+- The unchanged `TestRunImplementHasNoSpecCheckPrecondition` passed in the same
+  focused run as the new boundary test. No Implement or Daemon source changed.
+
+Focused checks:
+
+- Before the production edit,
+  `rtk env GOCACHE=/private/tmp/roundfix-0113-task10-gocache go test ./internal/cli -run '^TestSpecCheckClassifiesTheGateBoundary$'`
+  exited `1` because `classifySpecCheckBoundary` did not exist.
+- After implementation,
+  `rtk env GOCACHE=/private/tmp/roundfix-0113-task10-gocache go test ./internal/cli ./internal/speccheck -run '^(TestSpecCheckClassifiesTheGateBoundary|TestGateAcceptsItsOwnDeclaredTerm|TestRunImplementHasNoSpecCheckPrecondition|TestRunSpecCheckGapStrictPromotion|TestSpecCheckStageExitsNonZeroOnAFinding|TestRunSpecCheckJSONWritesOneObjectPerSpec)$'`
+  exited `0` for both packages.
+- `rtk env GOCACHE=/private/tmp/roundfix-0113-task10-gocache go test ./internal/cli ./internal/speccheck`
+  exited `0` for both affected packages.
+- After the final code and test edit, the boundary, lower classifier, unchanged
+  Implement contract, unchanged non-strict sweep, and help tests passed together
+  in both affected packages; `rtk git diff --check` exited `0`.
+
+The commands under `## Verification` remain for Daemon Verification and were not
+run in this Agent turn.

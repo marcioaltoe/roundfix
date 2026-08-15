@@ -36,7 +36,7 @@ their artifacts. With no slug, checks every active Spec in the Spec Root.
 Options:
   --stage   Limit checks to the prd, techspec, or tasks authoring stage
   --format  Output format: text or json (default: text)
-  --strict  Promote gap findings to errors
+  --strict  Promote gap findings to errors; a full sweep reports gate repair inputs separately
   --run-verification
             Execute authored Verification commands in a disposable checkout at HEAD
 
@@ -94,8 +94,21 @@ type specCheckDocument struct {
 	Schema       string                      `json:"schema"`
 	Slug         string                      `json:"slug"`
 	Findings     []speccheck.Finding         `json:"findings"`
+	RepairInputs []specCheckRepairInput      `json:"repairInputs"`
 	Skipped      []speccheck.SkippedDetector `json:"skipped"`
 	Verification specCheckVerificationReport `json:"verification"`
+}
+
+type specCheckOutcome struct {
+	result       speccheck.Result
+	repairInputs []specCheckRepairInput
+}
+
+type specCheckRepairInput struct {
+	Code    string               `json:"code"`
+	Summary string               `json:"summary"`
+	Where   []speccheck.Location `json:"where"`
+	Fix     string               `json:"fix"`
 }
 
 const (
@@ -235,7 +248,7 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 		}
 	}
 
-	results := make([]speccheck.Result, 0, len(slugs))
+	results := make([]specCheckOutcome, 0, len(slugs))
 	for _, slug := range slugs {
 		if err := validateSpecCheckSlug(resolvedSpecsRoot.Path, slug); err != nil {
 			printSpecCheckFailure(err, stderr)
@@ -255,7 +268,10 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 		if req.strict {
 			promoteSpecCheckGaps(&result)
 		}
-		results = append(results, result)
+		results = append(results, classifySpecCheckBoundary(
+			result,
+			req.strict && req.stage == speccheck.StageAll,
+		))
 	}
 
 	verificationReports := make([]specCheckVerificationReport, len(slugs))
@@ -272,8 +288,8 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 
 	hasError := false
 	hasVerificationRefusal := false
-	for index, result := range results {
-		for _, finding := range result.Findings {
+	for index, outcome := range results {
+		for _, finding := range outcome.result.Findings {
 			if finding.Severity == speccheck.SeverityError {
 				hasError = true
 				break
@@ -281,9 +297,9 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 		}
 		switch req.outputFormat {
 		case specCheckFormatText:
-			fmt.Fprint(stdout, renderSpecCheckText(result, verificationReports[index]))
+			fmt.Fprint(stdout, renderSpecCheckText(outcome, verificationReports[index]))
 		case specCheckFormatJSON:
-			data, err := renderSpecCheckJSON(result, verificationReports[index])
+			data, err := renderSpecCheckJSON(outcome, verificationReports[index])
 			if err != nil {
 				fmt.Fprintf(stderr, "%s: spec check failed: %v\n", app.Name, err)
 				return exitRunFailed
@@ -451,9 +467,19 @@ func specCheckVerificationCommand(taskID string, verdict daemon.CommandVerdict) 
 	return report
 }
 
-func renderSpecCheckText(result speccheck.Result, verification specCheckVerificationReport) string {
+func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerificationReport) string {
 	var report strings.Builder
-	report.WriteString(speccheck.RenderText(result))
+	report.WriteString(speccheck.RenderText(outcome.result))
+	if len(outcome.repairInputs) > 0 {
+		report.WriteString("Repair inputs:\n")
+		for _, input := range outcome.repairInputs {
+			fmt.Fprintf(&report, "[repair input] %s: %s\n", input.Code, input.Summary)
+			for _, location := range input.Where {
+				fmt.Fprintf(&report, "  at %s:%d\n", location.Path, location.Line)
+			}
+			fmt.Fprintf(&report, "  fix: %s\n", input.Fix)
+		}
+	}
 	if !verification.Executed {
 		report.WriteString("Verification: not run (use --run-verification).\n")
 		return report.String()
@@ -480,12 +506,16 @@ func renderSpecCheckText(result speccheck.Result, verification specCheckVerifica
 	return report.String()
 }
 
-func renderSpecCheckJSON(result speccheck.Result, verification specCheckVerificationReport) ([]byte, error) {
-	findings := result.Findings
+func renderSpecCheckJSON(outcome specCheckOutcome, verification specCheckVerificationReport) ([]byte, error) {
+	findings := outcome.result.Findings
 	if findings == nil {
 		findings = []speccheck.Finding{}
 	}
-	skipped := result.Skipped
+	repairInputs := outcome.repairInputs
+	if repairInputs == nil {
+		repairInputs = []specCheckRepairInput{}
+	}
+	skipped := outcome.result.Skipped
 	if skipped == nil {
 		skipped = []speccheck.SkippedDetector{}
 	}
@@ -494,8 +524,9 @@ func renderSpecCheckJSON(result speccheck.Result, verification specCheckVerifica
 	}
 	data, err := json.Marshal(specCheckDocument{
 		Schema:       speccheck.SchemaVersion,
-		Slug:         result.Slug,
+		Slug:         outcome.result.Slug,
 		Findings:     findings,
+		RepairInputs: repairInputs,
 		Skipped:      skipped,
 		Verification: verification,
 	})
@@ -503,6 +534,28 @@ func renderSpecCheckJSON(result speccheck.Result, verification specCheckVerifica
 		return nil, fmt.Errorf("render Spec Consistency Check JSON: %w", err)
 	}
 	return data, nil
+}
+
+func classifySpecCheckBoundary(result speccheck.Result, gateSweep bool) specCheckOutcome {
+	outcome := specCheckOutcome{
+		result:       result,
+		repairInputs: []specCheckRepairInput{},
+	}
+	if !gateSweep {
+		return outcome
+	}
+
+	precondition := speccheck.GatePrecondition(result)
+	outcome.result.Findings = precondition.Findings
+	for _, input := range precondition.Inputs {
+		outcome.repairInputs = append(outcome.repairInputs, specCheckRepairInput{
+			Code:    input.Code,
+			Summary: input.Summary,
+			Where:   input.Where,
+			Fix:     input.Fix,
+		})
+	}
+	return outcome
 }
 
 func parseSpecAuditCommand(args []string) (specAuditRequest, error) {
