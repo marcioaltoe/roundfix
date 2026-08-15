@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0114-an-audit-that-reads-the-authorization-it-was-given
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: low
 ---
@@ -58,3 +58,38 @@ become required only when the row declares a mutation.
 `_techspec.md` → Build Order 1; API Contracts.
 `_prd.md` → Core Feature 3; Core Feature 4; Goal 3; User Story 3.
 ADR-0131, ADR-0117.
+
+## Result
+
+### Implementation
+
+- The bounded-files detector now reads the Tooling authority reason. A cited
+  authorization or an affirmative protected-tooling mutation declaration still
+  requires exact bounded files; the template's explicit
+  `no protected tooling mutation proposed or authorized` declaration does not.
+- `TestToolingRowStatesApplicability` exercises the public PRD-stage checker with
+  four independent cases: the accepted template wording, an unbounded declared
+  mutation, a record that omits the Spec, and a prose-only grant.
+
+### Focused evidence
+
+- Before the production edit,
+  `rtk go test -count=1 ./internal/speccheck -run '^TestToolingRowStatesApplicability$'`
+  failed only the template-wording subtest with `SC-TOOLING-UNBOUNDED`; the other
+  three cases passed. This captured the pre-change refusal.
+- After the edit, that focused command reported five passes (the parent plus four
+  subtests), covering the first four acceptance criteria through
+  `CheckStage(..., StagePRD)`.
+- `rtk go test -count=1 ./internal/speccheck` passed all 215 package tests.
+- `rtk git -c core.fsmonitor=false status --short -- .agents/skills/write-prd
+  skills/write-prd` returned no changed template path, and
+  `rtk rg -n "no protected tooling mutation" internal/speccheck/constraints.go`
+  located the declaration detector in production code. The PRD template remains
+  unchanged.
+- `rtk make verify-incremental` reached `ok roundfix/internal/speccheck` but
+  exited 2 because
+  `TestACPXRunCodexFallsBackToCleanPathWhenConfiguredPathIsQuarantined` found the
+  installed Codex ACP adapter does not advertise `sandbox_mode` and does not
+  prove `@agentclientprotocol/codex-acp` 1.1.5 or newer. This failure is outside
+  this Task's changed package and remains for the environment owner.
+- The Daemon-owned commands under `## Verification` were not run in this turn.
