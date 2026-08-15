@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0103-a-suite-that-leaks-nothing
-status: failed # pending | in_progress | completed | failed — only implement-task changes this
+status: pending # pending | in_progress | completed | failed — only implement-task changes this
 type: qa
 complexity: high
 ---
@@ -22,14 +22,21 @@ the Spec's vocabulary.
 2. MUST carry the outside-evidence row from task_01: the upstream documentation
    of the write-then-execute hazard (golang/go#22315), and the 2026-08-06
    process-table measurement of four survivors consuming two hours and forty
-   minutes of CPU — neither produced by this Spec.
-3. MUST classify every finding by user impact and record auditable evidence per
+   minutes of CPU — neither produced by this Spec. The Session's sandbox has no
+   network, so the upstream half is supplied by the committed observation
+   `qa/evidence/2026-08-15-the-upstream-diagnosis-observed.md`, which the row MUST
+   cite rather than attempt to fetch. A row resting on it passes; it is not
+   environment-blocked, because the evidence is present in the tree.
+3. MUST rest the residue row on
+   `qa/evidence/2026-08-15-the-residue-check-on-the-host.md` when the Session
+   cannot produce a fresh binary, citing it rather than claiming an unbuilt CLI.
+4. MUST classify every finding by user impact and record auditable evidence per
    row.
-4. MUST check whether this Spec introduced, changed, or retired a term the
+5. MUST check whether this Spec introduced, changed, or retired a term the
    glossary should carry, and update the domain context when it found something.
-5. MUST record a row as blocked with its reason rather than passing it on
+6. MUST record a row as blocked with its reason rather than passing it on
    equivalent artifacts when its surface cannot be reached.
-6. MUST classify the authoritative-gate row as blocked on environment, not as a
+7. MUST classify the authoritative-gate row as blocked on environment, not as a
    code failure, when the gate fails only under the Agent Session's own process
    density and the committed host measurement at the same build records it green.
    The measurement is
@@ -37,8 +44,8 @@ the Spec's vocabulary.
    on it MUST cite it and MUST NOT claim the gate passed inside the Session. If
    the recorded build differs from the build under gate, the row is a code
    failure again.
-7. MUST write the dated QA report into this Spec's evidence directory.
-8. MUST NOT commit scratch repositories, built binaries, or any file it did not
+8. MUST write the dated QA report into this Spec's evidence directory.
+9. MUST NOT commit scratch repositories, built binaries, or any file it did not
    author as evidence — which is also this Spec's own Core Feature 7, so the gate
    is its first subject.
 
