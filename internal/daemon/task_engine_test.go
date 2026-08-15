@@ -746,15 +746,6 @@ func TestRefusedReportDoesNotBlockItsSuccessor(t *testing.T) {
 			wantCause: "mechanical refusal: QA-FIXTURE: fixture precondition refused the gate",
 		},
 		{
-			name: "environmental precondition refusal is readable",
-			result: speccheck.MechanicalResult{
-				Skips: []speccheck.MechanicalSkip{{
-					Detector: "external acceptance evidence", MissingArtifact: "environment access",
-				}},
-			},
-			wantCause: "mechanical refusal: external acceptance evidence: missing environment access",
-		},
-		{
 			name:       "non-terminal row status is refused",
 			result:     speccheck.MechanicalResult{Blocking: true},
 			replaceOld: "| QA-PRECONDITION | fail |",
@@ -1117,24 +1108,6 @@ assigned_repairs:
 		}
 	})
 
-	t.Run("Spec owned vocabulary finding becomes gate input", func(t *testing.T) {
-		t.Parallel()
-		request := loadRequest(t, "vocabulary-missing", "")
-
-		if request.Precondition.Blocking || len(request.Precondition.Findings) != 0 {
-			t.Fatalf("Precondition = %#v, want no blocking finding", request.Precondition)
-		}
-		if len(request.Precondition.Inputs) != 1 || !strings.Contains(request.Precondition.Inputs[0].Summary, "publish:") {
-			t.Fatalf("Precondition Inputs = %#v, want the pending publish: repair input", request.Precondition.Inputs)
-		}
-		result, err := speccheck.RunMechanicalStage(context.Background(), request)
-		if err != nil {
-			t.Fatalf("RunMechanicalStage: %v", err)
-		}
-		if result.Blocking {
-			t.Fatalf("mechanical result = %#v, want the Spec-owned vocabulary input not to refuse the gate", result)
-		}
-	})
 }
 
 func TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport(t *testing.T) {
@@ -1271,6 +1244,36 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 		} {
 			if !strings.Contains(report, count) {
 				t.Errorf("non-blocking mechanical QA Report missing %q:\n%s", count, report)
+			}
+		}
+	})
+
+	t.Run("NonBlocking zero-row result records no refusal", func(t *testing.T) {
+		report := writeReport(t, speccheck.MechanicalResult{})
+
+		if !strings.Contains(report, "\nverdict: pass\n") {
+			t.Fatalf("non-blocking zero-row QA Report has no pass verdict:\n%s", report)
+		}
+		for _, refused := range []string{"| QA-PRECONDITION |", "| fail |", "mechanical refusal"} {
+			if strings.Contains(report, refused) {
+				t.Errorf("non-blocking zero-row QA Report contains refusal marker %q:\n%s", refused, report)
+			}
+		}
+	})
+
+	t.Run("optional skips are not refusal causes", func(t *testing.T) {
+		report := writeReport(t, speccheck.MechanicalResult{
+			Skips: []speccheck.MechanicalSkip{{
+				Detector: "fixture detector", MissingArtifact: "optional fixture",
+			}},
+		})
+
+		if !strings.Contains(report, "| fixture detector | optional fixture |") {
+			t.Fatalf("non-blocking QA Report omitted its optional skip:\n%s", report)
+		}
+		for _, refused := range []string{"| QA-PRECONDITION |", "| fail |", "mechanical refusal"} {
+			if strings.Contains(report, refused) {
+				t.Errorf("optional skip became refusal marker %q:\n%s", refused, report)
 			}
 		}
 	})

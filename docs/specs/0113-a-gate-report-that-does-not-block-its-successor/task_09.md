@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: high
 ---
@@ -84,3 +84,69 @@ Feature 1; Goal 1; Non-Goals, removing or weakening the mechanical stage.
 ADR-0132, ADR-0134.
 Evidence: this Spec's QA report `qa/qa-report-2026-08-15-01.md`, findings F-001
 and F-002.
+
+## Result
+
+The report writer now synthesizes `QA-PRECONDITION` only when the mechanical
+result is blocking and has no carried or blocked rows. A non-blocking zero-row
+result keeps its `pass` verdict and empty Results table, and optional detector
+skips remain only in the Mechanical skips table. Refusal causes now come only
+from findings or assigned-repair failures.
+
+The Daemon request builder no longer calls `speccheck.Check` or classifies its
+result, so Implement retains its deliberate no-Spec-consistency-precondition
+contract. The gate-owned classifier and its existing strict-check-derived
+coverage remain at the `internal/speccheck` seam. The CLI's deliberately
+inconsistent fixture and
+`TestRunImplementHasNoSpecCheckPrecondition` were not changed.
+
+Acceptance evidence:
+
+- A blocking zero-row result still writes the terminal refusal row:
+  `TestWriteMechanicalQAReportRecordsTheRefusal/empty_result_records_its_blocking_cause`
+  passed in the focused writer check.
+- A non-blocking zero-row result writes `verdict: pass` and no
+  `QA-PRECONDITION`, `fail`, or `mechanical refusal` marker:
+  `TestWriteMechanicalQAReportRecordsTheRefusal/NonBlocking_zero-row_result_records_no_refusal`
+  passed after failing against the pre-change writer.
+- An optional detector skip remains visible without becoming a refusal:
+  `TestWriteMechanicalQAReportRecordsTheRefusal/optional_skips_are_not_refusal_causes`
+  passed after failing against the pre-change writer. The obsolete successor
+  table row that called an optional skip an environmental refusal was removed.
+- Every `TestRunImplement...` journey passed in one fresh focused run, including
+  the QA prompt journey that failed before the production change. The unchanged
+  `TestRunImplementHasNoSpecCheckPrecondition` also passed independently.
+- A source inspection found no `speccheck.Check` or `GatePrecondition` call in
+  `internal/daemon/task_engine.go`; the refusal-row condition is
+  `result.Blocking && len(result.Carried)+len(result.Blocked) == 0`.
+- `TestGateAcceptsItsOwnDeclaredTerm` passed at the gate-owned speccheck seam;
+  its declared term becomes named gate input, an undeclared emitted term still
+  blocks, and the authoring stage still reports the declared term.
+- `make verify` and every command under this Task's `## Verification` remain for
+  Daemon Verification and were not run in this Agent turn.
+
+Focused checks:
+
+- Pre-change public-journey reproduction:
+  `rtk env GOCACHE=/private/tmp/roundfix-0113-task09-gocache go test ./internal/cli -run '^TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord$'`
+  exited 1 because the mechanical stage blocked on four Spec-consistency
+  findings.
+- Pre-change writer reproduction after adding the regression cases:
+  `rtk env GOCACHE=/private/tmp/roundfix-0113-task09-gocache go test ./internal/daemon -run '^TestWriteMechanicalQAReportRecordsTheRefusal$/(NonBlocking_zero-row_result_records_no_refusal|optional_skips_are_not_refusal_causes)$'`
+  exited 1 and printed the contradictory `verdict: pass` plus
+  `QA-PRECONDITION | fail` row for both cases.
+- After implementation, the focused writer command including the blocking
+  control exited 0; the public QA Implement journey exited 0; and
+  `TestGateAcceptsItsOwnDeclaredTerm` exited 0.
+- `rtk env GOCACHE=/private/tmp/roundfix-0113-task09-gocache go test -count=1 ./internal/daemon ./internal/speccheck`
+  exited 0.
+- `rtk env GOCACHE=/private/tmp/roundfix-0113-task09-gocache go test -count=1 ./internal/cli -run '^TestRunImplement'`
+  exited 0.
+- A broader affected-package attempt reached two unrelated Force Stop
+  integration failures because the sandbox denied macOS process-table reads;
+  the same attempt exposed the obsolete optional-skip successor expectation,
+  which this Task corrected before the passing backend-package rerun.
+- `rtk git diff --check` exited 0.
+
+The domain check found no introduced, changed, or retired glossary term. No
+follow-up outside this Task's slice was discovered.

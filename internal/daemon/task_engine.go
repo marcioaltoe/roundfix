@@ -1898,11 +1898,6 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
 	}
-	checked, err := speccheck.Check(plan.SpecsRoot, plan.WorkDir, plan.Spec.Slug)
-	if err != nil {
-		return speccheck.MechanicalRequest{}, fmt.Errorf("run QA gate precondition for Spec %s: %w", plan.Spec.Slug, err)
-	}
-	precondition := speccheck.GatePrecondition(checked)
 	var assignedRepairs []speccheck.AssignedRepair
 	if len(qaTask.AssignedRepairs) > 0 {
 		assignedRepairs = make([]speccheck.AssignedRepair, len(qaTask.AssignedRepairs))
@@ -1925,7 +1920,6 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 		ReportPath:      previousReportPath,
 		TaskRepairPaths: append([]string(nil), qaTask.TaskRepairPaths...),
 		AssignedRepairs: assignedRepairs,
-		Precondition:    precondition,
 	}, nil
 }
 
@@ -2031,7 +2025,7 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 	if bytes.Equal(mechanicalBody, mechanical.Bytes()) {
 		return "", errors.New("materialize mechanical QA Report: mechanical rows table is absent")
 	}
-	if len(result.Carried)+len(result.Blocked) == 0 {
+	if result.Blocking && len(result.Carried)+len(result.Blocked) == 0 {
 		const skipsHeading = "\n## Mechanical skips"
 		refusalRow := fmt.Sprintf(
 			"| QA-PRECONDITION | fail | mechanical refusal: %s; no other checks executed |\n\n## Mechanical skips",
@@ -2085,7 +2079,7 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 }
 
 func mechanicalRefusalCause(result speccheck.MechanicalResult) string {
-	causes := make([]string, 0, len(result.RepairFailures)+len(result.Findings)+len(result.Skips))
+	causes := make([]string, 0, len(result.RepairFailures)+len(result.Findings))
 	for _, failure := range result.RepairFailures {
 		cause := strings.TrimSpace(failure.ID)
 		if cause == "" {
@@ -2111,25 +2105,7 @@ func mechanicalRefusalCause(result speccheck.MechanicalResult) string {
 	if len(causes) > 0 {
 		return strings.Join(causes, "; ")
 	}
-	for _, skip := range result.Skips {
-		cause := strings.TrimSpace(skip.Detector)
-		if missing := strings.TrimSpace(skip.MissingArtifact); missing != "" {
-			if cause != "" {
-				cause += ": "
-			}
-			cause += "missing " + missing
-		}
-		if cause != "" {
-			causes = append(causes, cause)
-		}
-	}
-	if len(causes) > 0 {
-		return strings.Join(causes, "; ")
-	}
-	if result.Blocking {
-		return "mechanical stage blocked without a finding row"
-	}
-	return "mechanical stage produced no report rows"
+	return "mechanical stage blocked without a finding row"
 }
 
 func mechanicalReportCell(value string) string {
