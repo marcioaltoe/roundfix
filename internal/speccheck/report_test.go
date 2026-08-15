@@ -6,6 +6,7 @@ package speccheck_test
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -15,6 +16,97 @@ import (
 )
 
 const fixtureSpecRoot = "testdata/repo/docs/specs"
+
+func TestToolingRowStatesApplicability(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		row        string
+		recordPath string
+		record     string
+		wantCode   string
+	}{
+		{
+			name: "template no mutation wording",
+			row:  "Tooling authority: applicable — no protected tooling mutation proposed or authorized.",
+		},
+		{
+			name:     "declared mutation without bounded files",
+			row:      "Tooling authority: applicable — protected tooling mutation proposed and authorized.",
+			wantCode: speccheck.CodeToolingUnbounded,
+		},
+		{
+			name:       "authorization record omits Spec",
+			row:        "Tooling authority: applicable — protected tooling mutation authorized at `docs/workflow/authorizations/2026-08-11-other-spec.md`; bounded files: `Makefile`.",
+			recordPath: "docs/workflow/authorizations/2026-08-11-other-spec.md",
+			record:     "---\ngranted: 2026-08-11\naction: mutate protected tooling\npaths:\n  - Makefile\nconsuming: 0115-other-spec\n---\n",
+			wantCode:   speccheck.CodeToolingUnauthorized,
+		},
+		{
+			name:       "authorization record states grant only in prose",
+			row:        "Tooling authority: applicable — protected tooling mutation authorized at `docs/workflow/authorizations/2026-08-11-prose-grant.md`; bounded files: `Makefile`.",
+			recordPath: "docs/workflow/authorizations/2026-08-11-prose-grant.md",
+			record:     "Authorization for Spec 0114-tooling-row permits changes to Makefile.\n",
+			wantCode:   speccheck.CodeToolingUntyped,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			repoRoot, specsRoot, slug := writeToolingRowFixture(t, tt.row, tt.recordPath, tt.record)
+			result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+			if err != nil {
+				t.Fatalf("CheckStage(StagePRD): %v", err)
+			}
+			if tt.wantCode == "" {
+				if len(result.Findings) != 0 {
+					t.Fatalf("StagePRD findings = %#v, want none", result.Findings)
+				}
+				return
+			}
+			if findings := findingsWithCode(result, tt.wantCode); len(findings) != 1 {
+				t.Fatalf("%s findings = %#v, want exactly one", tt.wantCode, findings)
+			}
+			if len(result.Findings) != 1 {
+				t.Fatalf("StagePRD findings = %#v, want only %s", result.Findings, tt.wantCode)
+			}
+		})
+	}
+}
+
+func writeToolingRowFixture(t *testing.T, toolingRow, recordPath, record string) (string, string, string) {
+	t.Helper()
+
+	const slug = "0114-tooling-row"
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	writeToolingRowFile(t, repoRoot, "docs/agents/agent-instructions.md", "# Agent instructions\n")
+	writeToolingRowFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", "# Tooling row\n\n## Project Constraints\n\n"+
+		"- Identifier strategy: not applicable — no identifier change. Source: `docs/agents/agent-instructions.md`.\n"+
+		"- Authentication and HTTP: not applicable — no network boundary. Source: `docs/agents/agent-instructions.md`.\n"+
+		"- Active ADR obligations: not applicable — no ADR applies. Source: `docs/agents/agent-instructions.md`.\n"+
+		"- "+toolingRow+" Source: `docs/agents/agent-instructions.md`.\n")
+	if recordPath != "" {
+		writeToolingRowFile(t, repoRoot, recordPath, record)
+	}
+	return repoRoot, specsRoot, slug
+}
+
+func writeToolingRowFile(t *testing.T, repoRoot, relativePath, content string) {
+	t.Helper()
+
+	path := filepath.Join(repoRoot, filepath.FromSlash(relativePath))
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("create directory for %s: %v", relativePath, err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write %s: %v", relativePath, err)
+	}
+}
 
 func TestCheckConstraintAndTooling(t *testing.T) {
 	t.Parallel()
@@ -45,7 +137,7 @@ func TestCheckConstraintAndTooling(t *testing.T) {
 			wantCode: speccheck.CodeToolingUnauthorized,
 		},
 		{
-			name:     "applicable tooling has no bounded files",
+			name:     "declared tooling mutation has no bounded files",
 			slug:     "tooling-unbounded",
 			wantCode: speccheck.CodeToolingUnbounded,
 		},

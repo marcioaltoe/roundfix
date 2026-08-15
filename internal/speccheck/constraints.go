@@ -19,7 +19,7 @@ const (
 	CodeConstraintSource = "SC-CONSTRAINT-SOURCE"
 	// CodeToolingUnauthorized identifies a cited authorization that omits the Spec.
 	CodeToolingUnauthorized = "SC-TOOLING-UNAUTHORIZED"
-	// CodeToolingUnbounded identifies applicable tooling authority without bounded files.
+	// CodeToolingUnbounded identifies a declared tooling mutation without bounded files.
 	CodeToolingUnbounded = "SC-TOOLING-UNBOUNDED"
 	// CodeToolingUntyped identifies an authorization record that states its grant
 	// only in prose, so no checker can enumerate what it permits.
@@ -360,15 +360,27 @@ func detectToolingRow(result *Result, repoRoot, slug string, artifact constraint
 		}
 	}
 
-	if !row.BoundedFiles {
+	if declaresProtectedToolingMutation(row) && !row.BoundedFiles {
 		result.Findings = append(result.Findings, Finding{
 			Code:     CodeToolingUnbounded,
 			Severity: SeverityError,
-			Summary:  artifact.displayPath + " makes Tooling authority applicable without bounded files alongside " + recordLocation.Path,
+			Summary:  artifact.displayPath + " declares a protected tooling mutation without bounded files alongside " + recordLocation.Path,
 			Where:    []Location{rowLocation, recordLocation},
 			Fix:      "Add an exact bounded files list to the Tooling authority row in " + artifact.displayPath + ".",
 		})
 	}
+}
+
+func declaresProtectedToolingMutation(row constraintRow) bool {
+	if row.AuthorizationPath != "" {
+		return true
+	}
+	reason := strings.ToLower(strings.Join(strings.Fields(row.Reason), " "))
+	if strings.Contains(reason, "no protected tooling mutation") {
+		return false
+	}
+	return strings.Contains(reason, "protected tooling mutation") ||
+		strings.Contains(reason, "express maintainer authorization")
 }
 
 // typedAuthorizationCutoff is the first day an authorization record must state
