@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0114-an-audit-that-reads-the-authorization-it-was-given
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: high
 ---
@@ -61,3 +61,56 @@ gives the checker a predicate that can answer.
 `_techspec.md` → Build Order 2; Implementation Design, Interfaces; Risks &
 Considerations, the declared set. `_prd.md` → Core Feature 2; Goal 2; User
 Story 2; Open Questions. ADR-0130.
+
+## Result
+
+### Implementation
+
+- Added a compiled governed-path set with one cited entry for each of the eleven
+  tooling kinds named by the universal Tooling Authority clause. The set covers
+  conventional repository-relative configuration and script paths without
+  reading an editable data file.
+- Added `GovernedPath`, which applies the package's existing repository-path
+  normalization and returns whether any fully cited set entry matches.
+- Added fourteen named table cases: one positive case per governed kind and the
+  required negative cases for ordinary Go source, an ordinary Go test, and a
+  Spec document.
+- Kept the changed-path audit untouched. This slice introduces the predicate but
+  does not call it from the audit; Task 03 owns the historical-union contract and
+  Task 05 owns audit integration.
+
+### Focused-check evidence
+
+- Before the implementation, `rtk env
+  GOCACHE=/tmp/roundfix-task-02-go-cache go test ./internal/speccheck -run
+  '^TestGovernedPath$'` exited 1 because `speccheck.GovernedPath` was undefined.
+- After the implementation, the same focused command exited 0 and reported
+  `ok roundfix/internal/speccheck`.
+- `rtk env GOCACHE=/tmp/roundfix-task-02-go-cache make verify-incremental`
+  initially reached the changed package successfully but exited 2 in the sandbox
+  because two unrelated force-stop integration tests could not read the host
+  process table. The unsandboxed rerun exited 0; all Go packages, skill checks,
+  and the build passed.
+- `rtk rg -c '^\s*kind:' internal/speccheck/governed.go && rtk rg -c
+  '^\s*clause:' internal/speccheck/governed.go` exited 0 and printed `11` for
+  both counts. This is direct evidence that every declared entry carries its
+  clause citation.
+- `rtk rg -l 'GovernedPath' internal/speccheck --glob '*.go'` exited 0 and named
+  only `governed.go` and `governed_test.go`, proving this slice added no audit
+  call site.
+
+### Acceptance evidence
+
+- Each named tooling kind has a true case: the eleven governed subtests passed in
+  `TestGovernedPath` and in the incremental repository gate.
+- The ordinary Go source, ordinary test, and Spec document subtests all passed
+  with expected value `false`.
+- The governed set has eleven entries and eleven adjacent clause fields; an entry
+  without both its kind and clause cannot match.
+- Audit behavior is unchanged because the predicate has no production caller;
+  the incremental repository gate passed after the final code edit.
+
+### Not run
+
+- The three commands under `## Verification` are reserved for the Roundfix
+  Daemon and were not run in this Agent turn.
