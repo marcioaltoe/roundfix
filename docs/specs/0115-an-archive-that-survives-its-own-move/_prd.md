@@ -98,7 +98,13 @@ corrective Task is to undo an archival the contract has no command for.
   against a repository this Spec did not build — two were observed on 2026-08-12
   and 2026-08-13 with sixteen and six Specs under the older convention.
 - A Spec refused by CI after archival is reopened by a supported act rather than
-  by editing frontmatter and moving folders by hand.
+  by editing frontmatter and moving folders by hand. Reproduced on 2026-08-15:
+  Spec 0103 passed its gate, archived, opened a Pull Request, and only then did CI
+  refuse it — `TestSpawnedFixtureDeathFailsFast` asserted a wall clock that
+  included a nested `go test` process, which stays under a second on a developer
+  machine and does not on a loaded runner. The repair had to land as an ordinary
+  commit outside any Task, because the Spec that owns the test was already
+  history.
 
 ## Decisions
 

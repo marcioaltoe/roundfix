@@ -21,6 +21,28 @@ const realACPXIntegrationEnv = "ROUNDFIX_REAL_ACPX"
 
 const spawnedFixtureDeathTestEnv = "ROUNDFIX_TEST_SPAWNED_FIXTURE_DEATH"
 
+// spawnedFixtureWaitPrefix marks the wait duration the nested fixture run
+// reports, so the parent measures the wait rather than the nested `go test`
+// process that contains it. A loaded runner can spend more than a second
+// starting and tearing that process down while the wait itself stays in
+// milliseconds, which is the only number this test claims anything about.
+const spawnedFixtureWaitPrefix = "roundfix-fixture-wait="
+
+func spawnedFixtureWaitDuration(output string) (time.Duration, bool) {
+	for _, line := range strings.Split(output, "\n") {
+		_, value, found := strings.Cut(strings.TrimSpace(line), spawnedFixtureWaitPrefix)
+		if !found {
+			continue
+		}
+		measured, err := time.ParseDuration(strings.TrimSpace(value))
+		if err != nil {
+			continue
+		}
+		return measured, true
+	}
+	return 0, false
+}
+
 func TestSpawnedFixtureDeathFailsFast(t *testing.T) {
 	const fixtureName = "immediate-exit acpx fixture"
 	if os.Getenv(spawnedFixtureDeathTestEnv) == "fixture" {
@@ -36,22 +58,32 @@ func TestSpawnedFixtureDeathFailsFast(t *testing.T) {
 		go func() {
 			fixtureExit <- cmd.Wait()
 		}()
+		// The claim under test is how long the wait takes, not how long a nested
+		// `go test` process takes to start and tear down. Report the wait itself
+		// so the parent measures that; Cleanup still runs after the Fatalf that
+		// waitForFile raises.
+		waitStarted := time.Now()
+		t.Cleanup(func() {
+			fmt.Printf("%s%s\n", spawnedFixtureWaitPrefix, time.Since(waitStarted))
+		})
 		waitForFile(t, fixtureName, filepath.Join(t.TempDir(), "never-created"), fixtureExit)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	started := time.Now()
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestSpawnedFixtureDeathFailsFast$")
 	cmd.Env = environmentForTest(spawnedFixtureDeathTestEnv + "=wait")
 	output, err := cmd.CombinedOutput()
-	elapsed := time.Since(started)
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		t.Fatalf("dead fixture wait exceeded two-second containment timeout:\n%s", output)
+		t.Fatalf("dead fixture wait exceeded its containment timeout:\n%s", output)
 	}
 	if err == nil {
 		t.Fatalf("dead fixture wait unexpectedly passed:\n%s", output)
+	}
+	elapsed, ok := spawnedFixtureWaitDuration(string(output))
+	if !ok {
+		t.Fatalf("dead fixture wait did not report its measured duration:\n%s", output)
 	}
 	if elapsed >= time.Second {
 		t.Fatalf("dead fixture wait took %s, want under one second:\n%s", elapsed, output)
