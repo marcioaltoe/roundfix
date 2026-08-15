@@ -28,6 +28,10 @@ _Avoid_: Pause, retry, failure
 The Stop Command mode that proves owner identity, cancels registered Agent Sessions, terminates the recorded owning process, and completes the Run as Stopped only after owner exit is proven. A proven identity mismatch always refuses; only the explicit `--owner-identity-unreadable` last-resort flag permits PID-only termination after the host reports the identity unreadable.
 _Avoid_: Lock release, best-effort stop, orphan reclamation
 
+**Governed Path**:
+A repository path the tooling-authority rules bind — the configuration, scripts, ignore files, plugin declarations, and version pins of linters, formatters, typecheckers, test runners, architecture checkers, build tools, package managers, and code generators. The changed-path audit judges a Task commit only against its governed paths; an ordinary source, test, or documentation file is not governed and needs no grant. The declared set is held to the record: every path any authorization has ever bounded stays governed.
+_Avoid_: Protected file, restricted path, tooling file
+
 **Process Residue**:
 A process Roundfix started that outlived the Run that started it, so no live Run record owns it. The readiness diagnostic reports residue with each process's age, its consumed CPU time, and its originating Run when the Run Database still knows it; reporting settles nothing and creates no Run record.
 _Avoid_: Orphan, zombie, leaked run, stale process

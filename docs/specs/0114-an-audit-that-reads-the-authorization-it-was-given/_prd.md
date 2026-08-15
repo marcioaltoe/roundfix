@@ -45,15 +45,16 @@ third disagreement sits beside them: the PRD template tells an author to record
   rather than changes: ADR-0091 makes the QA gate a Task node of its own type, and
   ADR-0104 makes a Spec accept on evidence it did not author, which is what the
   two replayed historical refusals supply here. Source: `docs/agents/domain.md`.
-- Tooling authority: not applicable — the audit and detector corrections are
-  production Go, which no tooling grant governs. If the TechSpec resolves the
-  template-versus-detector disagreement by changing the `write-prd` template
-  rather than the detector, that becomes a protected tooling mutation and must
-  obtain express maintainer authorization with exact bounded files before
-  decomposition. Writing this row as `applicable` without a grant is itself
-  refused by `SC-TOOLING-UNBOUNDED` — this Spec was refused that way while being
-  authored, which is the third defect it records. Source:
-  `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — the constraint governs this Spec, and no
+  protected tooling mutation is proposed or authorized. The audit and detector
+  corrections are production Go, which no grant governs, and the `write-prd`
+  template is deliberately left unchanged: ADR-0131 settles the
+  template-versus-detector disagreement in the detector precisely so that
+  repairing the machinery that hands grants out does not itself require a grant.
+  This row is written in the wording that machinery now accepts. It was written as
+  `not applicable` while this Spec was authored, because `SC-TOOLING-UNBOUNDED`
+  refused the correct wording three times — the third defect this Spec records, and
+  the one it has now removed. Source: `docs/agents/agent-instructions.md`.
 
 ## Goals
 

@@ -62,16 +62,15 @@ bounded, so it can grow deliberately and cannot silently narrow.
   why the tooling-row repair lands at authoring time; ADR-0128 already makes the
   suite guard and this audit read one declaration, and this Spec makes them share
   the parser rather than only the format. Source: `docs/agents/domain.md`.
-- Tooling authority: not applicable — no protected tooling mutation is proposed
-  or authorized. The work is production Go in the consistency checker and its
-  tests. The PRD template is deliberately left unchanged: ADR-0131 settles the
-  disagreement in the checker precisely so that repairing the grant machinery does
-  not itself require a grant. This row is written in the wording ADR-0131 replaces,
-  because the checker that reads it still refuses the other one — the third time
-  this Spec has been refused by the defect it exists to remove, after its PRD was
-  refused twice while being authored. Once the detector lands, the row reads
-  `applicable` and says the same thing. Source:
-  `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — the constraint governs this Spec, and no
+  protected tooling mutation is proposed or authorized. The work is production Go
+  in the consistency checker and its tests. The PRD template is deliberately left
+  unchanged: ADR-0131 settles the disagreement in the checker precisely so that
+  repairing the grant machinery does not itself require a grant. This row was
+  written as `not applicable` while the Spec was authored, because the checker
+  that reads it still refused the correct wording — the third such refusal, after
+  the PRD was refused twice. The detector this Spec delivers accepts it, which is
+  the row proving its own repair. Source: `docs/agents/agent-instructions.md`.
 
 ## System Architecture
 
