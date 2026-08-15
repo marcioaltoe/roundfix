@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: qa
 complexity: high
 ---
