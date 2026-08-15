@@ -1,9 +1,12 @@
 ---
 spec: 0103-a-suite-that-leaks-nothing
-status: active
+status: archived
 created: 2026-08-12
 surfaces: [backend, infra]
+archived: "2026-08-15"
+source_slug: 0103-a-suite-that-leaks-nothing
 ---
+
 
 # A suite that leaks nothing
 
