@@ -418,6 +418,87 @@ func TestMechanicalReportShape(t *testing.T) {
 	})
 }
 
+func TestBlockedCauseDiagnosticNamesTheLiteral(t *testing.T) {
+	t.Parallel()
+
+	const (
+		requiredLiteral = `" — waits on "`
+		wrongTypeDetail = "blocked cause outside environment, finding, or declared"
+	)
+	tests := []struct {
+		name           string
+		status         string
+		environment    int
+		finding        int
+		declared       int
+		wantDetail     string
+		rejectedDetail string
+	}{
+		{
+			name:           "finding type without required literal names the literal",
+			status:         "blocked (finding: QA-FIXTURE)",
+			wantDetail:     requiredLiteral,
+			rejectedDetail: wrongTypeDetail,
+		},
+		{
+			name:           "unrecognised blocked cause names the three types",
+			status:         "blocked (external: outage)",
+			wantDetail:     wrongTypeDetail,
+			rejectedDetail: requiredLiteral,
+		},
+		{
+			name:        "environment cause keeps its typed count",
+			status:      "blocked (environment: unavailable)",
+			environment: 1,
+		},
+		{
+			name:    "finding cause with required literal keeps its typed count",
+			status:  "blocked (finding: QA-FIXTURE — waits on fixture)",
+			finding: 1,
+		},
+		{
+			name:     "declared cause keeps its typed count",
+			status:   "blocked (declared: unavailable)",
+			declared: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			reportPath := "docs/specs/mechanical/qa/report.md"
+			writeMechanicalFile(t, repoRoot, reportPath, fmt.Sprintf("---\n"+
+				"verdict: fail\n"+
+				"rows_blocked_environment: %d\n"+
+				"rows_blocked_finding: %d\n"+
+				"rows_blocked_declared: %d\n"+
+				"---\n\n"+
+				"# QA Report\n\n"+
+				"## Results\n\n"+
+				"| # | Status | Evidence |\n"+
+				"| - | --- | --- |\n"+
+				"| R01 | %s | observed inline |\n",
+				tt.environment, tt.finding, tt.declared, tt.status))
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+			if tt.wantDetail == "" {
+				if len(findings) != 0 {
+					t.Fatalf("%s findings = %#v, want none", speccheck.CodeMechanicalReportShape, findings)
+				}
+				return
+			}
+			if len(findings) != 1 || !strings.Contains(findings[0].Detail, tt.wantDetail) {
+				t.Fatalf("%s findings = %#v, want one detail containing %q", speccheck.CodeMechanicalReportShape, findings, tt.wantDetail)
+			}
+			if strings.Contains(findings[0].Detail, tt.rejectedDetail) {
+				t.Fatalf("%s detail = %q, must differ from %q", speccheck.CodeMechanicalReportShape, findings[0].Detail, tt.rejectedDetail)
+			}
+		})
+	}
+}
+
 func TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode(t *testing.T) {
 	t.Parallel()
 	repoRoot := newMechanicalGitRepo(t)

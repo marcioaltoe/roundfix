@@ -33,6 +33,8 @@ const (
 	CodeMechanicalConsequentOrder = "QA-CONSEQUENT-ORDER"
 	CodeMechanicalReportShape     = "QA-REPORT-SHAPE"
 	CodeMechanicalEvidencePath    = "QA-EVIDENCE-PATH"
+
+	blockedCauseLiteral = " — waits on "
 )
 
 // MechanicalRequest names the written declarations and observable repository
@@ -1152,8 +1154,15 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 			})
 		case typedBlockedStatus(lower, "environment"):
 			actual["rows_blocked_environment"]++
-		case typedBlockedStatus(lower, "finding") && strings.Contains(lower, " — waits on "):
+		case typedBlockedStatus(lower, "finding") && strings.Contains(lower, blockedCauseLiteral):
 			actual["rows_blocked_finding"]++
+		case typedBlockedStatus(lower, "finding"):
+			addMechanicalFinding(result, MechanicalFinding{
+				Code: CodeMechanicalReportShape, File: report.path, Line: row.line,
+				Detail:  "row " + row.id + " has a finding-typed blocked status without required literal \" — waits on \"",
+				Fix:     "Add the required literal \" — waits on \" after the finding type.",
+				RowHint: row.id,
+			})
 		case typedBlockedStatus(lower, "declared"):
 			actual["rows_blocked_declared"]++
 		case strings.HasPrefix(lower, "blocked"):

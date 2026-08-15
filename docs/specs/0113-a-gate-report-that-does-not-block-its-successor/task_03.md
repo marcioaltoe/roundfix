@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: low
 ---
@@ -54,3 +54,44 @@ wanted. An author reading that rewrites a row that was typed correctly.
 
 `_techspec.md` → Build Order 3; Implementation Design, Interfaces. `_prd.md` →
 Core Features 3 and 5; Goal 2; User Story 2. ADR-0133.
+
+## Result
+
+### Implementation
+
+- The report-shape detector now separates a finding-typed blocked status that
+  lacks the required literal from a blocked status with an unrecognised cause.
+- The missing-literal diagnostic quotes `" — waits on "`; the existing wrong-type
+  diagnostic and its three named cause types remain unchanged.
+- The environment, finding and declared count increments remain on their existing
+  accepted-status branches.
+
+### Focused-check evidence
+
+- Before the production change,
+  `GOCACHE=/tmp/roundfix-task-03-gocache rtk proxy go test ./internal/speccheck -run '^TestBlockedCauseDiagnosticNamesTheLiteral$'`
+  failed because the missing-literal row received the wrong-type diagnostic.
+- After the production change, the same focused command passed.
+- `GOCACHE=/tmp/roundfix-task-03-gocache rtk make verify-incremental` passed when
+  run outside the managed sandbox. The sandboxed attempt could not let two
+  unrelated `internal/cli` process-tree tests read the process table; all other
+  reported packages, including `internal/speccheck`, passed in that attempt.
+- `rtk git diff --check` passed.
+
+### Acceptance-criterion evidence
+
+- Finding-typed row without the literal: subtest
+  `finding_type_without_required_literal_names_the_literal` requires the quoted
+  literal in the diagnostic and passed.
+- Unrecognised blocked cause: subtest
+  `unrecognised_blocked_cause_names_the_three_types` requires the existing three-
+  type diagnostic and passed.
+- Distinct messages: both refusal subtests reject the other case's diagnostic;
+  both passed.
+- Typed totals: the environment, finding and declared subtests each provide the
+  matching frontmatter count and require zero report-shape findings; all passed.
+
+### Daemon verification
+
+The commands under `## Verification` were not run; the Daemon owns those commands
+and Task settlement.
