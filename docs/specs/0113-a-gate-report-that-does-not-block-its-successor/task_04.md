@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -52,3 +52,49 @@ is fine.
 
 `_techspec.md` → Build Order 4; Testing Approach, one cause one finding.
 `_prd.md` → Core Feature 4; User Story 3. ADR-0133.
+
+## Result
+
+### Implementation
+
+- The report-shape detector now tracks finding-typed rows that fail the required
+  literal check separately from rows that contribute to parsed totals.
+- A declared finding count equal to the parsed total plus those unparsed rows is
+  attributed to the row-specific parse finding, so it produces no second count
+  finding.
+- A declared finding count that still differs after accounting for unparsed rows
+  keeps the count finding alongside every row-specific parse finding.
+- The change introduces no domain term and requires no glossary update.
+
+### Focused-check evidence
+
+- Before the production change,
+  `GOCACHE=/tmp/roundfix-task-04-gocache rtk proxy go test ./internal/speccheck -run '^TestCountDisagreementReportsItsCause$'`
+  failed because `unparsed_row_accounts_for_count_disagreement` returned both
+  the `R-PARSE` literal finding and a `rows_blocked_finding` count finding.
+- After the production change, the same focused command passed.
+- `GOCACHE=/tmp/roundfix-task-04-gocache rtk proxy go test ./internal/speccheck -run '^(TestMechanicalReportShape|TestBlockedCauseDiagnosticNamesTheLiteral|TestCountDisagreementReportsItsCause|TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode)$'`
+  passed.
+- `GOCACHE=/tmp/roundfix-task-04-gocache rtk make verify-incremental` passed
+  outside the managed sandbox. The sandboxed attempt could not let two unrelated
+  `internal/cli` process-tree tests read the process table; `internal/speccheck`
+  and `internal/daemon` passed in that attempt.
+- `rtk git diff --check` passed after the implementation edits.
+
+### Acceptance-criterion evidence
+
+- Parse-caused disagreement: subtest
+  `unparsed_row_accounts_for_count_disagreement` requires exactly one report-shape
+  finding, requires that finding to name `R-PARSE`, and rejects a count finding;
+  it passed.
+- Genuine disagreement: subtest
+  `parsed_rows_expose_genuine_count_disagreement` uses only a parsed row and
+  requires the `rows_blocked_finding` count finding; it passed.
+- Both causes: subtest `unparsed_row_and_wrong_total_expose_both_causes` requires
+  two findings, the parse failure naming `R-PARSE`, and the count finding; it
+  passed.
+
+### Daemon verification
+
+The commands under `## Verification` were not run; the Daemon owns those commands
+and Task settlement.

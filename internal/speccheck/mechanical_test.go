@@ -499,6 +499,74 @@ func TestBlockedCauseDiagnosticNamesTheLiteral(t *testing.T) {
 	}
 }
 
+func TestCountDisagreementReportsItsCause(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		rows             string
+		declaredFinding  int
+		wantFindings     int
+		wantParseRow     string
+		wantCountFinding bool
+	}{
+		{
+			name:            "unparsed row accounts for count disagreement",
+			rows:            "| R-PARSE | blocked (finding: QA-FIXTURE) | observed inline |\n",
+			declaredFinding: 1,
+			wantFindings:    1,
+			wantParseRow:    "R-PARSE",
+		},
+		{
+			name:             "parsed rows expose genuine count disagreement",
+			rows:             "| R-PARSED | blocked (finding: QA-FIXTURE — waits on fixture) | observed inline |\n",
+			declaredFinding:  2,
+			wantFindings:     1,
+			wantCountFinding: true,
+		},
+		{
+			name: "unparsed row and wrong total expose both causes",
+			rows: "| R-PARSE | blocked (finding: QA-FIXTURE) | observed inline |\n" +
+				"| R-PARSED | blocked (finding: QA-OTHER — waits on other fixture) | observed inline |\n",
+			declaredFinding:  3,
+			wantFindings:     2,
+			wantParseRow:     "R-PARSE",
+			wantCountFinding: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			reportPath := "docs/specs/mechanical/qa/report.md"
+			writeMechanicalFile(t, repoRoot, reportPath, fmt.Sprintf("---\n"+
+				"verdict: fail\n"+
+				"rows_blocked_environment: 0\n"+
+				"rows_blocked_finding: %d\n"+
+				"rows_blocked_declared: 0\n"+
+				"---\n\n"+
+				"# QA Report\n\n"+
+				"## Results\n\n"+
+				"| # | Status | Evidence |\n"+
+				"| - | --- | --- |\n%s",
+				tt.declaredFinding, tt.rows))
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+			if len(findings) != tt.wantFindings {
+				t.Fatalf("%s findings = %#v, want %d", speccheck.CodeMechanicalReportShape, findings, tt.wantFindings)
+			}
+			if tt.wantParseRow != "" && !mechanicalDetailsContain(findings, tt.wantParseRow) {
+				t.Fatalf("%s findings = %#v, want parse failure naming row %s", speccheck.CodeMechanicalReportShape, findings, tt.wantParseRow)
+			}
+			if got := mechanicalDetailsContain(findings, "rows_blocked_finding"); got != tt.wantCountFinding {
+				t.Fatalf("%s count finding present = %t, want %t: %#v", speccheck.CodeMechanicalReportShape, got, tt.wantCountFinding, findings)
+			}
+		})
+	}
+}
+
 func TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode(t *testing.T) {
 	t.Parallel()
 	repoRoot := newMechanicalGitRepo(t)

@@ -1133,6 +1133,11 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 		"rows_blocked_finding":     0,
 		"rows_blocked_declared":    0,
 	}
+	unparsed := map[string]int{
+		"rows_blocked_environment": 0,
+		"rows_blocked_finding":     0,
+		"rows_blocked_declared":    0,
+	}
 	if len(report.rows) == 0 {
 		addMechanicalFinding(result, MechanicalFinding{
 			Code: CodeMechanicalReportShape, File: report.path, Line: 1,
@@ -1157,6 +1162,7 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 		case typedBlockedStatus(lower, "finding") && strings.Contains(lower, blockedCauseLiteral):
 			actual["rows_blocked_finding"]++
 		case typedBlockedStatus(lower, "finding"):
+			unparsed["rows_blocked_finding"]++
 			addMechanicalFinding(result, MechanicalFinding{
 				Code: CodeMechanicalReportShape, File: report.path, Line: row.line,
 				Detail:  "row " + row.id + " has a finding-typed blocked status without required literal \" — waits on \"",
@@ -1207,6 +1213,9 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 			continue
 		}
 		if declared[field] != actual[field] {
+			if declared[field] == actual[field]+unparsed[field] {
+				continue
+			}
 			addMechanicalFinding(result, MechanicalFinding{
 				Code: CodeMechanicalReportShape, File: report.path, Line: line,
 				Detail: fmt.Sprintf("%s is %d but the Results table contains %d matching rows", field, declared[field], actual[field]),
