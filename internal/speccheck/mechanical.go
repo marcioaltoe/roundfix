@@ -33,6 +33,8 @@ const (
 	CodeMechanicalConsequentOrder = "QA-CONSEQUENT-ORDER"
 	CodeMechanicalReportShape     = "QA-REPORT-SHAPE"
 	CodeMechanicalEvidencePath    = "QA-EVIDENCE-PATH"
+
+	blockedCauseLiteral = " — waits on "
 )
 
 // MechanicalRequest names the written declarations and observable repository
@@ -44,6 +46,69 @@ type MechanicalRequest struct {
 	TaskCommits       []MechanicalTaskCommit
 	ConsequentFixes   []ConsequentFixDeclaration
 	ReportPath        string
+	TaskRepairPaths   []string
+	AssignedRepairs   []AssignedRepair
+	Precondition      GatePreconditionResult
+}
+
+// AssignedRepair is one exact replacement the gate's Task requires. Path must
+// also appear in TaskRepairPaths; Before and After make the operation and its
+// verification deterministic instead of asking the mechanical stage to
+// interpret prose.
+type AssignedRepair struct {
+	ID     string
+	Path   string
+	Before string
+	After  string
+}
+
+// PerformedRepair records an assigned repair whose write was independently
+// read back and verified. WriteMechanicalResult makes this audit trail visible
+// in the seeded QA Report.
+type PerformedRepair struct {
+	ID   string
+	Path string
+}
+
+// RepairFailure records assigned work the gate could not safely perform or
+// verify. It is deliberately not a MechanicalFinding: findings remain
+// observations for work the Task did not assign.
+type RepairFailure struct {
+	ID     string
+	Path   string
+	Detail string
+}
+
+// GatePreconditionResult separates contradictions that stop a QA gate from
+// written inputs the gate itself is assigned to repair. Inputs remain visible
+// so the gate can act on them; they are not silently discarded to get green.
+type GatePreconditionResult struct {
+	Findings []Finding
+	Inputs   []Finding
+	Blocking bool
+}
+
+// GatePrecondition classifies one ordinary Spec Consistency Check result for
+// the Spec's own QA gate. Only an undocumented emitted token selected by that
+// same Spec's complete Vocabulary Contract becomes gate input. All other
+// findings keep their ordinary blocking behavior, and the source Result is not
+// mutated.
+func GatePrecondition(checked Result) GatePreconditionResult {
+	precondition := GatePreconditionResult{
+		Findings: []Finding{},
+		Inputs:   []Finding{},
+	}
+	for _, finding := range checked.Findings {
+		if finding.Code == CodeVocabularyUndocumented &&
+			finding.declaredVocabularySpec != "" &&
+			finding.declaredVocabularySpec == checked.Slug {
+			precondition.Inputs = append(precondition.Inputs, finding)
+			continue
+		}
+		precondition.Findings = append(precondition.Findings, finding)
+	}
+	precondition.Blocking = len(precondition.Findings) > 0
+	return precondition
 }
 
 // MechanicalTaskCommit associates the Daemon-owned Task commit with its Task
@@ -276,18 +341,26 @@ func evidenceGlobPattern(ref string) string {
 	return pattern.String()
 }
 
-// RunMechanicalStage evaluates every detector and returns all findings in one
-// pass. It reads Git and files only; it writes no report and settles no Task.
+// RunMechanicalStage performs and verifies explicitly assigned repairs, then
+// evaluates every detector and returns all findings in one pass. Repairs may
+// write only exact TaskRepairPaths. The stage writes no report and settles no
+// Task.
 func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (MechanicalResult, error) {
 	result := MechanicalResult{
-		Findings: []MechanicalFinding{},
-		Carried:  []CarriedRow{},
-		Blocked:  []BlockedRow{},
-		Skips:    []MechanicalSkip{},
+		Findings:       []MechanicalFinding{},
+		Performed:      []PerformedRepair{},
+		RepairFailures: []RepairFailure{},
+		Carried:        []CarriedRow{},
+		Blocked:        []BlockedRow{},
+		Skips:          []MechanicalSkip{},
 	}
+	addGatePreconditionFindings(&result, request.Precondition)
 	repoRoot := filepath.Clean(request.RepoRoot)
 	if strings.TrimSpace(request.RepoRoot) == "" {
 		return result, errors.New("run mechanical stage: repository root is empty")
+	}
+	if err := performAssignedRepairs(&result, repoRoot, request.TaskRepairPaths, request.AssignedRepairs); err != nil {
+		return result, err
 	}
 
 	if err := detectMechanicalAuthPaths(ctx, &result, repoRoot, request); err != nil {
@@ -326,9 +399,168 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 		}
 	}
 
-	result.Blocking = len(result.Findings) > 0
+	result.Blocking = len(result.Findings) > 0 || len(result.RepairFailures) > 0
 	materializeBlockedRows(&result)
 	return result, nil
+}
+
+func addGatePreconditionFindings(result *MechanicalResult, precondition GatePreconditionResult) {
+	for _, finding := range precondition.Findings {
+		mechanical := MechanicalFinding{
+			Code:   finding.Code,
+			Detail: finding.Summary,
+			Fix:    finding.Fix,
+		}
+		if len(finding.Where) > 0 {
+			mechanical.File = finding.Where[0].Path
+			mechanical.Line = finding.Where[0].Line
+		}
+		addMechanicalFinding(result, mechanical)
+	}
+}
+
+type preparedRepairPath struct {
+	resolved string
+	content  []byte
+	mode     os.FileMode
+}
+
+func performAssignedRepairs(result *MechanicalResult, repoRoot string, taskPaths []string, repairs []AssignedRepair) error {
+	if len(repairs) == 0 {
+		return nil
+	}
+
+	allowed := make(map[string]bool, len(taskPaths))
+	for _, taskPath := range taskPaths {
+		clean := cleanMechanicalPath(taskPath)
+		if clean != "" && clean == taskPath {
+			allowed[clean] = true
+		}
+	}
+
+	prepared := make(map[string]preparedRepairPath)
+	applied := make([]PerformedRepair, 0, len(repairs))
+	seenIDs := make(map[string]bool, len(repairs))
+	for _, repair := range repairs {
+		id := strings.TrimSpace(repair.ID)
+		path := cleanMechanicalPath(repair.Path)
+		failure := RepairFailure{ID: id, Path: repair.Path}
+		switch {
+		case id == "":
+			failure.Detail = "assigned repair has no stable identifier and was not performed"
+			addRepairFailure(result, failure)
+			continue
+		case seenIDs[id]:
+			failure.Detail = fmt.Sprintf("assigned repair %s repeats an identifier and was not performed", id)
+			addRepairFailure(result, failure)
+			continue
+		}
+		seenIDs[id] = true
+
+		if path == "" || path != repair.Path || !allowed[path] {
+			failure.Detail = fmt.Sprintf("assigned repair %s names %q outside the Task-named repair paths", id, repair.Path)
+			addRepairFailure(result, failure)
+			continue
+		}
+		if repair.Before == "" || repair.Before == repair.After {
+			failure.Detail = fmt.Sprintf("assigned repair %s has no deterministic before/after change and was not performed", id)
+			addRepairFailure(result, failure)
+			continue
+		}
+
+		state, loaded := prepared[path]
+		if !loaded {
+			resolved, ok := resolveRepositoryPath(repoRoot, path)
+			if !ok {
+				failure.Detail = fmt.Sprintf("assigned repair %s names invalid repository path %q", id, repair.Path)
+				addRepairFailure(result, failure)
+				continue
+			}
+			info, err := os.Lstat(resolved)
+			if errors.Is(err, os.ErrNotExist) {
+				failure.Detail = fmt.Sprintf("assigned repair %s path %s does not exist and was not performed", id, path)
+				addRepairFailure(result, failure)
+				continue
+			}
+			if err != nil {
+				return fmt.Errorf("inspect assigned repair path %q: %w", resolved, err)
+			}
+			if !info.Mode().IsRegular() {
+				failure.Detail = fmt.Sprintf("assigned repair %s path %s is not a regular file and was not performed", id, path)
+				addRepairFailure(result, failure)
+				continue
+			}
+			realRoot, err := filepath.EvalSymlinks(repoRoot)
+			if err != nil {
+				return fmt.Errorf("resolve assigned repair repository root %q: %w", repoRoot, err)
+			}
+			realPath, err := filepath.EvalSymlinks(resolved)
+			if err != nil {
+				return fmt.Errorf("resolve assigned repair path %q: %w", resolved, err)
+			}
+			if filepath.Clean(realPath) != filepath.Join(filepath.Clean(realRoot), filepath.FromSlash(path)) {
+				failure.Detail = fmt.Sprintf("assigned repair %s path %s resolves through a symlink and was not performed", id, path)
+				addRepairFailure(result, failure)
+				continue
+			}
+			content, err := os.ReadFile(resolved)
+			if err != nil {
+				return fmt.Errorf("read assigned repair path %q: %w", resolved, err)
+			}
+			state = preparedRepairPath{resolved: resolved, content: content, mode: info.Mode().Perm()}
+		}
+
+		before := []byte(repair.Before)
+		after := []byte(repair.After)
+		switch occurrences := bytes.Count(state.content, before); occurrences {
+		case 0:
+			if bytes.Contains(state.content, after) {
+				prepared[path] = state
+				continue
+			}
+			failure.Detail = fmt.Sprintf("assigned repair %s was not performed: %s contains neither its before nor after text", id, path)
+			addRepairFailure(result, failure)
+		case 1:
+			state.content = bytes.Replace(state.content, before, after, 1)
+			prepared[path] = state
+			applied = append(applied, PerformedRepair{ID: id, Path: path})
+		default:
+			failure.Detail = fmt.Sprintf("assigned repair %s matches %d places in %s and was not performed", id, occurrences, path)
+			addRepairFailure(result, failure)
+		}
+	}
+	if len(result.RepairFailures) > 0 {
+		return nil
+	}
+
+	written := make(map[string]bool, len(applied))
+	for _, repair := range applied {
+		if written[repair.Path] {
+			continue
+		}
+		written[repair.Path] = true
+		state := prepared[repair.Path]
+		if err := os.WriteFile(state.resolved, state.content, state.mode); err != nil {
+			return fmt.Errorf("write assigned repair path %q: %w", state.resolved, err)
+		}
+		verified, err := os.ReadFile(state.resolved)
+		if err != nil {
+			return fmt.Errorf("verify assigned repair path %q: %w", state.resolved, err)
+		}
+		if !bytes.Equal(verified, state.content) {
+			addRepairFailure(result, RepairFailure{
+				ID: repair.ID, Path: repair.Path,
+				Detail: fmt.Sprintf("assigned repair %s write to %s could not be verified", repair.ID, repair.Path),
+			})
+			return nil
+		}
+	}
+	result.Performed = append(result.Performed, applied...)
+	return nil
+}
+
+func addRepairFailure(result *MechanicalResult, failure RepairFailure) {
+	result.RepairFailures = append(result.RepairFailures, failure)
 }
 
 func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, repoRoot string, request MechanicalRequest) error {
@@ -1131,6 +1363,11 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 		"rows_blocked_finding":     0,
 		"rows_blocked_declared":    0,
 	}
+	unparsed := map[string]int{
+		"rows_blocked_environment": 0,
+		"rows_blocked_finding":     0,
+		"rows_blocked_declared":    0,
+	}
 	if len(report.rows) == 0 {
 		addMechanicalFinding(result, MechanicalFinding{
 			Code: CodeMechanicalReportShape, File: report.path, Line: 1,
@@ -1152,8 +1389,16 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 			})
 		case typedBlockedStatus(lower, "environment"):
 			actual["rows_blocked_environment"]++
-		case typedBlockedStatus(lower, "finding") && strings.Contains(lower, " — waits on "):
+		case typedBlockedStatus(lower, "finding") && strings.Contains(lower, blockedCauseLiteral):
 			actual["rows_blocked_finding"]++
+		case typedBlockedStatus(lower, "finding"):
+			unparsed["rows_blocked_finding"]++
+			addMechanicalFinding(result, MechanicalFinding{
+				Code: CodeMechanicalReportShape, File: report.path, Line: row.line,
+				Detail:  "row " + row.id + " has a finding-typed blocked status without required literal \" — waits on \"",
+				Fix:     "Add the required literal \" — waits on \" after the finding type.",
+				RowHint: row.id,
+			})
 		case typedBlockedStatus(lower, "declared"):
 			actual["rows_blocked_declared"]++
 		case strings.HasPrefix(lower, "blocked"):
@@ -1198,6 +1443,9 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 			continue
 		}
 		if declared[field] != actual[field] {
+			if declared[field] == actual[field]+unparsed[field] {
+				continue
+			}
 			addMechanicalFinding(result, MechanicalFinding{
 				Code: CodeMechanicalReportShape, File: report.path, Line: line,
 				Detail: fmt.Sprintf("%s is %d but the Results table contains %d matching rows", field, declared[field], actual[field]),

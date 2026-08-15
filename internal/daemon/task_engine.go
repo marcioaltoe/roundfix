@@ -1759,7 +1759,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", fmt.Errorf("build QA prompt context for run %q: %w", plan.RunID, err)
 	}
-	mechanicalRequest, err := engine.qaMechanicalRequest(ctx, plan, promptContext.PreviousReportPath)
+	mechanicalRequest, err := engine.qaMechanicalRequest(ctx, plan, qaTask, promptContext.PreviousReportPath)
 	if err != nil {
 		return "", "", fmt.Errorf("build mechanical-stage request for run %q: %w", plan.RunID, err)
 	}
@@ -1888,7 +1888,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	return verdict, reportPath, nil
 }
 
-func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, previousReportPath string) (speccheck.MechanicalRequest, error) {
+func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qaTask spec.Task, previousReportPath string) (speccheck.MechanicalRequest, error) {
 	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
 	authorizationPath, boundedPaths, err := speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
 	if err != nil {
@@ -1898,6 +1898,18 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, pr
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
 	}
+	var assignedRepairs []speccheck.AssignedRepair
+	if len(qaTask.AssignedRepairs) > 0 {
+		assignedRepairs = make([]speccheck.AssignedRepair, len(qaTask.AssignedRepairs))
+		for index, repair := range qaTask.AssignedRepairs {
+			assignedRepairs[index] = speccheck.AssignedRepair{
+				ID:     repair.ID,
+				Path:   repair.Path,
+				Before: repair.Before,
+				After:  repair.After,
+			}
+		}
+	}
 	return speccheck.MechanicalRequest{
 		RepoRoot:          plan.WorkDir,
 		AuthorizationPath: authorizationPath,
@@ -1906,6 +1918,8 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, pr
 		// declaration exists, the detector records its presence-aware skip.
 		ConsequentFixes: nil,
 		ReportPath:      previousReportPath,
+		TaskRepairPaths: append([]string(nil), qaTask.TaskRepairPaths...),
+		AssignedRepairs: assignedRepairs,
 	}, nil
 }
 
@@ -2011,15 +2025,29 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 	if bytes.Equal(mechanicalBody, mechanical.Bytes()) {
 		return "", errors.New("materialize mechanical QA Report: mechanical rows table is absent")
 	}
+	if result.Blocking && len(result.Carried)+len(result.Blocked) == 0 {
+		const skipsHeading = "\n## Mechanical skips"
+		refusalRow := fmt.Sprintf(
+			"| QA-PRECONDITION | fail | mechanical refusal: %s; no other checks executed |\n\n## Mechanical skips",
+			mechanicalReportCell(mechanicalRefusalCause(result)),
+		)
+		withRefusal := bytes.Replace(mechanicalBody, []byte(skipsHeading), []byte(refusalRow), 1)
+		if bytes.Equal(withRefusal, mechanicalBody) {
+			return "", errors.New("materialize mechanical QA Report: mechanical skips section is absent")
+		}
+		mechanicalBody = withRefusal
+	}
 
 	var content bytes.Buffer
 	content.WriteString("---\n")
+	verdict := spec.VerdictPass
 	if result.Blocking {
-		content.WriteString("verdict: fail\n")
+		verdict = spec.VerdictFail
 	}
-	fmt.Fprintln(&content, "rows_blocked_environment: 0")
-	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", len(result.Blocked))
-	fmt.Fprintln(&content, "rows_blocked_declared: 0")
+	fmt.Fprintf(&content, "verdict: %s\n", verdict)
+	fmt.Fprintf(&content, "rows_blocked_environment: %d\n", mechanicalBlockedRowCount(mechanicalBody, "environment"))
+	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", mechanicalBlockedRowCount(mechanicalBody, "finding"))
+	fmt.Fprintf(&content, "rows_blocked_declared: %d\n", mechanicalBlockedRowCount(mechanicalBody, "declared"))
 	content.WriteString("---\n\n# QA Report\n\n")
 	content.Write(mechanicalBody)
 	reportDir := filepath.Join(plan.Spec.Dir, "qa")
@@ -2048,6 +2076,53 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 		return artifactCommitPath(plan, path), nil
 	}
 	return "", fmt.Errorf("create QA Report for %s: same-day numeric suffixes exhausted", date)
+}
+
+func mechanicalRefusalCause(result speccheck.MechanicalResult) string {
+	causes := make([]string, 0, len(result.RepairFailures)+len(result.Findings))
+	for _, failure := range result.RepairFailures {
+		cause := strings.TrimSpace(failure.ID)
+		if cause == "" {
+			cause = "assigned repair"
+		}
+		if detail := strings.TrimSpace(failure.Detail); detail != "" {
+			cause += ": " + detail
+		}
+		causes = append(causes, cause)
+	}
+	for _, finding := range result.Findings {
+		cause := strings.TrimSpace(finding.Code)
+		if detail := strings.TrimSpace(finding.Detail); detail != "" {
+			if cause != "" {
+				cause += ": "
+			}
+			cause += detail
+		}
+		if cause != "" {
+			causes = append(causes, cause)
+		}
+	}
+	if len(causes) > 0 {
+		return strings.Join(causes, "; ")
+	}
+	return "mechanical stage blocked without a finding row"
+}
+
+func mechanicalReportCell(value string) string {
+	return strings.ReplaceAll(strings.Join(strings.Fields(value), " "), "|", "\\|")
+}
+
+func mechanicalBlockedRowCount(report []byte, cause string) int {
+	const resultsHeading = "## Results\n\n"
+	start := bytes.Index(report, []byte(resultsHeading))
+	if start < 0 {
+		return 0
+	}
+	rows := report[start+len(resultsHeading):]
+	if end := bytes.Index(rows, []byte("\n## Mechanical skips")); end >= 0 {
+		rows = rows[:end]
+	}
+	return bytes.Count(rows, []byte(" | blocked ("+cause+":"))
 }
 
 // resolveQAPullRequest reports the Open Pull Request fact and whether the

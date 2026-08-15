@@ -38,6 +38,11 @@ type Finding struct {
 	Summary  string     `json:"summary"`
 	Where    []Location `json:"where"`
 	Fix      string     `json:"fix"`
+
+	// declaredVocabularySpec is set only for an emitted token selected by the
+	// named Spec's complete Vocabulary Contract. It stays out of the public
+	// report schema: callers use GatePrecondition to classify the finding.
+	declaredVocabularySpec string
 }
 
 // SkippedDetector records a detector that could not run because an input
@@ -57,11 +62,13 @@ type Result struct {
 // MechanicalResult is the complete, verdict-free output of the pre-QA
 // mechanical stage. Findings are accumulated rather than returned fail-fast.
 type MechanicalResult struct {
-	Findings []MechanicalFinding
-	Carried  []CarriedRow
-	Blocked  []BlockedRow
-	Skips    []MechanicalSkip
-	Blocking bool
+	Findings       []MechanicalFinding
+	Performed      []PerformedRepair
+	RepairFailures []RepairFailure
+	Carried        []CarriedRow
+	Blocked        []BlockedRow
+	Skips          []MechanicalSkip
+	Blocking       bool
 }
 
 // MechanicalFinding locates one citation-checkable contradiction and its
@@ -182,13 +189,20 @@ func RenderText(result Result) string {
 		report.WriteString("Skipped:\n")
 		for _, skipped := range result.Skipped {
 			report.WriteString("  ")
-			report.WriteString(skipped.Code)
+			report.WriteString(skippedDetectorTextLabel(skipped.Code))
 			report.WriteString(": missing ")
 			report.WriteString(skipped.Missing)
 			report.WriteByte('\n')
 		}
 	}
 	return report.String()
+}
+
+func skippedDetectorTextLabel(code string) string {
+	if code == CodeVocabularyUndocumented {
+		return "vocabulary documentation detector"
+	}
+	return code
 }
 
 // RenderJSON renders one compact roundfix-speccheck/v1 object.
@@ -223,6 +237,36 @@ const MechanicalRowsHeading = "## Mechanical rows\n\n"
 // choose a report path, edit an existing report, or compute a verdict.
 func WriteMechanicalResult(writer io.Writer, result MechanicalResult) error {
 	var report strings.Builder
+	report.WriteString("## Performed repairs\n\n")
+	if len(result.Performed) == 0 {
+		report.WriteString("None.\n\n")
+	} else {
+		report.WriteString("| Repair | Path | Verification |\n| --- | --- | --- |\n")
+		for _, repair := range result.Performed {
+			report.WriteString("| ")
+			report.WriteString(markdownCell(repair.ID))
+			report.WriteString(" | ")
+			report.WriteString(markdownCell(repair.Path))
+			report.WriteString(" | verified after write |\n")
+		}
+		report.WriteByte('\n')
+	}
+	report.WriteString("## Assigned repair failures\n\n")
+	if len(result.RepairFailures) == 0 {
+		report.WriteString("None.\n\n")
+	} else {
+		report.WriteString("| Repair | Path | Failure |\n| --- | --- | --- |\n")
+		for _, failure := range result.RepairFailures {
+			report.WriteString("| ")
+			report.WriteString(markdownCell(failure.ID))
+			report.WriteString(" | ")
+			report.WriteString(markdownCell(failure.Path))
+			report.WriteString(" | ")
+			report.WriteString(markdownCell(failure.Detail))
+			report.WriteString(" |\n")
+		}
+		report.WriteByte('\n')
+	}
 	report.WriteString("## Mechanical findings\n\n")
 	if len(result.Findings) == 0 {
 		report.WriteString("None.\n\n")

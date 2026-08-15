@@ -12,11 +12,13 @@ import (
 )
 
 type taskFrontmatter struct {
-	Task       string `yaml:"task"`
-	Spec       string `yaml:"spec"`
-	Status     string `yaml:"status"`
-	Type       string `yaml:"type"`
-	Complexity string `yaml:"complexity"`
+	Task            string           `yaml:"task"`
+	Spec            string           `yaml:"spec"`
+	Status          string           `yaml:"status"`
+	Type            string           `yaml:"type"`
+	Complexity      string           `yaml:"complexity"`
+	TaskRepairPaths []string         `yaml:"repair_paths"`
+	AssignedRepairs []AssignedRepair `yaml:"assigned_repairs"`
 }
 
 type taskDocument struct {
@@ -30,6 +32,8 @@ type taskDocument struct {
 	RehearsalCases   []TaskDeclaration
 	Verification     []string
 	NegativeControl  []string
+	TaskRepairPaths  []string
+	AssignedRepairs  []AssignedRepair
 }
 
 type taskMarkdownLine struct {
@@ -66,6 +70,8 @@ func ReloadTask(specsRoot string, task *Task) error {
 	task.RehearsalCases = append([]TaskDeclaration(nil), document.RehearsalCases...)
 	task.Verification = document.Verification
 	task.NegativeControl = append([]string(nil), document.NegativeControl...)
+	task.TaskRepairPaths = append([]string(nil), document.TaskRepairPaths...)
+	task.AssignedRepairs = append([]AssignedRepair(nil), document.AssignedRepairs...)
 	return nil
 }
 
@@ -129,6 +135,8 @@ func parseTaskDocument(content []byte, taskPath string) (taskDocument, error) {
 		RehearsalCases:   parseTaskSectionBullets(body, "Rehearsal Cases", bodyLineOffset),
 		Verification:     parseVerificationCommands(body),
 		NegativeControl:  parseNegativeControlDeclarations(body),
+		TaskRepairPaths:  append([]string(nil), frontmatter.TaskRepairPaths...),
+		AssignedRepairs:  append([]AssignedRepair(nil), frontmatter.AssignedRepairs...),
 	}, nil
 }
 

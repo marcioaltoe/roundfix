@@ -314,6 +314,38 @@ func TestRenderResultTextAndJSON(t *testing.T) {
 	}
 }
 
+func TestRenderVocabularySkipDoesNotLookLikeFinding(t *testing.T) {
+	t.Parallel()
+
+	result := checkFixture(t, "vocabulary-none")
+	if !hasSkip(result, speccheck.CodeVocabularyUndocumented, "Vocabulary Contract") {
+		t.Fatalf("Skipped = %#v, want vocabulary detector skip", result.Skipped)
+	}
+
+	textReport := speccheck.RenderText(result)
+	if strings.Contains(textReport, speccheck.CodeVocabularyUndocumented) {
+		t.Fatalf("text skip masquerades as a %s finding:\n%s", speccheck.CodeVocabularyUndocumented, textReport)
+	}
+	for _, fragment := range []string{"Skipped:", "vocabulary documentation detector", "Vocabulary Contract"} {
+		if !strings.Contains(textReport, fragment) {
+			t.Errorf("text skip does not contain %q:\n%s", fragment, textReport)
+		}
+	}
+
+	jsonReport, err := speccheck.RenderJSON(result)
+	if err != nil {
+		t.Fatalf("RenderJSON() error = %v", err)
+	}
+	if !strings.Contains(string(jsonReport), `"code":"`+speccheck.CodeVocabularyUndocumented+`"`) {
+		t.Fatalf("JSON skip lost stable detector code: %s", jsonReport)
+	}
+
+	findingReport := speccheck.RenderText(checkFixture(t, "vocabulary-missing"))
+	if !strings.Contains(findingReport, "[error] "+speccheck.CodeVocabularyUndocumented+":") {
+		t.Fatalf("vocabulary finding lost its diagnostic code:\n%s", findingReport)
+	}
+}
+
 func checkFixture(t *testing.T, slug string) speccheck.Result {
 	t.Helper()
 

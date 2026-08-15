@@ -1,9 +1,12 @@
 ---
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: active
+status: archived
 created: 2026-08-14
 surfaces: [backend, docs]
+archived: "2026-08-15"
+source_slug: 0113-a-gate-report-that-does-not-block-its-successor
 ---
+
 
 # A gate report that does not block its successor
 
@@ -17,6 +20,15 @@ single out. A second, independent refusal in the same family names a row's block
 cause as untyped when it is typed correctly: what the parser wants is a literal
 the diagnostic never mentions, and the mismatch produces a second symptom that
 sends a reader hunting a counting bug that does not exist.
+
+Two more failures of the same node were measured on 2026-08-14 and 2026-08-15 and
+are folded in here. A Spec that coins a term cannot pass its own gate: the
+authoring contract gives the gate the glossary update, and the gate's own static
+precondition refuses on the undocumented term before it can make it — the repair
+is assigned to the one actor forbidden from reaching it. And a gate that does
+reach its matrix can still decline to act: given two repairs its Task file named,
+it wrote both as findings and failed, leaving work its contract had assigned it to
+whoever read the report.
 
 ## Project Constraints
 
@@ -38,7 +50,12 @@ sends a reader hunting a counting bug that does not exist.
   makes a Spec accept on evidence it did not author, and ADR-0117 places a check
   with the stage that can produce its defect — this Spec changes none of the four,
   and the last is why its repairs belong in the stage that writes and reads the
-  report rather than in a later gate round. Source: `docs/agents/domain.md`.
+  report rather than in a later gate round. This Spec's own decisions are ADR-0132,
+  which makes a refused gate record the refusal as its terminal row, ADR-0133,
+  which makes a diagnostic name the literal it requires and one cause report once,
+  and ADR-0134, which makes the gate perform the repairs its Task names and stops
+  its vocabulary precondition refusing a term the Spec under gate declared.
+  Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized. The work is production Go in the gate's report writer and
   mechanical stage plus their tests, and the `qa-gate` contract's stated row form
@@ -49,6 +66,8 @@ sends a reader hunting a counting bug that does not exist.
 1. A refused gate leaves nothing that blocks its own next run.
 2. A refusal reports what it actually needs, in the words the parser accepts.
 3. No repair for a gate defect requires deleting evidence.
+4. A Spec that coins a term can pass the gate that is asked to document it.
+5. A repair the gate is assigned is performed by the gate, not reported back.
 
 ## User Stories
 
@@ -61,6 +80,11 @@ sends a reader hunting a counting bug that does not exist.
 3. As a maintainer, I want a blocked-row count that disagrees with the table to
    name the rows it failed to parse, so that I do not look for a counting defect
    that is a parsing symptom.
+4. As a Supervisor whose Spec coined a term, I want its gate to document that term
+   rather than refuse because it is undocumented, so that the contract's own
+   instruction is reachable by the actor it was given to.
+5. As a Supervisor reading a gate that found a repair it was told to make, I want
+   it made, so that a check assigned as an author does not behave as an observer.
 
 ## Core Features
 
@@ -79,6 +103,11 @@ sends a reader hunting a counting bug that does not exist.
 5. **A row typed correctly is not refused for prose.** Whether the parser should
    require its declared phrasing at all, or accept the type and treat what follows
    as free text, is settled rather than left to the parser's current behaviour.
+6. **The gate can satisfy its own vocabulary precondition.** A term the Spec under
+   gate declared is documentable by the gate rather than fatal to it, so the
+   glossary update the authoring contract assigns can actually happen.
+7. **An assigned repair is performed.** When the gate's Task names a repair it must
+   make, making it is what passes; reporting it is not.
 
 ## Non-Goals / Out of Scope
 
@@ -87,6 +116,8 @@ sends a reader hunting a counting bug that does not exist.
 - Changing verdict semantics or the three typed blocked-cause counts.
 - Changing what the gate executes once its preconditions pass.
 - Retroactively repairing reports already written.
+- Letting the gate edit anything its Task did not name. Performing an assigned
+  repair is not a licence to edit the Spec at will.
 
 ## Success Metrics
 
@@ -96,6 +127,11 @@ sends a reader hunting a counting bug that does not exist.
   declared literal — each produce a diagnostic naming what to change, proven by
   replaying both.
 - A parse failure reports once rather than as two findings.
+- A Spec declaring a coined term passes its gate without a human writing the
+  glossary entry first, reproduced from Spec 0103 on 2026-08-14 and Spec 0114 on
+  2026-08-15.
+- A gate given a named repair in its Task file completes it, measured against Spec
+  0114's gate, which found both of its assigned repairs and performed neither.
 - The empty-Results-table refusal is reproduced from the run that produced it on
   2026-08-14, where Spec 0103's gate stopped at the static precondition and wrote
   a report with no rows. Evidence:

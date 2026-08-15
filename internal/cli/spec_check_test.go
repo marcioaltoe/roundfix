@@ -271,7 +271,8 @@ func TestSpecCheckWithoutStageIsUnchanged(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("unscoped spec check exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
 	}
-	if want := renderSpecCheckText(wantResult, specCheckVerificationReport{Commands: []specCheckVerificationCommandReport{}}); stdout.String() != want {
+	wantOutcome := specCheckOutcome{result: wantResult, repairInputs: []specCheckRepairInput{}}
+	if want := renderSpecCheckText(wantOutcome, specCheckVerificationReport{Commands: []specCheckVerificationCommandReport{}}); stdout.String() != want {
 		t.Fatalf("unscoped stdout = %q, want existing report %q", stdout.String(), want)
 	}
 	if stderr.String() != "" {
@@ -308,6 +309,97 @@ func TestRunSpecCheckGapStrictPromotion(t *testing.T) {
 	if strings.Contains(stdout.String(), "[gap] "+speccheck.CodeADRRelated) {
 		t.Fatalf("strict stdout retained gap severity:\n%s", stdout.String())
 	}
+}
+
+func TestSpecCheckClassifiesTheGateBoundary(t *testing.T) {
+	t.Run("authoring stage keeps a declared term as an error", func(t *testing.T) {
+		_, _ = newSpecCheckWorkspace(t, "vocabulary-missing")
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{
+			"spec", "check", "vocabulary-missing", "--stage", "techspec", "--strict",
+		}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("authoring-stage exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+		}
+		if !strings.Contains(stdout.String(), "[error] "+speccheck.CodeVocabularyUndocumented) {
+			t.Fatalf("authoring-stage stdout does not contain the vocabulary error:\n%s", stdout.String())
+		}
+		if strings.Contains(stdout.String(), "[repair input]") {
+			t.Fatalf("authoring-stage stdout contains a gate repair input:\n%s", stdout.String())
+		}
+	})
+
+	t.Run("strict full sweep reports a declared term as repair input", func(t *testing.T) {
+		_, _ = newSpecCheckWorkspace(t, "vocabulary-missing")
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{
+			"spec", "check", "vocabulary-missing", "--strict",
+		}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("strict full-sweep exit = %d, want %d; stderr=%q\nstdout=%s", code, exitOK, stderr.String(), stdout.String())
+		}
+		for _, want := range []string{"[repair input] " + speccheck.CodeVocabularyUndocumented, "publish:"} {
+			if !strings.Contains(stdout.String(), want) {
+				t.Errorf("strict full-sweep stdout does not contain %q:\n%s", want, stdout.String())
+			}
+		}
+		if strings.Contains(stdout.String(), "[error] "+speccheck.CodeVocabularyUndocumented) {
+			t.Fatalf("strict full-sweep stdout retained the declared-term error:\n%s", stdout.String())
+		}
+
+		stdout.Reset()
+		stderr.Reset()
+		code = runCLIContext(t, context.Background(), []string{
+			"spec", "check", "vocabulary-missing", "--strict", "--format", "json",
+		}, &stdout, &stderr)
+		if code != exitOK {
+			t.Fatalf("strict full-sweep JSON exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+		}
+		var document struct {
+			Findings     []speccheck.Finding `json:"findings"`
+			RepairInputs []struct {
+				Code     string  `json:"code"`
+				Severity *string `json:"severity"`
+			} `json:"repairInputs"`
+		}
+		if err := json.Unmarshal(bytes.TrimSpace(stdout.Bytes()), &document); err != nil {
+			t.Fatalf("decode strict full-sweep JSON: %v; stdout=%q", err, stdout.String())
+		}
+		if len(document.Findings) != 0 || len(document.RepairInputs) != 1 ||
+			document.RepairInputs[0].Code != speccheck.CodeVocabularyUndocumented ||
+			document.RepairInputs[0].Severity != nil {
+			t.Fatalf("strict full-sweep JSON = %#v, want one non-error repair input", document)
+		}
+	})
+
+	t.Run("term with no Spec declaration remains an error in both modes", func(t *testing.T) {
+		undeclared := speccheck.Result{
+			Slug: "current-spec",
+			Findings: []speccheck.Finding{{
+				Code:     speccheck.CodeVocabularyUndocumented,
+				Severity: speccheck.SeverityError,
+				Summary:  `internal/example/emitter.go emits undocumented token "orphan:" absent from CONTEXT.md`,
+				Where:    []speccheck.Location{{Path: "internal/example/emitter.go", Line: 7}},
+				Fix:      `Document "orphan:" in CONTEXT.md.`,
+			}},
+		}
+
+		for _, gateSweep := range []bool{false, true} {
+			outcome := classifySpecCheckBoundary(undeclared, gateSweep)
+			if len(outcome.result.Findings) != 1 || outcome.result.Findings[0].Severity != speccheck.SeverityError {
+				t.Errorf("classifySpecCheckBoundary(gateSweep=%t) findings = %#v, want the undeclared-term error", gateSweep, outcome.result.Findings)
+			}
+			if len(outcome.repairInputs) != 0 {
+				t.Errorf("classifySpecCheckBoundary(gateSweep=%t) repair inputs = %#v, want none", gateSweep, outcome.repairInputs)
+			}
+		}
+	})
 }
 
 func TestRunSpecCheckJSONWritesOneObjectPerSpec(t *testing.T) {

@@ -19,6 +19,203 @@ import (
 	"roundfix/internal/speccheck"
 )
 
+func TestGateAcceptsItsOwnDeclaredTerm(t *testing.T) {
+	t.Parallel()
+
+	t.Run("own declared term becomes named gate input", func(t *testing.T) {
+		t.Parallel()
+
+		checked := checkFixture(t, "vocabulary-missing")
+		precondition := speccheck.GatePrecondition(checked)
+		if precondition.Blocking {
+			t.Fatalf("GatePrecondition() Blocking = true, want false; findings = %#v", precondition.Findings)
+		}
+		if len(precondition.Findings) != 0 {
+			t.Fatalf("GatePrecondition() Findings = %#v, want none", precondition.Findings)
+		}
+		if len(precondition.Inputs) != 1 || !strings.Contains(precondition.Inputs[0].Summary, "publish:") {
+			t.Fatalf("GatePrecondition() Inputs = %#v, want pending publish: term", precondition.Inputs)
+		}
+	})
+
+	t.Run("undeclared emitted term still blocks", func(t *testing.T) {
+		t.Parallel()
+
+		checked := speccheck.Result{
+			Slug: "current-spec",
+			Findings: []speccheck.Finding{{
+				Code:     speccheck.CodeVocabularyUndocumented,
+				Severity: speccheck.SeverityError,
+				Summary:  `internal/example/emitter.go emits undocumented token "orphan:" absent from CONTEXT.md`,
+				Where:    []speccheck.Location{{Path: "internal/example/emitter.go", Line: 7}},
+				Fix:      `Document "orphan:" in CONTEXT.md.`,
+			}},
+		}
+		precondition := speccheck.GatePrecondition(checked)
+		if !precondition.Blocking || len(precondition.Findings) != 1 {
+			t.Fatalf("GatePrecondition() = %#v, want undeclared term to block", precondition)
+		}
+		if len(precondition.Inputs) != 0 {
+			t.Fatalf("GatePrecondition() Inputs = %#v, want no undeclared input", precondition.Inputs)
+		}
+	})
+
+	t.Run("authoring stage still reports declared term", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot, err := filepath.Abs("testdata/repo")
+		if err != nil {
+			t.Fatalf("resolve fixture repository: %v", err)
+		}
+		checked, err := speccheck.CheckStage(fixtureSpecRoot, repoRoot, "vocabulary-missing", speccheck.StageTechSpec)
+		if err != nil {
+			t.Fatalf("CheckStage(StageTechSpec) error = %v", err)
+		}
+		findings := findingsWithCode(checked, speccheck.CodeVocabularyUndocumented)
+		if len(findings) != 1 || !strings.Contains(findings[0].Summary, "publish:") {
+			t.Fatalf("authoring findings = %#v, want pending publish: term", findings)
+		}
+	})
+}
+
+func TestGatePerformsAssignedRepairs(t *testing.T) {
+	t.Parallel()
+
+	t.Run("assigned repair is performed verified and recorded", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		const repairPath = "docs/specs/mechanical/_prd.md"
+		writeMechanicalFile(t, repoRoot, repairPath, "Tooling authority: not applicable\n")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:        repoRoot,
+			TaskRepairPaths: []string{repairPath},
+			AssignedRepairs: []speccheck.AssignedRepair{{
+				ID:     "restore-tooling-authority",
+				Path:   repairPath,
+				Before: "Tooling authority: not applicable",
+				After:  "Tooling authority: applicable",
+			}},
+		})
+
+		content, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(repairPath)))
+		if err != nil {
+			t.Fatalf("read repaired path: %v", err)
+		}
+		if got := string(content); got != "Tooling authority: applicable\n" {
+			t.Fatalf("repaired content = %q, want assigned replacement", got)
+		}
+		if len(result.Performed) != 1 || result.Performed[0].ID != "restore-tooling-authority" ||
+			result.Performed[0].Path != repairPath {
+			t.Fatalf("Performed = %#v, want the verified assigned repair", result.Performed)
+		}
+		if len(result.RepairFailures) != 0 {
+			t.Fatalf("RepairFailures = %#v, want none", result.RepairFailures)
+		}
+
+		var report bytes.Buffer
+		if err := speccheck.WriteMechanicalResult(&report, result); err != nil {
+			t.Fatalf("WriteMechanicalResult: %v", err)
+		}
+		for _, want := range []string{"## Performed repairs", "restore-tooling-authority", repairPath, "verified after write"} {
+			if !strings.Contains(report.String(), want) {
+				t.Fatalf("mechanical report does not record %q:\n%s", want, report.String())
+			}
+		}
+	})
+
+	t.Run("skipped assigned repair blocks", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		const repairPath = "CONTEXT.md"
+		writeMechanicalFile(t, repoRoot, repairPath, "# Glossary\n")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:        repoRoot,
+			TaskRepairPaths: []string{repairPath},
+			AssignedRepairs: []speccheck.AssignedRepair{{
+				ID:     "document-governed-path",
+				Path:   repairPath,
+				Before: "**Governed Path**: pending",
+				After:  "**Governed Path**: documented",
+			}},
+		})
+
+		if !result.Blocking || len(result.RepairFailures) != 1 || !strings.Contains(result.RepairFailures[0].Detail, "was not performed") {
+			t.Fatalf("assigned repair result = %#v, want one blocking skipped-repair failure", result)
+		}
+		if len(result.Findings) != 0 {
+			t.Fatalf("Findings = %#v, want assigned work kept out of observations", result.Findings)
+		}
+		if len(result.Performed) != 0 {
+			t.Fatalf("Performed = %#v, want none", result.Performed)
+		}
+	})
+
+	t.Run("unassigned finding is reported without a repair", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		const reportPath = "docs/specs/mechanical/qa/report.md"
+		original := "# QA Report without frontmatter or Results rows\n"
+		writeMechanicalFile(t, repoRoot, reportPath, original)
+
+		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+		if findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape); len(findings) == 0 {
+			t.Fatalf("%s findings = %#v, want the unassigned observation reported", speccheck.CodeMechanicalReportShape, findings)
+		}
+		content, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(reportPath)))
+		if err != nil {
+			t.Fatalf("read observed report: %v", err)
+		}
+		if string(content) != original {
+			t.Fatalf("unassigned finding changed report to %q", content)
+		}
+		if len(result.Performed) != 0 {
+			t.Fatalf("Performed = %#v, want none for an unassigned finding", result.Performed)
+		}
+	})
+
+	t.Run("repair outside Task named paths is refused before writing", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		const (
+			allowedPath = "docs/specs/mechanical/_prd.md"
+			outsidePath = "CONTEXT.md"
+		)
+		writeMechanicalFile(t, repoRoot, allowedPath, "allowed\n")
+		writeMechanicalFile(t, repoRoot, outsidePath, "original\n")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:        repoRoot,
+			TaskRepairPaths: []string{allowedPath},
+			AssignedRepairs: []speccheck.AssignedRepair{{
+				ID:     "out-of-bounds",
+				Path:   outsidePath,
+				Before: "original",
+				After:  "changed",
+			}},
+		})
+
+		if !result.Blocking || len(result.RepairFailures) != 1 || !strings.Contains(result.RepairFailures[0].Detail, "outside the Task-named repair paths") {
+			t.Fatalf("out-of-bounds result = %#v, want one blocking scope failure", result)
+		}
+		if len(result.Findings) != 0 {
+			t.Fatalf("Findings = %#v, want assigned work kept out of observations", result.Findings)
+		}
+		content, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(outsidePath)))
+		if err != nil {
+			t.Fatalf("read out-of-bounds path: %v", err)
+		}
+		if got := string(content); got != "original\n" {
+			t.Fatalf("out-of-bounds content = %q, want unchanged", got)
+		}
+		if len(result.Performed) != 0 {
+			t.Fatalf("Performed = %#v, want none", result.Performed)
+		}
+	})
+}
+
 func TestMechanicalAuthPaths(t *testing.T) {
 	t.Parallel()
 
@@ -416,6 +613,155 @@ func TestMechanicalReportShape(t *testing.T) {
 		assertMechanicalSkip(t, result, speccheck.DetectorMechanicalReportShape, "docs/specs/mechanical/qa/missing.md")
 		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalReportShape)
 	})
+}
+
+func TestBlockedCauseDiagnosticNamesTheLiteral(t *testing.T) {
+	t.Parallel()
+
+	const (
+		requiredLiteral = `" — waits on "`
+		wrongTypeDetail = "blocked cause outside environment, finding, or declared"
+	)
+	tests := []struct {
+		name           string
+		status         string
+		environment    int
+		finding        int
+		declared       int
+		wantDetail     string
+		rejectedDetail string
+	}{
+		{
+			name:           "finding type without required literal names the literal",
+			status:         "blocked (finding: QA-FIXTURE)",
+			wantDetail:     requiredLiteral,
+			rejectedDetail: wrongTypeDetail,
+		},
+		{
+			name:           "unrecognised blocked cause names the three types",
+			status:         "blocked (external: outage)",
+			wantDetail:     wrongTypeDetail,
+			rejectedDetail: requiredLiteral,
+		},
+		{
+			name:        "environment cause keeps its typed count",
+			status:      "blocked (environment: unavailable)",
+			environment: 1,
+		},
+		{
+			name:    "finding cause with required literal keeps its typed count",
+			status:  "blocked (finding: QA-FIXTURE — waits on fixture)",
+			finding: 1,
+		},
+		{
+			name:     "declared cause keeps its typed count",
+			status:   "blocked (declared: unavailable)",
+			declared: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			reportPath := "docs/specs/mechanical/qa/report.md"
+			writeMechanicalFile(t, repoRoot, reportPath, fmt.Sprintf("---\n"+
+				"verdict: fail\n"+
+				"rows_blocked_environment: %d\n"+
+				"rows_blocked_finding: %d\n"+
+				"rows_blocked_declared: %d\n"+
+				"---\n\n"+
+				"# QA Report\n\n"+
+				"## Results\n\n"+
+				"| # | Status | Evidence |\n"+
+				"| - | --- | --- |\n"+
+				"| R01 | %s | observed inline |\n",
+				tt.environment, tt.finding, tt.declared, tt.status))
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+			if tt.wantDetail == "" {
+				if len(findings) != 0 {
+					t.Fatalf("%s findings = %#v, want none", speccheck.CodeMechanicalReportShape, findings)
+				}
+				return
+			}
+			if len(findings) != 1 || !strings.Contains(findings[0].Detail, tt.wantDetail) {
+				t.Fatalf("%s findings = %#v, want one detail containing %q", speccheck.CodeMechanicalReportShape, findings, tt.wantDetail)
+			}
+			if strings.Contains(findings[0].Detail, tt.rejectedDetail) {
+				t.Fatalf("%s detail = %q, must differ from %q", speccheck.CodeMechanicalReportShape, findings[0].Detail, tt.rejectedDetail)
+			}
+		})
+	}
+}
+
+func TestCountDisagreementReportsItsCause(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		rows             string
+		declaredFinding  int
+		wantFindings     int
+		wantParseRow     string
+		wantCountFinding bool
+	}{
+		{
+			name:            "unparsed row accounts for count disagreement",
+			rows:            "| R-PARSE | blocked (finding: QA-FIXTURE) | observed inline |\n",
+			declaredFinding: 1,
+			wantFindings:    1,
+			wantParseRow:    "R-PARSE",
+		},
+		{
+			name:             "parsed rows expose genuine count disagreement",
+			rows:             "| R-PARSED | blocked (finding: QA-FIXTURE — waits on fixture) | observed inline |\n",
+			declaredFinding:  2,
+			wantFindings:     1,
+			wantCountFinding: true,
+		},
+		{
+			name: "unparsed row and wrong total expose both causes",
+			rows: "| R-PARSE | blocked (finding: QA-FIXTURE) | observed inline |\n" +
+				"| R-PARSED | blocked (finding: QA-OTHER — waits on other fixture) | observed inline |\n",
+			declaredFinding:  3,
+			wantFindings:     2,
+			wantParseRow:     "R-PARSE",
+			wantCountFinding: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			reportPath := "docs/specs/mechanical/qa/report.md"
+			writeMechanicalFile(t, repoRoot, reportPath, fmt.Sprintf("---\n"+
+				"verdict: fail\n"+
+				"rows_blocked_environment: 0\n"+
+				"rows_blocked_finding: %d\n"+
+				"rows_blocked_declared: 0\n"+
+				"---\n\n"+
+				"# QA Report\n\n"+
+				"## Results\n\n"+
+				"| # | Status | Evidence |\n"+
+				"| - | --- | --- |\n%s",
+				tt.declaredFinding, tt.rows))
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+			if len(findings) != tt.wantFindings {
+				t.Fatalf("%s findings = %#v, want %d", speccheck.CodeMechanicalReportShape, findings, tt.wantFindings)
+			}
+			if tt.wantParseRow != "" && !mechanicalDetailsContain(findings, tt.wantParseRow) {
+				t.Fatalf("%s findings = %#v, want parse failure naming row %s", speccheck.CodeMechanicalReportShape, findings, tt.wantParseRow)
+			}
+			if got := mechanicalDetailsContain(findings, "rows_blocked_finding"); got != tt.wantCountFinding {
+				t.Fatalf("%s count finding present = %t, want %t: %#v", speccheck.CodeMechanicalReportShape, got, tt.wantCountFinding, findings)
+			}
+		})
+	}
 }
 
 func TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode(t *testing.T) {
