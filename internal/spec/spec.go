@@ -99,6 +99,18 @@ type Task struct {
 	RehearsalCases   []TaskDeclaration
 	Verification     []string
 	NegativeControl  []string
+	TaskRepairPaths  []string
+	AssignedRepairs  []AssignedRepair
+}
+
+// AssignedRepair is one deterministic replacement declared by a Task. The
+// Daemon maps it into the pre-QA mechanical request; the mechanical stage owns
+// validating and performing the bounded write.
+type AssignedRepair struct {
+	ID     string `yaml:"id"`
+	Path   string `yaml:"path"`
+	Before string `yaml:"before"`
+	After  string `yaml:"after"`
 }
 
 // CarryForward is one completed Task commit a stopped Run can hand back to
@@ -879,6 +891,8 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		RehearsalCases:   append([]TaskDeclaration(nil), document.RehearsalCases...),
 		Verification:     document.Verification,
 		NegativeControl:  append([]string(nil), document.NegativeControl...),
+		TaskRepairPaths:  append([]string(nil), document.TaskRepairPaths...),
+		AssignedRepairs:  append([]AssignedRepair(nil), document.AssignedRepairs...),
 	}, nil
 }
 

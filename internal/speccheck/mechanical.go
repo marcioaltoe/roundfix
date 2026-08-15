@@ -48,6 +48,7 @@ type MechanicalRequest struct {
 	ReportPath        string
 	TaskRepairPaths   []string
 	AssignedRepairs   []AssignedRepair
+	Precondition      GatePreconditionResult
 }
 
 // AssignedRepair is one exact replacement the gate's Task requires. Path must
@@ -353,6 +354,7 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 		Blocked:        []BlockedRow{},
 		Skips:          []MechanicalSkip{},
 	}
+	addGatePreconditionFindings(&result, request.Precondition)
 	repoRoot := filepath.Clean(request.RepoRoot)
 	if strings.TrimSpace(request.RepoRoot) == "" {
 		return result, errors.New("run mechanical stage: repository root is empty")
@@ -400,6 +402,21 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 	result.Blocking = len(result.Findings) > 0 || len(result.RepairFailures) > 0
 	materializeBlockedRows(&result)
 	return result, nil
+}
+
+func addGatePreconditionFindings(result *MechanicalResult, precondition GatePreconditionResult) {
+	for _, finding := range precondition.Findings {
+		mechanical := MechanicalFinding{
+			Code:   finding.Code,
+			Detail: finding.Summary,
+			Fix:    finding.Fix,
+		}
+		if len(finding.Where) > 0 {
+			mechanical.File = finding.Where[0].Path
+			mechanical.Line = finding.Where[0].Line
+		}
+		addMechanicalFinding(result, mechanical)
+	}
 }
 
 type preparedRepairPath struct {

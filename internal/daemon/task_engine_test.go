@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"sort"
 	"strings"
@@ -290,6 +291,11 @@ func (fixture *taskCycleFixture) engineWithTaskWorktreesAndPriorChanges(t *testi
 
 func writeSpecDirForTest(t *testing.T, gitRoot string, slug string, seeds []taskSpecSeed) {
 	t.Helper()
+	if err := os.MkdirAll(filepath.Join(gitRoot, "docs", "agents"), 0o755); err != nil {
+		t.Fatalf("create fixture agent guide directory: %v", err)
+	}
+	mustWriteForTest(t, filepath.Join(gitRoot, "docs", "agents", "agent-instructions.md"), "# Agent instructions\n")
+	mustWriteForTest(t, filepath.Join(gitRoot, "docs", "agents", "domain.md"), "# Domain instructions\n")
 	writeSpecDirAtRootForTest(t, filepath.Join(gitRoot, "docs", "specs"), slug, seeds)
 }
 
@@ -309,7 +315,19 @@ func writeSpecDirAtRootForTestWithQA(t *testing.T, specsRoot string, slug string
 	if err := os.MkdirAll(specDir, 0o755); err != nil {
 		t.Fatalf("create spec dir: %v", err)
 	}
-	mustWriteForTest(t, filepath.Join(specDir, "_prd.md"), "---\nstatus: active\n---\n\n# PRD\n")
+	mustWriteForTest(t, filepath.Join(specDir, "_prd.md"), `---
+status: active
+---
+
+# PRD
+
+## Project Constraints
+
+- Identifier strategy: not applicable — this fixture creates no identifier. Source: `+"`docs/agents/domain.md`"+`.
+- Authentication and HTTP: not applicable — this fixture opens no transport. Source: `+"`docs/agents/agent-instructions.md`"+`.
+- Active ADR obligations: not applicable — this fixture cites no ADR. Source: `+"`docs/agents/domain.md`"+`.
+- Tooling authority: not applicable — this fixture changes no tooling. Source: `+"`docs/agents/agent-instructions.md`"+`.
+`)
 
 	var manifest strings.Builder
 	manifest.WriteString("---\nschema: spec-tasks/v1\n")
@@ -941,13 +959,19 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 		gittest.AppendConfig(t, repoRoot, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
 		specDir := filepath.Join(repoRoot, "docs", "specs", taskCycleSlug)
 		authorizationPath := "docs/workflow/authorizations/mechanical.md"
-		for _, dir := range []string{filepath.Dir(filepath.Join(repoRoot, authorizationPath)), specDir, filepath.Join(repoRoot, "internal")} {
+		for _, dir := range []string{filepath.Dir(filepath.Join(repoRoot, authorizationPath)), specDir, filepath.Join(repoRoot, "docs", "agents"), filepath.Join(repoRoot, "internal")} {
 			if err := os.MkdirAll(dir, 0o755); err != nil {
 				t.Fatalf("create fixture directory %q: %v", dir, err)
 			}
 		}
-		mustWriteForTest(t, filepath.Join(repoRoot, authorizationPath), "# Authorization\n\n## Bounded files\n\n- `Makefile`\n")
-		mustWriteForTest(t, filepath.Join(specDir, "_prd.md"), "# PRD\n\n## Project Constraints\n\n- Tooling authority: applicable — recorded at `"+authorizationPath+"`; bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
+		mustWriteForTest(t, filepath.Join(repoRoot, authorizationPath), "# Authorization\n\nSpec "+taskCycleSlug+" may change the files below.\n\n## Bounded files\n\n- `Makefile`\n")
+		mustWriteForTest(t, filepath.Join(repoRoot, "docs", "agents", "agent-instructions.md"), "# Agent instructions\n")
+		mustWriteForTest(t, filepath.Join(repoRoot, "docs", "agents", "domain.md"), "# Domain instructions\n")
+		mustWriteForTest(t, filepath.Join(specDir, "_prd.md"), "# PRD\n\n## Project Constraints\n\n"+
+			"- Identifier strategy: not applicable — the fixture creates no identifier. Source: `docs/agents/domain.md`.\n"+
+			"- Authentication and HTTP: not applicable — the fixture opens no transport. Source: `docs/agents/agent-instructions.md`.\n"+
+			"- Active ADR obligations: not applicable — the fixture cites no ADR. Source: `docs/agents/domain.md`.\n"+
+			"- Tooling authority: applicable — recorded at `"+authorizationPath+"`; bounded files: `Makefile`. Source: `docs/agents/agent-instructions.md`.\n")
 		mustWriteForTest(t, filepath.Join(specDir, "task_01.md"), "ordinary task\n")
 		mustWriteForTest(t, filepath.Join(specDir, "task_02.md"), "tooling task\n")
 		mustWriteForTest(t, filepath.Join(repoRoot, "Makefile"), "verify:\n\t@true\n")
@@ -974,7 +998,7 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 				{ID: "task_02", File: filepath.Join(taskCycleSlug, "task_02.md")},
 			},
 		}
-		request, err := (&Engine{}).qaMechanicalRequest(context.Background(), plan, "")
+		request, err := (&Engine{}).qaMechanicalRequest(context.Background(), plan, spec.Task{}, "")
 		if err != nil {
 			t.Fatalf("qaMechanicalRequest returned error: %v", err)
 		}
@@ -1002,6 +1026,113 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 
 		if result.Blocking || len(result.Findings) != 0 {
 			t.Fatalf("mechanical stage result = %+v, want the folded ordinary path to produce no finding", result)
+		}
+	})
+}
+
+func TestQAMechanicalRequestCarriesAssignedRepairs(t *testing.T) {
+	t.Parallel()
+
+	loadRequest := func(t *testing.T, slug string, repairDeclaration string) speccheck.MechanicalRequest {
+		t.Helper()
+		repoRoot := t.TempDir()
+		if err := os.CopyFS(repoRoot, os.DirFS(filepath.Join("..", "speccheck", "testdata", "repo"))); err != nil {
+			t.Fatalf("copy speccheck fixture repository: %v", err)
+		}
+		specsRoot := filepath.Join(repoRoot, "docs", "specs")
+		specDir := filepath.Join(specsRoot, slug)
+		mustWriteForTest(t, filepath.Join(specDir, "_tasks.md"), `---
+schema: spec-tasks/v1
+spec: `+slug+`
+qa: task_01
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+---
+
+# Task Graph
+`)
+		mustWriteForTest(t, filepath.Join(specDir, "task_01.md"), `---
+task: task_01
+spec: `+slug+`
+status: pending
+type: qa
+complexity: low
+`+repairDeclaration+`---
+
+# Task 01: Run the QA gate
+
+## Verification
+
+- `+"`true`"+` — expected: passes.
+`)
+		graph, err := spec.Load(specsRoot, slug)
+		if err != nil {
+			t.Fatalf("load Spec: %v", err)
+		}
+		request, err := (&Engine{}).qaMechanicalRequest(context.Background(), TaskPlan{
+			WorkDir:   repoRoot,
+			SpecsRoot: specsRoot,
+			Spec:      graph.Spec,
+			Tasks:     graph.Tasks,
+		}, graph.Tasks[0], "")
+		if err != nil {
+			t.Fatalf("qaMechanicalRequest: %v", err)
+		}
+		return request
+	}
+
+	t.Run("declared repair reaches both request fields", func(t *testing.T) {
+		t.Parallel()
+		const repairPath = "docs/specs/clean/_prd.md"
+		request := loadRequest(t, "clean", `repair_paths:
+  - `+repairPath+`
+assigned_repairs:
+  - id: restore-project-constraint
+    path: `+repairPath+`
+    before: old constraint
+    after: new constraint
+`)
+
+		if !reflect.DeepEqual(request.TaskRepairPaths, []string{repairPath}) {
+			t.Fatalf("TaskRepairPaths = %#v, want the Task declaration", request.TaskRepairPaths)
+		}
+		want := []speccheck.AssignedRepair{{
+			ID: "restore-project-constraint", Path: repairPath,
+			Before: "old constraint", After: "new constraint",
+		}}
+		if !reflect.DeepEqual(request.AssignedRepairs, want) {
+			t.Fatalf("AssignedRepairs = %#v, want %#v", request.AssignedRepairs, want)
+		}
+	})
+
+	t.Run("undeclared repair keeps request fields nil", func(t *testing.T) {
+		t.Parallel()
+		request := loadRequest(t, "clean", "")
+
+		if request.TaskRepairPaths != nil || request.AssignedRepairs != nil {
+			t.Fatalf("repair fields = paths %#v repairs %#v, want the unchanged nil request inputs", request.TaskRepairPaths, request.AssignedRepairs)
+		}
+	})
+
+	t.Run("Spec owned vocabulary finding becomes gate input", func(t *testing.T) {
+		t.Parallel()
+		request := loadRequest(t, "vocabulary-missing", "")
+
+		if request.Precondition.Blocking || len(request.Precondition.Findings) != 0 {
+			t.Fatalf("Precondition = %#v, want no blocking finding", request.Precondition)
+		}
+		if len(request.Precondition.Inputs) != 1 || !strings.Contains(request.Precondition.Inputs[0].Summary, "publish:") {
+			t.Fatalf("Precondition Inputs = %#v, want the pending publish: repair input", request.Precondition.Inputs)
+		}
+		result, err := speccheck.RunMechanicalStage(context.Background(), request)
+		if err != nil {
+			t.Fatalf("RunMechanicalStage: %v", err)
+		}
+		if result.Blocking {
+			t.Fatalf("mechanical result = %#v, want the Spec-owned vocabulary input not to refuse the gate", result)
 		}
 	})
 }

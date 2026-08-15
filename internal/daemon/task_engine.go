@@ -1759,7 +1759,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	if err != nil {
 		return "", "", fmt.Errorf("build QA prompt context for run %q: %w", plan.RunID, err)
 	}
-	mechanicalRequest, err := engine.qaMechanicalRequest(ctx, plan, promptContext.PreviousReportPath)
+	mechanicalRequest, err := engine.qaMechanicalRequest(ctx, plan, qaTask, promptContext.PreviousReportPath)
 	if err != nil {
 		return "", "", fmt.Errorf("build mechanical-stage request for run %q: %w", plan.RunID, err)
 	}
@@ -1888,7 +1888,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 	return verdict, reportPath, nil
 }
 
-func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, previousReportPath string) (speccheck.MechanicalRequest, error) {
+func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qaTask spec.Task, previousReportPath string) (speccheck.MechanicalRequest, error) {
 	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
 	authorizationPath, boundedPaths, err := speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
 	if err != nil {
@@ -1898,6 +1898,23 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, pr
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
 	}
+	checked, err := speccheck.Check(plan.SpecsRoot, plan.WorkDir, plan.Spec.Slug)
+	if err != nil {
+		return speccheck.MechanicalRequest{}, fmt.Errorf("run QA gate precondition for Spec %s: %w", plan.Spec.Slug, err)
+	}
+	precondition := speccheck.GatePrecondition(checked)
+	var assignedRepairs []speccheck.AssignedRepair
+	if len(qaTask.AssignedRepairs) > 0 {
+		assignedRepairs = make([]speccheck.AssignedRepair, len(qaTask.AssignedRepairs))
+		for index, repair := range qaTask.AssignedRepairs {
+			assignedRepairs[index] = speccheck.AssignedRepair{
+				ID:     repair.ID,
+				Path:   repair.Path,
+				Before: repair.Before,
+				After:  repair.After,
+			}
+		}
+	}
 	return speccheck.MechanicalRequest{
 		RepoRoot:          plan.WorkDir,
 		AuthorizationPath: authorizationPath,
@@ -1906,6 +1923,9 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, pr
 		// declaration exists, the detector records its presence-aware skip.
 		ConsequentFixes: nil,
 		ReportPath:      previousReportPath,
+		TaskRepairPaths: append([]string(nil), qaTask.TaskRepairPaths...),
+		AssignedRepairs: assignedRepairs,
+		Precondition:    precondition,
 	}, nil
 }
 
