@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path"
+	"path/filepath"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -16,7 +19,8 @@ const (
 	derivedOwnershipYML  = "_ownership.yml"
 	derivedOwnershipYAML = "_ownership.yaml"
 
-	baselineDigestRegenerationHint = "run 'make baseline-digests'"
+	sanctionedBaselineDigestCommand = "make baseline-digests"
+	baselineDigestRegenerationHint  = "run '" + sanctionedBaselineDigestCommand + "'"
 )
 
 type derivedOwnershipOwner string
@@ -46,6 +50,98 @@ type derivedOwnershipExceptionClaim struct {
 	Owner      derivedOwnershipOwner
 	Command    string
 	Reason     string
+}
+
+// OutputsFor returns the repository-relative paths the named regeneration
+// command owns, read from the ownership records in the tree. ADR-0129 explains
+// why a grant names the command rather than its consequences.
+func OutputsFor(repoRoot string, command string) ([]string, error) {
+	root, err := cleanRepositoryRoot(repoRoot)
+	if err != nil {
+		return nil, err
+	}
+	scanRoots, err := readDerivedDigestScanRoots(root)
+	if err != nil {
+		return nil, err
+	}
+
+	const baselineRoot = "internal/baseline"
+	fileSystem := os.DirFS(filepath.Join(root, filepath.FromSlash(baselineRoot)))
+	resolved, err := validateDerivedOwnership(fileSystem, scanRoots)
+	if err != nil {
+		return nil, fmt.Errorf("resolve derived ownership: %w", err)
+	}
+
+	command = strings.TrimSpace(command)
+	outputs := make([]string, 0)
+	for artifactPath, record := range resolved {
+		ownedCommand, ownsOutput := commandForDerivedOwnership(record)
+		if !ownsOutput || ownedCommand != command {
+			continue
+		}
+		info, err := fs.Stat(fileSystem, artifactPath)
+		if err != nil {
+			return nil, fmt.Errorf("stat owned derived path %q: %w", artifactPath, err)
+		}
+		if !info.Mode().IsRegular() {
+			continue
+		}
+		outputs = append(outputs, path.Join(baselineRoot, artifactPath))
+	}
+	sort.Strings(outputs)
+	return outputs, nil
+}
+
+func readDerivedDigestScanRoots(repoRoot string) ([]string, error) {
+	content, err := os.ReadFile(filepath.Join(repoRoot, "Makefile"))
+	if err != nil {
+		return nil, fmt.Errorf("read Makefile DERIVED_DIGEST_PATHS: %w", err)
+	}
+
+	const (
+		assignment     = "DERIVED_DIGEST_PATHS :="
+		baselinePrefix = "internal/baseline/"
+	)
+	for _, line := range strings.Split(string(content), "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, assignment) {
+			continue
+		}
+		fields := strings.Fields(strings.TrimSpace(strings.TrimPrefix(line, assignment)))
+		if len(fields) == 0 {
+			return nil, errors.New("Makefile DERIVED_DIGEST_PATHS is empty")
+		}
+		roots := make([]string, 0, len(fields))
+		seen := make(map[string]struct{}, len(fields))
+		for _, field := range fields {
+			clean := filepath.ToSlash(filepath.Clean(field))
+			if clean != field || !strings.HasPrefix(clean, baselinePrefix) {
+				return nil, fmt.Errorf("derived scan path %q is outside internal/baseline", field)
+			}
+			root := strings.TrimPrefix(clean, baselinePrefix)
+			if root == "" {
+				return nil, errors.New("derived scan path must name a path below internal/baseline")
+			}
+			if _, duplicate := seen[root]; duplicate {
+				return nil, fmt.Errorf("derived scan path %q is declared more than once", field)
+			}
+			seen[root] = struct{}{}
+			roots = append(roots, root)
+		}
+		return roots, nil
+	}
+	return nil, errors.New("Makefile has no DERIVED_DIGEST_PATHS assignment")
+}
+
+func commandForDerivedOwnership(record derivedOwnershipRecord) (string, bool) {
+	switch record.Owner {
+	case derivedOwnerSanctioned:
+		return sanctionedBaselineDigestCommand, true
+	case derivedOwnerDedicated:
+		return record.Command, true
+	default:
+		return "", false
+	}
 }
 
 func validateDerivedOwnership(

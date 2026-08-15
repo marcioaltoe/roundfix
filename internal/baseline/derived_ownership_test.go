@@ -21,7 +21,114 @@ import (
 	"sync"
 	"testing"
 	"testing/fstest"
+
+	"roundfix/internal/suiteguardcontract"
 )
+
+func TestOutputsForCommand(t *testing.T) {
+	t.Parallel()
+
+	repository := filepath.Clean(filepath.Join("..", ".."))
+
+	t.Run("command owns a tree", func(t *testing.T) {
+		t.Parallel()
+
+		got, err := OutputsFor(repository, "make baseline-digests")
+		if err != nil {
+			t.Fatal(err)
+		}
+		const knownOutput = "internal/baseline/assets/formatter-fixtures/standard-typescript-monorepo/golden/AGENTS.md"
+		for _, output := range got {
+			if output == knownOutput {
+				return
+			}
+		}
+		t.Fatalf("make baseline-digests outputs do not include owned path %q", knownOutput)
+	})
+
+	t.Run("make baseline-digests matches the 2026-08-06 enumeration", func(t *testing.T) {
+		t.Parallel()
+
+		got, err := OutputsFor(repository, "make baseline-digests")
+		if err != nil {
+			t.Fatal(err)
+		}
+		content, err := os.ReadFile(filepath.Join(
+			repository,
+			"docs",
+			"workflow",
+			"authorizations",
+			"2026-08-06-proof-cost.md",
+		))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var want []string
+		for _, declaration := range suiteguardcontract.ParseSanctionedRegenerations(content) {
+			if declaration.Command == "make baseline-digests" {
+				want = declaration.Outputs
+				break
+			}
+		}
+		if want == nil {
+			t.Fatal("2026-08-06 authorization has no make baseline-digests enumeration")
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("make baseline-digests outputs = %v, want enumerated %v", got, want)
+		}
+	})
+
+	t.Run("unknown command owns nothing", func(t *testing.T) {
+		t.Parallel()
+
+		got, err := OutputsFor(repository, "make unknown-derived-output")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != 0 {
+			t.Fatalf("unknown command outputs = %v, want empty", got)
+		}
+	})
+
+	t.Run("path owned by another command is excluded", func(t *testing.T) {
+		t.Parallel()
+
+		repository := newOutputsForCommandRepository(t)
+		got, err := OutputsFor(repository, "make requested-output")
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := []string{"internal/baseline/derived/requested.txt"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("make requested-output outputs = %v, want %v", got, want)
+		}
+	})
+}
+
+func newOutputsForCommandRepository(t *testing.T) string {
+	t.Helper()
+
+	repository := t.TempDir()
+	files := map[string]string{
+		"Makefile": "DERIVED_DIGEST_PATHS := internal/baseline/derived\n",
+		"internal/baseline/derived/_ownership.yml": "owner: dedicated\n" +
+			"command: make requested-output\nreason: requested fixture\n",
+		"internal/baseline/derived/requested.txt": "requested\n",
+		"internal/baseline/derived/other/_ownership.yml": "owner: dedicated\n" +
+			"command: make other-output\nreason: other fixture\n",
+		"internal/baseline/derived/other/not-requested.txt": "other\n",
+	}
+	for relative, content := range files {
+		filePath := filepath.Join(repository, filepath.FromSlash(relative))
+		if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+			t.Fatalf("create fixture directory for %q: %v", relative, err)
+		}
+		if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
+			t.Fatalf("write fixture %q: %v", relative, err)
+		}
+	}
+	return repository
+}
 
 func TestDerivedOwnershipIsExhaustive(t *testing.T) {
 	t.Parallel()

@@ -18,6 +18,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"roundfix/internal/baseline"
 	"roundfix/internal/suiteguardcontract"
 	"roundfix/internal/worktree"
 )
@@ -362,7 +363,11 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		})
 		return nil
 	}
-	regenerated := parseMechanicalRegenerationOutputs(content)
+	regenerated, err := parseMechanicalRegenerationOutputs(repoRoot, content)
+	if err != nil {
+		return fmt.Errorf("resolve sanctioned regeneration outputs from %q: %w", request.AuthorizationPath, err)
+	}
+	authorizationPath := cleanMechanicalPath(request.AuthorizationPath)
 
 	for _, taskCommit := range request.TaskCommits {
 		if strings.TrimSpace(taskCommit.SHA) == "" {
@@ -383,12 +388,30 @@ func detectMechanicalAuthPaths(ctx context.Context, result *MechanicalResult, re
 		}
 		taskFile := cleanMechanicalPath(taskCommit.TaskFile)
 		for _, changedPath := range changed {
-			if bounded[changedPath] || regenerated[changedPath] || changedPath == taskFile {
+			if changedPath == taskFile {
+				continue
+			}
+			if authorizationPath != "" && changedPath == authorizationPath {
+				addMechanicalFinding(result, MechanicalFinding{
+					Code: CodeMechanicalAuthPaths, File: request.AuthorizationPath, Line: 1,
+					Detail: fmt.Sprintf(
+						"Task %s commit %s changes authorization grant %s in the commit that consumes it",
+						taskCommit.TaskID, taskCommit.SHA, changedPath,
+					),
+					Fix:     "Land the authorization record in its own commit before the Task commit that consumes it.",
+					RowHint: taskCommit.TaskID,
+				})
+				continue
+			}
+			if !GovernedPath(changedPath) || bounded[changedPath] || regenerated[changedPath] {
 				continue
 			}
 			addMechanicalFinding(result, MechanicalFinding{
 				Code: CodeMechanicalAuthPaths, File: request.AuthorizationPath, Line: 1,
-				Detail:  fmt.Sprintf("Task %s commit %s changes %s outside the exact bounded files", taskCommit.TaskID, taskCommit.SHA, changedPath),
+				Detail: fmt.Sprintf(
+					"Task %s commit %s changes %s outside authorization grant %s's exact bounded files",
+					taskCommit.TaskID, taskCommit.SHA, changedPath, request.AuthorizationPath,
+				),
 				Fix:     "Move the path into an expressly authorized Task or narrow the commit to the written authorization and assigned Task file.",
 				RowHint: taskCommit.TaskID,
 			})
@@ -434,14 +457,21 @@ func parseMechanicalAuthorizationPaths(content []byte) map[string]bool {
 	return paths
 }
 
-func parseMechanicalRegenerationOutputs(content []byte) map[string]bool {
+func parseMechanicalRegenerationOutputs(repoRoot string, content []byte) (map[string]bool, error) {
 	outputs := make(map[string]bool)
 	for _, declaration := range suiteguardcontract.ParseSanctionedRegenerations(content) {
 		for _, output := range declaration.Outputs {
 			outputs[output] = true
 		}
+		resolved, err := baseline.OutputsFor(repoRoot, declaration.Command)
+		if err != nil {
+			return nil, fmt.Errorf("resolve outputs for command %q: %w", declaration.Command, err)
+		}
+		for _, output := range resolved {
+			outputs[output] = true
+		}
 	}
-	return outputs
+	return outputs, nil
 }
 
 func cleanMechanicalPath(value string) string {
@@ -1382,9 +1412,13 @@ func mechanicalCommitExists(ctx context.Context, repoRoot, sha string) (bool, er
 
 func mechanicalChangedPaths(ctx context.Context, repoRoot, sha string) ([]string, error) {
 	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", sha)
-	output, err := command.CombinedOutput()
+	output, err := command.Output()
 	if err != nil {
-		return nil, fmt.Errorf("read changed paths for Git commit %q: %w: %s", sha, err, strings.TrimSpace(string(output)))
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && len(bytes.TrimSpace(exitErr.Stderr)) > 0 {
+			return nil, fmt.Errorf("read changed paths for Git commit %q: %w: %s", sha, err, bytes.TrimSpace(exitErr.Stderr))
+		}
+		return nil, fmt.Errorf("read changed paths for Git commit %q: %w", sha, err)
 	}
 	var paths []string
 	for _, line := range strings.Split(string(output), "\n") {

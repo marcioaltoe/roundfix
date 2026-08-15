@@ -125,3 +125,25 @@ that records the refusal which produced it, which is exactly what Spec 0113's
 Core Feature 1 proposes a precondition refusal should write in the first place. It
 was applied by hand to one artifact; Spec 0113 is what makes the gate write it.
 
+## 2026-08-15 — the gate reports the repair instead of performing it
+
+Spec 0114's gate was given the same two jobs in its own Task file: restore the
+Tooling authority rows to the wording its detector had just made legal, and put
+its coined term in the glossary. It did neither. It found both, wrote them as
+findings F-001 and F-002, and failed:
+
+```text
+### F-001 — Spec artifacts retain the wording this Spec supersedes
+### F-002 — Governed Path never reaches the domain glossary
+```
+
+That is a different failure from the deadlock above, and worth separating. The
+gate was not blocked this time — no precondition refused it, and it reached its
+matrix. It simply reported a repair it had been told to make. Both edits were
+then made by hand in seconds.
+
+So the glossary check has two ways to fail a Spec that coins a term: refused
+before it can act, and acting as an observer when it was asked to be an author.
+Whatever fixes the first should decide the second, because a check that only ever
+reports leaves the work to whoever reads the report.
+

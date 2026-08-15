@@ -40,7 +40,7 @@ gone while the gate passes.
   governance amendment; ADR-0099 makes retention accounting mechanical while
   instruction classification is not, which is the split an exclusion-planned
   deletion must respect — it may compute what left the manifest and must not
-  decide what a maintainer meant. Source: `docs/agents/domain.md`.
+  decide what a maintainer meant. ADR-0129 lets a grant name its regeneration command while the tree names that command's outputs; this Spec authors Baseline decisions and digests rather than reading a grant, so it does not apply. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the decision catalog, a profile asset, the
   source-baseline manifest, and this repository's Setup Manifest are edited.
   Express maintainer authorization:
