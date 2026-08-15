@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0114-an-audit-that-reads-the-authorization-it-was-given
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: failed # pending | in_progress | completed | failed — only implement-task changes this
 type: qa
 complexity: high
 ---
