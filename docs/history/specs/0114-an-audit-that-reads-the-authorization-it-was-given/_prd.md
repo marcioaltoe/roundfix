@@ -1,9 +1,12 @@
 ---
 spec: 0114-an-audit-that-reads-the-authorization-it-was-given
-status: active
+status: archived
 created: 2026-08-14
 surfaces: [backend, docs]
+archived: "2026-08-15"
+source_slug: 0114-an-audit-that-reads-the-authorization-it-was-given
 ---
+
 
 # An audit that reads the authorization it was given
 
