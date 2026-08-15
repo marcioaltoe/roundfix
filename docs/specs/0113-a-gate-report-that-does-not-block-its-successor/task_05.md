@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0113-a-gate-report-that-does-not-block-its-successor
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -56,3 +56,61 @@ from reaching it, and two Specs stalled there on consecutive days — 0103 on
 
 `_techspec.md` → Build Order 5; Risks & Considerations, relaxing the vocabulary
 precondition. `_prd.md` → Core Feature 6; Goal 4; User Story 4. ADR-0134.
+
+## Result
+
+Implemented the gate-precondition classifier at the mechanical-stage seam. The
+vocabulary detector now retains private provenance only for an undocumented
+token selected by the checked Spec's complete Vocabulary Contract.
+`GatePrecondition` moves only that finding into its named `Inputs`; every other
+finding remains blocking, and the ordinary authoring result is not mutated.
+
+Attempt 1 feedback showed that the corpus sweep had matched a presence-aware
+vocabulary skip, not an undocumented-token finding. Text output now names that
+skip as the `vocabulary documentation detector`; JSON keeps the stable
+`SC-VOCABULARY-UNDOCUMENTED` skip code, and actual text findings still print the
+code. This keeps missing-input observability without presenting a skip as a
+finding.
+
+Acceptance evidence:
+
+- A current Spec's declared but undocumented `publish:` token produced a
+  non-blocking precondition with one input naming `publish:` in
+  `TestGateAcceptsItsOwnDeclaredTerm/own_declared_term_becomes_named_gate_input`.
+- A synthetic `orphan:` vocabulary diagnostic with no Spec-declaration
+  provenance remained a blocking finding and did not become gate input in
+  `TestGateAcceptsItsOwnDeclaredTerm/undeclared_emitted_term_still_blocks`.
+- `CheckStage(..., StageTechSpec)` continued to return the original
+  `SC-VOCABULARY-UNDOCUMENTED` finding for `publish:` in
+  `TestGateAcceptsItsOwnDeclaredTerm/authoring_stage_still_reports_declared_term`.
+- The positive case asserted the pending token survives in
+  `GatePreconditionResult.Inputs`, rather than disappearing when removed from
+  the blocking findings.
+- `TestRenderVocabularySkipDoesNotLookLikeFinding` proved the vocabulary skip
+  stays visible by name and missing artifact, remains coded in JSON, and does
+  not collide with the text signature retained by an actual vocabulary
+  finding.
+
+Focused checks:
+
+- Pre-change reproduction:
+  `rtk env GOCACHE=/private/tmp/roundfix-0113-task05-gocache go test ./internal/speccheck -run '^TestGateAcceptsItsOwnDeclaredTerm$/own_declared_term_becomes_named_gate_input$'`
+  failed to compile because `speccheck.GatePrecondition` did not exist.
+- After implementation:
+  `rtk env GOCACHE=/private/tmp/roundfix-0113-task05-gocache go test ./internal/speccheck -run '^TestGateAcceptsItsOwnDeclaredTerm$'`
+  exited 0.
+- Attempt 1 regression reproduction:
+  `rtk env GOCACHE=/private/tmp/roundfix-0113-task05-gocache go test ./internal/speccheck -run '^TestRenderVocabularySkipDoesNotLookLikeFinding$'`
+  failed because the text skip contained the finding code; after the renderer
+  repair, the same focused check exited 0.
+- After formatting the final implementation and test edits:
+  `rtk env GOCACHE=/private/tmp/roundfix-0113-task05-gocache go test -count=1 ./internal/speccheck`
+  exited 0 (`ok roundfix/internal/speccheck 2.341s`).
+- The focused CLI renderer checks
+  `rtk env GOCACHE=/private/tmp/roundfix-0113-task05-gocache go test -count=1 ./internal/cli -run '^(TestRunSpecCheckCleanText|TestSpecCheckWithoutStageIsUnchanged)$'`
+  exited 0 (`ok roundfix/internal/cli 0.648s`).
+- `rtk git diff --check` exited 0.
+
+The commands under `## Verification` were not run; the Daemon owns them. Task
+06 owns consuming this classified input while performing and recording assigned
+repairs.

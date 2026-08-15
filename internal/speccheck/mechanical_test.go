@@ -19,6 +19,65 @@ import (
 	"roundfix/internal/speccheck"
 )
 
+func TestGateAcceptsItsOwnDeclaredTerm(t *testing.T) {
+	t.Parallel()
+
+	t.Run("own declared term becomes named gate input", func(t *testing.T) {
+		t.Parallel()
+
+		checked := checkFixture(t, "vocabulary-missing")
+		precondition := speccheck.GatePrecondition(checked)
+		if precondition.Blocking {
+			t.Fatalf("GatePrecondition() Blocking = true, want false; findings = %#v", precondition.Findings)
+		}
+		if len(precondition.Findings) != 0 {
+			t.Fatalf("GatePrecondition() Findings = %#v, want none", precondition.Findings)
+		}
+		if len(precondition.Inputs) != 1 || !strings.Contains(precondition.Inputs[0].Summary, "publish:") {
+			t.Fatalf("GatePrecondition() Inputs = %#v, want pending publish: term", precondition.Inputs)
+		}
+	})
+
+	t.Run("undeclared emitted term still blocks", func(t *testing.T) {
+		t.Parallel()
+
+		checked := speccheck.Result{
+			Slug: "current-spec",
+			Findings: []speccheck.Finding{{
+				Code:     speccheck.CodeVocabularyUndocumented,
+				Severity: speccheck.SeverityError,
+				Summary:  `internal/example/emitter.go emits undocumented token "orphan:" absent from CONTEXT.md`,
+				Where:    []speccheck.Location{{Path: "internal/example/emitter.go", Line: 7}},
+				Fix:      `Document "orphan:" in CONTEXT.md.`,
+			}},
+		}
+		precondition := speccheck.GatePrecondition(checked)
+		if !precondition.Blocking || len(precondition.Findings) != 1 {
+			t.Fatalf("GatePrecondition() = %#v, want undeclared term to block", precondition)
+		}
+		if len(precondition.Inputs) != 0 {
+			t.Fatalf("GatePrecondition() Inputs = %#v, want no undeclared input", precondition.Inputs)
+		}
+	})
+
+	t.Run("authoring stage still reports declared term", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot, err := filepath.Abs("testdata/repo")
+		if err != nil {
+			t.Fatalf("resolve fixture repository: %v", err)
+		}
+		checked, err := speccheck.CheckStage(fixtureSpecRoot, repoRoot, "vocabulary-missing", speccheck.StageTechSpec)
+		if err != nil {
+			t.Fatalf("CheckStage(StageTechSpec) error = %v", err)
+		}
+		findings := findingsWithCode(checked, speccheck.CodeVocabularyUndocumented)
+		if len(findings) != 1 || !strings.Contains(findings[0].Summary, "publish:") {
+			t.Fatalf("authoring findings = %#v, want pending publish: term", findings)
+		}
+	})
+}
+
 func TestMechanicalAuthPaths(t *testing.T) {
 	t.Parallel()
 

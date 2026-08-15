@@ -38,6 +38,11 @@ type Finding struct {
 	Summary  string     `json:"summary"`
 	Where    []Location `json:"where"`
 	Fix      string     `json:"fix"`
+
+	// declaredVocabularySpec is set only for an emitted token selected by the
+	// named Spec's complete Vocabulary Contract. It stays out of the public
+	// report schema: callers use GatePrecondition to classify the finding.
+	declaredVocabularySpec string
 }
 
 // SkippedDetector records a detector that could not run because an input
@@ -182,13 +187,20 @@ func RenderText(result Result) string {
 		report.WriteString("Skipped:\n")
 		for _, skipped := range result.Skipped {
 			report.WriteString("  ")
-			report.WriteString(skipped.Code)
+			report.WriteString(skippedDetectorTextLabel(skipped.Code))
 			report.WriteString(": missing ")
 			report.WriteString(skipped.Missing)
 			report.WriteByte('\n')
 		}
 	}
 	return report.String()
+}
+
+func skippedDetectorTextLabel(code string) string {
+	if code == CodeVocabularyUndocumented {
+		return "vocabulary documentation detector"
+	}
+	return code
 }
 
 // RenderJSON renders one compact roundfix-speccheck/v1 object.

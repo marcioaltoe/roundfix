@@ -48,6 +48,38 @@ type MechanicalRequest struct {
 	ReportPath        string
 }
 
+// GatePreconditionResult separates contradictions that stop a QA gate from
+// written inputs the gate itself is assigned to repair. Inputs remain visible
+// so the gate can act on them; they are not silently discarded to get green.
+type GatePreconditionResult struct {
+	Findings []Finding
+	Inputs   []Finding
+	Blocking bool
+}
+
+// GatePrecondition classifies one ordinary Spec Consistency Check result for
+// the Spec's own QA gate. Only an undocumented emitted token selected by that
+// same Spec's complete Vocabulary Contract becomes gate input. All other
+// findings keep their ordinary blocking behavior, and the source Result is not
+// mutated.
+func GatePrecondition(checked Result) GatePreconditionResult {
+	precondition := GatePreconditionResult{
+		Findings: []Finding{},
+		Inputs:   []Finding{},
+	}
+	for _, finding := range checked.Findings {
+		if finding.Code == CodeVocabularyUndocumented &&
+			finding.declaredVocabularySpec != "" &&
+			finding.declaredVocabularySpec == checked.Slug {
+			precondition.Inputs = append(precondition.Inputs, finding)
+			continue
+		}
+		precondition.Findings = append(precondition.Findings, finding)
+	}
+	precondition.Blocking = len(precondition.Findings) > 0
+	return precondition
+}
+
 // MechanicalTaskCommit associates the Daemon-owned Task commit with its Task
 // declaration. TaskFile is the one always-allowed progress artifact.
 type MechanicalTaskCommit struct {

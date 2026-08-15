@@ -45,7 +45,7 @@ func detectVocabularyContract(result *Result, repoRoot, techSpecPath string, tec
 	}
 
 	for _, contract := range contracts {
-		detectVocabularyEntry(result, repoRoot, techSpecDisplayPath, contract)
+		detectVocabularyEntry(result, repoRoot, techSpecDisplayPath, result.Slug, contract)
 	}
 	return nil
 }
@@ -112,7 +112,7 @@ func vocabularyField(line, prefix string) (string, bool) {
 	return strings.TrimSpace(value), true
 }
 
-func detectVocabularyEntry(result *Result, repoRoot, techSpecDisplayPath string, contract vocabularyContract) {
+func detectVocabularyEntry(result *Result, repoRoot, techSpecDisplayPath, declaringSpec string, contract vocabularyContract) {
 	declarationLocation := Location{Path: techSpecDisplayPath, Line: contract.Line}
 	if contract.EmitsPath == "" || contract.Pattern == "" || contract.DocumentedIn == "" {
 		result.Findings = append(result.Findings, Finding{
@@ -187,9 +187,10 @@ func detectVocabularyEntry(result *Result, repoRoot, techSpecDisplayPath string,
 		}
 		line := 1 + bytes.Count(emitting[:match[0]], []byte("\n"))
 		result.Findings = append(result.Findings, Finding{
-			Code:     CodeVocabularyUndocumented,
-			Severity: SeverityError,
-			Summary:  contract.EmitsPath + " emits undocumented token " + fmt.Sprintf("%q", token) + " absent from " + contract.DocumentedIn,
+			Code:                   CodeVocabularyUndocumented,
+			Severity:               SeverityError,
+			Summary:                contract.EmitsPath + " emits undocumented token " + fmt.Sprintf("%q", token) + " absent from " + contract.DocumentedIn,
+			declaredVocabularySpec: declaringSpec,
 			Where: []Location{
 				{Path: contract.EmitsPath, Line: line},
 				{Path: contract.DocumentedIn, Line: 1},
