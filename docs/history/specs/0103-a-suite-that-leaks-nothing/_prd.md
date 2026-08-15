@@ -1,9 +1,12 @@
 ---
 spec: 0103-a-suite-that-leaks-nothing
-status: active
+status: archived
 created: 2026-08-12
 surfaces: [backend, infra]
+archived: "2026-08-15"
+source_slug: 0103-a-suite-that-leaks-nothing
 ---
+
 
 # A suite that leaks nothing
 
@@ -35,9 +38,19 @@ execution has no command that answers what it detached that is still running.
   Daemon exclusive ownership of Implement Task status, ADR-0056 separates Task
   Capacity from Verification Capacity, and ADR-0096 with ADR-0117 place the gate's
   mechanical stage and its checks — this Spec reports residue and settles nothing,
-  so it changes none of them. No accepted ADR governs test isolation or process
-  residue, which is why the invariants this Spec establishes are new. Source:
-  `docs/agents/domain.md`.
+  so it changes none of them. No accepted ADR governed test isolation or process
+  residue when this Spec was written, which is why the invariants it establishes
+  are new: ADR-0125 makes a spawned fixture a compiled binary, ADR-0126 places the
+  isolation guard per package rather than once around the suite, and ADR-0127
+  makes residue a readiness fact rather than a Run record, and ADR-0128 makes the
+  guard read the same sanctioned-regeneration declaration the changed-path audit
+  reads — which is ADR-0081's rule read by a second reader: a derived artifact a
+  sanctioned command rewrites is fallout of the authorized edit, and a
+  hand-written one is not. The closing node rests
+  on two more that it follows rather than changes: ADR-0091 makes the QA gate a
+  Task node of its own type, and ADR-0104 makes a Spec accept on evidence it did
+  not author, which is what the upstream diagnosis and the 2026-08-06 process
+  measurement supply here. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized. The work changes Go test code, test fixtures, and production Go
   in the process-ownership and CLI packages. It edits no linter, formatter,
@@ -89,7 +102,11 @@ execution has no command that answers what it detached that is still running.
    no live Run record, so detached execution has an inventory rather than a habit.
 6. **Force Stop proves the tree.** Stopping a Run proves the exit of the processes
    it spawned, not only of the registered owner.
-7. **A gate's scratch state stays out of the evidence.** Scratch repositories and
+7. **A sanctioned regeneration is not a violation.** A command whose declared
+   purpose is rewriting derived artifacts writes into the repository by contract,
+   and the guard reads the declaration that says so rather than holding an
+   exemption list of its own.
+8. **A gate's scratch state stays out of the evidence.** Scratch repositories and
    built binaries a gate produces are not committed as Spec evidence, and a
    submodule-shaped directory reference never reaches a commit.
 
@@ -121,6 +138,9 @@ printing an empty table.
   2026-08-06, measured outside this Spec by a process table nobody in the tool
   could see.
 - No Spec evidence directory holds a built binary or a submodule-shaped reference.
+- Every sanctioned regeneration command declared by an authorization record runs
+  to completion with the guard installed, measured against the two that failed on
+  2026-08-14: `make baseline-digests` and the plan-characterization update flag.
 
 ## Decisions
 

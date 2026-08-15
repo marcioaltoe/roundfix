@@ -30,6 +30,7 @@ import (
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 	"roundfix/internal/store"
+	"roundfix/internal/suiteguard"
 	roundtui "roundfix/internal/tui"
 	runworktree "roundfix/internal/worktree"
 )
@@ -56,7 +57,7 @@ func TestMain(m *testing.M) {
 		}
 		os.Exit(code)
 	}
-	code := m.Run()
+	code := suiteguard.Main(m, filepath.Join("..", ".."))
 	removeColdBuiltBinary()
 	os.Exit(code)
 }

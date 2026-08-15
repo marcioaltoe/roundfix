@@ -617,6 +617,8 @@ func TestCatalogCompatibility(t *testing.T) {
 	// Sequential: can rewrite shared digest artifacts when the update flag is enabled.
 	if !*updateBaselineDigests {
 		t.Parallel()
+	} else {
+		declareBaselineDigestRegeneration()
 	}
 
 	var catalog *Catalog
@@ -733,6 +735,8 @@ func TestCatalogDiagnosticCharacterization(t *testing.T) {
 	// Sequential: can rewrite the shared diagnostic golden when its update flag is enabled.
 	if !*updateCatalogDiagnosticCharacterization {
 		t.Parallel()
+	} else {
+		declareBaselineDigestRegeneration()
 	}
 	actual := loadCatalogDiagnosticCorpus(t)
 	actualBytes := marshalCatalogDiagnosticCorpus(t, actual)

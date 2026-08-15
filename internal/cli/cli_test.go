@@ -10305,6 +10305,80 @@ func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
 }
 
+func TestForceStopProvesTheTree(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	const descendantPID = 424243
+	withOwnerProcessController(t, ownerProcessTreeControllerStub{
+		terminateTree: func(_ context.Context, pid int, recordedIdentity string) ([]store.TerminationOutcome, error) {
+			if pid != *active.OwnerPID || recordedIdentity != active.OwnerIdentity {
+				t.Fatalf("tree root = (%d, %q), want (%d, %q)", pid, recordedIdentity, *active.OwnerPID, active.OwnerIdentity)
+			}
+			return []store.TerminationOutcome{
+				{PID: pid, Proven: true},
+				{PID: descendantPID, Reason: "process remains alive after force kill"},
+			}, nil
+		},
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("Force Stop exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("failed Force Stop printed success output %q", stdout.String())
+	}
+	for _, want := range []string{
+		strconv.Itoa(descendantPID),
+		"process remains alive after force kill",
+		"Run remains Active",
+		"Active Run lock retained",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("Force Stop diagnostic missing %q: %q", want, stderr.String())
+		}
+	}
+	assertRunState(t, homeDir, active.ID, store.StateActive)
+}
+
+func TestForceStopProvesTheTreeWhenTreeExits(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	const descendantPID = 424244
+	withOwnerProcessController(t, ownerProcessTreeControllerStub{
+		terminateTree: func(_ context.Context, pid int, recordedIdentity string) ([]store.TerminationOutcome, error) {
+			if pid != *active.OwnerPID || recordedIdentity != active.OwnerIdentity {
+				t.Fatalf("tree root = (%d, %q), want (%d, %q)", pid, recordedIdentity, *active.OwnerPID, active.OwnerIdentity)
+			}
+			return []store.TerminationOutcome{
+				{PID: pid, Proven: true},
+				{PID: descendantPID, Proven: true},
+			}, nil
+		},
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("Force Stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("clean tree wrote stderr %q", stderr.String())
+	}
+	wantStdout := fmt.Sprintf("Roundfix Run force-stopped\n\nRun:\n  ID: %s\n  State: Stopped\n  Kind: implement\n  Spec: 0001-widget-flow\n\nResult:\n  Force Stop proved the recorded owner process exited, completed the Run as Stopped, and released its Active Run locks.\n\nNo user work side effects:\n  Roundfix did not edit user files, commit, push, fetch, or resolve Review Source threads.\n", active.ID)
+	if stdout.String() != wantStdout {
+		t.Fatalf("Force Stop stdout changed\nwant: %q\ngot:  %q", wantStdout, stdout.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
 func TestRunForceStopAcceptsFlagsInAnyPosition(t *testing.T) {
 	t.Parallel()
 	orders := map[string]func(runID string) []string{
@@ -12633,8 +12707,13 @@ func (controller ownerProcessControllerFunc) ProveOwner(context.Context, int, st
 	return nil
 }
 
-func (controller ownerProcessControllerFunc) TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error {
-	return controller(ctx, pid, recordedIdentity)
+func (controller ownerProcessControllerFunc) TerminateTreeAndWait(ctx context.Context, pid int, recordedIdentity string) ([]store.TerminationOutcome, error) {
+	err := controller(ctx, pid, recordedIdentity)
+	outcome := store.TerminationOutcome{PID: pid, Proven: err == nil}
+	if err != nil {
+		outcome.Reason = err.Error()
+	}
+	return []store.TerminationOutcome{outcome}, err
 }
 
 // ownerProcessControllerStub drives the owner proof and the termination phase
@@ -12651,11 +12730,35 @@ func (controller ownerProcessControllerStub) ProveOwner(ctx context.Context, pid
 	return controller.prove(ctx, pid, recordedIdentity)
 }
 
-func (controller ownerProcessControllerStub) TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error {
-	if controller.terminate == nil {
+func (controller ownerProcessControllerStub) TerminateTreeAndWait(ctx context.Context, pid int, recordedIdentity string) ([]store.TerminationOutcome, error) {
+	var err error
+	if controller.terminate != nil {
+		err = controller.terminate(ctx, pid, recordedIdentity)
+	}
+	outcome := store.TerminationOutcome{PID: pid, Proven: err == nil}
+	if err != nil {
+		outcome.Reason = err.Error()
+	}
+	return []store.TerminationOutcome{outcome}, err
+}
+
+type ownerProcessTreeControllerStub struct {
+	prove         func(context.Context, int, string) error
+	terminateTree func(context.Context, int, string) ([]store.TerminationOutcome, error)
+}
+
+func (controller ownerProcessTreeControllerStub) ProveOwner(ctx context.Context, pid int, recordedIdentity string) error {
+	if controller.prove == nil {
 		return nil
 	}
-	return controller.terminate(ctx, pid, recordedIdentity)
+	return controller.prove(ctx, pid, recordedIdentity)
+}
+
+func (controller ownerProcessTreeControllerStub) TerminateTreeAndWait(ctx context.Context, pid int, recordedIdentity string) ([]store.TerminationOutcome, error) {
+	if controller.terminateTree == nil {
+		return []store.TerminationOutcome{{PID: pid, Proven: true}}, nil
+	}
+	return controller.terminateTree(ctx, pid, recordedIdentity)
 }
 
 func withOwnerProcessController(t *testing.T, controller OwnerProcessController) {

@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,6 +20,7 @@ import (
 	"roundfix/internal/codex"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/suiteguard"
 )
 
 const (
@@ -44,13 +47,77 @@ const (
 	fakeACPXExitCancel = "ROUNDFIX_FAKE_ACPX_EXIT_AFTER_CANCEL"
 	fakeACPXCodexPath  = "ROUNDFIX_FAKE_ACPX_CODEX_PATH"
 	fakeACPXThoughtLen = "ROUNDFIX_FAKE_ACPX_THOUGHT_LENGTH"
+	fakeAdapterDirEnv  = "ROUNDFIX_FAKE_ADAPTER_DIR"
 )
 
 func TestMain(m *testing.M) {
+	if code, ok := runFakeAdapterProcess(); ok {
+		os.Exit(code)
+	}
 	if os.Getenv(fakeACPXEnv) == "1" {
 		os.Exit(runFakeACPXProcess())
 	}
-	os.Exit(m.Run())
+	os.Exit(suiteguard.Main(m, filepath.Join("..", "..")))
+}
+
+func TestFixtureBinarySurvivesConcurrentExec(t *testing.T) {
+	const (
+		targetExecutions = 32
+		wantOutput       = "fixture-version"
+	)
+	workers := max(2, runtime.GOMAXPROCS(0)/2)
+	executions := max(2, targetExecutions/workers)
+	binaryInfo, err := os.Stat(os.Args[0])
+	if err != nil {
+		t.Fatalf("stat compiled test binary: %v", err)
+	}
+
+	dirs := make([]string, workers)
+	for index := range dirs {
+		dirs[index] = t.TempDir()
+	}
+	start := make(chan struct{})
+	errors := make(chan error, workers)
+	var group sync.WaitGroup
+	group.Add(workers)
+	for worker := range workers {
+		go func() {
+			defer group.Done()
+			<-start
+			for execution := range executions {
+				path := filepath.Join(dirs[worker], fmt.Sprintf("adapter-%d", execution))
+				output := wantOutput
+				if err := provisionFakeAdapter(path, fakeAdapterFixture{Output: &output}); err != nil {
+					errors <- fmt.Errorf("provision worker %d execution %d: %w", worker, execution, err)
+					return
+				}
+				fixtureInfo, err := os.Stat(path)
+				if err != nil {
+					errors <- fmt.Errorf("stat worker %d execution %d: %w", worker, execution, err)
+					return
+				}
+				if !os.SameFile(binaryInfo, fixtureInfo) {
+					errors <- fmt.Errorf("worker %d execution %d fixture is not linked to the compiled test binary", worker, execution)
+					return
+				}
+				probe, err := exec.Command(path, "--version").CombinedOutput()
+				if err != nil {
+					errors <- fmt.Errorf("exec worker %d execution %d: %w: %s", worker, execution, err, probe)
+					return
+				}
+				if got := strings.TrimSpace(string(probe)); got != wantOutput {
+					errors <- fmt.Errorf("probe worker %d execution %d = %q, want %q", worker, execution, got, wantOutput)
+					return
+				}
+			}
+		}()
+	}
+	close(start)
+	group.Wait()
+	close(errors)
+	for err := range errors {
+		t.Error(err)
+	}
 }
 
 func TestACPXProbePassesWhenVersionMatchesPin(t *testing.T) {
@@ -1208,7 +1275,7 @@ func TestProveExactSelectionCancelCleanup(t *testing.T) {
 		_, err := harness.runner.ProveExactSelection(ctx, ProbeRequest{Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}, WorkDir: harness.gitRoot})
 		result <- err
 	}()
-	waitForFile(t, started)
+	waitForFile(t, "fake acpx set reasoning_effort fixture", started, result)
 	cancel()
 
 	if err := receiveError(t, result); !errors.Is(err, context.Canceled) {
@@ -1231,7 +1298,7 @@ func TestProveExactSelectionTimeoutCleanup(t *testing.T) {
 		_, err := harness.runner.ProveExactSelection(ctx, ProbeRequest{Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}, WorkDir: harness.gitRoot})
 		result <- err
 	}()
-	waitForFile(t, started)
+	waitForFile(t, "fake acpx sessions show fixture", started, result)
 	ctx.expire()
 	err := receiveError(t, result)
 	if !errors.Is(err, context.DeadlineExceeded) {
@@ -1443,7 +1510,7 @@ func TestACPXProbeCancellationStillClosesDisposableSession(t *testing.T) {
 	go func() {
 		resultCh <- harness.runner.Probe(ctx, ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
 	}()
-	waitForFile(t, startedPath)
+	waitForFile(t, "fake acpx sessions ensure fixture", startedPath, resultCh)
 	cancel()
 
 	err := receiveError(t, resultCh)
@@ -1588,7 +1655,7 @@ func TestACPXProbeFallbackCancellationStillClosesCandidateSession(t *testing.T) 
 		_, _, err := harness.runner.ProbeFallback(ctx, runtime, FallbackCandidateSet{Models: []string{"gpt-working"}})
 		resultCh <- err
 	}()
-	waitForFile(t, startedPath)
+	waitForFile(t, "fake acpx sessions ensure fallback fixture", startedPath, resultCh)
 	cancel()
 
 	err := receiveError(t, resultCh)
@@ -2710,11 +2777,11 @@ func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 		_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
 		resultCh <- err
 	}()
-	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
+	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted, resultCh)
 	cancel()
-	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted, resultCh)
 	graceTimer := clock.waitForTimer(t, 0)
-	harness.waitForMilestone(t, "prompt completion", harness.milestones.promptCompleted)
+	harness.waitForMilestone(t, "prompt completion", harness.milestones.promptCompleted, resultCh)
 
 	err := receiveError(t, resultCh)
 	if !IsStopError(err) {
@@ -2762,9 +2829,9 @@ func TestACPXRunClosesSessionAfterCancelGracePeriod(t *testing.T) {
 		_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
 		resultCh <- err
 	}()
-	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
+	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted, resultCh)
 	cancel()
-	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted, resultCh)
 	graceTimer := clock.waitForTimer(t, 0)
 	if graceTimer.Duration() != harness.stopGrace {
 		t.Fatalf("expected grace timer duration %s, got %s", harness.stopGrace, graceTimer.Duration())
@@ -2772,7 +2839,7 @@ func TestACPXRunClosesSessionAfterCancelGracePeriod(t *testing.T) {
 	if !graceTimer.Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
 		t.Fatal("expected first grace timer fire to trigger fallback close")
 	}
-	harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted)
+	harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted, resultCh)
 	postCloseTimer := clock.waitForTimer(t, 1)
 
 	err := receiveError(t, resultCh)
@@ -2844,15 +2911,22 @@ func TestACPXRunCancellationCommandFailuresWarnAndContinue(t *testing.T) {
 			}()
 			select {
 			case <-promptStarted.done:
+			case err := <-resultCh:
+				select {
+				case <-promptStarted.done:
+					resultCh <- err
+				default:
+					failSpawnedFixtureExit(t, "fake acpx prompt fixture", err, "prompt start event")
+				}
 			case <-time.After(agentWaitBudget):
 				t.Fatalf("timed out waiting for prompt start event; Agent did not start within %s", agentWaitBudget)
 			}
 			cancel()
-			harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+			harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted, resultCh)
 			if !clock.waitForTimer(t, 0).Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
 				t.Fatal("expected grace timer fire to trigger fallback close")
 			}
-			harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted)
+			harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted, resultCh)
 			postCloseTimer := clock.waitForTimer(t, 1)
 
 			err := receiveError(t, resultCh)
@@ -3601,6 +3675,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 			Command: os.Args[0],
 			Environment: environmentForTest(
 				"HOME="+homeDir,
+				fakeAdapterDirEnv+"="+adapterDir,
 				fakeACPXEnv+"=1",
 				fakeACPXInvokes+"="+invocationsPath,
 				fakeACPXPrompts+"="+promptsPath,
@@ -3625,18 +3700,23 @@ func (harness *fakeACPXHarness) setEnv(key string, value string) {
 func installFakeAdapter(t *testing.T, dir string, command string) {
 	t.Helper()
 	path := filepath.Join(dir, command)
-	content := "#!/bin/sh\nexit 0\n"
+	fixture := fakeAdapterFixture{}
 	if command == "codex-acp" {
-		content = "#!/bin/sh\nprintf '%s\\n' '" + CodexAdapterPackage + " " + PinnedCodexAdapterVersion + "'\n"
+		output := CodexAdapterPackage + " " + PinnedCodexAdapterVersion
+		fixture.Output = &output
 	}
 	if command == "claude-agent-acp" {
-		content = "#!/bin/sh\nprintf '%s\\n' '" + PinnedClaudeAdapterVersion + "'\n"
+		output := PinnedClaudeAdapterVersion
+		fixture.Output = &output
 	}
 	if command == "npx" {
-		content = "#!/bin/sh\ncase \"$*\" in\n  *claude-agent-acp*) printf '%s\\n' '" + PinnedClaudeAdapterVersion + "' ;;\n  *) printf '%s\\n' '" + CodexAdapterPackage + " " + PinnedCodexAdapterVersion + "' ;;\nesac\n"
+		output := CodexAdapterPackage + " " + PinnedCodexAdapterVersion
+		claudeOutput := PinnedClaudeAdapterVersion
+		fixture.Output = &output
+		fixture.ClaudeOutput = &claudeOutput
 	}
-	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
-		t.Fatalf("write fake adapter %s: %v", command, err)
+	if err := provisionFakeAdapter(path, fixture); err != nil {
+		t.Fatalf("provision fake adapter %s: %v", command, err)
 	}
 }
 
@@ -3649,9 +3729,8 @@ func installFakeNamedVersionAdapter(t *testing.T, name string, output string) st
 	t.Helper()
 	dir := t.TempDir()
 	path := filepath.Join(dir, name)
-	content := "#!/bin/sh\nprintf '%s\\n' '" + output + "'\n"
-	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
-		t.Fatalf("write fake version adapter: %v", err)
+	if err := provisionFakeAdapter(path, fakeAdapterFixture{Output: &output}); err != nil {
+		t.Fatalf("provision fake version adapter: %v", err)
 	}
 	return path
 }
@@ -3664,9 +3743,8 @@ func installSymlinkedPackageAdapter(t *testing.T, packageName string, executable
 		t.Fatalf("create fake package adapter directory: %v", err)
 	}
 	target := filepath.Join(packageDir, "adapter")
-	content := "#!/bin/sh\nprintf '%s\\n' '" + output + "'\n"
-	if err := os.WriteFile(target, []byte(content), 0o755); err != nil {
-		t.Fatalf("write fake package adapter: %v", err)
+	if err := os.Link(os.Args[0], target); err != nil {
+		t.Fatalf("link compiled fake package adapter: %v", err)
 	}
 	binDir := filepath.Join(root, "bin")
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
@@ -3676,7 +3754,74 @@ func installSymlinkedPackageAdapter(t *testing.T, packageName string, executable
 	if err := os.Symlink(target, command); err != nil {
 		t.Fatalf("symlink fake package adapter: %v", err)
 	}
+	if err := writeFakeAdapterFixture(command, fakeAdapterFixture{Output: &output}); err != nil {
+		t.Fatalf("configure fake package adapter: %v", err)
+	}
 	return command
+}
+
+// The adapter fixture re-executes the compiled test binary. Its behavior lives
+// in a non-executable sidecar, so tests never write the file they execute. This
+// removes the ETXTBSY window documented by https://go.dev/issue/22315.
+type fakeAdapterFixture struct {
+	Output       *string `json:"output,omitempty"`
+	ClaudeOutput *string `json:"claude_output,omitempty"`
+}
+
+func provisionFakeAdapter(path string, fixture fakeAdapterFixture) error {
+	if err := os.Link(os.Args[0], path); err != nil {
+		return fmt.Errorf("link compiled test binary: %w", err)
+	}
+	if err := writeFakeAdapterFixture(path, fixture); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeFakeAdapterFixture(path string, fixture fakeAdapterFixture) error {
+	payload, err := json.Marshal(fixture)
+	if err != nil {
+		return fmt.Errorf("marshal adapter fixture: %w", err)
+	}
+	if err := os.WriteFile(path+".fixture.json", payload, 0o600); err != nil {
+		return fmt.Errorf("write adapter fixture behavior: %w", err)
+	}
+	return nil
+}
+
+func runFakeAdapterProcess() (int, bool) {
+	fixturePath := os.Args[0] + ".fixture.json"
+	payload, err := os.ReadFile(fixturePath)
+	if errors.Is(err, os.ErrNotExist) {
+		if resolved, resolveErr := exec.LookPath(os.Args[0]); resolveErr == nil && resolved != os.Args[0] {
+			fixturePath = resolved + ".fixture.json"
+			payload, err = os.ReadFile(fixturePath)
+		}
+	}
+	if errors.Is(err, os.ErrNotExist) && os.Getenv(fakeAdapterDirEnv) != "" {
+		fixturePath = filepath.Join(os.Getenv(fakeAdapterDirEnv), filepath.Base(os.Args[0])) + ".fixture.json"
+		payload, err = os.ReadFile(fixturePath)
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return 0, false
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "read adapter fixture behavior %s: %v\n", fixturePath, err)
+		return 2, true
+	}
+	var fixture fakeAdapterFixture
+	if err := json.Unmarshal(payload, &fixture); err != nil {
+		fmt.Fprintf(os.Stderr, "decode adapter fixture behavior: %v\n", err)
+		return 2, true
+	}
+	output := fixture.Output
+	if fixture.ClaudeOutput != nil && strings.Contains(strings.Join(os.Args[1:], " "), "claude-agent-acp") {
+		output = fixture.ClaudeOutput
+	}
+	if output != nil {
+		fmt.Fprintln(os.Stdout, *output)
+	}
+	return 0, true
 }
 
 func writeACPXConfigForTest(t *testing.T, content string) []string {
@@ -3755,9 +3900,9 @@ func newFakeACPXMilestones(t *testing.T, dir string) fakeACPXMilestones {
 	}
 }
 
-func (harness *fakeACPXHarness) waitForMilestone(t *testing.T, name string, path string) {
+func (harness *fakeACPXHarness) waitForMilestone(t *testing.T, name string, path string, fixtureExit chan error) {
 	t.Helper()
-	waitForACPXMilestone(t, name, path, harness.invocationsPath)
+	waitForACPXMilestone(t, "fake acpx prompt fixture", name, path, harness.invocationsPath, fixtureExit)
 }
 
 func assertCancellationFixturePaths(t *testing.T, harness *fakeACPXHarness) {
@@ -4260,7 +4405,7 @@ func containsInvocation(invocations [][]string, want []string) bool {
 // cancellation clock keeps its own scale.
 const agentWaitBudget = 90 * time.Second
 
-func waitForFile(t *testing.T, path string) {
+func waitForFile(t *testing.T, fixtureName string, path string, fixtureExit chan error) {
 	t.Helper()
 	deadline := time.After(agentWaitBudget)
 	ticker := time.NewTicker(5 * time.Millisecond)
@@ -4272,12 +4417,18 @@ func waitForFile(t *testing.T, path string) {
 		select {
 		case <-deadline:
 			t.Fatalf("timed out waiting for %s", path)
+		case err := <-fixtureExit:
+			if _, statErr := os.Stat(path); statErr == nil {
+				fixtureExit <- err
+				return
+			}
+			failSpawnedFixtureExit(t, fixtureName, err, path)
 		case <-ticker.C:
 		}
 	}
 }
 
-func waitForACPXMilestone(t *testing.T, name string, path string, invocationsPath string) {
+func waitForACPXMilestone(t *testing.T, fixtureName string, name string, path string, invocationsPath string, fixtureExit chan error) {
 	t.Helper()
 	deadline := time.After(agentWaitBudget)
 	ticker := time.NewTicker(5 * time.Millisecond)
@@ -4293,9 +4444,29 @@ func waitForACPXMilestone(t *testing.T, name string, path string, invocationsPat
 				invocations = string(content)
 			}
 			t.Fatalf("timed out waiting for fake acpx %s milestone at %s; invocations so far:\n%s", name, path, invocations)
+		case err := <-fixtureExit:
+			if _, statErr := os.Stat(path); statErr == nil {
+				fixtureExit <- err
+				return
+			}
+			failSpawnedFixtureExit(t, fixtureName, err, name+" milestone at "+path)
 		case <-ticker.C:
 		}
 	}
+}
+
+func failSpawnedFixtureExit(t *testing.T, fixtureName string, err error, awaited string) {
+	t.Helper()
+	status := "exit status 0"
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ProcessState != nil {
+			status = exitErr.ProcessState.String()
+		} else {
+			status = fmt.Sprintf("exit status unavailable (%v)", err)
+		}
+	}
+	t.Fatalf("spawned fixture %q exited with %s before %s", fixtureName, status, awaited)
 }
 
 func receiveError(t *testing.T, resultCh <-chan error) error {

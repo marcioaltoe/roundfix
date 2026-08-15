@@ -348,6 +348,8 @@ func TestFormatterComposition(t *testing.T) {
 	// Sequential: can rewrite shared formatter fixtures when the update flag is enabled.
 	if !*updateBaselineDigests {
 		t.Parallel()
+	} else {
+		declareBaselineDigestRegeneration()
 	}
 	repository := newAlignedTypeScriptRepository(t)
 	runPlanGit(t, repository, "init", "-q")

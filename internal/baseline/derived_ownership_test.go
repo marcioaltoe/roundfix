@@ -587,7 +587,7 @@ func newDerivedRegenerationFixture(t *testing.T) string {
 
 	sourceRoot := filepath.Clean(filepath.Join("..", ".."))
 	fixtureRoot := t.TempDir()
-	for _, directory := range []string{".agents", "internal", "skills"} {
+	for _, directory := range []string{".agents", "docs/workflow/authorizations", "internal", "skills"} {
 		if err := os.CopyFS(
 			filepath.Join(fixtureRoot, directory),
 			os.DirFS(filepath.Join(sourceRoot, directory)),
@@ -1109,6 +1109,48 @@ func writeDedicatedCommandFixture(
 		0o644,
 	); err != nil {
 		t.Fatalf("write declared-step fixture %q: %v", recordPath, err)
+	}
+	writeDedicatedAuthorizationFixture(t, baselineRoot, filepath.Dir(recordPath), command)
+}
+
+func writeDedicatedAuthorizationFixture(t *testing.T, baselineRoot, artifactDirectory, command string) {
+	t.Helper()
+
+	var outputs []string
+	root := filepath.Join(baselineRoot, filepath.FromSlash(artifactDirectory))
+	err := filepath.WalkDir(root, func(filePath string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() || entry.Name() == "_ownership.yml" {
+			return nil
+		}
+		relative, err := filepath.Rel(baselineRoot, filePath)
+		if err != nil {
+			return err
+		}
+		outputs = append(outputs, filepath.ToSlash(filepath.Join("internal", "baseline", relative)))
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("enumerate dedicated authorization fixture outputs: %v", err)
+	}
+	sort.Strings(outputs)
+
+	var authorization strings.Builder
+	authorization.WriteString("# Dedicated regeneration fixture\n\n## Sanctioned regeneration\n\n```yaml\ncommand: >-\n  ")
+	authorization.WriteString(strings.ReplaceAll(command, "\n", "\n  "))
+	authorization.WriteString("\noutputs:\n")
+	for _, output := range outputs {
+		authorization.WriteString("  - ")
+		authorization.WriteString(output)
+		authorization.WriteByte('\n')
+	}
+	authorization.WriteString("```\n")
+	repository := filepath.Dir(filepath.Dir(baselineRoot))
+	filePath := filepath.Join(repository, "docs", "workflow", "authorizations", "dedicated-fixture.md")
+	if err := os.WriteFile(filePath, []byte(authorization.String()), 0o644); err != nil {
+		t.Fatalf("write dedicated authorization fixture: %v", err)
 	}
 }
 

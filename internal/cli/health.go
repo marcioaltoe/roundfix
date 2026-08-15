@@ -17,6 +17,8 @@ const (
 	CheckStatusSkipped     CheckStatus = "skipped"
 	CheckStatusFailed      CheckStatus = "failed"
 	CheckStatusUnversioned CheckStatus = "unversioned"
+	CheckStatusFound       CheckStatus = "found"
+	CheckStatusPartial     CheckStatus = "partial"
 
 	HealthCheckNode     = "node"
 	HealthCheckACPX     = "acpx"
@@ -24,6 +26,7 @@ const (
 	HealthCheckAgent    = "agent"
 	HealthCheckProfiles = "profiles"
 	HealthCheckSkills   = "skills"
+	HealthCheckResidue  = "residue"
 	HealthCheckCodex    = "codex"
 )
 

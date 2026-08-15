@@ -46,7 +46,17 @@ type OwnerProcessControl struct {
 	processAbsent        func(int) (bool, error)
 	processStartIdentity func(context.Context, int) (string, error)
 	ownedProcesses       func(int, string) ([]int, error)
+	processInfo          func(context.Context, int) (OwnedProcess, error)
 	signalProcess        func(int, bool) error
+}
+
+// OwnedProcess is one live process proven to belong to a recorded Run owner.
+// Command is diagnostic context only and must not be used as ownership proof.
+type OwnedProcess struct {
+	PID     int
+	Started time.Time
+	CPUTime time.Duration
+	Command string
 }
 
 // TerminationOutcome records whether one owned process was observed absent.
@@ -74,6 +84,7 @@ func newOwnerProcessController(gracePeriod, stopWindow, pollInterval time.Durati
 		processAbsent:        processAbsent,
 		processStartIdentity: processStartIdentity,
 		ownedProcesses:       processTreePIDs,
+		processInfo:          readOwnedProcess,
 		signalProcess:        signalOwnerProcess,
 	}
 }
@@ -213,6 +224,41 @@ func (controller *OwnerProcessControl) InspectTree(
 		}
 	}
 	return live, nil
+}
+
+// InspectTreeProcesses returns details only for processes whose membership in
+// the recorded owner's spawn lineage has already been proven by InspectTree.
+// A process that exits between the lineage and detail reads is omitted; other
+// detail failures are returned with every process that was readable.
+func (controller *OwnerProcessControl) InspectTreeProcesses(
+	ctx context.Context,
+	pid int,
+	recordedIdentity string,
+) ([]OwnedProcess, error) {
+	pids, err := controller.InspectTree(ctx, pid, recordedIdentity)
+	if err != nil {
+		return nil, err
+	}
+
+	processes := make([]OwnedProcess, 0, len(pids))
+	var readErrors []error
+	for _, ownedPID := range pids {
+		process, err := controller.processInfo(ctx, ownedPID)
+		if err == nil {
+			process.PID = ownedPID
+			processes = append(processes, process)
+			continue
+		}
+		absent, absentErr := controller.processAbsent(ownedPID)
+		if absentErr == nil && absent {
+			continue
+		}
+		if absentErr != nil {
+			err = errors.Join(err, fmt.Errorf("prove process absence after detail read: %w", absentErr))
+		}
+		readErrors = append(readErrors, ownerProcessControlError(ownedPID, "read owned process details", err))
+	}
+	return processes, errors.Join(readErrors...)
 }
 
 // TerminateTreeAndWait proves the recorded owner before signalling any

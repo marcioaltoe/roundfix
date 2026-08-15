@@ -17,6 +17,7 @@ import (
 	"roundfix/internal/gittest"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	"roundfix/internal/suiteguard"
 )
 
 // Suite: Run Worktree git lifecycle.
@@ -41,7 +42,7 @@ func TestMain(m *testing.M) {
 	os.Setenv("HOME", homeDir)
 	os.Setenv("GIT_CONFIG_GLOBAL", "/dev/null")
 	os.Setenv("GIT_CONFIG_SYSTEM", "/dev/null")
-	code := m.Run()
+	code := suiteguard.Main(m, filepath.Join("..", ".."))
 	_ = os.RemoveAll(homeDir)
 	os.Exit(code)
 }

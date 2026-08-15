@@ -24,6 +24,7 @@ import (
 
 	"roundfix/internal/baseline"
 	"roundfix/internal/gittest"
+	"roundfix/internal/testfixture"
 )
 
 func TestGuidanceCompositionJourney(t *testing.T) {
@@ -1061,49 +1062,75 @@ func provisionBaselineReleaseFormatter(t *testing.T, repo string) (string, strin
 		t.Fatal("disposable repository does not own an Oxfmt version")
 	}
 
-	binDir := filepath.Join(t.TempDir(), "bin")
-	if err := os.MkdirAll(binDir, 0o755); err != nil {
-		t.Fatalf("create fixture-owned formatter directory: %v", err)
-	}
-	if err := os.WriteFile(
-		filepath.Join(binDir, "oxfmt"),
-		[]byte(baselineReleaseFormatterFixture),
-		0o755,
-	); err != nil {
-		t.Fatalf("provision repository-local formatter fixture: %v", err)
-	}
-	return binDir, formatterVersion
+	formatter := testfixture.FixtureBinary(t, "oxfmt", baselineReleaseFormatterFixture)
+	return filepath.Dir(formatter), formatterVersion
 }
 
-const baselineReleaseFormatterFixture = `#!/bin/sh
-set -eu
+const baselineReleaseFormatterFixture = `package main
 
-version="${ROUNDFIX_FIXTURE_FORMATTER_VERSION:?missing fixture formatter version}"
-if [ "${1:-}" = "--version" ] && [ "$#" -eq 1 ]; then
-	printf '%s\n' "$version"
-	exit 0
-fi
-if [ "${BUN_CONFIG_REGISTRY:-}" != "http://127.0.0.1:1" ]; then
-	printf '%s\n' "formatter fixture requires the unreachable registry" >&2
-	exit 1
-fi
-cache="${BUN_INSTALL_CACHE_DIR:?missing fixture-owned cache}"
-marker="$cache/.roundfix-formatter-fixture-used"
-if [ -e "$marker" ]; then
-	printf '%s\n' "formatter fixture cache was not fresh" >&2
-	exit 1
-fi
-mkdir -p "$cache"
-: > "$marker"
-if [ "$#" -ne 3 ] || [ "$1" != "--check" ] || [ "$2" != "AGENTS.md" ] || [ "$3" != "docs/agents" ]; then
-	printf '%s\n' "unexpected formatter invocation" >&2
-	exit 1
-fi
-if [ ! -s AGENTS.md ] || [ ! -d docs/agents ]; then
-	printf '%s\n' "managed formatter targets are missing" >&2
-	exit 1
-fi
-: > .qa-formatter-ran
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+func main() {
+	version := os.Getenv("ROUNDFIX_FIXTURE_FORMATTER_VERSION")
+	if version == "" {
+		fail("missing fixture formatter version")
+	}
+	args := os.Args[1:]
+	if len(args) == 1 && args[0] == "--version" {
+		fmt.Println(version)
+		return
+	}
+	if os.Getenv("BUN_CONFIG_REGISTRY") != "http://127.0.0.1:1" {
+		fail("formatter fixture requires the unreachable registry")
+	}
+	cache := os.Getenv("BUN_INSTALL_CACHE_DIR")
+	if cache == "" {
+		fail("missing fixture-owned cache")
+	}
+	marker := filepath.Join(cache, ".roundfix-formatter-fixture-used")
+	if _, err := os.Stat(marker); err == nil {
+		fail("formatter fixture cache was not fresh")
+	} else if !os.IsNotExist(err) {
+		fail("inspect formatter fixture cache: " + err.Error())
+	}
+	if err := os.MkdirAll(cache, 0o755); err != nil {
+		fail("create formatter fixture cache: " + err.Error())
+	}
+	if err := touch(marker); err != nil {
+		fail("mark formatter fixture cache: " + err.Error())
+	}
+	if len(args) != 3 || args[0] != "--check" || args[1] != "AGENTS.md" || args[2] != "docs/agents" {
+		fail("unexpected formatter invocation")
+	}
+	agents, err := os.Stat("AGENTS.md")
+	if err != nil || agents.Size() == 0 {
+		fail("managed formatter targets are missing")
+	}
+	docs, err := os.Stat("docs/agents")
+	if err != nil || !docs.IsDir() {
+		fail("managed formatter targets are missing")
+	}
+	if err := touch(".qa-formatter-ran"); err != nil {
+		fail("mark formatter fixture execution: " + err.Error())
+	}
+}
+
+func touch(path string) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	return file.Close()
+}
+
+func fail(message string) {
+	fmt.Fprintln(os.Stderr, message)
+	os.Exit(1)
+}
 `
 
 func newBaselineReleaseRepository(t *testing.T, profile string) string {

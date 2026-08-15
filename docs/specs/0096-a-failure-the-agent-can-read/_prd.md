@@ -39,7 +39,7 @@ human.
   Capacity from Verification Capacity, and ADR-0096 with ADR-0117 place the gate's
   mechanical stage and its checks — this Spec changes none of those. ADR-0111
   makes an unobserved Verification unknown rather than a verdict, which is exactly
-  what an empty diagnostic must be reported as. Source: `docs/agents/domain.md`.
+  what an empty diagnostic must be reported as. ADR-0127 places process residue in the readiness diagnostic; this Spec changes what an Agent reads about its own failure and reports no residue, so it does not apply. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the authoring contract gains the sanctioned
   exits for a reached corrective-Task ceiling. Express maintainer authorization:
   `docs/workflow/authorizations/2026-08-12-the-authoring-and-baseline-corrections.md`,

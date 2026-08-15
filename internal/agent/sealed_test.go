@@ -147,7 +147,7 @@ func TestSealedACPXPromptCancellationCancelsAndClosesSession(t *testing.T) {
 		})
 		result <- err
 	}()
-	waitForFile(t, started)
+	waitForFile(t, "fake acpx sealed prompt fixture", started, result)
 	cancel()
 
 	if err := receiveError(t, result); !errors.Is(err, context.Canceled) {

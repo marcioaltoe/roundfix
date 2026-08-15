@@ -469,6 +469,8 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 	// Sequential: can rewrite shared digest artifacts when the update flag is enabled.
 	if !*updateBaselineDigests {
 		t.Parallel()
+	} else {
+		declareBaselineDigestRegeneration()
 	}
 	if *updateBaselineDigests {
 		regenerateMaintainedSourceBaseline(t)

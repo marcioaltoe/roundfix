@@ -12,10 +12,12 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"roundfix/internal/agent"
 	"roundfix/internal/codex"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/store"
 	"roundfix/skills"
 )
 
@@ -234,6 +236,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				doctorReadyAdapterLine +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
+				"residue: ok (no process residue found)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
 		},
 		{
@@ -249,6 +252,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				doctorReadyAdapterLine +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
+				"residue: ok (no process residue found)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
 		},
 		{
@@ -264,6 +268,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				doctorReadyAdapterLine +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
+				"residue: ok (no process residue found)\n" +
 				"codex: skipped (not-applicable on linux)\n",
 		},
 	}
@@ -305,6 +310,219 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			assertDoctorPathMissing(t, filepath.Join(repoDir, ".roundfixrc.yml"))
 		})
 	}
+}
+
+var doctorResidueTestNow = time.Date(2026, time.August, 14, 21, 0, 0, 0, time.UTC)
+
+func TestDoctorReportsProcessResidueReported(t *testing.T) {
+	testDoctorReportsProcessResidueCase(t, doctorResidueTestCase{
+		runs: []store.Run{doctorTerminalRun()},
+		readLineage: func(_ context.Context, _ ProcessLineage) ([]store.OwnedProcess, error) {
+			return []store.OwnedProcess{{
+				PID:     5252,
+				Started: doctorResidueTestNow.Add(-2*time.Hour - 3*time.Minute - 4*time.Second),
+				CPUTime: 7*time.Minute + 8*time.Second,
+				Command: "roundfix-owned-fixture",
+			}}, nil
+		},
+		wantLine:       "residue: found (PID 5252; age 2h3m4s; CPU 7m8s; originating Run run-residue;",
+		wantTableCalls: 1,
+	})
+}
+
+func TestDoctorReportsProcessResidueExcludesLiveRun(t *testing.T) {
+	testDoctorReportsProcessResidueCase(t, doctorResidueTestCase{
+		runs:           []store.Run{doctorLiveRun()},
+		readLineage:    func(context.Context, ProcessLineage) ([]store.OwnedProcess, error) { return nil, nil },
+		wantLine:       "residue: ok (no process residue found)",
+		wantNoLine:     "run-live",
+		wantTableCalls: 0,
+	})
+}
+
+func TestDoctorReportsProcessResidueEmpty(t *testing.T) {
+	testDoctorReportsProcessResidueCase(t, doctorResidueTestCase{
+		runs: []store.Run{doctorTerminalRun()},
+		readLineage: func(context.Context, ProcessLineage) ([]store.OwnedProcess, error) {
+			return nil, nil
+		},
+		wantLine:       "residue: ok (no process residue found)",
+		wantTableCalls: 1,
+	})
+}
+
+func TestDoctorReportsProcessResidueUnreadable(t *testing.T) {
+	testDoctorReportsProcessResidueCase(t, doctorResidueTestCase{
+		runs: []store.Run{doctorTerminalRun()},
+		readLineage: func(context.Context, ProcessLineage) ([]store.OwnedProcess, error) {
+			return []store.OwnedProcess{{
+				PID:     6262,
+				Started: doctorResidueTestNow.Add(-time.Hour),
+				CPUTime: time.Minute,
+			}}, errors.New("permission denied reading process accounting")
+		},
+		wantLine:       "residue: partial (could not read process table for Run run-residue: permission denied reading process accounting)",
+		wantAlsoLine:   "residue: found (PID 6262; age 1h0m0s; CPU 1m0s; originating Run run-residue;",
+		wantNoLine:     "no process residue found",
+		wantTableCalls: 1,
+	})
+}
+
+func TestDoctorReportsProcessResidueDoesNotWriteRunRecord(t *testing.T) {
+	homeDir := t.TempDir()
+	ctx := t.Context()
+	writer, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database fixture: %v", err)
+	}
+	_, err = writer.CreateRun(ctx, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     filepath.Join(t.TempDir(), "repository"),
+		LocalBranch: "feature/residue",
+		SpecSlug:    "0103-a-suite-that-leaks-nothing",
+	})
+	if err != nil {
+		t.Fatalf("create Run Database fixture: %v", err)
+	}
+	before, err := writer.ListRuns(ctx, store.ListRunsQuery{States: store.StatesAll})
+	if err != nil {
+		t.Fatalf("list Run records before Doctor: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close Run Database fixture: %v", err)
+	}
+
+	results := defaultDoctorResidueResults(ctx, homeDir)
+
+	if len(results) != 1 || results[0].Status != CheckStatusOK || results[0].Detail != "no process residue found" {
+		t.Fatalf("Doctor residue result = %#v, want explicit empty inventory", results)
+	}
+	reader, err := store.OpenReader(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database after Doctor: %v", err)
+	}
+	after, err := reader.ListRuns(ctx, store.ListRunsQuery{States: store.StatesAll})
+	if err != nil {
+		_ = reader.Close()
+		t.Fatalf("list Run records after Doctor: %v", err)
+	}
+	if err := reader.Close(); err != nil {
+		t.Fatalf("close Run Database reader: %v", err)
+	}
+	if !reflect.DeepEqual(after, before) {
+		t.Fatalf("Doctor changed Run records:\nbefore=%#v\nafter=%#v", before, after)
+	}
+}
+
+type doctorResidueTestCase struct {
+	runs           []store.Run
+	readLineage    func(context.Context, ProcessLineage) ([]store.OwnedProcess, error)
+	wantLine       string
+	wantAlsoLine   string
+	wantNoLine     string
+	wantTableCalls int
+}
+
+func testDoctorReportsProcessResidueCase(t *testing.T, test doctorResidueTestCase) {
+	t.Helper()
+	withCLIWorkspace(t)
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+	)
+	withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+		Config:  roundconfig.Builtin(),
+		GitRoot: "/repo/project",
+		HomeDir: "/home/roundfix-test",
+	}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+		return profileProofResult{}
+	})
+	runStore := &doctorResidueRunStore{runs: test.runs}
+	processTable := &doctorResidueProcessTable{read: test.readLineage}
+	results := doctorResidueResults(t.Context(), runStore, processTable, doctorResidueTestNow)
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.doctor.residue = func(context.Context, string) []CheckResult {
+			return results
+		}
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLI(t, []string{"doctor"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("Doctor exit code = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), test.wantLine) {
+		t.Fatalf("Doctor output missing %q: %q", test.wantLine, stdout.String())
+	}
+	if test.wantAlsoLine != "" && !strings.Contains(stdout.String(), test.wantAlsoLine) {
+		t.Fatalf("Doctor output missing %q: %q", test.wantAlsoLine, stdout.String())
+	}
+	if test.wantNoLine != "" && strings.Contains(stdout.String(), test.wantNoLine) {
+		t.Fatalf("Doctor output unexpectedly contains %q: %q", test.wantNoLine, stdout.String())
+	}
+	if runStore.listCalls != 1 || runStore.query.States != store.StatesAll {
+		t.Fatalf("Run Database reads = %d with query %#v, want one all-state read", runStore.listCalls, runStore.query)
+	}
+	if processTable.calls != test.wantTableCalls {
+		t.Fatalf("process table reads = %d, want %d", processTable.calls, test.wantTableCalls)
+	}
+	if test.wantTableCalls == 1 {
+		terminalRun := doctorTerminalRun()
+		wantLineage := ProcessLineage{OwnerPID: *terminalRun.OwnerPID, OwnerIdentity: terminalRun.OwnerIdentity}
+		if !reflect.DeepEqual(processTable.lineages, []ProcessLineage{wantLineage}) {
+			t.Fatalf("process lineages = %#v, want %#v", processTable.lineages, []ProcessLineage{wantLineage})
+		}
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("Doctor stderr = %q, want empty", stderr.String())
+	}
+}
+
+func doctorTerminalRun() store.Run {
+	pid := 4242
+	return store.Run{
+		ID:            "run-residue",
+		State:         store.StateClean,
+		OwnerPID:      &pid,
+		OwnerIdentity: "test:terminal-owner",
+	}
+}
+
+func doctorLiveRun() store.Run {
+	pid := 4343
+	return store.Run{
+		ID:            "run-live",
+		State:         store.StateActive,
+		OwnerPID:      &pid,
+		OwnerIdentity: "test:live-owner",
+	}
+}
+
+type doctorResidueRunStore struct {
+	runs      []store.Run
+	query     store.ListRunsQuery
+	listCalls int
+}
+
+func (runStore *doctorResidueRunStore) ListRuns(_ context.Context, query store.ListRunsQuery) ([]store.Run, error) {
+	runStore.listCalls++
+	runStore.query = query
+	return append([]store.Run(nil), runStore.runs...), nil
+}
+
+type doctorResidueProcessTable struct {
+	read     func(context.Context, ProcessLineage) ([]store.OwnedProcess, error)
+	lineages []ProcessLineage
+	calls    int
+}
+
+func (table *doctorResidueProcessTable) ReadLineage(ctx context.Context, lineage ProcessLineage) ([]store.OwnedProcess, error) {
+	table.calls++
+	table.lineages = append(table.lineages, lineage)
+	return table.read(ctx, lineage)
 }
 
 func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
@@ -426,10 +644,10 @@ func TestRunDoctorAdapterReadinessReportsRequiredProfileRuntimes(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, test.wantCode, stdout.String(), stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 6 || lines[2] != test.wantLine {
+			if len(lines) != 7 || lines[2] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant adapter line %q at index 2", lines, test.wantLine)
 			}
-			wantLineNames := []string{"node", "acpx", "adapter", "profiles", "skills", "codex"}
+			wantLineNames := []string{"node", "acpx", "adapter", "profiles", "skills", "residue", "codex"}
 			for index, name := range wantLineNames {
 				if !strings.HasPrefix(lines[index], name+": ") {
 					t.Fatalf("Doctor line %d = %q, want %q check", index, lines[index], name)
@@ -868,7 +1086,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", code, test.wantCode, stderr.String())
 			}
 			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
-			if len(lines) != 6 || lines[4] != test.wantLine {
+			if len(lines) != 7 || lines[4] != test.wantLine {
 				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 4", lines, test.wantLine)
 			}
 			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 2 || checker.codexCalls != 1 {
@@ -1106,6 +1324,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		doctorReadyAdapterLine +
 		"profiles: ok (0 distinct tuples; 0 category references)\n" +
 		"skills: failed (Repository Skill Set readiness requires a Git repository; next: run roundfix doctor from a Git repository)\n" +
+		"residue: ok (no process residue found)\n" +
 		"codex: ok\n"
 	if got := stdout.String(); got != wantStdout {
 		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)
@@ -1202,6 +1421,7 @@ func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
 			len(skills.Names()),
 			len(external),
 		) +
+		"residue: ok (no process residue found)\n" +
 		"codex: ok\n"
 	if got := stdout.String(); got != wantStdout {
 		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)
@@ -1458,6 +1678,13 @@ func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loade
 				ExternalRequired: 25,
 			}, nil
 		},
+		residue: func(context.Context, string) []CheckResult {
+			return []CheckResult{{
+				Name:   HealthCheckResidue,
+				Status: CheckStatusOK,
+				Detail: "no process residue found",
+			}}
+		},
 	}
 	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
 		commandDependencies.doctor = dependencies
@@ -1476,6 +1703,13 @@ func withDoctorLiveDeps(t *testing.T, checker HealthChecker) {
 			OwnedRequired:    14,
 			ExternalRequired: 25,
 		}, nil
+	}
+	dependencies.residue = func(context.Context, string) []CheckResult {
+		return []CheckResult{{
+			Name:   HealthCheckResidue,
+			Status: CheckStatusOK,
+			Detail: "no process residue found",
+		}}
 	}
 	updateCommandDependenciesForTest(t, func(commandDependencies *commandDependencies) {
 		commandDependencies.doctor = dependencies

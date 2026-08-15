@@ -18,6 +18,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"roundfix/internal/suiteguardcontract"
 	"roundfix/internal/worktree"
 )
 
@@ -308,6 +309,9 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 	} else {
 		detectMechanicalReportShape(&result, report)
 		detectMechanicalEvidencePaths(&result, repoRoot, report)
+		if err := detectMechanicalEvidenceScratchState(ctx, &result, repoRoot, report); err != nil {
+			return result, err
+		}
 		if report.evidenceSnapshotsErr != nil {
 			addMechanicalSkip(&result, DetectorMechanicalReportShape, "evidence_snapshots")
 		}
@@ -432,39 +436,9 @@ func parseMechanicalAuthorizationPaths(content []byte) map[string]bool {
 
 func parseMechanicalRegenerationOutputs(content []byte) map[string]bool {
 	outputs := make(map[string]bool)
-	text := strings.ReplaceAll(string(content), "\r\n", "\n")
-	lines := strings.Split(text, "\n")
-	inSanctionedRegeneration := false
-	for index := 0; index < len(lines); index++ {
-		trimmed := strings.TrimSpace(lines[index])
-		if strings.HasPrefix(trimmed, "## ") {
-			inSanctionedRegeneration = strings.EqualFold(strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")), "Sanctioned regeneration")
-			continue
-		}
-		if !inSanctionedRegeneration || trimmed != "```yaml" {
-			continue
-		}
-
-		start := index + 1
-		for index++; index < len(lines) && strings.TrimSpace(lines[index]) != "```"; index++ {
-		}
-		if index >= len(lines) {
-			return outputs
-		}
-		var declaration struct {
-			Command string   `yaml:"command"`
-			Outputs []string `yaml:"outputs"`
-		}
-		if err := yaml.Unmarshal([]byte(strings.Join(lines[start:index], "\n")), &declaration); err != nil || strings.TrimSpace(declaration.Command) == "" {
-			continue
-		}
-		for _, declared := range declaration.Outputs {
-			declared = strings.TrimSpace(declared)
-			clean := cleanMechanicalPath(declared)
-			if clean == "" || clean != declared || strings.ContainsAny(clean, "*?") {
-				continue
-			}
-			outputs[clean] = true
+	for _, declaration := range suiteguardcontract.ParseSanctionedRegenerations(content) {
+		for _, output := range declaration.Outputs {
+			outputs[output] = true
 		}
 	}
 	return outputs
@@ -1235,6 +1209,123 @@ func detectMechanicalEvidencePaths(result *MechanicalResult, repoRoot string, re
 			addUnresolvedMechanicalEvidence(result, report, row, target)
 		}
 	}
+}
+
+type mechanicalEvidenceEntry struct {
+	mode   string
+	object string
+	path   string
+}
+
+func detectMechanicalEvidenceScratchState(ctx context.Context, result *MechanicalResult, repoRoot string, report mechanicalReport) error {
+	evidenceRoot := cleanMechanicalPath(filepath.ToSlash(filepath.Join(filepath.Dir(filepath.FromSlash(report.path)), "evidence")))
+	entries, err := mechanicalTrackedEvidence(ctx, repoRoot, evidenceRoot)
+	if err != nil {
+		return err
+	}
+	if len(entries) == 0 {
+		resolved, ok := resolveRepositoryPath(repoRoot, evidenceRoot)
+		if !ok {
+			addMechanicalSkip(result, DetectorMechanicalEvidencePath, evidenceRoot)
+			return nil
+		}
+		info, statErr := os.Stat(resolved)
+		if errors.Is(statErr, os.ErrNotExist) || statErr == nil && !info.IsDir() {
+			addMechanicalSkip(result, DetectorMechanicalEvidencePath, evidenceRoot)
+			return nil
+		}
+		if statErr != nil {
+			return fmt.Errorf("inspect mechanical evidence directory %q: %w", resolved, statErr)
+		}
+		return nil
+	}
+
+	for _, entry := range entries {
+		switch entry.mode {
+		case "160000":
+			addMechanicalEvidenceScratchFinding(result, entry.path, "gitlink")
+		case "100644", "100755":
+			binary, err := mechanicalBlobIsBinary(ctx, repoRoot, entry.object)
+			if err != nil {
+				return fmt.Errorf("inspect mechanical evidence %q: %w", entry.path, err)
+			}
+			if binary {
+				addMechanicalEvidenceScratchFinding(result, entry.path, "built binary")
+			}
+		}
+	}
+	return nil
+}
+
+func mechanicalTrackedEvidence(ctx context.Context, repoRoot, evidenceRoot string) ([]mechanicalEvidenceEntry, error) {
+	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "ls-files", "--stage", "-z", "--", evidenceRoot)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("list tracked mechanical evidence under %q: %w: %s", evidenceRoot, err, strings.TrimSpace(string(output)))
+	}
+	var entries []mechanicalEvidenceEntry
+	for _, raw := range bytes.Split(output, []byte{0}) {
+		if len(raw) == 0 {
+			continue
+		}
+		header, rawPath, ok := bytes.Cut(raw, []byte{'\t'})
+		fields := bytes.Fields(header)
+		if !ok || len(fields) != 3 {
+			return nil, fmt.Errorf("parse tracked mechanical evidence entry %q", raw)
+		}
+		path := string(rawPath)
+		clean := cleanMechanicalPath(path)
+		if clean == "" || clean != path || (clean != evidenceRoot && !strings.HasPrefix(clean, evidenceRoot+"/")) {
+			return nil, fmt.Errorf("tracked mechanical evidence path escapes %q: %q", evidenceRoot, path)
+		}
+		if string(fields[2]) != "0" {
+			continue
+		}
+		entries = append(entries, mechanicalEvidenceEntry{
+			mode:   string(fields[0]),
+			object: string(fields[1]),
+			path:   path,
+		})
+	}
+	return entries, nil
+}
+
+func mechanicalBlobIsBinary(ctx context.Context, repoRoot, object string) (bool, error) {
+	const probeSize = 8000
+	command := exec.CommandContext(ctx, "git", "-C", repoRoot, "cat-file", "blob", object)
+	var stderr bytes.Buffer
+	command.Stderr = &stderr
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		return false, fmt.Errorf("open git blob %s: %w", object, err)
+	}
+	if err := command.Start(); err != nil {
+		return false, fmt.Errorf("start git blob %s: %w", object, err)
+	}
+	probe := make([]byte, probeSize)
+	n, readErr := io.ReadFull(stdout, probe)
+	if readErr != nil && !errors.Is(readErr, io.EOF) && !errors.Is(readErr, io.ErrUnexpectedEOF) {
+		_ = command.Wait()
+		return false, fmt.Errorf("read git blob %s: %w", object, readErr)
+	}
+	if _, err := io.Copy(io.Discard, stdout); err != nil {
+		_ = command.Wait()
+		return false, fmt.Errorf("drain git blob %s: %w", object, err)
+	}
+	if err := command.Wait(); err != nil {
+		return false, fmt.Errorf("git cat-file blob %s: %w: %s", object, err, strings.TrimSpace(stderr.String()))
+	}
+	return bytes.IndexByte(probe[:n], 0) >= 0, nil
+}
+
+func addMechanicalEvidenceScratchFinding(result *MechanicalResult, path, kind string) {
+	addMechanicalFinding(result, MechanicalFinding{
+		Code:   CodeMechanicalEvidencePath,
+		File:   path,
+		Line:   1,
+		Detail: "tracked evidence path " + path + " is a " + kind,
+		Fix:    "Remove the gate's scratch state from the Spec evidence directory and keep only reader-openable artifacts.",
+	})
 }
 
 func mechanicalEvidenceTargets(value string) []string {

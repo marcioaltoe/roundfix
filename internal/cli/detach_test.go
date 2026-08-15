@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/store"
 )
 
 const (
@@ -22,8 +24,18 @@ const (
 	detachTestChildMalformedRunCreated = "malformed-run-created"
 	detachTestChildExitTwoWithOutput   = "exit-two-with-output"
 	detachTestChildExitOneSilently     = "exit-one-silently"
+	detachTestChildIgnoreSentinel      = "ignore-sentinel"
 	detachTestRunID                    = "run-detach-test"
+	detachTestPIDPathEnv               = "ROUNDFIX_DETACH_TEST_PID_PATH"
+	detachTestSentinelPathEnv          = "ROUNDFIX_DETACH_TEST_SENTINEL_PATH"
 )
+
+type detachTestSurvivor struct {
+	root         string
+	pidPath      string
+	sentinelPath string
+	pid          int
+}
 
 func TestRunDetachedCommandTimesOutWaitingForLiveness(t *testing.T) {
 	t.Parallel()
@@ -211,6 +223,35 @@ func TestRunDetachedCommandReportsSilentChildExitBeforeHandshake(t *testing.T) {
 	}
 }
 
+func TestDetachedChildIsTerminatedAtTeardown(t *testing.T) {
+	survivor := newDetachTestSurvivor(t)
+	t.Cleanup(func() {
+		if err := os.RemoveAll(survivor.root); err != nil {
+			t.Errorf("remove detached child teardown directory: %v", err)
+		}
+	})
+	command := exec.Command(os.Args[0], "-test.run=^$")
+	command.Env = withEnvValue(os.Environ(), detachTestChildModeEnv, detachTestChildIgnoreSentinel)
+	command.Env = withEnvValue(command.Env, detachTestSentinelPathEnv, survivor.sentinelPath)
+	if err := command.Start(); err != nil {
+		t.Fatalf("start detached child that ignores its sentinel: %v", err)
+	}
+	survivor.pid = command.Process.Pid
+
+	t.Cleanup(func() {
+		if err := survivor.terminate(); err != nil {
+			t.Error(err)
+		}
+		_ = command.Process.Release()
+		if store.ProcessAlive(survivor.pid) {
+			t.Errorf("detached child %d remains alive after teardown", survivor.pid)
+		}
+	})
+	if !store.ProcessAlive(survivor.pid) {
+		t.Fatalf("detached child %d exited before teardown", survivor.pid)
+	}
+}
+
 func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time.Duration, runCreationTimeout time.Duration) (string, string, int) {
 	t.Helper()
 	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
@@ -223,16 +264,37 @@ func runDetachParentForTest(t *testing.T, childMode string, livenessTimeout time
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	environment := commandEnvironmentForTest(t)
+	childEnvironment := withEnvValue(environment.environ, detachTestChildModeEnv, childMode)
+	var survivor *detachTestSurvivor
+	if childMode == detachTestChildRunCreated {
+		survivor = newDetachTestSurvivor(t)
+		childEnvironment = withEnvValue(childEnvironment, detachTestPIDPathEnv, survivor.pidPath)
+		childEnvironment = withEnvValue(childEnvironment, detachTestSentinelPathEnv, survivor.sentinelPath)
+		t.Cleanup(func() {
+			if err := survivor.terminate(); err != nil {
+				t.Error(err)
+			}
+			if err := os.RemoveAll(survivor.root); err != nil {
+				t.Errorf("remove detached child teardown directory: %v", err)
+			}
+		})
+	}
 	code := runDetachedCommand(
 		[]string{"implement", "--detach"},
 		commandRequest{name: "implement", detach: true, artifactDir: filepath.Join(t.TempDir(), "artifacts")},
 		roundconfig.Loaded{GitRoot: t.TempDir(), HomeDir: t.TempDir()},
 		&stdout,
 		&stderr,
-		withEnvValue(environment.environ, detachTestChildModeEnv, childMode),
+		childEnvironment,
 		t.TempDir(),
 		environment.dependencies.detachTimeouts,
 	)
+	if survivor != nil && code == exitOK {
+		survivor.pid = readDetachTestSurvivorPID(t, survivor.pidPath)
+		if !store.ProcessAlive(survivor.pid) {
+			t.Fatalf("detached child %d did not survive its caller", survivor.pid)
+		}
+	}
 	return stdout.String(), stderr.String(), code
 }
 
@@ -252,6 +314,9 @@ func runDetachTestChild(mode string) int {
 		time.Sleep(2 * time.Second)
 		return exitOK
 	case detachTestChildRunCreated:
+		if !recordDetachTestSurvivor() {
+			return exitRunFailed
+		}
 		handshake, ok := writeDetachTestLiveness()
 		if !ok {
 			return exitRunFailed
@@ -264,8 +329,7 @@ func runDetachTestChild(mode string) int {
 		if _, err := fmt.Fprintf(handshake, "%s\t%s\n", detachTestRunID, consoleLog); err != nil {
 			return exitRunFailed
 		}
-		time.Sleep(75 * time.Millisecond)
-		return exitOK
+		return waitForDetachTestSentinel()
 	case detachTestChildInvalidLiveness:
 		handshake, ok := openDetachTestHandshake()
 		if !ok {
@@ -295,10 +359,111 @@ func runDetachTestChild(mode string) int {
 		return exitPreflight
 	case detachTestChildExitOneSilently:
 		return exitRunFailed
+	case detachTestChildIgnoreSentinel:
+		for {
+			time.Sleep(time.Hour)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "unknown detach test child mode %q\n", mode)
 		return exitRunFailed
 	}
+}
+
+func newDetachTestSurvivor(t *testing.T) *detachTestSurvivor {
+	t.Helper()
+	root, err := os.MkdirTemp("", "roundfix-detach-test-")
+	if err != nil {
+		t.Fatalf("create detached child teardown directory: %v", err)
+	}
+	return &detachTestSurvivor{
+		root:         root,
+		pidPath:      filepath.Join(root, "pid"),
+		sentinelPath: filepath.Join(root, "release-sentinel"),
+	}
+}
+
+func recordDetachTestSurvivor() bool {
+	pidPath := strings.TrimSpace(os.Getenv(detachTestPIDPathEnv))
+	if pidPath == "" {
+		fmt.Fprintln(os.Stderr, "detached test child pid path is empty")
+		return false
+	}
+	if err := os.WriteFile(pidPath, []byte(strconv.Itoa(os.Getpid())), 0o600); err != nil {
+		fmt.Fprintf(os.Stderr, "record detached test child pid: %v\n", err)
+		return false
+	}
+	return true
+}
+
+func readDetachTestSurvivorPID(t *testing.T, pidPath string) int {
+	t.Helper()
+	content, err := os.ReadFile(pidPath)
+	if err != nil {
+		t.Fatalf("read detached test child pid: %v", err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(content)))
+	if err != nil || pid <= 0 {
+		t.Fatalf("parse detached test child pid %q: %v", content, err)
+	}
+	return pid
+}
+
+func waitForDetachTestSentinel() int {
+	sentinelPath := strings.TrimSpace(os.Getenv(detachTestSentinelPathEnv))
+	if sentinelPath == "" {
+		fmt.Fprintln(os.Stderr, "detached test child sentinel path is empty")
+		return exitRunFailed
+	}
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if _, err := os.Stat(sentinelPath); err == nil {
+			return exitOK
+		} else if !errors.Is(err, os.ErrNotExist) {
+			fmt.Fprintf(os.Stderr, "read detached test child sentinel: %v\n", err)
+			return exitRunFailed
+		}
+		<-ticker.C
+	}
+}
+
+func (survivor *detachTestSurvivor) terminate() error {
+	if survivor == nil || survivor.pid <= 0 {
+		return nil
+	}
+	process, err := os.FindProcess(survivor.pid)
+	if err != nil {
+		return fmt.Errorf("find detached child %d: %w", survivor.pid, err)
+	}
+	killErr := process.Kill()
+	killFailedWhileAlive := killErr != nil && store.ProcessAlive(survivor.pid)
+	var sentinelErr error
+	if err := os.WriteFile(survivor.sentinelPath, []byte("release\n"), 0o600); err != nil {
+		sentinelErr = fmt.Errorf("write detached child release sentinel: %w", err)
+	}
+
+	wait := make(chan error, 1)
+	go func() {
+		_, waitErr := process.Wait()
+		wait <- waitErr
+	}()
+	deadline := time.NewTimer(detachWaitTimeout)
+	defer deadline.Stop()
+	select {
+	case waitErr := <-wait:
+		if waitErr != nil && store.ProcessAlive(survivor.pid) {
+			return errors.Join(killErr, sentinelErr, fmt.Errorf("wait for detached child %d after kill: %w", survivor.pid, waitErr))
+		}
+	case <-deadline.C:
+		return errors.Join(killErr, sentinelErr, fmt.Errorf("detached child %d remains alive after non-cooperative teardown", survivor.pid))
+	}
+	if store.ProcessAlive(survivor.pid) {
+		return errors.Join(killErr, sentinelErr, fmt.Errorf("detached child %d remains alive after non-cooperative teardown", survivor.pid))
+	}
+	if killFailedWhileAlive {
+		return errors.Join(fmt.Errorf("kill detached child %d: %w", survivor.pid, killErr), sentinelErr)
+	}
+	return sentinelErr
 }
 
 func writeDetachTestLiveness() (*os.File, bool) {

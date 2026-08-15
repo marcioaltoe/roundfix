@@ -39,7 +39,7 @@ move.
   allows one Verification repair, ADR-0057 gives the Daemon exclusive ownership of
   Implement Task status, ADR-0056 separates Task Capacity from Verification
   Capacity, and ADR-0096 with ADR-0117 place the gate's mechanical stage and its
-  checks — the audit reports and settles nothing, so it changes none of them.
+  checks — the audit reports and settles nothing, so it changes none of them. ADR-0127 places process residue in the readiness diagnostic; this Spec's terminal audit may read that inventory as one of the surfaces it consumes, and does not move where it is reported.
   Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized. The work is production Go across the run lifecycle, agent, and
