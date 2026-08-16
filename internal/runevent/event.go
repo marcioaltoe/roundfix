@@ -91,6 +91,14 @@ const (
 	VerificationVerdictFailed VerificationVerdict = "failed"
 )
 
+// RepeatedFailure names the retained Verification failure whose diagnostic
+// signature matches the current failure for the same Work Item.
+type RepeatedFailure struct {
+	Signature string `json:"signature"`
+	RunID     string `json:"run_id"`
+	Attempt   int    `json:"attempt"`
+}
+
 // VerificationClassification names a bounded Verification failure class.
 type VerificationClassification string
 

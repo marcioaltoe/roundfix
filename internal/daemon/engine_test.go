@@ -1299,6 +1299,13 @@ func TestResolveCycleVerificationFailureRepairsSameSessionAndAvoidsDuplicateBatc
 	source := &engineFakeSource{calls: fixture.calls}
 	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, source)
 	plan := fixture.plan()
+	expectedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	if err := os.MkdirAll(filepath.Dir(expectedPath), 0o755); err != nil {
+		t.Fatalf("create diagnostic directory: %v", err)
+	}
+	if err := os.WriteFile(expectedPath, nil, 0o644); err != nil {
+		t.Fatalf("create empty diagnostic: %v", err)
+	}
 
 	result, err := engine.ResolveCycle(context.Background(), plan)
 
@@ -1318,13 +1325,13 @@ func TestResolveCycleVerificationFailureRepairsSameSessionAndAvoidsDuplicateBatc
 		t.Fatalf("expected repair to reuse SessionRef %#v, got %#v then %#v", plan.Session, runner.requests[0].Session, runner.requests[1].Session)
 	}
 	repairPrompt := runner.requests[1].Prompt
-	expectedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
 	for _, expected := range []string{
 		"Verification Feedback",
 		"Work Item: Batch 001",
 		"Failed command: make verify",
 		"Diagnostic artifact: " + expectedPath,
 		"verification failed",
+		"The command produced no output.",
 	} {
 		if !strings.Contains(repairPrompt, expected) {
 			t.Fatalf("expected repair prompt to contain %q, got:\n%s", expected, repairPrompt)

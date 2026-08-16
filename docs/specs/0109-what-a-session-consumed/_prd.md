@@ -35,7 +35,7 @@ small.
   measurement: a consumption an adapter did not report stays observably absent and
   never becomes a zero. ADR-0099 makes retention accounting mechanical while
   classification is not, which bounds how long consumption rows are kept alongside
-  the journal they accompany. Source: `docs/agents/domain.md`.
+  the journal they accompany. ADR-0135 makes an absent diagnostic a reported state in the repair prompt an Agent reads; this Spec records what a Session consumed and writes no Verification feedback, so it does not apply. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized. The work is production Go in the agent, daemon, and store
   packages plus their tests. Source: `docs/agents/agent-instructions.md`.

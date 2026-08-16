@@ -1448,6 +1448,60 @@ func TestNoFallbackAfterAgentWorkStarted(t *testing.T) {
 	}
 }
 
+func TestRecoveryNamesTheSurface(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
+	runner := &selectionLifecycleRunner{
+		gitRoot: fixture.gitRoot,
+		prepareErrByModel: map[string]error{
+			"bad-preferred": selectionStartErrForTest("codex", "bad-preferred"),
+			"bad-fallback":  selectionStartErrForTest("claude", "bad-fallback"),
+		},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "bad-preferred", "high"), selectionForTest("claude", "bad-fallback", "medium")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if len(result.Outcomes) != 1 {
+		t.Fatalf("Task outcomes = %+v, want one", result.Outcomes)
+	}
+	reason := result.Outcomes[0].Reason
+
+	t.Run("names Task and surface on one line", func(t *testing.T) {
+		for _, line := range strings.Split(reason, "\n") {
+			if strings.Contains(line, "task_01") {
+				if !strings.Contains(line, "surface "+fixture.gitRoot) {
+					t.Fatalf("Task recovery line = %q, want surface %q", line, fixture.gitRoot)
+				}
+				return
+			}
+		}
+		t.Fatalf("recovery reason has no line naming task_01: %q", reason)
+	})
+
+	t.Run("keeps existing recovery fields unchanged", func(t *testing.T) {
+		withoutSurface := strings.Replace(reason, " on surface "+fixture.gitRoot, "", 1)
+		for _, want := range []string{
+			"Agent Selection exhausted for task task_01 (backend)",
+			"preferred codex/bad-preferred/high",
+			"fallback claude/bad-fallback/medium",
+			"roundfix profiles validate --category backend",
+		} {
+			if !strings.Contains(withoutSurface, want) {
+				t.Fatalf("recovery reason without added surface = %q, want unchanged field %q", withoutSurface, want)
+			}
+		}
+	})
+}
+
 func TestAgentSessionOwnerCleanup(t *testing.T) {
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
@@ -2976,6 +3030,156 @@ func TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback(t *testing.T
 	assertVerificationFeedbackJournaled(t, fixture.sink.snapshot(), "task_01", "task_02")
 }
 
+func TestRepeatedFailure(t *testing.T) {
+	const (
+		command    = "verify-task_01"
+		diagnostic = "2026-08-16T12:34:56Z assertion failed: got 1, want 2\n"
+	)
+
+	t.Run("first failure reports no repetition", func(t *testing.T) {
+		result := runRepeatedFailureTaskCycle(t, command, diagnostic, false, false)
+		assertNoRepeatedFailure(t, result.failureEvent)
+	})
+
+	t.Run("matching failure event names earlier Run and attempt", func(t *testing.T) {
+		result := runRepeatedFailureTaskCycle(t, command, diagnostic, true, true)
+		assertRepeatedFailure(t, result.failureEvent, result.earlierRun.ID, 2)
+	})
+
+	t.Run("repair prompt names the same earlier Run and attempt", func(t *testing.T) {
+		result := runRepeatedFailureTaskCycle(t, command, diagnostic, true, true)
+		want := fmt.Sprintf("Repeated Failure: this diagnostic matches Run %s attempt 2", result.earlierRun.ID)
+		if !strings.Contains(result.repairPrompt, want) {
+			t.Fatalf("expected repair prompt to contain %q, got:\n%s", want, result.repairPrompt)
+		}
+	})
+
+	t.Run("failure beyond journal retention reports as new", func(t *testing.T) {
+		result := runRepeatedFailureTaskCycle(t, command, diagnostic, true, false)
+		assertNoRepeatedFailure(t, result.failureEvent)
+	})
+}
+
+type repeatedFailureCycleResult struct {
+	earlierRun   store.Run
+	failureEvent runevent.RunEvent
+	repairPrompt string
+}
+
+func runRepeatedFailureTaskCycle(t *testing.T, command string, diagnostic string, createEarlierRun bool, retainFailureEvent bool) repeatedFailureCycleResult {
+	t.Helper()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{command}}})
+
+	var earlierRun store.Run
+	if createEarlierRun {
+		var err error
+		earlierRun, err = fixture.store.CreateRunSkippingActiveLock(context.Background(), store.CreateRunRequest{
+			Kind:        store.KindImplement,
+			GitRoot:     fixture.gitRoot,
+			LocalBranch: "ma/earlier-run",
+			SpecSlug:    taskCycleSlug,
+		})
+		if err != nil {
+			t.Fatalf("create earlier Run: %v", err)
+		}
+		if retainFailureEvent {
+			seedRepeatedFailureEvent(t, fixture.store, earlierRun.ID, "task_01", command, diagnostic, 2)
+		}
+	}
+
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:        fixture.calls,
+		script:       []error{errors.New("exit status 1"), errors.New("exit status 1")},
+		outputByCall: map[int]string{1: diagnostic, 2: diagnostic},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Failed != 1 {
+		t.Fatalf("expected one failed Task after two observed failures, got %+v", result)
+	}
+
+	var failureEvent runevent.RunEvent
+	for _, event := range eventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == string(runevent.VerificationPhaseFailed) && payload["attempt"] == float64(1) {
+			failureEvent = event
+			break
+		}
+	}
+	if failureEvent.Kind == "" {
+		t.Fatal("expected first Verification failure event")
+	}
+	if len(runner.prompts) < 2 {
+		t.Fatalf("expected Task prompt and repair prompt, got %d prompt(s)", len(runner.prompts))
+	}
+	return repeatedFailureCycleResult{
+		earlierRun:   earlierRun,
+		failureEvent: failureEvent,
+		repairPrompt: runner.prompts[1],
+	}
+}
+
+func seedRepeatedFailureEvent(t *testing.T, runStore *store.Store, runID string, workItem string, command string, diagnostic string, attempt int) {
+	t.Helper()
+	signature := DiagnosticSignature(command, []byte(diagnostic))
+	payload, err := json.Marshal(map[string]any{
+		"attempt":              attempt,
+		"phase":                string(runevent.VerificationPhaseFailed),
+		"work_item":            workItem,
+		"task":                 workItem,
+		"command":              command,
+		"diagnostic_signature": signature,
+	})
+	if err != nil {
+		t.Fatalf("encode earlier Verification failure: %v", err)
+	}
+	if _, err := runStore.AppendRunEvent(context.Background(), runevent.RunEvent{
+		RunID:       runID,
+		Batch:       1,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonVerification,
+		ReviewIssue: workItem,
+		Summary:     "Earlier Verification failure.",
+		Time:        taskCycleNowForTest().Add(-time.Hour),
+		Payload:     payload,
+	}); err != nil {
+		t.Fatalf("append earlier Verification failure: %v", err)
+	}
+}
+
+func assertNoRepeatedFailure(t *testing.T, event runevent.RunEvent) {
+	t.Helper()
+	payload := eventPayloadMap(t, event)
+	if _, found := payload["repeated_failure"]; found {
+		t.Fatalf("expected failure to report no repetition, got %+v", payload)
+	}
+	if strings.Contains(event.Summary, "Repeated Failure") {
+		t.Fatalf("expected failure summary to omit repetition, got %q", event.Summary)
+	}
+}
+
+func assertRepeatedFailure(t *testing.T, event runevent.RunEvent, runID string, attempt int) {
+	t.Helper()
+	payload := eventPayloadMap(t, event)
+	repeated, ok := payload["repeated_failure"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected repeated_failure payload, got %+v", payload)
+	}
+	if repeated["run_id"] != runID || repeated["attempt"] != float64(attempt) {
+		t.Fatalf("expected repetition of Run %s attempt %d, got %+v", runID, attempt, repeated)
+	}
+	if signature, _ := repeated["signature"].(string); signature == "" || signature != payload["diagnostic_signature"] {
+		t.Fatalf("expected repeated and current signatures to match, got repeated=%+v payload=%+v", repeated, payload)
+	}
+	if !strings.Contains(event.Summary, "Repeated Failure") || !strings.Contains(event.Summary, runID) || !strings.Contains(event.Summary, fmt.Sprintf("attempt %d", attempt)) {
+		t.Fatalf("expected failure summary to name repeated Run and attempt, got %q", event.Summary)
+	}
+}
+
 // assertVerificationFeedbackJournaled proves the Verification Feedback turn
 // is observable per Task: only the repaired Task journals it, and it lands
 // between the attempt that failed and the attempt that follows, so a
@@ -3689,6 +3893,124 @@ func TestPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
 	testPreWorkProbePublishesEveryOffendingCommand(t)
 }
 
+func TestVacuousPreWorkEvent(t *testing.T) {
+	t.Run("summary names offending commands", func(t *testing.T) {
+		fixture := captureVacuousPreWorkEvent(t)
+		for _, command := range fixture.offenders {
+			if !strings.Contains(fixture.event.Summary, fmt.Sprintf("%q", command)) {
+				t.Fatalf("vacuous event summary %q does not name offender %q", fixture.event.Summary, command)
+			}
+		}
+	})
+
+	t.Run("payload carries every probed command verdict", func(t *testing.T) {
+		fixture := captureVacuousPreWorkEvent(t)
+		payload := decodeVacuousPreWorkEventPayload(t, fixture.event)
+		if len(payload.ProbedCommands) != len(fixture.commands) {
+			t.Fatalf("probed command verdicts = %+v, want %d entries", payload.ProbedCommands, len(fixture.commands))
+		}
+		for index, want := range fixture.commands {
+			if got := payload.ProbedCommands[index]; got.Command != want.Command || got.Verdict != want.Verdict {
+				t.Fatalf("probed command verdict %d = %+v, want command %q verdict %q", index, got, want.Command, want.Verdict)
+			}
+		}
+	})
+
+	t.Run("payload names each probe log", func(t *testing.T) {
+		fixture := captureVacuousPreWorkEvent(t)
+		payload := decodeVacuousPreWorkEventPayload(t, fixture.event)
+		for index, command := range payload.ProbedCommands {
+			want := verificationProbeOutputPath(fixture.artifactDir, fixture.runID, 1, index+1)
+			if command.ProbeLogPath != want {
+				t.Fatalf("probe log path %d = %q, want %q", index, command.ProbeLogPath, want)
+			}
+		}
+	})
+
+	t.Run("classification and phase stay unchanged", func(t *testing.T) {
+		fixture := captureVacuousPreWorkEvent(t)
+		payload := decodeVacuousPreWorkEventPayload(t, fixture.event)
+		if payload.Classification != string(runevent.VerificationClassificationVacuous) {
+			t.Fatalf("classification = %q, want %q", payload.Classification, runevent.VerificationClassificationVacuous)
+		}
+		if payload.Phase != string(runevent.VerificationPhaseFailed) {
+			t.Fatalf("phase = %q, want %q", payload.Phase, runevent.VerificationPhaseFailed)
+		}
+	})
+}
+
+type vacuousPreWorkEventCommand struct {
+	Command string
+	Verdict string
+}
+
+type vacuousPreWorkEventFixture struct {
+	event       runevent.RunEvent
+	offenders   []string
+	commands    []vacuousPreWorkEventCommand
+	artifactDir string
+	runID       string
+}
+
+type vacuousPreWorkEventPayload struct {
+	Task           string `json:"task"`
+	Classification string `json:"classification"`
+	Phase          string `json:"phase"`
+	ProbedCommands []struct {
+		Command      string `json:"command"`
+		Verdict      string `json:"verdict"`
+		ProbeLogPath string `json:"probe_log_path"`
+	} `json:"probed_commands"`
+}
+
+func captureVacuousPreWorkEvent(t *testing.T) vacuousPreWorkEventFixture {
+	t.Helper()
+	const (
+		firstVacuous  = "test -f first-existing-marker"
+		nonVacuous    = "test -f missing-before-agent"
+		secondVacuous = "test -f second-existing-marker"
+	)
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		verification: []string{firstVacuous, nonVacuous, secondVacuous},
+	}})
+	for _, marker := range []string{"first-existing-marker", "second-existing-marker"} {
+		if err := os.WriteFile(filepath.Join(fixture.gitRoot, marker), []byte("already present\n"), 0o644); err != nil {
+			t.Fatalf("write pre-existing marker %q: %v", marker, err)
+		}
+	}
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, ExecVerifier{}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	if _, err := engine.TaskCycle(context.Background(), fixture.plan()); err != nil {
+		t.Fatalf("TaskCycle() error = %v", err)
+	}
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		if eventPayloadString(t, event, "classification") == string(runevent.VerificationClassificationVacuous) {
+			return vacuousPreWorkEventFixture{
+				event:     event,
+				offenders: []string{firstVacuous, secondVacuous},
+				commands: []vacuousPreWorkEventCommand{
+					{Command: firstVacuous, Verdict: string(runevent.VerificationVerdictPassed)},
+					{Command: nonVacuous, Verdict: string(runevent.VerificationVerdictFailed)},
+					{Command: secondVacuous, Verdict: string(runevent.VerificationVerdictPassed)},
+				},
+				artifactDir: fixture.artifactDir,
+				runID:       fixture.run.ID,
+			}
+		}
+	}
+	t.Fatal("vacuous pre-work event was not published")
+	return vacuousPreWorkEventFixture{}
+}
+
+func decodeVacuousPreWorkEventPayload(t *testing.T, event runevent.RunEvent) vacuousPreWorkEventPayload {
+	t.Helper()
+	var payload vacuousPreWorkEventPayload
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		t.Fatalf("decode vacuous pre-work event: %v", err)
+	}
+	return payload
+}
+
 func testPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
 	t.Helper()
 	t.Parallel()
@@ -3743,22 +4065,26 @@ func testPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
 	if len(probeEvents) != 1 {
 		t.Fatalf("vacuous probe events = %d, want one aggregate refusal event: %+v", len(probeEvents), probeEvents)
 	}
-	var payload struct {
-		Task           string   `json:"task"`
-		Classification string   `json:"classification"`
-		Commands       []string `json:"commands"`
-	}
-	if err := json.Unmarshal(probeEvents[0].Payload, &payload); err != nil {
-		t.Fatalf("decode vacuous probe event: %v", err)
-	}
+	payload := decodeVacuousPreWorkEventPayload(t, probeEvents[0])
 	if payload.Task != "task_01" || probeEvents[0].ReviewIssue != "task_01" {
 		t.Fatalf("vacuous probe event Task identity = payload %q Work Item %q", payload.Task, probeEvents[0].ReviewIssue)
 	}
 	if payload.Classification != string(runevent.VerificationClassificationVacuous) {
 		t.Fatalf("vacuous probe classification = %q", payload.Classification)
 	}
-	if !slices.Equal(payload.Commands, []string{spec0089Gate, secondVacuous}) {
-		t.Fatalf("vacuous probe commands = %q, want every offending command", payload.Commands)
+	wantCommands := []vacuousPreWorkEventCommand{
+		{Command: spec0089Gate, Verdict: string(runevent.VerificationVerdictPassed)},
+		{Command: nonVacuous, Verdict: string(runevent.VerificationVerdictFailed)},
+		{Command: secondVacuous, Verdict: string(runevent.VerificationVerdictPassed)},
+	}
+	if len(payload.ProbedCommands) != len(wantCommands) {
+		t.Fatalf("vacuous probe command verdicts = %+v, want %d entries", payload.ProbedCommands, len(wantCommands))
+	}
+	for index, want := range wantCommands {
+		got := payload.ProbedCommands[index]
+		if got.Command != want.Command || got.Verdict != want.Verdict {
+			t.Fatalf("vacuous probe command verdict %d = %+v, want command %q verdict %q", index, got, want.Command, want.Verdict)
+		}
 	}
 }
 
@@ -4375,6 +4701,13 @@ func TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence(t *
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
 	plan := fixture.plan()
+	expectedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	if err := os.MkdirAll(filepath.Dir(expectedPath), 0o755); err != nil {
+		t.Fatalf("create diagnostic directory: %v", err)
+	}
+	if err := os.WriteFile(expectedPath, nil, 0o644); err != nil {
+		t.Fatalf("create empty diagnostic: %v", err)
+	}
 
 	result, err := engine.TaskCycle(context.Background(), plan)
 
@@ -4398,13 +4731,13 @@ func TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence(t *
 		t.Fatalf("expected repair to reuse SessionRef %#v, got %#v then %#v", expectedSession, runner.requests[0].Session, runner.requests[1].Session)
 	}
 	repairPrompt := runner.requests[1].Prompt
-	expectedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
 	for _, expected := range []string{
 		"Verification Feedback",
 		"Work Item: task_01",
 		"Failed command: echo second",
 		"Diagnostic artifact: " + expectedPath,
 		"verification failed",
+		"The command produced no output.",
 	} {
 		if !strings.Contains(repairPrompt, expected) {
 			t.Fatalf("expected repair prompt to contain %q, got:\n%s", expected, repairPrompt)

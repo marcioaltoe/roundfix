@@ -185,6 +185,11 @@ func VerificationRetryOutputPath(artifactDir string, runID string, batchNumber i
 	return filepath.Join(artifactDir, "runs", runID, "verification", fmt.Sprintf("batch-%03d-attempt-%d-retry-%d.log", batchNumber, attempt, retry))
 }
 
+func diagnosticArtifactEmpty(path string) bool {
+	info, err := os.Stat(strings.TrimSpace(path))
+	return err == nil && info.Mode().IsRegular() && info.Size() == 0
+}
+
 type CommitRequest struct {
 	WorkDir string
 	Message string

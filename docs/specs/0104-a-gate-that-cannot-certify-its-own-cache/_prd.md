@@ -29,7 +29,7 @@ have a cold cache and does not.
 - Active ADR obligations: applicable — ADR-0111 makes an unobserved Verification
   unknown rather than a verdict, which is precisely what a fully cached suite is:
   it observed nothing about the current tree. No accepted ADR governs the gate's
-  cache, which is why the rule this Spec may add is new. Source:
+  cache, which is why the rule this Spec may add is new. ADR-0135 makes an absent diagnostic a reported state in the repair prompt an Agent reads; this Spec changes which cache the gate clears and writes no Verification feedback, so it does not apply. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — the verification Makefile gains a target that
   clears the cache the gate uses, and the guidance stops naming a command that

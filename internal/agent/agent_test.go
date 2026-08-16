@@ -250,11 +250,60 @@ func TestBuildVerificationRepairPromptIncludesPathFailureAndNoOutputBody(t *test
 			t.Fatalf("expected repair prompt to contain %q, got:\n%s", expected, prompt)
 		}
 	}
-	if strings.Contains(prompt, "PACKAGE PASS") || strings.Contains(prompt, "raw output bytes") {
-		t.Fatalf("expected repair prompt to omit command output body, got:\n%s", prompt)
+	for _, forbidden := range []string{"PACKAGE PASS", "raw output bytes", "The command produced no output.", "The command redirected its output to:", "Repeated Failure"} {
+		if strings.Contains(prompt, forbidden) {
+			t.Fatalf("expected non-empty diagnostic prompt to omit %q, got:\n%s", forbidden, prompt)
+		}
 	}
 	if strings.Contains(prompt, "update the assigned status file when needed") {
 		t.Fatalf("expected Task repair prompt to forbid status authorship, got:\n%s", prompt)
+	}
+}
+
+func TestBuildVerificationRepairPromptStatesAnAbsentDiagnostic(t *testing.T) {
+	t.Parallel()
+
+	prompt, err := BuildVerificationRepairPrompt("task_01", VerificationFeedback{
+		Command:         "go test ./internal/agent > /tmp/agent-tests.log 2>&1",
+		DiagnosticPath:  "/repo/.roundfix/runs/run_123/verification/batch-001-attempt-1.log",
+		Failure:         "verification failed: exit status 1",
+		DiagnosticEmpty: true,
+		Attempt:         1,
+		TaskHandoff:     true,
+	})
+	if err != nil {
+		t.Fatalf("BuildVerificationRepairPrompt returned error: %v", err)
+	}
+	for _, expected := range []string{
+		"The command produced no output.",
+		"The command redirected its output to: /tmp/agent-tests.log",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected absent-diagnostic prompt to contain %q, got:\n%s", expected, prompt)
+		}
+	}
+}
+
+func TestBuildVerificationRepairPromptNamesRepeatedFailure(t *testing.T) {
+	t.Parallel()
+
+	prompt, err := BuildVerificationRepairPrompt("task_03", VerificationFeedback{
+		Command:        "go test ./internal/daemon",
+		DiagnosticPath: "/repo/.roundfix/runs/run_current/verification/batch-001-attempt-1.log",
+		Failure:        "verification failed: exit status 1",
+		Repeated: &runevent.RepeatedFailure{
+			Signature: "signature-123",
+			RunID:     "run_earlier",
+			Attempt:   2,
+		},
+		Attempt:     1,
+		TaskHandoff: true,
+	})
+	if err != nil {
+		t.Fatalf("BuildVerificationRepairPrompt returned error: %v", err)
+	}
+	if want := "Repeated Failure: this diagnostic matches Run run_earlier attempt 2 (signature signature-123)."; !strings.Contains(prompt, want) {
+		t.Fatalf("expected repair prompt to contain %q, got:\n%s", want, prompt)
 	}
 }
 

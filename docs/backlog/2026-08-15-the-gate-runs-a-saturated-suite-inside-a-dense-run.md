@@ -33,3 +33,17 @@ it already separates Task Capacity from Verification Capacity under ADR-0056.
 Changing `GO_TEST_PARALLEL` is a protected tooling mutation and needs express
 maintainer authorization with the Makefile named. The Makefile is currently
 bounded to Spec 0104 in the 2026-08-12 umbrella grant, which does not cover this.
+
+## 2026-08-16 — a fourth test, same signature
+
+Spec 0096's gate reported `TestACPXRunWarmSessionIsIdempotent` failing once under
+`make verify` while the same test passed five consecutive focused runs. The gate
+recorded the root cause as unknown, which is the honest answer: isolated evidence
+rules out a deterministic failure and says nothing about interference in the
+parallel suite. A local `make verify` at the same build did not reproduce it.
+
+That is now four distinct tests across four days — an adapter lineage probe, a
+fixture exec, a project-decision journey, and a warm-session idempotence check —
+each failing once, none twice, all under the loaded suite and none in isolation.
+The family is stable and the tests it lands on are not.
+

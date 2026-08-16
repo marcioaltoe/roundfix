@@ -33,7 +33,7 @@ Spec reproduces before it designs.
   unknown rather than a verdict, which is the discipline this Spec applies to its
   own two unproven observations: neither is treated as a defect until reproduced.
   No accepted ADR governs sealed-prompt lifetime or interview sequencing, which is
-  why the rules this Spec may add are new. Source: `docs/agents/domain.md`.
+  why the rules this Spec may add are new. ADR-0135 makes an absent diagnostic a reported state in the repair prompt an Agent reads; this Spec changes what the setup refresh asks and writes no Verification feedback, so it does not apply. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized. The work is production Go in the agent and CLI baseline packages
   plus their tests. Source: `docs/agents/agent-instructions.md`.

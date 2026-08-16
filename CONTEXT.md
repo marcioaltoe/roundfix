@@ -324,6 +324,10 @@ _Avoid_: Flaky test, generic non-zero exit, log-matched infrastructure error
 The failure diagnostics returned to an Agent Session after the Daemon runs Verification. Passing Verification produces no Agent feedback.
 _Avoid_: Full verification output, test log, progress stream
 
+**Repeated Failure**:
+A Verification failure whose normalised diagnostic signature matches an earlier failure of the same Work Item. The signal names the earlier Run and attempt in the Run record, Run Event Stream, and Verification Feedback.
+_Avoid_: New failure, duplicate error, retried failure
+
 **User Config**:
 Configuration that applies to Roundfix runs started by one developer across repositories.
 _Avoid_: Global config, machine config
