@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0096-a-failure-the-agent-can-read
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -56,3 +56,37 @@ compares, and nothing else consumes it yet.
 `_techspec.md` → Build Order 2; Implementation Design, Interfaces; Risks &
 Considerations, the collision. `_prd.md` → Core Feature 2; Open Questions.
 ADR-0136.
+
+## Result
+
+Implemented a pure `DiagnosticSignature` function that replaces timestamps,
+durations, Unix and Windows temporary paths, process identifiers, and Run IDs
+before hashing a length-delimited failing command with the normalized diagnostic.
+
+Focused-check evidence:
+
+- Before implementation, `rtk go test ./internal/daemon -run
+  '^TestDiagnosticSignature$'` failed to compile because `DiagnosticSignature`
+  did not exist.
+- After implementation, the same focused command reported 8 passing tests: the
+  parent plus separate timestamp, duration, temporary-path, process-id, run-id,
+  different-assertion, and different-command subtests.
+- `rtk go test ./internal/daemon` reported 233 passing tests.
+- A source scan for `store\.` or `Store` in
+  `internal/daemon/diagnostic_signature.go` returned no matches.
+
+Acceptance evidence:
+
+- `TestDiagnosticSignature/normalizes_timestamp`,
+  `/normalizes_duration`, `/normalizes_temporary_directory_path`,
+  `/normalizes_process_identifier`, and `/normalizes_run_identifier` compare
+  each volatile class independently and produce equal signatures.
+- `TestDiagnosticSignature/preserves_different_assertion` produces unequal
+  signatures when the assertion changes.
+- `TestDiagnosticSignature/includes_failing_command` produces unequal signatures
+  for identical diagnostics from different commands.
+- `DiagnosticSignature` depends only on its command and diagnostic parameters;
+  its source imports hashing, encoding, regular-expression, and numeric-formatting
+  standard-library packages and has no persistence dependency.
+
+The Daemon-owned Verification commands were not run in this Agent turn.
