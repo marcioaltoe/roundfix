@@ -32,7 +32,7 @@ teaches its own bypass.
   unknown rather than a verdict, and this Spec applies the same discipline to
   integration: an ancestry check that cannot see the content is unknown, not
   unintegrated. No accepted ADR governs Run Branch classification or repository
-  identity, which is why both rules this Spec adds are new. Source:
+  identity, which is why both rules this Spec adds are new. ADR-0135 makes an absent diagnostic a reported state in the repair prompt an Agent reads; this Spec gives a terminal branch one disposition and writes no Verification feedback, so it does not apply. Source:
   `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized. The work is production Go in the reconcile, preflight, and store

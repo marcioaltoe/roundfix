@@ -31,8 +31,7 @@ not exist rather than at the model identifier that is actually wrong.
   first the refusal, which governs how a failed proof is reported and is exactly
   the principle a spurious cleanup error violates; ADR-0111 makes an unobserved
   Verification unknown rather than a verdict, which is the discipline a lazily
-  proven fallback must not break — an unproven fallback is unknown, never proven.
-  Source: `docs/agents/domain.md`.
+  proven fallback must not break — an unproven fallback is unknown, never proven. ADR-0135 makes an absent diagnostic a reported state in the repair prompt an Agent reads; this Spec proves what a Run needs before it starts, before any Verification has run, so it does not apply. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized. The work is production Go in the preflight, agent, and worktree
   packages plus their tests. Source: `docs/agents/agent-instructions.md`.

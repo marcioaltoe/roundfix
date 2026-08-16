@@ -33,7 +33,7 @@ when the head did not come from a Round.
   unknown rather than a verdict, which is the same principle this Spec applies to
   a review signal: an absent or unrecognised review is not an approval. No
   accepted ADR governs when a review request is published, which is the gap this
-  Spec fills. Source: `docs/agents/domain.md`.
+  Spec fills. ADR-0135 makes an absent diagnostic a reported state in the repair prompt an Agent reads; this Spec asks for a review on every head the loop waits on and writes no Verification feedback, so it does not apply. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized. The work is production Go in the watch, review-source, and
   preflight packages plus their tests. Source:
