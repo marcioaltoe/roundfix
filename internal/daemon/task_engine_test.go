@@ -1448,6 +1448,60 @@ func TestNoFallbackAfterAgentWorkStarted(t *testing.T) {
 	}
 }
 
+func TestRecoveryNamesTheSurface(t *testing.T) {
+	t.Parallel()
+
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
+	runner := &selectionLifecycleRunner{
+		gitRoot: fixture.gitRoot,
+		prepareErrByModel: map[string]error{
+			"bad-preferred": selectionStartErrForTest("codex", "bad-preferred"),
+			"bad-fallback":  selectionStartErrForTest("claude", "bad-fallback"),
+		},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "bad-preferred", "high"), selectionForTest("claude", "bad-fallback", "medium")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if len(result.Outcomes) != 1 {
+		t.Fatalf("Task outcomes = %+v, want one", result.Outcomes)
+	}
+	reason := result.Outcomes[0].Reason
+
+	t.Run("names Task and surface on one line", func(t *testing.T) {
+		for _, line := range strings.Split(reason, "\n") {
+			if strings.Contains(line, "task_01") {
+				if !strings.Contains(line, "surface "+fixture.gitRoot) {
+					t.Fatalf("Task recovery line = %q, want surface %q", line, fixture.gitRoot)
+				}
+				return
+			}
+		}
+		t.Fatalf("recovery reason has no line naming task_01: %q", reason)
+	})
+
+	t.Run("keeps existing recovery fields unchanged", func(t *testing.T) {
+		withoutSurface := strings.Replace(reason, " on surface "+fixture.gitRoot, "", 1)
+		for _, want := range []string{
+			"Agent Selection exhausted for task task_01 (backend)",
+			"preferred codex/bad-preferred/high",
+			"fallback claude/bad-fallback/medium",
+			"roundfix profiles validate --category backend",
+		} {
+			if !strings.Contains(withoutSurface, want) {
+				t.Fatalf("recovery reason without added surface = %q, want unchanged field %q", withoutSurface, want)
+			}
+		}
+	})
+}
+
 func TestAgentSessionOwnerCleanup(t *testing.T) {
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})

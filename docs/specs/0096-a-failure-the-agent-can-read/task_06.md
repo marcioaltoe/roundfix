@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0096-a-failure-the-agent-can-read
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: low
 ---
@@ -46,3 +46,38 @@ the surface on the same line costs nothing and removes the trial.
 ## References
 
 `_techspec.md` → Build Order 6. `_prd.md` → Core Feature 4.
+
+## Result
+
+Agent Selection exhaustion recovery now carries the existing Agent Session
+work directory as the Task surface. The recovery reason renders
+`on surface <path>` immediately after the Task's category on the same line;
+category, preferred and fallback attempts, and the recovery action retain their
+existing values. All three exhaustion exits populate the surface.
+
+Focused checks and acceptance evidence:
+
+- The Daemon's attempt-1 diagnostic artifact reported `no tests to run`, which
+  established that the authored recovery case did not exist.
+- Before the production edit,
+  `GOCACHE=/tmp/roundfix-0096-task06-go-cache rtk go test ./internal/daemon -run '^TestRecoveryNamesTheSurface$/names_Task_and_surface_on_one_line$' -count=1`
+  failed because the line naming `task_01` omitted the Task surface.
+- After the edit,
+  `GOCACHE=/tmp/roundfix-0096-task06-go-cache rtk go test ./internal/daemon -run '^TestRecoveryNamesTheSurface$' -count=1`
+  passed the parent and both subtests. The named-surface case asserts that the
+  Task identifier and `surface <workdir>` occur on one line. The unchanged-fields
+  case removes only the inserted surface phrase and then asserts the original
+  category, preferred attempt, fallback attempt, and recovery action.
+- `GOCACHE=/tmp/roundfix-0096-task06-go-cache rtk go test ./internal/daemon -run '^(TestRecoveryNamesTheSurface|TestAgentSessionOwnerCleanup)$' -count=1`
+  passed all four selected tests, covering the new recovery contract and the
+  existing exhaustion cleanup flow.
+- `GOCACHE=/tmp/roundfix-0096-task06-go-cache rtk make verify-incremental`
+  first reached the full suite but the sandbox denied the ACP fixture artifact
+  and process-table access needed by two force-stop tests. Re-running the same
+  incremental gate with those host permissions exited 0: all Go packages, the
+  focused skills contract, `roundfix skills check`, and the production build
+  passed.
+- `rtk git diff --check` exited 0.
+
+The Daemon-owned commands under `## Verification` were not run during this
+Agent turn. The change introduces no new or changed glossary term.

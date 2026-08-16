@@ -81,6 +81,7 @@ type AgentSelectionExhaustedError struct {
 	ScopeKind string
 	ScopeID   string
 	Category  roundconfig.WorkCategory
+	Surface   string
 	Attempts  []agentSelectionAttempt
 }
 
@@ -92,10 +93,15 @@ func (err *AgentSelectionExhaustedError) Error() string {
 	for _, attempt := range err.Attempts {
 		parts = append(parts, fmt.Sprintf("%s %s: %s", attempt.Candidate.Role, selectionLabel(attempt.Candidate.Selection), strings.TrimSpace(attempt.Err.Error())))
 	}
-	return fmt.Sprintf("Agent Selection exhausted for %s %s (%s); attempted: %s; recovery: %s",
+	surface := ""
+	if path := strings.TrimSpace(err.Surface); path != "" {
+		surface = " on surface " + path
+	}
+	return fmt.Sprintf("Agent Selection exhausted for %s %s (%s)%s; attempted: %s; recovery: %s",
 		err.ScopeKind,
 		err.ScopeID,
 		err.Category,
+		surface,
 		strings.Join(parts, "; "),
 		agentSelectionRecoveryAction(err.Category),
 	)
@@ -259,6 +265,7 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 						ScopeKind: owner.scope.Kind,
 						ScopeID:   owner.scope.ID,
 						Category:  owner.scope.Category,
+						Surface:   owner.scope.Session.WorkDir,
 						Attempts:  append([]agentSelectionAttempt(nil), owner.attempts...),
 					}
 				}
@@ -286,6 +293,7 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 		ScopeKind: owner.scope.Kind,
 		ScopeID:   owner.scope.ID,
 		Category:  owner.scope.Category,
+		Surface:   owner.scope.Session.WorkDir,
 		Attempts:  append([]agentSelectionAttempt(nil), owner.attempts...),
 	}
 }
@@ -362,6 +370,7 @@ func (owner *agentSessionOwner) fallbackAfterSelectionFailure(ctx context.Contex
 			ScopeKind: owner.scope.Kind,
 			ScopeID:   owner.scope.ID,
 			Category:  owner.scope.Category,
+			Surface:   owner.scope.Session.WorkDir,
 			Attempts:  append([]agentSelectionAttempt(nil), owner.attempts...),
 		}
 	}
