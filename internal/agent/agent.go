@@ -189,11 +189,12 @@ type PromptRequest struct {
 }
 
 type VerificationFeedback struct {
-	Command        string
-	DiagnosticPath string
-	Failure        string
-	Attempt        int
-	TaskHandoff    bool
+	Command         string
+	DiagnosticPath  string
+	Failure         string
+	DiagnosticEmpty bool
+	Attempt         int
+	TaskHandoff     bool
 }
 
 func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
@@ -309,6 +310,13 @@ func BuildVerificationRepairPrompt(workItem string, feedback VerificationFeedbac
 	builder.WriteString(fmt.Sprintf("Failed command: %s\n", command))
 	builder.WriteString(fmt.Sprintf("Diagnostic artifact: %s\n", diagnosticPath))
 	builder.WriteString(fmt.Sprintf("Failure: %s\n\n", failure))
+	if feedback.DiagnosticEmpty {
+		builder.WriteString("The command produced no output.\n")
+		if redirectTarget := verificationRedirectTarget(command); redirectTarget != "" {
+			builder.WriteString(fmt.Sprintf("The command redirected its output to: %s\n", redirectTarget))
+		}
+		builder.WriteString("\n")
+	}
 	builder.WriteString("Required actions:\n")
 	builder.WriteString("1. Inspect the diagnostic artifact path and the related code or tests.\n")
 	if feedback.TaskHandoff {
@@ -324,6 +332,60 @@ func BuildVerificationRepairPrompt(workItem string, feedback VerificationFeedbac
 		builder.WriteString("5. When the repair is ready, stop; the Daemon will rerun the full configured Verification sequence once.\n")
 	}
 	return builder.String(), nil
+}
+
+func verificationRedirectTarget(command string) string {
+	quote := byte(0)
+	escaped := false
+	for index := 0; index < len(command); index++ {
+		char := command[index]
+		if escaped {
+			escaped = false
+			continue
+		}
+		if char == '\\' && quote != '\'' {
+			escaped = true
+			continue
+		}
+		if quote != 0 {
+			if char == quote {
+				quote = 0
+			}
+			continue
+		}
+		if char == '\'' || char == '"' {
+			quote = char
+			continue
+		}
+		if char != '>' {
+			continue
+		}
+
+		targetStart := index + 1
+		if targetStart < len(command) && command[targetStart] == '>' {
+			targetStart++
+		}
+		for targetStart < len(command) && (command[targetStart] == ' ' || command[targetStart] == '\t') {
+			targetStart++
+		}
+		if targetStart >= len(command) || command[targetStart] == '&' {
+			continue
+		}
+		if command[targetStart] == '\'' || command[targetStart] == '"' {
+			targetQuote := command[targetStart]
+			targetStart++
+			if targetEnd := strings.IndexByte(command[targetStart:], targetQuote); targetEnd >= 0 {
+				return command[targetStart : targetStart+targetEnd]
+			}
+			return strings.TrimSpace(command[targetStart:])
+		}
+		targetEnd := targetStart
+		for targetEnd < len(command) && !strings.ContainsRune(" \t\r\n;|&<>", rune(command[targetEnd])) {
+			targetEnd++
+		}
+		return command[targetStart:targetEnd]
+	}
+	return ""
 }
 
 func LogPath(artifactDir string, runID string, batchNumber int) string {

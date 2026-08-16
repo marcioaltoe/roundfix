@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0096-a-failure-the-agent-can-read
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -55,3 +55,32 @@ same; only one of them tells the Agent to go look for the output.
 
 `_techspec.md` → Build Order 1; System Architecture, the feedback prompt.
 `_prd.md` → Core Feature 1; Goal 1; User Story 1. ADR-0135, ADR-0111.
+
+## Result
+
+Implemented an explicit `DiagnosticEmpty` Verification Feedback state. Both the
+Batch and Task repair paths derive it from the retained diagnostic artifact, and
+the repair prompt reports a zero-byte diagnostic as “The command produced no
+output.” When the failed command contains a file redirect, the prompt also names
+the first redirect target. The false zero value leaves the existing non-empty
+diagnostic prompt unchanged.
+
+Focused checks and acceptance evidence:
+
+- Before implementation,
+  `rtk env GOCACHE=/tmp/roundfix-0096-go-cache go test ./internal/agent -run '^TestBuildVerificationRepairPromptStatesAnAbsentDiagnostic$' -count=1`
+  failed to compile because `VerificationFeedback` had no `DiagnosticEmpty`
+  field, establishing the missing state.
+- After implementation,
+  `rtk env GOCACHE=/tmp/roundfix-0096-go-cache go test ./internal/agent ./internal/daemon -run '^(TestBuildVerificationRepairPromptIncludesPathFailureAndNoOutputBody|TestBuildVerificationRepairPromptStatesAnAbsentDiagnostic|TestResolveCycleVerificationFailureRepairsSameSessionAndAvoidsDuplicateBatchStart|TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence)$' -count=1`
+  exited 0 for both packages. The absent-diagnostic test asserts the no-output
+  sentence and `/tmp/agent-tests.log` redirect target. The existing non-empty
+  case asserts that neither new line appears. The Batch and Task repair-flow
+  tests each assert that a zero-byte retained artifact reaches the Agent prompt.
+- `rtk rg -n 'DiagnosticEmpty' internal/agent/agent.go internal/daemon/engine.go internal/daemon/task_engine.go`
+  found the feedback field and production assignments in both Daemon call
+  sites.
+- `rtk git diff --check` exited 0.
+
+The Daemon-owned commands under `## Verification` were not run during this Agent
+turn. The change introduces no new or changed glossary term.

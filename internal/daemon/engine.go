@@ -911,10 +911,11 @@ func (engine *Engine) runBatchVerificationRepair(ctx context.Context, plan Cycle
 		return "", fmt.Errorf("update run %q to state %q before Batch %03d Verification Feedback: %w", plan.RunID, store.StateResolvingWithAgent, batch.Number, err)
 	}
 	prompt, err := agent.BuildVerificationRepairPrompt(fmt.Sprintf("Batch %03d", batch.Number), agent.VerificationFeedback{
-		Command:        first.CommandFailure.Command,
-		DiagnosticPath: first.CommandFailure.OutputPath,
-		Failure:        first.Failure,
-		Attempt:        1,
+		Command:         first.CommandFailure.Command,
+		DiagnosticPath:  first.CommandFailure.OutputPath,
+		Failure:         first.Failure,
+		DiagnosticEmpty: diagnosticArtifactEmpty(first.CommandFailure.OutputPath),
+		Attempt:         1,
 	})
 	if err != nil {
 		return "", fmt.Errorf("build Verification Feedback prompt for run %q batch %03d: %w", plan.RunID, batch.Number, err)

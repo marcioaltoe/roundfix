@@ -1369,11 +1369,12 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 		return "", fmt.Errorf("publish Verification Feedback event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
 	prompt, err := agent.BuildVerificationRepairPrompt(task.ID, agent.VerificationFeedback{
-		Command:        first.CommandFailure.Command,
-		DiagnosticPath: first.CommandFailure.OutputPath,
-		Failure:        first.Failure,
-		Attempt:        1,
-		TaskHandoff:    true,
+		Command:         first.CommandFailure.Command,
+		DiagnosticPath:  first.CommandFailure.OutputPath,
+		Failure:         first.Failure,
+		DiagnosticEmpty: diagnosticArtifactEmpty(first.CommandFailure.OutputPath),
+		Attempt:         1,
+		TaskHandoff:     true,
 	})
 	if err != nil {
 		return "", fmt.Errorf("build Verification Feedback prompt for run %q Task %s: %w", plan.RunID, task.ID, err)
