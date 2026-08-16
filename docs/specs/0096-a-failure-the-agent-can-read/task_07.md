@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0096-a-failure-the-agent-can-read
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: docs
 complexity: low
 ---
@@ -65,3 +65,41 @@ and is declared in that record's `## Sanctioned regeneration` block.
 
 `_techspec.md` → Build Order 7; Risks & Considerations, the tooling Task.
 `_prd.md` → Core Feature 3; Goal 3; User Story 3. ADR-0081.
+
+## Result
+
+The authoring contract now keeps the two-corrective-Task ceiling actionable. If
+QA findings would require a third corrective Task, the loop either amends the
+TechSpec and recuts the Task Graph from it, or promotes the excess corrective
+work to its own Spec while leaving the gate failing the discovered story
+explicitly. The clause makes that choice part of the loop's authority and tells
+the loop to continue without stopping for a human. `make skills-sync` copied the
+authorized source change to the sanctioned shipped-skill mirror.
+
+Focused checks and acceptance evidence:
+
+- Before implementation,
+  `rtk rg -n "promote .*own Spec|amend the (technical spec|TechSpec)|recut|corrective-Task ceiling" .agents/skills/write-tasks/SKILL.md`
+  found no match, establishing that neither exit nor the ceiling clause existed
+  in the authoring contract.
+- Fixed-string `rtk rg` checks found the amend-and-recut exit and the
+  promote-to-its-own-Spec exit in both `.agents/skills/write-tasks/SKILL.md` and
+  `skills/write-tasks/SKILL.md`. A focused authority search found “inside the
+  loop's authority” and “continues without stopping for a human” in both copies.
+- `rtk rg -n -F 'more than two corrective Tasks'` found the existing threshold
+  in `docs/agents/autonomous-work.md` and the same threshold in the new clause;
+  `rtk rg -n -F 'allows one Verification repair'
+  docs/adr/0038-daemon-allows-one-verification-repair.md` found the unchanged
+  one-repair policy. Neither governing file appears in the changed-file set.
+- `rtk cmp -s .agents/skills/write-tasks/SKILL.md
+  skills/write-tasks/SKILL.md` and `rtk git diff --check` exited 0.
+- `rtk git status --short` and `rtk git diff --name-status` showed only the
+  authorized canonical skill, this Task file, and the declared generated mirror;
+  no other path changed.
+- `rtk make verify-incremental` first reached two `internal/cli` integration
+  failures because the sandbox denied process-table inspection. The approved
+  rerun with process-table access exited 0; the Go suite, skill checks, and build
+  passed.
+
+The Daemon-owned commands under `## Verification` were not run during this Agent
+turn. The change introduces no new or changed glossary term.

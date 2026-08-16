@@ -131,6 +131,19 @@ closes. The domain guide (`docs/agents/domain.md`) owns what the check looks for
 and when the domain context is updated in response; the graph owns only where it
 happens, and nothing in it waits for a human.
 
+### Corrective-Task ceiling
+
+The corrective-work ceiling remains two Tasks. When QA findings would require
+more than two corrective Tasks, do not author a third patch or stop for a policy
+decision. Choose one sanctioned exit:
+
+- Amend the TechSpec and recut the Task Graph from it.
+- Promote the excess corrective work to its own Spec and leave the gate failing
+  the discovered story explicitly.
+
+Reaching the ceiling is a decision inside the loop's authority. The loop chooses
+an exit and continues without stopping for a human.
+
 ### Task Type selection
 
 Choose the type from the Task's dominant delivered outcome, not from who will
