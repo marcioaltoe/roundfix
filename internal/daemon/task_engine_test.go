@@ -3689,6 +3689,124 @@ func TestPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
 	testPreWorkProbePublishesEveryOffendingCommand(t)
 }
 
+func TestVacuousPreWorkEvent(t *testing.T) {
+	t.Run("summary names offending commands", func(t *testing.T) {
+		fixture := captureVacuousPreWorkEvent(t)
+		for _, command := range fixture.offenders {
+			if !strings.Contains(fixture.event.Summary, fmt.Sprintf("%q", command)) {
+				t.Fatalf("vacuous event summary %q does not name offender %q", fixture.event.Summary, command)
+			}
+		}
+	})
+
+	t.Run("payload carries every probed command verdict", func(t *testing.T) {
+		fixture := captureVacuousPreWorkEvent(t)
+		payload := decodeVacuousPreWorkEventPayload(t, fixture.event)
+		if len(payload.ProbedCommands) != len(fixture.commands) {
+			t.Fatalf("probed command verdicts = %+v, want %d entries", payload.ProbedCommands, len(fixture.commands))
+		}
+		for index, want := range fixture.commands {
+			if got := payload.ProbedCommands[index]; got.Command != want.Command || got.Verdict != want.Verdict {
+				t.Fatalf("probed command verdict %d = %+v, want command %q verdict %q", index, got, want.Command, want.Verdict)
+			}
+		}
+	})
+
+	t.Run("payload names each probe log", func(t *testing.T) {
+		fixture := captureVacuousPreWorkEvent(t)
+		payload := decodeVacuousPreWorkEventPayload(t, fixture.event)
+		for index, command := range payload.ProbedCommands {
+			want := verificationProbeOutputPath(fixture.artifactDir, fixture.runID, 1, index+1)
+			if command.ProbeLogPath != want {
+				t.Fatalf("probe log path %d = %q, want %q", index, command.ProbeLogPath, want)
+			}
+		}
+	})
+
+	t.Run("classification and phase stay unchanged", func(t *testing.T) {
+		fixture := captureVacuousPreWorkEvent(t)
+		payload := decodeVacuousPreWorkEventPayload(t, fixture.event)
+		if payload.Classification != string(runevent.VerificationClassificationVacuous) {
+			t.Fatalf("classification = %q, want %q", payload.Classification, runevent.VerificationClassificationVacuous)
+		}
+		if payload.Phase != string(runevent.VerificationPhaseFailed) {
+			t.Fatalf("phase = %q, want %q", payload.Phase, runevent.VerificationPhaseFailed)
+		}
+	})
+}
+
+type vacuousPreWorkEventCommand struct {
+	Command string
+	Verdict string
+}
+
+type vacuousPreWorkEventFixture struct {
+	event       runevent.RunEvent
+	offenders   []string
+	commands    []vacuousPreWorkEventCommand
+	artifactDir string
+	runID       string
+}
+
+type vacuousPreWorkEventPayload struct {
+	Task           string `json:"task"`
+	Classification string `json:"classification"`
+	Phase          string `json:"phase"`
+	ProbedCommands []struct {
+		Command      string `json:"command"`
+		Verdict      string `json:"verdict"`
+		ProbeLogPath string `json:"probe_log_path"`
+	} `json:"probed_commands"`
+}
+
+func captureVacuousPreWorkEvent(t *testing.T) vacuousPreWorkEventFixture {
+	t.Helper()
+	const (
+		firstVacuous  = "test -f first-existing-marker"
+		nonVacuous    = "test -f missing-before-agent"
+		secondVacuous = "test -f second-existing-marker"
+	)
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{
+		id:           "task_01",
+		verification: []string{firstVacuous, nonVacuous, secondVacuous},
+	}})
+	for _, marker := range []string{"first-existing-marker", "second-existing-marker"} {
+		if err := os.WriteFile(filepath.Join(fixture.gitRoot, marker), []byte("already present\n"), 0o644); err != nil {
+			t.Fatalf("write pre-existing marker %q: %v", marker, err)
+		}
+	}
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, ExecVerifier{}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	if _, err := engine.TaskCycle(context.Background(), fixture.plan()); err != nil {
+		t.Fatalf("TaskCycle() error = %v", err)
+	}
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		if eventPayloadString(t, event, "classification") == string(runevent.VerificationClassificationVacuous) {
+			return vacuousPreWorkEventFixture{
+				event:     event,
+				offenders: []string{firstVacuous, secondVacuous},
+				commands: []vacuousPreWorkEventCommand{
+					{Command: firstVacuous, Verdict: string(runevent.VerificationVerdictPassed)},
+					{Command: nonVacuous, Verdict: string(runevent.VerificationVerdictFailed)},
+					{Command: secondVacuous, Verdict: string(runevent.VerificationVerdictPassed)},
+				},
+				artifactDir: fixture.artifactDir,
+				runID:       fixture.run.ID,
+			}
+		}
+	}
+	t.Fatal("vacuous pre-work event was not published")
+	return vacuousPreWorkEventFixture{}
+}
+
+func decodeVacuousPreWorkEventPayload(t *testing.T, event runevent.RunEvent) vacuousPreWorkEventPayload {
+	t.Helper()
+	var payload vacuousPreWorkEventPayload
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		t.Fatalf("decode vacuous pre-work event: %v", err)
+	}
+	return payload
+}
+
 func testPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
 	t.Helper()
 	t.Parallel()
@@ -3743,22 +3861,26 @@ func testPreWorkProbePublishesEveryOffendingCommand(t *testing.T) {
 	if len(probeEvents) != 1 {
 		t.Fatalf("vacuous probe events = %d, want one aggregate refusal event: %+v", len(probeEvents), probeEvents)
 	}
-	var payload struct {
-		Task           string   `json:"task"`
-		Classification string   `json:"classification"`
-		Commands       []string `json:"commands"`
-	}
-	if err := json.Unmarshal(probeEvents[0].Payload, &payload); err != nil {
-		t.Fatalf("decode vacuous probe event: %v", err)
-	}
+	payload := decodeVacuousPreWorkEventPayload(t, probeEvents[0])
 	if payload.Task != "task_01" || probeEvents[0].ReviewIssue != "task_01" {
 		t.Fatalf("vacuous probe event Task identity = payload %q Work Item %q", payload.Task, probeEvents[0].ReviewIssue)
 	}
 	if payload.Classification != string(runevent.VerificationClassificationVacuous) {
 		t.Fatalf("vacuous probe classification = %q", payload.Classification)
 	}
-	if !slices.Equal(payload.Commands, []string{spec0089Gate, secondVacuous}) {
-		t.Fatalf("vacuous probe commands = %q, want every offending command", payload.Commands)
+	wantCommands := []vacuousPreWorkEventCommand{
+		{Command: spec0089Gate, Verdict: string(runevent.VerificationVerdictPassed)},
+		{Command: nonVacuous, Verdict: string(runevent.VerificationVerdictFailed)},
+		{Command: secondVacuous, Verdict: string(runevent.VerificationVerdictPassed)},
+	}
+	if len(payload.ProbedCommands) != len(wantCommands) {
+		t.Fatalf("vacuous probe command verdicts = %+v, want %d entries", payload.ProbedCommands, len(wantCommands))
+	}
+	for index, want := range wantCommands {
+		got := payload.ProbedCommands[index]
+		if got.Command != want.Command || got.Verdict != want.Verdict {
+			t.Fatalf("vacuous probe command verdict %d = %+v, want command %q verdict %q", index, got, want.Command, want.Verdict)
+		}
 	}
 }
 

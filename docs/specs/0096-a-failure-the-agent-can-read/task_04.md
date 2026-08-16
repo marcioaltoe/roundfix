@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0096-a-failure-the-agent-can-read
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: medium
 ---
@@ -52,3 +52,49 @@ a defect in commands that were fine.
 
 `_techspec.md` → Build Order 4; System Architecture, the vacuity event.
 `_prd.md` → Core Feature 5. ADR-0111.
+
+## Result
+
+### Implementation
+
+- The vacuous pre-work event summary now quotes every command that exited zero
+  against the unchanged tree instead of reporting only their count.
+- Replaced the ambiguous `commands` payload field with `probed_commands`. Each
+  entry records the authored command, its `passed`, `failed`, or `unknown`
+  verdict, and its numbered `probe_log_path`.
+- Kept the event's `vacuous` classification and `failed` phase unchanged.
+
+### Focused-check evidence
+
+- Red signal before the production edit:
+  `GOCACHE=/tmp/roundfix-0096-task04-go-cache rtk go test ./internal/daemon -run '^TestVacuousPreWorkEvent$/summary_names_offending_commands$'`
+  failed because the summary contained only `2 commands` and named neither
+  offender.
+- `GOCACHE=/tmp/roundfix-0096-task04-go-cache rtk go test ./internal/daemon -run '^TestVacuousPreWorkEvent$' -v`
+  passed all four subtests and the parent test.
+- `GOCACHE=/tmp/roundfix-0096-task04-go-cache rtk go test ./internal/daemon -run '^TestPreWorkProbe(RefusesATaskWhoseGateAlreadyPasses|PublishesEveryOffendingCommand)$' -v`
+  passed both existing pre-work refusal cases against the new payload contract.
+- `GOCACHE=/tmp/roundfix-0096-task04-go-cache rtk go test ./internal/daemon`
+  passed all 230 daemon tests.
+- `GOCACHE=/tmp/roundfix-0096-task04-go-cache rtk make verify-incremental`
+  first reached the full suite but the sandbox denied process-table access to
+  two unrelated force-stop integration tests. Re-running with process-table
+  access exited 0: all Go packages, the focused skill contract,
+  `roundfix skills check`, and the production build passed.
+
+### Acceptance evidence
+
+1. `TestVacuousPreWorkEvent/summary_names_offending_commands` passed after
+   asserting that the event summary contains both offending commands.
+2. `TestVacuousPreWorkEvent/payload_carries_every_probed_command_verdict`
+   passed after asserting the ordered `passed`, `failed`, and `passed` verdicts
+   for all three probed commands.
+3. `TestVacuousPreWorkEvent/payload_names_each_probe_log` passed after asserting
+   every entry's numbered `probe_log_path` under the Run artifact directory.
+4. `TestVacuousPreWorkEvent/classification_and_phase_stay_unchanged` passed with
+   `VerificationClassificationVacuous` and `VerificationPhaseFailed`.
+
+### Not run
+
+- The commands under this Task's `## Verification` section were not run; the
+  Roundfix Daemon owns declared Verification and Task settlement.

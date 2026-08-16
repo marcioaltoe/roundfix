@@ -247,6 +247,12 @@ type VerificationProbe struct {
 	Commands []CommandVerdict
 }
 
+type preWorkProbeCommandPayload struct {
+	Command      string `json:"command"`
+	Verdict      string `json:"verdict"`
+	ProbeLogPath string `json:"probe_log_path"`
+}
+
 func (probe VerificationProbe) Vacuous() []string {
 	commands := make([]string, 0, len(probe.Commands))
 	for _, result := range probe.Commands {
@@ -1038,13 +1044,31 @@ func verificationProbeOutputPath(artifactDir string, runID string, batchNumber i
 
 func (engine *Engine) publishPreWorkProbeFindings(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, probe VerificationProbe) error {
 	if vacuous := probe.Vacuous(); len(vacuous) > 0 {
-		summary := fmt.Sprintf("Pre-work Verification refused Task %s: %d commands exited zero against the unchanged tree.", task.ID, len(vacuous))
+		offenders := make([]string, 0, len(vacuous))
+		for _, command := range vacuous {
+			offenders = append(offenders, fmt.Sprintf("%q", command))
+		}
+		probedCommands := make([]preWorkProbeCommandPayload, 0, len(probe.Commands))
+		for index, result := range probe.Commands {
+			verdict := string(runevent.VerificationVerdictFailed)
+			if result.Vacuous {
+				verdict = string(runevent.VerificationVerdictPassed)
+			} else if result.Unknown {
+				verdict = "unknown"
+			}
+			probedCommands = append(probedCommands, preWorkProbeCommandPayload{
+				Command:      result.Command,
+				Verdict:      verdict,
+				ProbeLogPath: verificationProbeOutputPath(plan.ArtifactDir, plan.RunID, ordinal, index+1),
+			})
+		}
+		summary := fmt.Sprintf("Pre-work Verification refused Task %s: commands %s exited zero against the unchanged tree.", task.ID, strings.Join(offenders, ", "))
 		payload := map[string]any{
-			"attempt":        1,
-			"phase":          string(runevent.VerificationPhaseFailed),
-			"task":           task.ID,
-			"classification": string(runevent.VerificationClassificationVacuous),
-			"commands":       vacuous,
+			"attempt":         1,
+			"phase":           string(runevent.VerificationPhaseFailed),
+			"task":            task.ID,
+			"classification":  string(runevent.VerificationClassificationVacuous),
+			"probed_commands": probedCommands,
 		}
 		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
 			return fmt.Errorf("publish vacuous pre-work Verification event for run %q Task %s: %w", plan.RunID, task.ID, err)
