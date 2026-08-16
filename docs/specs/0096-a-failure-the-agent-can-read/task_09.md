@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0096-a-failure-the-agent-can-read
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: low
 ---
@@ -55,3 +55,40 @@ the repository gate is red.
 `_techspec.md` → System Architecture, the feedback prompt. `_prd.md` → Core
 Feature 1; Goal 1; User Story 1. ADR-0135.
 Evidence: this Spec's QA report `qa/qa-report-2026-08-16.md`, finding F-001.
+
+## Result
+
+### Implementation
+
+- The failed-command publication branch now stores its error in `publishErr`, so
+  successful publication cannot replace the verifier's cause before the failure
+  outcome is built.
+- A publication failure still returns `verificationAttemptOutcome{}` with the
+  publication error. The diagnostics progress line and `Repeated` metadata
+  assignment are unchanged.
+
+### Focused checks
+
+- Before the edit, `rtk go test ./internal/daemon -run
+  TestRunOutcomeDerivedFromUnresolvedIssues -count=1` failed with `expected
+  verification failure reason, got "verification failed: <nil>"`.
+- After the edit, that command passed. Separate focused runs of
+  `TestResolveCycleVerificationFailureFailsBatchAndContinues` in
+  `./internal/daemon` and `TestRunResolveVerificationFailureDoesNotCommit` in
+  `./internal/cli` also passed.
+- `rtk make verify-incremental` exited 0 after running the repository's Go tests,
+  skill checks, and build.
+- `rtk git diff --check` exited 0.
+
+### Acceptance evidence
+
+- Failed Verification cause: the focused daemon regression changed from red to
+  green and now retains `exit status 7` in the Batch failure reason.
+- Publication failure: inspection of the edited branch shows
+  `return verificationAttemptOutcome{}, publishErr`; no partial outcome can
+  escape when publication fails.
+- Named regressions: all three Acceptance Criteria tests passed in separate
+  focused runs.
+- Complete Verification: not run in this Agent turn because the Daemon owns the
+  commands under `## Verification`, including `make verify`. The required local
+  incremental gate passed; the complete-gate criterion awaits Daemon evidence.

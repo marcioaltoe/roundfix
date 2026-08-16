@@ -374,9 +374,9 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			if errors.As(err, &commandErr) {
 				var temporaryErr *TemporaryVerificationFailureError
 				temporary := errors.As(err, &temporaryErr)
-				metadata, err := req.publishFailedCommand(ctx, command, commandErr, temporary)
-				if err != nil {
-					return verificationAttemptOutcome{}, err
+				metadata, publishErr := req.publishFailedCommand(ctx, command, commandErr, temporary)
+				if publishErr != nil {
+					return verificationAttemptOutcome{}, publishErr
 				}
 				fmt.Fprintf(engine.deps.Progress, "Verification failed (%s); diagnostics: %s\n", req.identity(), commandErr.OutputPath)
 				return verificationAttemptOutcome{
