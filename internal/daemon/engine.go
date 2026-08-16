@@ -182,6 +182,7 @@ type verificationAttemptRequest struct {
 	Commands                []string
 	FailureClassification   runevent.VerificationClassification
 	FailureReason           runevent.VerificationReason
+	ClassifyFailure         func(context.Context, string, string) (verificationFailureMetadata, error)
 	Publish                 func(context.Context, string, map[string]any) error
 }
 
@@ -190,6 +191,12 @@ type verificationAttemptOutcome struct {
 	CommandFailure   *VerificationCommandError
 	TemporaryFailure *TemporaryVerificationFailureError
 	UnknownCause     *VerificationUnknownError
+	Repeated         *runevent.RepeatedFailure
+}
+
+type verificationFailureMetadata struct {
+	Signature string
+	Repeated  *runevent.RepeatedFailure
 }
 
 func terminalReasonLine(reason string) string {
@@ -367,7 +374,8 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			if errors.As(err, &commandErr) {
 				var temporaryErr *TemporaryVerificationFailureError
 				temporary := errors.As(err, &temporaryErr)
-				if err := req.publishFailedCommand(ctx, command, commandErr, temporary); err != nil {
+				metadata, err := req.publishFailedCommand(ctx, command, commandErr, temporary)
+				if err != nil {
 					return verificationAttemptOutcome{}, err
 				}
 				fmt.Fprintf(engine.deps.Progress, "Verification failed (%s); diagnostics: %s\n", req.identity(), commandErr.OutputPath)
@@ -375,6 +383,7 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 					Failure:          fmt.Sprintf("verification failed: %v", err),
 					CommandFailure:   commandErr,
 					TemporaryFailure: temporaryErr,
+					Repeated:         metadata.Repeated,
 				}, nil
 			}
 			var unknownErr *VerificationUnknownError
@@ -402,7 +411,7 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 			return verificationAttemptOutcome{}, err
 		}
 	}
-	if err := req.publishVerdict(ctx, runevent.VerificationVerdictPassed, "", "", false); err != nil {
+	if err := req.publishVerdict(ctx, runevent.VerificationVerdictPassed, "", "", false, verificationFailureMetadata{}); err != nil {
 		return verificationAttemptOutcome{}, err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Verification passed (%s).\n", req.identity())
@@ -427,17 +436,30 @@ func verificationStopRequested(ctx context.Context, err error) bool {
 	return agent.IsStopError(err) || errors.Is(err, ErrStopRequested) || errors.Is(err, context.Canceled) || (ctx != nil && errors.Is(ctx.Err(), context.Canceled))
 }
 
-func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, command string, commandErr *VerificationCommandError, temporary bool) error {
+func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, command string, commandErr *VerificationCommandError, temporary bool) (verificationFailureMetadata, error) {
+	metadata := verificationFailureMetadata{}
+	if req.ClassifyFailure != nil {
+		var err error
+		metadata, err = req.ClassifyFailure(ctx, command, commandErr.OutputPath)
+		if err != nil {
+			return verificationFailureMetadata{}, err
+		}
+	}
 	payload := req.payload(runevent.VerificationPhaseFailed, command)
 	payload["error"] = commandErr.Error()
 	if commandErr.OutputPath != "" {
 		payload["diagnostic_path"] = commandErr.OutputPath
 	}
+	applyRepeatedFailureMetadata(payload, metadata)
 	req.applyFailureMetadata(payload, temporary)
-	if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); err != nil {
-		return err
+	summary := req.summary(runevent.VerificationPhaseFailed, command)
+	if metadata.Repeated != nil {
+		summary = repeatedFailureSummary(summary, metadata.Repeated)
 	}
-	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, commandErr.OutputPath, "", temporary)
+	if err := req.Publish(ctx, summary, payload); err != nil {
+		return verificationFailureMetadata{}, err
+	}
+	return metadata, req.publishVerdict(ctx, runevent.VerificationVerdictFailed, commandErr.OutputPath, "", temporary, metadata)
 }
 
 func (req verificationAttemptRequest) publishInfrastructureFailure(ctx context.Context, command string, err error) error {
@@ -446,7 +468,7 @@ func (req verificationAttemptRequest) publishInfrastructureFailure(ctx context.C
 	if publishErr := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); publishErr != nil {
 		return publishErr
 	}
-	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, "", "", false)
+	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, "", "", false, verificationFailureMetadata{})
 }
 
 func (req verificationAttemptRequest) publishUnknownFailure(ctx context.Context, command string, unknownErr *VerificationUnknownError) error {
@@ -458,10 +480,10 @@ func (req verificationAttemptRequest) publishUnknownFailure(ctx context.Context,
 	if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); err != nil {
 		return err
 	}
-	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, unknownErr.DiagnosticPath, unknownErr.Error(), false)
+	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, unknownErr.DiagnosticPath, unknownErr.Error(), false, verificationFailureMetadata{})
 }
 
-func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdict runevent.VerificationVerdict, diagnosticPath string, failure string, temporary bool) error {
+func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdict runevent.VerificationVerdict, diagnosticPath string, failure string, temporary bool, metadata verificationFailureMetadata) error {
 	payload := req.payload(runevent.VerificationPhaseVerdict, "")
 	payload["verdict"] = string(verdict)
 	if diagnosticPath != "" {
@@ -470,6 +492,7 @@ func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdic
 	if failure != "" {
 		payload["error"] = failure
 	}
+	applyRepeatedFailureMetadata(payload, metadata)
 	req.applyFailureMetadata(payload, temporary)
 	identity := req.identity()
 	summary := fmt.Sprintf("Verification %s verdict: %s", identity, verdict)
@@ -478,7 +501,23 @@ func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdic
 	} else if req.BatchNumber > 0 {
 		summary = fmt.Sprintf("Verification %s for Batch %03d verdict: %s", identity, req.BatchNumber, verdict)
 	}
+	if metadata.Repeated != nil {
+		summary = repeatedFailureSummary(summary, metadata.Repeated)
+	}
 	return req.Publish(ctx, summary, payload)
+}
+
+func applyRepeatedFailureMetadata(payload map[string]any, metadata verificationFailureMetadata) {
+	if metadata.Signature != "" {
+		payload["diagnostic_signature"] = metadata.Signature
+	}
+	if metadata.Repeated != nil {
+		payload["repeated_failure"] = metadata.Repeated
+	}
+}
+
+func repeatedFailureSummary(summary string, repeated *runevent.RepeatedFailure) string {
+	return fmt.Sprintf("Repeated Failure: %s Matches Run %s attempt %d.", summary, repeated.RunID, repeated.Attempt)
 }
 
 func (req verificationAttemptRequest) applyFailureMetadata(payload map[string]any, temporary bool) {

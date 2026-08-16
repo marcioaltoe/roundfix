@@ -307,6 +307,14 @@ const (
 
 const qaPullRequestLookupTimeout = 10 * time.Second
 
+const repeatedFailureJournalPageSize = 256
+
+type runEventJournal interface {
+	Run(context.Context, string) (store.Run, bool, error)
+	ListRuns(context.Context, store.ListRunsQuery) ([]store.Run, error)
+	RunEventsAfter(context.Context, string, int64, int) ([]store.JournalEvent, error)
+}
+
 // TaskCycle executes the Task Graph for one Spec as a sibling of
 // ResolveCycle: each non-completed Task, in topological order, runs
 // through one Agent invocation as a Batch of one, then the Task's
@@ -1274,6 +1282,9 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 		Capacity:                plan.VerificationConcurrency,
 		TemporaryRetryAvailable: !*retryUsed,
 		Commands:                task.Verification,
+		ClassifyFailure: func(ctx context.Context, command string, diagnosticPath string) (verificationFailureMetadata, error) {
+			return engine.classifyRepeatedFailure(ctx, plan.RunID, task.ID, command, diagnosticPath)
+		},
 		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
 			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
 				return fmt.Errorf("publish verification event for run %q Task %s: %w", plan.RunID, task.ID, err)
@@ -1291,6 +1302,81 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 	request.Mode = verificationExclusive
 	request.TemporaryRetryAvailable = false
 	return engine.runTaskVerificationRequest(ctx, plan, task, request)
+}
+
+func (engine *Engine) classifyRepeatedFailure(ctx context.Context, runID string, workItem string, command string, diagnosticPath string) (verificationFailureMetadata, error) {
+	diagnostic, err := os.ReadFile(diagnosticPath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return verificationFailureMetadata{}, fmt.Errorf("read Verification diagnostic %q for repeated-failure classification: %w", diagnosticPath, err)
+	}
+	metadata := verificationFailureMetadata{Signature: DiagnosticSignature(command, diagnostic)}
+	journal, ok := engine.deps.Runs.(runEventJournal)
+	if !ok {
+		return metadata, nil
+	}
+
+	currentRun, found, err := journal.Run(ctx, runID)
+	if err != nil {
+		return verificationFailureMetadata{}, fmt.Errorf("read current Run %q for repeated-failure classification: %w", runID, err)
+	}
+	if !found {
+		return verificationFailureMetadata{}, fmt.Errorf("read current Run %q for repeated-failure classification: Run not found", runID)
+	}
+	runs, err := journal.ListRuns(ctx, store.ListRunsQuery{GitRoot: currentRun.GitRoot, States: store.StatesAll})
+	if err != nil {
+		return verificationFailureMetadata{}, fmt.Errorf("list earlier Runs for repeated-failure classification: %w", err)
+	}
+	for _, earlierRun := range runs {
+		if earlierRun.ID == currentRun.ID || earlierRun.Kind != store.KindImplement || earlierRun.SpecSlug != currentRun.SpecSlug {
+			continue
+		}
+		repeated, err := matchingRepeatedFailure(ctx, journal, earlierRun.ID, workItem, metadata.Signature)
+		if err != nil {
+			return verificationFailureMetadata{}, err
+		}
+		if repeated != nil {
+			metadata.Repeated = repeated
+			return metadata, nil
+		}
+	}
+	return metadata, nil
+}
+
+func matchingRepeatedFailure(ctx context.Context, journal runEventJournal, runID string, workItem string, signature string) (*runevent.RepeatedFailure, error) {
+	var matched *runevent.RepeatedFailure
+	var cursor int64
+	for {
+		events, err := journal.RunEventsAfter(ctx, runID, cursor, repeatedFailureJournalPageSize)
+		if err != nil {
+			return nil, fmt.Errorf("read earlier Verification failures for Run %q Work Item %s: %w", runID, workItem, err)
+		}
+		for _, entry := range events {
+			cursor = entry.Cursor
+			event := entry.Event
+			if event.Kind != runevent.KindDaemonVerification || event.ReviewIssue != workItem {
+				continue
+			}
+			var payload struct {
+				Attempt             int    `json:"attempt"`
+				Phase               string `json:"phase"`
+				DiagnosticSignature string `json:"diagnostic_signature"`
+			}
+			if err := json.Unmarshal(event.Payload, &payload); err != nil {
+				return nil, fmt.Errorf("decode earlier Verification failure for Run %q Work Item %s: %w", runID, workItem, err)
+			}
+			if payload.Phase != string(runevent.VerificationPhaseFailed) || payload.Attempt < 1 || payload.DiagnosticSignature != signature {
+				continue
+			}
+			matched = &runevent.RepeatedFailure{
+				Signature: signature,
+				RunID:     runID,
+				Attempt:   payload.Attempt,
+			}
+		}
+		if len(events) < repeatedFailureJournalPageSize {
+			return matched, nil
+		}
+	}
 }
 
 func (engine *Engine) runTaskVerificationRequest(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (verificationAttemptOutcome, error) {
@@ -1397,6 +1483,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 		DiagnosticPath:  first.CommandFailure.OutputPath,
 		Failure:         first.Failure,
 		DiagnosticEmpty: diagnosticArtifactEmpty(first.CommandFailure.OutputPath),
+		Repeated:        first.Repeated,
 		Attempt:         1,
 		TaskHandoff:     true,
 	})

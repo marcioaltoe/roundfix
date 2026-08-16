@@ -193,6 +193,7 @@ type VerificationFeedback struct {
 	DiagnosticPath  string
 	Failure         string
 	DiagnosticEmpty bool
+	Repeated        *runevent.RepeatedFailure
 	Attempt         int
 	TaskHandoff     bool
 }
@@ -299,6 +300,17 @@ func BuildVerificationRepairPrompt(workItem string, feedback VerificationFeedbac
 	if failure == "" {
 		return "", errors.New("verification failure is required")
 	}
+	if feedback.Repeated != nil {
+		if strings.TrimSpace(feedback.Repeated.Signature) == "" {
+			return "", errors.New("repeated failure signature is required")
+		}
+		if strings.TrimSpace(feedback.Repeated.RunID) == "" {
+			return "", errors.New("repeated failure Run ID is required")
+		}
+		if feedback.Repeated.Attempt < 1 {
+			return "", errors.New("repeated failure attempt is required")
+		}
+	}
 	if feedback.Attempt < 1 {
 		return "", errors.New("verification attempt is required")
 	}
@@ -310,6 +322,14 @@ func BuildVerificationRepairPrompt(workItem string, feedback VerificationFeedbac
 	builder.WriteString(fmt.Sprintf("Failed command: %s\n", command))
 	builder.WriteString(fmt.Sprintf("Diagnostic artifact: %s\n", diagnosticPath))
 	builder.WriteString(fmt.Sprintf("Failure: %s\n\n", failure))
+	if feedback.Repeated != nil {
+		builder.WriteString(fmt.Sprintf(
+			"Repeated Failure: this diagnostic matches Run %s attempt %d (signature %s).\n\n",
+			strings.TrimSpace(feedback.Repeated.RunID),
+			feedback.Repeated.Attempt,
+			strings.TrimSpace(feedback.Repeated.Signature),
+		))
+	}
 	if feedback.DiagnosticEmpty {
 		builder.WriteString("The command produced no output.\n")
 		if redirectTarget := verificationRedirectTarget(command); redirectTarget != "" {

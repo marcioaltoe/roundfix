@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0096-a-failure-the-agent-can-read
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: high
 ---
@@ -62,3 +62,59 @@ where both a Supervisor and the Agent will see it.
 
 `_techspec.md` → Build Order 3; Risks & Considerations, retention. `_prd.md` →
 Core Feature 2; Goal 2; User Story 2; Success Metrics. ADR-0136.
+
+## Result
+
+Implemented retained-history matching at the Task Verification failure boundary.
+Each captured failure now records its normalized diagnostic signature in the Run
+Event payload. Before publishing that event, the Daemon reads earlier implement
+Runs for the same repository, Spec, and Work Item from the Run Event Journal and
+looks for the same signature. A match adds a typed `repeated_failure` value and a
+summary naming the earlier Run and attempt; the same value reaches the repair
+prompt. A missing earlier journal event, including a Run whose events were pruned
+by Journal Retention, produces no repetition and no error.
+
+Focused-check evidence:
+
+- Before implementation,
+  `rtk rg -n 'RepeatedFailure|Repeated Failure' internal/agent internal/daemon/task_engine.go internal/runevent/event.go`
+  returned no matches, establishing that neither the event nor prompt could name
+  a repetition.
+- `rtk env GOCACHE=/tmp/roundfix-task03-go-cache go test ./internal/agent -run '^TestBuildVerificationRepairPrompt' -count=1`
+  reported 9 passing tests. The new prompt case asserts the exact earlier Run,
+  attempt, and signature; the existing cases prove a first failure still renders
+  without repetition.
+- `rtk env GOCACHE=/tmp/roundfix-task03-go-cache go test ./internal/daemon -run '^TestDiagnosticSignature$' -count=1`
+  reported 8 passing tests and compiled the journal lookup, event metadata, and
+  four-case `TestRepeatedFailure` integration coverage without executing the
+  Daemon-owned Task Verification case.
+- `rtk env GOCACHE=/tmp/roundfix-task03-go-cache go test ./internal/daemon -run '^(TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback|TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence)$' -count=1`
+  reported 2 passing tests, preserving failure-event ordering and the repair
+  prompt flow after adding classification.
+- `rtk rg -n 'DiagnosticSignature\(|Repeated Failure|repeated_failure' internal/agent/agent.go internal/daemon/engine.go internal/daemon/task_engine.go internal/runevent/event.go`
+  found the production signature caller, event payload, event summary, and prompt
+  rendering.
+- `rtk git diff --name-only` listed only this Task file plus Agent, Daemon, and
+  Run Event source/test files. It listed no store, migration, schema, or tooling
+  path, proving no second store or column was added.
+- `rtk git diff --check` exited 0.
+
+Acceptance evidence:
+
+- `TestRepeatedFailure/matching_failure_event_names_earlier_Run_and_attempt`
+  drives a real Run Event Journal entry through a Task cycle and asserts both the
+  typed payload and bounded summary name the retained Run and attempt.
+- `TestRepeatedFailure/first_failure_reports_no_repetition` asserts the first
+  signature has neither a `repeated_failure` payload nor a repeated summary.
+- `TestRepeatedFailure/repair_prompt_names_the_same_earlier_Run_and_attempt`
+  asserts the repair Agent receives the same match as the event.
+- `TestRepeatedFailure/failure_beyond_journal_retention_reports_as_new` models
+  the retained Run row after its journal events are gone and asserts the new
+  failure remains unannotated without an infrastructure error.
+- The implementation writes signatures only into the existing Run Event payload
+  and reads them through existing Run/Run Event Journal APIs; no persistence
+  schema changed.
+
+The Daemon-owned commands under `## Verification` were not run during this Agent
+turn. `Repeated Failure` was already introduced in `CONTEXT.md`, so this slice
+does not require a glossary update.

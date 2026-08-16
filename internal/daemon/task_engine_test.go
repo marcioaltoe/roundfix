@@ -2976,6 +2976,156 @@ func TestTaskCycleRepairReacquiresVerificationCapacityAfterFeedback(t *testing.T
 	assertVerificationFeedbackJournaled(t, fixture.sink.snapshot(), "task_01", "task_02")
 }
 
+func TestRepeatedFailure(t *testing.T) {
+	const (
+		command    = "verify-task_01"
+		diagnostic = "2026-08-16T12:34:56Z assertion failed: got 1, want 2\n"
+	)
+
+	t.Run("first failure reports no repetition", func(t *testing.T) {
+		result := runRepeatedFailureTaskCycle(t, command, diagnostic, false, false)
+		assertNoRepeatedFailure(t, result.failureEvent)
+	})
+
+	t.Run("matching failure event names earlier Run and attempt", func(t *testing.T) {
+		result := runRepeatedFailureTaskCycle(t, command, diagnostic, true, true)
+		assertRepeatedFailure(t, result.failureEvent, result.earlierRun.ID, 2)
+	})
+
+	t.Run("repair prompt names the same earlier Run and attempt", func(t *testing.T) {
+		result := runRepeatedFailureTaskCycle(t, command, diagnostic, true, true)
+		want := fmt.Sprintf("Repeated Failure: this diagnostic matches Run %s attempt 2", result.earlierRun.ID)
+		if !strings.Contains(result.repairPrompt, want) {
+			t.Fatalf("expected repair prompt to contain %q, got:\n%s", want, result.repairPrompt)
+		}
+	})
+
+	t.Run("failure beyond journal retention reports as new", func(t *testing.T) {
+		result := runRepeatedFailureTaskCycle(t, command, diagnostic, true, false)
+		assertNoRepeatedFailure(t, result.failureEvent)
+	})
+}
+
+type repeatedFailureCycleResult struct {
+	earlierRun   store.Run
+	failureEvent runevent.RunEvent
+	repairPrompt string
+}
+
+func runRepeatedFailureTaskCycle(t *testing.T, command string, diagnostic string, createEarlierRun bool, retainFailureEvent bool) repeatedFailureCycleResult {
+	t.Helper()
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{command}}})
+
+	var earlierRun store.Run
+	if createEarlierRun {
+		var err error
+		earlierRun, err = fixture.store.CreateRunSkippingActiveLock(context.Background(), store.CreateRunRequest{
+			Kind:        store.KindImplement,
+			GitRoot:     fixture.gitRoot,
+			LocalBranch: "ma/earlier-run",
+			SpecSlug:    taskCycleSlug,
+		})
+		if err != nil {
+			t.Fatalf("create earlier Run: %v", err)
+		}
+		if retainFailureEvent {
+			seedRepeatedFailureEvent(t, fixture.store, earlierRun.ID, "task_01", command, diagnostic, 2)
+		}
+	}
+
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{
+		calls:        fixture.calls,
+		script:       []error{errors.New("exit status 1"), errors.New("exit status 1")},
+		outputByCall: map[int]string{1: diagnostic, 2: diagnostic},
+	}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Failed != 1 {
+		t.Fatalf("expected one failed Task after two observed failures, got %+v", result)
+	}
+
+	var failureEvent runevent.RunEvent
+	for _, event := range eventsOfKind(fixture.sink, runevent.KindDaemonVerification) {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == string(runevent.VerificationPhaseFailed) && payload["attempt"] == float64(1) {
+			failureEvent = event
+			break
+		}
+	}
+	if failureEvent.Kind == "" {
+		t.Fatal("expected first Verification failure event")
+	}
+	if len(runner.prompts) < 2 {
+		t.Fatalf("expected Task prompt and repair prompt, got %d prompt(s)", len(runner.prompts))
+	}
+	return repeatedFailureCycleResult{
+		earlierRun:   earlierRun,
+		failureEvent: failureEvent,
+		repairPrompt: runner.prompts[1],
+	}
+}
+
+func seedRepeatedFailureEvent(t *testing.T, runStore *store.Store, runID string, workItem string, command string, diagnostic string, attempt int) {
+	t.Helper()
+	signature := DiagnosticSignature(command, []byte(diagnostic))
+	payload, err := json.Marshal(map[string]any{
+		"attempt":              attempt,
+		"phase":                string(runevent.VerificationPhaseFailed),
+		"work_item":            workItem,
+		"task":                 workItem,
+		"command":              command,
+		"diagnostic_signature": signature,
+	})
+	if err != nil {
+		t.Fatalf("encode earlier Verification failure: %v", err)
+	}
+	if _, err := runStore.AppendRunEvent(context.Background(), runevent.RunEvent{
+		RunID:       runID,
+		Batch:       1,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonVerification,
+		ReviewIssue: workItem,
+		Summary:     "Earlier Verification failure.",
+		Time:        taskCycleNowForTest().Add(-time.Hour),
+		Payload:     payload,
+	}); err != nil {
+		t.Fatalf("append earlier Verification failure: %v", err)
+	}
+}
+
+func assertNoRepeatedFailure(t *testing.T, event runevent.RunEvent) {
+	t.Helper()
+	payload := eventPayloadMap(t, event)
+	if _, found := payload["repeated_failure"]; found {
+		t.Fatalf("expected failure to report no repetition, got %+v", payload)
+	}
+	if strings.Contains(event.Summary, "Repeated Failure") {
+		t.Fatalf("expected failure summary to omit repetition, got %q", event.Summary)
+	}
+}
+
+func assertRepeatedFailure(t *testing.T, event runevent.RunEvent, runID string, attempt int) {
+	t.Helper()
+	payload := eventPayloadMap(t, event)
+	repeated, ok := payload["repeated_failure"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected repeated_failure payload, got %+v", payload)
+	}
+	if repeated["run_id"] != runID || repeated["attempt"] != float64(attempt) {
+		t.Fatalf("expected repetition of Run %s attempt %d, got %+v", runID, attempt, repeated)
+	}
+	if signature, _ := repeated["signature"].(string); signature == "" || signature != payload["diagnostic_signature"] {
+		t.Fatalf("expected repeated and current signatures to match, got repeated=%+v payload=%+v", repeated, payload)
+	}
+	if !strings.Contains(event.Summary, "Repeated Failure") || !strings.Contains(event.Summary, runID) || !strings.Contains(event.Summary, fmt.Sprintf("attempt %d", attempt)) {
+		t.Fatalf("expected failure summary to name repeated Run and attempt, got %q", event.Summary)
+	}
+}
+
 // assertVerificationFeedbackJournaled proves the Verification Feedback turn
 // is observable per Task: only the repaired Task journals it, and it lands
 // between the attempt that failed and the attempt that follows, so a
