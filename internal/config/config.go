@@ -840,6 +840,8 @@ notify:
 budget:
   enabled: %t
   max_run_duration: %s
+  # Bounds wall-clock time from Run start; evaluated before each review Round and during Review Source waits.
+  # Active Work Item resolution is not interrupted when the budget expires.
 
 resolve:
   batch_size: %d

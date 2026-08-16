@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0096-a-failure-the-agent-can-read
-status: pending # pending | in_progress | completed | failed — only implement-task changes this
+status: completed # pending | in_progress | completed | failed — only implement-task changes this
 type: backend
 complexity: low
 ---
@@ -49,3 +49,40 @@ behaviour stays and its contract is stated where it is configured.
 
 `_techspec.md` → Build Order 5; System Architecture, the configuration surface.
 `_prd.md` → Core Feature 6; Open Questions. ADR-0137.
+
+## Result
+
+The rendered YAML now states that `max_run_duration` bounds wall-clock time
+from Run start, is evaluated before review Rounds and during Review Source
+waits, and does not interrupt active Work Item resolution. A focused config
+test asserts that contract against `DefaultConfigYAML`, writes the rendered
+template as User Config, and loads it through `Load`.
+
+Focused checks:
+
+- Before the template edit,
+  `rtk env GOCACHE=/tmp/roundfix-task05-gocache go test ./internal/config -run '^TestRenderedConfig$' -count=1`
+  failed in `states_Run_Budget_contract` because the rendered template lacked
+  the contract text. After the edit, the same focused check passed.
+- `rtk env GOCACHE=/tmp/roundfix-task05-gocache go test ./internal/config -run '^Test(DefaultConfigYAMLVerificationCapacity|RenderedConfig)$' -count=1`
+  passed, covering the contract assertion, the real loader round-trip, and the
+  adjacent rendered-template behavior.
+- `rtk git diff --check` passed.
+- `rtk git diff --name-only HEAD -- internal/watch internal/daemon internal/rounds`
+  produced no paths; no budget evaluation code changed.
+- `rtk make verify-incremental GOCACHE=/tmp/roundfix-task05-gocache` first reached
+  two `internal/cli` force-stop integration failures because the sandbox denied
+  process-table inspection. The approved rerun with process-table access exited
+  0; the Go suite, skill checks, and build passed.
+
+Acceptance evidence:
+
+- The rendered-configuration contract is asserted by
+  `TestRenderedConfig/states_Run_Budget_contract` and the focused test passed.
+- `TestRenderedConfig/round-trips_through_Load` writes the rendered YAML and
+  loads it through the package loader; the focused test passed.
+- The changed evaluation-path query produced no paths; the implementation diff
+  is confined to the rendered config text and its config-package test.
+
+Daemon Verification was not run in this Agent turn, as required by the
+Daemon-assigned execution contract.

@@ -204,6 +204,36 @@ func TestDefaultConfigYAMLVerificationCapacity(t *testing.T) {
 	}
 }
 
+func TestRenderedConfig(t *testing.T) {
+	t.Parallel()
+	content := DefaultConfigYAML()
+
+	t.Run("states Run Budget contract", func(t *testing.T) {
+		want := fmt.Sprintf(`max_run_duration: %s
+  # Bounds wall-clock time from Run start; evaluated before each review Round and during Review Source waits.
+  # Active Work Item resolution is not interrupted when the budget expires.`, formatConfigDuration(Builtin().Budget.MaxRunDuration))
+		if !strings.Contains(content, want) {
+			t.Fatalf("rendered config is missing the Run Budget contract %q:\n%s", want, content)
+		}
+	})
+
+	t.Run("round-trips through Load", func(t *testing.T) {
+		homeDir := t.TempDir()
+		workDir := t.TempDir()
+		mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+		mustMkdir(t, filepath.Join(workDir, ".git"))
+		mustWrite(t, filepath.Join(homeDir, userConfigRelPath), content)
+
+		loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+		if err != nil {
+			t.Fatalf("load rendered config: %v", err)
+		}
+		if got, want := loaded.Config.Budget, Builtin().Budget; got != want {
+			t.Fatalf("loaded Run Budget = %#v, want %#v", got, want)
+		}
+	})
+}
+
 func TestModelCatalogRetainsOfficialCodexIdentifiers(t *testing.T) {
 	t.Parallel()
 	catalog := agent.ModelCatalog("codex")
