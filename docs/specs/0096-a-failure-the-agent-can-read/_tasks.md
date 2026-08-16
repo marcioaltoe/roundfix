@@ -25,9 +25,12 @@ graph:
     - id: task_07
       file: task_07.md
       needs: []
+    - id: task_09
+      file: task_09.md
+      needs: [task_03]
     - id: task_08
       file: task_08.md
-      needs: [task_03, task_04, task_05, task_06, task_07]
+      needs: [task_03, task_04, task_05, task_06, task_07, task_09]
 ---
 
 # Tasks — A failure the Agent can read
@@ -41,7 +44,8 @@ graph:
 | task_05 | Say what the run budget bounds where it is set              | backend | low        | —                                            |
 | task_06 | Name the surface a Task file was read from                  | backend | low        | —                                            |
 | task_07 | Write the ceiling's exits into the authoring contract       | docs    | low        | —                                            |
-| task_08 | Run the final QA gate                                       | qa      | high       | task_03, task_04, task_05, task_06, task_07  |
+| task_09 | Stop the failure cause being shadowed away                   | backend | low        | task_03                                      |
+| task_08 | Run the final QA gate                                       | qa      | high       | task_03, task_04, task_05, task_06, task_07, task_09 |
 
 Wave plan: `1 → task_01, task_02, task_04, task_05, task_06, task_07 · 2 → task_03 · 3 → task_08`.
 

@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0096-a-failure-the-agent-can-read
-status: failed # pending | in_progress | completed | failed — only implement-task changes this
+status: pending # pending | in_progress | completed | failed — only implement-task changes this
 type: qa
 complexity: high
 ---
