@@ -1,9 +1,12 @@
 ---
 spec: 0096-a-failure-the-agent-can-read
-status: active
+status: archived
 created: 2026-08-12
 surfaces: [backend, docs]
+archived: "2026-08-16"
+source_slug: 0096-a-failure-the-agent-can-read
 ---
+
 
 # A failure the Agent can read
 
