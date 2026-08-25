@@ -10,7 +10,6 @@ Write invariant into Baseline module.
 ## Work
 - Add section to docs/agents/autonomous-work.md
 - Text: "A commit hook must not be stricter"
-- Cite ADR-0098
 - Use managed marker boundaries
 
 ## Verification
