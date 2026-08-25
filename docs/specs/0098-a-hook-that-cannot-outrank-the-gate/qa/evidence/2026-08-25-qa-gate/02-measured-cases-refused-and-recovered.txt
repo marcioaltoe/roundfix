@@ -1,0 +1,22 @@
+=== measured case 2 — 2462-line generated file over the 500-line limit (husky-banner hook) ===
+$ roundfix settle --spec 0001-widget-flow --task task_01   → exit 1
+verify test -f internal/api/schema.gen.ts — ok
+Settle surface: /private/tmp/qa0098/case2
+roundfix: settle failed after verification: repository pre-commit hook refused the commit (exit status 1): internal/api/schema.gen.ts: 2462 lines exceeds the 500-line limit
+husky - pre-commit script failed (code 1)
+
+$ roundfix settle ... (after the over-strict rule leaves the hook)   → exit 0
+verify test -f internal/api/schema.gen.ts — ok
+commit internal/api/schema.gen.ts
+settled task_01 completed — c3636d3
+
+=== measured case 3 — sort() where the rule requires toSorted() ===
+$ roundfix settle ...   → exit 1
+verify test -f src/list.ts — ok
+Settle surface: /private/tmp/qa0098/case3
+roundfix: settle failed after verification: repository pre-commit hook refused the commit (exit status 1): src/list.ts:2: use toSorted() instead of sort()
+husky - pre-commit script failed (code 1)
+$ roundfix settle ... (after repair)   → exit 0
+verify test -f src/list.ts — ok
+commit src/list.ts
+settled task_01 completed — bc973b5

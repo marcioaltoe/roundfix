@@ -1,0 +1,10 @@
+$ roundfix settle --spec 0001-widget-flow --task task_01   # unmarked pre-commit hook, 82-line function
+exit: 1
+--- stdout ---
+verify test -f src/parser.go — ok
+--- stderr ---
+Settle surface: /private/tmp/qa0098/repo
+roundfix: settle failed after verification: git commit -m feat: add the parser
+
+Roundfix-Spec: 0001-widget-flow
+Roundfix-Task: task_01 failed: exit status 1: src/parser.go:3: function exceeds the 80-line limit

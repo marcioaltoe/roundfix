@@ -1,0 +1,13 @@
+=== a Task that deletes and renames files settles cleanly ===
+surface before:  D  obsolete.txt / R  original.txt -> renamed.txt
+$ roundfix settle --spec 0001-widget-flow --task task_01   → exit 0
+verify test ! -f obsolete.txt — ok
+commit obsolete.txt — deleted
+commit original.txt — deleted
+commit renamed.txt
+settled task_01 completed — 148124f
+--- commit name-status (independent read) ---
+D	obsolete.txt
+D	original.txt
+A	renamed.txt
+--- git status --porcelain=v1 after settle: (empty) ---

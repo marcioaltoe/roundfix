@@ -1,0 +1,6 @@
+=== verification failure stops and leaves the surface unchanged ===
+verify test -f present.txt — ok
+verify test -f missing.txt — failed (diagnostics: /tmp/qa0098/home/.roundfix/artifacts/e663e06e941b17d6/runs/settle-0001-widget-flow-task_01/verification/batch-001-attempt-1.log)
+task_01 stays completed — verification failed
+Settle surface: /private/tmp/qa0098/verifyfail
+--- porcelain before == after: "A  present.txt" ; HEAD 2 -> 2 ; third command never ran ---

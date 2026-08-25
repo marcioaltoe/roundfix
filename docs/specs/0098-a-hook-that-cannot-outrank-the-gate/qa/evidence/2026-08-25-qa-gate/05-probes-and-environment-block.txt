@@ -1,0 +1,29 @@
+=== probes ===
+--- double submit: settle the same Task again → exit 2, no second commit ---
+Preflight failed
+
+Reason:
+  Task task_01 has no settleable surface; candidates: /private/tmp/qa0098/case3: status completed (no uncommitted work); Task task_01 status is completed with no uncommitted work; nothing to settle
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix settle --help' for usage.
+--- implement Run cannot start in this environment → exit 2, no side effects ---
+2026/08/25 19:51:06 disposable Agent Session cleanup found no Session to close: close disposable Agent Session "roundfix-preflight-8277ff17780ad7c5": close acpx Agent Session "roundfix-preflight-8277ff17780ad7c5": acpx infrastructure error after exit code 1: missing session
+--- acpx stderr tail ---
+No named session "roundfix-preflight-8277ff17780ad7c5" for cwd /private/tmp/qa0098/impl and agent codex; recovery: rerun Agent Selection readiness after the Session can be closed
+Preflight failed
+
+Reason:
+  profile proof failed for runtime "codex", model "gpt-5.6-sol", reasoning_effort "high"; affected categories: backend preferred source=built-in; classification: selection_rejected; adapter error: apply Agent Selection "codex"/"gpt-5.6-sol"/"high" during ensure disposable Agent Session without model override: adapter rejected selection: acpx infrastructure error after exit code 1: acpx command failed
+--- acpx stderr tail ---
+Authentication required
+hint: run `acpx config show` to locate the active config, then add the required credential under `auth` and retry.; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection; next: update the profile with `roundfix profiles configure --scope user|project` or update the ACP Runtime or adapter, then rerun `roundfix profiles validate`; fallback: Fallback Chains activate only after Run creation (ADR-0050); Preflight proves every configured tuple and substitutes none
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Usage:
+  Run 'roundfix implement --help' for usage.
