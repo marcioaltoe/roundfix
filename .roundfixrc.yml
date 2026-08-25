@@ -68,40 +68,31 @@ defaults:
 profiles:
   general:
     preferred:
-      runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
-    fallbacks:
-      - runtime: opencode
-        model: openrouter/deepseek/deepseek-v4-flash-0731
-        reasoning_effort: max
-      - runtime: claude
-        model: opus
-        reasoning_effort: high
-  backend:
-    preferred:
-      runtime: codex
-      model: gpt-5.6-sol
-      reasoning_effort: high
-    fallbacks:
-      - runtime: opencode
-        model: openrouter/deepseek/deepseek-v4-flash-0731
-        reasoning_effort: max
-  frontend:
-    # The one category Claude still leads, and the one place it runs by default
-    # during the low week. Opus 5 at high scores 73% in 73 steps; the codex row
-    # that matches it is sol/max at 61 steps, and sol/high does not — it scores
-    # 69%. Claude is kept here on design judgment no benchmark on file measures,
-    # so the chain accepts the weaker codex setting at its tail rather than
-    # promoting a stronger one that would only ever run in an outage.
-    preferred:
       runtime: claude
       model: opus
       reasoning_effort: high
     fallbacks:
-      - runtime: opencode
-        model: openrouter/deepseek/deepseek-v4-flash-0731
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
+      - runtime: codex
+        model: gpt-5.6-luna
         reasoning_effort: max
+  backend:
+    preferred:
+      runtime: claude
+      model: opus
+      reasoning_effort: xhigh
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
+  frontend:
+    preferred:
+      runtime: claude
+      model: opus
+      reasoning_effort: xhigh
+    fallbacks:
       - runtime: codex
         model: gpt-5.6-sol
         reasoning_effort: high
@@ -150,35 +141,22 @@ profiles:
         reasoning_effort: high
   qa:
     preferred:
-      runtime: codex
-      model: gpt-5.6-sol
+      runtime: claude
+      model: opus
       reasoning_effort: high
     fallbacks:
-      - runtime: opencode
-        model: openrouter/deepseek/deepseek-v4-flash-0731
-        reasoning_effort: max
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
   review:
-    # The second category the OpenCode runtime leads, and the safest one. Review
-    # work is bounded, has no dependency graph, and blocks nobody, so extra
-    # turns cost wall clock and nothing else. It is also the category that pays
-    # for re-enabling nitpicks: a long tail of low-severity findings runs here
-    # at $0.18 per 1M output instead of against a quota the Task Graph needs.
-    #
-    # luna/max sits behind it: 67% for $0.61 against Sol's 69% for $3.47, bought
-    # with 102 steps against 37. It stays the cheapest usable codex row on the
-    # board by an order of magnitude, which is what makes it the right thing to
-    # weigh forward as the codex headroom is spent.
     preferred:
-      runtime: opencode
-      model: openrouter/deepseek/deepseek-v4-flash-0731
-      reasoning_effort: max
+      runtime: claude
+      model: opus
+      reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-luna
-        reasoning_effort: max
-      - runtime: claude
-        model: sonnet
-        reasoning_effort: xhigh
+        model: gpt-5.6-sol
+        reasoning_effort: high
 specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
   root: "docs/specs"
