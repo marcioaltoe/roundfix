@@ -37,7 +37,7 @@ which is evidence removal.
 - Authentication and HTTP: not applicable — no network boundary, credential, or
   request is created or read. The work is gate logic and report writing. Source:
   `docs/agents/specific-repository.md`.
-- Active ADR obligations: applicable — ADR-0096 asks for machine facts proof
+- Active ADR obligations: applicable — ADR-0096 asks for machine facts proof, ADR-0117 places checks at defect origin
   before spending an Agent turn, which is exactly the behavior this Spec's
   precondition refusal implements. This Spec changes what the gate writes when
   that precondition fires. No accepted ADR governs the precondition-refusal

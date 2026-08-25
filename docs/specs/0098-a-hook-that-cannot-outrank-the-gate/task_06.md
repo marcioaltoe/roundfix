@@ -20,6 +20,7 @@ Write invariant into Baseline module.
 ## References
 
 - User Story 3: Invariant documented
+- Core Feature 4: Invariant Documentation
 
 ## Result
 Invariant documented in rendered guidance.

@@ -17,12 +17,13 @@ created: 2026-08-25
 
 | PRD Item | TechSpec Section |
 | --- | --- |
-| User Story 1 | Hook Refusal Detection, Settle Recovery |
-| User Story 2 | Settle Command Extension |
-| User Story 3 | Recovery Contract |
+| User Story 1 | Hook Refusal Detection |
+| User Story 2 | Settle Extension |
+| User Story 3 | Recovery Path |
 | Core Feature 1 | Hook Refusal Detection |
 | Core Feature 2 | Settle Recovery |
 | Core Feature 3 | Deleted File Handling |
+| Core Feature 4 | Invariant Documentation |
 
 ## Context
 
