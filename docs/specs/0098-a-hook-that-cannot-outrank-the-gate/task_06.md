@@ -14,9 +14,8 @@ Write invariant into Baseline module.
 - Use managed marker boundaries
 
 ## Verification
-```bash
-grep -q "commit hook must not be stricter" docs/agents/autonomous-work.md
-```
+
+- `grep -q "commit hook must not be stricter" docs/agents/autonomous-work.md`
 
 ## Result
 Invariant documented in rendered guidance.

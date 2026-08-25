@@ -13,9 +13,8 @@ Update QA Report for precondition metadata.
 - Preserved during read/write
 
 ## Verification
-```bash
-make test -k TestQAReportMetadata | grep -q "ok"
-```
+
+- `make test -k TestQAReportMetadata | grep -q "ok"`
 
 ## Result
 Precondition metadata stored correctly.

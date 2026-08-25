@@ -14,9 +14,8 @@ Read only newest report, ignore superseded.
 - Ignore all older
 
 ## Verification
-```bash
-make test -k TestNewestReportOnly | grep -q "ok"
-```
+
+- `make test -k TestNewestReportOnly | grep -q "ok"`
 
 ## Result
 Mechanical stage reads newest report only.

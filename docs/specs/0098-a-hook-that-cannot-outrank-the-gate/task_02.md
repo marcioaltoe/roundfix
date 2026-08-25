@@ -13,9 +13,8 @@ Update settle command contract to accept `completed` status.
 - Load Task file from selected surface
 
 ## Verification
-```bash
-make test -k TestSettleAcceptsCompleted | grep -q "ok"
-```
+
+- `make test -k TestSettleAcceptsCompleted | grep -q "ok"`
 
 ## Result
 Settle command accepts completed-but-uncommitted Tasks.

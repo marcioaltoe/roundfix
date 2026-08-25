@@ -15,10 +15,9 @@ Verify all deliverables.
 - Verify invariant in docs
 
 ## Verification
-```bash
-roundfix spec check 0098-a-hook-that-cannot-outrank-the-gate --strict && \
-make test -k TestHookStrictness
-```
+
+- `roundfix spec check 0098-a-hook-that-cannot-outrank-the-gate --strict && \
+make test -k TestHookStrictness`
 
 ## Result
 QA gate passes all acceptance criteria.

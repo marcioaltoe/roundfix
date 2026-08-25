@@ -13,9 +13,8 @@ Modify mechanical stage to accept terminal row.
 - Validate status and provenance
 
 ## Verification
-```bash
-make test -k TestReportValidation | grep -q "ok"
-```
+
+- `make test -k TestReportValidation | grep -q "ok"`
 
 ## Result
 Mechanical stage validates new shape.
