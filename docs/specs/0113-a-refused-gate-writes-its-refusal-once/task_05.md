@@ -16,5 +16,10 @@ Read only newest report, ignore superseded.
 ## Verification
 - `make test -k TestNewestReportOnly | grep -q "ok"`
 
+
+## References
+
+- Core Feature 3: Newest Report Only
+
 ## Result
 Mechanical stage reads newest report only.

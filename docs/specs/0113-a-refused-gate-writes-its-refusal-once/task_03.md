@@ -15,5 +15,10 @@ Update QA Report for precondition metadata.
 ## Verification
 - `make test -k TestQAReportMetadata | grep -q "ok"`
 
+
+## References
+
+- Core Feature 1: Terminal Row Writing
+
 ## Result
 Precondition metadata stored correctly.

@@ -17,5 +17,10 @@ Verify all deliverables.
 ## Verification
 - `roundfix spec check 0113-a-refused-gate-writes-its-refusal-once --strict && make test -k TestGateRefusal`
 
+
+## References
+
+- All user stories and core features
+
 ## Result
 QA gate passes all acceptance criteria.

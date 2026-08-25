@@ -17,5 +17,11 @@ Implement gate refusal path with terminal row.
 ## Verification
 - `grep -q "| 0 | blocked | precondition |" /tmp/qa-report*.md`
 
+
+## References
+
+- User Story 1: Gate writes valid report
+- Core Feature 1: Terminal Row Writing
+
 ## Result
 Gate writes valid report on precondition refusal.

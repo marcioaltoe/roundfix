@@ -16,5 +16,10 @@ Write invariant into Baseline module.
 ## Verification
 - `grep -q "commit hook must not be stricter" docs/agents/autonomous-work.md`
 
+
+## References
+
+- User Story 3: Invariant documented
+
 ## Result
 Invariant documented in rendered guidance.

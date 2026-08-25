@@ -17,5 +17,10 @@ Verify all deliverables.
 ## Verification
 - `roundfix spec check 0098-a-hook-that-cannot-outrank-the-gate --strict && make test -k TestHookStrictness`
 
+
+## References
+
+- All user stories and core features
+
 ## Result
 QA gate passes all acceptance criteria.

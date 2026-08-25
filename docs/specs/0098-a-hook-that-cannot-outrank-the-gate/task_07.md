@@ -15,5 +15,11 @@ Verify three measured hook refusal cases.
 ## Verification
 - `make test -k TestHookRefusalRecovery | grep -q "ok.*3 subtests"`
 
+
+## References
+
+- User Story 1: Three measured cases
+- User Story 3: Acceptance verification
+
 ## Result
 Three cases resolve via settle without losing work.

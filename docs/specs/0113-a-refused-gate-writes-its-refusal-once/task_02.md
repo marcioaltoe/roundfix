@@ -16,5 +16,11 @@ Detect which precondition failed and why.
 ## Verification
 - `make test -k TestPreconditionDetection | grep -q "ok"`
 
+
+## References
+
+- User Story 2: Precondition captured
+- Core Feature 1: Terminal Row Writing
+
 ## Result
 Precondition failures detected correctly.

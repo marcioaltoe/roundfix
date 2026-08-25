@@ -15,5 +15,10 @@ Modify mechanical stage to accept terminal row.
 ## Verification
 - `make test -k TestReportValidation | grep -q "ok"`
 
+
+## References
+
+- Core Feature 2: Mechanical Stage Update
+
 ## Result
 Mechanical stage validates new shape.

@@ -18,5 +18,10 @@ Implement hook refusal detection in the Daemon's commit path.
 ## Verification
 - `grep -r "hook_refused" internal/daemon/*_test.go | wc -l | grep -qE '^[1-9]'`
 
+## References
+
+- User Story 1: Hook refusal is detected and recorded
+- Core Feature 1: Hook Refusal Detection
+
 ## Result
 Hook refusal detection implemented and tested.

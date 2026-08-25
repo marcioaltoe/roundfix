@@ -16,5 +16,10 @@ Commit and integrate settled work onto Run Branch.
 ## Verification
 - `git log --oneline -n 1 | grep -q "^[a-f0-9]*"`
 
+
+## References
+
+- Core Feature 2: Settle Recovery
+
 ## Result
 Settled commits integrate correctly.

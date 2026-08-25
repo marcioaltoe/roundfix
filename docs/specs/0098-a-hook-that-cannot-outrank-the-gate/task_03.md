@@ -16,5 +16,10 @@ Execute Task Verification in the selected settle surface.
 ## Verification
 - `make test -k TestSettleVerification | grep -q "ok"`
 
+
+## References
+
+- Core Feature 2: Settle Recovery
+
 ## Result
 Settle re-runs verification correctly.

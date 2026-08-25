@@ -6,6 +6,24 @@ created: 2026-08-25
 
 # TechSpec: A Hook That Cannot Outrank the Gate
 
+## Project Constraints
+
+- Identifier strategy: applicable — Verification, Task Worktree, Run, and Task status vocabulary are glossary terms. The closing node checks whether the work introduced or changed one. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — no network boundary, credential, or request. The work is commit orchestration and recovery. Source: `docs/agents/specific-repository.md`.
+- Active ADR obligations: applicable — ADR-0014 (Daemon verification ownership), ADR-0038 (one Verification repair), ADR-0020, ADR-0057, ADR-0056, ADR-0096, ADR-0117 apply. Source: `docs/agents/domain.md`.
+- Tooling authority: applicable — autonomous-work module. Express maintainer authorization: `docs/workflow/authorizations/2026-08-12-the-authoring-and-baseline-corrections.md`. Bounded files: `internal/daemon`, `internal/cli/settle.go`, `docs/agents/autonomous-work.md`. Source: `docs/agents/agent-instructions.md`.
+
+## Coverage Map
+
+| PRD Item | TechSpec Section |
+| --- | --- |
+| User Story 1 | Hook Refusal Detection, Settle Recovery |
+| User Story 2 | Settle Command Extension |
+| User Story 3 | Recovery Contract |
+| Core Feature 1 | Hook Refusal Detection |
+| Core Feature 2 | Settle Recovery |
+| Core Feature 3 | Deleted File Handling |
+
 ## Context
 
 The Daemon runs the authoritative Verification and then commits. When the

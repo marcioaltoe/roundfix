@@ -6,6 +6,24 @@ created: 2026-08-25
 
 # TechSpec: Gate Refusal Report Shape
 
+## Project Constraints
+
+- Identifier strategy: applicable — QA Report, precondition, terminal row are glossary terms. The closing node checks whether the work introduced or changed one. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — no network boundary, credential, or request. The work is gate logic and report writing. Source: `docs/agents/specific-repository.md`.
+- Active ADR obligations: applicable — ADR-0096 (machine facts proof before Agent turn). Source: `docs/agents/domain.md`.
+- Tooling authority: not applicable — no protected tooling mutation. Source: `docs/agents/agent-instructions.md`.
+
+## Coverage Map
+
+| PRD Item | TechSpec Section |
+| --- | --- |
+| User Story 1 | Gate Refusal Terminal Row |
+| User Story 2 | Precondition Metadata Recording |
+| User Story 3 | Report Reading Strategy |
+| Core Feature 1 | Terminal Row Writing |
+| Core Feature 2 | Mechanical Stage Update |
+| Core Feature 3 | Newest Report Only |
+
 ## Context
 
 When the QA gate refuses at a precondition check (e.g., a strict Spec consistency

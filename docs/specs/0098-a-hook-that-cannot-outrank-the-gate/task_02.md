@@ -15,5 +15,11 @@ Update settle command contract to accept `completed` status.
 ## Verification
 - `make test -k TestSettleAcceptsCompleted | grep -q "ok"`
 
+
+## References
+
+- User Story 2: Settle accepts completed
+- Core Feature 2: Settle Recovery
+
 ## Result
 Settle command accepts completed-but-uncommitted Tasks.
