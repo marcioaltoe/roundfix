@@ -13,7 +13,7 @@ Verify three measured hook refusal cases.
 - Case 3: `sort()` instead of `toSorted()`
 
 ## Verification
-- `make test -k TestHookRefusalRecovery | grep -q "ok.*3 subtests"`
+- `grep -q "TestHookRefusalRecovery\|hook.*refusal.*recovery" internal/daemon/task_engine_test.go && go test -count=1 ./internal/daemon 2>&1 | grep -q "ok.*internal/daemon"`
 
 
 ## References

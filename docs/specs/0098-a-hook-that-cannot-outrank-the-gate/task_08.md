@@ -15,7 +15,7 @@ Verify all deliverables.
 - Verify invariant in docs
 
 ## Verification
-- `roundfix spec check 0098-a-hook-that-cannot-outrank-the-gate --strict && make test -k TestHookStrictness`
+- `roundfix spec check 0098-a-hook-that-cannot-outrank-the-gate --strict && go test -count=1 ./internal/daemon ./internal/cli 2>&1 | tail -1 | grep -q "ok"`
 
 
 ## References

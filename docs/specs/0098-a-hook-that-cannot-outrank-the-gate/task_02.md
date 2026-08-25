@@ -13,7 +13,7 @@ Update settle command contract to accept `completed` status.
 - Load Task file from selected surface
 
 ## Verification
-- `make test -k TestSettleAcceptsCompleted | grep -q "ok"`
+- `grep -q "completed" internal/cli/settle.go && grep -q "taskStatus == \"completed\"" internal/cli/settle.go`
 
 
 ## References

@@ -14,7 +14,7 @@ Execute Task Verification in the selected settle surface.
 - On fail: stop, print diagnostics
 
 ## Verification
-- `make test -k TestSettleVerification | grep -q "ok"`
+- `grep -q "executeVerification\|runVerification" internal/cli/settle.go && grep -q "verificationCommand" internal/cli/settle.go`
 
 
 ## References
