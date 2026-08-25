@@ -117,7 +117,7 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	shortSHA := commitResult.shortSHA
 	if plan.taskSurface {
-		if integratedSHA, err := integrateSettledTaskWorktree(ctx, plan); err != nil {
+		if integratedSHA, err := integrateTaskWorktree(ctx, plan); err != nil {
 			fmt.Fprintf(stderr, "%s: settle failed after verification: %v\n", app.Name, err)
 			return exitRunFailed
 		} else if integratedSHA != "" {
@@ -549,29 +549,29 @@ type settleCommitResult struct {
 	paths    []string
 }
 
+// settleTaskAndCommit settles the Task completed in the surface that holds its
+// verified work and commits that surface as one standard Task commit. The
+// status flip is written before staging so it rides in the same commit as the
+// code changes (ADR 0013), the way the Daemon's own Task commit carries it.
 func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators engineCollaborators) (settleCommitResult, error) {
 	taskPath := filepath.Join(plan.specsRoot, plan.task.File)
-	changed, err := collaborators.worktree.Snapshot(ctx, plan.workDir)
-	if err != nil {
-		return settleCommitResult{}, err
-	}
-	if plan.task.Status != spec.StatusCompleted {
-		// The status flip below is not in the snapshot the surface just
-		// reported; a Task already completed there has no flip to commit.
-		changed = ensureSettleCommitPath(changed, settleArtifactCommitPath(plan, taskPath))
-	}
-	stageable, _ := daemon.FilterStageablePaths(plan.workDir, changed)
 	if err := spec.SetStatus(taskPath, spec.StatusCompleted); err != nil {
 		return settleCommitResult{}, fmt.Errorf("settle Task %s completed: %w", plan.task.ID, err)
 	}
-	committedPaths := []string(nil)
-	if len(stageable) > 0 {
-		committedPaths = append([]string(nil), stageable...)
-		message := daemon.TaskCommitMessage(plan.graph.Spec.Slug, plan.task)
+	if err := addAllChanges(ctx, plan.workDir); err != nil {
+		return settleCommitResult{}, err
+	}
+	committedPaths, err := stagedSettlePaths(ctx, plan.workDir)
+	if err != nil {
+		return settleCommitResult{}, err
+	}
+	if len(committedPaths) > 0 {
+		// The committer stages the surface again before it commits. That
+		// repeats the stage-all above rather than narrowing it, so the commit
+		// carries exactly the index stagedSettlePaths just reported.
 		if err := collaborators.committer.Commit(ctx, daemon.CommitRequest{
 			WorkDir: plan.workDir,
-			Message: message,
-			Paths:   stageable,
+			Message: daemon.TaskCommitMessage(plan.graph.Spec.Slug, plan.task),
 		}); err != nil {
 			return settleCommitResult{}, err
 		}
@@ -581,6 +581,43 @@ func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators eng
 		return settleCommitResult{}, err
 	}
 	return settleCommitResult{shortSHA: shortSHA, paths: committedPaths}, nil
+}
+
+// addAllChanges stages every change in the settle surface with `git add --all`.
+//
+// The Daemon's Task commit stages an explicit path list, because it diffs a
+// before and an after snapshot to keep the commit to what one Agent turn
+// touched. A settle surface has no before snapshot: everything uncommitted
+// there is the recovered Task's work, and two shapes reach this call that a
+// path list cannot carry. A file the Task deleted stops matching its own
+// pathspec once the removal is staged, so re-staging it fails on a pathspec
+// that matches nothing. A file the Task renamed is one porcelain record naming
+// the new path, so staging that path alone leaves the old path's deletion out
+// of the commit. Staging the whole surface records both as removals.
+func addAllChanges(ctx context.Context, workDir string) error {
+	if _, err := (preflight.ExecGitRunner{}).RunGit(ctx, workDir, "add", "--all"); err != nil {
+		return fmt.Errorf("stage settle surface %q: %w", workDir, err)
+	}
+	return nil
+}
+
+// stagedSettlePaths reports what addAllChanges staged, so the settle report
+// names exactly the paths the Task commit carries. Rename detection stays off:
+// a rename is an added path and a removed path in the commit, and settle
+// reports both.
+func stagedSettlePaths(ctx context.Context, workDir string) ([]string, error) {
+	output, err := (preflight.ExecGitRunner{}).RunGit(ctx, workDir, "diff", "--cached", "--name-only", "--no-renames", "-z")
+	if err != nil {
+		return nil, fmt.Errorf("read staged paths in settle surface %q: %w", workDir, err)
+	}
+	var paths []string
+	for _, path := range strings.Split(output, "\x00") {
+		if path != "" {
+			paths = append(paths, path)
+		}
+	}
+	sort.Strings(paths)
+	return paths, nil
 }
 
 func emitSettleSharedFailedWarning(stderr io.Writer, plan settlePlan) {
@@ -602,7 +639,11 @@ func otherFailedSettleTasks(tasks []spec.Task, settledTaskID string) []string {
 	return failed
 }
 
-func integrateSettledTaskWorktree(ctx context.Context, plan settlePlan) (string, error) {
+// integrateTaskWorktree replays the settled Task commit onto the Run Branch and
+// removes the Task Worktree once it lands. A conflict returns before the
+// removal, so the surface that still holds the work stays where the Supervisor
+// can reach it.
+func integrateTaskWorktree(ctx context.Context, plan settlePlan) (string, error) {
 	result, err := runworktree.IntegrateTask(ctx, plan.runRef, plan.taskRef)
 	if err != nil {
 		return "", err
@@ -635,19 +676,6 @@ func integrateSettledRun(ctx context.Context, plan settlePlan) (string, error) {
 	return "", nil
 }
 
-func ensureSettleCommitPath(paths []string, path string) []string {
-	for _, existing := range paths {
-		if existing == path {
-			result := append([]string(nil), paths...)
-			sort.Strings(result)
-			return result
-		}
-	}
-	result := append(append([]string(nil), paths...), path)
-	sort.Strings(result)
-	return result
-}
-
 func settleShortHEAD(ctx context.Context, gitRoot string) (string, error) {
 	output, err := preflight.ExecGitRunner{}.RunGit(ctx, gitRoot, "rev-parse", "--short", "HEAD")
 	if err != nil {
@@ -662,11 +690,4 @@ func settleShortHEAD(ctx context.Context, gitRoot string) (string, error) {
 
 func filepathInRoot(root string, path string) string {
 	return filepath.Join(root, path)
-}
-
-func settleArtifactCommitPath(plan settlePlan, artifactPath string) string {
-	if relative, err := filepath.Rel(plan.workDir, artifactPath); err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) && !filepath.IsAbs(relative) {
-		return relative
-	}
-	return artifactPath
 }

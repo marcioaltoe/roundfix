@@ -493,6 +493,86 @@ func TestSettleAcceptsCompletedTaskFromKeptTaskWorktreeAfterHookRefusal(t *testi
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 }
 
+// A refused commit leaves the Daemon's staging behind, so settle meets a
+// surface whose removals are already in the index. Those paths are in neither
+// the index nor the worktree, so re-staging them by pathspec matches nothing;
+// settle stages the whole surface instead, and the Task commit carries the
+// removals onto the Run Branch.
+func TestSettleCommitsDeletedAndRenamedWorkFromTaskWorktree(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover work a hook refused",
+			taskType:     "backend",
+			status:       string(spec.StatusInProgress),
+			verification: []string{"test -f never-written.txt"},
+		},
+	})
+	mustWrite(t, filepath.Join(repoDir, "removed.txt"), "obsolete\n")
+	mustWrite(t, filepath.Join(repoDir, "original.txt"), "moved content\n")
+	gitImplement(t, repoDir, "add", "-A")
+	gitImplement(t, repoDir, "commit", "-m", "seed the files the Task rewrites")
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	run, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateUnresolved)
+	if err := os.Remove(filepath.Join(taskRef.Path, "removed.txt")); err != nil {
+		t.Fatalf("delete task work: %v", err)
+	}
+	if err := os.Rename(filepath.Join(taskRef.Path, "original.txt"), filepath.Join(taskRef.Path, "renamed.txt")); err != nil {
+		t.Fatalf("rename task work: %v", err)
+	}
+	mustWrite(t, implementTaskPath(taskRef.Path, "task_01"), implementTaskContent(implementTestSlug, implementSeed{
+		id:           "task_01",
+		title:        "Recover work a hook refused",
+		taskType:     "backend",
+		status:       string(spec.StatusCompleted),
+		verification: []string{"test -f renamed.txt"},
+	}))
+	// The shape a refused commit leaves behind: the Daemon staged the whole
+	// Task, including both removals, and the hook refused the commit.
+	gitImplement(t, taskRef.Path, "add", "-A")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), taskRef.Path)
+	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
+	expectedStdout := "verify test -f renamed.txt — ok\n" +
+		"commit " + filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")) + "\n" +
+		"commit original.txt\n" +
+		"commit removed.txt\n" +
+		"commit renamed.txt\n" +
+		"settled task_01 completed — " + shortSHA + "\n"
+	if stdout.String() != expectedStdout {
+		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
+	}
+	nameStatus := gitSettleOutput(t, repoDir, "diff-tree", "--no-commit-id", "--name-status", "--no-renames", "-r", "HEAD")
+	for _, expected := range []string{"D\toriginal.txt", "D\tremoved.txt", "A\trenamed.txt"} {
+		if !strings.Contains(nameStatus, expected) {
+			t.Fatalf("expected Task commit to record %q, got:\n%s", expected, nameStatus)
+		}
+	}
+	for _, gone := range []string{"removed.txt", "original.txt"} {
+		if _, err := os.Stat(filepath.Join(repoDir, gone)); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("expected %s removed from the user checkout, got %v", gone, err)
+		}
+	}
+	if got := mustRead(t, filepath.Join(repoDir, "renamed.txt")); got != "moved content\n" {
+		t.Fatalf("expected renamed work integrated into user checkout, got %q", got)
+	}
+	assertRunWorktreeRemoved(t, taskRef.Path)
+	assertRunBranchRemoved(t, repoDir, taskRef.Branch)
+	assertRunWorktreeRemoved(t, run.WorkDir)
+	if status := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); status != "" {
+		t.Fatalf("expected clean user checkout after settle integration, got %q", status)
+	}
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
 func TestSettleRefusesCompletedTaskWhenNoSurfaceHoldsUncommittedWork(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
