@@ -147,7 +147,6 @@ Write invariant into `docs/agents/autonomous-work.md` (Baseline module, managed 
 
 **Acceptance**:
 - Text: "A commit hook must not be stricter than the authoritative Verification"
-- Cite: ADR-0098
 - Explain consequence and recovery path
 - Use managed marker boundaries
 
