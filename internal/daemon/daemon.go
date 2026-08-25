@@ -224,7 +224,14 @@ func (GitCommitter) Commit(ctx context.Context, req CommitRequest) error {
 	if err := runGit(ctx, req.WorkDir, addArgs...); err != nil {
 		return err
 	}
-	if err := runGit(ctx, req.WorkDir, "commit", "-m", req.Message); err != nil {
+	// A refused commit leaves the staged index untouched, so the work stays
+	// recoverable in the surface that produced it.
+	result, err := runGitCommand(ctx, req.WorkDir, "commit", "-m", req.Message)
+	if err != nil {
+		failure := result.Failure()
+		if hook, refused := ClassifyCommitHookRefusal(failure); refused {
+			return &HookRefusalError{Hook: hook, ExitCode: result.ExitCode, Output: failure, Err: err}
+		}
 		return err
 	}
 	return nil
@@ -335,7 +342,27 @@ func gitExcludePathspecs(workDir string, paths []string) []string {
 	return pathspecs
 }
 
-func runGitOutput(ctx context.Context, workDir string, args ...string) (string, error) {
+// gitCommandResult carries one git invocation's captured output and exit
+// code, so a caller can classify a failure instead of only reporting it.
+type gitCommandResult struct {
+	Stdout   string
+	Stderr   string
+	ExitCode int
+}
+
+// Failure is what the command said about why it failed: stderr, where git
+// and most hook runners write, followed by stdout, where some hooks report.
+func (result gitCommandResult) Failure() string {
+	parts := make([]string, 0, 2)
+	for _, stream := range []string{result.Stderr, result.Stdout} {
+		if trimmed := strings.TrimSpace(stream); trimmed != "" {
+			parts = append(parts, trimmed)
+		}
+	}
+	return strings.Join(parts, "\n")
+}
+
+func runGitCommand(ctx context.Context, workDir string, args ...string) (gitCommandResult, error) {
 	// fsmonitor is disabled per invocation so daemon warnings such as
 	// fsmonitor_ipc__send_query never reach parsed output.
 	cmdArgs := append([]string{"-C", workDir, "-c", "core.fsmonitor=false"}, args...)
@@ -343,32 +370,36 @@ func runGitOutput(ctx context.Context, workDir string, args ...string) (string, 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		detail := formatCommandOutput(stderr.Bytes())
-		if detail == "" {
-			detail = formatCommandOutput(stdout.Bytes())
-		}
-		return "", fmt.Errorf("git %s failed: %w%s", strings.Join(args, " "), err, detail)
+	runErr := cmd.Run()
+	result := gitCommandResult{Stdout: stdout.String(), Stderr: stderr.String()}
+	if runErr == nil {
+		return result, nil
 	}
-	return stdout.String(), nil
+	// A command that never reached an exit status reports -1, so a reader
+	// cannot mistake the zero value for success.
+	result.ExitCode = -1
+	var exitErr *exec.ExitError
+	if errors.As(runErr, &exitErr) {
+		result.ExitCode = exitErr.ExitCode()
+	}
+	detail := formatCommandOutput(stderr.Bytes())
+	if detail == "" {
+		detail = formatCommandOutput(stdout.Bytes())
+	}
+	return result, fmt.Errorf("git %s failed: %w%s", strings.Join(args, " "), runErr, detail)
+}
+
+func runGitOutput(ctx context.Context, workDir string, args ...string) (string, error) {
+	result, err := runGitCommand(ctx, workDir, args...)
+	if err != nil {
+		return "", err
+	}
+	return result.Stdout, nil
 }
 
 func runGit(ctx context.Context, workDir string, args ...string) error {
-	// fsmonitor is disabled per invocation so daemon warnings such as
-	// fsmonitor_ipc__send_query never reach parsed output.
-	cmdArgs := append([]string{"-C", workDir, "-c", "core.fsmonitor=false"}, args...)
-	cmd := exec.CommandContext(ctx, "git", cmdArgs...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		detail := formatCommandOutput(stderr.Bytes())
-		if detail == "" {
-			detail = formatCommandOutput(stdout.Bytes())
-		}
-		return fmt.Errorf("git %s failed: %w%s", strings.Join(args, " "), err, detail)
-	}
-	return nil
+	_, err := runGitCommand(ctx, workDir, args...)
+	return err
 }
 
 func formatCommandOutput(output []byte) string {

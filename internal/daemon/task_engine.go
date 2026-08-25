@@ -1605,6 +1605,10 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 		Message: message,
 		Paths:   stageable,
 	}); err != nil {
+		var refusal *HookRefusalError
+		if errors.As(err, &refusal) {
+			return engine.recordHookRefusal(ctx, plan, task, ordinal, refusal, err)
+		}
 		return err
 	}
 	subject, _, _ := strings.Cut(message, "\n")
@@ -1619,6 +1623,43 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, noOpShape)
 	}
 	return nil
+}
+
+// recordHookRefusal journals a Task commit the repository's commit hook
+// refused. The Daemon is the verification authority (ADR 0014) and the Task
+// already settled completed before this boundary, so the refusal neither
+// reclassifies the Task nor discards its work: the changes stay staged in
+// the surface that produced them and the Run names the recovery command.
+func (engine *Engine) recordHookRefusal(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, refusal *HookRefusalError, err error) error {
+	hook := refusal.HookName()
+	output := hookOutputExcerpt(refusal.Output, hookRefusalOutputMax)
+	if output == "" {
+		output = "unavailable"
+	}
+	recovery := fmt.Sprintf("roundfix settle --spec %s --task %s", plan.Spec.Slug, task.ID)
+	if _, writeErr := fmt.Fprintf(engine.deps.Progress,
+		"roundfix: run %s Task %s: the repository %s hook refused the commit (exit status %d): %s\nTask %s stays completed with its verified changes staged in %s; recover with: %s\n",
+		plan.RunID, task.ID, hook, refusal.ExitCode, output,
+		task.ID, plan.WorkDir, recovery,
+	); writeErr != nil {
+		return fmt.Errorf("write hook refusal for run %q Task %s: %w", plan.RunID, task.ID, writeErr)
+	}
+	summary := fmt.Sprintf("Task %s commit refused by the repository %s hook; Task stays completed with changes staged.", task.ID, hook)
+	payload := map[string]any{
+		"decision":       "refused",
+		"classification": hookRefusedClassification,
+		"task":           task.ID,
+		"status":         string(spec.StatusCompleted),
+		"hook":           hook,
+		"exit_code":      refusal.ExitCode,
+		"output":         output,
+		"surface":        plan.WorkDir,
+		"recovery":       recovery,
+	}
+	if publishErr := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonCommit, summary, payload); publishErr != nil {
+		return fmt.Errorf("publish hook refusal event for run %q Task %s: %w", plan.RunID, task.ID, publishErr)
+	}
+	return fmt.Errorf("commit Task %s for run %q: %w", task.ID, plan.RunID, err)
 }
 
 func taskNoOpCommitShape(plan TaskPlan, stageable []string) string {
