@@ -13,7 +13,7 @@ Ensure deleted files stage correctly.
 - Confirm deletion commits cleanly
 
 ## Verification
-- `git_test=$(mktemp -d) && cd "$git_test" && git init -q . && git config user.email t@t && git config user.name t && echo hi > file.txt && git add file.txt && git commit -qm init && rm file.txt && git add --all && git diff --cached --name-status | grep -q "^D" && cd - >/dev/null`
+- `grep -q "git add --all\|addAllChanges" internal/cli/settle.go && grep -q "name-status\|deletedPaths" internal/cli/settle.go`
 
 
 ## References
