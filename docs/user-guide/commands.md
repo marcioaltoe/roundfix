@@ -578,9 +578,9 @@ Task whose surfaces are all clean was committed already and settles nothing.
 Settle always reports the choice on stderr as `Settle surface: <path>`; when no
 candidate qualifies, the refusal names each candidate path, the status found
 there, and `no uncommitted work` for a surface that holds none. It re-runs the
-Task's Verification commands in the selected tree, changes nothing on failure,
-and on pass prints one sorted `commit <path>` line per committed path before
-the settled line:
+Task's Verification commands in the selected tree — verbatim, in task file
+order, with no Agent session — changes nothing on failure, and on pass prints
+one sorted `commit <path>` line per committed path before the settled line:
 
 ```text
 verify go test ./... — ok
@@ -588,6 +588,20 @@ commit internal/example/example.go
 commit docs/specs/<slug>/task_01.md
 settled task_01 completed — <short sha>
 ```
+
+The first command that does not pass ends the re-run and exits `1` with the
+Task status, the surface, and the Run left as they were:
+
+```text
+verify go test ./... — failed (diagnostics: <artifact-dir>/runs/settle-<slug>-<task_id>/verification/batch-001-attempt-1.log)
+task_01 stays completed — verification failed
+```
+
+A command whose verdict the runner never observed — it could not start, or its
+diagnostics could not be retained — reports `verify <command> — verdict
+unknown` and `<task_id> stays <status> — verification verdict unknown` instead,
+with the cause on stderr. Settle has no Verification repair: fix the cause and
+run it again.
 
 When other Tasks of the Spec are `failed` at settle time, one stderr warning
 names them: their work may be swept into this commit. Settle creates no Run,

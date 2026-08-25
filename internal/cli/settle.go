@@ -38,7 +38,7 @@ Options:
 
 Exit codes:
   0  settled completed and committed
-  1  verification failed; the Task status is unchanged and no commit is created
+  1  verification did not pass; the Task status is unchanged and no commit is created
   2  Preflight Validation failed
 `
 
@@ -105,25 +105,9 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	collaborators := commandDependenciesForContext(ctx).newEngineCollaborators()
-	verificationRunID := settleVerificationRunID(plan)
 	fmt.Fprintf(stderr, "Settle surface: %s\n", plan.workDir)
-	for _, command := range plan.task.Verification {
-		_, err := collaborators.verifier.Verify(ctx, daemon.VerifyRequest{
-			WorkDir:    plan.workDir,
-			Command:    command,
-			OutputPath: daemon.VerificationOutputPath(plan.artifactDir, verificationRunID, 1, 1),
-		})
-		if err != nil {
-			var commandErr *daemon.VerificationCommandError
-			if !errors.As(err, &commandErr) {
-				fmt.Fprintf(stderr, "%s: settle verification failed: %v\n", app.Name, err)
-				return exitRunFailed
-			}
-			fmt.Fprintf(stdout, "verify %s — failed (diagnostics: %s)\n", command, commandErr.OutputPath)
-			fmt.Fprintf(stdout, "%s stays %s — verification failed\n", plan.task.ID, plan.task.Status)
-			return exitRunFailed
-		}
-		fmt.Fprintf(stdout, "verify %s — ok\n", command)
+	if !runVerificationInSettleSurface(ctx, plan, collaborators.verifier, stdout, stderr) {
+		return exitRunFailed
 	}
 
 	commitResult, err := settleTaskAndCommit(ctx, plan, collaborators)
@@ -159,6 +143,53 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	fmt.Fprintf(stdout, "settled %s completed — %s\n", plan.task.ID, shortSHA)
 	return exitOK
+}
+
+// runVerificationInSettleSurface re-runs the Task's Verification in the
+// selected settle surface and reports one verdict line per command. The work
+// settle recovers already passed this Verification under the Daemon, so settle
+// runs the same commands through the same daemon.Verifier collaborator the
+// Implement Run engine uses: task file order, verbatim text, no edit, and no
+// Agent session to repair a failure. The first command that does not pass ends
+// the loop, and the caller leaves the surface exactly as it found it.
+//
+// Implement's single Verification repair (ADR-0038) has no counterpart here. A
+// temporary failure (exit code 75) reaches settle wrapped around its command
+// failure and stops the settle like any other failed command; the Supervisor
+// re-runs settle once the cause is gone.
+func runVerificationInSettleSurface(ctx context.Context, plan settlePlan, verifier daemon.Verifier, stdout io.Writer, stderr io.Writer) bool {
+	outputPath := daemon.VerificationOutputPath(plan.artifactDir, settleVerificationRunID(plan), 1, 1)
+	for _, verificationCommand := range plan.task.Verification {
+		_, err := verifier.Verify(ctx, daemon.VerifyRequest{
+			WorkDir:    plan.workDir,
+			Command:    verificationCommand,
+			OutputPath: outputPath,
+		})
+		if err == nil {
+			fmt.Fprintf(stdout, "verify %s — ok\n", verificationCommand)
+			continue
+		}
+		var commandErr *daemon.VerificationCommandError
+		if errors.As(err, &commandErr) {
+			fmt.Fprintf(stdout, "verify %s — failed (diagnostics: %s)\n", verificationCommand, commandErr.OutputPath)
+			fmt.Fprintf(stdout, "%s stays %s — verification failed\n", plan.task.ID, plan.task.Status)
+			return false
+		}
+		// The runner never observed a verdict, so the recovered work is
+		// neither verified nor refuted. Report it apart from a failed command
+		// and keep the cause on stderr: it names an environment problem the
+		// Supervisor clears before settling again.
+		var unknownErr *daemon.VerificationUnknownError
+		if errors.As(err, &unknownErr) {
+			fmt.Fprintf(stdout, "verify %s — verdict unknown\n", verificationCommand)
+			fmt.Fprintf(stdout, "%s stays %s — verification verdict unknown\n", plan.task.ID, plan.task.Status)
+			fmt.Fprintf(stderr, "%s: settle verification verdict unknown: %v\n", app.Name, unknownErr)
+			return false
+		}
+		fmt.Fprintf(stderr, "%s: settle verification failed: %v\n", app.Name, err)
+		return false
+	}
+	return true
 }
 
 func settleVerificationRunID(plan settlePlan) string {

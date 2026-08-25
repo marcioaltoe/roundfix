@@ -778,6 +778,200 @@ func TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestSettleVerificationRunsSurfaceCommandsVerbatim(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Recover work a hook refused", taskType: "backend", status: string(spec.StatusCompleted)},
+	})
+	// The commands land in the task file only after the workspace exists, so
+	// the first one can name the surface settle must run them in.
+	commands := []string{
+		"test \"$(pwd -P)\" = " + shellQuoteImplement(repoDir),
+		"printf 'a|b' | grep -q 'a|b'",
+		"test -f done.txt",
+	}
+	mustWrite(t, implementTaskPath(repoDir, "task_01"), implementTaskContent(implementTestSlug, implementSeed{
+		id:           "task_01",
+		title:        "Recover work a hook refused",
+		taskType:     "backend",
+		status:       string(spec.StatusCompleted),
+		verification: commands,
+	}))
+	gitImplement(t, repoDir, "add", "-A")
+	gitImplement(t, repoDir, "commit", "-m", "declare settle verification commands")
+	mustWrite(t, filepath.Join(repoDir, "done.txt"), "verified work\n")
+	runner := &implementFakeRunner{gitRoot: repoDir}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
+	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), repoDir)
+	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
+	expectedStdout := "verify " + commands[0] + " — ok\n" +
+		"verify " + commands[1] + " — ok\n" +
+		"verify " + commands[2] + " — ok\n" +
+		"commit done.txt\n" +
+		"settled task_01 completed — " + shortSHA + "\n"
+	if stdout.String() != expectedStdout {
+		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
+	}
+	if runner.calls != 0 {
+		t.Fatalf("expected settle to open no Agent session, got %d", runner.calls)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestSettleVerificationFailureKeepsHookRefusedWorkInTaskWorktree(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover work a hook refused",
+			taskType:     "backend",
+			status:       string(spec.StatusInProgress),
+			verification: []string{"test -f never-written.txt"},
+		},
+	})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	run, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateUnresolved)
+	// The shape a refused commit leaves behind, with a Verification that no
+	// longer passes in the surface holding the staged work.
+	mustWrite(t, filepath.Join(taskRef.Path, "done.txt"), "task work\n")
+	gitImplement(t, taskRef.Path, "add", "done.txt")
+	taskPath := implementTaskPath(taskRef.Path, "task_01")
+	mustWrite(t, taskPath, implementTaskContent(implementTestSlug, implementSeed{
+		id:       "task_01",
+		title:    "Recover work a hook refused",
+		taskType: "backend",
+		status:   string(spec.StatusCompleted),
+		verification: []string{
+			"test -f done.txt",
+			"test -f missing.txt",
+			"touch should-not-run",
+		},
+	}))
+	beforeTask := mustRead(t, taskPath)
+	beforeStatus := gitSettleOutput(t, taskRef.Path, "status", "--porcelain=v1")
+	beforeHeadCount := strings.TrimSpace(gitSettleOutput(t, taskRef.Path, "rev-list", "--count", "HEAD"))
+	runner := &implementFakeRunner{gitRoot: repoDir}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
+	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), taskRef.Path)
+	diagnosticPath := daemon.VerificationOutputPath(builtinArtifactDirForRepo(t, repoDir), "settle-"+implementTestSlug+"-task_01", 1, 1)
+	expectedStdout := "verify test -f done.txt — ok\n" +
+		"verify test -f missing.txt — failed (diagnostics: " + diagnosticPath + ")\n" +
+		"task_01 stays completed — verification failed\n"
+	if stdout.String() != expectedStdout {
+		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
+	}
+	if runner.calls != 0 {
+		t.Fatalf("expected settle to open no Agent session, got %d", runner.calls)
+	}
+	if _, err := os.Stat(filepath.Join(taskRef.Path, "should-not-run")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected later verification command not to run, stat error %v", err)
+	}
+	assertRunWorktreeExists(t, taskRef.Path)
+	assertRunWorktreeExists(t, run.WorkDir)
+	if got := mustRead(t, taskPath); got != beforeTask {
+		t.Fatalf("expected task file unchanged")
+	}
+	if got := gitSettleOutput(t, taskRef.Path, "status", "--porcelain=v1"); got != beforeStatus {
+		t.Fatalf("expected Task Worktree status unchanged %q, got %q", beforeStatus, got)
+	}
+	if !strings.Contains(beforeStatus, "A  done.txt") {
+		t.Fatalf("expected refused work to stay staged, got %q", beforeStatus)
+	}
+	if got := strings.TrimSpace(gitSettleOutput(t, taskRef.Path, "rev-list", "--count", "HEAD")); got != beforeHeadCount {
+		t.Fatalf("expected HEAD count %s, got %s", beforeHeadCount, got)
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, "done.txt")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected refused work to stay out of the checkout, stat error %v", err)
+	}
+}
+
+func TestSettleVerificationUnknownVerdictStopsWithoutCommitting(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover work a hook refused",
+			taskType:     "backend",
+			status:       string(spec.StatusCompleted),
+			verification: []string{"go test ./...", "touch should-not-run"},
+		},
+	})
+	mustWrite(t, filepath.Join(repoDir, "done.txt"), "verified work\n")
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.verifier = settleUnknownVerdictVerifier{cause: errors.New("fork/exec /bin/sh: permission denied")}
+	})
+	taskPath := implementTaskPath(repoDir, "task_01")
+	beforeTask := mustRead(t, taskPath)
+	beforeStatus := gitSettleOutput(t, repoDir, "status", "--porcelain=v1")
+	beforeHeadCount := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-list", "--count", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
+	}
+	expectedStdout := "verify go test ./... — verdict unknown\n" +
+		"task_01 stays completed — verification verdict unknown\n"
+	if stdout.String() != expectedStdout {
+		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
+	}
+	assertSettleSurfaceLine(t, stderr.String(), repoDir)
+	for _, expected := range []string{
+		"settle verification verdict unknown:",
+		"fork/exec /bin/sh: permission denied",
+	} {
+		if !strings.Contains(stderr.String(), expected) {
+			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())
+		}
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, "should-not-run")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected later verification command not to run, stat error %v", err)
+	}
+	if got := mustRead(t, taskPath); got != beforeTask {
+		t.Fatalf("expected task file unchanged")
+	}
+	if got := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); got != beforeStatus {
+		t.Fatalf("expected git status unchanged %q, got %q", beforeStatus, got)
+	}
+	if got := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-list", "--count", "HEAD")); got != beforeHeadCount {
+		t.Fatalf("expected HEAD count %s, got %s", beforeHeadCount, got)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+// settleUnknownVerdictVerifier stands in for a command runner that never
+// observed a verdict — the state daemon.ExecVerifier reports when it cannot
+// start the command or retain its diagnostics.
+type settleUnknownVerdictVerifier struct {
+	cause error
+}
+
+func (verifier settleUnknownVerdictVerifier) Verify(_ context.Context, req daemon.VerifyRequest) (daemon.VerifyResult, error) {
+	return daemon.VerifyResult{OutputPath: req.OutputPath}, &daemon.VerificationUnknownError{
+		Command:        req.Command,
+		DiagnosticPath: req.OutputPath,
+		Err:            verifier.cause,
+	}
+}
+
 func TestRunSettleActiveRunOnSameWorkingTreeBlocks(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusFailed)}})

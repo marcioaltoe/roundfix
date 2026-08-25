@@ -511,7 +511,9 @@ as `Settle surface: <path>`, re-runs the Task's Verification there, and on
 pass prints one `commit <path>` line per committed path before committing and
 integrating onto the Run Branch — warning when other failed Tasks share the
 worktree, since their work is swept into the same commit. It creates no Run
-and never pushes. Re-run `roundfix implement --spec <slug>` to pick up
+and never pushes. When Verification does not pass there, settle stops at that
+command and changes nothing — no Agent turn, no commit — so fix the cause and
+run it again. Re-run `roundfix implement --spec <slug>` to pick up
 still-pending Tasks; completed Tasks are skipped.
 
 ### Advance
