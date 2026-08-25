@@ -167,14 +167,6 @@ step — reached through a different call path.
 
 Add to `docs/agents/autonomous-work.md` under `setup-context-driven:begin`:
 
-```yaml
-hook_strictness:
-  rule: "A commit hook must not be stricter than the authoritative Verification"
-  enforcement: "Mandatory"
-  source: "ADR-0098"
-  consequence: "Hook refusal ends the Run with a recovery path via settle"
-```
-
 ## Acceptance Criteria
 
 ### Functional
