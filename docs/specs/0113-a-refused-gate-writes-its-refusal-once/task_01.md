@@ -15,7 +15,6 @@ Implement gate refusal path with terminal row.
 - Set verdict: `fail`
 
 ## Verification
-
 - `grep -q "| 0 | blocked | precondition |" /tmp/qa-report*.md`
 
 ## Result

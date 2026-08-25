@@ -13,7 +13,6 @@ Modify mechanical stage to accept terminal row.
 - Validate status and provenance
 
 ## Verification
-
 - `make test -k TestReportValidation | grep -q "ok"`
 
 ## Result

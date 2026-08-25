@@ -14,7 +14,6 @@ Detect which precondition failed and why.
 - Store for report writing
 
 ## Verification
-
 - `make test -k TestPreconditionDetection | grep -q "ok"`
 
 ## Result

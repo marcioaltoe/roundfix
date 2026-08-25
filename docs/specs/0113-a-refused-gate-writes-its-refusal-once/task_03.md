@@ -13,7 +13,6 @@ Update QA Report for precondition metadata.
 - Preserved during read/write
 
 ## Verification
-
 - `make test -k TestQAReportMetadata | grep -q "ok"`
 
 ## Result

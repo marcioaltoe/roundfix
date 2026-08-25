@@ -14,7 +14,6 @@ Execute Task Verification in the selected settle surface.
 - On fail: stop, print diagnostics
 
 ## Verification
-
 - `make test -k TestSettleVerification | grep -q "ok"`
 
 ## Result

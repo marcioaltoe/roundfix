@@ -14,7 +14,6 @@ Read only newest report, ignore superseded.
 - Ignore all older
 
 ## Verification
-
 - `make test -k TestNewestReportOnly | grep -q "ok"`
 
 ## Result

@@ -14,7 +14,6 @@ Commit and integrate settled work onto Run Branch.
 - Remove Task Worktree on success
 
 ## Verification
-
 - `git log --oneline -n 1 | grep -q "^[a-f0-9]*"`
 
 ## Result

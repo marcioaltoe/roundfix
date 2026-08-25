@@ -13,7 +13,6 @@ Verify three measured hook refusal cases.
 - Case 3: `sort()` instead of `toSorted()`
 
 ## Verification
-
 - `make test -k TestHookRefusalRecovery | grep -q "ok.*3 subtests"`
 
 ## Result
