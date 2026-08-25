@@ -20,6 +20,7 @@ Verify all deliverables.
 
 ## References
 
+- User Story 3: Report refusal reason
 - All user stories and core features
 
 ## Result
