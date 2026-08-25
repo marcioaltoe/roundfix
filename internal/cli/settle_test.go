@@ -543,8 +543,8 @@ func TestSettleCommitsDeletedAndRenamedWorkFromTaskWorktree(t *testing.T) {
 	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
 	expectedStdout := "verify test -f renamed.txt — ok\n" +
 		"commit " + filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")) + "\n" +
-		"commit original.txt\n" +
-		"commit removed.txt\n" +
+		"commit original.txt — deleted\n" +
+		"commit removed.txt — deleted\n" +
 		"commit renamed.txt\n" +
 		"settled task_01 completed — " + shortSHA + "\n"
 	if stdout.String() != expectedStdout {
@@ -571,6 +571,60 @@ func TestSettleCommitsDeletedAndRenamedWorkFromTaskWorktree(t *testing.T) {
 		t.Fatalf("expected clean user checkout after settle integration, got %q", status)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+// The other shape a Task's deletion reaches settle in: the removal is still
+// unstaged, and the surface holding it is the user checkout. The stage-all
+// records the removal without a pathspec that matches nothing, the Task commit
+// carries it, and the report names the path the commit deletes.
+func TestSettleCommitsUnstagedDeletionFromCheckoutSurface(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Remove the obsolete file",
+			taskType:     "backend",
+			status:       string(spec.StatusFailed),
+			verification: []string{"test ! -e obsolete.txt"},
+		},
+	})
+	mustWrite(t, filepath.Join(repoDir, "obsolete.txt"), "obsolete\n")
+	mustWrite(t, filepath.Join(repoDir, "kept.txt"), "kept\n")
+	gitImplement(t, repoDir, "add", "-A")
+	gitImplement(t, repoDir, "commit", "-m", "seed the files the Task rewrites")
+	if err := os.Remove(filepath.Join(repoDir, "obsolete.txt")); err != nil {
+		t.Fatalf("delete task work: %v", err)
+	}
+	mustWrite(t, filepath.Join(repoDir, "kept.txt"), "rewritten\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), repoDir)
+	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
+	expectedStdout := "verify test ! -e obsolete.txt — ok\n" +
+		"commit " + filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")) + "\n" +
+		"commit kept.txt\n" +
+		"commit obsolete.txt — deleted\n" +
+		"settled task_01 completed — " + shortSHA + "\n"
+	if stdout.String() != expectedStdout {
+		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
+	}
+	nameStatus := gitSettleOutput(t, repoDir, "diff-tree", "--no-commit-id", "--name-status", "--no-renames", "-r", "HEAD")
+	if !strings.Contains(nameStatus, "D\tobsolete.txt") {
+		t.Fatalf("expected Task commit to record the deletion, got:\n%s", nameStatus)
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, "obsolete.txt")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected obsolete.txt to stay removed after settle, got %v", err)
+	}
+	if status := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); status != "" {
+		t.Fatalf("expected clean checkout after settle, got %q", status)
+	}
+	assertNoRunDatabase(t, homeDir)
 }
 
 func TestSettleRefusesCompletedTaskWhenNoSurfaceHoldsUncommittedWork(t *testing.T) {

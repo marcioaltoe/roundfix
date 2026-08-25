@@ -580,12 +580,16 @@ candidate qualifies, the refusal names each candidate path, the status found
 there, and `no uncommitted work` for a surface that holds none. It re-runs the
 Task's Verification commands in the selected tree — verbatim, in task file
 order, with no Agent session — changes nothing on failure, and on pass prints
-one sorted `commit <path>` line per committed path before the settled line:
+one sorted `commit <path>` line per committed path before the settled line. A
+path the commit removes — a file the Task deleted, or the old name of one it
+renamed — carries a `— deleted` qualifier, because the path alone no longer
+exists in the surface to be read:
 
 ```text
 verify go test ./... — ok
-commit internal/example/example.go
 commit docs/specs/<slug>/task_01.md
+commit internal/example/example.go
+commit internal/example/obsolete.go — deleted
 settled task_01 completed — <short sha>
 ```
 

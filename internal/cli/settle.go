@@ -137,8 +137,12 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	if len(commitResult.paths) > 0 {
 		emitSettleSharedFailedWarning(stderr, plan)
-		for _, path := range commitResult.paths {
-			fmt.Fprintf(stdout, "commit %s\n", path)
+		for _, staged := range commitResult.paths {
+			if staged.deleted {
+				fmt.Fprintf(stdout, "commit %s — deleted\n", staged.path)
+				continue
+			}
+			fmt.Fprintf(stdout, "commit %s\n", staged.path)
 		}
 	}
 	fmt.Fprintf(stdout, "settled %s completed — %s\n", plan.task.ID, shortSHA)
@@ -546,7 +550,16 @@ func ensureNoSettleActiveRun(ctx context.Context, homeDir string, gitRoot string
 
 type settleCommitResult struct {
 	shortSHA string
-	paths    []string
+	paths    []settleStagedPath
+}
+
+// settleStagedPath is one path the settle commit carries and whether the
+// commit removes it. A removal is the one entry the path alone cannot report:
+// the file is gone from the surface, so the settle report says so rather than
+// leaving a Supervisor to read the commit to find out what it deleted.
+type settleStagedPath struct {
+	path    string
+	deleted bool
 }
 
 // settleTaskAndCommit settles the Task completed in the surface that holds its
@@ -602,21 +615,37 @@ func addAllChanges(ctx context.Context, workDir string) error {
 }
 
 // stagedSettlePaths reports what addAllChanges staged, so the settle report
-// names exactly the paths the Task commit carries. Rename detection stays off:
-// a rename is an added path and a removed path in the commit, and settle
-// reports both.
-func stagedSettlePaths(ctx context.Context, workDir string) ([]string, error) {
-	output, err := (preflight.ExecGitRunner{}).RunGit(ctx, workDir, "diff", "--cached", "--name-only", "--no-renames", "-z")
+// names exactly the paths the Task commit carries and marks the ones it
+// removes. Rename detection stays off: a rename is an added path and a removed
+// path in the commit, and settle reports both.
+//
+// `--name-status -z` writes one status field and one path field per entry,
+// each NUL-terminated, so the fields read as pairs and the split leaves one
+// empty field after the last path. A status without its path is truncated
+// output, and settle refuses rather than report a commit it cannot enumerate.
+func stagedSettlePaths(ctx context.Context, workDir string) ([]settleStagedPath, error) {
+	output, err := (preflight.ExecGitRunner{}).RunGit(ctx, workDir, "diff", "--cached", "--name-status", "--no-renames", "-z")
 	if err != nil {
 		return nil, fmt.Errorf("read staged paths in settle surface %q: %w", workDir, err)
 	}
-	var paths []string
-	for _, path := range strings.Split(output, "\x00") {
-		if path != "" {
-			paths = append(paths, path)
+	fields := strings.Split(output, "\x00")
+	var paths []settleStagedPath
+	for index := 0; index < len(fields); index += 2 {
+		status := fields[index]
+		if status == "" {
+			continue
 		}
+		if index+1 >= len(fields) || fields[index+1] == "" {
+			return nil, fmt.Errorf("read staged paths in settle surface %q: status %q carries no path", workDir, status)
+		}
+		paths = append(paths, settleStagedPath{
+			path:    fields[index+1],
+			deleted: strings.HasPrefix(status, "D"),
+		})
 	}
-	sort.Strings(paths)
+	sort.Slice(paths, func(first int, second int) bool {
+		return paths[first].path < paths[second].path
+	})
 	return paths, nil
 }
 
