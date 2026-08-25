@@ -305,18 +305,25 @@ func (committer *hookRefusingCommitter) attempts() int {
 	return committer.calls
 }
 
-// newHookRepoForTest builds a disposable repository with one base commit and
-// a repository-local hooks path, so a global core.hooksPath cannot decide
+// initHookRepoForTest turns an existing directory into a repository with a
+// repository-local hooks path, so a global core.hooksPath cannot decide
 // whether the test's hook runs.
-func newHookRepoForTest(t *testing.T) string {
+func initHookRepoForTest(t *testing.T, repoDir string) {
 	t.Helper()
-	repoDir := t.TempDir()
 	gittest.InitRepo(t, repoDir, "-b", "main")
 	hooksDir := filepath.Join(repoDir, ".git", "hooks")
 	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
 		t.Fatalf("create hooks directory: %v", err)
 	}
 	gittest.AppendConfig(t, repoDir, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n[core]\n\thooksPath = "+hooksDir+"\n")
+}
+
+// newHookRepoForTest builds a disposable repository with one base commit and
+// a repository-local hooks path.
+func newHookRepoForTest(t *testing.T) string {
+	t.Helper()
+	repoDir := t.TempDir()
+	initHookRepoForTest(t, repoDir)
 	mustWriteForTest(t, filepath.Join(repoDir, "base.txt"), "base\n")
 	runGitForTest(t, repoDir, "add", "base.txt")
 	runGitForTest(t, repoDir, "commit", "-q", "-m", "init")
