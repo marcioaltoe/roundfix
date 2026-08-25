@@ -397,6 +397,143 @@ func TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces(t *testing.T) {
 	}
 }
 
+func TestSettleAcceptsCompletedTaskWithUncommittedWorkInCheckout(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover work a hook refused",
+			taskType:     "backend",
+			status:       string(spec.StatusCompleted),
+			verification: []string{"test -f done.txt"},
+		},
+	})
+	mustWrite(t, filepath.Join(repoDir, "done.txt"), "verified work\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
+	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), repoDir)
+	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
+	expectedStdout := "verify test -f done.txt — ok\n" +
+		"commit done.txt\n" +
+		"settled task_01 completed — " + shortSHA + "\n"
+	if stdout.String() != expectedStdout {
+		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
+	}
+	if changed := settleCommitFiles(t, repoDir); strings.Join(changed, "|") != "done.txt" {
+		t.Fatalf("expected only the uncommitted work committed, got %v", changed)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: completed") {
+		t.Fatalf("expected task status to stay completed, got:\n%s", content)
+	}
+	if got := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); got != "" {
+		t.Fatalf("expected clean checkout after settle, got %q", got)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestSettleAcceptsCompletedTaskFromKeptTaskWorktreeAfterHookRefusal(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover work a hook refused",
+			taskType:     "backend",
+			status:       string(spec.StatusInProgress),
+			verification: []string{"test -f never-written.txt"},
+		},
+	})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	run, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateUnresolved)
+	// The shape a refused commit leaves behind: the Daemon settled the Task
+	// completed after its Verification passed, git add ran, and the hook
+	// refused the commit, so the verified work stays staged in the surface.
+	mustWrite(t, filepath.Join(taskRef.Path, "done.txt"), "task work\n")
+	gitImplement(t, taskRef.Path, "add", "done.txt")
+	mustWrite(t, implementTaskPath(taskRef.Path, "task_01"), implementTaskContent(implementTestSlug, implementSeed{
+		id:           "task_01",
+		title:        "Recover work a hook refused",
+		taskType:     "backend",
+		status:       string(spec.StatusCompleted),
+		verification: []string{"test -f done.txt"},
+	}))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), taskRef.Path)
+	// The Task Worktree's own task file declares this command; the checkout's
+	// copy declares one that cannot pass.
+	if !strings.Contains(stdout.String(), "verify test -f done.txt — ok\n") {
+		t.Fatalf("expected Verification loaded from the Task Worktree, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "settled task_01 completed — ") {
+		t.Fatalf("expected settled line, got %q", stdout.String())
+	}
+	assertRunWorktreeRemoved(t, taskRef.Path)
+	assertRunWorktreeRemoved(t, run.WorkDir)
+	if got := mustRead(t, filepath.Join(repoDir, "done.txt")); got != "task work\n" {
+		t.Fatalf("expected refused work integrated into user checkout, got %q", got)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: completed") {
+		t.Fatalf("expected checkout task file completed after settle, got:\n%s", content)
+	}
+	if status := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); status != "" {
+		t.Fatalf("expected clean user checkout after settle integration, got %q", status)
+	}
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestSettleRefusesCompletedTaskWhenNoSurfaceHoldsUncommittedWork(t *testing.T) {
+	t.Parallel()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Already committed work",
+			taskType:     "backend",
+			status:       string(spec.StatusCompleted),
+			verification: []string{"true"},
+		},
+	})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	_, runRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", store.StateUnresolved)
+	beforeHeadCount := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-list", "--count", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected preflight exit 2, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	for _, expected := range []string{
+		"no settleable surface",
+		runRef.Path + ": status completed (no uncommitted work)",
+		repoDir + ": status completed (no uncommitted work)",
+		"status is completed with no uncommitted work; nothing to settle",
+	} {
+		if !strings.Contains(stderr.String(), expected) {
+			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())
+		}
+	}
+	if got := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-list", "--count", "HEAD")); got != beforeHeadCount {
+		t.Fatalf("expected HEAD count %s, got %s", beforeHeadCount, got)
+	}
+	assertRunWorktreeExists(t, runRef.Path)
+}
+
 func TestRunSettleRefusalEnumeratesCandidateStatuses(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
@@ -428,10 +565,10 @@ func TestRunSettleRefusalEnumeratesCandidateStatuses(t *testing.T) {
 		t.Fatalf("expected no stdout, got %q", stdout.String())
 	}
 	for _, expected := range []string{
-		"no failed settle surface",
+		"no settleable surface",
 		missingTaskRef.Path + ": path does not exist",
 		runRef.Path + ": status pending",
-		repoDir + ": status completed",
+		repoDir + ": status completed (no uncommitted work)",
 		"status is pending; run the Implement Command",
 	} {
 		if !strings.Contains(stderr.String(), expected) {
@@ -538,13 +675,13 @@ func TestRunSettlePreflightRefusalsWriteNothing(t *testing.T) {
 			message: "status is in_progress; run the Implement Command",
 		},
 		{
-			name: "completed task has nothing to do",
+			name: "completed task with committed work has nothing to settle",
 			setup: func(t *testing.T) (string, string, string) {
 				homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
 				return homeDir, repoDir, implementTaskPath(repoDir, "task_01")
 			},
 			args:    []string{"settle", "--spec", implementTestSlug, "--task", "task_01"},
-			message: "status is completed; nothing to do",
+			message: "status is completed with no uncommitted work; nothing to settle",
 		},
 	}
 	for _, tt := range tests {

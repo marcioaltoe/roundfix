@@ -568,14 +568,19 @@ symbolic link; dropped paths are journaled and warned
 roundfix settle --spec <slug> --task <task_id>
 ```
 
-Local recovery for one failed Task whose completed work already exists in a
-kept Task Worktree, kept Run Worktree, or the current repository. Surface
-resolution picks the first candidate, in that order, **where the task file is
-actually `failed`**, and always reports the choice on stderr as
-`Settle surface: <path>`; when no candidate qualifies, the refusal names each
-candidate path and the status found there. It re-runs the Task's Verification
-commands in the selected tree, changes nothing on failure, and on pass prints
-one sorted `commit <path>` line per committed path before the settled line:
+Local recovery for one Task whose completed work already exists in a kept Task
+Worktree, kept Run Worktree, or the current repository. Surface resolution
+picks the first candidate, in that order, **where the task file is actually
+`failed`, or `completed` while that surface still holds the work uncommitted**
+— the state a refusing commit hook leaves behind, where the Daemon settled the
+Task after its Verification passed and the commit never landed. A `completed`
+Task whose surfaces are all clean was committed already and settles nothing.
+Settle always reports the choice on stderr as `Settle surface: <path>`; when no
+candidate qualifies, the refusal names each candidate path, the status found
+there, and `no uncommitted work` for a surface that holds none. It re-runs the
+Task's Verification commands in the selected tree, changes nothing on failure,
+and on pass prints one sorted `commit <path>` line per committed path before
+the settled line:
 
 ```text
 verify go test ./... — ok
