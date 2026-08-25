@@ -1,4 +1,5 @@
 ---
+schema: spec-tasks/v1
 spec: 0098-a-hook-that-cannot-outrank-the-gate
 qa: task_08
 ---

@@ -1,4 +1,5 @@
 ---
+schema: spec-tasks/v1
 spec: 0113-a-refused-gate-writes-its-refusal-once
 qa: task_06
 ---
