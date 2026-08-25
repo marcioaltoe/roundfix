@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "autonomous-work",
-  "version": 8,
+  "version": 9,
   "kind": "workflow",
   "title": "Autonomous Supervisor and ACP Runtime model",
   "dependsOn": [
@@ -34,12 +34,13 @@
   "supportingGuides": [
     {
       "id": "guide.autonomous-work",
-      "version": 8,
+      "version": 9,
       "path": "docs/agents/autonomous-work.md",
       "template": "template.guide.autonomous-work",
       "rules": [
         "rule.autonomous.supervisor-delegates",
         "rule.autonomous.verification-gate",
+        "rule.autonomous.hook-strictness",
         "rule.autonomous.loop"
       ],
       "references": []
@@ -77,6 +78,21 @@
           "id": "clause.autonomous.daemon-verifies-task",
           "enforcement": "mandatory",
           "guidance": "The Daemon runs each Task's declared Verification verbatim. A Task can settle `completed` only after that Verification passes; failed diagnostics return to the same Agent Session for the bounded retry policy."
+        }
+      ]
+    },
+    {
+      "id": "rule.autonomous.hook-strictness",
+      "version": 1,
+      "coverage": [
+        "coverage.autonomous-work",
+        "coverage.verification"
+      ],
+      "clauses": [
+        {
+          "id": "clause.autonomous.hook-strictness",
+          "enforcement": "mandatory",
+          "guidance": "A commit hook must not be stricter than the Task's declared Verification. ADR-0014 makes the Daemon the verification authority, and it commits only after that Verification passes, so a hook refusing at that point is a second gate the loop cannot satisfy: it discards work already proven correct. Keep every check a hook enforces inside the declared Verification. A refusal recorded with the `hook_refused` classification is a repository misconfiguration to repair, not a Task failure; the work stays staged in its surface and the Run ends unresolved instead of losing it."
         }
       ]
     },
