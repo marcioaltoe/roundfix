@@ -58,6 +58,25 @@ var cleanupCleanRunWorktree = runworktree.CleanupClean
 var pruneTerminalRunWorktrees = runworktree.PruneTerminalReport
 var loadCommittedSpecGraph = defaultLoadCommittedSpecGraph
 
+type implementRunWindowClosedError struct {
+	gitRoot string
+	cutoff  time.Time
+	now     time.Time
+}
+
+func (err implementRunWindowClosedError) Error() string {
+	return fmt.Sprintf(
+		"the Run Window for %s closed at %s; the time is %s",
+		err.gitRoot,
+		formatRunWindowInstant(err.cutoff, err.now.Location()),
+		formatRunWindowInstant(err.now, err.now.Location()),
+	)
+}
+
+func (err implementRunWindowClosedError) NextAction() string {
+	return "move the window with `roundfix window set <HH:MM> --force`, or remove it with `roundfix window clear`"
+}
+
 // runImplementCommand executes the Implement Command: Preflight Validation,
 // Run creation, the Live Run View, one Task cycle over the Task Graph, and
 // the terminal outcome, following the runOperationalCommand shape.
@@ -175,6 +194,22 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	defer func() {
 		_ = runStore.Close()
 	}()
+	window, found, err := runStore.RunWindowFor(ctx, gitState.Root)
+	if err != nil {
+		printPreflightFailure("implement", fmt.Errorf("read Run Window: %w", err), stderr)
+		return exitPreflight
+	}
+	if found {
+		now := commandDependenciesForContext(ctx).currentRunWindowTime()
+		if !window.CutoffAt.After(now) {
+			printPreflightFailure("implement", implementRunWindowClosedError{
+				gitRoot: gitState.Root,
+				cutoff:  window.CutoffAt,
+				now:     now,
+			}, stderr)
+			return exitPreflight
+		}
+	}
 	sweepRunRetention(ctx, runStore, req.artifactDir, loadedConfig.Config.Store.JournalRetention, stderr)
 	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runtime, runStore, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
