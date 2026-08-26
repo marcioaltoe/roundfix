@@ -3,6 +3,7 @@ package spec
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,16 +20,94 @@ const (
 	VerdictPartial = "partial"
 )
 
+// The terminal row a gate writes when it refuses at a precondition check. The
+// gate stopped before it built its matrix, so it has no measured requirement
+// to report; row 0 records the refusal itself, which keeps the Results table
+// non-empty and names the stop as a refusal rather than as a measurement.
+const (
+	QAPreconditionRowID         = "0"
+	QAPreconditionRowStatus     = "blocked"
+	QAPreconditionRowProvenance = "precondition"
+)
+
+// The recorded stand-ins for a refusal whose cause the caller could not name.
+// A refusal that cannot be written is the deadlock this shape exists to end,
+// so an unnamed cause degrades to a placeholder a reader can see rather than
+// to no report at all.
+const (
+	QAPreconditionCheckUnnamed     = "unnamed precondition check"
+	QAPreconditionReasonUnrecorded = "reason not recorded"
+)
+
 // ErrNoQAReport reports that the Spec has no qa/qa-report-*.md yet.
 var ErrNoQAReport = errors.New("no QA Report found")
 
 // QAReport is the validated verdict metadata callers need from a QA Report.
 // Each blocked-row cause remains independent; absent counts are zero.
 type QAReport struct {
-	Verdict                string
-	RowsBlockedEnvironment int
-	RowsBlockedFinding     int
-	RowsBlockedDeclared    int
+	Verdict                 string
+	RowsBlockedEnvironment  int
+	RowsBlockedFinding      int
+	RowsBlockedDeclared     int
+	RowsBlockedPrecondition int
+}
+
+// PreconditionRefusal is one QA gate stop at a precondition check: the name of
+// the check that refused and the reason it gave. Both reach the report so a
+// reader knows what was checked and why the gate never built its matrix.
+type PreconditionRefusal struct {
+	Check  string
+	Reason string
+}
+
+// WritePreconditionRefusalReport writes the whole QA Report of a gate that
+// refused at a precondition check: verdict fail, one blocked-precondition row
+// in the Results table, and the check and its reason in the frontmatter. The
+// caller owns where the report lands and under which name; this contract owns
+// its shape, so a refusal cannot be recorded as an empty matrix again.
+func WritePreconditionRefusalReport(writer io.Writer, refusal PreconditionRefusal) error {
+	check := qaRefusalValue(refusal.Check, QAPreconditionCheckUnnamed)
+	reason := qaRefusalValue(refusal.Reason, QAPreconditionReasonUnrecorded)
+
+	var report strings.Builder
+	report.WriteString("---\n")
+	fmt.Fprintf(&report, "verdict: %s\n", VerdictFail)
+	// One refusal is one row, and every other cause stays explicitly zero:
+	// a closed report carries all its typed counts even when they are empty.
+	report.WriteString("rows_blocked_precondition: 1\n")
+	report.WriteString("rows_blocked_environment: 0\n")
+	report.WriteString("rows_blocked_finding: 0\n")
+	report.WriteString("rows_blocked_declared: 0\n")
+	fmt.Fprintf(&report, "precondition_check: %s\n", strconv.Quote(check))
+	fmt.Fprintf(&report, "precondition_reason: %s\n", strconv.Quote(reason))
+	report.WriteString("---\n\n# QA Report\n\n")
+
+	report.WriteString("## Results\n\n")
+	report.WriteString("| # | Status | Provenance |\n| - | --- | --- |\n")
+	fmt.Fprintf(&report, "| %s | %s | %s |\n\n", QAPreconditionRowID, QAPreconditionRowStatus, QAPreconditionRowProvenance)
+
+	// A list, never a second table: a markdown table outside the Results
+	// section is read as more result rows, so prose that justifies the row
+	// would become rows of its own.
+	report.WriteString("## Precondition refusal\n\n")
+	fmt.Fprintf(&report, "- check: %s\n", check)
+	fmt.Fprintf(&report, "- reason: %s\n\n", reason)
+	report.WriteString("The gate stopped at this check before it built its QA matrix, so no requirement was measured and the row above records the refusal itself.\n")
+
+	if _, err := io.WriteString(writer, report.String()); err != nil {
+		return fmt.Errorf("write precondition refusal QA Report: %w", err)
+	}
+	return nil
+}
+
+// qaRefusalValue collapses an authored refusal value onto one line so it
+// cannot break the frontmatter it is written into, and falls back when the
+// caller named nothing.
+func qaRefusalValue(value, fallback string) string {
+	if collapsed := strings.Join(strings.Fields(value), " "); collapsed != "" {
+		return collapsed
+	}
+	return fallback
 }
 
 // NewestQAReport returns the path of the newest qa/qa-report-*.md in the
@@ -190,10 +269,11 @@ func readQAReport(path string) (QAReport, error) {
 		return QAReport{}, QAReportError{Path: path, Err: err}
 	}
 	var frontmatter struct {
-		Verdict                string    `yaml:"verdict"`
-		RowsBlockedEnvironment yaml.Node `yaml:"rows_blocked_environment"`
-		RowsBlockedFinding     yaml.Node `yaml:"rows_blocked_finding"`
-		RowsBlockedDeclared    yaml.Node `yaml:"rows_blocked_declared"`
+		Verdict                 string    `yaml:"verdict"`
+		RowsBlockedEnvironment  yaml.Node `yaml:"rows_blocked_environment"`
+		RowsBlockedFinding      yaml.Node `yaml:"rows_blocked_finding"`
+		RowsBlockedDeclared     yaml.Node `yaml:"rows_blocked_declared"`
+		RowsBlockedPrecondition yaml.Node `yaml:"rows_blocked_precondition"`
 	}
 	if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
 		return QAReport{}, QAReportError{Path: path, Err: err}
@@ -210,11 +290,16 @@ func readQAReport(path string) (QAReport, error) {
 	if err != nil {
 		return QAReport{}, QAReportError{Path: path, Err: err}
 	}
+	rowsBlockedPrecondition, err := qaBlockedCount(frontmatter.RowsBlockedPrecondition, "rows_blocked_precondition")
+	if err != nil {
+		return QAReport{}, QAReportError{Path: path, Err: err}
+	}
 	report := QAReport{
-		Verdict:                frontmatter.Verdict,
-		RowsBlockedEnvironment: rowsBlockedEnvironment,
-		RowsBlockedFinding:     rowsBlockedFinding,
-		RowsBlockedDeclared:    rowsBlockedDeclared,
+		Verdict:                 frontmatter.Verdict,
+		RowsBlockedEnvironment:  rowsBlockedEnvironment,
+		RowsBlockedFinding:      rowsBlockedFinding,
+		RowsBlockedDeclared:     rowsBlockedDeclared,
+		RowsBlockedPrecondition: rowsBlockedPrecondition,
 	}
 	switch report.Verdict {
 	case VerdictPass:
@@ -228,6 +313,14 @@ func readQAReport(path string) (QAReport, error) {
 			return QAReport{}, QAReportError{
 				Path: path,
 				Err:  fmt.Errorf("rows_blocked_declared must be zero when verdict is %q", VerdictPass),
+			}
+		}
+		// A gate that refused at a precondition measured no requirement, so a
+		// pass it claims describes nothing that ran.
+		if report.RowsBlockedPrecondition > 0 {
+			return QAReport{}, QAReportError{
+				Path: path,
+				Err:  fmt.Errorf("rows_blocked_precondition must be zero when verdict is %q", VerdictPass),
 			}
 		}
 		return report, nil
