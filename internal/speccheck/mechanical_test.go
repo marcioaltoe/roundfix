@@ -1161,6 +1161,140 @@ func TestResultsTableIsTheOnlyRowSource(t *testing.T) {
 	}
 }
 
+// TestMechanicalStageReadsTheNewestQAReportOnly pins the property a superseded
+// report violated: the stage validates the newest QA Report in the directory it
+// was pointed at and ignores every older one, so a refusal a previous run wrote
+// cannot block the run that supersedes it. Measured on Spec 0103 on 2026-08-14
+// and on Spec 0098 on 2026-08-26, where the only exit was deleting the report.
+func TestMechanicalStageReadsTheNewestQAReportOnly(t *testing.T) {
+	t.Parallel()
+
+	const directory = "docs/specs/mechanical/qa/"
+	const (
+		superseded = directory + "qa-report-2026-08-14.md"
+		newest     = directory + "qa-report-2026-08-15.md"
+	)
+
+	tests := []struct {
+		name      string
+		reports   map[string]string
+		requested string
+		// wantRow is the row a QA-REPORT-SHAPE finding must name, empty when the
+		// stage must raise none, and wantFile the report that finding must cite —
+		// which report was read is proven by the finding, not by its absence.
+		wantRow  string
+		wantFile string
+	}{
+		{
+			name: "a superseded refusal does not block the run that supersedes it",
+			reports: map[string]string{
+				superseded: mechanicalRowStatusReport("R01", "pending"),
+				newest:     mechanicalRowStatusReport("R01", "pass"),
+			},
+			requested: superseded,
+		},
+		{
+			name: "the newest report is the one read, not merely the older one skipped",
+			reports: map[string]string{
+				superseded: mechanicalRowStatusReport("R01", "pass"),
+				newest:     mechanicalRowStatusReport("R02", "pending"),
+			},
+			requested: superseded,
+			wantRow:   "R02",
+			wantFile:  newest,
+		},
+		{
+			// Raw filename order puts qa-report-2026-08-25.md above both of its
+			// same-date reruns, because "." sorts above "-", so a stage that
+			// sorted by name would read the defective first report of the date.
+			name: "recency is the date and run sequence, not raw filename order",
+			reports: map[string]string{
+				directory + "qa-report-2026-08-25.md":    mechanicalRowStatusReport("R01", "pending"),
+				directory + "qa-report-2026-08-25-02.md": mechanicalRowStatusReport("R02", "pending"),
+				directory + "qa-report-2026-08-25-10.md": mechanicalRowStatusReport("R03", "pass"),
+			},
+			requested: directory + "qa-report-2026-08-25.md",
+		},
+		{
+			name:      "a requested report that is gone yields to the newest one on disk",
+			reports:   map[string]string{newest: mechanicalRowStatusReport("R02", "pending")},
+			requested: directory + "qa-report-2026-08-13.md",
+			wantRow:   "R02",
+			wantFile:  newest,
+		},
+		{
+			// A path outside the qa-report-*.md family has no family to be the
+			// newest of, so it is read as named rather than redirected.
+			name: "a report outside the QA Report family is read as named",
+			reports: map[string]string{
+				directory + "report.md": mechanicalRowStatusReport("R01", "pending"),
+				newest:                  mechanicalRowStatusReport("R01", "pass"),
+			},
+			requested: directory + "report.md",
+			wantRow:   "R01",
+			wantFile:  directory + "report.md",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			for path, content := range tt.reports {
+				writeMechanicalFile(t, repoRoot, path, content)
+			}
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: tt.requested})
+
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+			if tt.wantRow == "" {
+				if len(findings) != 0 {
+					t.Fatalf("%s findings = %#v, want none from a superseded report", speccheck.CodeMechanicalReportShape, findings)
+				}
+				if result.Blocking {
+					t.Fatalf("Blocking = true, want an older report to leave the newer run free; findings = %#v", result.Findings)
+				}
+				return
+			}
+			if len(findings) != 1 || !strings.Contains(findings[0].Detail, "row "+tt.wantRow+" remains pending") {
+				t.Fatalf("%s findings = %#v, want exactly one naming row %s", speccheck.CodeMechanicalReportShape, findings, tt.wantRow)
+			}
+			if findings[0].File != tt.wantFile {
+				t.Fatalf("%s finding file = %q, want the report the stage read, %q", speccheck.CodeMechanicalReportShape, findings[0].File, tt.wantFile)
+			}
+		})
+	}
+
+	t.Run("a QA directory with no report keeps the requested path in its skip", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		requested := directory + "qa-report-2026-08-15.md"
+
+		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: requested})
+
+		assertMechanicalSkip(t, result, speccheck.DetectorMechanicalReportShape, requested)
+		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalReportShape)
+	})
+}
+
+// mechanicalRowStatusReport is one QA Report whose Results table carries a
+// single row with the given status: a pass row the stage accepts, a pending row
+// it refuses by name. Naming the row in the refusal is what makes the report the
+// stage actually read observable.
+func mechanicalRowStatusReport(rowID, status string) string {
+	verdict := spec.VerdictFail
+	if status == "pass" {
+		verdict = spec.VerdictPass
+	}
+	return "---\n" +
+		"verdict: " + verdict + "\n" +
+		"rows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n" +
+		"---\n\n# QA Report\n\n## Results\n\n" +
+		"| # | Status | Provenance |\n| - | --- | --- |\n" +
+		"| " + rowID + " | " + status + " | measured |\n"
+}
+
 func TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode(t *testing.T) {
 	t.Parallel()
 	repoRoot := newMechanicalGitRepo(t)
