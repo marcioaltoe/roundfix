@@ -1,0 +1,37 @@
+Rows 18, 19, 21, 25 — behaviour probes.
+
+PROBE (out-of-order input) — settle a completed Task whose surfaces are clean
+$ roundfix settle --spec 0001-widget-flow --task task_01     # in /private/tmp/qa0098b/case1, after a successful settle
+exit: 2
+Preflight failed
+Reason:
+  Task task_01 has no settleable surface; candidates: /private/tmp/qa0098b/case1: status completed (no uncommitted work); Task task_01 status is completed with no uncommitted work; nothing to settle
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+commit count still 2.
+
+PROBE (double submit) — a third invocation in a row
+exit: 2, commit count still 2. settle is idempotent; no second commit.
+
+PROBE (invalid input)
+  unknown task  -> exit 2: Task "task_99" does not exist in Task Graph for Spec "0001-widget-flow"; choose a task id from docs/specs/0001-widget-flow/_tasks.md
+  unknown spec  -> exit 2: Spec "9999-nope" not found: no _prd.md under "…/docs/specs/9999-nope"; check the slug or run the spec workflow first
+  missing --task -> exit 2: missing required --task; pass --task <task_id>
+  each carries the same explicit "No side effects" block.
+
+PROBE (false-positive boundary) — a genuine git failure in a repository with NO
+executable hook must keep the raw git error rather than be relabelled.
+/private/tmp/qa0098b/nohook2: no non-sample hooks installed; commit.gpgsign=true
+with an unusable gpg.program forces the commit itself to fail.
+$ roundfix settle --spec 0001-widget-flow --task task_01
+exit: 1
+verify test -f src/parser.go — ok
+roundfix: settle failed after verification: git commit -m feat: task: Add parser
+…failed: exit status 128: fatal: cannot exec '/bin/false': No such file or directory
+error: gpg failed to sign the data:
+fatal: failed to write commit object
+  -> NOT classified as a hook refusal. Raw git error preserved. Work still
+     staged, HEAD unchanged, task status completed.
+
+A second hookless probe (/private/tmp/qa0098b/nohook, .git/index.lock held)
+failed at the staging call and likewise kept its raw git error.

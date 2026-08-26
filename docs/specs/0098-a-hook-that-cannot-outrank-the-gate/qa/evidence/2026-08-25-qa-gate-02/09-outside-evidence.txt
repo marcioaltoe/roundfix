@@ -1,0 +1,29 @@
+Row 11 — outside-evidence row. The Spec's Success Metrics rest on measurements
+taken in a repository Roundfix did not build.
+
+PRIMARY SOURCE (read):
+/Users/marcio/dev/secondbrain/inbox/roundfix/2026-08-08-run-morre-em-falha-de-hook-e-settle-nao-recupera.md
+  frontmatter: origin: fluxus / destination: roundfix / type-hint: fix /
+               created_at: 2026-08-08 / capture: manual
+  "Nove observações de uma Spec de 15 Tasks (fluxus 0021, migração da API para
+   REST), executada em Runs detached ao longo de 2026-08-07 e 08"
+  "Três Runs morreram assim, sempre com o trabalho correto e já verificado,
+   preso staged no Task Worktree:
+     - função de rota com 82 linhas contra o limite de 80 do repositório
+     - arquivo gerado do cliente OpenAPI com 2462 linhas contra o limite de 500
+     - `Array#sort()` onde a regra pede `toSorted()`"
+  "Aconteceu duas vezes; nas duas extraí `git diff HEAD` do worktree e apliquei
+   no checkout à mão."   (the two manual-patch recoveries)
+
+INDEPENDENT CORROBORATION in the external repository itself (/Users/marcio/dev/fluxus):
+  .oxlintrc.json:21  "eslint/max-lines": ["warn", {"max": 500, …}]
+  .oxlintrc.json:29  "eslint/max-lines-per-function": [… max 80 …]
+     -> the exact two limits behind measured cases 1 and 2.
+  .husky/pre-commit  -> `#!/usr/bin/env sh` + `set -eu`, shells out to
+     lint-staged, prints no runner banner of its own.
+  package.json:42    "husky": "^9.1.7"
+     -> husky 9 emits no failure banner, so the visible output is the linter's
+        finding alone. That is the hook shape reproduced in cases 1 and 3 and in
+        the live Run of evidence 01.
+
+Roundfix did not build that repository and did not design these limits.

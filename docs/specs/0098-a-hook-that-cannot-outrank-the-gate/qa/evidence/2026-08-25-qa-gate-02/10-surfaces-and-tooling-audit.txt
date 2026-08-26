@@ -1,0 +1,111 @@
+Row 22 — CLI discovery sweep (F-1 regression check). All five surfaces now agree.
+
+$ roundfix --help | grep settle
+  roundfix settle --spec <slug> --task <task_id>
+  settle     Verify and commit one failed, or completed but uncommitted, Task
+
+$ roundfix settle --help
+  "A surface settles when its task file is failed, or completed while the
+   verified work is still uncommitted there — the state a refusing commit hook
+   leaves behind."
+
+CONTEXT.md:425 **Settle Command**
+  "It recovers a Task that is failed, or completed with uncommitted work; the
+   second is the state a Hook Refusal leaves behind, and a completed Task whose
+   surfaces are all clean was committed already and settles nothing."
+
+CONTEXT.md:223 **Hook Refusal**  (new entry, beside **Selection Failure**)
+  "The outcome (`hook_refused`) of a Task commit a repository commit hook
+   rejected after the authoritative Verification had already passed. …"
+
+$ grep -n "completed Tasks have nothing to do" .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md
+  (no matches — the sentence that stated the opposite of the delivered contract is gone)
+$ diff -q .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md
+  (identical — the mirror matches its canonical source)
+
+docs/user-guide/commands.md:571-580 carries the same contract.
+
+------------------------------------------------------------------------------
+Row 16 — commit-dependent tooling audit, resolved from the commits.
+
+The mechanical `authorization bounded paths` detector reported SKIPPED (missing
+artifact: "Task commits"), so this row was executed by hand, per detector rules
+read out of internal/speccheck/governed.go and internal/speccheck/mechanical.go.
+
+Governance set measured, not inferred — speccheck.GovernedPath exercised directly:
+  CONTEXT.md                                        -> false
+  internal/cli/cli.go                               -> false
+  internal/cli/settle.go                            -> false
+  internal/daemon/commit_hook.go                    -> false
+  internal/daemon/daemon.go                         -> false
+  internal/baseline/preservation_test.go            -> false
+  internal/baseline/testdata/catalog.digest         -> false
+  .agents/skills/roundfix/SKILL.md                  -> true
+  skills/roundfix/SKILL.md                          -> true
+  docs/agents/autonomous-work.md                    -> true
+  internal/baseline/assets/modules/autonomous-work.json -> true
+  Makefile                                          -> true
+
+Per-commit changed paths (git diff-tree --no-commit-id --name-only -r <sha>):
+
+  ce76b86f task_01 — no governed path.
+  514e9146 task_02 — no governed path.
+  668db81c task_03 — no governed path.
+  f30ec44d task_04 — no governed path.
+  ee3106f0 task_05 — no governed path.
+  a136146a task_07 — no governed path.
+  95b3377a task_10 — no governed path.
+
+  52f81736 task_06 — governed paths:
+    docs/agents/autonomous-work.md                       bounded (frontmatter paths)
+    internal/baseline/assets/modules/autonomous-work.json bounded (frontmatter paths)
+    …/formatter-fixtures/…/golden/docs/agents/autonomous-work.md
+                                                          declared `make baseline-digests` output
+    internal/baseline/assets/profiles/standard-typescript-monorepo.json
+                                                          bounded (frontmatter paths); the change is a
+                                                          single derived `goldenDigest` pin — sanctioned
+                                                          fallout under ADR-0081 and the repository's
+                                                          HARD RULE on sanctioned digest regeneration
+    (the eight internal/baseline/testdata/* paths are ungoverned; see below)
+
+  b7f0f858 task_09 — governed paths:
+    .agents/skills/roundfix/SKILL.md   bounded (frontmatter paths)
+    skills/roundfix/SKILL.md           declared `make skills-sync` output
+    (CONTEXT.md and internal/cli/cli.go are ungoverned ordinary source)
+
+Authorization chronology: docs/workflow/authorizations/2026-08-12-the-authoring-and-baseline-corrections.md
+landed alone in commit 1ef371b0, a chronological ancestor of every Task commit.
+02c7fb85 later narrowed the `make baseline-digests` output list from twelve
+entries to the four the audit governs; it also lands alone, and it touches only
+the authorization record. No authorization or prerequisite fix is folded into a
+Task commit; no consequent fix is folded into or ordered before its cause.
+
+Derived pins reproduce from the sanctioned command: `make verify-docs` (which
+runs repo-test, the derived-artifact regeneration gates) exits 0 on this tree.
+
+Observation, not a refusal: the record's "Bounded by purpose" prose narrows
+Spec 0098 to `internal/baseline/assets/modules/autonomous-work.json` and
+`docs/agents/autonomous-work.md`, and task_09 reached
+`.agents/skills/roundfix/SKILL.md`, which that prose assigns to Specs 0105/0108.
+The path is inside the record's exact bounded list (the frontmatter `paths:`),
+which is what the audit reads, and docs/agents/specific-repository.md's
+"HARD RULE — roundfix skill sync" independently requires that update from any
+change to CLI behaviour — which this Spec's settle change is. Recorded here so a
+later reader sees the per-Spec section is narrower than the delivered scope.
+
+------------------------------------------------------------------------------
+Row 12 / Row 13 — Non-Goals.
+
+$ git diff --name-only 1ef371b0..HEAD | grep -Ei 'hook|lint|husky|Makefile|package\.json|\.gitignore|\.golangci'
+  -> only this Spec's own task files, its QA artifacts, and
+     internal/daemon/commit_hook{,_test}.go — Roundfix's own classifier.
+     No repository hook, lint config, Makefile, ignore file or manifest changed.
+
+$ grep -rn -e '--no-verify' -e 'hooksPath' --include='*.go' internal cmd | grep -v _test.go
+  internal/daemon/commit_hook.go:135  // …the answer honours core.hooksPath — the husky layout…
+  -> one comment. No `--no-verify` anywhere in shipped code: no hook is bypassed.
+
+$ git diff --stat 1ef371b0..HEAD -- internal/daemon/task_engine.go
+  41 insertions, 0 deletions — purely additive at the commit boundary
+  (errors.As dispatch + recordHookRefusal). The authoritative Verification path
+  is untouched. No push or integration source was changed.

@@ -1,0 +1,38 @@
+Row 9 / Row 2 / Row 24 — the three measured cases, each in its own scratch
+repository with a real refusing pre-commit hook, driven through `roundfix settle`.
+
+CASE 1 — 82-line function over the 80-line limit. Hook names nothing.
+  /private/tmp/qa0098b/case1, .git/hooks/pre-commit, plain `set -eu`, no banner.
+  $ roundfix settle --spec 0001-widget-flow --task task_01
+  exit: 1
+  verify test -f src/parser.go — ok
+  Settle surface: /private/tmp/qa0098b/case1
+  roundfix: settle failed after verification: repository commit hook refused the commit (exit status 1): src/parser.go:3: function exceeds the 80-line limit
+    -> CLASSIFIED even though the hook never names itself. This is the F-2 shape.
+  state after the refusal: HEAD unchanged, commit count 1 -> 1, task status
+  completed, `A src/parser.go` still staged, file present with 83 lines.
+  after the repository repairs its hook:
+  exit: 0 / settled task_01 completed — 6b51c1f
+  committed sha256 == worktree sha256 (f7f5048a…); git show HEAD:src/parser.go | cmp - : identical
+  git status --porcelain=v1: empty; trailers present; task file still completed.
+
+CASE 2 — 2462-line generated file over the 500-line limit. Hook names itself.
+  /private/tmp/qa0098b/case2, husky banner emitted.
+  refused: exit 1
+  roundfix: settle failed after verification: repository pre-commit hook refused the commit (exit status 1): internal/api/schema.gen.ts: 2462 lines exceeds the 500-line limit
+  husky - pre-commit script failed (code 1)
+    -> the named-hook path still reports the hook by name and keeps the banner.
+  state: commit count 1 -> 1, work staged.
+  recovered: exit 0 / settled task_01 completed — c4c48df; sha256 match: yes; tree clean.
+
+CASE 3 — `sort()` where the rule requires `toSorted()`. Faithful fluxus shape:
+  core.hooksPath = .husky, `#!/bin/sh` + `set -eu`, no runner banner.
+  $ git rev-parse --path-format=absolute --git-path hooks
+  /private/tmp/qa0098b/case3/.husky
+  refused: exit 1
+  roundfix: settle failed after verification: repository commit hook refused the commit (exit status 1): src/list.ts:2: use toSorted() instead of sort()
+    -> CLASSIFIED through core.hooksPath, with no banner to read.
+  state: commit count 2 -> 2, work staged, task status completed.
+  recovered: exit 0 / settled task_01 completed — 4927103; sha256 match: yes; tree clean.
+
+Nothing was lost in any of the three.

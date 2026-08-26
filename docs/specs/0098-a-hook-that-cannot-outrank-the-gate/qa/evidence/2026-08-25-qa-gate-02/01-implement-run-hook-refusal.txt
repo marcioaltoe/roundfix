@@ -1,0 +1,27 @@
+Row 1 / Row 5 / Row 2 — US1 end to end through the real Daemon commit boundary.
+Binary: /tmp/qa0098-roundfix (roundfix 0.6.0, built from 83868abd).
+Repository: /private/tmp/qa0098b/run1, branch qa/hook-refusal.
+Hook: .git/hooks/pre-commit, plain `set -eu`, refuses any staged *.go, prints
+only its finding and no runner banner (the measured fluxus shape).
+
+$ roundfix implement --spec 0001-widget-flow
+exit: 1
+Run: run_20260826T010825Z_f9298d27aea95130   Agent: Codex / gpt-5.6-sol
+Run Worktree: /Users/marcio/.roundfix/worktrees/run1-654d8cd7/run_20260826T010825Z_f9298d27aea95130
+
+...Agent implemented the slice...
+Verification passed (attempt 1).
+roundfix: run run_20260826T010825Z_f9298d27aea95130 Task task_01: the repository commit hook refused the commit (exit status 1): src/parser.go:1: file violates the repository style rule
+Task task_01 stays completed with its verified changes staged in /Users/marcio/.roundfix/worktrees/run1-654d8cd7/run_20260826T010825Z_f9298d27aea95130; recover with: roundfix settle --spec 0001-widget-flow --task task_01
+roundfix: implement failed after Run start: commit Task task_01 for run "run_20260826T010825Z_f9298d27aea95130": repository commit hook refused the commit (exit status 1): src/parser.go:1: file violates the repository style rule
+Roundfix did not push; completed Task commits and preserved working tree changes remain for inspection.
+Run Worktree kept: /Users/marcio/.roundfix/worktrees/run1-654d8cd7/run_20260826T010825Z_f9298d27aea95130
+
+--- state after the refusal (independent git reads in the Run Worktree) ---
+$ git -C <run worktree> status --porcelain=v1
+M  docs/specs/0001-widget-flow/task_01.md
+A  src/parser.go
+task file status in the Run Worktree: completed
+src/parser.go present: yes  ("package main" / "// parser marker")
+commits on the Run Branch: 2 (unchanged by the refusal)
+user checkout task status: pending (the commit never landed there)
