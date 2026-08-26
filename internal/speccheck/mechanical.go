@@ -894,27 +894,49 @@ func parseMechanicalReport(path string, content []byte) mechanicalReport {
 	}
 
 	allLines := strings.Split(text, "\n")
-	inResults := false
+	report.rows = parseMechanicalResultsRows(allLines)
+	parseMechanicalRowInputs(allLines, report.rows)
+	return report
+}
+
+// parseMechanicalResultsRows reads report rows from the one table under the
+// report's `## Results` heading, and from nowhere else. A gate justifies a
+// Results row in prose, and that prose may carry a table of its own — a
+// comparison whose cells are names and observations, not statuses. Measured on
+// Spec 0098 on 2026-08-26: four cells of such a comparison were read as rows,
+// and each became a blocker no edit to the Results table could clear.
+//
+// A report with no `## Results` heading yields no rows, which the shape
+// detector reports as the missing matrix it is rather than passing on silence.
+func parseMechanicalResultsRows(lines []string) []mechanicalReportRow {
+	index := 0
+	for ; index < len(lines); index++ {
+		if depth, heading := markdownHeading(lines[index]); depth == 2 && strings.EqualFold(heading, "Results") {
+			index++
+			break
+		}
+	}
+
+	var rows []mechanicalReportRow
 	statusColumn, evidenceColumn, provenanceColumn := -1, -1, -1
-	for index, line := range allLines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "## ") {
-			if inResults {
+	inTable := false
+	for ; index < len(lines); index++ {
+		// The matrix ends where its table ends: at the next heading of any
+		// depth, or at the first line after the table that is not a table row.
+		if depth, _ := markdownHeading(lines[index]); depth > 0 {
+			break
+		}
+		cells := markdownCells(lines[index])
+		if len(cells) == 0 {
+			if inTable {
 				break
 			}
-			inResults = strings.EqualFold(strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")), "Results")
 			continue
 		}
-		if !inResults {
-			continue
-		}
-		cells := markdownCells(line)
-		if len(cells) == 0 {
-			continue
-		}
-		if statusColumn < 0 {
+		if !inTable {
+			inTable = true
 			for cellIndex, cell := range cells {
-				switch strings.ToLower(strings.TrimSpace(cell)) {
+				switch strings.ToLower(cell) {
 				case "status":
 					statusColumn = cellIndex
 				case "evidence":
@@ -925,20 +947,19 @@ func parseMechanicalReport(path string, content []byte) mechanicalReport {
 			}
 			continue
 		}
-		if markdownSeparator(cells) || statusColumn >= len(cells) {
+		if markdownSeparator(cells) || statusColumn < 0 || statusColumn >= len(cells) {
 			continue
 		}
-		row := mechanicalReportRow{id: strings.TrimSpace(cells[0]), status: strings.TrimSpace(cells[statusColumn]), line: index + 1}
+		row := mechanicalReportRow{id: cells[0], status: cells[statusColumn], line: index + 1}
 		if evidenceColumn >= 0 && evidenceColumn < len(cells) {
-			row.evidence = strings.TrimSpace(cells[evidenceColumn])
+			row.evidence = cells[evidenceColumn]
 		}
 		if provenanceColumn >= 0 && provenanceColumn < len(cells) {
-			row.provenance = strings.TrimSpace(cells[provenanceColumn])
+			row.provenance = cells[provenanceColumn]
 		}
-		report.rows = append(report.rows, row)
+		rows = append(rows, row)
 	}
-	parseMechanicalRowInputs(allLines, report.rows)
-	return report
+	return rows
 }
 
 func mechanicalEvidenceSnapshots(document yaml.Node) (map[string]mechanicalEvidenceRecord, error) {

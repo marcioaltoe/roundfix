@@ -1079,6 +1079,88 @@ func TestMechanicalStageAcceptsThePreconditionRefusalRow(t *testing.T) {
 	}
 }
 
+func TestResultsTableIsTheOnlyRowSource(t *testing.T) {
+	t.Parallel()
+
+	const frontmatter = "---\n" +
+		"verdict: pass\n" +
+		"rows_blocked_environment: 0\n" +
+		"rows_blocked_finding: 0\n" +
+		"rows_blocked_declared: 0\n" +
+		"---\n\n" +
+		"# QA Report\n\n"
+	const results = "## Results\n\n" +
+		"| # | Status | Provenance |\n" +
+		"| - | --- | --- |\n" +
+		"| R01 | pass | measured |\n"
+	// The comparison Spec 0098's gate wrote to justify a Results row on
+	// 2026-08-26. Its cells are the shape that became four blockers: a header
+	// naming a case, and rows naming an observation rather than a status.
+	const comparison = "| Case | Hook objection observed | Refused settle | Recovered settle |\n" +
+		"| --- | --- | --- | --- |\n" +
+		"| 82-line function vs 80 | function exceeds the 80-line limit | exit `1`, work staged | exit `0`, byte-identical |\n" +
+		"| 2462-line generated file vs 500 | 2462 lines exceeds the 500-line limit | exit `1`, work staged | exit `0`, byte-identical |\n" +
+		"| `sort()` vs `toSorted()` | use toSorted() instead of sort() | exit `1`, work staged | exit `0`, byte-identical |\n"
+
+	tests := []struct {
+		name       string
+		report     string
+		wantDetail string
+	}{
+		{
+			name:   "a comparison under a row-detail subsection is not a result",
+			report: frontmatter + results + "\n### Row detail — the three measured cases\n\nEach was built as its own repository:\n\n" + comparison,
+		},
+		{
+			name:   "a comparison in prose under no heading is not a result",
+			report: frontmatter + results + "\nEach was built as its own repository:\n\n" + comparison,
+		},
+		{
+			name:   "a comparison under a later section is not a result",
+			report: frontmatter + results + "\n## Findings\n\n" + comparison,
+		},
+		{
+			name: "a defective Results row is the only finding beside a comparison",
+			report: frontmatter + "## Results\n\n" +
+				"| # | Status | Provenance |\n" +
+				"| - | --- | --- |\n" +
+				"| R01 | pending | measured |\n\n" +
+				"### Row detail — the three measured cases\n\n" + comparison,
+			wantDetail: "row R01 remains pending instead of carrying a terminal status",
+		},
+		{
+			name:       "a report with no Results heading still reports the missing matrix",
+			report:     frontmatter + "## Evidence\n\n" + comparison,
+			wantDetail: "Results table has no report rows",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			reportPath := "docs/specs/mechanical/qa/report.md"
+			writeMechanicalFile(t, repoRoot, reportPath, tt.report)
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+			if tt.wantDetail == "" {
+				if len(findings) != 0 {
+					t.Fatalf("%s findings = %#v, want none for a table outside the Results matrix", speccheck.CodeMechanicalReportShape, findings)
+				}
+				if result.Blocking {
+					t.Fatalf("Blocking = true, want a gate's own evidence to leave the next run free; findings = %#v", result.Findings)
+				}
+				return
+			}
+			if len(findings) != 1 || !strings.Contains(findings[0].Detail, tt.wantDetail) {
+				t.Fatalf("%s findings = %#v, want exactly one detail containing %q", speccheck.CodeMechanicalReportShape, findings, tt.wantDetail)
+			}
+		})
+	}
+}
+
 func TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode(t *testing.T) {
 	t.Parallel()
 	repoRoot := newMechanicalGitRepo(t)
