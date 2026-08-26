@@ -220,6 +220,10 @@ _Avoid_: Session opened, prompt sent, turn started
 The outcome (`agent_selection_failed`) of a turn that ended before any Agent output, because the selected ACP Runtime would not serve it — exhausted quota, failed authentication, an adapter that will not start. It is a failure of the selection rather than of the work, so the Fallback Chain stays eligible.
 _Avoid_: Batch failure, agent crash, runtime error
 
+**Hook Refusal**:
+The outcome (`hook_refused`) of a Task commit a repository commit hook rejected after the authoritative Verification had already passed. It is a repository misconfiguration rather than a Task failure — a commit hook may never be stricter than the Verification — so the Task stays `completed`, its verified work stays staged in the surface that produced it, and the Run reports the refusing hook, its exit code, its output, and the Settle Command that recovers the work.
+_Avoid_: Commit failure, pre-commit error, verification failure
+
 **Mechanical Refusal Code**:
 The stable token a pre-QA mechanical check emits when it can refuse from written declarations and repository facts alone, before any Agent Session opens. Four exist: `QA-AUTH-PATHS` (a tooling change outside its authorization's bounded paths), `QA-CONSEQUENT-ORDER` (a consequent fix folded into or ordered before the change that caused it), `QA-REPORT-SHAPE` (a QA Report missing a required structural element), and `QA-EVIDENCE-PATH` (an evidence path a report names but the repository does not carry). The code is the durable name a reader and a later detector both use; the human sentence beside it may be reworded, the token may not.
 _Avoid_: lint code, error code, check name
@@ -419,7 +423,7 @@ The command that executes a Spec's Task Graph by running Agents over its Tasks i
 _Avoid_: Run command, execute command, spec command
 
 **Settle Command**:
-The local recovery command that re-runs one failed Task's Verification commands in the current repository. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it creates no Run and never pushes.
+The local recovery command that re-runs one Task's Verification commands in the surface that still holds its work — a kept Task Worktree, a kept Run Worktree, or the current repository. It recovers a Task that is failed, or completed with uncommitted work; the second is the state a Hook Refusal leaves behind, and a completed Task whose surfaces are all clean was committed already and settles nothing. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it creates no Run and never pushes.
 _Avoid_: Retry command, auto-settle, task fix command
 
 **Reconcile Command**:
