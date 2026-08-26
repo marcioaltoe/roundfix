@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-14
-updated_at: 2026-08-14
+updated_at: 2026-08-26
 kind: finding
 ---
 
@@ -59,3 +59,7 @@ The pre-work probe caught every one of them, in seconds, opening no Agent
 Session and spending no tokens. Both repositories measured the same thing: the
 probe is the cheapest place this defect class is ever caught, and it catches it
 after the Spec is authored rather than while it is being authored.
+
+---
+
+Adopted by Spec `0116-a-verdict-that-states-its-own-scope`.
