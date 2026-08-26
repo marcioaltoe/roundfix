@@ -1,0 +1,59 @@
+=== D. the verify stages the failed test target prevented, run individually ===
+--- make fmt-check ---
+exit=0
+--- make skills-sync-check ---
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.349s
+exit=0
+--- make skills-check ---
+go run -buildvcs=false ./cmd/roundfix skills check
+Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, implement-spec, brainstorming, council, business-analyst, archive-spec, qa-gate, evidence-gate
+exit=0
+--- make build ---
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=342a8a5d-dirty' -X 'roundfix/internal/app.BuildTime=2026-08-26 14:28:38 -0300'" -o bin/roundfix ./cmd/roundfix
+exit=0
+
+=== E. every package this Spec changes, run alone at HEAD ===
+$ go test -count=1 ./internal/spec ./internal/speccheck ./internal/daemon ./internal/cli
+ok  	roundfix/internal/spec	18.800s
+ok  	roundfix/internal/speccheck	5.491s
+ok  	roundfix/internal/daemon	4.986s
+ok  	roundfix/internal/cli	54.030s
+exit=0
+
+=== F. the documentation and derived-artifact gates ===
+--- make docs-test ---
+go test -count=1 -tags docscontract ./internal/docscontract
+ok  	roundfix/internal/docscontract	1.574s
+exit=0
+--- make repo-test ---
+go test -count=1 -tags repocontract -run '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical)$' ./internal/baseline ./skills
+ok  	roundfix/internal/baseline	34.227s
+ok  	roundfix/skills	15.110s
+exit=0
+--- make spec-budget ---
+go test -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusBudget$'
+ok  	roundfix/internal/docscontract	0.542s
+exit=0
+--- make spec-check ---
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0115-an-archive-that-survives-its-own-move/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0115-an-archive-that-survives-its-own-move/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0115-an-archive-that-survives-its-own-move/references/_index.md
+Verification: not run (use --run-verification).
+Spec 0116-a-verdict-that-states-its-own-scope
+No findings.
+Skipped:
+  SC-CONSTRAINT-MISSING: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_techspec.md
+  SC-CONSTRAINT-UNREASONED: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_techspec.md
+  SC-CONSTRAINT-SOURCE: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_techspec.md
+  SC-TOOLING-UNAUTHORIZED: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_techspec.md
+  SC-TOOLING-UNBOUNDED: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_techspec.md
+  SC-TOOLING-UNTYPED: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_techspec.md
+  vocabulary documentation detector: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_techspec.md
+  SC-COVERAGE-UNMAPPED: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_techspec.md
+  SC-COVERAGE-UNTASKED: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0116-a-verdict-that-states-its-own-scope/_tasks.md
+Verification: not run (use --run-verification).
+exit=0

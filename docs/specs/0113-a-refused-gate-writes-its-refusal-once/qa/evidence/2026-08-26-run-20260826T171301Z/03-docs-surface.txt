@@ -1,0 +1,20 @@
+=== A. git diff 854039b8..HEAD -- docs CONTEXT.md AGENTS.md README.md skills/ .agents/ ===
+.agents/skills/qa-gate/SKILL.md
+CONTEXT.md
+docs/user-guide/context-driven-development.md
+skills/qa-gate/SKILL.md
+
+=== B. grep -rn precondition CONTEXT.md ===
+116:The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict plus `rows_blocked_environment` and `rows_blocked_finding` counts in its frontmatter. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. Only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
+119:**Precondition Refusal**:
+120:A QA gate stop at a check that runs before the matrix is built — a strict Spec check being the usual one — recorded as the gate's entire QA Report rather than as a missing one: verdict `fail`, `rows_blocked_precondition` counting the stop, `precondition_check` naming what was checked, `precondition_reason` carrying every refusing code and the sentence beside it, and one terminal row `0 | blocked | precondition` in the Results table. The gate measured no requirement, so row `0` records the refusal itself instead of a result, and the prose justifying it is written as a list rather than a second table. An empty Results table is not the alternative: it refuses every later run on the report instead of on the Spec, and prescribes a repair — materialize every planned row — that a run which never built a matrix cannot perform.
+121:_Avoid_: Empty report, failed gate, skipped QA, precondition error
+
+=== C. grep -n precondition/newest in user guide ===
+79:A gate can also stop before it builds its matrix, at a precondition check such
+81:complete report, not an empty one: verdict `fail`, `rows_blocked_precondition`
+82:counting the `blocked` rows whose provenance is `precondition`,
+83:`precondition_check` naming the check that refused, `precondition_reason`
+86:`| 0 | blocked | precondition |`. Row `0` is the whole matrix — `blocked`
+87:because nothing ran, provenance `precondition` because the stop is a refusal
+96:Before a later gate run, the mechanical stage validates the newest report in

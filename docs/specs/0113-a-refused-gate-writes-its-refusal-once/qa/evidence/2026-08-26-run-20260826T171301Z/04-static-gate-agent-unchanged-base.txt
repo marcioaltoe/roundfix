@@ -1,0 +1,53 @@
+=== A. HEAD 342a8a5d — internal/agent alone, three consecutive runs ===
+--- run 1 ---
+ok  	roundfix/internal/agent	1.423s
+--- run 2 ---
+ok  	roundfix/internal/agent	1.424s
+--- run 3 ---
+ok  	roundfix/internal/agent	1.445s
+
+=== B. unchanged base: worktree at 854039b8 (the commit before this Spec's first Task) ===
+Preparing worktree (detached HEAD 854039b8)
+HEAD is now at 854039b8 spec: amend 0113 with the deadlock measured live on 0098
+base HEAD: 854039b8
+--- base run 1 ---
+ok  	roundfix/internal/agent	1.523s
+--- base run 2 ---
+ok  	roundfix/internal/agent	1.437s
+
+=== C. unchanged base 854039b8: full-suite invocation (grep of the summary lines) ===
+?   	roundfix/cmd/roundfix	[no test files]
+--- FAIL: TestACPXProbeSelectionRejectionClosesDisposableSession (0.96s)
+    acpx_runner_test.go:1415: expected adapter stderr preserved, got ""
+FAIL
+FAIL	roundfix/internal/agent	7.194s
+ok  	roundfix/internal/app	0.280s
+ok  	roundfix/internal/baseline	81.805s
+ok  	roundfix/internal/baselineacp	0.869s
+ok  	roundfix/internal/cli	117.179s
+ok  	roundfix/internal/codex	0.410s
+ok  	roundfix/internal/config	3.129s
+ok  	roundfix/internal/daemon	19.716s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/gittest	4.749s
+ok  	roundfix/internal/notify	1.970s
+ok  	roundfix/internal/preflight	4.848s
+ok  	roundfix/internal/releaseplan	1.661s
+ok  	roundfix/internal/reviewsource	2.217s
+ok  	roundfix/internal/reviewsource/coderabbit	1.187s
+ok  	roundfix/internal/rounds	1.993s
+ok  	roundfix/internal/runevent	0.938s
+ok  	roundfix/internal/skillhash	0.946s
+ok  	roundfix/internal/spec	52.403s
+ok  	roundfix/internal/specaudit	13.746s
+ok  	roundfix/internal/speccheck	60.370s
+ok  	roundfix/internal/store	59.267s
+ok  	roundfix/internal/suiteguard	2.953s
+?   	roundfix/internal/suiteguardcontract	[no test files]
+?   	roundfix/internal/testfixture	[no test files]
+ok  	roundfix/internal/tui	3.229s
+ok  	roundfix/internal/watch	1.055s
+ok  	roundfix/internal/worktree	24.696s
+ok  	roundfix/skills	15.716s
+FAIL
+EXIT=1

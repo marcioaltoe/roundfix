@@ -1,0 +1,21 @@
+=== R29. the authored QA Task's own Verification command ===
+$ roundfix spec check 0113-a-refused-gate-writes-its-refusal-once --strict && go test -count=1 ./internal/spec ./internal/speccheck 2>&1 | grep -q '^ok'
+exit=0
+
+=== R25. the report the production gate wrote, put back through the stage that must accept it ===
+    Blocking:       false
+    Findings:       0
+    Blocked rows:   0
+  exactly one row under ## Results:
+    3 table lines (header + separator + 1 row)
+  and the ## Mechanical rows table below it yields no result rows:
+    mechanical-rows table lines present: 1
+
+  round-trip through the reader:
+      "Verdict": "fail",
+      "RowsBlockedEnvironment": 0,
+      "RowsBlockedFinding": 0,
+      "RowsBlockedDeclared": 0,
+      "RowsBlockedPrecondition": 1,
+        "CheckName": "spec check --strict",
+        "Reason": "SC-CONSTRAINT-MISSING: docs/specs/9001-a-spec-that-contradicts-itself/_prd.md omits Identifier strategy required by docs/agents/spec-routing.md; SC-CONSTRAINT-MISSING: docs/specs/9001-a-spec-that-contradicts-itself/_prd.md omits Authentication and HTTP required by docs/agents/spec-routing.md; SC-CONSTRAINT-MISSING: docs/specs/9001-a-spec-that-contradicts-itself/_prd.md omits Active ADR obligations required by docs/agents/spec-routing.md; SC-CONSTRAINT-MISSING: docs/specs/9001-a-spec-that-contradicts-itself/_prd.md omits Tooling authority required by docs/agents/spec-routing.md"

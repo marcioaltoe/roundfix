@@ -1,0 +1,7 @@
+$ bin/roundfix spec check 0113-a-refused-gate-writes-its-refusal-once --strict
+Spec 0113-a-refused-gate-writes-its-refusal-once
+No findings.
+Skipped:
+  SC-REF-UNRESOLVED: missing docs/specs/0113-a-refused-gate-writes-its-refusal-once/references/_index.md
+Verification: not run (use --run-verification).
+exit=0

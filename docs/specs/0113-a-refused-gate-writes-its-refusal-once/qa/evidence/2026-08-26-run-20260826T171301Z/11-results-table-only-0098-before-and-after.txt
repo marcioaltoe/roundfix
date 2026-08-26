@@ -1,0 +1,44 @@
+=== P3. Core Feature 4: only the Results table is read as results ===
+source: docs/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25.md — Spec 0098's real report, the one the PRD names.
+It is copied alone into a fresh repository so newest-report-only cannot mask the result.
+
+  the prose evidence cells the PRD names, and the section they sit in:
+63:## Results
+91:### Row detail — what was actually run
+120:| 82-line function vs 80 | `src/parser.go:3: function exceeds the 80-line limit` | exit `1`, work staged, HEAD unchanged, task `completed` | exit `0`, `7bef7e8`, byte-identical |
+122:| `sort()` vs `toSorted()` | `src/list.ts:2: use toSorted() instead of sort()` | exit `1`, work staged, HEAD unchanged | exit `0`, `bc973b5`, byte-identical |
+190:### Row detail — environment-blocked rows and their equivalent evidence
+231:## Findings
+233:### F-1 — The delivered settle contract is contradicted on three of the five surfaces a Supervisor reads
+268:### F-2 — A hook that does not name itself is not classified, so the Run neither records `hook_refused` nor names the recovery — including in the repository where the three cases were measured
+
+  --- HEAD 342a8a5d (after task_07) ---
+requested:      docs/specs/y/qa/qa-report-2026-08-25.md
+Blocking:       true
+Findings:       3
+  - QA-REPORT-SHAPE docs/specs/y/qa/qa-report-2026-08-25.md:68 row="2" detail=row 2 has non-terminal status "**fail** — F-2"
+  - QA-REPORT-SHAPE docs/specs/y/qa/qa-report-2026-08-25.md:80 row="14" detail=row 14 has non-terminal status "**fail** — F-1"
+  - QA-REPORT-SHAPE docs/specs/y/qa/qa-report-2026-08-25.md:88 row="22" detail=row 22 has non-terminal status "**fail** — F-1"
+Blocked rows:   3
+  - 2 waits on row 2 has non-terminal status "**fail** — F-2" (QA-REPORT-SHAPE)
+  - 14 waits on row 14 has non-terminal status "**fail** — F-1" (QA-REPORT-SHAPE)
+  - 22 waits on row 22 has non-terminal status "**fail** — F-1" (QA-REPORT-SHAPE)
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/y/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
+
+=== P3b. non-vacuity control for P3: the same bytes at 4cc3b5fb, the commit before task_07 ===
+control HEAD: 4cc3b5fb feat: task: Update Mechanical Stage Validation
+control harness built
+requested:      docs/specs/y/qa/qa-report-2026-08-25.md
+Blocking:       true
+Findings:       7
+  - QA-REPORT-SHAPE docs/specs/y/qa/qa-report-2026-08-25.md:68 row="2" detail=row 2 has non-terminal status "**fail** — F-2"
+  - QA-REPORT-SHAPE docs/specs/y/qa/qa-report-2026-08-25.md:80 row="14" detail=row 14 has non-terminal status "**fail** — F-1"
+  - QA-REPORT-SHAPE docs/specs/y/qa/qa-report-2026-08-25.md:88 row="22" detail=row 22 has non-terminal status "**fail** — F-1"
+  - QA-REPORT-SHAPE docs/specs/y/qa/qa-report-2026-08-25.md:118 row="Case" detail=row Case has non-terminal status "Recovered settle"
+  - QA-REPORT-SHAPE docs/specs/y/qa/qa-report-2026-08-25.md:120 row="82-line function vs 80" detail=row 82-line function vs 80 has non-terminal status "exit `0`, `7bef7e8`, byte-identical"
+  - QA-REPORT-SHAPE docs/specs/y/qa/qa-report-2026-08-25.md:121 row="2462-line generated file vs 500" detail=row 2462-line generated file vs 500 has non-terminal status "exit `0`, `c3636d3`, byte-identical"
+  - QA-REPORT-SHAPE docs/specs/y/qa/qa-report-2026-08-25.md:122 row="`sort()` vs `toSorted()`" detail=row `sort()` vs `toSorted()` has non-terminal status "exit `0`, `bc973b5`, byte-identical"

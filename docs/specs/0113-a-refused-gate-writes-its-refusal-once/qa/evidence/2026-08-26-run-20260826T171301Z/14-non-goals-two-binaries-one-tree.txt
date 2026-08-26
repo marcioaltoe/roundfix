@@ -1,0 +1,142 @@
+=== Non-Goals: what checks the gate runs, their order, and the strict precondition itself ===
+Method: two binaries, one tree. The pre-Spec tree at 854039b8 is the fixed input; the
+pre-Spec binary and the HEAD binary each sweep every Spec in it with --strict.
+tree: 854039b8 spec: amend 0113 with the deadlock measured live on 0098
+pre-Spec binary built from 854039b8
+
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0097-a-wave-that-cannot-collide
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1265 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0098-a-hook-that-cannot-outrank-the-gate
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (348 bytes, 0 error line(s), 2 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0099-a-tool-that-meets-the-repositorys-conventions
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1531 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0100-a-review-the-loop-always-asks-for
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1363 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0101-a-terminal-branch-with-one-disposition
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1433 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0102-a-preflight-that-proves-what-the-run-needs
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1489 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0104-a-gate-that-cannot-certify-its-own-cache
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1461 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0105-the-gates-own-economics
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1223 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0106-a-decision-that-reaches-every-artifact
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1433 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0107-the-authoring-rules-the-guides-do-not-carry
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1503 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0108-what-an-agent-loads-to-answer-one-question
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1489 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0109-what-a-session-consumed
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1223 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0110-a-refresh-that-does-not-re-interview
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1405 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0111-one-terminal-audit-across-a-runs-surfaces
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1475 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0112-a-review-that-retires-on-its-own-facts
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1433 bytes, 0 error line(s), 13 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0113-a-refused-gate-writes-its-refusal-once
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (357 bytes, 0 error line(s), 2 skip line(s))
+### 
+  pre  exit=2
+  HEAD exit=2
+  byte-identical (100 bytes, 0 error line(s), 0 skip line(s))
+### 0115-an-archive-that-survives-its-own-move
+  pre  exit=0
+  HEAD exit=0
+  byte-identical (1419 bytes, 0 error line(s), 13 skip line(s))

@@ -1,0 +1,96 @@
+// Command qaharness is a throwaway QA measurement seat for Spec 0113. It
+// invokes exactly the exported entry points the Daemon's QA gate uses —
+// speccheck.RunMechanicalStage (internal/daemon/task_engine.go:1920) and the
+// internal/spec QA Report reader/writer — against real repository artifacts.
+// Deleted after the gate records its measurements.
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+
+	"roundfix/internal/spec"
+	"roundfix/internal/speccheck"
+)
+
+func main() {
+	if len(os.Args) < 2 {
+		fail("usage: qaharness <stage|write-refusal|read|newest> ...")
+	}
+	switch os.Args[1] {
+	case "stage":
+		stage(os.Args[2], os.Args[3])
+	case "write-refusal":
+		writeRefusal(os.Args[2], os.Args[3], os.Args[4])
+	case "read":
+		read(os.Args[2])
+	case "newest":
+		newest(os.Args[2:])
+	default:
+		fail("unknown subcommand " + os.Args[1])
+	}
+}
+
+func stage(repoRoot, reportPath string) {
+	result, err := speccheck.RunMechanicalStage(context.Background(), speccheck.MechanicalRequest{
+		RepoRoot:   repoRoot,
+		ReportPath: reportPath,
+	})
+	if err != nil {
+		fail("RunMechanicalStage: " + err.Error())
+	}
+	fmt.Printf("requested:      %s\n", reportPath)
+	fmt.Printf("Blocking:       %t\n", result.Blocking)
+	fmt.Printf("Findings:       %d\n", len(result.Findings))
+	for _, finding := range result.Findings {
+		fmt.Printf("  - %s %s:%d row=%q detail=%s\n", finding.Code, finding.File, finding.Line, finding.RowHint, finding.Detail)
+	}
+	fmt.Printf("Blocked rows:   %d\n", len(result.Blocked))
+	for _, row := range result.Blocked {
+		fmt.Printf("  - %s waits on %s (%s)\n", row.ID, row.WaitingOn, row.FindingCode)
+	}
+	fmt.Printf("Skips:          %d\n", len(result.Skips))
+	for _, skip := range result.Skips {
+		fmt.Printf("  - %s: %s\n", skip.Detector, skip.MissingArtifact)
+	}
+	fmt.Printf("PreconditionRefused: %t %+v\n", result.PreconditionRefused, result.PreconditionRefusal)
+}
+
+func writeRefusal(check, reason, outPath string) {
+	file, err := os.Create(outPath)
+	if err != nil {
+		fail(err.Error())
+	}
+	defer file.Close()
+	if err := spec.WritePreconditionRefusalReport(file, spec.PreconditionRefusal{CheckName: check, Reason: reason}); err != nil {
+		fail(err.Error())
+	}
+	fmt.Printf("wrote %s\n", outPath)
+}
+
+func read(specDir string) {
+	report, err := spec.ReadQAReport(specDir)
+	if err != nil {
+		fail("ReadQAReport: " + err.Error())
+	}
+	encoded, _ := json.MarshalIndent(report, "", "  ")
+	newestPath, newestErr := spec.NewestQAReport(specDir)
+	fmt.Printf("newest report:  %s (err=%v)\n", newestPath, newestErr)
+	fmt.Printf("%s\n", encoded)
+}
+
+func newest(paths []string) {
+	chosen, err := spec.NewestQAReportFromPaths(paths)
+	if err != nil {
+		fail("NewestQAReportFromPaths: " + err.Error())
+	}
+	fmt.Printf("candidates: %s\nnewest:     %s\n", strings.Join(paths, ", "), chosen)
+}
+
+func fail(message string) {
+	fmt.Fprintln(os.Stderr, "qaharness: "+message)
+	os.Exit(1)
+}

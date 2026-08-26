@@ -1,0 +1,58 @@
+$ git diff --name-only bd8fd98c..HEAD
+.agents/skills/qa-gate/SKILL.md
+CONTEXT.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/_prd.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/_tasks.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/_techspec.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_06.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_08.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_09.md
+docs/specs/0116-a-verdict-that-states-its-own-scope/_prd.md
+docs/specs/0116-a-verdict-that-states-its-own-scope/references/2026-08-14-a-clean-checker-left-eight-vacuous-commands-standing.md
+docs/specs/0116-a-verdict-that-states-its-own-scope/references/_index.md
+docs/user-guide/context-driven-development.md
+internal/cli/implement_test.go
+internal/cli/spec_check.go
+internal/daemon/daemon_test.go
+internal/daemon/task_engine.go
+internal/daemon/task_engine_test.go
+internal/speccheck/report.go
+skills/qa-gate/SKILL.md
+
+$ git log --format='%h %s' bd8fd98c..HEAD
+342a8a5d docs: task: Document the vocabulary this Spec emitted
+d8ad2d4d fix: narrow task_09's Verification to the effect it owns
+9e3f6a4e Merge branch 'roundfix/run-run_20260826T115253Z_2237687d3a2aafe1' into ma/a-gate-that-cannot-certify-its-own-cache
+cc23b238 fix: account for ADR-0117 in 0116, measured by the full sweep the stage-scoped check skipped
+34b09533 feat: task: Give the refusal report a writer in production
+cfa3d9b5 fix: corrective tasks for 0113 QA findings, and the authorization F-1 needs
+34ab1845 Merge branch 'roundfix/run-run_20260826T071534Z_856c9513f857cbad' into ma/a-gate-that-cannot-certify-its-own-cache
+e29ee9e9 spec: 0116 — a verdict that states its own scope
+
+--- git diff-tree cfa3d9b5 (fix: corrective tasks for 0113 QA findings, and the authorization F-1 needs) ---
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/_prd.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/_tasks.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_06.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_08.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_09.md
+
+--- git diff-tree 34b09533 (feat: task: Give the refusal report a writer in production) ---
+.agents/skills/qa-gate/SKILL.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_08.md
+internal/cli/implement_test.go
+internal/cli/spec_check.go
+internal/daemon/daemon_test.go
+internal/daemon/task_engine.go
+internal/daemon/task_engine_test.go
+internal/speccheck/report.go
+skills/qa-gate/SKILL.md
+
+--- git diff-tree 342a8a5d (docs: task: Document the vocabulary this Spec emitted) ---
+CONTEXT.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/_techspec.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_09.md
+docs/user-guide/context-driven-development.md
+
+--- git diff-tree d8ad2d4d (fix: narrow task_09's Verification to the effect it owns) ---
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_09.md
+

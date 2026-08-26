@@ -1,0 +1,67 @@
+=== R20. the docs surface, followed as its intended reader ===
+Reader: a maintainer whose gate just refused. They have the report and no repository knowledge.
+
+--- Q1. 'What shape is a precondition refusal?' -> docs/user-guide/context-driven-development.md
+the report contains equivalent observed or supervised evidence. A row stopped
+by a finding counts in `rows_blocked_finding` and does prevent `pass`. Both
+counts live in QA Report frontmatter and appear in the coverage summary.
+
+The first QA Report on a date is
+`docs/specs/<slug>/qa/qa-report-YYYY-MM-DD.md`. Same-day reruns use numeric
+siblings such as `qa-report-YYYY-MM-DD-NN.md`; scope and build suffixes are not
+part of the contract.
+
+A gate can also stop before it builds its matrix, at a precondition check such
+as `roundfix spec check <slug> --strict`. What that refusal leaves behind is a
+complete report, not an empty one: verdict `fail`, `rows_blocked_precondition`
+counting the `blocked` rows whose provenance is `precondition`,
+`precondition_check` naming the check that refused, `precondition_reason`
+carrying every refusing code with the sentence beside it, and a Results table
+holding the single terminal row
+`| 0 | blocked | precondition |`. Row `0` is the whole matrix — `blocked`
+because nothing ran, provenance `precondition` because the stop is a refusal
+rather than a measurement — so a maintainer whose gate refused reads the check
+and the reason from the frontmatter and decides whether to fix the Spec or the
+tree. The prose justifying that row is written as a list rather than as a second
+table: only the one table under the `## Results` heading is read as results, so
+every other table a report carries is evidence a reader weighs, never a row a
+later run can be blocked by. A gate that reached its matrix writes none of those
+three keys.
+
+Before a later gate run, the mechanical stage validates the newest report in
+that directory and nothing else, ranking by the embedded date first and the
+rerun sequence second, exactly as the names above define them. Older reports are
+read by nothing, so a refusal one run recorded cannot block the run that
+supersedes it, and unblocking a Spec never requires deleting the evidence of why
+it was blocked.
+
+## Adopt or update the Context-Driven Baseline
+
+The Baseline Command is the sole public authority for adopting, updating, and
+
+--- Q2. 'What do these three frontmatter keys mean?' -> CONTEXT.md glossary
+The universal Normative Clause that forbids changes to linter, formatter, and tool configuration unless the maintainer explicitly authorizes the exact bounded files.
+_Avoid_: Tool preference, implicit permission, cleanup authorization
+
+**QA Report**:
+The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict plus `rows_blocked_environment` and `rows_blocked_finding` counts in its frontmatter. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. Only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
+_Avoid_: Test report, QA log
+
+**Precondition Refusal**:
+A QA gate stop at a check that runs before the matrix is built — a strict Spec check being the usual one — recorded as the gate's entire QA Report rather than as a missing one: verdict `fail`, `rows_blocked_precondition` counting the stop, `precondition_check` naming what was checked, `precondition_reason` carrying every refusing code and the sentence beside it, and one terminal row `0 | blocked | precondition` in the Results table. The gate measured no requirement, so row `0` records the refusal itself instead of a result, and the prose justifying it is written as a list rather than a second table. An empty Results table is not the alternative: it refuses every later run on the report instead of on the Spec, and prescribes a repair — materialize every planned row — that a run which never built a matrix cannot perform.
+_Avoid_: Empty report, failed gate, skipped QA, precondition error
+
+
+--- Q3. 'What must my gate write when it refuses?' -> the installed skill
+32:## 1. Resolve scope and preconditions
+40:- A clean authoring check is a precondition of the gate, not a substitute for
+54:  rows_blocked_precondition: 1
+58:  precondition_check: "roundfix spec check <slug> --strict"
+59:  precondition_reason: "<every refusing code and the sentence beside it>"
+68:  | 0 | blocked | precondition |
+77:  `precondition` because the stop is a refusal and not a measurement. Name every
+78:  refusing `SC-*` code in `precondition_reason`, code first and its sentence
+412:A report that carries the precondition refusal row from section 1 carries
+413:`rows_blocked_precondition` as well, set to the exact number of `blocked` rows
+414:whose provenance is `precondition`, plus `precondition_check` and
+415:`precondition_reason`. A gate that reached its matrix writes none of these three

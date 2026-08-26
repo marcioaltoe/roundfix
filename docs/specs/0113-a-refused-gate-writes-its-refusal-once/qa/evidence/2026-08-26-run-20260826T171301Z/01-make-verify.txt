@@ -1,0 +1,51 @@
+$ make verify
+cwd: /Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260826T171301Z_eb768db2b9523448
+HEAD: 342a8a5db39ef39450833120ea7633a8e3d25bdb
+note: rerun with no concurrent repository writes (a first attempt was invalidated by QA evidence files written into the tree while suiteguard was sampling)
+
+go test -parallel 16 ./...
+?   	roundfix/cmd/roundfix	[no test files]
+--- FAIL: TestACPXRunReappliesSelectionForFreshRunnerSessionResume (0.78s)
+    acpx_runner_test.go:2348: first run: agent selection unavailable for runtime "codex" with model "gpt-5.5" and reasoning "xhigh" during apply advertised selection: apply Agent Selection "codex"/"gpt-5.5"/"xhigh" during set reasoning_effort: adapter rejected selection: acquire Agent Selection capabilities through acpx: command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection
+--- FAIL: TestACPXRunWarmSessionIsIdempotent (0.72s)
+    acpx_runner_test.go:2295: first work turn: agent selection unavailable for runtime "opencode" with model "openrouter/x-ai/grok-4.5" and reasoning "high" during apply advertised selection: apply Agent Selection "opencode"/"openrouter/x-ai/grok-4.5"/"high" during inspect Agent Session capabilities: adapter rejected selection: acquire Agent Selection capabilities through acpx: command failed; recovery: update the ACP Runtime or adapter and retry the exact Agent Selection
+2026/08/26 14:23:44 codex full-access sandbox preset unavailable for Agent Session "roundfix-run-1": acpx infrastructure error after exit code 2: acpx command failed
+--- acpx stderr tail ---
+ACP session session-id does not advertise config option 'sandbox_mode'. Supported config options: mode, model.
+--- FAIL: TestACPXExitCodeMapping (1.04s)
+    --- FAIL: TestACPXExitCodeMapping/all_permissions_denied_failure (0.10s)
+        acpx_runner_test.go:3608: read /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestACPXExitCodeMappingall_permissions_denied_failure1792853427/001/args.json: open /var/folders/_7/68y3l_1s55jcsdmmcmmm4dhh0000gn/T/TestACPXExitCodeMappingall_permissions_denied_failure1792853427/001/args.json: no such file or directory
+FAIL
+suiteguard: guard cost: measured 5054 paths; fingerprint took 164.155458ms before and 139.263416ms after
+FAIL	roundfix/internal/agent	8.403s
+ok  	roundfix/internal/app	(cached)
+ok  	roundfix/internal/baseline	79.510s
+ok  	roundfix/internal/baselineacp	(cached)
+ok  	roundfix/internal/cli	113.985s
+ok  	roundfix/internal/codex	(cached)
+ok  	roundfix/internal/config	(cached)
+ok  	roundfix/internal/daemon	17.843s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/gittest	3.578s
+ok  	roundfix/internal/notify	(cached)
+ok  	roundfix/internal/preflight	5.524s
+ok  	roundfix/internal/releaseplan	(cached)
+ok  	roundfix/internal/reviewsource	(cached)
+ok  	roundfix/internal/reviewsource/coderabbit	(cached)
+ok  	roundfix/internal/rounds	(cached)
+ok  	roundfix/internal/runevent	(cached)
+ok  	roundfix/internal/skillhash	(cached)
+ok  	roundfix/internal/spec	52.597s
+ok  	roundfix/internal/specaudit	(cached)
+ok  	roundfix/internal/speccheck	66.351s
+ok  	roundfix/internal/store	42.408s
+ok  	roundfix/internal/suiteguard	(cached)
+?   	roundfix/internal/suiteguardcontract	[no test files]
+?   	roundfix/internal/testfixture	[no test files]
+ok  	roundfix/internal/tui	(cached)
+ok  	roundfix/internal/watch	(cached)
+ok  	roundfix/internal/worktree	(cached)
+ok  	roundfix/skills	(cached)
+FAIL
+make: *** [test] Error 1
+EXIT=2

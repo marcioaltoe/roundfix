@@ -1,0 +1,28 @@
+=== R12 on this Spec's own history: the previous run's 'fail' report does not block this run ===
+The previous report is docs/specs/0113-.../qa/qa-report-2026-08-26.md — verdict fail, ten fail
+rows, and prose tables inside its ## Results window. It is copied alone into a fresh repository
+so newest-report-only cannot mask what the shape detector makes of it.
+  tables inside its ## Results window:
+    30 table lines between ## Results and ## Findings
+    Blocking:       true
+    Findings:       31
+    Blocked rows:   26
+
+=== the same report at 4cc3b5fb, before task_07 (non-vacuity control) ===
+    Blocking:       true
+    Findings:       31
+
+=== the previous report, read IN PLACE in this repository (its evidence directory resolves here) ===
+    requested:      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/qa-report-2026-08-26.md
+    Blocking:       true
+    Findings:       1
+      - QA-REPORT-SHAPE docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/qa-report-2026-08-26-01.md:1 row="" detail=Results table has no report rows
+    Blocked rows:   1
+      - QA-REPORT-SHAPE waits on Results table has no report rows (QA-REPORT-SHAPE)
+    Skips:          2
+      - authorization bounded paths: tooling authorization
+      - consequent-fix commit order: consequent-fix declaration
+    PreconditionRefused: false {CheckName: Reason:}
+
+=== the 31 findings in the isolated copy, by code ===
+    all QA-EVIDENCE-PATH (the scratch copy has no evidence directory); zero QA-REPORT-SHAPE
