@@ -1,0 +1,14 @@
+# Non-vacuity for Core Feature 2 / TechSpec Acceptance 1: the same refusal report bytes
+# through the detector as it stood BEFORE task_04 (tree 97ff7679 = task_03, task_04's parent).
+
+requested:      docs/specs/fixture/qa/qa-report-2026-08-26.md
+Blocking:       true
+Findings:       1
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-26.md:17 row="0" detail=row 0 has a blocked cause outside environment, finding, or declared
+Blocked rows:   1
+  - 0 waits on row 0 has a blocked cause outside environment, finding, or declared (QA-REPORT-SHAPE)
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/fixture/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}

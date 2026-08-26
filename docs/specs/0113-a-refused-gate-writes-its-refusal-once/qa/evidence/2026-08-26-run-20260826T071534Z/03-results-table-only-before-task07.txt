@@ -1,0 +1,26 @@
+# Non-vacuity: the same isolated 0098 report through the parser as it stood BEFORE task_07
+# (tree 4cc3b5fb = task_04, task_07's parent), same scratch repo, same report bytes.
+
+requested:      docs/specs/fixture/qa/qa-report-2026-08-25.md
+Blocking:       true
+Findings:       7
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:68 row="2" detail=row 2 has non-terminal status "**fail** — F-2"
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:80 row="14" detail=row 14 has non-terminal status "**fail** — F-1"
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:88 row="22" detail=row 22 has non-terminal status "**fail** — F-1"
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:118 row="Case" detail=row Case has non-terminal status "Recovered settle"
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:120 row="82-line function vs 80" detail=row 82-line function vs 80 has non-terminal status "exit `0`, `7bef7e8`, byte-identical"
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:121 row="2462-line generated file vs 500" detail=row 2462-line generated file vs 500 has non-terminal status "exit `0`, `c3636d3`, byte-identical"
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:122 row="`sort()` vs `toSorted()`" detail=row `sort()` vs `toSorted()` has non-terminal status "exit `0`, `bc973b5`, byte-identical"
+Blocked rows:   7
+  - 2 waits on row 2 has non-terminal status "**fail** — F-2" (QA-REPORT-SHAPE)
+  - 14 waits on row 14 has non-terminal status "**fail** — F-1" (QA-REPORT-SHAPE)
+  - 22 waits on row 22 has non-terminal status "**fail** — F-1" (QA-REPORT-SHAPE)
+  - Case waits on row Case has non-terminal status "Recovered settle" (QA-REPORT-SHAPE)
+  - 82-line function vs 80 waits on row 82-line function vs 80 has non-terminal status "exit `0`, `7bef7e8`, byte-identical" (QA-REPORT-SHAPE)
+  - 2462-line generated file vs 500 waits on row 2462-line generated file vs 500 has non-terminal status "exit `0`, `c3636d3`, byte-identical" (QA-REPORT-SHAPE)
+  - `sort()` vs `toSorted()` waits on row `sort()` vs `toSorted()` has non-terminal status "exit `0`, `bc973b5`, byte-identical" (QA-REPORT-SHAPE)
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/fixture/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}

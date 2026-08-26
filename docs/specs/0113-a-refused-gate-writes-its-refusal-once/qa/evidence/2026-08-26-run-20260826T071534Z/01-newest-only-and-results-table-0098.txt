@@ -1,0 +1,34 @@
+# Mechanical stage over Spec 0098's real QA directory (three same-day reports)
+# harness = speccheck.RunMechanicalStage, the exact call internal/daemon/task_engine.go:44 makes
+# repo HEAD: a7628d5b4d6eb9c3ab6f1d6a6a7c6b0ca58b4b61
+
+===== requested docs/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25.md
+requested:      docs/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          2
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+PreconditionRefused: false {CheckName: Reason:}
+
+===== requested docs/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25-01.md
+requested:      docs/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25-01.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          2
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+PreconditionRefused: false {CheckName: Reason:}
+
+===== requested docs/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25-02.md
+requested:      docs/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25-02.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          2
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+PreconditionRefused: false {CheckName: Reason:}
+

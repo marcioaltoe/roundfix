@@ -440,12 +440,16 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 	if err := detectMechanicalConsequentOrder(ctx, &result, repoRoot, request.ConsequentFixes); err != nil {
 		return result, err
 	}
-	report, present, err := loadMechanicalReport(repoRoot, request.ReportPath)
+	reportPath, err := newestMechanicalReportPath(repoRoot, request.ReportPath)
+	if err != nil {
+		return result, err
+	}
+	report, present, err := loadMechanicalReport(repoRoot, reportPath)
 	if err != nil {
 		return result, err
 	}
 	if !present {
-		missing := request.ReportPath
+		missing := reportPath
 		if strings.TrimSpace(missing) == "" {
 			missing = "QA Report"
 		}
@@ -845,6 +849,70 @@ func detectMechanicalConsequentOrder(ctx context.Context, result *MechanicalResu
 		}
 	}
 	return nil
+}
+
+// qaReportNameGlob matches the QA Report family a gate writes into a Spec's qa
+// directory: qa-report-YYYY-MM-DD.md and its same-date -NN reruns.
+const qaReportNameGlob = "qa-report-*.md"
+
+// newestMechanicalReportPath names the one QA Report the stage validates: the
+// newest member of the qa-report-*.md family in the directory the caller named,
+// whichever member of it the caller asked for. Every older report is read by
+// nothing, so a refusal one run wrote cannot block the run that supersedes it.
+// The caller's path names the QA directory; the directory names its own
+// authority.
+//
+// Recency is spec.NewestQAReportFromPaths — the same date-then-run-sequence key
+// spec.NewestQAReport applies to the filesystem and the worktree reconciler
+// applies to a Git tree. Raw filename order is not that key: "." sorts above
+// "-", so it reads a date's first report as newer than every same-date rerun
+// that supersedes it. A stage that sorted by name would disagree with the
+// callers that hand it a path about which report is current, which is how a
+// superseded one gets read again.
+//
+// A caller that names a report outside the family — a fixture, a draft under
+// another name — is answered with its own path. There is no family for it to be
+// the newest of, and redirecting that read would discard the report the caller
+// meant. For the same reason a carried row's establishing report is loaded by
+// its exact cited path and never through here: that citation names one report
+// on purpose, and pointing it at the newest would move the evidence a carried
+// row rests on.
+func newestMechanicalReportPath(repoRoot, requested string) (string, error) {
+	clean := cleanMechanicalPath(requested)
+	if clean == "" || !isQAReportName(filepath.Base(filepath.FromSlash(clean))) {
+		return requested, nil
+	}
+	directory := filepath.ToSlash(filepath.Dir(filepath.FromSlash(clean)))
+	resolved, ok := resolveRepositoryPath(repoRoot, directory)
+	if !ok {
+		return requested, nil
+	}
+	pattern := filepath.Join(resolved, qaReportNameGlob)
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return "", fmt.Errorf("list QA Reports matching %q: %w", pattern, err)
+	}
+	reports := make([]string, 0, len(matches))
+	for _, match := range matches {
+		candidate := cleanMechanicalPath(filepath.ToSlash(filepath.Join(directory, filepath.Base(match))))
+		if candidate != "" {
+			reports = append(reports, candidate)
+		}
+	}
+	// A directory with no report on disk answers with the requested path, so a
+	// caller that names one that is gone still gets the missing-report skip under
+	// the name it asked for rather than an empty one.
+	newest, err := spec.NewestQAReportFromPaths(reports)
+	if err != nil {
+		return clean, nil
+	}
+	return newest, nil
+}
+
+// isQAReportName reports whether one file name belongs to the QA Report family.
+func isQAReportName(name string) bool {
+	matched, err := filepath.Match(qaReportNameGlob, name)
+	return err == nil && matched
 }
 
 func loadMechanicalReport(repoRoot, reportPath string) (mechanicalReport, bool, error) {

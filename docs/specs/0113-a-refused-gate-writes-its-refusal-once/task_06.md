@@ -1,5 +1,5 @@
 ---
-status: pending
+status: failed
 type: qa
 ---
 

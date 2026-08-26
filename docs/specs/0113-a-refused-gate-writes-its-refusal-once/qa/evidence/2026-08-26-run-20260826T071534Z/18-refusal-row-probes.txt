@@ -1,0 +1,60 @@
+# High-risk probes against the new refusal-row detector (out-of-order and invalid input).
+
+===== a — provenance precondition with a non-blocked status
+    ## Results
+    
+    | # | Status | Provenance |
+    | - | --- | --- |
+    | 0 | pending | precondition |
+Blocking:       true
+Findings:       2
+  - QA-REPORT-SHAPE docs/specs/a/qa/qa-report-2026-08-26.md:15 row="0" detail=row 0 has provenance precondition with status "pending"
+  - QA-REPORT-SHAPE docs/specs/a/qa/qa-report-2026-08-26.md:3 row="" detail=rows_blocked_precondition is 1 but the Results table contains 0 matching rows
+  - 0 waits on row 0 has provenance precondition with status "pending" (QA-REPORT-SHAPE)
+  - QA-REPORT-SHAPE waits on rows_blocked_precondition is 1 but the Results table contains 0 matching rows (QA-REPORT-SHAPE)
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/a/qa/evidence
+
+===== b — bare blocked without precondition provenance (pre-existing refusal must survive)
+    ## Results
+    
+    | # | Status | Provenance |
+    | - | --- | --- |
+    | 0 | blocked | measured |
+Blocking:       true
+Findings:       1
+  - QA-REPORT-SHAPE docs/specs/b/qa/qa-report-2026-08-26.md:14 row="0" detail=row 0 has a blocked cause outside environment, finding, or declared
+  - 0 waits on row 0 has a blocked cause outside environment, finding, or declared (QA-REPORT-SHAPE)
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/b/qa/evidence
+
+===== c — rows_blocked_precondition declared but no refusal row
+    ## Results
+    
+    | # | Status | Provenance |
+    | - | --- | --- |
+    | R1 | pass | measured |
+Blocking:       true
+Findings:       1
+  - QA-REPORT-SHAPE docs/specs/c/qa/qa-report-2026-08-26.md:3 row="" detail=rows_blocked_precondition is 1 but the Results table contains 0 matching rows
+  - QA-REPORT-SHAPE waits on rows_blocked_precondition is 1 but the Results table contains 0 matching rows (QA-REPORT-SHAPE)
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/c/qa/evidence
+
+===== d — refusal row present but the count never declared
+    ## Results
+    
+    | # | Status | Provenance |
+    | - | --- | --- |
+    | 0 | blocked | precondition |
+Blocking:       true
+Findings:       1
+  - QA-REPORT-SHAPE docs/specs/d/qa/qa-report-2026-08-26.md:1 row="" detail=rows_blocked_precondition is absent from report frontmatter
+  - QA-REPORT-SHAPE waits on rows_blocked_precondition is absent from report frontmatter (QA-REPORT-SHAPE)
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/d/qa/evidence
+

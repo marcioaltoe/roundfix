@@ -1,0 +1,36 @@
+# Core Feature 4 in isolation: 0098's blocking report as the ONLY report in a scratch repo,
+# so newest-only cannot mask the result. Prose comparison table lives at line 118 of that report.
+
+renamed.txt`. The commit's own name-status is `D obsolete.txt`, `D
+original.txt`, `A renamed.txt`; both paths are gone from `HEAD`; the tree is
+clean. No pathspec error.
+
+**Row 9 (three measured cases).** Each built as its own repository with a real
+refusing `pre-commit` hook, then recovered after the over-strict rule left the
+hook:
+
+| Case | Hook objection observed | Refused settle | Recovered settle |
+| --- | --- | --- | --- |
+| 82-line function vs 80 | `src/parser.go:3: function exceeds the 80-line limit` | exit `1`, work staged, HEAD unchanged, task `completed` | exit `0`, `7bef7e8`, byte-identical |
+| 2462-line generated file vs 500 | `internal/api/schema.gen.ts: 2462 lines exceeds the 500-line limit` | exit `1`, work staged, HEAD unchanged | exit `0`, `c3636d3`, byte-identical |
+| `sort()` vs `toSorted()` | `src/list.ts:2: use toSorted() instead of sort()` | exit `1`, work staged, HEAD unchanged | exit `0`, `bc973b5`, byte-identical |
+
+Nothing was lost in any of the three. This is the Spec's first Success Metric,
+measured against the real command.
+
+===== stage over the isolated report
+requested:      docs/specs/fixture/qa/qa-report-2026-08-25.md
+Blocking:       true
+Findings:       3
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:68 row="2" detail=row 2 has non-terminal status "**fail** — F-2"
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:80 row="14" detail=row 14 has non-terminal status "**fail** — F-1"
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:88 row="22" detail=row 22 has non-terminal status "**fail** — F-1"
+Blocked rows:   3
+  - 2 waits on row 2 has non-terminal status "**fail** — F-2" (QA-REPORT-SHAPE)
+  - 14 waits on row 14 has non-terminal status "**fail** — F-1" (QA-REPORT-SHAPE)
+  - 22 waits on row 22 has non-terminal status "**fail** — F-1" (QA-REPORT-SHAPE)
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/fixture/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
