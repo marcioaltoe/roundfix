@@ -41,3 +41,8 @@ maintainer stated that no Baseline guide carries.
 - **Handoffs lifecycle.** Handoffs are archived to `docs/history/handoffs/`
   only on the user's confirmation, and when confirmed, all of them archive
   together — the active directory holds only the capture door.
+- **Backlog lifecycle.** `docs/backlog/` holds `open` or `promoted` entries
+  only; any other status archives to `docs/history/backlog/`. Unlike findings,
+  archived backlog entries carry no absorption license — intent that was set
+  aside needs no absorber, only the history root.
+
