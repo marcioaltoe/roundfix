@@ -15,7 +15,7 @@ Verify all deliverables.
 - Verify pattern across 3 specs
 
 ## Verification
-- `roundfix spec check 0113-a-refused-gate-writes-its-refusal-once --strict && make test -k TestGateRefusal`
+- `roundfix spec check 0113-a-refused-gate-writes-its-refusal-once --strict && go test -count=1 ./internal/spec ./internal/speccheck 2>&1 | grep -q "^ok"`
 
 
 ## References

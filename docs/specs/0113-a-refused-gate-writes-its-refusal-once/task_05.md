@@ -14,7 +14,7 @@ Read only newest report, ignore superseded.
 - Ignore all older
 
 ## Verification
-- `make test -k TestNewestReportOnly | grep -q "ok"`
+- `grep -q "NewestQAReport" internal/speccheck/mechanical.go && go test -count=1 ./internal/speccheck ./internal/spec 2>&1 | grep -q "^ok"`
 
 
 ## References

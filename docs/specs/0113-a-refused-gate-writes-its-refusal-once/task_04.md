@@ -13,7 +13,7 @@ Modify mechanical stage to accept terminal row.
 - Validate status and provenance
 
 ## Verification
-- `make test -k TestReportValidation | grep -q "ok"`
+- `grep -q "provenance.*precondition\|ProvenancePrecondition" internal/speccheck/mechanical.go && go test -count=1 ./internal/speccheck 2>&1 | grep -q "^ok"`
 
 
 ## References

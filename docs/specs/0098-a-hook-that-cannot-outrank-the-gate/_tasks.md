@@ -25,9 +25,15 @@ graph:
     - id: task_07
       file: task_07.md
       needs: [task_05, task_06]
+    - id: task_09
+      file: task_09.md
+      needs: [task_07]
+    - id: task_10
+      file: task_10.md
+      needs: [task_07]
     - id: task_08
       file: task_08.md
-      needs: [task_07]
+      needs: [task_07, task_09, task_10]
 ---
 
 # Tasks — Hook Strictness Invariant and Recovery
@@ -41,9 +47,15 @@ graph:
 | task_05 | Handle deleted file staging               | backend | medium     | task_04     |
 | task_06 | Document hook strictness invariant        | docs    | medium     | task_01     |
 | task_07 | Acceptance verification (3 cases)         | test    | high       | task_05, task_06 |
-| task_08 | QA gate                                   | qa      | medium     | task_07     |
+| task_09 | Align settle surfaces (QA F-1)            | backend | medium     | task_07     |
+| task_10 | Classify unnamed hook refusal (QA F-2)    | backend | high       | task_07     |
+| task_08 | QA gate                                   | qa      | medium     | task_07, task_09, task_10 |
 
-Waves: 1 → task_01 · 2 → task_02 · task_03 · task_04 · task_05 · task_06 · 3 → task_07 · 4 → task_08
+Waves: 1 → task_01 · 2 → task_02 · task_03 · task_04 · task_05 · task_06 · 3 → task_07 · 4 → task_09 · task_10 · 5 → task_08
+
+task_09 and task_10 are the two corrective Tasks the 2026-08-25 QA gate's
+findings F-1 and F-2 require. They are the whole corrective allowance; a third
+finding would recut the TechSpec or promote the work to its own Spec.
 
 ## Task: task_01 — Detect and Record Hook Refusal
 

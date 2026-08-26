@@ -13,7 +13,7 @@ Update QA Report for precondition metadata.
 - Preserved during read/write
 
 ## Verification
-- `make test -k TestQAReportMetadata | grep -q "ok"`
+- `grep -q "CheckName\|checkName" internal/spec/qa.go && grep -q "Reason\|reason" internal/spec/qa.go && go test -count=1 ./internal/spec 2>&1 | grep -q "^ok"`
 
 
 ## References

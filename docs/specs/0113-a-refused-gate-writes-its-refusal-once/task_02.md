@@ -14,7 +14,7 @@ Detect which precondition failed and why.
 - Store for report writing
 
 ## Verification
-- `make test -k TestPreconditionDetection | grep -q "ok"`
+- `grep -q "PreconditionRefusal\|preconditionRefusal" internal/speccheck/mechanical.go && go test -count=1 ./internal/speccheck 2>&1 | grep -q "^ok"`
 
 
 ## References
