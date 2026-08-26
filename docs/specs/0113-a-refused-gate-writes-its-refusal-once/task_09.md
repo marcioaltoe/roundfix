@@ -38,7 +38,7 @@ The whole documentation surface received nothing.
 - Core Feature 4: Only the Results table is read as results
 
 ## Verification
-- `grep -q "rows_blocked_precondition" CONTEXT.md && grep -qi "precondition" docs/user-guide/context-driven-development.md && grep -q "## Vocabulary Contract" docs/specs/0113-a-refused-gate-writes-its-refusal-once/_techspec.md && go test -count=1 -tags docscontract ./internal/docscontract 2>&1 | grep -q "^ok"`
+- `grep -q "rows_blocked_precondition" CONTEXT.md && grep -q "precondition_check" CONTEXT.md && grep -qi "precondition" docs/user-guide/context-driven-development.md && grep -q "newest" docs/user-guide/context-driven-development.md && grep -q "## Vocabulary Contract" docs/specs/0113-a-refused-gate-writes-its-refusal-once/_techspec.md`
 
 ## Result
 Every token this Spec emitted is named where the repository names its
