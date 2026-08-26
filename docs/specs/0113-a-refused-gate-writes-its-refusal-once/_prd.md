@@ -62,11 +62,17 @@ writes to justify a row becomes a row itself, and each one is a fresh blocker.
   that precondition fires. No accepted ADR governs the precondition-refusal
   report shape, which is why the rule this Spec adds is new. Source:
   `docs/agents/domain.md`.
-- Tooling authority: not applicable — no protected tooling mutation is proposed
-  or authorized. The work changes QA gate behavior and its report writing in
-  production Go and its tests, creating or editing no linter, formatter,
-  test-runner, build, or skill configuration. Source:
-  `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — the gate that stops at a precondition is the
+  `qa-gate` skill, so the refusal contract this Spec defines cannot reach a
+  refusing gate without editing it. The original row read `not applicable` on
+  the assumption that production Go alone carried the behavior; the 2026-08-26
+  QA gate measured that assumption false, finding the report writer and its
+  deriver complete and called by nothing. Express maintainer authorization:
+  granted 2026-08-26 in session, after the finding. Bounded files:
+  `.agents/skills/qa-gate/SKILL.md`. Its mirror under `skills/` is regenerated
+  by the declared `make skills-sync` and is sanctioned fallout, not a separate
+  target. No linter, formatter, test-runner, build, or version pin is touched.
+  Source: `docs/agents/agent-instructions.md`.
 
 ## Goals
 
