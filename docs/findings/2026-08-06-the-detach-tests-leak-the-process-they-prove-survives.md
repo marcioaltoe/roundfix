@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 ---
 
 # The detach tests leak the process they prove survives
@@ -158,3 +158,6 @@ recorded here rather than folded into them.
 Neither correction changes the finding's conclusion: four processes outlived
 their tests by days, and nothing in Roundfix reported them.
 
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

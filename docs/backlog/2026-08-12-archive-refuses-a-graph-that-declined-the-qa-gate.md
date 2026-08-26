@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-12
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -67,3 +67,7 @@ finding 1, where a declared-only `partial` cannot reach archive either.
 Minted from the Inbox Entry
 `inbox/roundfix/2026-08-10-archive-exige-qa-report-mesmo-com-qa-declined.md` in
 the Secondbrain, captured from a `fluxus` session.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

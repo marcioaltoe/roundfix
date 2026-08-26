@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 kind: rollup
 members:
   - 2026-07-26-claude-adapter-configoptions-migration.md
@@ -36,3 +36,7 @@ selection and access contract the Task Session will receive.
 Specs 0052 and 0056 absorbed the first adapter and profile defects. The rollup
 remains `pending` around end-to-end execution-policy proof: accepted config,
 runtime launch, and Task filesystem access must describe the same environment.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

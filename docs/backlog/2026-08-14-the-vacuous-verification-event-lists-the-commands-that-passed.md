@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: done
 created: 2026-08-14
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -54,3 +54,7 @@ Minted from the Inbox Entry
 in the Secondbrain, captured from a `fiscus` session. The same misreading slowed
 diagnosis in `roundfix` on 2026-08-12 while implementing Spec 0094, where eleven
 authored commands were refused across five probe cycles.
+
+---
+
+Triage 2026-08-26: delivered by delivered; Run Events carry commands (observed 2026-08-25/26). See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

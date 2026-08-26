@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-14
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -57,3 +57,7 @@ in the Secondbrain. Related:
 `docs/backlog/2026-08-13-a-refused-gate-writes-a-report-its-own-contract-rejects.md`
 records the adjacent defect that a refused gate leaves a report blocking its own
 successor; this entry names why one such refusal was unactionable.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

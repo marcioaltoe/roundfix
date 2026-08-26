@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 ---
 
 # Three gigabytes of event journal inside the retention window
@@ -65,3 +65,7 @@ is the cheap part of this observation; lock contention is the expensive part.
 
 A measurement worth taking before designing anything: event write latency and
 `SQLITE_BUSY` frequency as a function of journal size.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

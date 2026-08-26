@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-10
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -50,3 +50,7 @@ carrier elsewhere still warns. Worth settling in the same work: whether the
 exclusion should be path-based or declared by the assets' own ownership records,
 since `_ownership.yml` already states which trees are fixtures that nothing
 regenerates. This shape is non-binding.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

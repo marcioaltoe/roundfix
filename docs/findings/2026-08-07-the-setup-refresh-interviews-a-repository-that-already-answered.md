@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-07
-updated_at: 2026-08-07
+updated_at: 2026-08-26
 kind: finding
 spec: 0082-the-manifest-already-answered-that
 ---
@@ -99,3 +99,7 @@ live and unowned:
   `doctor` and `which -a` disagree on this machine;
 - the profile-change interview restart, recorded as the open question in Spec
   0082's PRD.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

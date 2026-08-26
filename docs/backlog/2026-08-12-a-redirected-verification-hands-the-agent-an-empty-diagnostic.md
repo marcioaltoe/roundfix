@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: done
 created: 2026-08-12
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -69,3 +69,7 @@ Minted from the Inbox Entry
 in the Secondbrain. Related:
 `docs/backlog/2026-08-09-a-verification-command-passes-only-by-exiting-zero.md`,
 which reaches the same empty-diagnostic behaviour by a different root cause.
+
+---
+
+Triage 2026-08-26: delivered by Spec 0096 / ADR-0135. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

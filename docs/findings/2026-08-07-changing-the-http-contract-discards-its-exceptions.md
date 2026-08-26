@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-07
-updated_at: 2026-08-07
+updated_at: 2026-08-26
 kind: finding
 ---
 
@@ -64,3 +64,7 @@ so it needs no tooling authorization — but it does need a Spec, because the fi
 has a real design question: whether "Change" should prompt for the full ordered
 exception list, edit it entry by entry, or accept the mode change while carrying
 the existing exceptions forward untouched.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

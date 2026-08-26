@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 kind: rollup
 members:
   - 2026-08-03-gate-and-review-rounds-need-a-convergence-rule.md
@@ -41,3 +41,7 @@ Supervisor interpreting local artifacts by hand.
 Reconciliation and newer Review Source contracts removed several manual steps.
 The rollup remains `pending` until every non-decision interruption has a typed
 recovery path and the loop stops returning control for mechanical reasons.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

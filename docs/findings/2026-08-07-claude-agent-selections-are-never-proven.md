@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-07
-updated_at: 2026-08-07
+updated_at: 2026-08-26
 kind: finding
 ---
 
@@ -83,3 +83,7 @@ Not fixed here. Two separable repairs, and the first has a real design choice:
 - **Catalog.** The hardcoded Claude list should be read from the adapter rather
   than maintained by hand, or it will drift again. Correcting the current values
   without removing the hand-maintenance only resets the clock.
+
+---
+
+Triage 2026-08-26: delivered; Preflight exact-proves every configured tuple (observed on profiles configure and doctor, 2026-08-26). See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

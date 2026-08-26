@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-10
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -47,3 +47,7 @@ diverging from it. Worth settling in the same work: whether a removed artifact
 should be deleted outright or reported as an orphan for the maintainer to
 confirm, since deletion of repository bytes on a decision flip is the kind of
 change the Baseline otherwise asks about. This shape is non-binding.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

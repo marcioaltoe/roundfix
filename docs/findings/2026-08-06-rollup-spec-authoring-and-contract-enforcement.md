@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 kind: rollup
 members:
   - 2026-08-04-a-finding-does-not-prevent-the-recurrence-it-describes.md
@@ -33,3 +33,7 @@ premise has an explicit route back to the artifact that asserted it.
 Spec 0065 made several requirement contradictions checkable. The rollup remains
 `pending` for the broader traceability contract from finding and ADR through
 Task ownership to the evidence that proves the authored consequence shipped.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

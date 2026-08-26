@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-14
-updated_at: 2026-08-14
+updated_at: 2026-08-26
 ---
 
 # A Spec that coins a term cannot pass its own gate
@@ -147,3 +147,6 @@ before it can act, and acting as an observer when it was asked to be an author.
 Whatever fixes the first should decide the second, because a check that only ever
 reports leaves the work to whoever reads the report.
 
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-14
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -51,3 +51,7 @@ in the Secondbrain. The same gap was met in `roundfix` on 2026-08-13 from the
 other side: Spec 0094 archived, its Pull Request opened, and CI failed twice on
 the documented spawn-density flake family before passing on a third run. Nothing
 had to be un-archived only because the failures were flakes rather than defects.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

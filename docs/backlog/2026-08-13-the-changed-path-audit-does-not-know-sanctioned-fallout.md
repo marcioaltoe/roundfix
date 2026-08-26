@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: done
 created: 2026-08-13
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -59,3 +59,7 @@ ordinary Go file, and the audit read both as governed.
 four `QA-AUTH-PATHS` findings against `task_15`. The workaround is recorded in
 `docs/workflow/authorizations/2026-08-12-the-archive-root-under-docs.md` under
 its 2026-08-13 extension.
+
+---
+
+Triage 2026-08-26: delivered by ADR-0128/0129. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: done
 created: 2026-08-14
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -52,3 +52,7 @@ Minted from the Inbox Entry
 Secondbrain. Related:
 `docs/backlog/2026-08-12-a-hook-failure-kills-a-run-that-already-verified-its-work.md`
 records the same shape reached through a commit hook instead of a pathspec.
+
+---
+
+Triage 2026-08-26: delivered by Spec 0098. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

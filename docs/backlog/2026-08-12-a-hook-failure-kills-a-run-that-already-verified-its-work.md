@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: done
 created: 2026-08-12
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -60,3 +60,7 @@ recovery instead of ending `Failed` in silence. Recovery covers the state
 the adjacent friction of the same session. This entry is minted from the Inbox
 Entry `inbox/roundfix/2026-08-08-run-morre-em-falha-de-hook-e-settle-nao-recupera.md`
 in the Secondbrain, observed in `fluxus` Spec 0021 across 2026-08-07/08.
+
+---
+
+Triage 2026-08-26: delivered by Spec 0098. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

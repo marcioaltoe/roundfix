@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 kind: rollup
 members:
   - 2026-07-23-setup-context-driven-adoption-process-improvements.md
@@ -44,3 +44,7 @@ Several member defects shipped through Specs 0054, 0057, 0061, 0062, and 0067.
 The rollup remains `pending` because the accumulated evidence still asks for
 one mechanically owned derivation path and semantic retention proof across the
 whole Baseline lifecycle.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

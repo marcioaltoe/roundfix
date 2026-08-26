@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: done
 created: 2026-08-13
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -63,3 +63,7 @@ Run's own record and not in the Spec's evidence directory.
 its removal, and `qa-report-2026-08-13.md`, whose sole finding is about that
 file. Related: `docs/history/findings/2026-07-28-same-day-qa-reruns-are-ignored-by-the-verdict-selector.md`
 records an adjacent defect in how reports are selected.
+
+---
+
+Triage 2026-08-26: delivered by Spec 0113. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

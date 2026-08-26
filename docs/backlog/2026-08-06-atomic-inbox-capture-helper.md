@@ -1,6 +1,6 @@
 ---
 type: feat # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-06
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -29,3 +29,7 @@ destination entry, commit only that brain-relative path, and report the path,
 commit hash, and capture-to-durability seconds. This shape is non-binding; the
 owning Spec must choose whether it belongs in a skill, helper, or product
 surface.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

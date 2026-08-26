@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: done
 created: 2026-08-09
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -64,3 +64,7 @@ since an empty artifact is what turned a one-line authoring slip into a spent
 Agent turn. And whether the authoring contract should carry any executable
 check at all — a Spec's gates are today only exercised the first time a Daemon
 runs them, which is the most expensive moment to discover they are wrong.
+
+---
+
+Triage 2026-08-26: delivered by Spec 0095. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-10
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -49,3 +49,7 @@ Worth settling in the same work: whether `make baseline-digests` should refresh
 the manifest itself, since the drift originates there — the command already owns
 every other derived pin, and leaving one out is what splits the two commands.
 This shape is non-binding.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

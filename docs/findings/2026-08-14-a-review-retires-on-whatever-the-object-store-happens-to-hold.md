@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-14
-updated_at: 2026-08-14
+updated_at: 2026-08-26
 kind: finding
 ---
 
@@ -87,3 +87,7 @@ The relocation machinery itself is sound. All 501 files moved with each
 destination verified against the content identity recorded before the move, the
 emptied source directories were removed, and the second run reported nothing
 left to do. The defect is in deciding *which* files to move, not in moving them.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

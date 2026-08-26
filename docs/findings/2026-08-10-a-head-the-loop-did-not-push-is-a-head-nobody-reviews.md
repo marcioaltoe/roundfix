@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-10
-updated_at: 2026-08-10
+updated_at: 2026-08-26
 ---
 
 # A head the loop did not push is a head nobody reviews
@@ -94,3 +94,7 @@ instruction.
 Worth settling in the same work: a transient `gh` failure during
 `WaitingForReview` currently discards the entire wait. `ghCommandError` already
 carries `temporary`, and nothing consumes it on that path.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

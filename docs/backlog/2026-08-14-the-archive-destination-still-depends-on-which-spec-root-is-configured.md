@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-14
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -62,3 +62,7 @@ Secondbrain. The sibling entry
 recorded the same split in `fiscus`, where Specs 0001 to 0006 and Spec 0007 ended
 up under two conventions; the guide half of that entry is closed, because Spec
 0094 brought `docs/agents/docs-layout.md` into agreement with the command.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

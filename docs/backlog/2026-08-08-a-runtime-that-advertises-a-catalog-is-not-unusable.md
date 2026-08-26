@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-08
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -42,3 +42,7 @@ Worth settling in the same work: whether the Model Catalog for such a runtime
 should be repository-configured instead of adapter-enumerated, since a
 maintainer selecting from hundreds of interactive options is not a usable flow
 either. This shape is non-binding.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

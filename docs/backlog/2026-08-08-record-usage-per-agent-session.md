@@ -1,6 +1,6 @@
 ---
 type: feat # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-08
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -53,3 +53,7 @@ nothing".
 Whether ACP adapters expose usage at all is the open question the owning Spec
 must settle first: `codex-acp` and `claude-agent-acp` need checking before any
 event shape is fixed. This shape is non-binding.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

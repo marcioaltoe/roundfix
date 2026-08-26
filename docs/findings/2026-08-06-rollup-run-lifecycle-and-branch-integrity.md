@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 kind: rollup
 members:
   - 2026-07-16-vortex-pr87-detached-watch-notification.md
@@ -41,3 +41,7 @@ classifying the resources created on another.
 Specs 0039, 0055, 0059, 0066, and 0068 closed important parts of the lifecycle.
 The rollup remains `pending` because parallel Runs still expose cross-surface
 ownership and classification seams that no single terminal audit covers.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

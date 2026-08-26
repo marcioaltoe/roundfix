@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-08
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -52,3 +52,7 @@ error already explains why no Session exists is not an independent fault and
 should not be joined into the surfaced error — it belongs in a warning at most.
 The narrower question worth settling with it: whether any cleanup error should
 ever outrank the setup error that caused it in the surfaced `next:` action.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

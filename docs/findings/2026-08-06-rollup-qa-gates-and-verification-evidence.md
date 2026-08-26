@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 kind: rollup
 members:
   - 2026-07-28-qa-gate-cannot-reach-pull-request-journeys.md
@@ -50,3 +50,7 @@ discovery, shell semantics, evidence order, and reachable journeys are tested.
 Specs 0053, 0063, 0065, 0070, 0071, and 0072 absorbed several measured defect
 classes. The rollup remains `pending` because gate authoring itself still needs
 mechanical discovery and contract checks before Task settlement relies on it.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

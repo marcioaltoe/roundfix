@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 ---
 
 # The loop cannot fix comments about its own artifacts
@@ -72,3 +72,7 @@ carrying is that machine-written operational records are excluded from review
 by default, and that the tool is still responsible for the quality of what it
 writes — because a repository that never reviews those files is exactly the one
 that will never notice they are wrong.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

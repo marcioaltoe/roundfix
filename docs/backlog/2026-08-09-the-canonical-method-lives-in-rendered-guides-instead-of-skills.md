@@ -1,6 +1,6 @@
 ---
 type: refactor # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-09
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -74,3 +74,7 @@ dispatch to enforce; the first keeps each part loadable on its own.
 
 Related: `docs/specs/0085-what-an-agent-reads-before-it-decides` already owns
 what an Agent reads, so this either extends it or supersedes part of it.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

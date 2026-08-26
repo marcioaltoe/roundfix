@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 ---
 
 # Minting an ADR opens gaps no one can ever close
@@ -59,3 +59,7 @@ zero and let the number mean something again.
 This belongs to Spec 0080's mechanical-stage work, which is already touching
 detector placement and already carries the principle that a check must fail
 only where someone can act on it.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

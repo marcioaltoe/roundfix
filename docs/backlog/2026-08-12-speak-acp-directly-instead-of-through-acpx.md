@@ -1,6 +1,6 @@
 ---
 type: feat # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-12
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -53,3 +53,7 @@ before any PRD is the smaller sufficient route.
 
 Related: `docs/references/model-selection.md` records how each adapter's
 identifiers had to be obtained.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

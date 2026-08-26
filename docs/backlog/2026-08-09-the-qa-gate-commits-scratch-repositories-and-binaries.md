@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-09
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -39,3 +39,7 @@ auditable.
 Worth settling in the same work: whether the gate should refuse to commit a file
 it did not author as evidence — a built binary is never evidence of anything a
 reader can check, and it is large.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

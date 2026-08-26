@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-07
-updated_at: 2026-08-07
+updated_at: 2026-08-26
 kind: finding
 ---
 
@@ -56,3 +56,7 @@ because the fix differs for each:
 - a field that duplicates the catalog and should be deleted along with its
   unimplemented error code;
 - a deliberate per-profile override that the resolution path forgot to consult.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

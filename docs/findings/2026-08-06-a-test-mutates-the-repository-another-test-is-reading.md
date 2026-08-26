@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 ---
 
 # A test mutates the repository another test is reading
@@ -69,3 +69,7 @@ This finding is a sibling of
 `2026-08-06-the-detach-tests-leak-the-process-they-prove-survives.md`: both are
 test side effects escaping the case that created them — one leaks processes,
 one leaks file mutations.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

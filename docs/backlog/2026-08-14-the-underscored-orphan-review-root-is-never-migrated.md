@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-14
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -44,3 +44,7 @@ discovery can ask afterwards.
 `docs/findings/2026-08-14-a-review-retires-on-whatever-the-object-store-happens-to-hold.md`,
 finding 3, which measured the gap while running the shipped migration against the
 repository that shipped it.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-07
-updated_at: 2026-08-07
+updated_at: 2026-08-26
 kind: finding
 ---
 
@@ -61,3 +61,7 @@ coverage record to a semantic owner outside `docs/specs/` and point both paths
 at it, or declare this file an explicit, documented exception to the
 archived-Spec rule. Rewriting it in place without settling that would silently
 establish the exception by precedent.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

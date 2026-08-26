@@ -1,6 +1,6 @@
 ---
 type: refactor # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-09
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -57,3 +57,7 @@ an Agent inside a Batch needs both.
 Worth measuring rather than assuming: how much of the 2,172 lines a typical
 dispatch actually uses. The answer decides whether this is a real cost or a
 tidiness preference.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

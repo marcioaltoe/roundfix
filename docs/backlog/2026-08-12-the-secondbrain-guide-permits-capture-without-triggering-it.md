@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-12
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -80,3 +80,7 @@ Minted from the Inbox Entry
 Secondbrain, captured from a `vortex` session. Related:
 `docs/backlog/2026-08-06-atomic-inbox-capture-helper.md`, which asks for the
 mechanism this clause would trigger.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

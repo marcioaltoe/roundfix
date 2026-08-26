@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-07
-updated_at: 2026-08-07
+updated_at: 2026-08-26
 kind: finding
 ---
 
@@ -72,3 +72,7 @@ rather than admitting and validating the whole list, which makes the check
 independent of catalogue size. The absent `effort` option needs its own answer —
 either a profile for such a runtime omits reasoning effort, or Roundfix records
 that the adapter cannot honour it.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

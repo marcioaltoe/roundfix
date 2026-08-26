@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 ---
 
 # A promoted backlog entry has nowhere valid to go
@@ -100,3 +100,7 @@ destination. Missing and unresolvable Spec cases instead say how to establish
 a valid destination. It fails an entry that is promoted without naming a
 Spec, one that names a Spec that does not resolve, and one that names a real
 Spec but never left `docs/backlog/`.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

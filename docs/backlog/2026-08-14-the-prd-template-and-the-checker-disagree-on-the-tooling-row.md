@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-14
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -55,3 +55,7 @@ in the Secondbrain. Reproduced in `roundfix` on 2026-08-12 while authoring the
 seventeen PRDs of the current Spec set: the first PRD written from the template
 refused for exactly this reason, and all seventeen use `not applicable` as a
 result.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

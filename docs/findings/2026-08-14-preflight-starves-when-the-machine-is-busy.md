@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-14
-updated_at: 2026-08-14
+updated_at: 2026-08-26
 kind: finding
 ---
 
@@ -53,3 +53,7 @@ Secondbrain, observed in `conexus` on 2026-08-11 and 2026-08-12.
 The failure is loud and creates nothing: no Run, no Agent Session, no partial
 state. An operator who reads the message and waits for the machine to clear gets
 a clean first attempt.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

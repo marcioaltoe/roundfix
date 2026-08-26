@@ -1,6 +1,6 @@
 ---
 type: fix # feat | fix | perf | refactor
-status: open # open | promoted | declined
+status: deferred
 created: 2026-08-12
 spec: null # Spec slug when status: promoted
 reason: null # required when status: declined
@@ -67,3 +67,7 @@ computation carry the same assumption.
 Minted from the Inbox Entry
 `inbox/roundfix/2026-08-11-release-plan-exige-tag-com-prefixo-v.md` in the
 Secondbrain, captured from a `fluxus` session.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

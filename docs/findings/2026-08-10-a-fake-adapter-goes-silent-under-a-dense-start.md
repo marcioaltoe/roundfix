@@ -1,7 +1,7 @@
 ---
-status: pending
+status: deferred
 created_at: 2026-08-10
-updated_at: 2026-08-14
+updated_at: 2026-08-26
 ---
 
 # A fake adapter goes silent under a dense start
@@ -87,3 +87,6 @@ Two failures on two consecutive Pull Requests, in two different tests, on
 branches whose changes cannot produce either signature. Both were green on
 rerun.
 
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
