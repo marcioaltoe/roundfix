@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -36,5 +36,51 @@ A Supervisor needs one surface to declare, read, and remove the bound.
 - `grep -q "\"window\"" internal/cli/cli.go && grep -q "RunWindow" internal/cli/cli.go && go test -count=1 ./internal/cli -run 'TestWindow' 2>&1 | grep -q "^ok"`
 
 ## Result
-A Supervisor sets, reads, and clears the Run Window, and a night-start cutoff
-resolves forward instead of reporting a closed window.
+
+Implemented the repository-scoped `roundfix window set|show|clear` command on
+the schema-13 Run Window store. The command loads configuration and resolves
+the Git root through the same `preflight.InspectGit` path as `implement`, so a
+call from a nested working-tree directory addresses the repository's one
+window.
+
+Acceptance evidence:
+
+- Command surface and Git-root resolution: root and command help advertise
+  `window`; `TestWindowSetResolvesNextOccurrenceFromNestedWorktreePath` passed
+  through the real CLI runner, a nested Git directory, and the real Run
+  Database.
+- Cutoff resolution and refusal: the focused suite passed the 23:00 to next-day
+  07:00 case, the same-day-while-ahead case, and a future absolute local
+  instant. `TestWindowSetRejectsPastAbsoluteCutoffWithoutStoring` exited `2`,
+  named the literal cutoff, and proved no window row existed. Malformed input,
+  missing input, extra arguments, and unknown subcommands also exited `2`.
+- Idempotent replacement: `TestWindowSetPreservesExistingWindowUnlessForced`
+  proved a second set without `--force` reports the standing cutoff while both
+  stored instants remain identical; the same flow with `--force` replaced the
+  cutoff.
+- Read and clear states: `TestWindowShowReportsSetAndAbsentStates` proved both
+  exit `0`, with the set state printing cutoff, current time, and remaining
+  duration. `TestWindowClearReportsWhetherWindowExisted` proved the first clear
+  reports removal and the second reports absence.
+- Bound explanation: `TestWindowHelpExplainsStartAndRunBounds` proved command
+  help and show output say the Run Window bounds when a Run may start and
+  `budget.max_run_duration` bounds how long one may run.
+
+Focused checks:
+
+- Pre-change signal:
+  `rtk env GOCACHE=/tmp/roundfix-task02-go-cache go test ./internal/cli -run '^TestWindowSetResolvesNextOccurrenceFromNestedWorktreePath$'`
+  failed to build because the command clock dependency and Run Window command
+  output did not exist.
+- After implementation:
+  `rtk env GOCACHE=/tmp/roundfix-task02-go-cache go test ./internal/cli -run '^TestWindow' -shuffle=on`
+  passed in 1.153s after the final implementation edits.
+- Required incremental gate: `rtk make verify-incremental` passed every
+  reported package except `internal/cli`; its only failures were the existing
+  force-stop integration tests, where the sandbox denied process-table
+  enumeration with `operation not permitted`. The Run Window tests passed in
+  the same package run.
+
+The Daemon-owned `## Verification` command was not run. Task 05 owns the
+already-planned `CONTEXT.md` term and user-guide updates; they remain outside
+this Task's slice.

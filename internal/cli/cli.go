@@ -48,6 +48,7 @@ Usage:
   roundfix resolve --pr <number> [--spec <slug>]
   roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
   roundfix implement --spec <slug>
+  roundfix window <set|show|clear>
   roundfix settle --spec <slug> --task <task_id>
   roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
@@ -87,6 +88,7 @@ Commands:
   resolve    Resolve downloaded Unresolved Review Issues
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
+  window     Set, show, or clear this repository's Run Window
   settle     Verify and commit one failed, or completed but uncommitted, Task
   reconcile  Inspect or release proven terminal spec Run worktrees
   release    Plan the next release version without mutating repository or release state
@@ -246,6 +248,7 @@ type commandDependencies struct {
 	fallbackConfirmationInput       func() io.Reader
 	fallbackConfirmationAvailable   func(io.Writer) bool
 	runsListNow                     func() time.Time
+	currentRunWindowTime            func() time.Time
 	runsInteractiveInputAvailable   func() bool
 	doctor                          doctorDependencies
 	runBrowserSession               func(context.Context, io.Writer, []store.Run, []store.Run) (roundtui.BrowserOutcome, error)
@@ -306,6 +309,7 @@ func defaultCommandDependencies() commandDependencies {
 		fallbackConfirmationInput:       fallbackConfirmationInput,
 		fallbackConfirmationAvailable:   fallbackConfirmationAvailable,
 		runsListNow:                     runsListNow,
+		currentRunWindowTime:            runWindowNow,
 		runsInteractiveInputAvailable:   runsInteractiveInputAvailable,
 		doctor:                          defaultDoctorDependencies(),
 		runBrowserSession:               runBrowserSession,
@@ -501,6 +505,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild, environment)
 	case "implement":
 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild, environment)
+	case "window":
+		return runWindowCommand(ctx, args[1:], stdout, stderr, environment)
 	case "settle":
 		return runSettleCommand(ctx, args[1:], stdout, stderr, environment)
 	case "reconcile":
@@ -5338,6 +5344,8 @@ Options:
 `
 	case "implement":
 		return implementUsage
+	case "window":
+		return windowUsage
 	case "settle":
 		return settleUsage
 	case "reconcile":
