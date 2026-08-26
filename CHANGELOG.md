@@ -2,6 +2,70 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.7.0] - 2026-08-26
+
+A Run whose verified work meets a refusing commit hook no longer dies losing
+it, and a gate that refuses at its own precondition no longer poisons every
+later run of the same Spec.
+
+### Added
+
+- **A hook refusal is a classified, recoverable state.** When the repository's
+  commit hook refuses after the authoritative Verification passed, the Daemon
+  classifies it `hook_refused` — by the hook's own output when it names itself,
+  and by a structural signal from the resolved hooks directory when it prints
+  only its finding, which is the husky/lint-staged shape that used to die as a
+  bare git error. The Task stays `completed`, the work stays staged, and the
+  Run names the recovery command. The invariant that a commit hook must never
+  be stricter than the authoritative Verification ships in the Baseline and
+  renders into every adopting repository. Measured origin: three Runs of one
+  Spec died this way in a fleet repository, each with correct, verified work
+  recovered by hand.
+
+- **Settle recovers completed-but-uncommitted work.** `settle` accepts a Task
+  that is `completed` while a surface still holds its work uncommitted — the
+  exact state a hook refusal leaves. It resolves the surface in priority order,
+  re-runs the Task's Verification verbatim in place with no Agent turn, stages
+  the whole surface including deletions and renames, commits with the standard
+  Task message, and integrates. A failing re-run stops with the surface
+  untouched.
+
+- **A refused gate writes its refusal once.** A QA gate stopped at a
+  precondition writes a report its own contract accepts: one terminal
+  `blocked | precondition` row carrying the refusing check and its reason,
+  instead of an empty Results table that blocked every later run until someone
+  deleted evidence. Wired end to end — the Daemon's mechanical stage and the
+  qa-gate skill — and proven by running the stage over the refusal writer's own
+  bytes. Measured origin: two Specs deadlocked this way on 2026-08-12/14, and a
+  third reproduced it live during this release's own QA.
+
+- **The mechanical stage reads the newest report only, and only its Results
+  table.** A superseded refusal cannot block the run that supersedes it, and a
+  comparison table a gate writes in its prose as evidence is no longer parsed
+  as result rows — three prose cells each became a separate blocker in the
+  measured case.
+
+- **Archival lifecycles are Baseline rules.** The active documentation
+  directories hold live work only: findings that are done or deferred archive
+  to `docs/history/findings/` through Rollup absorption with an `absorbed_by`
+  license; backlog entries in any status other than `open` or `promoted`
+  archive with no license; handoffs archive only on the user's explicit
+  confirmation, and all together. A Rollup that licenses archived members must
+  itself stay active — moving one unresolved 261 licenses in the measured
+  sweep.
+
+### Changed
+
+- **The ADR set is consolidated.** Twelve new records (ADR-0138 through
+  ADR-0149) each absorb two or three same-subject decisions; the 25 superseded
+  members carry `superseded_by` and live under `docs/history/adr/`, and every
+  external citation follows its consolidation. 133 active records became 120.
+
+- **One gap-promotion rule.** The Spec Consistency Check's gap promotion is
+  exported and shared, so the Daemon's gate precondition and
+  `roundfix spec check --strict` cannot drift apart — the refusal names that
+  command, so they must agree.
+
 ## [0.6.0] - 2026-08-14
 
 Retired documentation gets one home, and a repository still on the old layout
@@ -421,6 +485,10 @@ time, together with the work that followed it.
 Earlier release sections are intentionally omitted from the restarted
 changelog. Git history remains the source for prior implementation history.
 
+[0.7.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.7.0
+[0.6.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.6.0
+[0.4.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.4.0
+[0.3.1]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.3.1
 [0.0.3]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.0.3
 [0.0.2]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.0.2
 [0.0.1]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.0.1
