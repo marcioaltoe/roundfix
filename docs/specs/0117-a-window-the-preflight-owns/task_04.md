@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -30,5 +30,27 @@ Request on a timer, which ADR-0022 already owns and this Spec declines.
 - `grep -q "MaxRunDuration" internal/cli/implement.go && go test -count=1 ./internal/cli -run 'TestImplementRunWindowCrossing' 2>&1 | grep -q "^ok" && go test -count=1 ./internal/watch 2>&1 | grep -q "^ok"`
 
 ## Result
-A Run that may outlast the window is created and says so; a Run already under
-way is never interrupted by it.
+
+Implementation:
+
+- The implement preflight prepares a crossing report when the already-read Run
+  Window is open and `now + budget.MaxRunDuration` is after its cutoff. The
+  report is emitted only after Run creation and names the cutoff, remaining
+  time, and configured maximum.
+- A maximum duration ending exactly at the cutoff does not report a crossing.
+  The comparison never refuses, stops, or shortens the Run.
+- The implement path performs no Run Window read after Run creation, and
+  `internal/watch` remains byte-identical.
+
+Focused-check evidence:
+
+- Red signal: `rtk go test ./internal/cli -run
+  '^TestImplementRunWindowCrossing$' -count=1` failed because the crossing Run
+  emitted zero reports while both cases still created their Runs.
+- After implementation, the same focused command passed all 3 reported tests.
+- `rtk go test ./internal/cli -run
+  '^TestImplementRunWindow($|Crossing$)' -count=1` passed all 7 reported tests,
+  covering closed, open, absent, crossing, and cutoff-equality behavior.
+- `rtk git -c core.fsmonitor=false diff --check` exited 0, and `rtk git -c
+  core.fsmonitor=false diff -- internal/watch` produced no output.
+- The Daemon-owned `## Verification` command was not run in this Agent turn.

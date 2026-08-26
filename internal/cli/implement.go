@@ -77,6 +77,19 @@ func (err implementRunWindowClosedError) NextAction() string {
 	return "move the window with `roundfix window set <HH:MM> --force`, or remove it with `roundfix window clear`"
 }
 
+func formatRunWindowDuration(duration time.Duration) string {
+	switch {
+	case duration%time.Hour == 0:
+		return fmt.Sprintf("%dh", int(duration/time.Hour))
+	case duration%time.Minute == 0:
+		return fmt.Sprintf("%dm", int(duration/time.Minute))
+	case duration%time.Second == 0:
+		return fmt.Sprintf("%ds", int(duration/time.Second))
+	default:
+		return duration.String()
+	}
+}
+
 // runImplementCommand executes the Implement Command: Preflight Validation,
 // Run creation, the Live Run View, one Task cycle over the Task Graph, and
 // the terminal outcome, following the runOperationalCommand shape.
@@ -199,6 +212,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", fmt.Errorf("read Run Window: %w", err), stderr)
 		return exitPreflight
 	}
+	runWindowCrossingReport := ""
 	if found {
 		now := commandDependenciesForContext(ctx).currentRunWindowTime()
 		if !window.CutoffAt.After(now) {
@@ -208,6 +222,14 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 				now:     now,
 			}, stderr)
 			return exitPreflight
+		}
+		if now.Add(loadedConfig.Config.Budget.MaxRunDuration).After(window.CutoffAt) {
+			runWindowCrossingReport = fmt.Sprintf(
+				"Run Window: closes %s, in %s; max_run_duration is %s, so this Run may run past it.",
+				formatRunWindowInstant(window.CutoffAt, now.Location()),
+				formatRunWindowDuration(window.CutoffAt.Sub(now).Round(time.Second)),
+				formatRunWindowDuration(loadedConfig.Config.Budget.MaxRunDuration),
+			)
 		}
 	}
 	sweepRunRetention(ctx, runStore, req.artifactDir, loadedConfig.Config.Store.JournalRetention, stderr)
@@ -251,6 +273,9 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 	printRunOwnerIdentityWarning(stderr, run)
+	if runWindowCrossingReport != "" {
+		fmt.Fprintln(stderr, runWindowCrossingReport)
+	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailure(err, stderr)

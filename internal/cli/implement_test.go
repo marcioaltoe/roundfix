@@ -3944,6 +3944,59 @@ func TestImplementRunWindow(t *testing.T) {
 	})
 }
 
+func TestImplementRunWindowCrossing(t *testing.T) {
+	location := time.FixedZone("BRT", -3*60*60)
+	tests := []struct {
+		name       string
+		now        time.Time
+		wantReport string
+	}{
+		{
+			name:       "Run may cross cutoff",
+			now:        time.Date(2026, time.August, 27, 6, 48, 0, 0, location),
+			wantReport: "Run Window: closes 2026-08-27 07:00 BRT, in 12m; max_run_duration is 45m, so this Run may run past it.\n",
+		},
+		{
+			name: "maximum duration ends at cutoff",
+			now:  time.Date(2026, time.August, 27, 6, 15, 0, 0, location),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+			mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: 45m\n")
+			gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+			gitImplement(t, repoDir, "commit", "-m", "configure Run duration")
+			withImplementCollaborators(t, &implementFakeRunner{
+				gitRoot:      repoDir,
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+			})
+			cutoff := time.Date(2026, time.August, 27, 7, 0, 0, 0, location)
+			seedImplementRunWindow(t, homeDir, repoDir, cutoff)
+			updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+				dependencies.currentRunWindowTime = func() time.Time { return tt.now }
+			})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("open Run Window exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+			}
+			assertRunCount(t, store.DatabasePath(homeDir), 1)
+			if got := strings.Count(stderr.String(), "Run Window: closes "); got != 0 && tt.wantReport == "" {
+				t.Fatalf("non-crossing Run emitted %d crossing report(s): %q", got, stderr.String())
+			} else if got != 1 && tt.wantReport != "" {
+				t.Fatalf("crossing Run emitted %d crossing report(s), want 1: %q", got, stderr.String())
+			}
+			if tt.wantReport != "" && !strings.Contains(stderr.String(), tt.wantReport) {
+				t.Fatalf("crossing report missing %q from stderr: %q", tt.wantReport, stderr.String())
+			}
+		})
+	}
+}
+
 func seedImplementRunWindow(t *testing.T, homeDir, gitRoot string, cutoff time.Time) {
 	t.Helper()
 	runStore, err := store.Open(context.Background(), homeDir)
