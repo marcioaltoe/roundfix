@@ -212,6 +212,7 @@ logs:
 
 budget:
   enabled: true
+  # budget.max_run_duration bounds how long a Run may run; the Run Window bounds when one may start.
   max_run_duration: 2h
 
 resolve:
@@ -252,7 +253,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | `notify.enabled` | `true` | Sends one terminal outcome notification for `resolve`, `watch`, and `implement`. |
 | `notify.command` | `""` | Uses the native desktop notifier. A non-empty shell command replaces it. |
 | `budget.enabled` | `true` | Enforces the configured Run duration budget. |
-| `budget.max_run_duration` | `2h` | Sets the maximum duration of a budgeted Run. |
+| `budget.max_run_duration` | `2h` | Sets the maximum duration of a budgeted Run; the Run Window bounds when a Run may start. |
 | `resolve.batch_size` | `3` | Limits how many Review Issues one Agent Batch receives. |
 
 ### Worktree, log, and retention settings
