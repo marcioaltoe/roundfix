@@ -1,6 +1,7 @@
 ---
 spec: 0113-a-refused-gate-writes-its-refusal-once
-status: active
+status: archived
+archived: 2026-08-26
 created: 2026-08-25
 surfaces: [backend, docs]
 ---

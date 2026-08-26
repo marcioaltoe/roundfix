@@ -1,6 +1,7 @@
 ---
 spec: 0098-a-hook-that-cannot-outrank-the-gate
-status: active
+status: archived
+archived: 2026-08-26
 created: 2026-08-12
 surfaces: [backend, docs]
 ---
