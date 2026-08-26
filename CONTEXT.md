@@ -149,7 +149,7 @@ The token-free disposable Agent Session check that maps one Agent Selection thro
 _Avoid_: Model validity, catalog match, recommendation rank
 
 **Runtime Catalogue**:
-What an ACP Runtime advertises before Roundfix asks it to apply a specific Agent Selection, established from a disposable Agent Session ensured without the requested model so the answer cannot be contaminated by the question. Membership in it decides refusal where no adapter refuses first; where an adapter refuses, its own message stands (ADR-0119).
+What an ACP Runtime advertises before Roundfix asks it to apply a specific Agent Selection, established from a disposable Agent Session ensured without the requested model so the answer cannot be contaminated by the question. Membership in it decides refusal where no adapter refuses first; where an adapter refuses, its own message stands (ADR-0147).
 _Avoid_: Model list, capability payload, advertised options
 
 **Selection Encoding**:

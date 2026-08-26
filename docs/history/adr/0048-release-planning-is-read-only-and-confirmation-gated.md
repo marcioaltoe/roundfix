@@ -1,9 +1,9 @@
 ---
-status: accepted
+status: superseded # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-07-17T00:37:58Z
-updated_at: 2026-08-11T21:35:56Z
+updated_at: 2026-08-26T00:00:00Z
 deprecated_at: null
-superseded_by: null
+superseded_by: ADR-0143
 ---
 
 # Release planning is read-only and confirmation-gated

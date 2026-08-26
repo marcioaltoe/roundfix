@@ -1,9 +1,9 @@
 ---
-status: accepted
+status: superseded # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-08-08T00:00:00Z
-updated_at: 2026-08-08T00:00:00Z
+updated_at: 2026-08-26T00:00:00Z
 deprecated_at: null
-superseded_by: null
+superseded_by: ADR-0145
 ---
 
 # An unrecorded managed region is refreshed and named

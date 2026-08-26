@@ -1,9 +1,9 @@
 ---
-status: accepted
+status: superseded # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-07-24T21:27:41Z
-updated_at: 2026-08-11T21:35:56Z
+updated_at: 2026-08-26T00:00:00Z
 deprecated_at: null
-superseded_by: null
+superseded_by: ADR-0143
 ---
 
 # ADR-0065: Release Plan exposes a read-only reset mode

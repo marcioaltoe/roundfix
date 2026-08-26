@@ -1532,7 +1532,7 @@ scheduler starts up to `worktree.concurrency` Tasks from that Wave at once.
 The default is `2`; `1` keeps sequential behavior. Each Task's Verification
 commands gate one commit. By default the Run never pushes; a repository can
 opt in with `implement.auto_push: true`, which pushes only after a Clean
-outcome and never opens pull requests (ADR-0021).
+outcome and never opens pull requests (ADR-0138).
 
 1. Start the Implement Command with:
 

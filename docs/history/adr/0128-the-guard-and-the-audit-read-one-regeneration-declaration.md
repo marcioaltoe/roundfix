@@ -1,9 +1,9 @@
 ---
-status: accepted # proposed | accepted | rejected | deprecated | superseded
+status: superseded # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-08-14T22:40:00Z
-updated_at: 2026-08-14T22:40:00Z
+updated_at: 2026-08-26T00:00:00Z
 deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ
-superseded_by: null # null or ADR-NNNN
+superseded_by: ADR-0149
 ---
 
 # The suite guard and the changed-path audit read one regeneration declaration

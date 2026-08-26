@@ -1,9 +1,9 @@
 ---
-status: accepted
+status: superseded # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-07-28T22:02:41Z
-updated_at: 2026-07-28T22:02:41Z
+updated_at: 2026-08-26T00:00:00Z
 deprecated_at: null
-superseded_by: null
+superseded_by: ADR-0146
 ---
 
 # Release publication is all-or-nothing across the package set

@@ -1,9 +1,9 @@
 ---
-status: accepted
+status: superseded # proposed | accepted | rejected | deprecated | superseded
 created_at: 2026-07-11T18:41:10Z
-updated_at: 2026-08-11T21:35:56Z
+updated_at: 2026-08-26T00:00:00Z
 deprecated_at: null
-superseded_by: null
+superseded_by: ADR-0140
 ---
 
 # ADR-0040: Reasoning effort is assigned only when configured

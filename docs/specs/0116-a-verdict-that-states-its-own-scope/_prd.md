@@ -27,7 +27,7 @@ reader is looking.
 - Authentication and HTTP: not applicable — no network boundary, credential, or
   request is created or read. The work is checker reporting, authoring
   guidance, and report provenance. Source: `docs/agents/specific-repository.md`.
-- Active ADR obligations: applicable — ADR-0124 already decides that authoring
+- Active ADR obligations: applicable — ADR-0148 already decides that authoring
   and Run time share one Verification prober precisely so that a checker cannot
   approve what the probe later refuses; this Spec closes the remaining half,
   which is that the shared prober is never reached from the authoring path the
@@ -54,7 +54,7 @@ reader is looking.
 2. A clean check verdict cannot be read as coverage the check did not perform.
 3. A QA Report names the Roundfix that produced it, so a finding can be
    attributed to the binary that raised it.
-4. The defect class ADR-0124 exists to remove stops recurring in repositories
+4. The defect class ADR-0148 exists to remove stops recurring in repositories
    that follow the shipped skills.
 
 ## User Stories
@@ -107,7 +107,7 @@ rendered authoring guidance.
   `0097-a-wave-that-cannot-collide`, which names it in its own problem
   statement. This Spec adopts none of it.
 - Changing what the Verification prober classifies, or how the Daemon's
-  pre-work probe behaves. ADR-0124 settled the shared prober; this Spec changes
+  pre-work probe behaves. ADR-0148 settled the shared prober; this Spec changes
   which callers reach it and what the caller reports, never the classification.
 - Changing the QA gate's verdict rules, its row contract, or which checks it
   runs. Only the report's record of its own producer is in scope.

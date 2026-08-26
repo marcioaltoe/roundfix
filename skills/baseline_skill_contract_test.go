@@ -26,7 +26,7 @@ const baselineDigestRegenerationHint = "run 'make baseline-digests'"
 // declared in skills-lock.json. It moves only when that declared set changes on
 // purpose; three tests read this one constant so a legitimate change edits one
 // line instead of three.
-const upstreamManagedSkillTreeDigest = "c6d857ac719caf3d1f334f378bdada4e4e89cbc0795b7771c781d0511cb7c9cd"
+const upstreamManagedSkillTreeDigest = "1cd69782e8ade29846cfe680d4e7265d55a76087c4da5323ae7faef8bbec2d81"
 
 type baselineDigestTargetResult struct {
 	SchemaVersion *int    `json:"schemaVersion"`
@@ -1145,7 +1145,7 @@ func TestUpstreamADRFormatUnchanged(t *testing.T) {
 		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, upstreamManagedSkillTreeDigest)
 	}
 
-	const wantADRFormatSHA256 = "f1f36cd3f8d3b6474ddd5855da4e233bfc4ae1a1c5024909ccf11871819a41b2"
+	const wantADRFormatSHA256 = "944c92aa790e8fbdc9199640b170979abb8a34ba8d0fe18c2a01a63bce140ca0"
 	adrFormat := readBaselineSkillContractFile(
 		t,
 		filepath.Join(repoRoot, ".agents", "skills", "domain-modeling", "ADR-FORMAT.md"),
