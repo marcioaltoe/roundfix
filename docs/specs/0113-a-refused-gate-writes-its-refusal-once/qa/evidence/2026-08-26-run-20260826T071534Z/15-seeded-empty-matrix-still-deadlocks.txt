@@ -1,0 +1,24 @@
+# User Story 1 measured on the path the PRD actually names: a gate that stops at
+# 'roundfix spec check <slug> --strict' before it builds its matrix.
+# Input: 14-seeded-report-as-written-by-the-daemon.md, the report THIS Run's Daemon seeded
+# for Spec 0113 at HEAD a7628d5b, copied byte-for-byte into a scratch repository as the
+# only report, so newest-only cannot mask its shape.
+
+===== what the next run's mechanical stage does with it if the gate stops before filling it
+requested:      docs/specs/fixture/qa/qa-report-2026-08-26.md
+Blocking:       true
+Findings:       1
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-26.md:1 row="" detail=Results table has no report rows
+Blocked rows:   1
+  - QA-REPORT-SHAPE waits on Results table has no report rows (QA-REPORT-SHAPE)
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/fixture/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
+
+# This is the same shape Spec 0094's gate left on 2026-08-13 (09-historical-pattern-in-place.txt)
+# and Spec 0103's on 2026-08-14. Nothing in this Spec replaces it with the refusal shape it minted:
+# the Daemon never calls spec.WritePreconditionRefusalReport and never sets
+# MechanicalRequest.Precondition (10-production-wiring.txt), and the qa-gate skill that owns
+# this stop was not changed by this Spec (12-non-goals-precondition-unchanged.txt path list).

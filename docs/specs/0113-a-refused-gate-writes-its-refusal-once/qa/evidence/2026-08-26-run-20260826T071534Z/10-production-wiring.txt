@@ -1,0 +1,68 @@
+# Production reachability of the refusal-writing contract.
+
+===== every non-test reference to the writer and its metadata
+qaharness/main.go:72:	if err := spec.WritePreconditionRefusalReport(file, spec.PreconditionRefusal{CheckName: check, Reason: reason}); err != nil {
+internal/spec/qa.go:70:// WritePreconditionRefusalReport writes the whole QA Report of a gate that
+internal/spec/qa.go:75:func WritePreconditionRefusalReport(writer io.Writer, refusal PreconditionRefusal) error {
+
+===== every non-test reference to MechanicalRequest.Precondition being SET
+internal/spec/qa.go:321:		RowsBlockedPrecondition: rowsBlockedPrecondition,
+internal/spec/qa.go:322:		Precondition: PreconditionRefusal{
+
+===== the only production construction of MechanicalRequest (internal/daemon/task_engine.go)
+	return speccheck.MechanicalRequest{
+		RepoRoot:          plan.WorkDir,
+		AuthorizationPath: authorizationPath,
+		TaskCommits:       taskCommits,
+		// Consequent-fix declarations are optional authored inputs. Until a
+		// declaration exists, the detector records its presence-aware skip.
+		ConsequentFixes: nil,
+		ReportPath:      previousReportPath,
+		TaskRepairPaths: append([]string(nil), qaTask.TaskRepairPaths...),
+		AssignedRepairs: assignedRepairs,
+	}, nil
+}
+
+===== the frontmatter the Daemon actually writes for every QA Report (task_engine.go:2194-2205)
+	var content bytes.Buffer
+	content.WriteString("---\n")
+	verdict := spec.VerdictPass
+	if result.Blocking {
+		verdict = spec.VerdictFail
+	}
+	fmt.Fprintf(&content, "verdict: %s\n", verdict)
+	fmt.Fprintf(&content, "rows_blocked_environment: %d\n", mechanicalBlockedRowCount(mechanicalBody, "environment"))
+	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", mechanicalBlockedRowCount(mechanicalBody, "finding"))
+	fmt.Fprintf(&content, "rows_blocked_declared: %d\n", mechanicalBlockedRowCount(mechanicalBody, "declared"))
+	content.WriteString("---\n\n# QA Report\n\n")
+	content.Write(mechanicalBody)
+	reportDir := filepath.Join(plan.Spec.Dir, "qa")
+
+===== the row the Daemon writes when its gate refuses (task_engine.go:2181-2192)
+	if result.Blocking && len(result.Carried)+len(result.Blocked) == 0 {
+		const skipsHeading = "\n## Mechanical skips"
+		refusalRow := fmt.Sprintf(
+			"| QA-PRECONDITION | fail | mechanical refusal: %s; no other checks executed |\n\n## Mechanical skips",
+			mechanicalReportCell(mechanicalRefusalCause(result)),
+		)
+		withRefusal := bytes.Replace(mechanicalBody, []byte(skipsHeading), []byte(refusalRow), 1)
+		if bytes.Equal(withRefusal, mechanicalBody) {
+			return "", errors.New("materialize mechanical QA Report: mechanical skips section is absent")
+		}
+		mechanicalBody = withRefusal
+	}
+
+
+===== every mention of the refusal shape in the installed qa-gate skill
+(no mention in any skill)
+
+===== what the qa-gate skill tells a gate to do when the precondition fails
+41-  it. For every active, non-legacy Spec, run:
+42-
+43-  ```bash
+44-  roundfix spec check <slug> --strict
+45-  ```
+46-
+47:  Stop before building the matrix when the command fails. Record the clean
+48-  result in the report's scope and environment, but do not create QA matrix
+49-  rows that repeat the authoring rules in the table below. A completed or

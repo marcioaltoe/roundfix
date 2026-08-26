@@ -1,0 +1,11 @@
+# Self-check: this report read by the stage that will read it on the next run.
+# Run after the report was closed, before the harness was removed again.
+
+requested:      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/qa-report-2026-08-26.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          2
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+PreconditionRefused: false {CheckName: Reason:}

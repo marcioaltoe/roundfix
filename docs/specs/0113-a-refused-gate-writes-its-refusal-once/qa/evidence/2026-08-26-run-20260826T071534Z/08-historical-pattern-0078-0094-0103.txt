@@ -1,0 +1,97 @@
+# TechSpec Acceptance 5 / outside-evidence row: the pattern across three earlier Specs.
+# Reports authored by earlier gates (Specs 0078, 0094, 0103), each copied ALONE into a scratch repo
+# so newest-only cannot mask its own shape, then read by today's mechanical stage.
+
+===== 0078 / qa-report-2026-08-05.md
+requested:      docs/specs/0078/qa/qa-report-2026-08-05.md
+Blocking:       true
+Findings:       18
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:72 row="R02" detail=row R02 cites unresolved evidence path evidence/2026-08-05-spec-0078/constraint-audit.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:73 row="R03" detail=row R03 cites unresolved evidence path evidence/2026-08-05-spec-0078/make-verify.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:74 row="R04" detail=row R04 cites unresolved evidence path evidence/2026-08-05-spec-0078/repository-config.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:75 row="R05" detail=row R05 cites unresolved evidence path evidence/2026-08-05-spec-0078/preflight-table.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:76 row="R06" detail=row R06 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:77 row="R07" detail=row R07 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:78 row="R08" detail=row R08 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:79 row="R09" detail=row R09 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:80 row="R10" detail=row R10 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:81 row="R11" detail=row R11 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:82 row="R12" detail=row R12 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:83 row="R13" detail=row R13 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:84 row="R14" detail=row R14 cites unresolved evidence path evidence/2026-08-05-spec-0078/boundary-contract.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:85 row="R15" detail=row R15 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:85 row="R15" detail=row R15 cites unresolved evidence path evidence/2026-08-05-spec-0078/make-verify.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:86 row="R16" detail=row R16 cites unresolved evidence path evidence/2026-08-05-spec-0078/skill-contract.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:87 row="R17" detail=row R17 cites unresolved evidence path evidence/2026-08-05-spec-0078/non-goals.md
+  - QA-EVIDENCE-PATH docs/specs/0078/qa/qa-report-2026-08-05.md:88 row="R18" detail=row R18 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md
+Blocked rows:   17
+  - R02 waits on row R02 cites unresolved evidence path evidence/2026-08-05-spec-0078/constraint-audit.md (QA-EVIDENCE-PATH)
+  - R03 waits on row R03 cites unresolved evidence path evidence/2026-08-05-spec-0078/make-verify.md (QA-EVIDENCE-PATH)
+  - R04 waits on row R04 cites unresolved evidence path evidence/2026-08-05-spec-0078/repository-config.md (QA-EVIDENCE-PATH)
+  - R05 waits on row R05 cites unresolved evidence path evidence/2026-08-05-spec-0078/preflight-table.md (QA-EVIDENCE-PATH)
+  - R06 waits on row R06 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md (QA-EVIDENCE-PATH)
+  - R07 waits on row R07 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md (QA-EVIDENCE-PATH)
+  - R08 waits on row R08 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md (QA-EVIDENCE-PATH)
+  - R09 waits on row R09 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md (QA-EVIDENCE-PATH)
+  - R10 waits on row R10 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md (QA-EVIDENCE-PATH)
+  - R11 waits on row R11 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md (QA-EVIDENCE-PATH)
+  - R12 waits on row R12 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md (QA-EVIDENCE-PATH)
+  - R13 waits on row R13 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md (QA-EVIDENCE-PATH)
+  - R14 waits on row R14 cites unresolved evidence path evidence/2026-08-05-spec-0078/boundary-contract.md (QA-EVIDENCE-PATH)
+  - R15 waits on row R15 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md (QA-EVIDENCE-PATH)
+  - R16 waits on row R16 cites unresolved evidence path evidence/2026-08-05-spec-0078/skill-contract.md (QA-EVIDENCE-PATH)
+  - R17 waits on row R17 cites unresolved evidence path evidence/2026-08-05-spec-0078/non-goals.md (QA-EVIDENCE-PATH)
+  - R18 waits on row R18 cites unresolved evidence path evidence/2026-08-05-spec-0078/equivalent-pr-evidence.md (QA-EVIDENCE-PATH)
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/0078/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
+
+===== 0094 / qa-report-2026-08-13.md
+requested:      docs/specs/0094/qa/qa-report-2026-08-13.md
+Blocking:       true
+Findings:       2
+  - QA-REPORT-SHAPE docs/specs/0094/qa/qa-report-2026-08-13.md:1 row="" detail=Results table has no report rows
+  - QA-REPORT-SHAPE docs/specs/0094/qa/qa-report-2026-08-13.md:7 row="" detail=rows_blocked_environment is 1 but the Results table contains 0 matching rows
+Blocked rows:   1
+  - QA-REPORT-SHAPE waits on Results table has no report rows (QA-REPORT-SHAPE)
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/0094/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
+
+===== 0103a / qa-report-2026-08-14.md
+requested:      docs/specs/0103a/qa/qa-report-2026-08-14.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/0103a/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
+
+===== 0103b / qa-report-2026-08-14-01.md
+requested:      docs/specs/0103b/qa/qa-report-2026-08-14-01.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/0103b/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
+
+===== 0103c / qa-report-2026-08-15-01.md
+requested:      docs/specs/0103c/qa/qa-report-2026-08-15-01.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/0103c/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
+
