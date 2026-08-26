@@ -19,6 +19,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"roundfix/internal/baseline"
+	"roundfix/internal/spec"
 	"roundfix/internal/suiteguardcontract"
 	"roundfix/internal/worktree"
 )
@@ -79,6 +80,12 @@ type RepairFailure struct {
 	Detail string
 }
 
+// GatePreconditionCheck names the check a QA gate runs before it builds its
+// matrix: the Spec's own strict Spec Consistency Check. One name covers every
+// refusal that check produces, because the finding codes recorded beside it
+// are what identify the detector that refused.
+const GatePreconditionCheck = "spec check --strict"
+
 // GatePreconditionResult separates contradictions that stop a QA gate from
 // written inputs the gate itself is assigned to repair. Inputs remain visible
 // so the gate can act on them; they are not silently discarded to get green.
@@ -109,6 +116,62 @@ func GatePrecondition(checked Result) GatePreconditionResult {
 	}
 	precondition.Blocking = len(precondition.Findings) > 0
 	return precondition
+}
+
+// PreconditionRefusal derives the audit record of a QA gate stop: the check
+// that refused and, from the same strict Spec Consistency Check result the
+// gate already classified, every code and sentence behind the refusal. The
+// result of that check is read where it is produced rather than re-parsed from
+// its rendered text, so a reworded line cannot change what the report records.
+//
+// A gate whose precondition did not block refuses nothing, which the second
+// return separates from a refusal whose cause carries no name. That one is
+// still recorded: a refusal the gate cannot write is the deadlock the refusal
+// report exists to end.
+func PreconditionRefusal(precondition GatePreconditionResult) (spec.PreconditionRefusal, bool) {
+	if !precondition.Blocking {
+		return spec.PreconditionRefusal{}, false
+	}
+	reasons := make([]string, 0, len(precondition.Findings))
+	recorded := make(map[string]bool, len(precondition.Findings))
+	for _, finding := range precondition.Findings {
+		// Every distinct cause is kept, because the reason is the only record
+		// of why the gate stopped; a repeat of one adds nothing to read.
+		reason := preconditionRefusalReason(finding)
+		if reason == "" || recorded[reason] {
+			continue
+		}
+		recorded[reason] = true
+		reasons = append(reasons, reason)
+	}
+	return spec.PreconditionRefusal{
+		Check:  GatePreconditionCheck,
+		Reason: strings.Join(reasons, "; "),
+	}, true
+}
+
+// preconditionRefusalReason renders one refusing finding as its durable code
+// followed by the sentence that explains it. The code leads because it is the
+// name a later reader and detector share; the sentence beside it may be
+// reworded, the code may not. A finding that names only one of the two is
+// recorded by that one alone rather than by an empty label.
+func preconditionRefusalReason(finding Finding) string {
+	code := collapseRefusalText(finding.Code)
+	summary := collapseRefusalText(finding.Summary)
+	switch {
+	case code == "":
+		return summary
+	case summary == "":
+		return code
+	default:
+		return code + ": " + summary
+	}
+}
+
+// collapseRefusalText folds one authored value onto a single line so a joined
+// reason stays one frontmatter value in the report it is written into.
+func collapseRefusalText(value string) string {
+	return strings.Join(strings.Fields(value), " ")
 }
 
 // MechanicalTaskCommit associates the Daemon-owned Task commit with its Task
@@ -355,6 +418,9 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 		Skips:          []MechanicalSkip{},
 	}
 	addGatePreconditionFindings(&result, request.Precondition)
+	// The refusal travels with the result so the report writer never has to
+	// reconstruct why the gate stopped from the findings it happens to carry.
+	result.PreconditionRefusal, result.PreconditionRefused = PreconditionRefusal(request.Precondition)
 	repoRoot := filepath.Clean(request.RepoRoot)
 	if strings.TrimSpace(request.RepoRoot) == "" {
 		return result, errors.New("run mechanical stage: repository root is empty")

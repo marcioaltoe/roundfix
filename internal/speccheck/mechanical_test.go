@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
 
@@ -76,6 +77,199 @@ func TestGateAcceptsItsOwnDeclaredTerm(t *testing.T) {
 			t.Fatalf("authoring findings = %#v, want pending publish: term", findings)
 		}
 	})
+}
+
+func TestGateRefusalNamesThePreconditionThatStoppedIt(t *testing.T) {
+	t.Parallel()
+
+	t.Run("a strict Spec check refusal names its check and every refusing code", func(t *testing.T) {
+		t.Parallel()
+
+		precondition := speccheck.GatePrecondition(checkFixture(t, "constraint-missing"))
+		if !precondition.Blocking {
+			t.Fatalf("GatePrecondition() Blocking = false, want the fixture's strict findings to stop the gate")
+		}
+
+		refusal, refused := speccheck.PreconditionRefusal(precondition)
+		if !refused {
+			t.Fatalf("PreconditionRefusal() refused = false, want a refusal for findings %#v", precondition.Findings)
+		}
+		if refusal.Check != speccheck.GatePreconditionCheck {
+			t.Fatalf("refusal.Check = %q, want %q", refusal.Check, speccheck.GatePreconditionCheck)
+		}
+		for _, finding := range precondition.Findings {
+			if !strings.Contains(refusal.Reason, finding.Code) {
+				t.Fatalf("refusal.Reason = %q, want the refusing code %q", refusal.Reason, finding.Code)
+			}
+			if summary := oneLineRefusalText(finding.Summary); !strings.Contains(refusal.Reason, summary) {
+				t.Fatalf("refusal.Reason = %q, want the reason %q", refusal.Reason, summary)
+			}
+		}
+	})
+
+	t.Run("a gate input alone refuses nothing", func(t *testing.T) {
+		t.Parallel()
+
+		precondition := speccheck.GatePrecondition(checkFixture(t, "vocabulary-missing"))
+		if len(precondition.Inputs) == 0 {
+			t.Fatalf("GatePrecondition() Inputs = none, want the fixture's own declared term as gate input")
+		}
+		refusal, refused := speccheck.PreconditionRefusal(precondition)
+		if refused {
+			t.Fatalf("PreconditionRefusal() = %#v, true; want no refusal when the gate is assigned repair inputs", refusal)
+		}
+		if refusal != (spec.PreconditionRefusal{}) {
+			t.Fatalf("PreconditionRefusal() = %#v, want the zero refusal when nothing refused", refusal)
+		}
+	})
+
+	t.Run("every distinct cause survives and a repeat is recorded once", func(t *testing.T) {
+		t.Parallel()
+
+		contradiction := speccheck.Finding{
+			Code:     speccheck.CodeRequirementContradictory,
+			Severity: speccheck.SeverityError,
+			Summary:  "_prd.md requires one report per run and forbids writing one",
+			Where:    []speccheck.Location{{Path: "docs/specs/gate-spec/_prd.md", Line: 12}},
+			Fix:      "Resolve the contradiction.",
+		}
+		unmapped := speccheck.Finding{
+			Code:     speccheck.CodeCoverageUnmapped,
+			Severity: speccheck.SeverityError,
+			Summary:  "Core Feature 2 has no TechSpec section",
+			Where:    []speccheck.Location{{Path: "docs/specs/gate-spec/_techspec.md", Line: 20}},
+			Fix:      "Map the feature.",
+		}
+		precondition := speccheck.GatePrecondition(speccheck.Result{
+			Slug:     "gate-spec",
+			Findings: []speccheck.Finding{contradiction, unmapped, contradiction},
+		})
+
+		refusal, refused := speccheck.PreconditionRefusal(precondition)
+		if !refused {
+			t.Fatalf("PreconditionRefusal() refused = false, want a refusal for three blocking findings")
+		}
+		want := speccheck.CodeRequirementContradictory + ": " + contradiction.Summary + "; " +
+			speccheck.CodeCoverageUnmapped + ": " + unmapped.Summary
+		if refusal.Reason != want {
+			t.Fatalf("refusal.Reason = %q, want %q", refusal.Reason, want)
+		}
+	})
+
+	t.Run("a refusal reason stays on one line", func(t *testing.T) {
+		t.Parallel()
+
+		precondition := speccheck.GatePrecondition(speccheck.Result{
+			Slug: "gate-spec",
+			Findings: []speccheck.Finding{{
+				Code:     speccheck.CodeConstraintMissing,
+				Severity: speccheck.SeverityError,
+				Summary:  "_prd.md Project Constraints omits\nidentifier strategy\tand tooling authority",
+				Fix:      "Account for every row.",
+			}},
+		})
+
+		refusal, refused := speccheck.PreconditionRefusal(precondition)
+		if !refused {
+			t.Fatalf("PreconditionRefusal() refused = false, want a refusal for one blocking finding")
+		}
+		if strings.ContainsAny(refusal.Reason, "\n\t") {
+			t.Fatalf("refusal.Reason = %q, want one line a report frontmatter can carry", refusal.Reason)
+		}
+		want := speccheck.CodeConstraintMissing +
+			": _prd.md Project Constraints omits identifier strategy and tooling authority"
+		if refusal.Reason != want {
+			t.Fatalf("refusal.Reason = %q, want %q", refusal.Reason, want)
+		}
+	})
+
+	t.Run("a refusal whose cause has no name still records the refusing check", func(t *testing.T) {
+		t.Parallel()
+
+		refusal, refused := speccheck.PreconditionRefusal(speccheck.GatePreconditionResult{
+			Findings: []speccheck.Finding{{Severity: speccheck.SeverityError}},
+			Blocking: true,
+		})
+		if !refused {
+			t.Fatalf("PreconditionRefusal() refused = false, want an unnamed refusal recorded rather than dropped")
+		}
+		if refusal.Check != speccheck.GatePreconditionCheck {
+			t.Fatalf("refusal.Check = %q, want %q", refusal.Check, speccheck.GatePreconditionCheck)
+		}
+		if refusal.Reason != "" {
+			t.Fatalf("refusal.Reason = %q, want no invented reason", refusal.Reason)
+		}
+	})
+}
+
+func TestMechanicalStageStoresThePreconditionRefusalForTheReport(t *testing.T) {
+	t.Parallel()
+
+	t.Run("a refusing precondition reaches the refusal report writer", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := newMechanicalGitRepo(t)
+		blocking := speccheck.Result{
+			Slug: "gate-spec",
+			Findings: []speccheck.Finding{{
+				Code:     speccheck.CodeRequirementContradictory,
+				Severity: speccheck.SeverityError,
+				Summary:  "_prd.md requires one report per run and forbids writing one",
+				Where:    []speccheck.Location{{Path: "docs/specs/gate-spec/_prd.md", Line: 12}},
+				Fix:      "Resolve the contradiction.",
+			}},
+		}
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:     repoRoot,
+			Precondition: speccheck.GatePrecondition(blocking),
+		})
+
+		if !result.PreconditionRefused {
+			t.Fatalf("RunMechanicalStage() PreconditionRefused = false, want the refusal stored for report writing")
+		}
+		if !result.Blocking {
+			t.Fatalf("RunMechanicalStage() Blocking = false, want a refusing precondition to block the gate")
+		}
+		if !mechanicalDetailsContain(result.Findings, blocking.Findings[0].Summary) {
+			t.Fatalf("Findings = %#v, want the refusing finding still visible", result.Findings)
+		}
+
+		var report bytes.Buffer
+		if err := spec.WritePreconditionRefusalReport(&report, result.PreconditionRefusal); err != nil {
+			t.Fatalf("WritePreconditionRefusalReport() error = %v", err)
+		}
+		for _, want := range []string{
+			`precondition_check: "` + speccheck.GatePreconditionCheck + `"`,
+			speccheck.CodeRequirementContradictory,
+			"requires one report per run",
+			"| 0 | blocked | precondition |",
+		} {
+			if !strings.Contains(report.String(), want) {
+				t.Fatalf("refusal report does not record %q:\n%s", want, report.String())
+			}
+		}
+	})
+
+	t.Run("a passed precondition stores no refusal", func(t *testing.T) {
+		t.Parallel()
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:     newMechanicalGitRepo(t),
+			Precondition: speccheck.GatePrecondition(checkFixture(t, "vocabulary-missing")),
+		})
+
+		if result.PreconditionRefused {
+			t.Fatalf("RunMechanicalStage() PreconditionRefusal = %#v, want no refusal recorded", result.PreconditionRefusal)
+		}
+		if result.PreconditionRefusal != (spec.PreconditionRefusal{}) {
+			t.Fatalf("RunMechanicalStage() PreconditionRefusal = %#v, want the zero refusal", result.PreconditionRefusal)
+		}
+	})
+}
+
+func oneLineRefusalText(value string) string {
+	return strings.Join(strings.Fields(value), " ")
 }
 
 func TestGatePerformsAssignedRepairs(t *testing.T) {

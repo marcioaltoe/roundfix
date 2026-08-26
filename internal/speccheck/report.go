@@ -9,6 +9,8 @@ import (
 	"io"
 	"strconv"
 	"strings"
+
+	"roundfix/internal/spec"
 )
 
 // SchemaVersion identifies the machine-readable Spec Consistency Check
@@ -69,6 +71,15 @@ type MechanicalResult struct {
 	Blocked        []BlockedRow
 	Skips          []MechanicalSkip
 	Blocking       bool
+
+	// PreconditionRefusal is the check that stopped this gate before it could
+	// build a matrix, and the reason it gave, ready for the report a refusal
+	// writes instead of that matrix. PreconditionRefused separates a run that
+	// refused nothing from a refusal whose cause carries no name, which is
+	// recorded rather than dropped. The stage stores the pair and writes no
+	// report itself.
+	PreconditionRefusal spec.PreconditionRefusal
+	PreconditionRefused bool
 }
 
 // MechanicalFinding locates one citation-checkable contradiction and its
