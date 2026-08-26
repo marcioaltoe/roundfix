@@ -76,6 +76,30 @@ The first QA Report on a date is
 siblings such as `qa-report-YYYY-MM-DD-NN.md`; scope and build suffixes are not
 part of the contract.
 
+A gate can also stop before it builds its matrix, at a precondition check such
+as `roundfix spec check <slug> --strict`. What that refusal leaves behind is a
+complete report, not an empty one: verdict `fail`, `rows_blocked_precondition`
+counting the `blocked` rows whose provenance is `precondition`,
+`precondition_check` naming the check that refused, `precondition_reason`
+carrying every refusing code with the sentence beside it, and a Results table
+holding the single terminal row
+`| 0 | blocked | precondition |`. Row `0` is the whole matrix — `blocked`
+because nothing ran, provenance `precondition` because the stop is a refusal
+rather than a measurement — so a maintainer whose gate refused reads the check
+and the reason from the frontmatter and decides whether to fix the Spec or the
+tree. The prose justifying that row is written as a list rather than as a second
+table: only the one table under the `## Results` heading is read as results, so
+every other table a report carries is evidence a reader weighs, never a row a
+later run can be blocked by. A gate that reached its matrix writes none of those
+three keys.
+
+Before a later gate run, the mechanical stage validates the newest report in
+that directory and nothing else, ranking by the embedded date first and the
+rerun sequence second, exactly as the names above define them. Older reports are
+read by nothing, so a refusal one run recorded cannot block the run that
+supersedes it, and unblocking a Spec never requires deleting the evidence of why
+it was blocked.
+
 ## Adopt or update the Context-Driven Baseline
 
 The Baseline Command is the sole public authority for adopting, updating, and

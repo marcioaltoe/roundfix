@@ -13,6 +13,29 @@ created: 2026-08-25
 - Active ADR obligations: applicable — ADR-0096 (machine facts proof before Agent turn). Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation. Source: `docs/agents/agent-instructions.md`.
 
+## Vocabulary Contract
+
+The tokens this Spec emits are the three frontmatter keys a precondition refusal
+writes. Each entry below pairs a file that writes them with the glossary that has
+to carry them. The pattern names this Spec's three tokens literally rather than
+matching `rows_blocked_*` as a family: the environment, finding, and declared
+counts predate this Spec and belong to the Specs that introduced them, so a
+family pattern would charge their documentation to this one.
+
+- emits: `internal/spec/qa.go`
+  pattern: `rows_blocked_precondition|precondition_check|precondition_reason`
+  documented-in: `CONTEXT.md`
+- emits: `.agents/skills/qa-gate/SKILL.md`
+  pattern: `rows_blocked_precondition|precondition_check|precondition_reason`
+  documented-in: `CONTEXT.md`
+- emits: `internal/speccheck/mechanical.go`
+  pattern: `rows_blocked_precondition|precondition_check|precondition_reason`
+  documented-in: `CONTEXT.md`
+
+The three files are the writer of the refusal report, the skill instruction the
+refusing gate follows, and the detector that reconciles the count against the
+Results table — every surface where one of these tokens reaches a reader.
+
 ## Coverage Map
 
 | PRD Item | TechSpec Section |
@@ -159,9 +182,19 @@ The terminal row that records a precondition refusal:
 
 ### 5. Results Table Is The Only Row Source
 
-The three sections above assume the detector reads the report's Results matrix.
-It does not: `parseMechanicalReport` collects rows from every markdown table in
-the file, so any table a gate writes elsewhere in the report is read as results.
+The three sections above assume the detector reads the report's Results matrix
+alone. It does not — though not for the reason this section first gave.
+
+**Corrected 2026-08-26 against the delivered code (task_07).** The draft read:
+"`parseMechanicalReport` collects rows from every markdown table in the file."
+Measurement says otherwise. The scan was already bound to the `## Results`
+section — it started at that heading and stopped at the next `## ` — and the
+blockers came from inside that window. Spec 0098's report opens `## Results` at
+line 63 and does not reach `## Findings` until line 231, so the four
+`### Row detail` subsections between them were still scanned, and the comparison
+table inside one of them was read as rows. The defect is a scan bound to the
+section rather than to the table, which is a narrower fault than "any table in
+the file" and is why the fix below moves the boundary rather than adding one.
 
 Measured on Spec 0098 on 2026-08-26. Its gate wrote an evidence table comparing
 the three hook-refusal cases, in the prose that justifies one Results row:
@@ -176,11 +209,14 @@ The prescribed fix — replace the status with a terminal one — is not availab
 these are cells of a comparison, and rewriting them would destroy the evidence
 the row rests on.
 
-**Change**: bound row collection to the table under the `## Results` heading.
-A table under any other heading, or with no heading, yields no rows. The column
-contract for the Results table itself is unchanged, and a report with no
-`## Results` heading still reports a missing matrix rather than passing with
-zero rows.
+**Change**: bound row collection to the *table*, not the section.
+`parseMechanicalResultsRows` finds the `## Results` heading, collects the first
+table under it, and stops at the next heading of any depth or at the first line
+after that table which is not a table row. A table under a subsection of
+`## Results`, under any other heading, or in prose with no heading yields no
+rows. The column contract for the Results table itself is unchanged, and a
+report with no `## Results` heading still reports a missing matrix rather than
+passing with zero rows.
 
 This interacts with section 3: reading the newest report only removes a
 superseded refusal, while this section removes a blocker the *current* report
