@@ -565,6 +565,12 @@ func configureImplementUpstream(t *testing.T, repoDir string, remote string, bra
 
 func writeImplementSpec(t *testing.T, repoDir string, slug string, seeds []implementSeed) {
 	t.Helper()
+	// Every Project Constraint row cites an operative guide, and the strict Spec
+	// check the QA gate runs as its precondition resolves those citations against
+	// the repository. A fixture that names them without creating them refuses.
+	mustMkdir(t, filepath.Join(repoDir, "docs", "agents"))
+	mustWrite(t, filepath.Join(repoDir, "docs", "agents", "agent-instructions.md"), "# Agent instructions\n")
+	mustWrite(t, filepath.Join(repoDir, "docs", "agents", "domain.md"), "# Domain instructions\n")
 	writeImplementSpecAtRoot(t, filepath.Join(repoDir, "docs", "specs"), slug, seeds)
 }
 
@@ -578,11 +584,21 @@ func declareImplementQADeclined(t *testing.T, repoDir string, reason string) {
 	gitImplement(t, repoDir, "commit", "-m", "declare QA declined")
 }
 
+const implementFixtureConstraints = "## Project Constraints\n\n" +
+	"- Identifier strategy: not applicable — this fixture creates no identifier. Source: `docs/agents/domain.md`.\n" +
+	"- Authentication and HTTP: not applicable — this fixture opens no transport. Source: `docs/agents/agent-instructions.md`.\n" +
+	"- Active ADR obligations: not applicable — this fixture cites no ADR. Source: `docs/agents/domain.md`.\n" +
+	"- Tooling authority: not applicable — this fixture changes no tooling. Source: `docs/agents/agent-instructions.md`.\n"
+
 func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds []implementSeed) {
 	t.Helper()
 	specDir := filepath.Join(specsRoot, slug)
 	mustMkdir(t, specDir)
-	mustWrite(t, filepath.Join(specDir, "_prd.md"), "---\nstatus: active\n---\n\n# PRD\n")
+	// The QA gate's own precondition is `spec check --strict`, so a fixture Spec
+	// that skips its Project Constraints refuses at the gate before any Agent
+	// runs. These rows keep the fixture authoring-clean, which is what every
+	// implement Run below is actually measuring.
+	mustWrite(t, filepath.Join(specDir, "_prd.md"), "---\nstatus: active\n---\n\n# PRD\n\n"+implementFixtureConstraints)
 
 	var qaTaskID string
 	for _, seed := range seeds {
@@ -2202,6 +2218,14 @@ func TestRunImplementHasNoSpecCheckPrecondition(t *testing.T) {
 	_, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget backend"},
 	})
+	// The shared fixture is authoring-clean, because the QA gate refuses on a
+	// Spec that is not. This Task is about the implement command instead, so it
+	// breaks its own Spec: the premise below has to be a fact this test creates,
+	// not one it inherits.
+	prdPath := filepath.Join(repoDir, "docs", "specs", implementTestSlug, "_prd.md")
+	mustWrite(t, prdPath, strings.Replace(mustRead(t, prdPath), implementFixtureConstraints, "", 1))
+	gitImplement(t, repoDir, "add", "-A")
+	gitImplement(t, repoDir, "commit", "-m", "drop Project Constraints")
 	checkResult, err := speccheck.Check(filepath.Join(repoDir, "docs", "specs"), repoDir, implementTestSlug)
 	if err != nil {
 		t.Fatalf("prove inconsistent implement fixture: %v", err)

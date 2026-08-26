@@ -266,7 +266,7 @@ func runSpecCheckCommand(ctx context.Context, args []string, stdout, stderr io.W
 			return exitPreflight
 		}
 		if req.strict {
-			promoteSpecCheckGaps(&result)
+			speccheck.PromoteGaps(&result)
 		}
 		results = append(results, classifySpecCheckBoundary(
 			result,
@@ -692,14 +692,6 @@ func specAuditNeedsAttention(result specaudit.Result) bool {
 		}
 	}
 	return false
-}
-
-func promoteSpecCheckGaps(result *speccheck.Result) {
-	for index := range result.Findings {
-		if result.Findings[index].Severity == speccheck.SeverityGap {
-			result.Findings[index].Severity = speccheck.SeverityError
-		}
-	}
 }
 
 func printSpecCheckFailure(err error, stderr io.Writer) {

@@ -403,6 +403,15 @@ func mustWriteForTest(t *testing.T, path string, content string) {
 	}
 }
 
+func readFileForTest(t *testing.T, path string) string {
+	t.Helper()
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return string(content)
+}
+
 func TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

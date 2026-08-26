@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -1017,6 +1018,199 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 
 		if result.Blocking || len(result.Findings) != 0 {
 			t.Fatalf("mechanical stage result = %+v, want the folded ordinary path to produce no finding", result)
+		}
+	})
+}
+
+func TestQAMechanicalRequestCarriesTheGatePrecondition(t *testing.T) {
+	t.Parallel()
+
+	loadPrecondition := func(t *testing.T, breakSpec bool) speccheck.GatePreconditionResult {
+		t.Helper()
+		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+		plan := fixture.qaPlan()
+		if breakSpec {
+			prdPath := filepath.Join(fixture.specsRoot, taskCycleSlug, "_prd.md")
+			prd := readFileForTest(t, prdPath)
+			head, _, found := strings.Cut(prd, "## Project Constraints")
+			if !found {
+				t.Fatalf("fixture PRD has no Project Constraints to remove:\n%s", prd)
+			}
+			mustWriteForTest(t, prdPath, head)
+		}
+
+		request, err := (&Engine{}).qaMechanicalRequest(context.Background(), plan, spec.Task{}, "")
+		if err != nil {
+			t.Fatalf("qaMechanicalRequest returned error: %v", err)
+		}
+		return request.Precondition
+	}
+
+	t.Run("a contradicted Spec reaches the stage as a refusing precondition", func(t *testing.T) {
+		t.Parallel()
+		precondition := loadPrecondition(t, true)
+
+		if !precondition.Blocking {
+			t.Fatalf("Precondition = %#v, want the contradicted Spec to block the gate", precondition)
+		}
+		refusal, refused := speccheck.PreconditionRefusal(precondition)
+		if !refused {
+			t.Fatalf("PreconditionRefusal() refused = false for findings %#v", precondition.Findings)
+		}
+		if refusal.CheckName != speccheck.GatePreconditionCheck {
+			t.Fatalf("refusal check = %q, want %q", refusal.CheckName, speccheck.GatePreconditionCheck)
+		}
+		// The reason is what a maintainer reads to decide whether to fix the
+		// Spec or the tree, so it must name the detector that refused rather
+		// than merely report that something did.
+		if !strings.Contains(refusal.Reason, speccheck.CodeConstraintMissing) {
+			t.Fatalf("refusal reason = %q, want the refusing code %q", refusal.Reason, speccheck.CodeConstraintMissing)
+		}
+	})
+
+	t.Run("a clean Spec reaches the stage refusing nothing", func(t *testing.T) {
+		t.Parallel()
+		precondition := loadPrecondition(t, false)
+
+		if precondition.Blocking {
+			t.Fatalf("Precondition = %#v, want a clean Spec to refuse nothing", precondition)
+		}
+		if refusal, refused := speccheck.PreconditionRefusal(precondition); refused {
+			t.Fatalf("PreconditionRefusal() = %#v, true; want no refusal from a clean Spec", refusal)
+		}
+	})
+}
+
+func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
+	t.Parallel()
+	const reason = "SC-CONSTRAINT-MISSING: _prd.md declares no Identifier strategy row"
+	refusedResult := speccheck.MechanicalResult{
+		Findings: []speccheck.MechanicalFinding{{
+			Code: speccheck.CodeConstraintMissing, File: "docs/specs/" + taskCycleSlug + "/_prd.md", Line: 1,
+			Detail: "_prd.md declares no Identifier strategy row", Fix: "Declare the row.", RowHint: "R01",
+		}},
+		Blocked:             []speccheck.BlockedRow{{ID: "R01", FindingCode: speccheck.CodeConstraintMissing, WaitingOn: "no Identifier strategy row"}},
+		Blocking:            true,
+		PreconditionRefusal: spec.PreconditionRefusal{CheckName: speccheck.GatePreconditionCheck, Reason: reason},
+		PreconditionRefused: true,
+	}
+
+	type writtenReport struct {
+		repoRoot string
+		specDir  string
+		path     string
+		body     string
+	}
+	writeReport := func(t *testing.T, result speccheck.MechanicalResult) writtenReport {
+		t.Helper()
+		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+		engine := fixture.engine(t, &taskFakeRunner{}, &taskFakeVerifier{}, &engineFakeCommitter{}, fixture.worktree)
+		plan := fixture.qaPlan()
+		gittest.InitRepo(t, fixture.gitRoot, "-b", "main")
+		gittest.AppendConfig(t, fixture.gitRoot, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
+		runGitForTest(t, fixture.gitRoot, "add", "-A")
+		runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "initial")
+
+		reportPath, err := engine.writeMechanicalQAReport(plan, result)
+		if err != nil {
+			t.Fatalf("writeMechanicalQAReport() error = %v", err)
+		}
+		return writtenReport{
+			repoRoot: fixture.gitRoot,
+			specDir:  plan.Spec.Dir,
+			path:     reportPath,
+			body:     readFileForTest(t, filepath.Join(fixture.gitRoot, filepath.FromSlash(reportPath))),
+		}
+	}
+
+	t.Run("the refusal is recorded as one terminal row and its frontmatter", func(t *testing.T) {
+		t.Parallel()
+		report := writeReport(t, refusedResult).body
+
+		wantFrontmatter := "---\nverdict: fail\nrows_blocked_precondition: 1\n" +
+			"rows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n" +
+			"precondition_check: " + strconv.Quote(speccheck.GatePreconditionCheck) + "\n" +
+			"precondition_reason: " + strconv.Quote(reason) + "\n---\n"
+		if !strings.HasPrefix(report, wantFrontmatter) {
+			t.Fatalf("refusal QA Report frontmatter:\n%s\nwant prefix:\n%s", report, wantFrontmatter)
+		}
+		wantResults := "## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n" +
+			"| " + spec.QAPreconditionRowID + " | " + spec.QAPreconditionRowStatus + " | " + spec.QAPreconditionRowProvenance + " |\n\n"
+		if !strings.Contains(report, wantResults) {
+			t.Fatalf("refusal QA Report has no terminal refusal row:\n%s", report)
+		}
+		if strings.Contains(report, "| QA-PRECONDITION |") {
+			t.Fatalf("refusal QA Report still carries the pre-contract refusal row:\n%s", report)
+		}
+	})
+
+	t.Run("the refusal costs the report none of the stage's own observations", func(t *testing.T) {
+		t.Parallel()
+		report := writeReport(t, refusedResult).body
+
+		for _, evidence := range []string{
+			"### " + speccheck.CodeConstraintMissing,
+			"- detail: _prd.md declares no Identifier strategy row",
+			speccheck.MechanicalRowsHeading,
+			"| R01 | blocked (finding: " + speccheck.CodeConstraintMissing + " — waits on no Identifier strategy row) | mechanical finding |",
+		} {
+			if !strings.Contains(report, evidence) {
+				t.Errorf("refusal QA Report dropped mechanical evidence %q:\n%s", evidence, report)
+			}
+		}
+	})
+
+	t.Run("the mechanical stage accepts the shape the refusal wrote", func(t *testing.T) {
+		t.Parallel()
+		written := writeReport(t, refusedResult)
+
+		checked, err := speccheck.RunMechanicalStage(context.Background(), speccheck.MechanicalRequest{
+			RepoRoot:   written.repoRoot,
+			ReportPath: written.path,
+		})
+		if err != nil {
+			t.Fatalf("RunMechanicalStage() error = %v", err)
+		}
+		for _, finding := range checked.Findings {
+			if finding.Code == speccheck.CodeMechanicalReportShape {
+				t.Fatalf("mechanical stage refused the refusal report's shape: %#v\n%s", finding, written.body)
+			}
+		}
+	})
+
+	t.Run("the refusal reads back as the refusal that was recorded", func(t *testing.T) {
+		t.Parallel()
+		written := writeReport(t, refusedResult)
+
+		read, err := spec.ReadQAReport(written.specDir)
+		if err != nil {
+			t.Fatalf("ReadQAReport() error = %v", err)
+		}
+		if read.Verdict != spec.VerdictFail || read.RowsBlockedPrecondition != 1 {
+			t.Fatalf("QAReport = %+v, want verdict %q with one precondition-blocked row", read, spec.VerdictFail)
+		}
+		if read.Precondition != refusedResult.PreconditionRefusal {
+			t.Fatalf("QAReport.Precondition = %#v, want %#v", read.Precondition, refusedResult.PreconditionRefusal)
+		}
+	})
+
+	t.Run("a gate that refused nothing writes the report it wrote before", func(t *testing.T) {
+		t.Parallel()
+		unrefused := refusedResult
+		unrefused.PreconditionRefused = false
+		unrefused.PreconditionRefusal = spec.PreconditionRefusal{}
+		report := writeReport(t, unrefused).body
+
+		want := "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
+			"# QA Report\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n" +
+			"## Mechanical findings\n\n### " + speccheck.CodeConstraintMissing + "\n\n" +
+			"- location: `docs/specs/" + taskCycleSlug + "/_prd.md:1`\n" +
+			"- detail: _prd.md declares no Identifier strategy row\n- fix: Declare the row.\n- blocked row: `R01`\n\n" +
+			"## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n" +
+			"| R01 | blocked (finding: " + speccheck.CodeConstraintMissing + " — waits on no Identifier strategy row) | mechanical finding |\n\n" +
+			"## Mechanical skips\n\nNone.\n"
+		if report != want {
+			t.Fatalf("unrefused mechanical QA Report changed:\n%s\nwant:\n%s", report, want)
 		}
 	})
 }
