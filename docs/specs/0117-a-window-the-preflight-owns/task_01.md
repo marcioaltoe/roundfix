@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: data
 ---
 
@@ -35,5 +35,38 @@ would be a second store to keep honest.
 - `grep -q "run_windows" internal/store/store.go && grep -q "schemaVersion = 13" internal/store/store.go && grep -q "func (store \*Store) SetRunWindow" internal/store/store.go && go test -count=1 ./internal/store 2>&1 | grep -q "^ok"`
 
 ## Result
-The Run Window is durable, repository-scoped state that a restarted process
-finds unchanged.
+
+Implemented schema 13 with an additive, idempotent v12 migration for the
+`run_windows` table. Fresh databases create the table directly, and historical
+schema fixtures migrate their copied working databases before read-only
+consumer replay; the recorded corpus remains unchanged. The durable-table
+lifecycle policy now records that only explicit force-set and clear operations
+replace or remove Run Windows.
+
+Added `SetRunWindow`, `RunWindowFor`, and `ClearRunWindow` with context-aware
+SQLite operations under the existing serialized write transaction. The stored
+row and returned `RunWindow` use Unix-second instants. A non-replacing set reads
+and returns the standing row without issuing an insert or update.
+
+Focused evidence:
+
+- Schema migration and existing-row preservation:
+  `rtk env GOCACHE=/tmp/roundfix-task01-go-cache go test ./internal/store -run 'Test(OpenMigratesV11RunDatabaseAddingOwnerIdentityUnproven|OpenMigratesV12RunDatabaseAddingRunWindows|RunWindowPersistsAndClearsByGitRoot|SetRunWindowPreservesExistingWindowWithoutReplace|DurableTableLifecyclePolicyCoversEveryTable|JournalConsumerCorpusReplaysEveryConsumer)$'`
+  passed. `TestOpenMigratesV12RunDatabaseAddingRunWindows` proves the existing
+  Run survives and the new table starts empty.
+- Durable repository scope, absence, and clear semantics: the same command
+  passed `TestRunWindowPersistsAndClearsByGitRoot`, which closes and reopens the
+  store, isolates two Git roots, treats absence as non-error state, and proves
+  clear's removed/not-removed result.
+- Set asymmetry: the same command passed
+  `TestSetRunWindowPreservesExistingWindowWithoutReplace`; it returns the
+  standing window with `written=false`, and SQLite `total_changes()` remains
+  unchanged. Its forced-set case replaces the cutoff with `written=true`.
+- Existing outdated-database caller:
+  `rtk env GOCACHE=/tmp/roundfix-task01-go-cache go test ./internal/cli -run '^TestBranchIntegrityPreflightMigratesOutdatedRunDatabase$'`
+  passed.
+- Required incremental gate: `rtk make verify-incremental` ran after the final
+  edits. `internal/store` and every package except `internal/cli` passed;
+  `internal/cli` failed only two force-stop integration tests because the
+  sandbox denied process-table enumeration with `operation not permitted`.
+  The Daemon-owned Task Verification command was not run.
