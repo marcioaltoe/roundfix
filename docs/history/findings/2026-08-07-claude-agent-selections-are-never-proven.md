@@ -1,5 +1,6 @@
 ---
 status: done
+absorbed_by: 0091-a-proof-that-can-refuse
 created_at: 2026-08-07
 updated_at: 2026-08-26
 kind: finding
