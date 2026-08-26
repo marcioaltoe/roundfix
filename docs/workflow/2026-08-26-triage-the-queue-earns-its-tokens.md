@@ -16,17 +16,44 @@ opus/high for about one point of result.
 
 ## Active queue, in order
 
-1. **Unresolved-Run work reuse** (new, lean: techspec-direct, no product
-   decision to record). An Unresolved Run leaves completed Task commits on its
-   Run Branch; the next implement reads the checkout, sees `pending`, and redoes
-   them. Either integrate completed work at Run end or refuse the next Run
-   naming the integration command. Evidence: finding
+Reordered 2026-08-26 after the maintainer proposed shipping a supervisor
+kickoff skill and its session-cutoff script. The assessment split that work
+three ways — code, owned skill, typed decisions — and put its code half first
+because it is small and converts a discipline into a contract.
+
+1. **A session cutoff the Preflight owns** (new, small). A supervisor loop
+   bounded by a wall-clock cutoff enforces it today by remembering to call a
+   script before each Run. A rule the agent must remember to check is the same
+   partial-detector-read-as-a-gate shape this session measured three times: if
+   the check is skipped, Runs open all night, with the guard installed. The
+   cutoff becomes a Run-creation precondition instead, alongside the existing
+   refusals, and converses with `budget.max_run_duration` — opening a Run with
+   less than that left means crossing the cutoff. Evidence: the kickoff skill's
+   own `window.sh`, whose header documents the naive-comparison bug it exists
+   to avoid.
+2. **Unresolved-Run work reuse** (lean: techspec-direct, no product decision to
+   record). An Unresolved Run leaves completed Task commits on its Run Branch;
+   the next implement reads the checkout, sees `pending`, and redoes them.
+   Either integrate completed work at Run end or refuse the next Run naming the
+   integration command. Evidence: finding
    `2026-08-12-five-unresolved-runs-to-deliver-one-spec` (kept pending for
    adoption) plus this session's measurement above.
-2. **0116-a-verdict-that-states-its-own-scope** (authored, source adopted,
+3. **0116-a-verdict-that-states-its-own-scope** (authored, source adopted,
    tooling authorization granted 2026-08-26). Stops vacuous Verification
    commands at authoring instead of one lost Run each.
-3. **0097-a-wave-that-cannot-collide**. Two Tasks a graph declares independent
+4. **`kickoff` versus `implement-spec`** — a decision before an implementation.
+   The proposed kickoff skill declares `implement-spec` a rival loop that
+   contradicts `docs/agents/autonomous-work.md` and publishes on its own.
+   `implement-spec` is Roundfix-owned and shipped. If kickoff is right, the
+   fleet receives a defective loop plus a note telling readers not to use it.
+   Settle whether kickoff replaces it before either is packaged; the answer
+   decides whether the skill work is one job or two.
+5. **kickoff as an owned skill**, after that decision. Not portable as written:
+   it cites `ADR-0041` (absent here — ADR numbers are per repository), carries
+   a consuming repository's domain and spend ceiling, declares a review policy
+   that ADR-0118 says belongs in a typed decision, and is written in
+   Portuguese while every owned skill ships in English.
+6. **0097-a-wave-that-cannot-collide**. Two Tasks a graph declares independent
    editing the same file die at integration; measured first-hand here on
    2026-08-26 (0113 task_05 × task_07). Evidence kept pending:
    `2026-08-11-a-git-worktree-that-fails-only-under-load`.
