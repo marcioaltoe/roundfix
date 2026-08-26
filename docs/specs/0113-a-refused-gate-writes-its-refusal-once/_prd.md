@@ -29,6 +29,25 @@ gate writes a structurally invalid report while doing the right thing — stoppi
 at a strict Spec check failure. The only exit was deleting the empty report,
 which is evidence removal.
 
+A third measurement, on 2026-08-26, shows the same deadlock reached through a
+report that is not empty. Spec 0098's gate wrote `qa-report-2026-08-25.md` with
+verdict `fail`, correctly recording two `Trust-Damage` findings as `fail` rows.
+Both findings were then fixed by that Spec's two corrective Tasks. The next gate
+run (`run_20260826T004155Z_8a013e2b7e48654e`) refused anyway: the mechanical
+stage read the superseded report and raised `QA-REPORT-SHAPE` against its `fail`
+rows, blocking the very run that carried the fix. The stage reads
+`previousReportPath` (`internal/daemon/task_engine.go:2073`), so newer evidence
+never supersedes older evidence.
+
+Two properties of that measurement matter for the design below. First, the
+blocking rows were correct when written — this is not a malformed artifact but a
+valid one outliving its run, so deleting it would again be evidence removal.
+Second, the same run's findings included rows named `Case`, `82-line function vs
+80`, and `` `sort()` vs `toSorted()` ``, which are cells of an evidence table in
+the report's prose, not rows of its Results table. The shape detector parses any
+markdown table in the report as the Results matrix, so prose evidence a gate
+writes to justify a row becomes a row itself, and each one is a fresh blocker.
+
 ## Project Constraints
 
 - Identifier strategy: applicable — QA Report, precondition, and terminal row
@@ -82,6 +101,11 @@ which is evidence removal.
 3. **Gate refusal precondition is recorded in the report.** The terminal row
    that records the precondition refusal includes the check name and the reason
    it failed, so a reader understands what was checked and why.
+4. **Only the Results table is read as results.** The shape detector parses rows
+   from the report's Results table alone. A markdown table a gate writes in its
+   prose to justify a row — an evidence matrix, a per-case comparison — is not
+   parsed as a result and cannot block a later run. Measured on Spec 0098 on
+   2026-08-26, where three prose evidence cells each became a separate blocker.
 
 ## Non-Goals / Out of Scope
 

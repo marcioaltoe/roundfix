@@ -23,6 +23,7 @@ created: 2026-08-25
 | Core Feature 1 | Terminal Row Writing |
 | Core Feature 2 | Mechanical Stage Update |
 | Core Feature 3 | Newest Report Only |
+| Core Feature 4 | Results Table Is The Only Row Source |
 
 ## Context
 
@@ -155,6 +156,36 @@ The terminal row that records a precondition refusal:
 - No requirements were measured
 - The refusal is recorded as metadata (precondition_check, precondition_reason)
 - The report is valid per the QA Report contract
+
+### 5. Results Table Is The Only Row Source
+
+The three sections above assume the detector reads the report's Results matrix.
+It does not: `parseMechanicalReport` collects rows from every markdown table in
+the file, so any table a gate writes elsewhere in the report is read as results.
+
+Measured on Spec 0098 on 2026-08-26. Its gate wrote an evidence table comparing
+the three hook-refusal cases, in the prose that justifies one Results row:
+
+| Case | Hook objection observed | Refused settle | Recovered settle |
+| --- | --- | --- | --- |
+| 82-line function vs 80 | … | exit `1`, work staged | exit `0`, byte-identical |
+
+The detector read `Case`, `82-line function vs 80`, and two more as result rows
+with non-terminal statuses, and raised one `QA-REPORT-SHAPE` finding for each.
+The prescribed fix — replace the status with a terminal one — is not available:
+these are cells of a comparison, and rewriting them would destroy the evidence
+the row rests on.
+
+**Change**: bound row collection to the table under the `## Results` heading.
+A table under any other heading, or with no heading, yields no rows. The column
+contract for the Results table itself is unchanged, and a report with no
+`## Results` heading still reports a missing matrix rather than passing with
+zero rows.
+
+This interacts with section 3: reading the newest report only removes a
+superseded refusal, while this section removes a blocker the *current* report
+raises against its own evidence. Spec 0098's deadlock needed both — its newest
+report was the one carrying the prose table.
 
 ## Specification
 
