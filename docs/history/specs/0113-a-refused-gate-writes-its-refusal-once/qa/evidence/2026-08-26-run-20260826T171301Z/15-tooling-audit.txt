@@ -1,0 +1,115 @@
+=== Non-Goal 3: Review Source behaviour and other external contracts ===
+$ git diff --name-only 854039b8..HEAD  (source files only, Spec artifacts excluded)
+.agents/skills/qa-gate/SKILL.md
+CONTEXT.md
+docs/user-guide/context-driven-development.md
+internal/cli/implement_test.go
+internal/cli/spec_check.go
+internal/daemon/daemon_test.go
+internal/daemon/task_engine.go
+internal/daemon/task_engine_test.go
+internal/spec/qa.go
+internal/spec/qa_test.go
+internal/speccheck/citations.go
+internal/speccheck/mechanical.go
+internal/speccheck/mechanical_test.go
+internal/speccheck/report.go
+internal/speccheck/testdata/mechanical/report-green.md
+skills/qa-gate/SKILL.md
+
+  reviewsource touched: 0 file(s)
+
+=== Commit-dependent tooling audit: every Daemon-owned Task commit for this Spec ===
+--- 342a8a5d  docs: task: Document the vocabulary this Spec emitted
+      CONTEXT.md
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/_techspec.md
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_09.md
+      docs/user-guide/context-driven-development.md
+--- d8ad2d4d  fix: narrow task_09's Verification to the effect it owns
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_09.md
+--- 34b09533  feat: task: Give the refusal report a writer in production
+      .agents/skills/qa-gate/SKILL.md
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_08.md
+      internal/cli/implement_test.go
+      internal/cli/spec_check.go
+      internal/daemon/daemon_test.go
+      internal/daemon/task_engine.go
+      internal/daemon/task_engine_test.go
+      internal/speccheck/report.go
+      skills/qa-gate/SKILL.md
+--- cfa3d9b5  fix: corrective tasks for 0113 QA findings, and the authorization F-1 needs
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/_prd.md
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/_tasks.md
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_06.md
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_08.md
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_09.md
+--- bd8fd98c  docs: qa report for 0113-a-refused-gate-writes-its-refusal-once (fail)
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/00-harness-main.go.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/01-newest-only-and-results-table-0098.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/02-results-table-only-isolated.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/03-results-table-only-before-task07.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/04-precondition-refusal-report.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/05-refusal-row-before-task04.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/06-newest-report-only.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/07-probes-ordering-and-missing-matrix.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/08-historical-pattern-0078-0094-0103.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/09-historical-pattern-in-place.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/10-production-wiring.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/11-tooling-audit.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/12-non-goals-precondition-unchanged.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/13-skipped-detector-rows.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/14-seeded-report-as-written-by-the-daemon.md
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/15-seeded-empty-matrix-still-deadlocks.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/16-daemon-mechanical-refusal-report.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/17-docs-surface-sweep.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/18-refusal-row-probes.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/19-this-report-read-by-the-stage.txt
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/qa-report-2026-08-26.md
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_06.md
+--- a7628d5b  feat: task: Read Newest Report Only
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_05.md
+      internal/speccheck/mechanical.go
+      internal/speccheck/mechanical_test.go
+--- 3e4f594b  fix: serialize 0113 task_05 behind task_07 after an integration conflict
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/_tasks.md
+--- b663bf72  feat: task: Parse results from the Results table only
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_07.md
+      internal/speccheck/citations.go
+      internal/speccheck/mechanical.go
+      internal/speccheck/mechanical_test.go
+      internal/speccheck/testdata/mechanical/report-green.md
+--- 4cc3b5fb  feat: task: Update Mechanical Stage Validation
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_04.md
+      internal/speccheck/mechanical.go
+      internal/speccheck/mechanical_test.go
+--- 97ff7679  feat: task: Store Precondition Metadata
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_03.md
+      internal/spec/qa.go
+      internal/spec/qa_test.go
+      internal/speccheck/mechanical.go
+      internal/speccheck/mechanical_test.go
+--- 19baa6bd  feat: task: Detect Precondition Failure
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_02.md
+      internal/speccheck/mechanical.go
+      internal/speccheck/mechanical_test.go
+      internal/speccheck/report.go
+--- c2a70a7e  feat: task: Write Terminal Row on Precondition Refusal
+      docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_01.md
+      internal/spec/qa.go
+      internal/spec/qa_test.go
+
+=== Repository-tooling configuration, scripts, ignore files, plugin declarations, version pins ===
+$ git diff --name-only 854039b8..HEAD | matched against tooling patterns
+  (no match — the PRD's 'no linter, formatter, test-runner, build, or version pin is touched' holds)
+
+=== The PRD's bounded tooling authorization, and what actually changed inside it ===
+  71:  granted 2026-08-26 in session, after the finding. Bounded files:
+  72-  `.agents/skills/qa-gate/SKILL.md`. Its mirror under `skills/` is regenerated
+  73-  by the declared `make skills-sync` and is sanctioned fallout, not a separate
+  74-  target. No linter, formatter, test-runner, build, or version pin is touched.
+
+  .agents/skills/ changes in the range:
+      .agents/skills/qa-gate/SKILL.md
+      skills/qa-gate/SKILL.md
+  mirror parity:
+      .agents/skills/qa-gate == skills/qa-gate (make skills-sync mirror is clean)

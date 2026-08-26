@@ -1,9 +1,12 @@
 ---
 status: pending
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 kind: rollup
 members:
+  - 2026-08-07-a-sixty-four-value-bound-locks-out-the-opencode-runtime.md
+  - 2026-08-10-a-fake-adapter-goes-silent-under-a-dense-start.md
+  - 2026-08-14-preflight-starves-when-the-machine-is-busy.md
   - 2026-07-26-claude-adapter-configoptions-migration.md
   - 2026-07-27-claude-adapter-standardization.md
   - 2026-07-28-profiles-configure-replaces-the-whole-profiles-map.md
@@ -36,3 +39,7 @@ selection and access contract the Task Session will receive.
 Specs 0052 and 0056 absorbed the first adapter and profile defects. The rollup
 remains `pending` around end-to-end execution-policy proof: accepted config,
 runtime launch, and Task filesystem access must describe the same environment.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

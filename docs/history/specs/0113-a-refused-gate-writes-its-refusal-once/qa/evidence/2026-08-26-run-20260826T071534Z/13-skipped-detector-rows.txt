@@ -1,0 +1,60 @@
+# Skipped-detector rows retained per the qa-gate contract.
+# roundfix spec check 0113 --strict skipped two detectors, so the gate keeps their rows.
+
+===== A. SC-REF-UNRESOLVED equivalent: every repository path this Spec's artifacts cite
+  MISSING    _tasks.md
+  MISSING    acpx_runner_test.go
+  resolves   CONTEXT.md
+  resolves   docs/agents/agent-instructions.md
+  resolves   docs/agents/domain.md
+  resolves   docs/agents/specific-repository.md
+  resolves   docs/specs/0098-a-hook-that-cannot-outrank-the-gate/qa/qa-report-2026-08-25.md
+  resolves   internal/daemon/task_context.go
+  resolves   internal/daemon/task_engine.go
+  resolves   internal/spec/qa_test.go
+  resolves   internal/spec/qa.go
+  resolves   internal/speccheck/citations.go
+  resolves   internal/speccheck/mechanical_test.go
+  resolves   internal/speccheck/mechanical.go
+  resolves   internal/speccheck/report.go
+  resolves   internal/worktree/worktree.go
+  MISSING    mechanical_test.go
+  MISSING    qa-report-2026-08-13.md
+  MISSING    qa-report-2026-08-14.md
+  MISSING    qa-report-2026-08-15.md
+  MISSING    qa-report-2026-08-25-02.md
+  MISSING    qa-report-2026-08-25.md
+  MISSING    report-green.md
+  MISSING    report-raw.md
+  MISSING    report-red.md
+  MISSING    task_NN.md
+  MISSING    testdata/mechanical/report-green.md
+
+===== B. line anchors cited by the Spec's Result prose, checked against the file
+  ok         internal/speccheck/mechanical.go:87 -> const GatePreconditionCheck = "spec check --strict"
+  ok         internal/speccheck/mechanical.go:131 -> func PreconditionRefusal(precondition GatePreconditionResult) (spec.Pr
+  ok         internal/speccheck/mechanical.go:880 -> func newestMechanicalReportPath(repoRoot, requested string) (string, e
+  ok         internal/daemon/task_engine.go:2073 -> ReportPath:      previousReportPath,
+  ok         internal/daemon/task_engine.go:44 -> return speccheck.RunMechanicalStage(ctx, request)
+
+===== C. vocabulary documentation equivalent: tokens this Spec emits into the QA Report artifact
+  rows_blocked_precondition    emitted by internal/spec/qa.go: 4 | named in CONTEXT.md: 0 | named in docs/user-guide: 0 | TechSpec Vocabulary Contract: 1
+  precondition_check           emitted by internal/spec/qa.go: 2 | named in CONTEXT.md: 0 | named in docs/user-guide: 0 | TechSpec Vocabulary Contract: 1
+  precondition_reason          emitted by internal/spec/qa.go: 2 | named in CONTEXT.md: 0 | named in docs/user-guide: 0 | TechSpec Vocabulary Contract: 1
+
+  CONTEXT.md QA Report entry as it stands:
+    
+    **QA Report**:
+    The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict plus `rows_blocked_environment` and `rows_blocked_finding` counts in its frontmatter.
+    _Avoid_: Test report, QA log
+
+  docs/user-guide/context-driven-development.md blocked-cause paragraph:
+    
+    Every blocked row records its cause. A row the environment makes unreachable
+    counts in `rows_blocked_environment`; it does not by itself prevent `pass` when
+    the report contains equivalent observed or supervised evidence. A row stopped
+    by a finding counts in `rows_blocked_finding` and does prevent `pass`. Both
+    counts live in QA Report frontmatter and appear in the coverage summary.
+    
+    The first QA Report on a date is
+    `docs/specs/<slug>/qa/qa-report-YYYY-MM-DD.md`. Same-day reruns use numeric

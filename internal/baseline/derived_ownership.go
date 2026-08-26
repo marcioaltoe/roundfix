@@ -53,7 +53,7 @@ type derivedOwnershipExceptionClaim struct {
 }
 
 // OutputsFor returns the repository-relative paths the named regeneration
-// command owns, read from the ownership records in the tree. ADR-0129 explains
+// command owns, read from the ownership records in the tree. ADR-0149 explains
 // why a grant names the command rather than its consequences.
 func OutputsFor(repoRoot string, command string) ([]string, error) {
 	root, err := cleanRepositoryRoot(repoRoot)

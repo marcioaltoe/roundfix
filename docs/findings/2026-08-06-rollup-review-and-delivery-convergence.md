@@ -1,9 +1,12 @@
 ---
 status: pending
 created_at: 2026-08-06
-updated_at: 2026-08-06
+updated_at: 2026-08-26
 kind: rollup
 members:
+  - 2026-08-06-the-loop-cannot-fix-comments-about-its-own-artifacts.md
+  - 2026-08-10-a-head-the-loop-did-not-push-is-a-head-nobody-reviews.md
+  - 2026-08-14-a-review-retires-on-whatever-the-object-store-happens-to-hold.md
   - 2026-08-03-gate-and-review-rounds-need-a-convergence-rule.md
   - 2026-08-04-an-accepted-gap-has-no-terminal-state-so-the-loop-cannot-close.md
   - 2026-08-04-review-runs-halt-autonomous-delivery-on-unrelated-dirty-files.md
@@ -41,3 +44,7 @@ Supervisor interpreting local artifacts by hand.
 Reconciliation and newer Review Source contracts removed several manual steps.
 The rollup remains `pending` until every non-decision interruption has a typed
 recovery path and the loop stops returning control for mechanical reasons.
+
+---
+
+Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.

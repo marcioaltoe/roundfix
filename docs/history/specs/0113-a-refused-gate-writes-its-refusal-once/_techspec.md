@@ -1,0 +1,314 @@
+---
+spec: 0113-a-refused-gate-writes-its-refusal-once
+status: active
+created: 2026-08-25
+---
+
+# TechSpec: Gate Refusal Report Shape
+
+## Project Constraints
+
+- Identifier strategy: applicable — QA Report, precondition, terminal row are glossary terms. The closing node checks whether the work introduced or changed one. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — no network boundary, credential, or request. The work is gate logic and report writing. Source: `docs/agents/specific-repository.md`.
+- Active ADR obligations: applicable — ADR-0096 (machine facts proof before Agent turn). Source: `docs/agents/domain.md`.
+- Tooling authority: not applicable — no protected tooling mutation. Source: `docs/agents/agent-instructions.md`.
+
+## Vocabulary Contract
+
+The tokens this Spec emits are the three frontmatter keys a precondition refusal
+writes. Each entry below pairs a file that writes them with the glossary that has
+to carry them. The pattern names this Spec's three tokens literally rather than
+matching `rows_blocked_*` as a family: the environment, finding, and declared
+counts predate this Spec and belong to the Specs that introduced them, so a
+family pattern would charge their documentation to this one.
+
+- emits: `internal/spec/qa.go`
+  pattern: `rows_blocked_precondition|precondition_check|precondition_reason`
+  documented-in: `CONTEXT.md`
+- emits: `.agents/skills/qa-gate/SKILL.md`
+  pattern: `rows_blocked_precondition|precondition_check|precondition_reason`
+  documented-in: `CONTEXT.md`
+- emits: `internal/speccheck/mechanical.go`
+  pattern: `rows_blocked_precondition|precondition_check|precondition_reason`
+  documented-in: `CONTEXT.md`
+
+The three files are the writer of the refusal report, the skill instruction the
+refusing gate follows, and the detector that reconciles the count against the
+Results table — every surface where one of these tokens reaches a reader.
+
+## Coverage Map
+
+| PRD Item | TechSpec Section |
+| --- | --- |
+| User Story 1 | Gate Refusal Terminal Row |
+| User Story 2 | Precondition Metadata Recording |
+| User Story 3 | Report Reading Strategy |
+| Core Feature 1 | Terminal Row Writing |
+| Core Feature 2 | Mechanical Stage Update |
+| Core Feature 3 | Newest Report Only |
+| Core Feature 4 | Results Table Is The Only Row Source |
+
+## Context
+
+When the QA gate refuses at a precondition check (e.g., a strict Spec consistency
+check), it writes a QA Report. Currently, the Results table in that report is
+empty — correctly, because the gate stopped before building the matrix.
+
+However, the mechanical stage of every later run reads that report and refuses
+with `QA-REPORT-SHAPE`:
+
+```text
+Results table has no report rows
+fix: Materialize every planned QA row with one terminal status.
+```
+
+This creates an unsolvable loop:
+1. Gate refuses at precondition → writes empty report
+2. Next run reads empty report → refuses on shape error
+3. The only exit is manual deletion of the report (evidence removal, forbidden)
+
+Measured on Spec 0103 (2026-08-14) and Spec 0094 (2026-08-12/13). The gate is
+doing the right thing by checking facts before spending an Agent turn (ADR-0096).
+The problem is the report it leaves behind.
+
+## Root Cause Analysis
+
+1. **Precondition refusal produces invalid report shape**: The gate builds a
+   matrix only after passing preconditions. A precondition refusal stops before
+   that, leaving an empty Results table.
+
+2. **Mechanical stage rejects empty reports**: The report validation requires
+   every planned row to be materialized with a terminal status. An empty table
+   violates this contract.
+
+3. **Report reading is not filtered**: The mechanical stage reads every report
+   in the QA directory, not just the current one. A superseded refusal blocks
+   the run that supersedes it.
+
+4. **Report is written despite stopping**: When the gate stops at a precondition,
+   it could write nothing, or it could write a valid report shape. Currently it
+   writes an invalid one.
+
+## Solution Design
+
+### 1. Gate Refusal Produces a Terminal Row
+
+When the QA gate refuses at a precondition:
+
+**Before**:
+```markdown
+## Results
+
+| # | Status | Provenance |
+| - | --- | --- |
+```
+
+**After**:
+```markdown
+## Results
+
+| # | Status | Provenance |
+| - | --- | --- |
+| 0 | blocked | precondition |
+```
+
+The terminal row:
+- **Status**: `blocked` (gate did not run, precondition prevented it)
+- **Provenance**: `precondition` (not a matrix result, a refusal record)
+- **Row 0**: Special terminal row that records the refusal itself
+
+### 2. Precondition Refusal Information
+
+The terminal row includes metadata about what precondition was checked:
+
+**Implementation**:
+- Store in QA Report frontmatter: `rows_blocked_precondition: <check_name>`
+- Check name: the name of the Spec check that refused (e.g., `strict`, `vocabulary`)
+- Reason: the reason it failed (e.g., "undocumented term", "contradictory requirement")
+
+**Report shape**:
+```yaml
+---
+verdict: fail
+rows_blocked_precondition: 1
+rows_blocked_environment: 0
+rows_blocked_finding: 0
+rows_unproven: 0
+precondition_check: "strict"
+precondition_reason: "SC-VOCABULARY-UNDOCUMENTED"
+---
+```
+
+### 3. Mechanical Stage Reads Newest Report Only
+
+Update the stage that reads QA Reports before running the gate:
+
+**Before**: Read every report in the QA directory, fail if any is invalid
+
+**After**: Read only the newest report by timestamp/name. If that report is
+newer than the gate's last run, accept it. Superseded reports are ignored.
+
+**Logic**:
+```
+reports = ls docs/specs/SLUG/qa/qa-report-*.md | sort -r
+if len(reports) == 0:
+  proceed (no prior report)
+elif len(reports) >= 1:
+  latest = reports[0]
+  if validate(latest) == ok:
+    proceed
+  else:
+    refuse SC-REPORT-SHAPE on latest only
+```
+
+This way:
+- A refusal from a prior run does not block a new run
+- The current run's own newest report is the authority
+- Superseded refusals are naturally ignored
+
+### 4. Terminal Row Semantics
+
+The terminal row that records a precondition refusal:
+
+| # | Status | Provenance | Requirement |
+| - | --- | --- | --- |
+| 0 | blocked | precondition | (none — this row records the refusal, not a requirement) |
+
+**Interpretation**:
+- The gate tried to run and was prevented by a precondition check
+- No requirements were measured
+- The refusal is recorded as metadata (precondition_check, precondition_reason)
+- The report is valid per the QA Report contract
+
+### 5. Results Table Is The Only Row Source
+
+The three sections above assume the detector reads the report's Results matrix
+alone. It does not — though not for the reason this section first gave.
+
+**Corrected 2026-08-26 against the delivered code (task_07).** The draft read:
+"`parseMechanicalReport` collects rows from every markdown table in the file."
+Measurement says otherwise. The scan was already bound to the `## Results`
+section — it started at that heading and stopped at the next `## ` — and the
+blockers came from inside that window. Spec 0098's report opens `## Results` at
+line 63 and does not reach `## Findings` until line 231, so the four
+`### Row detail` subsections between them were still scanned, and the comparison
+table inside one of them was read as rows. The defect is a scan bound to the
+section rather than to the table, which is a narrower fault than "any table in
+the file" and is why the fix below moves the boundary rather than adding one.
+
+Measured on Spec 0098 on 2026-08-26. Its gate wrote an evidence table comparing
+the three hook-refusal cases, in the prose that justifies one Results row:
+
+| Case | Hook objection observed | Refused settle | Recovered settle |
+| --- | --- | --- | --- |
+| 82-line function vs 80 | … | exit `1`, work staged | exit `0`, byte-identical |
+
+The detector read `Case`, `82-line function vs 80`, and two more as result rows
+with non-terminal statuses, and raised one `QA-REPORT-SHAPE` finding for each.
+The prescribed fix — replace the status with a terminal one — is not available:
+these are cells of a comparison, and rewriting them would destroy the evidence
+the row rests on.
+
+**Change**: bound row collection to the *table*, not the section.
+`parseMechanicalResultsRows` finds the `## Results` heading, collects the first
+table under it, and stops at the next heading of any depth or at the first line
+after that table which is not a table row. A table under a subsection of
+`## Results`, under any other heading, or in prose with no heading yields no
+rows. The column contract for the Results table itself is unchanged, and a
+report with no `## Results` heading still reports a missing matrix rather than
+passing with zero rows.
+
+This interacts with section 3: reading the newest report only removes a
+superseded refusal, while this section removes a blocker the *current* report
+raises against its own evidence. Spec 0098's deadlock needed both — its newest
+report was the one carrying the prose table.
+
+## Specification
+
+### QA Gate Refusal Path
+
+1. Gate runs precondition checks (e.g., `spec check --strict`)
+2. If precondition check fails:
+   - Do not build matrix (matrix requires passed preconditions)
+   - Create QA Report with verdict `fail`
+   - Frontmatter: `rows_blocked_precondition: 1`
+   - Store check name and reason
+   - Create Results table with one terminal row (status: blocked, provenance: precondition)
+   - Write report and stop
+
+3. If precondition check passes:
+   - Build matrix (existing behavior)
+   - Run verification and QA tasks
+   - Materialize every planned row
+   - Verdict: pass/partial/fail based on results
+
+### Mechanical Stage Report Reading
+
+1. Load all QA reports from `docs/specs/SLUG/qa/qa-report-*.md`
+2. Sort by filename (timestamp-based)
+3. Select the newest report only
+4. Validate report shape:
+   - If valid: proceed with gate
+   - If invalid (empty Results, missing frontmatter): refuse SC-REPORT-SHAPE
+5. Ignore reports that are not the newest (superseded reports)
+
+### Acceptance Rows
+
+Every acceptance row must list what was blocked and why:
+
+| # | Requirement | Blocked By | Evidence |
+| - | --- | --- | --- |
+| 1 | Term must be in glossary | precondition (strict) | SC-VOCABULARY-UNDOCUMENTED |
+| 2 | Contradictions must be resolved | precondition (strict) | SC-REQUIREMENT-CONTRADICTORY |
+| etc | - | - | - |
+
+When a requirement is blocked by precondition, it is listed in `rows_blocked_precondition`
+in the frontmatter.
+
+## Acceptance Criteria
+
+### Functional
+
+1. **Gate writes valid report on precondition refusal**
+   - Results table has one terminal row (not empty)
+   - Row status is `blocked`, provenance is `precondition`
+   - Report frontmatter has `rows_blocked_precondition: 1`
+   - Precondition check name and reason recorded
+
+2. **Mechanical stage reads newest report only**
+   - Multiple reports in QA directory → newest is read
+   - Superseded report does not block next run
+   - Report ordering is deterministic (by timestamp/name)
+
+3. **SC-REPORT-SHAPE never blocks a run that supersedes its cause**
+   - Spec 0103: precondition refusal on 2026-08-14 → can retry on 2026-08-15
+   - No manual intervention needed
+   - Report is valid per its own contract
+
+4. **Precondition check information is recoverable**
+   - Report includes what check refused
+   - Report includes why it refused
+   - Supervisor can read the report and understand the block
+
+### Evidence
+
+5. **Three consecutive Specs confirm the pattern is stable**
+   - Spec 0078 (historical)
+   - Spec 0094 (2026-08-12/13)
+   - Spec 0103 (2026-08-14)
+   - Each shows the same shape, fixed by same solution
+
+6. **No external acceptance row required**
+   - Gate refusal is internal to QA contract
+   - Report shape is Roundfix-defined
+   - Evidence is the measured pattern
+
+## Related Specs
+
+**Spec 0098** (Hook Strictness) depends on this: After 0113 gates correctly on
+precondition refusal, 0098 can proceed without deadlock. The two Specs are
+independent implementations but sequenced for dependency reasons.
+
+**Spec 0103** (Vocabulary Contract) is unblocked by this: Once 0113 allows
+precondition refusal reports to not block the next run, Spec 0103 can retry
+and pass.

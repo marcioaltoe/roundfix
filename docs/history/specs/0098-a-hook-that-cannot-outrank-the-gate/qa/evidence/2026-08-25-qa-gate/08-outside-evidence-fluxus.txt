@@ -1,0 +1,54 @@
+=== outside evidence — the source of the three measured Run deaths ===
+
+Source: /Users/marcio/dev/secondbrain/inbox/roundfix/2026-08-08-run-morre-em-falha-de-hook-e-settle-nao-recupera.md
+  origin: fluxus | created_at: 2026-08-08 | capture: manual
+  "Nove observações de uma Spec de 15 Tasks (fluxus 0021, migração da API para REST),
+   executada em Runs detached ao longo de 2026-08-07 e 08 e entregue na main."
+
+The three Run deaths, verbatim from that record:
+  - função de rota com 82 linhas contra o limite de 80 do repositório
+  - arquivo gerado do cliente OpenAPI com 2462 linhas contra o limite de 500
+  - `Array#sort()` onde a regra pede `toSorted()`
+
+The two manual-patch recoveries, verbatim:
+  "Aconteceu duas vezes; nas duas extraí `git diff HEAD` do worktree e apliquei no checkout à mão."
+
+Independent corroboration in the external repository itself (this Spec did not build it):
+  /Users/marcio/dev/fluxus/.oxlintrc.json
+    "eslint/max-lines": [
+      "warn",
+      {
+        "max": 500,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
+    "eslint/max-lines-per-function": [
+      "warn",
+      {
+        "max": 80,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
+
+  /Users/marcio/dev/fluxus/.husky/pre-commit  (the hook that refused)
+#!/usr/bin/env sh
+set -eu
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+if ! printf '%s\n' "$staged_files" | grep -Eq '\.(js|jsx|ts|tsx|css|scss|html|json|jsonc|ya?ml|md|markdown|graphql)$'; then
+  exit 0
+fi
+
+if command -v lint-staged >/dev/null 2>&1; then
+  lint-staged
+else
+  bun x lint-staged
+fi
+  package.json: "husky": "^9.1.7"

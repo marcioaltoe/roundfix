@@ -1,0 +1,23 @@
+# docs surface sweep. PRD frontmatter declares surfaces: [backend, docs].
+# Reader: a maintainer whose gate just refused, asking the documentation two questions.
+
+===== Q1. 'My gate refused at its precondition. What report should it write?'
+-- every documentation file that mentions a QA Report:
+docs/user-guide/context-driven-development.md
+docs/user-guide/release-runbook.md
+docs/user-guide/usage.md
+CONTEXT.md
+
+-- searching those files for the refusal shape this Spec minted:
+docs/user-guide/commands.md:888:`--owner-identity-unreadable` precondition, or stopping a Run that already
+(no hit: neither the blocked/precondition row, rows_blocked_precondition, precondition_check,
+ nor precondition_reason appears in any guide, glossary entry, or root instruction)
+
+===== Q2. 'Which report will the next run read?'
+docs/user-guide/context-driven-development.md:315:`proposed`, `rejected`, `deprecated`, and `superseded` are inactive. A legacy
+docs/user-guide/context-driven-development.md:323:status: proposed # proposed | accepted | rejected | deprecated | superseded
+docs/user-guide/context-driven-development.md:327:superseded_by: null # null or ADR-NNNN
+docs/user-guide/context-driven-development.md:824:branch as `superseded` only when Git evidence proves that the target branch
+
+===== documentation paths this Spec changed (854039b8..HEAD)
+  (empty: no documentation, guide, glossary entry, or skill was changed by this Spec)

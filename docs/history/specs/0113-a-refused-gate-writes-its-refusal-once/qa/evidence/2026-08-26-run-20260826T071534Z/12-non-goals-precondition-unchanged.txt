@@ -1,0 +1,43 @@
+# Non-Goals 1 & 2: what checks the gate runs, their order, and the strict precondition itself.
+# Same tree (HEAD a7628d5b), two binaries: 854039b8 (the commit before this Spec's first Task)
+# and HEAD. Command: roundfix spec check <every active slug> --strict --format json
+
+Specs checked:
+0097-a-wave-that-cannot-collide
+0098-a-hook-that-cannot-outrank-the-gate
+0099-a-tool-that-meets-the-repositorys-conventions
+0100-a-review-the-loop-always-asks-for
+0101-a-terminal-branch-with-one-disposition
+0102-a-preflight-that-proves-what-the-run-needs
+0104-a-gate-that-cannot-certify-its-own-cache
+0105-the-gates-own-economics
+0106-a-decision-that-reaches-every-artifact
+0107-the-authoring-rules-the-guides-do-not-carry
+0108-what-an-agent-loads-to-answer-one-question
+0109-what-a-session-consumed
+0110-a-refresh-that-does-not-re-interview
+0111-one-terminal-audit-across-a-runs-surfaces
+0112-a-review-that-retires-on-its-own-facts
+0113-a-refused-gate-writes-its-refusal-once
+0115-an-archive-that-survives-its-own-move
+
+===== diff of the two JSON documents
+(byte-identical: the detector set, their order, and every finding and skip are unchanged)
+document size:    25156 bytes; findings reported:      199
+
+===== Non-Goal 3: Review Source and other external contracts
+paths touched by every Task commit of this Spec (854039b8..HEAD):
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/_tasks.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_01.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_02.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_03.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_04.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_05.md
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_07.md
+internal/spec/qa.go
+internal/spec/qa_test.go
+internal/speccheck/citations.go
+internal/speccheck/mechanical.go
+internal/speccheck/mechanical_test.go
+internal/speccheck/report.go
+internal/speccheck/testdata/mechanical/report-green.md

@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -1017,6 +1018,199 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 
 		if result.Blocking || len(result.Findings) != 0 {
 			t.Fatalf("mechanical stage result = %+v, want the folded ordinary path to produce no finding", result)
+		}
+	})
+}
+
+func TestQAMechanicalRequestCarriesTheGatePrecondition(t *testing.T) {
+	t.Parallel()
+
+	loadPrecondition := func(t *testing.T, breakSpec bool) speccheck.GatePreconditionResult {
+		t.Helper()
+		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+		plan := fixture.qaPlan()
+		if breakSpec {
+			prdPath := filepath.Join(fixture.specsRoot, taskCycleSlug, "_prd.md")
+			prd := readFileForTest(t, prdPath)
+			head, _, found := strings.Cut(prd, "## Project Constraints")
+			if !found {
+				t.Fatalf("fixture PRD has no Project Constraints to remove:\n%s", prd)
+			}
+			mustWriteForTest(t, prdPath, head)
+		}
+
+		request, err := (&Engine{}).qaMechanicalRequest(context.Background(), plan, spec.Task{}, "")
+		if err != nil {
+			t.Fatalf("qaMechanicalRequest returned error: %v", err)
+		}
+		return request.Precondition
+	}
+
+	t.Run("a contradicted Spec reaches the stage as a refusing precondition", func(t *testing.T) {
+		t.Parallel()
+		precondition := loadPrecondition(t, true)
+
+		if !precondition.Blocking {
+			t.Fatalf("Precondition = %#v, want the contradicted Spec to block the gate", precondition)
+		}
+		refusal, refused := speccheck.PreconditionRefusal(precondition)
+		if !refused {
+			t.Fatalf("PreconditionRefusal() refused = false for findings %#v", precondition.Findings)
+		}
+		if refusal.CheckName != speccheck.GatePreconditionCheck {
+			t.Fatalf("refusal check = %q, want %q", refusal.CheckName, speccheck.GatePreconditionCheck)
+		}
+		// The reason is what a maintainer reads to decide whether to fix the
+		// Spec or the tree, so it must name the detector that refused rather
+		// than merely report that something did.
+		if !strings.Contains(refusal.Reason, speccheck.CodeConstraintMissing) {
+			t.Fatalf("refusal reason = %q, want the refusing code %q", refusal.Reason, speccheck.CodeConstraintMissing)
+		}
+	})
+
+	t.Run("a clean Spec reaches the stage refusing nothing", func(t *testing.T) {
+		t.Parallel()
+		precondition := loadPrecondition(t, false)
+
+		if precondition.Blocking {
+			t.Fatalf("Precondition = %#v, want a clean Spec to refuse nothing", precondition)
+		}
+		if refusal, refused := speccheck.PreconditionRefusal(precondition); refused {
+			t.Fatalf("PreconditionRefusal() = %#v, true; want no refusal from a clean Spec", refusal)
+		}
+	})
+}
+
+func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
+	t.Parallel()
+	const reason = "SC-CONSTRAINT-MISSING: _prd.md declares no Identifier strategy row"
+	refusedResult := speccheck.MechanicalResult{
+		Findings: []speccheck.MechanicalFinding{{
+			Code: speccheck.CodeConstraintMissing, File: "docs/specs/" + taskCycleSlug + "/_prd.md", Line: 1,
+			Detail: "_prd.md declares no Identifier strategy row", Fix: "Declare the row.", RowHint: "R01",
+		}},
+		Blocked:             []speccheck.BlockedRow{{ID: "R01", FindingCode: speccheck.CodeConstraintMissing, WaitingOn: "no Identifier strategy row"}},
+		Blocking:            true,
+		PreconditionRefusal: spec.PreconditionRefusal{CheckName: speccheck.GatePreconditionCheck, Reason: reason},
+		PreconditionRefused: true,
+	}
+
+	type writtenReport struct {
+		repoRoot string
+		specDir  string
+		path     string
+		body     string
+	}
+	writeReport := func(t *testing.T, result speccheck.MechanicalResult) writtenReport {
+		t.Helper()
+		fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+		engine := fixture.engine(t, &taskFakeRunner{}, &taskFakeVerifier{}, &engineFakeCommitter{}, fixture.worktree)
+		plan := fixture.qaPlan()
+		gittest.InitRepo(t, fixture.gitRoot, "-b", "main")
+		gittest.AppendConfig(t, fixture.gitRoot, "[user]\n\tname = Roundfix Test\n\temail = test@example.com\n[commit]\n\tgpgsign = false\n")
+		runGitForTest(t, fixture.gitRoot, "add", "-A")
+		runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "initial")
+
+		reportPath, err := engine.writeMechanicalQAReport(plan, result)
+		if err != nil {
+			t.Fatalf("writeMechanicalQAReport() error = %v", err)
+		}
+		return writtenReport{
+			repoRoot: fixture.gitRoot,
+			specDir:  plan.Spec.Dir,
+			path:     reportPath,
+			body:     readFileForTest(t, filepath.Join(fixture.gitRoot, filepath.FromSlash(reportPath))),
+		}
+	}
+
+	t.Run("the refusal is recorded as one terminal row and its frontmatter", func(t *testing.T) {
+		t.Parallel()
+		report := writeReport(t, refusedResult).body
+
+		wantFrontmatter := "---\nverdict: fail\nrows_blocked_precondition: 1\n" +
+			"rows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n" +
+			"precondition_check: " + strconv.Quote(speccheck.GatePreconditionCheck) + "\n" +
+			"precondition_reason: " + strconv.Quote(reason) + "\n---\n"
+		if !strings.HasPrefix(report, wantFrontmatter) {
+			t.Fatalf("refusal QA Report frontmatter:\n%s\nwant prefix:\n%s", report, wantFrontmatter)
+		}
+		wantResults := "## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n" +
+			"| " + spec.QAPreconditionRowID + " | " + spec.QAPreconditionRowStatus + " | " + spec.QAPreconditionRowProvenance + " |\n\n"
+		if !strings.Contains(report, wantResults) {
+			t.Fatalf("refusal QA Report has no terminal refusal row:\n%s", report)
+		}
+		if strings.Contains(report, "| QA-PRECONDITION |") {
+			t.Fatalf("refusal QA Report still carries the pre-contract refusal row:\n%s", report)
+		}
+	})
+
+	t.Run("the refusal costs the report none of the stage's own observations", func(t *testing.T) {
+		t.Parallel()
+		report := writeReport(t, refusedResult).body
+
+		for _, evidence := range []string{
+			"### " + speccheck.CodeConstraintMissing,
+			"- detail: _prd.md declares no Identifier strategy row",
+			speccheck.MechanicalRowsHeading,
+			"| R01 | blocked (finding: " + speccheck.CodeConstraintMissing + " — waits on no Identifier strategy row) | mechanical finding |",
+		} {
+			if !strings.Contains(report, evidence) {
+				t.Errorf("refusal QA Report dropped mechanical evidence %q:\n%s", evidence, report)
+			}
+		}
+	})
+
+	t.Run("the mechanical stage accepts the shape the refusal wrote", func(t *testing.T) {
+		t.Parallel()
+		written := writeReport(t, refusedResult)
+
+		checked, err := speccheck.RunMechanicalStage(context.Background(), speccheck.MechanicalRequest{
+			RepoRoot:   written.repoRoot,
+			ReportPath: written.path,
+		})
+		if err != nil {
+			t.Fatalf("RunMechanicalStage() error = %v", err)
+		}
+		for _, finding := range checked.Findings {
+			if finding.Code == speccheck.CodeMechanicalReportShape {
+				t.Fatalf("mechanical stage refused the refusal report's shape: %#v\n%s", finding, written.body)
+			}
+		}
+	})
+
+	t.Run("the refusal reads back as the refusal that was recorded", func(t *testing.T) {
+		t.Parallel()
+		written := writeReport(t, refusedResult)
+
+		read, err := spec.ReadQAReport(written.specDir)
+		if err != nil {
+			t.Fatalf("ReadQAReport() error = %v", err)
+		}
+		if read.Verdict != spec.VerdictFail || read.RowsBlockedPrecondition != 1 {
+			t.Fatalf("QAReport = %+v, want verdict %q with one precondition-blocked row", read, spec.VerdictFail)
+		}
+		if read.Precondition != refusedResult.PreconditionRefusal {
+			t.Fatalf("QAReport.Precondition = %#v, want %#v", read.Precondition, refusedResult.PreconditionRefusal)
+		}
+	})
+
+	t.Run("a gate that refused nothing writes the report it wrote before", func(t *testing.T) {
+		t.Parallel()
+		unrefused := refusedResult
+		unrefused.PreconditionRefused = false
+		unrefused.PreconditionRefusal = spec.PreconditionRefusal{}
+		report := writeReport(t, unrefused).body
+
+		want := "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
+			"# QA Report\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n" +
+			"## Mechanical findings\n\n### " + speccheck.CodeConstraintMissing + "\n\n" +
+			"- location: `docs/specs/" + taskCycleSlug + "/_prd.md:1`\n" +
+			"- detail: _prd.md declares no Identifier strategy row\n- fix: Declare the row.\n- blocked row: `R01`\n\n" +
+			"## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n" +
+			"| R01 | blocked (finding: " + speccheck.CodeConstraintMissing + " — waits on no Identifier strategy row) | mechanical finding |\n\n" +
+			"## Mechanical skips\n\nNone.\n"
+		if report != want {
+			t.Fatalf("unrefused mechanical QA Report changed:\n%s\nwant:\n%s", report, want)
 		}
 	})
 }
@@ -6644,6 +6838,230 @@ func TestInitialTaskRunStatusesSeedsEarlierRunCompletions(t *testing.T) {
 		if statuses[id] != expected {
 			t.Fatalf("expected %s seeded %q, got %q", id, expected, statuses[id])
 		}
+	}
+}
+
+// measuredHookRefusalCase is one of the three Run deaths this Spec was built
+// from: work that passed the authoritative Verification and was then refused
+// by a repository commit hook enforcing a rule the Verification did not.
+//
+// check is the hook's own rule, run once per staged file with $file bound. It
+// is computed over the staged content rather than announced by the fixture, so
+// the objection the Run reports is the one a real hook would raise.
+type measuredHookRefusalCase struct {
+	name      string
+	path      string
+	content   string
+	check     string
+	objection string
+}
+
+// hook wraps a case's rule in the shape the measured repository ran it in:
+// findings on stderr, a plain `set -eu` script that prints no banner, and a
+// non-zero exit. Git names nothing when a hook fails, so this output identifies
+// no hook at all — which is what the measured Runs actually produced, and what
+// a fixture that announces a runner banner cannot reproduce.
+func (testCase measuredHookRefusalCase) hook() string {
+	return "set -eu\n" +
+		"exec 1>&2\n" +
+		"refused=0\n" +
+		"for file in $(git diff --cached --name-only --diff-filter=ACM); do\n" +
+		testCase.check +
+		"done\n" +
+		"if [ \"$refused\" -ne 0 ]; then\n" +
+		"  exit 1\n" +
+		"fi\n" +
+		"exit 0\n"
+}
+
+func measuredHookRefusalCases() []measuredHookRefusalCase {
+	return []measuredHookRefusalCase{
+		{
+			name:    "function over the 80-line limit",
+			path:    filepath.Join("src", "parser.go"),
+			content: measuredOverlongFunctionForTest(),
+			check: "  case \"$file\" in *.go) ;; *) continue ;; esac\n" +
+				"  if awk -v path=\"$file\" '/^func /{start=NR} /^}/{if (start && NR-start+1 > 80) {printf \"%s:%d: function exceeds the 80-line limit\\n\", path, start; bad=1} start=0} END{exit !bad}' \"$file\"; then\n" +
+				"    refused=1\n" +
+				"  fi\n",
+			objection: "src/parser.go:3: function exceeds the 80-line limit",
+		},
+		{
+			name:    "generated file over the 500-line limit",
+			path:    filepath.Join("internal", "api", "schema.gen.ts"),
+			content: measuredGeneratedFileForTest(),
+			check: "  lines=$(wc -l < \"$file\" | tr -d ' ')\n" +
+				"  if [ \"$lines\" -gt 500 ]; then\n" +
+				"    echo \"$file: $lines lines exceeds the 500-line limit\"\n" +
+				"    refused=1\n" +
+				"  fi\n",
+			objection: "internal/api/schema.gen.ts: 2462 lines exceeds the 500-line limit",
+		},
+		{
+			name: "sort() where the rule requires toSorted()",
+			path: filepath.Join("src", "list.ts"),
+			content: "export function names(items: Item[]): string[] {\n" +
+				"  return items.map((item) => item.name).sort();\n" +
+				"}\n",
+			check: "  case \"$file\" in *.ts) ;; *) continue ;; esac\n" +
+				"  line=$(grep -n '\\.sort(' \"$file\" | grep -v toSorted | head -1 | cut -d: -f1)\n" +
+				"  if [ -n \"$line\" ]; then\n" +
+				"    echo \"$file:$line: use toSorted() instead of sort()\"\n" +
+				"    refused=1\n" +
+				"  fi\n",
+			objection: "src/list.ts:2: use toSorted() instead of sort()",
+		},
+	}
+}
+
+// measuredOverlongFunctionForTest writes one function of 82 lines, opening on
+// line 3 so the hook's finding names a stable position.
+func measuredOverlongFunctionForTest() string {
+	var body strings.Builder
+	body.WriteString("package parser\n\n")
+	body.WriteString("func Parse(input string) []string {\n")
+	body.WriteString("\tfields := []string{}\n")
+	for index := 0; index < 78; index++ {
+		fmt.Fprintf(&body, "\tfields = append(fields, field%02d(input))\n", index)
+	}
+	body.WriteString("\treturn fields\n")
+	body.WriteString("}\n")
+	return body.String()
+}
+
+// measuredGeneratedFileForTest writes the 2462-line generated file of the
+// second measured case.
+func measuredGeneratedFileForTest() string {
+	lines := make([]string, 0, 2462)
+	lines = append(lines, "// Code generated by the schema generator. DO NOT EDIT.")
+	for index := 1; index <= 2461; index++ {
+		lines = append(lines, fmt.Sprintf("export type Field%04d = { id: number }", index))
+	}
+	return strings.Join(lines, "\n") + "\n"
+}
+
+// TestHookRefusalRecovery drives the three measured Run deaths through the
+// Daemon's commit boundary against a real repository whose commit hook is
+// stricter than the Task's declared Verification. Each case ends the same way:
+// the refusal is classified rather than mistaken for a Task failure, the Task
+// keeps the completed status its passing Verification earned, the work stays
+// in the surface that produced it, and the Run names the recovery command.
+//
+// The recovery half is the commit settle performs. The Supervisor repairs the
+// misconfiguration the hook-strictness invariant names — the rule that
+// outranked the authoritative Verification leaves the hook — and the surface
+// is staged whole and committed through the same Committer settle uses, which
+// is where a path list cannot reach a deletion. The settle Command's own
+// surface resolution and re-verification are covered in internal/cli.
+func TestHookRefusalRecovery(t *testing.T) {
+	t.Parallel()
+	for _, testCase := range measuredHookRefusalCases() {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Add the measured work"}})
+			initHookRepoForTest(t, fixture.gitRoot)
+			runGitForTest(t, fixture.gitRoot, "add", "-A")
+			runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "seed the spec")
+			writeCommitHookForTest(t, fixture.gitRoot, "pre-commit", testCase.hook())
+			// The Task's work, as the Agent turn left it in the surface.
+			workPath := filepath.Join(fixture.gitRoot, testCase.path)
+			if err := os.MkdirAll(filepath.Dir(workPath), 0o755); err != nil {
+				t.Fatalf("create work directory: %v", err)
+			}
+			mustWriteForTest(t, workPath, testCase.content)
+			relPath := filepath.ToSlash(testCase.path)
+			fixture.worktree.snapshots = [][]string{nil, {testCase.path}}
+			runner := &taskFakeRunner{
+				calls:        fixture.calls,
+				gitRoot:      fixture.gitRoot,
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+			}
+			engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, GitCommitter{}, fixture.worktree)
+
+			result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+			var refusal *HookRefusalError
+			if !errors.As(err, &refusal) {
+				t.Fatalf("expected the hook refusal classified, got %v", err)
+			}
+			// The measured hooks print only their finding and git names
+			// nothing, so the refusal is recognised from the repository and
+			// reported under the generic label rather than a guessed hook.
+			if refusal.Hook != "" {
+				t.Fatalf("expected no hook name from output that names none, got %q", refusal.Hook)
+			}
+			if got := refusal.HookName(); got != "commit" {
+				t.Fatalf("expected the generic hook label reported, got %q", got)
+			}
+			if !strings.Contains(refusal.Output, testCase.objection) {
+				t.Fatalf("expected the hook's own finding %q recorded, got %q", testCase.objection, refusal.Output)
+			}
+			if result.Completed != 0 || result.Failed != 0 {
+				t.Fatalf("expected no settled Task counted after the refusal, got %+v", result)
+			}
+			if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+				t.Fatalf("expected the verified Task to stay completed, got %q", got)
+			}
+
+			// Nothing was reverted and nothing was committed: the verified work
+			// is still in the surface, where settle reaches it.
+			staged := runGitForTest(t, fixture.gitRoot, "diff", "--cached", "--name-only")
+			for _, want := range []string{relPath, filepath.ToSlash(taskFileRel(taskCycleSlug, "task_01"))} {
+				if !strings.Contains(staged, want) {
+					t.Fatalf("expected %s left staged for recovery, got %q", want, staged)
+				}
+			}
+			if got := strings.TrimSpace(runGitForTest(t, fixture.gitRoot, "rev-list", "--count", "HEAD")); got != "1" {
+				t.Fatalf("expected no commit beyond the seed, got %q commits", got)
+			}
+
+			event := hookRefusedEvent(t, fixture)
+			payload := eventPayloadMap(t, event)
+			recovery := fmt.Sprintf("roundfix settle --spec %s --task task_01", taskCycleSlug)
+			if payload["recovery"] != recovery {
+				t.Fatalf("expected the recovery command recorded, got %v", payload["recovery"])
+			}
+			if payload["status"] != string(spec.StatusCompleted) {
+				t.Fatalf("expected the Task recorded completed, got %v", payload["status"])
+			}
+			if payload["hook"] != "commit" {
+				t.Fatalf("expected the unnamed hook recorded under the generic label, got %v", payload["hook"])
+			}
+			if output, _ := payload["output"].(string); !strings.Contains(output, testCase.objection) {
+				t.Fatalf("expected the hook's finding on the Run Event, got %q", output)
+			}
+			progress := fixture.progress.String()
+			for _, want := range []string{testCase.objection, recovery} {
+				if !strings.Contains(progress, want) {
+					t.Fatalf("expected %q in the Run's output, got %q", want, progress)
+				}
+			}
+
+			// Recovery: the over-strict rule leaves the hook, and settle's
+			// commit lands the work the Run would otherwise have lost.
+			if err := os.Remove(filepath.Join(fixture.gitRoot, ".git", "hooks", "pre-commit")); err != nil {
+				t.Fatalf("repair the hook configuration: %v", err)
+			}
+			if err := (GitCommitter{}).Commit(context.Background(), CommitRequest{
+				WorkDir: fixture.gitRoot,
+				Message: TaskCommitMessage(taskCycleSlug, fixture.graph.Tasks[0]),
+			}); err != nil {
+				t.Fatalf("recover the refused work: %v", err)
+			}
+			if got := strings.TrimSpace(runGitForTest(t, fixture.gitRoot, "rev-list", "--count", "HEAD")); got != "2" {
+				t.Fatalf("expected the recovered work committed once, got %q commits", got)
+			}
+			if got := runGitForTest(t, fixture.gitRoot, "show", "HEAD:"+relPath); got != testCase.content {
+				t.Fatalf("expected %s recovered byte for byte, got %d of %d bytes", relPath, len(got), len(testCase.content))
+			}
+			committedTask := runGitForTest(t, fixture.gitRoot, "show", "HEAD:"+filepath.ToSlash(taskFileRel(taskCycleSlug, "task_01")))
+			if !strings.Contains(committedTask, "status: completed") {
+				t.Fatalf("expected the completed Task file to ride in the recovered commit, got:\n%s", committedTask)
+			}
+			if got := strings.TrimSpace(runGitForTest(t, fixture.gitRoot, "status", "--porcelain=v1")); got != "" {
+				t.Fatalf("expected the surface clean once the work is recovered, got %q", got)
+			}
+		})
 	}
 }
 

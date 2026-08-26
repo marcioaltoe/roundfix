@@ -1,0 +1,29 @@
+# Core Feature 2 / TechSpec Acceptance 2 & 3: newest-report-only, measured as a sequence.
+
+===== A. the empty-matrix refusal ALONE (the PRD's deadlock artifact, 0103 2026-08-14 shape)
+requested:      docs/specs/fixture/qa/qa-report-2026-08-25.md
+Blocking:       true
+Findings:       1
+  - QA-REPORT-SHAPE docs/specs/fixture/qa/qa-report-2026-08-25.md:1 row="" detail=Results table has no report rows
+Blocked rows:   1
+  - QA-REPORT-SHAPE waits on Results table has no report rows (QA-REPORT-SHAPE)
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/fixture/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
+
+===== B. same empty-matrix refusal requested by name, with a NEWER valid refusal on disk
+requested:      docs/specs/fixture/qa/qa-report-2026-08-25.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/fixture/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
+
+===== C. ordering key: -02 supersedes the unsuffixed report, -10 supersedes -02
+candidates: docs/specs/fixture/qa/qa-report-2026-08-25.md, docs/specs/fixture/qa/qa-report-2026-08-25-02.md, docs/specs/fixture/qa/qa-report-2026-08-25-10.md, docs/specs/fixture/qa/qa-report-2026-08-26.md
+newest:     docs/specs/fixture/qa/qa-report-2026-08-26.md

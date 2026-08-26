@@ -1,0 +1,53 @@
+# Core Features 1 & 3 / TechSpec Acceptance 1 & 4:
+# the artifact spec.WritePreconditionRefusalReport produces, then read back and re-validated.
+
+===== rendered report bytes
+---
+verdict: fail
+rows_blocked_precondition: 1
+rows_blocked_environment: 0
+rows_blocked_finding: 0
+rows_blocked_declared: 0
+precondition_check: "spec check --strict"
+precondition_reason: "SC-VOCABULARY-UNDOCUMENTED: emitted token \"Run Ledger\" is not documented by the Spec's Vocabulary Contract"
+---
+
+# QA Report
+
+## Results
+
+| # | Status | Provenance |
+| - | --- | --- |
+| 0 | blocked | precondition |
+
+## Precondition refusal
+
+- check: spec check --strict
+- reason: SC-VOCABULARY-UNDOCUMENTED: emitted token "Run Ledger" is not documented by the Spec's Vocabulary Contract
+
+The gate stopped at this check before it built its QA matrix, so no requirement was measured and the row above records the refusal itself.
+
+===== read back through spec.ReadQAReport (the reader roundfix settles verdicts with)
+newest report:  docs/specs/fixture/qa/qa-report-2026-08-26.md (err=<nil>)
+{
+  "Verdict": "fail",
+  "RowsBlockedEnvironment": 0,
+  "RowsBlockedFinding": 0,
+  "RowsBlockedDeclared": 0,
+  "RowsBlockedPrecondition": 1,
+  "Precondition": {
+    "CheckName": "spec check --strict",
+    "Reason": "SC-VOCABULARY-UNDOCUMENTED: emitted token \"Run Ledger\" is not documented by the Spec's Vocabulary Contract"
+  }
+}
+
+===== the mechanical stage that used to refuse this row
+requested:      docs/specs/fixture/qa/qa-report-2026-08-26.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/fixture/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}

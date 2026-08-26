@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
 
@@ -76,6 +77,199 @@ func TestGateAcceptsItsOwnDeclaredTerm(t *testing.T) {
 			t.Fatalf("authoring findings = %#v, want pending publish: term", findings)
 		}
 	})
+}
+
+func TestGateRefusalNamesThePreconditionThatStoppedIt(t *testing.T) {
+	t.Parallel()
+
+	t.Run("a strict Spec check refusal names its check and every refusing code", func(t *testing.T) {
+		t.Parallel()
+
+		precondition := speccheck.GatePrecondition(checkFixture(t, "constraint-missing"))
+		if !precondition.Blocking {
+			t.Fatalf("GatePrecondition() Blocking = false, want the fixture's strict findings to stop the gate")
+		}
+
+		refusal, refused := speccheck.PreconditionRefusal(precondition)
+		if !refused {
+			t.Fatalf("PreconditionRefusal() refused = false, want a refusal for findings %#v", precondition.Findings)
+		}
+		if refusal.CheckName != speccheck.GatePreconditionCheck {
+			t.Fatalf("refusal.CheckName = %q, want %q", refusal.CheckName, speccheck.GatePreconditionCheck)
+		}
+		for _, finding := range precondition.Findings {
+			if !strings.Contains(refusal.Reason, finding.Code) {
+				t.Fatalf("refusal.Reason = %q, want the refusing code %q", refusal.Reason, finding.Code)
+			}
+			if summary := oneLineRefusalText(finding.Summary); !strings.Contains(refusal.Reason, summary) {
+				t.Fatalf("refusal.Reason = %q, want the reason %q", refusal.Reason, summary)
+			}
+		}
+	})
+
+	t.Run("a gate input alone refuses nothing", func(t *testing.T) {
+		t.Parallel()
+
+		precondition := speccheck.GatePrecondition(checkFixture(t, "vocabulary-missing"))
+		if len(precondition.Inputs) == 0 {
+			t.Fatalf("GatePrecondition() Inputs = none, want the fixture's own declared term as gate input")
+		}
+		refusal, refused := speccheck.PreconditionRefusal(precondition)
+		if refused {
+			t.Fatalf("PreconditionRefusal() = %#v, true; want no refusal when the gate is assigned repair inputs", refusal)
+		}
+		if refusal != (spec.PreconditionRefusal{}) {
+			t.Fatalf("PreconditionRefusal() = %#v, want the zero refusal when nothing refused", refusal)
+		}
+	})
+
+	t.Run("every distinct cause survives and a repeat is recorded once", func(t *testing.T) {
+		t.Parallel()
+
+		contradiction := speccheck.Finding{
+			Code:     speccheck.CodeRequirementContradictory,
+			Severity: speccheck.SeverityError,
+			Summary:  "_prd.md requires one report per run and forbids writing one",
+			Where:    []speccheck.Location{{Path: "docs/specs/gate-spec/_prd.md", Line: 12}},
+			Fix:      "Resolve the contradiction.",
+		}
+		unmapped := speccheck.Finding{
+			Code:     speccheck.CodeCoverageUnmapped,
+			Severity: speccheck.SeverityError,
+			Summary:  "Core Feature 2 has no TechSpec section",
+			Where:    []speccheck.Location{{Path: "docs/specs/gate-spec/_techspec.md", Line: 20}},
+			Fix:      "Map the feature.",
+		}
+		precondition := speccheck.GatePrecondition(speccheck.Result{
+			Slug:     "gate-spec",
+			Findings: []speccheck.Finding{contradiction, unmapped, contradiction},
+		})
+
+		refusal, refused := speccheck.PreconditionRefusal(precondition)
+		if !refused {
+			t.Fatalf("PreconditionRefusal() refused = false, want a refusal for three blocking findings")
+		}
+		want := speccheck.CodeRequirementContradictory + ": " + contradiction.Summary + "; " +
+			speccheck.CodeCoverageUnmapped + ": " + unmapped.Summary
+		if refusal.Reason != want {
+			t.Fatalf("refusal.Reason = %q, want %q", refusal.Reason, want)
+		}
+	})
+
+	t.Run("a refusal reason stays on one line", func(t *testing.T) {
+		t.Parallel()
+
+		precondition := speccheck.GatePrecondition(speccheck.Result{
+			Slug: "gate-spec",
+			Findings: []speccheck.Finding{{
+				Code:     speccheck.CodeConstraintMissing,
+				Severity: speccheck.SeverityError,
+				Summary:  "_prd.md Project Constraints omits\nidentifier strategy\tand tooling authority",
+				Fix:      "Account for every row.",
+			}},
+		})
+
+		refusal, refused := speccheck.PreconditionRefusal(precondition)
+		if !refused {
+			t.Fatalf("PreconditionRefusal() refused = false, want a refusal for one blocking finding")
+		}
+		if strings.ContainsAny(refusal.Reason, "\n\t") {
+			t.Fatalf("refusal.Reason = %q, want one line a report frontmatter can carry", refusal.Reason)
+		}
+		want := speccheck.CodeConstraintMissing +
+			": _prd.md Project Constraints omits identifier strategy and tooling authority"
+		if refusal.Reason != want {
+			t.Fatalf("refusal.Reason = %q, want %q", refusal.Reason, want)
+		}
+	})
+
+	t.Run("a refusal whose cause has no name still records the refusing check", func(t *testing.T) {
+		t.Parallel()
+
+		refusal, refused := speccheck.PreconditionRefusal(speccheck.GatePreconditionResult{
+			Findings: []speccheck.Finding{{Severity: speccheck.SeverityError}},
+			Blocking: true,
+		})
+		if !refused {
+			t.Fatalf("PreconditionRefusal() refused = false, want an unnamed refusal recorded rather than dropped")
+		}
+		if refusal.CheckName != speccheck.GatePreconditionCheck {
+			t.Fatalf("refusal.CheckName = %q, want %q", refusal.CheckName, speccheck.GatePreconditionCheck)
+		}
+		if refusal.Reason != "" {
+			t.Fatalf("refusal.Reason = %q, want no invented reason", refusal.Reason)
+		}
+	})
+}
+
+func TestMechanicalStageStoresThePreconditionRefusalForTheReport(t *testing.T) {
+	t.Parallel()
+
+	t.Run("a refusing precondition reaches the refusal report writer", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := newMechanicalGitRepo(t)
+		blocking := speccheck.Result{
+			Slug: "gate-spec",
+			Findings: []speccheck.Finding{{
+				Code:     speccheck.CodeRequirementContradictory,
+				Severity: speccheck.SeverityError,
+				Summary:  "_prd.md requires one report per run and forbids writing one",
+				Where:    []speccheck.Location{{Path: "docs/specs/gate-spec/_prd.md", Line: 12}},
+				Fix:      "Resolve the contradiction.",
+			}},
+		}
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:     repoRoot,
+			Precondition: speccheck.GatePrecondition(blocking),
+		})
+
+		if !result.PreconditionRefused {
+			t.Fatalf("RunMechanicalStage() PreconditionRefused = false, want the refusal stored for report writing")
+		}
+		if !result.Blocking {
+			t.Fatalf("RunMechanicalStage() Blocking = false, want a refusing precondition to block the gate")
+		}
+		if !mechanicalDetailsContain(result.Findings, blocking.Findings[0].Summary) {
+			t.Fatalf("Findings = %#v, want the refusing finding still visible", result.Findings)
+		}
+
+		var report bytes.Buffer
+		if err := spec.WritePreconditionRefusalReport(&report, result.PreconditionRefusal); err != nil {
+			t.Fatalf("WritePreconditionRefusalReport() error = %v", err)
+		}
+		for _, want := range []string{
+			`precondition_check: "` + speccheck.GatePreconditionCheck + `"`,
+			speccheck.CodeRequirementContradictory,
+			"requires one report per run",
+			"| 0 | blocked | precondition |",
+		} {
+			if !strings.Contains(report.String(), want) {
+				t.Fatalf("refusal report does not record %q:\n%s", want, report.String())
+			}
+		}
+	})
+
+	t.Run("a passed precondition stores no refusal", func(t *testing.T) {
+		t.Parallel()
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:     newMechanicalGitRepo(t),
+			Precondition: speccheck.GatePrecondition(checkFixture(t, "vocabulary-missing")),
+		})
+
+		if result.PreconditionRefused {
+			t.Fatalf("RunMechanicalStage() PreconditionRefusal = %#v, want no refusal recorded", result.PreconditionRefusal)
+		}
+		if result.PreconditionRefusal != (spec.PreconditionRefusal{}) {
+			t.Fatalf("RunMechanicalStage() PreconditionRefusal = %#v, want the zero refusal", result.PreconditionRefusal)
+		}
+	})
+}
+
+func oneLineRefusalText(value string) string {
+	return strings.Join(strings.Fields(value), " ")
 }
 
 func TestGatePerformsAssignedRepairs(t *testing.T) {
@@ -762,6 +956,343 @@ func TestCountDisagreementReportsItsCause(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMechanicalStageAcceptsThePreconditionRefusalRow(t *testing.T) {
+	t.Parallel()
+
+	t.Run("the refusal a gate writes passes the stage that reads it", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		reportPath := "docs/specs/mechanical/qa/qa-report-2026-08-25.md"
+		var refusal bytes.Buffer
+		if err := spec.WritePreconditionRefusalReport(&refusal, spec.PreconditionRefusal{
+			CheckName: speccheck.GatePreconditionCheck,
+			Reason:    "SC-VOCABULARY-UNDOCUMENTED: undocumented emitted token",
+		}); err != nil {
+			t.Fatalf("WritePreconditionRefusalReport() error = %v", err)
+		}
+		writeMechanicalFile(t, repoRoot, reportPath, refusal.String())
+
+		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalReportShape)
+		if result.Blocking {
+			t.Fatalf("Blocking = true, want a refusal report to leave the next run free; findings = %#v", result.Findings)
+		}
+	})
+
+	t.Run("an empty Results table still refuses", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		reportPath := "docs/specs/mechanical/qa/report-empty.md"
+		writeMechanicalFile(t, repoRoot, reportPath, "---\n"+
+			"verdict: fail\n"+
+			"rows_blocked_environment: 0\n"+
+			"rows_blocked_finding: 0\n"+
+			"rows_blocked_declared: 0\n"+
+			"rows_blocked_precondition: 0\n"+
+			"---\n\n"+
+			"# QA Report\n\n"+
+			"## Results\n\n"+
+			"| # | Status | Provenance |\n"+
+			"| - | --- | --- |\n")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+		findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+		if len(findings) != 1 || !strings.Contains(findings[0].Detail, "Results table has no report rows") {
+			t.Fatalf("%s findings = %#v, want the empty-matrix refusal", speccheck.CodeMechanicalReportShape, findings)
+		}
+	})
+
+	tests := []struct {
+		name       string
+		declared   string
+		row        string
+		wantDetail string
+	}{
+		{
+			name:     "blocked beside precondition provenance is terminal",
+			declared: "rows_blocked_precondition: 1\n",
+			row:      "| 0 | blocked | precondition |\n",
+		},
+		{
+			name:       "precondition provenance with a non-blocked status refuses",
+			declared:   "rows_blocked_precondition: 0\n",
+			row:        "| 0 | pending | precondition |\n",
+			wantDetail: `row 0 has provenance precondition with status "pending"`,
+		},
+		{
+			name:       "bare blocked without precondition provenance still refuses",
+			row:        "| 0 | blocked | measured |\n",
+			wantDetail: "blocked cause outside environment, finding, or declared",
+		},
+		{
+			name:       "a declared count that no refusal row matches refuses",
+			declared:   "rows_blocked_precondition: 2\n",
+			row:        "| 0 | blocked | precondition |\n",
+			wantDetail: "rows_blocked_precondition is 2 but the Results table contains 1 matching rows",
+		},
+		{
+			name:       "a refusal row without its declared count refuses",
+			row:        "| 0 | blocked | precondition |\n",
+			wantDetail: "rows_blocked_precondition is absent from report frontmatter",
+		},
+		{
+			name: "a report that records no refusal need not declare the count",
+			row:  "| R01 | pass | measured |\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			reportPath := "docs/specs/mechanical/qa/report.md"
+			writeMechanicalFile(t, repoRoot, reportPath, "---\n"+
+				"verdict: fail\n"+
+				"rows_blocked_environment: 0\n"+
+				"rows_blocked_finding: 0\n"+
+				"rows_blocked_declared: 0\n"+
+				tt.declared+
+				"---\n\n"+
+				"# QA Report\n\n"+
+				"## Results\n\n"+
+				"| # | Status | Provenance |\n"+
+				"| - | --- | --- |\n"+
+				tt.row)
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+			if tt.wantDetail == "" {
+				if len(findings) != 0 {
+					t.Fatalf("%s findings = %#v, want none", speccheck.CodeMechanicalReportShape, findings)
+				}
+				return
+			}
+			if len(findings) != 1 || !strings.Contains(findings[0].Detail, tt.wantDetail) {
+				t.Fatalf("%s findings = %#v, want one detail containing %q", speccheck.CodeMechanicalReportShape, findings, tt.wantDetail)
+			}
+		})
+	}
+}
+
+func TestResultsTableIsTheOnlyRowSource(t *testing.T) {
+	t.Parallel()
+
+	const frontmatter = "---\n" +
+		"verdict: pass\n" +
+		"rows_blocked_environment: 0\n" +
+		"rows_blocked_finding: 0\n" +
+		"rows_blocked_declared: 0\n" +
+		"---\n\n" +
+		"# QA Report\n\n"
+	const results = "## Results\n\n" +
+		"| # | Status | Provenance |\n" +
+		"| - | --- | --- |\n" +
+		"| R01 | pass | measured |\n"
+	// The comparison Spec 0098's gate wrote to justify a Results row on
+	// 2026-08-26. Its cells are the shape that became four blockers: a header
+	// naming a case, and rows naming an observation rather than a status.
+	const comparison = "| Case | Hook objection observed | Refused settle | Recovered settle |\n" +
+		"| --- | --- | --- | --- |\n" +
+		"| 82-line function vs 80 | function exceeds the 80-line limit | exit `1`, work staged | exit `0`, byte-identical |\n" +
+		"| 2462-line generated file vs 500 | 2462 lines exceeds the 500-line limit | exit `1`, work staged | exit `0`, byte-identical |\n" +
+		"| `sort()` vs `toSorted()` | use toSorted() instead of sort() | exit `1`, work staged | exit `0`, byte-identical |\n"
+
+	tests := []struct {
+		name       string
+		report     string
+		wantDetail string
+	}{
+		{
+			name:   "a comparison under a row-detail subsection is not a result",
+			report: frontmatter + results + "\n### Row detail — the three measured cases\n\nEach was built as its own repository:\n\n" + comparison,
+		},
+		{
+			name:   "a comparison in prose under no heading is not a result",
+			report: frontmatter + results + "\nEach was built as its own repository:\n\n" + comparison,
+		},
+		{
+			name:   "a comparison under a later section is not a result",
+			report: frontmatter + results + "\n## Findings\n\n" + comparison,
+		},
+		{
+			name: "a defective Results row is the only finding beside a comparison",
+			report: frontmatter + "## Results\n\n" +
+				"| # | Status | Provenance |\n" +
+				"| - | --- | --- |\n" +
+				"| R01 | pending | measured |\n\n" +
+				"### Row detail — the three measured cases\n\n" + comparison,
+			wantDetail: "row R01 remains pending instead of carrying a terminal status",
+		},
+		{
+			name:       "a report with no Results heading still reports the missing matrix",
+			report:     frontmatter + "## Evidence\n\n" + comparison,
+			wantDetail: "Results table has no report rows",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			reportPath := "docs/specs/mechanical/qa/report.md"
+			writeMechanicalFile(t, repoRoot, reportPath, tt.report)
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+			if tt.wantDetail == "" {
+				if len(findings) != 0 {
+					t.Fatalf("%s findings = %#v, want none for a table outside the Results matrix", speccheck.CodeMechanicalReportShape, findings)
+				}
+				if result.Blocking {
+					t.Fatalf("Blocking = true, want a gate's own evidence to leave the next run free; findings = %#v", result.Findings)
+				}
+				return
+			}
+			if len(findings) != 1 || !strings.Contains(findings[0].Detail, tt.wantDetail) {
+				t.Fatalf("%s findings = %#v, want exactly one detail containing %q", speccheck.CodeMechanicalReportShape, findings, tt.wantDetail)
+			}
+		})
+	}
+}
+
+// TestMechanicalStageReadsTheNewestQAReportOnly pins the property a superseded
+// report violated: the stage validates the newest QA Report in the directory it
+// was pointed at and ignores every older one, so a refusal a previous run wrote
+// cannot block the run that supersedes it. Measured on Spec 0103 on 2026-08-14
+// and on Spec 0098 on 2026-08-26, where the only exit was deleting the report.
+func TestMechanicalStageReadsTheNewestQAReportOnly(t *testing.T) {
+	t.Parallel()
+
+	const directory = "docs/specs/mechanical/qa/"
+	const (
+		superseded = directory + "qa-report-2026-08-14.md"
+		newest     = directory + "qa-report-2026-08-15.md"
+	)
+
+	tests := []struct {
+		name      string
+		reports   map[string]string
+		requested string
+		// wantRow is the row a QA-REPORT-SHAPE finding must name, empty when the
+		// stage must raise none, and wantFile the report that finding must cite —
+		// which report was read is proven by the finding, not by its absence.
+		wantRow  string
+		wantFile string
+	}{
+		{
+			name: "a superseded refusal does not block the run that supersedes it",
+			reports: map[string]string{
+				superseded: mechanicalRowStatusReport("R01", "pending"),
+				newest:     mechanicalRowStatusReport("R01", "pass"),
+			},
+			requested: superseded,
+		},
+		{
+			name: "the newest report is the one read, not merely the older one skipped",
+			reports: map[string]string{
+				superseded: mechanicalRowStatusReport("R01", "pass"),
+				newest:     mechanicalRowStatusReport("R02", "pending"),
+			},
+			requested: superseded,
+			wantRow:   "R02",
+			wantFile:  newest,
+		},
+		{
+			// Raw filename order puts qa-report-2026-08-25.md above both of its
+			// same-date reruns, because "." sorts above "-", so a stage that
+			// sorted by name would read the defective first report of the date.
+			name: "recency is the date and run sequence, not raw filename order",
+			reports: map[string]string{
+				directory + "qa-report-2026-08-25.md":    mechanicalRowStatusReport("R01", "pending"),
+				directory + "qa-report-2026-08-25-02.md": mechanicalRowStatusReport("R02", "pending"),
+				directory + "qa-report-2026-08-25-10.md": mechanicalRowStatusReport("R03", "pass"),
+			},
+			requested: directory + "qa-report-2026-08-25.md",
+		},
+		{
+			name:      "a requested report that is gone yields to the newest one on disk",
+			reports:   map[string]string{newest: mechanicalRowStatusReport("R02", "pending")},
+			requested: directory + "qa-report-2026-08-13.md",
+			wantRow:   "R02",
+			wantFile:  newest,
+		},
+		{
+			// A path outside the qa-report-*.md family has no family to be the
+			// newest of, so it is read as named rather than redirected.
+			name: "a report outside the QA Report family is read as named",
+			reports: map[string]string{
+				directory + "report.md": mechanicalRowStatusReport("R01", "pending"),
+				newest:                  mechanicalRowStatusReport("R01", "pass"),
+			},
+			requested: directory + "report.md",
+			wantRow:   "R01",
+			wantFile:  directory + "report.md",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			for path, content := range tt.reports {
+				writeMechanicalFile(t, repoRoot, path, content)
+			}
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: tt.requested})
+
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+			if tt.wantRow == "" {
+				if len(findings) != 0 {
+					t.Fatalf("%s findings = %#v, want none from a superseded report", speccheck.CodeMechanicalReportShape, findings)
+				}
+				if result.Blocking {
+					t.Fatalf("Blocking = true, want an older report to leave the newer run free; findings = %#v", result.Findings)
+				}
+				return
+			}
+			if len(findings) != 1 || !strings.Contains(findings[0].Detail, "row "+tt.wantRow+" remains pending") {
+				t.Fatalf("%s findings = %#v, want exactly one naming row %s", speccheck.CodeMechanicalReportShape, findings, tt.wantRow)
+			}
+			if findings[0].File != tt.wantFile {
+				t.Fatalf("%s finding file = %q, want the report the stage read, %q", speccheck.CodeMechanicalReportShape, findings[0].File, tt.wantFile)
+			}
+		})
+	}
+
+	t.Run("a QA directory with no report keeps the requested path in its skip", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		requested := directory + "qa-report-2026-08-15.md"
+
+		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: requested})
+
+		assertMechanicalSkip(t, result, speccheck.DetectorMechanicalReportShape, requested)
+		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalReportShape)
+	})
+}
+
+// mechanicalRowStatusReport is one QA Report whose Results table carries a
+// single row with the given status: a pass row the stage accepts, a pending row
+// it refuses by name. Naming the row in the refusal is what makes the report the
+// stage actually read observable.
+func mechanicalRowStatusReport(rowID, status string) string {
+	verdict := spec.VerdictFail
+	if status == "pass" {
+		verdict = spec.VerdictPass
+	}
+	return "---\n" +
+		"verdict: " + verdict + "\n" +
+		"rows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n" +
+		"---\n\n# QA Report\n\n## Results\n\n" +
+		"| # | Status | Provenance |\n| - | --- | --- |\n" +
+		"| " + rowID + " | " + status + " | measured |\n"
 }
 
 func TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode(t *testing.T) {

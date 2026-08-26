@@ -1,0 +1,29 @@
+# Behaviour probes
+
+===== P1. same-date recency: two defective reports (unsuffixed, -02) beside a valid -10
+#      raw byte order would rank qa-report-2026-08-25.md above qa-report-2026-08-25-02.md
+candidates: docs/specs/fixture/qa/qa-report-2026-08-25.md, docs/specs/fixture/qa/qa-report-2026-08-25-02.md, docs/specs/fixture/qa/qa-report-2026-08-25-10.md
+newest:     docs/specs/fixture/qa/qa-report-2026-08-25-10.md
+
+requested:      docs/specs/fixture/qa/qa-report-2026-08-25.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/fixture/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}
+
+===== P2. a report with NO '## Results' heading still reports the missing matrix
+requested:      docs/specs/other/qa/qa-report-2026-08-20.md
+Blocking:       true
+Findings:       1
+  - QA-REPORT-SHAPE docs/specs/other/qa/qa-report-2026-08-20.md:1 row="" detail=Results table has no report rows
+Blocked rows:   1
+  - QA-REPORT-SHAPE waits on Results table has no report rows (QA-REPORT-SHAPE)
+Skips:          3
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/other/qa/evidence
+PreconditionRefused: false {CheckName: Reason:}

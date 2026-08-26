@@ -1,0 +1,79 @@
+=== R19. every repository-relative path this Spec cites resolves (the SC-REF-UNRESOLVED detector is skipped) ===
+  skip recorded by the checker:
+    Skipped:
+      SC-REF-UNRESOLVED: missing docs/specs/0113-a-refused-gate-writes-its-refusal-once/references/_index.md
+    Verification: not run (use --run-verification).
+
+    MISSING: mechanical_test.go  (cited in _tasks.md)
+    MISSING: acpx_runner_test.go  (cited in task_04.md)
+    MISSING: report-red.md  (cited in task_04.md)
+    MISSING: report-green.md  (cited in task_05.md)
+    MISSING: report-raw.md  (cited in task_05.md)
+    MISSING: report-red.md  (cited in task_05.md)
+    MISSING: testdata/mechanical/report-green.md  (cited in task_07.md)
+    MISSING: docs/specs/0113/_prd.md  (cited in task_08.md)
+    MISSING: docs/specs/0113-.../_techspec.md  (cited in task_09.md)
+    checked 66 distinct repository-relative citations; 9 unresolved
+
+  cited line anchors still point at the construct they name:
+    internal/daemon/task_engine.go:2095 qaGatePrecondition -> : resolves
+    internal/daemon/task_engine.go:2244 mechanicalQAReportContent -> : resolves
+    internal/speccheck/report.go:70 PromoteGaps -> : resolves
+    internal/speccheck/mechanical.go:979 parseMechanicalResultsRows -> : resolves
+
+=== R18. the vocabulary documentation detector now runs instead of skipping ===
+  before this Spec's task_09 (tree 854039b8, HEAD binary): 
+    Skipped:
+      vocabulary documentation detector: missing docs/specs/0113-a-refused-gate-writes-its-refusal-once/_techspec.md Vocabulary Contract
+      SC-REF-UNRESOLVED: missing docs/specs/0113-a-refused-gate-writes-its-refusal-once/references/_index.md
+    Verification: not run (use --run-verification).
+  a Spec with no Vocabulary Contract today, for contrast:
+    Skipped:
+      vocabulary documentation detector: missing docs/specs/0098-a-hook-that-cannot-outrank-the-gate/_techspec.md Vocabulary Contract
+      SC-REF-UNRESOLVED: missing docs/specs/0098-a-hook-that-cannot-outrank-the-gate/references/_index.md
+    Verification: not run (use --run-verification).
+
+=== R19 follow-up: the nine names a bare path-existence sweep flagged, resolved one by one ===
+
+--- mechanical_test.go
+    cited: docs/specs/0113-a-refused-gate-writes-its-refusal-once/_tasks.md:60:`mechanical_test.go` that discarded a passing task_05. Two Tasks that rewrite the
+    cited: docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_02.md:88:`internal/speccheck/report.go`, `internal/speccheck/mechanical_test.go`, and
+    cited: docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_03.md:52:`internal/speccheck/mechanical_test.go` moved with it.
+    in the repository:
+      internal/speccheck/mechanical_test.go
+
+--- acpx_runner_test.go
+    cited: docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_04.md:100:`internal/agent` (`acpx_runner_test.go:2919`, the fake `acpx` fixture exiting
+    in the repository:
+      internal/agent/acpx_runner_test.go
+
+--- report-red.md
+    cited: docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_04.md:89:| Empty table → refuse SC-REPORT-SHAPE | Subtest `an empty Results table still refuses` writes a report whose Results table has a header and separator and no rows, and requires exactly one `QA-REPORT-SHAPE` whose detail is `Results table has no report rows`. `TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode` and the `report-red.md` fixture still hold their existing counts |
+    cited: docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_05.md:60:  fixture (`report-green.md`, `report-red.md`, `report-raw.md`) is read exactly
+    in the repository:
+      internal/speccheck/testdata/mechanical/report-red.md
+
+--- report-green.md
+    cited: docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_05.md:60:  fixture (`report-green.md`, `report-red.md`, `report-raw.md`) is read exactly
+    cited: docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_07.md:99:The canonical passing fixture `testdata/mechanical/report-green.md` now carries
+    in the repository:
+      internal/speccheck/testdata/mechanical/report-green.md
+
+--- report-raw.md
+    cited: docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_05.md:60:  fixture (`report-green.md`, `report-red.md`, `report-raw.md`) is read exactly
+    in the repository:
+      internal/speccheck/testdata/mechanical/report-raw.md
+
+--- docs/specs/0113/_prd.md
+    cited: 140:- location: `docs/specs/0113/_prd.md:1`
+
+--- docs/specs/0113-.../_techspec.md
+    cited: 129:- Changed files: `CONTEXT.md`, `docs/user-guide/context-driven-development.md`, `docs/specs/0113-.../_techspec.md`, and this Task file. No source file was touched.
+
+=== cited line anchors, re-run with the construct name printed ===
+    internal/daemon/task_engine.go:2095 -> resolves to qaGatePrecondition
+    internal/daemon/task_engine.go:2244 -> resolves to mechanicalQAReportContent
+    internal/speccheck/report.go:70 -> resolves to PromoteGaps
+    internal/speccheck/mechanical.go:979 -> resolves to parseMechanicalResultsRows
+    internal/spec/qa.go:75 -> resolves to WritePreconditionRefusalReport
+    internal/speccheck/mechanical.go:131 -> resolves to PreconditionRefusal

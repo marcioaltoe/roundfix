@@ -1,0 +1,58 @@
+=== P4. invalid and out-of-order refusal-row input ===
+
+--- P4a. provenance 'precondition' with a non-terminal status ---
+Blocking:       true
+Findings:       2
+  - QA-REPORT-SHAPE docs/specs/z/qa/qa-report-2026-08-26.md:17 row="0" detail=row 0 has provenance precondition with status "pending"
+  - QA-REPORT-SHAPE docs/specs/z/qa/qa-report-2026-08-26.md:3 row="" detail=rows_blocked_precondition is 1 but the Results table contains 0 matching rows
+  - 0 waits on row 0 has provenance precondition with status "pending" (QA-REPORT-SHAPE)
+  - QA-REPORT-SHAPE waits on rows_blocked_precondition is 1 but the Results table contains 0 matching rows (QA-REPORT-SHAPE)
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/z/qa/evidence
+
+--- P4b. a bare 'blocked' status outside the typed causes ---
+Blocking:       true
+Findings:       2
+  - QA-REPORT-SHAPE docs/specs/z/qa/qa-report-2026-08-26.md:17 row="0" detail=row 0 has a blocked cause outside environment, finding, or declared
+  - QA-REPORT-SHAPE docs/specs/z/qa/qa-report-2026-08-26.md:3 row="" detail=rows_blocked_precondition is 1 but the Results table contains 0 matching rows
+  - 0 waits on row 0 has a blocked cause outside environment, finding, or declared (QA-REPORT-SHAPE)
+  - QA-REPORT-SHAPE waits on rows_blocked_precondition is 1 but the Results table contains 0 matching rows (QA-REPORT-SHAPE)
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/z/qa/evidence
+
+--- P4c. rows_blocked_precondition declared with no matching row ---
+Blocking:       true
+Findings:       1
+  - QA-REPORT-SHAPE docs/specs/z/qa/qa-report-2026-08-26.md:3 row="" detail=rows_blocked_precondition is 1 but the Results table contains 0 matching rows
+  - QA-REPORT-SHAPE waits on rows_blocked_precondition is 1 but the Results table contains 0 matching rows (QA-REPORT-SHAPE)
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/z/qa/evidence
+
+--- P4d. a refusal row whose count was never declared ---
+Blocking:       true
+Findings:       1
+  - QA-REPORT-SHAPE docs/specs/z/qa/qa-report-2026-08-26.md:1 row="" detail=rows_blocked_precondition is absent from report frontmatter
+  - QA-REPORT-SHAPE waits on rows_blocked_precondition is absent from report frontmatter (QA-REPORT-SHAPE)
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/z/qa/evidence
+
+--- P4e. the shape the production gate actually wrote (positive control) ---
+Blocking:       false
+Findings:       0
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+  - QA evidence paths: docs/specs/z/qa/evidence
+  round-trip through the reader a maintainer reaches:
+newest report:  /tmp/qa0113-probes/e/docs/specs/z/qa/qa-report-2026-08-26.md (err=<nil>)
+  "Verdict": "fail",
+  "RowsBlockedEnvironment": 0,
+  "RowsBlockedFinding": 0,
+  "RowsBlockedDeclared": 0,
+  "RowsBlockedPrecondition": 1,
+  "Precondition": {
+    "CheckName": "spec check --strict",
+    "Reason": "SC-CONSTRAINT-MISSING: docs/specs/z/_prd.md omits Identifier strategy"

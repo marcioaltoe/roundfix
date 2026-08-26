@@ -1,0 +1,17 @@
+=== R30. this report, read by the mechanical stage it must itself satisfy ===
+$ RunMechanicalStage(RepoRoot=<this repository>, ReportPath=docs/specs/0113-.../qa/qa-report-2026-08-26-01.md)
+
+--- first attempt, with rows_blocked_environment written as 1 ---
+    Blocking: true; 1 finding: QA-REPORT-SHAPE at :7
+      detail: rows_blocked_environment is 1 but the Results table contains 2 matching rows
+    The detector was right: R01 and R27 are both environment-blocked. The count was corrected to 2.
+
+--- after the correction ---
+requested:      docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/qa-report-2026-08-26-01.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          2
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+PreconditionRefused: false {CheckName: Reason:}

@@ -1,0 +1,25 @@
+Row 5 — the Run Event Journal entry, read back from the Run Database
+(~/.roundfix/roundfix.db, table run_events) for the Run above.
+
+run_id     : run_20260826T010825Z_f9298d27aea95130
+cursor     : 325
+source     : daemon
+kind       : daemon.commit
+review_issue (task): task_01
+summary    : Task task_01 commit refused by the repository commit hook; Task stays completed with changes staged.
+created_at : 2026-08-26T01:10:18.719152Z
+payload    :
+{
+  "classification": "hook_refused",
+  "decision": "refused",
+  "exit_code": 1,
+  "hook": "commit",
+  "output": "src/parser.go:1: file violates the repository style rule",
+  "recovery": "roundfix settle --spec 0001-widget-flow --task task_01",
+  "status": "completed",
+  "surface": "/Users/marcio/.roundfix/worktrees/run1-654d8cd7/run_20260826T010825Z_f9298d27aea95130",
+  "task": "task_01"
+}
+
+"hook": "commit" is the generic label an unnamed hook gets; the recovery command
+is present regardless.

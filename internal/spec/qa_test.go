@@ -447,3 +447,331 @@ date: 2026-07-04
 		})
 	}
 }
+
+// qaResultsRows returns the data rows of the report's Results table: every
+// table line under the `## Results` heading except the header and its
+// separator, up to the next heading. The refusal contract is about how many
+// rows a refused gate materializes, so the count has to be read from the table
+// rather than from the frontmatter that claims it.
+func qaResultsRows(t *testing.T, report string) []string {
+	t.Helper()
+	var rows []string
+	inResults := false
+	for _, line := range strings.Split(report, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "## ") {
+			if inResults {
+				break
+			}
+			inResults = strings.TrimPrefix(trimmed, "## ") == "Results"
+			continue
+		}
+		if !inResults || !strings.HasPrefix(trimmed, "|") {
+			continue
+		}
+		if strings.Contains(trimmed, "Status") || strings.Trim(trimmed, "| -") == "" {
+			continue
+		}
+		rows = append(rows, trimmed)
+	}
+	return rows
+}
+
+func TestWritePreconditionRefusalReportWritesOneTerminalRow(t *testing.T) {
+	t.Parallel()
+	var report strings.Builder
+	if err := WritePreconditionRefusalReport(&report, PreconditionRefusal{
+		CheckName: "strict",
+		Reason:    "SC-VOCABULARY-UNDOCUMENTED",
+	}); err != nil {
+		t.Fatalf("WritePreconditionRefusalReport: %v", err)
+	}
+
+	rows := qaResultsRows(t, report.String())
+	if len(rows) != 1 {
+		t.Fatalf("Results rows = %q, want exactly one terminal row", rows)
+	}
+	wantRow := fmt.Sprintf("| %s | %s | %s |", QAPreconditionRowID, QAPreconditionRowStatus, QAPreconditionRowProvenance)
+	if rows[0] != wantRow {
+		t.Errorf("terminal row = %q, want %q", rows[0], wantRow)
+	}
+	for _, want := range []string{
+		"verdict: " + VerdictFail + "\n",
+		"rows_blocked_precondition: 1\n",
+		"rows_blocked_environment: 0\n",
+		"rows_blocked_finding: 0\n",
+		"rows_blocked_declared: 0\n",
+		`precondition_check: "strict"` + "\n",
+		`precondition_reason: "SC-VOCABULARY-UNDOCUMENTED"` + "\n",
+	} {
+		if !strings.Contains(report.String(), want) {
+			t.Errorf("report does not record %q:\n%s", want, report.String())
+		}
+	}
+}
+
+func TestWritePreconditionRefusalReportIsReadableAsARefusal(t *testing.T) {
+	t.Parallel()
+	var content strings.Builder
+	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{
+		CheckName: "strict",
+		Reason:    "SC-REQUIREMENT-CONTRADICTORY",
+	}); err != nil {
+		t.Fatalf("WritePreconditionRefusalReport: %v", err)
+	}
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-08-25.md"), content.String())
+
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport of a refusal the gate itself wrote: %v", err)
+	}
+	if report.Verdict != VerdictFail {
+		t.Errorf("Verdict = %q, want %q", report.Verdict, VerdictFail)
+	}
+	if report.RowsBlockedPrecondition != 1 {
+		t.Errorf("RowsBlockedPrecondition = %d, want 1", report.RowsBlockedPrecondition)
+	}
+	if report.RowsBlockedEnvironment != 0 || report.RowsBlockedFinding != 0 || report.RowsBlockedDeclared != 0 {
+		t.Errorf("other blocked causes = %d/%d/%d, want zero; a refusal measured nothing else",
+			report.RowsBlockedEnvironment, report.RowsBlockedFinding, report.RowsBlockedDeclared)
+	}
+}
+
+func TestWritePreconditionRefusalReportKeepsTheRefusalOnOneLine(t *testing.T) {
+	t.Parallel()
+	var content strings.Builder
+	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{
+		CheckName: "spec check --strict",
+		Reason:    "SC-VOCABULARY-UNDOCUMENTED:\nterm | \"Run Ledger\" is undocumented",
+	}); err != nil {
+		t.Fatalf("WritePreconditionRefusalReport: %v", err)
+	}
+	report := content.String()
+	if rows := qaResultsRows(t, report); len(rows) != 1 {
+		t.Fatalf("Results rows = %q, want exactly one terminal row", rows)
+	}
+	wantReason := `precondition_reason: "SC-VOCABULARY-UNDOCUMENTED: term | \"Run Ledger\" is undocumented"`
+	if !strings.Contains(report, wantReason+"\n") {
+		t.Errorf("report does not record the collapsed reason %q:\n%s", wantReason, report)
+	}
+
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-08-25.md"), report)
+	if _, err := ReadQAReport(specDir); err != nil {
+		t.Fatalf("ReadQAReport of a multi-line refusal reason: %v", err)
+	}
+}
+
+func TestWritePreconditionRefusalReportRecordsAnUnnamedRefusal(t *testing.T) {
+	t.Parallel()
+	var content strings.Builder
+	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{CheckName: "  ", Reason: ""}); err != nil {
+		t.Fatalf("WritePreconditionRefusalReport: %v", err)
+	}
+	report := content.String()
+	if rows := qaResultsRows(t, report); len(rows) != 1 {
+		t.Fatalf("Results rows = %q, want the refusal recorded even when it is unnamed", rows)
+	}
+	for _, want := range []string{
+		`precondition_check: "` + QAPreconditionCheckUnnamed + `"`,
+		`precondition_reason: "` + QAPreconditionReasonUnrecorded + `"`,
+	} {
+		if !strings.Contains(report, want+"\n") {
+			t.Errorf("report does not record %q:\n%s", want, report)
+		}
+	}
+}
+
+func TestReadQAReportRejectsAPreconditionBlockedPass(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-08-25.md"),
+		qaReportFixture(VerdictPass, "rows_blocked_precondition: 1"))
+
+	_, err := ReadQAReport(specDir)
+	var reportErr QAReportError
+	if !errors.As(err, &reportErr) {
+		t.Fatalf("error = %v, want QAReportError; a gate that never ran cannot pass", err)
+	}
+	if !strings.Contains(err.Error(), "rows_blocked_precondition must be zero") {
+		t.Errorf("error %q does not name the precondition count", err)
+	}
+}
+
+func TestReadQAReportRejectsANegativePreconditionCount(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-08-25.md"),
+		qaReportFixture(VerdictFail, "rows_blocked_precondition: -1"))
+
+	_, err := ReadQAReport(specDir)
+	var reportErr QAReportError
+	if !errors.As(err, &reportErr) {
+		t.Fatalf("error = %v, want QAReportError", err)
+	}
+	if !strings.Contains(err.Error(), "rows_blocked_precondition must be a non-negative integer") {
+		t.Errorf("error %q does not name the precondition count", err)
+	}
+}
+
+func TestReadQAReportRecordsThePreconditionRefusal(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		written PreconditionRefusal
+		want    PreconditionRefusal
+	}{
+		{
+			name: "a named refusal reads back as it was written",
+			written: PreconditionRefusal{
+				CheckName: "spec check --strict",
+				Reason:    `SC-VOCABULARY-UNDOCUMENTED: term "Run Ledger" is undocumented`,
+			},
+			want: PreconditionRefusal{
+				CheckName: "spec check --strict",
+				Reason:    `SC-VOCABULARY-UNDOCUMENTED: term "Run Ledger" is undocumented`,
+			},
+		},
+		{
+			name: "a refusal spread over lines reads back on one",
+			written: PreconditionRefusal{
+				CheckName: "spec check\t--strict",
+				Reason:    "SC-REQUIREMENT-CONTRADICTORY:\n_prd.md requires one report per run and forbids writing one",
+			},
+			want: PreconditionRefusal{
+				CheckName: "spec check --strict",
+				Reason:    "SC-REQUIREMENT-CONTRADICTORY: _prd.md requires one report per run and forbids writing one",
+			},
+		},
+		{
+			name:    "an unnamed refusal reads back as the placeholder it recorded",
+			written: PreconditionRefusal{},
+			want: PreconditionRefusal{
+				CheckName: QAPreconditionCheckUnnamed,
+				Reason:    QAPreconditionReasonUnrecorded,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var content strings.Builder
+			if err := WritePreconditionRefusalReport(&content, tt.written); err != nil {
+				t.Fatalf("WritePreconditionRefusalReport: %v", err)
+			}
+			specDir := t.TempDir()
+			writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-08-25.md"), content.String())
+
+			report, err := ReadQAReport(specDir)
+			if err != nil {
+				t.Fatalf("ReadQAReport of a refusal the gate itself wrote: %v", err)
+			}
+			if report.Precondition != tt.want {
+				t.Errorf("Precondition = %#v, want %#v", report.Precondition, tt.want)
+			}
+		})
+	}
+}
+
+func TestPreconditionRefusalRoundTripsThroughTheQAReport(t *testing.T) {
+	t.Parallel()
+	refusal := PreconditionRefusal{
+		CheckName: "spec check --strict",
+		Reason:    `SC-VOCABULARY-UNDOCUMENTED: term "Run Ledger" is undocumented; SC-COVERAGE-UNMAPPED: Core Feature 2 has no TechSpec section`,
+	}
+	var written strings.Builder
+	if err := WritePreconditionRefusalReport(&written, refusal); err != nil {
+		t.Fatalf("WritePreconditionRefusalReport: %v", err)
+	}
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-08-25.md"), written.String())
+
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport: %v", err)
+	}
+	if report.Precondition != refusal {
+		t.Fatalf("Precondition = %#v, want the refusal that was written, %#v", report.Precondition, refusal)
+	}
+	// The metadata a reader hands back has to be enough to write the same
+	// refusal again; anything the read drops would be evidence the next writer
+	// cannot recover.
+	var rewritten strings.Builder
+	if err := WritePreconditionRefusalReport(&rewritten, report.Precondition); err != nil {
+		t.Fatalf("WritePreconditionRefusalReport from the report that was read: %v", err)
+	}
+	if rewritten.String() != written.String() {
+		t.Errorf("rewritten report differs from the one read:\n--- read ---\n%s\n--- rewritten ---\n%s", written.String(), rewritten.String())
+	}
+}
+
+func TestReadQAReportLeavesThePreconditionUnrecordedWhenNoneRefused(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name             string
+		verdict          string
+		extraFrontmatter []string
+		want             PreconditionRefusal
+	}{
+		{
+			name:    "a pass that names no precondition stays readable",
+			verdict: VerdictPass,
+			want:    PreconditionRefusal{},
+		},
+		{
+			name:             "a check without a reason records the check alone",
+			verdict:          VerdictFail,
+			extraFrontmatter: []string{`precondition_check: "spec check --strict"`},
+			want:             PreconditionRefusal{CheckName: "spec check --strict"},
+		},
+		{
+			name:             "a reason without a check records the reason alone",
+			verdict:          VerdictFail,
+			extraFrontmatter: []string{`precondition_reason: "SC-REQUIREMENT-CONTRADICTORY"`},
+			want:             PreconditionRefusal{Reason: "SC-REQUIREMENT-CONTRADICTORY"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			specDir := t.TempDir()
+			writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-08-25.md"),
+				qaReportFixture(tt.verdict, tt.extraFrontmatter...))
+
+			report, err := ReadQAReport(specDir)
+			if err != nil {
+				t.Fatalf("ReadQAReport: %v", err)
+			}
+			if report.Verdict != tt.verdict {
+				t.Errorf("Verdict = %q, want %q", report.Verdict, tt.verdict)
+			}
+			if report.Precondition != tt.want {
+				t.Errorf("Precondition = %#v, want %#v", report.Precondition, tt.want)
+			}
+		})
+	}
+}
+
+func TestReadQAReportRejectsANonScalarPrecondition(t *testing.T) {
+	t.Parallel()
+	for _, field := range []string{
+		"precondition_check: [strict, vocabulary]",
+		"precondition_reason:\n  code: SC-REQUIREMENT-CONTRADICTORY",
+	} {
+		t.Run(strings.SplitN(field, ":", 2)[0], func(t *testing.T) {
+			specDir := t.TempDir()
+			writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-08-25.md"),
+				qaReportFixture(VerdictFail, field))
+
+			_, err := ReadQAReport(specDir)
+			var reportErr QAReportError
+			if !errors.As(err, &reportErr) {
+				t.Fatalf("error = %v, want QAReportError; a refusal that is not one recorded line is not readable", err)
+			}
+			if !strings.Contains(err.Error(), "cannot unmarshal") {
+				t.Errorf("error %q does not name the unreadable value", err)
+			}
+		})
+	}
+}

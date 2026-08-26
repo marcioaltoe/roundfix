@@ -3,10 +3,10 @@ name: golang-cli
 description: "Golang CLI application development. Use when building, modifying, or reviewing a Go CLI tool — especially for command structure, flag handling, configuration layering, version embedding, exit codes, I/O patterns, signal handling, shell completion, argument validation, and CLI unit testing. Also triggers when code uses cobra, viper, or urfave/cli. For cobra-specific APIs → See `samber/cc-skills-golang@golang-spf13-cobra` skill; for viper configuration layering → See `samber/cc-skills-golang@golang-spf13-viper` skill."
 user-invocable: true
 license: MIT
-compatibility: Designed for Claude Code or similar AI coding agents, and for projects using Golang.
+compatibility: Designed for Claude Code, Codex or similar harness, and for projects using Golang.
 metadata:
   author: samber
-  version: "1.2.0"
+  version: "1.3.0"
   openclaw:
     emoji: "💻"
     homepage: https://github.com/samber/cc-skills-golang
@@ -15,6 +15,8 @@ metadata:
         - go
     install: []
 allowed-tools: Read Edit Write Glob Grep Bash(go:*) Bash(golangci-lint:*) Bash(git:*) Agent AskUserQuestion
+paths:
+  - "**/*.go"
 ---
 
 **Persona:** You are a Go CLI engineer. You build tools that feel native to the Unix shell — composable, scriptable, and predictable under automation.
@@ -187,18 +189,18 @@ Use `cmd.OutOrStdout()` and `cmd.ErrOrStderr()` in commands (instead of `os.Stdo
 
 ## Common Mistakes
 
-| Mistake                           | Fix                                                                                                          |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Writing to `os.Stdout` directly   | Tests can't capture output. Use `cmd.OutOrStdout()` which tests can redirect to a buffer                     |
+| Mistake | Fix |
+| --- | --- |
+| Writing to `os.Stdout` directly | Tests can't capture output. Use `cmd.OutOrStdout()` which tests can redirect to a buffer |
 | Calling `os.Exit()` inside `RunE` | Cobra's error handling, deferred functions, and cleanup code never run. Return an error, let `main()` decide |
-| Not binding flags to Viper        | Flags won't be configurable via env/config. Call `viper.BindPFlag` for every configurable flag               |
-| Missing `viper.SetEnvPrefix`      | `PORT` collides with other tools. Use a prefix (`MYAPP_PORT`) to namespace env vars                          |
-| Logging to stdout                 | Unix pipes chain stdout — logs corrupt the data stream for the next program. Logs go to stderr               |
-| Printing usage on every error     | Full help text on every error is noise. Set `SilenceUsage: true`, save full usage for `--help`               |
-| Config file required              | Users without a config file get a crash. Ignore `viper.ConfigFileNotFoundError` — config should be optional  |
-| Not using `PersistentPreRunE`     | Config initialization must happen before any subcommand. Use root's `PersistentPreRunE`                      |
-| Hardcoded version string          | Version gets out of sync with tags. Inject via `ldflags` at build time from git tags                         |
-| Not supporting `--output` format  | Scripts can't parse human-readable output. Add JSON/table/plain for machine consumption                      |
+| Not binding flags to Viper | Flags won't be configurable via env/config. Call `viper.BindPFlag` for every configurable flag |
+| Missing `viper.SetEnvPrefix` | `PORT` collides with other tools. Use a prefix (`MYAPP_PORT`) to namespace env vars |
+| Logging to stdout | Unix pipes chain stdout — logs corrupt the data stream for the next program. Logs go to stderr |
+| Printing usage on every error | Full help text on every error is noise. Set `SilenceUsage: true`, save full usage for `--help` |
+| Config file required | Users without a config file get a crash. Ignore `viper.ConfigFileNotFoundError` — config should be optional |
+| Not using `PersistentPreRunE` | Config initialization must happen before any subcommand. Use root's `PersistentPreRunE` |
+| Hardcoded version string | Version gets out of sync with tags. Inject via `ldflags` at build time from git tags |
+| Not supporting `--output` format | Scripts can't parse human-readable output. Add JSON/table/plain for machine consumption |
 
 ## Related Skills
 

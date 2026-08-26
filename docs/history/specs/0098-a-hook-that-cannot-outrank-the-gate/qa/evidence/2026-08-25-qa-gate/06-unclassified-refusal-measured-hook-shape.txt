@@ -1,0 +1,17 @@
+=== the measured repository shape: husky v9 hook + lint-staged + oxlint output ===
+(core.hooksPath=.husky, hook is `set -eu` + lint-staged, output is the linter finding only)
+$ roundfix settle --spec 0001-widget-flow --task task_01   → exit 1
+verify test -f packages/api/src/route.ts — ok
+Settle surface: /private/tmp/qa0098/husky9
+roundfix: settle failed after verification: git commit -m feat: add the measured work
+
+Roundfix-Spec: 0001-widget-flow
+Roundfix-Task: task_01 failed: exit status 1: ✖ oxlint --fix:
+  x eslint(max-lines-per-function): Function has too many lines (82). Maximum allowed is 80.
+   ,-[packages/api/src/route.ts:3:1]
+
+--- classified as a hook refusal? NO — reported as a bare git error ---
+--- work preserved: staged=[.husky/pre-commit packages/api/src/route.ts] commits=1 status=completed ---
+
+--- contrast: the same boundary WITH a self-naming hook banner (case 2) ---
+roundfix: settle failed after verification: repository pre-commit hook refused the commit (exit status 1): internal/api/schema.gen.ts: 2462 lines exceeds the 500-line limit

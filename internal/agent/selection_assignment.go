@@ -50,7 +50,7 @@ type RuntimeCatalogue struct {
 	// Models and Efforts are the values the runtime advertised. Observed is true
 	// only when a catalogue was actually read; it lets an observed catalogue
 	// that advertises zero models still trigger the membership refusal, which
-	// an unread (zero-value) catalogue must not. See ADR-0119.
+	// an unread (zero-value) catalogue must not. See ADR-0147.
 	Models       []string
 	Efforts      []string
 	Observed     bool

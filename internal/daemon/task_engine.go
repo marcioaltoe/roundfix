@@ -1605,6 +1605,10 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 		Message: message,
 		Paths:   stageable,
 	}); err != nil {
+		var refusal *HookRefusalError
+		if errors.As(err, &refusal) {
+			return engine.recordHookRefusal(ctx, plan, task, ordinal, refusal, err)
+		}
 		return err
 	}
 	subject, _, _ := strings.Cut(message, "\n")
@@ -1619,6 +1623,43 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, noOpShape)
 	}
 	return nil
+}
+
+// recordHookRefusal journals a Task commit the repository's commit hook
+// refused. The Daemon is the verification authority (ADR 0014) and the Task
+// already settled completed before this boundary, so the refusal neither
+// reclassifies the Task nor discards its work: the changes stay staged in
+// the surface that produced them and the Run names the recovery command.
+func (engine *Engine) recordHookRefusal(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, refusal *HookRefusalError, err error) error {
+	hook := refusal.HookName()
+	output := hookOutputExcerpt(refusal.Output, hookRefusalOutputMax)
+	if output == "" {
+		output = "unavailable"
+	}
+	recovery := fmt.Sprintf("roundfix settle --spec %s --task %s", plan.Spec.Slug, task.ID)
+	if _, writeErr := fmt.Fprintf(engine.deps.Progress,
+		"roundfix: run %s Task %s: the repository %s hook refused the commit (exit status %d): %s\nTask %s stays completed with its verified changes staged in %s; recover with: %s\n",
+		plan.RunID, task.ID, hook, refusal.ExitCode, output,
+		task.ID, plan.WorkDir, recovery,
+	); writeErr != nil {
+		return fmt.Errorf("write hook refusal for run %q Task %s: %w", plan.RunID, task.ID, writeErr)
+	}
+	summary := fmt.Sprintf("Task %s commit refused by the repository %s hook; Task stays completed with changes staged.", task.ID, hook)
+	payload := map[string]any{
+		"decision":       "refused",
+		"classification": hookRefusedClassification,
+		"task":           task.ID,
+		"status":         string(spec.StatusCompleted),
+		"hook":           hook,
+		"exit_code":      refusal.ExitCode,
+		"output":         output,
+		"surface":        plan.WorkDir,
+		"recovery":       recovery,
+	}
+	if publishErr := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonCommit, summary, payload); publishErr != nil {
+		return fmt.Errorf("publish hook refusal event for run %q Task %s: %w", plan.RunID, task.ID, publishErr)
+	}
+	return fmt.Errorf("commit Task %s for run %q: %w", task.ID, plan.RunID, err)
 }
 
 func taskNoOpCommitShape(plan TaskPlan, stageable []string) string {
@@ -2010,6 +2051,10 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
 	}
+	precondition, err := qaGatePrecondition(plan)
+	if err != nil {
+		return speccheck.MechanicalRequest{}, err
+	}
 	var assignedRepairs []speccheck.AssignedRepair
 	if len(qaTask.AssignedRepairs) > 0 {
 		assignedRepairs = make([]speccheck.AssignedRepair, len(qaTask.AssignedRepairs))
@@ -2032,7 +2077,28 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 		ReportPath:      previousReportPath,
 		TaskRepairPaths: append([]string(nil), qaTask.TaskRepairPaths...),
 		AssignedRepairs: assignedRepairs,
+		Precondition:    precondition,
 	}, nil
+}
+
+// qaGatePrecondition runs the gate's own precondition — the Spec's strict Spec
+// Consistency Check, named by speccheck.GatePreconditionCheck — and classifies
+// it, so a contradiction the Spec still carries stops the gate here rather than
+// after an Agent turn has been spent on it (ADR 0117). The classification is
+// what keeps an undocumented term the Spec's own Vocabulary Contract selects a
+// repair input the gate can act on instead of a refusal.
+//
+// A refusing precondition travels into the mechanical stage rather than
+// short-circuiting it, because the stage owns deriving the refusal record the
+// report is written from and every other detector still has an observation to
+// contribute to that report.
+func qaGatePrecondition(plan TaskPlan) (speccheck.GatePreconditionResult, error) {
+	checked, err := speccheck.Check(plan.SpecsRoot, plan.WorkDir, plan.Spec.Slug)
+	if err != nil {
+		return speccheck.GatePreconditionResult{}, fmt.Errorf("run %q for Spec %s: %w", speccheck.GatePreconditionCheck, plan.Spec.Slug, err)
+	}
+	speccheck.PromoteGaps(&checked)
+	return speccheck.GatePrecondition(checked), nil
 }
 
 func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []string) ([]speccheck.MechanicalTaskCommit, error) {
@@ -2129,39 +2195,10 @@ func mechanicalCommitPaths(ctx context.Context, repoRoot, sha string) ([]string,
 }
 
 func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.MechanicalResult) (string, error) {
-	var mechanical bytes.Buffer
-	if err := speccheck.WriteMechanicalResult(&mechanical, result); err != nil {
+	content, err := mechanicalQAReportContent(result)
+	if err != nil {
 		return "", err
 	}
-	mechanicalBody := bytes.Replace(mechanical.Bytes(), []byte(speccheck.MechanicalRowsHeading), []byte("## Results\n\n"), 1)
-	if bytes.Equal(mechanicalBody, mechanical.Bytes()) {
-		return "", errors.New("materialize mechanical QA Report: mechanical rows table is absent")
-	}
-	if result.Blocking && len(result.Carried)+len(result.Blocked) == 0 {
-		const skipsHeading = "\n## Mechanical skips"
-		refusalRow := fmt.Sprintf(
-			"| QA-PRECONDITION | fail | mechanical refusal: %s; no other checks executed |\n\n## Mechanical skips",
-			mechanicalReportCell(mechanicalRefusalCause(result)),
-		)
-		withRefusal := bytes.Replace(mechanicalBody, []byte(skipsHeading), []byte(refusalRow), 1)
-		if bytes.Equal(withRefusal, mechanicalBody) {
-			return "", errors.New("materialize mechanical QA Report: mechanical skips section is absent")
-		}
-		mechanicalBody = withRefusal
-	}
-
-	var content bytes.Buffer
-	content.WriteString("---\n")
-	verdict := spec.VerdictPass
-	if result.Blocking {
-		verdict = spec.VerdictFail
-	}
-	fmt.Fprintf(&content, "verdict: %s\n", verdict)
-	fmt.Fprintf(&content, "rows_blocked_environment: %d\n", mechanicalBlockedRowCount(mechanicalBody, "environment"))
-	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", mechanicalBlockedRowCount(mechanicalBody, "finding"))
-	fmt.Fprintf(&content, "rows_blocked_declared: %d\n", mechanicalBlockedRowCount(mechanicalBody, "declared"))
-	content.WriteString("---\n\n# QA Report\n\n")
-	content.Write(mechanicalBody)
 	reportDir := filepath.Join(plan.Spec.Dir, "qa")
 	if err := os.MkdirAll(reportDir, 0o755); err != nil {
 		return "", fmt.Errorf("create QA Report directory %q: %w", reportDir, err)
@@ -2180,7 +2217,7 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 		if err != nil {
 			return "", fmt.Errorf("create QA Report %q: %w", path, err)
 		}
-		_, writeErr := file.Write(content.Bytes())
+		_, writeErr := file.Write(content)
 		closeErr := file.Close()
 		if writeErr != nil || closeErr != nil {
 			return "", fmt.Errorf("write QA Report %q: %w", path, errors.Join(writeErr, closeErr))
@@ -2188,6 +2225,67 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 		return artifactCommitPath(plan, path), nil
 	}
 	return "", fmt.Errorf("create QA Report for %s: same-day numeric suffixes exhausted", date)
+}
+
+// mechanicalQAReportContent renders the QA Report bytes one mechanical result
+// closes with.
+//
+// A gate whose precondition refused writes the refusal contract internal/spec
+// owns instead of a matrix it never built: verdict `fail`,
+// `rows_blocked_precondition: 1` beside the three typed counts at zero,
+// `precondition_check` and `precondition_reason` naming what refused and why,
+// and the single terminal row `| 0 | blocked | precondition |` under
+// `## Results`. The mechanical sections stay below it under their own headings,
+// where the shape detector reads no rows from them, so the refusal costs the
+// report none of the observations the stage already made.
+//
+// Every other gate writes exactly the report it wrote before: the refusal is an
+// added path, not a changed one.
+func mechanicalQAReportContent(result speccheck.MechanicalResult) ([]byte, error) {
+	var mechanical bytes.Buffer
+	if err := speccheck.WriteMechanicalResult(&mechanical, result); err != nil {
+		return nil, err
+	}
+	if result.PreconditionRefused {
+		var content bytes.Buffer
+		if err := spec.WritePreconditionRefusalReport(&content, result.PreconditionRefusal); err != nil {
+			return nil, fmt.Errorf("materialize precondition refusal QA Report: %w", err)
+		}
+		content.WriteByte('\n')
+		content.Write(mechanical.Bytes())
+		return content.Bytes(), nil
+	}
+
+	mechanicalBody := bytes.Replace(mechanical.Bytes(), []byte(speccheck.MechanicalRowsHeading), []byte("## Results\n\n"), 1)
+	if bytes.Equal(mechanicalBody, mechanical.Bytes()) {
+		return nil, errors.New("materialize mechanical QA Report: mechanical rows table is absent")
+	}
+	if result.Blocking && len(result.Carried)+len(result.Blocked) == 0 {
+		const skipsHeading = "\n## Mechanical skips"
+		refusalRow := fmt.Sprintf(
+			"| QA-PRECONDITION | fail | mechanical refusal: %s; no other checks executed |\n\n## Mechanical skips",
+			mechanicalReportCell(mechanicalRefusalCause(result)),
+		)
+		withRefusal := bytes.Replace(mechanicalBody, []byte(skipsHeading), []byte(refusalRow), 1)
+		if bytes.Equal(withRefusal, mechanicalBody) {
+			return nil, errors.New("materialize mechanical QA Report: mechanical skips section is absent")
+		}
+		mechanicalBody = withRefusal
+	}
+
+	var content bytes.Buffer
+	content.WriteString("---\n")
+	verdict := spec.VerdictPass
+	if result.Blocking {
+		verdict = spec.VerdictFail
+	}
+	fmt.Fprintf(&content, "verdict: %s\n", verdict)
+	fmt.Fprintf(&content, "rows_blocked_environment: %d\n", mechanicalBlockedRowCount(mechanicalBody, "environment"))
+	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", mechanicalBlockedRowCount(mechanicalBody, "finding"))
+	fmt.Fprintf(&content, "rows_blocked_declared: %d\n", mechanicalBlockedRowCount(mechanicalBody, "declared"))
+	content.WriteString("---\n\n# QA Report\n\n")
+	content.Write(mechanicalBody)
+	return content.Bytes(), nil
 }
 
 func mechanicalRefusalCause(result speccheck.MechanicalResult) string {

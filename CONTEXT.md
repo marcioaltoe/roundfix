@@ -113,8 +113,12 @@ The universal Normative Clause that forbids changes to linter, formatter, and to
 _Avoid_: Tool preference, implicit permission, cleanup authorization
 
 **QA Report**:
-The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict plus `rows_blocked_environment` and `rows_blocked_finding` counts in its frontmatter.
+The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict plus `rows_blocked_environment` and `rows_blocked_finding` counts in its frontmatter. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. Only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
 _Avoid_: Test report, QA log
+
+**Precondition Refusal**:
+A QA gate stop at a check that runs before the matrix is built — a strict Spec check being the usual one — recorded as the gate's entire QA Report rather than as a missing one: verdict `fail`, `rows_blocked_precondition` counting the stop, `precondition_check` naming what was checked, `precondition_reason` carrying every refusing code and the sentence beside it, and one terminal row `0 | blocked | precondition` in the Results table. The gate measured no requirement, so row `0` records the refusal itself instead of a result, and the prose justifying it is written as a list rather than a second table. An empty Results table is not the alternative: it refuses every later run on the report instead of on the Spec, and prescribes a repair — materialize every planned row — that a run which never built a matrix cannot perform.
+_Avoid_: Empty report, failed gate, skipped QA, precondition error
 
 **External Acceptance Evidence**:
 Evidence for at least one named acceptance row that originates outside the Spec's own artifacts — a real repository, a measurement, or published literature — with its origin recorded. A row whose external evidence cannot be obtained is recorded as blocked with its reason. It exists because a rubric and the requirement it measures, written by one author from one premise, confirm rather than test.
@@ -145,7 +149,7 @@ The token-free disposable Agent Session check that maps one Agent Selection thro
 _Avoid_: Model validity, catalog match, recommendation rank
 
 **Runtime Catalogue**:
-What an ACP Runtime advertises before Roundfix asks it to apply a specific Agent Selection, established from a disposable Agent Session ensured without the requested model so the answer cannot be contaminated by the question. Membership in it decides refusal where no adapter refuses first; where an adapter refuses, its own message stands (ADR-0119).
+What an ACP Runtime advertises before Roundfix asks it to apply a specific Agent Selection, established from a disposable Agent Session ensured without the requested model so the answer cannot be contaminated by the question. Membership in it decides refusal where no adapter refuses first; where an adapter refuses, its own message stands (ADR-0147).
 _Avoid_: Model list, capability payload, advertised options
 
 **Selection Encoding**:
@@ -219,6 +223,10 @@ _Avoid_: Session opened, prompt sent, turn started
 **Selection Failure**:
 The outcome (`agent_selection_failed`) of a turn that ended before any Agent output, because the selected ACP Runtime would not serve it — exhausted quota, failed authentication, an adapter that will not start. It is a failure of the selection rather than of the work, so the Fallback Chain stays eligible.
 _Avoid_: Batch failure, agent crash, runtime error
+
+**Hook Refusal**:
+The outcome (`hook_refused`) of a Task commit a repository commit hook rejected after the authoritative Verification had already passed. It is a repository misconfiguration rather than a Task failure — a commit hook may never be stricter than the Verification — so the Task stays `completed`, its verified work stays staged in the surface that produced it, and the Run reports the refusing hook, its exit code, its output, and the Settle Command that recovers the work.
+_Avoid_: Commit failure, pre-commit error, verification failure
 
 **Mechanical Refusal Code**:
 The stable token a pre-QA mechanical check emits when it can refuse from written declarations and repository facts alone, before any Agent Session opens. Four exist: `QA-AUTH-PATHS` (a tooling change outside its authorization's bounded paths), `QA-CONSEQUENT-ORDER` (a consequent fix folded into or ordered before the change that caused it), `QA-REPORT-SHAPE` (a QA Report missing a required structural element), and `QA-EVIDENCE-PATH` (an evidence path a report names but the repository does not carry). The code is the durable name a reader and a later detector both use; the human sentence beside it may be reworded, the token may not.
@@ -419,7 +427,7 @@ The command that executes a Spec's Task Graph by running Agents over its Tasks i
 _Avoid_: Run command, execute command, spec command
 
 **Settle Command**:
-The local recovery command that re-runs one failed Task's Verification commands in the current repository. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it creates no Run and never pushes.
+The local recovery command that re-runs one Task's Verification commands in the surface that still holds its work — a kept Task Worktree, a kept Run Worktree, or the current repository. It recovers a Task that is failed, or completed with uncommitted work; the second is the state a Hook Refusal leaves behind, and a completed Task whose surfaces are all clean was committed already and settles nothing. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it creates no Run and never pushes.
 _Avoid_: Retry command, auto-settle, task fix command
 
 **Reconcile Command**:

@@ -1,0 +1,40 @@
+Row 8 — a Task that deletes and renames files settles and commits the removals.
+
+/private/tmp/qa0098b/del, surface staged as a refused commit leaves it:
+  D    obsolete.txt
+  R100 original.txt -> renamed.txt
+
+$ roundfix settle --spec 0001-widget-flow --task task_01
+exit: 0
+verify test -f src/parser.go — ok
+commit obsolete.txt — deleted
+commit original.txt — deleted
+commit renamed.txt
+settled task_01 completed — 5336092
+
+independent confirmation:
+$ git diff-tree --no-commit-id --name-status -r HEAD
+D  obsolete.txt
+D  original.txt
+A  renamed.txt
+obsolete.txt in HEAD: gone;  original.txt in HEAD: gone;  renamed.txt: present
+git status --porcelain=v1: empty
+"pathspec" appears nowhere in stderr.
+
+------------------------------------------------------------------------------
+Row 6 — Verification failure stops settle and leaves the surface unchanged.
+
+/private/tmp/qa0098b/verifail, task file declares two commands:
+  - `test -f src/parser.go`
+  - `grep -q NEVER_PRESENT src/parser.go`
+
+$ roundfix settle --spec 0001-widget-flow --task task_01
+exit: 1
+verify test -f src/parser.go — ok
+verify grep -q NEVER_PRESENT src/parser.go — failed (diagnostics: …/verification/batch-001-attempt-1.log)
+task_01 stays completed — verification failed
+Settle surface: /private/tmp/qa0098b/verifail
+
+HEAD unchanged: yes.  Working tree byte-for-byte unchanged: yes.
+Task status unchanged: completed.  No Agent Session opened, no repair prompt.
+Commands ran verbatim, in task-file order.

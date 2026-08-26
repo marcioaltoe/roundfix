@@ -9,6 +9,8 @@ import (
 	"io"
 	"strconv"
 	"strings"
+
+	"roundfix/internal/spec"
 )
 
 // SchemaVersion identifies the machine-readable Spec Consistency Check
@@ -59,6 +61,20 @@ type Result struct {
 	Skipped  []SkippedDetector `json:"skipped"`
 }
 
+// PromoteGaps applies the strictness of `spec check --strict` to one result:
+// every candidate the checker could not settle becomes a contradiction. It is
+// exported because two callers must reach the same verdict from the same Spec
+// — the CLI the qa-gate skill runs, and the Daemon's own gate precondition —
+// and a second copy of this rule is how those two would come to disagree about
+// whether a Spec refuses.
+func PromoteGaps(result *Result) {
+	for index := range result.Findings {
+		if result.Findings[index].Severity == SeverityGap {
+			result.Findings[index].Severity = SeverityError
+		}
+	}
+}
+
 // MechanicalResult is the complete, verdict-free output of the pre-QA
 // mechanical stage. Findings are accumulated rather than returned fail-fast.
 type MechanicalResult struct {
@@ -69,6 +85,15 @@ type MechanicalResult struct {
 	Blocked        []BlockedRow
 	Skips          []MechanicalSkip
 	Blocking       bool
+
+	// PreconditionRefusal is the check that stopped this gate before it could
+	// build a matrix, and the reason it gave, ready for the report a refusal
+	// writes instead of that matrix. PreconditionRefused separates a run that
+	// refused nothing from a refusal whose cause carries no name, which is
+	// recorded rather than dropped. The stage stores the pair and writes no
+	// report itself.
+	PreconditionRefusal spec.PreconditionRefusal
+	PreconditionRefused bool
 }
 
 // MechanicalFinding locates one citation-checkable contradiction and its

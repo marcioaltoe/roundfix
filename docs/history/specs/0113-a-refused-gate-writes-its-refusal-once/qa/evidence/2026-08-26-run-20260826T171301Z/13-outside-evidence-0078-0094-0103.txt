@@ -1,0 +1,28 @@
+=== P5. outside evidence: three earlier Specs' reports, read in place in this repository ===
+These reports were authored by earlier gates, before this Spec existed. This Spec did not
+write them, and none of them was edited by it.
+
+--- docs/history/specs/0078-roundfix-asks-for-the-review/qa/qa-report-2026-08-05.md
+    authored by: 5e2d6ba5 2026-08-13 feat: one history root under docs (#159)
+    untouched by this Spec: 0 commit(s) since 854039b8
+    Blocking:       false
+    Findings:       0
+
+--- docs/history/specs/0094-one-history-root-under-docs/qa/qa-report-2026-08-13.md
+    authored by: 5e2d6ba5 2026-08-13 feat: one history root under docs (#159)
+    untouched by this Spec: 0 commit(s) since 854039b8
+    Blocking:       true
+    Findings:       2
+      - QA-REPORT-SHAPE docs/history/specs/0094-one-history-root-under-docs/qa/qa-report-2026-08-13.md:1 row="" detail=Results table has no report rows
+      - QA-REPORT-SHAPE docs/history/specs/0094-one-history-root-under-docs/qa/qa-report-2026-08-13.md:7 row="" detail=rows_blocked_environment is 1 but the Results table contains 0 matching rows
+      - QA-REPORT-SHAPE waits on Results table has no report rows (QA-REPORT-SHAPE)
+
+--- docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14.md
+    authored by: cec521b7 2026-08-15 fix: a suite that leaks nothing (#163)
+    untouched by this Spec: 0 commit(s) since 854039b8
+    Blocking:       false
+    Findings:       0
+
+Read as a pattern: 0094 carries the empty-matrix shape this Spec was written about and still
+refuses; 0103 carried a precondition refusal written as one terminal row and passes; 0078
+carries a full matrix and raises no shape finding. The same detector reads all three.

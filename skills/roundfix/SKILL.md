@@ -1532,7 +1532,7 @@ scheduler starts up to `worktree.concurrency` Tasks from that Wave at once.
 The default is `2`; `1` keeps sequential behavior. Each Task's Verification
 commands gate one commit. By default the Run never pushes; a repository can
 opt in with `implement.auto_push: true`, which pushes only after a Clean
-outcome and never opens pull requests (ADR-0021).
+outcome and never opens pull requests (ADR-0138).
 
 1. Start the Implement Command with:
 
@@ -1943,12 +1943,14 @@ Task, re-running a gate — is inside the loop's authority.
 ## Settle Command
 
 Use `roundfix settle --spec <slug> --task <task_id>` only as a local recovery
-command for one failed Task whose completed work is already in a kept Task
-Worktree, a kept Run Worktree, or the current repository. Settle resolves that
-surface by loading the target Task status in order from the deterministic Task
-Worktree path, the Run Worktree recorded on the latest kept Run, and the
-current repository. It selects the first candidate whose task file is
-`failed`.
+command for one Task whose completed work is already in a kept Task Worktree, a
+kept Run Worktree, or the current repository. Settle resolves that surface by
+loading the target Task status in order from the deterministic Task Worktree
+path, the Run Worktree recorded on the latest kept Run, and the current
+repository. It selects the first candidate whose task file is `failed`, or
+`completed` while that surface still holds the work uncommitted — the state a
+refusing commit hook leaves behind, where the Daemon settled the Task after its
+Verification passed and the commit never landed.
 
 Flags:
 
@@ -1958,12 +1960,14 @@ Flags:
 
 Preflight Validation exits `2` with one actionable message when either flag is
 missing, the repository does not resolve, the Spec or Task Graph does not load,
-the Task id is absent from the Task Graph, no candidate surface has the target
-Task `failed`, a settle surface path exists but is unusable, or another Active
-Run owns the Spec target or working tree. When no surface qualifies, the
-refusal names every candidate path and the status found there, or that the path
-does not exist. `pending` and `in_progress` Tasks belong to the Implement
-Command; completed Tasks have nothing to do.
+the Task id is absent from the Task Graph, no candidate surface holds the target
+Task in a settleable state, a settle surface path exists but is unusable, or
+another Active Run owns the Spec target or working tree. When no surface
+qualifies, the refusal names every candidate path and the status found there,
+`no uncommitted work` for a `completed` surface that holds none, or that the
+path does not exist. `pending` and `in_progress` Tasks belong to the Implement
+Command; a `completed` Task whose surfaces are all clean was committed already
+and settles nothing.
 
 On every settle that proceeds, stderr prints the selected surface before
 Verification starts:

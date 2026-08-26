@@ -1,0 +1,62 @@
+# Commit-dependent tooling audit for Spec 0113, resolved from the Daemon-owned Task commits
+# and the current worktree delta, with git diff-tree rather than a reported file list.
+
+===== c2a70a7e feat: task: Write Terminal Row on Precondition Refusal
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_01.md
+internal/spec/qa.go
+internal/spec/qa_test.go
+
+===== 19baa6bd feat: task: Detect Precondition Failure
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_02.md
+internal/speccheck/mechanical.go
+internal/speccheck/mechanical_test.go
+internal/speccheck/report.go
+
+===== 97ff7679 feat: task: Store Precondition Metadata
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_03.md
+internal/spec/qa.go
+internal/spec/qa_test.go
+internal/speccheck/mechanical.go
+internal/speccheck/mechanical_test.go
+
+===== 4cc3b5fb feat: task: Update Mechanical Stage Validation
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_04.md
+internal/speccheck/mechanical.go
+internal/speccheck/mechanical_test.go
+
+===== b663bf72 feat: task: Parse results from the Results table only
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_07.md
+internal/speccheck/citations.go
+internal/speccheck/mechanical.go
+internal/speccheck/mechanical_test.go
+internal/speccheck/testdata/mechanical/report-green.md
+
+===== 3e4f594b fix: serialize 0113 task_05 behind task_07 after an integration conflict
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/_tasks.md
+
+===== a7628d5b feat: task: Read Newest Report Only
+docs/specs/0113-a-refused-gate-writes-its-refusal-once/task_05.md
+internal/speccheck/mechanical.go
+internal/speccheck/mechanical_test.go
+
+===== current worktree delta (tracked + untracked)
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/01-newest-only-and-results-table-0098.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/02-results-table-only-isolated.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/03-results-table-only-before-task07.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/04-precondition-refusal-report.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/05-refusal-row-before-task04.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/06-newest-report-only.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/07-probes-ordering-and-missing-matrix.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/08-historical-pattern-0078-0094-0103.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/09-historical-pattern-in-place.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/10-production-wiring.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/evidence/2026-08-26-run-20260826T071534Z/11-tooling-audit.txt
+?? docs/specs/0113-a-refused-gate-writes-its-refusal-once/qa/qa-report-2026-08-26.md
+?? qaharness/main.go
+
+===== PRD Tooling authority declaration
+65:- Tooling authority: not applicable — no protected tooling mutation is proposed
+66-  or authorized. The work changes QA gate behavior and its report writing in
+67-  production Go and its tests, creating or editing no linter, formatter,
+68-  test-runner, build, or skill configuration. Source:
+69-  `docs/agents/agent-instructions.md`.

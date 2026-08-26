@@ -1,0 +1,67 @@
+# Same three Specs measured IN PLACE in this repository, so each report keeps its own
+# evidence/ directory (the isolated copies in 08-*.txt lose it and raise QA-EVIDENCE-PATH noise).
+# 0078 and 0094 each hold exactly one report, so newest-only cannot mask them.
+
+===== docs/history/specs/0078-roundfix-asks-for-the-review/qa/qa-report-2026-08-05.md
+requested:      docs/history/specs/0078-roundfix-asks-for-the-review/qa/qa-report-2026-08-05.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          2
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+PreconditionRefused: false {CheckName: Reason:}
+
+===== docs/history/specs/0094-one-history-root-under-docs/qa/qa-report-2026-08-13.md
+requested:      docs/history/specs/0094-one-history-root-under-docs/qa/qa-report-2026-08-13.md
+Blocking:       true
+Findings:       2
+  - QA-REPORT-SHAPE docs/history/specs/0094-one-history-root-under-docs/qa/qa-report-2026-08-13.md:1 row="" detail=Results table has no report rows
+  - QA-REPORT-SHAPE docs/history/specs/0094-one-history-root-under-docs/qa/qa-report-2026-08-13.md:7 row="" detail=rows_blocked_environment is 1 but the Results table contains 0 matching rows
+Blocked rows:   1
+  - QA-REPORT-SHAPE waits on Results table has no report rows (QA-REPORT-SHAPE)
+Skips:          2
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+PreconditionRefused: false {CheckName: Reason:}
+
+===== docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14.md
+requested:      docs/history/specs/0103-a-suite-that-leaks-nothing/qa/qa-report-2026-08-14.md
+Blocking:       false
+Findings:       0
+Blocked rows:   0
+Skips:          2
+  - authorization bounded paths: tooling authorization
+  - consequent-fix commit order: consequent-fix declaration
+PreconditionRefused: false {CheckName: Reason:}
+
+===== the frontmatter and Results table 0094's gate left behind on 2026-08-13
+---
+spec: 0094-one-history-root-under-docs
+date: 2026-08-13
+build: f5c1f5a5a485cdafc05eeb28ef57e14af409cc35
+status: closed
+verdict: pass
+rows_blocked_environment: 1
+rows_blocked_finding: 0
+rows_blocked_declared: 0
+surfaces: [cli, docs]
+---
+
+# QA report — One history root under `docs/`
+
+## Scope and environment
+
+Full terminal gate for all six PRD user stories, ten Core Features, Success
+Metrics, explicit Non-Goals, task-level acceptance not safely credited from
+focused evidence, and the mandatory commit-dependent tooling audit. The actor is
+a Roundfix maintainer using a binary built from
+
+## Results
+
+| # | Status | Provenance |
+| - | --- | --- |
+
+## Mechanical skips
+
+| Detector | Missing artifact |

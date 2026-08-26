@@ -1,5 +1,5 @@
 ---
-status: pending
+status: open
 created_at: 2026-08-15
 updated_at: 2026-08-15
 ---

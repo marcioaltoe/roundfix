@@ -1,0 +1,29 @@
+Row 7 / Row 3 — settle chooses the kept Run Worktree over the checkout and
+recovers the Daemon's hook-refused work.
+
+$ roundfix settle --spec 0001-widget-flow --task task_01     # hook still refusing
+exit: 1
+verify test -f src/parser.go — ok
+Settle surface: /Users/marcio/.roundfix/worktrees/run1-654d8cd7/run_20260826T010825Z_f9298d27aea95130
+roundfix: settle failed after verification: repository commit hook refused the commit (exit status 1): src/parser.go:1: file violates the repository style rule
+
+  -> the selected surface is the kept Run Worktree, not the current repository.
+
+# the repository repairs its over-strict hook, then:
+$ roundfix settle --spec 0001-widget-flow --task task_01
+exit: 0
+verify test -f src/parser.go — ok
+commit docs/specs/0001-widget-flow/task_01.md
+commit src/parser.go
+settled task_01 completed — b20b5bf
+Settle surface: /Users/marcio/.roundfix/worktrees/run1-654d8cd7/run_20260826T010825Z_f9298d27aea95130
+
+--- independent confirmation, from the user checkout, fresh git reads ---
+checkout HEAD: bc31948 -> b20b5bf on qa/hook-refusal
+src/parser.go in checkout HEAD: present
+byte-identical to the work the hook refused: yes
+task status in checkout: completed
+git status --porcelain=v1: (empty)
+commit trailers: Roundfix-Spec: 0001-widget-flow / Roundfix-Task: task_01
+Run Worktree: removed
+remotes configured: 0 — nothing was pushed

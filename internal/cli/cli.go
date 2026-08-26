@@ -87,7 +87,7 @@ Commands:
   resolve    Resolve downloaded Unresolved Review Issues
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
-  settle     Verify and commit all current worktree changes for one failed Task
+  settle     Verify and commit one failed, or completed but uncommitted, Task
   reconcile  Inspect or release proven terminal spec Run worktrees
   release    Plan the next release version without mutating repository or release state
   spec       Check Spec artifact consistency; audit Spec delivery

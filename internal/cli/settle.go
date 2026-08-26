@@ -23,12 +23,14 @@ import (
 const settleUsage = `Usage:
   roundfix settle --spec <slug> --task <task_id>
 
-Re-runs one failed Task's Verification commands in its kept Task Worktree when
-available, then its kept Run Worktree, then the current repository. On pass,
-settles completed and commits all Run Worktree changes plus the task file; for
-a kept Task Worktree, commits all Task Worktree changes plus the task file and
-integrates them onto the Run Branch. settle creates no Run, writes no Run Event
-Journal entries, and never pushes.
+Re-runs one Task's Verification commands in its kept Task Worktree when
+available, then its kept Run Worktree, then the current repository. A surface
+settles when its task file is failed, or completed while the verified work is
+still uncommitted there — the state a refusing commit hook leaves behind. On
+pass, settles completed and commits all Run Worktree changes plus the task file;
+for a kept Task Worktree, commits all Task Worktree changes plus the task file
+and integrates them onto the Run Branch. settle creates no Run, writes no Run
+Event Journal entries, and never pushes.
 
 Options:
   --spec  Spec slug under docs/specs/
@@ -36,7 +38,7 @@ Options:
 
 Exit codes:
   0  settled completed and committed
-  1  verification failed; status stays failed and no commit is created
+  1  verification did not pass; the Task status is unchanged and no commit is created
   2  Preflight Validation failed
 `
 
@@ -83,6 +85,7 @@ type settleSurfaceChoice struct {
 type settleSurfaceReport struct {
 	path   string
 	status string
+	detail string
 }
 
 func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writer, environment commandEnvironment) int {
@@ -102,25 +105,9 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	collaborators := commandDependenciesForContext(ctx).newEngineCollaborators()
-	verificationRunID := settleVerificationRunID(plan)
 	fmt.Fprintf(stderr, "Settle surface: %s\n", plan.workDir)
-	for _, command := range plan.task.Verification {
-		_, err := collaborators.verifier.Verify(ctx, daemon.VerifyRequest{
-			WorkDir:    plan.workDir,
-			Command:    command,
-			OutputPath: daemon.VerificationOutputPath(plan.artifactDir, verificationRunID, 1, 1),
-		})
-		if err != nil {
-			var commandErr *daemon.VerificationCommandError
-			if !errors.As(err, &commandErr) {
-				fmt.Fprintf(stderr, "%s: settle verification failed: %v\n", app.Name, err)
-				return exitRunFailed
-			}
-			fmt.Fprintf(stdout, "verify %s — failed (diagnostics: %s)\n", command, commandErr.OutputPath)
-			fmt.Fprintf(stdout, "%s stays failed — verification failed\n", plan.task.ID)
-			return exitRunFailed
-		}
-		fmt.Fprintf(stdout, "verify %s — ok\n", command)
+	if !runVerificationInSettleSurface(ctx, plan, collaborators.verifier, stdout, stderr) {
+		return exitRunFailed
 	}
 
 	commitResult, err := settleTaskAndCommit(ctx, plan, collaborators)
@@ -130,7 +117,7 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	shortSHA := commitResult.shortSHA
 	if plan.taskSurface {
-		if integratedSHA, err := integrateSettledTaskWorktree(ctx, plan); err != nil {
+		if integratedSHA, err := integrateTaskWorktree(ctx, plan); err != nil {
 			fmt.Fprintf(stderr, "%s: settle failed after verification: %v\n", app.Name, err)
 			return exitRunFailed
 		} else if integratedSHA != "" {
@@ -150,12 +137,63 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	if len(commitResult.paths) > 0 {
 		emitSettleSharedFailedWarning(stderr, plan)
-		for _, path := range commitResult.paths {
-			fmt.Fprintf(stdout, "commit %s\n", path)
+		for _, staged := range commitResult.paths {
+			if staged.deleted {
+				fmt.Fprintf(stdout, "commit %s — deleted\n", staged.path)
+				continue
+			}
+			fmt.Fprintf(stdout, "commit %s\n", staged.path)
 		}
 	}
 	fmt.Fprintf(stdout, "settled %s completed — %s\n", plan.task.ID, shortSHA)
 	return exitOK
+}
+
+// runVerificationInSettleSurface re-runs the Task's Verification in the
+// selected settle surface and reports one verdict line per command. The work
+// settle recovers already passed this Verification under the Daemon, so settle
+// runs the same commands through the same daemon.Verifier collaborator the
+// Implement Run engine uses: task file order, verbatim text, no edit, and no
+// Agent session to repair a failure. The first command that does not pass ends
+// the loop, and the caller leaves the surface exactly as it found it.
+//
+// Implement's single Verification repair (ADR-0038) has no counterpart here. A
+// temporary failure (exit code 75) reaches settle wrapped around its command
+// failure and stops the settle like any other failed command; the Supervisor
+// re-runs settle once the cause is gone.
+func runVerificationInSettleSurface(ctx context.Context, plan settlePlan, verifier daemon.Verifier, stdout io.Writer, stderr io.Writer) bool {
+	outputPath := daemon.VerificationOutputPath(plan.artifactDir, settleVerificationRunID(plan), 1, 1)
+	for _, verificationCommand := range plan.task.Verification {
+		_, err := verifier.Verify(ctx, daemon.VerifyRequest{
+			WorkDir:    plan.workDir,
+			Command:    verificationCommand,
+			OutputPath: outputPath,
+		})
+		if err == nil {
+			fmt.Fprintf(stdout, "verify %s — ok\n", verificationCommand)
+			continue
+		}
+		var commandErr *daemon.VerificationCommandError
+		if errors.As(err, &commandErr) {
+			fmt.Fprintf(stdout, "verify %s — failed (diagnostics: %s)\n", verificationCommand, commandErr.OutputPath)
+			fmt.Fprintf(stdout, "%s stays %s — verification failed\n", plan.task.ID, plan.task.Status)
+			return false
+		}
+		// The runner never observed a verdict, so the recovered work is
+		// neither verified nor refuted. Report it apart from a failed command
+		// and keep the cause on stderr: it names an environment problem the
+		// Supervisor clears before settling again.
+		var unknownErr *daemon.VerificationUnknownError
+		if errors.As(err, &unknownErr) {
+			fmt.Fprintf(stdout, "verify %s — verdict unknown\n", verificationCommand)
+			fmt.Fprintf(stdout, "%s stays %s — verification verdict unknown\n", plan.task.ID, plan.task.Status)
+			fmt.Fprintf(stderr, "%s: settle verification verdict unknown: %v\n", app.Name, unknownErr)
+			return false
+		}
+		fmt.Fprintf(stderr, "%s: settle verification failed: %v\n", app.Name, err)
+		return false
+	}
+	return true
 }
 
 func settleVerificationRunID(plan settlePlan) string {
@@ -247,22 +285,22 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer, e
 				hasRun:       true,
 			},
 		}
-		choice, reports, err := resolveSettleSurface(req, resolvedSpecsRoot, gitState.Root, candidatesWithCurrent(candidates, gitState.Root, gitState.Branch))
+		choice, reports, err := resolveSettleSurface(ctx, req, resolvedSpecsRoot, gitState.Root, candidatesWithCurrent(candidates, gitState.Root, gitState.Branch))
 		if err != nil {
 			return settlePlan{}, err
 		}
 		if !choice.found {
-			return settlePlan{}, settleNoFailedSurfaceError(req.specSlug, req.taskID, reports)
+			return settlePlan{}, settleNoSurfaceError(req.specSlug, req.taskID, reports)
 		}
 		applySettleSurfaceChoice(&plan, choice)
 	}
 	if plan.graph == nil {
-		choice, reports, err := resolveSettleSurface(req, resolvedSpecsRoot, gitState.Root, candidatesWithCurrent(nil, gitState.Root, gitState.Branch))
+		choice, reports, err := resolveSettleSurface(ctx, req, resolvedSpecsRoot, gitState.Root, candidatesWithCurrent(nil, gitState.Root, gitState.Branch))
 		if err != nil {
 			return settlePlan{}, err
 		}
 		if !choice.found {
-			return settlePlan{}, settleNoFailedSurfaceError(req.specSlug, req.taskID, reports)
+			return settlePlan{}, settleNoSurfaceError(req.specSlug, req.taskID, reports)
 		}
 		applySettleSurfaceChoice(&plan, choice)
 	}
@@ -296,7 +334,7 @@ func applySettleSurfaceChoice(plan *settlePlan, choice settleSurfaceChoice) {
 	plan.taskSurface = candidate.taskSurface
 }
 
-func resolveSettleSurface(req settleRequest, resolvedSpecsRoot roundconfig.SpecsRoot, gitRoot string, candidates []settleSurfaceCandidate) (settleSurfaceChoice, []settleSurfaceReport, error) {
+func resolveSettleSurface(ctx context.Context, req settleRequest, resolvedSpecsRoot roundconfig.SpecsRoot, gitRoot string, candidates []settleSurfaceCandidate) (settleSurfaceChoice, []settleSurfaceReport, error) {
 	var reports []settleSurfaceReport
 	for _, candidate := range candidates {
 		report := settleSurfaceReport{path: candidate.workDir}
@@ -329,8 +367,13 @@ func resolveSettleSurface(req settleRequest, resolvedSpecsRoot roundconfig.Specs
 			continue
 		}
 		report.status = string(task.Status)
+		settles, detail, err := settleSurfaceSettles(ctx, candidate.workDir, report.status)
+		if err != nil {
+			return settleSurfaceChoice{}, reports, err
+		}
+		report.detail = detail
 		reports = append(reports, report)
-		if task.Status == spec.StatusFailed {
+		if settles {
 			return settleSurfaceChoice{
 				candidate: candidate,
 				specsRoot: specsRoot,
@@ -343,8 +386,37 @@ func resolveSettleSurface(req settleRequest, resolvedSpecsRoot roundconfig.Specs
 	return settleSurfaceChoice{}, reports, nil
 }
 
-func settleNoFailedSurfaceError(slug string, taskID string, reports []settleSurfaceReport) error {
-	return validationError{message: fmt.Sprintf("Task %s has no failed settle surface; candidates: %s; %s", taskID, formatSettleSurfaceReports(reports), settleStatusGuidance(slug, taskID, reports))}
+// settleSurfaceSettles reports whether a candidate surface holds work settle
+// recovers, and what to say about the surface when it does not. taskStatus is
+// the status the surface's own task file carries, in the canonical text
+// spec.Load normalizes to — the same text the candidate report enumerates.
+//
+// failed is the ordinary settle target. completed is the hook-refusal state:
+// the Daemon settles the Task completed once its Verification passes and then
+// commits, so a commit a repository hook refuses leaves verified work
+// uncommitted in the surface that produced it. A completed Task whose surface
+// holds nothing uncommitted was committed already and settles nothing.
+func settleSurfaceSettles(ctx context.Context, workDir string, taskStatus string) (bool, string, error) {
+	if taskStatus == "failed" {
+		return true, "", nil
+	}
+	if taskStatus == "completed" {
+		changed, err := commandDependenciesForContext(ctx).newEngineCollaborators().worktree.Snapshot(ctx, workDir)
+		if err != nil {
+			return false, "", validationError{message: fmt.Sprintf("inspect settle surface %q for uncommitted work: %v", workDir, err)}
+		}
+		if len(changed) == 0 {
+			return false, settleCommittedSurfaceDetail, nil
+		}
+		return true, "", nil
+	}
+	return false, "", nil
+}
+
+const settleCommittedSurfaceDetail = "no uncommitted work"
+
+func settleNoSurfaceError(slug string, taskID string, reports []settleSurfaceReport) error {
+	return validationError{message: fmt.Sprintf("Task %s has no settleable surface; candidates: %s; %s", taskID, formatSettleSurfaceReports(reports), settleStatusGuidance(slug, taskID, reports))}
 }
 
 func formatSettleSurfaceReports(reports []settleSurfaceReport) string {
@@ -355,6 +427,9 @@ func formatSettleSurfaceReports(reports []settleSurfaceReport) string {
 			status = "status unavailable"
 		} else if spec.AllowedStatus(spec.Status(status)) {
 			status = "status " + status
+		}
+		if detail := strings.TrimSpace(report.detail); detail != "" {
+			status += " (" + detail + ")"
 		}
 		parts = append(parts, fmt.Sprintf("%s: %s", report.path, status))
 	}
@@ -368,7 +443,7 @@ func settleStatusGuidance(slug string, taskID string, reports []settleSurfaceRep
 			return settleStatusMessage(slug, spec.Task{ID: taskID, Status: status})
 		}
 	}
-	return fmt.Sprintf("Task %s status is unavailable; settle requires failed", taskID)
+	return fmt.Sprintf("Task %s status is unavailable; %s", taskID, settleStatusRequirement)
 }
 
 func latestKeptSettleRun(ctx context.Context, homeDir string, gitRoot string, specSlug string) (store.Run, bool, error) {
@@ -422,14 +497,18 @@ func settleStatusError(slug string, task spec.Task) error {
 	return validationError{message: settleStatusMessage(slug, task)}
 }
 
+// settleStatusRequirement states the contract every refusal closes on, so a
+// Supervisor reading one refusal knows which two states settle recovers.
+const settleStatusRequirement = "settle requires failed, or completed with uncommitted work"
+
 func settleStatusMessage(slug string, task spec.Task) string {
 	switch task.Status {
 	case spec.StatusPending, spec.StatusInProgress:
 		return fmt.Sprintf("Task %s status is %s; run the Implement Command instead: roundfix implement --spec %s", task.ID, task.Status, slug)
 	case spec.StatusCompleted:
-		return fmt.Sprintf("Task %s status is completed; nothing to do", task.ID)
+		return fmt.Sprintf("Task %s status is completed with no uncommitted work; nothing to settle", task.ID)
 	default:
-		return fmt.Sprintf("Task %s status is %s; settle requires failed", task.ID, task.Status)
+		return fmt.Sprintf("Task %s status is %s; %s", task.ID, task.Status, settleStatusRequirement)
 	}
 }
 
@@ -471,28 +550,41 @@ func ensureNoSettleActiveRun(ctx context.Context, homeDir string, gitRoot string
 
 type settleCommitResult struct {
 	shortSHA string
-	paths    []string
+	paths    []settleStagedPath
 }
 
+// settleStagedPath is one path the settle commit carries and whether the
+// commit removes it. A removal is the one entry the path alone cannot report:
+// the file is gone from the surface, so the settle report says so rather than
+// leaving a Supervisor to read the commit to find out what it deleted.
+type settleStagedPath struct {
+	path    string
+	deleted bool
+}
+
+// settleTaskAndCommit settles the Task completed in the surface that holds its
+// verified work and commits that surface as one standard Task commit. The
+// status flip is written before staging so it rides in the same commit as the
+// code changes (ADR 0013), the way the Daemon's own Task commit carries it.
 func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators engineCollaborators) (settleCommitResult, error) {
 	taskPath := filepath.Join(plan.specsRoot, plan.task.File)
-	changed, err := collaborators.worktree.Snapshot(ctx, plan.workDir)
-	if err != nil {
-		return settleCommitResult{}, err
-	}
-	changed = ensureSettleCommitPath(changed, settleArtifactCommitPath(plan, taskPath))
-	stageable, _ := daemon.FilterStageablePaths(plan.workDir, changed)
 	if err := spec.SetStatus(taskPath, spec.StatusCompleted); err != nil {
 		return settleCommitResult{}, fmt.Errorf("settle Task %s completed: %w", plan.task.ID, err)
 	}
-	committedPaths := []string(nil)
-	if len(stageable) > 0 {
-		committedPaths = append([]string(nil), stageable...)
-		message := daemon.TaskCommitMessage(plan.graph.Spec.Slug, plan.task)
+	if err := addAllChanges(ctx, plan.workDir); err != nil {
+		return settleCommitResult{}, err
+	}
+	committedPaths, err := stagedSettlePaths(ctx, plan.workDir)
+	if err != nil {
+		return settleCommitResult{}, err
+	}
+	if len(committedPaths) > 0 {
+		// The committer stages the surface again before it commits. That
+		// repeats the stage-all above rather than narrowing it, so the commit
+		// carries exactly the index stagedSettlePaths just reported.
 		if err := collaborators.committer.Commit(ctx, daemon.CommitRequest{
 			WorkDir: plan.workDir,
-			Message: message,
-			Paths:   stageable,
+			Message: daemon.TaskCommitMessage(plan.graph.Spec.Slug, plan.task),
 		}); err != nil {
 			return settleCommitResult{}, err
 		}
@@ -502,6 +594,59 @@ func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators eng
 		return settleCommitResult{}, err
 	}
 	return settleCommitResult{shortSHA: shortSHA, paths: committedPaths}, nil
+}
+
+// addAllChanges stages every change in the settle surface with `git add --all`.
+//
+// The Daemon's Task commit stages an explicit path list, because it diffs a
+// before and an after snapshot to keep the commit to what one Agent turn
+// touched. A settle surface has no before snapshot: everything uncommitted
+// there is the recovered Task's work, and two shapes reach this call that a
+// path list cannot carry. A file the Task deleted stops matching its own
+// pathspec once the removal is staged, so re-staging it fails on a pathspec
+// that matches nothing. A file the Task renamed is one porcelain record naming
+// the new path, so staging that path alone leaves the old path's deletion out
+// of the commit. Staging the whole surface records both as removals.
+func addAllChanges(ctx context.Context, workDir string) error {
+	if _, err := (preflight.ExecGitRunner{}).RunGit(ctx, workDir, "add", "--all"); err != nil {
+		return fmt.Errorf("stage settle surface %q: %w", workDir, err)
+	}
+	return nil
+}
+
+// stagedSettlePaths reports what addAllChanges staged, so the settle report
+// names exactly the paths the Task commit carries and marks the ones it
+// removes. Rename detection stays off: a rename is an added path and a removed
+// path in the commit, and settle reports both.
+//
+// `--name-status -z` writes one status field and one path field per entry,
+// each NUL-terminated, so the fields read as pairs and the split leaves one
+// empty field after the last path. A status without its path is truncated
+// output, and settle refuses rather than report a commit it cannot enumerate.
+func stagedSettlePaths(ctx context.Context, workDir string) ([]settleStagedPath, error) {
+	output, err := (preflight.ExecGitRunner{}).RunGit(ctx, workDir, "diff", "--cached", "--name-status", "--no-renames", "-z")
+	if err != nil {
+		return nil, fmt.Errorf("read staged paths in settle surface %q: %w", workDir, err)
+	}
+	fields := strings.Split(output, "\x00")
+	var paths []settleStagedPath
+	for index := 0; index < len(fields); index += 2 {
+		status := fields[index]
+		if status == "" {
+			continue
+		}
+		if index+1 >= len(fields) || fields[index+1] == "" {
+			return nil, fmt.Errorf("read staged paths in settle surface %q: status %q carries no path", workDir, status)
+		}
+		paths = append(paths, settleStagedPath{
+			path:    fields[index+1],
+			deleted: strings.HasPrefix(status, "D"),
+		})
+	}
+	sort.Slice(paths, func(first int, second int) bool {
+		return paths[first].path < paths[second].path
+	})
+	return paths, nil
 }
 
 func emitSettleSharedFailedWarning(stderr io.Writer, plan settlePlan) {
@@ -523,7 +668,11 @@ func otherFailedSettleTasks(tasks []spec.Task, settledTaskID string) []string {
 	return failed
 }
 
-func integrateSettledTaskWorktree(ctx context.Context, plan settlePlan) (string, error) {
+// integrateTaskWorktree replays the settled Task commit onto the Run Branch and
+// removes the Task Worktree once it lands. A conflict returns before the
+// removal, so the surface that still holds the work stays where the Supervisor
+// can reach it.
+func integrateTaskWorktree(ctx context.Context, plan settlePlan) (string, error) {
 	result, err := runworktree.IntegrateTask(ctx, plan.runRef, plan.taskRef)
 	if err != nil {
 		return "", err
@@ -556,19 +705,6 @@ func integrateSettledRun(ctx context.Context, plan settlePlan) (string, error) {
 	return "", nil
 }
 
-func ensureSettleCommitPath(paths []string, path string) []string {
-	for _, existing := range paths {
-		if existing == path {
-			result := append([]string(nil), paths...)
-			sort.Strings(result)
-			return result
-		}
-	}
-	result := append(append([]string(nil), paths...), path)
-	sort.Strings(result)
-	return result
-}
-
 func settleShortHEAD(ctx context.Context, gitRoot string) (string, error) {
 	output, err := preflight.ExecGitRunner{}.RunGit(ctx, gitRoot, "rev-parse", "--short", "HEAD")
 	if err != nil {
@@ -583,11 +719,4 @@ func settleShortHEAD(ctx context.Context, gitRoot string) (string, error) {
 
 func filepathInRoot(root string, path string) string {
 	return filepath.Join(root, path)
-}
-
-func settleArtifactCommitPath(plan settlePlan, artifactPath string) string {
-	if relative, err := filepath.Rel(plan.workDir, artifactPath); err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) && !filepath.IsAbs(relative) {
-		return relative
-	}
-	return artifactPath
 }

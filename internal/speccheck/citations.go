@@ -1469,6 +1469,21 @@ func resolveIndexedReference(indexDir, relative string) (string, bool) {
 	return filepath.Join(indexDir, clean), true
 }
 
+// markdownHeading reports the depth and text of one ATX heading line, and depth
+// zero for a line that is not a heading. Depth separates a document's sections
+// from the subsections written inside one.
+func markdownHeading(line string) (int, string) {
+	trimmed := strings.TrimSpace(line)
+	depth := 0
+	for depth < len(trimmed) && trimmed[depth] == '#' {
+		depth++
+	}
+	if depth == 0 || depth >= len(trimmed) || trimmed[depth] != ' ' {
+		return 0, ""
+	}
+	return depth, strings.TrimSpace(trimmed[depth+1:])
+}
+
 func markdownCells(line string) []string {
 	trimmed := strings.TrimSpace(line)
 	if !strings.HasPrefix(trimmed, "|") || !strings.HasSuffix(trimmed, "|") {

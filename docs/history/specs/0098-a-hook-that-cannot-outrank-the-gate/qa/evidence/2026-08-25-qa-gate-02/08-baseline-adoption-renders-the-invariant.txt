@@ -1,0 +1,42 @@
+Row 10 — AC5 / Success metric 3, exercised as a real first adoption rather than
+against a fixture.
+
+Scratch repository: /private/tmp/qa0098b/adopt (a fresh Go repo, git-initialised,
+no Roundfix history). Profile: go-cli-tui — deliberately NOT the profile whose
+golden fixture this Spec regenerated.
+
+1. External Repository Skill Set restored from a local clone of the pinned
+   source, plan-digest confirmed:
+   $ roundfix baseline skills restore --profile go-cli-tui --skill context7 \
+       --skill exa-web-search --source-dir /Users/marcio/dev/skills \
+       --confirm-plan ef6a0bbc…acb0f4 --format json
+   ok: True  applied: True  finding: restore.completed
+
+2. $ roundfix baseline plan --profile go-cli-tui --decision … --format json
+   planDigest: sha256:8e305bf7d0965921f7ffd703ddd79846af85dd730053ccda69b4f2a8d00c2ae8
+   (this file: 07-baseline-adoption-plan.json)
+
+3. $ roundfix baseline apply --plan plan.json --confirm-plan sha256:8e305bf7…
+   exit 0 — state: verified, "approved Baseline Plan applied"
+   Status matrix: Approved postimages verified; Profile alignment verified.
+
+4. The adopting repository's rendered guidance now carries the invariant:
+   $ grep -n "stricter" docs/agents/autonomous-work.md
+   15:- **mandatory**: A commit hook must not be stricter than the Task's declared
+   Verification. ADR-0014 makes the Daemon the verification authority, and it
+   commits only after that Verification passes, so a hook refusing at that point
+   is a second gate the loop cannot satisfy: it discards work already proven
+   correct. Keep every check a hook enforces inside the declared Verification. A
+   refusal recorded with the `hook_refused` classification is a repository
+   misconfiguration to repair, not a Task failure; the work stays staged in its
+   surface and the Run ends unresolved instead of losing it.
+
+5. "No local edit overwrites it" — the clause was locally weakened to
+   "A commit hook may be as strict as it likes." and the maintenance copy was run:
+   $ roundfix baseline update --repo /private/tmp/qa0098b/adopt --yes --format json
+   exit 0 — state: verified, "approved Baseline Plan applied"
+   $ grep -n "stricter" docs/agents/autonomous-work.md
+   15:- **mandatory**: A commit hook must not be stricter than the Task's declared Verification. …
+   The refresh restored the invariant verbatim.
+
+Source of truth: internal/baseline/assets/modules/autonomous-work.json:95.

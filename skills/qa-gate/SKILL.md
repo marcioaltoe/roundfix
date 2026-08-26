@@ -44,13 +44,54 @@ defect; do not run the gate outside that node.
   roundfix spec check <slug> --strict
   ```
 
-  Stop before building the matrix when the command fails. Record the clean
-  result in the report's scope and environment, but do not create QA matrix
-  rows that repeat the authoring rules in the table below. A completed or
-  archived legacy Spec is exempt from forced constraint backfill; keep every
-  legacy artifact byte-identical and retain any governance row that has no
-  clean authoring result to replace it. Absence of a Project Constraints
-  section by itself is not proof of legacy status.
+  Stop before building the matrix when the command fails, and write the refusal
+  before you stop. A gate that stops here measured no requirement, so its whole
+  report is the refusal:
+
+  ```markdown
+  ---
+  verdict: fail
+  rows_blocked_precondition: 1
+  rows_blocked_environment: 0
+  rows_blocked_finding: 0
+  rows_blocked_declared: 0
+  precondition_check: "roundfix spec check <slug> --strict"
+  precondition_reason: "<every refusing code and the sentence beside it>"
+  ---
+
+  # QA Report
+
+  ## Results
+
+  | # | Status | Provenance |
+  | - | --- | --- |
+  | 0 | blocked | precondition |
+
+  ## Precondition refusal
+
+  - check: roundfix spec check <slug> --strict
+  - reason: <every refusing code and the sentence beside it>
+  ```
+
+  Row `0` is the entire matrix: `blocked` because nothing ran, provenance
+  `precondition` because the stop is a refusal and not a measurement. Name every
+  refusing `SC-*` code in `precondition_reason`, code first and its sentence
+  after, joined with `; ` and collapsed onto one line, so a maintainer reading
+  the report knows whether to fix the Spec or the tree. Justify the row in prose
+  as a list, never as a second table under `## Results`. An empty Results table
+  is not an option: it refuses every later run on this report instead of on the
+  Spec, and the prescribed repair — materialize every planned row — is one a run
+  that never built a matrix cannot perform.
+
+  A gate that stopped here writes nothing else: no matrix, and no rows for the
+  checks that never executed.
+
+  When the command passes, record the clean result in the report's scope and
+  environment, but do not create QA matrix rows that repeat the authoring rules
+  in the table below. A completed or archived legacy Spec is exempt from forced
+  constraint backfill; keep every legacy artifact byte-identical and retain any
+  governance row that has no clean authoring result to replace it. Absence of a
+  Project Constraints section by itself is not proof of legacy status.
 
 | Authoring rule removed from the QA matrix | `spec check` equivalent |
 | --- | --- |
@@ -367,6 +408,12 @@ Close with `status: closed` and apply the verdict mechanically:
 Set `rows_blocked_environment`, `rows_blocked_finding`, and
 `rows_blocked_declared` to the exact number of rows with each blocked cause.
 Keep all three keys in every closed report, including when any count is zero.
+
+A report that carries the precondition refusal row from section 1 carries
+`rows_blocked_precondition` as well, set to the exact number of `blocked` rows
+whose provenance is `precondition`, plus `precondition_check` and
+`precondition_reason`. A gate that reached its matrix writes none of these three
+keys: the refusal is an added shape, not a fourth count every report owes.
 
 The gate permits PR preparation only on `pass`. On `fail` or `partial`, state what must change or be verified before rerunning. In a daemon-assigned Roundfix QA step, write the report but never commit or push; the daemon owns the QA report commit. Daemon-assigned steps may also run sandboxed: when an operation outside the workspace fails with a permission error (writes to `$HOME`, network, nested tool state), classify it immediately as environment-caused, mark the affected row `blocked (environment: <error>)`, and move on — never retry-loop a sandbox denial — noting in the environment record which checks need a full-access session.
 

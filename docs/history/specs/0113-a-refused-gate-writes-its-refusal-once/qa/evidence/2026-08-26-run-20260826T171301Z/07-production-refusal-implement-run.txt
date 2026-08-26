@@ -1,0 +1,62 @@
+Journey: a Supervisor runs 'roundfix implement' on a Spec whose gate precondition refuses.
+Seat: the built binary bin/roundfix (roundfix 0.6.0, commit stamp 342a8a5d-dirty), a real
+git repository under /tmp, the real Daemon, the real QA gate. No harness, no test.
+
+=== 1. the scratch Spec refuses its own gate precondition ===
+$ roundfix spec check 9001-a-spec-that-contradicts-itself --strict   -> exit 1, four SC-CONSTRAINT-MISSING
+
+=== 2. the Run: the QA gate stops before any Agent turn ===
+$ git switch -c work && roundfix implement --spec 9001-a-spec-that-contradicts-itself --no-input
+cwd: /tmp/qa0113-refusal-KOjloq/repo
+branch: work
+
+roundfix: pruned Run storage runs=3 journal_rows=0 artifact_bytes=0
+Run Worktree: /Users/marcio/.roundfix/worktrees/repo-f627fa77/run_20260826T173130Z_e8b1177ac173a8f7
+Roundfix implement
+
+Target:
+  Spec: 9001-a-spec-that-contradicts-itself
+  Branch: work
+  Agent: Codex
+  Agent Model: gpt-5.6-sol
+  Default Reasoning Effort: high
+  Selections:
+    per-scope history: unavailable
+  HEAD: 0a7d1574325bf06e96c32d118642ac1c97e2c028
+
+Run:
+  ID: run_20260826T173130Z_e8b1177ac173a8f7
+  State: ResolvingWithAgent
+  Task Capacity: 2
+  Verification Capacity: 1
+  Run Worktree: /Users/marcio/.roundfix/worktrees/repo-f627fa77/run_20260826T173130Z_e8b1177ac173a8f7
+  Git: clean, 0 unpushed commit(s), upstream no upstream
+  Auto-commit: on
+  Auto-push: off
+  Last push: disabled
+
++-----------------------------------------+--------------------------------------------------------+
+| Tasks                                   | Agent Console                                          |
++-----------------------------------------+--------------------------------------------------------+
+| task_01 completed — Do the task_01... | Agent and verification output will stream below.       |
+| task_02 pending — QA gate             |                                                        |
++-----------------------------------------+--------------------------------------------------------+
+Keys: Ctrl-C stop
+
+roundfix: implement selected Spec 9001-a-spec-that-contradicts-itself with 2 Task(s); 1 to execute this Run.
+Implement Run: run_20260826T173130Z_e8b1177ac173a8f7
+User checkout: /private/tmp/qa0113-refusal-KOjloq/repo on branch work
+Run Worktree: /Users/marcio/.roundfix/worktrees/repo-f627fa77/run_20260826T173130Z_e8b1177ac173a8f7 on branch roundfix/run-run_20260826T173130Z_e8b1177ac173a8f7
+Agent: Codex
+Agent Model: gpt-5.6-sol
+Default Reasoning Effort: high
+QA mechanical stage blocked Spec 9001-a-spec-that-contradicts-itself with 4 finding(s).
+QA verdict: fail
+QA Report commit created: docs: qa report for 9001-a-spec-that-contradicts-itself (fail)
+Implement Run run_20260826T173130Z_e8b1177ac173a8f7 reached Unresolved.
+Run Worktree kept: /Users/marcio/.roundfix/worktrees/repo-f627fa77/run_20260826T173130Z_e8b1177ac173a8f7
+task_01 completed — Do the task_01 work
+task_02 failed — QA gate
+qa fail — docs/specs/9001-a-spec-that-contradicts-itself/qa/qa-report-2026-08-26.md
+Unresolved: 1 completed, 1 failed, 0 skipped, 0 pending.
+exit=1

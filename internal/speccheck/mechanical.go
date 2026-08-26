@@ -19,6 +19,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"roundfix/internal/baseline"
+	"roundfix/internal/spec"
 	"roundfix/internal/suiteguardcontract"
 	"roundfix/internal/worktree"
 )
@@ -79,6 +80,12 @@ type RepairFailure struct {
 	Detail string
 }
 
+// GatePreconditionCheck names the check a QA gate runs before it builds its
+// matrix: the Spec's own strict Spec Consistency Check. One name covers every
+// refusal that check produces, because the finding codes recorded beside it
+// are what identify the detector that refused.
+const GatePreconditionCheck = "spec check --strict"
+
 // GatePreconditionResult separates contradictions that stop a QA gate from
 // written inputs the gate itself is assigned to repair. Inputs remain visible
 // so the gate can act on them; they are not silently discarded to get green.
@@ -109,6 +116,62 @@ func GatePrecondition(checked Result) GatePreconditionResult {
 	}
 	precondition.Blocking = len(precondition.Findings) > 0
 	return precondition
+}
+
+// PreconditionRefusal derives the audit record of a QA gate stop: the check
+// that refused and, from the same strict Spec Consistency Check result the
+// gate already classified, every code and sentence behind the refusal. The
+// result of that check is read where it is produced rather than re-parsed from
+// its rendered text, so a reworded line cannot change what the report records.
+//
+// A gate whose precondition did not block refuses nothing, which the second
+// return separates from a refusal whose cause carries no name. That one is
+// still recorded: a refusal the gate cannot write is the deadlock the refusal
+// report exists to end.
+func PreconditionRefusal(precondition GatePreconditionResult) (spec.PreconditionRefusal, bool) {
+	if !precondition.Blocking {
+		return spec.PreconditionRefusal{}, false
+	}
+	reasons := make([]string, 0, len(precondition.Findings))
+	recorded := make(map[string]bool, len(precondition.Findings))
+	for _, finding := range precondition.Findings {
+		// Every distinct cause is kept, because the reason is the only record
+		// of why the gate stopped; a repeat of one adds nothing to read.
+		reason := preconditionRefusalReason(finding)
+		if reason == "" || recorded[reason] {
+			continue
+		}
+		recorded[reason] = true
+		reasons = append(reasons, reason)
+	}
+	return spec.PreconditionRefusal{
+		CheckName: GatePreconditionCheck,
+		Reason:    strings.Join(reasons, "; "),
+	}, true
+}
+
+// preconditionRefusalReason renders one refusing finding as its durable code
+// followed by the sentence that explains it. The code leads because it is the
+// name a later reader and detector share; the sentence beside it may be
+// reworded, the code may not. A finding that names only one of the two is
+// recorded by that one alone rather than by an empty label.
+func preconditionRefusalReason(finding Finding) string {
+	code := collapseRefusalText(finding.Code)
+	summary := collapseRefusalText(finding.Summary)
+	switch {
+	case code == "":
+		return summary
+	case summary == "":
+		return code
+	default:
+		return code + ": " + summary
+	}
+}
+
+// collapseRefusalText folds one authored value onto a single line so a joined
+// reason stays one frontmatter value in the report it is written into.
+func collapseRefusalText(value string) string {
+	return strings.Join(strings.Fields(value), " ")
 }
 
 // MechanicalTaskCommit associates the Daemon-owned Task commit with its Task
@@ -167,11 +230,15 @@ func MechanicalAuthorization(repoRoot, prdPath string) (string, []string, error)
 }
 
 type mechanicalReportRow struct {
-	id       string
-	status   string
-	evidence string
-	inputs   []EvidenceInput
-	line     int
+	id     string
+	status string
+	// provenance is the Results table's Provenance cell, empty when the table
+	// declares no such column. It names where a row came from, which is what
+	// separates a gate's precondition refusal from a measurement that blocked.
+	provenance string
+	evidence   string
+	inputs     []EvidenceInput
+	line       int
 }
 
 type mechanicalEvidenceRecord struct {
@@ -180,15 +247,16 @@ type mechanicalEvidenceRecord struct {
 }
 
 type mechanicalReport struct {
-	path                   string
-	rows                   []mechanicalReportRow
-	rowsBlockedEnvironment int
-	rowsBlockedFinding     int
-	rowsBlockedDeclared    int
-	countLines             map[string]int
-	evidenceSnapshots      map[string]mechanicalEvidenceRecord
-	evidenceSnapshotsErr   error
-	parseError             error
+	path                    string
+	rows                    []mechanicalReportRow
+	rowsBlockedEnvironment  int
+	rowsBlockedFinding      int
+	rowsBlockedDeclared     int
+	rowsBlockedPrecondition int
+	countLines              map[string]int
+	evidenceSnapshots       map[string]mechanicalEvidenceRecord
+	evidenceSnapshotsErr    error
+	parseError              error
 }
 
 var (
@@ -355,6 +423,9 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 		Skips:          []MechanicalSkip{},
 	}
 	addGatePreconditionFindings(&result, request.Precondition)
+	// The refusal travels with the result so the report writer never has to
+	// reconstruct why the gate stopped from the findings it happens to carry.
+	result.PreconditionRefusal, result.PreconditionRefused = PreconditionRefusal(request.Precondition)
 	repoRoot := filepath.Clean(request.RepoRoot)
 	if strings.TrimSpace(request.RepoRoot) == "" {
 		return result, errors.New("run mechanical stage: repository root is empty")
@@ -369,12 +440,16 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 	if err := detectMechanicalConsequentOrder(ctx, &result, repoRoot, request.ConsequentFixes); err != nil {
 		return result, err
 	}
-	report, present, err := loadMechanicalReport(repoRoot, request.ReportPath)
+	reportPath, err := newestMechanicalReportPath(repoRoot, request.ReportPath)
+	if err != nil {
+		return result, err
+	}
+	report, present, err := loadMechanicalReport(repoRoot, reportPath)
 	if err != nil {
 		return result, err
 	}
 	if !present {
-		missing := request.ReportPath
+		missing := reportPath
 		if strings.TrimSpace(missing) == "" {
 			missing = "QA Report"
 		}
@@ -776,6 +851,70 @@ func detectMechanicalConsequentOrder(ctx context.Context, result *MechanicalResu
 	return nil
 }
 
+// qaReportNameGlob matches the QA Report family a gate writes into a Spec's qa
+// directory: qa-report-YYYY-MM-DD.md and its same-date -NN reruns.
+const qaReportNameGlob = "qa-report-*.md"
+
+// newestMechanicalReportPath names the one QA Report the stage validates: the
+// newest member of the qa-report-*.md family in the directory the caller named,
+// whichever member of it the caller asked for. Every older report is read by
+// nothing, so a refusal one run wrote cannot block the run that supersedes it.
+// The caller's path names the QA directory; the directory names its own
+// authority.
+//
+// Recency is spec.NewestQAReportFromPaths — the same date-then-run-sequence key
+// spec.NewestQAReport applies to the filesystem and the worktree reconciler
+// applies to a Git tree. Raw filename order is not that key: "." sorts above
+// "-", so it reads a date's first report as newer than every same-date rerun
+// that supersedes it. A stage that sorted by name would disagree with the
+// callers that hand it a path about which report is current, which is how a
+// superseded one gets read again.
+//
+// A caller that names a report outside the family — a fixture, a draft under
+// another name — is answered with its own path. There is no family for it to be
+// the newest of, and redirecting that read would discard the report the caller
+// meant. For the same reason a carried row's establishing report is loaded by
+// its exact cited path and never through here: that citation names one report
+// on purpose, and pointing it at the newest would move the evidence a carried
+// row rests on.
+func newestMechanicalReportPath(repoRoot, requested string) (string, error) {
+	clean := cleanMechanicalPath(requested)
+	if clean == "" || !isQAReportName(filepath.Base(filepath.FromSlash(clean))) {
+		return requested, nil
+	}
+	directory := filepath.ToSlash(filepath.Dir(filepath.FromSlash(clean)))
+	resolved, ok := resolveRepositoryPath(repoRoot, directory)
+	if !ok {
+		return requested, nil
+	}
+	pattern := filepath.Join(resolved, qaReportNameGlob)
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return "", fmt.Errorf("list QA Reports matching %q: %w", pattern, err)
+	}
+	reports := make([]string, 0, len(matches))
+	for _, match := range matches {
+		candidate := cleanMechanicalPath(filepath.ToSlash(filepath.Join(directory, filepath.Base(match))))
+		if candidate != "" {
+			reports = append(reports, candidate)
+		}
+	}
+	// A directory with no report on disk answers with the requested path, so a
+	// caller that names one that is gone still gets the missing-report skip under
+	// the name it asked for rather than an empty one.
+	newest, err := spec.NewestQAReportFromPaths(reports)
+	if err != nil {
+		return clean, nil
+	}
+	return newest, nil
+}
+
+// isQAReportName reports whether one file name belongs to the QA Report family.
+func isQAReportName(name string) bool {
+	matched, err := filepath.Match(qaReportNameGlob, name)
+	return err == nil && matched
+}
+
 func loadMechanicalReport(repoRoot, reportPath string) (mechanicalReport, bool, error) {
 	resolved, ok := resolveRepositoryPath(repoRoot, reportPath)
 	if !ok {
@@ -816,52 +955,79 @@ func parseMechanicalReport(path string, content []byte) mechanicalReport {
 				report.rowsBlockedEnvironment = counts["rows_blocked_environment"]
 				report.rowsBlockedFinding = counts["rows_blocked_finding"]
 				report.rowsBlockedDeclared = counts["rows_blocked_declared"]
+				report.rowsBlockedPrecondition = counts["rows_blocked_precondition"]
 				report.countLines = lines
 			}
 		}
 	}
 
 	allLines := strings.Split(text, "\n")
-	inResults := false
-	statusColumn, evidenceColumn := -1, -1
-	for index, line := range allLines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "## ") {
-			if inResults {
+	report.rows = parseMechanicalResultsRows(allLines)
+	parseMechanicalRowInputs(allLines, report.rows)
+	return report
+}
+
+// parseMechanicalResultsRows reads report rows from the one table under the
+// report's `## Results` heading, and from nowhere else. A gate justifies a
+// Results row in prose, and that prose may carry a table of its own — a
+// comparison whose cells are names and observations, not statuses. Measured on
+// Spec 0098 on 2026-08-26: four cells of such a comparison were read as rows,
+// and each became a blocker no edit to the Results table could clear.
+//
+// A report with no `## Results` heading yields no rows, which the shape
+// detector reports as the missing matrix it is rather than passing on silence.
+func parseMechanicalResultsRows(lines []string) []mechanicalReportRow {
+	index := 0
+	for ; index < len(lines); index++ {
+		if depth, heading := markdownHeading(lines[index]); depth == 2 && strings.EqualFold(heading, "Results") {
+			index++
+			break
+		}
+	}
+
+	var rows []mechanicalReportRow
+	statusColumn, evidenceColumn, provenanceColumn := -1, -1, -1
+	inTable := false
+	for ; index < len(lines); index++ {
+		// The matrix ends where its table ends: at the next heading of any
+		// depth, or at the first line after the table that is not a table row.
+		if depth, _ := markdownHeading(lines[index]); depth > 0 {
+			break
+		}
+		cells := markdownCells(lines[index])
+		if len(cells) == 0 {
+			if inTable {
 				break
 			}
-			inResults = strings.EqualFold(strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")), "Results")
 			continue
 		}
-		if !inResults {
-			continue
-		}
-		cells := markdownCells(line)
-		if len(cells) == 0 {
-			continue
-		}
-		if statusColumn < 0 {
+		if !inTable {
+			inTable = true
 			for cellIndex, cell := range cells {
-				switch strings.ToLower(strings.TrimSpace(cell)) {
+				switch strings.ToLower(cell) {
 				case "status":
 					statusColumn = cellIndex
 				case "evidence":
 					evidenceColumn = cellIndex
+				case "provenance":
+					provenanceColumn = cellIndex
 				}
 			}
 			continue
 		}
-		if markdownSeparator(cells) || statusColumn >= len(cells) {
+		if markdownSeparator(cells) || statusColumn < 0 || statusColumn >= len(cells) {
 			continue
 		}
-		row := mechanicalReportRow{id: strings.TrimSpace(cells[0]), status: strings.TrimSpace(cells[statusColumn]), line: index + 1}
+		row := mechanicalReportRow{id: cells[0], status: cells[statusColumn], line: index + 1}
 		if evidenceColumn >= 0 && evidenceColumn < len(cells) {
-			row.evidence = strings.TrimSpace(cells[evidenceColumn])
+			row.evidence = cells[evidenceColumn]
 		}
-		report.rows = append(report.rows, row)
+		if provenanceColumn >= 0 && provenanceColumn < len(cells) {
+			row.provenance = cells[provenanceColumn]
+		}
+		rows = append(rows, row)
 	}
-	parseMechanicalRowInputs(allLines, report.rows)
-	return report
+	return rows
 }
 
 func mechanicalEvidenceSnapshots(document yaml.Node) (map[string]mechanicalEvidenceRecord, error) {
@@ -1323,9 +1489,10 @@ func mechanicalBlobPaths(ctx context.Context, repoRoot, head string) ([]string, 
 
 func mechanicalBlockedCounts(document yaml.Node) (map[string]int, map[string]int, error) {
 	counts := map[string]int{
-		"rows_blocked_environment": 0,
-		"rows_blocked_finding":     0,
-		"rows_blocked_declared":    0,
+		"rows_blocked_environment":  0,
+		"rows_blocked_finding":      0,
+		"rows_blocked_declared":     0,
+		"rows_blocked_precondition": 0,
 	}
 	lines := make(map[string]int)
 	if len(document.Content) == 0 || document.Content[0].Kind != yaml.MappingNode {
@@ -1359,9 +1526,10 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 		})
 	}
 	actual := map[string]int{
-		"rows_blocked_environment": 0,
-		"rows_blocked_finding":     0,
-		"rows_blocked_declared":    0,
+		"rows_blocked_environment":  0,
+		"rows_blocked_finding":      0,
+		"rows_blocked_declared":     0,
+		"rows_blocked_precondition": 0,
 	}
 	unparsed := map[string]int{
 		"rows_blocked_environment": 0,
@@ -1379,6 +1547,24 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 		status := strings.TrimSpace(row.status)
 		lower := strings.ToLower(status)
 		switch {
+		// The row a gate writes when a precondition stopped it before it built
+		// a matrix: the bare blocked status no typed cause covers, with
+		// provenance precondition. Both cells are read, because the status
+		// alone says only that nothing was measured and the provenance alone
+		// would let any status claim to be a refusal.
+		case strings.EqualFold(row.provenance, spec.QAPreconditionRowProvenance):
+			if lower != spec.QAPreconditionRowStatus {
+				addMechanicalFinding(result, MechanicalFinding{
+					Code: CodeMechanicalReportShape, File: report.path, Line: row.line,
+					Detail: "row " + row.id + " has provenance " + spec.QAPreconditionRowProvenance +
+						" with status " + strconv.Quote(status),
+					Fix: "Record the precondition refusal as status " + spec.QAPreconditionRowStatus +
+						" beside provenance " + spec.QAPreconditionRowProvenance + ".",
+					RowHint: row.id,
+				})
+				continue
+			}
+			actual["rows_blocked_precondition"]++
 		case lower == "pass", lower == "fail", lower == "skipped", strings.HasPrefix(lower, "carried (") && strings.HasSuffix(lower, ")"):
 		case lower == "pending" || lower == "":
 			addMechanicalFinding(result, MechanicalFinding{
@@ -1446,13 +1632,44 @@ func detectMechanicalReportShape(result *MechanicalResult, report mechanicalRepo
 			if declared[field] == actual[field]+unparsed[field] {
 				continue
 			}
-			addMechanicalFinding(result, MechanicalFinding{
-				Code: CodeMechanicalReportShape, File: report.path, Line: line,
-				Detail: fmt.Sprintf("%s is %d but the Results table contains %d matching rows", field, declared[field], actual[field]),
-				Fix:    "Set " + field + " to the exact number of matching typed blocked rows.",
-			})
+			addMechanicalCountMismatch(result, report, field, line, declared[field], actual[field])
 		}
 	}
+	detectPreconditionCount(result, report, actual["rows_blocked_precondition"])
+}
+
+// detectPreconditionCount reconciles rows_blocked_precondition with the refusal
+// rows the Results table actually carries. The field is required only of a
+// report that records a refusal: every report closed before the refusal row
+// existed declares three counts, and demanding a fourth from all of them would
+// raise a fresh blocker on gates that never refused — the deadlock this row
+// exists to end.
+func detectPreconditionCount(result *MechanicalResult, report mechanicalReport, rows int) {
+	const field = "rows_blocked_precondition"
+	line, present := report.countLines[field]
+	switch {
+	case present:
+		if report.rowsBlockedPrecondition != rows {
+			addMechanicalCountMismatch(result, report, field, line, report.rowsBlockedPrecondition, rows)
+		}
+	case rows > 0:
+		addMechanicalFinding(result, MechanicalFinding{
+			Code: CodeMechanicalReportShape, File: report.path, Line: 1,
+			Detail: field + " is absent from report frontmatter",
+			Fix:    "Record " + field + " beside the precondition refusal row the gate wrote.",
+		})
+	}
+}
+
+func addMechanicalCountMismatch(result *MechanicalResult, report mechanicalReport, field string, line, declared, actual int) {
+	if line < 1 {
+		line = 1
+	}
+	addMechanicalFinding(result, MechanicalFinding{
+		Code: CodeMechanicalReportShape, File: report.path, Line: line,
+		Detail: fmt.Sprintf("%s is %d but the Results table contains %d matching rows", field, declared, actual),
+		Fix:    "Set " + field + " to the exact number of matching typed blocked rows.",
+	})
 }
 
 func detectMechanicalEvidencePaths(result *MechanicalResult, repoRoot string, report mechanicalReport) {

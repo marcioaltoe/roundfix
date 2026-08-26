@@ -112,9 +112,11 @@ For `type: refactor`, use:
 
 Keep `open` entries in `docs/backlog/`. When a Spec adopts an entry, set `status: promoted` and `spec` to that Spec's slug, then move the entry to `docs/specs/<slug>/references/`; git history remains the discovery trail. Set `status: declined` only with a non-null `reason`. The current type set is open: a new type must be a Conventional Commits type that expresses intent. Adding a type is a contract change that requires a corpus re-record, never an informal addition. Use `refactor` as the canonical token, never an abbreviation.
 
+`docs/backlog/` holds `open` or `promoted` entries only. An entry in any other status archives to `docs/history/backlog/`, carrying no absorption license: intent that was set aside needs only the history root.
+
 - **mandatory**: Keep evidence and intent distinct in both directions: a finding records what happened and is never a commitment; it is evidence-backed, immutable history. A backlog entry records what to do next and is never evidence. A finding may spawn a backlog entry; a backlog entry needs no finding. A `feat` entry is upstream raw material that the spec pipeline may consume, never the `write-idea` artifact itself.
 
-- **mandatory**: Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers.
+- **mandatory**: Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers. Each of these directories holds live work only: retired content moves under the single history root `docs/history/`, family by family (`docs/history/backlog/`, `docs/history/findings/`, `docs/history/handoffs/`). Handoffs archive only on the user's explicit confirmation, and when confirmed, every handoff archives together — the active `docs/handoffs/` directory is the capture door, never a shelf.
 
 - **mandatory**: Durable knowledge flows upstream only: the project glossary (`CONTEXT.md`) and the agent guides reference accepted ADRs and never reference `docs/specs/` or `docs/findings/` content. Findings are dated reports that become Specs, not reference material; a document meant as durable project reference belongs in `docs/references/`.
 
@@ -168,11 +170,13 @@ members:
   - YYYY-MM-DD-<finding-slug>.md
 ```
 
-- **mandatory**: Use `docs/history/findings/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:
+- **mandatory**: The active `docs/findings/` directory holds pending Findings and the active Rollups that license the archive, nothing else. A Finding that is done or deferred leaves for `docs/history/findings/` through absorption. Use `docs/history/findings/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:
 
 ```yaml
 absorbed_by: <rollup-basename-or-spec-slug>
 ```
+
+A Rollup that licenses archived members must itself stay active: moving it to the history root unresolves every license that names it.
 
 - **mandatory**: Read a findings directory holding only live work as `health`, not loss: Rollups and `docs/history/findings/` hold what was learned. Do not restore absorbed Findings merely to repopulate the active directory.
 
