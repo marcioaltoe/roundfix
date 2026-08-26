@@ -34,7 +34,10 @@ reader is looking.
   skills name. ADR-0135 makes an absent diagnostic a reported state rather than
   an empty message, and this Spec applies the same principle to an unrun check.
   ADR-0096 asks the gate to prove machine facts before spending an Agent turn.
-  Source: `docs/agents/domain.md`.
+  ADR-0117 places a defect's check at the stage that can produce it, which is
+  the obligation this Spec is most directly accountable to: a vacuous
+  Verification is produced during authoring, so authoring is where it must be
+  refused. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — this Spec edits Roundfix-owned authoring
   skills, which are protected tooling. Express maintainer authorization:
   granted 2026-08-26 in session, for the four authoring skills. Bounded files:
@@ -126,6 +129,15 @@ rendered authoring guidance.
   the artifact rather than the process that made it.
 - The 2026-08-14 finding's second observation — that a partial detector is read
   as a gate — no longer holds for the shipped authoring path.
+
+This PRD was itself written into the defect it describes, which is the closest
+measurement available. Its author ran the stage-scoped check, read
+`No findings.`, and reported the artifact as validated. `SC-ADR-RELATED` was in
+that run's skipped list, and the full unscoped sweep raised it: ADR-0117 was
+unaccounted for. The stage-scoped run did print its skips, and they were read
+past. A check that lists twelve skipped detectors under a clean verdict states
+its scope truthfully and still loses the reader, which is why Core Feature 2 is
+about where the scope is reported and not only whether it is.
 
 ## Decisions
 
