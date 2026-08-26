@@ -958,6 +958,127 @@ func TestCountDisagreementReportsItsCause(t *testing.T) {
 	}
 }
 
+func TestMechanicalStageAcceptsThePreconditionRefusalRow(t *testing.T) {
+	t.Parallel()
+
+	t.Run("the refusal a gate writes passes the stage that reads it", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		reportPath := "docs/specs/mechanical/qa/qa-report-2026-08-25.md"
+		var refusal bytes.Buffer
+		if err := spec.WritePreconditionRefusalReport(&refusal, spec.PreconditionRefusal{
+			CheckName: speccheck.GatePreconditionCheck,
+			Reason:    "SC-VOCABULARY-UNDOCUMENTED: undocumented emitted token",
+		}); err != nil {
+			t.Fatalf("WritePreconditionRefusalReport() error = %v", err)
+		}
+		writeMechanicalFile(t, repoRoot, reportPath, refusal.String())
+
+		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalReportShape)
+		if result.Blocking {
+			t.Fatalf("Blocking = true, want a refusal report to leave the next run free; findings = %#v", result.Findings)
+		}
+	})
+
+	t.Run("an empty Results table still refuses", func(t *testing.T) {
+		t.Parallel()
+		repoRoot := newMechanicalGitRepo(t)
+		reportPath := "docs/specs/mechanical/qa/report-empty.md"
+		writeMechanicalFile(t, repoRoot, reportPath, "---\n"+
+			"verdict: fail\n"+
+			"rows_blocked_environment: 0\n"+
+			"rows_blocked_finding: 0\n"+
+			"rows_blocked_declared: 0\n"+
+			"rows_blocked_precondition: 0\n"+
+			"---\n\n"+
+			"# QA Report\n\n"+
+			"## Results\n\n"+
+			"| # | Status | Provenance |\n"+
+			"| - | --- | --- |\n")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+		findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+		if len(findings) != 1 || !strings.Contains(findings[0].Detail, "Results table has no report rows") {
+			t.Fatalf("%s findings = %#v, want the empty-matrix refusal", speccheck.CodeMechanicalReportShape, findings)
+		}
+	})
+
+	tests := []struct {
+		name       string
+		declared   string
+		row        string
+		wantDetail string
+	}{
+		{
+			name:     "blocked beside precondition provenance is terminal",
+			declared: "rows_blocked_precondition: 1\n",
+			row:      "| 0 | blocked | precondition |\n",
+		},
+		{
+			name:       "precondition provenance with a non-blocked status refuses",
+			declared:   "rows_blocked_precondition: 0\n",
+			row:        "| 0 | pending | precondition |\n",
+			wantDetail: `row 0 has provenance precondition with status "pending"`,
+		},
+		{
+			name:       "bare blocked without precondition provenance still refuses",
+			row:        "| 0 | blocked | measured |\n",
+			wantDetail: "blocked cause outside environment, finding, or declared",
+		},
+		{
+			name:       "a declared count that no refusal row matches refuses",
+			declared:   "rows_blocked_precondition: 2\n",
+			row:        "| 0 | blocked | precondition |\n",
+			wantDetail: "rows_blocked_precondition is 2 but the Results table contains 1 matching rows",
+		},
+		{
+			name:       "a refusal row without its declared count refuses",
+			row:        "| 0 | blocked | precondition |\n",
+			wantDetail: "rows_blocked_precondition is absent from report frontmatter",
+		},
+		{
+			name: "a report that records no refusal need not declare the count",
+			row:  "| R01 | pass | measured |\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := newMechanicalGitRepo(t)
+			reportPath := "docs/specs/mechanical/qa/report.md"
+			writeMechanicalFile(t, repoRoot, reportPath, "---\n"+
+				"verdict: fail\n"+
+				"rows_blocked_environment: 0\n"+
+				"rows_blocked_finding: 0\n"+
+				"rows_blocked_declared: 0\n"+
+				tt.declared+
+				"---\n\n"+
+				"# QA Report\n\n"+
+				"## Results\n\n"+
+				"| # | Status | Provenance |\n"+
+				"| - | --- | --- |\n"+
+				tt.row)
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalReportShape)
+			if tt.wantDetail == "" {
+				if len(findings) != 0 {
+					t.Fatalf("%s findings = %#v, want none", speccheck.CodeMechanicalReportShape, findings)
+				}
+				return
+			}
+			if len(findings) != 1 || !strings.Contains(findings[0].Detail, tt.wantDetail) {
+				t.Fatalf("%s findings = %#v, want one detail containing %q", speccheck.CodeMechanicalReportShape, findings, tt.wantDetail)
+			}
+		})
+	}
+}
+
 func TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode(t *testing.T) {
 	t.Parallel()
 	repoRoot := newMechanicalGitRepo(t)
