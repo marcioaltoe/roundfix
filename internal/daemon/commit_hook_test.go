@@ -15,8 +15,12 @@ import (
 	"roundfix/internal/spec"
 )
 
+// TestClassifyCommitHookRefusal holds the output signal on its own: every case
+// runs against a repository with no commit hook installed, so what the failed
+// commit said is the only thing that can classify it.
 func TestClassifyCommitHookRefusal(t *testing.T) {
 	t.Parallel()
+	hooklessRepo := newHookRepoForTest(t)
 	tests := []struct {
 		name    string
 		output  string
@@ -82,7 +86,7 @@ func TestClassifyCommitHookRefusal(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			hook, refused := ClassifyCommitHookRefusal(test.output)
+			hook, refused := ClassifyCommitHookRefusal(context.Background(), hooklessRepo, test.output)
 			if refused != test.refused {
 				t.Fatalf("ClassifyCommitHookRefusal(%q) refused = %t, want %t", test.output, refused, test.refused)
 			}
@@ -90,6 +94,175 @@ func TestClassifyCommitHookRefusal(t *testing.T) {
 				t.Fatalf("ClassifyCommitHookRefusal(%q) hook = %q, want %q", test.output, hook, test.hook)
 			}
 		})
+	}
+}
+
+// TestClassifyCommitHookRefusalReadsTheRepositoryWhenOutputNamesNothing is the
+// F-2 shape: Git prints nothing identifying when a hook fails, so a hook that
+// emits only its finding can be recognised only from the repository. The
+// finding below carries no hook name, no runner banner and no hooks path, so
+// every case here is decided by whether a hook is installed.
+func TestClassifyCommitHookRefusalReadsTheRepositoryWhenOutputNamesNothing(t *testing.T) {
+	t.Parallel()
+	// The objection of the first measured Run death, as its hook printed it.
+	finding := "src/parser.go:12: function exceeds the 80-line limit"
+	if _, named := ClassifyCommitHookRefusal(context.Background(), t.TempDir(), finding); named {
+		t.Fatalf("expected %q to name no hook on its own", finding)
+	}
+	tests := []struct {
+		name    string
+		install func(t *testing.T, repoDir string)
+		refused bool
+	}{
+		{
+			name: "an executable pre-commit hook classifies the refusal",
+			install: func(t *testing.T, repoDir string) {
+				writeCommitHookForTest(t, repoDir, "pre-commit", "exit 1\n")
+			},
+			refused: true,
+		},
+		{
+			name: "an executable commit-msg hook classifies the refusal",
+			install: func(t *testing.T, repoDir string) {
+				writeCommitHookForTest(t, repoDir, "commit-msg", "exit 1\n")
+			},
+			refused: true,
+		},
+		{
+			name:    "a repository with no hook keeps the raw git error",
+			install: func(t *testing.T, repoDir string) {},
+		},
+		{
+			name: "a hook Git would not execute is not a hook",
+			install: func(t *testing.T, repoDir string) {
+				mustWriteForTest(t, filepath.Join(repoDir, ".git", "hooks", "pre-commit"), "#!/bin/sh\nexit 1\n")
+			},
+		},
+		{
+			name: "a sample hook is not an installed hook",
+			install: func(t *testing.T, repoDir string) {
+				writeCommitHookForTest(t, repoDir, "pre-commit.sample", "exit 1\n")
+			},
+		},
+		{
+			name: "a hook that cannot refuse this commit does not classify it",
+			install: func(t *testing.T, repoDir string) {
+				writeCommitHookForTest(t, repoDir, "pre-push", "exit 1\n")
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repoDir := newHookRepoForTest(t)
+			test.install(t, repoDir)
+
+			hook, refused := ClassifyCommitHookRefusal(context.Background(), repoDir, finding)
+
+			if refused != test.refused {
+				t.Fatalf("expected refused = %t for a failed commit, got %t", test.refused, refused)
+			}
+			if hook != "" {
+				t.Fatalf("expected no hook named by output that names none, got %q", hook)
+			}
+		})
+	}
+}
+
+// TestClassifyCommitHookRefusalResolvesTheHooksDirectoryGitWouldRun pins the
+// resolution to Git's own answer rather than to a guessed .git/hooks path: the
+// measured repository configured core.hooksPath to .husky, and the Daemon
+// commits from a Task Worktree, whose hooks live in the main repository.
+func TestClassifyCommitHookRefusalResolvesTheHooksDirectoryGitWouldRun(t *testing.T) {
+	t.Parallel()
+	finding := "src/parser.go:12: function exceeds the 80-line limit"
+
+	t.Run("core.hooksPath moves the hook out of .git", func(t *testing.T) {
+		t.Parallel()
+		repoDir := t.TempDir()
+		gittest.InitRepo(t, repoDir, "-b", "main")
+		gittest.AppendConfig(t, repoDir, "[core]\n\thooksPath = .husky\n")
+		huskyDir := filepath.Join(repoDir, ".husky")
+		if err := os.MkdirAll(huskyDir, 0o755); err != nil {
+			t.Fatalf("create .husky directory: %v", err)
+		}
+		// The measured hook: lint-staged behind `set -eu`, printing no banner.
+		writeExecutableHookForTest(t, filepath.Join(huskyDir, "pre-commit"), "set -eu\nexit 1\n")
+
+		if _, refused := ClassifyCommitHookRefusal(context.Background(), repoDir, finding); !refused {
+			t.Fatal("expected the hook under core.hooksPath found")
+		}
+		// Nothing lives in .git/hooks, so a guessed path would answer no.
+		if _, refused := ClassifyCommitHookRefusal(context.Background(), t.TempDir(), finding); refused {
+			t.Fatal("expected a directory outside any repository to classify nothing")
+		}
+	})
+
+	t.Run("a subdirectory resolves the same hook", func(t *testing.T) {
+		t.Parallel()
+		repoDir := newHookRepoForTest(t)
+		writeCommitHookForTest(t, repoDir, "pre-commit", "exit 1\n")
+		nested := filepath.Join(repoDir, "internal", "api")
+		if err := os.MkdirAll(nested, 0o755); err != nil {
+			t.Fatalf("create nested directory: %v", err)
+		}
+
+		if _, refused := ClassifyCommitHookRefusal(context.Background(), nested, finding); !refused {
+			t.Fatal("expected the repository's hook found from a subdirectory")
+		}
+	})
+
+	t.Run("a linked worktree resolves the repository's hook", func(t *testing.T) {
+		t.Parallel()
+		repoDir := newHookRepoForTest(t)
+		writeCommitHookForTest(t, repoDir, "pre-commit", "exit 1\n")
+		worktreeDir := filepath.Join(t.TempDir(), "task-worktree")
+		runGitForTest(t, repoDir, "worktree", "add", "-q", "-b", "task", worktreeDir)
+
+		if _, refused := ClassifyCommitHookRefusal(context.Background(), worktreeDir, finding); !refused {
+			t.Fatal("expected the hook found from the Task Worktree the Daemon commits in")
+		}
+	})
+}
+
+// TestGitCommitterClassifiesAHookThatNamesNothing drives the real committer
+// against the measured repository shape: a hook that prints its finding and
+// nothing else. Before the repository became a signal, this Run ended with a
+// raw git error, no hook_refused record and no recovery named.
+func TestGitCommitterClassifiesAHookThatNamesNothing(t *testing.T) {
+	t.Parallel()
+	repoDir := newHookRepoForTest(t)
+	writeCommitHookForTest(t, repoDir, "pre-commit",
+		"set -eu\n"+
+			"echo 'src/parser.go:12: function exceeds the 80-line limit' >&2\n"+
+			"exit 1\n")
+	mustWriteForTest(t, filepath.Join(repoDir, "src.txt"), "verified work\n")
+
+	err := GitCommitter{}.Commit(context.Background(), CommitRequest{
+		WorkDir: repoDir,
+		Message: "feat: add the parser",
+		Paths:   []string{"src.txt"},
+	})
+
+	var refusal *HookRefusalError
+	if !errors.As(err, &refusal) {
+		t.Fatalf("expected a classified hook refusal, got %v", err)
+	}
+	if refusal.Hook != "" {
+		t.Fatalf("expected no hook name from output that names none, got %q", refusal.Hook)
+	}
+	if got := refusal.HookName(); got != "commit" {
+		t.Fatalf("expected the generic hook label reported, got %q", got)
+	}
+	if refusal.ExitCode != 1 {
+		t.Fatalf("expected the hook exit code recorded, got %d", refusal.ExitCode)
+	}
+	if !strings.Contains(refusal.Output, "function exceeds the 80-line limit") {
+		t.Fatalf("expected the hook's objection recorded, got %q", refusal.Output)
+	}
+	staged := runGitForTest(t, repoDir, "diff", "--cached", "--name-only")
+	if !strings.Contains(staged, "src.txt") {
+		t.Fatalf("expected the verified work left staged for recovery, got %q", staged)
 	}
 }
 
@@ -332,8 +505,14 @@ func newHookRepoForTest(t *testing.T) string {
 
 func writeCommitHookForTest(t *testing.T, repoDir string, hook string, body string) {
 	t.Helper()
-	path := filepath.Join(repoDir, ".git", "hooks", hook)
+	writeExecutableHookForTest(t, filepath.Join(repoDir, ".git", "hooks", hook), body)
+}
+
+// writeExecutableHookForTest writes an executable hook at an explicit path,
+// for hooks that live outside .git/hooks because core.hooksPath moved them.
+func writeExecutableHookForTest(t *testing.T, path string, body string) {
+	t.Helper()
 	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+body), 0o755); err != nil {
-		t.Fatalf("write %s hook: %v", hook, err)
+		t.Fatalf("write hook %s: %v", path, err)
 	}
 }

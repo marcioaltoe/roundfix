@@ -671,8 +671,12 @@ func measuredHookRefusedWorkForTest() []measuredHookRefusedWork {
 
 // measuredHookRefusalScriptForTest enforces the three measured rules over the
 // staged content, so the refusal a test observes is computed rather than
-// declared.
-const measuredHookRefusalScriptForTest = `exec 1>&2
+// declared. It runs in the shape the measured repository used — a plain
+// `+"`set -eu`"+` script that prints its findings and no banner — because git
+// names no hook when one fails, and a fixture that announces a runner banner
+// classifies through output the real repository never produced.
+const measuredHookRefusalScriptForTest = `set -eu
+exec 1>&2
 refused=0
 for file in $(git diff --cached --name-only --diff-filter=ACM); do
   case "$file" in
@@ -696,7 +700,6 @@ for file in $(git diff --cached --name-only --diff-filter=ACM); do
   fi
 done
 if [ "$refused" -ne 0 ]; then
-  echo 'husky - pre-commit script failed (code 1)'
   exit 1
 fi
 exit 0
@@ -754,8 +757,10 @@ func TestSettleRecoversMeasuredHookRefusedWork(t *testing.T) {
 	if refusedCode != exitRunFailed {
 		t.Fatalf("expected settle to stop on the hook refusal with exit %d, got %d (stderr %q)", exitRunFailed, refusedCode, refusedStderr.String())
 	}
-	if !strings.Contains(refusedStderr.String(), "pre-commit hook refused the commit") {
-		t.Fatalf("expected the refusing hook named, got %q", refusedStderr.String())
+	// The hook named nothing, so settle reports the refusal under the generic
+	// label rather than guessing which hook ran.
+	if !strings.Contains(refusedStderr.String(), "repository commit hook refused the commit") {
+		t.Fatalf("expected the refusal reported, got %q", refusedStderr.String())
 	}
 	for _, item := range work {
 		if !strings.Contains(refusedStderr.String(), item.objection) {

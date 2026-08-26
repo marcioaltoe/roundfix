@@ -6662,16 +6662,19 @@ type measuredHookRefusalCase struct {
 	objection string
 }
 
-// hook wraps a case's rule in the shape a hook runner produces: findings on
-// stderr, a banner naming the hook, and a non-zero exit.
+// hook wraps a case's rule in the shape the measured repository ran it in:
+// findings on stderr, a plain `set -eu` script that prints no banner, and a
+// non-zero exit. Git names nothing when a hook fails, so this output identifies
+// no hook at all — which is what the measured Runs actually produced, and what
+// a fixture that announces a runner banner cannot reproduce.
 func (testCase measuredHookRefusalCase) hook() string {
-	return "exec 1>&2\n" +
+	return "set -eu\n" +
+		"exec 1>&2\n" +
 		"refused=0\n" +
 		"for file in $(git diff --cached --name-only --diff-filter=ACM); do\n" +
 		testCase.check +
 		"done\n" +
 		"if [ \"$refused\" -ne 0 ]; then\n" +
-		"  echo 'husky - pre-commit script failed (code 1)'\n" +
 		"  exit 1\n" +
 		"fi\n" +
 		"exit 0\n"
@@ -6787,8 +6790,14 @@ func TestHookRefusalRecovery(t *testing.T) {
 			if !errors.As(err, &refusal) {
 				t.Fatalf("expected the hook refusal classified, got %v", err)
 			}
-			if refusal.Hook != "pre-commit" {
-				t.Fatalf("expected the refusing hook named, got %q", refusal.Hook)
+			// The measured hooks print only their finding and git names
+			// nothing, so the refusal is recognised from the repository and
+			// reported under the generic label rather than a guessed hook.
+			if refusal.Hook != "" {
+				t.Fatalf("expected no hook name from output that names none, got %q", refusal.Hook)
+			}
+			if got := refusal.HookName(); got != "commit" {
+				t.Fatalf("expected the generic hook label reported, got %q", got)
 			}
 			if !strings.Contains(refusal.Output, testCase.objection) {
 				t.Fatalf("expected the hook's own finding %q recorded, got %q", testCase.objection, refusal.Output)
@@ -6820,6 +6829,9 @@ func TestHookRefusalRecovery(t *testing.T) {
 			}
 			if payload["status"] != string(spec.StatusCompleted) {
 				t.Fatalf("expected the Task recorded completed, got %v", payload["status"])
+			}
+			if payload["hook"] != "commit" {
+				t.Fatalf("expected the unnamed hook recorded under the generic label, got %v", payload["hook"])
 			}
 			if output, _ := payload["output"].(string); !strings.Contains(output, testCase.objection) {
 				t.Fatalf("expected the hook's finding on the Run Event, got %q", output)

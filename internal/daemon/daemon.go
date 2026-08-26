@@ -229,7 +229,7 @@ func (GitCommitter) Commit(ctx context.Context, req CommitRequest) error {
 	result, err := runGitCommand(ctx, req.WorkDir, "commit", "-m", req.Message)
 	if err != nil {
 		failure := result.Failure()
-		if hook, refused := ClassifyCommitHookRefusal(failure); refused {
+		if hook, refused := ClassifyCommitHookRefusal(ctx, req.WorkDir, failure); refused {
 			return &HookRefusalError{Hook: hook, ExitCode: result.ExitCode, Output: failure, Err: err}
 		}
 		return err
