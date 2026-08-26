@@ -1,9 +1,12 @@
 ---
-status: deferred
+status: pending
 created_at: 2026-08-06
 updated_at: 2026-08-26
 kind: rollup
 members:
+  - 2026-08-07-a-sixty-four-value-bound-locks-out-the-opencode-runtime.md
+  - 2026-08-10-a-fake-adapter-goes-silent-under-a-dense-start.md
+  - 2026-08-14-preflight-starves-when-the-machine-is-busy.md
   - 2026-07-26-claude-adapter-configoptions-migration.md
   - 2026-07-27-claude-adapter-standardization.md
   - 2026-07-28-profiles-configure-replaces-the-whole-profiles-map.md

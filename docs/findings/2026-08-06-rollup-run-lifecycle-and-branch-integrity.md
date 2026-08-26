@@ -1,9 +1,11 @@
 ---
-status: deferred
+status: pending
 created_at: 2026-08-06
 updated_at: 2026-08-26
 kind: rollup
 members:
+  - 2026-08-06-the-detach-tests-leak-the-process-they-prove-survives.md
+  - 2026-08-06-three-gigabytes-of-event-journal-inside-the-retention-window.md
   - 2026-07-16-vortex-pr87-detached-watch-notification.md
   - 2026-07-17-global-run-storage-sanitation-and-compaction.md
   - 2026-07-27-owner-identity-forks-ps-and-fails-closed-under-load.md

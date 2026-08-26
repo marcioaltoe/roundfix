@@ -1,5 +1,6 @@
 ---
-status: deferred
+status: done
+absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
 created_at: 2026-08-06
 updated_at: 2026-08-26
 ---

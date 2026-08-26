@@ -1,9 +1,12 @@
 ---
-status: deferred
+status: pending
 created_at: 2026-08-06
 updated_at: 2026-08-26
 kind: rollup
 members:
+  - 2026-08-06-a-test-mutates-the-repository-another-test-is-reading.md
+  - 2026-08-26-a-qa-tasks-authored-verification-is-never-executed.md
+  - 2026-08-26-the-daemon-has-no-postcondition-so-a-task-settles-clean-breaking-the-tree.md
   - 2026-07-28-qa-gate-cannot-reach-pull-request-journeys.md
   - 2026-07-28-same-day-qa-reruns-are-ignored-by-the-verdict-selector.md
   - 2026-07-29-qa-cycle-cost-is-cold-environments-and-agent-turns.md

@@ -1,5 +1,6 @@
 ---
-status: deferred
+status: done
+absorbed_by: 2026-08-06-rollup-agent-selection-and-execution-environments.md
 created_at: 2026-08-07
 updated_at: 2026-08-26
 kind: finding

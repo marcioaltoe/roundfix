@@ -1,9 +1,12 @@
 ---
-status: deferred
+status: pending
 created_at: 2026-08-06
 updated_at: 2026-08-26
 kind: rollup
 members:
+  - 2026-08-06-a-promoted-backlog-entry-has-nowhere-valid-to-go.md
+  - 2026-08-06-minting-an-adr-opens-gaps-no-one-can-ever-close.md
+  - 2026-08-07-a-live-contract-lives-inside-an-archived-spec.md
   - 2026-08-04-a-finding-does-not-prevent-the-recurrence-it-describes.md
   - 2026-08-05-authoring-has-no-procedure-for-a-disproven-premise.md
   - 2026-08-06-authoring-rules-a-release-night-made-checkable.md
