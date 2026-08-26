@@ -94,8 +94,8 @@ func TestGateRefusalNamesThePreconditionThatStoppedIt(t *testing.T) {
 		if !refused {
 			t.Fatalf("PreconditionRefusal() refused = false, want a refusal for findings %#v", precondition.Findings)
 		}
-		if refusal.Check != speccheck.GatePreconditionCheck {
-			t.Fatalf("refusal.Check = %q, want %q", refusal.Check, speccheck.GatePreconditionCheck)
+		if refusal.CheckName != speccheck.GatePreconditionCheck {
+			t.Fatalf("refusal.CheckName = %q, want %q", refusal.CheckName, speccheck.GatePreconditionCheck)
 		}
 		for _, finding := range precondition.Findings {
 			if !strings.Contains(refusal.Reason, finding.Code) {
@@ -193,8 +193,8 @@ func TestGateRefusalNamesThePreconditionThatStoppedIt(t *testing.T) {
 		if !refused {
 			t.Fatalf("PreconditionRefusal() refused = false, want an unnamed refusal recorded rather than dropped")
 		}
-		if refusal.Check != speccheck.GatePreconditionCheck {
-			t.Fatalf("refusal.Check = %q, want %q", refusal.Check, speccheck.GatePreconditionCheck)
+		if refusal.CheckName != speccheck.GatePreconditionCheck {
+			t.Fatalf("refusal.CheckName = %q, want %q", refusal.CheckName, speccheck.GatePreconditionCheck)
 		}
 		if refusal.Reason != "" {
 			t.Fatalf("refusal.Reason = %q, want no invented reason", refusal.Reason)

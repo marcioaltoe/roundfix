@@ -145,8 +145,8 @@ func PreconditionRefusal(precondition GatePreconditionResult) (spec.Precondition
 		reasons = append(reasons, reason)
 	}
 	return spec.PreconditionRefusal{
-		Check:  GatePreconditionCheck,
-		Reason: strings.Join(reasons, "; "),
+		CheckName: GatePreconditionCheck,
+		Reason:    strings.Join(reasons, "; "),
 	}, true
 }
 
