@@ -46,3 +46,12 @@ maintainer stated that no Baseline guide carries.
   archived backlog entries carry no absorption license — intent that was set
   aside needs no absorber, only the history root.
 
+---
+
+Delivered 2026-08-26: the three lifecycle rules above (findings, backlog,
+handoffs) were encoded into the Baseline the same day — clause extensions in
+`internal/baseline/assets/modules/context-workflow.json`, digests regenerated,
+the rendered guide carries them, and the managed refresh converges. What
+remains open in this entry is the original gap alone: no Baseline guide names
+a home for authorization records.
+
