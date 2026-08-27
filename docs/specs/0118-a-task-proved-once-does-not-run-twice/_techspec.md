@@ -101,9 +101,10 @@ Each is present and readable now.
 Three existing components change; no package, layer, or directory is added.
 
 **The Reconcile Command's carry-forward act** holds the two outcome guards. The
-first refuses the invocation when the single selected Run is not Stopped; the
-second skips any non-Stopped Run while building the candidate set. Both become
-a shared membership test over an accepted-outcome set of Stopped and Unresolved.
+first refuses the invocation when the single selected Run's outcome is neither
+Stopped nor Unresolved; the second skips any Run with another outcome while
+building the candidate set. Both use a shared membership test over the
+accepted-outcome set of Stopped and Unresolved.
 Every proof downstream of those guards — settlement-commit count, committed
 status, declared-input comparison, symlink crossing, checkout cleanliness, HEAD
 stability, repository-local Specs Root — is untouched.
