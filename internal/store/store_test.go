@@ -2598,6 +2598,51 @@ func TestOpenMigratesV11RunDatabaseAddingOwnerIdentityUnproven(t *testing.T) {
 	}
 }
 
+func TestOpenMigratesV12RunDatabaseAddingRunWindows(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	created, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create v12 fixture Run: %v", err)
+	}
+	closeStore(t, runStore)
+
+	db, err := sql.Open("sqlite", writerDSN(DatabasePath(homeDir)))
+	if err != nil {
+		t.Fatalf("open v12 fixture: %v", err)
+	}
+	for _, statement := range []string{
+		`DROP TABLE run_windows`,
+		`PRAGMA user_version = 12`,
+	} {
+		if _, err := db.Exec(statement); err != nil {
+			_ = db.Close()
+			t.Fatalf("build v12 fixture: %v", err)
+		}
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close v12 fixture: %v", err)
+	}
+
+	migrated := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, migrated)
+	if version, err := migrated.MigrationVersion(ctx); err != nil {
+		t.Fatalf("read migrated schema version: %v", err)
+	} else if version != schemaVersion {
+		t.Fatalf("migrated schema version = %d, want %d", version, schemaVersion)
+	}
+	if run, found, err := migrated.Run(ctx, created.ID); err != nil || !found {
+		t.Fatalf("read Run after v12 migration: found=%v err=%v", found, err)
+	} else if run.ID != created.ID {
+		t.Fatalf("migrated Run id = %q, want %q", run.ID, created.ID)
+	}
+	if window, found, err := migrated.RunWindowFor(ctx, created.GitRoot); err != nil || found {
+		t.Fatalf("new run_windows table must be empty: found=%v window=%#v err=%v", found, window, err)
+	}
+}
+
 // buildV9Fixture creates a schema v9 Run Database exactly as historical
 // binaries wrote it: the v7 fixture upgraded through the real v7→v8→v9
 // migration statements, without the v10 owner_identity column.
@@ -2851,6 +2896,104 @@ func TestActiveRunInGitRootFindsActiveRunsOfAnyKind(t *testing.T) {
 	}
 	if !ok || found.ID != implementRun.ID || found.Kind != KindImplement {
 		t.Fatalf("expected implement Run active in git root, ok=%v found=%#v", ok, found)
+	}
+}
+
+func TestRunWindowPersistsAndClearsByGitRoot(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	createdAt := time.Date(2026, 8, 26, 22, 30, 15, 987654321, time.UTC)
+	runStore.now = func() time.Time { return createdAt }
+	gitRoot := "/tmp/project"
+	cutoff := time.Date(2026, 8, 27, 7, 0, 0, 456789123, time.FixedZone("BRT", -3*60*60))
+
+	if window, found, err := runStore.RunWindowFor(ctx, gitRoot); err != nil || found {
+		t.Fatalf("absent Run Window must not be an error: found=%v window=%#v err=%v", found, window, err)
+	}
+	writtenWindow, written, err := runStore.SetRunWindow(ctx, gitRoot, cutoff, false)
+	if err != nil {
+		t.Fatalf("set Run Window: %v", err)
+	}
+	if !written {
+		t.Fatal("first SetRunWindow must report a write")
+	}
+	if writtenWindow.GitRoot != gitRoot || !writtenWindow.CutoffAt.Equal(cutoff.Truncate(time.Second)) ||
+		!writtenWindow.CreatedAt.Equal(createdAt.Truncate(time.Second)) {
+		t.Fatalf("stored Run Window = %#v", writtenWindow)
+	}
+	closeStore(t, runStore)
+
+	reopened := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, reopened)
+	persisted, found, err := reopened.RunWindowFor(ctx, gitRoot)
+	if err != nil || !found {
+		t.Fatalf("read persisted Run Window: found=%v err=%v", found, err)
+	}
+	if persisted != writtenWindow {
+		t.Fatalf("persisted Run Window = %#v, want %#v", persisted, writtenWindow)
+	}
+
+	otherRoot := "/tmp/other-project"
+	if _, written, err := reopened.SetRunWindow(ctx, otherRoot, cutoff.Add(time.Hour), false); err != nil || !written {
+		t.Fatalf("set other repository Run Window: written=%v err=%v", written, err)
+	}
+	if removed, err := reopened.ClearRunWindow(ctx, gitRoot); err != nil || !removed {
+		t.Fatalf("clear Run Window: removed=%v err=%v", removed, err)
+	}
+	if _, found, err := reopened.RunWindowFor(ctx, gitRoot); err != nil || found {
+		t.Fatalf("cleared Run Window must be absent: found=%v err=%v", found, err)
+	}
+	if _, found, err := reopened.RunWindowFor(ctx, otherRoot); err != nil || !found {
+		t.Fatalf("clear must not affect another repository: found=%v err=%v", found, err)
+	}
+	if removed, err := reopened.ClearRunWindow(ctx, gitRoot); err != nil || removed {
+		t.Fatalf("clearing an absent Run Window: removed=%v err=%v", removed, err)
+	}
+}
+
+func TestSetRunWindowPreservesExistingWindowWithoutReplace(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+	gitRoot := "/tmp/project"
+	standingCutoff := time.Date(2026, 8, 27, 7, 0, 0, 0, time.UTC)
+	standing, written, err := runStore.SetRunWindow(ctx, gitRoot, standingCutoff, false)
+	if err != nil || !written {
+		t.Fatalf("set standing Run Window: written=%v err=%v", written, err)
+	}
+
+	var changesBefore int64
+	if err := runStore.db.QueryRowContext(ctx, `SELECT total_changes()`).Scan(&changesBefore); err != nil {
+		t.Fatalf("read total changes before idempotent set: %v", err)
+	}
+	effective, written, err := runStore.SetRunWindow(ctx, gitRoot, standingCutoff.Add(24*time.Hour), false)
+	if err != nil {
+		t.Fatalf("set existing Run Window without replace: %v", err)
+	}
+	if written {
+		t.Fatal("SetRunWindow without replace must report no write for an existing row")
+	}
+	if effective != standing {
+		t.Fatalf("effective Run Window = %#v, want standing %#v", effective, standing)
+	}
+	var changesAfter int64
+	if err := runStore.db.QueryRowContext(ctx, `SELECT total_changes()`).Scan(&changesAfter); err != nil {
+		t.Fatalf("read total changes after idempotent set: %v", err)
+	}
+	if changesAfter != changesBefore {
+		t.Fatalf("idempotent set changed the database: before=%d after=%d", changesBefore, changesAfter)
+	}
+
+	replacementCutoff := standingCutoff.Add(2 * time.Hour)
+	replaced, written, err := runStore.SetRunWindow(ctx, gitRoot, replacementCutoff, true)
+	if err != nil || !written {
+		t.Fatalf("replace Run Window: written=%v err=%v", written, err)
+	}
+	if !replaced.CutoffAt.Equal(replacementCutoff) {
+		t.Fatalf("replacement cutoff = %s, want %s", replaced.CutoffAt, replacementCutoff)
 	}
 }
 

@@ -308,6 +308,10 @@ _Avoid_: Clean, Clean Unverified, zero Review Issues
 A safeguard that stops a Run before it can continue indefinitely and indirectly consume unbounded resources.
 _Avoid_: Max rounds, review round limit
 
+**Run Window**:
+The durable, repository-scoped bound on when an Implement Run may be created. It governs a Run's start and never its finish: a Run created before the cutoff continues to its own terminal outcome. The implementation spellings `RunWindow` and `run_window` refer to this same term.
+_Avoid_: Session — Agent Session names a different concept; curfew and deadline suggest the wrong boundary
+
 **Preflight Validation**:
 The early checks Roundfix runs before starting a Run or work that would make the developer wait.
 _Avoid_: Best-effort validation, late failure

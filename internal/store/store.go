@@ -121,6 +121,12 @@ type Run struct {
 	CompletedAt           *time.Time
 }
 
+type RunWindow struct {
+	GitRoot   string
+	CutoffAt  time.Time
+	CreatedAt time.Time
+}
+
 type TerminalOutcomeConflictError struct {
 	RunID     string
 	Stored    string
@@ -1075,6 +1081,71 @@ LIMIT 1`, gitRoot)
 	return run, true, nil
 }
 
+// SetRunWindow stores a repository's Run Window. An existing window is
+// returned unchanged unless replace is true.
+func (store *Store) SetRunWindow(ctx context.Context, gitRoot string, cutoff time.Time, replace bool) (RunWindow, bool, error) {
+	var window RunWindow
+	written := false
+	err := store.withWriteTx(ctx, "Run Window set", func(tx *sql.Tx) error {
+		standing, found, err := selectRunWindow(ctx, tx, gitRoot)
+		if err != nil {
+			return err
+		}
+		if found && !replace {
+			window = standing
+			return nil
+		}
+
+		cutoffAt := cutoff.Unix()
+		createdAt := store.now().Unix()
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO run_windows (git_root, cutoff_at, created_at)
+VALUES (?, ?, ?)
+ON CONFLICT(git_root) DO UPDATE SET
+	cutoff_at = excluded.cutoff_at,
+	created_at = excluded.created_at`, gitRoot, cutoffAt, createdAt); err != nil {
+			return fmt.Errorf("set Run Window: %w", err)
+		}
+		window = RunWindow{
+			GitRoot:   gitRoot,
+			CutoffAt:  time.Unix(cutoffAt, 0).UTC(),
+			CreatedAt: time.Unix(createdAt, 0).UTC(),
+		}
+		written = true
+		return nil
+	})
+	if err != nil {
+		return RunWindow{}, false, err
+	}
+	return window, written, nil
+}
+
+// RunWindowFor returns the Run Window for one repository, if any.
+func (store *Store) RunWindowFor(ctx context.Context, gitRoot string) (RunWindow, bool, error) {
+	return selectRunWindow(ctx, store.db, gitRoot)
+}
+
+// ClearRunWindow removes the Run Window for one repository, if present.
+func (store *Store) ClearRunWindow(ctx context.Context, gitRoot string) (bool, error) {
+	removed := false
+	err := store.withWriteTx(ctx, "Run Window clear", func(tx *sql.Tx) error {
+		result, err := tx.ExecContext(ctx, `DELETE FROM run_windows WHERE git_root = ?`, gitRoot)
+		if err != nil {
+			return fmt.Errorf("clear Run Window: %w", err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("read Run Window clear result: %w", err)
+		}
+		removed = affected > 0
+		return nil
+	})
+	if err != nil {
+		return false, err
+	}
+	return removed, nil
+}
+
 // ListRuns returns matching Runs, newest first by creation time.
 func (store *Store) ListRuns(ctx context.Context, query ListRunsQuery) ([]Run, error) {
 	sqlQuery := `
@@ -1279,7 +1350,7 @@ func terminalStateExclusion() (string, []any) {
 	return "state NOT IN (" + strings.Join(placeholders, ", ") + ")", arguments
 }
 
-const schemaVersion = 12
+const schemaVersion = 13
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -1314,6 +1385,7 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
+		statements = append(statements, migrateV12ToV13Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 4:
 		statements := append(migrateV4ToV5Statements(), migrateV5ToV6Statements()...)
@@ -1323,6 +1395,7 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
+		statements = append(statements, migrateV12ToV13Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 5:
 		if err := store.ensureAgentColumn(ctx); err != nil {
@@ -1334,6 +1407,7 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
+		statements = append(statements, migrateV12ToV13Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 6:
 		statements := append(migrateV6ToV7Statements(), migrateV7ToV8Statements()...)
@@ -1341,27 +1415,35 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
+		statements = append(statements, migrateV12ToV13Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 7:
 		statements := append(migrateV7ToV8Statements(), migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
+		statements = append(statements, migrateV12ToV13Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 8:
 		statements := append(migrateV8ToV9Statements(), migrateV9ToV10Statements()...)
 		statements = append(statements, migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
+		statements = append(statements, migrateV12ToV13Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 9:
 		statements := append(migrateV9ToV10Statements(), migrateV10ToV11Statements()...)
 		statements = append(statements, migrateV11ToV12Statements()...)
+		statements = append(statements, migrateV12ToV13Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 10:
 		statements := append(migrateV10ToV11Statements(), migrateV11ToV12Statements()...)
+		statements = append(statements, migrateV12ToV13Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 11:
-		return store.applyMigration(ctx, migrateV11ToV12Statements())
+		statements := append(migrateV11ToV12Statements(), migrateV12ToV13Statements()...)
+		return store.applyMigration(ctx, statements)
+	case 12:
+		return store.applyMigration(ctx, migrateV12ToV13Statements())
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -1378,7 +1460,7 @@ func (store *Store) applyMigration(ctx context.Context, statements []string) err
 	})
 }
 
-// createSchemaStatements creates schema v12 directly on a fresh Run Database.
+// createSchemaStatements creates schema v13 directly on a fresh Run Database.
 // spec_slug and the PR-shaped columns use the empty string for "not set";
 // which fields a Run must carry is enforced by Kind in CreateRun.
 func createSchemaStatements() []string {
@@ -1433,7 +1515,12 @@ func createSchemaStatements() []string {
 		`CREATE TABLE IF NOT EXISTS run_agent_selections ` + runAgentSelectionsColumns,
 		`CREATE INDEX IF NOT EXISTS idx_run_agent_selections_scope
 			ON run_agent_selections (run_id, scope_kind, scope_id, attempt)`,
-		`PRAGMA user_version = 12`,
+		`CREATE TABLE IF NOT EXISTS run_windows (
+			git_root TEXT PRIMARY KEY,
+			cutoff_at INTEGER NOT NULL,
+			created_at INTEGER NOT NULL
+		)`,
+		`PRAGMA user_version = 13`,
 	}
 }
 
@@ -1538,6 +1625,17 @@ func migrateV11ToV12Statements() []string {
 	return []string{
 		`ALTER TABLE runs ADD COLUMN owner_identity_unproven INTEGER NOT NULL DEFAULT 0`,
 		`PRAGMA user_version = 12`,
+	}
+}
+
+func migrateV12ToV13Statements() []string {
+	return []string{
+		`CREATE TABLE IF NOT EXISTS run_windows (
+			git_root TEXT PRIMARY KEY,
+			cutoff_at INTEGER NOT NULL,
+			created_at INTEGER NOT NULL
+		)`,
+		`PRAGMA user_version = 13`,
 	}
 }
 
@@ -1654,6 +1752,24 @@ type runQuerier interface {
 
 type runScanner interface {
 	Scan(dest ...any) error
+}
+
+func selectRunWindow(ctx context.Context, querier runQuerier, gitRoot string) (RunWindow, bool, error) {
+	row := querier.QueryRowContext(ctx, `
+SELECT git_root, cutoff_at, created_at
+FROM run_windows
+WHERE git_root = ?`, gitRoot)
+	var window RunWindow
+	var cutoffAt int64
+	var createdAt int64
+	if err := row.Scan(&window.GitRoot, &cutoffAt, &createdAt); errors.Is(err, sql.ErrNoRows) {
+		return RunWindow{}, false, nil
+	} else if err != nil {
+		return RunWindow{}, false, fmt.Errorf("read Run Window: %w", err)
+	}
+	window.CutoffAt = time.Unix(cutoffAt, 0).UTC()
+	window.CreatedAt = time.Unix(createdAt, 0).UTC()
+	return window, true, nil
 }
 
 func selectActiveRunByTarget(ctx context.Context, querier runQuerier, targetKind string, targetKey string) (Run, bool, error) {

@@ -33,6 +33,7 @@ func TestTask10PrechangeJournalCLIConsumers(t *testing.T) {
 	}
 	ctx := context.Background()
 	home := task10CopyCorpus(t, fixture)
+	task10MigrateCorpus(t, ctx, home)
 	reader, err := store.OpenReader(ctx, home)
 	if err != nil {
 		t.Fatalf("open recorded journal: %v", err)
@@ -99,6 +100,17 @@ func TestTask10PrechangeJournalCLIConsumers(t *testing.T) {
 	task10ReadJSON(t, expectations, &want)
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("pre-change consumer observations changed\nwant: %#v\n got: %#v", want, got)
+	}
+}
+
+func task10MigrateCorpus(t *testing.T, ctx context.Context, home string) {
+	t.Helper()
+	runStore, err := store.Open(ctx, home)
+	if err != nil {
+		t.Fatalf("migrate copied corpus: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close migrated corpus: %v", err)
 	}
 }
 

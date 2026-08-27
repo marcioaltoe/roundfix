@@ -1,6 +1,7 @@
 ---
 spec: 0117-a-window-the-preflight-owns
-status: active
+status: archived
+archived: 2026-08-26
 created: 2026-08-26
 surfaces: [cli, backend]
 ---

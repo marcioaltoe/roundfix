@@ -3859,6 +3859,162 @@ func TestRunImplementPreflightFailures(t *testing.T) {
 	}
 }
 
+func TestImplementRunWindow(t *testing.T) {
+	location := time.FixedZone("BRT", -3*60*60)
+
+	t.Run("closed window refuses before mutating preflight work", func(t *testing.T) {
+		now := time.Date(2026, time.August, 27, 7, 14, 0, 0, location)
+		cutoff := time.Date(2026, time.August, 27, 7, 0, 0, 0, location)
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+		withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
+		seedImplementRunWindow(t, homeDir, repoDir, cutoff)
+		updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+			dependencies.currentRunWindowTime = func() time.Time { return now }
+			dependencies.pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
+				t.Fatal("closed Run Window must refuse before pruning terminal Run Worktrees")
+				return nil, nil
+			}
+		})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+		if code != exitPreflight {
+			t.Fatalf("closed Run Window exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+		}
+		if stdout.Len() != 0 {
+			t.Fatalf("closed Run Window stdout = %q, want empty", stdout.String())
+		}
+		for _, want := range []string{
+			"the Run Window for " + repoDir + " closed at 2026-08-27 07:00 BRT; the time is 2026-08-27 07:14 BRT",
+			"Roundfix did not create a Run",
+			"move the window with `roundfix window set <HH:MM> --force`, or remove it with `roundfix window clear`",
+		} {
+			if !strings.Contains(stderr.String(), want) {
+				t.Fatalf("closed Run Window stderr = %q, want %q", stderr.String(), want)
+			}
+		}
+		assertRunCount(t, store.DatabasePath(homeDir), 0)
+		if _, err := os.Stat(filepath.Join(homeDir, ".roundfix", "worktrees")); err == nil {
+			t.Fatalf("closed Run Window created a Run Worktree root under %s", homeDir)
+		} else if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("stat Run Worktree root: %v", err)
+		}
+	})
+
+	t.Run("future window permits Run creation", func(t *testing.T) {
+		now := time.Date(2026, time.August, 27, 6, 45, 0, 0, location)
+		cutoff := time.Date(2026, time.August, 27, 7, 0, 0, 0, location)
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+		withImplementCollaborators(t, &implementFakeRunner{
+			gitRoot:      repoDir,
+			statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		})
+		seedImplementRunWindow(t, homeDir, repoDir, cutoff)
+		updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+			dependencies.currentRunWindowTime = func() time.Time { return now }
+		})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("future Run Window exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+		}
+		assertRunCount(t, store.DatabasePath(homeDir), 1)
+	})
+
+	t.Run("absent window permits Run creation", func(t *testing.T) {
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+		withImplementCollaborators(t, &implementFakeRunner{
+			gitRoot:      repoDir,
+			statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("absent Run Window exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+		}
+		assertRunCount(t, store.DatabasePath(homeDir), 1)
+	})
+}
+
+func TestImplementRunWindowCrossing(t *testing.T) {
+	location := time.FixedZone("BRT", -3*60*60)
+	tests := []struct {
+		name       string
+		now        time.Time
+		wantReport string
+	}{
+		{
+			name:       "Run may cross cutoff",
+			now:        time.Date(2026, time.August, 27, 6, 48, 0, 0, location),
+			wantReport: "Run Window: closes 2026-08-27 07:00 BRT, in 12m; max_run_duration is 45m, so this Run may run past it.\n",
+		},
+		{
+			name: "maximum duration ends at cutoff",
+			now:  time.Date(2026, time.August, 27, 6, 15, 0, 0, location),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+			mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "budget:\n  max_run_duration: 45m\n")
+			gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+			gitImplement(t, repoDir, "commit", "-m", "configure Run duration")
+			withImplementCollaborators(t, &implementFakeRunner{
+				gitRoot:      repoDir,
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+			})
+			cutoff := time.Date(2026, time.August, 27, 7, 0, 0, 0, location)
+			seedImplementRunWindow(t, homeDir, repoDir, cutoff)
+			updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+				dependencies.currentRunWindowTime = func() time.Time { return tt.now }
+			})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("open Run Window exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+			}
+			assertRunCount(t, store.DatabasePath(homeDir), 1)
+			if got := strings.Count(stderr.String(), "Run Window: closes "); got != 0 && tt.wantReport == "" {
+				t.Fatalf("non-crossing Run emitted %d crossing report(s): %q", got, stderr.String())
+			} else if got != 1 && tt.wantReport != "" {
+				t.Fatalf("crossing Run emitted %d crossing report(s), want 1: %q", got, stderr.String())
+			}
+			if tt.wantReport != "" && !strings.Contains(stderr.String(), tt.wantReport) {
+				t.Fatalf("crossing report missing %q from stderr: %q", tt.wantReport, stderr.String())
+			}
+		})
+	}
+}
+
+func seedImplementRunWindow(t *testing.T, homeDir, gitRoot string, cutoff time.Time) {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	if _, written, err := runStore.SetRunWindow(context.Background(), gitRoot, cutoff, false); err != nil {
+		_ = runStore.Close()
+		t.Fatalf("seed Run Window: %v", err)
+	} else if !written {
+		_ = runStore.Close()
+		t.Fatal("seed Run Window reported no write")
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run Database: %v", err)
+	}
+}
+
 func TestImplementRejectsInvalidTaskTypeBeforeSideEffects(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{

@@ -31,6 +31,13 @@ func TestTask10PrechangeJournalCockpitConsumer(t *testing.T) {
 		t.Fatalf("copy corpus: %v", err)
 	}
 	ctx := context.Background()
+	runStore, err := store.Open(ctx, home)
+	if err != nil {
+		t.Fatalf("migrate copied corpus: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close migrated corpus: %v", err)
+	}
 	reader, err := store.OpenReader(ctx, home)
 	if err != nil {
 		t.Fatalf("open recorded journal: %v", err)
