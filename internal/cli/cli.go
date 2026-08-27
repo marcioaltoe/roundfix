@@ -262,6 +262,7 @@ type commandDependencies struct {
 	cleanupCleanRunWorktree         func(context.Context, runworktree.Ref) error
 	pruneTerminalRunWorktrees       func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error)
 	loadCommittedSpecGraph          func(context.Context, string, roundconfig.SpecsRoot, string, string) (*spec.Graph, string, error)
+	inspectSpecCarryForwards        func(context.Context, *store.Store, string, roundconfig.SpecsRoot, string) ([]specCarryForward, error)
 	detachTimeouts                  detachPhaseTimeouts
 	attachInteractiveInputAvailable func() bool
 	attachSleep                     func(context.Context) error
@@ -323,6 +324,7 @@ func defaultCommandDependencies() commandDependencies {
 		cleanupCleanRunWorktree:         cleanupCleanRunWorktree,
 		pruneTerminalRunWorktrees:       pruneTerminalRunWorktrees,
 		loadCommittedSpecGraph:          loadCommittedSpecGraph,
+		inspectSpecCarryForwards:        inspectSpecCarryForwards,
 		detachTimeouts:                  detachTimeouts,
 		attachInteractiveInputAvailable: attachInteractiveInputAvailable,
 		attachSleep:                     attachSleep,
