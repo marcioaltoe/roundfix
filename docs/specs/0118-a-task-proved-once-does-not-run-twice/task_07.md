@@ -43,4 +43,4 @@ premise.
 - All user stories and core features
 
 ## Verification
-- `roundfix spec check 0118-a-task-proved-once-does-not-run-twice --strict && go test -count=1 ./internal/cli ./internal/spec ./internal/store 2>&1 | grep -q "^ok"`
+- `roundfix spec check 0118-a-task-proved-once-does-not-run-twice --strict && go test -count=1 ./internal/cli ./internal/spec ./internal/store`

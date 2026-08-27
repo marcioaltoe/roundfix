@@ -288,9 +288,13 @@ request opens.
 5. Update the user guide's reconcile and implement contracts (depends on: 1, 3).
 6. Update the `roundfix` skill under the recorded authorization, as its own
    commit (depends on: 1, 3).
-7. Acceptance: prove the defect is closed against the Run Branch evidence this
+7. Corrective, from this Spec's own first Run: compare each candidate against
+   the staged carries rather than the raw checkout, make the Preflight refuse
+   only when the whole set would carry, and restore the store open to its place
+   after the profile preflight (depends on: 3, 6).
+8. Acceptance: prove the defect is closed against the Run Branch evidence this
    repository still carries, and satisfy the outside-evidence row (depends on:
-   3).
+   7).
 
 ## Risks & Considerations
 
@@ -302,6 +306,32 @@ than the newest Run. Carrying a subset was considered and rejected: Spec 0092
 refuses the whole set precisely so a Task whose Spec, instruction, or Context
 moved is never silently replayed, and relaxing that would trade a measured
 waste for a silent correctness risk.
+
+**The declared-input baseline is the staged state, not the raw checkout.**
+Measured on this Spec's own first Run: task_04 edits `CONTEXT.md` and later
+Tasks correct the TechSpec, so every Task settled after them reported both as
+moved and the whole set refused. Nothing had drifted — the checkout simply had
+not received the earlier Tasks yet. Comparing a candidate against the raw
+checkout therefore asks the wrong question for any serial graph in which one
+Task edits a shared declared input, which is the ordinary shape: Spec 0117's
+graph would have failed the same way. The act already cherry-picks into a
+temporary staging worktree in dependency order, so each candidate is compared
+against that accumulating state — the checkout plus the carries staged ahead of
+it, which is exactly the state the Task was validated against. This strengthens
+the proof rather than relaxing it: an input that moved for any other reason
+still refuses, and the whole-set refusal is unchanged.
+
+**A refusal must mean the whole set would carry.** The Preflight's condition is
+that carry-forward would succeed, not that some member is individually
+carriable. Those differ precisely when the set refuses as a whole, and the
+weaker condition produces the deadlock the Preflight exists to avoid: implement
+refuses and names a command that then refuses.
+
+**The Preflight must not create the Run Database before cheaper checks run.**
+Three existing tests encode that a profile-preflight failure leaves no Run
+Database behind. Opening the store to answer the carry-forward question must
+therefore stay where Spec 0117 put it — after the profile preflight — rather
+than being hoisted above it.
 
 **The Preflight adds Git work before every Run.** It is bounded by the number
 of prior Stopped or Unresolved Runs of one Spec in one repository whose Run
