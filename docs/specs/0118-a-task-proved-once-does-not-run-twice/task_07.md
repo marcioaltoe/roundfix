@@ -43,4 +43,4 @@ premise.
 - All user stories and core features
 
 ## Verification
-- `roundfix spec check 0118-a-task-proved-once-does-not-run-twice --strict && go test -count=1 ./internal/cli ./internal/spec ./internal/store`
+- `newest="$(ls -1 docs/specs/0118-a-task-proved-once-does-not-run-twice/qa/qa-report-*.md 2>/dev/null | sort | tail -1)"; test -n "$newest" && grep -q "^verdict: pass" "$newest" && roundfix spec check 0118-a-task-proved-once-does-not-run-twice --strict && go test -count=1 ./internal/cli ./internal/spec ./internal/store`

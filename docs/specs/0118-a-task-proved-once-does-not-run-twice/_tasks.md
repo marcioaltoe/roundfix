@@ -25,9 +25,12 @@ graph:
     - id: task_08
       file: task_08.md
       needs: [task_06]
+    - id: task_09
+      file: task_09.md
+      needs: [task_08]
     - id: task_07
       file: task_07.md
-      needs: [task_08]
+      needs: [task_09]
 ---
 
 # Tasks — A Task proved once does not run twice
@@ -41,9 +44,10 @@ graph:
 | task_05 | Document both command contracts             | docs    | medium     | task_04 |
 | task_06 | The skill ships with the CLI change         | docs    | medium     | task_05 |
 | task_08 | A carry-forward that can carry a serial graph | backend | high     | task_06 |
-| task_07 | QA gate                                     | qa      | medium     | task_08 |
+| task_09 | The command help states the outcomes it accepts | backend | low    | task_08 |
+| task_07 | QA gate                                     | qa      | medium     | task_09 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 · 6 → task_06 · 7 → task_08 · 8 → task_07
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 · 6 → task_06 · 7 → task_08 · 8 → task_09 · 9 → task_07
 
 The chain is serial by edit locality, not by logic. task_01 and task_02 both
 rewrite the reconcile command path, so they cannot be siblings. task_04,
@@ -64,6 +68,6 @@ task_08 is corrective, added after this Spec's own first Run ended Unresolved:
 carry-forward refused all six verified Tasks because their declared inputs were
 compared against a checkout that had not received the earlier carries yet. It
 is numbered after the gate but ordered before it; the graph, not the number,
-carries the topology. One corrective slot of the two remains unused.
+carries the topology. task_09 is the second, from QA finding F-01: the reconcile help still called carry-forward a stopped-Run act. Both corrective slots are now used; a third finding requires a sanctioned exit, not a third patch.
 
 Each Task's work, references, and Verification live in its own `task_NN.md`.
