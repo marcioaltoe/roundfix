@@ -175,7 +175,7 @@ func inspectCarryForwardsForRun(
 	evidence map[string]reconcileTaskEvidence,
 ) ([]spec.CarryForward, error) {
 	carried := make([]spec.CarryForward, 0)
-	for _, task := range graph.Tasks {
+	for index, task := range graph.Tasks {
 		taskEvidence := evidence[task.ID]
 		if !taskEvidence.settledCompleted {
 			continue
@@ -215,13 +215,65 @@ func inspectCarryForwardsForRun(
 			)
 		} else {
 			candidate.Action = carryForwardReadyAction
-			if err := stageCarryForwardCandidate(ctx, stagingWorktree, candidate); err != nil {
-				return nil, fmt.Errorf("stage Task %s while proving serial carry-forward: %w", task.ID, err)
+			if stageErr := stageCarryForwardCandidate(ctx, stagingWorktree, candidate); stageErr != nil {
+				// A commit that will not apply is a reason to refuse this Task,
+				// not an operational failure of the whole inspection. Every
+				// other proof in this loop refuses and keeps reporting; this
+				// one now does too, so the caller still receives the complete
+				// set rather than the first thing that went wrong.
+				candidate.Action = "refuse"
+				candidate.RefusalReason = stageErr.Error()
+				carried = append(carried, candidate)
+				abortCarryForwardStaging(ctx, stagingWorktree)
+				carried = append(carried, unstagedCarryForwards(repoSpecsRoot, run, graph.Tasks[index+1:], evidence, task.ID)...)
+				return carried, nil
 			}
 		}
 		carried = append(carried, candidate)
 	}
 	return carried, nil
+}
+
+// abortCarryForwardStaging clears an in-progress cherry-pick so nothing is left
+// half-applied in the staging Worktree. It is best effort and its failure is
+// deliberately ignored: the staging Worktree is removed by the caller's cleanup
+// either way, and a failed abort must not outrank the staging refusal that is
+// the actual finding.
+func abortCarryForwardStaging(ctx context.Context, stagingWorktree string) {
+	_, _ = reconcileGitRaw(ctx, stagingWorktree, "cherry-pick", "--abort")
+}
+
+// unstagedCarryForwards records the Tasks whose proofs were never evaluated
+// because an earlier Task in the same set could not be staged. Declared inputs
+// are proved against the accumulating staged carries, so a set that stops
+// staging has no baseline left to judge the rest against. Saying that is
+// honest; inventing a verdict from a baseline that was never built is not.
+func unstagedCarryForwards(
+	repoSpecsRoot string,
+	run store.Run,
+	remaining []spec.Task,
+	evidence map[string]reconcileTaskEvidence,
+	blockingTaskID string,
+) []spec.CarryForward {
+	entries := make([]spec.CarryForward, 0, len(remaining))
+	for _, task := range remaining {
+		if !evidence[task.ID].settledCompleted {
+			continue
+		}
+		entries = append(entries, spec.CarryForward{
+			TaskID:      task.ID,
+			RunID:       run.ID,
+			TaskFile:    filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
+			MovedInputs: []string{},
+			Action:      "refuse",
+			RefusalReason: fmt.Sprintf(
+				"Task %s was not evaluated: Task %s could not be staged, so the set has no baseline to prove it against",
+				task.ID,
+				blockingTaskID,
+			),
+		})
+	}
+	return entries
 }
 
 func createCarryForwardStaging(

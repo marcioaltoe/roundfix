@@ -269,8 +269,62 @@ func addCarryForwardDistractors(t *testing.T, fixture carryForwardFixture) {
 		if err != nil {
 			t.Fatalf("create carry-forward distractor: %v", err)
 		}
+		// Record a present Run Worktree so each distractor is excluded by the
+		// Kind, Spec, and accepted-outcome filters rather than by the absent
+		// worktree check, which would let those filters be deleted silently.
+		if _, err := runStore.SetRunWorkDir(context.Background(), run.ID, fixture.ref.Path); err != nil {
+			t.Fatalf("record carry-forward distractor Run Worktree: %v", err)
+		}
 		if _, err := runStore.CompleteRun(context.Background(), run.ID, seed.state); err != nil {
 			t.Fatalf("complete carry-forward distractor: %v", err)
 		}
+	}
+}
+
+func TestCarryForwardConflictRefusesInsteadOfFailingTheInspection(t *testing.T) {
+	// The conflicting path is deliberately not a declared input, so the inputs
+	// proof passes and staging is actually attempted. A commit that will not
+	// apply must be reported as this Task's refusal, with the rest of the set
+	// still accounted for, rather than aborting the whole inspection.
+	conflictPath := filepath.ToSlash(filepath.Join("src", "shared.txt"))
+	seeds := []implementSeed{
+		{
+			id:              "task_01",
+			title:           "Write the shared file",
+			settlementFiles: map[string]string{conflictPath: "settled by task_01\n"},
+		},
+		{id: "task_02", title: "Depend on the shared file", needs: []string{"task_01"}},
+	}
+	fixture := newCarryForwardFixture(t, store.StateUnresolved, seeds)
+
+	if err := os.MkdirAll(filepath.Join(fixture.repoDir, "src"), 0o755); err != nil {
+		t.Fatalf("create checkout src directory: %v", err)
+	}
+	mustWrite(t, filepath.Join(fixture.repoDir, filepath.FromSlash(conflictPath)), "written in the checkout instead\n")
+	gitImplement(t, fixture.repoDir, "add", filepath.FromSlash(conflictPath))
+	gitImplement(t, fixture.repoDir, "commit", "-m", "conflicting checkout content")
+	beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+
+	var stdout strings.Builder
+	var stderr strings.Builder
+	code := runCLIContext(
+		t,
+		context.Background(),
+		[]string{"reconcile", fixture.run.ID, "--carry-forward", "--format=json"},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitPreflight {
+		t.Fatalf("conflicting carry-forward exit = %d, want %d (refusal, not operational failure) stderr=%q", code, exitPreflight, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "carry-forward refused the whole set") {
+		t.Fatalf("conflicting carry-forward stderr = %q, want a whole-set refusal", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "task_02 was not evaluated") {
+		t.Fatalf("conflicting carry-forward stderr = %q, want task_02 reported as not evaluated", stderr.String())
+	}
+	if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
+		t.Fatalf("conflicting carry-forward HEAD = %s, want unchanged %s", got, beforeHead)
 	}
 }
