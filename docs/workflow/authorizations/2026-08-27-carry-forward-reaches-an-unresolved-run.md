@@ -4,6 +4,7 @@ action: Describe the Unresolved-Run carry-forward, the implement Preflight refus
 consuming: 0118-a-task-proved-once-does-not-run-twice
 paths:
   - .agents/skills/roundfix/SKILL.md
+  - skills/roundfix/SKILL.md
 ---
 
 # Tooling authorization — carry-forward reaches an Unresolved Run (2026-08-27)
@@ -44,8 +45,11 @@ so it is bounded here rather than deferred.
   implement Preflight refusal with the command that clears it.
 
 `.claude/skills/` is a symbolic link to `.agents/skills/`, which is the
-authoritative source. The generated copies under `skills/` are rewritten by
-`make skills-sync` and are sanctioned fallout, not separate targets.
+authoritative source. `skills/roundfix/SKILL.md` is the generated copy that
+`make skills-sync` rewrites from it. It is sanctioned fallout of the authorized
+source edit rather than a separate target, and it is named in the bounded paths
+above because the changed-path audit reads that list and not this sentence — a
+grant whose prose says more than its frontmatter is a grant the gate refuses.
 
 ## Bounded by purpose
 
