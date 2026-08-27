@@ -24,6 +24,8 @@ import (
 
 const reconcileSchemaVersion = "roundfix-reconcile/v1"
 
+var carryForwardAcceptedStates = []string{store.StateStopped, store.StateUnresolved}
+
 type reconcileOptions struct {
 	runID             string
 	apply             bool
@@ -169,8 +171,19 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 
 	report := inspectReconcileRuns(ctx, repository, opts, runs)
 	carryForwardRefusal := ""
-	if opts.carryForward && (len(runs.selected) != 1 || runs.selected[0].State != store.StateStopped) {
-		carryForwardRefusal = fmt.Sprintf("Run %q is not Stopped; carry-forward accepts one stopped Run", opts.runID)
+	if opts.carryForward && len(runs.selected) != 1 {
+		carryForwardRefusal = fmt.Sprintf(
+			"Run %q could not be selected; carry-forward accepts one Run with outcome %s",
+			opts.runID,
+			strings.Join(carryForwardAcceptedStates, " or "),
+		)
+	} else if opts.carryForward && !slices.Contains(carryForwardAcceptedStates, runs.selected[0].State) {
+		carryForwardRefusal = fmt.Sprintf(
+			"Run %q has outcome %s; carry-forward accepts outcomes %s",
+			opts.runID,
+			runs.selected[0].State,
+			strings.Join(carryForwardAcceptedStates, " and "),
+		)
 	}
 	resolvedSpecsRoot, resolveSpecsErr := roundconfig.ResolveSpecsRoot(loaded, repository)
 	if resolveSpecsErr != nil {
@@ -310,7 +323,7 @@ func parseReconcileOptions(args []string) (reconcileOptions, error) {
 		return opts, validationError{message: "--apply, --discard-superseded, and --carry-forward are mutually exclusive"}
 	}
 	if opts.carryForward && opts.runID == "" {
-		return opts, validationError{message: "--carry-forward requires one stopped Run ID"}
+		return opts, validationError{message: "--carry-forward requires one Run ID"}
 	}
 	return opts, nil
 }
@@ -463,7 +476,7 @@ func inspectCarryForwards(
 	repoSpecsRoot = filepath.ToSlash(repoSpecsRoot)
 	carried := make([]spec.CarryForward, 0)
 	for _, run := range runs.selected {
-		if run.State != store.StateStopped {
+		if !slices.Contains(carryForwardAcceptedStates, run.State) {
 			continue
 		}
 		if strings.TrimSpace(run.WorkDir) == "" {
@@ -472,7 +485,7 @@ func inspectCarryForwards(
 		sourceSpecsRoot := specsRootForWorkDir(resolvedSpecsRoot, repository, run.WorkDir)
 		graph, err := spec.Load(sourceSpecsRoot, run.SpecSlug)
 		if err != nil {
-			return nil, fmt.Errorf("load stopped Run %q Spec %q: %w", run.ID, run.SpecSlug, err)
+			return nil, fmt.Errorf("load Run %q Spec %q: %w", run.ID, run.SpecSlug, err)
 		}
 		commitsByTask, err := carryForwardTaskCommits(ctx, run)
 		if err != nil {
@@ -528,17 +541,17 @@ func inspectCarryForwards(
 
 func carryForwardTaskCommits(ctx context.Context, run store.Run) (map[string][]string, error) {
 	if strings.TrimSpace(run.HeadSHA) == "" {
-		return nil, fmt.Errorf("stopped Run %q has no recorded starting commit", run.ID)
+		return nil, fmt.Errorf("Run %q has no recorded starting commit", run.ID)
 	}
 	output, err := reconcileGitText(ctx, run.WorkDir, "rev-list", "--reverse", run.HeadSHA+"..HEAD")
 	if err != nil {
-		return nil, fmt.Errorf("list settlement commits for stopped Run %q: %w", run.ID, err)
+		return nil, fmt.Errorf("list settlement commits for Run %q: %w", run.ID, err)
 	}
 	commits := make(map[string][]string)
 	for _, commit := range strings.Fields(output) {
 		message, err := reconcileGitText(ctx, run.WorkDir, "show", "-s", "--format=%B", commit)
 		if err != nil {
-			return nil, fmt.Errorf("read stopped Run %q commit %s: %w", run.ID, commit, err)
+			return nil, fmt.Errorf("read Run %q commit %s: %w", run.ID, commit, err)
 		}
 		if gitTrailerValue(message, "Roundfix-Spec") != run.SpecSlug {
 			continue
@@ -662,7 +675,7 @@ func carryForwardPathCrossesSymlink(repository string, relative string) bool {
 
 func carryForwardRefusalReason(candidates []spec.CarryForward) string {
 	if len(candidates) == 0 {
-		return "stopped Run has no Tasks with completed settlement evidence"
+		return "Run has no Tasks with completed settlement evidence"
 	}
 	refusals := make([]string, 0)
 	for _, candidate := range candidates {
