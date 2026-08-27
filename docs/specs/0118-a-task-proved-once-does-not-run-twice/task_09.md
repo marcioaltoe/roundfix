@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -30,3 +30,18 @@ behavior.
 
 ## Verification
 - `roundfix_help="$(go run -buildvcs=false ./cmd/roundfix reconcile --help 2>&1)" || exit 1; printf '%s' "$roundfix_help" | grep -q -- "--carry-forward" && printf '%s' "$roundfix_help" | grep -qi "Unresolved" && ! printf '%s' "$roundfix_help" | grep -q "stopped Run's settled Tasks" && go test -count=1 ./internal/cli`
+
+## Result
+
+- The Reconcile Command's `--carry-forward` help now states that it hands a
+  Stopped or Unresolved Run's settled Tasks back to the checkout. The existing
+  public help test asserts that exact option description.
+- The sibling `--apply`, `--discard-superseded`, and `--format` descriptions
+  were checked against the delivered command behavior and remain accurate, so
+  they were left unchanged.
+- The focused help subtest failed before the usage-string change because the
+  accepted-outcome description was absent, then passed after the change:
+  `go test -count=1 ./internal/cli -run '^TestRunCommandHelp$/^reconcile$'`.
+- Diff inspection confirms no flag, default, output stream, exit code, or other
+  command help changed. The declared `## Verification` command was not run; the
+  Daemon owns that check and Task settlement.

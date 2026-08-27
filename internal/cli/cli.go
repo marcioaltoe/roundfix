@@ -5363,7 +5363,7 @@ and already released entries remain successful preserved results.
 Options:
   --apply                 Release freshly revalidated safe and superseded Run Worktrees and Run Branches
   --discard-superseded    Discard Run Branches proven superseded
-  --carry-forward         Hand a stopped Run's settled Tasks back to the checkout
+  --carry-forward         Hand a Stopped or Unresolved Run's settled Tasks back to the checkout
   --format                Output format: text (default) or json
 `
 	case "release":
