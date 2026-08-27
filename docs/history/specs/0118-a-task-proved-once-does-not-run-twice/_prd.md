@@ -1,6 +1,7 @@
 ---
 spec: 0118-a-task-proved-once-does-not-run-twice
-status: active
+status: archived
+archived: 2026-08-27
 created: 2026-08-27
 surfaces: [backend, cli, docs]
 ---
