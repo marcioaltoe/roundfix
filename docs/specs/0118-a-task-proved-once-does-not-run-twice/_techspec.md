@@ -112,9 +112,12 @@ stability, repository-local Specs Root — is untouched.
 **A Spec-scoped carry-forward query** is extracted from the reconcile command
 path so a second caller can ask what a Spec's prior Runs would hand back
 without duplicating a proof. It takes the Run Database, the repository, the
-resolved Specs Root, and a Spec slug; it returns, per prior terminal Run, the
-candidates and their actions. It is the same inspection reconcile already
-performs, called with a different selection.
+resolved Specs Root, and a Spec slug; it returns, per prior Stopped or
+Unresolved Run of that Spec whose recorded Run Worktree is present, the
+candidates and their actions. Runs with other terminal outcomes are not
+carry-forward candidates, and a released Run whose Run Worktree is absent is
+skipped. It is the same inspection reconcile already performs, called with a
+different selection.
 
 **The Implement Command's Preflight** gains one step, placed after the Run
 Database is opened and beside the existing Run Window check, which is the
@@ -124,7 +127,7 @@ either refuses or reports and continues.
 
 ```mermaid
 flowchart TD
-    A[implement Preflight] --> B{prior terminal Runs<br/>for this Spec?}
+    A[implement Preflight] --> B{prior Stopped or Unresolved Runs<br/>with present Run Worktrees?}
     B -- no --> R[create Run]
     B -- yes --> C[Spec-scoped carry-forward query]
     C -- inspection failed --> N[report, continue] --> R
@@ -152,10 +155,11 @@ type specCarryForward struct {
 // carriable counts the candidates that passed every proof.
 func (result specCarryForward) carriable() int
 
-// inspectSpecCarryForwards reports, per prior terminal Run of one Spec in this
-// repository, what carry-forward would do. Runs whose Run Worktree is no
-// longer present are skipped rather than failing the inspection, so a released
-// Run never blocks the caller.
+// inspectSpecCarryForwards reports, per prior Stopped or Unresolved Run of one
+// Spec in this repository whose recorded Run Worktree is present, what
+// carry-forward would do. Runs with other terminal outcomes are ignored, and
+// Runs whose Run Worktree is no longer present are skipped rather than failing
+// the inspection, so a released Run never blocks the caller.
 func inspectSpecCarryForwards(
     ctx context.Context,
     runStore *store.Store,
@@ -206,9 +210,11 @@ terminal Run of the same Spec in this repository holds at least one carriable
 Task, the command exits through Preflight Validation, creating no Run, opening
 no Agent Session, and writing nothing to Git or the Run Database. The
 diagnostic names the Run, each Task it would recover, and the exact
-`roundfix reconcile <run-id> --carry-forward` invocation. When prior Runs hold
-completed Tasks that no longer pass the proofs, or when the inspection itself
-fails, the command reports that on stderr and proceeds to create the Run.
+`roundfix reconcile <run-id> --carry-forward` invocation. When inspected prior
+Stopped or Unresolved Runs hold completed Tasks that no longer pass the proofs,
+or when the inspection itself fails, the command reports that on stderr and
+proceeds to create the Run. Runs with other terminal outcomes are ignored, and
+a released Run whose Run Worktree is absent is skipped.
 
 ## Coverage Map
 
@@ -298,10 +304,10 @@ moved is never silently replayed, and relaxing that would trade a measured
 waste for a silent correctness risk.
 
 **The Preflight adds Git work before every Run.** It is bounded by the number
-of terminal Runs of one Spec in one repository whose Run Worktree still exists
-— three in the measured case, and zero once `reconcile --apply` has released
-them. No cap is imposed, because a cap would silently truncate coverage; the
-natural bound is the surviving worktrees.
+of prior Stopped or Unresolved Runs of one Spec in one repository whose Run
+Worktree still exists — three in the measured case, and zero once
+`reconcile --apply` has released them. No cap is imposed, because a cap would
+silently truncate coverage; the natural bound is the surviving worktrees.
 
 **Fail-open hides a defect in the new inspection.** Mitigated by reporting every
 inspection failure on stderr rather than swallowing it, so a recurring failure
