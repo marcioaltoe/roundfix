@@ -340,7 +340,11 @@ func TestCarryForwardStagingFailureIsNotClassifiedAsAConflict(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create carry-forward staging: %v", err)
 	}
-	t.Cleanup(func() { _ = cleanup() })
+	t.Cleanup(func() {
+		if err := cleanup(); err != nil {
+			t.Errorf("remove carry-forward staging: %v", err)
+		}
+	})
 
 	// The settlement commit applies cleanly; the Task file this candidate names
 	// does not exist, so writing provenance fails. That is Roundfix failing at
@@ -364,5 +368,44 @@ func TestCarryForwardStagingFailureIsNotClassifiedAsAConflict(t *testing.T) {
 	}
 	if !strings.Contains(stageErr.Error(), "provenance") {
 		t.Fatalf("staging failure = %v, want the provenance failure named", stageErr)
+	}
+}
+
+func TestCarryForwardOperationalCherryPickFailureIsNotAConflict(t *testing.T) {
+	t.Parallel()
+	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
+	ctx := context.Background()
+	head := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+	stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, fixture.repoDir, head)
+	if err != nil {
+		t.Fatalf("create carry-forward staging: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := cleanup(); err != nil {
+			t.Errorf("remove carry-forward staging: %v", err)
+		}
+	})
+
+	// A commit that does not exist makes the cherry-pick exit non-zero without
+	// leaving unmerged paths. git failing is not the same as the Task's work
+	// conflicting, and only the second is that Task's refusal.
+	candidate := spec.CarryForward{
+		TaskID:   "task_01",
+		RunID:    fixture.run.ID,
+		Commit:   "0000000000000000000000000000000000000000",
+		TaskFile: filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")),
+	}
+
+	stageErr := stageCarryForwardCandidate(ctx, stagingWorktree, candidate)
+
+	if stageErr == nil {
+		t.Fatalf("staging an absent commit succeeded, want a failure")
+	}
+	var conflict carryForwardConflictError
+	if errors.As(stageErr, &conflict) {
+		t.Fatalf("operational cherry-pick failure classified as a conflict: %v", stageErr)
+	}
+	if !strings.Contains(stageErr.Error(), "settlement commit") {
+		t.Fatalf("staging failure = %v, want the settlement commit named", stageErr)
 	}
 }

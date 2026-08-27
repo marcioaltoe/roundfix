@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 
 	roundconfig "roundfix/internal/config"
@@ -251,19 +252,38 @@ func inspectCarryForwardsForRun(
 type carryForwardConflictError struct {
 	TaskID string
 	Commit string
+	Paths  []string
 	Err    error
 }
 
 func (err carryForwardConflictError) Error() string {
 	return fmt.Sprintf(
-		"Task %s settlement commit %s does not apply to the staged carry-forward state: %v",
+		"Task %s settlement commit %s does not apply to the staged carry-forward state; conflicting path(s): %s",
 		err.TaskID,
 		err.Commit,
-		err.Err,
+		strings.Join(err.Paths, ", "),
 	)
 }
 
 func (err carryForwardConflictError) Unwrap() error { return err.Err }
+
+// carryForwardConflictingPaths lists the unmerged paths a failed cherry-pick
+// left behind. A non-empty list is what proves the failure was a conflict
+// rather than an operational one.
+func carryForwardConflictingPaths(ctx context.Context, workDir string) ([]string, error) {
+	output, err := reconcileGitText(ctx, workDir, "diff", "--name-only", "--diff-filter=U")
+	if err != nil {
+		return nil, fmt.Errorf("list carry-forward conflicting paths: %w", err)
+	}
+	paths := make([]string, 0)
+	for _, line := range strings.Split(output, "\n") {
+		if path := strings.TrimSpace(line); path != "" {
+			paths = append(paths, path)
+		}
+	}
+	sort.Strings(paths)
+	return paths, nil
+}
 
 // abortCarryForwardStaging clears the in-progress cherry-pick so nothing is
 // left half-applied in the staging Worktree. Its failure is returned rather
@@ -350,7 +370,27 @@ func createCarryForwardStaging(
 
 func stageCarryForwardCandidate(ctx context.Context, stagingWorktree string, candidate spec.CarryForward) error {
 	if _, err := reconcileGitRaw(ctx, stagingWorktree, "cherry-pick", candidate.Commit); err != nil {
-		return carryForwardConflictError{TaskID: candidate.TaskID, Commit: candidate.Commit, Err: err}
+		staged := fmt.Errorf("stage Task %s settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
+		if ctx.Err() != nil {
+			return staged
+		}
+		// A cherry-pick exits non-zero for a conflict and for every
+		// operational reason too — a bad object, a broken index, a killed
+		// process. Unmerged paths are what tell the two apart, which is the
+		// same signal Task integration already uses.
+		conflicting, pathsErr := carryForwardConflictingPaths(ctx, stagingWorktree)
+		if pathsErr != nil {
+			return errors.Join(staged, pathsErr)
+		}
+		if len(conflicting) == 0 {
+			return staged
+		}
+		return carryForwardConflictError{
+			TaskID: candidate.TaskID,
+			Commit: candidate.Commit,
+			Paths:  conflicting,
+			Err:    err,
+		}
 	}
 	taskPath := filepath.Join(stagingWorktree, filepath.FromSlash(candidate.TaskFile))
 	if err := spec.RecordCarryForward(taskPath, candidate.RunID, candidate.Commit); err != nil {
