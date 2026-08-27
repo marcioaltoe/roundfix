@@ -215,10 +215,11 @@ Run. Exit behavior, output streams, and the JSON envelope are unchanged; no
 flag is added.
 
 `roundfix implement --spec <slug>` — gains one Preflight refusal. When a prior
-terminal Run of the same Spec in this repository holds at least one carriable
-Task, the command exits through Preflight Validation, creating no Run, opening
-no Agent Session, and writing nothing to Git or the Run Database. The
-diagnostic names the Run, each Task it would recover, and the exact
+terminal Run of the same Spec in this repository has a present recorded Run
+Worktree and a complete candidate set that would carry, the command exits
+through Preflight Validation, creating no Run, opening no Agent Session, and
+writing nothing to Git or the Run Database. The diagnostic names the Run, each
+Task it would recover, and the exact
 `roundfix reconcile <run-id> --carry-forward` invocation. When inspected prior
 Stopped or Unresolved Runs hold completed Tasks that no longer pass the proofs,
 or when the inspection itself fails, the command reports that on stderr and
