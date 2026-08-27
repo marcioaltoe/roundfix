@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-12
-updated_at: 2026-08-12
+updated_at: 2026-08-27
 kind: finding
 ---
 
@@ -148,3 +148,5 @@ repository's finding; what follows is the tool friction.
 - **The gate found what 196 green tests did not** — including a frontend test
   that accepted a generic sentence as proof of "why", encoding the regression in
   its own expectation.
+
+Adopted by Spec `0118-a-task-proved-once-does-not-run-twice`.
