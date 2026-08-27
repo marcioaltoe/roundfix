@@ -1540,19 +1540,24 @@ outcome and never opens pull requests (ADR-0138).
 
 Before creating a Run, `implement` inspects prior terminal Runs for the same
 Spec in the current repository. When a `Stopped` or `Unresolved` Run with a
-present Run Worktree has at least one Task that passes Task Carry-Forward's
-proofs, Preflight Validation refuses before creating a Run or Agent Session.
-It exits `2`, leaves stdout empty, and writes no Git or Run Database state. The
-refusal names the Run and Tasks to recover and gives the exact next action:
+present Run Worktree has a complete candidate set that would carry, Preflight
+Validation refuses before creating a Run or Agent Session. The complete set
+must pass Task Carry-Forward's existing proofs, including a passing
+Verification verdict, exactly one settlement commit, and unmoved declared
+inputs for each candidate. Input proofs use the checkout plus the accumulating
+staged carries, so each later candidate is compared with the state established
+by earlier carries rather than the raw checkout. It exits `2`, leaves stdout
+empty, and writes no Git or Run Database state. The refusal names the Run and
+Tasks to recover and gives the exact next action:
 
 ```bash
 roundfix reconcile <run-id> --carry-forward
 ```
 
-When no Task is carriable, `implement` reports the inspection result and
-proceeds. An inspection failure is reported and also lets the Run proceed. If
-several Runs qualify, `implement` selects the one with the largest carriable
-Task set, breaking ties with the newest Run.
+When no complete candidate set would carry, `implement` reports the inspection
+result and proceeds. An inspection failure is reported and also lets the Run
+proceed. If several complete sets qualify, `implement` selects the Run with
+the largest carriable Task set, breaking ties with the newest Run.
 
 1. Start the Implement Command with:
 

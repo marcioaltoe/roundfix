@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: docs
 ---
 
@@ -48,3 +48,32 @@ mutation. Changing any other path fails this Task; stop before mutating one.
 
 ## Verification
 - `grep -q "staged carries" .agents/skills/roundfix/SKILL.md && grep -q "staged carries" skills/roundfix/SKILL.md && ! grep -q "has at least one Task that passes" .agents/skills/roundfix/SKILL.md && grep -q -- "--carry-forward" .agents/skills/roundfix/SKILL.md && grep -q -- "--discard-superseded" .agents/skills/roundfix/SKILL.md && go test -count=1 -tags docscontract ./internal/docscontract`
+
+## Result
+
+Updated the Implement Command section of the canonical Roundfix skill to
+describe the delivered Preflight rule: a prior `Stopped` or `Unresolved` Run
+blocks only when its complete candidate set would carry. The guidance names
+the passing Verification, single settlement commit, and unmoved declared
+input proofs, and explains that later input proofs use the checkout plus the
+accumulating staged carries. The existing Reconcile Command guidance names
+`--carry-forward` and `--discard-superseded` beside `--apply` and records the
+accepted `Stopped` and `Unresolved` outcomes. `rtk make skills-sync` regenerated
+the shipped copy.
+
+Acceptance evidence:
+
+- Reconcile guidance — `rtk rg -n -U 'Stopped|Unresolved|staged carries|--carry-forward|--discard-superseded|complete candidate set' .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` found the accepted outcomes, required wording, and flags in both copies.
+- Implement Preflight guidance — the same search found the complete-set rule,
+  and the exact recovery command is present in both copies at the documented
+  section.
+- Generated copy — `rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` passed; `rtk go test -count=1 ./skills -run '^TestAuthorialSkillSync$'` passed with 18 tests.
+- Corrective rule — `rtk rg -n -F 'has at least one Task that passes' .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` returned no matches (exit 1 as expected), while `staged carries` appears in both copies.
+
+Focused checks after the edit:
+
+- `rtk git -c core.fsmonitor=false diff --check -- .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — passed.
+- `rtk make baseline-digests` — passed; derived artifacts were already current (`changed: false`).
+
+The Daemon still owns Task status and must run the declared Verification
+commands; this turn did not run them.
