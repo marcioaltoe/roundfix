@@ -216,15 +216,24 @@ func inspectCarryForwardsForRun(
 		} else {
 			candidate.Action = carryForwardReadyAction
 			if stageErr := stageCarryForwardCandidate(ctx, stagingWorktree, candidate); stageErr != nil {
-				// A commit that will not apply is a reason to refuse this Task,
-				// not an operational failure of the whole inspection. Every
-				// other proof in this loop refuses and keeps reporting; this
-				// one now does too, so the caller still receives the complete
-				// set rather than the first thing that went wrong.
+				// Only a commit that will not apply is this Task's own fault,
+				// and only that is reported as its refusal. Provenance,
+				// staging, and amend failures are Roundfix failing at its own
+				// bookkeeping on work that applied cleanly; calling those a
+				// refusal would tell the caller the Task is unfit when the
+				// tool is.
+				var conflict carryForwardConflictError
+				if !errors.As(stageErr, &conflict) {
+					return nil, fmt.Errorf("stage Task %s while proving serial carry-forward: %w", task.ID, stageErr)
+				}
 				candidate.Action = "refuse"
 				candidate.RefusalReason = stageErr.Error()
+				if abortErr := abortCarryForwardStaging(ctx, stagingWorktree); abortErr != nil {
+					// Surfaced in the reason rather than returned: a failed
+					// abort must not outrank the conflict that is the finding.
+					candidate.RefusalReason += fmt.Sprintf("; aborting the staged cherry-pick also failed: %v", abortErr)
+				}
 				carried = append(carried, candidate)
-				abortCarryForwardStaging(ctx, stagingWorktree)
 				carried = append(carried, unstagedCarryForwards(repoSpecsRoot, run, graph.Tasks[index+1:], evidence, task.ID)...)
 				return carried, nil
 			}
@@ -234,13 +243,37 @@ func inspectCarryForwardsForRun(
 	return carried, nil
 }
 
-// abortCarryForwardStaging clears an in-progress cherry-pick so nothing is left
-// half-applied in the staging Worktree. It is best effort and its failure is
-// deliberately ignored: the staging Worktree is removed by the caller's cleanup
-// either way, and a failed abort must not outrank the staging refusal that is
-// the actual finding.
-func abortCarryForwardStaging(ctx context.Context, stagingWorktree string) {
-	_, _ = reconcileGitRaw(ctx, stagingWorktree, "cherry-pick", "--abort")
+// carryForwardConflictError marks a settlement commit that will not apply to
+// the staged state. That is a property of the Task's own work, so it is
+// reported as that Task's refusal. Every other staging failure is Roundfix
+// failing at its own bookkeeping over work that applied cleanly, and stays an
+// operational error.
+type carryForwardConflictError struct {
+	TaskID string
+	Commit string
+	Err    error
+}
+
+func (err carryForwardConflictError) Error() string {
+	return fmt.Sprintf(
+		"Task %s settlement commit %s does not apply to the staged carry-forward state: %v",
+		err.TaskID,
+		err.Commit,
+		err.Err,
+	)
+}
+
+func (err carryForwardConflictError) Unwrap() error { return err.Err }
+
+// abortCarryForwardStaging clears the in-progress cherry-pick so nothing is
+// left half-applied in the staging Worktree. Its failure is returned rather
+// than swallowed, but the caller records it beside the conflict instead of
+// returning it, so a failed abort never outranks the finding.
+func abortCarryForwardStaging(ctx context.Context, stagingWorktree string) error {
+	if _, err := reconcileGitRaw(ctx, stagingWorktree, "cherry-pick", "--abort"); err != nil {
+		return fmt.Errorf("abort carry-forward staging cherry-pick: %w", err)
+	}
+	return nil
 }
 
 // unstagedCarryForwards records the Tasks whose proofs were never evaluated
@@ -317,7 +350,7 @@ func createCarryForwardStaging(
 
 func stageCarryForwardCandidate(ctx context.Context, stagingWorktree string, candidate spec.CarryForward) error {
 	if _, err := reconcileGitRaw(ctx, stagingWorktree, "cherry-pick", candidate.Commit); err != nil {
-		return fmt.Errorf("stage Task %s settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
+		return carryForwardConflictError{TaskID: candidate.TaskID, Commit: candidate.Commit, Err: err}
 	}
 	taskPath := filepath.Join(stagingWorktree, filepath.FromSlash(candidate.TaskFile))
 	if err := spec.RecordCarryForward(taskPath, candidate.RunID, candidate.Commit); err != nil {

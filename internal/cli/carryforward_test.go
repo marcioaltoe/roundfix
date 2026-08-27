@@ -6,12 +6,14 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	runworktree "roundfix/internal/worktree"
 )
@@ -326,5 +328,41 @@ func TestCarryForwardConflictRefusesInsteadOfFailingTheInspection(t *testing.T) 
 	}
 	if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
 		t.Fatalf("conflicting carry-forward HEAD = %s, want unchanged %s", got, beforeHead)
+	}
+}
+
+func TestCarryForwardStagingFailureIsNotClassifiedAsAConflict(t *testing.T) {
+	t.Parallel()
+	fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
+	ctx := context.Background()
+	head := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+	stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, fixture.repoDir, head)
+	if err != nil {
+		t.Fatalf("create carry-forward staging: %v", err)
+	}
+	t.Cleanup(func() { _ = cleanup() })
+
+	// The settlement commit applies cleanly; the Task file this candidate names
+	// does not exist, so writing provenance fails. That is Roundfix failing at
+	// its own bookkeeping over work that applied, and it must stay operational
+	// rather than being reported as the Task refusing.
+	candidate := spec.CarryForward{
+		TaskID:   "task_01",
+		RunID:    fixture.run.ID,
+		Commit:   fixture.commits["task_01"],
+		TaskFile: filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_absent.md")),
+	}
+
+	stageErr := stageCarryForwardCandidate(ctx, stagingWorktree, candidate)
+
+	if stageErr == nil {
+		t.Fatalf("staging with an absent Task file succeeded, want a failure")
+	}
+	var conflict carryForwardConflictError
+	if errors.As(stageErr, &conflict) {
+		t.Fatalf("non-conflict staging failure classified as a conflict: %v", stageErr)
+	}
+	if !strings.Contains(stageErr.Error(), "provenance") {
+		t.Fatalf("staging failure = %v, want the provenance failure named", stageErr)
 	}
 }
