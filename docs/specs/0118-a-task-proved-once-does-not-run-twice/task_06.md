@@ -1,5 +1,5 @@
 ---
-status: completed
+status: pending
 type: docs
 ---
 
@@ -33,6 +33,10 @@ mutation. Changing any other path fails this Task; stop before mutating one.
 - Run the declared skill sync so the generated copy matches the source.
 - Stay inside the grant. It does not cover the skill's resolve, watch, settle,
   archive, baseline, or release guidance, nor its agent bundles.
+- Recut after QA finding F-02. The first cut described the Preflight rule as
+  originally specified, and task_08 then changed it. Describe the delivered
+  rule: refusal requires the complete candidate set to carry, and input proofs
+  resolve against the accumulating staged carries.
 - Claims are read from the delivered code, not from the TechSpec draft.
 
 ## References
@@ -43,24 +47,4 @@ mutation. Changing any other path fails this Task; stop before mutating one.
 - `docs/agents/specific-repository.md` carries the HARD RULE this Task settles
 
 ## Verification
-- `grep -q -- "--carry-forward" .agents/skills/roundfix/SKILL.md && grep -q -- "--discard-superseded" .agents/skills/roundfix/SKILL.md && grep -q -- "--carry-forward" skills/roundfix/SKILL.md && go test -count=1 -tags docscontract ./internal/docscontract 2>&1 | grep -q "^ok"`
-
-## Result
-
-Updated the canonical Roundfix skill so the Reconcile Command documents its
-three mutually exclusive mutation switches, including that Task Carry-Forward
-accepts only `Stopped` and `Unresolved` Runs. Added Implement Command Preflight
-guidance that names the refusal, its no-side-effect exit, and the exact
-`roundfix reconcile <run-id> --carry-forward` recovery command. Ran the
-authorized `make skills-sync` target to regenerate the shipped copy.
-
-Pre-change signal: the canonical skill had no `--carry-forward` or
-`--discard-superseded` guidance and stated that `--apply` was the only mutation
-switch.
-
-Focused checks after the edit:
-
-- `rtk git -c core.fsmonitor=false diff --check -- .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — passed.
-- `rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` — passed; canonical and generated copies match.
-- `rtk go test -count=1 ./skills -run '^TestAuthorialSkillSync$'` — passed (18 tests).
-- `rtk rg` checks — passed; both flags, the `Stopped`/`Unresolved` boundary, the Preflight refusal, and the recovery command are present in both copies.
+- `grep -q "staged carries" .agents/skills/roundfix/SKILL.md && grep -q "staged carries" skills/roundfix/SKILL.md && ! grep -q "has at least one Task that passes" .agents/skills/roundfix/SKILL.md && grep -q -- "--carry-forward" .agents/skills/roundfix/SKILL.md && grep -q -- "--discard-superseded" .agents/skills/roundfix/SKILL.md && go test -count=1 -tags docscontract ./internal/docscontract`

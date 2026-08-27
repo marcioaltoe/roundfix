@@ -30,7 +30,16 @@ The second trade-off is that the Preflight names exactly one Run. Carry-forward
 refuses a set in which any member refuses, and a carried Task makes itself
 refuse afterwards, so the caller effectively gets one attempt. Naming the Run
 with the largest carriable set is therefore not a preference among equals — it
-is the only choice that recovers the maximum.
+is the only choice that recovers the maximum. For the same reason the Preflight
+refuses only when the **complete** set would carry: a refusal that named a
+command which then refuses is the deadlock it exists to prevent.
+
+One proof detail is load-bearing and was found by running this Spec on itself.
+A candidate's declared inputs are compared against the accumulating staged
+carries — the checkout plus the carries staged ahead of it — not against the
+raw checkout. In any serial graph where one Task edits a shared declared input,
+comparing against the raw checkout reports every later Task as moved and
+refuses everything.
 
 ## Project Constraints
 
@@ -122,8 +131,8 @@ different selection.
 **The Implement Command's Preflight** gains one step, placed after the Run
 Database is opened and beside the existing Run Window check, which is the
 established precedent for a Preflight that refuses with no Run and no side
-effect. It consumes the query, decides whether any Task is carriable, and
-either refuses or reports and continues.
+effect. It consumes the query, decides whether the complete candidate set of
+some prior Run would carry, and either refuses or reports and continues.
 
 ```mermaid
 flowchart TD
@@ -131,7 +140,7 @@ flowchart TD
     B -- no --> R[create Run]
     B -- yes --> C[Spec-scoped carry-forward query]
     C -- inspection failed --> N[report, continue] --> R
-    C --> D{any Task carriable?}
+    C --> D{would a Run's whole set carry?}
     D -- no --> N
     D -- yes --> E[refuse: name Run, Tasks, command]
 ```
@@ -285,16 +294,29 @@ request opens.
    with this Spec's authoring, because the Vocabulary Contract detector refuses
    a Spec whose coined term is undocumented and because the `--apply`-only
    claim was already false before this Spec.
-5. Update the user guide's reconcile and implement contracts (depends on: 1, 3).
-6. Update the `roundfix` skill under the recorded authorization, as its own
-   commit (depends on: 1, 3).
-7. Corrective, from this Spec's own first Run: compare each candidate against
+5. Corrective, from this Spec's own first Run: compare each candidate against
    the staged carries rather than the raw checkout, make the Preflight refuse
    only when the whole set would carry, and restore the store open to its place
-   after the profile preflight (depends on: 3, 6).
-8. Acceptance: prove the defect is closed against the Run Branch evidence this
+   after the profile preflight (depends on: 4).
+6. Corrective, from QA finding F-01: the reconcile help states the outcomes the
+   act accepts (depends on: 5).
+7. Update the user guide's reconcile and implement contracts (depends on: 6).
+8. Update the `roundfix` skill under the recorded authorization, as its own
+   commit (depends on: 7).
+9. Acceptance: prove the defect is closed against the Run Branch evidence this
    repository still carries, and satisfy the outside-evidence row (depends on:
-   7).
+   8).
+
+**Every documentation step follows every behavior step.** The first cut of this
+Build Order placed the glossary, user guide, and skill immediately after the
+Preflight, which read correctly until a corrective step changed the decision
+rule those documents had already described. QA finding F-02 caught the result:
+two shipped surfaces stating that one carriable Task triggers a refusal and
+that inputs are compared with the checkout, when the delivered code requires
+the whole set and compares against the staged carries. A documentation Task
+whose subject can still move is a Task authored against a draft. Only the
+glossary stays early, because it defines the act rather than its decision rule
+and nothing later changed what the term means.
 
 ## Risks & Considerations
 

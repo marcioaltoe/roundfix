@@ -16,21 +16,21 @@ graph:
     - id: task_04
       file: task_04.md
       needs: [task_03]
-    - id: task_05
-      file: task_05.md
-      needs: [task_04]
-    - id: task_06
-      file: task_06.md
-      needs: [task_05]
     - id: task_08
       file: task_08.md
-      needs: [task_06]
+      needs: [task_04]
     - id: task_09
       file: task_09.md
       needs: [task_08]
+    - id: task_05
+      file: task_05.md
+      needs: [task_09]
+    - id: task_06
+      file: task_06.md
+      needs: [task_05]
     - id: task_07
       file: task_07.md
-      needs: [task_09]
+      needs: [task_06]
 ---
 
 # Tasks — A Task proved once does not run twice
@@ -41,13 +41,13 @@ graph:
 | task_02 | A Spec-scoped carry-forward query           | backend | medium     | task_01 |
 | task_03 | Preflight refuses to re-execute proved work | backend | high       | task_02 |
 | task_04 | The glossary names the accepted outcomes    | docs    | low        | task_03 |
-| task_05 | Document both command contracts             | docs    | medium     | task_04 |
-| task_06 | The skill ships with the CLI change         | docs    | medium     | task_05 |
-| task_08 | A carry-forward that can carry a serial graph | backend | high     | task_06 |
+| task_08 | A carry-forward that can carry a serial graph | backend | high     | task_04 |
 | task_09 | The command help states the outcomes it accepts | backend | low    | task_08 |
-| task_07 | QA gate                                     | qa      | medium     | task_09 |
+| task_05 | Document both command contracts             | docs    | medium     | task_09 |
+| task_06 | The skill ships with the CLI change         | docs    | medium     | task_05 |
+| task_07 | QA gate                                     | qa      | medium     | task_06 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 · 6 → task_06 · 7 → task_08 · 8 → task_09 · 9 → task_07
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_08 · 6 → task_09 · 7 → task_05 · 8 → task_06 · 9 → task_07
 
 The chain is serial by edit locality, not by logic. task_01 and task_02 both
 rewrite the reconcile command path, so they cannot be siblings. task_04,
@@ -68,6 +68,15 @@ task_08 is corrective, added after this Spec's own first Run ended Unresolved:
 carry-forward refused all six verified Tasks because their declared inputs were
 compared against a checkout that had not received the earlier carries yet. It
 is numbered after the gate but ordered before it; the graph, not the number,
-carries the topology. task_09 is the second, from QA finding F-01: the reconcile help still called carry-forward a stopped-Run act. Both corrective slots are now used; a third finding requires a sanctioned exit, not a third patch.
+carries the topology. task_09 is the second, from QA finding F-01: the reconcile help still called
+carry-forward a stopped-Run act. Both corrective slots are now used.
+
+QA finding F-02 was the third, so it took the sanctioned exit rather than a
+third patch: the TechSpec was amended and this cut redone from it. The original
+cut ordered the documentation Tasks before the behavior was settled, so task_05
+and task_06 described a decision rule that the corrective task_08 then changed.
+Both are recut to pending and now depend on task_09, which places every
+documentation Task after every behavior Task. That ordering is the structural
+repair; re-describing the delivered rule is its consequence.
 
 Each Task's work, references, and Verification live in its own `task_NN.md`.
