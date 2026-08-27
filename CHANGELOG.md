@@ -2,6 +2,41 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.8.0] - 2026-08-27
+
+An Implement Run can now be bounded by when it may start, so an autonomous
+session left running overnight stops opening new work at an hour you choose.
+
+### Added
+
+- **A Run Window the Preflight owns.** `roundfix window <set|show|clear>`
+  stores a repository-scoped cutoff in the Run Database. An `HH:MM` argument
+  resolves to the next occurrence of that time, so `07:00` asked at `23:00`
+  means tomorrow morning rather than a cutoff sixteen hours in the past.
+  Re-setting an existing window without `--force` never moves a standing
+  cutoff, so a second invocation cannot silently extend the night.
+
+- **A passed cutoff refuses `implement` from the Preflight.** The refusal
+  happens before any Run exists: no Run row, no Run Worktree, no Agent Session,
+  no Git mutation. It names both instants literally — the cutoff and the
+  current time — and its next action names the force-set and clear commands.
+  The window governs when a Run may start and never when one must finish: a Run
+  created before the cutoff continues to its own terminal outcome.
+
+- **A Run that may cross the window says so.** When `budget.max_run_duration`
+  reaches past the cutoff, the Preflight reports that the Run may run past it
+  and creates the Run anyway. The two time bounds now explain each other where
+  each is configured.
+
+### Changed
+
+- **The Run Database is at schema 13.** The migration runs on the first
+  operational command (`resolve`, `watch`, or `implement`) and adds the Run
+  Window's storage. The database is machine-wide, so a binary older than this
+  release will refuse to open a database this one has migrated, with a
+  deterministic diagnostic naming both schema versions. Upgrade every
+  installation on a machine together.
+
 ## [0.7.0] - 2026-08-26
 
 A Run whose verified work meets a refusing commit hook no longer dies losing
@@ -485,6 +520,7 @@ time, together with the work that followed it.
 Earlier release sections are intentionally omitted from the restarted
 changelog. Git history remains the source for prior implementation history.
 
+[0.8.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.8.0
 [0.7.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.7.0
 [0.6.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.6.0
 [0.4.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.4.0
