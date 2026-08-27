@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -276,7 +277,14 @@ func newCarryForwardFixture(t *testing.T, state string, seeds []implementSeed) c
 		if err := spec.SetStatus(taskPath, spec.StatusCompleted); err != nil {
 			t.Fatalf("settle source %s: %v", seed.id, err)
 		}
-		gitImplement(t, ref.Path, "add", implementationPath, filepath.Join("docs", "specs", implementTestSlug, seed.id+".md"))
+		settlementPaths := []string{implementationPath, filepath.Join("docs", "specs", implementTestSlug, seed.id+".md")}
+		for path, content := range seed.settlementFiles {
+			mustMkdir(t, filepath.Join(ref.Path, filepath.Dir(path)))
+			mustWrite(t, filepath.Join(ref.Path, filepath.FromSlash(path)), content)
+			settlementPaths = append(settlementPaths, filepath.FromSlash(path))
+		}
+		slices.Sort(settlementPaths)
+		gitImplement(t, ref.Path, append([]string{"add"}, settlementPaths...)...)
 		gitImplement(
 			t,
 			ref.Path,

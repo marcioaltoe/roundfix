@@ -129,6 +129,77 @@ func TestInspectSpecCarryForwards(t *testing.T) {
 	})
 }
 
+func TestCarryForwardInputsResolveAgainstStagedCarries(t *testing.T) {
+	sharedInput := filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_prd.md"))
+	seeds := []implementSeed{
+		{
+			id:    "task_01",
+			title: "Update the shared contract",
+			settlementFiles: map[string]string{
+				sharedInput: "---\nstatus: active\n---\n\n# PRD\n\nShared contract from task_01.\n",
+			},
+		},
+		{id: "task_02", title: "Use the shared contract", needs: []string{"task_01"}},
+	}
+
+	t.Run("a serial graph carries against its accumulating staged state", func(t *testing.T) {
+		fixture := newCarryForwardFixture(t, store.StateUnresolved, seeds)
+		var stdout strings.Builder
+		var stderr strings.Builder
+
+		code := runCLIContext(
+			t,
+			context.Background(),
+			[]string{"reconcile", fixture.run.ID, "--carry-forward", "--format=json"},
+			&stdout,
+			&stderr,
+		)
+
+		if code != exitOK {
+			t.Fatalf("serial carry-forward exit = %d, want %d stderr=%q stdout=%q", code, exitOK, stderr.String(), stdout.String())
+		}
+		for _, taskID := range []string{"task_01", "task_02"} {
+			if got := mustRead(t, filepath.Join(fixture.repoDir, "src", taskID+".txt")); got != taskID+" settled\n" {
+				t.Fatalf("carried %s implementation = %q", taskID, got)
+			}
+		}
+	})
+
+	t.Run("genuine shared-input drift still refuses the whole set", func(t *testing.T) {
+		fixture := newCarryForwardFixture(t, store.StateUnresolved, seeds)
+		sharedPath := filepath.Join(fixture.repoDir, filepath.FromSlash(sharedInput))
+		mustWrite(t, sharedPath, "---\nstatus: active\n---\n\n# PRD\n\nGenuine drift after the Run.\n")
+		gitImplement(t, fixture.repoDir, "add", filepath.FromSlash(sharedInput))
+		gitImplement(t, fixture.repoDir, "commit", "-m", "change shared contract after Run")
+		beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+		var stdout strings.Builder
+		var stderr strings.Builder
+
+		code := runCLIContext(
+			t,
+			context.Background(),
+			[]string{"reconcile", fixture.run.ID, "--carry-forward", "--format=json"},
+			&stdout,
+			&stderr,
+		)
+
+		if code != exitPreflight {
+			t.Fatalf("drifted serial carry-forward exit = %d, want %d stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+		}
+		if !strings.Contains(stderr.String(), "carry-forward refused the whole set") || !strings.Contains(stderr.String(), sharedInput) {
+			t.Fatalf("drifted serial carry-forward stderr = %q, want whole-set refusal naming %s", stderr.String(), sharedInput)
+		}
+		if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
+			t.Fatalf("drifted serial carry-forward HEAD = %s, want unchanged %s", got, beforeHead)
+		}
+		for _, taskID := range []string{"task_01", "task_02"} {
+			if _, err := os.Stat(filepath.Join(fixture.repoDir, "src", taskID+".txt")); !os.IsNotExist(err) {
+				t.Fatalf("drifted serial carry-forward %s implementation stat error = %v, want not exist", taskID, err)
+			}
+		}
+	})
+}
+
 func TestCarryForwardExplicitRunStillRefusesAMissingRunWorktree(t *testing.T) {
 	t.Parallel()
 	fixture := newCarryForwardFixture(t, store.StateStopped, []implementSeed{{id: "task_01", title: "Build the core"}})

@@ -36,6 +36,11 @@ func (result specCarryForward) carriable() int {
 	return count
 }
 
+// wouldCarry reports whether carry-forward would accept the complete set.
+func (result specCarryForward) wouldCarry() bool {
+	return len(result.Candidates) > 0 && result.carriable() == len(result.Candidates)
+}
+
 // inspectSpecCarryForwards reports, per prior terminal Run of one Spec in this
 // repository, what carry-forward would do. Runs whose Run Worktree is no
 // longer present are skipped rather than failing the inspection.
@@ -134,51 +139,145 @@ func inspectCarryForwards(
 			return nil, err
 		}
 		evidence := runs.taskEvidence[run.ID]
-		for _, task := range graph.Tasks {
-			taskEvidence := evidence[task.ID]
-			if !taskEvidence.settledCompleted {
-				continue
-			}
-			candidate := spec.CarryForward{
-				TaskID:      task.ID,
-				RunID:       run.ID,
-				TaskFile:    filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
-				MovedInputs: []string{},
-			}
-			if !taskEvidence.verificationPassed {
-				candidate.Action = "refuse"
-				candidate.RefusalReason = fmt.Sprintf("Task %s has no passing Verification verdict in Run %s", task.ID, run.ID)
-				carried = append(carried, candidate)
-				continue
-			}
-			taskCommits := commitsByTask[task.ID]
-			if len(taskCommits) != 1 {
-				candidate.Action = "refuse"
-				candidate.RefusalReason = fmt.Sprintf("Task %s has %d settlement commits in Run %s; expected exactly one", task.ID, len(taskCommits), run.ID)
-				carried = append(carried, candidate)
-				continue
-			}
-			candidate.Commit = taskCommits[0]
-			if err := inspectCarryForwardCandidate(ctx, repository, &candidate); err != nil {
-				candidate.Action = "refuse"
-				candidate.RefusalReason = err.Error()
-				carried = append(carried, candidate)
-				continue
-			}
-			if candidate.InputsMoved {
-				candidate.Action = "refuse"
-				candidate.RefusalReason = fmt.Sprintf(
-					"Task %s declared input(s) moved: %s",
-					task.ID,
-					strings.Join(candidate.MovedInputs, ", "),
-				)
-			} else {
-				candidate.Action = carryForwardReadyAction
-			}
-			carried = append(carried, candidate)
+		checkoutHead, err := reconcileGitText(ctx, repository, "rev-parse", "HEAD")
+		if err != nil {
+			return nil, fmt.Errorf("read checkout HEAD for Run %q carry-forward proof: %w", run.ID, err)
 		}
+		stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, repository, checkoutHead)
+		if err != nil {
+			return nil, err
+		}
+		runCarried, inspectErr := inspectCarryForwardsForRun(
+			ctx,
+			stagingWorktree,
+			repoSpecsRoot,
+			run,
+			graph,
+			commitsByTask,
+			evidence,
+		)
+		cleanupErr := cleanup()
+		if inspectErr != nil || cleanupErr != nil {
+			return nil, errors.Join(inspectErr, cleanupErr)
+		}
+		carried = append(carried, runCarried...)
 	}
 	return carried, nil
+}
+
+func inspectCarryForwardsForRun(
+	ctx context.Context,
+	stagingWorktree string,
+	repoSpecsRoot string,
+	run store.Run,
+	graph *spec.Graph,
+	commitsByTask map[string][]string,
+	evidence map[string]reconcileTaskEvidence,
+) ([]spec.CarryForward, error) {
+	carried := make([]spec.CarryForward, 0)
+	for _, task := range graph.Tasks {
+		taskEvidence := evidence[task.ID]
+		if !taskEvidence.settledCompleted {
+			continue
+		}
+		candidate := spec.CarryForward{
+			TaskID:      task.ID,
+			RunID:       run.ID,
+			TaskFile:    filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
+			MovedInputs: []string{},
+		}
+		if !taskEvidence.verificationPassed {
+			candidate.Action = "refuse"
+			candidate.RefusalReason = fmt.Sprintf("Task %s has no passing Verification verdict in Run %s", task.ID, run.ID)
+			carried = append(carried, candidate)
+			continue
+		}
+		taskCommits := commitsByTask[task.ID]
+		if len(taskCommits) != 1 {
+			candidate.Action = "refuse"
+			candidate.RefusalReason = fmt.Sprintf("Task %s has %d settlement commits in Run %s; expected exactly one", task.ID, len(taskCommits), run.ID)
+			carried = append(carried, candidate)
+			continue
+		}
+		candidate.Commit = taskCommits[0]
+		if err := inspectCarryForwardCandidate(ctx, stagingWorktree, &candidate); err != nil {
+			candidate.Action = "refuse"
+			candidate.RefusalReason = err.Error()
+			carried = append(carried, candidate)
+			continue
+		}
+		if candidate.InputsMoved {
+			candidate.Action = "refuse"
+			candidate.RefusalReason = fmt.Sprintf(
+				"Task %s declared input(s) moved: %s",
+				task.ID,
+				strings.Join(candidate.MovedInputs, ", "),
+			)
+		} else {
+			candidate.Action = carryForwardReadyAction
+			if err := stageCarryForwardCandidate(ctx, stagingWorktree, candidate); err != nil {
+				return nil, fmt.Errorf("stage Task %s while proving serial carry-forward: %w", task.ID, err)
+			}
+		}
+		carried = append(carried, candidate)
+	}
+	return carried, nil
+}
+
+func createCarryForwardStaging(
+	ctx context.Context,
+	repository string,
+	checkoutHead string,
+) (string, func() error, error) {
+	tempRoot, err := os.MkdirTemp("", "roundfix-carry-forward-")
+	if err != nil {
+		return "", nil, fmt.Errorf("create carry-forward staging directory: %w", err)
+	}
+	stagingWorktree := filepath.Join(tempRoot, "worktree")
+	if _, err := reconcileGitRaw(ctx, repository, "worktree", "add", "--detach", stagingWorktree, checkoutHead); err != nil {
+		return "", nil, errors.Join(
+			fmt.Errorf("create carry-forward staging Worktree: %w", err),
+			os.RemoveAll(tempRoot),
+		)
+	}
+	cleanup := func() error {
+		_, worktreeErr := reconcileGitRaw(context.Background(), repository, "worktree", "remove", "--force", stagingWorktree)
+		if worktreeErr != nil {
+			worktreeErr = fmt.Errorf("remove carry-forward staging Worktree: %w", worktreeErr)
+		}
+		removeErr := os.RemoveAll(tempRoot)
+		if removeErr != nil {
+			removeErr = fmt.Errorf("remove carry-forward staging directory: %w", removeErr)
+		}
+		return errors.Join(worktreeErr, removeErr)
+	}
+	checkoutPatch, err := reconcileGitRaw(ctx, repository, "diff", "--binary", "--full-index", "HEAD", "--")
+	if err != nil {
+		return "", nil, errors.Join(fmt.Errorf("read checkout changes for carry-forward staging: %w", err), cleanup())
+	}
+	if len(checkoutPatch) > 0 {
+		if _, err := reconcileGitRawInput(ctx, stagingWorktree, checkoutPatch, "apply", "--binary", "--whitespace=nowarn", "-"); err != nil {
+			return "", nil, errors.Join(fmt.Errorf("apply checkout changes to carry-forward staging Worktree: %w", err), cleanup())
+		}
+	}
+	return stagingWorktree, cleanup, nil
+}
+
+func stageCarryForwardCandidate(ctx context.Context, stagingWorktree string, candidate spec.CarryForward) error {
+	if _, err := reconcileGitRaw(ctx, stagingWorktree, "cherry-pick", candidate.Commit); err != nil {
+		return fmt.Errorf("stage Task %s settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
+	}
+	taskPath := filepath.Join(stagingWorktree, filepath.FromSlash(candidate.TaskFile))
+	if err := spec.RecordCarryForward(taskPath, candidate.RunID, candidate.Commit); err != nil {
+		return fmt.Errorf("record Task %s carry-forward provenance: %w", candidate.TaskID, err)
+	}
+	if _, err := reconcileGitRaw(ctx, stagingWorktree, "add", "--", candidate.TaskFile); err != nil {
+		return fmt.Errorf("stage Task %s carry-forward provenance: %w", candidate.TaskID, err)
+	}
+	if _, err := reconcileGitRaw(ctx, stagingWorktree, "commit", "--amend", "--no-edit"); err != nil {
+		return fmt.Errorf("amend Task %s carry-forward provenance: %w", candidate.TaskID, err)
+	}
+	return nil
 }
 
 func carryForwardTaskCommits(ctx context.Context, run store.Run) (map[string][]string, error) {
@@ -219,18 +318,18 @@ func gitTrailerValue(message string, key string) string {
 	return ""
 }
 
-func inspectCarryForwardCandidate(ctx context.Context, repository string, candidate *spec.CarryForward) error {
+func inspectCarryForwardCandidate(ctx context.Context, stagingWorktree string, candidate *spec.CarryForward) error {
 	if candidate == nil {
 		return errors.New("carry-forward candidate is required")
 	}
-	changed, err := reconcileGitText(ctx, repository, "diff-tree", "--no-commit-id", "--name-only", "-r", candidate.Commit)
+	changed, err := reconcileGitText(ctx, stagingWorktree, "diff-tree", "--no-commit-id", "--name-only", "-r", candidate.Commit)
 	if err != nil {
 		return fmt.Errorf("inspect Task %s settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
 	}
 	if !lineSet(changed)[candidate.TaskFile] {
 		return fmt.Errorf("Task %s settlement commit %s does not contain %s", candidate.TaskID, candidate.Commit, candidate.TaskFile)
 	}
-	committedTask, found, err := reconcileGitBlob(ctx, repository, candidate.Commit, candidate.TaskFile)
+	committedTask, found, err := reconcileGitBlob(ctx, stagingWorktree, candidate.Commit, candidate.TaskFile)
 	if err != nil {
 		return fmt.Errorf("read Task %s from settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
 	}
@@ -244,11 +343,11 @@ func inspectCarryForwardCandidate(ctx context.Context, repository string, candid
 	if status != spec.StatusCompleted {
 		return fmt.Errorf("Task %s settlement commit %s records status %q, not completed", candidate.TaskID, candidate.Commit, status)
 	}
-	parent, err := reconcileGitText(ctx, repository, "rev-parse", candidate.Commit+"^")
+	parent, err := reconcileGitText(ctx, stagingWorktree, "rev-parse", candidate.Commit+"^")
 	if err != nil {
 		return fmt.Errorf("resolve Task %s settlement parent: %w", candidate.TaskID, err)
 	}
-	parentTask, found, err := reconcileGitBlob(ctx, repository, parent, candidate.TaskFile)
+	parentTask, found, err := reconcileGitBlob(ctx, stagingWorktree, parent, candidate.TaskFile)
 	if err != nil {
 		return fmt.Errorf("read Task %s declared inputs from %s: %w", candidate.TaskID, parent, err)
 	}
@@ -261,18 +360,18 @@ func inspectCarryForwardCandidate(ctx context.Context, repository string, candid
 	}
 	moved := make([]string, 0)
 	for _, input := range inputs {
-		_, existed, err := reconcileGitBlob(ctx, repository, parent, input)
+		_, existed, err := reconcileGitBlob(ctx, stagingWorktree, parent, input)
 		if err != nil {
 			return fmt.Errorf("read Task %s input %s from %s: %w", candidate.TaskID, input, parent, err)
 		}
 		if !existed {
 			continue
 		}
-		if carryForwardPathCrossesSymlink(repository, input) {
+		if carryForwardPathCrossesSymlink(stagingWorktree, input) {
 			moved = append(moved, input)
 			continue
 		}
-		changed, err := reconcileGitInputChanged(ctx, repository, parent, input)
+		changed, err := reconcileGitInputChanged(ctx, stagingWorktree, parent, input)
 		if err != nil {
 			return fmt.Errorf("compare Task %s input %s against %s: %w", candidate.TaskID, input, parent, err)
 		}

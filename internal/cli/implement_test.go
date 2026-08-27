@@ -66,12 +66,13 @@ func TestMain(m *testing.M) {
 // values default to status pending, type backend, and one Verification command
 // that fails until the scripted Agent records its work.
 type implementSeed struct {
-	id           string
-	title        string
-	taskType     string
-	status       string
-	needs        []string
-	verification []string
+	id              string
+	title           string
+	taskType        string
+	status          string
+	needs           []string
+	verification    []string
+	settlementFiles map[string]string
 }
 
 func implementQAGateSeed(status string, needs ...string) implementSeed {
@@ -3945,7 +3946,7 @@ func TestImplementRunWindow(t *testing.T) {
 }
 
 func TestImplementRefusesWhenCarryForwardIsAvailable(t *testing.T) {
-	t.Run("a real prior Run refuses before another Run or Agent Session exists", func(t *testing.T) {
+	t.Run("a real prior Run refuses before another Run or Task Agent turn exists", func(t *testing.T) {
 		fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
 		runner := &implementFakeRunner{gitRoot: fixture.repoDir}
 		withImplementCollaborators(t, runner)
@@ -3968,8 +3969,8 @@ func TestImplementRefusesWhenCarryForwardIsAvailable(t *testing.T) {
 				t.Fatalf("real carry-forward refusal stderr = %q, want %q", stderr.String(), want)
 			}
 		}
-		if runner.calls != 0 || len(runner.probeRequests) != 0 {
-			t.Fatalf("real carry-forward refusal reached Agent work: calls=%d proofs=%d", runner.calls, len(runner.probeRequests))
+		if runner.calls != 0 {
+			t.Fatalf("real carry-forward refusal reached %d Task Agent turn(s)", runner.calls)
 		}
 		assertRunCount(t, store.DatabasePath(fixture.homeDir), 1)
 		if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
@@ -4081,9 +4082,6 @@ func TestImplementRefusesWhenCarryForwardIsAvailable(t *testing.T) {
 			if runner.calls != 0 {
 				t.Fatalf("carry-forward refusal spent %d task Agent turn(s), want zero", runner.calls)
 			}
-			if len(runner.probeRequests) != 0 {
-				t.Fatalf("carry-forward refusal opened %d Agent Selection proof Session(s), want zero", len(runner.probeRequests))
-			}
 			assertRunCount(t, store.DatabasePath(homeDir), 0)
 			if got := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")); got != beforeHead {
 				t.Fatalf("carry-forward refusal moved HEAD from %s to %s", beforeHead, got)
@@ -4092,6 +4090,43 @@ func TestImplementRefusesWhenCarryForwardIsAvailable(t *testing.T) {
 				t.Fatalf("carry-forward refusal changed Git status from %q to %q", beforeStatus, got)
 			}
 		})
+	}
+}
+
+func TestImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Build the core"}})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.inspectSpecCarryForwards = func(context.Context, *store.Store, string, roundconfig.SpecsRoot, string) ([]specCarryForward, error) {
+			return []specCarryForward{{
+				Run: store.Run{ID: "run-mixed"},
+				Candidates: []spec.CarryForward{
+					{TaskID: "task_01", Action: carryForwardReadyAction},
+					{TaskID: "task_02", Action: "refuse", RefusalReason: "Task task_02 declared input(s) moved: CONTEXT.md"},
+				},
+			}}, nil
+		}
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("mixed carry-forward set exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if runner.calls != 1 {
+		t.Fatalf("mixed carry-forward set task Agent turns = %d, want one", runner.calls)
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	for _, want := range []string{"Run run-mixed", "Task task_02 declared input(s) moved", "implement will proceed"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("mixed carry-forward set stderr = %q, want %q", stderr.String(), want)
+		}
 	}
 }
 

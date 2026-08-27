@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -45,3 +45,39 @@ the whole set, which is the deadlock this Spec exists to remove.
 
 ## Verification
 - `grep -q "TestImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry" internal/cli/implement_test.go && grep -q "TestCarryForwardInputsResolveAgainstStagedCarries" internal/cli/carryforward_test.go && go test -count=1 ./internal/cli`
+
+## Result
+
+- Task Carry-Forward now builds its proof baseline in a temporary staging
+  worktree seeded from the checkout, then stages each proved candidate in Task
+  Graph order before comparing the next candidate. The apply path reuses the
+  same candidate-staging operation.
+- The whole-set contract remains strict: a genuine shared-input change and the
+  existing moved-input and mixed-set cases refuse without carrying any Task.
+- The Implement Preflight now selects a prior Run only when every candidate in
+  its set would carry. A mixed ready/refusing set is reported and Implement
+  proceeds instead of naming a carry-forward command that would refuse.
+- Agent Selection Profile Preflight runs before the Run Database opens. The Run
+  Window and Task Carry-Forward checks remain adjacent immediately after the
+  open.
+
+Focused-check evidence:
+
+- Before implementation,
+  `rtk go test -count=1 ./internal/cli -run '^(TestRunImplementPreflightProbeFailureCreatesNoRun|TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt|TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun)$'`
+  reported one pass and two failures because profile-preflight refusals created
+  the Run Database.
+- Before the production fix,
+  `rtk go test -count=1 ./internal/cli -run '^(TestCarryForwardInputsResolveAgainstStagedCarries|TestImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry)$'`
+  reported the serial-graph and mixed-set regressions.
+- After implementation,
+  `rtk go test -count=1 ./internal/cli -run '^(TestCarryForward.*|TestInspectSpecCarryForwards|TestImplementCarryForward.*|TestImplementRefusesWhenCarryForwardIsAvailable|TestImplementProceedsWhenNothingIsCarriable|TestImplementRunWindow.*|TestRunImplementPreflightProbeFailureCreatesNoRun|TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt|TestRunImplementSelectionFailure.*)$'`
+  passed 42 tests. This covers the serial staged baseline, genuine drift,
+  whole-set refusal, mixed-set Implement continuation, Run selection, Run
+  Window placement, and profile-preflight database ordering.
+- The Daemon-owned `## Verification` command was not run in this Agent turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260827T150555Z_9e1f7632d21f0c1b`
+- Source commit: `5c59c27e76a5376e15ca4d480cd89c1399035cc1`

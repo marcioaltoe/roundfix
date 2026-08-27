@@ -197,6 +197,25 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 
+	categories := implementProfileCategories(graph)
+	collaborators := commandDependenciesForContext(ctx).newEngineCollaborators()
+	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loadedConfig.Config, categories, gitState.Root, collaborators.runner, stderr)
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	runtime, err := runtimeForOperationalProfileRun(req, loadedConfig.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	agentSelections, err := operationalAgentSelectionProfiles(loadedConfig.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	req = requestWithRuntimeSelection(req, runtime)
+
 	runStore, err := store.Open(ctx, loadedConfig.HomeDir)
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -253,25 +272,6 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	} else {
 		reportImplementNonCarriableCarryForwards(stderr, carryForwards)
 	}
-
-	categories := implementProfileCategories(graph)
-	collaborators := commandDependenciesForContext(ctx).newEngineCollaborators()
-	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loadedConfig.Config, categories, gitState.Root, collaborators.runner, stderr)
-	if err != nil {
-		printPreflightFailure("implement", err, stderr)
-		return exitPreflight
-	}
-	runtime, err := runtimeForOperationalProfileRun(req, loadedConfig.Config, categories, profilePreflight.Override)
-	if err != nil {
-		printPreflightFailure("implement", err, stderr)
-		return exitPreflight
-	}
-	agentSelections, err := operationalAgentSelectionProfiles(loadedConfig.Config, categories, profilePreflight.Override)
-	if err != nil {
-		printPreflightFailure("implement", err, stderr)
-		return exitPreflight
-	}
-	req = requestWithRuntimeSelection(req, runtime)
 
 	sweepRunRetention(ctx, runStore, req.artifactDir, loadedConfig.Config.Store.JournalRetention, stderr)
 	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runtime, runStore, stderr); err != nil {
@@ -485,6 +485,9 @@ func selectImplementCarryForward(results []specCarryForward) (specCarryForward, 
 	var selected specCarryForward
 	var selectedTasks []string
 	for _, result := range results {
+		if !result.wouldCarry() {
+			continue
+		}
 		tasks := make([]string, 0, result.carriable())
 		for _, candidate := range result.Candidates {
 			if candidate.Action == carryForwardReadyAction {
@@ -506,12 +509,12 @@ func selectImplementCarryForward(results []specCarryForward) (specCarryForward, 
 
 func reportImplementNonCarriableCarryForwards(stderr io.Writer, results []specCarryForward) {
 	for _, result := range results {
-		if result.carriable() != 0 {
+		if result.wouldCarry() {
 			continue
 		}
 		fmt.Fprintf(
 			stderr,
-			"%s: note: Run %s has no Tasks available for Task Carry-Forward: %s; implement will proceed.\n",
+			"%s: note: Run %s is not available for Task Carry-Forward: %s; implement will proceed.\n",
 			app.Name,
 			result.Run.ID,
 			carryForwardRefusalReason(result.Candidates),

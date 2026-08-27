@@ -473,38 +473,17 @@ func applyCarryForwards(ctx context.Context, repository string, candidates []spe
 	if err != nil {
 		return fmt.Errorf("read checkout HEAD before carry-forward: %w", err)
 	}
-	tempRoot, err := os.MkdirTemp("", "roundfix-carry-forward-")
+	stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, repository, checkoutHead)
 	if err != nil {
-		return fmt.Errorf("create carry-forward staging directory: %w", err)
+		return err
 	}
 	defer func() {
-		if removeErr := os.RemoveAll(tempRoot); returnErr == nil && removeErr != nil {
-			returnErr = fmt.Errorf("remove carry-forward staging directory: %w", removeErr)
-		}
-	}()
-	stagingWorktree := filepath.Join(tempRoot, "worktree")
-	if _, err := reconcileGitRaw(ctx, repository, "worktree", "add", "--detach", stagingWorktree, checkoutHead); err != nil {
-		return fmt.Errorf("create carry-forward staging Worktree: %w", err)
-	}
-	defer func() {
-		if _, removeErr := reconcileGitRaw(context.Background(), repository, "worktree", "remove", "--force", stagingWorktree); returnErr == nil && removeErr != nil {
-			returnErr = fmt.Errorf("remove carry-forward staging Worktree: %w", removeErr)
-		}
+		returnErr = errors.Join(returnErr, cleanup())
 	}()
 
 	for _, candidate := range candidates {
-		if _, err := reconcileGitRaw(ctx, stagingWorktree, "cherry-pick", candidate.Commit); err != nil {
-			return fmt.Errorf("stage Task %s settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
-		}
-		taskPath := filepath.Join(stagingWorktree, filepath.FromSlash(candidate.TaskFile))
-		if err := spec.RecordCarryForward(taskPath, candidate.RunID, candidate.Commit); err != nil {
-			return fmt.Errorf("record Task %s carry-forward provenance: %w", candidate.TaskID, err)
-		}
-		if _, err := reconcileGitRaw(ctx, stagingWorktree, "add", "--", candidate.TaskFile); err != nil {
-			return fmt.Errorf("stage Task %s carry-forward provenance: %w", candidate.TaskID, err)
-		}
-		if _, err := reconcileGitRaw(ctx, stagingWorktree, "commit", "--amend", "--no-edit"); err != nil {
-			return fmt.Errorf("amend Task %s carry-forward provenance: %w", candidate.TaskID, err)
+		if err := stageCarryForwardCandidate(ctx, stagingWorktree, candidate); err != nil {
+			return err
 		}
 	}
 	stagedHead, err := reconcileGitText(ctx, stagingWorktree, "rev-parse", "HEAD")
@@ -537,10 +516,17 @@ func reconcileGitText(ctx context.Context, workDir string, args ...string) (stri
 }
 
 func reconcileGitRaw(ctx context.Context, workDir string, args ...string) ([]byte, error) {
+	return reconcileGitRawInput(ctx, workDir, nil, args...)
+}
+
+func reconcileGitRawInput(ctx context.Context, workDir string, input []byte, args ...string) ([]byte, error) {
 	commandArgs := append([]string{"-c", "core.fsmonitor=false", "-c", "commit.gpgSign=false"}, args...)
 	command := exec.CommandContext(ctx, "git", commandArgs...)
 	command.Dir = workDir
 	command.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	if input != nil {
+		command.Stdin = strings.NewReader(string(input))
+	}
 	output, err := command.CombinedOutput()
 	if err != nil {
 		diagnostic := strings.TrimSpace(string(output))
