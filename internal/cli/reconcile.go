@@ -169,8 +169,19 @@ func runReconcileCommand(ctx context.Context, args []string, stdout, stderr io.W
 
 	report := inspectReconcileRuns(ctx, repository, opts, runs)
 	carryForwardRefusal := ""
-	if opts.carryForward && (len(runs.selected) != 1 || runs.selected[0].State != store.StateStopped) {
-		carryForwardRefusal = fmt.Sprintf("Run %q is not Stopped; carry-forward accepts one stopped Run", opts.runID)
+	if opts.carryForward && len(runs.selected) != 1 {
+		carryForwardRefusal = fmt.Sprintf(
+			"Run %q could not be selected; carry-forward accepts one Run with outcome %s",
+			opts.runID,
+			strings.Join(carryForwardAcceptedStates, " or "),
+		)
+	} else if opts.carryForward && !slices.Contains(carryForwardAcceptedStates, runs.selected[0].State) {
+		carryForwardRefusal = fmt.Sprintf(
+			"Run %q has outcome %s; carry-forward accepts outcomes %s",
+			opts.runID,
+			runs.selected[0].State,
+			strings.Join(carryForwardAcceptedStates, " and "),
+		)
 	}
 	resolvedSpecsRoot, resolveSpecsErr := roundconfig.ResolveSpecsRoot(loaded, repository)
 	if resolveSpecsErr != nil {
@@ -310,7 +321,7 @@ func parseReconcileOptions(args []string) (reconcileOptions, error) {
 		return opts, validationError{message: "--apply, --discard-superseded, and --carry-forward are mutually exclusive"}
 	}
 	if opts.carryForward && opts.runID == "" {
-		return opts, validationError{message: "--carry-forward requires one stopped Run ID"}
+		return opts, validationError{message: "--carry-forward requires one Run ID"}
 	}
 	return opts, nil
 }
@@ -450,232 +461,6 @@ func loadReconcileTaskCoverage(
 	return coverage, evidenceByRun, nil
 }
 
-func inspectCarryForwards(
-	ctx context.Context,
-	repository string,
-	resolvedSpecsRoot roundconfig.SpecsRoot,
-	runs reconcileRunSelection,
-) ([]spec.CarryForward, error) {
-	repoSpecsRoot, ok := repositoryRelativePath(repository, resolvedSpecsRoot.Path)
-	if !ok {
-		return nil, fmt.Errorf("carry-forward Specs Root %q is outside repository %q", resolvedSpecsRoot.Path, repository)
-	}
-	repoSpecsRoot = filepath.ToSlash(repoSpecsRoot)
-	carried := make([]spec.CarryForward, 0)
-	for _, run := range runs.selected {
-		if run.State != store.StateStopped {
-			continue
-		}
-		if strings.TrimSpace(run.WorkDir) == "" {
-			return nil, fmt.Errorf("inspect carry-forward Run %q: recorded Run Worktree is missing", run.ID)
-		}
-		sourceSpecsRoot := specsRootForWorkDir(resolvedSpecsRoot, repository, run.WorkDir)
-		graph, err := spec.Load(sourceSpecsRoot, run.SpecSlug)
-		if err != nil {
-			return nil, fmt.Errorf("load stopped Run %q Spec %q: %w", run.ID, run.SpecSlug, err)
-		}
-		commitsByTask, err := carryForwardTaskCommits(ctx, run)
-		if err != nil {
-			return nil, err
-		}
-		evidence := runs.taskEvidence[run.ID]
-		for _, task := range graph.Tasks {
-			taskEvidence := evidence[task.ID]
-			if !taskEvidence.settledCompleted {
-				continue
-			}
-			candidate := spec.CarryForward{
-				TaskID:      task.ID,
-				RunID:       run.ID,
-				TaskFile:    filepath.ToSlash(filepath.Join(repoSpecsRoot, task.File)),
-				MovedInputs: []string{},
-			}
-			if !taskEvidence.verificationPassed {
-				candidate.Action = "refuse"
-				candidate.RefusalReason = fmt.Sprintf("Task %s has no passing Verification verdict in Run %s", task.ID, run.ID)
-				carried = append(carried, candidate)
-				continue
-			}
-			taskCommits := commitsByTask[task.ID]
-			if len(taskCommits) != 1 {
-				candidate.Action = "refuse"
-				candidate.RefusalReason = fmt.Sprintf("Task %s has %d settlement commits in Run %s; expected exactly one", task.ID, len(taskCommits), run.ID)
-				carried = append(carried, candidate)
-				continue
-			}
-			candidate.Commit = taskCommits[0]
-			if err := inspectCarryForwardCandidate(ctx, repository, &candidate); err != nil {
-				candidate.Action = "refuse"
-				candidate.RefusalReason = err.Error()
-				carried = append(carried, candidate)
-				continue
-			}
-			if candidate.InputsMoved {
-				candidate.Action = "refuse"
-				candidate.RefusalReason = fmt.Sprintf(
-					"Task %s declared input(s) moved: %s",
-					task.ID,
-					strings.Join(candidate.MovedInputs, ", "),
-				)
-			} else {
-				candidate.Action = "would carry forward with --carry-forward"
-			}
-			carried = append(carried, candidate)
-		}
-	}
-	return carried, nil
-}
-
-func carryForwardTaskCommits(ctx context.Context, run store.Run) (map[string][]string, error) {
-	if strings.TrimSpace(run.HeadSHA) == "" {
-		return nil, fmt.Errorf("stopped Run %q has no recorded starting commit", run.ID)
-	}
-	output, err := reconcileGitText(ctx, run.WorkDir, "rev-list", "--reverse", run.HeadSHA+"..HEAD")
-	if err != nil {
-		return nil, fmt.Errorf("list settlement commits for stopped Run %q: %w", run.ID, err)
-	}
-	commits := make(map[string][]string)
-	for _, commit := range strings.Fields(output) {
-		message, err := reconcileGitText(ctx, run.WorkDir, "show", "-s", "--format=%B", commit)
-		if err != nil {
-			return nil, fmt.Errorf("read stopped Run %q commit %s: %w", run.ID, commit, err)
-		}
-		if gitTrailerValue(message, "Roundfix-Spec") != run.SpecSlug {
-			continue
-		}
-		taskID := gitTrailerValue(message, "Roundfix-Task")
-		if taskID == "" {
-			continue
-		}
-		commits[taskID] = append(commits[taskID], commit)
-	}
-	return commits, nil
-}
-
-func gitTrailerValue(message string, key string) string {
-	prefix := strings.ToLower(strings.TrimSpace(key)) + ":"
-	lines := strings.Split(message, "\n")
-	for index := len(lines) - 1; index >= 0; index-- {
-		line := strings.TrimSpace(lines[index])
-		if strings.HasPrefix(strings.ToLower(line), prefix) {
-			return strings.TrimSpace(line[len(prefix):])
-		}
-	}
-	return ""
-}
-
-func inspectCarryForwardCandidate(ctx context.Context, repository string, candidate *spec.CarryForward) error {
-	if candidate == nil {
-		return errors.New("carry-forward candidate is required")
-	}
-	changed, err := reconcileGitText(ctx, repository, "diff-tree", "--no-commit-id", "--name-only", "-r", candidate.Commit)
-	if err != nil {
-		return fmt.Errorf("inspect Task %s settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
-	}
-	if !lineSet(changed)[candidate.TaskFile] {
-		return fmt.Errorf("Task %s settlement commit %s does not contain %s", candidate.TaskID, candidate.Commit, candidate.TaskFile)
-	}
-	committedTask, found, err := reconcileGitBlob(ctx, repository, candidate.Commit, candidate.TaskFile)
-	if err != nil {
-		return fmt.Errorf("read Task %s from settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
-	}
-	if !found {
-		return fmt.Errorf("Task %s settlement commit %s does not contain %s", candidate.TaskID, candidate.Commit, candidate.TaskFile)
-	}
-	status, err := spec.CarryForwardStatus(candidate.TaskFile, committedTask)
-	if err != nil {
-		return fmt.Errorf("read Task %s status from settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
-	}
-	if status != spec.StatusCompleted {
-		return fmt.Errorf("Task %s settlement commit %s records status %q, not completed", candidate.TaskID, candidate.Commit, status)
-	}
-	parent, err := reconcileGitText(ctx, repository, "rev-parse", candidate.Commit+"^")
-	if err != nil {
-		return fmt.Errorf("resolve Task %s settlement parent: %w", candidate.TaskID, err)
-	}
-	parentTask, found, err := reconcileGitBlob(ctx, repository, parent, candidate.TaskFile)
-	if err != nil {
-		return fmt.Errorf("read Task %s declared inputs from %s: %w", candidate.TaskID, parent, err)
-	}
-	if !found {
-		return fmt.Errorf("Task %s input file %s is absent from settlement parent %s", candidate.TaskID, candidate.TaskFile, parent)
-	}
-	inputs, err := spec.CarryForwardInputs(filepath.Dir(candidate.TaskFile), candidate.TaskFile, parentTask)
-	if err != nil {
-		return fmt.Errorf("read Task %s declared inputs: %w", candidate.TaskID, err)
-	}
-	moved := make([]string, 0)
-	for _, input := range inputs {
-		_, existed, err := reconcileGitBlob(ctx, repository, parent, input)
-		if err != nil {
-			return fmt.Errorf("read Task %s input %s from %s: %w", candidate.TaskID, input, parent, err)
-		}
-		if !existed {
-			continue
-		}
-		if carryForwardPathCrossesSymlink(repository, input) {
-			moved = append(moved, input)
-			continue
-		}
-		changed, err := reconcileGitInputChanged(ctx, repository, parent, input)
-		if err != nil {
-			return fmt.Errorf("compare Task %s input %s against %s: %w", candidate.TaskID, input, parent, err)
-		}
-		if changed {
-			moved = append(moved, input)
-		}
-	}
-	slices.Sort(moved)
-	candidate.MovedInputs = moved
-	candidate.InputsMoved = len(moved) > 0
-	return nil
-}
-
-func lineSet(output string) map[string]bool {
-	set := make(map[string]bool)
-	for _, line := range strings.Split(output, "\n") {
-		line = filepath.ToSlash(strings.TrimSpace(line))
-		if line != "" {
-			set[line] = true
-		}
-	}
-	return set
-}
-
-func carryForwardPathCrossesSymlink(repository string, relative string) bool {
-	current := filepath.Clean(repository)
-	for _, part := range strings.Split(filepath.FromSlash(relative), string(filepath.Separator)) {
-		if part == "" || part == "." {
-			continue
-		}
-		current = filepath.Join(current, part)
-		info, err := os.Lstat(current)
-		if err != nil {
-			return false
-		}
-		if info.Mode()&os.ModeSymlink != 0 {
-			return true
-		}
-	}
-	return false
-}
-
-func carryForwardRefusalReason(candidates []spec.CarryForward) string {
-	if len(candidates) == 0 {
-		return "stopped Run has no Tasks with completed settlement evidence"
-	}
-	refusals := make([]string, 0)
-	for _, candidate := range candidates {
-		if strings.TrimSpace(candidate.RefusalReason) != "" {
-			refusals = append(refusals, candidate.RefusalReason)
-		}
-	}
-	if len(refusals) == 0 {
-		return ""
-	}
-	return "carry-forward refused the whole set: " + strings.Join(refusals, "; ")
-}
-
 func applyCarryForwards(ctx context.Context, repository string, candidates []spec.CarryForward) (returnErr error) {
 	status, err := reconcileGitText(ctx, repository, "status", "--porcelain=v1", "--untracked-files=all")
 	if err != nil {
@@ -688,38 +473,17 @@ func applyCarryForwards(ctx context.Context, repository string, candidates []spe
 	if err != nil {
 		return fmt.Errorf("read checkout HEAD before carry-forward: %w", err)
 	}
-	tempRoot, err := os.MkdirTemp("", "roundfix-carry-forward-")
+	stagingWorktree, cleanup, err := createCarryForwardStaging(ctx, repository, checkoutHead)
 	if err != nil {
-		return fmt.Errorf("create carry-forward staging directory: %w", err)
+		return err
 	}
 	defer func() {
-		if removeErr := os.RemoveAll(tempRoot); returnErr == nil && removeErr != nil {
-			returnErr = fmt.Errorf("remove carry-forward staging directory: %w", removeErr)
-		}
-	}()
-	stagingWorktree := filepath.Join(tempRoot, "worktree")
-	if _, err := reconcileGitRaw(ctx, repository, "worktree", "add", "--detach", stagingWorktree, checkoutHead); err != nil {
-		return fmt.Errorf("create carry-forward staging Worktree: %w", err)
-	}
-	defer func() {
-		if _, removeErr := reconcileGitRaw(context.Background(), repository, "worktree", "remove", "--force", stagingWorktree); returnErr == nil && removeErr != nil {
-			returnErr = fmt.Errorf("remove carry-forward staging Worktree: %w", removeErr)
-		}
+		returnErr = errors.Join(returnErr, cleanup())
 	}()
 
 	for _, candidate := range candidates {
-		if _, err := reconcileGitRaw(ctx, stagingWorktree, "cherry-pick", candidate.Commit); err != nil {
-			return fmt.Errorf("stage Task %s settlement commit %s: %w", candidate.TaskID, candidate.Commit, err)
-		}
-		taskPath := filepath.Join(stagingWorktree, filepath.FromSlash(candidate.TaskFile))
-		if err := spec.RecordCarryForward(taskPath, candidate.RunID, candidate.Commit); err != nil {
-			return fmt.Errorf("record Task %s carry-forward provenance: %w", candidate.TaskID, err)
-		}
-		if _, err := reconcileGitRaw(ctx, stagingWorktree, "add", "--", candidate.TaskFile); err != nil {
-			return fmt.Errorf("stage Task %s carry-forward provenance: %w", candidate.TaskID, err)
-		}
-		if _, err := reconcileGitRaw(ctx, stagingWorktree, "commit", "--amend", "--no-edit"); err != nil {
-			return fmt.Errorf("amend Task %s carry-forward provenance: %w", candidate.TaskID, err)
+		if err := stageCarryForwardCandidate(ctx, stagingWorktree, candidate); err != nil {
+			return err
 		}
 	}
 	stagedHead, err := reconcileGitText(ctx, stagingWorktree, "rev-parse", "HEAD")
@@ -746,69 +510,23 @@ func applyCarryForwards(ctx context.Context, repository string, candidates []spe
 	return nil
 }
 
-func reconcileGitBlob(ctx context.Context, workDir string, revision string, path string) ([]byte, bool, error) {
-	path = filepath.ToSlash(path)
-	listing, err := reconcileGitRaw(ctx, workDir, "ls-tree", "-z", revision, "--", path)
-	if err != nil {
-		return nil, false, err
-	}
-	if len(listing) == 0 {
-		return nil, false, nil
-	}
-	content, err := reconcileGitRaw(ctx, workDir, "show", revision+":"+path)
-	if err != nil {
-		return nil, false, err
-	}
-	return content, true, nil
-}
-
-// reconcileGitInputChanged reports whether the working-tree bytes for path
-// differ from the bytes recorded at revision, applying Git's conversion rules
-// (core.autocrlf, text/eol, and clean/smudge filters) rather than comparing raw
-// bytes. A difference is reported as changed; nonexistent inputs and
-// symlink-crossing paths are handled by the caller. Exit 1 from git diff means
-// the path differs; any other Git error is returned.
-func reconcileGitInputChanged(ctx context.Context, workDir string, revision string, path string) (bool, error) {
-	output, err := reconcileGitRawDiff(ctx, workDir, "diff", "--quiet", revision, "--", filepath.ToSlash(path))
-	if err != nil {
-		return false, err
-	}
-	return output, nil
-}
-
-// reconcileGitRawDiff runs a git subcommand and maps a nonzero exit to a diff
-// result without failing the whole helper: exit 1 signals a difference, other
-// errors carry the diagnostic.
-func reconcileGitRawDiff(ctx context.Context, workDir string, args ...string) (bool, error) {
-	commandArgs := append([]string{"-c", "core.fsmonitor=false", "-c", "commit.gpgSign=false"}, args...)
-	command := exec.CommandContext(ctx, "git", commandArgs...)
-	command.Dir = workDir
-	command.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
-	output, err := command.CombinedOutput()
-	if err == nil {
-		return false, nil
-	}
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-		return true, nil
-	}
-	diagnostic := strings.TrimSpace(string(output))
-	if diagnostic == "" {
-		return false, fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
-	}
-	return false, fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, diagnostic)
-}
-
 func reconcileGitText(ctx context.Context, workDir string, args ...string) (string, error) {
 	output, err := reconcileGitRaw(ctx, workDir, args...)
 	return strings.TrimSpace(string(output)), err
 }
 
 func reconcileGitRaw(ctx context.Context, workDir string, args ...string) ([]byte, error) {
+	return reconcileGitRawInput(ctx, workDir, nil, args...)
+}
+
+func reconcileGitRawInput(ctx context.Context, workDir string, input []byte, args ...string) ([]byte, error) {
 	commandArgs := append([]string{"-c", "core.fsmonitor=false", "-c", "commit.gpgSign=false"}, args...)
 	command := exec.CommandContext(ctx, "git", commandArgs...)
 	command.Dir = workDir
 	command.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	if input != nil {
+		command.Stdin = strings.NewReader(string(input))
+	}
 	output, err := command.CombinedOutput()
 	if err != nil {
 		diagnostic := strings.TrimSpace(string(output))

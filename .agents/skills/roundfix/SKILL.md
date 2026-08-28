@@ -786,16 +786,20 @@ After reviewing the dry-run, apply cleanup explicitly:
 ```bash
 roundfix reconcile <run-id> --apply
 roundfix reconcile --apply
+roundfix reconcile <run-id> --discard-superseded
+roundfix reconcile <run-id> --carry-forward
 ```
 
-`--apply` is the only mutation switch. Roundfix acts only on entries classified
-`safe` or `superseded`, or on proven process and Run Branch candidates, during
-that invocation. It rechecks metadata, process ownership and identity,
-worktree cleanliness, heads, ancestry, QA-report-only commit shape, and
-superseding reports as applicable before mutation. It records the superseding
-report when it releases superseded work. It preserves `unintegrated`, `dirty`,
-and `unknown` work, and treats `released` as an idempotent no-op. There is no
-force bypass.
+These three mutation switches are mutually exclusive. `--apply` releases
+entries classified `safe` or `superseded`, or proven process and Run Branch
+candidates, after rechecking the applicable metadata, ownership, cleanliness,
+heads, ancestry, and superseding-report evidence. `--discard-superseded`
+records a Branch Disposition before removing a Run Branch proven superseded.
+`--carry-forward` hands settled Tasks from one terminal spec Run back to the
+checkout; it accepts only Runs whose outcome is `Stopped` or `Unresolved` and
+refuses every other terminal outcome. Carry-forward keeps its existing proof
+requirements and refuses the whole Task set when any member cannot be proved.
+There is no force bypass.
 
 Process termination succeeds only when Roundfix proves every reported process
 absent. An unprovable termination is reported with its reason and is never
@@ -1533,6 +1537,27 @@ The default is `2`; `1` keeps sequential behavior. Each Task's Verification
 commands gate one commit. By default the Run never pushes; a repository can
 opt in with `implement.auto_push: true`, which pushes only after a Clean
 outcome and never opens pull requests (ADR-0138).
+
+Before creating a Run, `implement` inspects prior terminal Runs for the same
+Spec in the current repository. When a `Stopped` or `Unresolved` Run with a
+present Run Worktree has a complete candidate set that would carry, Preflight
+Validation refuses before creating a Run or Agent Session. The complete set
+must pass Task Carry-Forward's existing proofs, including a passing
+Verification verdict, exactly one settlement commit, and unmoved declared
+inputs for each candidate. Input proofs use the checkout plus the accumulating
+staged carries, so each later candidate is compared with the state established
+by earlier carries rather than the raw checkout. It exits `2`, leaves stdout
+empty, and writes no Git or Run Database state. The refusal names the Run and
+Tasks to recover and gives the exact next action:
+
+```bash
+roundfix reconcile <run-id> --carry-forward
+```
+
+When no complete candidate set would carry, `implement` reports the inspection
+result and proceeds. An inspection failure is reported and also lets the Run
+proceed. If several complete sets qualify, `implement` selects the Run with
+the largest carriable Task set, breaking ties with the newest Run.
 
 1. Start the Implement Command with:
 

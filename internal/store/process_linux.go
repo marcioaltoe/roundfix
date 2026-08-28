@@ -9,7 +9,19 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"syscall"
 )
+
+// processVanished reports the two ways procfs says a PID is gone. Enumerating a
+// process table is inherently racy — a task may be reaped between listing
+// /proc and reading its entry — so a vanished PID is skipped, never an error.
+// ENOENT is the common answer and ESRCH is what procfs returns while the task
+// is being reaped; guarding only the first made a whole enumeration fail on a
+// process that simply exited, which is the ordinary case this scan must
+// tolerate. The darwin sibling already treats ESRCH this way.
+func processVanished(err error) bool {
+	return errors.Is(err, os.ErrNotExist) || errors.Is(err, syscall.ESRCH)
+}
 
 func processStartIdentity(_ context.Context, pid int) (string, error) {
 	stat, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
@@ -54,7 +66,7 @@ func processTreePIDs(ownerPID int, _ string) ([]int, error) {
 		}
 		stat, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
+			if processVanished(err) {
 				continue
 			}
 			return nil, fmt.Errorf("read process %d ownership: %w", pid, err)

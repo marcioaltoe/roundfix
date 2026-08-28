@@ -262,6 +262,7 @@ type commandDependencies struct {
 	cleanupCleanRunWorktree         func(context.Context, runworktree.Ref) error
 	pruneTerminalRunWorktrees       func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error)
 	loadCommittedSpecGraph          func(context.Context, string, roundconfig.SpecsRoot, string, string) (*spec.Graph, string, error)
+	inspectSpecCarryForwards        func(context.Context, *store.Store, string, roundconfig.SpecsRoot, string) ([]specCarryForward, error)
 	detachTimeouts                  detachPhaseTimeouts
 	attachInteractiveInputAvailable func() bool
 	attachSleep                     func(context.Context) error
@@ -323,6 +324,7 @@ func defaultCommandDependencies() commandDependencies {
 		cleanupCleanRunWorktree:         cleanupCleanRunWorktree,
 		pruneTerminalRunWorktrees:       pruneTerminalRunWorktrees,
 		loadCommittedSpecGraph:          loadCommittedSpecGraph,
+		inspectSpecCarryForwards:        inspectSpecCarryForwards,
 		detachTimeouts:                  detachTimeouts,
 		attachInteractiveInputAvailable: attachInteractiveInputAvailable,
 		attachSleep:                     attachSleep,
@@ -5361,7 +5363,7 @@ and already released entries remain successful preserved results.
 Options:
   --apply                 Release freshly revalidated safe and superseded Run Worktrees and Run Branches
   --discard-superseded    Discard Run Branches proven superseded
-  --carry-forward         Hand a stopped Run's settled Tasks back to the checkout
+  --carry-forward         Hand a Stopped or Unresolved Run's settled Tasks back to the checkout
   --format                Output format: text (default) or json
 `
 	case "release":

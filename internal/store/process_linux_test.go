@@ -3,7 +3,9 @@
 package store
 
 import (
+	"os"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -25,5 +27,27 @@ func TestParseProcStatStartTimeRejectsMissingField(t *testing.T) {
 	_, err := parseProcStatStartTime([]byte("42 (worker) S 1 2"))
 	if err == nil || !strings.Contains(err.Error(), "missing start time field") {
 		t.Fatalf("parse error = %v, want missing start time field", err)
+	}
+}
+
+func TestProcessVanishedAcceptsBothProcfsAnswers(t *testing.T) {
+	// A task reaped mid-scan is reported as ENOENT or, while it is still being
+	// reaped, as ESRCH. Guarding only the first made a whole process-table
+	// enumeration fail on a process that simply exited.
+	for _, testCase := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "missing proc entry", err: &os.PathError{Op: "read", Path: "/proc/1/stat", Err: syscall.ENOENT}, want: true},
+		{name: "task being reaped", err: &os.PathError{Op: "read", Path: "/proc/1/stat", Err: syscall.ESRCH}, want: true},
+		{name: "permission denied is not a vanished process", err: &os.PathError{Op: "read", Path: "/proc/1/stat", Err: syscall.EACCES}, want: false},
+		{name: "nil is not a vanished process", err: nil, want: false},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := processVanished(testCase.err); got != testCase.want {
+				t.Fatalf("processVanished(%v) = %t, want %t", testCase.err, got, testCase.want)
+			}
+		})
 	}
 }

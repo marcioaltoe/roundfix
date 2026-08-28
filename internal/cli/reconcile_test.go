@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -22,89 +23,180 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
-func TestCarryForwardSettlesATaskWhoseInputsAreUnchanged(t *testing.T) {
+func TestCarryForwardAcceptsAnUnresolvedRun(t *testing.T) {
 	t.Parallel()
-	fixture := newCarryForwardFixture(t, []implementSeed{{id: "task_01", title: "Build the core"}})
-	beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
+	for _, state := range []string{store.StateStopped, store.StateUnresolved} {
+		state := state
+		t.Run(state, func(t *testing.T) {
+			t.Parallel()
+			fixture := newCarryForwardFixture(t, state, []implementSeed{{id: "task_01", title: "Build the core"}})
+			beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
 
-	code := runCLIContext(
-		t,
-		context.Background(),
-		[]string{"reconcile", fixture.run.ID, "--carry-forward", "--format=json"},
-		&stdout,
-		&stderr,
-	)
+			code := runCLIContext(
+				t,
+				context.Background(),
+				[]string{"reconcile", fixture.run.ID, "--carry-forward", "--format=json"},
+				&stdout,
+				&stderr,
+			)
 
-	if code != exitOK {
-		t.Fatalf("carry-forward exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
-	}
-	if stderr.Len() != 0 {
-		t.Fatalf("carry-forward stderr = %q, want empty", stderr.String())
-	}
-	afterHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
-	if afterHead == beforeHead {
-		t.Fatalf("carry-forward HEAD = %s, want a fast-forward", afterHead)
-	}
-	task := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
-	for _, want := range []string{"status: completed", fixture.run.ID, fixture.commits["task_01"]} {
-		if !strings.Contains(task, want) {
-			t.Fatalf("carried task does not contain %q:\n%s", want, task)
-		}
-	}
-	if got := mustRead(t, filepath.Join(fixture.repoDir, "src", "task_01.txt")); got != "task_01 settled\n" {
-		t.Fatalf("carried implementation = %q", got)
+			if code != exitOK {
+				t.Fatalf("carry-forward exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("carry-forward stderr = %q, want empty", stderr.String())
+			}
+			afterHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+			if afterHead == beforeHead {
+				t.Fatalf("carry-forward HEAD = %s, want a fast-forward", afterHead)
+			}
+			task := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
+			for _, want := range []string{"status: completed", fixture.run.ID, fixture.commits["task_01"]} {
+				if !strings.Contains(task, want) {
+					t.Fatalf("carried task does not contain %q:\n%s", want, task)
+				}
+			}
+			if got := mustRead(t, filepath.Join(fixture.repoDir, "src", "task_01.txt")); got != "task_01 settled\n" {
+				t.Fatalf("carried implementation = %q", got)
+			}
+		})
 	}
 }
 
 func TestCarryForwardRefusesATaskWhoseInputsMoved(t *testing.T) {
 	t.Parallel()
-	fixture := newCarryForwardFixture(t, []implementSeed{{id: "task_01", title: "Build the core"}})
-	prdPath := filepath.Join(fixture.repoDir, "docs", "specs", implementTestSlug, "_prd.md")
-	mustWrite(t, prdPath, mustRead(t, prdPath)+"\nMoved after settlement.\n")
-	beforeTask := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
-	beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
+	for _, state := range []string{store.StateStopped, store.StateUnresolved} {
+		state := state
+		t.Run(state, func(t *testing.T) {
+			t.Parallel()
+			fixture := newCarryForwardFixture(t, state, []implementSeed{{id: "task_01", title: "Build the core"}})
+			prdPath := filepath.Join(fixture.repoDir, "docs", "specs", implementTestSlug, "_prd.md")
+			mustWrite(t, prdPath, mustRead(t, prdPath)+"\nMoved after settlement.\n")
+			beforeTask := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
+			beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
 
-	code := runCLIContext(
-		t,
-		context.Background(),
-		[]string{"reconcile", fixture.run.ID, "--carry-forward", "--format=json"},
-		&stdout,
-		&stderr,
-	)
+			code := runCLIContext(
+				t,
+				context.Background(),
+				[]string{"reconcile", fixture.run.ID, "--carry-forward", "--format=json"},
+				&stdout,
+				&stderr,
+			)
 
-	if code != exitPreflight {
-		t.Fatalf("moved-input exit = %d, want %d stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
-	}
-	for _, want := range []string{"task_01", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_prd.md"))} {
-		if !strings.Contains(stderr.String(), want) {
-			t.Fatalf("moved-input stderr does not name %q: %q", want, stderr.String())
-		}
-	}
-	if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
-		t.Fatalf("moved-input HEAD = %s, want unchanged %s", got, beforeHead)
-	}
-	if got := mustRead(t, implementTaskPath(fixture.repoDir, "task_01")); got != beforeTask {
-		t.Fatal("moved-input refusal changed the Task file")
-	}
-	if _, err := os.Stat(filepath.Join(fixture.repoDir, "src", "task_01.txt")); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("moved-input implementation stat error = %v, want not exist", err)
+			if code != exitPreflight {
+				t.Fatalf("moved-input exit = %d, want %d stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+			}
+			for _, want := range []string{"task_01", filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "_prd.md"))} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("moved-input stderr does not name %q: %q", want, stderr.String())
+				}
+			}
+			if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
+				t.Fatalf("moved-input HEAD = %s, want unchanged %s", got, beforeHead)
+			}
+			if got := mustRead(t, implementTaskPath(fixture.repoDir, "task_01")); got != beforeTask {
+				t.Fatal("moved-input refusal changed the Task file")
+			}
+			if _, err := os.Stat(filepath.Join(fixture.repoDir, "src", "task_01.txt")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("moved-input implementation stat error = %v, want not exist", err)
+			}
+		})
 	}
 }
 
 func TestCarryForwardRefusesRatherThanCarryingASubset(t *testing.T) {
 	t.Parallel()
-	fixture := newCarryForwardFixture(t, []implementSeed{
-		{id: "task_01", title: "Build the core"},
-		{id: "task_02", title: "Wire the shell", needs: []string{"task_01"}},
-	})
-	secondTaskPath := implementTaskPath(fixture.repoDir, "task_02")
-	mustWrite(t, secondTaskPath, mustRead(t, secondTaskPath)+"\nMoved after settlement.\n")
-	beforeFirst := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
-	beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+	for _, state := range []string{store.StateStopped, store.StateUnresolved} {
+		state := state
+		t.Run(state, func(t *testing.T) {
+			t.Parallel()
+			fixture := newCarryForwardFixture(t, state, []implementSeed{
+				{id: "task_01", title: "Build the core"},
+				{id: "task_02", title: "Wire the shell", needs: []string{"task_01"}},
+			})
+			secondTaskPath := implementTaskPath(fixture.repoDir, "task_02")
+			mustWrite(t, secondTaskPath, mustRead(t, secondTaskPath)+"\nMoved after settlement.\n")
+			beforeFirst := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
+			beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(
+				t,
+				context.Background(),
+				[]string{"reconcile", fixture.run.ID, "--carry-forward", "--format=json"},
+				&stdout,
+				&stderr,
+			)
+
+			if code != exitPreflight {
+				t.Fatalf("mixed-set exit = %d, want %d stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+			}
+			if !strings.Contains(stderr.String(), "task_02") || !strings.Contains(stderr.String(), filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_02.md"))) {
+				t.Fatalf("mixed-set stderr = %q, want task_02 and its moved input", stderr.String())
+			}
+			if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
+				t.Fatalf("mixed-set HEAD = %s, want unchanged %s", got, beforeHead)
+			}
+			if got := mustRead(t, implementTaskPath(fixture.repoDir, "task_01")); got != beforeFirst {
+				t.Fatal("mixed-set refusal carried task_01")
+			}
+			for _, taskID := range []string{"task_01", "task_02"} {
+				if _, err := os.Stat(filepath.Join(fixture.repoDir, "src", taskID+".txt")); !errors.Is(err, os.ErrNotExist) {
+					t.Fatalf("mixed-set %s implementation stat error = %v, want not exist", taskID, err)
+				}
+			}
+		})
+	}
+}
+
+func TestCarryForwardWithoutTheFlagReportsAndChangesNothing(t *testing.T) {
+	t.Parallel()
+	for _, state := range []string{store.StateStopped, store.StateUnresolved} {
+		state := state
+		t.Run(state, func(t *testing.T) {
+			t.Parallel()
+			fixture := newCarryForwardFixture(t, state, []implementSeed{{id: "task_01", title: "Build the core"}})
+			beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+			beforeTask := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(
+				t,
+				context.Background(),
+				[]string{"reconcile", fixture.run.ID, "--format=json"},
+				&stdout,
+				&stderr,
+			)
+
+			if code != exitOK {
+				t.Fatalf("carry-forward report exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+			}
+			var report reconcileReport
+			if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+				t.Fatalf("decode carry-forward report: %v\n%s", err, stdout.String())
+			}
+			if len(report.CarryForwards) != 1 || report.CarryForwards[0].TaskID != "task_01" || report.CarryForwards[0].Action != "would carry forward with --carry-forward" {
+				t.Fatalf("carry-forward report = %+v", report.CarryForwards)
+			}
+			if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
+				t.Fatalf("read-only carry-forward HEAD = %s, want %s", got, beforeHead)
+			}
+			if got := mustRead(t, implementTaskPath(fixture.repoDir, "task_01")); got != beforeTask {
+				t.Fatal("read-only carry-forward report changed the Task file")
+			}
+		})
+	}
+}
+
+func TestCarryForwardRefusesAnUnacceptedRunOutcomeByName(t *testing.T) {
+	t.Parallel()
+	fixture := newCarryForwardFixture(t, store.StateClean, []implementSeed{{id: "task_01", title: "Build the core"}})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -117,55 +209,12 @@ func TestCarryForwardRefusesRatherThanCarryingASubset(t *testing.T) {
 	)
 
 	if code != exitPreflight {
-		t.Fatalf("mixed-set exit = %d, want %d stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
+		t.Fatalf("unaccepted-outcome exit = %d, want %d stderr=%q stdout=%q", code, exitPreflight, stderr.String(), stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "task_02") || !strings.Contains(stderr.String(), filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_02.md"))) {
-		t.Fatalf("mixed-set stderr = %q, want task_02 and its moved input", stderr.String())
-	}
-	if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
-		t.Fatalf("mixed-set HEAD = %s, want unchanged %s", got, beforeHead)
-	}
-	if got := mustRead(t, implementTaskPath(fixture.repoDir, "task_01")); got != beforeFirst {
-		t.Fatal("mixed-set refusal carried task_01")
-	}
-	for _, taskID := range []string{"task_01", "task_02"} {
-		if _, err := os.Stat(filepath.Join(fixture.repoDir, "src", taskID+".txt")); !errors.Is(err, os.ErrNotExist) {
-			t.Fatalf("mixed-set %s implementation stat error = %v, want not exist", taskID, err)
+	for _, want := range []string{store.StateClean, store.StateStopped, store.StateUnresolved} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("unaccepted-outcome stderr does not name %q: %q", want, stderr.String())
 		}
-	}
-}
-
-func TestCarryForwardWithoutTheFlagReportsAndChangesNothing(t *testing.T) {
-	t.Parallel()
-	fixture := newCarryForwardFixture(t, []implementSeed{{id: "task_01", title: "Build the core"}})
-	beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
-	beforeTask := mustRead(t, implementTaskPath(fixture.repoDir, "task_01"))
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	code := runCLIContext(
-		t,
-		context.Background(),
-		[]string{"reconcile", fixture.run.ID, "--format=json"},
-		&stdout,
-		&stderr,
-	)
-
-	if code != exitOK {
-		t.Fatalf("carry-forward report exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
-	}
-	var report reconcileReport
-	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
-		t.Fatalf("decode carry-forward report: %v\n%s", err, stdout.String())
-	}
-	if len(report.CarryForwards) != 1 || report.CarryForwards[0].TaskID != "task_01" || report.CarryForwards[0].Action != "would carry forward with --carry-forward" {
-		t.Fatalf("carry-forward report = %+v", report.CarryForwards)
-	}
-	if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
-		t.Fatalf("read-only carry-forward HEAD = %s, want %s", got, beforeHead)
-	}
-	if got := mustRead(t, implementTaskPath(fixture.repoDir, "task_01")); got != beforeTask {
-		t.Fatal("read-only carry-forward report changed the Task file")
 	}
 }
 
@@ -177,7 +226,7 @@ type carryForwardFixture struct {
 	commits map[string]string
 }
 
-func newCarryForwardFixture(t *testing.T, seeds []implementSeed) carryForwardFixture {
+func newCarryForwardFixture(t *testing.T, state string, seeds []implementSeed) carryForwardFixture {
 	t.Helper()
 	homeDir, repoDir := newImplementWorkspace(t, seeds)
 	ctx := context.Background()
@@ -228,7 +277,14 @@ func newCarryForwardFixture(t *testing.T, seeds []implementSeed) carryForwardFix
 		if err := spec.SetStatus(taskPath, spec.StatusCompleted); err != nil {
 			t.Fatalf("settle source %s: %v", seed.id, err)
 		}
-		gitImplement(t, ref.Path, "add", implementationPath, filepath.Join("docs", "specs", implementTestSlug, seed.id+".md"))
+		settlementPaths := []string{implementationPath, filepath.Join("docs", "specs", implementTestSlug, seed.id+".md")}
+		for path, content := range seed.settlementFiles {
+			mustMkdir(t, filepath.Join(ref.Path, filepath.Dir(path)))
+			mustWrite(t, filepath.Join(ref.Path, filepath.FromSlash(path)), content)
+			settlementPaths = append(settlementPaths, filepath.FromSlash(path))
+		}
+		slices.Sort(settlementPaths)
+		gitImplement(t, ref.Path, append([]string{"add"}, settlementPaths...)...)
 		gitImplement(
 			t,
 			ref.Path,
@@ -256,7 +312,7 @@ func newCarryForwardFixture(t *testing.T, seeds []implementSeed) carryForwardFix
 			t.Fatalf("append carry-forward evidence for %s: %v", seed.id, err)
 		}
 	}
-	completed, err := runStore.CompleteRun(ctx, run.ID, store.StateStopped)
+	completed, err := runStore.CompleteRun(ctx, run.ID, state)
 	if err != nil {
 		t.Fatalf("stop carry-forward Run: %v", err)
 	}

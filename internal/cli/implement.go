@@ -64,6 +64,23 @@ type implementRunWindowClosedError struct {
 	now     time.Time
 }
 
+type implementCarryForwardAvailableError struct {
+	Run   store.Run
+	Tasks []string
+}
+
+func (err implementCarryForwardAvailableError) Error() string {
+	return fmt.Sprintf(
+		"Run %s holds proved Tasks available for Task Carry-Forward: %s",
+		err.Run.ID,
+		strings.Join(err.Tasks, ", "),
+	)
+}
+
+func (err implementCarryForwardAvailableError) NextAction() string {
+	return fmt.Sprintf("recover them with `roundfix reconcile %s --carry-forward`", err.Run.ID)
+}
+
 func (err implementRunWindowClosedError) Error() string {
 	return fmt.Sprintf(
 		"the Run Window for %s closed at %s; the time is %s",
@@ -232,6 +249,30 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			)
 		}
 	}
+	carryForwards, inspectErr := commandDependenciesForContext(ctx).inspectSpecCarryForwards(
+		ctx,
+		runStore,
+		gitState.Root,
+		resolvedSpecsRoot,
+		graph.Spec.Slug,
+	)
+	if inspectErr != nil {
+		fmt.Fprintf(
+			stderr,
+			"%s: note: Task Carry-Forward inspection failed; implement will proceed: %v\n",
+			app.Name,
+			inspectErr,
+		)
+	} else if selected, tasks, found := selectImplementCarryForward(carryForwards); found {
+		printPreflightFailure("implement", implementCarryForwardAvailableError{
+			Run:   selected.Run,
+			Tasks: tasks,
+		}, stderr)
+		return exitPreflight
+	} else {
+		reportImplementNonCarriableCarryForwards(stderr, carryForwards)
+	}
+
 	sweepRunRetention(ctx, runStore, req.artifactDir, loadedConfig.Config.Store.JournalRetention, stderr)
 	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runtime, runStore, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -438,6 +479,47 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+func selectImplementCarryForward(results []specCarryForward) (specCarryForward, []string, bool) {
+	var selected specCarryForward
+	var selectedTasks []string
+	for _, result := range results {
+		if !result.wouldCarry() {
+			continue
+		}
+		tasks := make([]string, 0, result.carriable())
+		for _, candidate := range result.Candidates {
+			if candidate.Action == carryForwardReadyAction {
+				tasks = append(tasks, candidate.TaskID)
+			}
+		}
+		if len(tasks) == 0 {
+			continue
+		}
+		sort.Strings(tasks)
+		if len(tasks) > len(selectedTasks) ||
+			(len(tasks) == len(selectedTasks) && result.Run.CreatedAt.After(selected.Run.CreatedAt)) {
+			selected = result
+			selectedTasks = tasks
+		}
+	}
+	return selected, selectedTasks, len(selectedTasks) > 0
+}
+
+func reportImplementNonCarriableCarryForwards(stderr io.Writer, results []specCarryForward) {
+	for _, result := range results {
+		if result.wouldCarry() {
+			continue
+		}
+		fmt.Fprintf(
+			stderr,
+			"%s: note: Run %s is not available for Task Carry-Forward: %s; implement will proceed.\n",
+			app.Name,
+			result.Run.ID,
+			carryForwardRefusalReason(result.Candidates),
+		)
+	}
 }
 
 func printRunOwnerIdentityWarning(stderr io.Writer, run store.Run) {

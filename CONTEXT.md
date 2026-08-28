@@ -435,8 +435,12 @@ The local recovery command that re-runs one Task's Verification commands in the 
 _Avoid_: Retry command, auto-settle, task fix command
 
 **Reconcile Command**:
-The support command that inspects terminal spec Run Worktrees and Run Branches and reports their Run Worktree Reconciliation state. It is read-only by default; `--apply` is its only mutation switch, removes only freshly revalidated `safe` or `superseded` work, and has no force bypass.
+The support command that inspects terminal spec Run Worktrees and Run Branches and reports their Run Worktree Reconciliation state. It is read-only by default and carries three named mutation switches, none of which has a force bypass: `--apply` is the only one that releases retained Git surfaces, removing only freshly revalidated `safe` or `superseded` work; `--discard-superseded` records a Branch Disposition before removing a branch it can prove superseded; and `--carry-forward` performs Task Carry-Forward.
 _Avoid_: GC Command, Settle Command, automatic integration
+
+**Task Carry-Forward**:
+The explicit act that hands a settled Task from a terminal spec Run's Run Branch back to the user's checkout, so work that already ran and passed its Verification is never executed again to reach the same result. It accepts a Run whose outcome is Stopped or Unresolved and refuses every other terminal outcome. It carries a Task only on proof — a passing Verification verdict, exactly one settlement commit, declared inputs unmoved since settlement, a clean checkout, and a repository-local Specs Root — refuses the whole set rather than carrying part of it, and stamps each carried Task with the Run and commit that established it. Reached through the Reconcile Command's `--carry-forward` switch; it is never automatic, and a carried Task's own file becomes a moved input afterwards, so the act does not repeat itself. The implementation spelling `CarryForward` refers to this same term.
+_Avoid_: replay, resume, automatic carry, QA row carry-forward
 
 **Reprocess Command**:
 An explicit future command for revisiting selected Terminal Review Issues.

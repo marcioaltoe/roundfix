@@ -66,12 +66,13 @@ func TestMain(m *testing.M) {
 // values default to status pending, type backend, and one Verification command
 // that fails until the scripted Agent records its work.
 type implementSeed struct {
-	id           string
-	title        string
-	taskType     string
-	status       string
-	needs        []string
-	verification []string
+	id              string
+	title           string
+	taskType        string
+	status          string
+	needs           []string
+	verification    []string
+	settlementFiles map[string]string
 }
 
 func implementQAGateSeed(status string, needs ...string) implementSeed {
@@ -3942,6 +3943,250 @@ func TestImplementRunWindow(t *testing.T) {
 		}
 		assertRunCount(t, store.DatabasePath(homeDir), 1)
 	})
+}
+
+func TestImplementRefusesWhenCarryForwardIsAvailable(t *testing.T) {
+	t.Run("a real prior Run refuses before another Run or Task Agent turn exists", func(t *testing.T) {
+		fixture := newCarryForwardFixture(t, store.StateUnresolved, []implementSeed{{id: "task_01", title: "Build the core"}})
+		runner := &implementFakeRunner{gitRoot: fixture.repoDir}
+		withImplementCollaborators(t, runner)
+		beforeHead := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD"))
+		beforeStatus := gitImplementOutput(t, fixture.repoDir, "status", "--short")
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+		if code != exitPreflight {
+			t.Fatalf("real carry-forward refusal exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+		}
+		for _, want := range []string{
+			"Run " + fixture.run.ID,
+			"task_01",
+			"`roundfix reconcile " + fixture.run.ID + " --carry-forward`",
+		} {
+			if !strings.Contains(stderr.String(), want) {
+				t.Fatalf("real carry-forward refusal stderr = %q, want %q", stderr.String(), want)
+			}
+		}
+		if runner.calls != 0 {
+			t.Fatalf("real carry-forward refusal reached %d Task Agent turn(s)", runner.calls)
+		}
+		assertRunCount(t, store.DatabasePath(fixture.homeDir), 1)
+		if got := strings.TrimSpace(gitImplementOutput(t, fixture.repoDir, "rev-parse", "HEAD")); got != beforeHead {
+			t.Fatalf("real carry-forward refusal moved HEAD from %s to %s", beforeHead, got)
+		}
+		if got := gitImplementOutput(t, fixture.repoDir, "status", "--short"); got != beforeStatus {
+			t.Fatalf("real carry-forward refusal changed Git status from %q to %q", beforeStatus, got)
+		}
+	})
+
+	tests := []struct {
+		name       string
+		results    []specCarryForward
+		wantRunID  string
+		wantTasks  []string
+		unselected string
+	}{
+		{
+			name: "one prior Run exposes every recovery detail",
+			results: []specCarryForward{{
+				Run: store.Run{ID: "run-proved", CreatedAt: time.Date(2026, time.August, 27, 9, 0, 0, 0, time.UTC)},
+				Candidates: []spec.CarryForward{
+					{TaskID: "task_01", Action: carryForwardReadyAction},
+					{TaskID: "task_02", Action: carryForwardReadyAction},
+				},
+			}},
+			wantRunID: "run-proved",
+			wantTasks: []string{"task_01", "task_02"},
+		},
+		{
+			name: "largest carriable set wins over recency",
+			results: []specCarryForward{
+				{
+					Run:        store.Run{ID: "run-newer-small", CreatedAt: time.Date(2026, time.August, 27, 10, 0, 0, 0, time.UTC)},
+					Candidates: []spec.CarryForward{{TaskID: "task_01", Action: carryForwardReadyAction}},
+				},
+				{
+					Run: store.Run{ID: "run-older-large", CreatedAt: time.Date(2026, time.August, 27, 9, 0, 0, 0, time.UTC)},
+					Candidates: []spec.CarryForward{
+						{TaskID: "task_01", Action: carryForwardReadyAction},
+						{TaskID: "task_02", Action: carryForwardReadyAction},
+					},
+				},
+			},
+			wantRunID:  "run-older-large",
+			wantTasks:  []string{"task_01", "task_02"},
+			unselected: "run-newer-small",
+		},
+		{
+			name: "newest Run wins a carriable-count tie",
+			results: []specCarryForward{
+				{
+					Run:        store.Run{ID: "run-older", CreatedAt: time.Date(2026, time.August, 27, 9, 0, 0, 0, time.UTC)},
+					Candidates: []spec.CarryForward{{TaskID: "task_01", Action: carryForwardReadyAction}},
+				},
+				{
+					Run:        store.Run{ID: "run-newer", CreatedAt: time.Date(2026, time.August, 27, 10, 0, 0, 0, time.UTC)},
+					Candidates: []spec.CarryForward{{TaskID: "task_02", Action: carryForwardReadyAction}},
+				},
+			},
+			wantRunID:  "run-newer",
+			wantTasks:  []string{"task_02"},
+			unselected: "run-older",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+				{id: "task_01", title: "Build the core"},
+				{id: "task_02", title: "Connect the core"},
+			})
+			runner := &implementFakeRunner{gitRoot: repoDir}
+			withImplementCollaborators(t, runner)
+			updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+				dependencies.inspectSpecCarryForwards = func(context.Context, *store.Store, string, roundconfig.SpecsRoot, string) ([]specCarryForward, error) {
+					return tt.results, nil
+				}
+				dependencies.pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
+					t.Fatal("carry-forward refusal must precede mutating preflight work")
+					return nil, nil
+				}
+			})
+			beforeHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+			beforeStatus := gitImplementOutput(t, repoDir, "status", "--short")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("carry-forward refusal exit = %d, want %d; stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("carry-forward refusal stdout = %q, want empty", stdout.String())
+			}
+			for _, want := range append([]string{
+				"Run " + tt.wantRunID,
+				"`roundfix reconcile " + tt.wantRunID + " --carry-forward`",
+				"Roundfix did not create a Run",
+			}, tt.wantTasks...) {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("carry-forward refusal stderr = %q, want %q", stderr.String(), want)
+				}
+			}
+			if tt.unselected != "" && strings.Contains(stderr.String(), "reconcile "+tt.unselected+" --carry-forward") {
+				t.Fatalf("carry-forward refusal selected %q instead of %q: %q", tt.unselected, tt.wantRunID, stderr.String())
+			}
+			if runner.calls != 0 {
+				t.Fatalf("carry-forward refusal spent %d task Agent turn(s), want zero", runner.calls)
+			}
+			assertRunCount(t, store.DatabasePath(homeDir), 0)
+			if got := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")); got != beforeHead {
+				t.Fatalf("carry-forward refusal moved HEAD from %s to %s", beforeHead, got)
+			}
+			if got := gitImplementOutput(t, repoDir, "status", "--short"); got != beforeStatus {
+				t.Fatalf("carry-forward refusal changed Git status from %q to %q", beforeStatus, got)
+			}
+		})
+	}
+}
+
+func TestImplementCarryForwardRefusesOnlyWhenTheSetWouldCarry(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Build the core"}})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+		dependencies.inspectSpecCarryForwards = func(context.Context, *store.Store, string, roundconfig.SpecsRoot, string) ([]specCarryForward, error) {
+			return []specCarryForward{{
+				Run: store.Run{ID: "run-mixed"},
+				Candidates: []spec.CarryForward{
+					{TaskID: "task_01", Action: carryForwardReadyAction},
+					{TaskID: "task_02", Action: "refuse", RefusalReason: "Task task_02 declared input(s) moved: CONTEXT.md"},
+				},
+			}}, nil
+		}
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("mixed carry-forward set exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if runner.calls != 1 {
+		t.Fatalf("mixed carry-forward set task Agent turns = %d, want one", runner.calls)
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	for _, want := range []string{"Run run-mixed", "Task task_02 declared input(s) moved", "implement will proceed"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("mixed carry-forward set stderr = %q, want %q", stderr.String(), want)
+		}
+	}
+}
+
+func TestImplementProceedsWhenNothingIsCarriable(t *testing.T) {
+	tests := []struct {
+		name       string
+		inspect    func(context.Context, *store.Store, string, roundconfig.SpecsRoot, string) ([]specCarryForward, error)
+		wantStderr []string
+	}{
+		{
+			name: "completed Tasks fail their carry-forward proofs",
+			inspect: func(context.Context, *store.Store, string, roundconfig.SpecsRoot, string) ([]specCarryForward, error) {
+				return []specCarryForward{{
+					Run: store.Run{ID: "run-moved-inputs"},
+					Candidates: []spec.CarryForward{
+						{TaskID: "task_01", Action: "refuse", RefusalReason: "Task task_01 declared input(s) moved: _prd.md"},
+					},
+				}}, nil
+			},
+			wantStderr: []string{"Run run-moved-inputs", "Task task_01 declared input(s) moved", "implement will proceed"},
+		},
+		{
+			name: "inspection failure fails open",
+			inspect: func(context.Context, *store.Store, string, roundconfig.SpecsRoot, string) ([]specCarryForward, error) {
+				return nil, errors.New("forced carry-forward inspection failure")
+			},
+			wantStderr: []string{"Task Carry-Forward inspection failed", "forced carry-forward inspection failure", "implement will proceed"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Build the core"}})
+			runner := &implementFakeRunner{
+				gitRoot:      repoDir,
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+			}
+			withImplementCollaborators(t, runner)
+			updateCommandDependenciesForTest(t, func(dependencies *commandDependencies) {
+				dependencies.inspectSpecCarryForwards = tt.inspect
+			})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := runCLIContext(t, context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("non-carriable preflight exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+			}
+			if runner.calls != 1 {
+				t.Fatalf("non-carriable preflight task Agent turns = %d, want one", runner.calls)
+			}
+			assertRunCount(t, store.DatabasePath(homeDir), 1)
+			for _, want := range tt.wantStderr {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("non-carriable preflight stderr = %q, want %q", stderr.String(), want)
+				}
+			}
+		})
+	}
 }
 
 func TestImplementRunWindowCrossing(t *testing.T) {

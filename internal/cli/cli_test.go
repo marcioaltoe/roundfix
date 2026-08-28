@@ -429,7 +429,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "reconcile",
 			args:     []string{"reconcile", "--help"},
-			contains: []string{"roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]", "read-only report", "--apply", "--format"},
+			contains: []string{"roundfix reconcile [run-id] [--apply | --discard-superseded | --carry-forward] [--format <text|json>]", "read-only report", "Hand a Stopped or Unresolved Run's settled Tasks back to the checkout", "--apply", "--format"},
 		},
 		{
 			name:     "profiles",

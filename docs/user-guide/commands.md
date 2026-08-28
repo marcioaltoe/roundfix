@@ -561,6 +561,36 @@ end Clean. `implement.auto_push: true` makes a Clean Run push its branch
 upstream. Integration Pending, Unresolved, Failed, Stopped, and failing-QA
 Runs never push.
 
+Before creating a Run, `implement` inspects prior terminal Runs for the same
+Spec in the current repository. It considers Runs with outcome Stopped or
+Unresolved when their recorded Run Worktree is present. Preflight Validation
+refuses only when a prior Run's complete candidate set would carry: every
+candidate in that set passes Task Carry-Forward's proofs. A set with any
+refusing candidate is reported and implement proceeds. The refusal exits `2`,
+leaves stdout empty, creates no Run or Agent Session, and writes no Git or Run
+Database state. It names the selected Run and the Tasks it would recover, then
+gives the exact recovery command:
+
+```text
+Preflight failed
+
+Reason:
+  Run <run-id> holds proved Tasks available for Task Carry-Forward: task_01, task_02
+
+No side effects:
+  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+
+Next action:
+  recover them with `roundfix reconcile <run-id> --carry-forward`
+```
+
+When more than one prior Run qualifies, `implement` names the Run with the
+largest carriable Task set; a tie goes to the newest Run. When an inspected
+Run's stranded work is not carriable as a complete set, `implement` reports
+each refusal reason on stderr and proceeds to create the Run. If the inspection
+itself fails, it reports the failure and also proceeds. A prior Run whose
+recorded Run Worktree is gone is skipped by this check.
+
 The profile-led default is:
 
 ```bash
@@ -740,14 +770,26 @@ different disposition, and none of them bypasses the proof above:
 roundfix reconcile <run-id> --apply               # release safe and superseded surfaces
 roundfix reconcile --apply
 roundfix reconcile <run-id> --discard-superseded  # discard a Run Branch proven superseded
-roundfix reconcile <run-id> --carry-forward       # hand a stopped Run's settled Tasks back
+roundfix reconcile <run-id> --carry-forward       # hand a Stopped or Unresolved Run's settled Tasks back
 ```
 
 `--discard-superseded` writes the branch record before removing anything, so a
-discard that cannot be recorded does not happen. `--carry-forward` compares each
-settled Task's inputs byte-for-byte with the checkout and refuses the whole set
-rather than carrying part of it, so a Task whose Spec, instruction, or Context
-moved since settlement is never silently replayed.
+discard that cannot be recorded does not happen. `--carry-forward` accepts a
+terminal Run whose outcome is Stopped or Unresolved. Every other terminal
+outcome is refused by name; the refusal names the actual outcome and says
+which outcomes carry-forward accepts. It compares each candidate's declared inputs
+against the accumulating staged carries—the checkout plus the carries staged
+ahead of it—rather than against the raw checkout. If one candidate refuses, the
+whole set is refused rather than carrying part of it, so a Task whose Spec,
+instruction, or Context moved since settlement is never silently replayed.
+
+Carry-forward records each carried Task as completed and appends its source Run
+and settlement commit to the Task file. Because the carried Task's own file
+becomes a moved input afterwards, the caller effectively gets one carry-forward
+for overlapping work. If you carry from the wrong Run first, a later
+overlapping set is refused as a whole; when several Runs qualify, choose the
+Run that `implement` names, because it has the largest carriable set and uses
+the newest Run to break ties.
 
 `--apply` remains the only switch that releases Run Worktrees.
 
