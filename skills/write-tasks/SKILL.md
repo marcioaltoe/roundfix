@@ -198,15 +198,22 @@ Before reporting, verify mechanically — parse, don't eyeball.
 Start by running the repository's own checker on the Spec you just decomposed:
 
 ```bash
-roundfix spec check <slug>
+roundfix spec check <slug> --run-verification
 ```
 
-It runs in well under a second and reads the PRD, the TechSpec, the ADRs they
-cite, and the graph together — which is the first moment all four exist. Treat
-every reported error as blocking: fix the artifact and re-run until it is clean,
-and do not report the breakdown while a finding stands. A `[gap]` is blocking
-too; account for the named ADR or record why it does not apply. Skipped checks
-are informational.
+This form reads the PRD, the TechSpec, the ADRs they cite, and the graph
+together — which is the first moment all four exist — and executes authored
+Verification commands in a disposable checkout at `HEAD`. A clean verdict from
+`roundfix spec check <slug>` without `--run-verification` does not cover
+Vacuous Verification: it does not execute those commands against the unchanged
+tree, so a command that already exits zero can remain undiscovered. Do not
+prefer the non-probing form for its speed; that speed is a consequence of
+omitting command execution.
+
+Treat every reported error as blocking: fix the artifact and re-run until it is
+clean, and do not report the breakdown while a finding stands. A `[gap]` is
+blocking too; account for the named ADR or record why it does not apply. Skipped
+checks are informational.
 
 This is not a substitute for the list below, which covers what the checker does
 not: it catches unlisted and unaccounted ADRs, incomplete Project Constraints,

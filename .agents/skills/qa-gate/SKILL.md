@@ -41,7 +41,7 @@ defect; do not run the gate outside that node.
   it. For every active, non-legacy Spec, run:
 
   ```bash
-  roundfix spec check <slug> --strict
+  roundfix spec check <slug> --strict --run-verification
   ```
 
   Stop before building the matrix when the command fails, and write the refusal
@@ -55,7 +55,7 @@ defect; do not run the gate outside that node.
   rows_blocked_environment: 0
   rows_blocked_finding: 0
   rows_blocked_declared: 0
-  precondition_check: "roundfix spec check <slug> --strict"
+  precondition_check: "roundfix spec check <slug> --strict --run-verification"
   precondition_reason: "<every refusing code and the sentence beside it>"
   ---
 
@@ -69,7 +69,7 @@ defect; do not run the gate outside that node.
 
   ## Precondition refusal
 
-  - check: roundfix spec check <slug> --strict
+  - check: roundfix spec check <slug> --strict --run-verification
   - reason: <every refusing code and the sentence beside it>
   ```
 

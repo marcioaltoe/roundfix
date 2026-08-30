@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: docs
 ---
 
@@ -55,3 +55,36 @@ path fails this Task; stop before mutating one.
 
 ## Verification
 - `for s in write-prd write-techspec write-tasks qa-gate; do grep -q -- "--run-verification" ".agents/skills/$s/SKILL.md" || exit 1; grep -q -- "--run-verification" "skills/$s/SKILL.md" || exit 1; done; go test -count=1 -tags docscontract ./internal/docscontract && go test -count=1 ./skills`
+
+## Result
+
+The four authoring skills now name the probing form of the Spec Consistency
+Check. The `write-tasks` guidance also explains that a clean non-probing result
+does not cover Vacuous Verification and that its speed comes from omitting
+command execution.
+
+Evidence by acceptance criterion:
+
+- Every canonical and generated skill contains `--run-verification`: the
+  focused occurrence scan reported `1`, `1`, `2`, and `3` occurrences for
+  `write-prd`, `write-techspec`, `write-tasks`, and `qa-gate`, respectively, in
+  both trees. `make skills-sync` exited 0, and each source/generated pair was
+  identical afterward.
+- The delivered command contract was checked with `go run -buildvcs=false
+  ./cmd/roundfix spec check --help` (exit 0), which reports that
+  `--run-verification` executes authored Verification commands in a disposable
+  checkout at `HEAD`. The focused CLI test command
+  `go test -count=1 ./internal/cli -run
+  'TestSpecCheckRunVerification|TestRunSpecCheckHelpAppearsInTopLevelUsageAndCommandList' -v`
+  exited 0, including the non-probing verdict coverage case.
+- `git diff --check` exited 0. The changed-path inspection contains only the
+  eight authorized skill paths plus this assigned Task file; `_tasks.md` and
+  every other Task file remain untouched.
+
+The task's declared Verification command was not run, and the Task status was
+not changed; both remain owned by the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260830T161359Z_31aaee7e42ecc4e4`
+- Source commit: `4331672f38b4729e365df84bd605485308c6389b`
