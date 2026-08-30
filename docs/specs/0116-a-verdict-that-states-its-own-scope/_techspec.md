@@ -92,7 +92,8 @@ tell whether it identifies the auditor or the audited.
 
 The first is where a report records the identity, the second is where the
 identity is assembled from the build stamp, and the third is the template an
-Agent fills. Each path is present and readable now.
+Agent fills. The first two paths are delivered and readable now; the later
+authoring-skill task updates the template to match them.
 
 ## System Architecture
 
