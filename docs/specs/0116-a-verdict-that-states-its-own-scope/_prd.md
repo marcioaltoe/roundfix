@@ -34,6 +34,27 @@ reader is looking.
   skills name. ADR-0135 makes an absent diagnostic a reported state rather than
   an empty message, and this Spec applies the same principle to an unrun check.
   ADR-0096 asks the gate to prove machine facts before spending an Agent turn.
+  ADR-0080 distinguishes blocked rows by typed cause and never credits a
+  journey without evidence, which bounds this Spec to recording the auditor
+  rather than loosening what a report must carry. ADR-0081 makes the generated
+  skill copies deterministic fallout of an authorized edit, which is why the
+  four skills and their mirrors are one authorization rather than eight.
+  ADR-0093 bounds the Spec Consistency Check to what a Spec's artifacts say
+  about each other, never to topical judgement, which is the boundary Core
+  Feature 2 reports from rather than widens. ADR-0091 keeps the QA gate one
+  terminal Task node of type `qa`, which is the node whose report gains the
+  auditor record. ADR-0097 is applicable at one seam: a carried QA row inherits
+  an earlier report's observation, so the auditor a report names is the binary
+  that produced that report and never the one that inherited its row.
+  ADR-0104 obliges at least one named acceptance row to rest on evidence from
+  outside this Spec's own artifacts, and lands that obligation at the gate; this
+  Spec's outside evidence is the adopted `fluxus` finding, whose measurement was
+  taken in a repository this Spec did not build.
+  ADR-0149 would normally spare a grant from enumerating a command's outputs by
+  resolving them from an `_ownership.yml` declaration; `skills/` carries no such
+  declaration today, so this Spec's grant names the generated copies explicitly
+  because the changed-path audit cannot otherwise resolve them. That gap is
+  recorded for Triage and is not this Spec's to close.
   ADR-0117 places a defect's check at the stage that can produce it, which is
   the obligation this Spec is most directly accountable to: a vacuous
   Verification is produced during authoring, so authoring is where it must be
