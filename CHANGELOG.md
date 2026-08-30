@@ -2,6 +2,58 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.9.0] - 2026-08-30
+
+Work a Run already proved is no longer executed a second time to reach the same
+result.
+
+### Added
+
+- **Task Carry-Forward reaches an Unresolved Run.**
+  `roundfix reconcile <run-id> --carry-forward` accepts a Run whose outcome is
+  `Unresolved`, not only `Stopped`. Every proof is unchanged: a passing
+  Verification verdict, exactly one settlement commit, declared inputs unmoved,
+  a clean checkout, and a repository-local Specs Root. A Run with any other
+  terminal outcome is refused by a message naming the outcome it has and the
+  outcomes the act accepts. Measured origin: three Runs of one Spec in this
+  repository settled seven Tasks that an earlier Run had already completed and
+  verified.
+
+- **`implement` refuses to re-execute proved work.** Before creating a Run, the
+  Preflight inspects the Spec's prior terminal Runs. When one of them would
+  carry its complete set forward, the command refuses with no Run, no Agent
+  Session, and no Git or Run Database state, naming the Run, the Tasks it would
+  recover, and the exact recovery command. When stranded work exists but cannot
+  be carried, it reports that and proceeds; the check saves Agent turns and
+  never becomes a new way for the loop to stop.
+
+- **The glossary carries Task Carry-Forward**, a term the product had performed
+  since 0.4.0 without naming, and the Reconcile Command entry now describes all
+  three of its mutation switches instead of claiming `--apply` is the only one.
+
+### Fixed
+
+- **Declared inputs are proved against the staged carries, not the raw
+  checkout.** In any serial graph where one Task edits a shared declared input —
+  a glossary, a TechSpec — every later Task reported that input as moved and the
+  whole set refused, because the checkout had not received the earlier Tasks
+  yet. Candidates are now compared against the accumulating staged state, which
+  is what each Task was validated against. This strengthens the proof: an input
+  that moved for any other reason still refuses. Without it, carry-forward could
+  not serve the Specs most likely to need it.
+
+- **A vanished PID no longer fails process enumeration on Linux.** The scan
+  skipped a process that exited mid-scan only on `ENOENT`, while procfs also
+  answers `ESRCH` while a task is being reaped, so an ordinary exit could fail
+  the whole enumeration — the path Force Stop and the readiness diagnostic both
+  use. The macOS implementation already treated `ESRCH` that way, so the two
+  platforms disagreed about what a vanished PID is.
+
+- **Only a proven cherry-pick conflict refuses a carried Task.** A bad object, a
+  broken index, or a cancelled context also make `git cherry-pick` exit
+  non-zero, and none of them is the Task's work refusing. Unmerged paths now
+  decide, and the refusal names them.
+
 ## [0.8.0] - 2026-08-27
 
 An Implement Run can now be bounded by when it may start, so an autonomous
@@ -520,6 +572,7 @@ time, together with the work that followed it.
 Earlier release sections are intentionally omitted from the restarted
 changelog. Git history remains the source for prior implementation history.
 
+[0.9.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.9.0
 [0.8.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.8.0
 [0.7.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.7.0
 [0.6.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.6.0
