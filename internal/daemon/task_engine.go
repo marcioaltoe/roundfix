@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"unicode/utf8"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/app"
 	"roundfix/internal/preflight"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
@@ -2239,8 +2241,8 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 // where the shape detector reads no rows from them, so the refusal costs the
 // report none of the observations the stage already made.
 //
-// Every other gate writes exactly the report it wrote before: the refusal is an
-// added path, not a changed one.
+// Every path records the Auditing Binary independently from the audited tree;
+// the refusal is an added report shape, not a different attribution contract.
 func mechanicalQAReportContent(result speccheck.MechanicalResult) ([]byte, error) {
 	var mechanical bytes.Buffer
 	if err := speccheck.WriteMechanicalResult(&mechanical, result); err != nil {
@@ -2280,6 +2282,10 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult) ([]byte, error
 		verdict = spec.VerdictFail
 	}
 	fmt.Fprintf(&content, "verdict: %s\n", verdict)
+	auditor := app.Auditor()
+	_, auditorStaleness := auditor.CompareToTree("", app.AncestryUnknown)
+	fmt.Fprintf(&content, "auditing_binary: %s\n", strconv.Quote(auditor.String()))
+	fmt.Fprintf(&content, "auditor_staleness: %s\n", strconv.Quote(auditorStaleness))
 	fmt.Fprintf(&content, "rows_blocked_environment: %d\n", mechanicalBlockedRowCount(mechanicalBody, "environment"))
 	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", mechanicalBlockedRowCount(mechanicalBody, "finding"))
 	fmt.Fprintf(&content, "rows_blocked_declared: %d\n", mechanicalBlockedRowCount(mechanicalBody, "declared"))

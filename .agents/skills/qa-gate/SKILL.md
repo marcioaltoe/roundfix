@@ -364,7 +364,9 @@ Use this structure:
 ---
 spec: <slug>
 date: YYYY-MM-DD
-build: <commit-or-artifact>
+build: <audited-commit-or-artifact>
+auditing_binary: "<version-and-build-identity>"
+auditor_staleness: "<current|stale|unknown: reason>"
 status: in-progress # in-progress | closed
 verdict: pending # pending | pass | fail | partial
 rows_blocked_environment: 0

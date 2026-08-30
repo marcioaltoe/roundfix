@@ -35,6 +35,13 @@ func taskCycleNowForTest() time.Time {
 	return time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
 }
 
+func qaAuditorFrontmatterForTest() string {
+	auditor := app.Auditor()
+	_, auditorStaleness := auditor.CompareToTree("", app.AncestryUnknown)
+	return "auditing_binary: " + strconv.Quote(auditor.String()) + "\n" +
+		"auditor_staleness: " + strconv.Quote(auditorStaleness) + "\n"
+}
+
 func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -1207,7 +1214,8 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 		unrefused.PreconditionRefusal = spec.PreconditionRefusal{}
 		report := writeReport(t, unrefused).body
 
-		want := "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
+		want := "---\nverdict: fail\n" + qaAuditorFrontmatterForTest() +
+			"rows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
 			"# QA Report\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n" +
 			"## Mechanical findings\n\n### " + speccheck.CodeConstraintMissing + "\n\n" +
 			"- location: `docs/specs/" + taskCycleSlug + "/_prd.md:1`\n" +
@@ -1415,7 +1423,8 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 		}
 
 		report := writeReport(t, result)
-		want := "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
+		want := "---\nverdict: fail\n" + qaAuditorFrontmatterForTest() +
+			"rows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
 			"# QA Report\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n" +
 			"## Mechanical findings\n\n### QA-FIXTURE\n\n" +
 			"- location: `fixture.md:7`\n- detail: fixture mismatch\n- fix: repair fixture\n- blocked row: `R01`\n\n" +

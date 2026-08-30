@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -48,3 +48,39 @@ changes below are production code, not repository tooling, and need no grant.
 
 ## Verification
 - `grep -q "auditing_binary" internal/daemon/task_engine.go || exit 1; grep -q "auditor_staleness" internal/daemon/task_engine.go || exit 1; grep -q "auditing_binary" .agents/skills/qa-gate/SKILL.md || exit 1; grep -q "auditing_binary" skills/qa-gate/SKILL.md || exit 1; go test -count=1 ./internal/daemon ./skills && go test -count=1 -tags docscontract ./internal/docscontract`
+
+## Result
+
+The Daemon's ordinary mechanical QA Report now writes `auditing_binary` and
+`auditor_staleness` before the existing blocked-cause counts, using the same
+running-binary identity and unknown-safe comparison as the precondition-refusal
+writer. The QA-gate template names `build` as the audited artifact and carries
+the same two auditor keys; `make skills-sync` regenerated its shipped copy.
+
+### Focused-check evidence
+
+- Red signal: `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test
+  ./internal/daemon -run
+  'TestWriteMechanicalQAReportWritesThePreconditionRefusal/a_gate_that_refused_nothing_writes_the_report_it_wrote_before|TestWriteMechanicalQAReportRecordsTheRefusal/populated_blocking_result_preserves_its_bytes'`
+  failed because both ordinary reports omitted the two newly required keys.
+- After the production change, `rtk env
+  GOCACHE=/private/tmp/roundfix-task08-gocache go test ./internal/daemon -run
+  'TestWriteMechanicalQAReportWritesThePreconditionRefusal|TestWriteMechanicalQAReportRecordsTheRefusal'`
+  passed.
+- `rtk make skills-sync-check` passed, including its focused `./skills` checks.
+- `rtk env GOCACHE=/private/tmp/roundfix-task08-gocache go test ./skills -run
+  '^TestAuthorialSkillSync$'` passed.
+- `rtk git diff --check` passed.
+
+### Acceptance evidence
+
+1. Both exact-byte Daemon expectations now require the Auditing Binary and its
+   staleness beside unchanged environment, finding, and declared blocked counts.
+2. The canonical and generated QA-gate templates contain both keys beside
+   `build`; the sync check and authorial-skill sync test confirm parity.
+3. The template's `build` placeholder is explicitly the audited commit or
+   artifact, while `auditing_binary` separately identifies the report producer.
+4. The Daemon expectations state the new contract through values derived from
+   `app.Auditor()` and `CompareToTree`, rather than relaxing their byte checks.
+5. The focused Daemon tests retain the prior verdict, result rows, refusal
+   behavior, and all blocked-cause counts while exercising the added metadata.
