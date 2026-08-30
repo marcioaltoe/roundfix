@@ -41,8 +41,15 @@ defect; do not run the gate outside that node.
   it. For every active, non-legacy Spec, run:
 
   ```bash
-  roundfix spec check <slug> --strict --run-verification
+  roundfix spec check <slug> --strict
   ```
+
+  The gate keeps this non-probing form because the probe asks whether a
+  command already passes before its work exists, while the gate runs after
+  every Task is complete. Probing completed Tasks would therefore report their
+  already-passing commands as vacuous and refuse the gate. The three authoring
+  skills use `--run-verification` while the work is still being authored, when
+  that question is answerable.
 
   Stop before building the matrix when the command fails, and write the refusal
   before you stop. A gate that stops here measured no requirement, so its whole
@@ -55,7 +62,7 @@ defect; do not run the gate outside that node.
   rows_blocked_environment: 0
   rows_blocked_finding: 0
   rows_blocked_declared: 0
-  precondition_check: "roundfix spec check <slug> --strict --run-verification"
+  precondition_check: "roundfix spec check <slug> --strict"
   precondition_reason: "<every refusing code and the sentence beside it>"
   ---
 
@@ -69,7 +76,7 @@ defect; do not run the gate outside that node.
 
   ## Precondition refusal
 
-  - check: roundfix spec check <slug> --strict --run-verification
+  - check: roundfix spec check <slug> --strict
   - reason: <every refusing code and the sentence beside it>
   ```
 

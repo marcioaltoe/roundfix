@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: docs
 ---
 
@@ -47,3 +47,39 @@ three authoring skills, whose probing form is correct and stays.
 
 ## Verification
 - `grep -q -- "roundfix spec check <slug> --strict$" .agents/skills/qa-gate/SKILL.md || exit 1; ! grep -q -- "--strict --run-verification" .agents/skills/qa-gate/SKILL.md || exit 1; ! grep -q -- "--strict --run-verification" skills/qa-gate/SKILL.md || exit 1; for s in write-prd write-techspec write-tasks; do grep -q -- "--run-verification" ".agents/skills/$s/SKILL.md" || exit 1; done; go test -count=1 -tags docscontract ./internal/docscontract && go test -count=1 ./skills`
+
+## Result
+
+The QA gate precondition now uses the non-probing `roundfix spec check <slug>
+--strict` form in its command and both refusal-report examples. The skill also
+explains that probing asks whether a command already passes before its work
+exists, while the gate runs after every Task is complete; probing completed
+Tasks would report their passing commands as vacuous and refuse the gate. The
+embedded copy was regenerated with `make skills-sync`.
+
+Evidence by acceptance criterion:
+
+- The canonical and generated QA-gate skills each contain exactly one command,
+  one `precondition_check` value, and one refusal-prose `check` value for the
+  non-probing form, with zero `--strict --run-verification` occurrences. The
+  focused contract scan, `cmp`, and `git diff --check` all passed.
+- The rationale is grounded in the delivered command: `GOCACHE=/private/tmp/roundfix-task07-gocache
+  go run -buildvcs=false ./cmd/roundfix spec check --help` exited 0 and states
+  that `--run-verification` executes authored Verification commands in a
+  disposable checkout at `HEAD`. The initial invocation without the writable
+  cache was blocked by a local Go build-cache permission error; the rerun
+  passed.
+- The `write-tasks` statement that a clean non-probing verdict does not cover
+  Vacuous Verification remains unchanged, and the three authoring skills still
+  contain `--run-verification`; a focused post-edit scan passed.
+- `make skills-sync` and `make skills-sync-check` exited 0. The current changed
+  paths are the two authorized QA-gate skill paths and this assigned Task file;
+  `_tasks.md` and the other Task files remain untouched.
+
+The declared Verification command was not run, and the Task status was not
+changed; both remain owned by the Daemon.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260830T171806Z_714f24711c052987`
+- Source commit: `03a7e20945058fd681ca928bcbbd960b3627e97e`
