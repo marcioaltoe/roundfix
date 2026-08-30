@@ -79,11 +79,11 @@ type PreconditionRefusal struct {
 // in the Results table, and the check and its reason in the frontmatter. The
 // caller owns where the report lands and under which name; this contract owns
 // its shape, so a refusal cannot be recorded as an empty matrix again.
-func WritePreconditionRefusalReport(writer io.Writer, refusal PreconditionRefusal) error {
+func WritePreconditionRefusalReport(writer io.Writer, refusal PreconditionRefusal, evidence AuditorEvidence) error {
 	check := qaRefusalValue(refusal.CheckName, QAPreconditionCheckUnnamed)
 	reason := qaRefusalValue(refusal.Reason, QAPreconditionReasonUnrecorded)
 	auditor := app.Auditor()
-	auditorStaleness := auditor.StalenessLine("", app.AncestryUnknown)
+	auditorStaleness := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
 
 	var report strings.Builder
 	report.WriteString("---\n")

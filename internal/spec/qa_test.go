@@ -502,7 +502,7 @@ func TestWritePreconditionRefusalReportWritesOneTerminalRow(t *testing.T) {
 	if err := WritePreconditionRefusalReport(&report, PreconditionRefusal{
 		CheckName: "strict",
 		Reason:    "SC-VOCABULARY-UNDOCUMENTED",
-	}); err != nil {
+	}, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 
@@ -540,7 +540,7 @@ func TestPreconditionRefusalReportNamesItsAuditor(t *testing.T) {
 	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{
 		CheckName: "strict",
 		Reason:    "SC-VOCABULARY-UNDOCUMENTED",
-	}); err != nil {
+	}, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 	for _, want := range []string{
@@ -572,7 +572,7 @@ func TestWritePreconditionRefusalReportIsReadableAsARefusal(t *testing.T) {
 	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{
 		CheckName: "strict",
 		Reason:    "SC-REQUIREMENT-CONTRADICTORY",
-	}); err != nil {
+	}, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 	specDir := t.TempDir()
@@ -600,7 +600,7 @@ func TestWritePreconditionRefusalReportKeepsTheRefusalOnOneLine(t *testing.T) {
 	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{
 		CheckName: "spec check --strict",
 		Reason:    "SC-VOCABULARY-UNDOCUMENTED:\nterm | \"Run Ledger\" is undocumented",
-	}); err != nil {
+	}, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 	report := content.String()
@@ -622,7 +622,7 @@ func TestWritePreconditionRefusalReportKeepsTheRefusalOnOneLine(t *testing.T) {
 func TestWritePreconditionRefusalReportRecordsAnUnnamedRefusal(t *testing.T) {
 	t.Parallel()
 	var content strings.Builder
-	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{CheckName: "  ", Reason: ""}); err != nil {
+	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{CheckName: "  ", Reason: ""}, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 	report := content.String()
@@ -713,7 +713,7 @@ func TestReadQAReportRecordsThePreconditionRefusal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var content strings.Builder
-			if err := WritePreconditionRefusalReport(&content, tt.written); err != nil {
+			if err := WritePreconditionRefusalReport(&content, tt.written, AuditorEvidence{}); err != nil {
 				t.Fatalf("WritePreconditionRefusalReport: %v", err)
 			}
 			specDir := t.TempDir()
@@ -737,7 +737,7 @@ func TestPreconditionRefusalRoundTripsThroughTheQAReport(t *testing.T) {
 		Reason:    `SC-VOCABULARY-UNDOCUMENTED: term "Run Ledger" is undocumented; SC-COVERAGE-UNMAPPED: Core Feature 2 has no TechSpec section`,
 	}
 	var written strings.Builder
-	if err := WritePreconditionRefusalReport(&written, refusal); err != nil {
+	if err := WritePreconditionRefusalReport(&written, refusal, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 	specDir := t.TempDir()
@@ -754,7 +754,7 @@ func TestPreconditionRefusalRoundTripsThroughTheQAReport(t *testing.T) {
 	// refusal again; anything the read drops would be evidence the next writer
 	// cannot recover.
 	var rewritten strings.Builder
-	if err := WritePreconditionRefusalReport(&rewritten, report.Precondition); err != nil {
+	if err := WritePreconditionRefusalReport(&rewritten, report.Precondition, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport from the report that was read: %v", err)
 	}
 	if rewritten.String() != written.String() {
