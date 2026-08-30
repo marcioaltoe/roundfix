@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"roundfix/internal/app"
 )
 
 func qaReportFixture(verdict string, extraFrontmatter ...string) string {
@@ -41,6 +43,23 @@ func TestQAVerdictReadsSupportedVerdicts(t *testing.T) {
 				t.Errorf("QAVerdict = %q, want %q", got, verdict)
 			}
 		})
+	}
+}
+
+func TestReadQAReportAcceptsOlderReportWithoutAuditorMetadata(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-07-04.md"), qaReportFixture(VerdictPass))
+
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport of report written before auditor metadata: %v", err)
+	}
+	if report.Verdict != VerdictPass {
+		t.Errorf("Verdict = %q, want %q", report.Verdict, VerdictPass)
+	}
+	if report.AuditingBinary != "" || report.AuditorStaleness != "" {
+		t.Errorf("auditor metadata = %q / %q, want absent metadata preserved as empty", report.AuditingBinary, report.AuditorStaleness)
 	}
 }
 
@@ -507,6 +526,43 @@ func TestWritePreconditionRefusalReportWritesOneTerminalRow(t *testing.T) {
 		if !strings.Contains(report.String(), want) {
 			t.Errorf("report does not record %q:\n%s", want, report.String())
 		}
+	}
+}
+
+func TestPreconditionRefusalReportNamesItsAuditor(t *testing.T) {
+	oldVersion, oldCommit, oldTime := app.Version, app.BuildCommit, app.BuildTime
+	t.Cleanup(func() {
+		app.Version, app.BuildCommit, app.BuildTime = oldVersion, oldCommit, oldTime
+	})
+	app.Version, app.BuildCommit, app.BuildTime = "1.2.3", "", ""
+
+	var content strings.Builder
+	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{
+		CheckName: "strict",
+		Reason:    "SC-VOCABULARY-UNDOCUMENTED",
+	}); err != nil {
+		t.Fatalf("WritePreconditionRefusalReport: %v", err)
+	}
+	for _, want := range []string{
+		`auditing_binary: "1.2.3"`,
+		`auditor_staleness: "unknown: auditing binary has no build commit and audited tree declares no version"`,
+	} {
+		if !strings.Contains(content.String(), want+"\n") {
+			t.Errorf("report does not record %q:\n%s", want, content.String())
+		}
+	}
+
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-08-25.md"), content.String())
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport of refusal with auditor metadata: %v", err)
+	}
+	if report.AuditingBinary != "1.2.3" {
+		t.Errorf("AuditingBinary = %q, want released-build identity %q", report.AuditingBinary, "1.2.3")
+	}
+	if report.AuditorStaleness != "unknown: auditing binary has no build commit and audited tree declares no version" {
+		t.Errorf("AuditorStaleness = %q, want an explicit unknown reason", report.AuditorStaleness)
 	}
 }
 

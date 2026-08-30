@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/gittest"
 	"roundfix/internal/rounds"
@@ -1126,8 +1127,13 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 	t.Run("the refusal is recorded as one terminal row and its frontmatter", func(t *testing.T) {
 		t.Parallel()
 		report := writeReport(t, refusedResult).body
+		auditor := app.Auditor()
+		_, auditorStaleness := auditor.CompareToTree("", app.AncestryUnknown)
 
-		wantFrontmatter := "---\nverdict: fail\nrows_blocked_precondition: 1\n" +
+		wantFrontmatter := "---\nverdict: fail\n" +
+			"auditing_binary: " + strconv.Quote(auditor.String()) + "\n" +
+			"auditor_staleness: " + strconv.Quote(auditorStaleness) + "\n" +
+			"rows_blocked_precondition: 1\n" +
 			"rows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n" +
 			"precondition_check: " + strconv.Quote(speccheck.GatePreconditionCheck) + "\n" +
 			"precondition_reason: " + strconv.Quote(reason) + "\n---\n"
