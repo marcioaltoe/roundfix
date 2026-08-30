@@ -280,7 +280,7 @@ func TestRenderResultTextAndJSON(t *testing.T) {
 	result := checkFixture(t, "tooling-unauthorized")
 	finding := requireFinding(t, result, speccheck.CodeToolingUnauthorized)
 
-	textReport := speccheck.RenderText(result, speccheck.VerificationCoverage{Ran: true, Commands: 2})
+	textReport := speccheck.RenderText(result, speccheck.VerificationCoverage{Ran: true, Executed: 2})
 	for _, fragment := range []string{finding.Code, string(finding.Severity), finding.Summary, finding.Fix} {
 		if !strings.Contains(textReport, fragment) {
 			t.Errorf("text report does not contain %q:\n%s", fragment, textReport)
@@ -329,7 +329,7 @@ func TestVerdictLineStatesProbeCoverage(t *testing.T) {
 			name: "probe ran",
 			coverage: speccheck.VerificationCoverage{
 				Ran:      true,
-				Commands: 2,
+				Executed: 2,
 			},
 			want: "No findings. Authored Verification commands executed: 2.",
 		},
@@ -337,6 +337,18 @@ func TestVerdictLineStatesProbeCoverage(t *testing.T) {
 			name:     "probe did not run",
 			coverage: speccheck.VerificationCoverage{},
 			want:     "No findings. Authored Verification commands were not executed.",
+		},
+		{
+			// A command the probe could not run is never counted as executed.
+			// Reporting it as executed would overstate coverage, which is the
+			// defect this whole report exists to remove.
+			name: "probe ran but a command could not be executed",
+			coverage: speccheck.VerificationCoverage{
+				Ran:        true,
+				Executed:   1,
+				Unexecuted: 1,
+			},
+			want: "No findings. Authored Verification commands executed: 1; could not be executed: 1.",
 		},
 	}
 

@@ -86,6 +86,20 @@ const (
 // CompareToTree answers whether this binary predates the tree it audits. A
 // stamped build prefers commit ancestry; otherwise the declared tree version
 // is used. Missing evidence always produces StalenessUnknown.
+//
+// The reason never repeats the state it accompanies. A caller composes the two
+// as "<state>: <reason>", and a reason that prefixed its own state produced
+// "unknown: unknown: ..." in one path and a bare reason in another, leaving the
+// recorded field with no stable shape to read.
+// StalenessLine composes the recorded field: the state, then the reason that
+// established it. Both report writers use this rather than composing their own,
+// because two compositions are how one writer came to record a bare reason with
+// no state while the other recorded both.
+func (binary AuditingBinary) StalenessLine(treeVersion string, ancestry AncestryResult) string {
+	state, reason := binary.CompareToTree(treeVersion, ancestry)
+	return string(state) + ": " + reason
+}
+
 func (binary AuditingBinary) CompareToTree(treeVersion string, ancestry AncestryResult) (Staleness, string) {
 	commit := strings.TrimSpace(binary.Commit)
 	if commit != "" {
@@ -95,7 +109,7 @@ func (binary AuditingBinary) CompareToTree(treeVersion string, ancestry Ancestry
 		case AncestryNotOlder:
 			return StalenessCurrent, "commit ancestry: build commit does not predate audited tree"
 		default:
-			return StalenessUnknown, "unknown: commit ancestry is unavailable for stamped build"
+			return StalenessUnknown, "commit ancestry could not be resolved for the recorded build commit"
 		}
 	}
 
@@ -109,9 +123,9 @@ func (binary AuditingBinary) CompareToTree(treeVersion string, ancestry Ancestry
 	}
 
 	if treeVersion == "" {
-		return StalenessUnknown, "unknown: auditing binary has no build commit and audited tree declares no version"
+		return StalenessUnknown, "auditing binary has no build commit and audited tree declares no version"
 	}
-	return StalenessUnknown, "unknown: auditing binary declares no version"
+	return StalenessUnknown, "auditing binary declares no version"
 }
 
 // VersionLine is the complete `--version` line body: the plain version for

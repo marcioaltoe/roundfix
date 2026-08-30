@@ -83,7 +83,7 @@ func WritePreconditionRefusalReport(writer io.Writer, refusal PreconditionRefusa
 	check := qaRefusalValue(refusal.CheckName, QAPreconditionCheckUnnamed)
 	reason := qaRefusalValue(refusal.Reason, QAPreconditionReasonUnrecorded)
 	auditor := app.Auditor()
-	_, auditorStaleness := auditor.CompareToTree("", app.AncestryUnknown)
+	auditorStaleness := auditor.StalenessLine("", app.AncestryUnknown)
 
 	var report strings.Builder
 	report.WriteString("---\n")

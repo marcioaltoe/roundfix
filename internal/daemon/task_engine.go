@@ -2283,7 +2283,7 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult) ([]byte, error
 	}
 	fmt.Fprintf(&content, "verdict: %s\n", verdict)
 	auditor := app.Auditor()
-	_, auditorStaleness := auditor.CompareToTree("", app.AncestryUnknown)
+	auditorStaleness := auditor.StalenessLine("", app.AncestryUnknown)
 	fmt.Fprintf(&content, "auditing_binary: %s\n", strconv.Quote(auditor.String()))
 	fmt.Fprintf(&content, "auditor_staleness: %s\n", strconv.Quote(auditorStaleness))
 	fmt.Fprintf(&content, "rows_blocked_environment: %d\n", mechanicalBlockedRowCount(mechanicalBody, "environment"))

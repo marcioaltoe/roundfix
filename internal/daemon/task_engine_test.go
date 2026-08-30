@@ -37,7 +37,7 @@ func taskCycleNowForTest() time.Time {
 
 func qaAuditorFrontmatterForTest() string {
 	auditor := app.Auditor()
-	_, auditorStaleness := auditor.CompareToTree("", app.AncestryUnknown)
+	auditorStaleness := auditor.StalenessLine("", app.AncestryUnknown)
 	return "auditing_binary: " + strconv.Quote(auditor.String()) + "\n" +
 		"auditor_staleness: " + strconv.Quote(auditorStaleness) + "\n"
 }
@@ -1135,7 +1135,7 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 		t.Parallel()
 		report := writeReport(t, refusedResult).body
 		auditor := app.Auditor()
-		_, auditorStaleness := auditor.CompareToTree("", app.AncestryUnknown)
+		auditorStaleness := auditor.StalenessLine("", app.AncestryUnknown)
 
 		wantFrontmatter := "---\nverdict: fail\n" +
 			"auditing_binary: " + strconv.Quote(auditor.String()) + "\n" +

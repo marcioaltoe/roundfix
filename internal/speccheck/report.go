@@ -62,10 +62,14 @@ type Result struct {
 }
 
 // VerificationCoverage tells the renderer what the probe did, so a clean
-// verdict can state its own scope.
+// verdict can state its own scope. Executed counts the commands the probe
+// actually ran; Unexecuted counts those it could not, which are reported
+// separately rather than folded into the executed count. Folding them in is
+// the same overstatement this report exists to remove, one layer down.
 type VerificationCoverage struct {
-	Ran      bool
-	Commands int
+	Ran        bool
+	Executed   int
+	Unexecuted int
 }
 
 // PromoteGaps applies the strictness of `spec check --strict` to one result:
@@ -197,7 +201,14 @@ func RenderText(result Result, coverage VerificationCoverage) string {
 	report.WriteByte('\n')
 	if len(result.Findings) == 0 {
 		if coverage.Ran {
-			fmt.Fprintf(&report, "No findings. Authored Verification commands executed: %d.\n", coverage.Commands)
+			if coverage.Unexecuted > 0 {
+				// Both facts on the verdict line. A second line would be read
+				// after the verdict, which is the position this report exists
+				// to move away from.
+				fmt.Fprintf(&report, "No findings. Authored Verification commands executed: %d; could not be executed: %d.\n", coverage.Executed, coverage.Unexecuted)
+			} else {
+				fmt.Fprintf(&report, "No findings. Authored Verification commands executed: %d.\n", coverage.Executed)
+			}
 		} else {
 			report.WriteString("No findings. Authored Verification commands were not executed.\n")
 		}

@@ -366,7 +366,7 @@ spec: <slug>
 date: YYYY-MM-DD
 build: <audited-commit-or-artifact>
 auditing_binary: "<version-and-build-identity>"
-auditor_staleness: "<current|stale|unknown: reason>"
+auditor_staleness: "<state>: <reason>" # state is current|stale|unknown; the reason names the signal that answered, such as commit ancestry or the declared tree version
 status: in-progress # in-progress | closed
 verdict: pending # pending | pass | fail | partial
 rows_blocked_environment: 0

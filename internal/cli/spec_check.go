@@ -469,9 +469,18 @@ func specCheckVerificationCommand(taskID string, verdict daemon.CommandVerdict) 
 
 func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerificationReport) string {
 	var report strings.Builder
+	executed, unexecuted := 0, 0
+	for _, command := range verification.Commands {
+		if command.Verdict == specCheckVerificationVerdictUnknown {
+			unexecuted++
+			continue
+		}
+		executed++
+	}
 	report.WriteString(speccheck.RenderText(outcome.result, speccheck.VerificationCoverage{
-		Ran:      verification.Executed,
-		Commands: len(verification.Commands),
+		Ran:        verification.Executed,
+		Executed:   executed,
+		Unexecuted: unexecuted,
 	}))
 	if len(outcome.repairInputs) > 0 {
 		report.WriteString("Repair inputs:\n")

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -103,13 +104,13 @@ func TestCompareToTree(t *testing.T) {
 			treeVersion: "1.2.3",
 			ancestry:    AncestryUnknown,
 			want:        StalenessUnknown,
-			wantReason:  "unknown: commit ancestry is unavailable for stamped build",
+			wantReason:  "commit ancestry could not be resolved for the recorded build commit",
 		},
 		{
 			name:       "unknown without build stamp or declared tree version",
 			binary:     AuditingBinary{Version: "1.2.3"},
 			want:       StalenessUnknown,
-			wantReason: "unknown: auditing binary has no build commit and audited tree declares no version",
+			wantReason: "auditing binary has no build commit and audited tree declares no version",
 		},
 	}
 
@@ -181,5 +182,38 @@ func TestVersionMatchesTheReleaseManifest(t *testing.T) {
 	}
 	if manifest.Version != Version {
 		t.Fatalf("dist/npm/roundfix/package.json version = %q, but internal/app.Version = %q; the release workflow validates the tag against the manifest, so both must match", manifest.Version, Version)
+	}
+}
+
+func TestStalenessLineNeverRepeatsItsState(t *testing.T) {
+	t.Parallel()
+	// A reason that prefixed its own state produced "unknown: unknown: ..." in
+	// one path and a bare reason in another, leaving the recorded field with no
+	// stable shape. Every state composes exactly once.
+	for _, testCase := range []struct {
+		name        string
+		binary      AuditingBinary
+		treeVersion string
+		ancestry    AncestryResult
+		wantPrefix  string
+	}{
+		{name: "stale by ancestry", binary: AuditingBinary{Commit: "abc1234"}, ancestry: AncestryOlder, wantPrefix: "stale: "},
+		{name: "current by ancestry", binary: AuditingBinary{Commit: "abc1234"}, ancestry: AncestryNotOlder, wantPrefix: "current: "},
+		{name: "unknown by ancestry", binary: AuditingBinary{Commit: "abc1234"}, ancestry: AncestryUnknown, wantPrefix: "unknown: "},
+		{name: "unknown with no evidence at all", binary: AuditingBinary{}, ancestry: AncestryUnknown, wantPrefix: "unknown: "},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			line := testCase.binary.StalenessLine(testCase.treeVersion, testCase.ancestry)
+			if !strings.HasPrefix(line, testCase.wantPrefix) {
+				t.Fatalf("staleness line = %q, want prefix %q", line, testCase.wantPrefix)
+			}
+			rest := strings.TrimPrefix(line, testCase.wantPrefix)
+			for _, state := range []string{"current:", "stale:", "unknown:"} {
+				if strings.HasPrefix(rest, state) {
+					t.Fatalf("staleness line = %q, want the state recorded once", line)
+				}
+			}
+		})
 	}
 }
