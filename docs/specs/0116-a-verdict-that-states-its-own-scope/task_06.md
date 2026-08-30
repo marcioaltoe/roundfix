@@ -9,8 +9,11 @@ Verify every deliverable of this Spec against the running commands.
 
 ## Work
 
-- An author following each of the four skills reaches the probing form of the
-  check
+- An author following any of the three pre-work authoring skills — write-prd,
+  write-techspec, write-tasks — reaches the probing form of the check
+- The terminal QA gate's own precondition stays non-probing, and the skill says
+  why the difference exists. A gate that probed would report every completed
+  Task vacuous and refuse every finished graph
 - A clean verdict from the non-probing form states its own coverage on the
   verdict line, and the replaced trailing note is gone
 - A clean verdict from the probing form states that the commands ran
