@@ -1934,7 +1934,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		}
 		return "", "", fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, err)
 	}
-	reportPath, err = engine.writeMechanicalQAReport(plan, mechanicalResult)
+	reportPath, err = engine.writeMechanicalQAReport(ctx, plan, mechanicalResult)
 	if err != nil {
 		return "", "", fmt.Errorf("materialize QA mechanical result for run %q: %w", plan.RunID, err)
 	}
@@ -2196,8 +2196,10 @@ func mechanicalCommitPaths(ctx context.Context, repoRoot, sha string) ([]string,
 	return paths, nil
 }
 
-func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.MechanicalResult) (string, error) {
-	evidence := spec.ResolveAuditorEvidence(context.Background(), plan.WorkDir, app.Auditor())
+func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan, result speccheck.MechanicalResult) (string, error) {
+	// The Git subprocesses this resolves through must die with the QA Run;
+	// context.Background() here outlived a cancelled gate.
+	evidence := spec.ResolveAuditorEvidence(ctx, plan.WorkDir, app.Auditor())
 	content, err := mechanicalQAReportContent(result, evidence)
 	if err != nil {
 		return "", err

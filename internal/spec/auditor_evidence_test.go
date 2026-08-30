@@ -22,6 +22,10 @@ func initEvidenceRepo(t *testing.T) string {
 		{"init", "--initial-branch=main"},
 		{"config", "user.email", "evidence@example.test"},
 		{"config", "user.name", "Evidence"},
+		// A developer with global commit signing on would otherwise have this
+		// fixture prompt or fail; the repository disables it in every other
+		// Git fixture for the same reason.
+		{"config", "commit.gpgsign", "false"},
 	} {
 		command := exec.Command("git", append([]string{"-C", root}, args...)...)
 		if output, err := command.CombinedOutput(); err != nil {

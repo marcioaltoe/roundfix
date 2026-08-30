@@ -784,7 +784,7 @@ func TestRefusedReportDoesNotBlockItsSuccessor(t *testing.T) {
 			runGitForTest(t, fixture.gitRoot, "add", "-A")
 			runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "initial")
 
-			reportPath, err := engine.writeMechanicalQAReport(plan, test.result)
+			reportPath, err := engine.writeMechanicalQAReport(context.Background(), plan, test.result)
 			if err != nil {
 				t.Fatalf("writeMechanicalQAReport() error = %v", err)
 			}
@@ -1119,7 +1119,7 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 		runGitForTest(t, fixture.gitRoot, "add", "-A")
 		runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "initial")
 
-		reportPath, err := engine.writeMechanicalQAReport(plan, result)
+		reportPath, err := engine.writeMechanicalQAReport(context.Background(), plan, result)
 		if err != nil {
 			t.Fatalf("writeMechanicalQAReport() error = %v", err)
 		}
@@ -1331,7 +1331,7 @@ func TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport(t *testing.
 	engine := &Engine{deps: Dependencies{Now: func() time.Time { return now }}}
 	plan := TaskPlan{WorkDir: repoRoot, Spec: spec.Spec{Slug: taskCycleSlug, Dir: specDir}}
 
-	reportPath, err := engine.writeMechanicalQAReport(plan, speccheck.MechanicalResult{Blocking: true})
+	reportPath, err := engine.writeMechanicalQAReport(context.Background(), plan, speccheck.MechanicalResult{Blocking: true})
 
 	if err != nil {
 		t.Fatalf("writeMechanicalQAReport returned error: %v", err)
@@ -1358,7 +1358,7 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 		engine := &Engine{deps: Dependencies{Now: taskCycleNowForTest}}
 		plan := TaskPlan{WorkDir: repoRoot, Spec: spec.Spec{Slug: taskCycleSlug, Dir: specDir}}
 
-		reportPath, err := engine.writeMechanicalQAReport(plan, result)
+		reportPath, err := engine.writeMechanicalQAReport(context.Background(), plan, result)
 		if err != nil {
 			t.Fatalf("writeMechanicalQAReport returned error: %v", err)
 		}
