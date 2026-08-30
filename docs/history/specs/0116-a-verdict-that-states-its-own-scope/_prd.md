@@ -1,6 +1,7 @@
 ---
 spec: 0116-a-verdict-that-states-its-own-scope
-status: active
+status: archived
+archived: 2026-08-30
 created: 2026-08-26
 surfaces: [cli, docs]
 ---
