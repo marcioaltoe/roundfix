@@ -121,7 +121,7 @@ func TestResolveAuditorEvidence(t *testing.T) {
 		if err := os.MkdirAll(filepath.Dir(manifest), 0o755); err != nil {
 			t.Fatalf("create manifest directory: %v", err)
 		}
-		if err := os.WriteFile(manifest, []byte(`{"version":"9.9.9"}`), 0o644); err != nil {
+		if err := os.WriteFile(manifest, []byte(`{"name":"roundfix","version":"9.9.9"}`), 0o644); err != nil {
 			t.Fatalf("write manifest: %v", err)
 		}
 		commitEvidenceFile(t, root, "a.txt", "one\n")
@@ -133,6 +133,31 @@ func TestResolveAuditorEvidence(t *testing.T) {
 		}
 		if evidence.TreeVersion != "9.9.9" {
 			t.Fatalf("declared tree version = %q, want 9.9.9", evidence.TreeVersion)
+		}
+	})
+
+	t.Run("a manifest at the same path but another identity answers nothing", func(t *testing.T) {
+		t.Parallel()
+		// The path alone does not prove the tree is Roundfix. Comparing this
+		// binary's version against another package's manifest would answer a
+		// question nobody asked, and answer it with false confidence.
+		root := initEvidenceRepo(t)
+		manifest := filepath.Join(root, roundfixVersionManifest)
+		if err := os.MkdirAll(filepath.Dir(manifest), 0o755); err != nil {
+			t.Fatalf("create manifest directory: %v", err)
+		}
+		if err := os.WriteFile(manifest, []byte(`{"name":"some-other-package","version":"9.9.9"}`), 0o644); err != nil {
+			t.Fatalf("write manifest: %v", err)
+		}
+		commitEvidenceFile(t, root, "a.txt", "one\n")
+
+		evidence := ResolveAuditorEvidence(ctx, root, app.AuditingBinary{Version: "0.1.0"})
+
+		if evidence.TreeVersion != "" {
+			t.Fatalf("foreign-manifest tree version = %q, want empty", evidence.TreeVersion)
+		}
+		if evidence.Ancestry != app.AncestryUnknown {
+			t.Fatalf("foreign-manifest ancestry = %v, want %v", evidence.Ancestry, app.AncestryUnknown)
 		}
 	})
 

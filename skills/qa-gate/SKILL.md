@@ -59,6 +59,8 @@ defect; do not run the gate outside that node.
   ---
   verdict: fail
   rows_blocked_precondition: 1
+  auditing_binary: "<version-and-build-identity>"
+  auditor_staleness: "<state>: <reason>"
   rows_blocked_environment: 0
   rows_blocked_finding: 0
   rows_blocked_declared: 0

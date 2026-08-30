@@ -113,7 +113,7 @@ The universal Normative Clause that forbids changes to linter, formatter, and to
 _Avoid_: Tool preference, implicit permission, cleanup authorization
 
 **QA Report**:
-The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, and `auditor_staleness`, plus `rows_blocked_environment` and `rows_blocked_finding` counts in its frontmatter. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. Only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
+The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict, its Auditing Binary as `auditing_binary`, and `auditor_staleness`, plus `rows_blocked_environment`, `rows_blocked_finding`, and `rows_blocked_declared` counts in its frontmatter. A report recording a Precondition Refusal carries `rows_blocked_precondition` beside those counts, plus the `precondition_check` and `precondition_reason` keys that name the refusal; a gate that reached its matrix writes none of those three. Only the newest report in the directory is read by a later run's mechanical stage, so a superseded report blocks nothing.
 _Avoid_: Test report, QA log
 
 **Auditing Binary**:

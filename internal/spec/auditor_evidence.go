@@ -29,6 +29,12 @@ type AuditorEvidence struct {
 // declares no Roundfix version, so the version signal cannot answer there.
 var roundfixVersionManifest = filepath.Join("dist", "npm", "roundfix", "package.json")
 
+// roundfixManifestName is the identity the manifest must declare. A path alone
+// does not prove the tree is Roundfix, and comparing this binary's version
+// against a manifest that merely sits at the same path would answer a question
+// about some other package.
+const roundfixManifestName = "roundfix"
+
 // ResolveAuditorEvidence collects what the audited repository can say about the
 // auditing binary's age.
 //
@@ -112,9 +118,13 @@ func declaredRoundfixVersion(repoRoot string) string {
 		return ""
 	}
 	var manifest struct {
+		Name    string `json:"name"`
 		Version string `json:"version"`
 	}
 	if err := json.Unmarshal(content, &manifest); err != nil {
+		return ""
+	}
+	if strings.TrimSpace(manifest.Name) != roundfixManifestName {
 		return ""
 	}
 	return strings.TrimSpace(manifest.Version)
