@@ -61,6 +61,13 @@ type Result struct {
 	Skipped  []SkippedDetector `json:"skipped"`
 }
 
+// VerificationCoverage tells the renderer what the probe did, so a clean
+// verdict can state its own scope.
+type VerificationCoverage struct {
+	Ran      bool
+	Commands int
+}
+
 // PromoteGaps applies the strictness of `spec check --strict` to one result:
 // every candidate the checker could not settle becomes a contradiction. It is
 // exported because two callers must reach the same verdict from the same Spec
@@ -183,13 +190,17 @@ type jsonDocument struct {
 }
 
 // RenderText renders one result with every diagnostic location and fix.
-func RenderText(result Result) string {
+func RenderText(result Result, coverage VerificationCoverage) string {
 	var report strings.Builder
 	report.WriteString("Spec ")
 	report.WriteString(result.Slug)
 	report.WriteByte('\n')
 	if len(result.Findings) == 0 {
-		report.WriteString("No findings.\n")
+		if coverage.Ran {
+			fmt.Fprintf(&report, "No findings. Authored Verification commands executed: %d.\n", coverage.Commands)
+		} else {
+			report.WriteString("No findings. Authored Verification commands were not executed.\n")
+		}
 	}
 	for _, finding := range result.Findings {
 		report.WriteByte('[')

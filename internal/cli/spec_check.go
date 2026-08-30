@@ -469,7 +469,10 @@ func specCheckVerificationCommand(taskID string, verdict daemon.CommandVerdict) 
 
 func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerificationReport) string {
 	var report strings.Builder
-	report.WriteString(speccheck.RenderText(outcome.result))
+	report.WriteString(speccheck.RenderText(outcome.result, speccheck.VerificationCoverage{
+		Ran:      verification.Executed,
+		Commands: len(verification.Commands),
+	}))
 	if len(outcome.repairInputs) > 0 {
 		report.WriteString("Repair inputs:\n")
 		for _, input := range outcome.repairInputs {
@@ -481,7 +484,6 @@ func renderSpecCheckText(outcome specCheckOutcome, verification specCheckVerific
 		}
 	}
 	if !verification.Executed {
-		report.WriteString("Verification: not run (use --run-verification).\n")
 		return report.String()
 	}
 	fmt.Fprintf(&report, "Verification tree: %s\n", verification.Tree)

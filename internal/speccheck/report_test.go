@@ -280,11 +280,14 @@ func TestRenderResultTextAndJSON(t *testing.T) {
 	result := checkFixture(t, "tooling-unauthorized")
 	finding := requireFinding(t, result, speccheck.CodeToolingUnauthorized)
 
-	textReport := speccheck.RenderText(result)
+	textReport := speccheck.RenderText(result, speccheck.VerificationCoverage{Ran: true, Commands: 2})
 	for _, fragment := range []string{finding.Code, string(finding.Severity), finding.Summary, finding.Fix} {
 		if !strings.Contains(textReport, fragment) {
 			t.Errorf("text report does not contain %q:\n%s", fragment, textReport)
 		}
+	}
+	if strings.Contains(textReport, "Authored Verification commands") {
+		t.Fatalf("finding report contains clean-verdict coverage:\n%s", textReport)
 	}
 	for _, location := range finding.Where {
 		want := location.Path + ":" + strconv.Itoa(location.Line)
@@ -314,6 +317,46 @@ func TestRenderResultTextAndJSON(t *testing.T) {
 	}
 }
 
+func TestVerdictLineStatesProbeCoverage(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		coverage speccheck.VerificationCoverage
+		want     string
+	}{
+		{
+			name: "probe ran",
+			coverage: speccheck.VerificationCoverage{
+				Ran:      true,
+				Commands: 2,
+			},
+			want: "No findings. Authored Verification commands executed: 2.",
+		},
+		{
+			name:     "probe did not run",
+			coverage: speccheck.VerificationCoverage{},
+			want:     "No findings. Authored Verification commands were not executed.",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			report := speccheck.RenderText(speccheck.Result{Slug: "clean"}, tt.coverage)
+			lines := strings.Split(report, "\n")
+			if len(lines) < 2 {
+				t.Fatalf("RenderText() = %q, want a verdict line", report)
+			}
+			if lines[1] != tt.want {
+				t.Fatalf("verdict line = %q, want %q", lines[1], tt.want)
+			}
+		})
+	}
+}
+
 func TestRenderVocabularySkipDoesNotLookLikeFinding(t *testing.T) {
 	t.Parallel()
 
@@ -322,7 +365,7 @@ func TestRenderVocabularySkipDoesNotLookLikeFinding(t *testing.T) {
 		t.Fatalf("Skipped = %#v, want vocabulary detector skip", result.Skipped)
 	}
 
-	textReport := speccheck.RenderText(result)
+	textReport := speccheck.RenderText(result, speccheck.VerificationCoverage{})
 	if strings.Contains(textReport, speccheck.CodeVocabularyUndocumented) {
 		t.Fatalf("text skip masquerades as a %s finding:\n%s", speccheck.CodeVocabularyUndocumented, textReport)
 	}
@@ -340,7 +383,7 @@ func TestRenderVocabularySkipDoesNotLookLikeFinding(t *testing.T) {
 		t.Fatalf("JSON skip lost stable detector code: %s", jsonReport)
 	}
 
-	findingReport := speccheck.RenderText(checkFixture(t, "vocabulary-missing"))
+	findingReport := speccheck.RenderText(checkFixture(t, "vocabulary-missing"), speccheck.VerificationCoverage{})
 	if !strings.Contains(findingReport, "[error] "+speccheck.CodeVocabularyUndocumented+":") {
 		t.Fatalf("vocabulary finding lost its diagnostic code:\n%s", findingReport)
 	}
