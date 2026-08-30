@@ -34,13 +34,20 @@ Verify every deliverable of this Spec against the running commands.
 ## Outside evidence
 
 One acceptance row rests on evidence this Spec did not author. Three freshly
-decomposed Specs in `fluxus` passed `roundfix spec check <slug>` while carrying
-eleven authored Verification commands that could not fail — a repository this
-Spec did not build, measured before this Spec existed, recorded at
+decomposed Specs in `fluxus` passed `roundfix spec check <slug>` — the full
+unscoped sweep — while carrying **eight** authored Verification commands that
+could not fail: three naming a suite or file that already existed, five invoking
+the repository verification gate. A repository this Spec did not build, measured
+before this Spec existed, recorded at
 `references/2026-08-14-a-clean-checker-left-eight-vacuous-commands-standing.md`
 and provenanced in `references/_index.md`. The row records that this measurement
 is what establishes the requirement, rather than a rehearsal of the Spec's own
 premise.
+
+The same document records eleven vacuous commands measured in **this**
+repository while implementing Spec 0094. That number corroborates the class but
+is not outside evidence, and the row must not cite it as such — an earlier draft
+of this Task did, which is the attribution the gate caught as F-002.
 
 ## References
 
