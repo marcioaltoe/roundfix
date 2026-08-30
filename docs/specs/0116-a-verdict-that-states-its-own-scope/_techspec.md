@@ -101,8 +101,16 @@ Four existing components change; no package, layer, or directory is added.
 
 **The four authoring skills** name the Spec Consistency Check once each, except
 the QA gate skill which names it three times. None names `--run-verification`.
-Each instruction gains the probing form, and the skill that owns the
-Verification contract states what a clean non-probing verdict does not cover.
+
+The probing form goes to the three skills that run before the work exists —
+`write-prd`, `write-techspec`, `write-tasks` — because that is the only moment
+its question is answerable. The QA gate keeps the non-probing form at its
+precondition: it runs after every Task is complete, so each completed Task's
+command passes and the probe reports it vacuous, which would refuse the gate for
+every Spec in the repository. The gate skill still gains the statement of what a
+clean non-probing verdict does not cover, because that statement is true wherever
+it is read; only the command it names is different.
+
 This is guidance, not code, and it is the only part of this Spec that reaches an
 author who never reads a diagnostic.
 

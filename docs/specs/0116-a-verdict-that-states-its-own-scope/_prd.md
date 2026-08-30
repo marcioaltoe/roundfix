@@ -93,10 +93,16 @@ reader is looking.
 
 ## Core Features
 
-1. **The authoring skills name the probing form of the check.** Every
-   Roundfix-owned authoring skill that instructs the author to run the Spec
-   Consistency Check names the form that runs the authored Verification
-   commands. The skill that owns the Verification contract states that a clean
+1. **The skills that run before the work name the probing form of the check.**
+   Every Roundfix-owned authoring skill that instructs an author to run the Spec
+   Consistency Check *while the work does not yet exist* names the form that
+   runs the authored Verification commands. The terminal QA gate is excluded and
+   keeps the non-probing form: the probe asks whether a command already passes
+   before its work exists, and the gate runs after every Task is complete, where
+   that question has no true answer and every completed command reports vacuous.
+   Measured on this Spec's own first Run, which applied the rule uniformly and
+   made the gate refuse at its precondition with five of six Tasks reported
+   vacuous. The skill that owns the Verification contract states that a clean
    verdict from the non-probing form does not cover the vacuity class, and stops
    describing the check's speed as a property the author should prefer, because
    that speed is a consequence of the omission.
