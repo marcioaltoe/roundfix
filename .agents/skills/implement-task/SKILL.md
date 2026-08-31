@@ -94,6 +94,11 @@ editing it.
 
 - Build a checklist from Requirements + Acceptance Criteria.
 - Capture the pre-change signal that proves the task is _not yet_ done — the failing test, the missing behavior, the 404. Without a red starting point you cannot show your change is what turned things green.
+- **Characterization Tasks use the real boundary.** When the assigned Task is a
+  characterization Task, exercise the named external surface and record what
+  the real thing does. Do not substitute a fake, mock, fixture, or inferred
+  behavior; the record is the boundary evidence that downstream Tasks may
+  rely on.
 
 ## 3. Implement
 

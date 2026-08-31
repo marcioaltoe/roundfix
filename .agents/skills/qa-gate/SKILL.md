@@ -177,6 +177,15 @@ preserve older reports as history.
 Read the Pull Request fact in the Roundfix QA prompt before planning Pull
 Request journeys:
 
+The Pull Request row uses the equivalent-evidence path by default. Under
+ADR-0088, the authored gate runs before an Open Pull Request exists, so Specs
+must not pay to rediscover that arrangement. Keep the row in the matrix and
+record the equivalent observed or supervised evidence it accepts — such as
+the head, ancestry, changed files, and local checks — alongside the row's
+environment cause. Never silently pass or omit the row. Without recorded
+equivalent evidence, it remains blocked and the gate follows ADR-0080's
+existing verdict rule.
+
 - When the fact names an Open Pull Request, those journeys are runnable.
   Observe that Pull Request read-only through the existing `gh` and Review
   Source boundaries. Check approval, checks and status evidence, unresolved

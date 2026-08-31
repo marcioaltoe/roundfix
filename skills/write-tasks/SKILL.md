@@ -79,6 +79,12 @@ by each Task file. The preflight never moves either responsibility.
 
 - **Vertical slices.** Each task delivers a narrow but complete path through every layer it touches, demoable or verifiable on its own — a tracer bullet, not a layer ("all the schemas" is a wrong task; "expired imports retry and surface their status" is a right one).
 - **Prefactoring first.** When a slice needs the ground prepared, make that its own leading task: make the change easy, then make the easy change.
+- **Characterize external surfaces during authoring.** When a Spec crosses an
+  external surface such as an adapter, contract, or database, author a
+  characterization Task that records what the real boundary does, not what a
+  fake does. Put that Task before the Tasks whose premises depend on the
+  boundary, so an unsupported premise fails while the Spec is still being
+  authored rather than at the QA gate.
 - **Sized for one fresh session.** A task an agent can complete in a single sitting with a fresh context. More than ~7 subtasks or files means split it.
 - **Tests embedded, never separated.** Every task's acceptance criteria include its own tests; a trailing "write the tests" task means the earlier tasks were never done.
 - **Independently implementable.** Once its `needs` are completed, a task must require no other unfinished work — that's what allows parallel execution across worktrees later.

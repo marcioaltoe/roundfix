@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: docs
 ---
 
@@ -55,3 +55,44 @@ path fails this Task; stop before mutating one.
 
 ## Verification
 - `grep -qi "characteriz" .agents/skills/write-tasks/SKILL.md || exit 1; grep -qi "characteriz" skills/write-tasks/SKILL.md || exit 1; grep -qi "pull request row" .agents/skills/qa-gate/SKILL.md || exit 1; grep -qi "characteriz" .agents/skills/implement-task/SKILL.md || exit 1; go test -count=1 -tags docscontract ./internal/docscontract && go test -count=1 ./skills`
+
+## Result
+
+Implemented the bounded guidance changes:
+
+- Task authoring now requires a characterization Task for a Spec that crosses
+  an external surface, records the real boundary's behavior, and precedes
+  dependent Tasks in `.agents/skills/write-tasks/SKILL.md`.
+- Task execution now requires a characterization Task to exercise and record
+  the real boundary rather than a fake, mock, fixture, or inferred behavior in
+  `.agents/skills/implement-task/SKILL.md`.
+- The QA gate now applies the equivalent-evidence path to the Pull Request row
+  by default, keeps the row in the matrix, records its environment cause and
+  evidence, and leaves it blocked without recorded equivalent evidence in
+  `.agents/skills/qa-gate/SKILL.md`.
+- `rtk make skills-sync` regenerated the three corresponding `skills/` copies;
+  each canonical/mirror pair is byte-identical.
+
+Focused checks:
+
+- `rtk make skills-sync`: passed.
+- `rtk make baseline-digests`: passed; reported `ok:true` and `changed:false`.
+- `rtk make skills-sync-check`: passed; the shipped skill checks reported
+  `ok roundfix/skills`.
+- `rtk git diff --check`: passed.
+- Canonical clause presence check: passed for the characterization clauses and
+  the Pull Request row clause.
+- The post-edit changed-path inspection found only the six authorized skill
+  paths plus this assigned Task file; the existing `status: in_progress` edit
+  was preserved. No other Task file or `_tasks.md` was changed.
+
+The delivered skill text agrees with the referenced Build Order and ADR
+behavior; no TechSpec correction was needed or authorized in this slice.
+
+The Task's declared Verification commands were not run; they remain for the
+Daemon's Verification and settlement.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260831T183328Z_c381ee928ef8acd5`
+- Source commit: `d7fa490cff6eb58dd669dd07b6b7e55ae7371a21`
