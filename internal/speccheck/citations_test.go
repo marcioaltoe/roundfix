@@ -313,6 +313,21 @@ func TestCitationAcceptsWrittenForms(t *testing.T) {
 		})
 	}
 
+	t.Run("a four-digit year in the obligations row is not a decision number", func(t *testing.T) {
+		t.Parallel()
+
+		// Accepting every four-digit token made prose like "granted 2026" cite
+		// ADR-2026 and suppress SC-ADR-UNLISTED, so the checker reported less
+		// coverage than it appeared to. Decision numbers are zero-padded; years
+		// are not.
+		repoRoot := writeWrittenCitationFixture(t, "ADR-0026 applies, granted 2026 and still active", "ADR-0026 and ADR-0029 are cited.")
+		result := checkWrittenCitationFixture(t, repoRoot)
+		findings := findingsWithCode(result, speccheck.CodeADRUnlisted)
+		if len(findings) != 1 {
+			t.Fatalf("%s findings = %#v, want ADR-0029 unlisted rather than a year absorbing it", speccheck.CodeADRUnlisted, findings)
+		}
+	})
+
 	t.Run("bare decision number outside obligations is not a citation", func(t *testing.T) {
 		t.Parallel()
 

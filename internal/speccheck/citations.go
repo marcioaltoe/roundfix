@@ -57,13 +57,18 @@ var (
 	adrFilenamePattern     = regexp.MustCompile(`^([0-9]{4})-.*\.md$`)
 	findingFilenamePattern = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}-.+\.md$`)
 	adrCitationPattern     = regexp.MustCompile(`\bADR-([0-9]{4})\b`)
-	decisionNumberPattern  = regexp.MustCompile(`\b([0-9]{4})\b`)
-	adrAttributionPattern  = regexp.MustCompile(`(?i)\bADR-([0-9]{4})\s+(?:already\s+)?(?:makes?|establish(?:es|ed)?|requires?|keeps?|has|places?|puts?|says?)\s+`)
-	citationWordPattern    = regexp.MustCompile(`[a-z0-9]+`)
-	inactiveStatusPattern  = regexp.MustCompile(`(?im)^\s*(?:\*\*)?status(?:\*\*)?:\s*(?:proposed|rejected|deprecated|superseded)\b`)
-	featureRefPattern      = regexp.MustCompile(`(?i)\bCore Features?\s+`)
-	storyRefPattern        = regexp.MustCompile(`(?i)\b(?:User )?(?:Story|Stories)\s+`)
-	numberedItemPattern    = regexp.MustCompile(`^\s*([0-9]+)\.\s+`)
+	// A bare decision number is zero-padded, which is what separates it from a
+	// four-digit year in the same prose. Accepting every four-digit token made
+	// "applicable in 2026" cite ADR-2026 and suppress SC-ADR-UNLISTED, turning a
+	// checker into one that reports less than it appears to. Revisit if decision
+	// numbering ever reaches 1000.
+	decisionNumberPattern = regexp.MustCompile(`\b(0[0-9]{3})\b`)
+	adrAttributionPattern = regexp.MustCompile(`(?i)\bADR-([0-9]{4})\s+(?:already\s+)?(?:makes?|establish(?:es|ed)?|requires?|keeps?|has|places?|puts?|says?)\s+`)
+	citationWordPattern   = regexp.MustCompile(`[a-z0-9]+`)
+	inactiveStatusPattern = regexp.MustCompile(`(?im)^\s*(?:\*\*)?status(?:\*\*)?:\s*(?:proposed|rejected|deprecated|superseded)\b`)
+	featureRefPattern     = regexp.MustCompile(`(?i)\bCore Features?\s+`)
+	storyRefPattern       = regexp.MustCompile(`(?i)\b(?:User )?(?:Story|Stories)\s+`)
+	numberedItemPattern   = regexp.MustCompile(`^\s*([0-9]+)\.\s+`)
 )
 
 const (

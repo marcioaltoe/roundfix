@@ -83,8 +83,16 @@ func ReloadTask(specsRoot string, task *Task) error {
 // sequence, then accepts only the exact passing verdict from the newest one.
 // The command is rendered into the Task file so readers can see the contract,
 // but changing that rendered command does not change the effective contract.
+// shellSingleQuoted renders one shell word that survives sh -c verbatim. The
+// derived command interpolates a Spec slug, and a slug is a directory name
+// rather than a validated identifier, so an unquoted one carrying `;` or a
+// quote would change which command runs.
+func shellSingleQuoted(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
+}
+
 func DerivedQAVerification(slug string) []string {
-	reportDir := filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa"))
+	reportDir := shellSingleQuoted(filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa")))
 	command := `newest="$(find ` + reportDir + ` -type f -name "qa-report-*.md" -print 2>/dev/null | ` +
 		`awk "{ report=\$0; name=\$0; parts=split(name, path, \"/\"); name=path[parts]; name=substr(name, 11, length(name)-13); ` +
 		`date=substr(name, 1, 10); suffix=substr(name, 11); ` +

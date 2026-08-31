@@ -369,8 +369,15 @@ func TestReloadTaskDerivesOnlyQAVerification(t *testing.T) {
 			gitRoot := t.TempDir()
 			specsRoot := defaultSpecsRoot(gitRoot)
 			relFile := filepath.Join(slug, "task_01.md")
-			verification := md("## Verification\n\n- '" + tt.verification + "'\n")
-			writeFile(t, filepath.Join(specsRoot, relFile), taskFixture("task_01", "Fixture", "pending", tt.taskType, verification))
+			// Built here rather than through taskFixture, which routes its
+			// whole body through md() and rewrites every single quote into a
+			// backtick. The derived command carries single quotes now that the
+			// Spec path is shell-quoted, so that helper would corrupt the very
+			// command under test.
+			content := "---\ntask: task_01\nspec: demo\nstatus: pending\ntype: " + tt.taskType +
+				"\ncomplexity: low\n---\n\n# Task 01: Fixture\n\n## Overview\n\nFixture task.\n\n" +
+				"## Verification\n\n- `" + tt.verification + "`\n"
+			writeFile(t, filepath.Join(specsRoot, relFile), content)
 
 			task := &Task{ID: "task_01", File: relFile}
 			if err := ReloadTask(specsRoot, task); err != nil {
@@ -611,5 +618,45 @@ func TestReloadTaskReportsBrokenAgentEdits(t *testing.T) {
 			}
 			tt.check(t, err)
 		})
+	}
+}
+
+func TestDerivedQAVerificationQuotesTheSpecPath(t *testing.T) {
+	t.Parallel()
+	// The slug reaches this command from a directory name, not from a validated
+	// identifier, and the command runs under sh -c. An unquoted slug carrying a
+	// separator or a quote would change which command runs.
+	for _, testCase := range []struct {
+		name string
+		slug string
+	}{
+		{name: "command separator", slug: "demo; touch owned"},
+		{name: "single quote", slug: "demo'x"},
+		{name: "command substitution", slug: "demo$(touch owned)"},
+		{name: "backtick substitution", slug: "demo`touch owned`"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			command := DerivedQAVerification(testCase.slug)[0]
+			quoted := shellSingleQuoted(filepath.ToSlash(filepath.Join("docs", "specs", testCase.slug, "qa")))
+			if !strings.Contains(command, quoted) {
+				t.Fatalf("derived command does not carry the quoted path %q", quoted)
+			}
+			if strings.Contains(command, "find "+filepath.ToSlash(filepath.Join("docs", "specs", testCase.slug, "qa"))+" ") {
+				t.Fatalf("derived command interpolates the slug unquoted: %q", command)
+			}
+		})
+	}
+}
+
+func TestShellSingleQuotedSurvivesEmbeddedQuotes(t *testing.T) {
+	t.Parallel()
+	if got := shellSingleQuoted("plain"); got != "'plain'" {
+		t.Fatalf("shellSingleQuoted(plain) = %q", got)
+	}
+	// A single quote closes the word, escapes, and reopens it, so the shell
+	// still reads one argument.
+	if got := shellSingleQuoted("a'b"); got != `'a'\''b'` {
+		t.Fatalf("shellSingleQuoted(a'b) = %q", got)
 	}
 }
