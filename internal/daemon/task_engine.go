@@ -2281,7 +2281,7 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.
 	var content bytes.Buffer
 	content.WriteString("---\n")
 	verdict := spec.VerdictPass
-	if result.Blocking {
+	if result.Blocking || len(result.Findings) > 0 || len(result.RepairFailures) > 0 {
 		verdict = spec.VerdictFail
 	}
 	fmt.Fprintf(&content, "verdict: %s\n", verdict)

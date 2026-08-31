@@ -185,6 +185,11 @@ func invertedExitVerificationCommand(command string) (invertedExitForm, bool) {
 // undeclared environment state or a path outside the repository. A path first
 // created by the same command is command-local state and remains permitted.
 func NonHermeticVerification(task spec.Task) []Finding {
+	// A qa Task's effective command is supplied by Roundfix, not authored by
+	// the Task, so authoring-policy checks do not govern it.
+	if task.Type == spec.TaskTypeQA {
+		return nil
+	}
 	var findings []Finding
 	createdPaths := make(map[string]bool)
 	for _, command := range task.Verification {

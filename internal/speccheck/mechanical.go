@@ -474,8 +474,8 @@ func RunMechanicalStage(ctx context.Context, request MechanicalRequest) (Mechani
 		}
 	}
 
-	result.Blocking = len(result.Findings) > 0 || len(result.RepairFailures) > 0
-	materializeBlockedRows(&result)
+	materializeBlockedRows(&result, report.rows)
+	result.Blocking = mechanicalResultBlocksMatrix(result, report.rows)
 	return result, nil
 }
 
@@ -1919,22 +1919,65 @@ func addMechanicalSkip(result *MechanicalResult, detector, missing string) {
 	result.Skips = append(result.Skips, MechanicalSkip{Detector: detector, MissingArtifact: missing})
 }
 
-func materializeBlockedRows(result *MechanicalResult) {
+// BlockedRows returns the matrix rows this finding explicitly names.
+func (finding MechanicalFinding) BlockedRows() []string {
+	rowID := strings.TrimSpace(finding.RowHint)
+	if rowID == "" {
+		return nil
+	}
+	return []string{rowID}
+}
+
+func materializeBlockedRows(result *MechanicalResult, matrix []mechanicalReportRow) {
+	matrixRows := make(map[string]bool, len(matrix))
+	for _, row := range matrix {
+		matrixRows[strings.TrimSpace(row.id)] = true
+	}
+
 	seen := make(map[string]bool)
 	for _, finding := range result.Findings {
-		rowID := strings.TrimSpace(finding.RowHint)
-		if rowID == "" {
-			rowID = finding.Code
+		rows := finding.BlockedRows()
+		if len(rows) == 0 && len(matrix) == 0 {
+			rows = []string{finding.Code}
 		}
-		key := rowID + "\x00" + finding.Code
-		if seen[key] {
-			continue
+		for _, rowID := range rows {
+			rowID = strings.TrimSpace(rowID)
+			if rowID == "" || len(matrix) > 0 && !matrixRows[rowID] {
+				continue
+			}
+			key := rowID + "\x00" + finding.Code
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			result.Blocked = append(result.Blocked, BlockedRow{
+				ID:          rowID,
+				FindingCode: finding.Code,
+				WaitingOn:   finding.Detail,
+			})
 		}
-		seen[key] = true
-		result.Blocked = append(result.Blocked, BlockedRow{
-			ID:          rowID,
-			FindingCode: finding.Code,
-			WaitingOn:   finding.Detail,
-		})
 	}
+}
+
+func mechanicalResultBlocksMatrix(result MechanicalResult, matrix []mechanicalReportRow) bool {
+	if result.PreconditionRefused || len(result.RepairFailures) > 0 {
+		return true
+	}
+	if len(result.Findings) == 0 {
+		return false
+	}
+	if len(matrix) == 0 {
+		return true
+	}
+
+	blocked := make(map[string]bool, len(result.Blocked))
+	for _, row := range result.Blocked {
+		blocked[row.ID] = true
+	}
+	for _, row := range matrix {
+		if !blocked[strings.TrimSpace(row.id)] {
+			return false
+		}
+	}
+	return true
 }

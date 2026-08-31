@@ -1315,15 +1315,17 @@ func detectTaskCoverageAndContextReferences(
 				finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
 				result.Findings = append(result.Findings, finding)
 			}
-			form, matched := nonHermeticVerificationCommand(command, createdPaths)
-			if matched {
-				finding := nonHermeticFinding(task.File, command, form)
-				finding.Where[0] = Location{
-					Path: artifactDisplayPath(repoRoot, taskPath),
-					Line: sectionLineContaining(content, "Verification", command),
+			if task.Type != spec.TaskTypeQA {
+				form, matched := nonHermeticVerificationCommand(command, createdPaths)
+				if matched {
+					finding := nonHermeticFinding(task.File, command, form)
+					finding.Where[0] = Location{
+						Path: artifactDisplayPath(repoRoot, taskPath),
+						Line: sectionLineContaining(content, "Verification", command),
+					}
+					finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+					result.Findings = append(result.Findings, finding)
 				}
-				finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
-				result.Findings = append(result.Findings, finding)
 			}
 		}
 		for _, command := range VacuousVerificationCommands(task) {
