@@ -2,6 +2,64 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.10.0] - 2026-08-31
+
+A clean check no longer reports more coverage than it performed, and a QA
+Report names the Roundfix that produced it.
+
+### Added
+
+- **The authoring skills reach the Verification prober.** `--run-verification`
+  appeared zero times across every shipped skill, so an author following the
+  guidance ran the form of the Spec Consistency Check that never executes the
+  authored Verification commands, and a command that cannot fail survived to a
+  Run. The three skills that run before the work — `write-prd`,
+  `write-techspec`, `write-tasks` — now name the probing form.
+
+  The terminal QA gate deliberately does not. The probe asks whether a command
+  already passes before its work exists, and the gate runs after every Task is
+  complete, where that question has no true answer and every completed command
+  reports vacuous. Measured while delivering this change: applied uniformly, it
+  refused the gate with five of six Tasks reported vacuous, and would have
+  refused every finished graph in the repository.
+
+- **A clean verdict states its own coverage.** `No findings.` now carries
+  whether the authored Verification commands ran, on the verdict line rather
+  than in a trailing note printed after the skipped-detector list — past where a
+  reader stops. Commands the probe could not execute are counted and named
+  separately from those it ran.
+
+- **A QA Report records its Auditing Binary.** The report carries the version
+  and build identity of the Roundfix that produced the verdict, distinct from
+  the commit of the tree it audited, so a finding can be attributed to a named
+  auditor. Staleness is reported beside it as `current`, `stale`, or `unknown`,
+  with the reason that answered.
+
+  Age is resolved from commit ancestry for a stamped build and from the tree's
+  declared version otherwise, and only when the audited tree is the repository
+  the binary was built from. Auditing an adopting repository answers `unknown`
+  by design: a Roundfix build commit is not an object in that tree, and
+  comparing it against history it never belonged to would be worse than saying
+  nothing. Nothing branches on staleness — the condition is recorded, never
+  enforced.
+
+### Fixed
+
+- **Every QA Report producer records the auditor**, not only the
+  precondition-refusal writer. The Daemon's report materialization and the
+  gate's own template both carry the keys, so the ordinary report a maintainer
+  reads names its auditor instead of leaving the gate to fill it by hand.
+
+- **The staleness field has one shape.** Some reasons prefixed their own state
+  and some did not, and both writers discarded the state, so the same condition
+  was recorded as `stale: commit ancestry: ...` in one report and
+  `commit ancestry: ...` in another. One composition now owns the field.
+
+- **A version is read only from a manifest that identifies itself.** The tree
+  version was resolved by file path alone, so any repository carrying a file at
+  that path would have had its version compared against the running binary,
+  reporting an age about an unrelated package.
+
 ## [0.9.0] - 2026-08-30
 
 Work a Run already proved is no longer executed a second time to reach the same
@@ -572,6 +630,7 @@ time, together with the work that followed it.
 Earlier release sections are intentionally omitted from the restarted
 changelog. Git history remains the source for prior implementation history.
 
+[0.10.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.10.0
 [0.9.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.9.0
 [0.8.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.8.0
 [0.7.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.7.0
