@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -42,3 +42,46 @@ detectors at once, so no `qa` Task can be authored at all.
 
 ## Verification
 - `grep -q "TestDerivedQAVerificationPassesTheChecker" internal/spec/task_test.go || exit 1; go test -count=1 ./internal/spec ./internal/speccheck && go test -count=1 -tags docscontract ./internal/docscontract`
+
+## Result
+
+Implementation:
+
+- `DerivedQAVerification` now obtains the report basename by splitting on `/`
+  and validates filenames and verdict whitespace with string operations. The
+  generated command contains no slash-leading awk regex token for the
+  hermeticity checker to misclassify.
+- The command still parses calendar dates, leap years, and numeric rerun
+  sequences before sorting. The existing selection cases now also cover a
+  malformed rerun suffix, a non-digit date, and surrounding verdict whitespace.
+- `task_06.md` carries the corrected derived command.
+- `TestDerivedQAVerificationPassesTheChecker` exercises the real Task-stage
+  checker through its existing `internal/speccheck` suite. The checker-side
+  fixture verifies both that the command is independently hermetic and that a
+  `qa` Task carrying it has neither `SC-QA-VERIFICATION-AUTHORED` nor
+  `SC-VERIFY-NON-HERMETIC` findings.
+- `SC-VERIFY-NON-HERMETIC` implementation code was not changed. This slice
+  introduced, changed, or retired no glossary term, so `CONTEXT.md` needs no
+  update.
+
+Focused checks:
+
+- Before the generator change,
+  `rtk env GOCACHE=/private/tmp/roundfix-task07-go-cache go test -count=1 ./internal/spec -run '^TestDerivedQAVerificationPassesTheChecker$'`
+  failed because the checker classified `/^.*\\/qa-report-/` as an external
+  path. This reproduced the missing contract at the named seam.
+- After the change,
+  `rtk env GOCACHE=/private/tmp/roundfix-task07-go-cache go test -count=1 ./internal/spec -run '^TestDerivedQAVerification(RequiresTheNewestReportToPass|PassesTheChecker)$'`
+  passed. This covers checker acceptance, parsed date and sequence ordering,
+  verdict-domain enforcement, malformed names, and missing reports.
+- `rtk env GOCACHE=/private/tmp/roundfix-task07-go-cache go test -count=1 -tags docscontract ./internal/docscontract -run '^TestCheckActiveCorpusHasNoErrors$'`
+  passed after `task_06.md` was re-rendered. This checks the corrected command
+  against the active Spec corpus without running the Task's declared
+  Verification sequence.
+
+The Daemon-owned Verification command was not run in this Agent turn.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260831T183328Z_c381ee928ef8acd5`
+- Source commit: `75339d0f6c469f8c892a802f382de9c23a82aabf`

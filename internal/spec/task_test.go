@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -209,6 +210,12 @@ func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
 			},
 		},
 		{
+			name: "passing verdict permits surrounding whitespace",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "\tpass \r",
+			},
+		},
+		{
 			name: "newer failed rerun defeats older pass",
 			reports: map[string]string{
 				"qa-report-2026-08-31.md":    "pass",
@@ -230,6 +237,14 @@ func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
 				"qa-report-2026-08-31-02.md": "fail",
 				"qa-report-2026-08-31-10.md": "pass",
 			},
+		},
+		{
+			name: "malformed rerun loses to an unsuffixed report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md":         "fail",
+				"qa-report-2026-08-31-ffd6852.md": "pass",
+			},
+			wantErr: true,
 		},
 		{
 			name: "partial is outside the passing domain",
@@ -261,6 +276,14 @@ func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "non-digit date loses to a valid report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "fail",
+				"qa-report-202A-08-31.md": "pass",
+			},
+			wantErr: true,
+		},
+		{
 			name:    "missing report",
 			wantErr: true,
 		},
@@ -283,6 +306,26 @@ func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
 				t.Fatalf("derived QA Verification error = %v, wantErr %v; output: %s", err, tt.wantErr, output)
 			}
 		})
+	}
+}
+
+func TestDerivedQAVerificationPassesTheChecker(t *testing.T) {
+	_, testFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller could not locate the repository")
+	}
+	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(testFile), "..", ".."))
+
+	// internal/speccheck imports internal/spec, so run the checker-side
+	// integration test in a subprocess instead of introducing an import cycle.
+	command := exec.Command(
+		"go", "test", "-count=1", "./internal/speccheck",
+		"-run", "^TestDerivedQAVerificationIsAcceptedByTaskStageChecker$",
+	)
+	command.Dir = repoRoot
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("derived QA Verification checker contract: %v\n%s", err, output)
 	}
 }
 

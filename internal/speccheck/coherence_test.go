@@ -256,6 +256,75 @@ type: qa
 	}
 }
 
+func TestDerivedQAVerificationIsAcceptedByTaskStageChecker(t *testing.T) {
+	t.Parallel()
+
+	const slug = "derived-qa-verification"
+	derived := spec.DerivedQAVerification(slug)
+	if len(derived) != 1 {
+		t.Fatalf("DerivedQAVerification() = %q, want one command", derived)
+	}
+
+	// Exercise the hermeticity classifier without the qa exemption first. This
+	// keeps the generated command valid even when it is reused or inspected in
+	// isolation.
+	if findings := speccheck.NonHermeticVerification(spec.Task{
+		File:         slug + "/task_01.md",
+		Verification: derived,
+	}); len(findings) != 0 {
+		t.Fatalf("derived QA Verification hermeticity findings = %#v, want none", findings)
+	}
+
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", `---
+spec: derived-qa-verification
+status: active
+created: 2026-08-31
+surfaces: [backend]
+---
+
+# Derived QA Verification fixture
+`)
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_tasks.md", `---
+schema: spec-tasks/v1
+spec: derived-qa-verification
+qa: task_01
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+---
+`)
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/task_01.md", `---
+task: task_01
+spec: derived-qa-verification
+status: pending
+type: qa
+---
+
+# Task 01: QA gate
+
+## Verification
+
+- `+"`"+derived[0]+"`"+`
+`)
+
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks): %v", err)
+	}
+	for _, code := range []string{
+		speccheck.CodeQAVerificationAuthored,
+		speccheck.CodeVerifyNonHermetic,
+	} {
+		if findings := findingsWithCode(result, code); len(findings) != 0 {
+			t.Errorf("StageTasks %s findings = %#v, want none", code, findings)
+		}
+	}
+}
+
 func TestContradictoryRequirementsRefusesSameNamedSubject(t *testing.T) {
 	t.Parallel()
 
