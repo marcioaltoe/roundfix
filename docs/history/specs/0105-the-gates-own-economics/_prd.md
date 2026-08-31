@@ -1,6 +1,7 @@
 ---
 spec: 0105-the-gates-own-economics
-status: active
+status: archived
+archived: 2026-08-31
 created: 2026-08-12
 surfaces: [backend, docs]
 ---
