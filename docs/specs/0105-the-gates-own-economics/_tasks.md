@@ -19,9 +19,12 @@ graph:
     - id: task_05
       file: task_05.md
       needs: [task_07]
+    - id: task_08
+      file: task_08.md
+      needs: [task_05]
     - id: task_06
       file: task_06.md
-      needs: [task_05]
+      needs: [task_08]
 ---
 
 # Tasks — The gate's own economics
@@ -33,9 +36,10 @@ graph:
 | task_03 | The citation parser reads the written forms    | backend | medium     | task_02 |
 | task_07 | The derived Verification passes the checker     | backend | medium     | task_03 |
 | task_05 | Characterization, and the Pull Request row     | docs    | high       | task_07 |
-| task_06 | QA gate                                        | qa      | medium     | task_05 |
+| task_08 | The CLI fixtures build a qa seed correctly     | test    | medium     | task_05 |
+| task_06 | QA gate                                        | qa      | medium     | task_08 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_07 · 5 → task_05 · 6 → task_06
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_07 · 5 → task_05 · 6 → task_08 · 7 → task_06
 
 The chain is serial by two rules, not by logic.
 
@@ -61,6 +65,9 @@ task_07 is corrective, from this Spec's own first Run: the command
 `SC-QA-VERIFICATION-AUTHORED` demands is refused by `SC-VERIFY-NON-HERMETIC`,
 which reads an awk regex as an external path, so no `qa` Task could be authored.
 It is numbered after the gate but ordered before it; the graph, not the number,
-carries the topology. One corrective slot of the two remains unused.
+carries the topology. task_08 is the second, from QA finding F-001, and consequent rather than
+independent: the derived Verification made the CLI fixtures stale, so it lands
+after the change that caused it. Both corrective slots are now used; a third
+finding requires a sanctioned exit, not a third patch.
 
 Each Task's work, references, and Verification live in its own `task_NN.md`.
