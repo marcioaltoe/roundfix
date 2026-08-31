@@ -285,6 +285,103 @@ func TestCheckADRUnlisted(t *testing.T) {
 	}
 }
 
+func TestCitationAcceptsWrittenForms(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name        string
+		obligations string
+	}{
+		{
+			name:        "English conjunction separates decision numbers",
+			obligations: "0026, 0029 and 0031 are the active decisions",
+		},
+		{
+			name:        "Portuguese conjunction separates decision numbers",
+			obligations: "0026, 0029 e 0031 are the active decisions",
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			repoRoot := writeWrittenCitationFixture(t, tt.obligations, "ADR-0026, ADR-0029, and ADR-0031.")
+			result := checkWrittenCitationFixture(t, repoRoot)
+			if findings := findingsWithCode(result, speccheck.CodeADRUnlisted); len(findings) != 0 {
+				t.Fatalf("%s findings = %#v, want all written decision numbers listed", speccheck.CodeADRUnlisted, findings)
+			}
+		})
+	}
+
+	t.Run("bare decision number outside obligations is not a citation", func(t *testing.T) {
+		t.Parallel()
+
+		repoRoot := writeWrittenCitationFixture(t, "ADR-0026 is the active decision", "Decision 0029 was considered without a citation.")
+		result := checkWrittenCitationFixture(t, repoRoot)
+		if findings := findingsWithCode(result, speccheck.CodeADRUnlisted); len(findings) != 0 {
+			t.Fatalf("%s findings = %#v, want a bare number outside obligations ignored", speccheck.CodeADRUnlisted, findings)
+		}
+	})
+}
+
+func TestCitationFailureNamesTheRecognisedForm(t *testing.T) {
+	t.Parallel()
+
+	repoRoot := writeWrittenCitationFixture(t, "ADR-29 is malformed", "ADR-0029.")
+	result := checkWrittenCitationFixture(t, repoRoot)
+	finding := requireFinding(t, result, speccheck.CodeADRUnlisted)
+	if !strings.Contains(finding.Fix, "ADR-NNNN") {
+		t.Fatalf("fix = %q, want the recognised ADR-NNNN form", finding.Fix)
+	}
+}
+
+func writeWrittenCitationFixture(t *testing.T, obligations, body string) string {
+	t.Helper()
+
+	repoRoot := t.TempDir()
+	for _, source := range []string{
+		"docs/agents/agent-instructions.md",
+		"docs/agents/cli.md",
+		"docs/agents/domain.md",
+	} {
+		writeCitationFixtureFile(t, repoRoot, source, "# Fixture source\n")
+	}
+	for _, number := range []string{"0026", "0029", "0031"} {
+		writeCitationFixtureFile(t, repoRoot, "docs/adr/"+number+"-fixture-decision.md", "---\nstatus: accepted\n---\n\n# Fixture decision "+number+"\n")
+	}
+
+	const prdPrefix = `---
+spec: written-citations
+status: active
+---
+
+# Written citations
+
+## Project Constraints
+
+- Identifier strategy: not applicable — no persisted identity. Source: ` + "`docs/agents/domain.md`" + `.
+- Authentication and HTTP: not applicable — file reads only. Source: ` + "`docs/agents/cli.md`" + `.
+- Active ADR obligations: applicable — `
+	const prdSuffix = `. Source: ` + "`docs/agents/domain.md`" + `.
+- Tooling authority: not applicable — ordinary source only. Source: ` + "`docs/agents/agent-instructions.md`" + `.
+
+## References
+
+`
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/written-citations/_prd.md", prdPrefix+obligations+prdSuffix+body+"\n")
+	return repoRoot
+}
+
+func checkWrittenCitationFixture(t *testing.T, repoRoot string) speccheck.Result {
+	t.Helper()
+
+	result, err := speccheck.Check(filepath.Join(repoRoot, "docs", "specs"), repoRoot, "written-citations")
+	if err != nil {
+		t.Fatalf("Check(written-citations) error = %v", err)
+	}
+	return result
+}
+
 func TestCheckADRClosureDepthOne(t *testing.T) {
 	t.Parallel()
 

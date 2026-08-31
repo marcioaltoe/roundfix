@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -34,3 +34,41 @@ word of meaning, which is a correction round spent on punctuation.
 
 ## Verification
 - `grep -q "TestCitationAcceptsWrittenForms" internal/speccheck/citations_test.go || exit 1; grep -q "TestCitationFailureNamesTheRecognisedForm" internal/speccheck/citations_test.go || exit 1; go test -count=1 ./internal/speccheck`
+
+## Result
+
+Implementation:
+
+- The Active ADR obligations row now reads four-digit decision numbers with or
+  without an `ADR-` prefix. The exact-row boundary keeps bare-number recognition
+  out of prose, while token-based parsing accepts comma lists and both `and` and
+  `e` conjunctions.
+- An unlisted-citation finding now tells the author that `ADR-NNNN` is the
+  recognised form.
+
+Acceptance evidence:
+
+- `TestCitationAcceptsWrittenForms/English_conjunction_separates_decision_numbers`
+  and `Portuguese_conjunction_separates_decision_numbers` exercise `0026, 0029
+  and 0031` and `0026, 0029 e 0031` as three listed decisions.
+- `TestCitationAcceptsWrittenForms/bare_decision_number_outside_obligations_is_not_a_citation`
+  keeps a bare prose number outside the citation graph.
+- `TestCitationFailureNamesTheRecognisedForm` asserts that an unrecognised
+  obligations-row form reports `ADR-NNNN` in its fix.
+
+Focused checks:
+
+- Before the production change,
+  `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/speccheck -run 'TestCitation(AcceptsWrittenForms|FailureNamesTheRecognisedForm)$'`
+  failed with three `SC-ADR-UNLISTED` findings for each conjunction case and a
+  fix that omitted `ADR-NNNN`.
+- After the production change, the same focused command passed.
+- A final focused regression run,
+  `GOCACHE=/tmp/roundfix-task03-gocache go test -count=1 ./internal/speccheck -run 'Test(CheckADRUnlisted|CitationAcceptsWrittenForms|CitationFailureNamesTheRecognisedForm)$'`,
+  passed, including the existing prefixed-citation behavior.
+- The Daemon-owned `## Verification` command was not run during implementation.
+
+## Carry-forward provenance
+
+- Source Run: `run_20260831T171256Z_df3674a688059467`
+- Source commit: `5ba017a2cc9f7324b7f2d01de34aed973d6c36df`
