@@ -1285,6 +1285,14 @@ func detectTaskCoverageAndContextReferences(
 		if task.Status == spec.StatusCompleted {
 			continue
 		}
+		if finding, ok := AuthoredQAVerification(task); ok {
+			finding.Where[0] = Location{
+				Path: artifactDisplayPath(repoRoot, taskPath),
+				Line: sectionLineContaining(content, "Verification", "`"),
+			}
+			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+			result.Findings = append(result.Findings, finding)
+		}
 		if finding, ok := WorkIndependentVerification(task); ok {
 			finding.Where[0] = Location{
 				Path: artifactDisplayPath(repoRoot, taskPath),

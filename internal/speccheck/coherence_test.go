@@ -201,6 +201,61 @@ func TestCoherenceFindingsRetainDeclarationSourceLines(t *testing.T) {
 	}
 }
 
+func TestAuthoredQAVerificationIsRefusedByTaskName(t *testing.T) {
+	t.Parallel()
+
+	const slug = "authored-qa-verification"
+	repoRoot := t.TempDir()
+	specsRoot := filepath.Join(repoRoot, "docs", "specs")
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", `---
+spec: authored-qa-verification
+status: active
+created: 2026-08-31
+surfaces: [backend]
+---
+
+# Authored QA Verification fixture
+`)
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_tasks.md", `---
+schema: spec-tasks/v1
+spec: authored-qa-verification
+qa: task_01
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+---
+`)
+	writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/task_01.md", `---
+task: task_01
+spec: authored-qa-verification
+status: pending
+type: qa
+---
+
+# Task 01: QA gate
+
+## Verification
+
+- `+"`grep -q \"^verdict: partial$\" docs/specs/authored-qa-verification/qa/qa-report-old.md`"+`
+`)
+
+	result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+	if err != nil {
+		t.Fatalf("CheckStage(StageTasks): %v", err)
+	}
+	findings := findingsWithCode(result, speccheck.CodeQAVerificationAuthored)
+	if len(findings) != 1 {
+		t.Fatalf("%s findings = %#v, want one", speccheck.CodeQAVerificationAuthored, findings)
+	}
+	for _, want := range []string{"task_01.md", "qa Task task_01", "authored Verification"} {
+		if !strings.Contains(findings[0].Summary, want) {
+			t.Errorf("finding summary = %q, want %q", findings[0].Summary, want)
+		}
+	}
+}
+
 func TestContradictoryRequirementsRefusesSameNamedSubject(t *testing.T) {
 	t.Parallel()
 

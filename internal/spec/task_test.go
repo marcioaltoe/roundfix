@@ -3,6 +3,7 @@ package spec
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -181,6 +182,164 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 	}
 	if len(task.Needs) != 1 || task.Needs[0] != "task_00" {
 		t.Errorf("Needs = %v, want the manifest-owned value untouched", task.Needs)
+	}
+}
+
+func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
+	t.Parallel()
+
+	const slug = "derived-qa-verification"
+	commands := DerivedQAVerification(slug)
+	if len(commands) != 1 {
+		t.Fatalf("DerivedQAVerification() = %q, want one command", commands)
+	}
+	if !strings.Contains(commands[0], filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa"))) {
+		t.Fatalf("DerivedQAVerification() = %q, want the Spec's QA directory", commands[0])
+	}
+
+	tests := []struct {
+		name    string
+		reports map[string]string
+		wantErr bool
+	}{
+		{
+			name: "only passing report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "pass",
+			},
+		},
+		{
+			name: "newer failed rerun defeats older pass",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md":    "pass",
+				"qa-report-2026-08-31-02.md": "fail",
+			},
+			wantErr: true,
+		},
+		{
+			name: "zero rerun still defeats the unsuffixed report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md":    "pass",
+				"qa-report-2026-08-31-00.md": "fail",
+			},
+			wantErr: true,
+		},
+		{
+			name: "numeric rerun order accepts ten after two",
+			reports: map[string]string{
+				"qa-report-2026-08-31-02.md": "fail",
+				"qa-report-2026-08-31-10.md": "pass",
+			},
+		},
+		{
+			name: "partial is outside the passing domain",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "partial",
+			},
+			wantErr: true,
+		},
+		{
+			name: "body text cannot override a failed frontmatter verdict",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "fail\n---\n\nverdict: pass",
+			},
+			wantErr: true,
+		},
+		{
+			name: "duplicate verdict is not a passing report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "fail\nverdict: pass",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid later date loses to a valid report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "fail",
+				"qa-report-2026-13-40.md": "pass",
+			},
+			wantErr: true,
+		},
+		{
+			name:    "missing report",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			reportDir := filepath.Join(root, "docs", "specs", slug, "qa")
+			for name, verdict := range tt.reports {
+				writeFile(t, filepath.Join(reportDir, name), "---\nverdict: "+verdict+"\n---\n")
+			}
+
+			command := exec.Command("sh", "-c", commands[0])
+			command.Dir = root
+			output, err := command.CombinedOutput()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("derived QA Verification error = %v, wantErr %v; output: %s", err, tt.wantErr, output)
+			}
+		})
+	}
+}
+
+func TestReloadTaskDerivesOnlyQAVerification(t *testing.T) {
+	t.Parallel()
+
+	const slug = "demo"
+	derived := DerivedQAVerification(slug)
+	tests := []struct {
+		name         string
+		taskType     string
+		verification string
+		want         []string
+		wantAuthored bool
+	}{
+		{
+			name:         "qa authored command is not effective",
+			taskType:     "qa",
+			verification: "echo author-controlled",
+			want:         derived,
+			wantAuthored: true,
+		},
+		{
+			name:         "rendered derived qa command is accepted",
+			taskType:     "qa",
+			verification: derived[0],
+			want:         derived,
+		},
+		{
+			name:         "non-qa command remains authored",
+			taskType:     "backend",
+			verification: "echo author-controlled",
+			want:         []string{"echo author-controlled"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			relFile := filepath.Join(slug, "task_01.md")
+			verification := md("## Verification\n\n- '" + tt.verification + "'\n")
+			writeFile(t, filepath.Join(specsRoot, relFile), taskFixture("task_01", "Fixture", "pending", tt.taskType, verification))
+
+			task := &Task{ID: "task_01", File: relFile}
+			if err := ReloadTask(specsRoot, task); err != nil {
+				t.Fatalf("ReloadTask: %v", err)
+			}
+			if !reflect.DeepEqual(task.Verification, tt.want) {
+				t.Errorf("Verification = %q, want %q", task.Verification, tt.want)
+			}
+			if got := AuthoredQAVerification(*task); got != tt.wantAuthored {
+				t.Errorf("AuthoredQAVerification() = %v, want %v", got, tt.wantAuthored)
+			}
+		})
 	}
 }
 
