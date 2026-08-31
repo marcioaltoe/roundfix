@@ -62,9 +62,10 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// implementSeed describes one task file for a test Spec directory. Zero
-// values default to status pending, type backend, and one Verification command
-// that fails until the scripted Agent records its work.
+// implementSeed describes one task file for a test Spec directory. Zero values
+// default to status pending and type backend. A non-qa seed defaults to one
+// Verification command that fails until the scripted Agent records its work;
+// a qa seed defaults to the Verification Roundfix derives for its Spec.
 type implementSeed struct {
 	id              string
 	title           string
@@ -628,6 +629,49 @@ func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds
 	}
 }
 
+func TestImplementTaskContentChoosesVerificationByTaskType(t *testing.T) {
+	const authoredQACommand = "test -f authored-qa-report"
+
+	tests := []struct {
+		name        string
+		seed        implementSeed
+		wantCommand string
+	}{
+		{
+			name:        "qa seed derives its default",
+			seed:        implementQAGateSeed(string(spec.StatusPending)),
+			wantCommand: spec.DerivedQAVerification(implementTestSlug)[0],
+		},
+		{
+			name: "qa seed keeps an explicit command",
+			seed: implementSeed{
+				id:           "task_qa",
+				taskType:     string(spec.TaskTypeQA),
+				verification: []string{authoredQACommand},
+			},
+			wantCommand: authoredQACommand,
+		},
+		{
+			name:        "non-qa seed keeps the agent marker default",
+			seed:        implementSeed{id: "task_01"},
+			wantCommand: implementFixtureVerificationCommand("task_01"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := implementTaskContent(implementTestSlug, tt.seed)
+			wantLine := fmt.Sprintf("- `%s` — expected: passes.\n", tt.wantCommand)
+			if !strings.Contains(content, wantLine) {
+				t.Fatalf("implementTaskContent() = %q, want Verification line %q", content, wantLine)
+			}
+			if got := strings.Count(content, "— expected: passes.\n"); got != 1 {
+				t.Fatalf("implementTaskContent() rendered %d Verification commands, want 1: %q", got, content)
+			}
+		})
+	}
+}
+
 func implementTaskContent(slug string, seed implementSeed) string {
 	status := seed.status
 	if status == "" {
@@ -643,7 +687,11 @@ func implementTaskContent(slug string, seed implementSeed) string {
 	}
 	verification := seed.verification
 	if len(verification) == 0 {
-		verification = []string{implementFixtureVerificationCommand(seed.id)}
+		if taskType == string(spec.TaskTypeQA) {
+			verification = spec.DerivedQAVerification(slug)
+		} else {
+			verification = []string{implementFixtureVerificationCommand(seed.id)}
+		}
 	}
 	var body strings.Builder
 	body.WriteString(fmt.Sprintf("---\ntask: %s\nspec: %s\nstatus: %s\ntype: %s\n---\n\n# %s\n\n## Verification\n\n", seed.id, slug, status, taskType, title))
