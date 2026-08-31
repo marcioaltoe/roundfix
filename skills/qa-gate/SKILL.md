@@ -180,11 +180,21 @@ Request journeys:
 The Pull Request row uses the equivalent-evidence path by default. Under
 ADR-0088, the authored gate runs before an Open Pull Request exists, so Specs
 must not pay to rediscover that arrangement. Keep the row in the matrix and
-record the equivalent observed or supervised evidence it accepts — such as
-the head, ancestry, changed files, and local checks — alongside the row's
-environment cause. Never silently pass or omit the row. Without recorded
-equivalent evidence, it remains blocked and the gate follows ADR-0080's
-existing verdict rule.
+record equivalent observed or supervised evidence for every control the Pull
+Request would have exercised, alongside the row's environment cause:
+
+- **approval** — who accepted the change, or that no acceptance was obtained;
+- **checks and status** — the repository Verification and any required check,
+  run locally, with its result;
+- **unresolved review threads** — that none stands, or which do;
+- **Merge-Ready acceptance** — the Review Source evidence for the expected
+  head, or that none exists yet;
+- **review-artifact ancestry** — the head the evidence belongs to, and that it
+  is the head the row is claiming for.
+
+Never silently pass or omit the row. A control with no equivalent evidence keeps
+the row blocked; ADR-0080 refuses to credit a journey without evidence, and an
+enumerated control left unanswered is exactly that.
 
 - When the fact names an Open Pull Request, those journeys are runnable.
   Observe that Pull Request read-only through the existing `gh` and Review
