@@ -9,9 +9,11 @@ does not reopen it.
 `implement-spec` remains the Roundfix-owned autonomous loop. The proposed
 `kickoff` skill is not adopted.
 
-Confirmed by the maintainer on 2026-08-31. The skill itself now sits in
-`~/.Trash/kickoff`; the deletion preceded the confirmation and is consistent
-with it.
+Confirmed by the maintainer on 2026-08-31. The skill was never committed to this
+repository, so there is no removal commit to cite: it existed only in the
+maintainer's working environment and was deleted there before the confirmation.
+That is why this record carries the reasoning rather than pointing at a diff —
+the reasoning is the only durable artifact the decision leaves behind.
 
 ## Why the question existed
 
@@ -46,5 +48,11 @@ even reached.
 
 ## Consequence for the queue
 
-The queue item closes with no implementation. The remaining Specs are `0105` and
-`0097`, plus the defects captured for Triage in the Secondbrain inbox.
+**No `kickoff` implementation shipped, and none will.** Nothing from the skill
+entered this repository as a skill, a command, or a rule. The one thing that did
+ship — the Run Window of Spec 0117 — was authored here from the measured problem
+its script documented, not adapted from its code.
+
+The queue item therefore closes with no implementation owed. The remaining Specs
+are `0105` and `0097`, plus the defects captured for Triage in the Secondbrain
+inbox.
