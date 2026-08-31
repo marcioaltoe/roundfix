@@ -236,8 +236,8 @@ func TestMechanicalStageStoresThePreconditionRefusalForTheReport(t *testing.T) {
 		}
 
 		var report bytes.Buffer
-		if err := spec.WritePreconditionRefusalReport(&report, result.PreconditionRefusal); err != nil {
-			t.Fatalf("WritePreconditionRefusalReport() error = %v", err)
+		if err := spec.WritePreconditionRefusalReport(&report, result.PreconditionRefusal, spec.AuditorEvidence{}); err != nil {
+			t.Fatalf("WritePreconditionRefusalReport(, spec.AuditorEvidence{}) error = %v", err)
 		}
 		for _, want := range []string{
 			`precondition_check: "` + speccheck.GatePreconditionCheck + `"`,
@@ -969,8 +969,8 @@ func TestMechanicalStageAcceptsThePreconditionRefusalRow(t *testing.T) {
 		if err := spec.WritePreconditionRefusalReport(&refusal, spec.PreconditionRefusal{
 			CheckName: speccheck.GatePreconditionCheck,
 			Reason:    "SC-VOCABULARY-UNDOCUMENTED: undocumented emitted token",
-		}); err != nil {
-			t.Fatalf("WritePreconditionRefusalReport() error = %v", err)
+		}, spec.AuditorEvidence{}); err != nil {
+			t.Fatalf("WritePreconditionRefusalReport(, spec.AuditorEvidence{}) error = %v", err)
 		}
 		writeMechanicalFile(t, repoRoot, reportPath, refusal.String())
 

@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/app"
 )
 
 // QA Report verdict values written by the qa-gate workflow.
@@ -45,7 +47,12 @@ var ErrNoQAReport = errors.New("no QA Report found")
 // QAReport is the validated verdict metadata callers need from a QA Report.
 // Each blocked-row cause remains independent; absent counts are zero.
 type QAReport struct {
-	Verdict                 string
+	Verdict string
+	// AuditingBinary and AuditorStaleness name the Roundfix that produced the
+	// report and what it established about its age. They are optional so QA
+	// Reports written before this metadata existed remain readable.
+	AuditingBinary          string
+	AuditorStaleness        string
 	RowsBlockedEnvironment  int
 	RowsBlockedFinding      int
 	RowsBlockedDeclared     int
@@ -72,13 +79,17 @@ type PreconditionRefusal struct {
 // in the Results table, and the check and its reason in the frontmatter. The
 // caller owns where the report lands and under which name; this contract owns
 // its shape, so a refusal cannot be recorded as an empty matrix again.
-func WritePreconditionRefusalReport(writer io.Writer, refusal PreconditionRefusal) error {
+func WritePreconditionRefusalReport(writer io.Writer, refusal PreconditionRefusal, evidence AuditorEvidence) error {
 	check := qaRefusalValue(refusal.CheckName, QAPreconditionCheckUnnamed)
 	reason := qaRefusalValue(refusal.Reason, QAPreconditionReasonUnrecorded)
+	auditor := app.Auditor()
+	auditorStaleness := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
 
 	var report strings.Builder
 	report.WriteString("---\n")
 	fmt.Fprintf(&report, "verdict: %s\n", VerdictFail)
+	fmt.Fprintf(&report, "auditing_binary: %s\n", strconv.Quote(auditor.String()))
+	fmt.Fprintf(&report, "auditor_staleness: %s\n", strconv.Quote(auditorStaleness))
 	// One refusal is one row, and every other cause stays explicitly zero:
 	// a closed report carries all its typed counts even when they are empty.
 	report.WriteString("rows_blocked_precondition: 1\n")
@@ -283,6 +294,8 @@ func readQAReport(path string) (QAReport, error) {
 	}
 	var frontmatter struct {
 		Verdict                 string    `yaml:"verdict"`
+		AuditingBinary          string    `yaml:"auditing_binary"`
+		AuditorStaleness        string    `yaml:"auditor_staleness"`
 		RowsBlockedEnvironment  yaml.Node `yaml:"rows_blocked_environment"`
 		RowsBlockedFinding      yaml.Node `yaml:"rows_blocked_finding"`
 		RowsBlockedDeclared     yaml.Node `yaml:"rows_blocked_declared"`
@@ -315,6 +328,8 @@ func readQAReport(path string) (QAReport, error) {
 	// written down.
 	report := QAReport{
 		Verdict:                 frontmatter.Verdict,
+		AuditingBinary:          frontmatter.AuditingBinary,
+		AuditorStaleness:        frontmatter.AuditorStaleness,
 		RowsBlockedEnvironment:  rowsBlockedEnvironment,
 		RowsBlockedFinding:      rowsBlockedFinding,
 		RowsBlockedDeclared:     rowsBlockedDeclared,

@@ -61,6 +61,17 @@ type Result struct {
 	Skipped  []SkippedDetector `json:"skipped"`
 }
 
+// VerificationCoverage tells the renderer what the probe did, so a clean
+// verdict can state its own scope. Executed counts the commands the probe
+// actually ran; Unexecuted counts those it could not, which are reported
+// separately rather than folded into the executed count. Folding them in is
+// the same overstatement this report exists to remove, one layer down.
+type VerificationCoverage struct {
+	Ran        bool
+	Executed   int
+	Unexecuted int
+}
+
 // PromoteGaps applies the strictness of `spec check --strict` to one result:
 // every candidate the checker could not settle becomes a contradiction. It is
 // exported because two callers must reach the same verdict from the same Spec
@@ -183,13 +194,24 @@ type jsonDocument struct {
 }
 
 // RenderText renders one result with every diagnostic location and fix.
-func RenderText(result Result) string {
+func RenderText(result Result, coverage VerificationCoverage) string {
 	var report strings.Builder
 	report.WriteString("Spec ")
 	report.WriteString(result.Slug)
 	report.WriteByte('\n')
 	if len(result.Findings) == 0 {
-		report.WriteString("No findings.\n")
+		if coverage.Ran {
+			if coverage.Unexecuted > 0 {
+				// Both facts on the verdict line. A second line would be read
+				// after the verdict, which is the position this report exists
+				// to move away from.
+				fmt.Fprintf(&report, "No findings. Authored Verification commands executed: %d; could not be executed: %d.\n", coverage.Executed, coverage.Unexecuted)
+			} else {
+				fmt.Fprintf(&report, "No findings. Authored Verification commands executed: %d.\n", coverage.Executed)
+			}
+		} else {
+			report.WriteString("No findings. Authored Verification commands were not executed.\n")
+		}
 	}
 	for _, finding := range result.Findings {
 		report.WriteByte('[')

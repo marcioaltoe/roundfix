@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/gittest"
 	"roundfix/internal/rounds"
@@ -32,6 +33,13 @@ const taskCycleSlug = "0001-sample-feature"
 
 func taskCycleNowForTest() time.Time {
 	return time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+}
+
+func qaAuditorFrontmatterForTest() string {
+	auditor := app.Auditor()
+	auditorStaleness := auditor.StalenessLine("", app.AncestryUnknown)
+	return "auditing_binary: " + strconv.Quote(auditor.String()) + "\n" +
+		"auditor_staleness: " + strconv.Quote(auditorStaleness) + "\n"
 }
 
 func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
@@ -776,7 +784,7 @@ func TestRefusedReportDoesNotBlockItsSuccessor(t *testing.T) {
 			runGitForTest(t, fixture.gitRoot, "add", "-A")
 			runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "initial")
 
-			reportPath, err := engine.writeMechanicalQAReport(plan, test.result)
+			reportPath, err := engine.writeMechanicalQAReport(context.Background(), plan, test.result)
 			if err != nil {
 				t.Fatalf("writeMechanicalQAReport() error = %v", err)
 			}
@@ -1111,7 +1119,7 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 		runGitForTest(t, fixture.gitRoot, "add", "-A")
 		runGitForTest(t, fixture.gitRoot, "commit", "-q", "-m", "initial")
 
-		reportPath, err := engine.writeMechanicalQAReport(plan, result)
+		reportPath, err := engine.writeMechanicalQAReport(context.Background(), plan, result)
 		if err != nil {
 			t.Fatalf("writeMechanicalQAReport() error = %v", err)
 		}
@@ -1126,8 +1134,13 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 	t.Run("the refusal is recorded as one terminal row and its frontmatter", func(t *testing.T) {
 		t.Parallel()
 		report := writeReport(t, refusedResult).body
+		auditor := app.Auditor()
+		auditorStaleness := auditor.StalenessLine("", app.AncestryUnknown)
 
-		wantFrontmatter := "---\nverdict: fail\nrows_blocked_precondition: 1\n" +
+		wantFrontmatter := "---\nverdict: fail\n" +
+			"auditing_binary: " + strconv.Quote(auditor.String()) + "\n" +
+			"auditor_staleness: " + strconv.Quote(auditorStaleness) + "\n" +
+			"rows_blocked_precondition: 1\n" +
 			"rows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n" +
 			"precondition_check: " + strconv.Quote(speccheck.GatePreconditionCheck) + "\n" +
 			"precondition_reason: " + strconv.Quote(reason) + "\n---\n"
@@ -1201,7 +1214,8 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 		unrefused.PreconditionRefusal = spec.PreconditionRefusal{}
 		report := writeReport(t, unrefused).body
 
-		want := "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
+		want := "---\nverdict: fail\n" + qaAuditorFrontmatterForTest() +
+			"rows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
 			"# QA Report\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n" +
 			"## Mechanical findings\n\n### " + speccheck.CodeConstraintMissing + "\n\n" +
 			"- location: `docs/specs/" + taskCycleSlug + "/_prd.md:1`\n" +
@@ -1317,7 +1331,7 @@ func TestWriteMechanicalQAReportPreservesSameDayNamingAndPriorReport(t *testing.
 	engine := &Engine{deps: Dependencies{Now: func() time.Time { return now }}}
 	plan := TaskPlan{WorkDir: repoRoot, Spec: spec.Spec{Slug: taskCycleSlug, Dir: specDir}}
 
-	reportPath, err := engine.writeMechanicalQAReport(plan, speccheck.MechanicalResult{Blocking: true})
+	reportPath, err := engine.writeMechanicalQAReport(context.Background(), plan, speccheck.MechanicalResult{Blocking: true})
 
 	if err != nil {
 		t.Fatalf("writeMechanicalQAReport returned error: %v", err)
@@ -1344,7 +1358,7 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 		engine := &Engine{deps: Dependencies{Now: taskCycleNowForTest}}
 		plan := TaskPlan{WorkDir: repoRoot, Spec: spec.Spec{Slug: taskCycleSlug, Dir: specDir}}
 
-		reportPath, err := engine.writeMechanicalQAReport(plan, result)
+		reportPath, err := engine.writeMechanicalQAReport(context.Background(), plan, result)
 		if err != nil {
 			t.Fatalf("writeMechanicalQAReport returned error: %v", err)
 		}
@@ -1409,7 +1423,8 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 		}
 
 		report := writeReport(t, result)
-		want := "---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
+		want := "---\nverdict: fail\n" + qaAuditorFrontmatterForTest() +
+			"rows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
 			"# QA Report\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n" +
 			"## Mechanical findings\n\n### QA-FIXTURE\n\n" +
 			"- location: `fixture.md:7`\n- detail: fixture mismatch\n- fix: repair fixture\n- blocked row: `R01`\n\n" +

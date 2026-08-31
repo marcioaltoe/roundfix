@@ -34,7 +34,7 @@ func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {
 	assertReplayLocations(t, findingPath, finding,
 		speccheck.Location{Path: "docs/specs/" + replay0060Task03 + "/task_03.md", Line: 44},
 	)
-	report := speccheck.RenderText(result)
+	report := speccheck.RenderText(result, speccheck.VerificationCoverage{})
 	for _, want := range []string{
 		"SC-VERIFY-WORK-INDEPENDENT",
 		"docs/specs/" + replay0060Task03 + "/task_03.md:44",

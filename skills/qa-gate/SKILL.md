@@ -44,6 +44,13 @@ defect; do not run the gate outside that node.
   roundfix spec check <slug> --strict
   ```
 
+  The gate keeps this non-probing form because the probe asks whether a
+  command already passes before its work exists, while the gate runs after
+  every Task is complete. Probing completed Tasks would therefore report their
+  already-passing commands as vacuous and refuse the gate. The three authoring
+  skills use `--run-verification` while the work is still being authored, when
+  that question is answerable.
+
   Stop before building the matrix when the command fails, and write the refusal
   before you stop. A gate that stops here measured no requirement, so its whole
   report is the refusal:
@@ -52,6 +59,8 @@ defect; do not run the gate outside that node.
   ---
   verdict: fail
   rows_blocked_precondition: 1
+  auditing_binary: "<version-and-build-identity>"
+  auditor_staleness: "<state>: <reason>"
   rows_blocked_environment: 0
   rows_blocked_finding: 0
   rows_blocked_declared: 0
@@ -357,7 +366,9 @@ Use this structure:
 ---
 spec: <slug>
 date: YYYY-MM-DD
-build: <commit-or-artifact>
+build: <audited-commit-or-artifact>
+auditing_binary: "<version-and-build-identity>"
+auditor_staleness: "<state>: <reason>" # state is current|stale|unknown; the reason names the signal that answered, such as commit ancestry or the declared tree version
 status: in-progress # in-progress | closed
 verdict: pending # pending | pass | fail | partial
 rows_blocked_environment: 0

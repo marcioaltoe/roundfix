@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"roundfix/internal/app"
 )
 
 func qaReportFixture(verdict string, extraFrontmatter ...string) string {
@@ -41,6 +43,23 @@ func TestQAVerdictReadsSupportedVerdicts(t *testing.T) {
 				t.Errorf("QAVerdict = %q, want %q", got, verdict)
 			}
 		})
+	}
+}
+
+func TestReadQAReportAcceptsOlderReportWithoutAuditorMetadata(t *testing.T) {
+	t.Parallel()
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-07-04.md"), qaReportFixture(VerdictPass))
+
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport of report written before auditor metadata: %v", err)
+	}
+	if report.Verdict != VerdictPass {
+		t.Errorf("Verdict = %q, want %q", report.Verdict, VerdictPass)
+	}
+	if report.AuditingBinary != "" || report.AuditorStaleness != "" {
+		t.Errorf("auditor metadata = %q / %q, want absent metadata preserved as empty", report.AuditingBinary, report.AuditorStaleness)
 	}
 }
 
@@ -483,7 +502,7 @@ func TestWritePreconditionRefusalReportWritesOneTerminalRow(t *testing.T) {
 	if err := WritePreconditionRefusalReport(&report, PreconditionRefusal{
 		CheckName: "strict",
 		Reason:    "SC-VOCABULARY-UNDOCUMENTED",
-	}); err != nil {
+	}, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 
@@ -510,13 +529,50 @@ func TestWritePreconditionRefusalReportWritesOneTerminalRow(t *testing.T) {
 	}
 }
 
+func TestPreconditionRefusalReportNamesItsAuditor(t *testing.T) {
+	oldVersion, oldCommit, oldTime := app.Version, app.BuildCommit, app.BuildTime
+	t.Cleanup(func() {
+		app.Version, app.BuildCommit, app.BuildTime = oldVersion, oldCommit, oldTime
+	})
+	app.Version, app.BuildCommit, app.BuildTime = "1.2.3", "", ""
+
+	var content strings.Builder
+	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{
+		CheckName: "strict",
+		Reason:    "SC-VOCABULARY-UNDOCUMENTED",
+	}, AuditorEvidence{}); err != nil {
+		t.Fatalf("WritePreconditionRefusalReport: %v", err)
+	}
+	for _, want := range []string{
+		`auditing_binary: "1.2.3"`,
+		`auditor_staleness: "unknown: auditing binary has no build commit and audited tree declares no version"`,
+	} {
+		if !strings.Contains(content.String(), want+"\n") {
+			t.Errorf("report does not record %q:\n%s", want, content.String())
+		}
+	}
+
+	specDir := t.TempDir()
+	writeFile(t, filepath.Join(specDir, "qa", "qa-report-2026-08-25.md"), content.String())
+	report, err := ReadQAReport(specDir)
+	if err != nil {
+		t.Fatalf("ReadQAReport of refusal with auditor metadata: %v", err)
+	}
+	if report.AuditingBinary != "1.2.3" {
+		t.Errorf("AuditingBinary = %q, want released-build identity %q", report.AuditingBinary, "1.2.3")
+	}
+	if report.AuditorStaleness != "unknown: auditing binary has no build commit and audited tree declares no version" {
+		t.Errorf("AuditorStaleness = %q, want an explicit unknown reason", report.AuditorStaleness)
+	}
+}
+
 func TestWritePreconditionRefusalReportIsReadableAsARefusal(t *testing.T) {
 	t.Parallel()
 	var content strings.Builder
 	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{
 		CheckName: "strict",
 		Reason:    "SC-REQUIREMENT-CONTRADICTORY",
-	}); err != nil {
+	}, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 	specDir := t.TempDir()
@@ -544,7 +600,7 @@ func TestWritePreconditionRefusalReportKeepsTheRefusalOnOneLine(t *testing.T) {
 	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{
 		CheckName: "spec check --strict",
 		Reason:    "SC-VOCABULARY-UNDOCUMENTED:\nterm | \"Run Ledger\" is undocumented",
-	}); err != nil {
+	}, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 	report := content.String()
@@ -566,7 +622,7 @@ func TestWritePreconditionRefusalReportKeepsTheRefusalOnOneLine(t *testing.T) {
 func TestWritePreconditionRefusalReportRecordsAnUnnamedRefusal(t *testing.T) {
 	t.Parallel()
 	var content strings.Builder
-	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{CheckName: "  ", Reason: ""}); err != nil {
+	if err := WritePreconditionRefusalReport(&content, PreconditionRefusal{CheckName: "  ", Reason: ""}, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 	report := content.String()
@@ -657,7 +713,7 @@ func TestReadQAReportRecordsThePreconditionRefusal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var content strings.Builder
-			if err := WritePreconditionRefusalReport(&content, tt.written); err != nil {
+			if err := WritePreconditionRefusalReport(&content, tt.written, AuditorEvidence{}); err != nil {
 				t.Fatalf("WritePreconditionRefusalReport: %v", err)
 			}
 			specDir := t.TempDir()
@@ -681,7 +737,7 @@ func TestPreconditionRefusalRoundTripsThroughTheQAReport(t *testing.T) {
 		Reason:    `SC-VOCABULARY-UNDOCUMENTED: term "Run Ledger" is undocumented; SC-COVERAGE-UNMAPPED: Core Feature 2 has no TechSpec section`,
 	}
 	var written strings.Builder
-	if err := WritePreconditionRefusalReport(&written, refusal); err != nil {
+	if err := WritePreconditionRefusalReport(&written, refusal, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport: %v", err)
 	}
 	specDir := t.TempDir()
@@ -698,7 +754,7 @@ func TestPreconditionRefusalRoundTripsThroughTheQAReport(t *testing.T) {
 	// refusal again; anything the read drops would be evidence the next writer
 	// cannot recover.
 	var rewritten strings.Builder
-	if err := WritePreconditionRefusalReport(&rewritten, report.Precondition); err != nil {
+	if err := WritePreconditionRefusalReport(&rewritten, report.Precondition, AuditorEvidence{}); err != nil {
 		t.Fatalf("WritePreconditionRefusalReport from the report that was read: %v", err)
 	}
 	if rewritten.String() != written.String() {

@@ -1,3 +1,7 @@
+// Suite: Roundfix build identity
+// Invariant: the auditing binary identifies itself and never infers current from missing age evidence.
+// Boundary IN: build-stamp assembly and pure ancestry/version comparison.
+// Boundary OUT: Git probing and QA Report serialization.
 package app
 
 import (
@@ -5,8 +9,124 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
+
+func TestAuditorAssemblesBuildIdentity(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		commit  string
+		built   string
+		want    AuditingBinary
+		line    string
+	}{
+		{
+			name:    "release build remains readable without local stamps",
+			version: "1.2.3",
+			want:    AuditingBinary{Version: "1.2.3"},
+			line:    "1.2.3",
+		},
+		{
+			name:    "local build includes every stamp",
+			version: "1.2.3",
+			commit:  " a1b2c3d ",
+			built:   " 2026-07-15 14:32:05 -0300 ",
+			want: AuditingBinary{
+				Version: "1.2.3",
+				Commit:  "a1b2c3d",
+				Built:   "2026-07-15 14:32:05 -0300",
+			},
+			line: "1.2.3 (a1b2c3d, built 2026-07-15 14:32:05 -0300)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldVersion, oldCommit, oldTime := Version, BuildCommit, BuildTime
+			t.Cleanup(func() {
+				Version, BuildCommit, BuildTime = oldVersion, oldCommit, oldTime
+			})
+			Version, BuildCommit, BuildTime = tt.version, tt.commit, tt.built
+
+			got := Auditor()
+			if got != tt.want {
+				t.Fatalf("Auditor() = %#v, want %#v", got, tt.want)
+			}
+			if got.String() != tt.line {
+				t.Fatalf("Auditor().String() = %q, want %q", got.String(), tt.line)
+			}
+		})
+	}
+}
+
+func TestCompareToTree(t *testing.T) {
+	tests := []struct {
+		name        string
+		binary      AuditingBinary
+		treeVersion string
+		ancestry    AncestryResult
+		want        Staleness
+		wantReason  string
+	}{
+		{
+			name:       "stale from commit ancestry",
+			binary:     AuditingBinary{Version: "1.2.3", Commit: "a1b2c3d"},
+			ancestry:   AncestryOlder,
+			want:       StalenessStale,
+			wantReason: "commit ancestry: build commit predates audited tree",
+		},
+		{
+			name:       "current from commit ancestry",
+			binary:     AuditingBinary{Version: "1.2.3", Commit: "a1b2c3d"},
+			ancestry:   AncestryNotOlder,
+			want:       StalenessCurrent,
+			wantReason: "commit ancestry: build commit does not predate audited tree",
+		},
+		{
+			name:        "stale released binary from declared tree version",
+			binary:      AuditingBinary{Version: "1.2.2"},
+			treeVersion: "1.2.3",
+			want:        StalenessStale,
+			wantReason:  "declared tree version: auditing binary 1.2.2 predates 1.2.3",
+		},
+		{
+			name:        "current released binary from declared tree version",
+			binary:      AuditingBinary{Version: "1.2.3"},
+			treeVersion: "v1.2.3",
+			want:        StalenessCurrent,
+			wantReason:  "declared tree version: auditing binary 1.2.3 does not predate v1.2.3",
+		},
+		{
+			name:        "unknown stamped build without ancestry answer",
+			binary:      AuditingBinary{Version: "1.2.3", Commit: "a1b2c3d"},
+			treeVersion: "1.2.3",
+			ancestry:    AncestryUnknown,
+			want:        StalenessUnknown,
+			wantReason:  "commit ancestry could not be resolved for the recorded build commit",
+		},
+		{
+			name:       "unknown without build stamp or declared tree version",
+			binary:     AuditingBinary{Version: "1.2.3"},
+			want:       StalenessUnknown,
+			wantReason: "auditing binary has no build commit and audited tree declares no version",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, reason := tt.binary.CompareToTree(tt.treeVersion, tt.ancestry)
+			if got != tt.want {
+				t.Fatalf("CompareToTree() staleness = %q, want %q", got, tt.want)
+			}
+			if reason != tt.wantReason {
+				t.Fatalf("CompareToTree() reason = %q, want %q", reason, tt.wantReason)
+			}
+		})
+	}
+}
 
 func TestVersionLineIncludesBuildIdentityWhenStamped(t *testing.T) {
 	tests := []struct {
@@ -62,5 +182,38 @@ func TestVersionMatchesTheReleaseManifest(t *testing.T) {
 	}
 	if manifest.Version != Version {
 		t.Fatalf("dist/npm/roundfix/package.json version = %q, but internal/app.Version = %q; the release workflow validates the tag against the manifest, so both must match", manifest.Version, Version)
+	}
+}
+
+func TestStalenessLineNeverRepeatsItsState(t *testing.T) {
+	t.Parallel()
+	// A reason that prefixed its own state produced "unknown: unknown: ..." in
+	// one path and a bare reason in another, leaving the recorded field with no
+	// stable shape. Every state composes exactly once.
+	for _, testCase := range []struct {
+		name        string
+		binary      AuditingBinary
+		treeVersion string
+		ancestry    AncestryResult
+		wantPrefix  string
+	}{
+		{name: "stale by ancestry", binary: AuditingBinary{Commit: "abc1234"}, ancestry: AncestryOlder, wantPrefix: "stale: "},
+		{name: "current by ancestry", binary: AuditingBinary{Commit: "abc1234"}, ancestry: AncestryNotOlder, wantPrefix: "current: "},
+		{name: "unknown by ancestry", binary: AuditingBinary{Commit: "abc1234"}, ancestry: AncestryUnknown, wantPrefix: "unknown: "},
+		{name: "unknown with no evidence at all", binary: AuditingBinary{}, ancestry: AncestryUnknown, wantPrefix: "unknown: "},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			line := testCase.binary.StalenessLine(testCase.treeVersion, testCase.ancestry)
+			if !strings.HasPrefix(line, testCase.wantPrefix) {
+				t.Fatalf("staleness line = %q, want prefix %q", line, testCase.wantPrefix)
+			}
+			rest := strings.TrimPrefix(line, testCase.wantPrefix)
+			for _, state := range []string{"current:", "stale:", "unknown:"} {
+				if strings.HasPrefix(rest, state) {
+					t.Fatalf("staleness line = %q, want the state recorded once", line)
+				}
+			}
+		})
 	}
 }

@@ -184,7 +184,7 @@ frontmatter.
 Then run the checker against the stage that produced the artifact:
 
 ```bash
-roundfix spec check <slug> --stage prd
+roundfix spec check <slug> --stage prd --run-verification
 ```
 
 An error-level finding or a checker execution failure blocks the report. Fix

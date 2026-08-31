@@ -1,6 +1,7 @@
 ---
 spec: 0116-a-verdict-that-states-its-own-scope
-status: active
+status: archived
+archived: 2026-08-30
 created: 2026-08-26
 surfaces: [cli, docs]
 ---
@@ -34,6 +35,27 @@ reader is looking.
   skills name. ADR-0135 makes an absent diagnostic a reported state rather than
   an empty message, and this Spec applies the same principle to an unrun check.
   ADR-0096 asks the gate to prove machine facts before spending an Agent turn.
+  ADR-0080 distinguishes blocked rows by typed cause and never credits a
+  journey without evidence, which bounds this Spec to recording the auditor
+  rather than loosening what a report must carry. ADR-0081 makes the generated
+  skill copies deterministic fallout of an authorized edit, which is why the
+  four skills and their mirrors are one authorization rather than eight.
+  ADR-0093 bounds the Spec Consistency Check to what a Spec's artifacts say
+  about each other, never to topical judgement, which is the boundary Core
+  Feature 2 reports from rather than widens. ADR-0091 keeps the QA gate one
+  terminal Task node of type `qa`, which is the node whose report gains the
+  auditor record. ADR-0097 is applicable at one seam: a carried QA row inherits
+  an earlier report's observation, so the auditor a report names is the binary
+  that produced that report and never the one that inherited its row.
+  ADR-0104 obliges at least one named acceptance row to rest on evidence from
+  outside this Spec's own artifacts, and lands that obligation at the gate; this
+  Spec's outside evidence is the adopted `fluxus` finding, whose measurement was
+  taken in a repository this Spec did not build.
+  ADR-0149 would normally spare a grant from enumerating a command's outputs by
+  resolving them from an `_ownership.yml` declaration; `skills/` carries no such
+  declaration today, so this Spec's grant names the generated copies explicitly
+  because the changed-path audit cannot otherwise resolve them. That gap is
+  recorded for Triage and is not this Spec's to close.
   ADR-0117 places a defect's check at the stage that can produce it, which is
   the obligation this Spec is most directly accountable to: a vacuous
   Verification is produced during authoring, so authoring is where it must be
@@ -72,10 +94,16 @@ reader is looking.
 
 ## Core Features
 
-1. **The authoring skills name the probing form of the check.** Every
-   Roundfix-owned authoring skill that instructs the author to run the Spec
-   Consistency Check names the form that runs the authored Verification
-   commands. The skill that owns the Verification contract states that a clean
+1. **The skills that run before the work name the probing form of the check.**
+   Every Roundfix-owned authoring skill that instructs an author to run the Spec
+   Consistency Check *while the work does not yet exist* names the form that
+   runs the authored Verification commands. The terminal QA gate is excluded and
+   keeps the non-probing form: the probe asks whether a command already passes
+   before its work exists, and the gate runs after every Task is complete, where
+   that question has no true answer and every completed command reports vacuous.
+   Measured on this Spec's own first Run, which applied the rule uniformly and
+   made the gate refuse at its precondition with five of six Tasks reported
+   vacuous. The skill that owns the Verification contract states that a clean
    verdict from the non-probing form does not cover the vacuity class, and stops
    describing the check's speed as a property the author should prefer, because
    that speed is a consequence of the omission.

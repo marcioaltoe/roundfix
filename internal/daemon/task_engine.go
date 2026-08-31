@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"unicode/utf8"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/app"
 	"roundfix/internal/preflight"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
@@ -1932,7 +1934,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 		}
 		return "", "", fmt.Errorf("run QA mechanical stage for run %q: %w", plan.RunID, err)
 	}
-	reportPath, err = engine.writeMechanicalQAReport(plan, mechanicalResult)
+	reportPath, err = engine.writeMechanicalQAReport(ctx, plan, mechanicalResult)
 	if err != nil {
 		return "", "", fmt.Errorf("materialize QA mechanical result for run %q: %w", plan.RunID, err)
 	}
@@ -2194,8 +2196,11 @@ func mechanicalCommitPaths(ctx context.Context, repoRoot, sha string) ([]string,
 	return paths, nil
 }
 
-func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.MechanicalResult) (string, error) {
-	content, err := mechanicalQAReportContent(result)
+func (engine *Engine) writeMechanicalQAReport(ctx context.Context, plan TaskPlan, result speccheck.MechanicalResult) (string, error) {
+	// The Git subprocesses this resolves through must die with the QA Run;
+	// context.Background() here outlived a cancelled gate.
+	evidence := spec.ResolveAuditorEvidence(ctx, plan.WorkDir, app.Auditor())
+	content, err := mechanicalQAReportContent(result, evidence)
 	if err != nil {
 		return "", err
 	}
@@ -2239,16 +2244,16 @@ func (engine *Engine) writeMechanicalQAReport(plan TaskPlan, result speccheck.Me
 // where the shape detector reads no rows from them, so the refusal costs the
 // report none of the observations the stage already made.
 //
-// Every other gate writes exactly the report it wrote before: the refusal is an
-// added path, not a changed one.
-func mechanicalQAReportContent(result speccheck.MechanicalResult) ([]byte, error) {
+// Every path records the Auditing Binary independently from the audited tree;
+// the refusal is an added report shape, not a different attribution contract.
+func mechanicalQAReportContent(result speccheck.MechanicalResult, evidence spec.AuditorEvidence) ([]byte, error) {
 	var mechanical bytes.Buffer
 	if err := speccheck.WriteMechanicalResult(&mechanical, result); err != nil {
 		return nil, err
 	}
 	if result.PreconditionRefused {
 		var content bytes.Buffer
-		if err := spec.WritePreconditionRefusalReport(&content, result.PreconditionRefusal); err != nil {
+		if err := spec.WritePreconditionRefusalReport(&content, result.PreconditionRefusal, evidence); err != nil {
 			return nil, fmt.Errorf("materialize precondition refusal QA Report: %w", err)
 		}
 		content.WriteByte('\n')
@@ -2280,6 +2285,10 @@ func mechanicalQAReportContent(result speccheck.MechanicalResult) ([]byte, error
 		verdict = spec.VerdictFail
 	}
 	fmt.Fprintf(&content, "verdict: %s\n", verdict)
+	auditor := app.Auditor()
+	auditorStaleness := auditor.StalenessLine(evidence.TreeVersion, evidence.Ancestry)
+	fmt.Fprintf(&content, "auditing_binary: %s\n", strconv.Quote(auditor.String()))
+	fmt.Fprintf(&content, "auditor_staleness: %s\n", strconv.Quote(auditorStaleness))
 	fmt.Fprintf(&content, "rows_blocked_environment: %d\n", mechanicalBlockedRowCount(mechanicalBody, "environment"))
 	fmt.Fprintf(&content, "rows_blocked_finding: %d\n", mechanicalBlockedRowCount(mechanicalBody, "finding"))
 	fmt.Fprintf(&content, "rows_blocked_declared: %d\n", mechanicalBlockedRowCount(mechanicalBody, "declared"))

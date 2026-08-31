@@ -253,7 +253,7 @@ func requireRenderedFinding(t *testing.T, result speccheck.Result, code, path st
 	if strings.TrimSpace(finding.Fix) == "" {
 		t.Fatal("finding has no concrete fix")
 	}
-	report := speccheck.RenderText(result)
+	report := speccheck.RenderText(result, speccheck.VerificationCoverage{})
 	if !strings.Contains(report, finding.Code+": "+finding.Summary) {
 		t.Fatalf("rendered report does not contain finding summary:\n%s", report)
 	}

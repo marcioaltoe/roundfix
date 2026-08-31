@@ -34,7 +34,7 @@ func TestRunSpecCheckCleanText(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("spec check exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
 	}
-	if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings.\n") {
+	if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings. Authored Verification commands were not executed.\n") {
 		t.Fatalf("stdout = %q, want clean report", stdout.String())
 	}
 	if strings.Contains(stdout.String(), "[error]") || strings.Contains(stdout.String(), "[gap]") {
@@ -116,6 +116,9 @@ func TestSpecCheckRunVerification(t *testing.T) {
 		if got := strings.Count(stdout.String(), ": honest — "); got != 2 {
 			t.Fatalf("honest verdict count = %d, want 2:\n%s", got, stdout.String())
 		}
+		if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings. Authored Verification commands executed: 2.\n") {
+			t.Fatalf("stdout = %q, want probed clean verdict", stdout.String())
+		}
 	})
 
 	t.Run("does not execute commands without the flag", func(t *testing.T) {
@@ -132,8 +135,11 @@ func TestSpecCheckRunVerification(t *testing.T) {
 		if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("Verification command ran without opt-in: %v", err)
 		}
-		if !strings.Contains(stdout.String(), "Verification: not run (use --run-verification).") {
-			t.Fatalf("stdout does not report unexecuted Verification:\n%s", stdout.String())
+		if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings. Authored Verification commands were not executed.\n") {
+			t.Fatalf("stdout does not report unexecuted Verification on the verdict line:\n%s", stdout.String())
+		}
+		if strings.Contains(stdout.String(), "Verification: not run (use --run-verification).") {
+			t.Fatalf("stdout retains the superseded trailing Verification note:\n%s", stdout.String())
 		}
 	})
 
@@ -220,7 +226,7 @@ func TestSpecCheckStageExitsZeroWithoutAFinding(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("stage-scoped spec check exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
 	}
-	if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings.\n") {
+	if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings. Authored Verification commands were not executed.\n") {
 		t.Fatalf("stdout = %q, want clean stage-scoped report", stdout.String())
 	}
 	if stderr.String() != "" {
@@ -773,8 +779,8 @@ func TestRunSpecAuditPreservesSpecCheckBehavior(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("spec check exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
 	}
-	if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings.\n") {
-		t.Fatalf("spec check stdout = %q, want unchanged clean report prefix", stdout.String())
+	if !strings.HasPrefix(stdout.String(), "Spec clean\nNo findings. Authored Verification commands were not executed.\n") {
+		t.Fatalf("spec check stdout = %q, want clean report prefix", stdout.String())
 	}
 	if strings.Contains(stdout.String(), "[error]") || strings.Contains(stdout.String(), "[gap]") {
 		t.Fatalf("spec check clean stdout contains a finding:\n%s", stdout.String())
