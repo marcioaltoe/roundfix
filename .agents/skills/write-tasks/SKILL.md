@@ -101,6 +101,19 @@ by each Task file. The preflight never moves either responsibility.
   characterization that must write requires that write to be authorized in the
   Task the way any other irreversible action is — recording what a boundary
   does is not authority to change it.
+
+  **Its Verification asserts the record, never the boundary.** The Daemon runs a
+  Task's declared `## Verification` commands verbatim through the shell, once
+  against the unchanged tree before the Agent turn exists and again at
+  settlement. Nothing in that path reads the bounds above: they constrain the
+  Agent, and the Daemon is not the Agent. A Verification that reaches the real
+  surface therefore reaches it unbounded, twice, including before any work has
+  been done. Verify the characterization the Task recorded — its shape, its
+  presence, what downstream Tasks will read — and leave the boundary call in the
+  Agent turn, where the Task's declared target, isolation, credentials, and
+  write authorization apply. This is the hermeticity rule these commands already
+  carry, stated where the temptation to break it is strongest: a live external
+  surface is ambient state, and a command that depends on one is not hermetic.
 - **Sized for one fresh session.** A task an agent can complete in a single sitting with a fresh context. More than ~7 subtasks or files means split it.
 - **Tests embedded, never separated.** Every task's acceptance criteria include its own tests; a trailing "write the tests" task means the earlier tasks were never done.
 - **Independently implementable.** Once its `needs` are completed, a task must require no other unfinished work — that's what allows parallel execution across worktrees later.
