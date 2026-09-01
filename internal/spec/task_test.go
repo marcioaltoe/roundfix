@@ -3,8 +3,10 @@ package spec
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -181,6 +183,230 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 	}
 	if len(task.Needs) != 1 || task.Needs[0] != "task_00" {
 		t.Errorf("Needs = %v, want the manifest-owned value untouched", task.Needs)
+	}
+}
+
+func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
+	t.Parallel()
+
+	const slug = "derived-qa-verification"
+	commands := DerivedQAVerification(slug)
+	if len(commands) != 1 {
+		t.Fatalf("DerivedQAVerification() = %q, want one command", commands)
+	}
+	if !strings.Contains(commands[0], filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa"))) {
+		t.Fatalf("DerivedQAVerification() = %q, want the Spec's QA directory", commands[0])
+	}
+
+	tests := []struct {
+		name    string
+		reports map[string]string
+		wantErr bool
+	}{
+		{
+			name: "only passing report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "pass",
+			},
+		},
+		{
+			name: "passing verdict permits surrounding whitespace",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "\tpass \r",
+			},
+		},
+		{
+			name: "newer failed rerun defeats older pass",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md":    "pass",
+				"qa-report-2026-08-31-02.md": "fail",
+			},
+			wantErr: true,
+		},
+		{
+			name: "zero rerun still defeats the unsuffixed report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md":    "pass",
+				"qa-report-2026-08-31-00.md": "fail",
+			},
+			wantErr: true,
+		},
+		{
+			name: "numeric rerun order accepts ten after two",
+			reports: map[string]string{
+				"qa-report-2026-08-31-02.md": "fail",
+				"qa-report-2026-08-31-10.md": "pass",
+			},
+		},
+		{
+			name: "malformed rerun loses to an unsuffixed report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md":         "fail",
+				"qa-report-2026-08-31-ffd6852.md": "pass",
+			},
+			wantErr: true,
+		},
+		{
+			name: "partial is outside the passing domain",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "partial",
+			},
+			wantErr: true,
+		},
+		{
+			name: "body text cannot override a failed frontmatter verdict",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "fail\n---\n\nverdict: pass",
+			},
+			wantErr: true,
+		},
+		{
+			name: "duplicate verdict is not a passing report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "fail\nverdict: pass",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid later date loses to a valid report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "fail",
+				"qa-report-2026-13-40.md": "pass",
+			},
+			wantErr: true,
+		},
+		{
+			name: "non-digit date loses to a valid report",
+			reports: map[string]string{
+				"qa-report-2026-08-31.md": "fail",
+				"qa-report-202A-08-31.md": "pass",
+			},
+			wantErr: true,
+		},
+		{
+			// The sole report is malformed. Sorting a malformed name last only
+			// helps while a well-formed one exists beside it; alone, it won
+			// tail -1 and its verdict was read as the gate's.
+			name: "a sole malformed report is not a candidate",
+			reports: map[string]string{
+				"qa-report-notadate.md": "pass",
+			},
+			wantErr: true,
+		},
+		{
+			name: "a sole report with a malformed sequence is not a candidate",
+			reports: map[string]string{
+				"qa-report-2026-08-31-x2.md": "pass",
+			},
+			wantErr: true,
+		},
+		{
+			name:    "missing report",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			reportDir := filepath.Join(root, "docs", "specs", slug, "qa")
+			for name, verdict := range tt.reports {
+				writeFile(t, filepath.Join(reportDir, name), "---\nverdict: "+verdict+"\n---\n")
+			}
+
+			command := exec.Command("sh", "-c", commands[0])
+			command.Dir = root
+			output, err := command.CombinedOutput()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("derived QA Verification error = %v, wantErr %v; output: %s", err, tt.wantErr, output)
+			}
+		})
+	}
+}
+
+func TestDerivedQAVerificationPassesTheChecker(t *testing.T) {
+	_, testFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller could not locate the repository")
+	}
+	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(testFile), "..", ".."))
+
+	// internal/speccheck imports internal/spec, so run the checker-side
+	// integration test in a subprocess instead of introducing an import cycle.
+	command := exec.Command(
+		"go", "test", "-count=1", "./internal/speccheck",
+		"-run", "^TestDerivedQAVerificationIsAcceptedByTaskStageChecker$",
+	)
+	command.Dir = repoRoot
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("derived QA Verification checker contract: %v\n%s", err, output)
+	}
+}
+
+func TestReloadTaskDerivesOnlyQAVerification(t *testing.T) {
+	t.Parallel()
+
+	const slug = "demo"
+	derived := DerivedQAVerification(slug)
+	tests := []struct {
+		name         string
+		taskType     string
+		verification string
+		want         []string
+		wantAuthored bool
+	}{
+		{
+			name:         "qa authored command is not effective",
+			taskType:     "qa",
+			verification: "echo author-controlled",
+			want:         derived,
+			wantAuthored: true,
+		},
+		{
+			name:         "rendered derived qa command is accepted",
+			taskType:     "qa",
+			verification: derived[0],
+			want:         derived,
+		},
+		{
+			name:         "non-qa command remains authored",
+			taskType:     "backend",
+			verification: "echo author-controlled",
+			want:         []string{"echo author-controlled"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			relFile := filepath.Join(slug, "task_01.md")
+			// Built here rather than through taskFixture, which routes its
+			// whole body through md() and rewrites every single quote into a
+			// backtick. The derived command carries single quotes now that the
+			// Spec path is shell-quoted, so that helper would corrupt the very
+			// command under test.
+			content := "---\ntask: task_01\nspec: demo\nstatus: pending\ntype: " + tt.taskType +
+				"\ncomplexity: low\n---\n\n# Task 01: Fixture\n\n## Overview\n\nFixture task.\n\n" +
+				"## Verification\n\n- `" + tt.verification + "`\n"
+			writeFile(t, filepath.Join(specsRoot, relFile), content)
+
+			task := &Task{ID: "task_01", File: relFile}
+			if err := ReloadTask(specsRoot, task); err != nil {
+				t.Fatalf("ReloadTask: %v", err)
+			}
+			if !reflect.DeepEqual(task.Verification, tt.want) {
+				t.Errorf("Verification = %q, want %q", task.Verification, tt.want)
+			}
+			if got := AuthoredQAVerification(*task); got != tt.wantAuthored {
+				t.Errorf("AuthoredQAVerification() = %v, want %v", got, tt.wantAuthored)
+			}
+		})
 	}
 }
 
@@ -409,5 +635,45 @@ func TestReloadTaskReportsBrokenAgentEdits(t *testing.T) {
 			}
 			tt.check(t, err)
 		})
+	}
+}
+
+func TestDerivedQAVerificationQuotesTheSpecPath(t *testing.T) {
+	t.Parallel()
+	// The slug reaches this command from a directory name, not from a validated
+	// identifier, and the command runs under sh -c. An unquoted slug carrying a
+	// separator or a quote would change which command runs.
+	for _, testCase := range []struct {
+		name string
+		slug string
+	}{
+		{name: "command separator", slug: "demo; touch owned"},
+		{name: "single quote", slug: "demo'x"},
+		{name: "command substitution", slug: "demo$(touch owned)"},
+		{name: "backtick substitution", slug: "demo`touch owned`"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			command := DerivedQAVerification(testCase.slug)[0]
+			quoted := shellSingleQuoted(filepath.ToSlash(filepath.Join("docs", "specs", testCase.slug, "qa")))
+			if !strings.Contains(command, quoted) {
+				t.Fatalf("derived command does not carry the quoted path %q", quoted)
+			}
+			if strings.Contains(command, "find "+filepath.ToSlash(filepath.Join("docs", "specs", testCase.slug, "qa"))+" ") {
+				t.Fatalf("derived command interpolates the slug unquoted: %q", command)
+			}
+		})
+	}
+}
+
+func TestShellSingleQuotedSurvivesEmbeddedQuotes(t *testing.T) {
+	t.Parallel()
+	if got := shellSingleQuoted("plain"); got != "'plain'" {
+		t.Fatalf("shellSingleQuoted(plain) = %q", got)
+	}
+	// A single quote closes the word, escapes, and reopens it, so the shell
+	// still reads one argument.
+	if got := shellSingleQuoted("a'b"); got != `'a'\''b'` {
+		t.Fatalf("shellSingleQuoted(a'b) = %q", got)
 	}
 }

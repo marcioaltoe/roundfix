@@ -57,12 +57,18 @@ var (
 	adrFilenamePattern     = regexp.MustCompile(`^([0-9]{4})-.*\.md$`)
 	findingFilenamePattern = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}-.+\.md$`)
 	adrCitationPattern     = regexp.MustCompile(`\bADR-([0-9]{4})\b`)
-	adrAttributionPattern  = regexp.MustCompile(`(?i)\bADR-([0-9]{4})\s+(?:already\s+)?(?:makes?|establish(?:es|ed)?|requires?|keeps?|has|places?|puts?|says?)\s+`)
-	citationWordPattern    = regexp.MustCompile(`[a-z0-9]+`)
-	inactiveStatusPattern  = regexp.MustCompile(`(?im)^\s*(?:\*\*)?status(?:\*\*)?:\s*(?:proposed|rejected|deprecated|superseded)\b`)
-	featureRefPattern      = regexp.MustCompile(`(?i)\bCore Features?\s+`)
-	storyRefPattern        = regexp.MustCompile(`(?i)\b(?:User )?(?:Story|Stories)\s+`)
-	numberedItemPattern    = regexp.MustCompile(`^\s*([0-9]+)\.\s+`)
+	// A bare decision number is zero-padded, which is what separates it from a
+	// four-digit year in the same prose. Accepting every four-digit token made
+	// "applicable in 2026" cite ADR-2026 and suppress SC-ADR-UNLISTED, turning a
+	// checker into one that reports less than it appears to. Revisit if decision
+	// numbering ever reaches 1000.
+	decisionNumberPattern = regexp.MustCompile(`\b(0[0-9]{3})\b`)
+	adrAttributionPattern = regexp.MustCompile(`(?i)\bADR-([0-9]{4})\s+(?:already\s+)?(?:makes?|establish(?:es|ed)?|requires?|keeps?|has|places?|puts?|says?)\s+`)
+	citationWordPattern   = regexp.MustCompile(`[a-z0-9]+`)
+	inactiveStatusPattern = regexp.MustCompile(`(?im)^\s*(?:\*\*)?status(?:\*\*)?:\s*(?:proposed|rejected|deprecated|superseded)\b`)
+	featureRefPattern     = regexp.MustCompile(`(?i)\bCore Features?\s+`)
+	storyRefPattern       = regexp.MustCompile(`(?i)\b(?:User )?(?:Story|Stories)\s+`)
+	numberedItemPattern   = regexp.MustCompile(`^\s*([0-9]+)\.\s+`)
 )
 
 const (
@@ -905,7 +911,7 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 		addSkip(result, CodeADRRelated, missing)
 		return nil
 	}
-	listed := citationNumbers([]byte(rowText))
+	listed := obligationCitationNumbers([]byte(rowText))
 	rowLocation := Location{Path: prdDisplayPath, Line: rowLine}
 
 	specCitations, err := readSpecCitations(repoRoot, specDir)
@@ -927,7 +933,7 @@ func detectADRConsistency(result *Result, repoRoot, specDir string, prdContent [
 			Severity: SeverityError,
 			Summary:  citation.Path + " cites " + name + ", but " + prdDisplayPath + " does not list it under Active ADR obligations",
 			Where:    []Location{citation, rowLocation},
-			Fix:      "List ADR-" + number + " in the Active ADR obligations row in " + prdDisplayPath + " or remove the stale citation.",
+			Fix:      "List ADR-" + number + " in the Active ADR obligations row in " + prdDisplayPath + " using the recognised ADR-NNNN form, or remove the stale citation.",
 		})
 	}
 
@@ -1068,9 +1074,13 @@ func readSpecCitations(repoRoot, specDir string) (map[string]Location, error) {
 	return citations, nil
 }
 
-func citationNumbers(content []byte) map[string]bool {
+// obligationCitationNumbers reads decision numbers only after the caller has
+// isolated the Active ADR obligations row. That context makes a bare four-digit
+// number unambiguous and leaves list punctuation, including English "and" and
+// Portuguese "e", outside the citation token itself.
+func obligationCitationNumbers(content []byte) map[string]bool {
 	numbers := make(map[string]bool)
-	for _, match := range adrCitationPattern.FindAllSubmatch(content, -1) {
+	for _, match := range decisionNumberPattern.FindAllSubmatch(content, -1) {
 		numbers[string(match[1])] = true
 	}
 	return numbers
@@ -1285,6 +1295,14 @@ func detectTaskCoverageAndContextReferences(
 		if task.Status == spec.StatusCompleted {
 			continue
 		}
+		if finding, ok := AuthoredQAVerification(task); ok {
+			finding.Where[0] = Location{
+				Path: artifactDisplayPath(repoRoot, taskPath),
+				Line: sectionLineContaining(content, "Verification", "`"),
+			}
+			finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+			result.Findings = append(result.Findings, finding)
+		}
 		if finding, ok := WorkIndependentVerification(task); ok {
 			finding.Where[0] = Location{
 				Path: artifactDisplayPath(repoRoot, taskPath),
@@ -1307,15 +1325,17 @@ func detectTaskCoverageAndContextReferences(
 				finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
 				result.Findings = append(result.Findings, finding)
 			}
-			form, matched := nonHermeticVerificationCommand(command, createdPaths)
-			if matched {
-				finding := nonHermeticFinding(task.File, command, form)
-				finding.Where[0] = Location{
-					Path: artifactDisplayPath(repoRoot, taskPath),
-					Line: sectionLineContaining(content, "Verification", command),
+			if task.Type != spec.TaskTypeQA {
+				form, matched := nonHermeticVerificationCommand(command, createdPaths)
+				if matched {
+					finding := nonHermeticFinding(task.File, command, form)
+					finding.Where[0] = Location{
+						Path: artifactDisplayPath(repoRoot, taskPath),
+						Line: sectionLineContaining(content, "Verification", command),
+					}
+					finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
+					result.Findings = append(result.Findings, finding)
 				}
-				finding.Summary = finding.Where[0].Path + strings.TrimPrefix(finding.Summary, task.File)
-				result.Findings = append(result.Findings, finding)
 			}
 		}
 		for _, command := range VacuousVerificationCommands(task) {

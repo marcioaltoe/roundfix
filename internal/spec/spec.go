@@ -101,6 +101,12 @@ type Task struct {
 	NegativeControl  []string
 	TaskRepairPaths  []string
 	AssignedRepairs  []AssignedRepair
+
+	// qaAuthored records that a qa Task's rendered Verification
+	// differs from the command Roundfix derives. The effective Verification
+	// remains derived; Spec check reads this provenance through
+	// AuthoredQAVerification and refuses the authored contract by name.
+	qaAuthored bool
 }
 
 // AssignedRepair is one deterministic replacement declared by a Task. The
@@ -877,6 +883,7 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 	if len(document.Verification) == 0 {
 		return Task{}, MissingVerificationError{TaskID: node.ID, Path: path}
 	}
+	verification, authoredQA := taskVerification(slug, document.Type, document.Verification)
 	return Task{
 		ID:               node.ID,
 		File:             filepath.Join(slug, node.File),
@@ -889,10 +896,11 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		Context:          append([]TaskContextRef(nil), document.Context...),
 		Requirements:     append([]TaskDeclaration(nil), document.Requirements...),
 		RehearsalCases:   append([]TaskDeclaration(nil), document.RehearsalCases...),
-		Verification:     document.Verification,
+		Verification:     verification,
 		NegativeControl:  append([]string(nil), document.NegativeControl...),
 		TaskRepairPaths:  append([]string(nil), document.TaskRepairPaths...),
 		AssignedRepairs:  append([]AssignedRepair(nil), document.AssignedRepairs...),
+		qaAuthored:       authoredQA,
 	}, nil
 }
 

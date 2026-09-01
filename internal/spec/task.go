@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -60,6 +61,7 @@ func ReloadTask(specsRoot string, task *Task) error {
 	if len(document.Verification) == 0 {
 		return MissingVerificationError{TaskID: task.ID, Path: path}
 	}
+	verification, authoredQA := taskVerification(taskSlug(task.File), document.Type, document.Verification)
 	task.Title = document.Title
 	task.TitleLine = document.TitleLine
 	task.Status = Status(document.Frontmatter.Status)
@@ -68,11 +70,74 @@ func ReloadTask(specsRoot string, task *Task) error {
 	task.Context = append([]TaskContextRef(nil), document.Context...)
 	task.Requirements = append([]TaskDeclaration(nil), document.Requirements...)
 	task.RehearsalCases = append([]TaskDeclaration(nil), document.RehearsalCases...)
-	task.Verification = document.Verification
+	task.Verification = verification
 	task.NegativeControl = append([]string(nil), document.NegativeControl...)
 	task.TaskRepairPaths = append([]string(nil), document.TaskRepairPaths...)
 	task.AssignedRepairs = append([]AssignedRepair(nil), document.AssignedRepairs...)
+	task.qaAuthored = authoredQA
 	return nil
+}
+
+// DerivedQAVerification is the Verification Roundfix supplies for a Task of
+// type qa. It orders QA Reports by their embedded date and numeric rerun
+// sequence, then accepts only the exact passing verdict from the newest one.
+// The command is rendered into the Task file so readers can see the contract,
+// but changing that rendered command does not change the effective contract.
+// shellSingleQuoted renders one shell word that survives sh -c verbatim. The
+// derived command interpolates a Spec slug, and a slug is a directory name
+// rather than a validated identifier, so an unquoted one carrying `;` or a
+// quote would change which command runs.
+func shellSingleQuoted(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
+}
+
+func DerivedQAVerification(slug string) []string {
+	reportDir := shellSingleQuoted(filepath.ToSlash(filepath.Join("docs", "specs", slug, "qa")))
+	command := `newest="$(find ` + reportDir + ` -type f -name "qa-report-*.md" -print 2>/dev/null | ` +
+		`awk "{ report=\$0; name=\$0; parts=split(name, path, \"/\"); name=path[parts]; name=substr(name, 11, length(name)-13); ` +
+		`date=substr(name, 1, 10); suffix=substr(name, 11); ` +
+		`shape=(length(date) == 10 && substr(date, 5, 1) == \"-\" && substr(date, 8, 1) == \"-\"); ` +
+		`for (i=1; i <= 10 && shape; i++) { if (i != 5 && i != 8 && index(\"0123456789\", substr(date, i, 1)) == 0) shape=0 } ` +
+		`year=substr(date, 1, 4)+0; month=substr(date, 6, 2)+0; day=substr(date, 9, 2)+0; ` +
+		`leap=(year%400 == 0 || (year%4 == 0 && year%100 != 0)); days=(month == 2 ? 28+leap : ((month == 4 || month == 6 || month == 9 || month == 11) ? 30 : 31)); ` +
+		`dated=(shape && month >= 1 && month <= 12 && day >= 1 && day <= days); if (!dated) date=\"\"; ` +
+		`if (suffix == \"\") { sequenced=1; sequence=-1 } else { sequenced=(length(suffix) > 1 && substr(suffix, 1, 1) == \"-\"); ` +
+		`for (i=2; i <= length(suffix) && sequenced; i++) { if (index(\"0123456789\", substr(suffix, i, 1)) == 0) sequenced=0 } sequence=(sequenced ? substr(suffix, 2)+0 : 0) } ` +
+		// A malformed name is not a candidate at all. Sorting it last only
+		// worked while a well-formed report existed beside it; the sole
+		// malformed report won tail -1 and its verdict was read.
+		`if (dated && sequenced) printf \"%s\\t%s\\t%s\\t%s\\t%s\\n\", dated, date, sequenced, sequence, report }" | ` +
+		`sort -k1,1n -k2,2 -k3,3n -k4,4n -k5,5 | tail -1 | cut -f5-)"; ` +
+		`test -n "$newest" || exit 1; ` +
+		`awk "BEGIN { whitespace=\" \t\r\n\f\v\" } NR == 1 && \$0 == \"---\" { frontmatter=1; next } frontmatter && \$0 == \"---\" { closed=1; exit } ` +
+		`frontmatter && index(\$0, \"verdict:\") == 1 { verdict=substr(\$0, 9); ` +
+		`while (length(verdict) > 0 && index(whitespace, substr(verdict, 1, 1)) > 0) verdict=substr(verdict, 2); ` +
+		`while (length(verdict) > 0 && index(whitespace, substr(verdict, length(verdict), 1)) > 0) verdict=substr(verdict, 1, length(verdict)-1); verdicts++ } ` +
+		`END { exit(closed && verdicts == 1 && verdict == \"pass\" ? 0 : 1) }" "$newest"`
+	return []string{command}
+}
+
+// AuthoredQAVerification reports a qa Task whose rendered command differs
+// from the Verification Roundfix derives. Callers refuse this condition rather
+// than silently replacing the author's visible text.
+func AuthoredQAVerification(task Task) bool {
+	return task.Type == TaskTypeQA && task.qaAuthored
+}
+
+func taskVerification(slug string, taskType TaskType, rendered []string) ([]string, bool) {
+	if taskType != TaskTypeQA {
+		return append([]string(nil), rendered...), false
+	}
+	derived := DerivedQAVerification(slug)
+	return derived, !slices.Equal(rendered, derived)
+}
+
+func taskSlug(taskFile string) string {
+	clean := filepath.Clean(taskFile)
+	if separator := strings.IndexRune(clean, filepath.Separator); separator >= 0 {
+		return clean[:separator]
+	}
+	return filepath.Base(filepath.Dir(clean))
 }
 
 // SetStatus rewrites only the status frontmatter value of a task file,

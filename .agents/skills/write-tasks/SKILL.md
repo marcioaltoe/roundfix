@@ -79,6 +79,41 @@ by each Task file. The preflight never moves either responsibility.
 
 - **Vertical slices.** Each task delivers a narrow but complete path through every layer it touches, demoable or verifiable on its own — a tracer bullet, not a layer ("all the schemas" is a wrong task; "expired imports retry and surface their status" is a right one).
 - **Prefactoring first.** When a slice needs the ground prepared, make that its own leading task: make the change easy, then make the easy change.
+- **Characterize external surfaces during authoring.** When a Spec crosses an
+  external surface such as an adapter, contract, or database, author a
+  characterization Task that records what the real boundary does, not what a
+  fake does, so an unsupported premise fails while the Spec is still being
+  authored rather than at the QA gate.
+
+  **List it in `needs`, not merely earlier in the file.** Every Task whose
+  premise depends on the characterization names that Task in its `needs` entry
+  in `_tasks.md`. Execution waves are built from `needs` alone, so a Task that
+  merely appears later in the manifest can run in the same wave as the
+  characterization it depends on, and read a boundary nobody has characterized
+  yet. File order is not a dependency.
+
+  **A characterization Task touches a real boundary, so bound it explicitly.**
+  Its file states the target it will reach, by name. It reads rather than
+  writes, or runs against an isolated instance the Task itself creates and
+  removes; it never characterizes against shared or production state by
+  default. It uses credentials scoped to that target and no wider, honours
+  cancellation, and cleans up what it created even when it fails. A
+  characterization that must write requires that write to be authorized in the
+  Task the way any other irreversible action is — recording what a boundary
+  does is not authority to change it.
+
+  **Its Verification asserts the record, never the boundary.** The Daemon runs a
+  Task's declared `## Verification` commands verbatim through the shell, once
+  against the unchanged tree before the Agent turn exists and again at
+  settlement. Nothing in that path reads the bounds above: they constrain the
+  Agent, and the Daemon is not the Agent. A Verification that reaches the real
+  surface therefore reaches it unbounded, twice, including before any work has
+  been done. Verify the characterization the Task recorded — its shape, its
+  presence, what downstream Tasks will read — and leave the boundary call in the
+  Agent turn, where the Task's declared target, isolation, credentials, and
+  write authorization apply. This is the hermeticity rule these commands already
+  carry, stated where the temptation to break it is strongest: a live external
+  surface is ambient state, and a command that depends on one is not hermetic.
 - **Sized for one fresh session.** A task an agent can complete in a single sitting with a fresh context. More than ~7 subtasks or files means split it.
 - **Tests embedded, never separated.** Every task's acceptance criteria include its own tests; a trailing "write the tests" task means the earlier tasks were never done.
 - **Independently implementable.** Once its `needs` are completed, a task must require no other unfinished work — that's what allows parallel execution across worktrees later.

@@ -1,6 +1,7 @@
 ---
 spec: 0105-the-gates-own-economics
-status: active
+status: archived
+archived: 2026-08-31
 created: 2026-08-12
 surfaces: [backend, docs]
 ---
@@ -39,7 +40,14 @@ in one measured case produced a gate that passed itself having failed.
   that can produce its defect, which together are this Spec's cost thesis;
   ADR-0093 checks consistency by citation rather than inference; ADR-0104 makes a
   Spec accept on evidence it did not author, which is the rule the
-  characterization change serves. Source: `docs/agents/domain.md`.
+  characterization change serves. ADR-0081 makes the generated skill copies
+  deterministic fallout of an authorized edit, which is why the three skills and
+  their mirrors are one authorization rather than six. ADR-0149 would normally
+  spare a grant from enumerating a command's outputs by resolving them from an
+  `_ownership.yml` declaration; `skills/` carries none, and the resolver reads
+  only under `internal/baseline`, so this Spec's grant names the generated
+  copies explicitly. That gap is recorded for Triage and is not this Spec's to
+  close. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — the QA gate skill, the task-authoring skill, and
   the task-execution skill are edited. Express maintainer authorization:
   `docs/workflow/authorizations/2026-08-12-the-authoring-and-baseline-corrections.md`,
@@ -81,15 +89,9 @@ in one measured case produced a gate that passed itself having failed.
 3. **Roundfix owns the QA Task's Verification.** The gate Task's Verification is
    derived rather than authored, so an author cannot write a predicate that
    accepts a verdict outside the domain or selects an older report.
-4. **An authored Verification is protected from the review Agent.** The
-   review-resolution Agent does not rewrite an authored Verification; if it does,
-   the change is surfaced as a contract change in the Round report.
-5. **A finding needing absent infrastructure is not resolved by the review Agent.**
-   Choosing a test substrate is Spec scope, and a newly introduced environment
-   variable is the cheap trigger that detects the attempt.
-6. **Independent static findings report together.** A governance failure does not
+4. **Independent static findings report together.** A governance failure does not
    stop the matrix before the flow rows run, so a round reports both.
-7. **The citation parser reads the forms Specs are written in.** A conjunction as
+5. **The citation parser reads the forms Specs are written in.** A conjunction as
    a list separator and a decision number without its prefix are recognised, or
    the failure message names the form that is.
 
@@ -109,6 +111,14 @@ the changed files, the local checks — rather than passing silently or blocking
 - Changing verdict semantics or the typed blocked-cause counts.
 - Building prepared data infrastructure for data-shaped repositories, which is
   infrastructure rather than method.
+- The review-resolution Agent's guardrails: not rewriting an authored
+  Verification, and not resolving a finding that needs absent infrastructure.
+  Split out on 2026-08-31 under this Spec's own Open Question. The split is by
+  subsystem: those two live in `internal/rounds`, which no other feature here
+  touches and which carries no reference to Verification today, so the guardrail
+  is new behaviour in a subsystem rather than an adjustment to this one. Carried
+  as `docs/backlog/2026-08-31-the-review-agent-rewrites-the-contract-it-was-asked-to-satisfy.md`,
+  with its undecided forbid-versus-report question travelling with it.
 - Measuring the gate's own cost distribution, which this Spec's changes make
   measurable but does not itself deliver.
 
@@ -133,9 +143,9 @@ the changed files, the local checks — rather than passing silently or blocking
 
 ## Open Questions
 
-- Whether the review-resolution Agent is forbidden from editing an authored
-  Verification or merely surfaces the edit. Forbidding is the default until
-  answered, since the two measured edits both failed correct work.
-- Whether this Spec splits, with the review-Agent guardrails travelling
-  separately. The default is to split if decomposition cannot size the whole into
-  single-session slices, which is likely given seven core features.
+- Resolved 2026-08-31: this Spec splits, and the review-Agent guardrails travel
+  separately in the backlog entry named under Non-Goals. The undecided
+  forbid-versus-report question travels with them rather than being settled
+  here, because settling it would commit this Spec to a subsystem it does not
+  otherwise touch.
+- None outstanding.

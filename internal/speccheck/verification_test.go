@@ -339,6 +339,19 @@ complexity: low
 	}
 }
 
+func TestNonHermeticVerificationSkipsRoundfixOwnedQAVerification(t *testing.T) {
+	t.Parallel()
+
+	task := spec.Task{
+		File:         "derived-qa-verification/task_01.md",
+		Type:         spec.TaskTypeQA,
+		Verification: spec.DerivedQAVerification("derived-qa-verification"),
+	}
+	if findings := speccheck.NonHermeticVerification(task); len(findings) != 0 {
+		t.Fatalf("NonHermeticVerification() findings = %#v, want Roundfix-owned Verification skipped", findings)
+	}
+}
+
 func TestVerifyNonHermeticSkipsWithoutTaskGraph(t *testing.T) {
 	t.Parallel()
 

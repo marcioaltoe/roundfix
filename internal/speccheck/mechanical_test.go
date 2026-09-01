@@ -1316,6 +1316,56 @@ func TestMechanicalFindingsWithoutRowHintsBlockTheirRefusalCode(t *testing.T) {
 	}
 }
 
+func TestFindingBlocksOnlyTheRowsItNames(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		statuses     []string
+		wantBlocked  []string
+		wantBlocking bool
+	}{
+		{
+			name:         "one named row leaves the others measurable",
+			statuses:     []string{"pending", "pass", "pass"},
+			wantBlocked:  []string{"R01"},
+			wantBlocking: false,
+		},
+		{
+			name:         "every named row can still block the matrix",
+			statuses:     []string{"pending", "pending", "pending"},
+			wantBlocked:  []string{"R01", "R02", "R03"},
+			wantBlocking: true,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			repoRoot := newMechanicalGitRepo(t)
+			reportPath := "docs/specs/mechanical/qa/report-row-scope.md"
+			var rows strings.Builder
+			for index, status := range test.statuses {
+				fmt.Fprintf(&rows, "| R%02d | %s | measured |\n", index+1, status)
+			}
+			writeMechanicalFile(t, repoRoot, reportPath,
+				"---\nverdict: fail\nrows_blocked_environment: 0\nrows_blocked_finding: 0\nrows_blocked_declared: 0\n---\n\n"+
+					"# QA Report\n\n## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n"+rows.String())
+
+			result := runMechanical(t, speccheck.MechanicalRequest{RepoRoot: repoRoot, ReportPath: reportPath})
+
+			if result.Blocking != test.wantBlocking {
+				t.Fatalf("Blocking = %t, want %t; findings = %#v", result.Blocking, test.wantBlocking, result.Findings)
+			}
+			if got := mechanicalBlockedRowIDs(result); !reflect.DeepEqual(got, test.wantBlocked) {
+				t.Fatalf("blocked rows = %v, want %v", got, test.wantBlocked)
+			}
+		})
+	}
+}
+
 func TestMechanicalEvidencePath(t *testing.T) {
 	t.Parallel()
 
@@ -1700,17 +1750,22 @@ func TestMechanicalReportsAllFindings(t *testing.T) {
 			t.Errorf("Findings = %#v, want %s", result.Findings, code)
 		}
 	}
-	if !result.Blocking {
-		t.Fatal("Blocking = false, want true when findings exist")
+	if result.Blocking {
+		t.Fatalf("Blocking = true, want the unnamed matrix row to remain measurable; blocked = %#v", result.Blocked)
 	}
 	for _, finding := range result.Findings {
 		if finding.Code == "" || finding.File == "" || finding.Line < 1 || finding.Detail == "" || finding.Fix == "" {
 			t.Errorf("finding omits a required typed field: %#v", finding)
 		}
 	}
-	for _, row := range []string{"task_01", "R-COMMIT", "R01", "R02"} {
+	for _, row := range []string{"R01", "R02"} {
 		if !mechanicalResultBlocksRow(result, row) {
 			t.Errorf("Blocked = %#v, want row %s tied to its finding", result.Blocked, row)
+		}
+	}
+	for _, row := range []string{"task_01", "R-COMMIT", "R03"} {
+		if mechanicalResultBlocksRow(result, row) {
+			t.Errorf("Blocked = %#v, do not want unnamed matrix row %s blocked", result.Blocked, row)
 		}
 	}
 }
@@ -1984,4 +2039,12 @@ func mechanicalResultBlocksRow(result speccheck.MechanicalResult, row string) bo
 		}
 	}
 	return false
+}
+
+func mechanicalBlockedRowIDs(result speccheck.MechanicalResult) []string {
+	rows := make([]string, 0, len(result.Blocked))
+	for _, blocked := range result.Blocked {
+		rows = append(rows, blocked.ID)
+	}
+	return rows
 }

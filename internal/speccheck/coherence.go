@@ -15,6 +15,9 @@ const (
 	CodeRequirementContradictory = "SC-REQUIREMENT-CONTRADICTORY"
 	// CodeRehearsalUndeclared identifies a gate rehearsal with no complete case declarations.
 	CodeRehearsalUndeclared = "SC-REHEARSAL-UNDECLARED"
+	// CodeQAVerificationAuthored identifies a qa Task whose rendered
+	// Verification differs from the command Roundfix derives for its Spec.
+	CodeQAVerificationAuthored = "SC-QA-VERIFICATION-AUTHORED"
 )
 
 // Stage names the authoring moment a caller is validating.
@@ -61,6 +64,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeVerifyVacuousCommand, stage: StageTasks},
 	{code: CodeRequirementContradictory, stage: StageTasks},
 	{code: CodeRehearsalUndeclared, stage: StageTasks},
+	{code: CodeQAVerificationAuthored, stage: StageTasks},
 }
 
 // CheckStage runs the detectors whose inputs exist by stage. StageAll keeps
@@ -284,6 +288,23 @@ func UndeclaredRehearsal(task spec.Task) (Finding, bool) {
 		return undeclaredRehearsalFinding(task, task.TitleLine), true
 	}
 	return Finding{}, false
+}
+
+// AuthoredQAVerification reports a qa Task whose file tries to control the
+// Verification that Roundfix derives. The effective command is never the
+// authored one; this finding makes the refusal visible instead of overwriting
+// the Task file silently.
+func AuthoredQAVerification(task spec.Task) (Finding, bool) {
+	if !spec.AuthoredQAVerification(task) {
+		return Finding{}, false
+	}
+	return Finding{
+		Code:     CodeQAVerificationAuthored,
+		Severity: SeverityError,
+		Summary:  task.File + " names qa Task " + task.ID + " with an authored Verification command",
+		Where:    []Location{{Path: task.File, Line: 1}},
+		Fix:      "Regenerate the qa Task so its ## Verification renders Roundfix's derived command unchanged.",
+	}, true
 }
 
 func declaredRequirementClauses(requirements []spec.TaskDeclaration) []declaredRequirementClause {

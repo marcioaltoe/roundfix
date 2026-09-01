@@ -371,7 +371,11 @@ status: active
 		}
 		verification := seed.verification
 		if len(verification) == 0 {
-			verification = []string{"true"}
+			if taskType == string(spec.TaskTypeQA) {
+				verification = spec.DerivedQAVerification(slug)
+			} else {
+				verification = []string{"true"}
+			}
 		}
 		var body strings.Builder
 		body.WriteString(fmt.Sprintf("---\ntask: %s\nspec: %s\nstatus: %s\ntype: %s\n---\n\n# %s\n\n## Verification\n\n", seed.id, slug, status, taskType, title))
@@ -1433,6 +1437,23 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 			"## Mechanical skips\n\nNone.\n"
 		if report != want {
 			t.Fatalf("populated mechanical QA Report changed:\n%s", report)
+		}
+	})
+
+	t.Run("scoped finding keeps a failing verdict while the matrix continues", func(t *testing.T) {
+		report := writeReport(t, speccheck.MechanicalResult{
+			Findings: []speccheck.MechanicalFinding{{
+				Code: "QA-FIXTURE", File: "fixture.md", Line: 7,
+				Detail: "fixture mismatch", Fix: "repair fixture", RowHint: "R01",
+			}},
+			Blocked: []speccheck.BlockedRow{{ID: "R01", FindingCode: "QA-FIXTURE", WaitingOn: "fixture mismatch"}},
+		})
+
+		if !strings.Contains(report, "\nverdict: fail\n") {
+			t.Fatalf("scoped mechanical finding loosened the QA verdict:\n%s", report)
+		}
+		if strings.Contains(report, "QA-PRECONDITION") {
+			t.Fatalf("scoped mechanical finding was rendered as a pre-matrix refusal:\n%s", report)
 		}
 	})
 
