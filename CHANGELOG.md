@@ -2,6 +2,66 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.11.0] - 2026-09-01
+
+The QA gate stops charging for its own shape. Of 201 failed Tasks measured
+across five repositories, 123 were the gate returning a verdict rather than code
+breaking.
+
+### Added
+
+- **Roundfix owns the QA Task's Verification.** It was hand-authored over a
+  verdict the Daemon already derived, and in one measured case that produced a
+  gate which passed itself having failed. The derived command resolves the
+  newest report by parsed date and sequence rather than by lexicographic sort,
+  is rendered into the Task file so a reader still sees what runs, and an
+  authored one is refused by name rather than silently replaced.
+
+- **A finding blocks the rows it names**, not the whole matrix. One governance
+  finding blocked fifteen of nineteen rows in the measured round, so a full
+  Agent Session reported signal about governance and nothing about function. A
+  finding that names every row still blocks every row; what goes away is the
+  implicit cascade. Withholding is untouched: a blocking machine fact before a
+  matrix exists still withholds the Agent Session.
+
+- **The citation parser reads the forms Specs are written in** — a conjunction
+  as a list separator in either repository language, and a decision number
+  without its `ADR-` prefix on an obligations line — and names the recognised
+  form when a citation still fails.
+
+- **Characterization meets the real boundary during authoring.** A Spec crossing
+  an adapter, contract, or database authors a Task that records what the real
+  thing does, listed in the dependent Task's `needs` so execution waves respect
+  it. The Task names its target, reads rather than writes or uses an isolated
+  instance it creates and removes, scopes its credentials, honours cancellation,
+  and authorizes any write specifically. Its Verification asserts the record,
+  never the boundary: the Daemon runs declared Verification commands verbatim,
+  twice, including before any work exists.
+
+- **The Pull Request row carries the equivalent-evidence path by default.** The
+  row is unreachable by construction, and one Spec paid six of its eight gate
+  executions for it alone. The gate now enumerates the controls it must find
+  equivalent evidence for — approval, checks and status, unresolved review
+  threads, Merge-Ready acceptance, and review-artifact ancestry — and a control
+  left unanswered keeps the row blocked.
+
+### Fixed
+
+- **The Spec path in the derived command is a single shell word.** It reached
+  that command from a directory name rather than a validated identifier, and ran
+  under `sh -c`, so a slug carrying a separator, a quote, or a substitution
+  would have changed which command runs.
+
+- **A malformed report is not a candidate.** The derived command sorted a report
+  whose name does not parse last rather than excluding it, which held only while
+  a well-formed report existed beside it; alone, the malformed one was selected
+  and its verdict read.
+
+- **A four-digit year is no longer read as a decision number.** The obligations
+  row accepted every four-digit token, so prose such as `granted 2026` cited
+  ADR-2026 and suppressed `SC-ADR-UNLISTED` — the checker reporting more
+  coverage than it performed. Decision numbers are zero-padded; years are not.
+
 ## [0.10.0] - 2026-08-31
 
 A clean check no longer reports more coverage than it performed, and a QA
@@ -630,6 +690,7 @@ time, together with the work that followed it.
 Earlier release sections are intentionally omitted from the restarted
 changelog. Git history remains the source for prior implementation history.
 
+[0.11.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.11.0
 [0.10.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.10.0
 [0.9.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.9.0
 [0.8.0]: https://github.com/marcioaltoe/roundfix/releases/tag/v0.8.0
