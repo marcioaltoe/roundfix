@@ -324,7 +324,12 @@ func TestCitationAcceptsWrittenForms(t *testing.T) {
 		result := checkWrittenCitationFixture(t, repoRoot)
 		findings := findingsWithCode(result, speccheck.CodeADRUnlisted)
 		if len(findings) != 1 {
-			t.Fatalf("%s findings = %#v, want ADR-0029 unlisted rather than a year absorbing it", speccheck.CodeADRUnlisted, findings)
+			t.Fatalf("%s findings = %#v, want exactly one", speccheck.CodeADRUnlisted, findings)
+		}
+		// Name the decision, not just the count: a different unlisted ADR would
+		// satisfy a length check while the year still absorbed this one.
+		if !strings.Contains(findings[0].Summary, "ADR-0029") {
+			t.Fatalf("%s finding = %q, want it to name ADR-0029", speccheck.CodeADRUnlisted, findings[0].Summary)
 		}
 	})
 

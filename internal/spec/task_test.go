@@ -284,6 +284,23 @@ func TestDerivedQAVerificationRequiresTheNewestReportToPass(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			// The sole report is malformed. Sorting a malformed name last only
+			// helps while a well-formed one exists beside it; alone, it won
+			// tail -1 and its verdict was read as the gate's.
+			name: "a sole malformed report is not a candidate",
+			reports: map[string]string{
+				"qa-report-notadate.md": "pass",
+			},
+			wantErr: true,
+		},
+		{
+			name: "a sole report with a malformed sequence is not a candidate",
+			reports: map[string]string{
+				"qa-report-2026-08-31-x2.md": "pass",
+			},
+			wantErr: true,
+		},
+		{
 			name:    "missing report",
 			wantErr: true,
 		},
