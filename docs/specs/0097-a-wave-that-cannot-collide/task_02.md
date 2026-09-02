@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -31,3 +31,34 @@ edit; reporting it at integration costs a Run.
 
 ## Verification
 - `grep -q "CodeWaveCollision" internal/speccheck/coherence.go || exit 1; grep -q "TestWaveCollisionIsReportedAtAuthoring" internal/speccheck/coherence_test.go || exit 1; go test -count=1 ./internal/speccheck ./internal/spec`
+
+## Result
+
+Implemented the Task Graph-stage `SC-WAVE-COLLISION` finding by calling the
+shared `spec.Collisions` rule from the Spec Consistency Check. Each finding is
+an error, names both Tasks, renders every shared repository path with its touch
+source, and tells the author to give one Task a `needs` edge on the other.
+
+Acceptance evidence:
+
+- `TestWaveCollisionIsReportedAtAuthoring/colliding_graph` exercises two
+  independent Tasks that name two shared files. It asserts one error finding,
+  both Task IDs, both paths, the `verification command` source, and the
+  `needs`-edge remedy.
+- `TestWaveCollisionIsReportedAtAuthoring/serialized_graph` gives `task_02` a
+  `needs: [task_01]` edge and asserts that no collision finding is emitted.
+- `TestWaveCollisionIsReportedAtAuthoring/Spec_with_no_graph_yet` checks a Spec
+  without `_tasks.md`, asserts no collision finding, and requires the detector
+  to record the missing Task Graph as a skip.
+- The stage-scope tests require `SC-WAVE-COLLISION` to be skipped at PRD and
+  TechSpec authoring and available at the Task Graph stage.
+
+Focused checks:
+
+- Red: `rtk go test -run '^TestWaveCollisionIsReportedAtAuthoring$' ./internal/speccheck`
+  failed to compile because `speccheck.CodeWaveCollision` did not exist.
+- Green: `rtk go test -count=1 -run '^(TestWaveCollisionIsReportedAtAuthoring|TestStageScope)' ./internal/speccheck`
+  passed 10 tests.
+- `rtk git diff --check` exited 0 with no diagnostics.
+
+The Daemon-owned Verification command was not run.

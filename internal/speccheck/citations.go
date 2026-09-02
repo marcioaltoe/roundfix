@@ -53,6 +53,7 @@ var (
 		CodeVerifyNonHermetic,
 		CodeRequirementContradictory,
 		CodeRehearsalUndeclared,
+		CodeWaveCollision,
 	}
 	adrFilenamePattern     = regexp.MustCompile(`^([0-9]{4})-.*\.md$`)
 	findingFilenamePattern = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}-.+\.md$`)
@@ -874,6 +875,9 @@ func detectCitationCoverageAndReferences(
 		return err
 	}
 	if graphPresent {
+		if err := detectWaveCollisions(result, repoRoot, graph); err != nil {
+			return err
+		}
 		if err := detectTaskCoverageAndContextReferences(result, repoRoot, specsRoot, graph, units, prdDisplayPath); err != nil {
 			return err
 		}
@@ -883,6 +887,7 @@ func detectCitationCoverageAndReferences(
 		addSkip(result, CodeReferenceUnresolved, manifestDisplayPath)
 		addSkip(result, CodeVerifyInvertedExit, manifestDisplayPath)
 		addSkip(result, CodeVerifyNonHermetic, manifestDisplayPath)
+		addSkip(result, CodeWaveCollision, manifestDisplayPath)
 	}
 
 	if err := detectReferenceIndex(result, repoRoot, specDir); err != nil {

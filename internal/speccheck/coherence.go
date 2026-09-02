@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"roundfix/internal/spec"
@@ -18,6 +19,9 @@ const (
 	// CodeQAVerificationAuthored identifies a qa Task whose rendered
 	// Verification differs from the command Roundfix derives for its Spec.
 	CodeQAVerificationAuthored = "SC-QA-VERIFICATION-AUTHORED"
+	// CodeWaveCollision identifies Tasks that the Task Graph permits in one
+	// Wave even though their written evidence names a shared repository file.
+	CodeWaveCollision = "SC-WAVE-COLLISION"
 )
 
 // Stage names the authoring moment a caller is validating.
@@ -65,6 +69,7 @@ var stagedDetectors = []stagedDetector{
 	{code: CodeRequirementContradictory, stage: StageTasks},
 	{code: CodeRehearsalUndeclared, stage: StageTasks},
 	{code: CodeQAVerificationAuthored, stage: StageTasks},
+	{code: CodeWaveCollision, stage: StageTasks},
 }
 
 // CheckStage runs the detectors whose inputs exist by stage. StageAll keeps
@@ -198,6 +203,42 @@ func detectTechSpecCoverage(result *Result, repoRoot, prdPath, techSpecPath stri
 		techSpecContent,
 		artifactDisplayPath(repoRoot, techSpecPath),
 	)
+	return nil
+}
+
+func detectWaveCollisions(result *Result, repoRoot string, graph *spec.Graph) error {
+	collisions, err := spec.Collisions(repoRoot, graph)
+	if err != nil {
+		return fmt.Errorf("detect Task Graph Wave collisions: %w", err)
+	}
+	manifestPath := artifactDisplayPath(repoRoot, filepath.Join(graph.Spec.Dir, "_tasks.md"))
+	taskPaths := make(map[string]string, len(graph.Tasks))
+	for _, task := range graph.Tasks {
+		taskPaths[task.ID] = artifactDisplayPath(
+			repoRoot,
+			filepath.Join(filepath.Dir(graph.Spec.Dir), filepath.FromSlash(task.File)),
+		)
+	}
+
+	for _, collision := range collisions {
+		paths := make([]string, 0, len(collision.Paths))
+		for path, source := range collision.Paths {
+			paths = append(paths, fmt.Sprintf("%s (%s)", path, source))
+		}
+		sort.Strings(paths)
+		result.Findings = append(result.Findings, Finding{
+			Code:     CodeWaveCollision,
+			Severity: SeverityError,
+			Summary: "Task " + collision.First + " and Task " + collision.Second +
+				" can run in the same Wave and share repository files: " + strings.Join(paths, ", "),
+			Where: []Location{
+				{Path: taskPaths[collision.First], Line: 1},
+				{Path: taskPaths[collision.Second], Line: 1},
+				{Path: manifestPath, Line: 1},
+			},
+			Fix: "Give one Task a `needs` edge on the other in " + manifestPath + ".",
+		})
+	}
 	return nil
 }
 
