@@ -1,0 +1,23 @@
+Environment fact supplied to the gate: no Pull Request is open for the Spec;
+Pull Request journeys are environment-blocked. The per-Run branch is never
+pushed and has no Pull Request of its own.
+
+Equivalent control evidence:
+- approval: no acceptance was obtained because no Pull Request exists.
+- checks and status: make verify ran twice; each run was environment-blocked by
+  sandbox-denied process-table access in two unchanged-base force-stop tests.
+  Every package changed by this Spec passed, all focused feature journeys passed,
+  and make verify-docs exited 0.
+- unresolved review threads: none stands because there is no Pull Request or
+  review thread surface to contain one.
+- Merge-Ready acceptance: no Review Source evidence exists yet because there is
+  no Pull Request; no Merge-Ready claim is made.
+- review-artifact ancestry: no review artifact exists. Feature evidence belongs
+  to audited head e5814eadb616c837ac53506defffe1425b70b652. The target branch
+  ma/0097-a-wave-that-cannot-collide is at
+  0c17ca8d978f0b68dff980a1aceb61fb33097107, the merge-base and parent of this
+  Run's five Task commits.
+
+Unblocking action: after the Daemon integrates this Run onto the target branch,
+open the Spec Pull Request and observe these five controls against its actual
+head. No commit, push, or Pull Request mutation occurred in QA.

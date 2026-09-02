@@ -32,6 +32,7 @@ func TestStageScopeRunsOnlyDetectorsTheStageCanDecide(t *testing.T) {
 		speccheck.CodeVerifyWorkIndependent,
 		speccheck.CodeVerifyInvertedExit,
 		speccheck.CodeVerifyNonHermetic,
+		speccheck.CodeWaveCollision,
 	} {
 		if findings := findingsWithCode(prdResult, code); len(findings) != 0 {
 			t.Errorf("StagePRD %s findings = %#v, want detector not run", code, findings)
@@ -51,6 +52,7 @@ func TestStageScopeRunsOnlyDetectorsTheStageCanDecide(t *testing.T) {
 		speccheck.CodeVerifyInvertedExit,
 		speccheck.CodeVerifyNonHermetic,
 		speccheck.CodeRequirementContradictory,
+		speccheck.CodeWaveCollision,
 	} {
 		if findings := findingsWithCode(techSpecResult, code); len(findings) != 0 {
 			t.Errorf("StageTechSpec %s findings = %#v, want detector not run", code, findings)
@@ -131,6 +133,7 @@ func TestStageScopeNamesTheDetectorsItSkipped(t *testing.T) {
 		speccheck.CodeVerifyNonHermetic,
 		speccheck.CodeRequirementContradictory,
 		speccheck.CodeRehearsalUndeclared,
+		speccheck.CodeWaveCollision,
 	} {
 		if !hasSkip(result, code, "stage prd") {
 			t.Errorf("StagePRD Skipped = %#v, want named %s detector", result.Skipped, code)
@@ -150,6 +153,123 @@ func TestStageScopeRejectsUnknownStage(t *testing.T) {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("CheckStage(unknown) error = %q, want accepted value %q", err, want)
 		}
+	}
+}
+
+func TestWaveCollisionIsReportedAtAuthoring(t *testing.T) {
+	t.Parallel()
+
+	const slug = "wave-collision"
+	tests := []struct {
+		name          string
+		manifestNeeds string
+		writeGraph    bool
+		wantFinding   bool
+	}{
+		{
+			name:        "colliding graph",
+			writeGraph:  true,
+			wantFinding: true,
+		},
+		{
+			name:          "serialized graph",
+			manifestNeeds: "task_01",
+			writeGraph:    true,
+		},
+		{
+			name: "Spec with no graph yet",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			repoRoot := t.TempDir()
+			specsRoot := filepath.Join(repoRoot, "docs", "specs")
+			writeCitationFixtureFile(t, repoRoot, "internal/shared/first.go", "package shared\n")
+			writeCitationFixtureFile(t, repoRoot, "internal/shared/second.go", "package shared\n")
+			writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_prd.md", `---
+spec: wave-collision
+status: active
+created: 2026-09-02
+surfaces: [backend]
+---
+
+# Wave collision fixture
+`)
+			if tt.writeGraph {
+				needs := "[]"
+				if tt.manifestNeeds != "" {
+					needs = "[" + tt.manifestNeeds + "]"
+				}
+				writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/_tasks.md", `---
+schema: spec-tasks/v1
+spec: wave-collision
+qa: declined
+qa_reason: no behavioral surface in this fixture
+graph:
+  nodes:
+    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: `+needs+`
+---
+`)
+				for _, taskID := range []string{"task_01", "task_02"} {
+					writeCitationFixtureFile(t, repoRoot, "docs/specs/"+slug+"/"+taskID+".md", `---
+status: pending
+type: backend
+---
+
+# Task: `+taskID+`
+
+## Verification
+
+- `+"`"+`test -f internal/shared/first.go && test -f internal/shared/second.go`+"`"+`
+`)
+				}
+			}
+
+			result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StageTasks)
+			if err != nil {
+				t.Fatalf("CheckStage(StageTasks): %v", err)
+			}
+			findings := findingsWithCode(result, speccheck.CodeWaveCollision)
+			if tt.wantFinding {
+				if len(findings) != 1 {
+					t.Fatalf("%s findings = %#v, want one", speccheck.CodeWaveCollision, findings)
+				}
+				finding := findings[0]
+				if finding.Severity != speccheck.SeverityError {
+					t.Errorf("severity = %q, want %q", finding.Severity, speccheck.SeverityError)
+				}
+				for _, want := range []string{
+					"task_01",
+					"task_02",
+					"internal/shared/first.go",
+					"internal/shared/second.go",
+					string(spec.TouchFromVerification),
+				} {
+					if !strings.Contains(finding.Summary, want) {
+						t.Errorf("summary = %q, want %q", finding.Summary, want)
+					}
+				}
+				if !strings.Contains(finding.Fix, "needs") {
+					t.Errorf("fix = %q, want needs-edge remedy", finding.Fix)
+				}
+				return
+			}
+			if len(findings) != 0 {
+				t.Fatalf("%s findings = %#v, want none", speccheck.CodeWaveCollision, findings)
+			}
+			if !tt.writeGraph && !hasSkip(result, speccheck.CodeWaveCollision, "_tasks.md") {
+				t.Fatalf("Skipped = %#v, want %s missing _tasks.md", result.Skipped, speccheck.CodeWaveCollision)
+			}
+		})
 	}
 }
 

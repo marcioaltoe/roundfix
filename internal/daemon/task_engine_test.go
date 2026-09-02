@@ -2524,6 +2524,17 @@ func (worktrees *fakeTaskWorktrees) cleanedTasks() []string {
 	return append([]string(nil), worktrees.cleaned...)
 }
 
+func (worktrees *fakeTaskWorktrees) createdTasks() []string {
+	worktrees.mu.Lock()
+	defer worktrees.mu.Unlock()
+	created := make([]string, 0, len(worktrees.created))
+	for taskID := range worktrees.created {
+		created = append(created, taskID)
+	}
+	sort.Strings(created)
+	return created
+}
+
 func (worktrees *fakeTaskWorktrees) taskRef(taskID string) runworktree.TaskRef {
 	worktrees.mu.Lock()
 	defer worktrees.mu.Unlock()
@@ -3039,6 +3050,150 @@ func TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects(t *testing.T) {
 				t.Fatalf("Run state changed from %q to %q", stateBefore, got)
 			}
 		})
+	}
+}
+
+func TestTaskCycleRefusesAWaveCollision(t *testing.T) {
+	t.Parallel()
+	const sharedVerification = "go test docs/specs/" + taskCycleSlug + "/_prd.md docs/specs/" + taskCycleSlug + "/_tasks.md"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{sharedVerification}},
+		{id: "task_02", verification: []string{sharedVerification}},
+	})
+	runner := &selectionLifecycleRunner{gitRoot: fixture.gitRoot}
+	taskWorktrees := newFakeTaskWorktrees()
+	engine := fixture.engineWithTaskWorktrees(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "backend-model", "high")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err == nil {
+		t.Fatal("expected Wave collision refusal")
+	}
+	for _, want := range []string{
+		"Task task_01 and Task task_02",
+		"docs/specs/" + taskCycleSlug + "/_prd.md (verification command)",
+		"docs/specs/" + taskCycleSlug + "/_tasks.md (verification command)",
+		"`needs` edge",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("Wave collision refusal missing %q: %v", want, err)
+		}
+	}
+	if result.Completed != 0 || result.Failed != 0 || result.Skipped != 0 || result.QAVerdict != "" || result.QAReportPath != "" || len(result.Outcomes) != 0 {
+		t.Fatalf("Wave collision refusal returned a Task result: %+v", result)
+	}
+	attempts, attemptsErr := fixture.store.AgentSelectionAttempts(context.Background(), fixture.run.ID)
+	if attemptsErr != nil {
+		t.Fatalf("read Agent Session attempts from Run Database: %v", attemptsErr)
+	}
+	if len(attempts) != 0 {
+		t.Fatalf("Wave collision opened an Agent Session recorded in the Run Database: %+v", attempts)
+	}
+	if prepared := runner.prepareRequests(); len(prepared) != 0 {
+		t.Fatalf("Wave collision prepared Agent Sessions: %+v", prepared)
+	}
+	if created := taskWorktrees.createdTasks(); len(created) != 0 {
+		t.Fatalf("Wave collision created Task Worktrees: %v", created)
+	}
+	for _, taskID := range []string{"task_01", "task_02"} {
+		if got := taskStatusOnDisk(t, fixture.gitRoot, taskID); got != string(spec.StatusPending) {
+			t.Fatalf("Wave collision changed %s status to %q, want pending", taskID, got)
+		}
+	}
+}
+
+func TestTaskCycleDispatchesSerializedCollisionGraph(t *testing.T) {
+	t.Parallel()
+	const sharedVerification = "go test docs/specs/" + taskCycleSlug + "/_prd.md"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{sharedVerification}},
+		{id: "task_02", needs: []string{"task_01"}, verification: []string{sharedVerification}},
+	})
+	runner := &selectionLifecycleRunner{
+		gitRoot: fixture.gitRoot,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusCompleted,
+		},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "backend-model", "high")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("serialized Task Graph was refused: %v", err)
+	}
+	if result.Completed != 2 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("serialized Task Graph result = %+v, want both Tasks completed", result)
+	}
+	requests := runner.runRequests()
+	if len(requests) != 2 || taskIDFromPrompt(requests[0].Prompt) != "task_01" || taskIDFromPrompt(requests[1].Prompt) != "task_02" {
+		t.Fatalf("serialized Task Graph dispatched in order task_01, task_02: %+v", lifecycleRequestSummary(requests))
+	}
+	attempts, attemptsErr := fixture.store.AgentSelectionAttempts(context.Background(), fixture.run.ID)
+	if attemptsErr != nil {
+		t.Fatalf("read Agent Session attempts from Run Database: %v", attemptsErr)
+	}
+	scopes := make(map[string]bool)
+	for _, attempt := range attempts {
+		if attempt.ScopeKind == store.AgentSelectionScopeTask {
+			scopes[attempt.ScopeID] = true
+		}
+	}
+	if !scopes["task_01"] || !scopes["task_02"] || len(scopes) != 2 {
+		t.Fatalf("serialized Task Graph Agent Session scopes = %v, want task_01 and task_02: %+v", scopes, attempts)
+	}
+}
+
+func TestTaskCycleDispatchesCollidingGraphAtTaskCapacityOne(t *testing.T) {
+	t.Parallel()
+	const sharedVerification = "go test docs/specs/" + taskCycleSlug + "/_prd.md"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{sharedVerification}},
+		{id: "task_02", verification: []string{sharedVerification}},
+	})
+	runner := &selectionLifecycleRunner{
+		gitRoot: fixture.gitRoot,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusCompleted,
+		},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	// The same two Tasks refused at Task Capacity 2 in
+	// TestTaskCycleRefusesAWaveCollision: they touch one path and carry no
+	// `needs` edge. At Task Capacity 1 they never share a Wave, so the
+	// collision the graph describes cannot occur and refusing would be a
+	// refusal of work the Run can perform.
+	plan.Concurrency = 1
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "backend-model", "high")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("colliding Task Graph refused at Task Capacity 1: %v", err)
+	}
+	if result.Completed != 2 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("colliding Task Graph at Task Capacity 1 result = %+v, want both Tasks completed", result)
+	}
+	if requests := runner.runRequests(); len(requests) != 2 {
+		t.Fatalf("colliding Task Graph at Task Capacity 1 dispatched %d Agent Sessions, want 2: %+v", len(requests), lifecycleRequestSummary(requests))
 	}
 }
 
@@ -3779,6 +3934,9 @@ func TestTaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork(t *testing.T)
 	assertTaskSet(t, runner.startedTasks(), "task_01", "task_02")
 	for _, taskID := range []string{"task_01", "task_02"} {
 		opts := taskWorktrees.taskCreateOptions(taskID)
+		if opts.Concurrency != plan.Concurrency {
+			t.Fatalf("expected concurrency %d for %s, got %d", plan.Concurrency, taskID, opts.Concurrency)
+		}
 		if opts.Bootstrap.Command != command || opts.Bootstrap.Timeout != time.Second {
 			t.Fatalf("expected bootstrap options for %s, got %#v", taskID, opts.Bootstrap)
 		}
@@ -3798,7 +3956,11 @@ func TestTaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks(t *testin
 	const command = "make task-bootstrap"
 	taskWorktrees := newFakeTaskWorktrees()
 	taskWorktrees.createErrByTask = map[string]error{
-		"task_01": &runworktree.BootstrapError{Command: command, Err: errors.New("exit status 7")},
+		"task_01": &runworktree.BootstrapError{
+			Command: command,
+			Err:     errors.New("exit status 7"),
+			Stage:   runworktree.BootstrapFailureAfterStart,
+		},
 	}
 	runner := &taskSchedulerRunner{
 		started: make(chan string, 3),

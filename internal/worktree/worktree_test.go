@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -182,6 +183,162 @@ func TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot(t *testing.T) {
 	}
 }
 
+func TestTaskWorktreeCreationFailureNamesItsContext(t *testing.T) {
+	t.Parallel()
+	const concurrency = 4
+	fixture := newIntegrationFixture(t, "creation-context")
+	blockedParent := filepath.Join(t.TempDir(), "not-a-directory")
+	mustWriteWorktreeTest(t, blockedParent, "blocked\n")
+	fixture.ref.Path = filepath.Join(blockedParent, "run")
+
+	_, err := CreateTaskWithOptions(t.Context(), fixture.ref, "task_02", TaskCreateOptions{
+		Concurrency: concurrency,
+	})
+	if err == nil {
+		t.Fatal("expected Task Worktree creation failure")
+	}
+	for _, want := range []string{`Run "creation-context"`, "Task task_02", "concurrency 4", "next action:"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("creation error %q does not name %q", err, want)
+		}
+	}
+	var pathErr *os.PathError
+	if !errors.As(err, &pathErr) {
+		t.Fatalf("creation error does not carry the filesystem error: %T %[1]v", err)
+	}
+	if !errors.Is(err, pathErr.Err) {
+		t.Fatalf("creation error does not preserve its underlying cause: %v", err)
+	}
+}
+
+func TestBootstrapSerializesAcrossSiblings(t *testing.T) {
+	t.Parallel()
+	const rounds = 6
+	for round := range rounds {
+		bootstrapSerializationRound(t, round)
+	}
+}
+
+// bootstrapSerializationRound runs one round in its own function so the round's
+// context is cancelled when the round ends. Deferring inside the loop instead
+// held every round's cancel until the test returned.
+func bootstrapSerializationRound(t *testing.T, round int) {
+	t.Helper()
+	const siblings = 4
+	type bootstrapResult struct {
+		taskID string
+		err    error
+	}
+
+	roundCtx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	root := t.TempDir()
+	lockPath := filepath.Join(root, "shared-bootstrap.lock")
+	releasePath := filepath.Join(root, "bootstrap.release")
+	if output, err := exec.Command("mkfifo", releasePath).CombinedOutput(); err != nil {
+		t.Fatalf("round %d: create bootstrap release FIFO: %v: %s", round, err, output)
+	}
+
+	start := make(chan struct{})
+	started := make(chan string, siblings)
+	results := make(chan bootstrapResult, siblings)
+	for sibling := range siblings {
+		taskID := fmt.Sprintf("task_%02d", sibling+1)
+		worktreeDir := filepath.Join(root, taskID)
+		if err := os.Mkdir(worktreeDir, 0o755); err != nil {
+			t.Fatalf("round %d: create sibling %s: %v", round, taskID, err)
+		}
+		command := fmt.Sprintf(
+			`mkdir %q || { printf 'lock collision'; exit 70; }; trap 'rmdir %q' EXIT; printf 'bootstrap-started\n'; read release < %q; test "$release" = release`,
+			lockPath,
+			lockPath,
+			releasePath,
+		)
+		go func() {
+			<-start
+			err := runBootstrap(
+				roundCtx,
+				worktreeDir,
+				BootstrapSpec{Command: command, Timeout: 5 * time.Second},
+				&bootstrapStartWriter{taskID: taskID, started: started},
+			)
+			results <- bootstrapResult{taskID: taskID, err: err}
+		}()
+	}
+	close(start)
+
+	seen := make(map[string]struct{}, siblings)
+	completed := 0
+	for len(seen) < siblings {
+		select {
+		case taskID := <-started:
+			if _, duplicate := seen[taskID]; duplicate {
+				t.Fatalf("round %d: sibling %s reported bootstrap start twice", round, taskID)
+			}
+			seen[taskID] = struct{}{}
+			releaseBootstrap(t, releasePath)
+		case result := <-results:
+			if result.err != nil {
+				t.Fatalf("round %d: sibling %s bootstrap: %v", round, result.taskID, result.err)
+			}
+			completed++
+		}
+	}
+	for completed < siblings {
+		result := <-results
+		if result.err != nil {
+			t.Fatalf("round %d: sibling %s bootstrap: %v", round, result.taskID, result.err)
+		}
+		completed++
+	}
+	if _, err := os.Stat(lockPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("round %d: expected shared bootstrap lock removed, stat err=%v", round, err)
+	}
+}
+
+func TestBootstrapFailureAfterWorkIsClassifiedApart(t *testing.T) {
+	t.Parallel()
+	const command = "printf complete > bootstrap.complete; exit 7"
+
+	beforeErr := runBootstrap(
+		context.Background(),
+		"",
+		BootstrapSpec{Command: command, Timeout: time.Second},
+		io.Discard,
+	)
+	var before *BootstrapError
+	if !errors.As(beforeErr, &before) {
+		t.Fatalf("expected pre-start BootstrapError, got %T %[1]v", beforeErr)
+	}
+	if before.Stage != BootstrapFailureBeforeStart {
+		t.Fatalf("expected pre-start classification, got %q", before.Stage)
+	}
+	if !strings.Contains(before.Error(), "bootstrap work did not start") {
+		t.Fatalf("expected pre-start failure message, got %q", before.Error())
+	}
+
+	worktreeDir := t.TempDir()
+	afterErr := runBootstrap(
+		context.Background(),
+		worktreeDir,
+		BootstrapSpec{Command: command, Timeout: time.Second},
+		io.Discard,
+	)
+	var after *BootstrapError
+	if !errors.As(afterErr, &after) {
+		t.Fatalf("expected post-start BootstrapError, got %T %[1]v", afterErr)
+	}
+	if after.Stage != BootstrapFailureAfterStart {
+		t.Fatalf("expected post-start classification, got %q", after.Stage)
+	}
+	if !strings.Contains(after.Error(), "bootstrap work may have been applied") {
+		t.Fatalf("expected post-start failure message, got %q", after.Error())
+	}
+	if got := mustReadWorktreeTest(t, filepath.Join(worktreeDir, "bootstrap.complete")); got != "complete" {
+		t.Fatalf("expected bootstrap work to remain observable, got %q", got)
+	}
+}
+
 func TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit(t *testing.T) {
 	t.Parallel()
 	var output bytes.Buffer
@@ -196,7 +353,10 @@ func TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit(t *testing.T) {
 	if bootstrapErr.Command != command {
 		t.Fatalf("expected command %q, got %q", command, bootstrapErr.Command)
 	}
-	if !strings.Contains(err.Error(), "worktree bootstrap failed: "+command+": exit status 7") {
+	if bootstrapErr.Stage != BootstrapFailureAfterStart {
+		t.Fatalf("expected post-start classification, got %q", bootstrapErr.Stage)
+	}
+	if !strings.Contains(err.Error(), "worktree bootstrap failed: "+command+": exit status 7; bootstrap work may have been applied") {
 		t.Fatalf("expected bootstrap failure message, got %q", err.Error())
 	}
 	if bootstrapErr.Tail != "failure-tail" {
@@ -204,6 +364,41 @@ func TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit(t *testing.T) {
 	}
 	if output.String() != "failure-tail" {
 		t.Fatalf("expected output streamed before failure, got %q", output.String())
+	}
+}
+
+type bootstrapStartWriter struct {
+	taskID  string
+	started chan<- string
+	buffer  bytes.Buffer
+	once    sync.Once
+}
+
+func (writer *bootstrapStartWriter) Write(p []byte) (int, error) {
+	written, err := writer.buffer.Write(p)
+	if err != nil {
+		return written, err
+	}
+	if strings.Contains(writer.buffer.String(), "bootstrap-started\n") {
+		writer.once.Do(func() {
+			writer.started <- writer.taskID
+		})
+	}
+	return written, nil
+}
+
+func releaseBootstrap(t *testing.T, path string) {
+	t.Helper()
+	release, err := os.OpenFile(path, os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatalf("open bootstrap release FIFO: %v", err)
+	}
+	if _, err := io.WriteString(release, "release\n"); err != nil {
+		_ = release.Close()
+		t.Fatalf("write bootstrap release: %v", err)
+	}
+	if err := release.Close(); err != nil {
+		t.Fatalf("close bootstrap release FIFO: %v", err)
 	}
 }
 
@@ -220,7 +415,10 @@ func TestRunBootstrapReturnsBootstrapErrorOnTimeout(t *testing.T) {
 	if bootstrapErr.Command != command {
 		t.Fatalf("expected command %q, got %q", command, bootstrapErr.Command)
 	}
-	if !strings.Contains(err.Error(), "worktree bootstrap failed: "+command+": timed out after 10ms") {
+	if bootstrapErr.Stage != BootstrapFailureAfterStart {
+		t.Fatalf("expected post-start classification, got %q", bootstrapErr.Stage)
+	}
+	if !strings.Contains(err.Error(), "worktree bootstrap failed: "+command+": timed out after 10ms; bootstrap work may have been applied") {
 		t.Fatalf("expected timeout bootstrap failure, got %q", err.Error())
 	}
 }

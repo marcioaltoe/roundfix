@@ -1,6 +1,7 @@
 ---
 spec: 0097-a-wave-that-cannot-collide
-status: active
+status: archived
+archived: 2026-09-02
 created: 2026-08-12
 surfaces: [backend, infra]
 ---
@@ -42,7 +43,7 @@ this Spec makes the safety a property the graph can prove before it dispatches.
   applies directly — the collision this Spec detects is produced at dispatch, which
   is where the check is placed rather than at integration. No accepted ADR governs
   wave composition, which is why the rule this Spec adds is new rather than a
-  restatement. ADR-0127 places process residue in the readiness diagnostic; this Spec schedules waves before dispatch and inspects no process table, so it does not apply. Source: `docs/agents/domain.md`.
+  restatement. ADR-0127 places process residue in the readiness diagnostic; this Spec schedules waves before dispatch and inspects no process table, so it does not apply. ADR-0148 establishes that a rule enforced at authoring and at Run time lives in one extracted prober both callers use, so a checker cannot approve what the Run later refuses; the collision rule follows that shape. ADR-0135 makes an absent diagnostic a reported state rather than an empty message, which is the principle the worktree failure message applies to a raw errno. ADR-0093 bounds the Spec Consistency Check to what artifacts say rather than to inference, which is the line the collision rule works inside: it reads paths that resolve to repository files and never infers a Task's intent. Source: `docs/agents/domain.md`.
 - Tooling authority: not applicable — no protected tooling mutation is proposed
   or authorized. The work changes daemon, worktree, and graph-validation behavior
   in production Go and its tests, creating or editing no linter, formatter,

@@ -334,6 +334,17 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	if err != nil {
 		return TaskCycleResult{}, err
 	}
+	// A serial plan has no Wave, so it has no collision to refuse. A Task
+	// Worktree is based on the Run Branch tip as it stands when the Task is
+	// created, so at Task Capacity 1 the previous Task has already integrated
+	// and the next one starts from its result. The stale base this rule exists
+	// to catch cannot form, and refusing anyway would refuse work the Run can
+	// perform.
+	if plan.Concurrency > 1 {
+		if err := refuseTaskPlanWaveCollisions(plan); err != nil {
+			return TaskCycleResult{}, err
+		}
+	}
 	taskCapacity := plan.Concurrency
 	verificationCapacity := plan.VerificationConcurrency
 	plan.verificationGate = newVerificationGate(verificationCapacity)
@@ -382,6 +393,37 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 		return result, err
 	}
 	return result, nil
+}
+
+func refuseTaskPlanWaveCollisions(plan TaskPlan) error {
+	collisions, err := spec.Collisions(plan.WorkDir, &spec.Graph{
+		Spec:  plan.Spec,
+		Tasks: plan.Tasks,
+	})
+	if err != nil {
+		return fmt.Errorf("task cycle: inspect Task Graph Wave collisions before dispatch: %w", err)
+	}
+	if len(collisions) == 0 {
+		return nil
+	}
+
+	details := make([]string, 0, len(collisions))
+	for _, collision := range collisions {
+		paths := make([]string, 0, len(collision.Paths))
+		for path, source := range collision.Paths {
+			paths = append(paths, fmt.Sprintf("%s (%s)", path, source))
+		}
+		sort.Strings(paths)
+		details = append(details, fmt.Sprintf(
+			"Task %s and Task %s share repository files: %s; add a `needs` edge from Task %s to Task %s",
+			collision.First,
+			collision.Second,
+			strings.Join(paths, ", "),
+			collision.Second,
+			collision.First,
+		))
+	}
+	return fmt.Errorf("task cycle: refuse Wave before dispatch because Tasks collide: %s", strings.Join(details, "; "))
 }
 
 func taskPlanWithoutQAGate(plan TaskPlan) (TaskPlan, *spec.Task, error) {
@@ -547,6 +589,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 			CopyList:        plan.CopyList,
 			Bootstrap:       plan.Bootstrap,
 			BootstrapOutput: plan.BootstrapOutput,
+			Concurrency:     plan.Concurrency,
 		})
 		if err != nil {
 			var bootstrapErr *runworktree.BootstrapError

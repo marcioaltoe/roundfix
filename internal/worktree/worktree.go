@@ -62,6 +62,7 @@ type TaskCreateOptions struct {
 	CopyList        []string
 	Bootstrap       BootstrapSpec
 	BootstrapOutput io.Writer
+	Concurrency     int
 }
 
 type BootstrapSpec struct {
@@ -69,18 +70,49 @@ type BootstrapSpec struct {
 	Timeout time.Duration
 }
 
+// bootstrapPermit serializes Worktree Bootstrap commands inside one Roundfix
+// process while leaving worktree provisioning and the Task lifecycle parallel.
+var bootstrapPermit = func() chan struct{} {
+	permit := make(chan struct{}, 1)
+	permit <- struct{}{}
+	return permit
+}()
+
+// BootstrapFailureStage reports whether a failed command could have applied
+// bootstrap work before Roundfix observed the failure.
+type BootstrapFailureStage string
+
+const (
+	BootstrapFailureBeforeStart BootstrapFailureStage = "before-start"
+	BootstrapFailureAfterStart  BootstrapFailureStage = "after-start"
+)
+
 type BootstrapError struct {
 	Command string
 	Err     error
 	Tail    string
+	Stage   BootstrapFailureStage
 }
 
 func (err *BootstrapError) Error() string {
+	// One guard rather than two: the partial form still read err.Command below
+	// it, so a nil receiver formatted through the error interface panicked at
+	// the exact point the guards claimed to cover.
+	if err == nil {
+		return "worktree bootstrap failed: unknown error"
+	}
 	reason := "unknown error"
-	if err != nil && err.Err != nil {
+	if err.Err != nil {
 		reason = err.Err.Error()
 	}
-	return fmt.Sprintf("worktree bootstrap failed: %s: %s", err.Command, reason)
+	state := ""
+	switch err.Stage {
+	case BootstrapFailureBeforeStart:
+		state = "; bootstrap work did not start"
+	case BootstrapFailureAfterStart:
+		state = "; bootstrap work may have been applied"
+	}
+	return fmt.Sprintf("worktree bootstrap failed: %s: %s%s", err.Command, reason, state)
 }
 
 func (err *BootstrapError) Unwrap() error {
@@ -1413,22 +1445,27 @@ func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
 }
 
 func CreateTask(ctx context.Context, run Ref, taskID string, copyList []string) (TaskRef, error) {
-	return CreateTaskWithOptions(ctx, run, taskID, TaskCreateOptions{CopyList: copyList})
+	return CreateTaskWithOptions(ctx, run, taskID, TaskCreateOptions{CopyList: copyList, Concurrency: 1})
 }
 
 func CreateTaskWithOptions(ctx context.Context, run Ref, taskID string, opts TaskCreateOptions) (TaskRef, error) {
 	if err := validateRef(run); err != nil {
-		return TaskRef{}, err
+		return TaskRef{}, taskWorktreeCreationError(run.RunID, taskID, opts.Concurrency, err)
 	}
 	taskID, err := cleanPathSegment(taskID)
 	if err != nil {
-		return TaskRef{}, fmt.Errorf("create Task Worktree: %w", err)
+		return TaskRef{}, taskWorktreeCreationError(run.RunID, taskID, opts.Concurrency, err)
 	}
 
 	runner := execGitRunner{}
 	baseSHA, err := gitRevision(ctx, runner, run.UserRoot, run.Branch)
 	if err != nil {
-		return TaskRef{}, fmt.Errorf("resolve Run Branch tip for Task Worktree: %w", err)
+		return TaskRef{}, taskWorktreeCreationError(
+			run.RunID,
+			taskID,
+			opts.Concurrency,
+			fmt.Errorf("resolve Run Branch tip: %w", err),
+		)
 	}
 	ref := TaskRef{
 		RunID:    run.RunID,
@@ -1439,18 +1476,33 @@ func CreateTaskWithOptions(ctx context.Context, run Ref, taskID string, opts Tas
 		BaseSHA:  baseSHA,
 	}
 	if err := os.MkdirAll(filepath.Dir(ref.Path), 0o755); err != nil {
-		return TaskRef{}, fmt.Errorf("create Task Worktree parent %q: %w", filepath.Dir(ref.Path), err)
+		return TaskRef{}, taskWorktreeCreationError(
+			ref.RunID,
+			ref.TaskID,
+			opts.Concurrency,
+			fmt.Errorf("create parent %q: %w", filepath.Dir(ref.Path), err),
+		)
 	}
 	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "-b", ref.Branch, ref.Path, baseSHA); err != nil {
-		return TaskRef{}, fmt.Errorf("create Task Worktree: %w", err)
+		return TaskRef{}, taskWorktreeCreationError(ref.RunID, ref.TaskID, opts.Concurrency, err)
 	}
 	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
-		return TaskRef{}, err
+		return TaskRef{}, taskWorktreeCreationError(ref.RunID, ref.TaskID, opts.Concurrency, err)
 	}
 	if err := runBootstrap(ctx, ref.Path, opts.Bootstrap, opts.BootstrapOutput); err != nil {
-		return ref, err
+		return ref, taskWorktreeCreationError(ref.RunID, ref.TaskID, opts.Concurrency, err)
 	}
 	return ref, nil
+}
+
+func taskWorktreeCreationError(runID string, taskID string, concurrency int, err error) error {
+	return fmt.Errorf(
+		"create Task Worktree for Run %q Task %s at configured concurrency %d; next action: inspect the underlying error before retrying the Run: %w",
+		runID,
+		taskID,
+		concurrency,
+		err,
+	)
 }
 
 func TaskRefFor(run Ref, taskID string) (TaskRef, error) {
@@ -2360,14 +2412,22 @@ func runBootstrap(ctx context.Context, worktreeDir string, spec BootstrapSpec, o
 	}
 	worktreeDir = strings.TrimSpace(worktreeDir)
 	if worktreeDir == "" {
-		return &BootstrapError{Command: command, Err: errors.New("worktree root is required")}
+		return &BootstrapError{Command: command, Err: errors.New("worktree root is required"), Stage: BootstrapFailureBeforeStart}
 	}
 	if spec.Timeout <= 0 {
-		return &BootstrapError{Command: command, Err: errors.New("timeout must be greater than 0")}
+		return &BootstrapError{Command: command, Err: errors.New("timeout must be greater than 0"), Stage: BootstrapFailureBeforeStart}
 	}
 	if out == nil {
 		out = io.Discard
 	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-bootstrapPermit:
+	}
+	defer func() {
+		bootstrapPermit <- struct{}{}
+	}()
 
 	runCtx, cancel := context.WithTimeout(ctx, spec.Timeout)
 	defer cancel()
@@ -2377,7 +2437,13 @@ func runBootstrap(ctx context.Context, worktreeDir string, spec BootstrapSpec, o
 	stream := io.MultiWriter(out, tail)
 	cmd.Stdout = stream
 	cmd.Stderr = stream
-	err := cmd.Run()
+	if err := cmd.Start(); err != nil {
+		if errors.Is(runCtx.Err(), context.Canceled) && ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return &BootstrapError{Command: command, Err: err, Tail: tail.String(), Stage: BootstrapFailureBeforeStart}
+	}
+	err := cmd.Wait()
 	if err == nil {
 		return nil
 	}
@@ -2386,12 +2452,13 @@ func runBootstrap(ctx context.Context, worktreeDir string, spec BootstrapSpec, o
 			Command: command,
 			Err:     fmt.Errorf("timed out after %s", spec.Timeout),
 			Tail:    tail.String(),
+			Stage:   BootstrapFailureAfterStart,
 		}
 	}
 	if errors.Is(runCtx.Err(), context.Canceled) && ctx.Err() != nil {
 		return ctx.Err()
 	}
-	return &BootstrapError{Command: command, Err: err, Tail: tail.String()}
+	return &BootstrapError{Command: command, Err: err, Tail: tail.String(), Stage: BootstrapFailureAfterStart}
 }
 
 type boundedTail struct {
