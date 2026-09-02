@@ -129,8 +129,10 @@ status. Spec 0117's QA Task still carries the first shape.
 
 - No Run Branches, no Run Worktrees, no retained artifacts. `~/.roundfix/worktrees`
   is empty.
-- The Run Database is at schema 13 and the installed binary is 0.12.0, the
-  released one, so the machine-wide database and the fleet agree. Do not run a
+- The Run Database is at schema 13. Both `roundfix` binaries on this machine,
+  `/opt/homebrew/bin` and `~/go/bin`, are 0.12.0, so nothing here opens the
+  machine-wide database expecting an older schema. That is a statement about
+  this machine, not about every repository the database serves. Do not run a
   `bin/roundfix` built from a branch carrying an unreleased migration.
 - A release bump touches two files, and `dist/npm/roundfix/package.json` is the
   hinge between two different checks. `make verify` fails when
