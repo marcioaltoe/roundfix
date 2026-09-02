@@ -134,10 +134,26 @@ func declaredTaskTouches(repoRoot string, task Task) (map[string]TouchSource, er
 	return paths, nil
 }
 
+// repositoryFile reads a candidate lifted out of a Verification command or a
+// declared Context reference. Such a candidate is a token from a shell line,
+// not a path: it can carry surrounding whitespace, a leading dash that is
+// really a flag, or a glob that names no single file. Those are filtered here
+// and nowhere else.
 func repositoryFile(repoRoot, candidate string) (string, bool, error) {
 	candidate = strings.TrimSpace(candidate)
 	if candidate == "" || strings.HasPrefix(candidate, "-") ||
 		strings.ContainsAny(candidate, "$`*?[]{}") {
+		return "", false, nil
+	}
+	return repositoryFileExact(repoRoot, candidate)
+}
+
+// repositoryFileExact reads a path exactly as given. Git reports a path
+// verbatim, so trimming it or rejecting it for shell metacharacters would
+// answer about a different file than the one history names — or discard a real
+// one, since `foo[1].go` is an ordinary filename.
+func repositoryFileExact(repoRoot, candidate string) (string, bool, error) {
+	if candidate == "" {
 		return "", false, nil
 	}
 
@@ -311,12 +327,11 @@ func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]b
 	// --all, not HEAD: a settlement commit lives on its Run Branch until
 	// integration moves it, and a Run that ended Unresolved leaves it there.
 	// Searching HEAD alone would miss the prior Run this source exists to read.
-	// No repository, or one with no commits, is genuinely absent evidence: the
-	// prior-Run source is one of three and a Spec can be checked outside a
-	// working repository. Past that point a read failure is a failure, because
-	// reporting it as absent evidence would under-report a real collision —
-	// the failure this rule exists to remove.
-	if _, err := collisionGit(repoRoot, "rev-parse", "--verify", "HEAD"); err != nil {
+	available, err := priorRunHistoryReadable(repoRoot)
+	if err != nil {
+		return nil, err
+	}
+	if !available {
 		return touches, nil
 	}
 	output, err := collisionGit(repoRoot, "log", "--all", "--grep=Roundfix-Task:", format)
@@ -350,7 +365,10 @@ func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]b
 		changed, err := collisionGit(repoRoot, "-c", "core.quotePath=false",
 			"diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", commit)
 		if err != nil {
-			return nil, err
+			// The Task keeps its claim above, so no older settlement answers
+			// in its place; only this Task's prior-Run paths are omitted, and
+			// the other two sources still speak for it.
+			continue
 		}
 		for _, line := range strings.Split(changed, "\x00") {
 			// History names paths the tree no longer carries. A file two Tasks
@@ -358,9 +376,7 @@ func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]b
 			// repository-boundary and regular-file check the declared sources
 			// use applies here; without it this source could report a collision
 			// on a path that does not exist.
-			// No trimming: git reports the path exactly, and a name that
-			// legitimately ends in whitespace is still that name.
-			relative, ok, err := repositoryFile(repoRoot, line)
+			relative, ok, err := repositoryFileExact(repoRoot, line)
 			if err != nil || !ok {
 				continue
 			}
@@ -368,6 +384,35 @@ func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]b
 		}
 	}
 	return touches, nil
+}
+
+// priorRunHistoryReadable answers whether this repository can be read for
+// settlement history at all.
+//
+// Two failures are absent evidence rather than a fault: a path outside any
+// repository, because a Spec can be checked outside a working tree, and a
+// repository with no commits. `rev-parse --verify --quiet HEAD` separates them
+// by exit status — 1 and silent when the ref does not resolve, 128 with a
+// fatal when the repository itself is the problem — so only the one fatal that
+// means "no repository" is tolerated. A permission failure or a damaged object
+// store reaches neither branch: reporting those as absent evidence would let
+// an unsafe Wave through, which is the failure this rule exists to remove.
+func priorRunHistoryReadable(repoRoot string) (bool, error) {
+	if _, err := collisionGit(repoRoot, "rev-parse", "--verify", "--quiet", "HEAD"); err != nil {
+		var exit *exec.ExitError
+		if !errors.As(err, &exit) {
+			return false, err
+		}
+		stderr := strings.TrimSpace(string(exit.Stderr))
+		if exit.ExitCode() == 1 && stderr == "" {
+			return false, nil
+		}
+		if strings.Contains(stderr, "not a git repository") {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func collisionGit(repoRoot string, args ...string) (string, error) {

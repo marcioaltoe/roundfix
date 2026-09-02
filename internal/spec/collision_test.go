@@ -348,3 +348,72 @@ func TestCollisionsReadsSettlementsOnRunBranchesNotOnlyHead(t *testing.T) {
 		t.Fatalf("Collisions = %#v, want %#v: the settlements are reachable only from the Run Branch", collisions, want)
 	}
 }
+
+func TestCollisionsReadsHistoricalPathsGitReportsVerbatim(t *testing.T) {
+	// A filename can contain a character that is a shell metacharacter and an
+	// ordinary letter in a path. Verification candidates are tokens from a
+	// command line and are filtered for those; a path Git reports is the path,
+	// and filtering it there would discard real evidence.
+	repoRoot := t.TempDir()
+	gittest.InitRepo(t, repoRoot, "--initial-branch=main")
+	const shared = "internal/spec/fixture[1].go"
+	writeCollisionFile(t, repoRoot, shared, "package spec\n")
+	gittest.Run(t, repoRoot, "add", "--", shared)
+	gittest.Run(t, repoRoot, "commit", "-m", "seed")
+	for _, taskID := range []string{"task_01", "task_02"} {
+		writeCollisionFile(t, repoRoot, shared, "package spec\n\nconst x = \""+taskID+"\"\n")
+		gittest.Run(t, repoRoot, "add", "--", shared)
+		gittest.Run(t, repoRoot, "commit", "-m", "feat: bracket fixture",
+			"-m", "Roundfix-Spec: 0097-collision\nRoundfix-Task: "+taskID)
+	}
+
+	graph := &Graph{
+		Spec:  Spec{Slug: "0097-collision"},
+		Tasks: []Task{{ID: "task_01"}, {ID: "task_02"}},
+	}
+	collisions, err := Collisions(repoRoot, graph)
+	if err != nil {
+		t.Fatalf("Collisions returned error: %v", err)
+	}
+	want := []WaveCollision{{
+		First:  "task_01",
+		Second: "task_02",
+		Paths:  map[string]TouchSource{shared: TouchFromPriorRun},
+	}}
+	if !reflect.DeepEqual(collisions, want) {
+		t.Fatalf("Collisions = %#v, want %#v", collisions, want)
+	}
+}
+
+func TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence(t *testing.T) {
+	// A Spec can be checked outside a working repository, and a repository can
+	// have no commits yet. Neither is a read failure, and neither may fail the
+	// check: prior-Run history is one of three sources.
+	t.Parallel()
+	graph := &Graph{
+		Spec:  Spec{Slug: "0097-collision"},
+		Tasks: []Task{{ID: "task_01"}, {ID: "task_02"}},
+	}
+	for _, test := range []struct {
+		name  string
+		setup func(t *testing.T, repoRoot string)
+	}{
+		{name: "outside any repository", setup: func(*testing.T, string) {}},
+		{name: "repository with no commits", setup: func(t *testing.T, repoRoot string) {
+			gittest.InitRepo(t, repoRoot, "--initial-branch=main")
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			repoRoot := t.TempDir()
+			test.setup(t, repoRoot)
+			collisions, err := Collisions(repoRoot, graph)
+			if err != nil {
+				t.Fatalf("Collisions failed on %s: %v", test.name, err)
+			}
+			if len(collisions) != 0 {
+				t.Fatalf("Collisions = %#v, want none", collisions)
+			}
+		})
+	}
+}
