@@ -1,0 +1,29 @@
+Outside evidence source:
+docs/history/specs/0113-a-refused-gate-writes-its-refusal-once/_tasks.md
+
+The archived graph states that task_05 and task_07 ran as siblings on
+2026-08-26 and produced an integration conflict on mechanical_test.go that
+discarded a passing task_05. It now gives task_05 a needs edge on task_07.
+
+Neither archived task_05.md nor task_07.md has a "## Context" section. Their
+Verification commands both name internal/speccheck/mechanical.go. Their Results
+also name internal/speccheck/mechanical_test.go as an actual changed path. This
+corroborates the measured no-Context collision independently of Spec 0097.
+
+Commit-dependent changed-file audit (all commands exited 0):
+db6242d6: task_01.md, internal/spec/collision.go, internal/spec/collision_test.go
+7f00214d: task_02.md, internal/speccheck/citations.go,
+            internal/speccheck/coherence.go, internal/speccheck/coherence_test.go
+393663fd: task_03.md, internal/daemon/task_engine.go,
+            internal/daemon/task_engine_test.go
+629988c9: task_04.md, internal/daemon/task_engine_test.go,
+            internal/worktree/worktree.go, internal/worktree/worktree_test.go
+e5814ead: task_05.md, internal/daemon/task_engine.go,
+            internal/daemon/task_engine_test.go, internal/worktree/worktree.go,
+            internal/worktree/worktree_test.go
+
+No commit changed a Governed Path, so tooling authorization and consequent-fix
+chronology are not applicable. The base-to-head diff changes no .agents skill,
+internal/config path, Makefile, go.mod, or go.sum. The collision check adds a
+refusal and remedy; it does not reorder. Existing integration-conflict code is
+unchanged. Settlement and Verification capacity code is unchanged.

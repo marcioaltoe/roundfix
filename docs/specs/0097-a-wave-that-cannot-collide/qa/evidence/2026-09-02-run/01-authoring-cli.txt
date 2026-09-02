@@ -1,0 +1,16 @@
+Auditing binary:
+roundfix 0.11.0 (e5814ead, built 2026-09-02T12:08:00-0300)
+
+Collision journey:
+$ /private/tmp/roundfix-qa0097 spec check 0097-a-wave-that-cannot-collide --strict
+exit 1
+[error] SC-WAVE-COLLISION: Task task_01 and Task task_02 can run in the same Wave and share repository files: internal/spec/collision.go (verification command)
+fix: Give one Task a `needs` edge on the other in docs/specs/0097-a-wave-that-cannot-collide/_tasks.md.
+
+Independent confirmation after adding task_02 needs task_01 and making task_03
+name the same file through a transitive task_01 <- task_02 <- task_03 chain:
+$ /private/tmp/roundfix-qa0097 spec check 0097-a-wave-that-cannot-collide --strict
+exit 0
+No findings. Authored Verification commands were not executed.
+
+The scratch clone remained outside the repository and was not committed.

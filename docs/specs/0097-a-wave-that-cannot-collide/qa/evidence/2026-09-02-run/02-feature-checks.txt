@@ -1,0 +1,25 @@
+All commands ran against e5814eadb616c837ac53506defffe1425b70b652 and exited 0.
+
+$ go test -v -count=1 -run '^(TestCollisionsFindsTheMeasuredShape|TestCollisionsReturnsEveryPairAndSharedPath|TestCollisionsExcludesTransitivelyOrderedTasks|TestCollisionsRejectsPackageSelectorsFlagsAndTestNames|TestCollisionsLearnsPathFromDeclaredContext|TestCollisionsLearnsPathFromPackedPriorRunSettlementCommitsWithoutCommands|TestCollisionsRequiresGraphAndRepositoryRoot)$' ./internal/spec
+PASS: all seven named tests and both invalid-input subtests.
+
+$ go test -v -count=1 -run '^TestWaveCollisionIsReportedAtAuthoring$' ./internal/speccheck
+PASS: colliding graph, serialized graph, and Spec with no graph yet.
+
+$ go test -v -count=1 -run '^TestTaskCycle(RefusesAWaveCollision|DispatchesSerializedCollisionGraph)$' ./internal/daemon
+PASS: both tests. The refusal test reads the Run Database, Agent Selection
+attempts, prepared Agent Sessions, Task Worktree creation requests, Task status,
+and the unchanged plan; the serialized test observes task_01 then task_02.
+
+$ go test -race -v -count=1 -timeout=90s -run '^(TestBootstrapSerializesAcrossSiblings|TestBootstrapFailureAfterWorkIsClassifiedApart|TestTaskWorktreeCreationFailureNamesItsContext)$' ./internal/worktree
+PASS: all three tests under the race detector. The bootstrap test admitted four
+siblings over six rounds through a real exclusive filesystem lock (24 commands)
+without collision. The failure-stage test observed the post-start file content
+"complete" after exit 7. The creation failure test used a real filesystem error
+and proved errors.As/errors.Is retained it.
+
+$ go test -v -count=1 -run '^TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap$' ./internal/daemon
+PASS: independent Task scheduling remains concurrent and capacity-bounded.
+
+$ go test -v -count=1 -run '^(TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork|TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork)$' ./internal/cli
+PASS: both assembled CLI Implement flows.

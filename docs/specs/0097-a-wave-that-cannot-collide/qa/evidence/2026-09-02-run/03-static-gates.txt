@@ -1,0 +1,30 @@
+$ roundfix spec check 0097-a-wave-that-cannot-collide --strict
+exit 0: no findings; authored Verification commands were not executed.
+Skipped: absent Vocabulary Contract and absent references/_index.md.
+
+$ make verify
+attempt 1: exit 2. The two internal/cli force-stop tests failed because the
+sandbox denied process-table access with "operation not permitted". One ACP
+test also failed once, then passed focused and passed on the full rerun.
+attempt 2: exit 2 only for the same two process-table tests. All other packages,
+including internal/spec, internal/speccheck, internal/daemon, and
+internal/worktree, passed.
+
+Unchanged-base reproduction at 0c17ca8d978f0b68dff980a1aceb61fb33097107:
+$ GOCACHE=/private/tmp/roundfix-qa0097-base-cli-cache go test -count=1 -run '^(TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner|TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion)$' ./internal/cli
+exit 1: both tests failed at "read process table for non-session owner:
+operation not permitted". This proves the denial is environmental and predates
+the Spec implementation.
+
+$ go test -count=1 -run '^TestSealedACPXPromptRejectsToolUseAndClosesSession$' ./internal/agent
+exit 0 on the current tree.
+
+$ make verify-docs
+exit 0: docs contract, repository contract, corpus budget, and corpus-wide
+roundfix spec check passed. The same two optional detector skips remained.
+
+$ RunMechanicalStage(RepoRoot=<audited tree>, ReportPath=docs/specs/0097-a-wave-that-cannot-collide/qa/qa-report-2026-09-02.md)
+exit 0 with Findings=[], Blocked=[], RepairFailures=[], Blocking=false. Only the
+two preserved non-applicable skips remained: tooling authorization and
+consequent-fix declaration. QA Report structure and every QA evidence path
+resolved successfully.
