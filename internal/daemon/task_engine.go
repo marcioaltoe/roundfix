@@ -334,6 +334,9 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	if err != nil {
 		return TaskCycleResult{}, err
 	}
+	if err := refuseTaskPlanWaveCollisions(plan); err != nil {
+		return TaskCycleResult{}, err
+	}
 	taskCapacity := plan.Concurrency
 	verificationCapacity := plan.VerificationConcurrency
 	plan.verificationGate = newVerificationGate(verificationCapacity)
@@ -382,6 +385,37 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 		return result, err
 	}
 	return result, nil
+}
+
+func refuseTaskPlanWaveCollisions(plan TaskPlan) error {
+	collisions, err := spec.Collisions(plan.WorkDir, &spec.Graph{
+		Spec:  plan.Spec,
+		Tasks: plan.Tasks,
+	})
+	if err != nil {
+		return fmt.Errorf("task cycle: inspect Task Graph Wave collisions before dispatch: %w", err)
+	}
+	if len(collisions) == 0 {
+		return nil
+	}
+
+	details := make([]string, 0, len(collisions))
+	for _, collision := range collisions {
+		paths := make([]string, 0, len(collision.Paths))
+		for path, source := range collision.Paths {
+			paths = append(paths, fmt.Sprintf("%s (%s)", path, source))
+		}
+		sort.Strings(paths)
+		details = append(details, fmt.Sprintf(
+			"Task %s and Task %s share repository files: %s; add a `needs` edge from Task %s to Task %s",
+			collision.First,
+			collision.Second,
+			strings.Join(paths, ", "),
+			collision.Second,
+			collision.First,
+		))
+	}
+	return fmt.Errorf("task cycle: refuse Wave before dispatch because Tasks collide: %s", strings.Join(details, "; "))
 }
 
 func taskPlanWithoutQAGate(plan TaskPlan) (TaskPlan, *spec.Task, error) {

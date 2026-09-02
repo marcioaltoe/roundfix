@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -33,3 +33,26 @@ is reported before any Agent Session opens.
 
 ## Verification
 - `grep -q "Collisions" internal/daemon/task_engine.go || exit 1; grep -q "TestTaskCycleRefusesAWaveCollision" internal/daemon/task_engine_test.go || exit 1; go test -count=1 ./internal/daemon`
+
+## Result
+
+- `TaskCycle` now calls `spec.Collisions` after validating the plan and before
+  publishing the cycle-start event or entering the scheduler. A collision
+  returns one deterministic refusal that names every Task pair, sorted shared
+  path with its source, and the `needs` edge that would serialize the pair; the
+  plan itself is never rewritten.
+- `TestTaskCycleRefusesAWaveCollision` exercises two same-Wave Tasks through the
+  daemon boundary. It asserts the refusal text, unchanged pending Task status,
+  no Agent Selection attempt in the Run Database, no prepared Agent Session,
+  and no Task Worktree creation.
+- `TestTaskCycleDispatchesSerializedCollisionGraph` gives the same shared path a
+  `needs` edge and observes both Tasks dispatch in dependency order with both
+  Task Agent Session scopes persisted in the Run Database.
+- Focused red signal: `rtk go test -run '^TestTaskCycleRefusesAWaveCollision$'
+  ./internal/daemon` failed because the pre-dispatch refusal did not exist.
+- Focused checks after implementation: `rtk go test -run
+  '^TestTaskCycle(RefusesAWaveCollision|DispatchesSerializedCollisionGraph)$'
+  ./internal/daemon` reported 2 passing tests; `rtk go test -run
+  '^TestTaskCycle' ./internal/daemon` reported 94 passing tests.
+- The Daemon-owned command in `## Verification` was not run during this Agent
+  turn.
