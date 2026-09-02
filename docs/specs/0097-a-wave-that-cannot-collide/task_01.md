@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -41,3 +41,54 @@ nothing.
 
 ## Verification
 - `grep -q "func Collisions" internal/spec/collision.go || exit 1; grep -q "TouchFromVerification" internal/spec/collision.go || exit 1; grep -q "TestCollisionsFindsTheMeasuredShape" internal/spec/collision_test.go || exit 1; go test -count=1 ./internal/spec`
+
+## Result
+
+Implementation:
+
+- `Collisions` returns every unordered independent Task pair with its shared
+  repository files and touch sources.
+- Touch sets combine literal file paths from Verification commands, declared
+  Context entries, and the newest reachable settlement commit for each Task.
+  Git objects, including packed and delta-compressed objects, are read directly
+  from the repository without starting a process.
+- The dependency closure follows `needs` transitively in both directions before
+  comparing a pair. Candidate paths must resolve to regular files inside the
+  repository; directories, package selectors, flags, test names, expansions,
+  and paths outside the repository are ignored.
+
+Acceptance evidence:
+
+- Same-Wave pair and source reporting: `TestCollisionsFindsTheMeasuredShape`
+  exercises two Tasks with no Context whose Verification commands name
+  `internal/speccheck/mechanical.go` and observes one collision attributed to
+  `TouchFromVerification`; `TestCollisionsReturnsEveryPairAndSharedPath`
+  observes all three pairs among three independent Tasks and both shared paths
+  on the pair that names both.
+- Three-source union: the measured-shape test covers Verification,
+  `TestCollisionsLearnsPathFromDeclaredContext` covers Context, and
+  `TestCollisionsLearnsPathFromPackedPriorRunSettlementCommitsWithoutCommands`
+  covers settlement commits.
+- File-only filtering:
+  `TestCollisionsRejectsPackageSelectorsFlagsAndTestNames` exercises
+  `./internal/cli`, `-run`, and `TestCommand` and observes no collision.
+- Transitive ordering: `TestCollisionsExcludesTransitivelyOrderedTasks` uses
+  `task_01 <- task_02 <- task_03` with one common file and observes no pair,
+  including the chain's ends.
+- Read-only execution: the packed-prior-Run test clears `PATH` before calling
+  `Collisions`; the call still reads the settlement commits and returns the
+  expected collision.
+- Invalid-input behavior: `TestCollisionsRequiresGraphAndRepositoryRoot`
+  observes errors for a missing graph and a missing repository root.
+
+Focused checks:
+
+- Pre-change signal: `rtk rg -n "func Collisions|TestCollisionsFindsTheMeasuredShape" internal/spec`
+  exited 1 with no matches.
+- `rtk go test -run '^TestCollisions' ./internal/spec` initially exposed packed
+  symbolic-reference handling, then passed all 9 tests after the production
+  reader fix.
+- `rtk go vet ./internal/spec` exited 0 with no diagnostics.
+
+Daemon Verification was not run in this Agent turn; the Daemon owns the
+declared command and terminal Task settlement.
