@@ -1,7 +1,7 @@
 # The queue is empty (2026-09-02)
 
 `docs/specs/` carries no active Spec. Every item the 2026-08-26 triage listed is
-delivered, and four releases went out. This records what shipped, what the work
+delivered, and five releases went out. This records what shipped, what the work
 found on the way, and what is left — which is no longer a Spec queue but a set of
 decisions about mechanisms the practice has been working around by hand.
 
@@ -13,9 +13,7 @@ decisions about mechanisms the practice has been working around by hand.
 | v0.9.0 | 0118 | Task Carry-Forward accepts an `Unresolved` Run; `implement` refuses rather than re-executing proved work |
 | v0.10.0 | 0116 | A clean verdict states its own coverage; a QA Report names its Auditing Binary |
 | v0.11.0 | 0105 | Roundfix owns the QA Task's Verification; a finding blocks the rows it names |
-
-Spec 0097 — a wave that cannot collide — is in PR #173, Clean on its first Run,
-archived, awaiting merge and its own release.
+| v0.12.0 | 0097 | A Wave that would collide is reported before it dispatches; bootstrap is serialized across siblings |
 
 The `kickoff` versus `implement-spec` question is settled and recorded at
 `docs/workflow/2026-08-31-kickoff-is-settled-implement-spec-remains-the-loop.md`:
@@ -86,6 +84,19 @@ removed `git` from `PATH` to prove it. The repository invokes `git` for exactly
 those questions in four packages. Deleted in review; the sentence is corrected in
 the archived TechSpec.
 
+**One defect, four times in one file, in both directions.** Spec 0097's
+prior-Run source treats a failure to read as an absence of evidence. Review found
+it in `git log`, in the `HEAD` probe added to fix the first, in `diff-tree`, and
+in `repositoryFileExact` — the middle one introduced by the fix for the first.
+Under-reporting is this rule's whole failure mode, so each instance silently
+permitted the Wave it exists to refuse. The stable answer was to stop inferring
+from the presence of an error and read the exit status: `rev-parse --verify
+--quiet HEAD` gives 1 and silence for a repository with no commits, 128 with a
+fatal for no repository, and everything else propagates. Related: a path filter
+built for shell tokens was reused for paths Git reports verbatim, which trimmed
+them and discarded any name containing a glob character — `fixture[1].go` is an
+ordinary filename.
+
 **Three families of gate that hides its exit status**, all found in authored
 Verification commands this session: a pipe into `grep -q "^ok"` passes when any
 package prints `ok`; the same idiom over several packages hides a red one; and a
@@ -123,6 +134,9 @@ status. Spec 0117's QA Task still carries the first shape.
   built from a branch carrying an unreleased migration.
 - Eight pending Inbox Entries under `inbox/roundfix/`, four of them from this
   session. Two captures were triaged to `_triaged/` when their defects shipped.
+- The installed binary and `internal/app.Version` are both 0.12.0. The npm
+  manifest at `dist/npm/roundfix/package.json` carries the version too, and the
+  gate fails the release commit if the two disagree.
 
 ## If you pick this up
 
