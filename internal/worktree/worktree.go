@@ -69,10 +69,28 @@ type BootstrapSpec struct {
 	Timeout time.Duration
 }
 
+// bootstrapPermit serializes Worktree Bootstrap commands inside one Roundfix
+// process while leaving worktree provisioning and the Task lifecycle parallel.
+var bootstrapPermit = func() chan struct{} {
+	permit := make(chan struct{}, 1)
+	permit <- struct{}{}
+	return permit
+}()
+
+// BootstrapFailureStage reports whether a failed command could have applied
+// bootstrap work before Roundfix observed the failure.
+type BootstrapFailureStage string
+
+const (
+	BootstrapFailureBeforeStart BootstrapFailureStage = "before-start"
+	BootstrapFailureAfterStart  BootstrapFailureStage = "after-start"
+)
+
 type BootstrapError struct {
 	Command string
 	Err     error
 	Tail    string
+	Stage   BootstrapFailureStage
 }
 
 func (err *BootstrapError) Error() string {
@@ -80,7 +98,16 @@ func (err *BootstrapError) Error() string {
 	if err != nil && err.Err != nil {
 		reason = err.Err.Error()
 	}
-	return fmt.Sprintf("worktree bootstrap failed: %s: %s", err.Command, reason)
+	state := ""
+	if err != nil {
+		switch err.Stage {
+		case BootstrapFailureBeforeStart:
+			state = "; bootstrap work did not start"
+		case BootstrapFailureAfterStart:
+			state = "; bootstrap work may have been applied"
+		}
+	}
+	return fmt.Sprintf("worktree bootstrap failed: %s: %s%s", err.Command, reason, state)
 }
 
 func (err *BootstrapError) Unwrap() error {
@@ -2360,14 +2387,22 @@ func runBootstrap(ctx context.Context, worktreeDir string, spec BootstrapSpec, o
 	}
 	worktreeDir = strings.TrimSpace(worktreeDir)
 	if worktreeDir == "" {
-		return &BootstrapError{Command: command, Err: errors.New("worktree root is required")}
+		return &BootstrapError{Command: command, Err: errors.New("worktree root is required"), Stage: BootstrapFailureBeforeStart}
 	}
 	if spec.Timeout <= 0 {
-		return &BootstrapError{Command: command, Err: errors.New("timeout must be greater than 0")}
+		return &BootstrapError{Command: command, Err: errors.New("timeout must be greater than 0"), Stage: BootstrapFailureBeforeStart}
 	}
 	if out == nil {
 		out = io.Discard
 	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-bootstrapPermit:
+	}
+	defer func() {
+		bootstrapPermit <- struct{}{}
+	}()
 
 	runCtx, cancel := context.WithTimeout(ctx, spec.Timeout)
 	defer cancel()
@@ -2377,7 +2412,13 @@ func runBootstrap(ctx context.Context, worktreeDir string, spec BootstrapSpec, o
 	stream := io.MultiWriter(out, tail)
 	cmd.Stdout = stream
 	cmd.Stderr = stream
-	err := cmd.Run()
+	if err := cmd.Start(); err != nil {
+		if errors.Is(runCtx.Err(), context.Canceled) && ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return &BootstrapError{Command: command, Err: err, Tail: tail.String(), Stage: BootstrapFailureBeforeStart}
+	}
+	err := cmd.Wait()
 	if err == nil {
 		return nil
 	}
@@ -2386,12 +2427,13 @@ func runBootstrap(ctx context.Context, worktreeDir string, spec BootstrapSpec, o
 			Command: command,
 			Err:     fmt.Errorf("timed out after %s", spec.Timeout),
 			Tail:    tail.String(),
+			Stage:   BootstrapFailureAfterStart,
 		}
 	}
 	if errors.Is(runCtx.Err(), context.Canceled) && ctx.Err() != nil {
 		return ctx.Err()
 	}
-	return &BootstrapError{Command: command, Err: err, Tail: tail.String()}
+	return &BootstrapError{Command: command, Err: err, Tail: tail.String(), Stage: BootstrapFailureAfterStart}
 }
 
 type boundedTail struct {

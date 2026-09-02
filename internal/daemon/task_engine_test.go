@@ -3913,7 +3913,11 @@ func TestTaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks(t *testin
 	const command = "make task-bootstrap"
 	taskWorktrees := newFakeTaskWorktrees()
 	taskWorktrees.createErrByTask = map[string]error{
-		"task_01": &runworktree.BootstrapError{Command: command, Err: errors.New("exit status 7")},
+		"task_01": &runworktree.BootstrapError{
+			Command: command,
+			Err:     errors.New("exit status 7"),
+			Stage:   runworktree.BootstrapFailureAfterStart,
+		},
 	}
 	runner := &taskSchedulerRunner{
 		started: make(chan string, 3),
