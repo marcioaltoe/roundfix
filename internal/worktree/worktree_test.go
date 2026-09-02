@@ -197,9 +197,9 @@ func TestTaskWorktreeCreationFailureNamesItsContext(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected Task Worktree creation failure")
 	}
-	for _, context := range []string{`Run "creation-context"`, "Task task_02", "concurrency 4", "next action:"} {
-		if !strings.Contains(err.Error(), context) {
-			t.Errorf("creation error %q does not name %q", err, context)
+	for _, want := range []string{`Run "creation-context"`, "Task task_02", "concurrency 4", "next action:"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("creation error %q does not name %q", err, want)
 		}
 	}
 	var pathErr *os.PathError
@@ -213,81 +213,86 @@ func TestTaskWorktreeCreationFailureNamesItsContext(t *testing.T) {
 
 func TestBootstrapSerializesAcrossSiblings(t *testing.T) {
 	t.Parallel()
-	const (
-		rounds   = 6
-		siblings = 4
-	)
+	const rounds = 6
+	for round := range rounds {
+		bootstrapSerializationRound(t, round)
+	}
+}
+
+// bootstrapSerializationRound runs one round in its own function so the round's
+// context is cancelled when the round ends. Deferring inside the loop instead
+// held every round's cancel until the test returned.
+func bootstrapSerializationRound(t *testing.T, round int) {
+	t.Helper()
+	const siblings = 4
 	type bootstrapResult struct {
 		taskID string
 		err    error
 	}
 
-	for round := range rounds {
-		roundCtx, cancel := context.WithCancel(t.Context())
-		defer cancel()
-		root := t.TempDir()
-		lockPath := filepath.Join(root, "shared-bootstrap.lock")
-		releasePath := filepath.Join(root, "bootstrap.release")
-		if output, err := exec.Command("mkfifo", releasePath).CombinedOutput(); err != nil {
-			t.Fatalf("round %d: create bootstrap release FIFO: %v: %s", round, err, output)
-		}
+	roundCtx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	root := t.TempDir()
+	lockPath := filepath.Join(root, "shared-bootstrap.lock")
+	releasePath := filepath.Join(root, "bootstrap.release")
+	if output, err := exec.Command("mkfifo", releasePath).CombinedOutput(); err != nil {
+		t.Fatalf("round %d: create bootstrap release FIFO: %v: %s", round, err, output)
+	}
 
-		start := make(chan struct{})
-		started := make(chan string, siblings)
-		results := make(chan bootstrapResult, siblings)
-		for sibling := range siblings {
-			taskID := fmt.Sprintf("task_%02d", sibling+1)
-			worktreeDir := filepath.Join(root, taskID)
-			if err := os.Mkdir(worktreeDir, 0o755); err != nil {
-				t.Fatalf("round %d: create sibling %s: %v", round, taskID, err)
-			}
-			command := fmt.Sprintf(
-				`mkdir %q || { printf 'lock collision'; exit 70; }; trap 'rmdir %q' EXIT; printf 'bootstrap-started\n'; read release < %q; test "$release" = release`,
-				lockPath,
-				lockPath,
-				releasePath,
+	start := make(chan struct{})
+	started := make(chan string, siblings)
+	results := make(chan bootstrapResult, siblings)
+	for sibling := range siblings {
+		taskID := fmt.Sprintf("task_%02d", sibling+1)
+		worktreeDir := filepath.Join(root, taskID)
+		if err := os.Mkdir(worktreeDir, 0o755); err != nil {
+			t.Fatalf("round %d: create sibling %s: %v", round, taskID, err)
+		}
+		command := fmt.Sprintf(
+			`mkdir %q || { printf 'lock collision'; exit 70; }; trap 'rmdir %q' EXIT; printf 'bootstrap-started\n'; read release < %q; test "$release" = release`,
+			lockPath,
+			lockPath,
+			releasePath,
+		)
+		go func() {
+			<-start
+			err := runBootstrap(
+				roundCtx,
+				worktreeDir,
+				BootstrapSpec{Command: command, Timeout: 5 * time.Second},
+				&bootstrapStartWriter{taskID: taskID, started: started},
 			)
-			go func() {
-				<-start
-				err := runBootstrap(
-					roundCtx,
-					worktreeDir,
-					BootstrapSpec{Command: command, Timeout: 5 * time.Second},
-					&bootstrapStartWriter{taskID: taskID, started: started},
-				)
-				results <- bootstrapResult{taskID: taskID, err: err}
-			}()
-		}
-		close(start)
+			results <- bootstrapResult{taskID: taskID, err: err}
+		}()
+	}
+	close(start)
 
-		seen := make(map[string]struct{}, siblings)
-		completed := 0
-		for len(seen) < siblings {
-			select {
-			case taskID := <-started:
-				if _, duplicate := seen[taskID]; duplicate {
-					t.Fatalf("round %d: sibling %s reported bootstrap start twice", round, taskID)
-				}
-				seen[taskID] = struct{}{}
-				releaseBootstrap(t, releasePath)
-			case result := <-results:
-				if result.err != nil {
-					t.Fatalf("round %d: sibling %s bootstrap: %v", round, result.taskID, result.err)
-				}
-				completed++
+	seen := make(map[string]struct{}, siblings)
+	completed := 0
+	for len(seen) < siblings {
+		select {
+		case taskID := <-started:
+			if _, duplicate := seen[taskID]; duplicate {
+				t.Fatalf("round %d: sibling %s reported bootstrap start twice", round, taskID)
 			}
-		}
-		for completed < siblings {
-			result := <-results
+			seen[taskID] = struct{}{}
+			releaseBootstrap(t, releasePath)
+		case result := <-results:
 			if result.err != nil {
 				t.Fatalf("round %d: sibling %s bootstrap: %v", round, result.taskID, result.err)
 			}
 			completed++
 		}
-		if _, err := os.Stat(lockPath); !errors.Is(err, os.ErrNotExist) {
-			t.Fatalf("round %d: expected shared bootstrap lock removed, stat err=%v", round, err)
+	}
+	for completed < siblings {
+		result := <-results
+		if result.err != nil {
+			t.Fatalf("round %d: sibling %s bootstrap: %v", round, result.taskID, result.err)
 		}
-		cancel()
+		completed++
+	}
+	if _, err := os.Stat(lockPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("round %d: expected shared bootstrap lock removed, stat err=%v", round, err)
 	}
 }
 

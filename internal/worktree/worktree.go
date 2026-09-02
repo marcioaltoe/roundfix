@@ -95,18 +95,22 @@ type BootstrapError struct {
 }
 
 func (err *BootstrapError) Error() string {
+	// One guard rather than two: the partial form still read err.Command below
+	// it, so a nil receiver formatted through the error interface panicked at
+	// the exact point the guards claimed to cover.
+	if err == nil {
+		return "worktree bootstrap failed: unknown error"
+	}
 	reason := "unknown error"
-	if err != nil && err.Err != nil {
+	if err.Err != nil {
 		reason = err.Err.Error()
 	}
 	state := ""
-	if err != nil {
-		switch err.Stage {
-		case BootstrapFailureBeforeStart:
-			state = "; bootstrap work did not start"
-		case BootstrapFailureAfterStart:
-			state = "; bootstrap work may have been applied"
-		}
+	switch err.Stage {
+	case BootstrapFailureBeforeStart:
+		state = "; bootstrap work did not start"
+	case BootstrapFailureAfterStart:
+		state = "; bootstrap work may have been applied"
 	}
 	return fmt.Sprintf("worktree bootstrap failed: %s: %s%s", err.Command, reason, state)
 }
