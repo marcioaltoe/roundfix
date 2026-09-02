@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"roundfix/internal/gittest"
@@ -415,5 +416,53 @@ func TestCollisionsTreatsAnAbsentRepositoryAsAbsentEvidence(t *testing.T) {
 				t.Fatalf("Collisions = %#v, want none", collisions)
 			}
 		})
+	}
+}
+
+func TestCollisionsReportsAnInspectionFailureOnAPriorRunPath(t *testing.T) {
+	// A path history names can be unreadable for a reason that is not
+	// not-exists — here a symlink loop. Excluding it the way a missing path is
+	// excluded would drop the collision evidence silently, so it is reported
+	// with the path and the Task that settled it.
+	repoRoot := t.TempDir()
+	gittest.InitRepo(t, repoRoot, "--initial-branch=main")
+	const shared = "internal/spec/loop.go"
+	writeCollisionFile(t, repoRoot, shared, "package spec\n")
+	gittest.Run(t, repoRoot, "add", "--", shared)
+	gittest.Run(t, repoRoot, "commit", "-m", "seed")
+	for _, taskID := range []string{"task_01", "task_02"} {
+		writeCollisionFile(t, repoRoot, shared, "package spec\n\nconst x = \""+taskID+"\"\n")
+		gittest.Run(t, repoRoot, "add", "--", shared)
+		gittest.Run(t, repoRoot, "commit", "-m", "feat: loop fixture",
+			"-m", "Roundfix-Spec: 0097-collision\nRoundfix-Task: "+taskID)
+	}
+
+	// The tree now carries a cycle where the settled file was.
+	absolute := filepath.Join(repoRoot, filepath.FromSlash(shared))
+	partner := filepath.Join(filepath.Dir(absolute), "loop-partner.go")
+	if err := os.Remove(absolute); err != nil {
+		t.Fatalf("remove settled file: %v", err)
+	}
+	if err := os.Symlink(partner, absolute); err != nil {
+		t.Fatalf("link settled file to its partner: %v", err)
+	}
+	if err := os.Symlink(absolute, partner); err != nil {
+		t.Fatalf("link partner back: %v", err)
+	}
+
+	graph := &Graph{
+		Spec:  Spec{Slug: "0097-collision"},
+		Tasks: []Task{{ID: "task_01"}, {ID: "task_02"}},
+	}
+	_, err := Collisions(repoRoot, graph)
+	if err == nil {
+		t.Fatal("Collisions reported no error over an unreadable prior Run path")
+	}
+	// task_02 settled last, and history is read newest first, so its
+	// settlement is the one being read when the inspection fails.
+	for _, want := range []string{shared, "task_02"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("Collisions error %q does not name %q", err, want)
+		}
 	}
 }
