@@ -1,6 +1,7 @@
 ---
 spec: 0097-a-wave-that-cannot-collide
-status: active
+status: archived
+archived: 2026-09-02
 created: 2026-08-12
 surfaces: [backend, infra]
 ---
