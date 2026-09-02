@@ -147,7 +147,7 @@ func TestCollisionsLearnsPathFromDeclaredContext(t *testing.T) {
 	}
 }
 
-func TestCollisionsLearnsPathFromPackedPriorRunSettlementCommitsWithoutCommands(t *testing.T) {
+func TestCollisionsLearnsPathFromPackedPriorRunSettlementCommits(t *testing.T) {
 	repoRoot := t.TempDir()
 	gittest.InitRepo(t, repoRoot, "--initial-branch=main")
 	writeCollisionFile(t, repoRoot, "internal/spec/prior.go", "package spec\n\nconst prior = 0\n")
@@ -156,8 +156,10 @@ func TestCollisionsLearnsPathFromPackedPriorRunSettlementCommitsWithoutCommands(
 
 	commitCollisionTask(t, repoRoot, "0097-collision", "task_01", "package spec\n\nconst prior = 1\n")
 	commitCollisionTask(t, repoRoot, "0097-collision", "task_02", "package spec\n\nconst prior = 2\n")
+	// Packed objects, which is the ordinary state of any repository that has
+	// been gc'd. git reads packs natively; the rule asks git rather than
+	// parsing them itself.
 	gittest.Run(t, repoRoot, "gc", "--prune=now")
-	t.Setenv("PATH", t.TempDir())
 
 	verification := []string{"go test ./internal/spec"}
 	graph := &Graph{
@@ -169,7 +171,7 @@ func TestCollisionsLearnsPathFromPackedPriorRunSettlementCommitsWithoutCommands(
 	}
 	collisions, err := Collisions(repoRoot, graph)
 	if err != nil {
-		t.Fatalf("Collisions returned error with command lookup disabled: %v", err)
+		t.Fatalf("Collisions returned error over packed objects: %v", err)
 	}
 	want := []WaveCollision{{
 		First:  "task_01",

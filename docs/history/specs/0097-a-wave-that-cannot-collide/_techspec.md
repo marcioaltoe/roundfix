@@ -66,7 +66,14 @@ Four components change; no package, layer, or directory is added.
 
 **The collision rule** is one function over a Task Graph: given the Tasks, it
 returns the pairs that share a path and the source of each shared path. It reads
-the graph and the repository, runs no command, and opens no Agent Session.
+the graph and the repository, executes no authored Verification command, and
+opens no Agent Session.
+
+It reads Git history by invoking `git`, which is what this repository does for
+exactly these questions in `internal/worktree`, `internal/specaudit`,
+`internal/speccheck`, and `internal/cli`. Parsing loose objects, pack indexes,
+and delta chains in Go would reimplement a program already installed, and every
+defect in that reimplementation would be ours.
 
 **Two callers, one rule**, following ADR-0148. The Spec Consistency Check
 reports a collision at authoring, where the defect is produced and where fixing
