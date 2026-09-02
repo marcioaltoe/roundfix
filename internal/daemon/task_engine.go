@@ -334,8 +334,16 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	if err != nil {
 		return TaskCycleResult{}, err
 	}
-	if err := refuseTaskPlanWaveCollisions(plan); err != nil {
-		return TaskCycleResult{}, err
+	// A serial plan has no Wave, so it has no collision to refuse. A Task
+	// Worktree is based on the Run Branch tip as it stands when the Task is
+	// created, so at Task Capacity 1 the previous Task has already integrated
+	// and the next one starts from its result. The stale base this rule exists
+	// to catch cannot form, and refusing anyway would refuse work the Run can
+	// perform.
+	if plan.Concurrency > 1 {
+		if err := refuseTaskPlanWaveCollisions(plan); err != nil {
+			return TaskCycleResult{}, err
+		}
 	}
 	taskCapacity := plan.Concurrency
 	verificationCapacity := plan.VerificationConcurrency

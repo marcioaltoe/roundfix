@@ -278,8 +278,6 @@ func taskDependencyClosure(tasks []Task) map[string]map[string]bool {
 	return closure
 }
 
-type gitHash [20]byte
-
 // priorRunTaskTouches reports the paths the newest prior settlement commit
 // changed for each Task in the graph.
 //
@@ -313,9 +311,17 @@ func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]b
 	// --all, not HEAD: a settlement commit lives on its Run Branch until
 	// integration moves it, and a Run that ended Unresolved leaves it there.
 	// Searching HEAD alone would miss the prior Run this source exists to read.
+	// No repository, or one with no commits, is genuinely absent evidence: the
+	// prior-Run source is one of three and a Spec can be checked outside a
+	// working repository. Past that point a read failure is a failure, because
+	// reporting it as absent evidence would under-report a real collision —
+	// the failure this rule exists to remove.
+	if _, err := collisionGit(repoRoot, "rev-parse", "--verify", "HEAD"); err != nil {
+		return touches, nil
+	}
 	output, err := collisionGit(repoRoot, "log", "--all", "--grep=Roundfix-Task:", format)
 	if err != nil {
-		return touches, nil
+		return nil, err
 	}
 	// git log reports newest first, so the first record for a Task is its
 	// newest settlement and every later one is superseded.
@@ -339,17 +345,22 @@ func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]b
 		// to an older one would answer with paths this Task has since stopped
 		// touching.
 		touches[taskID] = make(map[string]bool)
-		changed, err := collisionGit(repoRoot, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", commit)
+		// -z with quotePath off: git otherwise quotes and escapes any path
+		// outside plain ASCII, and a quoted path is not the path.
+		changed, err := collisionGit(repoRoot, "-c", "core.quotePath=false",
+			"diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", commit)
 		if err != nil {
-			continue
+			return nil, err
 		}
-		for _, line := range strings.Split(changed, "\n") {
+		for _, line := range strings.Split(changed, "\x00") {
 			// History names paths the tree no longer carries. A file two Tasks
 			// both deleted is not a file they now share, so the same
 			// repository-boundary and regular-file check the declared sources
 			// use applies here; without it this source could report a collision
 			// on a path that does not exist.
-			relative, ok, err := repositoryFile(repoRoot, strings.TrimSpace(line))
+			// No trimming: git reports the path exactly, and a name that
+			// legitimately ends in whitespace is still that name.
+			relative, ok, err := repositoryFile(repoRoot, line)
 			if err != nil || !ok {
 				continue
 			}
@@ -363,6 +374,12 @@ func collisionGit(repoRoot string, args ...string) (string, error) {
 	command := exec.Command("git", append([]string{"-C", repoRoot}, args...)...)
 	output, err := command.Output()
 	if err != nil {
+		// Carry git's own words: "read Git history" alone leaves a reader with
+		// nothing to act on.
+		var exit *exec.ExitError
+		if errors.As(err, &exit) && len(exit.Stderr) > 0 {
+			return "", fmt.Errorf("read Git history for Task Graph collisions: %w: %s", err, strings.TrimSpace(string(exit.Stderr)))
+		}
 		return "", fmt.Errorf("read Git history for Task Graph collisions: %w", err)
 	}
 	return string(output), nil

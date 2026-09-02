@@ -3157,6 +3157,46 @@ func TestTaskCycleDispatchesSerializedCollisionGraph(t *testing.T) {
 	}
 }
 
+func TestTaskCycleDispatchesCollidingGraphAtTaskCapacityOne(t *testing.T) {
+	t.Parallel()
+	const sharedVerification = "go test docs/specs/" + taskCycleSlug + "/_prd.md"
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{sharedVerification}},
+		{id: "task_02", verification: []string{sharedVerification}},
+	})
+	runner := &selectionLifecycleRunner{
+		gitRoot: fixture.gitRoot,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusCompleted,
+		},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	// The same two Tasks refused at Task Capacity 2 in
+	// TestTaskCycleRefusesAWaveCollision: they touch one path and carry no
+	// `needs` edge. At Task Capacity 1 they never share a Wave, so the
+	// collision the graph describes cannot occur and refusing would be a
+	// refusal of work the Run can perform.
+	plan.Concurrency = 1
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "backend-model", "high")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("colliding Task Graph refused at Task Capacity 1: %v", err)
+	}
+	if result.Completed != 2 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("colliding Task Graph at Task Capacity 1 result = %+v, want both Tasks completed", result)
+	}
+	if requests := runner.runRequests(); len(requests) != 2 {
+		t.Fatalf("colliding Task Graph at Task Capacity 1 dispatched %d Agent Sessions, want 2: %+v", len(requests), lifecycleRequestSummary(requests))
+	}
+}
+
 func TestTaskCycleIntegratedVerificationCapacityOneBoundsConcurrentTaskWorktrees(t *testing.T) {
 	t.Parallel()
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
