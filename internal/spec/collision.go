@@ -36,8 +36,12 @@ type WaveCollision struct {
 }
 
 // Collisions reports every pair the Task Graph permits in one Wave that is
-// known to touch a common repository file. It reads files and Git objects
-// directly; it does not execute Verification, Git, or any other command.
+// known to touch a common repository file.
+//
+// It never executes an authored Verification: a command written to be run when
+// the work exists must not run to decide whether the work may start. It does
+// read the repository, and it runs read-only git to read prior-Run settlement
+// history.
 func Collisions(repoRoot string, graph *Graph) ([]WaveCollision, error) {
 	if graph == nil {
 		return nil, errors.New("find Task Graph collisions: graph is required")
@@ -377,7 +381,10 @@ func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]b
 			// use applies here; without it this source could report a collision
 			// on a path that does not exist.
 			relative, ok, err := repositoryFileExact(repoRoot, line)
-			if err != nil || !ok {
+			if err != nil {
+				return nil, fmt.Errorf("inspect prior Run path %q for Task %q: %w", line, taskID, err)
+			}
+			if !ok {
 				continue
 			}
 			touches[taskID][relative] = true
