@@ -15898,6 +15898,16 @@ func assertOrderedSubsequence(t *testing.T, haystack []string, expected []string
 	}
 }
 
+func assertKindPresent(t *testing.T, kinds []string, want string) {
+	t.Helper()
+	for _, kind := range kinds {
+		if kind == want {
+			return
+		}
+	}
+	t.Fatalf("expected %s in the journal, got %v", want, kinds)
+}
+
 func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
 	t.Parallel()
 	homeDir, repoDir := withCLIWorkspace(t)
@@ -15923,9 +15933,15 @@ func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
 		string(runevent.KindDaemonCommit),
 		string(runevent.KindDaemonSourceResolution),
 		string(runevent.KindDaemonBatch),
-		string(runevent.KindDaemonPush),
-		string(runevent.KindDaemonOutcome),
 	})
+	// The push and the outcome are published by different paths and land in
+	// different batches, so ADR-0098 orders each within its batch and promises
+	// nothing between them. The narrative above is what one path wrote; these
+	// two are asserted by presence, which is what the journal actually
+	// guarantees. Requiring push before outcome turned this gate red by timing
+	// three times without a defect behind it.
+	assertKindPresent(t, kinds, string(runevent.KindDaemonPush))
+	assertKindPresent(t, kinds, string(runevent.KindDaemonOutcome))
 	pushed := 0
 	for _, entry := range events {
 		if entry.Event.Kind == runevent.KindDaemonPush && strings.Contains(string(entry.Event.Payload), `"pushed"`) {
@@ -16010,22 +16026,38 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 	assertOutcomeFollowedByNotificationReceipt(t, events, store.StateClean)
 }
 
+// assertOutcomeFollowedByNotificationReceipt requires the outcome to precede the
+// receipt, not to sit immediately before it.
+//
+// ADR-0098 appends Run Events in batches with durability per batch, so the
+// journal promises that an event was recorded, and orders events a single path
+// wrote. It does not promise adjacency across paths: an agent.status published
+// while the outcome batch was settling lands between them and means nothing is
+// wrong. Asserting adjacency read that interleaving as a defect and turned a
+// gate red by timing.
 func assertOutcomeFollowedByNotificationReceipt(t *testing.T, events []store.JournalEvent, state string) {
 	t.Helper()
-	if len(events) < 2 {
-		t.Fatalf("expected outcome and notification receipt events, got %+v", events)
+	outcomeAt := -1
+	for index, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonOutcome && strings.Contains(string(entry.Event.Payload), `"`+state+`"`) {
+			outcomeAt = index
+			break
+		}
 	}
-	outcome := events[len(events)-2].Event
-	if outcome.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(outcome.Payload), `"`+state+`"`) {
-		t.Fatalf("expected %s outcome immediately before notification receipt, got %+v", state, outcome)
+	if outcomeAt < 0 {
+		t.Fatalf("expected a %s outcome in the journal, got %+v", state, daemonKindSequence(events))
 	}
-	receipt := events[len(events)-1].Event
-	var payload runevent.NotificationReceiptPayload
-	if receipt.Kind != runevent.KindDaemonStatus ||
-		json.Unmarshal(receipt.Payload, &payload) != nil ||
-		!strings.HasPrefix(payload.Event, "outcome_notification_") {
-		t.Fatalf("expected notification receipt after %s outcome, got %+v", state, receipt)
+	for _, entry := range events[outcomeAt+1:] {
+		if entry.Event.Kind != runevent.KindDaemonStatus {
+			continue
+		}
+		var payload runevent.NotificationReceiptPayload
+		if json.Unmarshal(entry.Event.Payload, &payload) == nil &&
+			strings.HasPrefix(payload.Event, "outcome_notification_") {
+			return
+		}
 	}
+	t.Fatalf("expected a notification receipt after the %s outcome, got %+v", state, daemonKindSequence(events))
 }
 
 func TestTriageOnlyBatchJournalsCommitSkipDecision(t *testing.T) {
