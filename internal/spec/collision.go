@@ -310,7 +310,10 @@ func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]b
 	// failure.
 	const format = "--format=%H%x1f%(trailers:key=Roundfix-Spec,valueonly)%x1f" +
 		"%(trailers:key=Roundfix-Task,valueonly)%x1e"
-	output, err := collisionGit(repoRoot, "log", "--grep=Roundfix-Task:", format)
+	// --all, not HEAD: a settlement commit lives on its Run Branch until
+	// integration moves it, and a Run that ended Unresolved leaves it there.
+	// Searching HEAD alone would miss the prior Run this source exists to read.
+	output, err := collisionGit(repoRoot, "log", "--all", "--grep=Roundfix-Task:", format)
 	if err != nil {
 		return touches, nil
 	}
@@ -341,9 +344,16 @@ func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]b
 			continue
 		}
 		for _, line := range strings.Split(changed, "\n") {
-			if path := strings.TrimSpace(line); path != "" {
-				touches[taskID][filepath.ToSlash(path)] = true
+			// History names paths the tree no longer carries. A file two Tasks
+			// both deleted is not a file they now share, so the same
+			// repository-boundary and regular-file check the declared sources
+			// use applies here; without it this source could report a collision
+			// on a path that does not exist.
+			relative, ok, err := repositoryFile(repoRoot, strings.TrimSpace(line))
+			if err != nil || !ok {
+				continue
 			}
+			touches[taskID][relative] = true
 		}
 	}
 	return touches, nil
