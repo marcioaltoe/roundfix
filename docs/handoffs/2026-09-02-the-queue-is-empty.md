@@ -129,14 +129,17 @@ status. Spec 0117's QA Task still carries the first shape.
 
 - No Run Branches, no Run Worktrees, no retained artifacts. `~/.roundfix/worktrees`
   is empty.
-- The Run Database is at schema 13 and the installed binary is the released one,
-  so the machine-wide database and the fleet agree. Do not run a `bin/roundfix`
-  built from a branch carrying an unreleased migration.
-- Eight pending Inbox Entries under `inbox/roundfix/`, four of them from this
+- The Run Database is at schema 13 and the installed binary is 0.12.0, the
+  released one, so the machine-wide database and the fleet agree. Do not run a
+  `bin/roundfix` built from a branch carrying an unreleased migration.
+- A release bump touches two files, and `dist/npm/roundfix/package.json` is the
+  hinge between two different checks. `make verify` fails when
+  `internal/app.Version` and that manifest disagree; the release workflow's tag
+  validation fails when the pushed tag and that manifest disagree. So bumping
+  only `internal/app.Version` is caught locally, which is how v0.12.0 was
+  caught, and bumping only the manifest is caught at the tag.
+- Nine pending Inbox Entries under `inbox/roundfix/`, five of them from this
   session. Two captures were triaged to `_triaged/` when their defects shipped.
-- The installed binary and `internal/app.Version` are both 0.12.0. The npm
-  manifest at `dist/npm/roundfix/package.json` carries the version too, and the
-  gate fails the release commit if the two disagree.
 
 ## If you pick this up
 
