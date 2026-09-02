@@ -62,6 +62,7 @@ type TaskCreateOptions struct {
 	CopyList        []string
 	Bootstrap       BootstrapSpec
 	BootstrapOutput io.Writer
+	Concurrency     int
 }
 
 type BootstrapSpec struct {
@@ -1440,22 +1441,27 @@ func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
 }
 
 func CreateTask(ctx context.Context, run Ref, taskID string, copyList []string) (TaskRef, error) {
-	return CreateTaskWithOptions(ctx, run, taskID, TaskCreateOptions{CopyList: copyList})
+	return CreateTaskWithOptions(ctx, run, taskID, TaskCreateOptions{CopyList: copyList, Concurrency: 1})
 }
 
 func CreateTaskWithOptions(ctx context.Context, run Ref, taskID string, opts TaskCreateOptions) (TaskRef, error) {
 	if err := validateRef(run); err != nil {
-		return TaskRef{}, err
+		return TaskRef{}, taskWorktreeCreationError(run.RunID, taskID, opts.Concurrency, err)
 	}
 	taskID, err := cleanPathSegment(taskID)
 	if err != nil {
-		return TaskRef{}, fmt.Errorf("create Task Worktree: %w", err)
+		return TaskRef{}, taskWorktreeCreationError(run.RunID, taskID, opts.Concurrency, err)
 	}
 
 	runner := execGitRunner{}
 	baseSHA, err := gitRevision(ctx, runner, run.UserRoot, run.Branch)
 	if err != nil {
-		return TaskRef{}, fmt.Errorf("resolve Run Branch tip for Task Worktree: %w", err)
+		return TaskRef{}, taskWorktreeCreationError(
+			run.RunID,
+			taskID,
+			opts.Concurrency,
+			fmt.Errorf("resolve Run Branch tip: %w", err),
+		)
 	}
 	ref := TaskRef{
 		RunID:    run.RunID,
@@ -1466,18 +1472,33 @@ func CreateTaskWithOptions(ctx context.Context, run Ref, taskID string, opts Tas
 		BaseSHA:  baseSHA,
 	}
 	if err := os.MkdirAll(filepath.Dir(ref.Path), 0o755); err != nil {
-		return TaskRef{}, fmt.Errorf("create Task Worktree parent %q: %w", filepath.Dir(ref.Path), err)
+		return TaskRef{}, taskWorktreeCreationError(
+			ref.RunID,
+			ref.TaskID,
+			opts.Concurrency,
+			fmt.Errorf("create parent %q: %w", filepath.Dir(ref.Path), err),
+		)
 	}
 	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "-b", ref.Branch, ref.Path, baseSHA); err != nil {
-		return TaskRef{}, fmt.Errorf("create Task Worktree: %w", err)
+		return TaskRef{}, taskWorktreeCreationError(ref.RunID, ref.TaskID, opts.Concurrency, err)
 	}
 	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
-		return TaskRef{}, err
+		return TaskRef{}, taskWorktreeCreationError(ref.RunID, ref.TaskID, opts.Concurrency, err)
 	}
 	if err := runBootstrap(ctx, ref.Path, opts.Bootstrap, opts.BootstrapOutput); err != nil {
-		return ref, err
+		return ref, taskWorktreeCreationError(ref.RunID, ref.TaskID, opts.Concurrency, err)
 	}
 	return ref, nil
+}
+
+func taskWorktreeCreationError(runID string, taskID string, concurrency int, err error) error {
+	return fmt.Errorf(
+		"create Task Worktree for Run %q Task %s at configured concurrency %d; next action: inspect the underlying error before retrying the Run: %w",
+		runID,
+		taskID,
+		concurrency,
+		err,
+	)
 }
 
 func TaskRefFor(run Ref, taskID string) (TaskRef, error) {

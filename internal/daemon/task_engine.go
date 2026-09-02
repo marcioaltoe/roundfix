@@ -581,6 +581,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 			CopyList:        plan.CopyList,
 			Bootstrap:       plan.Bootstrap,
 			BootstrapOutput: plan.BootstrapOutput,
+			Concurrency:     plan.Concurrency,
 		})
 		if err != nil {
 			var bootstrapErr *runworktree.BootstrapError

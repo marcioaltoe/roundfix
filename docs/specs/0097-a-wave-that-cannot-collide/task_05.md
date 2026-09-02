@@ -1,5 +1,5 @@
 ---
-status: pending
+status: completed
 type: backend
 ---
 
@@ -30,3 +30,25 @@ terms before they can act.
 
 ## Verification
 - `grep -q "TestTaskWorktreeCreationFailureNamesItsContext" internal/worktree/worktree_test.go || exit 1; go test -count=1 ./internal/worktree ./internal/daemon`
+
+## Result
+
+- Task Worktree creation options now carry the configured concurrency from the
+  Daemon. The sequential convenience path records concurrency `1`.
+- Every Task Worktree creation failure now names its Run, Task, and configured
+  concurrency, states the next action, and wraps the original error with `%w`.
+- `TestTaskWorktreeCreationFailureNamesItsContext` forces a real filesystem
+  failure, checks all three context values and the next-action label, and uses
+  `errors.As` plus `errors.Is` to prove the filesystem error remains in the
+  chain.
+- Focused evidence: `rtk proxy env
+  GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run
+  '^(TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot|TestTaskWorktreeCreationFailureNamesItsContext|TestTaskWorktreesIntegrateFirstByFastForwardThenCherryPick)$'
+  ./internal/worktree` passed.
+- Focused evidence: `rtk proxy env
+  GOCACHE=/private/tmp/roundfix-task05-gocache go test -count=1 -run
+  '^(TestTaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork|TestTaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks)$'
+  ./internal/daemon` passed; the first test asserts that the Task Plan's
+  concurrency reaches each Task Worktree creation request.
+- Focused evidence: `rtk git diff --check` passed.
+- The declared Verification command was not run; the Daemon owns that gate.

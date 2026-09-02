@@ -3894,6 +3894,9 @@ func TestTaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork(t *testing.T)
 	assertTaskSet(t, runner.startedTasks(), "task_01", "task_02")
 	for _, taskID := range []string{"task_01", "task_02"} {
 		opts := taskWorktrees.taskCreateOptions(taskID)
+		if opts.Concurrency != plan.Concurrency {
+			t.Fatalf("expected concurrency %d for %s, got %d", plan.Concurrency, taskID, opts.Concurrency)
+		}
 		if opts.Bootstrap.Command != command || opts.Bootstrap.Timeout != time.Second {
 			t.Fatalf("expected bootstrap options for %s, got %#v", taskID, opts.Bootstrap)
 		}

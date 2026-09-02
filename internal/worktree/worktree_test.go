@@ -183,6 +183,34 @@ func TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot(t *testing.T) {
 	}
 }
 
+func TestTaskWorktreeCreationFailureNamesItsContext(t *testing.T) {
+	t.Parallel()
+	const concurrency = 4
+	fixture := newIntegrationFixture(t, "creation-context")
+	blockedParent := filepath.Join(t.TempDir(), "not-a-directory")
+	mustWriteWorktreeTest(t, blockedParent, "blocked\n")
+	fixture.ref.Path = filepath.Join(blockedParent, "run")
+
+	_, err := CreateTaskWithOptions(t.Context(), fixture.ref, "task_02", TaskCreateOptions{
+		Concurrency: concurrency,
+	})
+	if err == nil {
+		t.Fatal("expected Task Worktree creation failure")
+	}
+	for _, context := range []string{`Run "creation-context"`, "Task task_02", "concurrency 4", "next action:"} {
+		if !strings.Contains(err.Error(), context) {
+			t.Errorf("creation error %q does not name %q", err, context)
+		}
+	}
+	var pathErr *os.PathError
+	if !errors.As(err, &pathErr) {
+		t.Fatalf("creation error does not carry the filesystem error: %T %[1]v", err)
+	}
+	if !errors.Is(err, pathErr.Err) {
+		t.Fatalf("creation error does not preserve its underlying cause: %v", err)
+	}
+}
+
 func TestBootstrapSerializesAcrossSiblings(t *testing.T) {
 	t.Parallel()
 	const (
