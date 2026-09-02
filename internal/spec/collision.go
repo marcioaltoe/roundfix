@@ -280,14 +280,20 @@ func taskDependencyClosure(tasks []Task) map[string]map[string]bool {
 
 type gitHash [20]byte
 
-// priorRunTaskTouches reports the paths a prior Run's settlement commit changed
-// for each Task in the graph.
+// priorRunTaskTouches reports the paths the newest prior settlement commit
+// changed for each Task in the graph.
 //
 // It invokes git rather than reading object files, because that is what this
 // repository does for exactly these questions in internal/worktree,
-// internal/specaudit, internal/speccheck, and internal/cli. Parsing loose
-// objects, pack indexes, and delta chains by hand would reimplement a program
-// already installed, and every defect in that reimplementation would be ours.
+// internal/specaudit, internal/speccheck, and internal/cli. Trailers are read
+// through git's own interpolation for the same reason: a hand-rolled scan of
+// every message line would read a Roundfix-Spec mentioned in a body as though
+// it were a trailer, and git already knows where the terminal block starts.
+//
+// Only the newest settlement per Task counts. A Task that settled in more than
+// one Run — the ordinary shape when a Run ends Unresolved and the next one
+// re-executes it — would otherwise union stale paths into current evidence and
+// refuse a Wave that is safe.
 func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]bool, error) {
 	touches := make(map[string]map[string]bool)
 	slug := strings.TrimSpace(graph.Spec.Slug)
@@ -299,38 +305,40 @@ func priorRunTaskTouches(repoRoot string, graph *Graph) (map[string]map[string]b
 		wanted[task.ID] = true
 	}
 
-	// A repository with no commits, or no settlement commits, is not an error:
-	// the prior-Run source is one of three and absent evidence is not a failure.
-	output, err := collisionGit(repoRoot, "log", "--grep=Roundfix-Task:", "--format=%H%x1f%B%x1e")
+	// A repository with no commits, or none carrying the trailer, is not an
+	// error: the prior-Run source is one of three, and absent evidence is not a
+	// failure.
+	const format = "--format=%H%x1f%(trailers:key=Roundfix-Spec,valueonly)%x1f" +
+		"%(trailers:key=Roundfix-Task,valueonly)%x1e"
+	output, err := collisionGit(repoRoot, "log", "--grep=Roundfix-Task:", format)
 	if err != nil {
 		return touches, nil
 	}
+	// git log reports newest first, so the first record for a Task is its
+	// newest settlement and every later one is superseded.
 	for _, record := range strings.Split(output, "\x1e") {
-		record = strings.TrimSpace(record)
-		if record == "" {
+		fields := strings.Split(strings.TrimSpace(record), "\x1f")
+		if len(fields) != 3 {
 			continue
 		}
-		separator := strings.IndexByte(record, 0x1f)
-		if separator < 0 {
+		commit := strings.TrimSpace(fields[0])
+		if strings.TrimSpace(fields[1]) != slug {
 			continue
 		}
-		commit := strings.TrimSpace(record[:separator])
-		message := record[separator+1:]
-		if gitTrailer(message, "Roundfix-Spec") != slug {
-			continue
-		}
-		taskID := gitTrailer(message, "Roundfix-Task")
+		taskID := strings.TrimSpace(fields[2])
 		if taskID == "" || !wanted[taskID] {
 			continue
 		}
-		changed, err := collisionGit(repoRoot, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", commit)
-		if err != nil {
-			// One unreadable commit is absent evidence for that Task, never a
-			// reason to abandon the whole collision report.
+		if _, seen := touches[taskID]; seen {
 			continue
 		}
-		if touches[taskID] == nil {
-			touches[taskID] = make(map[string]bool)
+		// The newest settlement is the evidence, readable or not: falling back
+		// to an older one would answer with paths this Task has since stopped
+		// touching.
+		touches[taskID] = make(map[string]bool)
+		changed, err := collisionGit(repoRoot, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", commit)
+		if err != nil {
+			continue
 		}
 		for _, line := range strings.Split(changed, "\n") {
 			if path := strings.TrimSpace(line); path != "" {
@@ -348,18 +356,4 @@ func collisionGit(repoRoot string, args ...string) (string, error) {
 		return "", fmt.Errorf("read Git history for Task Graph collisions: %w", err)
 	}
 	return string(output), nil
-}
-
-// gitTrailer reads the last occurrence of one trailer key, which is the one Git
-// itself would report when a message repeats it.
-func gitTrailer(message string, key string) string {
-	prefix := strings.ToLower(strings.TrimSpace(key)) + ":"
-	lines := strings.Split(message, "\n")
-	for index := len(lines) - 1; index >= 0; index-- {
-		line := strings.TrimSpace(lines[index])
-		if strings.HasPrefix(strings.ToLower(line), prefix) {
-			return strings.TrimSpace(line[len(prefix):])
-		}
-	}
-	return ""
 }

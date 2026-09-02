@@ -220,3 +220,68 @@ func commitCollisionTask(t *testing.T, repoRoot, slug, taskID, content string) {
 	gittest.Run(t, repoRoot, "add", "internal/spec/prior.go")
 	gittest.Run(t, repoRoot, "commit", "-m", "feat: collision fixture", "-m", "Roundfix-Spec: "+slug+"\nRoundfix-Task: "+taskID)
 }
+
+func TestCollisionsUsesOnlyTheNewestSettlementPerTask(t *testing.T) {
+	// A Task that settled in more than one Run is the ordinary shape once a Run
+	// ends Unresolved and the next re-executes it. Unioning an older settlement
+	// into current evidence would refuse a Wave that is safe.
+	repoRoot := t.TempDir()
+	gittest.InitRepo(t, repoRoot, "--initial-branch=main")
+	writeCollisionFile(t, repoRoot, "internal/spec/prior.go", "package spec\n")
+	writeCollisionFile(t, repoRoot, "internal/spec/current.go", "package spec\n")
+	gittest.Run(t, repoRoot, "add", ".")
+	gittest.Run(t, repoRoot, "commit", "-m", "seed")
+
+	// task_01 settled once on the shared file, then again on a file of its own.
+	// Only the newer settlement is its evidence.
+	commitCollisionTask(t, repoRoot, "0097-collision", "task_01", "package spec\n\nconst a = 1\n")
+	writeCollisionFile(t, repoRoot, "internal/spec/current.go", "package spec\n\nconst b = 1\n")
+	gittest.Run(t, repoRoot, "add", "internal/spec/current.go")
+	gittest.Run(t, repoRoot, "commit", "-m", "feat: newer settlement", "-m", "Roundfix-Spec: 0097-collision\nRoundfix-Task: task_01")
+	// task_02 touches only the file task_01 has stopped touching.
+	commitCollisionTask(t, repoRoot, "0097-collision", "task_02", "package spec\n\nconst c = 1\n")
+
+	graph := &Graph{
+		Spec:  Spec{Slug: "0097-collision"},
+		Tasks: []Task{{ID: "task_01"}, {ID: "task_02"}},
+	}
+
+	collisions, err := Collisions(repoRoot, graph)
+	if err != nil {
+		t.Fatalf("Collisions returned error: %v", err)
+	}
+	if len(collisions) != 0 {
+		t.Fatalf("Collisions = %#v, want none: task_01's older settlement is superseded", collisions)
+	}
+}
+
+func TestCollisionsReadsTrailersNotTheMessageBody(t *testing.T) {
+	// A body that mentions another Spec must not combine with the terminal
+	// Roundfix-Task trailer. git knows where the trailer block starts; a scan
+	// of every line does not.
+	repoRoot := t.TempDir()
+	gittest.InitRepo(t, repoRoot, "--initial-branch=main")
+	writeCollisionFile(t, repoRoot, "internal/spec/prior.go", "package spec\n")
+	gittest.Run(t, repoRoot, "add", ".")
+	gittest.Run(t, repoRoot, "commit", "-m", "seed")
+
+	writeCollisionFile(t, repoRoot, "internal/spec/prior.go", "package spec\n\nconst a = 1\n")
+	gittest.Run(t, repoRoot, "add", "internal/spec/prior.go")
+	gittest.Run(t, repoRoot, "commit",
+		"-m", "feat: mentions another Spec in its body",
+		"-m", "Refers to Roundfix-Spec: 0097-collision in prose, which is not a trailer.",
+		"-m", "Roundfix-Task: task_01")
+
+	graph := &Graph{
+		Spec:  Spec{Slug: "0097-collision"},
+		Tasks: []Task{{ID: "task_01"}, {ID: "task_02"}},
+	}
+
+	collisions, err := Collisions(repoRoot, graph)
+	if err != nil {
+		t.Fatalf("Collisions returned error: %v", err)
+	}
+	if len(collisions) != 0 {
+		t.Fatalf("Collisions = %#v, want none: the Spec appears in the body, not in a trailer", collisions)
+	}
+}
