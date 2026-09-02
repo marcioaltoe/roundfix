@@ -2,6 +2,40 @@
 
 All notable changes to Roundfix are documented in this file.
 
+## [0.12.0] - 2026-09-02
+
+Raising Task Worktree concurrency made three latent failures visible at once, and
+all three cost whole Runs of finished Agent work. Concurrency was configured as a
+number and verified as nothing; the safety is now a property the graph proves
+before it dispatches.
+
+### Added
+
+- **Wave collision detection.** Before a Wave dispatches, `implement` reports
+  when two Tasks in it are known to touch the same file, naming both Tasks, the
+  paths, and where each touch was learned. Tasks the graph declared independent
+  edited the same file and died at integration, which never appeared while Tasks
+  ran one at a time — every Agent Session in the Wave paid for it. Evidence comes
+  from three sources: paths named in a Task's Verification commands, paths in its
+  declared Context, and the paths its newest prior-Run settlement commit changed.
+  The rule refuses rather than serializing, and only where a Wave can form: a Run
+  at Task Capacity 1 starts each Task from the previous one's integrated result,
+  so the stale base this catches cannot occur.
+- **A bootstrap failure that does not lie.** A bootstrap that fails after
+  completing its work now reports that state distinctly from one that failed
+  before starting, so a maintainer is not told nothing happened when everything
+  did.
+
+### Changed
+
+- **Serialized worktree bootstrap.** Bootstrap is serialized across sibling Task
+  Worktrees even when the Tasks themselves run in parallel. Siblings bootstrapped
+  against one shared Git directory and collided on its lock, reporting failure
+  after having done every byte of the work.
+- **A worktree error in Roundfix's own words.** A Task Worktree that cannot be
+  created names the Run, the Task, and the concurrency level, and carries the
+  underlying filesystem error as evidence rather than as the message.
+
 ## [0.11.0] - 2026-09-01
 
 The QA gate stops charging for its own shape. Of 201 failed Tasks measured

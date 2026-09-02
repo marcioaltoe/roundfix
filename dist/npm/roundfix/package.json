@@ -1,6 +1,6 @@
 {
   "name": "roundfix",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Roundfix CLI \u2014 resolve CodeRabbit PR review feedback and execute Spec Task Graphs with local coding agents.",
   "type": "commonjs",
   "bin": {
