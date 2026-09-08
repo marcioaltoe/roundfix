@@ -1,0 +1,86 @@
+---
+spec: 0125-repository-identity-and-run-branch-policy
+status: active
+created: 2026-09-08
+surfaces: [backend, cli, docs]
+---
+
+# One repository keeps one identity and its chosen branch policy
+
+The Baseline requires the chosen ma/ prefix while internal Run/Task branches use a fixed namespace. Linked worktrees derive different repository identities from their checkout paths. Reconciliation now proves the reported deleted-target squash case, but other content and reference cases remain narrower. The maintainer needs shared repository identity and consistent branch policy without losing old Run resources or deleting unproved work.
+
+This Spec is **in authoring**. Its protected scope and open decisions are
+pending approval. The accompanying authorization is a proposal with no grant;
+there is no TechSpec, Task Graph, or authority to start implementation.
+
+## Project Constraints
+
+- Identifier strategy: applicable — canonical repository identity must group linked worktrees while preserving access to existing Run records; keep Run/Task IDs stable and recognize old branch names during migration. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — local repository/ref identity and reconciliation introduce no authentication or HTTP endpoints. Source: `docs/agents/cli.md` and `docs/agents/agent-instructions.md`.
+- Active ADR obligations: applicable — ADR-0138 preserves one commit per verified Task and the existing Clean-only opt-in push boundary. ADR-0135 requires absent diagnostic output to be reported as an explicit state, not an empty message; it does not define whether a Git reference exists. Keep branch disposition evidence-based and honor the selected ma/ branch rule in the universal guide. Source: `docs/agents/domain.md` and `docs/agents/spec-routing.md`.
+- Tooling authority: applicable — protected tooling mutation is proposed, not authorized. The reviewable proposal is `docs/specs/0125-repository-identity-and-run-branch-policy/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Source: `docs/agents/agent-instructions.md`.
+
+## Goals
+
+- Every new Agent-created Run/Task branch honors the repository's selected prefix.
+- Linked worktrees discover and reconcile the same repository's Run records.
+- Existing namespaces and persisted identity mappings remain readable through migration.
+- Reconciliation names absent refs truthfully and preserves any content it cannot prove delivered.
+
+## Core Features
+
+1. Use the effective repository branch policy for new Run/Task branches, and retain explicit recognition of legacy Roundfix namespaces for existing records.
+2. Derive a repository identity shared by main and linked worktrees, with migration or alias evidence for prior checkout-derived records. Moving/removing a linked checkout must not make its Runs unreachable.
+3. Retain the already implemented deleted-target content proof and its positive/negative tests; do not duplicate or weaken it.
+4. Characterize present-target squash and generic missing-ref cases. Prove delivered content through an approved local evidence rule, or return a truthful preserved/unintegrated result with the missing proof named.
+5. Update the public skill examples and recovery output so proposed branch names and commands match what the executor creates.
+
+## Non-Goals / Out of Scope
+
+- No mass renaming or deletion of existing branches/worktrees, force cleanup, or archive-only proof of integration.
+- No merging unrelated clones merely because their remote URLs match.
+- No automatic repository profile change, branch-policy exception, or new forge dependency for local reconciliation.
+
+## Acceptance evidence
+
+Outside-evidence row: Use the pre-existing Pantheon naming capture and real main/linked-worktree Git fixtures. Preserve a Run-only change in every negative cleanup case, including a Spec whose archive record exists but whose branch content differs.
+
+The later Task Graph and QA must prove each Core Feature with observed
+positive and negative cases. Source inspection and proposed checks do not
+constitute implementation or terminal QA evidence.
+
+## Open Questions
+
+- Resolve the bounded bootstrap method: the current Implement Command cannot create a conforming Run Branch and the Supervisor cannot write feature code. The required `ma/` prefix is already confirmed and does not need approval again.
+- Approve the repository identity migration boundary and how prior checkout records remain discoverable.
+- Choose the acceptable present-target squash content proof; unavailable or ambiguous evidence must preserve work.
+
+Until answered, all proposed limits and protected mutations remain unapproved.
+
+## Provisional inputs
+
+These sources remain at their current paths. No ownership transfer, promotion,
+adoption index, or source move occurs before implementation commitment.
+
+- [2026-09-08-run-branches-ignore-the-selected-prefix.md](../../findings/2026-09-08-run-branches-ignore-the-selected-prefix.md)
+- [2026-08-06-rollup-run-lifecycle-and-branch-integrity.md](../../findings/2026-08-06-rollup-run-lifecycle-and-branch-integrity.md)
+- [2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md](../../findings/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md)
+
+## Research basis
+
+Secondbrain `inbox/roundfix/_triaged/2026-09-08-branches-internas-do-run-ignoram-o-prefixo-do-repositorio.md` supplies the measured naming conflict. The two triaged reconcile captures dated 2026-09-02 are already resolved for their deleted-target case, demonstrated by a fresh focused test. Exa read [Git worktree](https://git-scm.com/docs/git-worktree) and [repository layout](https://git-scm.com/docs/gitrepository-layout): linked worktrees attach to one repository while retaining distinct metadata. This supports investigating shared repository identity; the exact Roundfix migration and proof remain proposed.
+
+The local Secondbrain index was read and its query workflow used before
+authoring. The sources above affected the stated requirements and limits;
+they do not approve this Spec or substitute for live capability/behavior proof.
+
+## Authoring checkpoint
+
+Spec 0119 owns migration/execution authority; 0121 supplies skill regeneration ownership. This branch-policy prerequisite must be settled before claiming the unattended workflow can honor ma/ throughout a Run.
+
+Record the maintainer's bounded decision in [_authorization.md](_authorization.md),
+then commit that approval record separately before its consuming tooling
+changes. Only after that checkpoint may the TechSpec settle the design and a
+Task Graph authorize execution. PRD-stage checks will report their actual
+scope and any pending authorization findings; a green partial check is not
+implementation readiness.
