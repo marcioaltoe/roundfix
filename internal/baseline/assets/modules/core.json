@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 5,
+  "version": 6,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -292,7 +292,7 @@
   "supportingGuides": [
     {
       "id": "guide.agent-instructions",
-      "version": 5,
+      "version": 6,
       "path": "docs/agents/agent-instructions.md",
       "template": "template.guide.agent-instructions",
       "rules": [
@@ -580,7 +580,7 @@
     },
     {
       "id": "rule.core.decision-authority",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.universal-safety"
       ],
@@ -588,7 +588,7 @@
         {
           "id": "clause.core.ask-user-answerable-decisions",
           "enforcement": "stop-and-ask",
-          "guidance": "Never guess a decision the user can answer cheaply. Ask through the runtime's structured user-interaction tool when it has one; when it has none, reproduce that shape by hand. Either way the question must be answerable without rereading the session: state what was found and why it forces a choice, then enumerate options by number or letter, each with the consequence of picking it, and name a recommendation. Never bundle several questions into one message, ask in open prose, or compress an option until only its author can tell what it means — an under-explained question is answered by guess, which costs more than not asking."
+          "guidance": "Never guess a decision the user can answer cheaply. Use the structured user-interaction tool actually exposed and permitted in the current session: `AskUserQuestion` in Claude Code, `request_user_input` in Codex, or `question` in OpenCode; Codex runtimes that expose `request_user_input_async` may use that equivalent. Interpret skill references to `AskUserQuestion` as this interaction contract across runtimes. Respect the tool's advertised schema and mode restrictions; do not invent tool calls or switch session modes merely to ask a question. Ask exactly one question per call or message and keep only one question pending, even when the tool accepts an array of questions. Wait for the user's response before asking the next question or doing work that depends on the answer; an asynchronous request may leave independent work running. Make the question answerable without rereading the session: state what was found and why it forces a choice, provide 2-3 concise, mutually exclusive options with the consequence of each choice, and put the recommended option first with `(Recommended)` in its label. Preserve custom text input; do not add an `Other` option when the interface already supplies one. If no permitted structured tool is available, present the same single question with numbered or lettered options in chat and accept a custom answer. Never bundle questions, replace the options with an open-prose question, or treat a recommendation, preselection, dismissal, timeout, or missing answer as the user's choice."
         }
       ]
     },
