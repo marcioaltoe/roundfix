@@ -40,3 +40,12 @@ consuming Spec before it is represented as a supported runtime operation.
 Commit this record separately before its consuming tooling changes. Known
 regeneration/verification compatibility failures remain unresolved; this grant
 does not suppress them or claim a passing repository gate.
+
+## Sanctioned regeneration
+
+The repository-owned command resolves its generated outputs. This declaration
+records the digest regeneration already granted above; it adds no source paths.
+
+```yaml
+command: make baseline-digests
+```

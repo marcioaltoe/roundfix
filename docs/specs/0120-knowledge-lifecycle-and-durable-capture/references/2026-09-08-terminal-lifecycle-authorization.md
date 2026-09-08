@@ -31,3 +31,12 @@ files is still pending and is not answered by this record.
 Commit this record separately before its consuming tooling change. Existing
 red verification dependencies must be repaired before that tooling commit;
 the record itself makes no passing-gate or implementation-readiness claim.
+
+## Sanctioned regeneration
+
+The repository-owned command resolves its generated outputs. This declaration
+records the digest regeneration already granted above; it adds no source paths.
+
+```yaml
+command: make baseline-digests
+```

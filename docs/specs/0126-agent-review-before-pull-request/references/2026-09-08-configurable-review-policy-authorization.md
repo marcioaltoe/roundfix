@@ -37,3 +37,12 @@ Spec authorization. Historical review evidence retains its original meaning.
 Commit this record separately before consuming tooling changes. The known
 regeneration/verification compatibility failures remain prerequisites to
 publishing the resulting tooling change as verified.
+
+## Sanctioned regeneration
+
+The repository-owned command resolves its generated outputs. This declaration
+records the digest regeneration already granted above; it adds no source paths.
+
+```yaml
+command: make baseline-digests
+```
