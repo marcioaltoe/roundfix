@@ -1477,6 +1477,50 @@
       "start": 2348,
       "end": 2467,
       "digest": "6b69aed9edfd555561f350967eec615bb14ac27de595ead8f7cfc6d759fc857a"
+    },
+    {
+      "id": "clause.secondbrain.04-external-research",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 8075,
+      "end": 8386,
+      "digest": "aea8328b62d2f2667f94b18a0ba8ca96736e045e0940ad1a17580fe8d1255c62"
+    },
+    {
+      "id": "clause.secondbrain.05-research-limitations",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 8535,
+      "end": 8844,
+      "digest": "8897b4488328a4c7d22f101e46f93a8dd569b3f7eea0064c9355125c07124fd1"
+    },
+    {
+      "id": "clause.secondbrain.prohibit-external-local-discovery",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "prohibited",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 9006,
+      "end": 9263,
+      "digest": "0fb841d01d6e81aea985b3da0a69eb92a333fd4e5613806d618df669cc9a1960"
+    },
+    {
+      "id": "clause.secondbrain.record-decision-sources",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 9425,
+      "end": 9664,
+      "digest": "5007d421c7a8ca913bf0c2f63cdfcb53a12781164ec6f8f657a1d5d1cdb71833"
     }
   ]
 }

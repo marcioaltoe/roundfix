@@ -85,3 +85,19 @@ When Secondbrain knowledge must be added or corrected, ask Hermes to ingest or u
 <!-- source-baseline-entry: clause.secondbrain.baseline-owned-guidance -->
 - MUST treat guidance inside `setup-context-driven` markers as Baseline-owned: propose changes to it as an Inbox Entry to the Baseline's owner, never as a local edit the next Baseline update overwrites.
 <!-- /source-baseline-entry: clause.secondbrain.baseline-owned-guidance -->
+
+<!-- source-baseline-entry: clause.secondbrain.04-external-research -->
+Use Exa MCP to find and read relevant external sources that support or challenge the proposal. Prefer primary sources, assess their applicability, and distinguish published evidence from inference. This requirement complements the mandatory authoritative documentation workflow for external APIs and libraries.
+<!-- /source-baseline-entry: clause.secondbrain.04-external-research -->
+
+<!-- source-baseline-entry: clause.secondbrain.05-research-limitations -->
+If either source is unavailable or yields no relevant result, record the attempted consultation and its limitation explicitly, then continue with the available evidence. Do not claim validation from an unavailable, unread, or irrelevant source. Another research tool does not satisfy the Exa MCP requirement.
+<!-- /source-baseline-entry: clause.secondbrain.05-research-limitations -->
+
+<!-- source-baseline-entry: clause.secondbrain.prohibit-external-local-discovery -->
+Do not use Exa or another external research tool to discover or infer local repository code or behavior. Use local code-search tools for that purpose. Never include credentials, private client records, or proprietary source code in external search queries.
+<!-- /source-baseline-entry: clause.secondbrain.prohibit-external-local-discovery -->
+
+<!-- source-baseline-entry: clause.secondbrain.record-decision-sources -->
+Record the Secondbrain file paths and external source URLs used, and explain how they informed, changed, or challenged the decision in the relevant technical artifact. If no artifact is being authored, include this record in the response.
+<!-- /source-baseline-entry: clause.secondbrain.record-decision-sources -->

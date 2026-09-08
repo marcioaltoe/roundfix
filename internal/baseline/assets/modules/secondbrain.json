@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "secondbrain",
-  "version": 8,
+  "version": 9,
   "kind": "knowledge-source",
   "title": "Secondbrain guidance",
   "dependsOn": [
@@ -32,7 +32,7 @@
   "supportingGuides": [
     {
       "id": "guide.secondbrain",
-      "version": 8,
+      "version": 9,
       "path": "docs/agents/secondbrain.md",
       "template": "template.guide.secondbrain",
       "rules": [
@@ -48,7 +48,7 @@
   "rules": [
     {
       "id": "rule.secondbrain.index-first",
-      "version": 5,
+      "version": 6,
       "coverage": [
         "coverage.secondbrain",
         "coverage.research"
@@ -57,7 +57,7 @@
         {
           "id": "clause.secondbrain.01-consult-triggers",
           "enforcement": "mandatory",
-          "guidance": "Consult the local Secondbrain before making a design or architecture proposal, and before authoring an Idea, PRD, or TechSpec."
+          "guidance": "Consult both the local Secondbrain and Exa MCP before proposing solutions or recommendations, making product, design, or architecture decisions, and authoring an Idea, PRD, or TechSpec. Both sources are required; one does not replace the other."
         },
         {
           "id": "clause.secondbrain.02-query-order",
@@ -67,13 +67,23 @@
         {
           "id": "clause.secondbrain.03-decision-consultation",
           "enforcement": "mandatory",
-          "guidance": "Consult the Secondbrain while a decision is being formed — authoring a Spec, choosing an approach, or validating a strategy — for what it holds and this repository does not: the decisions sibling projects in the ecosystem already made and paid for, literature, and general technical knowledge. Report an unreachable Secondbrain or an empty result as a condition in the artifact being written; it is never a reason to stop the work."
+          "guidance": "Use Secondbrain for prior decisions, related project experience, and existing research. Follow the index-first and local query workflow defined in this guide."
+        },
+        {
+          "id": "clause.secondbrain.04-external-research",
+          "enforcement": "mandatory",
+          "guidance": "Use Exa MCP to find and read relevant external sources that support or challenge the proposal. Prefer primary sources, assess their applicability, and distinguish published evidence from inference. This requirement complements the mandatory authoritative documentation workflow for external APIs and libraries."
+        },
+        {
+          "id": "clause.secondbrain.05-research-limitations",
+          "enforcement": "mandatory",
+          "guidance": "If either source is unavailable or yields no relevant result, record the attempted consultation and its limitation explicitly, then continue with the available evidence. Do not claim validation from an unavailable, unread, or irrelevant source. Another research tool does not satisfy the Exa MCP requirement."
         }
       ]
     },
     {
       "id": "rule.secondbrain.read-only",
-      "version": 8,
+      "version": 9,
       "coverage": [
         "coverage.secondbrain",
         "coverage.universal-safety"
@@ -107,7 +117,7 @@
         {
           "id": "clause.secondbrain.research-capture",
           "enforcement": "mandatory",
-          "guidance": "A session that performed substantive external research must capture a digest with its sources for the brain's own namespace. Run the advisory qmd duplicate check first through an authorized access path, verify that returned paths exist, and review substantive overlap; a score alone never decides. A strong verified match routes the digest to extend existing knowledge instead of duplicating it; otherwise create a new pending research Inbox Entry. Ingestion remains the brain's own contract."
+          "guidance": "Capture substantive external research and relevant findings or articles from Exa MCP as sourced digests in pending research Inbox Entries in the brain's own namespace, for later ingestion and reuse as reference material. Capture relevant articles on subjects important or foundational to the projects even when found outside a dedicated research session. Include each source's title and URL, a concise summary of the content read, the projects or topics it informs, and why it matters; distinguish published evidence from inference. Run the advisory qmd duplicate check first through an authorized access path, verify that returned paths exist, and review substantive overlap; a score alone never decides. A strong verified match routes the digest to extend existing knowledge instead of duplicating it; otherwise create a new pending research Inbox Entry. Follow the Inbox Entry contract. Capture is pending ingestion, which remains the brain's own contract."
         },
         {
           "id": "clause.secondbrain.capture-trigger",
@@ -128,7 +138,7 @@
     },
     {
       "id": "rule.secondbrain.secret-safety",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.secondbrain",
         "coverage.security-configuration"
@@ -138,17 +148,27 @@
           "id": "clause.secondbrain.prohibit-secret-access",
           "enforcement": "prohibited",
           "guidance": "Never read, copy, or expose `.env` files, tokens, credentials, cookies, private keys, API keys, session material, or unsafe personal and client data. Stop at likely secret-bearing sources and request a safe source."
+        },
+        {
+          "id": "clause.secondbrain.prohibit-external-local-discovery",
+          "enforcement": "prohibited",
+          "guidance": "Do not use Exa or another external research tool to discover or infer local repository code or behavior. Use local code-search tools for that purpose. Never include credentials, private client records, or proprietary source code in external search queries."
         }
       ]
     },
     {
       "id": "rule.secondbrain.citations",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.secondbrain",
         "coverage.research"
       ],
       "clauses": [
+        {
+          "id": "clause.secondbrain.record-decision-sources",
+          "enforcement": "mandatory",
+          "guidance": "Record the Secondbrain file paths and external source URLs used, and explain how they informed, changed, or challenged the decision in the relevant technical artifact. If no artifact is being authored, include this record in the response."
+        },
         {
           "id": "clause.secondbrain.cite-used-files",
           "enforcement": "mandatory",

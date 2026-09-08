@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-08-12
-updated_at: 2026-08-12
+updated_at: 2026-09-08
 kind: finding
 ---
 
@@ -204,3 +204,24 @@ In the `vortex` repository, under `docs/specs/_archived/0023-sync-purchase-invoi
 `docs/specs/0025-sync-derivada-horaria-e-cupons`: the reports under `qa/`
 (fourteen executions) and the review artifacts under `docs/specs/_reviews/pr-138`,
 `pr-139` and `pr-140`.
+
+## Addendum — 2026-09-08 — Current triage
+
+Existing deliveries cover finding 1 through 0105 (the default Pull Request
+equivalent-evidence path), finding 3 through 0095 (hermeticity and declared
+outputs), finding 7 through 0096 (the named Task-file surface), and portions of
+finding 6 through 0092/0118 and 0097's deleted-target reconciliation.
+
+Findings 2 and 9 remain in
+`docs/backlog/2026-08-31-the-review-agent-rewrites-the-contract-it-was-asked-to-satisfy.md`:
+protect authored Verification and refuse absent-infrastructure scope growth.
+Route them to provisional P7 with the user-requested replacement review.
+Findings 4 and 5 are CodeRabbit-specific; retire their provider mechanism only
+after removal lands, while preserving the general evidence/propagation
+requirements in the replacement.
+
+Finding 8 still asks for explicit authoring rules on property-shaped evidence,
+test-layer boundaries, updates to existing contracts, and narrow commit scope.
+Hermeticity alone does not settle all four. Route the remaining work to
+provisional P1/P8. Historical round and failure counts remain dated observations,
+not a measurement of the current workflow.

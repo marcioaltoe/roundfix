@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-08-06
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 kind: rollup
 members:
   - 2026-08-06-a-test-mutates-the-repository-another-test-is-reading.md
@@ -57,3 +57,24 @@ mechanical discovery and contract checks before Task settlement relies on it.
 ---
 
 Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
+
+## Addendum — 2026-09-08 — Current triage
+
+Existing deliveries cover reachability/report selection (0053, 0070, 0072),
+mechanical and staged checks (0064, 0080, 0093), Verification probes (0090,
+0095, 0116), derived QA Verification and combined static/journey findings
+(0105), and current-report/precondition-report handling (0113).
+
+Current `internal/daemon/task_engine.go` still completes the QA Task only for
+`pass`, while `internal/spec/archive.go` admits the declared-only `partial`
+case. The Task verification path checks authored commands before committing,
+with no general postcondition over the resulting committed tree. The new
+Finding `2026-09-08-verified-executable-source-is-dropped-before-settlement.md`
+records a concrete loss at that boundary. Route these to provisional P3,
+verified content and terminal settlement.
+
+Gate-cost distribution, load-sensitive checks, and historical test interference
+need current measurements in provisional P5. Broader declaration-to-evidence
+traceability belongs to provisional P1/P8. No current load experiment or
+terminal QA was performed by this triage; this Rollup remains the license for
+its 22 archived members.

@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-08-11
-updated_at: 2026-08-11
+updated_at: 2026-09-08
 ---
 
 # A git worktree that fails only under load
@@ -59,3 +59,16 @@ that cannot be created is a Run-level event with a Run, a Task, and a
 concurrency level; the git text is evidence for that sentence, not a substitute
 for it. Today `implement failed after Run start: create Task Worktree: ...`
 passes the raw fatal through and stops.
+
+## Addendum — 2026-09-08 — Current triage
+
+Spec `0097-a-wave-that-cannot-collide` supplied the contextual error in
+`internal/worktree/worktree.go`, naming Run, Task, and configured concurrency.
+The current production Git runner also passes `core.fsmonitor=false`.
+
+Those source changes address the diagnostic and the suspected interference,
+but this triage did not reproduce the original ERANGE or run the controlled
+experiment needed to prove its cause. Root cause therefore remains unknown.
+Keep the Finding pending and route the remaining characterization to
+provisional P5, Verification capacity and measured economics. Do not treat an
+isolated passing rerun as proof that the load failure is fixed.

@@ -55,3 +55,15 @@ the rendered guide carries them, and the managed refresh converges. What
 remains open in this entry is the original gap alone: no Baseline guide names
 a home for authorization records.
 
+## Addendum — 2026-09-08 — Current triage
+
+The current guide still omits an authorization-record home while the audit
+reads legacy `docs/workflow/authorizations/` records. The user now explicitly
+requests authorizations inside their Specs and asks for that contract in the
+canonical rules. That instruction changes the proposed destination in the
+original Shape; it does not erase the original observation.
+
+Keep this entry open for provisional P1, authorization and knowledge lifecycle.
+The new design must resolve Spec-contained grants while preserving valid legacy
+references and the boundary between an authorization record and its governed
+change. No Spec number or final grant schema is assigned by this triage.

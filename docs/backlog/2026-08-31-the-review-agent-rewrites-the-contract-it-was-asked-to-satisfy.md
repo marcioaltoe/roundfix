@@ -53,3 +53,14 @@ the cost of a reader who must notice it.
 Note that a Verification the Daemon derives rather than an author writes — Spec
 0105 Core Feature 3, for the QA Task specifically — removes this risk for that
 one Task without touching the general case.
+
+## Addendum — 2026-09-08 — Current triage
+
+Spec 0105 explicitly excluded these resolution-Agent guardrails. Current
+`internal/rounds` provides issue identity and status handling but no guard for
+authored Verification or a newly invented test substrate.
+
+Keep the entry open for provisional P7, review by Codex or Claude before the
+Pull Request. Removing CodeRabbit does not remove this Agent scope hazard.
+The forbid-versus-report decision and accepted-risk handling still require the
+maintainer's bounded planning decision; this addendum grants neither behavior.

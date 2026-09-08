@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-08-12
-updated_at: 2026-08-12
+updated_at: 2026-09-08
 kind: finding
 ---
 
@@ -147,3 +147,22 @@ handoffs; the ordering is by real cost, not by theoretical severity.
   modules.
 - Action / suggestion: carry each as a Baseline module clause, and add a temporal
   prerequisite field so the queue orders itself.
+
+## Addendum — 2026-09-08 — Current triage
+
+The current tree and delivery records cover findings 2 and 3 through 0097
+(serialized bootstrap, collision checks, contextual errors), finding 5 through
+0095/0116 (authoring-time execution), finding 6 through 0105 (derived QA
+Verification), and finding 7 through 0103 (process-tree termination). These
+links describe implemented scope; this triage did not replay the eight-Spec
+session or establish a fresh pass for all of its surfaces.
+
+Finding 1 remains visible: `internal/daemon/task_engine.go` only completes a QA
+Task for `pass`, although archive accepts a properly declared-only `partial`.
+Route it to provisional P3. Finding 4 remains visible in the eager fallback
+proof list in `internal/cli/profiles_validate.go`: provisional P4. Finding 8
+remains visible in checkout-derived `findGitRoot`/`repoID` in
+`internal/config/config.go`: provisional P6. Finding 9's temporal prerequisites
+and remaining authoring rules belong to provisional P1/P8; portions already
+taught by 0095/0097 must not be implemented again. The aggregate remains pending
+until these residuals receive explicit Specs.

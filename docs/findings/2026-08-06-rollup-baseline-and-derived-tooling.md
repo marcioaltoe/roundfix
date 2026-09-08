@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-08-06
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 kind: rollup
 members:
   - 2026-08-07-changing-the-http-contract-discards-its-exceptions.md
@@ -52,3 +52,22 @@ whole Baseline lifecycle.
 ---
 
 Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
+
+## Addendum — 2026-09-08 — Current triage
+
+Existing deliveries address semantic retention (0057), repository-derived
+skill requirements (0061), declared Baseline regeneration (0062 and 0067),
+manifest-driven refresh (0082), and unrecorded managed-region refresh (0084).
+
+Three member defects remain visible in current source. The `http-contract`
+Change branch in `internal/cli/baseline_human.go` returns only `mode`, dropping
+recorded exceptions and source provenance. The TypeScript Profile still names
+an inert `Post-only` HTTP default beside the catalog's live default. Greenfield
+classification returns without decisions while
+`internal/baseline/preservation.go` still requires them for stale managed
+sources. `skills/` also has no declared regeneration ownership, now captured in
+`docs/backlog/2026-09-08-skill-regeneration-declares-its-owned-outputs.md`.
+
+Route the residuals to provisional P2, Baseline decisions and complete
+regeneration. Keep this Rollup active to license its 16 archived members;
+historical absorption did not establish that every member defect was fixed.

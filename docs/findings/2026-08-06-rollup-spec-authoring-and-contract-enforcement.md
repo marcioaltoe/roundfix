@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-08-06
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 kind: rollup
 members:
   - 2026-08-06-a-promoted-backlog-entry-has-nowhere-valid-to-go.md
@@ -40,3 +40,20 @@ Task ownership to the evidence that proves the authored consequence shipped.
 ---
 
 Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
+
+## Addendum — 2026-09-08 — Current triage
+
+The promoted Backlog adoption seam was explicitly closed in its 2026-08-07
+member addendum. Existing deliveries include consistency checks (0064, 0065),
+stage-scoped citation checks (0093), hermetic/effect-proving Verification
+(0095), wave collision detection (0097), and real-boundary characterization
+(0105). Spec 0083 moved the coverage reference out of archived Spec content.
+
+The upstream-only guide/glossary citation rule still has no matching detector,
+as recorded in the open 2026-08-26 Backlog Entry. Traceability from each promise
+to assigned work and behavior evidence is broader than citation checking.
+This triage did not establish a complete supported path for a falsified premise
+back through authoring and corrective work. Route those remaining contracts to
+provisional P1, authorization and knowledge lifecycle, and P8, durable
+unattended Spec workflow. Keep this Rollup active for its seven members; no
+Spec number is assigned by these provisional labels.

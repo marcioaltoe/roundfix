@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-08-06
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 kind: rollup
 members:
   - 2026-08-06-the-loop-cannot-fix-comments-about-its-own-artifacts.md
@@ -48,3 +48,24 @@ recovery path and the loop stops returning control for mechanical reasons.
 ---
 
 Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
+
+## Addendum — 2026-09-08 — Current triage
+
+Current `internal/rounds/rounds.go` carries Review Issue fingerprints and
+newest-issue deduplication. Existing deliveries cover artifact history (0094),
+verified work and commit-hook/deletion recovery (0092, 0098), and carry-forward
+from Unresolved Runs (0118). Those mechanisms must survive replacement of the
+review provider.
+
+The current issue status contract has no maintainer-accepted terminal state,
+and the resolution path has no guard protecting authored Verification or
+preventing creation of an absent test substrate. These are provisional P7,
+review by Codex or Claude before the Pull Request, together with review
+identity and candidate-head evidence. Provider-specific request, nitpick,
+thread, and rate-limit complaints are candidates for retirement when the
+user-requested CodeRabbit removal actually lands; this triage does not claim
+that removal is already implemented.
+
+Corrective-loop and falsified-premise routing remain provisional P8, durable
+unattended Spec workflow. Keep the Rollup active to license all 14 members;
+the dated deferral did not establish end-to-end convergence.

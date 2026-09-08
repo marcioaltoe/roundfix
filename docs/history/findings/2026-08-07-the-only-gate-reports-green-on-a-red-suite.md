@@ -1,8 +1,9 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-07
-updated_at: 2026-08-07
+updated_at: 2026-09-08
 kind: finding
+absorbed_by: 0083-a-gate-that-can-say-no
 ---
 
 # The only gate reports green on a red suite (2026-08-07)
@@ -72,3 +73,21 @@ Not fixed here. Two candidate owners and the choice matters:
 The second is worth weighing on its own merits regardless of the first: a gate
 whose exit status depends on a summarizing wrapper has a failure mode that a
 direct invocation does not.
+
+## Addendum — 2026-09-08 — The authoritative gate rejects a masked failure
+
+Archived Spec `0083-a-gate-that-can-say-no` implemented the repair. The current
+Makefile uses `GO := go` for the authoritative targets, keeping `GO_HUMAN` for
+human-facing output. `internal/spec/gate_test.go` exercises high-volume and
+short failures, a passing fixture, and a masking-wrapper negative control.
+
+Fresh verification on 2026-09-08:
+
+```sh
+rtk proxy env GOCACHE=/Users/marcio/dev/roundfix/.gocache go test ./internal/spec -run '^TestAuthoritativeGateReportsFailure$' -count=1
+```
+
+Exit 0; `ok roundfix/internal/spec 5.586s`. This supports closure of the
+recorded wrapper-masking defect. It does not claim that every repository test
+is deterministic or that the complete repository gate ran in this triage.
+The Finding is archived under the implementing Spec's absorption license.
