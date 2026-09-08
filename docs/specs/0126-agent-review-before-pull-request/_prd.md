@@ -11,8 +11,10 @@ Roundfix currently depends on CodeRabbit for review feedback and evidence, even
 when a repository wants to review locally before opening a Pull Request. The
 maintainer requests removal of that operational dependency and a local,
 independent Codex or Claude Code review that proves which candidate it examined.
-This PRD is in authoring: reviewer selection, limits, migration details, and
-protected-file authority are pending decisions. It does not authorize execution.
+Reviewer selection is confirmed: Codex by default, with the explicit configured
+review profile taking precedence. This PRD remains in authoring because limits,
+migration details and exact protected-file authority are pending. It does not
+authorize execution.
 
 ## Project Constraints
 
@@ -31,7 +33,12 @@ protected-file authority are pending decisions. It does not authorize execution.
   ADR-0127 applies to reviewer process lifecycle: readiness reports process residue without inventing Run records or settling work from the inventory.
   ADR-0139 applies: the Run Database and checkout guard preserve one Active Run per work target and reject competing mutation.
   ADR-0142 applies to preserved historical Review Source Evidence: expected-head classification and the distinction between Clean and Clean Unverified remain readable, while a new pre-PR contract requires an explicit decision.
-- Tooling authority: applicable — protected changes are proposed but express maintainer authorization for the exact bounded files has not been granted. The proposed record is [_authorization.md](_authorization.md), at `docs/specs/0126-agent-review-before-pull-request/_authorization.md`; `status: proposed` and `granted: null` are not a grant. Candidate bounded files: `.roundfixrc.yml`, `.coderabbit.yaml`, `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/autonomous-work.json`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/agents/openai.yaml`, `skills/roundfix/SKILL.md`, `skills/roundfix/agents/openai.yaml`, `docs/agents/agent-instructions.md`, `docs/agents/autonomous-work.md`, `docs/agents/setup-context.json`, `internal/cli/cli_test.go`, `internal/docscontract/publicdocs_test.go`, `skills/baseline_skill_contract_test.go`. Deterministic digest fallout follows the sanctioned regeneration rule after source approval. No Task Graph or tooling mutation is authorized by this list. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+  ADR-0080 applies to the inherited QA evidence cited in the adopted measurement: distinguish environment-blocked rows from product failure and successful execution.
+  ADR-0151 applies: use Codex by default and preserve an explicit configured review profile, with effective selection provenance and explicit capability refusal.
+  ADR-0093 applies: mechanical citation accounting does not establish semantic review correctness.
+  ADR-0097 applies to carried QA evidence consumed by delivery: retain declared unchanged evidence rather than inheriting a pass after its inputs move.
+  ADR-0104 applies: acceptance uses independent evidence with its actual origin; missing external evidence remains visible under the declared policy.
+- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `.roundfixrc.yml`, `.coderabbit.yaml`, `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/autonomous-work.json`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/agents/openai.yaml`, `skills/roundfix/SKILL.md`, `skills/roundfix/agents/openai.yaml`, `docs/agents/agent-instructions.md`, `docs/agents/autonomous-work.md`, `docs/agents/setup-context.json`, `internal/cli/cli_test.go`, `internal/docscontract/publicdocs_test.go`, `skills/baseline_skill_contract_test.go`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -51,7 +58,7 @@ protected-file authority are pending decisions. It does not authorize execution.
 
 ## Core Features
 
-1. Independent local review examines an explicit repository candidate and the applicable Spec and standards in a fresh reviewer session. The reviewer reports findings and coverage without mutating code, tests, instructions, Verification, or Git state. Reviewer selection is pending; supporting a provider does not authorize its execution or billing.
+1. Independent local review examines an explicit repository candidate and the applicable Spec and standards in a fresh reviewer session. The reviewer reports findings and coverage without mutating code, tests, instructions, Verification, or Git state. Codex is the default; an explicit effective project review profile takes precedence. Supporting a runtime does not authorize additional billing.
 2. Review evidence records the candidate's base and head, the effective reviewer selection, the result, omissions, and execution outcome. A changed head or base relationship, incomplete coverage, malformed response, runtime failure, timeout, or interruption cannot produce a passing review.
 3. CodeRabbit retirement removes active provider requests, defaults, command routing, configuration requirements, and mandatory owned-skill instructions. Explicit legacy usage receives a migration diagnostic before side effects. Existing `none` support must not be assumed; legacy command retirement and inherited configuration migration require a confirmed public contract.
 4. Findings receive evidence-backed dispositions. A disproved finding is distinct from accepting a real risk. Unresolved blocking findings prevent publication; a failed check or review cannot be automatically accepted or waived. Optional suggestions can be retained as backlog intent under the approved policy.
@@ -102,7 +109,7 @@ successful disabled mode.
 
 ## Open Questions
 
-- Reviewer policy and effective runtime/model selection — maintainer decision pending. No automatic default applies while the current question is unanswered.
+- Reviewer policy is settled: Codex by default, with the explicitly configured review profile taking precedence. The current project tuple and declared fallbacks are retained.
 - Correction cycles, wall-clock limits, and paid API/subscription bounds — maintainer decision pending. Two corrective review cycles is a proposal, not an approved allowance; the existing rule to re-examine more than two QA corrective Tasks still applies.
 - Legacy command/configuration retirement and the pre-PR readiness contract — architecture decision pending before TechSpec authoring can settle implementation.
 - Archive-first final review and the authority for any later corrective Spec — proposed ordering pending confirmation; neither an archive exception nor approval inheritance is assumed.
@@ -123,3 +130,34 @@ They establish native review and headless structured-output primitives; they
 do not establish Roundfix integration, runtime access, or a paid allowance.
 Local CLI help confirmed available flags, and a parser-only probe confirmed the
 Codex target/custom-prompt conflict. No live reviewer was invoked for this PRD.
+
+## Confirmed reviewer decision — 2026-09-08
+
+The maintainer selected Codex as the default independent reviewer and requires
+an explicit reviewer in `.roundfixrc.yml` to take precedence. Reuse the existing
+`profiles.review` resolution instead of introducing another reviewer key or
+forcing invocation flags that override the project. Current Project Config
+selects Codex / gpt-5.6-luna / max with the declared Codex / gpt-5.6-sol / high
+fallback; preserve that actual tuple. Built-in, User Config and Project Config
+provenance remain visible. Invalid configuration or unavailable required review
+capability is a named refusal, never a silent substitution with the default.
+
+`review_source.name: coderabbit` is the legacy external PR-feedback provider,
+not an Agent Selection Profile. The new native review must consume the review
+profile; changing this planning record does not yet implement that adapter or
+remove CodeRabbit. Review sessions are independent of implementation sessions,
+and a changed candidate invalidates their evidence. The granted default-policy
+decision does not approve otherwise proposed governed mutations or paid calls.
+
+The [source ownership index](references/_index.md) records the pre-adoption
+path, type, primary owner and current owned copy. Secondary consumers link
+that copy; lifecycle completion means routing, not verified implementation.
+
+The provider-opt-out evidence is owned in [the adopted Finding](references/2026-09-08-generated-review-rules-reactivate-a-disabled-provider.md). Its acceptance must prove that retired/disabled CodeRabbit never receives an automatic or manual request from generated guidance or the new delivery path.
+
+## Technical candidate
+
+The [_techspec.md](_techspec.md) records the reviewable implementation map,
+coverage and build order. It is a proposed candidate, not a completed authoring
+gate or permission to dispatch. Exact governed grants and the named decisions
+remain pending; no Task Graph or implementation result is claimed.

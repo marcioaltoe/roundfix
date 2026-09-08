@@ -32,7 +32,7 @@ there is no TechSpec, Task Graph, or authority to start implementation.
   ADR-0117 is applicable: place artifact checks at the stage producing their defect; committed-content checks need the commit evidence that pre-work authoring cannot supply, and public behavior still belongs to QA.
   ADR-0127 is not applicable to this change: machine process-residue inventory remains a readiness fact and this Spec introduces no residue command or synthetic Run record.
   ADR-0138 is applicable: preserve one commit per verified Task and opt-in push only at Clean; the proposed postcondition supplies additional completion evidence without granting new delivery actions.
-- Tooling authority: applicable — protected tooling mutation is proposed, not authorized. The reviewable proposal is `docs/specs/0122-verified-content-and-terminal-settlement/_authorization.md`; bounded files: `internal/spec/archive.go`, `internal/spec/archive_test.go`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/qa-gate/SKILL.md`, `.agents/skills/archive-spec/SKILL.md`, `skills/roundfix/SKILL.md`, `skills/qa-gate/SKILL.md`, `skills/archive-spec/SKILL.md`, `internal/baseline/assets/modules/spec-workflow.json`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`. Source: `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `internal/spec/archive.go`, `internal/spec/archive_test.go`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/qa-gate/SKILL.md`, `.agents/skills/archive-spec/SKILL.md`, `skills/roundfix/SKILL.md`, `skills/qa-gate/SKILL.md`, `skills/archive-spec/SKILL.md`, `internal/baseline/assets/modules/spec-workflow.json`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/write-tasks/references/task-template.md`, `skills/write-tasks/SKILL.md`, `skills/write-tasks/references/task-template.md`, `.agents/skills/implement-task/SKILL.md`, `skills/implement-task/SKILL.md`, `internal/speccheck/coherence.go`, `docs/agents/spec-routing.md`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -48,6 +48,9 @@ there is no TechSpec, Task Graph, or authority to start implementation.
 3. Proposed: run the selected repository Verification against the integrated candidate before declaring Clean, with Daemon ownership and an explicit failure/recovery result. The design must decide its exact commit boundary and avoid redundant full gates per Task.
 4. Use one declared-acceptance eligibility policy for the newest QA Report across settlement, the derived QA command, and archive. A qualifying partial report retains its partial verdict and records unproven actions; failed, missing, undeclared, or unobserved acceptance stays blocking.
 5. Make the approved settlement semantics consistent in the QA, archive, and public command guidance.
+
+6. An explicitly authorized Task may enter to repair its named known-red repository precondition under frozen Spec/Task/source authority. Normal Tasks remain blocked by red prerequisites. The same required gate and focused repair assertion must pass before settlement; shell rephrasing, an Agent-edited policy or an unapproved failure cannot bypass entry checks.
+7. Collect failures from explicitly independent Verification groups before spending the existing single repair turn, while preserving dependency ordering and skipping checks whose setup prerequisite failed. Do not infer independence from arbitrary shell text or simply continue every command after failure. Preserve all diagnostics and the existing retry ceiling.
 
 ## Non-Goals / Out of Scope
 
@@ -71,14 +74,16 @@ constitute implementation or terminal QA evidence.
 
 Until answered, all proposed limits and protected mutations remain unapproved.
 
-## Provisional inputs
+## Source ownership
 
-These sources remain at their current paths. No ownership transfer, promotion,
-adoption index, or source move occurs before implementation commitment.
+The maintainer selected this intent for implementation. Ordinary sources now
+have one primary owner and one copy under that owner's `references/` directory.
+Active Rollups remain as shared archive-license roots; their dated addenda map
+every remaining family to its consuming Spec. Adoption is not execution approval.
 
-- [2026-09-08-verified-executable-source-is-dropped-before-settlement.md](../../findings/2026-09-08-verified-executable-source-is-dropped-before-settlement.md)
+- [2026-09-08-verified-executable-source-is-dropped-before-settlement.md](references/2026-09-08-verified-executable-source-is-dropped-before-settlement.md)
 - [2026-08-06-rollup-qa-gates-and-verification-evidence.md](../../findings/2026-08-06-rollup-qa-gates-and-verification-evidence.md)
-- [2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md](../../findings/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md)
+- [2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md](../0129-spec-authoring-and-gate-recovery/references/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md)
 
 ## Research basis
 
@@ -98,3 +103,14 @@ changes. Only after that checkpoint may the TechSpec settle the design and a
 Task Graph authorize execution. PRD-stage checks will report their actual
 scope and any pending authorization findings; a green partial check is not
 implementation readiness.
+
+The [source ownership index](references/_index.md) records the pre-adoption
+path, type, primary owner and current owned copy. Secondary consumers link
+that copy; lifecycle completion means routing, not verified implementation.
+
+## Technical candidate
+
+The [_techspec.md](_techspec.md) records the reviewable implementation map,
+coverage and build order. It is a proposed candidate, not a completed authoring
+gate or permission to dispatch. Exact governed grants and the named decisions
+remain pending; no Task Graph or implementation result is claimed.

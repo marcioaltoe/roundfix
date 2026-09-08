@@ -23,7 +23,9 @@ There is no executable Task Graph yet.
 - Identifier strategy: applicable — retain existing Spec slugs, dated artifact basenames, Inbox destinations, and source provenance; a terminal disposition does not invent an implementation identity. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no credential, authentication, or HTTP API change is proposed. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — preserve the one-way mirror and fleet Inbox boundary, the existing History Root, and accepted regeneration ownership under ADR-0149. Source: `docs/agents/docs-layout.md`.
-- Tooling authority: applicable — protected tooling mutation is proposed, not authorized. The proposal is `docs/specs/0120-knowledge-lifecycle-and-durable-capture/_authorization.md`; bounded files: `internal/baseline/assets/modules/context-workflow.json`, `internal/baseline/assets/modules/secondbrain.json`, `internal/spec/archive.go`, `internal/spec/archive_test.go`, `internal/speccheck/backlog.go`, `internal/speccheck/backlog_test.go`, `internal/docscontract/publicdocs_test.go`, `.agents/skills/archive-spec/SKILL.md`, `skills/archive-spec/SKILL.md`, `docs/agents/docs-layout.md`, `docs/agents/secondbrain.md`, `docs/agents/setup-context.json`. Source: `docs/agents/agent-instructions.md`.
+  ADR-0123 remains operative: retirement currently uses conservative local reachability and the Review Artifact resolver never writes into history. The proposed stable-evidence change does not yet supersede it.
+  ADR-0152 is a proposed revision only, recorded for review; it creates no current obligation or grant.
+- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `internal/baseline/assets/modules/context-workflow.json`, `internal/baseline/assets/modules/secondbrain.json`, `internal/spec/archive.go`, `internal/spec/archive_test.go`, `internal/speccheck/backlog.go`, `internal/speccheck/backlog_test.go`, `internal/docscontract/publicdocs_test.go`, `.agents/skills/archive-spec/SKILL.md`, `skills/archive-spec/SKILL.md`, `docs/agents/docs-layout.md`, `docs/agents/secondbrain.md`, `docs/agents/setup-context.json`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -60,6 +62,8 @@ There is no executable Task Graph yet.
 7. Relevant research capture keeps URLs, dates, summary, project relevance,
    limitations, and influence on the decision. It feeds later ingestion and
    never claims the pending digest was already integrated into the wiki.
+
+8. Review Artifact retirement must use stable recorded or provider evidence, with explicit unknown outcomes when evidence is unavailable, rather than local object-store availability. Preserve valid squash receipts. Relocation from legacy docs/specs/_reviews is independent of the active/retired decision. This proposed change must explicitly revise ADR-0123 before its conflicting behavior changes.
 
 ## Non-Goals / Out of Scope
 
@@ -107,5 +111,16 @@ mechanics from remaining contract gaps. Secondbrain's own agent and Inbox
 contracts and the inspected autosync script establish ownership locally;
 Exa-read execution documentation supports distinguishing authority from
 supplied content but does not decide this repository's lifecycle vocabulary.
-The cross-Spec plan records those limitations. Sources are pending adoption
-until this Spec's final scope is approved.
+The cross-Spec plan records those limitations. Ordinary source ownership is recorded in the reference index. The exact
+implementation grant remains pending independently of adoption.
+
+The [source ownership index](references/_index.md) records the pre-adoption
+path, type, primary owner and current owned copy. Secondary consumers link
+that copy; lifecycle completion means routing, not verified implementation.
+
+## Technical candidate
+
+The [_techspec.md](_techspec.md) records the reviewable implementation map,
+coverage and build order. It is a proposed candidate, not a completed authoring
+gate or permission to dispatch. Exact governed grants and the named decisions
+remain pending; no Task Graph or implementation result is claimed.

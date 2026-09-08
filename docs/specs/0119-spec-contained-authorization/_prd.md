@@ -32,7 +32,7 @@ Task Graph and no grant to change protected tooling yet.
   ADR-0038 is not applicable to the implementation scope: the one Verification repair allowance remains unchanged and is not widened by a grant.
   ADR-0056 is not applicable to the implementation scope: Task Capacity, Verification Capacity, and the temporary-failure retry remain unchanged.
   ADR-0127 is not applicable to the implementation scope: reporting process residue as a readiness fact remains unchanged.
-- Tooling authority: applicable — protected tooling mutation is proposed, not authorized. The reviewable proposal is `docs/specs/0119-spec-contained-authorization/_authorization.md`; bounded files: `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/spec-workflow.json`, `internal/baseline/assets/modules/context-workflow.json`, `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `.agents/skills/write-tasks/SKILL.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-tasks/SKILL.md`, `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`. Source: `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/spec-workflow.json`, `internal/baseline/assets/modules/context-workflow.json`, `internal/speccheck/constraints.go`, `internal/speccheck/constraints_characterization_test.go`, `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-prd/references/prd-template.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-techspec/references/techspec-template.md`, `.agents/skills/write-tasks/SKILL.md`, `skills/write-prd/SKILL.md`, `skills/write-prd/references/prd-template.md`, `skills/write-techspec/SKILL.md`, `skills/write-techspec/references/techspec-template.md`, `skills/write-tasks/SKILL.md`, `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, `internal/speccheck/governed.go`, `internal/speccheck/governed_repocontract_test.go`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -132,3 +132,21 @@ and the Exa-read Codex/Claude execution documentation distinguish tool access,
 input, and approval; this informs explicit approval state instead of inferred
 authority. Those external interfaces do not validate the proposed Roundfix
 schema. The cross-Spec plan records the source URLs and their limitations.
+
+The [source ownership index](references/_index.md) records the pre-adoption
+path, type, primary owner and current owned copy. Secondary consumers link
+that copy; lifecycle completion means routing, not verified implementation.
+
+## Technical candidate
+
+The [_techspec.md](_techspec.md) records the reviewable implementation map,
+coverage and build order. It is a proposed candidate, not a completed authoring
+gate or permission to dispatch. Exact governed grants and the named decisions
+remain pending; no Task Graph or implementation result is claimed.
+
+## Squash history prerequisite
+
+A new or widened governed grant must land independently in target ancestry
+before its consuming squash delivery. A separate commit inside the same PR
+would be flattened with the change and does not preserve prior approval.
+Validate that boundary before dispatch and against the observed merged history.

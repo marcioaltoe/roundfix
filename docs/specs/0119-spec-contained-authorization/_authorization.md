@@ -23,6 +23,8 @@ paths:
   - docs/agents/spec-routing.md
   - docs/agents/docs-layout.md
   - docs/agents/setup-context.json
+  - internal/speccheck/governed.go
+  - internal/speccheck/governed_repocontract_test.go
 ---
 
 # Proposed authority for Spec 0119
@@ -69,3 +71,10 @@ until the source mutations are approved.
 
 Pending. Record the maintainer's concrete decision and approved bounded scope
 here before changing `status` or `granted`; do not fill either from inference.
+
+## Scope refinement from complete triage
+
+The technical candidate now names the additional governed paths above for the
+newly exposed residuals. Their presence remains a proposal, not an amendment to
+an approved grant. No current tooling, test, template or generator file was
+changed by this planning operation. Sanctioned outputs follow source approval.

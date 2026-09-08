@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-06
 updated_at: 2026-09-08
 kind: rollup
@@ -57,3 +57,19 @@ back through authoring and corrective work. Route those remaining contracts to
 provisional P1, authorization and knowledge lifecycle, and P8, durable
 unattended Spec workflow. Keep this Rollup active for its seven members; no
 Spec number is assigned by these provisional labels.
+
+## Addendum — 2026-09-08 — Complete implementation routing
+
+The maintainer selected the residual work for the queue. Its primary owner is
+[0129-spec-authoring-and-gate-recovery](../specs/0129-spec-authoring-and-gate-recovery/_prd.md).
+- [0119-spec-contained-authorization](../specs/0119-spec-contained-authorization/_prd.md): source and mutation authority.
+- [0120-knowledge-lifecycle-and-durable-capture](../specs/0120-knowledge-lifecycle-and-durable-capture/_prd.md): upstream citation detection.
+- [0122-verified-content-and-terminal-settlement](../specs/0122-verified-content-and-terminal-settlement/_prd.md): authorized red-precondition repair and verification feedback.
+- [0127-durable-unattended-spec-workflow](../specs/0127-durable-unattended-spec-workflow/_prd.md): execution of the authored delivery queue.
+
+`done` records complete routing to implementation Specs, not a passing repair or
+QA verdict. This Rollup remains in the active findings directory because its
+archived members still name this basename as their absorption license. Those
+licenses and original observations are preserved; retirement waits for the
+durable replacement contract in 0120. Shipped mechanisms remain regression
+obligations rather than duplicate implementation Tasks.

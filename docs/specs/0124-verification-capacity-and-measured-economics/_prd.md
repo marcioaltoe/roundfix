@@ -18,7 +18,9 @@ there is no TechSpec, Task Graph, or authority to start implementation.
 - Identifier strategy: not applicable — retain existing Run, Task, and diagnostic identities; measurements do not introduce a new persisted identity scheme. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — verification scheduling and local/CI test execution introduce no authentication or HTTP policy. Source: `docs/agents/cli.md` and `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0056 separates per-Run Task and Verification Capacity and expressly does not coordinate the entire machine. ADR-0117 requires each defect to be checked by the stage that can produce it. Preserve these boundaries unless a measured, explicitly approved design revises them. Source: `docs/agents/domain.md` and `docs/agents/spec-routing.md`.
-- Tooling authority: applicable — protected tooling mutation is proposed, not authorized. The reviewable proposal is `docs/specs/0124-verification-capacity-and-measured-economics/_authorization.md`; bounded files: `Makefile`, `.github/workflows/ci-verify.yml`. Source: `docs/agents/agent-instructions.md`.
+  ADR-0119 is an archived historical decision cited by an adopted measurement. Preserve that historical evidence; it is not a new operative authorization or a reason to weaken current refusal behavior.
+  ADR-0147 supersedes the historical refusal decision: preserve an adapter-origin refusal and use the catalog as the net, not as authority to claim a better message or successful selection.
+- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `Makefile`, `.github/workflows/ci-verify.yml`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -34,6 +36,8 @@ there is no TechSpec, Task Graph, or authority to start implementation.
 3. Select a bounded capacity policy from those measurements; do not adopt a core-count formula or raise deadlines solely because the original failure disappears.
 4. Preserve the direct unfiltered Go gate and existing two-tier semantics. Decide whether a named cold-cache convenience command adds value beyond current fresh test targets.
 5. After the runtime-state prerequisite passes, add ordinary go-vet coverage to the approved Verification composition with a negative control that demonstrates it can refuse a copied-lock regression.
+
+6. Characterize proposed controls for fixture deadlines, external-record lookups inside gates, fragile literals, test-mass infrastructure and toolchain/formatter drift. Record a measured adopt/defer decision for each proposal rather than treating every historical suggestion as an approved detector. No gate, cache or concurrency policy changes before its named cause and negative controls are established.
 
 ## Non-Goals / Out of Scope
 
@@ -57,16 +61,18 @@ constitute implementation or terminal QA evidence.
 
 Until answered, all proposed limits and protected mutations remain unapproved.
 
-## Provisional inputs
+## Source ownership
 
-These sources remain at their current paths. No ownership transfer, promotion,
-adoption index, or source move occurs before implementation commitment.
+The maintainer selected this intent for implementation. Ordinary sources now
+have one primary owner and one copy under that owner's `references/` directory.
+Active Rollups remain as shared archive-license roots; their dated addenda map
+every remaining family to its consuming Spec. Adoption is not execution approval.
 
-- [2026-08-08-go-clean-testcache-clears-a-cache-the-gate-does-not-use.md](../../backlog/2026-08-08-go-clean-testcache-clears-a-cache-the-gate-does-not-use.md)
-- [2026-08-10-the-loop-is-measured-and-the-gate-is-where-it-costs.md](../../backlog/2026-08-10-the-loop-is-measured-and-the-gate-is-where-it-costs.md)
-- [2026-08-15-the-gate-runs-a-saturated-suite-inside-a-dense-run.md](../../backlog/2026-08-15-the-gate-runs-a-saturated-suite-inside-a-dense-run.md)
-- [2026-08-11-a-git-worktree-that-fails-only-under-load.md](../../findings/2026-08-11-a-git-worktree-that-fails-only-under-load.md)
-- [2026-09-08-force-stop-legacy-owner-has-an-unexplained-ci-failure.md](../../findings/2026-09-08-force-stop-legacy-owner-has-an-unexplained-ci-failure.md)
+- [2026-08-08-go-clean-testcache-clears-a-cache-the-gate-does-not-use.md](references/2026-08-08-go-clean-testcache-clears-a-cache-the-gate-does-not-use.md)
+- [2026-08-10-the-loop-is-measured-and-the-gate-is-where-it-costs.md](references/2026-08-10-the-loop-is-measured-and-the-gate-is-where-it-costs.md)
+- [2026-08-15-the-gate-runs-a-saturated-suite-inside-a-dense-run.md](references/2026-08-15-the-gate-runs-a-saturated-suite-inside-a-dense-run.md)
+- [2026-08-11-a-git-worktree-that-fails-only-under-load.md](references/2026-08-11-a-git-worktree-that-fails-only-under-load.md)
+- [2026-09-08-force-stop-legacy-owner-has-an-unexplained-ci-failure.md](references/2026-09-08-force-stop-legacy-owner-has-an-unexplained-ci-failure.md)
 
 ## Research basis
 
@@ -86,3 +92,14 @@ changes. Only after that checkpoint may the TechSpec settle the design and a
 Task Graph authorize execution. PRD-stage checks will report their actual
 scope and any pending authorization findings; a green partial check is not
 implementation readiness.
+
+The [source ownership index](references/_index.md) records the pre-adoption
+path, type, primary owner and current owned copy. Secondary consumers link
+that copy; lifecycle completion means routing, not verified implementation.
+
+## Technical candidate
+
+The [_techspec.md](_techspec.md) records the reviewable implementation map,
+coverage and build order. It is a proposed candidate, not a completed authoring
+gate or permission to dispatch. Exact governed grants and the named decisions
+remain pending; no Task Graph or implementation result is claimed.

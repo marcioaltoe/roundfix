@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-06
 updated_at: 2026-09-08
 kind: rollup
@@ -61,3 +61,17 @@ measured economics. Regeneration ownership is shared with provisional P2.
 
 This addendum records implemented scope from current source and archived
 delivery records, not a fresh live-adapter test or complete resolution.
+
+## Addendum — 2026-09-08 — Complete implementation routing
+
+The maintainer selected the residual work for the queue. Its primary owner is
+[0123-runtime-readiness-and-model-capabilities](../specs/0123-runtime-readiness-and-model-capabilities/_prd.md).
+- [0124-verification-capacity-and-measured-economics](../specs/0124-verification-capacity-and-measured-economics/_prd.md): resource contention and characterized fallbacks.
+- [0121-baseline-decisions-and-complete-regeneration](../specs/0121-baseline-decisions-and-complete-regeneration/_prd.md): generated readiness remedies.
+
+`done` records complete routing to implementation Specs, not a passing repair or
+QA verdict. This Rollup remains in the active findings directory because its
+archived members still name this basename as their absorption license. Those
+licenses and original observations are preserved; retirement waits for the
+durable replacement contract in 0120. Shipped mechanisms remain regression
+obligations rather than duplicate implementation Tasks.

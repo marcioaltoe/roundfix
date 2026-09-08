@@ -18,7 +18,7 @@ there is no TechSpec, Task Graph, or authority to start implementation.
 - Identifier strategy: applicable — canonical repository identity must group linked worktrees while preserving access to existing Run records; keep Run/Task IDs stable and recognize old branch names during migration. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — local repository/ref identity and reconciliation introduce no authentication or HTTP endpoints. Source: `docs/agents/cli.md` and `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0138 preserves one commit per verified Task and the existing Clean-only opt-in push boundary. ADR-0135 requires absent diagnostic output to be reported as an explicit state, not an empty message; it does not define whether a Git reference exists. Keep branch disposition evidence-based. ADR-0150 confirms purpose-based work branches and the existing Roundfix Run namespace. ADR-0118 remains relevant for compatibility of the saved decision key, with its personal-prefix aspect replaced. Source: `docs/agents/domain.md` and `docs/agents/spec-routing.md`.
-- Tooling authority: applicable — protected tooling mutation is proposed, not authorized. The reviewable proposal is `docs/specs/0125-repository-identity-and-run-branch-policy/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Source: `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -57,14 +57,16 @@ constitute implementation or terminal QA evidence.
 
 Until answered, all proposed limits and protected mutations remain unapproved.
 
-## Provisional inputs
+## Source ownership
 
-These sources remain at their current paths. No ownership transfer, promotion,
-adoption index, or source move occurs before implementation commitment.
+The maintainer selected this intent for implementation. Ordinary sources now
+have one primary owner and one copy under that owner's `references/` directory.
+Active Rollups remain as shared archive-license roots; their dated addenda map
+every remaining family to its consuming Spec. Adoption is not execution approval.
 
 - [2026-09-08-run-branches-ignore-the-selected-prefix.md](../../history/findings/2026-09-08-run-branches-ignore-the-selected-prefix.md)
 - [2026-08-06-rollup-run-lifecycle-and-branch-integrity.md](../../findings/2026-08-06-rollup-run-lifecycle-and-branch-integrity.md)
-- [2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md](../../findings/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md)
+- [2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md](../0129-spec-authoring-and-gate-recovery/references/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md)
 
 ## Research basis
 
@@ -84,3 +86,10 @@ changes. Only after that checkpoint may the TechSpec settle the design and a
 Task Graph authorize execution. PRD-stage checks will report their actual
 scope and any pending authorization findings; a green partial check is not
 implementation readiness.
+
+## Technical candidate
+
+The [_techspec.md](_techspec.md) records the reviewable implementation map,
+coverage and build order. It is a proposed candidate, not a completed authoring
+gate or permission to dispatch. Exact governed grants and the named decisions
+remain pending; no Task Graph or implementation result is claimed.

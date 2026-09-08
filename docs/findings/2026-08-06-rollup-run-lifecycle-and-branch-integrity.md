@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-06
 updated_at: 2026-09-08
 kind: rollup
@@ -83,3 +83,17 @@ The retired prefix-conflict Finding is absorbed here as an additional archived
 member. Its runtime suggestion is deferred because the policy changed; this
 Rollup remains active for the separate residuals above and now licenses 14
 members.
+
+## Addendum — 2026-09-08 — Complete implementation routing
+
+The maintainer selected the residual work for the queue. Its primary owner is
+[0125-repository-identity-and-run-branch-policy](../specs/0125-repository-identity-and-run-branch-policy/_prd.md).
+- [0124-verification-capacity-and-measured-economics](../specs/0124-verification-capacity-and-measured-economics/_prd.md): host-load investigations.
+- [0127-durable-unattended-spec-workflow](../specs/0127-durable-unattended-spec-workflow/_prd.md): durable queue ownership and duration enforcement.
+
+`done` records complete routing to implementation Specs, not a passing repair or
+QA verdict. This Rollup remains in the active findings directory because its
+archived members still name this basename as their absorption license. Those
+licenses and original observations are preserved; retirement waits for the
+durable replacement contract in 0120. Shipped mechanisms remain regression
+obligations rather than duplicate implementation Tasks.

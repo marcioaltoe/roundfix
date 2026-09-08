@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-06
 updated_at: 2026-09-08
 kind: rollup
@@ -71,3 +71,17 @@ sources. `skills/` also has no declared regeneration ownership, now captured in
 Route the residuals to provisional P2, Baseline decisions and complete
 regeneration. Keep this Rollup active to license its 16 archived members;
 historical absorption did not establish that every member defect was fixed.
+
+## Addendum — 2026-09-08 — Complete implementation routing
+
+The maintainer selected the residual work for the queue. Its primary owner is
+[0121-baseline-decisions-and-complete-regeneration](../specs/0121-baseline-decisions-and-complete-regeneration/_prd.md).
+- [0119-spec-contained-authorization](../specs/0119-spec-contained-authorization/_prd.md): operative authority.
+- [0124-verification-capacity-and-measured-economics](../specs/0124-verification-capacity-and-measured-economics/_prd.md): measurement-driven tooling changes.
+
+`done` records complete routing to implementation Specs, not a passing repair or
+QA verdict. This Rollup remains in the active findings directory because its
+archived members still name this basename as their absorption license. Those
+licenses and original observations are preserved; retirement waits for the
+durable replacement contract in 0120. Shipped mechanisms remain regression
+obligations rather than duplicate implementation Tasks.
