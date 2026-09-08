@@ -112,20 +112,16 @@ unchanged therefore does not preserve an identified active CodeRabbit dependency
    This depends on every preceding slice.
 
 The removal slice belongs in `roundfix implement --spec <slug> --detach` because
-Implement Runs do not require CodeRabbit review. Starting that Run is currently
-blocked by a separate contract: the user's mandatory `ma/` branch prefix conflicts
-with `store.RunBranchPrefix = "roundfix/run-"`, used by Run/Task Worktree creation.
-Local `roundfix implement --help`, its parser, and the Worktree config type expose
-no branch or namespace override. A Baseline `branch.prefix` answer does not change
-this hardcoded runtime value. Do not start the Run under a silently different
-prefix or rename its branch behind its owner.
-
-Spec 0125 must resolve that bootstrap first, or the maintainer must explicitly
-authorize a bounded bootstrap execution method and exact scope. The Supervisor
-cannot resolve the contradiction by writing feature code itself. After that
-prerequisite, the old Daemon can execute and verify the Task that removes the
-adapter from the next binary. Rebuild the binary before a later Task or QA
-exercises that new CLI.
+Implement Runs do not require CodeRabbit review. The maintainer's 2026-09-08
+branch-policy decision permits the current `roundfix/run-` namespace and its
+Task branches, so the previously identified personal-prefix bootstrap conflict
+is resolved. New work branches use purpose prefixes without user initials.
+No branch rename behind a Run's owner or Supervisor feature-code exception is
+needed. Spec 0125's remaining repository-identity work is still relevant to
+cross-worktree orchestration, but naming no longer blocks an implementation Run.
+After the applicable Spec, limits, and tooling grant are approved, the old Daemon
+can execute and verify the Task that removes the adapter from the next binary.
+Rebuild that binary before a later Task or QA exercises its CLI.
 Until the native replacement passes its gate, no unattended merge is eligible.
 For the first replacement PR, use the independently selected native CLI against
 the final candidate and record its evidence; this avoids requiring the new

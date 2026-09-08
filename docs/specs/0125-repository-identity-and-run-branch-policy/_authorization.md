@@ -58,3 +58,12 @@ from the request to author Specs, a default answer, or a checker result.
 Research and provisional source provenance are recorded in [_prd.md](_prd.md).
 The planning documents may be reviewed and committed without activating this
 proposed grant; implementation remains blocked on the checkpoint above.
+
+## Confirmed naming subset — 2026-09-08
+
+The maintainer removed the personal `ma/` requirement, selected purpose-based
+work branches, and permitted the existing Roundfix Run namespace. The exact
+canonical/global instruction changes are approved in
+[_authorization-2026-09-08-branch-policy.md](_authorization-2026-09-08-branch-policy.md).
+This broader record remains proposed for the unapproved skill, identity, and
+reconciliation changes; do not treat the naming decision as approval of those.

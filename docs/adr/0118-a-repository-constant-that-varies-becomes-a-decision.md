@@ -1,7 +1,7 @@
 ---
 status: accepted
 created_at: 2026-08-10T00:00:00Z
-updated_at: 2026-08-10T00:00:00Z
+updated_at: 2026-09-08T15:10:02Z
 deprecated_at: null
 superseded_by: null
 ---
@@ -43,3 +43,11 @@ Rendering the prefix from a repository-local file that the catalog reads was
 rejected: it puts the value outside the Decision Document, so the manifest no
 longer records what the repository actually answered, and Readoption has nothing
 to carry forward.
+
+## Addendum — 2026-09-08
+
+ADR-0150 replaces this record's personal branch-prefix policy with purpose-based
+work branches and a separate tool-owned Run namespace. The compatible decision
+key remains, with `<type>/` as its new default; the earlier `ma/` examples above
+are historical. The general separation between portable rules and repository
+decisions remains accepted.

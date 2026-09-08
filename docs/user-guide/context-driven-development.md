@@ -50,7 +50,7 @@ Not every change runs the full pipeline. The entry point depends on the change â
 a large initiative starts at `write-idea`, a standard feature at `write-prd`, a
 refactor or bug fix at `write-techspec`, and a trivial fix skips the spec folder
 entirely. The routing rules live in
-[`docs/agents/spec-routing.md`](agents/spec-routing.md); every route converges on
+[`docs/agents/spec-routing.md`](../agents/spec-routing.md); every route converges on
 `write-tasks`, so implementation always executes from a Task Graph rather than an
 ad-hoc plan.
 
@@ -456,7 +456,7 @@ repository owner's answers:
     },
     {
       "id": "branch.prefix",
-      "value": "ma/"
+      "value": "<type>/"
     },
     {
       "id": "domain.layout",
@@ -840,7 +840,7 @@ order, each gated by its own Verification commands â€” and `roundfix archive`
 closes the loop after `qa-gate` passes. The operational flow is documented in the
 [usage guide](usage.md); the autonomous role split (an orchestrator authors
 Specs, an ACP Runtime implements them) is in
-[`docs/agents/autonomous-work.md`](agents/autonomous-work.md).
+[`docs/agents/autonomous-work.md`](../agents/autonomous-work.md).
 
 Failed QA attempts can retain QA-report-only Run Branches. Branch Integrity
 Preflight excludes those branches from automatic fast-forward integration and
