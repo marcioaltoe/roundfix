@@ -1,11 +1,13 @@
 ---
 status: proposed
 granted: null
-action: align verified output, repository postcondition, and declared-only QA settlement with archive eligibility
+action: align verified output, QA settlement and user-authorized archive-only QA overrides
 consuming: 0122-verified-content-and-terminal-settlement
 paths:
   - internal/spec/archive.go
   - internal/spec/archive_test.go
+  - internal/cli/archive.go
+  - internal/cli/archive_test.go
   - .agents/skills/roundfix/SKILL.md
   - .agents/skills/qa-gate/SKILL.md
   - .agents/skills/archive-spec/SKILL.md
@@ -33,7 +35,7 @@ approved policy. Do not execute implementation from this record.
 
 ## Proposed bounded mutation
 
-The two archive Go files are already historically governed. The authorial skills and canonical archive clause change only after the settlement decision is approved. Ordinary daemon and Task model source belongs in the later Implementation Design, not this protected-path list.
+The archive Go files are historically governed. The narrow canonical QA Archive Override policy is separately approved in the dated reference; Go, tests and owned-skill integration remain proposed here. The final implementation must preserve all gates outside the authorized archive-only QA exception. Ordinary daemon and Task model source belongs in the later Implementation Design, not this protected-path list.
 
 The expanded proposal covers the existing archive-layout clause and the
 Spec-routing clauses needed for the explicit repair-entry and independent
@@ -89,3 +91,18 @@ The technical candidate now names the additional governed paths above for the
 newly exposed residuals. Their presence remains a proposal, not an amendment to
 an approved grant. No current tooling, test, template or generator file was
 changed by this planning operation. Sanctioned outputs follow source approval.
+
+
+## Confirmed QA archive override policy — 2026-09-08
+
+The [narrow canonical grant](references/2026-09-08-authorized-qa-archive-override.md)
+covers three modules and four generated guides/manifest. The maintainer permits
+archival with a QA override when explicitly requested or authorized; that does
+not approve this broader source/test/skill proposal or override any current Spec.
+
+The implementation must support approval provenance, unchanged QA/Task evidence,
+a QA-only archive exception and intact non-QA/source-integrity gates. It must
+not convert an overridden archive into QA pass, Task completion, Run Clean,
+review approval or permission for publication. The public archive parser and
+its test are explicitly named above for later implementation; final flags and
+metadata fields beyond `qa_override` remain to be authored.

@@ -13,8 +13,9 @@ Extend the authoring evidence graph beyond citation presence and make premise ch
 This document makes the proposed work concrete for review. Authoring remains
 open: the exact governed grant and the decisions named below are pending.
 It is not an implementation-ready TechSpec, an executable Task Graph or
-approval to mutate protected files. The cross-Spec order and remaining
-decisions are in [the portfolio plan](../../workflow/2026-09-08-pending-work-plan.md).
+approval to mutate protected files. The remaining decisions are recorded in
+[_prd.md](_prd.md) and [_authorization.md](_authorization.md); the dependencies
+below define this Spec's place in the implementation order.
 
 ## Project Constraints
 
@@ -30,6 +31,7 @@ decisions are in [the portfolio plan](../../workflow/2026-09-08-pending-work-pla
   ADR-0093 applies: consistency uses explicit citations and does not infer behavior from their presence.
   ADR-0097 applies: carry forward QA only from declared, unchanged evidence; stale input requires supported revalidation.
   ADR-0104 applies: acceptance uses independent evidence with its actual origin; missing external evidence remains visible under the declared policy.
+  ADR-0154 applies to archive disposition: an explicitly user-authorized QA Archive Override preserves actual QA/Task evidence and does not satisfy independent delivery gates.
 - Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `.agents/skills/write-prd/SKILL.md`, `.agents/skills/write-techspec/SKILL.md`, `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/write-tasks/references/task-template.md`, `.agents/skills/implement-task/SKILL.md`, `skills/write-prd/SKILL.md`, `skills/write-techspec/SKILL.md`, `skills/write-tasks/SKILL.md`, `skills/write-tasks/references/task-template.md`, `skills/implement-task/SKILL.md`, `internal/speccheck/coherence.go`, `internal/baseline/assets/modules/spec-workflow.json`, `docs/agents/spec-routing.md`, `docs/agents/setup-context.json`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
@@ -38,7 +40,7 @@ decisions are in [the portfolio plan](../../workflow/2026-09-08-pending-work-pla
 | --- | --- | --- |
 | Requirement evidence map | `owned write-prd/write-techspec/write-tasks skills and templates` | Connect API contracts, metrics and accepted ADR obligations to Tasks and behavioral evidence. |
 | Mechanical authoring checks | `internal/speccheck/coherence.go and stage-specific detectors` | Check reference completeness and declared graph structure without claiming semantic proof. |
-| Semantic independent review | `Spec 0126 reviewer contract and authored review checklist` | Compare implementation behavior and rejected alternatives to operative decisions. |
+| Optional semantic independent review | `Spec 0126 reviewer contract and authored review checklist` | When review is enabled, compare implementation behavior and rejected alternatives to operative decisions; explicit none records omission without a semantic-review claim. |
 | Amendment and QA recovery | `existing Spec/Task loaders and Daemon lifecycle/store` | Preserve prior Results/reports and authorize supported supersession/invalidation. |
 | Temporal prerequisites | `Task Graph authoring and queue preflight` | Represent future observations, ordinal-generator edges and changed prerequisite assumptions. |
 | Verification contract | `canonical spec-routing, Task authoring and existing rehearsal/CI declarations` | Require property-shaped acceptance and declared feasible test surfaces without broadening corrective budgets. |
@@ -56,7 +58,7 @@ prerequisite Specs land rather than replacing their newer contracts.
 Extend authored traceability to API Contracts, Success Metrics and each
 applicable accepted-ADR obligation. Name the consuming Task and the observable
 behavior/evidence that will settle it. Citation presence remains a mechanical
-fact, not proof that a decision was obeyed. Independent semantic review checks
+fact, not proof that a decision was obeyed. When enabled by the pre-PR policy, independent semantic review checks
 the chosen design and its rejected alternatives against actual behavior;
 unsupported conclusions remain findings. A documentation assertion or mock
 that reproduces the implementation is insufficient product evidence.
@@ -120,10 +122,10 @@ Stage-specific Spec Check reports missing traceability separately from semantic 
 
 ## Coverage Map
 
-- PRD Goal 1 → Requirement evidence map, Mechanical authoring checks, Semantic independent review.
+- PRD Goal 1 → Requirement evidence map, Mechanical authoring checks, Optional semantic independent review.
 - PRD Goal 2 → Amendment and QA recovery.
 - PRD Goal 3 → Temporal prerequisites, Verification contract.
-- Core Feature 1 → Requirement evidence map and Mechanical authoring checks and Semantic independent review.
+- Core Feature 1 → Requirement evidence map and Mechanical authoring checks and Optional semantic independent review.
 - Core Feature 2 → Amendment and QA recovery.
 - Core Feature 3 → Amendment and QA recovery.
 - Core Feature 4 → Temporal prerequisites.
@@ -139,10 +141,12 @@ success metric before execution.
 
 Local repository evidence and the adopted sources define the concrete seams.
 The [owned source index](references/_index.md) records each primary source.
-The [portfolio plan](../../workflow/2026-09-08-pending-work-plan.md) records
-secondary consumers and prerequisite Specs. External research was read through
-Exa and compared with local Secondbrain history; the PRD and portfolio plan
-retain links and describe its effect. Published interfaces support feasibility,
+The prerequisite Specs are listed below. Secondary consumers reference the
+primary owner's adopted source instead of duplicating it. External research was read through
+Exa and compared with local Secondbrain history. The
+[historical research record](https://github.com/marcioaltoe/roundfix/blob/6b8ea48725cbca13974eee0b400b3482202874f6/docs/workflow/2026-09-08-pending-work-plan.md)
+retains the consulted sources, their influence and limitations after the plan
+was removed from the current tree. Published interfaces support feasibility,
 not a claim that the proposed runtime or behavior already exists.
 
 ## Testing Approach
@@ -152,7 +156,7 @@ Git/store/process boundaries for integration behavior, and the authored public
 QA Task for user-visible acceptance. Do not infer a terminal pass from source
 inspection or a focused fixture. Required observations:
 
-1. A missing API/metric/ADR-to-Task/evidence reference is found at its authoring stage; complete citations with contradictory behavior still fail semantic review.
+1. A missing API/metric/ADR-to-Task/evidence reference is found at its authoring stage; complete citations with contradictory behavior fail enabled semantic review. Explicit none records no such review while preserving mechanical checks and QA.
 2. A premise amendment preserves prior Results and forces affected consumers to revalidate; broader scope or missing temporal evidence blocks.
 3. Stale QA recovery keeps the earlier report and audit trail, respects active ownership and cannot reopen archived/completed history by manual editing.
 4. Ordinal-generator dependencies prevent concurrent collision and a future-release prerequisite does not execute publication.
@@ -184,6 +188,24 @@ Do not pretend mechanical traceability proves ADR obedience. The safe stale-QA t
 ## Decisions
 
 - The maintainer selected complete source triage and the implementation portfolio; source ownership is now recorded. That intent is distinct from a concrete governed-file grant.
-- Delivery through squash merge is confirmed only with independent review and required checks approved for the current candidate; releases, tags and paid consumption are not implied.
-- Reviewer selection follows the [confirmed portfolio policy](../../workflow/2026-09-08-pending-work-plan.md); this Spec does not introduce a separate override.
+- Delivery through squash merge requires the configured pre-PR review policy outcome and passing required checks for the current candidate. Explicit none records intentional review omission; enabled-provider failure cannot select none. Releases, tags and paid consumption are not implied.
+- Preserve configured reviewer selection; this Spec introduces no separate reviewer override.
 - The proposed mechanisms and unresolved trade-offs above remain candidates. Existing accepted ADRs named in Project Constraints remain operative until any explicit revision is accepted.
+
+## Cross-Spec dependencies
+
+Required predecessor contracts: [0119](../0119-spec-contained-authorization/_techspec.md), [0121](../0121-baseline-decisions-and-complete-regeneration/_techspec.md), [0122](../0122-verified-content-and-terminal-settlement/_techspec.md), [0126](../0126-agent-review-before-pull-request/_techspec.md).
+Shared skills and canonical files require serial integration and revalidation
+after predecessor changes. A predecessor reference is not an execution grant.
+
+
+## Authorized archive disposition
+
+Consume the archive policy from Spec 0122 and ADR-0154. An applicable explicit
+user authorization can archive the covered Spec with unmet QA, recording the
+override and preserving original evidence. This does not reopen or complete
+Tasks, declare QA passed, imply review approval or authorize publication/merge.
+A durable workflow records the overridden archive and evaluates subsequent
+actions against their own approval and gates; it does not retry the waived
+archive prerequisite or ask again for the same applicable archive approval.
+The absence of authority for a later action remains a separate visible blocker.

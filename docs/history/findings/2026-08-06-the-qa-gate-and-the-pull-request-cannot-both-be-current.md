@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-08-06
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
+updated_at: 2026-09-08
+absorbed_by: 0127-durable-unattended-spec-workflow
 ---
 
 # 2026-08-06 — The QA gate and the pull request cannot both be current
@@ -100,3 +100,13 @@ work on an unintegrated Run Branch.
 ## Spec pointer
 
 None yet.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-qa-gates-and-verification-evidence.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0127-durable-unattended-spec-workflow](../../specs/0127-durable-unattended-spec-workflow/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

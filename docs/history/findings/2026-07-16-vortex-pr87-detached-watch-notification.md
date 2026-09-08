@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-07-16
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-run-lifecycle-and-branch-integrity.md
+updated_at: 2026-09-08
+absorbed_by: 0039-review-source-evidence-and-detached-outcomes
 ---
 
 # Detached watch — terminal failure notification lacked actionable context (2026-07-16)
@@ -197,3 +197,13 @@ Finding 4 shipped earlier with archived Spec 0037. Spec 0039 itself remains
 unarchived only because its QA matrix contains Pull Request journeys the gate
 cannot reach from a Run Worktree — see
 [2026-07-28 — QA gate cannot reach Pull Request journeys](2026-07-28-qa-gate-cannot-reach-pull-request-journeys.md).
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-run-lifecycle-and-branch-integrity.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0039-review-source-evidence-and-detached-outcomes](../specs/0039-review-source-evidence-and-detached-outcomes/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

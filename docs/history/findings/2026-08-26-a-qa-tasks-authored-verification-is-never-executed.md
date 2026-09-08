@@ -1,8 +1,8 @@
 ---
 status: done
-absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
+absorbed_by: 0105-the-gates-own-economics
 created_at: 2026-08-26
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 kind: finding
 ---
 
@@ -22,3 +22,13 @@ Source: secondbrain `inbox/roundfix/2026-08-24-a-verification-de-uma-task-qa-nun
 (origin oraculum). Deferred at the 2026-08-26 triage: needs reproduction in this
 repository before a Spec commits to it. Related family: Spec 0116 names it as a
 non-goal; 0105 owns the gate's Verification derivation and may absorb it.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-qa-gates-and-verification-evidence.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0105-the-gates-own-economics](../specs/0105-the-gates-own-economics/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

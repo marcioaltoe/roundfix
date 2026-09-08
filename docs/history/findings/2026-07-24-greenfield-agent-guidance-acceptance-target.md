@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-07-24
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-baseline-and-derived-tooling.md
+updated_at: 2026-09-08
+absorbed_by: 0047-context-driven-guidance-composition
 ---
 
 # Context-Driven Baseline — greenfield guidance acceptance target (2026-07-24)
@@ -176,3 +176,13 @@ adaptation for profile-specific gaps, review every removal, include the Profile
 file in the digest-bound Change Plan, and return automatically to audit.
 Universal requirements remain non-waivable and receive exact remediation
 operations.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-baseline-and-derived-tooling.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0047-context-driven-guidance-composition](../specs/0047-context-driven-guidance-composition/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

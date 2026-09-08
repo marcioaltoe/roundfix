@@ -73,8 +73,9 @@ Task Graph and no grant to change protected tooling yet.
    are actionable diagnostics, never successful validation.
 5. Approval for implementation, commit, push, PR creation, merge, and release
    remains distinguishable. The session's approved through-merge policy
-   requires passing independent review and required checks for the candidate
-   commit; it does not grant a release or bypass.
+   requires the configured review policy outcome and passing required checks
+   for the candidate commit. Explicit none records intentional review omission;
+   it does not grant a release or bypass.
 6. Execution of authored Verification states which Spec source and commands
    were approved and what effects they may have. Read-only checking remains
    available without command execution. A changed or untrusted source needs
@@ -110,7 +111,7 @@ Supervisor proceeds without asking for that same approval again.
 - Confirmed on 2026-09-08: authorizations must be inside Specs and this must
   become canonical guidance.
 - Confirmed on 2026-09-08: after approval of Specs and limits, autonomous
-  delivery may reach merge only with independent review and checks approved.
+  delivery may reach merge only with the configured review policy outcome and checks approved.
 - Proposed: one `_authorization.md` per Spec, with explicit proposed/approved
   state and a preserved decision trail. This is not an approved schema yet.
 
@@ -126,12 +127,12 @@ Supervisor proceeds without asking for that same approval again.
 
 The inventory read the existing authorization-home Backlog, the Inbox report
 about third-party Verification execution, and the current constraints and
-changed-path readers. These are inputs awaiting adoption, not claims that
+changed-path readers. These inputs are adopted in the source index; their ownership does not claim
 implementation has started. Secondbrain's earlier fleet workflow observations
 and the Exa-read Codex/Claude execution documentation distinguish tool access,
 input, and approval; this informs explicit approval state instead of inferred
 authority. Those external interfaces do not validate the proposed Roundfix
-schema. The cross-Spec plan records the source URLs and their limitations.
+schema. The [historical research record](https://github.com/marcioaltoe/roundfix/blob/6b8ea48725cbca13974eee0b400b3482202874f6/docs/workflow/2026-09-08-pending-work-plan.md) records the source URLs and their limitations; it is available at the cited Git revision, not as a current planning file.
 
 The [source ownership index](references/_index.md) records the pre-adoption
 path, type, primary owner and current owned copy. Secondary consumers link
@@ -150,3 +151,14 @@ A new or widened governed grant must land independently in target ancestry
 before its consuming squash delivery. A separate commit inside the same PR
 would be flattened with the change and does not preserve prior approval.
 Validate that boundary before dispatch and against the observed merged history.
+
+## Maintainer-directed cleanup — 2026-09-08
+
+The maintainer explicitly requested deletion of every file under
+`docs/workflow/`, including the old authorization records, and the two dated
+design documents. Their content remains in Git revision
+`6b8ea48725cbca13974eee0b400b3482202874f6`; this Spec must not promise that their
+old paths remain readable as current worktree files. Historical approval and
+scope remain evidence to resolve from their operative revision, not new grants
+recreated or widened by the cleanup. The proposed Spec-contained approvals
+remain proposed. Adapting tests or readers requires its own bounded scope.

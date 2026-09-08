@@ -69,7 +69,7 @@ every remaining family to its consuming Spec. Adoption is not execution approval
 
 - [2026-09-08-support-claude-fable-5-1-and-gpt-6-astra.md](references/2026-09-08-support-claude-fable-5-1-and-gpt-6-astra.md)
 - [2026-09-08-acpx-runner-value-receivers-copy-its-mutex.md](references/2026-09-08-acpx-runner-value-receivers-copy-its-mutex.md)
-- [2026-08-06-rollup-agent-selection-and-execution-environments.md](../../findings/2026-08-06-rollup-agent-selection-and-execution-environments.md)
+- [2026-08-06-rollup-agent-selection-and-execution-environments.md](../../history/findings/2026-08-06-rollup-agent-selection-and-execution-environments.md)
 - [model-selection.md](../../references/model-selection.md)
 
 ## Research basis

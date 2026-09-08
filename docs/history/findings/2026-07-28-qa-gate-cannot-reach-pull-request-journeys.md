@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-07-28
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
+updated_at: 2026-09-08
+absorbed_by: 0053-qa-gate-reachability-and-verdict-semantics
 ---
 
 # QA gate — acceptance rows that need a live Pull Request are structurally unreachable, so their Spec can never be archived (2026-07-28)
@@ -111,3 +111,13 @@ and
 [ADR-0080](../adr/0080-qa-verdicts-distinguish-environment-blocked-rows.md).
 Spec 0039 was archived the same day with a maintainer `qa_override` and the
 supervised evidence recorded in its final QA report.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-qa-gates-and-verification-evidence.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0053-qa-gate-reachability-and-verdict-semantics](../specs/0053-qa-gate-reachability-and-verdict-semantics/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

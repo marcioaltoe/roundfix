@@ -2,8 +2,8 @@
 date: 2026-08-05
 surface: internal, Makefile, docs/agents
 status: done
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-baseline-and-derived-tooling.md
+updated_at: 2026-09-08
+absorbed_by: 0121-baseline-decisions-and-complete-regeneration
 ---
 
 # What this repository should change, after a full queue night
@@ -134,3 +134,13 @@ recorded; the pattern is worth watching for in future records.
 - Task settlement: 33 implementation Tasks, 1 failure attributable to the work.
 - `docs/handoffs/2026-08-05-the-night-the-queue-moved.md`.
 - Pull Requests #98, #100, #104, #113, #114, #118 for the specific cases above.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-baseline-and-derived-tooling.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0121-baseline-decisions-and-complete-regeneration](../../specs/0121-baseline-decisions-and-complete-regeneration/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

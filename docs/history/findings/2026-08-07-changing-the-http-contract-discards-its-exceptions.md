@@ -1,8 +1,8 @@
 ---
 status: done
-absorbed_by: 2026-08-06-rollup-baseline-and-derived-tooling.md
+absorbed_by: 0121-baseline-decisions-and-complete-regeneration
 created_at: 2026-08-07
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 kind: finding
 ---
 
@@ -69,3 +69,13 @@ the existing exceptions forward untouched.
 ---
 
 Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-baseline-and-derived-tooling.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0121-baseline-decisions-and-complete-regeneration](../../specs/0121-baseline-decisions-and-complete-regeneration/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

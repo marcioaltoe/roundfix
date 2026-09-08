@@ -2,8 +2,8 @@
 date: 2026-08-04
 surface: docs/findings, .agents/skills
 status: done
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-spec-authoring-and-contract-enforcement.md
+updated_at: 2026-09-08
+absorbed_by: 0129-spec-authoring-and-gate-recovery
 ---
 
 # A finding does not prevent the recurrence it describes
@@ -83,3 +83,13 @@ current arrangement cannot hold, not which repair to buy.
   three packages on 2026-08-03.
 - Second brain: `wiki/concepts/agent-workflows-e-loop-engineering.md`;
   `wiki/sources/x-codila-loop-engineering-graph-engineering-2026.md`.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-spec-authoring-and-contract-enforcement.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0129-spec-authoring-and-gate-recovery](../../specs/0129-spec-authoring-and-gate-recovery/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

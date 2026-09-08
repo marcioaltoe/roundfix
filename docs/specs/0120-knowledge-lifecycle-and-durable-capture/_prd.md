@@ -23,9 +23,11 @@ There is no executable Task Graph yet.
 - Identifier strategy: applicable — retain existing Spec slugs, dated artifact basenames, Inbox destinations, and source provenance; a terminal disposition does not invent an implementation identity. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no credential, authentication, or HTTP API change is proposed. Source: `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — preserve the one-way mirror and fleet Inbox boundary, the existing History Root, and accepted regeneration ownership under ADR-0149. Source: `docs/agents/docs-layout.md`.
+  ADR-0083 applies to the source-adoption validation follow-up: adopted Findings and Backlog Entries move to one owning Spec, with no copy or stub left at the original path.
+  ADR-0116 applies to cited-policy evidence: preserve checks that compare a claim with the cited record; source-origin absence is an additional structural check, not a substitute for semantic citation validation.
   ADR-0123 remains operative: retirement currently uses conservative local reachability and the Review Artifact resolver never writes into history. The proposed stable-evidence change does not yet supersede it.
   ADR-0152 is a proposed revision only, recorded for review; it creates no current obligation or grant.
-- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `internal/baseline/assets/modules/context-workflow.json`, `internal/baseline/assets/modules/secondbrain.json`, `internal/spec/archive.go`, `internal/spec/archive_test.go`, `internal/speccheck/backlog.go`, `internal/speccheck/backlog_test.go`, `internal/docscontract/publicdocs_test.go`, `.agents/skills/archive-spec/SKILL.md`, `skills/archive-spec/SKILL.md`, `docs/agents/docs-layout.md`, `docs/agents/secondbrain.md`, `docs/agents/setup-context.json`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — express maintainer authorization on 2026-09-08 covers the terminal lifecycle instruction through [the narrow grant](references/2026-09-08-terminal-lifecycle-authorization.md); bounded files: `internal/baseline/assets/modules/context-workflow.json`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, with sanctioned digest regeneration. The broader [_authorization.md](_authorization.md) remains proposed, including all Go, test, companion-repository and unrelated skill changes. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -111,7 +113,7 @@ mechanics from remaining contract gaps. Secondbrain's own agent and Inbox
 contracts and the inspected autosync script establish ownership locally;
 Exa-read execution documentation supports distinguishing authority from
 supplied content but does not decide this repository's lifecycle vocabulary.
-The cross-Spec plan records those limitations. Ordinary source ownership is recorded in the reference index. The exact
+The [historical research record](https://github.com/marcioaltoe/roundfix/blob/6b8ea48725cbca13974eee0b400b3482202874f6/docs/workflow/2026-09-08-pending-work-plan.md) preserves those limitations at its cited Git revision. Ordinary source ownership is recorded in the reference index. The exact
 implementation grant remains pending independently of adoption.
 
 The [source ownership index](references/_index.md) records the pre-adoption
@@ -124,3 +126,21 @@ The [_techspec.md](_techspec.md) records the reviewable implementation map,
 coverage and build order. It is a proposed candidate, not a completed authoring
 gate or permission to dispatch. Exact governed grants and the named decisions
 remain pending; no Task Graph or implementation result is claimed.
+
+## Confirmed terminal lifecycle decision — 2026-09-08
+
+The maintainer requires all terminal Findings, Backlog Entries and Rollups to
+leave the active family directories for their `docs/history/` family, without
+waiting for consuming Spec implementation, QA or publication. Spec-owned
+adopted references remain part of their self-contained Spec. A real standalone
+terminal disposition without an absorber records non-empty `closure_reason`
+and `closure_evidence`; a fabricated owner is prohibited, and invalid existing
+absorption pointers remain errors.
+
+The six terminal Rollups and their 82 member links have now been migrated to
+history with real direct Spec absorbers. This resolves their current placement
+using existing code. Supporting the standalone closure fields in mechanical
+validation remains implementation work. The
+[narrow canonical grant](references/2026-09-08-terminal-lifecycle-authorization.md)
+covers the requested instruction and generated guide/manifest only; the broader
+proposed authorization remains unchanged.

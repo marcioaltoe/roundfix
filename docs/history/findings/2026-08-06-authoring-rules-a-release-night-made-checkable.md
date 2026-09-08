@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-08-06
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-spec-authoring-and-contract-enforcement.md
+updated_at: 2026-09-08
+absorbed_by: 0129-spec-authoring-and-gate-recovery
 ---
 
 # Spec authoring — rules a release night made checkable (2026-08-06)
@@ -122,3 +122,13 @@ the `SC-*` enforcement surface the same night; these are its next rules.
 - Both release-gate refusals (`Validate tag`, nested `Verify gate`) stopped the
   run before anything published — fail-closed release plumbing turned two
   mistakes into reruns instead of half-published coordinates.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-spec-authoring-and-contract-enforcement.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0129-spec-authoring-and-gate-recovery](../../specs/0129-spec-authoring-and-gate-recovery/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

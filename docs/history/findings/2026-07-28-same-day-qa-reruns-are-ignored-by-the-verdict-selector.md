@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-07-28
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
+updated_at: 2026-09-08
+absorbed_by: 0053-qa-gate-reachability-and-verdict-semantics
 ---
 
 # QA verdict — every same-day rerun was ignored, so a passing Spec still reported fail (2026-07-28)
@@ -93,3 +93,13 @@ selector needed no implementation Spec; this status records the direct fix.
 The related report-naming disagreement between the Daemon prompt and the
 qa-gate Skill remains open and travels with the QA-gate reachability work in
 [2026-07-28 — QA gate cannot reach Pull Request journeys](2026-07-28-qa-gate-cannot-reach-pull-request-journeys.md).
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-qa-gates-and-verification-evidence.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0053-qa-gate-reachability-and-verdict-semantics](../specs/0053-qa-gate-reachability-and-verdict-semantics/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

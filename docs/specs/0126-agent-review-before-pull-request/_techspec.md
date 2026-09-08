@@ -4,25 +4,23 @@ prd: _prd.md
 created: 2026-09-08
 ---
 
-# Configured independent review before a pull request — Technical candidate
+# Configurable pre-PR review — Technical candidate
 
 ## Executive Summary
 
-Add a native local-candidate review phase using the existing atomic review profile resolver and durable evidence store. Retire CodeRabbit as an operational dependency while retaining historical readers. The design spends a separate review session and revalidates its candidate instead of treating an absent or skipped provider check as approval.
-
-This document makes the proposed work concrete for review. Authoring remains
-open: the exact governed grant and the decisions named below are pending.
-It is not an implementation-ready TechSpec, an executable Task Graph or
-approval to mutate protected files. The cross-Spec order and remaining
-decisions are in [the portfolio plan](../../workflow/2026-09-08-pending-work-plan.md).
+Add explicit provider selection and a truthful none path around the existing
+candidate-review boundaries. Codex, Claude and CodeRabbit are enabled choices;
+none performs no review and retains QA/checks. This revises the earlier provider
+retirement proposal. The policy is confirmed; schema, adapters, limits and
+remaining exact implementation grants are still in authoring.
 
 ## Project Constraints
 
 - Identifier strategy: applicable — preserve the existing Run and Task identities and use immutable Git commit identities to identify the reviewed candidate. New work branches use purpose prefixes such as `feat/`, `fix/`, and `refactor/`; Roundfix-owned Run/Task branches retain their documented namespace. The maintainer explicitly removed the personal-prefix conflict on 2026-09-08. No new identifier format is approved here. Source: `docs/agents/domain.md`, `docs/agents/agent-instructions.md`.
-- Authentication and HTTP: applicable — reuse the maintainer's existing authenticated local runtimes; do not introduce credentials, change authentication policy, or silently route subscription work through paid APIs. No backend HTTP guide exists for this CLI repository, so absence supplies no authorization. Native review access, tool permissions, and monetary or quota bounds still require confirmation. Source: `docs/agents/agent-instructions.md`, `docs/agents/cli.md`.
-- Active ADR obligations: applicable — retain the active execution, evidence, and authoring contracts while proposing a distinct pre-PR review contract. Source: `docs/agents/domain.md`, `docs/agents/autonomous-work.md`, `docs/agents/spec-routing.md`.
+- Authentication and HTTP: applicable — reuse the maintainer's existing authenticated runtimes and any explicitly selected provider service; do not introduce credentials, change authentication policy, or silently route subscription work through paid APIs. No backend HTTP guide exists for this CLI repository, so absence supplies no authorization. Native review access, tool permissions, and monetary or quota bounds still require confirmation. Source: `docs/agents/agent-instructions.md`, `docs/agents/cli.md`.
+- Active ADR obligations: applicable — retain the active execution, evidence, and authoring contracts while proposing the configurable pre-PR review contract. Source: `docs/agents/domain.md`, `docs/agents/autonomous-work.md`, `docs/agents/spec-routing.md`.
   ADR-0014 applies: the Daemon runs Task Verification and settles the outcome.
-  ADR-0019 applies to the historical Watch contract: Clean requires evidence that the Open Pull Request is merge-ready; retirement must not rewrite that recorded meaning.
+  ADR-0019 applies to the historical Watch contract: Clean requires evidence that the Open Pull Request is merge-ready; new policy modes must not rewrite that recorded meaning.
   ADR-0020 applies to retained acpx Batch execution: a valid parsed prompt result outranks a later teardown exit, which remains journaled; this does not establish success rules for a separate native reviewer.
   ADR-0038 applies: Daemon Verification Feedback permits one repair in the same Agent Session, distinct from the proposed independent-review correction limit.
   ADR-0056 applies to corrective Spec Runs: Task Capacity and Verification Capacity remain separate, and the exclusive temporary-failure retry retains its existing bound.
@@ -34,177 +32,256 @@ decisions are in [the portfolio plan](../../workflow/2026-09-08-pending-work-pla
   ADR-0139 applies: the Run Database and checkout guard preserve one Active Run per work target and reject competing mutation.
   ADR-0142 applies to preserved historical Review Source Evidence: expected-head classification and the distinction between Clean and Clean Unverified remain readable, while a new pre-PR contract requires an explicit decision.
   ADR-0080 applies to the inherited QA evidence cited in the adopted measurement: distinguish environment-blocked rows from product failure and successful execution.
-  ADR-0151 applies: use Codex by default and preserve an explicit configured review profile, with effective selection provenance and explicit capability refusal.
+  ADR-0151 retains the Codex default and explicit project-selection precedence for agent review.
+  ADR-0153 applies: the Pre-PR Review Policy permits codex, claude, coderabbit or explicit none; enabled-review failures do not become configured omissions.
   ADR-0093 applies: mechanical citation accounting does not establish semantic review correctness.
   ADR-0097 applies to carried QA evidence consumed by delivery: retain declared unchanged evidence rather than inheriting a pass after its inputs move.
   ADR-0104 applies: acceptance uses independent evidence with its actual origin; missing external evidence remains visible under the declared policy.
-- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `.roundfixrc.yml`, `.coderabbit.yaml`, `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/autonomous-work.json`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/agents/openai.yaml`, `skills/roundfix/SKILL.md`, `skills/roundfix/agents/openai.yaml`, `docs/agents/agent-instructions.md`, `docs/agents/autonomous-work.md`, `docs/agents/setup-context.json`, `internal/cli/cli_test.go`, `internal/docscontract/publicdocs_test.go`, `skills/baseline_skill_contract_test.go`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+  ADR-0154 applies to archive disposition: an explicitly user-authorized QA Archive Override preserves actual QA/Task evidence and does not satisfy independent delivery gates.
+- Tooling authority: applicable — express maintainer authorization covers the canonical policy in [the narrow grant](references/2026-09-08-configurable-review-policy-authorization.md), bounded files: `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/autonomous-work.json`, `docs/agents/agent-instructions.md`, `docs/agents/autonomous-work.md` and `docs/agents/setup-context.json`, with sanctioned digest regeneration. Other exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `.roundfixrc.yml`, `.coderabbit.yaml`, `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/autonomous-work.json`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/agents/openai.yaml`, `skills/roundfix/SKILL.md`, `skills/roundfix/agents/openai.yaml`, `docs/agents/agent-instructions.md`, `docs/agents/autonomous-work.md`, `docs/agents/setup-context.json`, `internal/cli/cli_test.go`, `internal/docscontract/publicdocs_test.go`, `skills/baseline_skill_contract_test.go`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## System Architecture
 
-| Component | Existing package or proposed file | Responsibility |
+| Component | Existing package or proposed seam | Responsibility |
 | --- | --- | --- |
-| Configured reviewer | `internal/config/profiles.go, CLI profile preflight and daemon selection owner` | Resolve CategoryReview, exact effective tuple, source and explicit fallbacks. |
-| Native review adapter | `internal/agent/review.go and internal/cli/review.go (new in existing packages)` | Review an explicit clean candidate in an independent session without changing repository content. |
-| Candidate review receipt | `internal/store and internal/runevent; local-candidate evidence in reviewsource` | Persist repository/base/merge-base/head, selection, terminal verdict, findings and omissions outside the reviewed tree. |
-| Provider retirement | `internal/config/config.go, CLI default provider factories and legacy command routes` | Remove operational CodeRabbit defaults/requests while preserving known legacy decoding/history. |
-| Finding correction cycle | `existing Roundfix Task execution and receipt linkage` | Apply bounded runtime-owned corrections and require fresh review of the changed candidate. |
-| Publication eligibility | `CLI delivery/pre-PR check and owned/canonical guidance` | Require current independent review and GitHub checks under the approved through-merge policy. |
+| Review policy resolver | `internal/config` and CLI preflight | Resolve explicit provider/none, default and provenance; preserve valid agent-profile configuration. |
+| Provider adapters | `internal/agent`, `internal/reviewsource`, proposed local review CLI | Inspect a candidate through Codex, Claude or CodeRabbit's supported local surface. |
+| Review/omission record | `internal/store` and `internal/runevent` | Persist candidate identity and either enabled-review evidence or explicit configured omission. |
+| Legacy configuration migration | Existing config and PR-feedback command routes | Preserve intentional service selection and history without universal provider requirements. |
+| Corrective work | Existing Roundfix Task/Run execution | Apply authorized fixes and obtain fresh enabled review. |
+| Publication eligibility | CLI delivery boundary and canonical guidance | Require the selected policy's outcome and all other applicable gates. |
 
-The map extends current package owners. Paths that name a package are
-implementation seams, not permission for arbitrary edits below that directory.
-The exact governed files remain in the authorization proposal; ordinary source
-changes must stay within this Spec's behavior. Revalidate shared files after
-prerequisite Specs land rather than replacing their newer contracts.
+Package seams are not unrestricted mutation grants. Revalidate exact files
+after predecessor Specs land.
 
 ## Implementation Design
 
-### Selection and review boundary
+### Policy resolution
 
-Codex is the confirmed default, and explicit `.roundfixrc.yml` review selection
-wins. Reuse `profiles.review` rather than introducing a parallel reviewer key.
-The current project tuple is Codex/Luna/max with its declared Codex/Sol/high
-fallback; the built-in profile remains a distinct default. Preserve User and
-Project Config precedence, effective tuple and source. The automated launcher
-omits selection flags unless the user supplied an actual invocation override.
-Invalid config or absent required review capability is an explicit refusal;
-only approved declared fallback reasons can activate another selection.
+Separate provider selection from the Agent Selection Profile. Accepted policy
+choices are codex, claude, coderabbit and explicit none. Keep the confirmed
+Codex built-in default, User Config overrides and stronger explicit Project Config overrides. Reuse applicable profiles for an
+agent provider's model/effort, with visible provenance; do not treat coderabbit
+or none as ACP runtimes. A provider/profile mismatch is a named configuration
+problem, never permission to silently use a different provider.
 
-Create a fresh reviewer session over a clean candidate with repository reads
-and denied writes. Codex's noninteractive review and Claude's structured
-headless execution are integration surfaces, not interchangeable output
-contracts. Characterize each allowed runtime's terminal/result shape and
-permission behavior. A configured runtime without a proved adapter is named as
-unsupported; it is never silently replaced by Codex. Do not reuse the current
-sealed-prompt path as if it offered repository investigation: its empty working
-directory, denied tools and 2 MiB input bound solve a different contract.
+The final YAML field and legacy precedence mapping remain to be authored.
+Existing `profiles.review` and `review_source.name` represent different facts;
+inspect both during migration and preserve explicit intent. Merely reading a
+legacy provider block cannot enable it, and absence cannot select none. A
+configured runtime outside the three named providers needs an explicit supported
+mapping or a migration refusal, not an invented fourth enabled option.
 
-### Receipt and correction
+### Provider interfaces
 
-A complete receipt fixes repository identity, base/merge-base/head, requested
-profile and origin, effective runtime/model/effort, execution completion,
-coverage/omissions, verdict and typed findings. Store it outside the reviewed
-tree so recording review does not change its own candidate. Empty, truncated,
-failed, cancelled, stale or missing results are not approval. Re-evaluate the
-review range whenever the candidate changes and retain superseded receipts.
+For Codex and Claude, create an independent reviewer session with repository
+reads and denied writes. Preserve configured selection and characterize actual
+result shape, cancellation and inherited permissions. Retain the dated native
+interface observations below as inputs, not current proof.
 
-Disposition distinguishes implemented correction, evidence that disproves a
-finding and an explicitly accepted real risk. The reviewer never implements
-its own correction or weakens Verification. Corrections are separate runtime
-Tasks/Runs inside their grant and consume a finite cycle budget. After the
-accepted archive-first sequence, a late blocker parks publication and needs a
-new corrective Spec with sufficient authority; do not reopen archived evidence
-or inherit unlimited approval from the previous Spec.
+For CodeRabbit, use its documented local CLI review surface before the PR.
+Its existing GitHub PR-feedback service remains a distinct interface. The CLI
+reference documents agent JSON output and local scope selection. Characterize
+the installed version, final result shape, exact candidate coverage, file
+mutation behavior, authentication and cancellation before treating its output
+as an accepted receipt. Scope defaults cannot omit the candidate's relevant
+files; an empty or partial review is not complete evidence. Provider access
+uses its existing approved boundary; selection alone introduces no new
+credential or code-disclosure authorization.
 
-### CodeRabbit migration and publication
+Only the selected enabled provider's readiness is required. Unknown selection,
+missing capability, failed/skipped/incomplete output or unavailable credentials
+blocks that mode. No such failure activates none. Declared agent-model fallbacks
+retain their approved scope and do not substitute another provider implicitly.
 
-`review_source.name` is the old PR-feedback provider, not an ACP runtime.
-Decode the known historical CodeRabbit block as warned inert legacy data when
-needed for compatibility; invalid new values still refuse with the correct
-configuration path. Retired fetch/resolve/watch provider operations refuse
-before network, Run creation or Agent work. Remove active factories, defaults,
-requests and provider-specific canonical obligations, plus this project's
-obsolete YAML/block in the approved change. Preserve original Runs/events and
-artifact readers; never purge history to satisfy a string search.
+### Explicit none and durable outcomes
 
-The Pantheon evidence requires an explicit provider opt-out to remain effective.
-Disabled automatic review is not authority to request that provider manually.
-Do not mutate another repository or its User Config as part of this migration.
-Publication requires the current candidate's native review and the repository's
-required checks; a later push invalidates prior candidate evidence.
+None bypasses reviewer process creation, provider requests, reviewer readiness
+and review waiting. Record repository/candidate identity, effective policy and
+configuration provenance as an intentional configured omission outside the
+reviewed tree. It is not a passing review, an empty receipt or a reused historical
+Review Skipped result. The publication boundary accepts this distinct outcome
+when other authority, QA and required checks are satisfied.
 
-### Interfaces
+Enabled review records repository, base/merge-base/head, provider, applicable
+model/effort and provenance, execution completion, coverage/omissions, verdict
+and findings. Invalid, absent, stale or incomplete records cannot authorize the
+selected enabled path. Revalidate current candidate and policy at publication
+and recovery; neither old enabled evidence nor an old none record overrides a
+changed configuration. This storage design is proposed implementation.
 
-The component responsibilities above define the boundary inputs and outcomes.
-Preserve the existing public command, error, persistence and owner contracts
-unless this design explicitly proposes their revision. Refusal occurs before
-the dependent mutation and reports the missing fact; empty or absent evidence
-cannot become a successful terminal result.
+### Corrections, publication and compatibility
+
+Corrections remain runtime-owned, bounded by the consuming Spec and limits,
+and require new enabled review of the changed candidate. The archive-first
+late-correction trade-off remains pending. With none, the absence of reviewer
+findings does not erase QA failures or previously recorded unresolved work.
+
+CodeRabbit remains optional and selectable. Remove unconditional defaults and
+instructions that force that service across all policies. Unselected or
+explicitly disabled providers receive no generated manual or automatic request.
+Do not uninstall the GitHub App, mutate another repository or silently rewrite
+User Config. Existing historical Runs/events and outcomes retain their meaning.
+Legacy command migration must be explicit; a post-PR service result is not
+fabricated pre-PR evidence.
+
+Both enabled review and none lead to publication only under the approved action
+scope. Required checks still cover the head being merged, and repository/GitHub
+protection remains binding. No administrator bypass is added.
 
 ### Data Models
 
-A review receipt binds repository/base/merge-base/head, profile provenance, effective reviewer, completion, verdict, findings and omissions. Persist it outside the reviewed tree and preserve superseded receipts.
+Persist a policy outcome distinguishing completed enabled review from explicit
+configured omission. Both identify repository, candidate and policy provenance;
+only completed review carries reviewer verdict/coverage/findings. Preserve prior
+attempts and historical outcome types. Final schema remains a candidate.
 
 ### API Contracts
 
-The proposed native review command accepts an explicit clean local candidate and uses CategoryReview. It returns structured complete evidence or a named refusal/failure; it needs no fabricated PR number. Legacy provider routes refuse before network/Run creation.
+A proposed local review operation resolves the candidate and policy, produces
+structured evidence or configured omission, or returns a named failure. None
+needs no reviewer/session/PR identity. Final command flags and YAML schema must
+be authored and validated before Task dispatch; no runnable syntax is invented
+by this proposal.
 
 ## Coverage Map
 
-- PRD Goal 1 → Configured reviewer, Native review adapter.
-- PRD Goal 2 → Candidate review receipt.
-- PRD Goal 3 → Provider retirement, Publication eligibility.
-- PRD Goal 4 → Provider retirement, Candidate review receipt.
-- PRD Goal 5 → Finding correction cycle.
-- User Story 1 → Configured reviewer, Native review adapter.
-- User Story 2 → Candidate review receipt.
-- User Story 3 → Provider retirement, Publication eligibility.
-- User Story 4 → Finding correction cycle.
-- User Story 5 → Candidate review receipt, Provider retirement.
-- Core Feature 1 → Configured reviewer and Native review adapter.
-- Core Feature 2 → Candidate review receipt.
-- Core Feature 3 → Provider retirement.
-- Core Feature 4 → Finding correction cycle.
-- Core Feature 5 → Finding correction cycle.
-- Core Feature 6 → Publication eligibility.
-- Core Feature 7 → Provider retirement and Candidate review receipt.
-- Core Feature 8 → Publication eligibility.
-
-The Testing Approach below describes the observations that must settle these
-contracts. Task IDs and actual evidence are deliberately not invented during
-proposal authoring; approved Task decomposition must assign every contract and
-success metric before execution.
+- PRD Goals 1 and 3; User Stories 1 and 3; Core Features 1–4 → policy resolver, provider adapters and legacy migration.
+- PRD Goals 2 and 4; User Stories 2 and 5; Core Features 2, 3 and 7 → review/omission records.
+- PRD Goal 5; User Story 4; Core Feature 5 → corrective work.
+- Core Features 6 and 8 → publication eligibility and policy-aware delivery order.
 
 ## Integration Points
 
-Local repository evidence and the adopted sources define the concrete seams.
-The [owned source index](references/_index.md) records each primary source.
-The [portfolio plan](../../workflow/2026-09-08-pending-work-plan.md) records
-secondary consumers and prerequisite Specs. External research was read through
-Exa and compared with local Secondbrain history; the PRD and portfolio plan
-retain links and describe its effect. Published interfaces support feasibility,
-not a claim that the proposed runtime or behavior already exists.
+The [owned source index](references/_index.md) preserves the adopted evidence.
+Spec 0119 supplies authority; Spec 0123 supplies runtime capability evidence.
+Spec 0127 consumes the policy result, including none. ADR-0153 records the
+maintainer correction while ADR-0151 retains default/profile precedence.
 
 ## Testing Approach
 
-Use focused tests at the named package seams for deterministic rules, real
-Git/store/process boundaries for integration behavior, and the authored public
-QA Task for user-visible acceptance. Do not infer a terminal pass from source
-inspection or a focused fixture. Required observations:
+1. Omitted selection uses the confirmed default; each explicit codex/claude/coderabbit/none choice takes precedence with provenance. Invalid values and incompatible profiles refuse.
+2. Each enabled provider reviews a real local candidate before a PR exists, covers its intended files, leaves source/index/refs unchanged and emits a complete validated result.
+3. None creates no reviewer process, performs no reviewer readiness probe or provider request, records configured omission and permits otherwise authorized publication.
+4. Failed, missing, skipped, cancelled, truncated or stale enabled review never selects none; candidate or policy changes invalidate prior eligibility.
+5. Unselected providers may be absent without blocking the selected path. Generated instructions do not call opted-out providers; intentionally selected CodeRabbit remains functional.
+6. Required-check failure blocks merge with every mode, including none. History remains readable and unchanged; corrections preserve scope and current evidence.
+7. Real external acceptance evidence and terminal QA exercise each approved mode and distinguish unavailable environment from success. Provider calls await their recorded access and limits.
 
-1. No override uses the Codex default; explicit project Claude/OpenCode/Codex selection retains its actual tuple/provenance or reports unsupported capability. Invalid config never silently defaults.
-2. Independent review reads the clean candidate, cannot change its files/index/refs, records a complete receipt and rejects empty/truncated/error/cancelled output.
-3. Changed head/range invalidates review; corrections require fresh evidence and remain within approved Spec and Verification scope.
-4. Known legacy config remains inspectable but cannot trigger CodeRabbit network requests; retired commands refuse before mutation and disabled-provider guidance never restores manual requests.
-5. Historical records remain byte-identical and readable; pre-PR review operates without a synthetic PR number.
-
-These are planned checks, not executed evidence. Exact commands, independent
-groups where supported, required runtime access and failure expectations must
-be authored after approval. Preserve the repository's declared Go/toolchain and
-CI constraints; live paid calls require the separately recorded limit.
+These are planned observations, not executed verification. Author exact commands
+and controls after resolving the remaining design and grants.
 
 ## Build Order
 
-1. CategoryReview selection and native review contract (depends on: none).
-2. Read-only adapters and exact terminal/selection evidence (depends on: 1).
-3. Durable candidate receipts and eligibility (depends on: 1, 2).
-4. Operational CodeRabbit retirement and known-legacy migration (depends on: 1, 2, 3).
-5. Bounded findings/correction and publication integration (depends on: 3, 4).
-6. Owned skills/canonical guidance and sanctioned outputs (depends on: 1, 2, 3, 4, 5).
-7. Real configured-runtime and public refusal journeys with terminal QA (depends on: 1, 2, 3, 4, 5, 6).
+1. Policy/schema resolution, compatibility plan and source provenance (depends on: none).
+2. Explicit-none outcome and no-call boundary (depends on: 1).
+3. Independent agent adapters and local CodeRabbit adapter (depends on: 1).
+4. Candidate-bound records and policy-aware eligibility (depends on: 2, 3).
+5. Corrective work and publication integration (depends on: 4).
+6. Owned skill alignment, canonical guidance and sanctioned outputs (depends on: 1, 2, 3, 4, 5).
+7. Real mode-specific journeys and terminal QA (depends on: 1, 2, 3, 4, 5, 6).
 
-This sequence is a proposed build order, not `_tasks.md`. Prerequisite merges,
-exact governed authority and remaining decisions must be revalidated before it
-becomes a Task Graph. Implementation and Verification remain runtime/Daemon
-owned; the Supervisor authors and coordinates.
+The Task Graph does not exist yet. This order does not grant implementation or
+claim completion of the narrow canonical instruction change.
 
 ## Risks & Considerations
 
-The native adapter must prove read-only behavior and result completeness, not only process exit. The archive-first late-correction policy and monetary/cycle limits remain pending approval. Preserve opted-out providers and historical evidence during migration.
+None intentionally omits independent review and must remain observable. Optional
+providers have different coverage, result and account contracts. Defaults,
+legacy configuration and agent profiles need unambiguous migration. Time,
+consumption and correction limits plus archive-first late-correction policy
+remain pending. No missing limit is interpreted as unlimited.
 
 ## Decisions
 
-- The maintainer selected complete source triage and the implementation portfolio; source ownership is now recorded. That intent is distinct from a concrete governed-file grant.
-- Delivery through squash merge is confirmed only with independent review and required checks approved for the current candidate; releases, tags and paid consumption are not implied.
-- Reviewer policy is settled by [ADR-0151](../../adr/0151-configured-review-profiles-select-the-independent-reviewer.md): Codex by default, explicit review profile in `.roundfixrc.yml` taking precedence.
-- The proposed mechanisms and unresolved trade-offs above remain candidates. Existing accepted ADRs named in Project Constraints remain operative until any explicit revision is accepted.
+- ADR-0153 confirms codex, claude, coderabbit or none and replaces mandatory review/CodeRabbit removal. Codex remains the default; explicit project selection wins.
+- QA, required checks, action authority and limits remain mandatory for every policy. Failure of an enabled provider never selects none.
+- The dated narrow grant authorizes the canonical policy and its generated guidance only; broader adapters/configuration/test work remains proposed.
+
+## Cross-Spec dependencies
+
+Required predecessor contracts: [0119](../0119-spec-contained-authorization/_techspec.md), [0123](../0123-runtime-readiness-and-model-capabilities/_techspec.md).
+Shared files integrate serially; revalidate their current contracts after each
+predecessor. No dependency reference is an implementation grant.
+
+## Dated native-interface evidence — 2026-09-08
+
+The removed design recorded read-only inspection of `codex-cli 0.153.4` and
+Claude Code `2.1.263`; these are dated observations, not promises about future
+installed versions. Codex native target arguments and a custom review prompt
+were mutually exclusive: combining `--base main` with a positional prompt
+returned parser exit 2 before model work. Characterize how the selected review
+mode receives the adopted Spec and standards without inventing an instructions
+flag or assuming that help output proves the actual structured result.
+
+The Claude investigation distinguished `dontAsk`, the allowed-tool list and
+the effective tool surface. It proposed Read/Glob/Grep with a supplied diff,
+with hooks and inherited MCP permissions included in the read-only proof.
+Unrestricted Bash was not part of that proposal. The read documentation said
+`--bare` did not use subscription OAuth and `--max-budget-usd` controlled API
+spending, not subscription quota. Revalidate those constraints against the
+installed adapter before any authorized live exercise; no such call has run.
+
+Sources read through Exa: [Codex CLI reference](https://developers.openai.com/codex/cli/reference),
+[Claude headless execution](https://code.claude.com/docs/en/headless) and
+[Claude CLI reference](https://code.claude.com/docs/en/cli-reference).
+The observations narrow the required adapter characterization; they do not
+prove access, successful review or sufficient permission isolation.
+
+
+## CodeRabbit local-interface evidence — 2026-09-08
+
+Exa found the official [local review overview](https://docs.coderabbit.ai/overview/ide-cli-review)
+and read the [CLI reference](https://docs.coderabbit.ai/cli/reference). The returned
+reference documents local tracked-change review, committed/uncommitted scope
+choices and one JSON object per stdout line with agent output. It is a viable
+surface to characterize for the selected coderabbit mode; the fetched excerpt
+does not prove its entire terminal schema or Roundfix integration. No service
+was invoked, installed or authenticated here.
+
+Secondbrain's earlier reviewer/readiness captures were consulted after an
+index/qmd search. They preserve the prior mandatory-review/removal decision;
+this maintainer correction supersedes that policy rather than rewriting those
+historical captures. Published provider documentation establishes interfaces;
+only the maintainer authorizes none and makes CodeRabbit optional.
+
+
+## Canonical application and verification limit — 2026-09-08
+
+The narrow policy grant landed as commit `888cb62` before the source edits.
+Core and autonomous-work modules were changed and the public Baseline update
+applied reviewed plan `sha256:c1767cd21b6f1824f9f3b73dfb733f02422b580eb2d3391a0e7f0ca06f3acf36`
+at exit 0, updating only agent-instructions, autonomous-work and the Setup
+Manifest. This proves those generated postimages, not a working provider mode.
+
+`make baseline-digests` with Go 1.26.7 failed at
+`TestReadoptionCompatibilityMaintainedFixture`: suiteguard rejected the generated
+catalog digest/normalized writes because its authorization discovery still
+requires the deleted workflow directory. Partial outputs were restored to
+their pre-attempt bytes. The known seven-file compatibility proposal is still
+pending. Consequently the shipped formatter fixture retains the old loop text
+and strict Spec Check reports `SC-LOOP-ORDER-DIVERGENT`. This is unresolved
+regeneration, not an exemption or a passing repository gate. No fixture, test,
+runtime/config parser or provider adapter was manually changed.
+
+
+The final precedence clarification used public Baseline plan
+`sha256:13697f951a96ed88161731dc0a833e1c12370de31375852547fc56782c6ed643`:
+apply exited 0 and a fresh preview reported current with no file changes.
+Independent Standards and Spec rechecks found no remaining reviewed policy
+inconsistency. All eleven pending Specs still report the known
+`SC-LOOP-ORDER-DIVERGENT` regeneration failure and no other current detector
+finding. Their absent Task Graphs remain explicit skips, not implementation
+readiness. The two preserved nested-carrier warnings remain unchanged.
+
+
+## Authorized archive disposition
+
+Consume the archive policy from Spec 0122 and ADR-0154. An applicable explicit
+user authorization can archive the covered Spec with unmet QA, recording the
+override and preserving original evidence. This does not reopen or complete
+Tasks, declare QA passed, imply review approval or authorize publication/merge.
+A durable workflow records the overridden archive and evaluates subsequent
+actions against their own approval and gates; it does not retry the waived
+archive prerequisite or ask again for the same applicable archive approval.
+The absence of authority for a later action remains a separate visible blocker.

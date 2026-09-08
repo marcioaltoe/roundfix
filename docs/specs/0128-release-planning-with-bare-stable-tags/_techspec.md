@@ -13,8 +13,9 @@ Extend the existing stable-version parser and Git discovery to accept strict pre
 This document makes the proposed work concrete for review. Authoring remains
 open: the exact governed grant and the decisions named below are pending.
 It is not an implementation-ready TechSpec, an executable Task Graph or
-approval to mutate protected files. The cross-Spec order and remaining
-decisions are in [the portfolio plan](../../workflow/2026-09-08-pending-work-plan.md).
+approval to mutate protected files. The remaining decisions are recorded in
+[_prd.md](_prd.md) and [_authorization.md](_authorization.md); the dependencies
+below define this Spec's place in the implementation order.
 
 ## Project Constraints
 
@@ -109,10 +110,12 @@ success metric before execution.
 
 Local repository evidence and the adopted sources define the concrete seams.
 The [owned source index](references/_index.md) records each primary source.
-The [portfolio plan](../../workflow/2026-09-08-pending-work-plan.md) records
-secondary consumers and prerequisite Specs. External research was read through
-Exa and compared with local Secondbrain history; the PRD and portfolio plan
-retain links and describe its effect. Published interfaces support feasibility,
+The prerequisite Specs are listed below. Secondary consumers reference the
+primary owner's adopted source instead of duplicating it. External research was read through
+Exa and compared with local Secondbrain history. The
+[historical research record](https://github.com/marcioaltoe/roundfix/blob/6b8ea48725cbca13974eee0b400b3482202874f6/docs/workflow/2026-09-08-pending-work-plan.md)
+retains the consulted sources, their influence and limitations after the plan
+was removed from the current tree. Published interfaces support feasibility,
 not a claim that the proposed runtime or behavior already exists.
 
 ## Testing Approach
@@ -152,6 +155,12 @@ Normalizing a tag too early can collapse distinct refs or change a reset digest.
 ## Decisions
 
 - The maintainer selected complete source triage and the implementation portfolio; source ownership is now recorded. That intent is distinct from a concrete governed-file grant.
-- Delivery through squash merge is confirmed only with independent review and required checks approved for the current candidate; releases, tags and paid consumption are not implied.
-- Reviewer selection follows the [confirmed portfolio policy](../../workflow/2026-09-08-pending-work-plan.md); this Spec does not introduce a separate override.
+- Delivery through squash merge requires the configured pre-PR review policy outcome and passing required checks for the current candidate. Explicit none records intentional review omission; enabled-provider failure cannot select none. Releases, tags and paid consumption are not implied.
+- Preserve configured reviewer selection; this Spec introduces no separate reviewer override.
 - The proposed mechanisms and unresolved trade-offs above remain candidates. Existing accepted ADRs named in Project Constraints remain operative until any explicit revision is accepted.
+
+## Cross-Spec dependencies
+
+Required predecessor contracts: [0119](../0119-spec-contained-authorization/_techspec.md).
+Shared skills and canonical files require serial integration and revalidation
+after predecessor changes. A predecessor reference is not an execution grant.

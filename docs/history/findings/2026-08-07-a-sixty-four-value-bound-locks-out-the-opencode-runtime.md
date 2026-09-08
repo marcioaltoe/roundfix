@@ -1,8 +1,8 @@
 ---
 status: done
-absorbed_by: 2026-08-06-rollup-agent-selection-and-execution-environments.md
+absorbed_by: 0088-a-third-runtime-that-can-run
 created_at: 2026-08-07
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 kind: finding
 ---
 
@@ -77,3 +77,13 @@ that the adapter cannot honour it.
 ---
 
 Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-agent-selection-and-execution-environments.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0088-a-third-runtime-that-can-run](../specs/0088-a-third-runtime-that-can-run/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

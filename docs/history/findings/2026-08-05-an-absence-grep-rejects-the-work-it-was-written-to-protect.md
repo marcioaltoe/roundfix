@@ -2,8 +2,8 @@
 date: 2026-08-05
 surface: docs/specs, .agents/skills
 status: done
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
+updated_at: 2026-09-08
+absorbed_by: 0129-spec-authoring-and-gate-recovery
 ---
 
 # An absence grep rejects the work it was written to protect
@@ -92,3 +92,13 @@ check is possible, it belongs in review, not in a gate that stops a Task.
   `internal/specaudit/audit.go`.
 - The replacement behavioural assertion passed on
   `run_20260805T013130Z_31398370e8ba8670`, outcome `Clean`.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-qa-gates-and-verification-evidence.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0129-spec-authoring-and-gate-recovery](../../specs/0129-spec-authoring-and-gate-recovery/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

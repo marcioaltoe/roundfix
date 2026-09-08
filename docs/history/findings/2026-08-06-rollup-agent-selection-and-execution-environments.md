@@ -3,6 +3,7 @@ status: done
 created_at: 2026-08-06
 updated_at: 2026-09-08
 kind: rollup
+absorbed_by: 0123-runtime-readiness-and-model-capabilities
 members:
   - 2026-08-07-a-sixty-four-value-bound-locks-out-the-opencode-runtime.md
   - 2026-08-10-a-fake-adapter-goes-silent-under-a-dense-start.md
@@ -65,9 +66,9 @@ delivery records, not a fresh live-adapter test or complete resolution.
 ## Addendum — 2026-09-08 — Complete implementation routing
 
 The maintainer selected the residual work for the queue. Its primary owner is
-[0123-runtime-readiness-and-model-capabilities](../specs/0123-runtime-readiness-and-model-capabilities/_prd.md).
-- [0124-verification-capacity-and-measured-economics](../specs/0124-verification-capacity-and-measured-economics/_prd.md): resource contention and characterized fallbacks.
-- [0121-baseline-decisions-and-complete-regeneration](../specs/0121-baseline-decisions-and-complete-regeneration/_prd.md): generated readiness remedies.
+[0123-runtime-readiness-and-model-capabilities](../../specs/0123-runtime-readiness-and-model-capabilities/_prd.md).
+- [0124-verification-capacity-and-measured-economics](../../specs/0124-verification-capacity-and-measured-economics/_prd.md): resource contention and characterized fallbacks.
+- [0121-baseline-decisions-and-complete-regeneration](../../specs/0121-baseline-decisions-and-complete-regeneration/_prd.md): generated readiness remedies.
 
 `done` records complete routing to implementation Specs, not a passing repair or
 QA verdict. This Rollup remains in the active findings directory because its
@@ -75,3 +76,20 @@ archived members still name this basename as their absorption license. Those
 licenses and original observations are preserved; retirement waits for the
 durable replacement contract in 0120. Shipped mechanisms remain regression
 obligations rather than duplicate implementation Tasks.
+
+## Addendum — 2026-09-08 — Routing document removed
+
+The maintainer requested removal of `docs/workflow/` and its routing documents.
+The earlier citation remains a dated historical observation; its original bytes
+can be read at Git revision `6b8ea48725cbca13974eee0b400b3482202874f6`.
+The current primary and secondary Spec owners remain those in the complete-triage
+addendum above; removing the old plan does not reopen or erase the members.
+
+## Addendum — 2026-09-08 — Archived after complete routing
+
+The maintainer requires terminal Findings and Rollups to leave the active
+family directory. Every member now points directly to an existing active or
+archived Spec, and this Rollup has its own direct Spec absorber. The earlier
+statements retaining this file as an active license root are superseded by
+this completed routing migration. Original observations and prior pointers
+remain recorded; archival does not claim implementation of pending Specs.
