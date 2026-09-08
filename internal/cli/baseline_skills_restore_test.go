@@ -59,23 +59,23 @@ func TestBaselineSkillsRestoreCommand(t *testing.T) {
 				Action:  "Review plannedChanges and rerun with --confirm-plan planDigest.",
 			}
 			return baseline.SkillsRestorePayload{
-					SchemaVersion: baseline.SkillsRestoreSchemaVersion,
-					Profile:       "rust-cli",
-					Setup:         stringPointerForCLI("rust-cli"),
-					Acquisitions: []baseline.RestoreAcquisition{{
-						Provider: "github", Repository: "example/skills", Ref: strings.Repeat("b", 40),
-					}},
-					Skills: []baseline.RestoreSkill{},
-					PlannedChanges: []baseline.RestorePlannedChange{{
-						Action: "create", Path: ".agents/skills/example/SKILL.md", Skill: "example",
-					}},
-					PlanDigest: &digest,
-					Finding:    &finding,
-				}, &baseline.SkillsRestoreError{
-					Category: baseline.SkillsRestoreAction,
-					Finding:  finding,
-					Err:      errors.New("confirmation required"),
-				}
+				SchemaVersion: baseline.SkillsRestoreSchemaVersion,
+				Profile:       "rust-cli",
+				Setup:         stringPointerForCLI("rust-cli"),
+				Acquisitions: []baseline.RestoreAcquisition{{
+					Provider: "github", Repository: "example/skills", Ref: strings.Repeat("b", 40),
+				}},
+				Skills: []baseline.RestoreSkill{},
+				PlannedChanges: []baseline.RestorePlannedChange{{
+					Action: "create", Path: ".agents/skills/example/SKILL.md", Skill: "example",
+				}},
+				PlanDigest: &digest,
+				Finding:    &finding,
+			}, &baseline.SkillsRestoreError{
+				Category: baseline.SkillsRestoreAction,
+				Finding:  finding,
+				Err:      errors.New("confirmation required"),
+			}
 		}
 		source := t.TempDir()
 		var stdout bytes.Buffer

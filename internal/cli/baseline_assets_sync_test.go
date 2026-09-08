@@ -57,16 +57,16 @@ func TestBaselineAssetsSyncCommand(t *testing.T) {
 				Action:    "Run roundfix baseline assets sync without --check.",
 			}
 			return baseline.AssetsSyncPayload{
-					SchemaVersion:  baseline.AssetsSyncSchemaVersion,
-					OK:             false,
-					Summary:        baseline.AssetsSyncSummary{Errors: 1},
-					Findings:       []baseline.AssetsSyncFinding{finding},
-					PlannedChanges: []baseline.AssetsSyncChange{},
-				}, &baseline.AssetsSyncError{
-					Category: baseline.AssetsSyncExecution,
-					Finding:  finding,
-					Err:      errors.New("snapshot drift"),
-				}
+				SchemaVersion:  baseline.AssetsSyncSchemaVersion,
+				OK:             false,
+				Summary:        baseline.AssetsSyncSummary{Errors: 1},
+				Findings:       []baseline.AssetsSyncFinding{finding},
+				PlannedChanges: []baseline.AssetsSyncChange{},
+			}, &baseline.AssetsSyncError{
+				Category: baseline.AssetsSyncExecution,
+				Finding:  finding,
+				Err:      errors.New("snapshot drift"),
+			}
 		}
 		source := t.TempDir()
 		var stdout bytes.Buffer
