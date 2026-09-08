@@ -10,6 +10,8 @@ paths:
   - internal/baseline/assets/templates/guides/agent-instructions.md
   - docs/agents/agent-instructions.md
   - docs/agents/setup-context.json
+  - .agents/skills/implement-spec/SKILL.md
+  - skills/implement-spec/SKILL.md
 ---
 
 # Approved branch-policy correction
@@ -75,3 +77,15 @@ branch; existing remote branches and historical records are not deleted or
 mass-renamed. Validate generated guidance, unchanged non-branch decisions,
 catalog regeneration, and the repository's required checks before claiming
 the correction complete.
+
+## Scope clarification — owned implementation skill
+
+The same explicit removal applies to the mandatory personal prefix found in
+`.agents/skills/implement-spec/SKILL.md`. Replace only its branch guardrail with
+the confirmed purpose-based work policy and the Roundfix Run/Task exception,
+and advance that skill's version. Do not change task execution, QA, publication,
+or permission rules. Regenerate `skills/implement-spec/SKILL.md` through
+`make skills-sync`, then run sanctioned `make baseline-digests` and the public
+Baseline update to refresh the catalog pins and managed manifest. The exact
+source and shipped copy are included above; this clarification precedes their
+consuming edit and relies on the already confirmed naming decision.
