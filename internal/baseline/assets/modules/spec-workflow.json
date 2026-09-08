@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 8,
+  "version": 9,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -59,7 +59,7 @@
     },
     {
       "id": "guide.spec-docs-layout",
-      "version": 4,
+      "version": 5,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.spec-docs-layout",
       "rules": [
@@ -173,7 +173,7 @@
     },
     {
       "id": "rule.spec.docs-layout",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.spec-workflow"
       ],
@@ -181,7 +181,7 @@
         {
           "id": "clause.spec.keep-artifacts-in-spec-folder",
           "enforcement": "mandatory",
-          "guidance": "Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `docs/history/specs/`."
+          "guidance": "Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive Specs under the resolved archive root (`docs/history/specs/` for the built-in root) after their non-QA Tasks are completed and their QA meets the normal archive eligibility contract, or when an explicit user request or applicable prior user authorization permits a QA Archive Override. A generic archive request alone does not silently waive QA. Record the approval source, date, covered Spec/revision and actual QA outcome or absence; stamp `qa_override: true` and preserve any supplied reason. Do not ask again for an already applicable approval. The override may waive the named terminal QA gate's completion/evidence prerequisite for archive, but never changes its Task status or report verdict to completed/pass. Missing, failed, incomplete, stale or malformed QA remains recorded as observed. Non-QA Task completion, self-contained references, safe destination and execution ownership remain required. An archive override is not Implement Clean, QA success, review approval, permission to publish/merge/release or a waiver of required checks. Declared QA decline and qualifying declared-only partial evidence are evaluated under their own contracts, not automatically called overrides. A runtime command without override support must be reported as unsupported rather than given an invented flag."
         },
         {
           "id": "clause.spec.specs-are-downstream-artifacts",

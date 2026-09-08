@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 15,
+  "version": 17,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -33,7 +33,7 @@
       "triggers": [
         {
           "id": "trigger.context-workflow.archive-spec",
-          "when": "Archiving a completed and QA-passed Spec."
+          "when": "Archiving a Spec under normal QA eligibility or an explicitly user-authorized QA Archive Override, with non-QA Tasks completed."
         }
       ]
     },
@@ -222,7 +222,7 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 10,
+      "version": 11,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": [
@@ -274,7 +274,7 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 11,
+      "version": 12,
       "coverage": [
         "coverage.context-workflow"
       ],
@@ -297,7 +297,7 @@
         {
           "id": "clause.context.docs-one-job-per-directory",
           "enforcement": "mandatory",
-          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers. Each of these directories holds live work only: retired content moves under the single history root `docs/history/`, family by family (`docs/history/backlog/`, `docs/history/findings/`, `docs/history/handoffs/`). Handoffs archive only on the user's explicit confirmation, and when confirmed, every handoff archives together — the active `docs/handoffs/` directory is the capture door, never a shelf."
+          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/backlog/` for dated, typed intent not yet committed to a Spec, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers. Each of these directories holds live work only: retired content moves under the single history root `docs/history/`, family by family (`docs/history/backlog/`, `docs/history/findings/`, `docs/history/handoffs/`). Handoffs archive only on the user's explicit confirmation, and when confirmed, every handoff archives together — the active `docs/handoffs/` directory is the capture door, never a shelf. Findings, Backlog Entries and Rollups with a terminal lifecycle status must leave their active directory for the matching history family; preserve valid provenance and update dependent references as part of that transition. Spec-owned adopted references retain their Spec ownership and archive with the Spec; this rule clears active family directories without dismantling self-contained Specs."
         },
         {
           "id": "clause.context.docs-upstream-flow",
@@ -307,7 +307,7 @@
         {
           "id": "clause.context.backlog-01-operational-contract",
           "enforcement": "mandatory",
-          "guidance": "Name backlog entries `YYYY-MM-DD-<kebab-slug>.md`. Use this complete copyable Backlog Operational Contract:\n\n```markdown\n---\ntype: feat # feat | fix | perf | refactor\nstatus: open # open | promoted | declined\ncreated: YYYY-MM-DD\nspec: null # Spec slug when status: promoted\nreason: null # required when status: declined\n---\n```\n\nFor `type: feat`, use:\n\n```markdown\n# <Title — the intent in one line>\n\n## Opportunity\n\n<What could exist and for whom.>\n\n## Value\n\n<Why it would matter; the hypothesis.>\n\n## Shape\n\n<The rough form of a solution, explicitly non-binding.>\n```\n\nFor `type: fix`, use:\n\n```markdown\n# <Title — the defect in one line>\n\n## Symptom\n\n<What misbehaves, as a user or operator sees it.>\n\n## Where\n\n<The surface, command, or package, as known.>\n\n## Expected\n\n<The behavior that should replace it.>\n\n## Evidence\n\n<A finding link when one exists; `none yet` is honest.>\n```\n\nFor `type: perf`, use:\n\n```markdown\n# <Title — the cost in one line>\n\n## Slow\n\n<What is slow, for whom, and in which operation.>\n\n## Measured\n\n<The number that says so and how it was measured.>\n\n## Target\n\n<The number that would settle it.>\n```\n\nFor `type: refactor`, use:\n\n```markdown\n# <Title — the tangle in one line>\n\n## Tangled\n\n<What resists change, and where it is duplicated or coupled.>\n\n## Cost\n\n<What it makes slow, risky, or wrong to touch.>\n\n## Shape\n\n<The structure that would replace it, explicitly non-binding.>\n```\n\nKeep `open` entries in `docs/backlog/`. When a Spec adopts an entry, set `status: promoted` and `spec` to that Spec's slug, then move the entry to `docs/specs/<slug>/references/`; git history remains the discovery trail. Set `status: declined` only with a non-null `reason`. The current type set is open: a new type must be a Conventional Commits type that expresses intent. Adding a type is a contract change that requires a corpus re-record, never an informal addition. Use `refactor` as the canonical token, never an abbreviation.\n\n`docs/backlog/` holds `open` or `promoted` entries only. An entry in any other status archives to `docs/history/backlog/`, carrying no absorption license: intent that was set aside needs only the history root."
+          "guidance": "Name backlog entries `YYYY-MM-DD-<kebab-slug>.md`. Use this complete copyable Backlog Operational Contract:\n\n```markdown\n---\ntype: feat # feat | fix | perf | refactor\nstatus: open # open | promoted | declined | done | deprecated | superseded | closed | cancelled\ncreated: YYYY-MM-DD\nspec: null # Spec slug when status: promoted\nreason: null # required for terminal closure without a consuming Spec\n---\n```\n\nFor `type: feat`, use:\n\n```markdown\n# <Title — the intent in one line>\n\n## Opportunity\n\n<What could exist and for whom.>\n\n## Value\n\n<Why it would matter; the hypothesis.>\n\n## Shape\n\n<The rough form of a solution, explicitly non-binding.>\n```\n\nFor `type: fix`, use:\n\n```markdown\n# <Title — the defect in one line>\n\n## Symptom\n\n<What misbehaves, as a user or operator sees it.>\n\n## Where\n\n<The surface, command, or package, as known.>\n\n## Expected\n\n<The behavior that should replace it.>\n\n## Evidence\n\n<A finding link when one exists; `none yet` is honest.>\n```\n\nFor `type: perf`, use:\n\n```markdown\n# <Title — the cost in one line>\n\n## Slow\n\n<What is slow, for whom, and in which operation.>\n\n## Measured\n\n<The number that says so and how it was measured.>\n\n## Target\n\n<The number that would settle it.>\n```\n\nFor `type: refactor`, use:\n\n```markdown\n# <Title — the tangle in one line>\n\n## Tangled\n\n<What resists change, and where it is duplicated or coupled.>\n\n## Cost\n\n<What it makes slow, risky, or wrong to touch.>\n\n## Shape\n\n<The structure that would replace it, explicitly non-binding.>\n```\n\nKeep `open` entries in `docs/backlog/`. When a Spec adopts an entry, set `status: promoted` and `spec` to that Spec's slug, then move the entry to `docs/specs/<slug>/references/`; git history remains the discovery trail. Set `status: declined` only with a non-null `reason`. The current type set is open: a new type must be a Conventional Commits type that expresses intent. Adding a type is a contract change that requires a corpus re-record, never an informal addition. Use `refactor` as the canonical token, never an abbreviation.\n\n`docs/backlog/` holds unresolved `open` intent only. A `promoted` entry is adopted source material and moves to its consuming Spec's `references/` under the adoption contract; it is not a terminal implementation verdict. Every terminal Backlog Entry (`declined`, `done`, `deprecated`, `superseded`, `closed`, or `cancelled`) moves to `docs/history/backlog/` in the same operation that records its terminal status. Preserve its original intent, the true disposition, any consuming Spec and the reason for closure. No absorption license is required for a Backlog Entry. An unknown status is a declaration error, never an inferred terminal disposition."
         },
         {
           "id": "clause.context.backlog-02-finding-boundary",
@@ -317,17 +317,17 @@
         {
           "id": "clause.context.findings-01-frontmatter",
           "enforcement": "mandatory",
-          "guidance": "Use this complete copyable Findings Operational Contract:\n\n```markdown\n---\nstatus: pending # pending | partial | deferred | done\ncreated_at: YYYY-MM-DD\nupdated_at: YYYY-MM-DD\n---\n\n# <Area> — <short title> (YYYY-MM-DD)\n\n<Two to four sentences describing the session or investigation, the attempted outcome, and links to adjacent evidence.>\n\n## 1. <Finding title — symptom, not hypothesis>\n\n- Symptom / evidence: <observed behavior, command output, identifiers, and paths needed to reproduce>\n- Root cause: <proven cause, or `unknown` with what was ruled out>\n- Action / suggestion: <fix, mitigation, or route to a Spec, direct change, or upstream report>\n\n## 2. <Next finding>\n\n## What worked — keep\n\n<Optional evidence about behavior worth preserving.>\n\n## Addendum — YYYY-MM-DD — <short title>\n\n<Append new evidence, root-cause proof, status context, or routing links without rewriting the original observation.>\n```"
+          "guidance": "Use this complete copyable Findings Operational Contract:\n\n```markdown\n---\nstatus: pending # pending | partial | deferred | done | deprecated | superseded | closed | cancelled\ncreated_at: YYYY-MM-DD\nupdated_at: YYYY-MM-DD\n---\n\n# <Area> — <short title> (YYYY-MM-DD)\n\n<Two to four sentences describing the session or investigation, the attempted outcome, and links to adjacent evidence.>\n\n## 1. <Finding title — symptom, not hypothesis>\n\n- Symptom / evidence: <observed behavior, command output, identifiers, and paths needed to reproduce>\n- Root cause: <proven cause, or `unknown` with what was ruled out>\n- Action / suggestion: <fix, mitigation, or route to a Spec, direct change, or upstream report>\n\n## 2. <Next finding>\n\n## What worked — keep\n\n<Optional evidence about behavior worth preserving.>\n\n## Addendum — YYYY-MM-DD — <short title>\n\n<Append new evidence, root-cause proof, status context, or routing links without rewriting the original observation.>\n```"
         },
         {
           "id": "clause.context.findings-08-rollup",
           "enforcement": "mandatory",
-          "guidance": "A Rollup is a Finding of `kind: rollup` that consolidates related Findings. It lives beside active Findings under `docs/findings/`, shares their lifecycle contract, and declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `docs/history/findings/`. Use this extension:\n\n```yaml\nkind: rollup\nmembers:\n  - YYYY-MM-DD-<finding-slug>.md\n```"
+          "guidance": "A Rollup is a Finding of `kind: rollup` that consolidates related Findings and shares their lifecycle contract. Only a Rollup with unresolved work belongs under `docs/findings/`; a terminal Rollup belongs under `docs/history/findings/`. It declares a non-empty `members:` list of Finding basenames. Every member must resolve under `docs/findings/` or `docs/history/findings/`. Use this extension:\n\n```yaml\nkind: rollup\nmembers:\n  - YYYY-MM-DD-<finding-slug>.md\n```"
         },
         {
           "id": "clause.context.findings-09-archive",
           "enforcement": "mandatory",
-          "guidance": "The active `docs/findings/` directory holds pending Findings and the active Rollups that license the archive, nothing else. A Finding that is done or deferred leaves for `docs/history/findings/` through absorption. Use `docs/history/findings/` as the archival home for Findings. Every archived Finding requires an `absorbed_by:` license that resolves to an active Rollup basename or a Spec slug. Use this extension:\n\n```yaml\nabsorbed_by: <rollup-basename-or-spec-slug>\n```\n\nA Rollup that licenses archived members must itself stay active: moving it to the history root unresolves every license that names it."
+          "guidance": "The active `docs/findings/` directory holds unresolved Findings and unresolved Rollups only. Every terminal Finding or Rollup still in an active family directory (`done`, `deferred`, `deprecated`, `superseded`, `closed`, or `cancelled`) moves to `docs/history/findings/` in the same operation that records its terminal status; do not wait for the consuming Spec's implementation, QA, merge, or release. Preserve the original observation and record the true disposition and its reason in a dated addendum. An unknown status is a declaration error, never an inferred terminal disposition. A Spec-owned adopted reference retains its Spec ownership and travels with that Spec at archive; do not extract it from `references/` merely because its preserved source status is terminal. When absorption actually occurred, the archived Finding or Rollup retains a valid `absorbed_by:` pointer to the active or archived Spec that absorbs its content, or to an unresolved active Rollup:\n\n```yaml\nabsorbed_by: <active-rollup-basename-or-active-or-archived-spec-slug>\n```\n\nWhen any terminal Finding has no consuming Spec or Rollup, record a non-empty `closure_reason` and `closure_evidence` source locator instead of inventing an absorber. Preserve its original observation and dated disposition; absence of a Spec never prevents a legitimate terminal record from entering history. An invalid existing `absorbed_by` must be repaired, not hidden by these closure fields.\n\nBefore retiring a Rollup, transfer each member's absorption pointer to its true remaining owner and record the retiring Rollup's own absorption or evidenced terminal closure. Preserve the prior routing in a dated addendum and validate all member and absorption references before completing the move. Referenced history is a migration obligation, not an exemption that keeps a terminal Rollup active indefinitely. Do not invent an owner or rewrite original evidence merely to satisfy the archive check."
         },
         {
           "id": "clause.context.findings-10-live-work-health",
@@ -337,7 +337,7 @@
         {
           "id": "clause.context.findings-11-rollup-closure",
           "enforcement": "mandatory",
-          "guidance": "When a Rollup has `no open members`, review it as a candidate for its own closure and close it through the existing Finding lifecycle contract when its work is settled."
+          "guidance": "When a Rollup has no unresolved work of its own because its residuals were absorbed by Specs or received an evidenced terminal disposition, record its terminal status, migrate its member links and archive it under `docs/history/findings/`. A linked implementation Spec may still be pending: closure of the routing record does not assert delivery of that Spec. Do not keep a terminal Rollup under `docs/findings/` solely because archived members previously named it."
         },
         {
           "id": "clause.context.findings-02-pending",
@@ -357,7 +357,7 @@
         {
           "id": "clause.context.findings-05-done",
           "enforcement": "mandatory",
-          "guidance": "Set `status: done` as soon as the Spec is created and linked; do not wait for its Tasks, QA, archive, or release."
+          "guidance": "Set `status: done` as soon as the Spec is created and linked; do not wait for its Tasks, QA, archive, or release. Complete source adoption or move the terminal Finding to `docs/history/findings/` in that same lifecycle operation, preserving its valid absorption pointer. `done` records routing completion, not verified implementation."
         },
         {
           "id": "clause.context.findings-06-append-evidence",

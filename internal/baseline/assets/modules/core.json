@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 7,
+  "version": 8,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -292,7 +292,7 @@
   "supportingGuides": [
     {
       "id": "guide.agent-instructions",
-      "version": 7,
+      "version": 8,
       "path": "docs/agents/agent-instructions.md",
       "template": "template.guide.agent-instructions",
       "rules": [
@@ -359,7 +359,7 @@
     },
     {
       "id": "rule.core.evidence-before-complete",
-      "version": 3,
+      "version": 4,
       "coverage": [
         "coverage.verification"
       ],
@@ -382,7 +382,7 @@
         {
           "id": "clause.core.request-pull-request-review",
           "enforcement": "mandatory",
-          "guidance": "A hand-opened pull request asks for its own review when it changes code. Automatic review is off by configuration, so a pull request opened directly gets none, and its review check reports that automatic review is disabled — which reads like a pass. Put the review marker in the pull request description when the pull request is opened rather than adding it afterwards; a one-shot review comment is invalidated by any later push while the check still reads green. Before merging, read the review's own result against the head that will land, and treat an absent or stale result as a block rather than a pass."
+          "guidance": "Resolve the repository's pre-PR review policy before publication. Supported policy choices are `codex`, `claude`, `coderabbit`, and explicit `none`; Codex remains the built-in default when no applicable explicit selection is declared. Preserve User Config over built-in defaults and Project Config over User Config; an explicit project selection takes precedence. Honor the selected provider and its configured model/effort where applicable. With review enabled, obtain the configured provider's review of the current candidate before opening the Pull Request and require a complete applicable result. With explicit `none`, omit the reviewer and provider calls and record that review was disabled by configuration; otherwise authorized publication and merge may proceed after QA and required checks. Disabled review is not a passing review. This policy does not waive repository or GitHub requirements."
         }
       ]
     },
@@ -541,7 +541,7 @@
     },
     {
       "id": "rule.core.git-delivery",
-      "version": 5,
+      "version": 6,
       "coverage": [
         "coverage.git-delivery"
       ],
@@ -564,7 +564,7 @@
         {
           "id": "clause.core.request-review-explicitly",
           "enforcement": "mandatory",
-          "guidance": "When a pull request changes code and the repository's review automation does not review it on its own, request the review explicitly as part of opening the pull request rather than as a follow-up. Never read a skipped or absent review check as approval."
+          "guidance": "Follow the explicit configured review policy without re-enabling an opted-out provider. CodeRabbit is an optional choice, never a mandatory dependency. With `codex`, `claude`, or `coderabbit` enabled, use the supported pre-PR review path and block on failed, unavailable, incomplete, absent, or stale review evidence. Such an outcome never selects `none` automatically. With explicit `none`, do not request a review or wait for reviewer readiness; retain QA and required checks and report the intentional omission. Configuration or runtime support that has not been implemented must not be presented as a working command."
         },
         {
           "id": "clause.core.conventional-commit-titles",
