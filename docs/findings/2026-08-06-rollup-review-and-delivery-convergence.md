@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-06
 updated_at: 2026-09-08
 kind: rollup
@@ -69,3 +69,17 @@ that removal is already implemented.
 Corrective-loop and falsified-premise routing remain provisional P8, durable
 unattended Spec workflow. Keep the Rollup active to license all 14 members;
 the dated deferral did not establish end-to-end convergence.
+
+## Addendum — 2026-09-08 — Complete implementation routing
+
+The maintainer selected the residual work for the queue. Its primary owner is
+[0126-agent-review-before-pull-request](../specs/0126-agent-review-before-pull-request/_prd.md).
+- [0127-durable-unattended-spec-workflow](../specs/0127-durable-unattended-spec-workflow/_prd.md): durable correction/delivery recovery.
+- [0120-knowledge-lifecycle-and-durable-capture](../specs/0120-knowledge-lifecycle-and-durable-capture/_prd.md): Review Artifact retirement and relocation.
+
+`done` records complete routing to implementation Specs, not a passing repair or
+QA verdict. This Rollup remains in the active findings directory because its
+archived members still name this basename as their absorption license. Those
+licenses and original observations are preserved; retirement waits for the
+durable replacement contract in 0120. Shipped mechanisms remain regression
+obligations rather than duplicate implementation Tasks.

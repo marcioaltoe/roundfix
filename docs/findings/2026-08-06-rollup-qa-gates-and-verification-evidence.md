@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-08-06
 updated_at: 2026-09-08
 kind: rollup
@@ -78,3 +78,18 @@ need current measurements in provisional P5. Broader declaration-to-evidence
 traceability belongs to provisional P1/P8. No current load experiment or
 terminal QA was performed by this triage; this Rollup remains the license for
 its 22 archived members.
+
+## Addendum — 2026-09-08 — Complete implementation routing
+
+The maintainer selected the residual work for the queue. Its primary owner is
+[0122-verified-content-and-terminal-settlement](../specs/0122-verified-content-and-terminal-settlement/_prd.md).
+- [0124-verification-capacity-and-measured-economics](../specs/0124-verification-capacity-and-measured-economics/_prd.md): verification economics.
+- [0129-spec-authoring-and-gate-recovery](../specs/0129-spec-authoring-and-gate-recovery/_prd.md): promise and ADR traceability.
+- [0128-release-planning-with-bare-stable-tags](../specs/0128-release-planning-with-bare-stable-tags/_prd.md): bare stable version tags.
+
+`done` records complete routing to implementation Specs, not a passing repair or
+QA verdict. This Rollup remains in the active findings directory because its
+archived members still name this basename as their absorption license. Those
+licenses and original observations are preserved; retirement waits for the
+durable replacement contract in 0120. Shipped mechanisms remain regression
+obligations rather than duplicate implementation Tasks.

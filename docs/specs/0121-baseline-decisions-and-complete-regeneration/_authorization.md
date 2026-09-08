@@ -11,6 +11,19 @@ paths:
   - skills/_ownership.yml
   - .agents/skills/roundfix/SKILL.md
   - skills/roundfix/SKILL.md
+  - internal/baseline/assets/decisions.json
+  - internal/baseline/assets/modules/core.json
+  - internal/baseline/assets/modules/spec-workflow.json
+  - internal/baseline/assets/profiles/go-cli-tui.json
+  - internal/baseline/assets/profiles/rust-cli.json
+  - internal/baseline/assets/templates/index.json
+  - internal/baseline/assets/templates/guides/agent-instructions.md
+  - docs/agents/agent-instructions.md
+  - docs/agents/spec-routing.md
+  - docs/agents/setup-context.json
+  - internal/baseline/plan_test.go
+  - .agents/skills/setup-context-driven/SKILL.md
+  - skills/setup-context-driven/SKILL.md
 ---
 
 # Proposed authority for Spec 0121
@@ -63,3 +76,10 @@ from the request to author Specs, a default answer, or a checker result.
 Research and provisional source provenance are recorded in [_prd.md](_prd.md).
 The planning documents may be reviewed and committed without activating this
 proposed grant; implementation remains blocked on the checkpoint above.
+
+## Scope refinement from complete triage
+
+The technical candidate now names the additional governed paths above for the
+newly exposed residuals. Their presence remains a proposal, not an amendment to
+an approved grant. No current tooling, test, template or generator file was
+changed by this planning operation. Sanctioned outputs follow source approval.

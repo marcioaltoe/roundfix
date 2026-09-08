@@ -6,15 +6,16 @@ Remove the CodeRabbit execution path, require an independent local review before
 publishing a Pull Request, and make delivery survive the supervising session.
 Keep `implement-spec` as the preparation and orchestration entry point, backed by
 Roundfix Runs. The proposed sequence is Spec 0126 for removal and independent
-review, followed by Spec 0127 for durable delivery. These numbers are provisional;
+review, followed by Spec 0127 for durable delivery. These Spec owners are assigned;
 this design does not approve their architecture or authorize tooling edits.
-The wider queue and its provisional assignments live in the
+The wider queue and its current source assignments live in the
 [pending-work plan](../workflow/2026-09-08-pending-work-plan.md).
 
 The maintainer has approved automatic delivery through merge after the relevant
 Spec and its limits are approved, with independent review and required checks
-passing for the current head. Reviewer selection, correction budgets, and exact
-tooling grants remain decisions to record in the Specs. Existing authorization
+passing for the current head. Reviewer selection is now confirmed: Codex by
+default, honoring an explicit `profiles.review` override in `.roundfixrc.yml`.
+Correction budgets and exact tooling grants remain decisions to record in the Specs. Existing authorization
 does not turn an unanswered limit into an unlimited allowance.
 
 ## Problem and observed state
@@ -125,8 +126,8 @@ Rebuild that binary before a later Task or QA exercises its CLI.
 Until the native replacement passes its gate, no unattended merge is eligible.
 For the first replacement PR, use the independently selected native CLI against
 the final candidate and record its evidence; this avoids requiring the new
-feature to certify its own existence. That bootstrap still requires the pending
-reviewer choice and execution limits.
+feature to certify its own existence. Reviewer selection is confirmed; that
+bootstrap still requires sufficient execution limits and adapter evidence.
 
 ### Archive and review ordering
 
@@ -251,7 +252,7 @@ Proposed disposition is to block publication on unresolved correctness,
 security, contract, or missing-coverage findings; require evidence for rejecting
 a false positive; and record optional suggestions in the backlog.
 The reviewer cannot mark its own findings resolved by changing the requirement.
-The existing [review Agent backlog item](../backlog/2026-08-31-the-review-agent-rewrites-the-contract-it-was-asked-to-satisfy.md)
+The existing [review Agent backlog item](../specs/0126-agent-review-before-pull-request/references/2026-08-31-the-review-agent-rewrites-the-contract-it-was-asked-to-satisfy.md)
 belongs in this contract, including escalation when a fix needs absent infrastructure.
 
 Rejecting a finding because its premise is disproved is an evidenced disposition.
@@ -263,8 +264,7 @@ generates more than two corrective Tasks from QA findings. Preserve that rule.
 Proposed additional limit: at most two corrective implementation/re-review cycles
 per candidate, then stop with the remaining findings. This is a proposal, not an
 approved budget or a reinterpretation of the QA Task limit. The maintainer must
-decide runtime/model selection, wall-clock
-and spend/quota limits, cancellation behavior, and whether any severity is
+decide wall-clock and spend/quota limits, cancellation behavior, and whether any severity is
 eligible for evidence-backed deferral. No paid-API fallback is implied.
 After archive, each corrective implementation cycle belongs to a new corrective
 Spec under the ordering above. A cycle budget alone does not grant that Spec.
@@ -277,8 +277,9 @@ record approvals, and delegate execution through Roundfix. Port useful behavior
 from the Fluxus kickoff requirements without adopting its skill or script.
 
 Use the existing `roundfix window set/show/clear` contract. A Run Window bounds
-new Run starts; `budget.max_run_duration` bounds an individual Run. Neither is
-currently a queue-wide spend limit. Existing `worktree.concurrency` bounds Task
+new Run starts. `budget.max_run_duration` declares an individual-Run limit,
+but the inspected Implement path does not enforce it; Spec 0127 owns that fix.
+Neither setting is a queue-wide spend limit. Existing `worktree.concurrency` bounds Task
 Worktrees, not concurrent whole-Spec deliveries. Propose serial Spec delivery
 initially, with Task parallelism remaining the declared repository setting.
 
@@ -408,6 +409,22 @@ rtk qmd query 'Revisão independente de código e persistência de workflow aut�
 The external pages establish available primitives, not end-to-end Roundfix
 correctness. No live reviewer, permission attack, spend limit, queue recovery,
 GitHub mutation, or implementation test ran while writing this design. Native
-reviewer selection and result characterization remain explicit prerequisites.
+reviewer selection is confirmed; adapter/result characterization remains an
+explicit prerequisite.
 The supervising session owns capture of this sourced research digest in the
 Secondbrain inbox; this artifact does not claim that ingestion occurred.
+
+## Refinement after complete source triage
+
+Use the existing `CategoryReview` resolver and its built-in/User/Project
+provenance. The current project preferred selection is Codex/Luna/max with its
+Codex/Sol/high fallback. Do not force invocation flags over it. Legacy
+`review_source.name` is not an ACP runtime selector. Provider opt-out must never
+be converted to a manual CodeRabbit request by generated guidance.
+
+The queue now separates read-only bare-tag release planning (0128) and Spec
+authoring/QA-recovery contracts (0129). The current Implement path's duration
+setting is not established as enforced: static inspection found only a warning
+and presentation use. 0127 must fix that boundary before claiming unattended
+Run-duration enforcement. The updated pending-work plan and each technical
+candidate contain the current source owners and build dependencies.

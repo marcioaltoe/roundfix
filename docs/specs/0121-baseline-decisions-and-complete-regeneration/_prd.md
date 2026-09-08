@@ -18,7 +18,7 @@ there is no TechSpec, Task Graph, or authority to start implementation.
 - Identifier strategy: not applicable — no new persisted entity or identifier strategy is proposed; preserve existing Baseline and decision identities. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: applicable — the proposal changes how the CLI edits a repository-owned HTTP Contract, preserving its confirmed mode, typed exceptions, and source; it introduces no application endpoint or authentication policy. Source: `docs/agents/cli.md` and `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0081 keeps regenerated pins as sanctioned fallout. ADR-0149 gives the tree ownership of regeneration outputs. ADR-0130 keeps the audit's governed path set honest against authorization history. Retain semantic preservation rather than treating stale source as disposable. Source: `docs/agents/domain.md` and `docs/agents/spec-routing.md`.
-- Tooling authority: applicable — protected tooling mutation is proposed, not authorized. The reviewable proposal is `docs/specs/0121-baseline-decisions-and-complete-regeneration/_authorization.md`; bounded files: `internal/baseline/assets/profiles/standard-typescript-monorepo.json`, `internal/baseline/assets/contract-v1.json`, `internal/cli/baseline_human_test.go`, `internal/baseline/derived_ownership_test.go`, `skills/_ownership.yml`, `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Source: `docs/agents/agent-instructions.md`.
+- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `internal/baseline/assets/profiles/standard-typescript-monorepo.json`, `internal/baseline/assets/contract-v1.json`, `internal/cli/baseline_human_test.go`, `internal/baseline/derived_ownership_test.go`, `skills/_ownership.yml`, `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`, `internal/baseline/assets/decisions.json`, `internal/baseline/assets/modules/core.json`, `internal/baseline/assets/modules/spec-workflow.json`, `internal/baseline/assets/profiles/go-cli-tui.json`, `internal/baseline/assets/profiles/rust-cli.json`, `internal/baseline/assets/templates/index.json`, `internal/baseline/assets/templates/guides/agent-instructions.md`, `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/setup-context.json`, `internal/baseline/plan_test.go`, `.agents/skills/setup-context-driven/SKILL.md`, `skills/setup-context-driven/SKILL.md`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -34,6 +34,9 @@ there is no TechSpec, Task Graph, or authority to start implementation.
 3. Proposed: when Greenfield encounters retained managed source requiring classification, refuse early with the Preservation route named. Do not discard source or invent approval; a different design requires a recorded decision.
 4. Declare skill regeneration ownership and prove that sanctioned generation covers the declared outputs while manual derived edits remain refused.
 5. Update shipped command guidance and regenerate only the approved derivation closure.
+
+6. Represent the local incremental command separately from the complete verification.gate decision and expose both through Profile output, planning, generated guidance and the Setup Manifest. Existing single-gate manifests need a reviewed migration; never invent a command or treat absence as compliance. Replay the Fiscus capture in an isolated repository without changing Fiscus tooling.
+7. Reconcile obsolete external skill-lock entries only against positively established absence at an explicitly selected immutable upstream revision and a confirmed mutation plan. An unreachable source, a merely unneeded skill or local absence cannot authorize removal. Required-but-removed skills block; preserve installed files and unknown lock fields, and keep Doctor offline/read-only.
 
 ## Non-Goals / Out of Scope
 
@@ -57,13 +60,15 @@ constitute implementation or terminal QA evidence.
 
 Until answered, all proposed limits and protected mutations remain unapproved.
 
-## Provisional inputs
+## Source ownership
 
-These sources remain at their current paths. No ownership transfer, promotion,
-adoption index, or source move occurs before implementation commitment.
+The maintainer selected this intent for implementation. Ordinary sources now
+have one primary owner and one copy under that owner's `references/` directory.
+Active Rollups remain as shared archive-license roots; their dated addenda map
+every remaining family to its consuming Spec. Adoption is not execution approval.
 
 - [2026-08-06-rollup-baseline-and-derived-tooling.md](../../findings/2026-08-06-rollup-baseline-and-derived-tooling.md)
-- [2026-09-08-skill-regeneration-declares-its-owned-outputs.md](../../backlog/2026-09-08-skill-regeneration-declares-its-owned-outputs.md)
+- [2026-09-08-skill-regeneration-declares-its-owned-outputs.md](references/2026-09-08-skill-regeneration-declares-its-owned-outputs.md)
 - [2026-08-07-changing-the-http-contract-discards-its-exceptions.md](../../history/findings/2026-08-07-changing-the-http-contract-discards-its-exceptions.md)
 - [2026-08-07-two-http-contract-defaults-and-only-one-is-read.md](../../history/findings/2026-08-07-two-http-contract-defaults-and-only-one-is-read.md)
 - [2026-08-07-greenfield-adoption-cannot-satisfy-its-own-gate.md](../../history/findings/2026-08-07-greenfield-adoption-cannot-satisfy-its-own-gate.md)
@@ -86,3 +91,14 @@ changes. Only after that checkpoint may the TechSpec settle the design and a
 Task Graph authorize execution. PRD-stage checks will report their actual
 scope and any pending authorization findings; a green partial check is not
 implementation readiness.
+
+The [source ownership index](references/_index.md) records the pre-adoption
+path, type, primary owner and current owned copy. Secondary consumers link
+that copy; lifecycle completion means routing, not verified implementation.
+
+## Technical candidate
+
+The [_techspec.md](_techspec.md) records the reviewable implementation map,
+coverage and build order. It is a proposed candidate, not a completed authoring
+gate or permission to dispatch. Exact governed grants and the named decisions
+remain pending; no Task Graph or implementation result is claimed.

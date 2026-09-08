@@ -57,7 +57,7 @@ regeneration outputs; do not hand-edit pins or invent a general fixture grant.
 
 ## Pending decisions and execution limits
 
-- Reviewer policy, effective models, and permitted fallback behavior: pending.
+- Reviewer policy: confirmed — default Codex; an explicit project review profile takes precedence. Model and fallback selection follows the declared effective profile.
 - Time, subscription quota, API spend, and live-probe allowance: pending; no unlimited default.
 - Corrective implementation/re-review cycles and finding dispositions: pending. A rejected false positive needs evidence; accepting a true risk or waiving a failed gate is a separate human decision.
 - Public legacy-command/configuration migration and readiness semantics: pending.
@@ -92,3 +92,21 @@ the PRD stage only. The current authorization detector keys typed validation
 from a date in the record filename and does not establish that this proposed
 Spec-local record is granted. A green authoring check is not approval or
 implementation readiness; Spec 0119 must close that recognition gap.
+
+## Confirmed reviewer decision — 2026-09-08
+
+The maintainer selected Codex as the default independent reviewer and requires
+an explicit reviewer in `.roundfixrc.yml` to take precedence. Reuse the existing
+`profiles.review` resolution instead of introducing another reviewer key or
+forcing invocation flags that override the project. Current Project Config
+selects Codex / gpt-5.6-luna / max with the declared Codex / gpt-5.6-sol / high
+fallback; preserve that actual tuple. Built-in, User Config and Project Config
+provenance remain visible. Invalid configuration or unavailable required review
+capability is a named refusal, never a silent substitution with the default.
+
+`review_source.name: coderabbit` is the legacy external PR-feedback provider,
+not an Agent Selection Profile. The new native review must consume the review
+profile; changing this planning record does not yet implement that adapter or
+remove CodeRabbit. Review sessions are independent of implementation sessions,
+and a changed candidate invalidates their evidence. The granted default-policy
+decision does not approve otherwise proposed governed mutations or paid calls.

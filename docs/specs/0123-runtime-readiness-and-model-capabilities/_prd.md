@@ -18,7 +18,10 @@ there is no TechSpec, Task Graph, or authority to start implementation.
 - Identifier strategy: applicable — model IDs are runtime-advertised opaque values; keep API/provider identifiers distinct from ACP Agent Selection IDs and preserve existing Run/Session identity. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — no new authentication or HTTP layer; use current runtime credentials and do not transmit secrets in probes or research. Source: `docs/agents/cli.md` and `docs/agents/agent-instructions.md`.
 - Active ADR obligations: applicable — ADR-0107 requires every configured Work Category to be accounted for; ADR-0147 preserves honest advertised capability evidence and the adapter refusal. The current eager Fallback Chain contract is an explicit proposed decision to revisit, not permission to omit readiness evidence. Source: `docs/agents/domain.md` and `docs/agents/spec-routing.md`.
-- Tooling authority: applicable — protected tooling mutation is proposed, not authorized. The reviewable proposal is `docs/specs/0123-runtime-readiness-and-model-capabilities/_authorization.md`; bounded files: `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Source: `docs/agents/agent-instructions.md`.
+  ADR-0049 applies: each present Agent Selection Profile replaces the lower-precedence profile atomically and preserves its explicit fallback chain.
+  ADR-0140 applies: prove the exact advertised runtime/model/effort tuple through the installed adapter. Any narrower change to fallback validation timing remains a proposed revision, not an accepted exception.
+  ADR-0093 applies to authored capability claims: the consistency checker follows explicit citations and must not infer approval or model support from missing evidence.
+- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -57,13 +60,15 @@ constitute implementation or terminal QA evidence.
 
 Until answered, all proposed limits and protected mutations remain unapproved.
 
-## Provisional inputs
+## Source ownership
 
-These sources remain at their current paths. No ownership transfer, promotion,
-adoption index, or source move occurs before implementation commitment.
+The maintainer selected this intent for implementation. Ordinary sources now
+have one primary owner and one copy under that owner's `references/` directory.
+Active Rollups remain as shared archive-license roots; their dated addenda map
+every remaining family to its consuming Spec. Adoption is not execution approval.
 
-- [2026-09-08-support-claude-fable-5-1-and-gpt-6-astra.md](../../backlog/2026-09-08-support-claude-fable-5-1-and-gpt-6-astra.md)
-- [2026-09-08-acpx-runner-value-receivers-copy-its-mutex.md](../../findings/2026-09-08-acpx-runner-value-receivers-copy-its-mutex.md)
+- [2026-09-08-support-claude-fable-5-1-and-gpt-6-astra.md](references/2026-09-08-support-claude-fable-5-1-and-gpt-6-astra.md)
+- [2026-09-08-acpx-runner-value-receivers-copy-its-mutex.md](references/2026-09-08-acpx-runner-value-receivers-copy-its-mutex.md)
 - [2026-08-06-rollup-agent-selection-and-execution-environments.md](../../findings/2026-08-06-rollup-agent-selection-and-execution-environments.md)
 - [model-selection.md](../../references/model-selection.md)
 
@@ -85,3 +90,14 @@ changes. Only after that checkpoint may the TechSpec settle the design and a
 Task Graph authorize execution. PRD-stage checks will report their actual
 scope and any pending authorization findings; a green partial check is not
 implementation readiness.
+
+The [source ownership index](references/_index.md) records the pre-adoption
+path, type, primary owner and current owned copy. Secondary consumers link
+that copy; lifecycle completion means routing, not verified implementation.
+
+## Technical candidate
+
+The [_techspec.md](_techspec.md) records the reviewable implementation map,
+coverage and build order. It is a proposed candidate, not a completed authoring
+gate or permission to dispatch. Exact governed grants and the named decisions
+remain pending; no Task Graph or implementation result is claimed.

@@ -33,7 +33,8 @@ remain pending; this document does not start or authorize implementation.
   ADR-0139 applies: durable recovery must retain one Active Run per work target and the same-checkout mutation guard rather than starting a competing owner.
   ADR-0142 applies to the existing head-bound evidence contract and historical outcomes; independent pre-PR review must be settled by Spec 0126 before the new delivery path relies on it.
   Preserve the accepted decision to keep `implement-spec` and repair its conflicting instructions rather than introducing a competing implementation loop.
-- Tooling authority: applicable — protected changes are proposed but express maintainer authorization for the exact bounded files has not been granted. The proposed record is [_authorization.md](_authorization.md), at `docs/specs/0127-durable-unattended-spec-workflow/_authorization.md`; its proposed status and null grant authorize no mutation. Candidate bounded files: `.agents/skills/implement-spec/SKILL.md`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/agents/openai.yaml`, `internal/baseline/assets/modules/autonomous-work.json`, `skills/implement-spec/SKILL.md`, `skills/roundfix/SKILL.md`, `skills/roundfix/agents/openai.yaml`, `docs/agents/autonomous-work.md`, `docs/agents/setup-context.json`, `internal/cli/cli_test.go`, `skills/baseline_skill_contract_test.go`, `internal/docscontract/publicdocs_test.go`. Deterministic digest fallout follows the sanctioned regeneration rule after source approval. No Task Graph or tooling mutation is authorized by this list. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+  ADR-0151 applies: the queue consumes the configured review profile without overriding it with a forced Codex invocation.
+- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `.agents/skills/implement-spec/SKILL.md`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/agents/openai.yaml`, `internal/baseline/assets/modules/autonomous-work.json`, `skills/implement-spec/SKILL.md`, `skills/roundfix/SKILL.md`, `skills/roundfix/agents/openai.yaml`, `docs/agents/autonomous-work.md`, `docs/agents/setup-context.json`, `internal/cli/cli_test.go`, `skills/baseline_skill_contract_test.go`, `internal/docscontract/publicdocs_test.go`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -63,6 +64,9 @@ remain pending; this document does not start or authorize implementation.
 8. The owned `implement-spec` entry point delegates implementation and Verification to Roundfix. It absorbs useful queue preparation from kickoff without introducing another implementation loop, copying a second window script, or authorizing the Supervisor to write code or tests.
 9. A blocking review after archive preserves the completed/archived Spec and parks publication. Correction is authored as a new Spec with its own authority and gate; the candidate is reviewed again after that correction is archived. A remaining cycle budget or routine queue-continuation grant does not silently authorize the new Spec.
 
+10. Apply the approved maximum Run duration to Implement execution, including cancellation of owned Agent/process boundaries and truthful recoverable settlement. The current YAML value is not proof of enforcement; fix and exercise this prerequisite before unattended delivery starts.
+11. Consume the authoring coverage and supported gate-recovery contract from Spec 0129. The durable owner advances only authored and authorized Spec revisions, records temporal prerequisites, and parks an amendment that expands authority or invalidates the approved premise.
+
 ## User Experience
 
 The maintainer sees the approved queue, its active Spec, current Run and delivery
@@ -79,7 +83,7 @@ execution stopped instead of promising that work continues.
 - Bypassing QA, review, checks, tooling grants, or the confirmed purpose-based work-branch policy.
 - Reopening archived Specs or inheriting review validity across an archive commit.
 - Treating a Task Worktree concurrency setting as permission for parallel whole-Spec deliveries.
-- Selecting a reviewer or paying for API access without the pending decisions.
+- Overriding the confirmed reviewer policy or charging API usage without its recorded limit.
 - Replacing the existing Run lifecycle with an unrelated orchestration framework.
 - Releasing versions, creating tags, or performing destructive migrations under routine delivery authority.
 
@@ -102,14 +106,14 @@ execution stopped instead of promising that work continues.
 - A Detached Run surviving its caller is insufficient proof that a multi-Spec delivery queue survives its owner.
 - Proposed archive-first final review preserves the existing archive boundary but can require a new corrective Spec, gate, and grant after a late finding. That trade-off is pending, not an accepted change to QA or archive policy.
 - Spec 0119 supplies the proposed authorization convention; Specs 0122, 0125, and 0126 supply settlement, branch identity, and independent-review prerequisites. Runtime readiness and capacity evidence are provided by the corresponding portfolio work.
-- This PRD makes no source adoption or executable commitment while the relevant decisions and grants remain pending.
+- Source adoption is complete in the owned reference index; executable commitment remains pending the relevant decisions and grants.
 
 ## Open Questions
 
 - Durable owner, persistence/recovery contract, and public command surface — architecture decision pending; no proposed mechanism is represented as implemented.
 - Queue-wide time, API/subscription spend, concurrency, and correction limits — maintainer decision pending. Serial whole-Spec delivery and two corrective review cycles are proposals, not defaults already authorized.
 - Cutoff behavior for a Run already started, failed delivery after the cutoff, and explicit cancellation — maintainer decision pending; existing Run Window semantics remain unchanged until approved otherwise.
-- Independent reviewer policy and its candidate-evidence contract — pending decision and Spec 0126 prerequisite.
+- Reviewer selection is settled; the implemented candidate-evidence contract remains the Spec 0126 prerequisite.
 - Archive-first final review and the handling/authority of post-archive corrective Specs — proposed sequencing pending confirmation; no artifact-only review exemption or inherited grant is assumed.
 - Exact protected-file grants and generated outputs — pending in the proposed authorization record.
 - Branch naming is settled and requires no bootstrap exception. Spec 0125 remains relevant to shared repository identity and reconciliation, not permission to start a Run under its existing namespace.
@@ -130,3 +134,39 @@ They support the native reviewer prerequisite, not automatic end-to-end delivery
 Current local inspection confirmed Run Window and Detached Run primitives and
 the instruction conflict. No queue owner, live recovery exercise, reviewer, or
 GitHub mutation was executed for this PRD.
+
+## Confirmed reviewer decision — 2026-09-08
+
+The maintainer selected Codex as the default independent reviewer and requires
+an explicit reviewer in `.roundfixrc.yml` to take precedence. Reuse the existing
+`profiles.review` resolution instead of introducing another reviewer key or
+forcing invocation flags that override the project. Current Project Config
+selects Codex / gpt-5.6-luna / max with the declared Codex / gpt-5.6-sol / high
+fallback; preserve that actual tuple. Built-in, User Config and Project Config
+provenance remain visible. Invalid configuration or unavailable required review
+capability is a named refusal, never a silent substitution with the default.
+
+`review_source.name: coderabbit` is the legacy external PR-feedback provider,
+not an Agent Selection Profile. The new native review must consume the review
+profile; changing this planning record does not yet implement that adapter or
+remove CodeRabbit. Review sessions are independent of implementation sessions,
+and a changed candidate invalidates their evidence. The granted default-policy
+decision does not approve otherwise proposed governed mutations or paid calls.
+
+The [source ownership index](references/_index.md) records the pre-adoption
+path, type, primary owner and current owned copy. Secondary consumers link
+that copy; lifecycle completion means routing, not verified implementation.
+
+## Technical candidate
+
+The [_techspec.md](_techspec.md) records the reviewable implementation map,
+coverage and build order. It is a proposed candidate, not a completed authoring
+gate or permission to dispatch. Exact governed grants and the named decisions
+remain pending; no Task Graph or implementation result is claimed.
+
+## Squash history prerequisite
+
+A new or widened governed grant must land independently in target ancestry
+before its consuming squash delivery. A separate commit inside the same PR
+would be flattened with the change and does not preserve prior approval.
+Validate that boundary before dispatch and against the observed merged history.
