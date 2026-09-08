@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-08-06
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 kind: rollup
 members:
   - 2026-08-06-the-detach-tests-leak-the-process-they-prove-survives.md
@@ -47,3 +47,25 @@ ownership and classification seams that no single terminal audit covers.
 ---
 
 Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
+
+## Addendum — 2026-09-08 — Current triage
+
+Existing deliveries cover owner identity (0055), storage lifecycle (0059),
+teardown (0066), close audit (0068), journal economics (0081), carry-forward
+and disposition (0092, 0118), process-tree fixtures/termination (0103), and the
+deleted-target content proof delivered with 0097 in commit `8235a850`.
+
+On 2026-09-08, `TestInspectTerminalRunSafeWhenTargetDeletedAfterSquashMerge`
+passed with a real Git fixture, as did the deleted-target nonmatching-content,
+unknown-default, and active-Run cases. This closes the two triaged Secondbrain
+captures dated 2026-09-02 about the observed deleted-target reconciliation path.
+It does not prove a squash against a target that remains present: current
+`internal/worktree/worktree.go` still uses ancestry then QA supersession there.
+An archived Spec alone is not evidence that arbitrary Run content is disposable.
+
+Current `internal/config/config.go` derives repository identity from the
+checkout path, and `internal/store/store.go` fixes the internal branch prefix
+to `roundfix/run-`. Route those gaps and the narrow reconciliation residuals to
+provisional P6, repository identity and Run branch policy. Historical load
+failures remain provisional P5 investigations. Keep this Rollup active to
+license its 13 archived members.

@@ -60,3 +60,18 @@ Worth settling in the same work: whether `make verify` should refuse to report
 success when its Go suite is entirely cached, since a cached pass proves the
 cache and not the tree. Both touch protected tooling and need express
 maintainer authorization with bounded files before any Task may run.
+
+## Addendum — 2026-09-08 — Current triage
+
+The bad bare-`go clean -testcache` prescription is absent from the current
+repository guidance. The Makefile now deliberately separates cached local
+verification from `test-budget -count=1`, and its docs/repository contract tests
+also run with `-count=1`. `.github/workflows/ci-verify.yml` selects the cold
+`test-budget` target. Spec 0083 also removed the output-filtering wrapper from
+the authoritative gate.
+
+This is partial resolution of the recorded problem, not delivery of the
+suggested `verify-cold` or `clean-testcache` target. Keep this entry open for
+provisional P5, Verification capacity and measured economics, to settle the
+remaining cache ergonomics and evidence policy. No discard or new tooling
+policy is inferred from this triage.

@@ -47,3 +47,14 @@ fixture exec, a project-decision journey, and a warm-session idempotence check �
 each failing once, none twice, all under the loaded suite and none in isolation.
 The family is stable and the tests it lands on are not.
 
+## Addendum — 2026-09-08 — Current triage
+
+The current Makefile still sets `GO_TEST_PARALLEL ?= 16` and records the
+I/O-heavy measurements that motivated it. Spec 0103 deliberately excluded
+changing suite parallelism. The new Finding
+`docs/findings/2026-09-08-force-stop-legacy-owner-has-an-unexplained-ci-failure.md`
+adds a dated failure observation, not proof that saturation caused it.
+
+Keep this entry open for provisional P5. The first work must preserve failure
+logs and measure the competing execution contexts; no core-count formula or
+longer timeout is approved by this addendum.

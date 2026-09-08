@@ -102,3 +102,16 @@ Daemon's pre-work probe still refuses those commands — the discovery just move
 back to Run time, at 5–40 seconds and zero tokens per refusal instead of 0.04
 seconds at authoring. Re-enabling it is one line in the staged detector
 registry.
+
+## Addendum — 2026-09-08 — Current triage
+
+Spec 0105 implemented real-boundary characterization and combined static and
+behavioral discovery. Specs 0095 and 0116 put Verification execution back in
+the authoring path. Those delivered portions must not generate duplicate work.
+
+Gate-cost distribution remains outside 0105's delivered scope. Keep this
+entry open for provisional P5, Verification capacity and measured economics,
+with a new measurement before choosing an optimization. The recorded 2026-08-10
+totals are historical; no current Run Database measurement was performed in
+this triage. Prepared-data infrastructure was also excluded from 0105 and
+requires a separate bounded decision before it becomes implementation scope.

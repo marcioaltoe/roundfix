@@ -25,3 +25,15 @@ roots — with the layout guide itself exempt where it names directories to
 define them. The rule's letter should also gain the history roots, since
 archived evidence is no more durable a foundation for a guide than active
 evidence.
+
+## Addendum — 2026-09-08 — Current triage
+
+Current `docs/agents/docs-layout.md` still names only active Spec/Finding
+roots in its upstream-only clause. A local search found no corresponding
+guide/glossary citation detector. Archived source and regenerated guidance can
+therefore retain the same unresolved policy gap.
+
+Keep this entry open for provisional P1, authorization and knowledge lifecycle.
+The checker must distinguish an actual downstream citation from a layout
+definition that names a directory. This triage performed source inspection,
+not a mutation test proving a future detector.
