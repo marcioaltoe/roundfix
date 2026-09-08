@@ -715,18 +715,21 @@ _Avoid_: tail mode, auto-scroll, live mode
 
 **Pre-PR Review Policy**:
 The repository's choice of Codex, Claude, CodeRabbit, or no reviewer before a
-Pull Request is opened. An enabled provider reviews the current candidate;
-explicit none records an intentional omission and leaves QA and required
-checks in force. Provider failure does not mean review was disabled.
+Pull Request is opened. An enabled review covers the current candidate, while
+explicit none records an intentional omission that leaves QA and required
+checks binding; provider failure is not an omission.
+_Avoid_: Review mode, reviewer profile, automatic review
 
 **Pre-PR Review Provider**:
 The selected agent or service that performs review under the Pre-PR Review
-Policy. Agent Selection Profiles supply an agent provider's runtime/model
-selection; no reviewer is a policy choice, not an Agent Runtime.
+Policy. An Agent Selection Profile supplies an agent provider's runtime and
+model; explicit none is a policy choice with no provider.
+_Avoid_: Review Source, Pre-PR Review Policy, reviewer model
 
 
 **QA Archive Override**:
 An explicit user request or applicable prior authorization to archive a covered
-Spec despite its QA prerequisite being unmet. It preserves the actual QA and
-Task evidence and records the approved exception. It applies only to archival;
-non-QA completion, source integrity and separate delivery gates remain binding.
+Spec despite its QA prerequisite being unmet. The recorded exception preserves
+actual QA and Task evidence while retaining non-QA completion, source integrity
+and separate delivery gates.
+_Avoid_: QA pass, QA bypass, Implement Clean

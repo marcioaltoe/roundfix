@@ -8,14 +8,15 @@ superseded_by: null
 
 # Pre-PR review is an explicit provider policy
 
-The maintainer clarified that pre-PR review may use Codex, Claude, CodeRabbit,
-or none. This replaces the earlier requirements to remove CodeRabbit entirely
-and always perform independent review. CodeRabbit remains optional. ADR-0151's
-Codex default and explicit project-selection precedence remain; provider choice
-also includes the service provider and the explicit absence of a reviewer.
-Preserve User Config over built-in defaults and Project Config over User Config.
-An Agent Selection Profile describes model/runtime configuration when an agent
-provider is selected; it does not represent `none` as an Agent Runtime.
+The maintainer chose optional pre-PR review through Codex, Claude, CodeRabbit,
+or explicit `none` to make the cost and assurance trade-off visible. This
+supersedes the requirements to remove CodeRabbit entirely and always perform
+independent review while preserving ADR-0151's Codex default and configured
+precedence. User Config overrides built-in defaults, Project Config overrides
+User Config, and Agent Selection Profiles supply runtime/model configuration
+only when an agent provider is selected.
+
+## Consequences
 
 With `codex`, `claude`, or `coderabbit`, review examines the current candidate
 before the PR and its result must satisfy the enabled review policy. Explicit
