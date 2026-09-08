@@ -133,9 +133,9 @@
     },
     {
       "id": "branch.prefix",
-      "version": 1,
+      "version": 2,
       "type": "string",
-      "default": "ma/",
+      "default": "<type>/",
       "summary": "The required prefix for agent-created branches, named by generated guidance.",
       "effects": [
         {

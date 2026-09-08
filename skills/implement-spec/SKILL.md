@@ -6,10 +6,10 @@ argument-hint: "<spec slug or path under docs/specs/> [--from task_NN]"
 metadata:
   category: implementation
   tags: [workflow, agents, coding, issues]
-  version: 0.0.2
+  version: 0.0.3
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
-version: 0.0.2
+version: 0.0.3
 ---
 
 # Implement Spec
@@ -62,7 +62,7 @@ Report progress as a checklist (`task_NN ✓ / in_progress / failed / blocked`) 
 
 ## Guardrails
 
-- One commit per task; one `ma/` branch per spec (create it if missing) — no per-task branches unless the user asks.
+- One commit per task; one work branch per spec named `<type>/<description>` under the repository's purpose-based branch policy. Roundfix-owned Run and Task branches follow Roundfix's documented namespace. Outside Roundfix, create per-task branches only when the user asks.
 - Pushing and PR creation are explicit user actions; the loop never publishes on its own.
 - Never run destructive git commands (`reset`, `restore`, `clean`, `checkout --`) without explicit permission.
 - Never edit `_prd.md`, `_techspec.md`, or `_tasks.md` from inside the loop — spec amendments are a human decision made outside it.

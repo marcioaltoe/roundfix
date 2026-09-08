@@ -4,8 +4,12 @@
 
 This setup-owned guide defines the portable baseline. Repository authors own
 project-specific extensions outside setup markers and may add stricter rules.
-The selected repository Verification is `make verify`. Agent-created
-branches **MUST** use the selected `ma/` prefix.
+The selected repository Verification is `make verify`.
+The branch-prefix pattern is `ma/`; `<type>` is replaced by the
+work's purpose, never used literally. Use `<type>/` as the portable decision
+value. Legacy personal-prefix values must be revised through Baseline and do
+not override the purpose-based branch rule below. Tool-owned Run and Task
+branches follow their tool's documented namespace.
 
 - **mandatory**: Keep root agent instructions as short mandatory pointers. Setup owns only marked baseline content; preserve repository-authored bytes outside setup markers and keep project-specific architecture and policy in repository-owned documents.
 
@@ -55,7 +59,7 @@ branches **MUST** use the selected `ma/` prefix.
 
 - **stop-and-ask**: Stop and ask for explicit authority before destructive Git operations that discard, overwrite, or remove work.
 
-- **mandatory**: Write commit subjects and pull request titles as Conventional Commits subjects, and follow the scope policy the repository's commit configuration declares. A squash merge often takes the pull request title as the final commit message, so the title is held to the same contract as a commit.
+- **mandatory**: Write commit subjects and pull request titles as Conventional Commits subjects, and follow the scope policy the repository's commit configuration declares. A squash merge often takes the pull request title as the final commit message, so the title is held to the same contract as a commit. Name new work branches `<type>/<description>` using the same purpose types the repository accepts for commits and pull request titles, such as `feat/`, `fix/`, `refactor/`, `docs/`, `test/`, `chore/`, `perf/`, `build/`, `ci/`, `style/`, or `revert/`. Use `refactor/`, not `refact/`; never use personal names or initials as branch prefixes. Tool-owned Run and Task branches use the tool's documented namespace; Roundfix retains `roundfix/run-` and its derived Task branch names. Existing branches are not renamed automatically.
 
 - **mandatory**: Release work starts with the read-only release plan before any changelog, version, tag, push, package, asset, or published-release mutation. A generic release request authorizes only a conclusive patch plan; minor, major, version-zero breaking, and manual classification outcomes require the maintainer decisions recorded in the repository's release runbook.
 

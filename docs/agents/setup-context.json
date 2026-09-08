@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:74c30a138531e9d9f509cb8c9eeda13984ac4bb348cbb66a27c53f0754246569",
-  "catalogDigest": "sha256:9619539194991e4e21dac62ee3dd4c3594aeb7ef0d4fe2c1368ce4090cb32546",
+  "catalogDigest": "sha256:fed1d4fad537a9dbf823195975fd71b042a11bf3409a1ff9d3dcb825674e7349",
   "modules": [
     "core",
     "context-workflow",
@@ -25,7 +25,7 @@
       "value": true
     },
     "branch.prefix": {
-      "value": "ma/"
+      "value": "\u003ctype\u003e/"
     },
     "domain.layout": {
       "value": "single-context"
@@ -153,7 +153,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "633d22024f18337e1bfc5947203d3d6d57932b1b6ce52652f14b09259e05fc54"
+      "digest": "e8dfcc92ffce6bd01d7574e1b7659e11817714ce072034fd7db4849050f7b6a1"
     },
     {
       "id": "root.cli-surface",

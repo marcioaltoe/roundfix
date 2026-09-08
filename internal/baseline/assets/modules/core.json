@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 6,
+  "version": 7,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -292,7 +292,7 @@
   "supportingGuides": [
     {
       "id": "guide.agent-instructions",
-      "version": 6,
+      "version": 7,
       "path": "docs/agents/agent-instructions.md",
       "template": "template.guide.agent-instructions",
       "rules": [
@@ -541,7 +541,7 @@
     },
     {
       "id": "rule.core.git-delivery",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.git-delivery"
       ],
@@ -569,7 +569,7 @@
         {
           "id": "clause.core.conventional-commit-titles",
           "enforcement": "mandatory",
-          "guidance": "Write commit subjects and pull request titles as Conventional Commits subjects, and follow the scope policy the repository's commit configuration declares. A squash merge often takes the pull request title as the final commit message, so the title is held to the same contract as a commit."
+          "guidance": "Write commit subjects and pull request titles as Conventional Commits subjects, and follow the scope policy the repository's commit configuration declares. A squash merge often takes the pull request title as the final commit message, so the title is held to the same contract as a commit. Name new work branches `<type>/<description>` using the same purpose types the repository accepts for commits and pull request titles, such as `feat/`, `fix/`, `refactor/`, `docs/`, `test/`, `chore/`, `perf/`, `build/`, `ci/`, `style/`, or `revert/`. Use `refactor/`, not `refact/`; never use personal names or initials as branch prefixes. Tool-owned Run and Task branches use the tool's documented namespace; Roundfix retains `roundfix/run-` and its derived Task branch names. Existing branches are not renamed automatically."
         },
         {
           "id": "clause.core.plan-the-release-first",
