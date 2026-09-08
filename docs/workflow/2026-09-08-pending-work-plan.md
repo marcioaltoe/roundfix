@@ -57,13 +57,14 @@ A review generated before a PR exists needs its own contract; it must not fake
 a PR identifier to satisfy the old interfaces. Reviewer output must identify
 the base and head commits, and a changed head invalidates the review.
 
-The public Implement Command has no branch-prefix override. Run and Task
-branches currently derive from the hard-coded `roundfix/run-` namespace,
-which conflicts with this repository's mandatory `ma/` prefix. Therefore an
-implementation Run cannot bootstrap 0125 under today's contracts without an
-explicitly bounded alternative execution authorization. The Supervisor also
-remains prohibited from writing feature code. This is a real bootstrap
-decision to settle, not permission to silently ignore either instruction.
+The maintainer removed the mandatory personal prefix on 2026-09-08. New work
+branches use purpose types (`feat/`, `fix/`, `refactor/`, and the other accepted
+commit types); Roundfix Run/Task branches retain their existing `roundfix/run-`
+namespace and derived names. This resolves the previously recorded naming
+bootstrap conflict without a runtime code change or an execution exception.
+The Supervisor still delegates feature code and tests through Roundfix. The
+approved canonical/global instruction subset is recorded inside Spec 0125;
+repository identity and reconciliation changes remain proposed.
 
 ## Progress and remaining decisions
 
@@ -126,7 +127,7 @@ independently testable contracts out of one oversized Spec.
 | 0122 — Verified content and terminal settlement | Required executable files survive commit; Clean proves the resulting repository content; declared-only partial QA follows the already accepted policy consistently. | Exact protected file grant if an existing governed test changes. |
 | 0123 — Runtime readiness and new models | Fable 5.1 and Astra are selectable only under advertised runtime capabilities and actual access evidence; runtime state is not copied with its mutex; fallbacks are proved when used. | Approved access/budget policy; current catalog research. |
 | 0124 — Verification capacity and economics | Fresh controlled measurements explain gate cost and resource contention; unknown flakes retain evidence; gate/cache changes follow measurements and preserve negative controls. | 0123 mutex fix before enabling vet; tooling grant before gate changes. |
-| 0125 — Repository identity and branch policy | Linked worktrees share repository identity; new Run/Task branches honor the repository prefix; legacy and squash reconciliation preserve unproved work. | Branch-policy and migration decision. |
+| 0125 — Repository identity and branch policy | Linked worktrees share repository identity; work branches express purpose while Run/Task branches retain the Roundfix namespace; legacy and squash reconciliation preserve unproved work. | Branch policy confirmed; repository-identity migration and reconciliation decisions pending. |
 | 0126 — Independent review before a pull request | A local independent review certifies a specific candidate commit; bounded corrections trigger a fresh review; operative CodeRabbit dependencies are removed across product and owned skills. | Reviewer policy and concrete removal/migration grant. |
 | 0127 — Durable unattended Spec delivery | A durable Supervisor drives approved Specs through implementation, independent review, QA, archive, PR, checks, and merge, stopping at exhausted limits or missing authority. | 0119, 0122, 0125, 0126; use 0123 readiness and the capacity evidence from 0124. |
 
@@ -201,3 +202,27 @@ These sources establish interfaces and prior experience. They do not prove
 that Roundfix already implements the proposed review or queue, that every
 installed adapter exposes every new model, or that unknown CI flakes share
 one root cause.
+
+## Branch-policy decision — 2026-09-08
+
+The mandatory personal prefix is removed. `refactor/` is used rather than
+`refact/` to match the repository's commit vocabulary. The compatible
+`branch.prefix` decision now defaults to the placeholder pattern `<type>/`;
+this repository's stored value is changed through the public Baseline workflow.
+Legacy manifests can still be read, but their personal values do not override
+the new canonical purpose rule. Existing remote branches and original evidence
+are retained. The current work continues on `feat/purpose-based-branch-policy`.
+The owned `implement-spec` skill and its shipped copy also replace their former
+personal-prefix guardrail; version 0.0.3 delegates naming to this policy and
+preserves the Roundfix Run/Task namespace.
+
+The prior claim that a naming exception was needed to bootstrap a Run is no
+longer current. Reviewer choice, resource limits, the broader tooling grants,
+and unfinished TechSpecs/Task Graphs remain pending; this naming decision does
+not answer those separate questions.
+
+The retired Run-prefix Finding moves to `docs/history/findings/` with its
+original observation preserved and a dated policy-disposition addendum. The
+active Run lifecycle Rollup licenses it as a fourteenth member, in addition to
+the 81 historical members preserved at the earlier portfolio checkpoint.
+The Secondbrain triage pointer follows its history destination.

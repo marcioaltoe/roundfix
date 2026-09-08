@@ -4,6 +4,7 @@ created_at: 2026-08-06
 updated_at: 2026-09-08
 kind: rollup
 members:
+  - 2026-09-08-run-branches-ignore-the-selected-prefix.md
   - 2026-08-06-the-detach-tests-leak-the-process-they-prove-survives.md
   - 2026-08-06-three-gigabytes-of-event-journal-inside-the-retention-window.md
   - 2026-07-16-vortex-pr87-detached-watch-notification.md
@@ -69,3 +70,16 @@ to `roundfix/run-`. Route those gaps and the narrow reconciliation residuals to
 provisional P6, repository identity and Run branch policy. Historical load
 failures remain provisional P5 investigations. Keep this Rollup active to
 license its 13 archived members.
+
+## Addendum — 2026-09-08 — Branch naming decision settled
+
+The maintainer removed the personal-prefix requirement and permits the existing
+Roundfix Run/Task namespace. Purpose-based work branches are now the canonical
+policy, so a configurable Run prefix is no longer required to resolve that
+observation. Spec 0125 retains the separate repository-identity and reconciliation
+residuals; the original namespace-conflict observation remains historical evidence.
+
+The retired prefix-conflict Finding is absorbed here as an additional archived
+member. Its runtime suggestion is deferred because the policy changed; this
+Rollup remains active for the separate residuals above and now licenses 14
+members.

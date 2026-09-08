@@ -16,7 +16,7 @@ protected-file authority are pending decisions. It does not authorize execution.
 
 ## Project Constraints
 
-- Identifier strategy: applicable — preserve the existing Run and Task identities and use immutable Git commit identities to identify the reviewed candidate. Agent-created branches must retain the required `ma/` prefix. The current Run Branch namespace conflicts with that obligation; Spec 0125 or an expressly bounded bootstrap decision must settle it before an implementation Run starts. No new identifier format is approved here. Source: `docs/agents/domain.md`, `docs/agents/agent-instructions.md`.
+- Identifier strategy: applicable — preserve the existing Run and Task identities and use immutable Git commit identities to identify the reviewed candidate. New work branches use purpose prefixes such as `feat/`, `fix/`, and `refactor/`; Roundfix-owned Run/Task branches retain their documented namespace. The maintainer explicitly removed the personal-prefix conflict on 2026-09-08. No new identifier format is approved here. Source: `docs/agents/domain.md`, `docs/agents/agent-instructions.md`.
 - Authentication and HTTP: applicable — reuse the maintainer's existing authenticated local runtimes; do not introduce credentials, change authentication policy, or silently route subscription work through paid APIs. No backend HTTP guide exists for this CLI repository, so absence supplies no authorization. Native review access, tool permissions, and monetary or quota bounds still require confirmation. Source: `docs/agents/agent-instructions.md`, `docs/agents/cli.md`.
 - Active ADR obligations: applicable — retain the active execution, evidence, and authoring contracts while proposing a distinct pre-PR review contract. Source: `docs/agents/domain.md`, `docs/agents/autonomous-work.md`, `docs/agents/spec-routing.md`.
   ADR-0014 applies: the Daemon runs Task Verification and settles the outcome.
@@ -78,7 +78,7 @@ successful disabled mode.
 - Buying API credits, changing credentials, or treating unknown quota as unlimited.
 - Allowing a reviewer to implement its own corrections or waive failed gates.
 - Implementing the durable multi-Spec delivery owner; that is Spec 0127.
-- Solving the incompatible Run Branch prefix by silently creating a non-`ma/` branch.
+- Renaming historical branches or changing the already permitted Roundfix Run namespace.
 
 ## Success Metrics
 
@@ -107,7 +107,7 @@ successful disabled mode.
 - Legacy command/configuration retirement and the pre-PR readiness contract — architecture decision pending before TechSpec authoring can settle implementation.
 - Archive-first final review and the authority for any later corrective Spec — proposed ordering pending confirmation; neither an archive exception nor approval inheritance is assumed.
 - Exact protected paths and sanctioned generated outputs — maintainer decision pending in the proposed authorization record.
-- Bootstrap under the mandatory branch prefix — Spec 0125 or a separate bounded authorization must resolve the current runtime conflict; Supervisor feature implementation is not approved.
+- The naming bootstrap is resolved by the maintainer's purpose/Run-namespace decision. Supervisor feature implementation remains prohibited; implementation still belongs to a Roundfix Run.
 
 ## Research and limitations
 

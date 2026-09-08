@@ -17,7 +17,7 @@ remain pending; this document does not start or authorize implementation.
 
 ## Project Constraints
 
-- Identifier strategy: applicable — preserve Run, Task, Spec, and Git identities and make durable delivery refer to their actual records. New agent-created branches must use `ma/`; Spec 0125 must reconcile the runtime's current Run Branch namespace before execution. No new durable identity format is chosen by this PRD. Source: `docs/agents/domain.md`, `docs/agents/agent-instructions.md`.
+- Identifier strategy: applicable — preserve Run, Task, Spec, and Git identities and make durable delivery refer to their actual records. New work branches use purpose prefixes; tool-owned Run/Task branches use Roundfix's existing namespace. The maintainer removed the personal-prefix requirement on 2026-09-08, so naming no longer blocks Run creation. No new durable identity format is chosen by this PRD. Source: `docs/agents/domain.md`, `docs/agents/agent-instructions.md`.
 - Authentication and HTTP: applicable — delivery uses the repository's existing authenticated runtimes and GitHub boundary, with no new credential storage or authentication policy. No backend HTTP guide exists; absence is not permission to create one. Publication authority and resource limits must be recorded, and a missing or denied credential parks the affected action. Source: `docs/agents/agent-instructions.md`, `docs/agents/cli.md`.
 - Active ADR obligations: applicable — preserve execution ownership and evidence semantics while proposing durable delivery across Runs. Source: `docs/agents/domain.md`, `docs/agents/autonomous-work.md`, `docs/agents/spec-routing.md`.
   ADR-0014 applies: the Daemon remains responsible for Task Verification and settlement as the durable Supervisor advances delivery.
@@ -76,7 +76,7 @@ execution stopped instead of promising that work continues.
 
 - Adopting Fluxus kickoff as a second canonical skill or replacing `implement-spec`.
 - Letting the Supervisor implement features or tests directly.
-- Bypassing QA, review, checks, tooling grants, or the `ma/` branch rule.
+- Bypassing QA, review, checks, tooling grants, or the confirmed purpose-based work-branch policy.
 - Reopening archived Specs or inheriting review validity across an archive commit.
 - Treating a Task Worktree concurrency setting as permission for parallel whole-Spec deliveries.
 - Selecting a reviewer or paying for API access without the pending decisions.
@@ -112,7 +112,7 @@ execution stopped instead of promising that work continues.
 - Independent reviewer policy and its candidate-evidence contract — pending decision and Spec 0126 prerequisite.
 - Archive-first final review and the handling/authority of post-archive corrective Specs — proposed sequencing pending confirmation; no artifact-only review exemption or inherited grant is assumed.
 - Exact protected-file grants and generated outputs — pending in the proposed authorization record.
-- Bootstrap under the mandatory `ma/` branch rule — Spec 0125 or a separately bounded authorization must settle it before execution; no Supervisor feature-code exception is granted.
+- Branch naming is settled and requires no bootstrap exception. Spec 0125 remains relevant to shared repository identity and reconciliation, not permission to start a Run under its existing namespace.
 
 ## Research and limitations
 

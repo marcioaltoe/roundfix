@@ -63,7 +63,7 @@ regeneration outputs; do not hand-edit pins or invent a general fixture grant.
 - Public legacy-command/configuration migration and readiness semantics: pending.
 - Archive-first final review and new corrective-Spec handling after a late finding: proposed, pending. This grant proposal neither reopens archived records nor grants a future corrective Spec by inheritance.
 - Exact protected-file grant above and any final generated-file plan: pending.
-- The Spec 0125 branch-prefix conflict or an expressly bounded bootstrap method: pending. No non-`ma/` agent-created branch and no Supervisor feature-code implementation is approved.
+- Branch naming: confirmed on 2026-09-08. Work branches use purpose types and Roundfix Run/Task branches retain their documented namespace. No naming bootstrap exception is needed; Supervisor feature-code implementation remains prohibited.
 
 ## Explicit exclusions
 

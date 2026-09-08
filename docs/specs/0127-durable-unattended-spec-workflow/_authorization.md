@@ -60,7 +60,7 @@ or undocumented generated path is authorized by this proposal.
 - Cutoff and cancellation handling for delivery already in progress: pending.
 - Archive-first final review and authority for a new corrective Spec after a late finding: pending. Existing archive immutability and exact-head evidence remain binding; this proposal grants neither an exception nor automatic approval inheritance.
 - The exact protected-file list above and any final generated-file plan: pending.
-- Spec 0125's Run Branch namespace conflict or a separate bounded bootstrap: pending. No agent-created branch outside `ma/` and no Supervisor feature implementation are approved.
+- Branch naming: confirmed on 2026-09-08. Work branches use purpose types and Run/Task branches retain the Roundfix namespace. No naming bootstrap exception or Supervisor feature-code exception is needed or granted.
 - Readiness and settlement prerequisites named by the portfolio: unresolved work remains a prerequisite, never waived by this record.
 
 ## Explicit exclusions
