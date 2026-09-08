@@ -1,31 +1,141 @@
 # Model selection reference
 
-Source snapshot: 2026-08-07; OpenCode runtime facts remeasured 2026-08-08
-against opencode 1.18.15 through acpx 0.13.0.
-Status: recommendation input, not routing policy.
+Updated 2026-09-08. This is advisory evidence for choosing a model; configured
+Agent Selection Profiles determine execution. No profile was changed by this
+refresh. API prices, subscription quota, runtime advertisement, and a successful
+ACP selection are different facts.
 
-Sources, each answering a different question:
+## Current models, versions, and token prices
 
-- [DeepSWE v1.1](https://deepswe.datacurve.ai/) — result, cost, output tokens,
-  and steps per agentic coding task.
-- [OpenRouter models API](https://openrouter.ai/api/v1/models) — token price,
-  cache price, and context window.
-- [whatllm.org](https://whatllm.org/explore) — a quality index and per-response
-  latency.
+The following values were read from the [OpenRouter models API](https://openrouter.ai/api/v1/models)
+at **2026-09-08 14:28 UTC**. Prices are USD per million tokens as returned by
+that catalog, before any unmeasured endpoint-specific, subscription, batch,
+priority, or account adjustment. The version column is the date suffix of the
+returned `canonical_slug`, not an alternative callable identifier. Exact
+values, cache writes, pricing overrides, and provider limits are preserved in
+[the dated source snapshot](model-pricing-2026-09-08.json).
 
-No single source answers "which model should this profile use". Task cost hides
-latency, token price hides how many tokens a model spends, and a quality index
-hides both.
+| OpenRouter model ID | Version suffix | Input $/M | Output $/M | Cache read $/M | Context tokens | Max output tokens |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `openai/gpt-6-astra` | 20260903 | $10 | $50 | $1 | 1,050,000 | 128,000 |
+| `openai/gpt-5.6-sol` | 20260709 | $2 | $10 | $0.2 | 1,050,000 | 128,000 |
+| `openai/gpt-5.6-terra` | 20260709 | $2 | $12 | $0.2 | 1,050,000 | 128,000 |
+| `openai/gpt-5.6-luna` | 20260709 | $0.2 | $1.2 | $0.02 | 1,050,000 | 128,000 |
+| `openai/gpt-5.5` | 20260423 | $5 | $30 | $0.5 | 1,050,000 | 128,000 |
+| `openai/gpt-5.4` | 20260305 | $2.5 | $15 | $0.25 | 1,050,000 | 128,000 |
+| `openai/gpt-5.4-mini` | 20260317 | $0.75 | $4.5 | $0.075 | 400,000 | 128,000 |
+| `openai/gpt-5.3-codex-spark` | absent from this catalog snapshot | — | — | — | — | — |
+| `anthropic/claude-fable-5.1` | 20260831 | $10 | $50 | $0.25 | 1,000,000 | 128,000 |
+| `anthropic/claude-fable-5` | 20260609 | $10 | $50 | $1 | 1,000,000 | 128,000 |
+| `anthropic/claude-opus-5` | 20260723 | $5 | $25 | $0.5 | 1,000,000 | 128,000 |
+| `anthropic/claude-sonnet-5` | 20260630 | $2 | $10 | $0.2 | 1,000,000 | 128,000 |
+| `anthropic/claude-haiku-4.5` | 20251001 | $1 | $5 | $0.1 | 200,000 | 64,000 |
+| `deepseek/deepseek-v4-pro` | 20260423 | $0.95526 | $1.91052 | $0.079605 | 1,048,576 | 384,000 |
+| `deepseek/deepseek-v4-flash-0731` | 20260731 | $0.065 | $0.18 | $0.016 | 1,310,720 | 943,718 |
+| `z-ai/glm-5.2` | 20260616 | $0.966 | $3.036 | $0.1932 | 1,048,576 | 131,072 |
+| `z-ai/glm-5.3-flash` | 20260826 | $0.075 | $0.25 | $0.015 | 1,310,720 | 131,072 |
+| `xiaomi/mimo-v2.5` | 20260422 | $0.14 | $0.28 | $0.0028 | 1,050,000 | 131,072 |
+| `moonshotai/kimi-k3` | 20260715 | $3 | $15 | $0.3 | 1,048,576 | 943,718 |
+| `x-ai/grok-4.5` | 20260708 | $2 | $6 | $0.3 | 500,000 | 450,000 |
+| `google/gemini-3.6-flash` | 20260721 | $0.75 | $3.75 | $0.075 | 1,048,576 | 65,536 |
+| `qwen/qwen3.8-max` | absent from this catalog snapshot | — | — | — | — | — |
+| `qwen/qwen3.8-max-0902` | 20260902 | $2 | $6 | $0.25 | 1,000,000 | 131,072 |
+| `meta/muse-spark-1.1` | 20260709 | $1.25 | $4.25 | $0.15 | 1,048,576 | 943,718 |
 
-This is the live reference. The 2026-07-16 snapshot inside Spec 0035 is that
-Spec's historical artifact and is not maintained; an archived Spec may be deleted
-at any time, so the durable table lives here.
+The listed context is the model-level value. A selected endpoint can advertise
+a smaller context: this snapshot reports 1,024,000 for DeepSeek V4 Pro and
+1,048,576 for Flash 0731 and GLM 5.3 Flash in `top_provider`. Output limits also
+remain subject to the selected endpoint and account. A missing catalog ID does
+not prove the model is absent from every other provider or subscription.
 
-Roundfix never routes automatically from this table. It uses only configured
-Agent Selection Profiles; a ranking can help a maintainer fill a profile but can
-never select or modify one.
+### Long-context and cache pricing
 
-## Benchmark name to Agent Selection
+OpenRouter returns long-prompt overrides for the following models. Values are
+input / output / cache-read / cache-write USD per million tokens; `—` means no
+value was returned, not free use. The source field is `min_prompt_tokens`.
+
+| Model | Threshold tokens | Input | Output | Cache read | Cache write |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `openai/gpt-6-astra` | 272,000 | $20 | $75 | $2 | $25 |
+| `openai/gpt-5.6-sol` | 272,000 | $4 | $15 | $0.4 | $5 |
+| `openai/gpt-5.6-terra` | 272,000 | $4 | $18 | $0.4 | $5 |
+| `openai/gpt-5.6-luna` | 272,000 | $0.4 | $1.8 | $0.04 | $0.5 |
+| `openai/gpt-5.5` | 272,000 | $10 | $45 | $1 | — |
+| `openai/gpt-5.4` | 272,000 | $5 | $22.5 | $0.5 | — |
+| `x-ai/grok-4.5` | 200,000 | $4 | $12 | $0.6 | — |
+
+For Fable 5.1, cache writes cost $12.50/M for 5 minutes or $20/M for one hour,
+and reads cost $0.25/M. Astra short-context cache writes cost $12.50/M; its
+long-context tier is $25/M. Vendor documentation confirms Astra's higher tier
+for inputs above 272k tokens. Additional tool, image, audio, and reasoning
+prices returned by the API are retained in the snapshot; this table is not a
+complete invoice estimator.
+
+### New requested models
+
+- **GPT-6 Astra:** OpenAI API ID `gpt-6-astra`; OpenRouter ID
+  `openai/gpt-6-astra`, canonical slug `openai/gpt-6-astra-20260903`.
+  OpenAI documents 1,050,000 context tokens and 128,000 maximum output tokens.
+  See [the model reference](https://developers.openai.com/api/docs/models/gpt-6-astra)
+  and [OpenAI pricing](https://developers.openai.com/api/docs/pricing).
+- **Claude Fable 5.1:** Anthropic API ID **`claude-fable-5-1`**;
+  OpenRouter ID **`anthropic/claude-fable-5.1`**, canonical slug
+  `anthropic/claude-fable-5.1-20260831`. The September 1
+  [Anthropic release notes](https://docs.anthropic.com/en/release-notes/api)
+  confirm 1M context, 128k output, always-on adaptive thinking, and the reduced
+  cache-read price. Its API rejects `tool_choice: any` and `tool`; an adapter
+  must account for this rather than reusing an older model's control contract.
+
+Exa returned an old model-overview page at the legacy Anthropic URL; even the
+newer overview omitted Fable 5.1. The dated release notes and live OpenRouter
+response establish the new model more directly. Public availability does not
+prove that a local ACP adapter accepts the same identifier.
+
+## Runtime availability observed 2026-09-08
+
+| Surface | Observed version or evidence | Scope of the observation |
+| --- | --- | --- |
+| Codex CLI | 0.153.4 | `--version`; no ACP selection or inference performed. |
+| Claude Code | 2.1.263 | `--version`; no ACP selection or inference performed. |
+| OpenCode | 1.18.29 | `models` returned 422 entries: 345 OpenRouter, 59 OpenCode, 18 OpenCode Go. |
+| acpx | 0.15.1 | `--version`; the ACP catalog was not reprobed. |
+| This Codex session | Tool-advertised delegation model `gpt-6-astra` | Availability in this session, not proof for Roundfix's separately launched adapter. |
+
+Neither Astra nor Fable 5.1 appeared in the current `opencode models` output.
+It still advertised `openrouter/qwen/qwen3.8-max`, while the OpenRouter API
+returned only the dated `qwen/qwen3.8-max-0902` ID. This mismatch requires
+runtime discovery and a selection receipt before a usable profile is offered.
+The `openrouter/` prefix belongs to OpenCode's selection namespace; it is not
+part of an OpenRouter API model ID.
+
+The public [Codex models page](https://developers.openai.com/codex/models)
+provides product recommendations; it is not an exhaustive observation of this
+session, every account, or every ACP adapter. Current Codex and Claude ACP
+model/effort catalogs remain unmeasured here. Historical August advertisements
+below cannot establish today's access. No paid model probe was run.
+
+## How this affects selection
+
+The new models enter the support Backlog and Spec 0123. Their prices do not
+justify automatically replacing a configured profile. Compared with the
+August snapshot, the OpenRouter Luna row is now $0.20/$1.20, Terra $2/$12,
+and Sol $2/$10; old discounts and ratios must not drive current choices.
+Subscription usage has no inferred dollar-per-token conversion. A paid API
+fallback requires its own approved spending limit.
+
+Secondbrain research used its model-selection concept, pricing monitor and
+fleet observations before Exa and live provider verification. The refreshed
+editorial table and pending research digest retain those sources and their
+limitations. Benchmark/task-cost observations below were **not remeasured**;
+no current quality, latency, or category-specific ranking is asserted from them.
+
+## Historical observations — August 2026, not current selection advice
+
+Everything below is a dated record retained for comparison. Model availability,
+prices, promotions, account limits, and recommendations in this record are not
+confirmed current. Consult the September tables above before choosing a model.
+
+### Benchmark name to Agent Selection
 
 The benchmark publishes display names. Roundfix accepts only identifiers the ACP
 adapter advertises. They are not the same vocabulary, and a row that cannot be
@@ -62,7 +172,7 @@ Do **not** take model identifiers from `internal/agent/catalog.go`. That
 hardcoded list is stale against this adapter: it offers `claude-opus-5` and
 `claude-opus-4-8`, neither of which the adapter advertises. The adapter is the
 source; the catalog is a copy nothing checks. See
-[the finding](../findings/2026-08-07-claude-agent-selections-are-never-proven.md).
+[the finding](../history/findings/2026-08-07-claude-agent-selections-are-never-proven.md).
 
 | Benchmark name | Runtime | Agent Selection model | Selectable |
 | --- | --- | --- | --- |
@@ -79,7 +189,7 @@ source; the catalog is a copy nothing checks. See
 | `claude-opus-4.8` | — | — | not via the claude adapter; reachable through `opencode` |
 | `kimi-k3`, `qwen3.8-max`, `glm-5.2`, `grok-4.5`, `deepseek-v4-flash`, `muse-spark-1.1`, `gemini-3.6-flash` | opencode | `openrouter/<vendor>/<model>` | yes — see below |
 
-### The opencode runtime reaches everything else
+#### The opencode runtime reaches everything else
 
 Roundfix supports three runtimes — `codex`, `claude`, `opencode` — and the third
 changes what is reachable. Measured 2026-08-08 against opencode 1.18.15 through
@@ -111,11 +221,7 @@ returns nothing for that runtime — so these must be written into a profile by
 hand. Combined with the adapter accepting unknown identifiers, a typo here is
 silent until a Run.
 
-Reasoning-effort names (`low`, `medium`, `high`, `xhigh`, `max`) match the
-benchmark's bracketed suffix and the **codex and claude** adapters' advertised
-effort values. OpenCode does not share that vocabulary — see below.
-
-#### The `opencode-go` subscription tier — 2026-08-08
+##### The `opencode-go` subscription tier — 2026-08-08
 
 Three tiers hide behind the one runtime, and only the middle one is the
 subscription. `openrouter/` is pay-per-use through an OpenRouter key.
@@ -137,7 +243,7 @@ row: `deepseek-v4-flash / max` at **53%** for $0.10 per task — far under
 ruled out on both axes at once. `deepseek-v4-pro` has no row because it is newer
 than the board.
 
-### The Go tier is capped, and OpenRouter carries the same models
+#### The Go tier is capped, and OpenRouter carries the same models
 
 Measured 2026-08-08 on the OpenCode Go dashboard: the **continuous window hit
 100%** with 1h06 to reset, weekly at 40%, monthly at 20%, and the
@@ -147,7 +253,7 @@ That is not a budget sustained work can plan against, which is why this
 repository routes the `opencode` runtime through `openrouter/` identifiers
 instead of `opencode-go/` ones.
 
-### Kimi K3 against DeepSeek V4 Pro — OpenRouter, 2026-08-08
+#### Kimi K3 against DeepSeek V4 Pro — OpenRouter, 2026-08-08
 
 The two candidates for that slot, from OpenRouter's own comparison. Kimi K3
 leads every measured axis and costs one to two orders of magnitude more.
@@ -221,7 +327,7 @@ Read them before repointing a profile — but read them knowing they price
 subscription-covered, so their prices inform which model is good, not what a Run
 here costs.
 
-#### OpenCode reasoning-effort defaults — 2026-08-09 snapshot
+##### OpenCode reasoning-effort defaults — 2026-08-09 snapshot
 
 This snapshot records measurements taken 2026-08-08 against OpenCode 1.18.15
 through acpx 0.13.0. Each row comes from `sessions ensure --model <M>` followed
@@ -248,7 +354,7 @@ first work prompt. See ADR-0108.
 configuration and fails later inside a Run. Read identifiers from the adapter
 before writing them into a profile; the preview will not catch a mistake.
 
-## Snapshot — 2026-08-07
+### Snapshot — 2026-08-07
 
 Sorted by result. Cost is average cost per task; steps and output tokens matter
 for wall clock, which cost alone does not express.
@@ -273,7 +379,7 @@ for wall clock, which cost alone does not express.
 | `codex / gpt-5.6-sol / low` | 45% | $1.07 | 11k | 23 | $0.024 |
 | `codex / gpt-5.6-luna / high` | 44% | $0.16 | 26k | 49 | $0.004 |
 
-## What changed since 2026-07-16
+### What changed since 2026-07-16
 
 | Agent Selection | Cost then | Cost now | Change |
 | --- | ---: | ---: | --- |
@@ -287,7 +393,7 @@ The previous snapshot predates `claude-opus-5` entirely and offered
 `claude-opus-4-8` as the Claude option at 52%. Opus 5 now leads the board at
 74%, and its `high` setting reaches 73% for half the cost of its `max`.
 
-## Token price and latency — 2026-08-07
+### Token price and latency — 2026-08-07
 
 DeepSWE reports cost per task. Two other sources report the inputs that produce
 it, and they answer questions the task cost hides.
@@ -333,7 +439,7 @@ That source's task cost uses a different task mix from DeepSWE's and is not
 comparable to the table above; only the ordering and the response times carry
 across.
 
-## Reading these tables honestly
+### Reading these tables honestly
 
 **Step count alone does not measure wall clock.** `gpt-5.6-luna / max` takes 102
 steps against `gpt-5.6-sol / high`'s 37, which invites the conclusion that it is
@@ -379,7 +485,7 @@ reporting `category_specific: false` until a category-specific evaluation exists
 **A result is a snapshot, not a guarantee.** Display the source date with the
 numbers, and never let ranking data change a configured profile on its own.
 
-## Local measurements
+### Local measurements
 
 Benchmark numbers do not predict this repository's Runs: its tasks are larger
 than benchmark tasks, its Verification commands gate every commit, and its wall
