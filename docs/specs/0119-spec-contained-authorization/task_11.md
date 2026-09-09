@@ -1,7 +1,7 @@
 ---
 task: task_11
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -92,3 +92,68 @@ this Spec's declared behavior.
 - `_techspec.md` → Implementation Design: Audit and compatibility; Risks & Considerations.
 - `_authorization.md` → the 2026-09-09 amendment bounding the two suiteguardcontract paths.
 - ADR-0149.
+
+## Result
+
+The typed authorization reader now lives in `internal/authorization`, below
+both packages that consume it. `internal/spec` preserves its existing reader
+API through type aliases and forwarding functions, while
+`internal/suiteguardcontract` imports the shared implementation directly. The
+authorization frontmatter decoder and grant classifier exist only in the new
+reader package.
+
+Legacy regeneration discovery now consumes the shared reader's parsed
+regeneration projection without requiring the typed status, grant date,
+action, consuming Spec, or bounded paths that Spec-contained grants require.
+Unreadable records still return an error. Active and archived Spec records
+still contribute only when the shared reader classifies them as granted.
+
+Acceptance evidence:
+
+1. Before the change, `rtk go test ./internal/spec -run '^$'` failed with the
+   import chain `internal/spec` test → `internal/suiteguard` →
+   `internal/suiteguardcontract` → `internal/spec`. After the move,
+   `rtk go test -count=1 ./internal/spec` passed. A fresh
+   `rtk rg -n "roundfix/internal/spec" internal/suiteguardcontract --glob '*.go'`
+   returned no matches.
+2. The new
+   `TestSanctionedRegenerationResolvesLegacyRecordsWithoutFrontmatter` writes a
+   legacy record containing only its heading and YAML declaration. Before the
+   production change, the focused test failed because discovery returned no
+   declarations. After the change, `rtk go test -count=1
+   ./internal/suiteguardcontract` passed and preserved both outputs in sorted
+   order.
+3. That suiteguardcontract run also exercised proposed, null-dated, malformed,
+   and unrelated active Spec records as non-operative, plus the approved
+   archived multi-Spec grant as operative. `rtk go test -count=1
+   ./internal/spec -run 'TestAuthorizationReader'` separately passed all typed
+   reader grant, refusal, operation, path, and historical-record cases.
+4. `TestSanctionedRegenerationSetOnlyGrows` now creates its own minimal legacy
+   record instead of depending on repository contents. As a mutation check, I
+   temporarily removed the legacy append and ran `rtk go test -count=1
+   ./internal/suiteguardcontract -run 'TestSanctionedRegenerationSetOnlyGrows'`;
+   it failed at `regeneration_test.go:302` for the missing recorded legacy
+   declaration. I restored the implementation, and the full focused package
+   run passed.
+5. A fresh search for `parseAuthorizationRecord`,
+   `splitAuthorizationFrontmatter`, and `authorizationFrontmatterMapping`
+   found all three only in `internal/authorization/authorization.go`. The
+   `internal/spec` facade contains no YAML decoder, and the suiteguardcontract
+   search above confirms it no longer imports `internal/spec`.
+
+Focused checks:
+
+- `rtk go test -count=1 ./internal/suiteguardcontract` — passed.
+- `rtk go test -count=1 ./internal/spec` — passed.
+- `rtk go test -count=1 ./internal/suiteguard -run
+  'TestSanctionedRegeneration(IsDeclaredInProcess|IsNotAViolationWrongCommandIsRefused|IsNotAViolationUndeclaredCommandIsRefused)'`
+  — passed all three in-process declaration cases.
+- `rtk go test ./internal/speccheck -run '^$'` — package and shared-reader
+  imports compiled without running tests.
+- `rtk go test ./internal/authorization` — package compiled; it has no direct
+  test files because the preserved `internal/spec` compatibility suite owns
+  the reader contract.
+- `rtk git diff --check` — passed.
+
+The Task's declared `## Verification` commands were not run; Daemon
+Verification remains pending.

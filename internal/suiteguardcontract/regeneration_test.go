@@ -157,6 +157,31 @@ func TestCleanupRegenerationDiscovery(t *testing.T) {
 	})
 }
 
+func TestSanctionedRegenerationResolvesLegacyRecordsWithoutFrontmatter(t *testing.T) {
+	repository := t.TempDir()
+	writeCleanupRegenerationFile(
+		t,
+		repository,
+		"docs/workflow/authorizations/legacy.md",
+		cleanupLegacyRegenerationOnly(
+			"legacy-generator",
+			[]string{"generated/legacy-z.txt", "generated/legacy-a.txt"},
+		),
+	)
+
+	want := []SanctionedRegeneration{{
+		Command: "legacy-generator",
+		Outputs: []string{"generated/legacy-a.txt", "generated/legacy-z.txt"},
+	}}
+	got, err := ReadSanctionedRegenerations(repository)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("legacy declarations = %#v, want %#v", got, want)
+	}
+}
+
 func TestSanctionedRegenerationReadsArchivedSpecGrants(t *testing.T) {
 	repository := t.TempDir()
 	writeCleanupRegenerationFile(t, repository, "Makefile", "DERIVED_DIGEST_PATHS := internal/baseline/derived\n")
@@ -251,8 +276,8 @@ func TestSanctionedRegenerationSetOnlyGrows(t *testing.T) {
 	writeCleanupRegenerationFile(
 		t,
 		repository,
-		"docs/workflow/authorizations/2026-08-12-present-legacy.md",
-		cleanupLegacyGrant("0099-present-legacy", "present-legacy-command", "generated/present-legacy.txt"),
+		"docs/workflow/authorizations/present-legacy.md",
+		cleanupLegacyRegenerationOnly("present-legacy-command", []string{"generated/present-legacy.txt"}),
 	)
 	writeCleanupRegenerationFile(
 		t,
@@ -352,6 +377,22 @@ func cleanupLegacyGrant(consuming, command, output string) string {
 		"command: " + command + "\n" +
 		"outputs:\n" +
 		"  - " + output + "\n" +
+		"```\n"
+}
+
+func cleanupLegacyRegenerationOnly(command string, outputs []string) string {
+	var declaredOutputs strings.Builder
+	for _, output := range outputs {
+		declaredOutputs.WriteString("  - ")
+		declaredOutputs.WriteString(output)
+		declaredOutputs.WriteByte('\n')
+	}
+	return "# Legacy authorization\n\n" +
+		"## Sanctioned regeneration\n\n" +
+		"```yaml\n" +
+		"command: " + command + "\n" +
+		"outputs:\n" +
+		declaredOutputs.String() +
 		"```\n"
 }
 

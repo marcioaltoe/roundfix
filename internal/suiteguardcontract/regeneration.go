@@ -17,7 +17,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"roundfix/internal/spec"
+	"roundfix/internal/authorization"
 )
 
 const sanctionedRegenerationHeading = "Sanctioned regeneration"
@@ -47,11 +47,11 @@ func ReadSanctionedRegenerations(root string) ([]SanctionedRegeneration, error) 
 	var declarations []SanctionedRegeneration
 	for _, source := range []struct {
 		root string
-		role spec.AuthorizationRole
+		role authorization.AuthorizationRole
 	}{
-		{root: legacyAuthorizationRoot, role: spec.AuthorizationRoleLegacy},
-		{root: specAuthorizationRoot, role: spec.AuthorizationRoleSpec},
-		{root: archivedSpecRoot, role: spec.AuthorizationRoleSpec},
+		{root: legacyAuthorizationRoot, role: authorization.AuthorizationRoleLegacy},
+		{root: specAuthorizationRoot, role: authorization.AuthorizationRoleSpec},
+		{root: archivedSpecRoot, role: authorization.AuthorizationRoleSpec},
 	} {
 		discovered, err := readAuthorizationRegenerations(root, source.root, source.role)
 		if err != nil {
@@ -88,7 +88,7 @@ func ReadSanctionedRegenerations(root string) ([]SanctionedRegeneration, error) 
 func readAuthorizationRegenerations(
 	repoRoot string,
 	authorizationRoot string,
-	role spec.AuthorizationRole,
+	role authorization.AuthorizationRole,
 ) ([]SanctionedRegeneration, error) {
 	var declarations []SanctionedRegeneration
 	err := walkAuthorizationMarkdown(
@@ -96,7 +96,7 @@ func readAuthorizationRegenerations(
 		func(relative string) error {
 			recordPath := path.Join(authorizationRoot, filepath.ToSlash(relative))
 			askingSpec := ""
-			if role == spec.AuthorizationRoleSpec {
+			if role == authorization.AuthorizationRoleSpec {
 				parts := strings.Split(filepath.ToSlash(relative), "/")
 				if len(parts) < 2 {
 					return nil
@@ -104,30 +104,31 @@ func readAuthorizationRegenerations(
 				askingSpec = parts[0]
 			}
 
-			resolution := spec.ReadAuthorization(context.Background(), spec.AuthorizationReadRequest{
+			resolution := authorization.ReadAuthorization(context.Background(), authorization.AuthorizationReadRequest{
 				RepoRoot:   repoRoot,
 				RecordPath: recordPath,
 				Role:       role,
 				AskingSpec: askingSpec,
 			})
-			switch resolution.Outcome {
-			case spec.AuthorizationGranted:
-				for _, regeneration := range resolution.Record.Regenerations {
-					outputs := append([]string(nil), regeneration.Outputs...)
-					sort.Strings(outputs)
-					declarations = append(declarations, SanctionedRegeneration{
-						Command: regeneration.Command,
-						Outputs: outputs,
-					})
-				}
-			case spec.AuthorizationRefused:
-				return nil
-			case spec.AuthorizationUnresolved:
+			if resolution.Outcome == authorization.AuthorizationUnresolved {
 				return fmt.Errorf(
 					"resolve authorization record %q: %s",
 					recordPath,
 					resolution.Reason.Detail,
 				)
+			}
+			if role == authorization.AuthorizationRoleLegacy {
+				// Legacy declarations predate typed grant fields. Their parsed
+				// regeneration does not depend on the record granting another action.
+				declarations = appendAuthorizationRegenerations(declarations, resolution.Record.Regenerations)
+				return nil
+			}
+
+			switch resolution.Outcome {
+			case authorization.AuthorizationGranted:
+				declarations = appendAuthorizationRegenerations(declarations, resolution.Record.Regenerations)
+			case authorization.AuthorizationRefused:
+				return nil
 			default:
 				return fmt.Errorf(
 					"resolve authorization record %q: unknown outcome %q",
@@ -142,6 +143,21 @@ func readAuthorizationRegenerations(
 		return nil, err
 	}
 	return declarations, nil
+}
+
+func appendAuthorizationRegenerations(
+	declarations []SanctionedRegeneration,
+	regenerations []authorization.AuthorizationRegeneration,
+) []SanctionedRegeneration {
+	for _, regeneration := range regenerations {
+		outputs := append([]string(nil), regeneration.Outputs...)
+		sort.Strings(outputs)
+		declarations = append(declarations, SanctionedRegeneration{
+			Command: regeneration.Command,
+			Outputs: outputs,
+		})
+	}
+	return declarations
 }
 
 func walkAuthorizationMarkdown(
