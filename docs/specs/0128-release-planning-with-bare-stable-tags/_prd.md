@@ -52,7 +52,7 @@ Spec alone is insufficient to validate the original premise.
 The maintainer selected the remaining source intent for the implementation queue.
 The technical candidate is reviewable; proposed paths, experimental limits and
 any change to an accepted ADR must receive an operative decision before execution.
-The existing through-merge authority requires independent review and required
+The existing through-merge authority requires the configured review policy outcome and required
 checks and grants no release or waiver.
 
 ## Research basis
@@ -62,7 +62,7 @@ remaining behavior. Secondbrain's agent-workflow and harness syntheses explain
 why durable state, external acceptance and explicit stop conditions matter.
 Exa-read official Codex noninteractive and Claude headless documentation supports
 independent execution interfaces, not the correctness of this Roundfix design.
-The queue plan records source URLs, their influence and remaining limitations.
+The [historical research record](https://github.com/marcioaltoe/roundfix/blob/6b8ea48725cbca13974eee0b400b3482202874f6/docs/workflow/2026-09-08-pending-work-plan.md) preserves source URLs, their influence and remaining limitations at its cited Git revision.
 
 The [source ownership index](references/_index.md) records the pre-adoption
 path, type, primary owner and current owned copy. Secondary consumers link

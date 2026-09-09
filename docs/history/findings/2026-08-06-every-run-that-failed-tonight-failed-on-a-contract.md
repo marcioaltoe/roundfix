@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-08-06
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-spec-authoring-and-contract-enforcement.md
+updated_at: 2026-09-08
+absorbed_by: 0129-spec-authoring-and-gate-recovery
 ---
 
 # Every Run that failed tonight failed on a contract
@@ -148,3 +148,13 @@ gate passed it, most on the first or second cycle, and every finding the gates
 produced was real — including two that were errors in artifacts this session
 authored, caught by a gate reading the archived source rather than the carrier
 that quoted it.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-spec-authoring-and-contract-enforcement.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0129-spec-authoring-and-gate-recovery](../../specs/0129-spec-authoring-and-gate-recovery/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

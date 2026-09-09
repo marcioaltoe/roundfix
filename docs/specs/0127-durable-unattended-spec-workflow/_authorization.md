@@ -30,15 +30,15 @@ its existence alone does not extend the current checker or execution authority.
 ## Authority already expressed
 
 In the 2026-09-08 planning conversation, the maintainer confirmed automatic
-implementation, independent review, PR creation, and merge after the consuming
-Specs and their limits are approved. Independent review and required checks must
-pass for the current commit. This policy authorizes neither an unapproved queue
+implementation, the configured review policy, PR creation, and merge after the consuming
+Specs and their limits are approved. The configured review policy must be satisfied and required checks must
+pass for the current commit; explicit none records intentional review omission. This policy authorizes neither an unapproved queue
 nor an unanswered budget; it does not grant a gate waiver. Commit and push of
 planning changes are separately authorized in the conversation.
 
 ## Proposed protected scope
 
-- Align the owned orchestration skills and canonical autonomous module with Daemon-owned implementation and Verification, terminal QA, approved independent review, and durable delivery.
+- Align the owned orchestration skills and canonical autonomous module with Daemon-owned implementation and Verification, terminal QA, the configured review/omission policy, and durable delivery.
 - Regenerate only their listed embedded copies and rendered guidance through their existing owners.
 - Intentionally revise the named governed contract tests to prove the approved workflow; preserve checks that reject missing authority, stale evidence, and unsafe replay.
 - Keep `implement-spec` as the entry point. No kickoff skill, extra window script, package-manager change, build-tool change, or new dependency is included in this proposal.
@@ -55,7 +55,7 @@ or undocumented generated path is authorized by this proposal.
 ## Pending decisions and execution limits
 
 - Durable supervision, persistence, action reconciliation, and migration behavior: pending.
-- Reviewer policy: confirmed — default Codex with an explicit project-profile override. The implemented independent-review prerequisite in Spec 0126 remains pending.
+- Review policy: confirmed — codex, claude, coderabbit or explicit none; default Codex with explicit project precedence. The implemented policy/adapter prerequisite in Spec 0126 remains pending.
 - Queue-wide time, API spend, subscription quota, parallel delivery, and corrective-cycle limits: pending. No missing value means unlimited.
 - Cutoff and cancellation handling for delivery already in progress: pending.
 - Archive-first final review and authority for a new corrective Spec after a late finding: pending. Existing archive immutability and exact-head evidence remain binding; this proposal grants neither an exception nor automatic approval inheritance.
@@ -96,18 +96,23 @@ implementation readiness; Spec 0119 must close that recognition gap.
 
 ## Confirmed reviewer decision — 2026-09-08
 
-The maintainer selected Codex as the default independent reviewer and requires
-an explicit reviewer in `.roundfixrc.yml` to take precedence. Reuse the existing
-`profiles.review` resolution instead of introducing another reviewer key or
-forcing invocation flags that override the project. Current Project Config
-selects Codex / gpt-5.6-luna / max with the declared Codex / gpt-5.6-sol / high
-fallback; preserve that actual tuple. Built-in, User Config and Project Config
-provenance remain visible. Invalid configuration or unavailable required review
-capability is a named refusal, never a silent substitution with the default.
+The maintainer confirmed a Pre-PR Review Policy of codex, claude, coderabbit
+or explicit none. ADR-0153 replaces mandatory review and total CodeRabbit
+removal; ADR-0151 retains the Codex default and explicit project precedence.
+For agent providers, preserve applicable model/effort and profile provenance.
+None creates no reviewer/provider call and records configured omission while
+QA and required checks remain mandatory. Enabled-provider failure is not none.
 
-`review_source.name: coderabbit` is the legacy external PR-feedback provider,
-not an Agent Selection Profile. The new native review must consume the review
-profile; changing this planning record does not yet implement that adapter or
-remove CodeRabbit. Review sessions are independent of implementation sessions,
-and a changed candidate invalidates their evidence. The granted default-policy
-decision does not approve otherwise proposed governed mutations or paid calls.
+This policy correction does not change the current project's selected mode,
+install a service, grant paid calls or implement any new configuration field.
+The exact provider/profile migration and enabled adapters remain implementation
+work. Historical PR-feedback records keep their original meaning.
+
+
+## QA archive override is a separate action
+
+The maintainer permits the capability described in ADR-0154 and Spec 0122.
+The queue may consume an already applicable explicit per-Spec archive override
+without reconfirmation, preserving approval and QA evidence. This proposed
+queue grant supplies no override for a particular Spec and grants no QA success,
+Run Clean, publication or merge exception through archival alone.

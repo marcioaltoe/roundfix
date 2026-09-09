@@ -2,8 +2,8 @@
 date: 2026-08-05
 surface: internal/cli, internal/daemon, internal/spec, .agents/skills
 status: done
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-review-and-delivery-convergence.md
+updated_at: 2026-09-08
+absorbed_by: 0127-durable-unattended-spec-workflow
 ---
 
 # What Roundfix should do differently, measured over one queue night
@@ -155,3 +155,13 @@ workflow; content is not.
 - Corroborating field findings from fluxus and vortex sessions, versioned in
   `docs/findings/` on 2026-08-04.
 - `docs/handoffs/2026-08-05-the-night-the-queue-moved.md`.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-review-and-delivery-convergence.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0127-durable-unattended-spec-workflow](../../specs/0127-durable-unattended-spec-workflow/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

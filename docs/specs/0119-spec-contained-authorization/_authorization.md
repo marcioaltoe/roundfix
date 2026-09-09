@@ -37,8 +37,10 @@ Approval of the exact protected mutations above is still pending.
 
 On 2026-09-08 the maintainer requested Specs containing their authorizations
 and the same requirement in canonical guidance. The confirmed unattended
-delivery scope is implementation, independent review, PR, and automatic merge
-only after Specs and their limits are approved and review/checks pass. It
+delivery scope is implementation, the configured review policy, PR, and automatic
+merge only after Specs and their limits are approved and required checks pass.
+The later confirmed policy permits codex, claude, coderabbit or explicit none;
+none records intentional omission and enabled-review failures still block. It
 does not approve this proposed implementation schema or waive existing gates.
 
 ## Proposed bounded mutation

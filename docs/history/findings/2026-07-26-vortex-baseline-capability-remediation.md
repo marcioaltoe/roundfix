@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-07-26
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-baseline-and-derived-tooling.md
+updated_at: 2026-09-08
+absorbed_by: 0057-baseline-capability-evidence-and-retention
 ---
 
 # Context-Driven Baseline — capability divergences do not carry enough evidence to be remediated (2026-07-26)
@@ -302,3 +302,13 @@ spurious warnings.
 All seven findings, including the symlink-discovery corroboration and the
 resolved `rg` classification, are owned by
 [Spec 0057 — Baseline capability evidence and retention](../specs/0057-baseline-capability-evidence-and-retention/_prd.md).
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-baseline-and-derived-tooling.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0057-baseline-capability-evidence-and-retention](../specs/0057-baseline-capability-evidence-and-retention/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

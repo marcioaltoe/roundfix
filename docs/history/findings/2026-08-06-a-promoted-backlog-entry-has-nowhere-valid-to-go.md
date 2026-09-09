@@ -1,8 +1,8 @@
 ---
 status: done
-absorbed_by: 2026-08-06-rollup-spec-authoring-and-contract-enforcement.md
+absorbed_by: 0080-cheap-detectors-run-before-the-gate
 created_at: 2026-08-06
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 ---
 
 # A promoted backlog entry has nowhere valid to go
@@ -105,3 +105,13 @@ Spec but never left `docs/backlog/`.
 ---
 
 Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-spec-authoring-and-contract-enforcement.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0080-cheap-detectors-run-before-the-gate](../specs/0080-cheap-detectors-run-before-the-gate/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

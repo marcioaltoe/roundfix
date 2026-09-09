@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-07-28
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-agent-selection-and-execution-environments.md
+updated_at: 2026-09-08
+absorbed_by: 0056-profiles-configure-merge-semantics
 ---
 
 # profiles configure — a one-category fragment deletes every other configured profile (2026-07-28)
@@ -104,3 +104,13 @@ non-zero exit or an explicit refusal channel.
 
 All four suggested resolutions are owned by
 [Spec 0056 — Profiles configure merge semantics](../specs/0056-profiles-configure-merge-semantics/_prd.md).
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-agent-selection-and-execution-environments.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0056-profiles-configure-merge-semantics](../specs/0056-profiles-configure-merge-semantics/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

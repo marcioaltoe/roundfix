@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-07-27
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-agent-selection-and-execution-environments.md
+updated_at: 2026-09-08
+absorbed_by: 0052-claude-adapter-standardization
 ---
 
 # Agent Selection — standardize on the official Claude adapter and stop reading `[...]` as reasoning effort (2026-07-27)
@@ -238,3 +238,13 @@ The maintainer authorized the Skill-pair edit and its five derived digest pins
 in that Spec's Tooling authority entry, pinned the Claude adapter at `0.63.0`
 and Codex at `1.1.5`, and changed the built-in `frontend` Preferred Selection
 to `claude / opus / xhigh`.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-agent-selection-and-execution-environments.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0052-claude-adapter-standardization](../specs/0052-claude-adapter-standardization/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

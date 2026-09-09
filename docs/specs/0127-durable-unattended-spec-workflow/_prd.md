@@ -31,9 +31,11 @@ remain pending; this document does not start or authorize implementation.
   ADR-0117 applies: the workflow checks authoring defects when producing their artifacts and retains commit-dependent and user-surface checks at the gate that can establish them.
   ADR-0127 applies: process residue is a readiness observation, not a synthetic Run or a reason for the inventory to settle work after restart.
   ADR-0139 applies: durable recovery must retain one Active Run per work target and the same-checkout mutation guard rather than starting a competing owner.
-  ADR-0142 applies to the existing head-bound evidence contract and historical outcomes; independent pre-PR review must be settled by Spec 0126 before the new delivery path relies on it.
+  ADR-0142 applies to the existing head-bound evidence contract and historical outcomes; the configurable pre-PR policy must be settled by Spec 0126 before the new delivery path relies on it.
   Preserve the accepted decision to keep `implement-spec` and repair its conflicting instructions rather than introducing a competing implementation loop.
-  ADR-0151 applies: the queue consumes the configured review profile without overriding it with a forced Codex invocation.
+  ADR-0151 preserves the Codex default and explicit project selection for agent review.
+  ADR-0153 applies: the queue consumes codex, claude, coderabbit or explicit none, preserving QA/checks and recording configured omission without treating enabled-review failures as none.
+  ADR-0154 applies to archive disposition: an explicitly user-authorized QA Archive Override preserves actual QA/Task evidence and does not satisfy independent delivery gates.
 - Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `.agents/skills/implement-spec/SKILL.md`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/roundfix/agents/openai.yaml`, `internal/baseline/assets/modules/autonomous-work.json`, `skills/implement-spec/SKILL.md`, `skills/roundfix/SKILL.md`, `skills/roundfix/agents/openai.yaml`, `docs/agents/autonomous-work.md`, `docs/agents/setup-context.json`, `internal/cli/cli_test.go`, `skills/baseline_skill_contract_test.go`, `internal/docscontract/publicdocs_test.go`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
@@ -56,7 +58,7 @@ remain pending; this document does not start or authorize implementation.
 
 1. Queue preparation inventories active Specs, backlog intent, Findings, and the destination Inbox under their existing lifecycle rules. It records dependencies and pending decisions and identifies the Specs actually approved for execution. An inventory alone is not implementation authority or source adoption.
 2. Durable orchestration owns progress across Spec Runs and delivery actions. The workflow survives loss of the initiating chat and restarts from observed results, including an action that succeeded externally before its local acknowledgement was recorded. It never opens duplicate PRs or merges twice because an acknowledgement was lost.
-3. Proposed order is the Daemon-owned Task Graph and terminal QA, archive and commit, independent review of the resulting candidate, publication, current-head checks, and merge. Spec 0126 supplies the independent-review contract. Archive invalidates a pre-archive review, and no failed, skipped, stale, or absent evidence is interpreted as approval.
+3. Proposed order is the Daemon-owned Task Graph and terminal QA, archive and commit, the configured review or explicit omission for the resulting candidate, publication, current-head checks, and merge. Spec 0126 supplies the configured review/omission contract. Archive invalidates a pre-archive review, and no failed, provider-skipped, stale, or absent enabled-review evidence is interpreted as approval. Explicit none records configured omission, creates no reviewer call/readiness requirement and proceeds through the other gates.
 4. Approval and limits accompany each consuming Spec. A granted routine action need not be reconfirmed; a missing, expired, changed, or insufficient grant stops its dependent action. Only one user question may be pending, and the workflow never treats silence, timeout, or a recommended option as the answer.
 5. Run Window and Run Budget retain their existing separate meanings: the window bounds new Run starts, and the budget bounds an individual Run. Queue-wide time, spending, concurrency, and correction behavior must be expressly decided and enforced rather than inferred from those settings.
 6. Later Specs are revalidated when their prerequisites change the operative assumptions. A contradiction, new authority requirement, or new irreversible action becomes a durable blocker instead of an improvised implementation decision.
@@ -80,7 +82,7 @@ execution stopped instead of promising that work continues.
 
 - Adopting Fluxus kickoff as a second canonical skill or replacing `implement-spec`.
 - Letting the Supervisor implement features or tests directly.
-- Bypassing QA, review, checks, tooling grants, or the confirmed purpose-based work-branch policy.
+- Bypassing QA, an enabled review requirement, required checks, tooling grants, or the confirmed purpose-based work-branch policy. Explicit none is a permitted policy, not a bypass.
 - Reopening archived Specs or inheriting review validity across an archive commit.
 - Treating a Task Worktree concurrency setting as permission for parallel whole-Spec deliveries.
 - Overriding the confirmed reviewer policy or charging API usage without its recorded limit.
@@ -94,18 +96,19 @@ execution stopped instead of promising that work continues.
 | Delivery survives the chat/session boundary | A Spec continues under an identified durable owner after the initiating session exits. |
 | The queue survives its own owner's restart | Restart between completed Runs resumes the next eligible delivery step without an additional user prompt for already granted actions. |
 | External action replay is safe | Interruptions around push, PR creation, and merge reconcile the observed result without duplicates or lost ownership. |
-| Conditional authority remains bounded | Missing approval, exhausted approved limits, stale review, or failed checks prevents the dependent action and remains visible after restart. |
+| Conditional authority remains bounded | Missing approval, exhausted limits, stale enabled-review evidence or failed checks prevents the dependent action; none is accepted only as an explicit configured omission. |
 | A late finding cannot mutate completed history | Post-archive review blocks publication, preserves the original Spec, and waits for any missing corrective-Spec authority. |
+| Explicit none survives restart | Resume preserves the configured omission without reviewer calls; changed policy is revalidated and failed required checks still block merge. |
 | Canonical ownership is consistent | Owned instructions consistently assign code/tests and Verification to the runtime and Daemon, with QA retained in the Task Graph. |
 | External acceptance evidence | A real repository outside this Spec's fixtures exercises interruption and resumption, with its origin and actual external receipts recorded. Missing evidence is reported under the repository's declared policy. |
 
 ## Decisions
 
-- The maintainer confirmed automatic delivery through merge after the Specs and limits are approved, requiring independent review and required checks on the current commit.
+- The maintainer confirmed automatic delivery through merge after the Specs and limits are approved, requiring the configured review policy outcome and required checks on the current commit; explicit none permits intentional review omission.
 - The existing decision keeps `implement-spec` as the Roundfix-owned loop; this proposal repairs the implementation of that decision and evaluates useful kickoff preparation.
 - A Detached Run surviving its caller is insufficient proof that a multi-Spec delivery queue survives its owner.
 - Proposed archive-first final review preserves the existing archive boundary but can require a new corrective Spec, gate, and grant after a late finding. That trade-off is pending, not an accepted change to QA or archive policy.
-- Spec 0119 supplies the proposed authorization convention; Specs 0122, 0125, and 0126 supply settlement, branch identity, and independent-review prerequisites. Runtime readiness and capacity evidence are provided by the corresponding portfolio work.
+- Spec 0119 supplies the proposed authorization convention; Specs 0122, 0125, and 0126 supply settlement, branch identity, and review-policy prerequisites. Runtime readiness and capacity evidence are provided by the corresponding portfolio work.
 - Source adoption is complete in the owned reference index; executable commitment remains pending the relevant decisions and grants.
 
 ## Open Questions
@@ -137,21 +140,17 @@ GitHub mutation was executed for this PRD.
 
 ## Confirmed reviewer decision — 2026-09-08
 
-The maintainer selected Codex as the default independent reviewer and requires
-an explicit reviewer in `.roundfixrc.yml` to take precedence. Reuse the existing
-`profiles.review` resolution instead of introducing another reviewer key or
-forcing invocation flags that override the project. Current Project Config
-selects Codex / gpt-5.6-luna / max with the declared Codex / gpt-5.6-sol / high
-fallback; preserve that actual tuple. Built-in, User Config and Project Config
-provenance remain visible. Invalid configuration or unavailable required review
-capability is a named refusal, never a silent substitution with the default.
+The maintainer confirmed a Pre-PR Review Policy of codex, claude, coderabbit
+or explicit none. ADR-0153 replaces mandatory review and total CodeRabbit
+removal; ADR-0151 retains the Codex default and explicit project precedence.
+For agent providers, preserve applicable model/effort and profile provenance.
+None creates no reviewer/provider call and records configured omission while
+QA and required checks remain mandatory. Enabled-provider failure is not none.
 
-`review_source.name: coderabbit` is the legacy external PR-feedback provider,
-not an Agent Selection Profile. The new native review must consume the review
-profile; changing this planning record does not yet implement that adapter or
-remove CodeRabbit. Review sessions are independent of implementation sessions,
-and a changed candidate invalidates their evidence. The granted default-policy
-decision does not approve otherwise proposed governed mutations or paid calls.
+This policy correction does not change the current project's selected mode,
+install a service, grant paid calls or implement any new configuration field.
+The exact provider/profile migration and enabled adapters remain implementation
+work. Historical PR-feedback records keep their original meaning.
 
 The [source ownership index](references/_index.md) records the pre-adoption
 path, type, primary owner and current owned copy. Secondary consumers link
@@ -170,3 +169,15 @@ A new or widened governed grant must land independently in target ancestry
 before its consuming squash delivery. A separate commit inside the same PR
 would be flattened with the change and does not preserve prior approval.
 Validate that boundary before dispatch and against the observed merged history.
+
+
+## Authorized archive disposition
+
+Consume the archive policy from Spec 0122 and ADR-0154. An applicable explicit
+user authorization can archive the covered Spec with unmet QA, recording the
+override and preserving original evidence. This does not reopen or complete
+Tasks, declare QA passed, imply review approval or authorize publication/merge.
+A durable workflow records the overridden archive and evaluates subsequent
+actions against their own approval and gates; it does not retry the waived
+archive prerequisite or ask again for the same applicable archive approval.
+The absence of authority for a later action remains a separate visible blocker.

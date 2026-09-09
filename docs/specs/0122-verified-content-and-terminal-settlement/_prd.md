@@ -10,8 +10,9 @@ surfaces: [backend, cli, docs]
 A Task can verify executable source, omit it from the commit, and leave a Clean Run whose destination fails the same assertion. Task checks also do not establish a general postcondition over committed output. Separately, archive accepts a properly declared-only partial QA result while settlement leaves its QA Task failed. The maintainer needs verification, committed content, and terminal disposition to agree without crediting unobserved acceptance.
 
 This Spec is **in authoring**. Its protected scope and open decisions are
-pending approval. The accompanying authorization is a proposal with no grant;
-there is no TechSpec, Task Graph, or authority to start implementation.
+pending approval. The broader implementation authorization remains proposed; a technical
+candidate exists, but there is no Task Graph or implementation authority.
+The separate narrow grant covers the confirmed canonical archive policy only.
 
 ## Project Constraints
 
@@ -31,8 +32,9 @@ there is no TechSpec, Task Graph, or authority to start implementation.
   ADR-0104 is applicable: use the pre-existing Pantheon omission and declared-partial observations as outside acceptance evidence, preserving provenance and explicit blocked status when evidence cannot be obtained.
   ADR-0117 is applicable: place artifact checks at the stage producing their defect; committed-content checks need the commit evidence that pre-work authoring cannot supply, and public behavior still belongs to QA.
   ADR-0127 is not applicable to this change: machine process-residue inventory remains a readiness fact and this Spec introduces no residue command or synthetic Run record.
+  ADR-0154 applies: an explicit user-authorized QA Archive Override changes archive eligibility only, preserving original QA/Task evidence and separate delivery gates.
   ADR-0138 is applicable: preserve one commit per verified Task and opt-in push only at Clean; the proposed postcondition supplies additional completion evidence without granting new delivery actions.
-- Tooling authority: applicable — exact governed mutations remain proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `internal/spec/archive.go`, `internal/spec/archive_test.go`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/qa-gate/SKILL.md`, `.agents/skills/archive-spec/SKILL.md`, `skills/roundfix/SKILL.md`, `skills/qa-gate/SKILL.md`, `skills/archive-spec/SKILL.md`, `internal/baseline/assets/modules/spec-workflow.json`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/write-tasks/references/task-template.md`, `skills/write-tasks/SKILL.md`, `skills/write-tasks/references/task-template.md`, `.agents/skills/implement-task/SKILL.md`, `skills/implement-task/SKILL.md`, `internal/speccheck/coherence.go`, `docs/agents/spec-routing.md`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
+- Tooling authority: applicable — express maintainer authorization covers the QA Archive Override policy through [the narrow grant](references/2026-09-08-authorized-qa-archive-override.md); bounded files: `internal/baseline/assets/modules/spec-workflow.json`, `internal/baseline/assets/modules/context-workflow.json`, `internal/baseline/assets/modules/autonomous-work.json`, `docs/agents/docs-layout.md`, `docs/agents/skill-dispatch.md`, `docs/agents/autonomous-work.md`, `docs/agents/setup-context.json`, with sanctioned digest regeneration. All Go, tests, skills and remaining implementation mutations stay proposed in [_authorization.md](_authorization.md); status proposed and a null grant authorize no mutation. Bounded proposed files: `internal/spec/archive.go`, `internal/spec/archive_test.go`, `internal/cli/archive.go`, `internal/cli/archive_test.go`, `.agents/skills/roundfix/SKILL.md`, `.agents/skills/qa-gate/SKILL.md`, `.agents/skills/archive-spec/SKILL.md`, `skills/roundfix/SKILL.md`, `skills/qa-gate/SKILL.md`, `skills/archive-spec/SKILL.md`, `internal/baseline/assets/modules/spec-workflow.json`, `docs/agents/docs-layout.md`, `docs/agents/setup-context.json`, `.agents/skills/write-tasks/SKILL.md`, `.agents/skills/write-tasks/references/task-template.md`, `skills/write-tasks/SKILL.md`, `skills/write-tasks/references/task-template.md`, `.agents/skills/implement-task/SKILL.md`, `skills/implement-task/SKILL.md`, `internal/speccheck/coherence.go`, `docs/agents/spec-routing.md`. Sanctioned regeneration follows source approval. Source: `docs/agents/agent-instructions.md`, `docs/agents/spec-routing.md`, `docs/agents/specific-repository.md`.
 
 ## Goals
 
@@ -40,17 +42,21 @@ there is no TechSpec, Task Graph, or authority to start implementation.
 - Intentional executable repository source can be delivered without treating its permission bit as build-artifact proof.
 - The committed and integrated candidate satisfies the approved repository postcondition.
 - The same declared-only QA evidence yields compatible settlement and archive decisions.
+- An explicit user-authorized QA Archive Override permits archival without falsifying QA or Task completion.
 
 ## Core Features
 
 1. Distinguish intentional repository source from disposable output using evidence beyond executable mode. At minimum, preserve changes to already tracked executable source.
 2. When required output cannot be staged or committed, report its paths and cause in the Task/Run outcome and preserve the recovery surface; a console warning alone cannot establish completion.
 3. Proposed: run the selected repository Verification against the integrated candidate before declaring Clean, with Daemon ownership and an explicit failure/recovery result. The design must decide its exact commit boundary and avoid redundant full gates per Task.
-4. Use one declared-acceptance eligibility policy for the newest QA Report across settlement, the derived QA command, and archive. A qualifying partial report retains its partial verdict and records unproven actions; failed, missing, undeclared, or unobserved acceptance stays blocking.
+4. Use one declared-acceptance eligibility policy for the newest QA Report across settlement, the derived QA command, and archive. A qualifying partial report retains its partial verdict and records unproven actions; failed, missing, undeclared, or unobserved acceptance stays blocking for QA/settlement; an explicitly authorized archive-only override has its own disposition.
 5. Make the approved settlement semantics consistent in the QA, archive, and public command guidance.
 
 6. An explicitly authorized Task may enter to repair its named known-red repository precondition under frozen Spec/Task/source authority. Normal Tasks remain blocked by red prerequisites. The same required gate and focused repair assertion must pass before settlement; shell rephrasing, an Agent-edited policy or an unapproved failure cannot bypass entry checks.
 7. Collect failures from explicitly independent Verification groups before spending the existing single repair turn, while preserving dependency ordering and skipping checks whose setup prerequisite failed. Do not infer independence from arbitrary shell text or simply continue every command after failure. Preserve all diagnostics and the existing retry ceiling.
+
+8. Support a QA Archive Override requested by the user or already covered by an applicable explicit authorization. Record the covered Spec/revision, approval source/date, actual QA outcome or missing evidence, supplied rationale and `qa_override: true`. Non-QA Tasks and self-containment must still satisfy their archive gates. The override may bypass the terminal QA Task's archive prerequisite, preserving its actual status/report; it never creates pass, completed or Clean. Reuse an applicable prior approval without another confirmation. A generic archive request or blanket automation permission does not infer an override.
+9. Keep archive success with override distinct from delivery eligibility. Review policy, required checks and publication/merge/release authority remain independently enforced. Preserve normal declared-gate and qualifying partial cases without calling them overrides automatically.
 
 ## Non-Goals / Out of Scope
 
@@ -66,8 +72,17 @@ The later Task Graph and QA must prove each Core Feature with observed
 positive and negative cases. Source inspection and proposed checks do not
 constitute implementation or terminal QA evidence.
 
+Archive-override acceptance must include: authorized missing/failed QA succeeds
+as an overridden archive; the same input without authorization refuses; wrong
+Spec/revision or stale approval refuses; a QA-only incomplete gate can be
+archived without changing its status; an incomplete non-QA Task, invalid
+reference or occupied destination still refuses. Archived QA/report bytes and
+Task Results remain unchanged, and no Run becomes Clean or eligible for an
+otherwise forbidden push because archival succeeded.
+
 ## Open Questions
 
+- The QA archive-override policy is confirmed by the maintainer; exact CLI/schema implementation and remaining governed scope still need final authoring.
 - Approve the proposed postcondition boundary and failure disposition before the TechSpec fixes transaction order.
 - Approve the declared-only partial settlement policy with explicit unproven actions, or keep it blocked and revise archive to match.
 - Choose the evidence required for newly created executable source; already tracked source is the measured defect.
@@ -82,7 +97,7 @@ Active Rollups remain as shared archive-license roots; their dated addenda map
 every remaining family to its consuming Spec. Adoption is not execution approval.
 
 - [2026-09-08-verified-executable-source-is-dropped-before-settlement.md](references/2026-09-08-verified-executable-source-is-dropped-before-settlement.md)
-- [2026-08-06-rollup-qa-gates-and-verification-evidence.md](../../findings/2026-08-06-rollup-qa-gates-and-verification-evidence.md)
+- [2026-08-06-rollup-qa-gates-and-verification-evidence.md](../../history/findings/2026-08-06-rollup-qa-gates-and-verification-evidence.md)
 - [2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md](../0129-spec-authoring-and-gate-recovery/references/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md)
 
 ## Research basis

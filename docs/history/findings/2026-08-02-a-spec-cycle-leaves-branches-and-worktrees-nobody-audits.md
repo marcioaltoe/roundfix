@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-08-02
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-run-lifecycle-and-branch-integrity.md
+updated_at: 2026-09-08
+absorbed_by: 0068-spec-close-audit
 ---
 
 # A Spec cycle leaves branches and worktrees nobody audits (2026-08-02)
@@ -100,3 +100,13 @@ already take. Its value is naming residue, not deleting aggressively.
 ## Routing — 2026-08-02
 
 Routed to [Spec 0068](../specs/0068-spec-close-audit/_prd.md) on 2026-08-02.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-run-lifecycle-and-branch-integrity.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0068-spec-close-audit](../specs/0068-spec-close-audit/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

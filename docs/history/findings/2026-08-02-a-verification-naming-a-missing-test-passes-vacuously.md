@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-08-02
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
+updated_at: 2026-09-08
+absorbed_by: 0095-a-verification-that-ran-before-anyone-believed-it
 ---
 
 # A Verification naming a missing test passes vacuously (2026-08-02)
@@ -93,3 +93,13 @@ claim the Task status makes.
 - The Task Result sections were honest. Three of the four say plainly that the
   behavior was not implemented. The Agents did not claim false work; the gate
   that consumed their claims did not read them.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-qa-gates-and-verification-evidence.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0095-a-verification-that-ran-before-anyone-believed-it](../specs/0095-a-verification-that-ran-before-anyone-believed-it/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

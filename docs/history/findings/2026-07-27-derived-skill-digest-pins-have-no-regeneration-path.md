@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-07-27
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-baseline-and-derived-tooling.md
+updated_at: 2026-09-08
+absorbed_by: 0067-derived-artifact-regeneration-boundary
 ---
 
 # Skill edits — derived digest pins have no regeneration path and block their own Task three times per day (2026-07-27)
@@ -120,3 +120,13 @@ and
 [ADR-0081](../adr/0081-sanctioned-digest-regeneration-is-fallout-of-the-authorized-edit.md).
 Correction from that Spec's exploration: a non-roundfix Skill edit cascades
 into all three catalog setups, so the chain is up to seven files, not five.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-baseline-and-derived-tooling.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0067-derived-artifact-regeneration-boundary](../specs/0067-derived-artifact-regeneration-boundary/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

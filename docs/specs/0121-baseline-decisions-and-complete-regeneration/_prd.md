@@ -67,7 +67,7 @@ have one primary owner and one copy under that owner's `references/` directory.
 Active Rollups remain as shared archive-license roots; their dated addenda map
 every remaining family to its consuming Spec. Adoption is not execution approval.
 
-- [2026-08-06-rollup-baseline-and-derived-tooling.md](../../findings/2026-08-06-rollup-baseline-and-derived-tooling.md)
+- [2026-08-06-rollup-baseline-and-derived-tooling.md](../../history/findings/2026-08-06-rollup-baseline-and-derived-tooling.md)
 - [2026-09-08-skill-regeneration-declares-its-owned-outputs.md](references/2026-09-08-skill-regeneration-declares-its-owned-outputs.md)
 - [2026-08-07-changing-the-http-contract-discards-its-exceptions.md](../../history/findings/2026-08-07-changing-the-http-contract-discards-its-exceptions.md)
 - [2026-08-07-two-http-contract-defaults-and-only-one-is-read.md](../../history/findings/2026-08-07-two-http-contract-defaults-and-only-one-is-read.md)

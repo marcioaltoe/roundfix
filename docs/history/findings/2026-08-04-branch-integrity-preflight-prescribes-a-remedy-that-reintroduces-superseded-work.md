@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-08-04
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-run-lifecycle-and-branch-integrity.md
+updated_at: 2026-09-08
+absorbed_by: 0125-repository-identity-and-run-branch-policy
 ---
 
 # 2026-08-04 — Branch Integrity Preflight prescribes a remedy that reintroduces superseded work
@@ -100,3 +100,13 @@ discarding it"* exists in the skill; the tool's own output argues against it.
   `docs/specs/_archived/0015-health-e-identidade-operacional/qa/qa-report-2026-08-04.md`.
 - Platform work relanded separately as oraculum PR #37.
 - Related: [a Spec cycle leaves branches and worktrees nobody audits](2026-08-02-a-spec-cycle-leaves-branches-and-worktrees-nobody-audits.md).
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-run-lifecycle-and-branch-integrity.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0125-repository-identity-and-run-branch-policy](../../specs/0125-repository-identity-and-run-branch-policy/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

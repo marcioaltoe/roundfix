@@ -1,8 +1,8 @@
 ---
 status: done
-absorbed_by: 2026-08-06-rollup-run-lifecycle-and-branch-integrity.md
+absorbed_by: 0081-a-journal-cheap-to-write-and-keep
 created_at: 2026-08-06
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 ---
 
 # Three gigabytes of event journal inside the retention window
@@ -70,3 +70,13 @@ A measurement worth taking before designing anything: event write latency and
 ---
 
 Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-run-lifecycle-and-branch-integrity.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0081-a-journal-cheap-to-write-and-keep](../specs/0081-a-journal-cheap-to-write-and-keep/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

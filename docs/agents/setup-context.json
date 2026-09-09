@@ -8,7 +8,7 @@
   },
   "profile": "go-cli-tui",
   "profileDigest": "sha256:74c30a138531e9d9f509cb8c9eeda13984ac4bb348cbb66a27c53f0754246569",
-  "catalogDigest": "sha256:fed1d4fad537a9dbf823195975fd71b042a11bf3409a1ff9d3dcb825674e7349",
+  "catalogDigest": "sha256:1443f1b3c51a2f857d2b39818d5ed34e235aa9f898330e81e0c20e36fa3b86ad",
   "modules": [
     "core",
     "context-workflow",
@@ -63,7 +63,7 @@
       "module": "core",
       "template": "template.guide.skill-dispatch",
       "version": "0.0.1",
-      "digest": "a1234683631b40f0b2566a876eb2019444cb2ed57fd639a4b3d384ea5b29f427"
+      "digest": "d165ae9cb13bf5a6d1b950de9ecebfde32d2255ab22429e51d2de3090ad0f113"
     },
     {
       "id": "root.core",
@@ -81,7 +81,7 @@
       "module": "context-workflow",
       "template": "template.guide.docs-layout",
       "version": "0.0.1",
-      "digest": "f05398b31281942fe42428d667f64c71ae3f30f92d60fb5fcc1be8d7dd7aaaa5"
+      "digest": "d65e69734e3d7fedc3ae616f581207772980299a4aae2af9ce19eab877208f95"
     },
     {
       "id": "root.context-workflow",
@@ -153,7 +153,7 @@
       "module": "core",
       "template": "template.guide.agent-instructions",
       "version": "0.0.1",
-      "digest": "e8dfcc92ffce6bd01d7574e1b7659e11817714ce072034fd7db4849050f7b6a1"
+      "digest": "0c5ac8a6948ccccd2be1648b77584f0bad19232c212420f18c213d0e7d096912"
     },
     {
       "id": "root.cli-surface",
@@ -189,7 +189,7 @@
       "module": "spec-workflow",
       "template": "template.guide.spec-docs-layout",
       "version": "0.0.1",
-      "digest": "34c8478dcd04a454d14f1c223ecbf5522873aa80ebc14a64afe48915755282fd"
+      "digest": "ef1fd5c586cc4dfd09e0fa5df1cda4ce26b70d6433c7f0a68006be2ae2566b85"
     },
     {
       "id": "guide.domain",
@@ -216,7 +216,7 @@
       "module": "autonomous-work",
       "template": "template.guide.autonomous-work",
       "version": "0.0.1",
-      "digest": "4d1cc9b160264fa1f1a2bf0860c8b1fead43c45c417f60bfe06955b479ede485"
+      "digest": "e03bdb0edcd3f79a280660302681e9fb2baa5c002b49e1350a1c660de97cb984"
     },
     {
       "id": "root.secondbrain",

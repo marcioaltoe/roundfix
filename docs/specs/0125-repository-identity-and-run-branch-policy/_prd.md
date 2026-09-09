@@ -65,7 +65,7 @@ Active Rollups remain as shared archive-license roots; their dated addenda map
 every remaining family to its consuming Spec. Adoption is not execution approval.
 
 - [2026-09-08-run-branches-ignore-the-selected-prefix.md](../../history/findings/2026-09-08-run-branches-ignore-the-selected-prefix.md)
-- [2026-08-06-rollup-run-lifecycle-and-branch-integrity.md](../../findings/2026-08-06-rollup-run-lifecycle-and-branch-integrity.md)
+- [2026-08-06-rollup-run-lifecycle-and-branch-integrity.md](../../history/findings/2026-08-06-rollup-run-lifecycle-and-branch-integrity.md)
 - [2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md](../0129-spec-authoring-and-gate-recovery/references/2026-08-12-a-queue-of-eight-specs-shows-where-the-loop-breaks.md)
 
 ## Research basis

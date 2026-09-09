@@ -2,7 +2,7 @@
 status: proposed
 granted: null
 created: 2026-09-08
-action: Replace operational CodeRabbit review with independent local review before publication
+action: implement configurable pre-PR review with codex, claude, coderabbit or none
 consuming:
   - 0126-agent-review-before-pull-request
 paths:
@@ -22,7 +22,7 @@ paths:
   - skills/baseline_skill_contract_test.go
 ---
 
-# Proposed authority for independent local review
+# Proposed implementation authority for configurable pre-PR review
 
 This is a reviewable proposed record, not express maintainer authorization.
 `granted: null` means no protected mutation is granted by this artifact. The
@@ -31,18 +31,20 @@ assumed to recognize a new authorization schema merely because this file exists.
 
 ## Authority already expressed
 
-In the 2026-09-08 planning conversation, the maintainer requested removal of the
-CodeRabbit dependency and review before opening a Pull Request, and confirmed
-automatic delivery through merge after the Spec and limits are approved.
-That policy requires independent review and required checks on the current
-commit. It does not approve a reviewer choice, unlimited spending, a failed-gate
-waiver, or the exact proposed files above. Commit and push of planning changes
-are separately authorized in the conversation.
+The maintainer now permits codex, claude, coderabbit or none, preserving the
+Codex default and explicit project precedence. This supersedes mandatory review
+and complete CodeRabbit removal. Otherwise authorized delivery can omit review
+with explicit none, while QA and required checks remain binding.
+
+The [narrow canonical grant](references/2026-09-08-configurable-review-policy-authorization.md)
+expressly covers the two canonical modules and generated guides/manifest only.
+The implementation paths in this proposed record remain ungranted; the policy
+choice does not enable paid calls or implement adapters/configuration parsing.
 
 ## Proposed protected scope
 
-- Retire the repository's obsolete CodeRabbit configuration in the same bounded change that makes its removal valid; preserve unrelated configuration. Do not silently modify User Config or another repository.
-- Replace the two canonical modules' operational review obligations and the Roundfix-owned skill/manifest contract. Embedded and rendered copies must come from their owners.
+- Make CodeRabbit optional through explicit provider selection and compatible configuration migration; preserve unrelated configuration and do not silently change User Config, another repository or the current selected policy.
+- Implement and align the owned skill/manifest contract for the already confirmed canonical review policy. Embedded and rendered copies must come from their owners; the narrow source-policy grant is recorded separately.
 - Intentionally revise the named affected contract tests to prove the replacement behavior. The scope does not allow suppressing a failure, weakening assertions to obtain green, or changing Verification configuration.
 - Keep every path exact. A subsequently discovered governed path requires an amended proposal and express approval before mutation.
 
@@ -57,10 +59,10 @@ regeneration outputs; do not hand-edit pins or invent a general fixture grant.
 
 ## Pending decisions and execution limits
 
-- Reviewer policy: confirmed — default Codex; an explicit project review profile takes precedence. Model and fallback selection follows the declared effective profile.
+- Review policy: confirmed — codex, claude, coderabbit or explicit none; default Codex and explicit project precedence. Agent model/effort follows the compatible effective profile.
 - Time, subscription quota, API spend, and live-probe allowance: pending; no unlimited default.
 - Corrective implementation/re-review cycles and finding dispositions: pending. A rejected false positive needs evidence; accepting a true risk or waiving a failed gate is a separate human decision.
-- Public legacy-command/configuration migration and readiness semantics: pending.
+- Public policy schema, legacy-command/configuration migration and mode-specific readiness semantics: pending.
 - Archive-first final review and new corrective-Spec handling after a late finding: proposed, pending. This grant proposal neither reopens archived records nor grants a future corrective Spec by inheritance.
 - Exact protected-file grant above and any final generated-file plan: pending.
 - Branch naming: confirmed on 2026-09-08. Work branches use purpose types and Roundfix Run/Task branches retain their documented namespace. No naming bootstrap exception is needed; Supervisor feature-code implementation remains prohibited.
@@ -95,18 +97,14 @@ implementation readiness; Spec 0119 must close that recognition gap.
 
 ## Confirmed reviewer decision — 2026-09-08
 
-The maintainer selected Codex as the default independent reviewer and requires
-an explicit reviewer in `.roundfixrc.yml` to take precedence. Reuse the existing
-`profiles.review` resolution instead of introducing another reviewer key or
-forcing invocation flags that override the project. Current Project Config
-selects Codex / gpt-5.6-luna / max with the declared Codex / gpt-5.6-sol / high
-fallback; preserve that actual tuple. Built-in, User Config and Project Config
-provenance remain visible. Invalid configuration or unavailable required review
-capability is a named refusal, never a silent substitution with the default.
+The maintainer confirmed a Pre-PR Review Policy of codex, claude, coderabbit
+or explicit none. ADR-0153 replaces mandatory review and total CodeRabbit
+removal; ADR-0151 retains the Codex default and explicit project precedence.
+For agent providers, preserve applicable model/effort and profile provenance.
+None creates no reviewer/provider call and records configured omission while
+QA and required checks remain mandatory. Enabled-provider failure is not none.
 
-`review_source.name: coderabbit` is the legacy external PR-feedback provider,
-not an Agent Selection Profile. The new native review must consume the review
-profile; changing this planning record does not yet implement that adapter or
-remove CodeRabbit. Review sessions are independent of implementation sessions,
-and a changed candidate invalidates their evidence. The granted default-policy
-decision does not approve otherwise proposed governed mutations or paid calls.
+This policy correction does not change the current project's selected mode,
+install a service, grant paid calls or implement any new configuration field.
+The exact provider/profile migration and enabled adapters remain implementation
+work. Historical PR-feedback records keep their original meaning.

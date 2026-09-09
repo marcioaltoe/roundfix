@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-07-29
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
+updated_at: 2026-09-08
+absorbed_by: 0124-verification-capacity-and-measured-economics
 ---
 
 # QA gate — discovery stops at the first hard gate, so one Spec pays for five expensive rounds (2026-07-29)
@@ -130,3 +130,13 @@ Worth naming, because the corrections should not weaken it:
 ## Routing — 2026-08-01
 
 Routed to [Spec 0063](../specs/0063-qa-cycle-economics/_prd.md) on 2026-08-01.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-qa-gates-and-verification-evidence.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0124-verification-capacity-and-measured-economics](../../specs/0124-verification-capacity-and-measured-economics/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

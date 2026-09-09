@@ -3,7 +3,7 @@ status: deferred
 created_at: 2026-09-08
 updated_at: 2026-09-08
 kind: finding
-absorbed_by: 2026-08-06-rollup-run-lifecycle-and-branch-integrity.md
+absorbed_by: 0125-repository-identity-and-run-branch-policy
 ---
 
 # Run naming — internal branches ignore the repository's selected prefix (2026-09-08)
@@ -39,3 +39,13 @@ Disposition: deferred because the changed naming policy leaves no runtime
 prefix change to implement. Archive this observation under the active Run
 lifecycle Rollup; its remaining identity and reconciliation work stays live.
 The approved naming correction is tracked separately from those residuals.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-run-lifecycle-and-branch-integrity.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0125-repository-identity-and-run-branch-policy](../../specs/0125-repository-identity-and-run-branch-policy/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

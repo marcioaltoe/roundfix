@@ -24,7 +24,7 @@ Individual skill triggers:
 - `agentic-cli-design`:
   - `trigger.cli-surface.agentic-cli-design`: Changing CLI flags, streams, exit codes, JSON, dry-run, non-interactive, or introspection behavior.
 - `archive-spec`:
-  - `trigger.context-workflow.archive-spec`: Archiving a completed and QA-passed Spec.
+  - `trigger.context-workflow.archive-spec`: Archiving a Spec under normal QA eligibility or an explicitly user-authorized QA Archive Override, with non-QA Tasks completed.
 - `brainstorming`:
   - `trigger.context-workflow.brainstorming`: Starting creative feature or behavior design before implementation.
 - `bubbletea`:

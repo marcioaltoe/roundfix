@@ -74,6 +74,8 @@ _Avoid_: Provider, backend, integration
 
 **Review Source**:
 The external review system that produces feedback for an Open Pull Request.
+This legacy PR-feedback concept is distinct from a Pre-PR Review Provider.
+
 _Avoid_: Review Provider, Agent, ACP Runtime
 
 **Review Source Evidence**:
@@ -491,7 +493,7 @@ Each Spec Consistency Check finding is an `error` when the check locates both si
 _Avoid_: QA verdict, priority, confidence
 
 **Archive Command**:
-The support command that archives a completed Spec: it verifies every Task is completed and QA passed, stamps archive metadata, and moves the Spec folder to the archived spec root. Refuses a Spec with incomplete Tasks or no passing QA verdict.
+The support command that retires a Spec under the archive eligibility contract, stamps its disposition, and moves the whole Spec to the resolved archive root. Normal QA eligibility and a user-authorized QA Archive Override are distinct dispositions. Neither retirement nor an override fabricates Task completion or a passing QA verdict.
 _Avoid_: Move command, retire run, cleanup command
 
 **History Root**:
@@ -709,3 +711,25 @@ _Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
 **Follow Mode**:
 The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
 _Avoid_: tail mode, auto-scroll, live mode
+
+
+**Pre-PR Review Policy**:
+The repository's choice of Codex, Claude, CodeRabbit, or no reviewer before a
+Pull Request is opened. An enabled review covers the current candidate, while
+explicit none records an intentional omission that leaves QA and required
+checks binding; provider failure is not an omission.
+_Avoid_: Review mode, reviewer profile, automatic review
+
+**Pre-PR Review Provider**:
+The selected agent or service that performs review under the Pre-PR Review
+Policy. An Agent Selection Profile supplies an agent provider's runtime and
+model; explicit none is a policy choice with no provider.
+_Avoid_: Review Source, Pre-PR Review Policy, reviewer model
+
+
+**QA Archive Override**:
+An explicit user request or applicable prior authorization to archive a covered
+Spec despite its QA prerequisite being unmet. The recorded exception preserves
+actual QA and Task evidence while retaining non-QA completion, source integrity
+and separate delivery gates.
+_Avoid_: QA pass, QA bypass, Implement Clean

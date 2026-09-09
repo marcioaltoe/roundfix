@@ -2,8 +2,8 @@
 date: 2026-08-03
 surface: internal/cli
 status: done
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-qa-gates-and-verification-evidence.md
+updated_at: 2026-09-08
+absorbed_by: 0124-verification-capacity-and-measured-economics
 ---
 
 # A 200 ms attach budget fails the Verification gate under CI load
@@ -69,3 +69,13 @@ than remove it.
 - Local: `make verify` exit 0, 3,136 tests in 24 packages;
   `go test ./internal/cli -count=1 -run 'TestRunImplementDetachSurvivesCallerProcessGroupKill'`
   PASS in 0.80 s.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-qa-gates-and-verification-evidence.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0124-verification-capacity-and-measured-economics](../../specs/0124-verification-capacity-and-measured-economics/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

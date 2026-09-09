@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-08-05
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-review-and-delivery-convergence.md
+updated_at: 2026-09-08
+absorbed_by: 0126-agent-review-before-pull-request
 ---
 
 # 2026-08-05 — Five frictions from a full autonomous spec night
@@ -106,3 +106,13 @@ every database-backed acceptance row in this repository will settle environment-
 forever. The spec-side mitigation (`## Unreachable Acceptance` declarations) exists, but a
 per-category sandbox relaxation for `qa` would remove the recurring gap — related to the
 existing finding `2026-08-05-agent-full-access-passes-config-validation-and-fails-every-task.md`.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-review-and-delivery-convergence.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0126-agent-review-before-pull-request](../../specs/0126-agent-review-before-pull-request/_prd.md),
+as pending residual contract. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

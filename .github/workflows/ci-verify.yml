@@ -25,6 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          # Historical authorization contracts read retained main ancestors.
+          fetch-depth: 0
           persist-credentials: false
 
       # cache: true restores GOMODCACHE and GOCACHE between runs, so CI stops

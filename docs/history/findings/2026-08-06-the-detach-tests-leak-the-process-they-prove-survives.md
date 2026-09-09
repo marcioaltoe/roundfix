@@ -1,8 +1,8 @@
 ---
 status: done
-absorbed_by: 2026-08-06-rollup-run-lifecycle-and-branch-integrity.md
+absorbed_by: 0103-a-suite-that-leaks-nothing
 created_at: 2026-08-06
-updated_at: 2026-08-26
+updated_at: 2026-09-08
 ---
 
 # The detach tests leak the process they prove survives
@@ -162,3 +162,13 @@ their tests by days, and nothing in Roundfix reported them.
 ---
 
 Triage 2026-08-26: deferred out of the active queue. See docs/workflow/2026-08-26-triage-the-queue-earns-its-tokens.md.
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-run-lifecycle-and-branch-integrity.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0103-a-suite-that-leaks-nothing](../specs/0103-a-suite-that-leaks-nothing/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

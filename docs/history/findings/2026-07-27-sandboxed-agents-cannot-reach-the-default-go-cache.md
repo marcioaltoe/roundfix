@@ -1,8 +1,8 @@
 ---
 status: done
 created_at: 2026-07-27
-updated_at: 2026-08-06
-absorbed_by: 2026-08-06-rollup-baseline-and-derived-tooling.md
+updated_at: 2026-09-08
+absorbed_by: 0054-tooling-task-and-verification-hygiene
 ---
 
 # Verification — sandboxed Agents cannot reach the default Go build cache, and nothing tells them so (2026-07-27)
@@ -73,3 +73,13 @@ full recovery cycle, and both look exactly like product defects in the report.
 The repository-local `GOCACHE` default in the Makefile (maintainer-authorized)
 is owned by
 [Spec 0054 — Tooling task and verification hygiene](../specs/0054-tooling-task-and-verification-hygiene/_prd.md).
+
+## Addendum — 2026-09-08 — Terminal Rollup retired
+
+The previous absorber was `2026-08-06-rollup-baseline-and-derived-tooling.md`. Its terminal routing
+record is now under `docs/history/findings/`. This Finding's direct absorber
+is [0054-tooling-task-and-verification-hygiene](../specs/0054-tooling-task-and-verification-hygiene/_prd.md),
+as delivered contract and historical evidence. This transfer preserves the original
+observation and the prior routing; it does not assert that a pending Spec has
+implemented every historical suggestion. Complementary responsibilities remain
+recorded in the archived Rollup and their consuming Specs.

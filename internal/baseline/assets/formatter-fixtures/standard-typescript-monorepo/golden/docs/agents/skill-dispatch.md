@@ -44,7 +44,7 @@ Individual skill triggers:
 - `architectural-analysis`:
   - `trigger.typescript.architectural-analysis`: Analyzing TypeScript repository architecture and dependency boundaries.
 - `archive-spec`:
-  - `trigger.context-workflow.archive-spec`: Archiving a completed and QA-passed Spec.
+  - `trigger.context-workflow.archive-spec`: Archiving a Spec under normal QA eligibility or an explicitly user-authorized QA Archive Override, with non-QA Tasks completed.
 - `backend-docs`:
   - `trigger.backend.backend-docs`: Writing backend API or service documentation.
 - `baseline-ui`:
