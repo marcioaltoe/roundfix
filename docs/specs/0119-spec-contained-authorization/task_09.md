@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -78,3 +78,65 @@ in [_authorization.md](_authorization.md).
 - `_techspec.md` → Implementation Design: Audit and compatibility; Build Order 1, 3.
 - `_authorization.md` → the 2026-09-09 amendment adding these two paths.
 - ADR-0149.
+
+## Result
+
+The suite guard now discovers candidate Markdown records in the preserved
+legacy directory, active Specs, and archived Specs, then delegates grant
+classification and sanctioned-regeneration parsing to the typed authorization
+reader. Command-only declarations still resolve their outputs through the
+repository-owned ownership tree. Explicit historical output lists retain their
+sorted result shape.
+
+Focused acceptance evidence:
+
+1. `TestSanctionedRegenerationReadsArchivedSpecGrants` uses an approved record
+   under `docs/history/specs/` whose consuming field names two Specs. Its
+   command-only declaration resolves to the ownership tree's generated output.
+2. The same archived test proves that the enclosing archived Spec can appear
+   after another consumer in the declared list and still contributes its
+   sanctioned regeneration.
+3. `TestSanctionedRegenerationRejectsNonOperativeRecords` independently checks
+   proposed, null-dated, malformed, and wrong-consumer records; every case
+   resolves to no sanctioned regeneration.
+4. `TestSanctionedRegenerationSetOnlyGrows` compares the widened result with a
+   recorded pre-change subset containing an active Spec record and a dated
+   prose-era legacy record. Both commands and their outputs remain present,
+   including the historical sorted order for an explicit multi-output list.
+5. `ReadSanctionedRegenerations` now calls `spec.ReadAuthorization`; the private
+   `approvedSpecGrant` parser was removed. `ParseSanctionedRegenerations`
+   remains exported only for the existing changed-path and ownership audits;
+   the suite guard's grant-discovery path no longer calls it.
+
+Focused checks:
+
+- Before the production edit,
+  `rtk env GOCACHE=/private/tmp/roundfix-task09-gocache go test -count=1 ./internal/suiteguardcontract -run 'SanctionedRegeneration'`
+  failed because the archived multi-Spec record contributed no declaration.
+- After the last implementation edit,
+  `rtk env GOCACHE=/private/tmp/roundfix-task09-gocache go test -count=1 ./internal/suiteguardcontract -run '^(TestCleanupRegenerationDiscovery|TestSanctionedRegeneration.*)$'`
+  passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task09-gocache go build -buildvcs=false ./...`
+  passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task09-gocache go test -count=1 ./internal/spec -run '^TestAuthorizationReader(ClassifiesGrantState|ResolvesPreservedHistoricalRecords)$'`
+  failed during package setup with the test-only import cycle described below.
+- `rtk env GOCACHE=/private/tmp/roundfix-task09-gocache go test -count=1 ./internal/suiteguard -run '^TestSanctionedRegeneration'`
+  failed because the positive consumer fixture still supplies the malformed
+  legacy record described below.
+
+Follow-up constraints found outside this Task's mutation allowlist:
+
+- `internal/spec/main_test.go` imports `internal/suiteguard`, whose production
+  path reaches `internal/suiteguardcontract`. The new typed-reader dependency
+  closes that test-only cycle, so the focused `internal/spec` test command
+  fails during setup with `import cycle not allowed in test`. Repairing the
+  test package boundary requires authority for a path outside this Task.
+- `internal/suiteguard/suiteguard_test.go` still creates
+  `docs/workflow/authorizations/fixture.md` without the date, consuming work,
+  or bounded paths required by the typed legacy contract. Its positive
+  sanctioned-regeneration test now refuses that malformed fixture. Updating
+  the fixture to an operative dated legacy record requires authority for that
+  out-of-scope file.
+
+The Daemon-owned commands under `## Verification` were not run in this Agent
+turn.

@@ -89,8 +89,8 @@ func TestCleanupRegenerationDiscovery(t *testing.T) {
 		writeCleanupRegenerationFile(
 			t,
 			repository,
-			"docs/workflow/authorizations/legacy.md",
-			"# Legacy grant\n\n## Sanctioned regeneration\n\n```yaml\ncommand: legacy-generator\noutputs:\n  - generated/legacy.txt\n```\n",
+			"docs/workflow/authorizations/2026-08-12-legacy.md",
+			cleanupLegacyGrant("0099-legacy-consumer", "legacy-generator", "generated/legacy.txt"),
 		)
 
 		want := []SanctionedRegeneration{{
@@ -157,6 +157,128 @@ func TestCleanupRegenerationDiscovery(t *testing.T) {
 	})
 }
 
+func TestSanctionedRegenerationReadsArchivedSpecGrants(t *testing.T) {
+	repository := t.TempDir()
+	writeCleanupRegenerationFile(t, repository, "Makefile", "DERIVED_DIGEST_PATHS := internal/baseline/derived\n")
+	writeCleanupRegenerationFile(t, repository, "internal/baseline/derived/_ownership.yml", "owner: sanctioned\nreason: fixture\n")
+	writeCleanupRegenerationFile(t, repository, "internal/baseline/derived/generated.txt", "generated\n")
+	writeCleanupRegenerationFile(
+		t,
+		repository,
+		"docs/history/specs/archived-grant/_authorization.md",
+		cleanupMultiSpecGrant(
+			"archived-grant",
+			"another-consumer",
+			"internal/baseline/derived/_ownership.yml",
+			"make baseline-digests",
+		),
+	)
+
+	want := []SanctionedRegeneration{{
+		Command: "make baseline-digests",
+		Outputs: []string{"internal/baseline/derived/generated.txt"},
+	}}
+	got, err := ReadSanctionedRegenerations(repository)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("archived multi-Spec declarations = %#v, want %#v", got, want)
+	}
+}
+
+func TestSanctionedRegenerationRejectsNonOperativeRecords(t *testing.T) {
+	tests := []struct {
+		name       string
+		recordPath string
+		content    string
+	}{
+		{
+			name:       "proposed",
+			recordPath: "docs/specs/proposed/_authorization.md",
+			content: cleanupSpecGrant(
+				"proposed", "2026-09-09", "not granted", "proposed", "Makefile", "proposed-command",
+			),
+		},
+		{
+			name:       "null dated",
+			recordPath: "docs/specs/null-date/_authorization.md",
+			content: cleanupSpecGrant(
+				"approved", "null", "missing date", "null-date", "Makefile", "null-date-command",
+			),
+		},
+		{
+			name:       "malformed",
+			recordPath: "docs/specs/malformed/_authorization.md",
+			content:    "---\nstatus: approved\npaths: [\n---\n\n## Sanctioned regeneration\n\n```yaml\ncommand: malformed-command\n```\n",
+		},
+		{
+			name:       "unrelated",
+			recordPath: "docs/specs/unrelated/_authorization.md",
+			content: cleanupSpecGrant(
+				"approved", "2026-09-09", "different consumer", "another-spec", "Makefile", "unrelated-command",
+			),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repository := t.TempDir()
+			writeCleanupRegenerationFile(t, repository, tt.recordPath, tt.content)
+
+			got, err := ReadSanctionedRegenerations(repository)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != nil {
+				t.Fatalf("non-operative declarations = %#v, want nil", got)
+			}
+		})
+	}
+}
+
+func TestSanctionedRegenerationSetOnlyGrows(t *testing.T) {
+	repository := t.TempDir()
+	writeCleanupRegenerationFile(
+		t,
+		repository,
+		"docs/specs/present-spec/_authorization.md",
+		cleanupSpecGrantWithOutputs(
+			"present-spec",
+			"present-spec-command",
+			[]string{"generated/present-spec-z.txt", "generated/present-spec-a.txt"},
+		),
+	)
+	writeCleanupRegenerationFile(
+		t,
+		repository,
+		"docs/workflow/authorizations/2026-08-12-present-legacy.md",
+		cleanupLegacyGrant("0099-present-legacy", "present-legacy-command", "generated/present-legacy.txt"),
+	)
+	writeCleanupRegenerationFile(
+		t,
+		repository,
+		"docs/history/specs/new-archive/_authorization.md",
+		cleanupSpecGrantWithOutput("new-archive", "new-archive-command", "generated/new-archive.txt"),
+	)
+
+	recordedPresent := []SanctionedRegeneration{
+		{Command: "present-legacy-command", Outputs: []string{"generated/present-legacy.txt"}},
+		{
+			Command: "present-spec-command",
+			Outputs: []string{"generated/present-spec-a.txt", "generated/present-spec-z.txt"},
+		},
+	}
+	got, err := ReadSanctionedRegenerations(repository)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, present := range recordedPresent {
+		if !containsSanctionedRegeneration(got, present) {
+			t.Errorf("widened declarations = %#v, missing recorded present declaration %#v", got, present)
+		}
+	}
+}
+
 func cleanupSpecGrant(status, granted, action, consuming, boundedPath, command string) string {
 	return "---\n" +
 		"status: " + status + "\n" +
@@ -171,6 +293,78 @@ func cleanupSpecGrant(status, granted, action, consuming, boundedPath, command s
 		"```yaml\n" +
 		"command: " + command + "\n" +
 		"```\n"
+}
+
+func cleanupMultiSpecGrant(consuming, additionalConsumer, boundedPath, command string) string {
+	return "---\n" +
+		"status: approved\n" +
+		"granted: 2026-09-09\n" +
+		"action: regenerate archived outputs\n" +
+		"consuming:\n" +
+		"  - " + additionalConsumer + "\n" +
+		"  - " + consuming + "\n" +
+		"paths:\n" +
+		"  - " + boundedPath + "\n" +
+		"---\n\n" +
+		"# Grant\n\n" +
+		"## Sanctioned regeneration\n\n" +
+		"```yaml\n" +
+		"command: " + command + "\n" +
+		"```\n"
+}
+
+func cleanupSpecGrantWithOutput(consuming, command, output string) string {
+	return cleanupSpecGrantWithOutputs(consuming, command, []string{output})
+}
+
+func cleanupSpecGrantWithOutputs(consuming, command string, outputs []string) string {
+	var declaredOutputs strings.Builder
+	for _, output := range outputs {
+		declaredOutputs.WriteString("  - ")
+		declaredOutputs.WriteString(output)
+		declaredOutputs.WriteByte('\n')
+	}
+	return "---\n" +
+		"status: approved\n" +
+		"granted: 2026-09-09\n" +
+		"action: regenerate recorded output\n" +
+		"consuming: " + consuming + "\n" +
+		"paths:\n" +
+		"  - " + outputs[0] + "\n" +
+		"---\n\n" +
+		"# Grant\n\n" +
+		"## Sanctioned regeneration\n\n" +
+		"```yaml\n" +
+		"command: " + command + "\n" +
+		"outputs:\n" +
+		declaredOutputs.String() +
+		"```\n"
+}
+
+func cleanupLegacyGrant(consuming, command, output string) string {
+	return "# Legacy grant — regenerate recorded output\n\n" +
+		"## Consuming Spec\n\n" +
+		"- " + consuming + "\n\n" +
+		"## Authorized paths\n\n" +
+		"- `" + output + "`\n\n" +
+		"## Sanctioned regeneration\n\n" +
+		"```yaml\n" +
+		"command: " + command + "\n" +
+		"outputs:\n" +
+		"  - " + output + "\n" +
+		"```\n"
+}
+
+func containsSanctionedRegeneration(
+	declarations []SanctionedRegeneration,
+	want SanctionedRegeneration,
+) bool {
+	for _, declaration := range declarations {
+		if reflect.DeepEqual(declaration, want) {
+			return true
+		}
+	}
+	return false
 }
 
 func writeCleanupRegenerationFile(t *testing.T, repository, relative, content string) {
