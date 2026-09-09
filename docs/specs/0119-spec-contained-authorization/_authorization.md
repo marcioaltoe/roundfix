@@ -25,6 +25,14 @@ paths:
   - docs/agents/setup-context.json
   - internal/speccheck/governed.go
   - internal/speccheck/governed_repocontract_test.go
+  - internal/suiteguardcontract/regeneration.go
+  - internal/suiteguardcontract/regeneration_test.go
+operations:
+  - implement
+  - commit
+  - push
+  - pull_request
+  - merge
 ---
 
 # Approved authority for Spec 0119
@@ -97,6 +105,28 @@ procedência commitada".
   Spec; a third means the decomposition is wrong and the Run stops.
 - Verification remains Daemon-owned. ADR-0014, ADR-0057, ADR-0096, ADR-0117,
   ADR-0130 and ADR-0149 remain operative and are not revised by this grant.
+
+## Amendment — 2026-09-09 — widened scope and typed operations
+
+The maintainer answered the second review's scope question with "Ampliar a 0119
+para cobrir os três", widening this grant on the same day it was granted.
+
+Two paths join the bounded set: `internal/suiteguardcontract/regeneration.go`
+and its test. That file owns a second grant parser which reads only the legacy
+and active Spec roots, so it cannot see an archived Spec's grant and cannot
+preserve a multi-Spec consuming list. Leaving it outside the boundary would ship
+two readers disagreeing about the same record.
+
+The frontmatter now carries `operations`, the machine-readable permission list
+Core Feature 5 requires. A free-text `action` cannot distinguish approval to
+implement from approval to release, so an audit could not honor this record's
+own no-release limit. The listed operations are exactly the maintainer's
+confirmed through-merge delivery scope. `release`, `tag`, `deploy` and paid
+consumption are absent, and absence is refusal rather than silence.
+
+This amendment lands in its own commit before the work that consumes it, and it
+widens nothing beyond the two named paths and the typed restatement of limits
+this record already carried in prose.
 
 ## Sanctioned regeneration
 
