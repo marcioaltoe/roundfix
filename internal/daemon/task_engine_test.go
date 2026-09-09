@@ -968,7 +968,13 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 				t.Fatalf("create fixture directory %q: %v", dir, err)
 			}
 		}
-		mustWriteForTest(t, filepath.Join(repoRoot, authorizationPath), "# Authorization\n\nSpec "+taskCycleSlug+" may change the files below.\n\n## Bounded files\n\n- `Makefile`\n")
+		mustWriteForTest(t, filepath.Join(repoRoot, authorizationPath), "---\n"+
+			"status: approved\n"+
+			"granted: 2026-09-09\n"+
+			"action: audit bounded paths\n"+
+			"consuming: "+taskCycleSlug+"\n"+
+			"paths:\n  - Makefile\n"+
+			"---\n")
 		mustWriteForTest(t, filepath.Join(repoRoot, "docs", "agents", "agent-instructions.md"), "# Agent instructions\n")
 		mustWriteForTest(t, filepath.Join(repoRoot, "docs", "agents", "domain.md"), "# Domain instructions\n")
 		mustWriteForTest(t, filepath.Join(specDir, "_prd.md"), "# PRD\n\n## Project Constraints\n\n"+
@@ -987,7 +993,12 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 		mustWriteForTest(t, filepath.Join(repoRoot, "internal", "ordinary.go"), "package internal\n\nconst ordinary = true\n")
 		runGitForTest(t, repoRoot, "add", "-A")
 		runGitForTest(t, repoRoot, "commit", "-q", "-m", "feat: ordinary work", "-m", "Roundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_01")
-		mustWriteForTest(t, filepath.Join(repoRoot, "Makefile"), "verify:\n\t@true\nfast-verify:\n\t@true\n")
+		// The refusal case changes only an ungranted governed path. This keeps
+		// commit selection honest: intersecting the grant itself cannot be the
+		// reason the audit sees the commit.
+		if foldedPath != ".golangci.yml" {
+			mustWriteForTest(t, filepath.Join(repoRoot, "Makefile"), "verify:\n\t@true\nfast-verify:\n\t@true\n")
+		}
 		mustWriteForTest(t, filepath.Join(repoRoot, foldedPath), foldedContent)
 		runGitForTest(t, repoRoot, "add", "-A")
 		runGitForTest(t, repoRoot, "commit", "-q", "-m", "chore: tooling work", "-m", "Roundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_02")
@@ -1008,6 +1019,9 @@ func TestQAMechanicalRequestSelectsTheAuthorizedTaskCommit(t *testing.T) {
 		}
 		if len(request.TaskCommits) != 1 || request.TaskCommits[0].TaskID != "task_02" {
 			t.Fatalf("qaMechanicalRequest selected Task commits %+v, want only task_02", request.TaskCommits)
+		}
+		if request.DeliveryTargetRevision != initialHead {
+			t.Fatalf("qaMechanicalRequest delivery target = %q, want Run start head %s", request.DeliveryTargetRevision, initialHead)
 		}
 		result, err := speccheck.RunMechanicalStage(context.Background(), request)
 		if err != nil {
@@ -1221,6 +1235,7 @@ func TestWriteMechanicalQAReportWritesThePreconditionRefusal(t *testing.T) {
 		want := "---\nverdict: fail\n" + qaAuditorFrontmatterForTest() +
 			"rows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
 			"# QA Report\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n" +
+			"## Authorization audit inputs\n\nNone.\n\n" +
 			"## Mechanical findings\n\n### " + speccheck.CodeConstraintMissing + "\n\n" +
 			"- location: `docs/specs/" + taskCycleSlug + "/_prd.md:1`\n" +
 			"- detail: _prd.md declares no Identifier strategy row\n- fix: Declare the row.\n- blocked row: `R01`\n\n" +
@@ -1430,6 +1445,7 @@ func TestWriteMechanicalQAReportRecordsTheRefusal(t *testing.T) {
 		want := "---\nverdict: fail\n" + qaAuditorFrontmatterForTest() +
 			"rows_blocked_environment: 0\nrows_blocked_finding: 1\nrows_blocked_declared: 0\n---\n\n" +
 			"# QA Report\n\n## Performed repairs\n\nNone.\n\n## Assigned repair failures\n\nNone.\n\n" +
+			"## Authorization audit inputs\n\nNone.\n\n" +
 			"## Mechanical findings\n\n### QA-FIXTURE\n\n" +
 			"- location: `fixture.md:7`\n- detail: fixture mismatch\n- fix: repair fixture\n- blocked row: `R01`\n\n" +
 			"## Results\n\n| # | Status | Provenance |\n| - | --- | --- |\n" +

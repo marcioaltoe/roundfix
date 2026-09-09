@@ -2088,11 +2088,11 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, qaTask spec.
 
 func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qaTask spec.Task, previousReportPath string) (speccheck.MechanicalRequest, error) {
 	prdPath := filepath.Join(plan.Spec.Dir, "_prd.md")
-	authorizationPath, boundedPaths, err := speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
+	authorizationPath, _, err := speccheck.MechanicalAuthorization(plan.WorkDir, prdPath)
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
 	}
-	taskCommits, err := mechanicalTaskCommits(ctx, plan, boundedPaths)
+	taskCommits, err := mechanicalTaskCommits(ctx, plan, authorizationPath)
 	if err != nil {
 		return speccheck.MechanicalRequest{}, err
 	}
@@ -2113,9 +2113,11 @@ func (engine *Engine) qaMechanicalRequest(ctx context.Context, plan TaskPlan, qa
 		}
 	}
 	return speccheck.MechanicalRequest{
-		RepoRoot:          plan.WorkDir,
-		AuthorizationPath: authorizationPath,
-		TaskCommits:       taskCommits,
+		RepoRoot:               plan.WorkDir,
+		AuthorizationPath:      authorizationPath,
+		ConsumingSpec:          plan.Spec.Slug,
+		DeliveryTargetRevision: plan.HeadSHA,
+		TaskCommits:            taskCommits,
 		// Consequent-fix declarations are optional authored inputs. Until a
 		// declaration exists, the detector records its presence-aware skip.
 		ConsequentFixes: nil,
@@ -2146,8 +2148,8 @@ func qaGatePrecondition(plan TaskPlan) (speccheck.GatePreconditionResult, error)
 	return speccheck.GatePrecondition(checked), nil
 }
 
-func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []string) ([]speccheck.MechanicalTaskCommit, error) {
-	if strings.TrimSpace(plan.HeadSHA) == "" || len(boundedPaths) == 0 {
+func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, authorizationPath string) ([]speccheck.MechanicalTaskCommit, error) {
+	if strings.TrimSpace(plan.HeadSHA) == "" || strings.TrimSpace(authorizationPath) == "" {
 		return nil, nil
 	}
 	revisionRange := strings.TrimSpace(plan.HeadSHA) + "..HEAD"
@@ -2181,10 +2183,6 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []st
 		}
 		commitsByTask[taskID] = sha
 	}
-	bounded := make(map[string]bool, len(boundedPaths))
-	for _, path := range boundedPaths {
-		bounded[filepath.ToSlash(filepath.Clean(filepath.FromSlash(path)))] = true
-	}
 	result := make([]speccheck.MechanicalTaskCommit, 0, len(commitsByTask))
 	for _, task := range plan.Tasks {
 		sha := commitsByTask[task.ID]
@@ -2195,14 +2193,14 @@ func mechanicalTaskCommits(ctx context.Context, plan TaskPlan, boundedPaths []st
 		if err != nil {
 			return nil, err
 		}
-		intersectsAuthorization := false
+		intersectsGoverned := false
 		for _, path := range changed {
-			if bounded[path] {
-				intersectsAuthorization = true
+			if speccheck.GovernedPath(path) {
+				intersectsGoverned = true
 				break
 			}
 		}
-		if !intersectsAuthorization {
+		if !intersectsGoverned {
 			continue
 		}
 		result = append(result, speccheck.MechanicalTaskCommit{

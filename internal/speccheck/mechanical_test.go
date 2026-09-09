@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/gittest"
 	"roundfix/internal/spec"
 	"roundfix/internal/speccheck"
 )
@@ -415,6 +416,7 @@ func TestMechanicalAuthPaths(t *testing.T) {
 
 	repoRoot := newMechanicalGitRepo(t)
 	copyMechanicalFixture(t, repoRoot, "authorization.md", "docs/workflow/authorizations/mechanical.md")
+	target := commitMechanicalFiles(t, repoRoot, "record authorization", "docs/workflow/authorizations/mechanical.md")
 	writeMechanicalFile(t, repoRoot, "Makefile", "verify:\n\t@true\n")
 	greenCommit := commitMechanicalFiles(t, repoRoot, "authorized change", "Makefile")
 	writeMechanicalFile(t, repoRoot, ".golangci.yml", "linters: {}\n")
@@ -423,8 +425,9 @@ func TestMechanicalAuthPaths(t *testing.T) {
 	t.Run("green fixture accepts exact bounded path", func(t *testing.T) {
 		t.Parallel()
 		result := runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:          repoRoot,
-			AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      "docs/workflow/authorizations/mechanical.md",
+			DeliveryTargetRevision: target,
 			TaskCommits: []speccheck.MechanicalTaskCommit{{
 				TaskID:   "task_01",
 				SHA:      greenCommit,
@@ -437,8 +440,9 @@ func TestMechanicalAuthPaths(t *testing.T) {
 	t.Run("red fixture names every path outside the bound", func(t *testing.T) {
 		t.Parallel()
 		result := runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:          repoRoot,
-			AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      "docs/workflow/authorizations/mechanical.md",
+			DeliveryTargetRevision: target,
 			TaskCommits: []speccheck.MechanicalTaskCommit{{
 				TaskID:   "task_02",
 				SHA:      redCommit,
@@ -451,15 +455,18 @@ func TestMechanicalAuthPaths(t *testing.T) {
 		}
 	})
 
-	t.Run("absent authorization records a skip", func(t *testing.T) {
+	t.Run("absent authorization records an unresolved audit input", func(t *testing.T) {
 		t.Parallel()
 		result := runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:          repoRoot,
-			AuthorizationPath: "docs/workflow/authorizations/missing.md",
-			TaskCommits:       []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: greenCommit}},
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      "docs/workflow/authorizations/missing.md",
+			DeliveryTargetRevision: target,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: greenCommit}},
 		})
-		assertMechanicalSkip(t, result, speccheck.DetectorMechanicalAuthPaths, "docs/workflow/authorizations/missing.md")
-		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+		if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Outcome != spec.AuthorizationUnresolved || result.AuthorizationReads[0].Reason.Code != spec.AuthorizationReasonUnreadableRecord {
+			t.Fatalf("AuthorizationReads = %#v, want unresolved unreadable record", result.AuthorizationReads)
+		}
+		assertMechanicalAuthorizationRefused(t, result, "docs/workflow/authorizations/missing.md")
 	})
 }
 
@@ -469,12 +476,14 @@ func TestMechanicalAuthPathsAcceptsDeclaredRegenerationOutput(t *testing.T) {
 	repoRoot := newMechanicalGitRepo(t)
 	writeMechanicalResolverFixture(t, repoRoot)
 	writeMechanicalFile(t, repoRoot, "docs/workflow/authorizations/mechanical.md", mechanicalRegenerationAuthorization("command: make baseline-digests\noutputs:\n  - internal/baseline/testdata/catalog.digest\n"))
+	target := commitMechanicalFiles(t, repoRoot, "record regeneration authorization", "docs/workflow/authorizations/mechanical.md")
 	writeMechanicalFile(t, repoRoot, "internal/baseline/testdata/catalog.digest", "generated\n")
 	commit := commitMechanicalFiles(t, repoRoot, "regenerate baseline digest", "internal/baseline/testdata/catalog.digest")
 
 	result := runMechanical(t, speccheck.MechanicalRequest{
-		RepoRoot:          repoRoot,
-		AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
+		RepoRoot:               repoRoot,
+		AuthorizationPath:      "docs/workflow/authorizations/mechanical.md",
+		DeliveryTargetRevision: target,
 		TaskCommits: []speccheck.MechanicalTaskCommit{{
 			TaskID:   "task_06",
 			SHA:      commit,
@@ -491,12 +500,14 @@ func TestMechanicalAuthPathsStillRefusesAnUndeclaredPath(t *testing.T) {
 	repoRoot := newMechanicalGitRepo(t)
 	writeMechanicalResolverFixture(t, repoRoot)
 	writeMechanicalFile(t, repoRoot, "docs/workflow/authorizations/mechanical.md", mechanicalRegenerationAuthorization("command: make baseline-digests\noutputs:\n  - internal/baseline/testdata/catalog.digest\n"))
+	target := commitMechanicalFiles(t, repoRoot, "record regeneration authorization", "docs/workflow/authorizations/mechanical.md")
 	writeMechanicalFile(t, repoRoot, ".golangci.yml", "linters: {}\n")
 	commit := commitMechanicalFiles(t, repoRoot, "change undeclared path", ".golangci.yml")
 
 	result := runMechanical(t, speccheck.MechanicalRequest{
-		RepoRoot:          repoRoot,
-		AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
+		RepoRoot:               repoRoot,
+		AuthorizationPath:      "docs/workflow/authorizations/mechanical.md",
+		DeliveryTargetRevision: target,
 		TaskCommits: []speccheck.MechanicalTaskCommit{{
 			TaskID:   "task_06",
 			SHA:      commit,
@@ -516,22 +527,25 @@ func TestMechanicalAuthPathsRefusesInvalidRegenerationDeclaration(t *testing.T) 
 	tests := []struct {
 		name        string
 		declaration string
+		wantDetail  string
 	}{
-		{name: "output without command", declaration: "outputs:\n  - internal/baseline/assets/source-baselines/index.json\n"},
-		{name: "output glob", declaration: "command: make baseline-digests\noutputs:\n  - internal/baseline/assets/source-baselines/*.json\n"},
+		{name: "output without command", declaration: "outputs:\n  - internal/baseline/assets/source-baselines/index.json\n", wantDetail: "authorization audit is refused"},
+		{name: "output glob", declaration: "command: make baseline-digests\noutputs:\n  - internal/baseline/assets/source-baselines/*.json\n", wantDetail: "internal/baseline/assets/source-baselines/index.json"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			repoRoot := newMechanicalGitRepo(t)
 			writeMechanicalFile(t, repoRoot, "docs/workflow/authorizations/mechanical.md", mechanicalRegenerationAuthorization(tt.declaration))
+			target := commitMechanicalFiles(t, repoRoot, "record invalid regeneration authorization", "docs/workflow/authorizations/mechanical.md")
 			const derivedPath = "internal/baseline/assets/source-baselines/index.json"
 			writeMechanicalFile(t, repoRoot, derivedPath, "hand edited\n")
 			commit := commitMechanicalFiles(t, repoRoot, "hand edit baseline digest", derivedPath)
 
 			result := runMechanical(t, speccheck.MechanicalRequest{
-				RepoRoot:          repoRoot,
-				AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
+				RepoRoot:               repoRoot,
+				AuthorizationPath:      "docs/workflow/authorizations/mechanical.md",
+				DeliveryTargetRevision: target,
 				TaskCommits: []speccheck.MechanicalTaskCommit{{
 					TaskID:   "task_06",
 					SHA:      commit,
@@ -540,8 +554,8 @@ func TestMechanicalAuthPathsRefusesInvalidRegenerationDeclaration(t *testing.T) 
 			})
 
 			findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalAuthPaths)
-			if len(findings) != 1 || !strings.Contains(findings[0].Detail, derivedPath) {
-				t.Fatalf("%s findings = %#v, want invalid regeneration declaration refused", speccheck.CodeMechanicalAuthPaths, findings)
+			if len(findings) != 1 || !strings.Contains(findings[0].Detail, tt.wantDetail) {
+				t.Fatalf("%s findings = %#v, want invalid regeneration declaration refused by the typed reader", speccheck.CodeMechanicalAuthPaths, findings)
 			}
 		})
 	}
@@ -554,7 +568,6 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 		archiveHelpCommit      = "419a4661ac769ff7ee6ce5423bd795185c859d01"
 		archiveCarrierCommit   = "65c51ebf2e19220ff50d25fe03be809fcdf353f0"
 		verificationTaskCommit = "28acf39cc193ad490646cb5a1d23500e0c08c273"
-		regeneratedCommit      = "c80e1266658929f68e8046af82f88e13392dc56d"
 		verificationTaskFile   = "docs/specs/0095-a-verification-that-ran-before-anyone-believed-it/task_08.md"
 		archiveHelpTaskFile    = "docs/specs/0094-one-history-root-under-docs/task_15.md"
 		archiveCarrierTaskFile = "docs/specs/0094-one-history-root-under-docs/task_16.md"
@@ -567,8 +580,9 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 		}
 
 		result := runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:          repository,
-			AuthorizationPath: archiveAuthorization,
+			RepoRoot:               repository,
+			AuthorizationPath:      archiveAuthorization,
+			DeliveryTargetRevision: archiveHelpCommit + "^1",
 			TaskCommits: []speccheck.MechanicalTaskCommit{
 				{
 					TaskID:   "task_15",
@@ -586,8 +600,9 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
 
 		result = runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:          repository,
-			AuthorizationPath: authoringAuthorization,
+			RepoRoot:               repository,
+			AuthorizationPath:      authoringAuthorization,
+			DeliveryTargetRevision: verificationTaskCommit + "^1",
 			TaskCommits: []speccheck.MechanicalTaskCommit{{
 				TaskID:   "task_08",
 				SHA:      verificationTaskCommit,
@@ -599,25 +614,25 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 	})
 
 	t.Run("historical regeneration resolves outputs absent from the grant", func(t *testing.T) {
-		if missing := firstMissingMechanicalCommit(repository, regeneratedCommit); missing != "" {
-			t.Skipf("outside evidence unavailable: historical Task commit %s cannot be resolved", missing)
-		}
-
-		repoRoot := cloneMechanicalHistory(t, repository)
-		const authorizationPath = "docs/workflow/authorizations/mechanical-history.md"
-		writeMechanicalFile(t, repoRoot, authorizationPath,
-			"---\nconsuming: 0094-one-history-root-under-docs\npaths:\n"+
-				"  - internal/baseline/assets/source-baselines/baseline.standard-typescript-monorepo-0.0.1/corpus/docs/agents/spec-routing.md\n"+
-				"---\n\n# Historical authorization replay\n\n## Sanctioned regeneration\n\n"+
-				"```yaml\ncommand: make baseline-digests\n```\n")
+		repoRoot := newMechanicalGitRepo(t)
+		writeMechanicalResolverFixture(t, repoRoot)
+		const (
+			authorizationPath = "docs/specs/regeneration-history/_authorization.md"
+			regeneratedPath   = "internal/baseline/derived/frozen.txt"
+		)
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalRegenerationAuthorization("command: make baseline-digests\n"))
+		target := commitMechanicalFiles(t, repoRoot, "record regeneration authority", authorizationPath)
+		writeMechanicalFile(t, repoRoot, regeneratedPath, "regenerated\n")
+		regeneratedCommit := commitMechanicalFiles(t, repoRoot, "regenerate owned output", regeneratedPath)
 
 		result := runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:          repoRoot,
-			AuthorizationPath: authorizationPath,
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "mechanical",
+			DeliveryTargetRevision: target,
 			TaskCommits: []speccheck.MechanicalTaskCommit{{
-				TaskID:   "task_16",
-				SHA:      regeneratedCommit,
-				TaskFile: archiveCarrierTaskFile,
+				TaskID: "task_16",
+				SHA:    regeneratedCommit,
 			}},
 		})
 
@@ -627,15 +642,18 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 	t.Run("governed path outside the grant is refused by name", func(t *testing.T) {
 		repoRoot := newMechanicalGitRepo(t)
 		const authorizationPath = "docs/workflow/authorizations/mechanical.md"
-		writeMechanicalFile(t, repoRoot, authorizationPath, "# Authorization\n\n## Bounded files\n\n- `Makefile`\n")
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("mechanical", "Makefile"))
+		target := commitMechanicalFiles(t, repoRoot, "record narrow authorization", authorizationPath)
 		writeMechanicalFile(t, repoRoot, "Makefile", "verify:\n\t@true\n")
 		writeMechanicalFile(t, repoRoot, ".golangci.yml", "linters: {}\n")
 		commit := commitMechanicalFiles(t, repoRoot, "change granted build and ungranted linter configuration", "Makefile", ".golangci.yml")
 
 		result := runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:          repoRoot,
-			AuthorizationPath: authorizationPath,
-			TaskCommits:       []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: commit}},
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "mechanical",
+			DeliveryTargetRevision: target,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: commit}},
 		})
 
 		assertMechanicalPathEscapedGrant(t, result, ".golangci.yml", authorizationPath)
@@ -647,14 +665,17 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 			authorizationPath = "docs/workflow/authorizations/mechanical.md"
 			derivedPath       = "internal/baseline/assets/source-baselines/index.json"
 		)
-		writeMechanicalFile(t, repoRoot, authorizationPath, "# Authorization\n\n## Bounded files\n\n- `Makefile`\n")
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("mechanical", "Makefile"))
+		target := commitMechanicalFiles(t, repoRoot, "record narrow authorization", authorizationPath)
 		writeMechanicalFile(t, repoRoot, derivedPath, "hand edited\n")
 		commit := commitMechanicalFiles(t, repoRoot, "hand edit derived value", derivedPath)
 
 		result := runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:          repoRoot,
-			AuthorizationPath: authorizationPath,
-			TaskCommits:       []speccheck.MechanicalTaskCommit{{TaskID: "task_02", SHA: commit}},
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "mechanical",
+			DeliveryTargetRevision: target,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_02", SHA: commit}},
 		})
 
 		assertMechanicalPathEscapedGrant(t, result, derivedPath, authorizationPath)
@@ -670,18 +691,261 @@ func TestAuditJudgesTheGrant(t *testing.T) {
 
 	t.Run("Task commit cannot carry its own authorization", func(t *testing.T) {
 		repoRoot := newMechanicalGitRepo(t)
+		target := strings.TrimSpace(runMechanicalGit(t, repoRoot, "rev-parse", "HEAD"))
 		const authorizationPath = "docs/workflow/authorizations/mechanical.md"
-		writeMechanicalFile(t, repoRoot, authorizationPath, "# Authorization\n\n## Bounded files\n\n- `Makefile`\n")
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("mechanical", "Makefile"))
 		writeMechanicalFile(t, repoRoot, "Makefile", "verify:\n\t@true\n")
 		commit := commitMechanicalFiles(t, repoRoot, "fold grant into authorized change", authorizationPath, "Makefile")
 
 		result := runMechanical(t, speccheck.MechanicalRequest{
-			RepoRoot:          repoRoot,
-			AuthorizationPath: authorizationPath,
-			TaskCommits:       []speccheck.MechanicalTaskCommit{{TaskID: "task_03", SHA: commit}},
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "mechanical",
+			DeliveryTargetRevision: target,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_03", SHA: commit}},
 		})
 
 		assertMechanicalPathEscapedGrant(t, result, authorizationPath, authorizationPath)
+	})
+}
+
+func TestAuditReadsTheAuthorizingAncestor(t *testing.T) {
+	t.Run("grant already in delivery target", func(t *testing.T) {
+		repoRoot := newMechanicalGitRepo(t)
+		const authorizationPath = "docs/specs/audit-target/_authorization.md"
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("audit-target", "Makefile"))
+		target := commitMechanicalFiles(t, repoRoot, "authorize target", authorizationPath)
+		writeMechanicalFile(t, repoRoot, "Makefile", "verify:\n\t@true\n")
+		consumer := commitMechanicalFiles(t, repoRoot, "consume target grant", "Makefile")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "audit-target",
+			DeliveryTargetRevision: target,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+		})
+
+		assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+		if len(result.AuthorizationReads) != 1 {
+			t.Fatalf("AuthorizationReads = %#v, want one grant read", result.AuthorizationReads)
+		}
+		read := result.AuthorizationReads[0]
+		if read.TaskID != "task_01" || read.Outcome != spec.AuthorizationGranted || read.Source.Path != authorizationPath || read.Source.Revision != target {
+			t.Fatalf("AuthorizationReads[0] = %#v, want granted %s at %s", read, authorizationPath, target)
+		}
+
+		var report bytes.Buffer
+		if err := speccheck.WriteMechanicalResult(&report, result); err != nil {
+			t.Fatalf("WriteMechanicalResult() error = %v", err)
+		}
+		if !strings.Contains(report.String(), authorizationPath) || !strings.Contains(report.String(), target) {
+			t.Fatalf("mechanical report omits authorization provenance:\n%s", report.String())
+		}
+	})
+}
+
+func TestAuditRefusesSelfApprovalAndRetroactiveGrants(t *testing.T) {
+	t.Run("same commit creates its grant", func(t *testing.T) {
+		repoRoot := newMechanicalGitRepo(t)
+		target := strings.TrimSpace(runMechanicalGit(t, repoRoot, "rev-parse", "HEAD"))
+		const authorizationPath = "docs/specs/self-approved/_authorization.md"
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("self-approved", "Makefile"))
+		writeMechanicalFile(t, repoRoot, "Makefile", "verify:\n\t@true\n")
+		consumer := commitMechanicalFiles(t, repoRoot, "create and consume grant", authorizationPath, "Makefile")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "self-approved",
+			DeliveryTargetRevision: target,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+		})
+
+		assertMechanicalAuthorizationRefused(t, result, authorizationPath)
+		findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalAuthPaths)
+		if len(findings) != 1 || !strings.Contains(findings[0].Detail, "changes authorization grant") {
+			t.Fatalf("%s findings = %#v, want same-commit grant edit refusal", speccheck.CodeMechanicalAuthPaths, findings)
+		}
+	})
+
+	t.Run("earlier sibling grant is absent from target ancestry", func(t *testing.T) {
+		repoRoot := newMechanicalGitRepo(t)
+		target := strings.TrimSpace(runMechanicalGit(t, repoRoot, "rev-parse", "HEAD"))
+		const authorizationPath = "docs/specs/sibling-grant/_authorization.md"
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("sibling-grant", "Makefile"))
+		commitMechanicalFiles(t, repoRoot, "grant on consuming branch", authorizationPath)
+		writeMechanicalFile(t, repoRoot, "Makefile", "verify:\n\t@true\n")
+		consumer := commitMechanicalFiles(t, repoRoot, "consume sibling grant", "Makefile")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "sibling-grant",
+			DeliveryTargetRevision: target,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_02", SHA: consumer}},
+		})
+
+		assertMechanicalAuthorizationRefused(t, result, authorizationPath)
+	})
+
+	t.Run("same commit widens its grant", func(t *testing.T) {
+		repoRoot := newMechanicalGitRepo(t)
+		const authorizationPath = "docs/specs/widened-grant/_authorization.md"
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("widened-grant", "Makefile"))
+		target := commitMechanicalFiles(t, repoRoot, "authorize narrow target", authorizationPath)
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("widened-grant", "Makefile", ".golangci.yml"))
+		writeMechanicalFile(t, repoRoot, ".golangci.yml", "linters: {}\n")
+		consumer := commitMechanicalFiles(t, repoRoot, "widen and consume grant", authorizationPath, ".golangci.yml")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "widened-grant",
+			DeliveryTargetRevision: target,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_03", SHA: consumer}},
+		})
+
+		assertMechanicalAuthorizationRefused(t, result, authorizationPath)
+	})
+
+	t.Run("later amendment authorizes only later work", func(t *testing.T) {
+		repoRoot := newMechanicalGitRepo(t)
+		const authorizationPath = "docs/specs/amended-grant/_authorization.md"
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("amended-grant", "Makefile"))
+		narrow := commitMechanicalFiles(t, repoRoot, "authorize narrow target", authorizationPath)
+
+		runMechanicalGit(t, repoRoot, "switch", "-c", "early-consumer", narrow)
+		writeMechanicalFile(t, repoRoot, ".golangci.yml", "linters: {}\n")
+		earlyConsumer := commitMechanicalFiles(t, repoRoot, "consume before amendment", ".golangci.yml")
+
+		runMechanicalGit(t, repoRoot, "switch", "main")
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("amended-grant", "Makefile", ".golangci.yml"))
+		amendment := commitMechanicalFiles(t, repoRoot, "widen target grant", authorizationPath)
+		writeMechanicalFile(t, repoRoot, ".golangci.yml", "linters:\n  enable: []\n")
+		laterConsumer := commitMechanicalFiles(t, repoRoot, "consume after amendment", ".golangci.yml")
+
+		early := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "amended-grant",
+			DeliveryTargetRevision: amendment,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_04", SHA: earlyConsumer}},
+		})
+		assertMechanicalAuthorizationRefused(t, early, authorizationPath)
+		if len(early.AuthorizationReads) != 1 || early.AuthorizationReads[0].Source.Revision != narrow {
+			t.Fatalf("early AuthorizationReads = %#v, want narrow grant %s", early.AuthorizationReads, narrow)
+		}
+
+		later := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "amended-grant",
+			DeliveryTargetRevision: amendment,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_05", SHA: laterConsumer}},
+		})
+		assertNoMechanicalCode(t, later, speccheck.CodeMechanicalAuthPaths)
+		if len(later.AuthorizationReads) != 1 || later.AuthorizationReads[0].Source.Revision != amendment {
+			t.Fatalf("later AuthorizationReads = %#v, want amended grant %s", later.AuthorizationReads, amendment)
+		}
+	})
+}
+
+func TestAuditDiscoversRecordsInEveryLocation(t *testing.T) {
+	locations := []struct {
+		name          string
+		requestedPath string
+		recordPath    string
+	}{
+		{
+			name:          "active Spec",
+			requestedPath: "docs/specs/active-grant/_authorization.md",
+			recordPath:    "docs/specs/active-grant/_authorization.md",
+		},
+		{
+			name:          "archived Spec",
+			requestedPath: "docs/specs/archived-grant/_authorization.md",
+			recordPath:    "docs/history/specs/archived-grant/_authorization.md",
+		},
+		{
+			name:          "preserved legacy record",
+			requestedPath: "docs/workflow/authorizations/2026-09-09-legacy-grant.md",
+			recordPath:    "docs/workflow/authorizations/2026-09-09-legacy-grant.md",
+		},
+	}
+	for _, location := range locations {
+		t.Run(location.name, func(t *testing.T) {
+			repoRoot := newMechanicalGitRepo(t)
+			authorization := mechanicalTypedAuthorization("location-grant", "Makefile")
+			if location.name == "preserved legacy record" {
+				authorization = "# Tooling authorization — legacy grant\n\n" +
+					"**Granted:** 2026-09-09 by the maintainer for Spec location-grant.\n\n" +
+					"## Bounded files\n\n- `Makefile`\n"
+			}
+			writeMechanicalFile(t, repoRoot, location.recordPath, authorization)
+			target := commitMechanicalFiles(t, repoRoot, "record target grant", location.recordPath)
+			writeMechanicalFile(t, repoRoot, "Makefile", "verify:\n\t@true\n")
+			consumer := commitMechanicalFiles(t, repoRoot, "consume target grant", "Makefile")
+
+			result := runMechanical(t, speccheck.MechanicalRequest{
+				RepoRoot:               repoRoot,
+				AuthorizationPath:      location.requestedPath,
+				ConsumingSpec:          "location-grant",
+				DeliveryTargetRevision: target,
+				TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+			})
+
+			assertNoMechanicalCode(t, result, speccheck.CodeMechanicalAuthPaths)
+			if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Source.Path != location.recordPath || result.AuthorizationReads[0].Source.Revision != target {
+				t.Fatalf("AuthorizationReads = %#v, want %s at %s", result.AuthorizationReads, location.recordPath, target)
+			}
+		})
+	}
+
+	t.Run("legacy record with another declared consumer refuses", func(t *testing.T) {
+		repoRoot := newMechanicalGitRepo(t)
+		const authorizationPath = "docs/workflow/authorizations/2026-09-09-other-consumer.md"
+		writeMechanicalFile(t, repoRoot, authorizationPath,
+			"# Tooling authorization — other consumer\n\n"+
+				"## Consuming Spec\n\n- `9999-other-consumer`\n\n"+
+				"## Bounded files\n\n- `Makefile`\n")
+		target := commitMechanicalFiles(t, repoRoot, "record other consumer grant", authorizationPath)
+		writeMechanicalFile(t, repoRoot, "Makefile", "verify:\n\t@true\n")
+		consumer := commitMechanicalFiles(t, repoRoot, "consume other grant", "Makefile")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "location-grant",
+			DeliveryTargetRevision: target,
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_02", SHA: consumer}},
+		})
+
+		if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Outcome != spec.AuthorizationRefused || result.AuthorizationReads[0].Reason.Code != spec.AuthorizationReasonConsuming {
+			t.Fatalf("AuthorizationReads = %#v, want wrong-consumer refusal", result.AuthorizationReads)
+		}
+		assertMechanicalAuthorizationRefused(t, result, authorizationPath)
+	})
+
+	t.Run("unavailable delivery target is unresolved", func(t *testing.T) {
+		repoRoot := newMechanicalGitRepo(t)
+		const authorizationPath = "docs/specs/unavailable-target/_authorization.md"
+		writeMechanicalFile(t, repoRoot, authorizationPath, mechanicalTypedAuthorization("unavailable-target", "Makefile"))
+		writeMechanicalFile(t, repoRoot, "Makefile", "verify:\n\t@true\n")
+		consumer := commitMechanicalFiles(t, repoRoot, "consume unavailable target", authorizationPath, "Makefile")
+
+		result := runMechanical(t, speccheck.MechanicalRequest{
+			RepoRoot:               repoRoot,
+			AuthorizationPath:      authorizationPath,
+			ConsumingSpec:          "unavailable-target",
+			DeliveryTargetRevision: strings.Repeat("0", 40),
+			TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: consumer}},
+		})
+
+		if len(result.AuthorizationReads) != 1 || result.AuthorizationReads[0].Outcome != spec.AuthorizationUnresolved || result.AuthorizationReads[0].Reason.Code != spec.AuthorizationReasonUnavailableRevision {
+			t.Fatalf("AuthorizationReads = %#v, want unresolved unavailable revision", result.AuthorizationReads)
+		}
+		assertMechanicalAuthorizationRefused(t, result, authorizationPath)
 	})
 }
 
@@ -1726,13 +1990,15 @@ func TestMechanicalReportsAllFindings(t *testing.T) {
 	copyMechanicalFixture(t, repoRoot, "authorization.md", "docs/workflow/authorizations/mechanical.md")
 	copyMechanicalFixture(t, repoRoot, "report-red.md", "docs/specs/mechanical/qa/report-red.md")
 	copyMechanicalFixture(t, repoRoot, "evidence/pass.txt", "docs/specs/mechanical/qa/evidence/pass.txt")
+	target := commitMechanicalFiles(t, repoRoot, "record authorization", "docs/workflow/authorizations/mechanical.md")
 	writeMechanicalFile(t, repoRoot, ".golangci.yml", "linters: {}\n")
 	commit := commitMechanicalFiles(t, repoRoot, "outside", ".golangci.yml")
 
 	result := runMechanical(t, speccheck.MechanicalRequest{
-		RepoRoot:          repoRoot,
-		AuthorizationPath: "docs/workflow/authorizations/mechanical.md",
-		TaskCommits:       []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: commit}},
+		RepoRoot:               repoRoot,
+		AuthorizationPath:      "docs/workflow/authorizations/mechanical.md",
+		DeliveryTargetRevision: target,
+		TaskCommits:            []speccheck.MechanicalTaskCommit{{TaskID: "task_01", SHA: commit}},
 		ConsequentFixes: []speccheck.ConsequentFixDeclaration{{
 			File: "docs/specs/mechanical/_tasks.md", Line: 12, RowHint: "R-COMMIT", CauseCommit: commit, FixCommit: commit,
 		}},
@@ -1845,16 +2111,30 @@ func runMechanical(t *testing.T, request speccheck.MechanicalRequest) speccheck.
 }
 
 func mechanicalRegenerationAuthorization(declaration string) string {
-	return "# Tooling authorization\n\n## Bounded files\n\n- `Makefile`\n\n## Sanctioned regeneration\n\n```yaml\n" + declaration + "```\n"
+	return mechanicalTypedAuthorization("mechanical", "Makefile") +
+		"\n## Sanctioned regeneration\n\n```yaml\n" + declaration + "```\n"
+}
+
+func mechanicalTypedAuthorization(consuming string, paths ...string) string {
+	var declared strings.Builder
+	for _, path := range paths {
+		declared.WriteString("  - ")
+		declared.WriteString(path)
+		declared.WriteByte('\n')
+	}
+	return "---\n" +
+		"status: approved\n" +
+		"granted: 2026-09-09\n" +
+		"action: audit bounded paths\n" +
+		"consuming: " + consuming + "\n" +
+		"paths:\n" + declared.String() +
+		"---\n"
 }
 
 func newMechanicalGitRepo(t *testing.T) string {
 	t.Helper()
 	repoRoot := t.TempDir()
-	runMechanicalGit(t, repoRoot, "init", "--quiet")
-	runMechanicalGit(t, repoRoot, "config", "user.name", "Roundfix Test")
-	runMechanicalGit(t, repoRoot, "config", "user.email", "roundfix@example.invalid")
-	runMechanicalGit(t, repoRoot, "config", "commit.gpgsign", "false")
+	gittest.InitRepo(t, repoRoot, "--quiet", "-b", "main")
 	writeMechanicalFile(t, repoRoot, ".keep", "fixture\n")
 	commitMechanicalFiles(t, repoRoot, "initial", ".keep")
 	return repoRoot
@@ -1877,12 +2157,7 @@ func commitMechanicalFiles(t *testing.T, repoRoot, message string, paths ...stri
 
 func runMechanicalGit(t *testing.T, repoRoot string, args ...string) string {
 	t.Helper()
-	command := exec.Command("git", append([]string{"-C", repoRoot}, args...)...)
-	output, err := command.CombinedOutput()
-	if err != nil {
-		t.Fatalf("git %s: %v: %s", strings.Join(args, " "), err, output)
-	}
-	return string(output)
+	return gittest.Run(t, repoRoot, args...)
 }
 
 func firstMissingMechanicalCommit(repoRoot string, commits ...string) string {
@@ -1919,6 +2194,20 @@ func assertMechanicalPathEscapedGrant(
 	if !strings.Contains(findings[0].Detail, path) || findings[0].File != grant {
 		t.Fatalf("%s finding = %#v, want path %s escaping grant %s", speccheck.CodeMechanicalAuthPaths, findings[0], path, grant)
 	}
+}
+
+func assertMechanicalAuthorizationRefused(t *testing.T, result speccheck.MechanicalResult, authorizationPath string) {
+	t.Helper()
+	findings := mechanicalFindingsWithCode(result, speccheck.CodeMechanicalAuthPaths)
+	if len(findings) == 0 {
+		t.Fatalf("%s findings = %#v, want refusal naming %s", speccheck.CodeMechanicalAuthPaths, result.Findings, authorizationPath)
+	}
+	for _, finding := range findings {
+		if finding.File == authorizationPath || strings.Contains(finding.Detail, authorizationPath) {
+			return
+		}
+	}
+	t.Fatalf("%s findings = %#v, want refusal naming %s", speccheck.CodeMechanicalAuthPaths, findings, authorizationPath)
 }
 
 func copyMechanicalFixture(t *testing.T, repoRoot, source, destination string) {

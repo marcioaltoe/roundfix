@@ -89,13 +89,14 @@ func PromoteGaps(result *Result) {
 // MechanicalResult is the complete, verdict-free output of the pre-QA
 // mechanical stage. Findings are accumulated rather than returned fail-fast.
 type MechanicalResult struct {
-	Findings       []MechanicalFinding
-	Performed      []PerformedRepair
-	RepairFailures []RepairFailure
-	Carried        []CarriedRow
-	Blocked        []BlockedRow
-	Skips          []MechanicalSkip
-	Blocking       bool
+	Findings           []MechanicalFinding
+	AuthorizationReads []MechanicalAuthorizationRead
+	Performed          []PerformedRepair
+	RepairFailures     []RepairFailure
+	Carried            []CarriedRow
+	Blocked            []BlockedRow
+	Skips              []MechanicalSkip
+	Blocking           bool
 
 	// PreconditionRefusal is the check that stopped this gate before it could
 	// build a matrix, and the reason it gave, ready for the report a refusal
@@ -105,6 +106,15 @@ type MechanicalResult struct {
 	// report itself.
 	PreconditionRefusal spec.PreconditionRefusal
 	PreconditionRefused bool
+}
+
+// MechanicalAuthorizationRead persists the exact grant object one Task audit
+// used, or the unresolved/refused input that prevented that audit from passing.
+type MechanicalAuthorizationRead struct {
+	TaskID  string
+	Outcome spec.AuthorizationOutcome
+	Source  spec.AuthorizationSource
+	Reason  spec.AuthorizationReason
 }
 
 // MechanicalFinding locates one citation-checkable contradiction and its
@@ -310,6 +320,30 @@ func WriteMechanicalResult(writer io.Writer, result MechanicalResult) error {
 			report.WriteString(markdownCell(failure.Path))
 			report.WriteString(" | ")
 			report.WriteString(markdownCell(failure.Detail))
+			report.WriteString(" |\n")
+		}
+		report.WriteByte('\n')
+	}
+	report.WriteString("## Authorization audit inputs\n\n")
+	if len(result.AuthorizationReads) == 0 {
+		report.WriteString("None.\n\n")
+	} else {
+		report.WriteString("| Task | Outcome | Record | Revision | Detail |\n| --- | --- | --- | --- | --- |\n")
+		for _, read := range result.AuthorizationReads {
+			detail := strings.TrimSpace(read.Reason.Detail)
+			if detail == "" {
+				detail = "operative grant"
+			}
+			report.WriteString("| ")
+			report.WriteString(markdownCell(read.TaskID))
+			report.WriteString(" | ")
+			report.WriteString(markdownCell(string(read.Outcome)))
+			report.WriteString(" | ")
+			report.WriteString(markdownCell(read.Source.Path))
+			report.WriteString(" | ")
+			report.WriteString(markdownCell(read.Source.Revision))
+			report.WriteString(" | ")
+			report.WriteString(markdownCell(detail))
 			report.WriteString(" |\n")
 		}
 		report.WriteByte('\n')

@@ -215,7 +215,7 @@ func TestCleanupHistoricalGrantEvidence(t *testing.T) {
 	replayRoot := newGovernedGitRepo(t)
 	writeGovernedResolverFixture(t, replayRoot)
 	writeGovernedAuthorizationRecord(t, replayRoot, proofCostRecord, string(proofCost))
-	commitGovernedFiles(
+	target := commitGovernedFiles(
 		t,
 		replayRoot,
 		"materialize recovered grant",
@@ -229,8 +229,9 @@ func TestCleanupHistoricalGrantEvidence(t *testing.T) {
 	writeGovernedAuthorizationRecord(t, replayRoot, acceptedPath, "regenerated\n")
 	acceptedCommit := commitGovernedFiles(t, replayRoot, "replay accepted regeneration", acceptedPath)
 	accepted := runGovernedMechanical(t, MechanicalRequest{
-		RepoRoot:          replayRoot,
-		AuthorizationPath: proofCostRecord,
+		RepoRoot:               replayRoot,
+		AuthorizationPath:      proofCostRecord,
+		DeliveryTargetRevision: target,
 		TaskCommits: []MechanicalTaskCommit{{
 			TaskID: "task_accepted",
 			SHA:    acceptedCommit,
@@ -242,8 +243,9 @@ func TestCleanupHistoricalGrantEvidence(t *testing.T) {
 	writeGovernedAuthorizationRecord(t, replayRoot, refusedPath, "linters: {}\n")
 	refusedCommit := commitGovernedFiles(t, replayRoot, "replay refused change", refusedPath)
 	refused := runGovernedMechanical(t, MechanicalRequest{
-		RepoRoot:          replayRoot,
-		AuthorizationPath: proofCostRecord,
+		RepoRoot:               replayRoot,
+		AuthorizationPath:      proofCostRecord,
+		DeliveryTargetRevision: target,
 		TaskCommits: []MechanicalTaskCommit{{
 			TaskID: "task_refused",
 			SHA:    refusedCommit,
