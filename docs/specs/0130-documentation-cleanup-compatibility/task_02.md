@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0130-documentation-cleanup-compatibility
-status: pending
+status: failed
 type: qa
 complexity: medium
 ---
