@@ -19,21 +19,28 @@ existed passes.
 
 ## Requirements
 
-1. MUST resolve the operative grant from the ancestry that precedes the
-   consuming commit, and MUST record which record path and revision the audit
-   read so a later reader can retrace the decision.
-2. MUST refuse a consuming commit that creates or widens the grant it depends
+1. MUST resolve the operative grant from the ancestry of the delivery target,
+   not merely from some earlier commit on the consuming branch, and MUST take
+   that target revision as an input rather than assuming it. A grant commit and
+   its consuming commit on the same branch collapse into one commit under
+   squash delivery, so an earlier-sibling grant is self-approval wearing two
+   commits.
+2. MUST record which record path and revision the audit read, and MUST persist
+   that provenance in the mechanical result and its written report, so the
+   grant object a passing audit relied on stays retraceable after the
+   in-memory result is gone.
+3. MUST refuse a consuming commit that creates or widens the grant it depends
    on, and MUST NOT let a later amendment authorize an earlier change
    retroactively.
-3. MUST accept an earlier bounded amendment as authority for work that comes
-   after it.
-4. MUST discover operative records in active Specs, in archived Specs, and in
+4. MUST accept an earlier bounded amendment as authority for work that comes
+   after it, when that amendment is already in the delivery target.
+5. MUST discover operative records in active Specs, in archived Specs, and in
    the preserved legacy location, and MUST NOT narrow the governed set the audit
    judges against.
-5. MUST keep the existing changed-path refusals and their reported tokens
+6. MUST keep the existing changed-path refusals and their reported tokens
    working for the conditions they already own, including a governed change
    outside the bounded set and a grant edited in the commit that consumes it.
-6. MUST report an unavailable revision or unreadable record as an unresolved
+7. MUST report an unavailable revision or unreadable record as an unresolved
    audit input rather than as a pass.
 
 ## Subtasks
@@ -48,8 +55,12 @@ existed passes.
 
 - [ ] A commit that adds or widens its own grant in the same commit refuses,
       naming the grant path.
-- [ ] A commit whose grant landed in an earlier ancestor passes, and the audit
-      result carries the record path and revision it read.
+- [ ] A grant commit followed by its consuming commit on the same branch, with
+      neither yet in the delivery target, refuses; the same grant refuses to
+      authorize its sibling even though it is an earlier ancestor.
+- [ ] A commit whose grant is already in the delivery target passes, and both
+      the audit result and its written report carry the record path and
+      revision the audit read.
 - [ ] A grant amended after the consuming commit does not authorize it; the same
       amendment authorizes a later commit.
 - [ ] A grant recorded in an archived Spec and one in the preserved legacy

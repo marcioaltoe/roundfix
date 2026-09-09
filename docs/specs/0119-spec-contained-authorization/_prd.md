@@ -148,7 +148,10 @@ observable change that is not named here is a regression, not a decision.
    starts failing the changed-path audit where it previously passed.
 3. `--run-verification`, Implement dispatch and Settle refuse authored commands
    from an untracked or modified Spec artifact, or from a Spec Root outside the
-   repository's Git tree, where they previously executed them unconditionally.
+   repository's Git tree, **when no valid execution approval covers that
+   source**, where they previously executed them unconditionally. A source
+   carrying a valid approval still executes, so the break is the removal of
+   unconditional trust, not the removal of the approval path.
 
 Preserved without change: every legacy dated record under
 `docs/workflow/authorizations/` that the suite guard still reads, every already

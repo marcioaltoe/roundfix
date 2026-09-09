@@ -28,22 +28,32 @@ after one, while read-only checking keeps working throughout.
    the repository's Git tree, when the carrying artifact is untracked or
    modified against its committed bytes, or when the command text differs from
    the committed bytes, and MUST name which of those conditions fired.
-4. MUST accept an execution approval recorded in the consuming Spec's
-   authorization record that names the approved revision, and MUST fall back to
-   refusal once the approved commands change, without withdrawing the historical
-   approval.
-5. MUST apply the same decision at read-only checking's probing path, at
-   Implement dispatch, and at Settle, emitting one shared code rather than three
-   private diagnostics.
-6. MUST keep `roundfix spec check` without command execution usable against any
+4. MUST accept an execution approval only when the approval record itself
+   reaches the trusted bar it is granting: it comes from a committed ancestor
+   of the delivery target, not from the same untracked or modified source it
+   authorizes. An approval a source can append to itself, pointing at a
+   revision that source just created, is self-approval and grants nothing.
+5. MUST bind an accepted approval to the repository, the approved revision, the
+   carrying artifact, and a digest of the exact approved command text, and MUST
+   fall back to refusal once any of those changes, without withdrawing the
+   historical approval record.
+6. MUST apply the same decision at every path that executes an authored
+   command, emitting one shared code rather than private diagnostics. The
+   pre-dispatch probe is not that boundary on its own: post-Agent verification
+   and Settle each call the verifier directly rather than through the prober, so
+   guarding only the probe leaves the two paths that actually run Agent-supplied
+   commands open. Cover the probe, the post-Agent verification call, and the
+   Settle call, and test each through its own path rather than through a shared
+   helper.
+7. MUST keep `roundfix spec check` without command execution usable against any
    source, trusted or not.
-7. MUST report an unreadable Git object or an unavailable revision as an
+8. MUST report an unreadable Git object or an unavailable revision as an
    unresolved source and refuse to execute, never as trusted and never as a
    manufactured verdict.
-8. MUST document both `SC-TOOLING-UNAPPROVED` and `SC-SOURCE-UNTRUSTED` as
+9. MUST document both `SC-TOOLING-UNAPPROVED` and `SC-SOURCE-UNTRUSTED` as
    glossary entries, so the coined tokens have a durable owner.
-9. MUST NOT grant network access, credential access, a different sandbox, or any
-   execution privilege beyond running the already-approved commands.
+10. MUST NOT grant network access, credential access, a different sandbox, or any
+    execution privilege beyond running the already-approved commands.
 
 ## Subtasks
 
@@ -61,13 +71,16 @@ after one, while read-only checking keeps working throughout.
       `SC-SOURCE-UNTRUSTED` naming the modified-artifact condition.
 - [ ] A Spec Root resolving outside the repository's Git tree refuses, naming
       the out-of-tree condition.
-- [ ] A Spec carrying an execution approval for the named revision executes; the
-      same approval stops authorizing once the approved command text changes,
-      and the historical approval record is unchanged.
+- [ ] A Spec carrying an execution approval already committed in the delivery
+      target executes; an approval appended to the same untracked or modified
+      source it authorizes refuses as self-approval.
+- [ ] The approval stops authorizing once the repository, revision, artifact or
+      approved command digest changes, and the historical approval record is
+      unchanged.
 - [ ] Read-only checking without command execution returns its normal report for
       an untrusted source and executes nothing.
-- [ ] The refusal is reported identically from the probing path, Implement
-      dispatch and Settle.
+- [ ] The refusal is reported identically from the probe, from the post-Agent
+      verification call, and from Settle, each exercised through its own path.
 - [ ] An unreadable Git object reports an unresolved source and executes
       nothing.
 - [ ] Both coined codes appear in the glossary with the meaning the readers
@@ -78,12 +91,15 @@ after one, while read-only checking keeps working throughout.
 - interface: `internal/speccheck/verification.go`
 - interface: `internal/cli/spec_check.go`
 - interface: `internal/daemon/verification_probe.go`
+- interface: `internal/daemon/engine.go`
+- interface: `internal/cli/settle.go`
 
 ## Verification
 
 - `grep -q 'SC-SOURCE-UNTRUSTED' internal/speccheck/verification.go && grep -q 'func TestVerificationRefusesUntrustedSource' internal/speccheck/verification_test.go && go test -count=1 ./internal/speccheck -run '^TestVerificationRefusesUntrustedSource$'` — an out-of-tree root, an untracked artifact, a modified artifact and altered command text each refuse with the shared code naming the condition.
 - `grep -q 'func TestVerificationExecutesOnCommittedProvenance' internal/speccheck/verification_test.go && go test -count=1 ./internal/speccheck -run '^TestVerificationExecutesOnCommittedProvenance$'` — a tracked, unmodified Spec executes, and a revision-bound execution approval expires when the approved commands change.
-- `grep -q 'func TestAuthoredCommandEntryPointsShareTheSourceDecision' internal/cli/spec_check_test.go && go test -count=1 ./internal/cli -run '^TestAuthoredCommandEntryPointsShareTheSourceDecision$'` — probing, Implement dispatch and Settle report the same refusal, and read-only checking still reports without executing.
+- `grep -q 'func TestSettleRefusesUntrustedCommandSource' internal/cli/settle_test.go && go test -count=1 ./internal/cli -run '^TestSettleRefusesUntrustedCommandSource$'` — Settle refuses through its own direct verifier call, not through the prober.
+- `grep -q 'func TestPostAgentVerificationRefusesUntrustedCommandSource' internal/daemon/engine_test.go && go test -count=1 ./internal/daemon -run '^TestPostAgentVerificationRefusesUntrustedCommandSource$'` — the post-Agent verification call refuses through its own path.
 - `grep -q 'SC-SOURCE-UNTRUSTED' CONTEXT.md && grep -q 'SC-TOOLING-UNAPPROVED' CONTEXT.md` — both coined codes carry a glossary owner.
 - `grep -q 'SC-SOURCE-UNTRUSTED' internal/speccheck/verification.go && go build -buildvcs=false ./...` — the shared code exists and the tree compiles with it wired in.
 

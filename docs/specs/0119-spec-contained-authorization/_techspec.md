@@ -70,7 +70,8 @@ three private diagnostics.
 
 The map extends current package owners. Paths that name a package are
 implementation seams, not permission for arbitrary edits below that directory.
-The exact governed files remain in the authorization proposal; ordinary source
+The exact governed files are the approved bounded set in the authorization
+record; ordinary source
 changes must stay within this Spec's behavior. Revalidate shared files after
 prerequisite Specs land rather than replacing their newer contracts.
 

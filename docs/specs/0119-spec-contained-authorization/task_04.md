@@ -29,6 +29,9 @@ before any other mutation. The bounded set comes from the approved grant in
    `skills/write-techspec/references/techspec-template.md`.
 2. MUST keep every path the predicate reports as governed today still governed,
    so the set only grows.
+3. MUST report as governed every path bounded by a record the widened discovery
+   reaches, including the archived Spec 0130 grant's paths, so the contract and
+   the predicate cannot disagree about a record that already exists.
 3. MUST carry the clause that puts each added path in the set, matching the
    existing entries' shape rather than adding an unexplained exception list.
 4. MUST NOT report an ordinary source or documentation path as governed as a
@@ -66,6 +69,9 @@ before any other mutation. The bounded set comes from the approved grant in
       it reads only the removed legacy directory.
 - [ ] Every path bounded by this Spec's approved grant reports governed, so the
       contract that consumes the predicate agrees with it.
+- [ ] Every path bounded by every record the widened discovery reaches reports
+      governed, including the archived Spec 0130 grant's paths; the acceptance
+      test enumerates the discovered records rather than a hand-picked sample.
 
 ## Context
 
