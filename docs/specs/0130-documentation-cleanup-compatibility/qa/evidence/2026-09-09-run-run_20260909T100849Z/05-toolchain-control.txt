@@ -1,0 +1,161 @@
+go test -parallel 16 ./...
+?   	roundfix/cmd/roundfix	[no test files]
+ok  	roundfix/internal/agent	7.576s
+ok  	roundfix/internal/app	0.294s
+ok  	roundfix/internal/baseline	112.960s
+ok  	roundfix/internal/baselineacp	0.612s
+ok  	roundfix/internal/cli	160.761s
+ok  	roundfix/internal/codex	3.134s
+ok  	roundfix/internal/config	4.355s
+ok  	roundfix/internal/daemon	40.730s
+?   	roundfix/internal/docscontract	[no test files]
+ok  	roundfix/internal/gittest	5.272s
+ok  	roundfix/internal/notify	1.350s
+ok  	roundfix/internal/preflight	10.515s
+ok  	roundfix/internal/releaseplan	1.046s
+ok  	roundfix/internal/reviewsource	0.781s
+ok  	roundfix/internal/reviewsource/coderabbit	1.644s
+ok  	roundfix/internal/rounds	3.769s
+ok  	roundfix/internal/runevent	2.526s
+ok  	roundfix/internal/skillhash	2.479s
+ok  	roundfix/internal/spec	94.601s
+ok  	roundfix/internal/specaudit	19.394s
+ok  	roundfix/internal/speccheck	37.270s
+ok  	roundfix/internal/store	77.472s
+ok  	roundfix/internal/suiteguard	5.241s
+ok  	roundfix/internal/suiteguardcontract	3.487s
+?   	roundfix/internal/testfixture	[no test files]
+ok  	roundfix/internal/tui	4.868s
+ok  	roundfix/internal/watch	1.796s
+ok  	roundfix/internal/worktree	39.358s
+ok  	roundfix/skills	30.749s
+go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+ok  	roundfix/skills	0.192s
+go run -buildvcs=false ./cmd/roundfix skills check
+Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, implement-spec, brainstorming, council, business-analyst, archive-spec, qa-gate, evidence-gate
+go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=c6a5ea15' -X 'roundfix/internal/app.BuildTime=2026-09-09 08:19:25 -0300'" -o bin/roundfix ./cmd/roundfix
+go test -count=1 -tags docscontract ./internal/docscontract
+ok  	roundfix/internal/docscontract	1.313s
+go test -count=1 -tags repocontract -run '^(TestMeasuredSanctionedOwnershipMatchesRecords|TestDeclaredStepRegenerationAndFrozenBoundaries|TestOwnedSkillEditLeavesDerivedArtifactsByteIdentical)$' ./internal/baseline ./skills
+ok  	roundfix/internal/baseline	36.133s
+ok  	roundfix/skills	17.173s
+go test -count=1 -parallel=1 -tags docscontract ./internal/docscontract -run '^TestCheckCorpusBudget$'
+ok  	roundfix/internal/docscontract	0.575s
+bin/roundfix spec check
+Spec 0119-spec-contained-authorization
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0119-spec-contained-authorization/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0119-spec-contained-authorization/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0119-spec-contained-authorization/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0119-spec-contained-authorization/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0119-spec-contained-authorization/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0119-spec-contained-authorization/_tasks.md
+Spec 0120-knowledge-lifecycle-and-durable-capture
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0120-knowledge-lifecycle-and-durable-capture/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0120-knowledge-lifecycle-and-durable-capture/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0120-knowledge-lifecycle-and-durable-capture/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0120-knowledge-lifecycle-and-durable-capture/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0120-knowledge-lifecycle-and-durable-capture/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0120-knowledge-lifecycle-and-durable-capture/_tasks.md
+Spec 0121-baseline-decisions-and-complete-regeneration
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0121-baseline-decisions-and-complete-regeneration/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0121-baseline-decisions-and-complete-regeneration/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0121-baseline-decisions-and-complete-regeneration/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0121-baseline-decisions-and-complete-regeneration/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0121-baseline-decisions-and-complete-regeneration/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0121-baseline-decisions-and-complete-regeneration/_tasks.md
+Spec 0122-verified-content-and-terminal-settlement
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0122-verified-content-and-terminal-settlement/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0122-verified-content-and-terminal-settlement/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0122-verified-content-and-terminal-settlement/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0122-verified-content-and-terminal-settlement/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0122-verified-content-and-terminal-settlement/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0122-verified-content-and-terminal-settlement/_tasks.md
+Spec 0123-runtime-readiness-and-model-capabilities
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0123-runtime-readiness-and-model-capabilities/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0123-runtime-readiness-and-model-capabilities/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0123-runtime-readiness-and-model-capabilities/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0123-runtime-readiness-and-model-capabilities/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0123-runtime-readiness-and-model-capabilities/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0123-runtime-readiness-and-model-capabilities/_tasks.md
+Spec 0124-verification-capacity-and-measured-economics
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0124-verification-capacity-and-measured-economics/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0124-verification-capacity-and-measured-economics/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0124-verification-capacity-and-measured-economics/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0124-verification-capacity-and-measured-economics/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0124-verification-capacity-and-measured-economics/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0124-verification-capacity-and-measured-economics/_tasks.md
+Spec 0125-repository-identity-and-run-branch-policy
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0125-repository-identity-and-run-branch-policy/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0125-repository-identity-and-run-branch-policy/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0125-repository-identity-and-run-branch-policy/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0125-repository-identity-and-run-branch-policy/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0125-repository-identity-and-run-branch-policy/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0125-repository-identity-and-run-branch-policy/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0125-repository-identity-and-run-branch-policy/references/_index.md
+Spec 0126-agent-review-before-pull-request
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0126-agent-review-before-pull-request/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0126-agent-review-before-pull-request/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0126-agent-review-before-pull-request/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0126-agent-review-before-pull-request/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0126-agent-review-before-pull-request/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0126-agent-review-before-pull-request/_tasks.md
+Spec 0127-durable-unattended-spec-workflow
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0127-durable-unattended-spec-workflow/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0127-durable-unattended-spec-workflow/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0127-durable-unattended-spec-workflow/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0127-durable-unattended-spec-workflow/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0127-durable-unattended-spec-workflow/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0127-durable-unattended-spec-workflow/_tasks.md
+Spec 0128-release-planning-with-bare-stable-tags
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0128-release-planning-with-bare-stable-tags/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0128-release-planning-with-bare-stable-tags/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0128-release-planning-with-bare-stable-tags/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0128-release-planning-with-bare-stable-tags/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0128-release-planning-with-bare-stable-tags/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0128-release-planning-with-bare-stable-tags/_tasks.md
+Spec 0129-spec-authoring-and-gate-recovery
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0129-spec-authoring-and-gate-recovery/_techspec.md Vocabulary Contract
+  SC-COVERAGE-UNTASKED: missing docs/specs/0129-spec-authoring-and-gate-recovery/_tasks.md
+  SC-REF-UNRESOLVED: missing docs/specs/0129-spec-authoring-and-gate-recovery/_tasks.md
+  SC-VERIFY-INVERTED-EXIT: missing docs/specs/0129-spec-authoring-and-gate-recovery/_tasks.md
+  SC-VERIFY-NON-HERMETIC: missing docs/specs/0129-spec-authoring-and-gate-recovery/_tasks.md
+  SC-WAVE-COLLISION: missing docs/specs/0129-spec-authoring-and-gate-recovery/_tasks.md
+Spec 0130-documentation-cleanup-compatibility
+No findings. Authored Verification commands were not executed.
+Skipped:
+  SC-BACKLOG-UNMOVED: missing docs/backlog
+  vocabulary documentation detector: missing docs/specs/0130-documentation-cleanup-compatibility/_techspec.md Vocabulary Contract
+  SC-REF-UNRESOLVED: missing docs/specs/0130-documentation-cleanup-compatibility/references/_index.md

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0130-documentation-cleanup-compatibility
-status: failed
+status: completed
 type: qa
 complexity: medium
 ---
@@ -57,3 +57,28 @@ independent evidence above remain the QA Agent's responsibility.
 - `_prd.md` → Goals 1–3, Core Features 1–4, Outside Evidence OE-1.
 - `_techspec.md` → Design, Vocabulary Contract, Research and decision evidence.
 - `docs/agents/autonomous-work.md` — Daemon verification and terminal QA ownership.
+
+## Result
+
+The independent QA Run exercised CF-1–CF-4 and OE-1, including real filesystem
+grant discovery, ownership/refusal boundaries, historical and controlled Git
+evidence, and two idempotent public regeneration runs after removing the 45
+legacy workflow files in a disposable clone. The original report and failure
+remain in commit `1ca65a9b`.
+
+Supervisor recovery on 2026-09-09 corrected only the report's formatter
+classification. The complete `make verify verify-docs` control exited 0 in a
+clean clone of the exact audited implementation `c6a5ea15`, with Go and gofmt
+1.26.7 explicitly selected. Neither CLI test named by the initial formatter
+invocation was changed. The transcript, checksum and independent clean Git
+reread are retained in the report's evidence directory.
+
+The same report now records 9 passed rows, one environment-blocked pre-PR row
+with each equivalent control answered, and zero failed/pending/skipped matrix
+rows. All four seeded mechanical skips remain unchanged. Four absent historical
+objects are inventoried separately from the two skipped historical subtests.
+The approved five-file scope, authorization ancestry and unchanged Vocabulary
+Contract are recorded in the original QA evidence. No QA override was used.
+
+Settlement and Task status remain owned by the public Roundfix Settle Command.
+This Spec evidence does not clear the combined cleanup PR's remaining gates.

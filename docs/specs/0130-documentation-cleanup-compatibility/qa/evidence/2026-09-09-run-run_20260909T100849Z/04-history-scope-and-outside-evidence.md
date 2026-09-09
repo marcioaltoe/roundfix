@@ -32,3 +32,20 @@ Source: <https://github.com/marcioaltoe/roundfix/actions/runs/34276050740/job/10
 - `rtk git diff --exit-code 54614682..c6a5ea15 -- CONTEXT.md` and the equivalent
   `go.mod go.sum` check exited 0. No glossary term or dependency changed.
 
+
+## 2026-09-09 — complete historical-object inventory
+
+An independent `git cat-file -e <sha>^{commit}` reread in the clean audited clone
+returned exit 128 for each of the four configured historical Task objects:
+
+| Task object | Result | Dependent historical case |
+| --- | --- | --- |
+| `419a4661ac769ff7ee6ce5423bd795185c859d01` | unavailable | grouped authorization audit |
+| `65c51ebf2e19220ff50d25fe03be809fcdf353f0` | unavailable | grouped authorization audit |
+| `28acf39cc193ad490646cb5a1d23500e0c08c273` | unavailable | grouped authorization audit |
+| `c80e1266658929f68e8046af82f88e13392dc56d` | unavailable | regeneration audit |
+
+The two historical subtests remain skipped, with the first missing object named
+for each case. This inventory does not manufacture four executed subtests.
+The 42 recovered real grants and controlled accepted/refused Git-change cases
+remain the executed coverage recorded above.
