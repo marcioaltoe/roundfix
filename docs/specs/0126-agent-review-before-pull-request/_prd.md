@@ -103,6 +103,20 @@ project configuration or install, authenticate or invoke a provider.
 - Codex remains the default; explicit project selection takes precedence. None permits no-review delivery while QA, required checks, authority and limits remain mandatory.
 - This replaces the earlier mandatory-review and total-CodeRabbit-removal policy; the updated decision is recorded in ADR-0153.
 - The Supervisor authors and dispatches; code/tests and Verification remain runtime/Daemon work.
+- Confirmed on 2026-09-09: an enabled pre-PR review runs at most two rounds per
+  candidate. Round one reviews the candidate, the findings are repaired, and
+  round two reviews the repaired candidate and is the last. Findings surviving
+  round two are repaired and the work stops with that diagnostic instead of
+  opening a third round, on the same reasoning as the two-Task corrective
+  ceiling: a third round means the candidate is wrong at its origin, not that
+  the reviewer is too strict. Rounds count per candidate, and a repair made
+  after round two does not restart the count. This bounds review effort; it
+  never converts an unreviewed or failed candidate into an approved one.
+- The round ceiling is a configuration default this Spec must carry into
+  `.roundfixrc.yml` together with the parser that reads it. It cannot be
+  declared in the configuration file before then: config decoding runs with
+  `KnownFields(true)`, so an unread key fails config parsing and breaks every
+  Roundfix command. Until this Spec ships, the ceiling is an operating rule.
 - Archive-first late-correction behavior, schema details and remaining implementation grants are still proposed.
 
 ## Open Questions
