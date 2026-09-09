@@ -25,6 +25,116 @@ const (
 	replay0060Task03 = "replay-0060-task-03"
 )
 
+func TestConstraintReaderCharacterizesGrantCitation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("citation forms", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name           string
+			citation       string
+			recordPath     string
+			wantRecordPath string
+		}{
+			{
+				name:           "backticked legacy repository path resolves",
+				citation:       "`docs/workflow/authorizations/2026-08-11-characterization.md`",
+				recordPath:     "docs/workflow/authorizations/2026-08-11-characterization.md",
+				wantRecordPath: "docs/workflow/authorizations/2026-08-11-characterization.md",
+			},
+			{
+				name:           "backticked Spec-contained repository path resolves",
+				citation:       "`docs/specs/0114-tooling-row/_authorization.md`",
+				recordPath:     "docs/specs/0114-tooling-row/_authorization.md",
+				wantRecordPath: "docs/specs/0114-tooling-row/_authorization.md",
+			},
+			{
+				name:       "Spec-relative Markdown link resolves none",
+				citation:   "[_authorization.md](_authorization.md)",
+				recordPath: "docs/specs/0114-tooling-row/_authorization.md",
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				row := "Tooling authority: applicable — express maintainer authorization recorded in " + tt.citation + "; bounded files: `Makefile`."
+				repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, tt.recordPath, "Authorization for Spec 0999-other permits changes to Makefile.\n")
+				result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+				if err != nil {
+					t.Fatalf("CheckStage(StagePRD): %v", err)
+				}
+
+				findings := findingsWithCode(result, speccheck.CodeToolingUnauthorized)
+				if tt.wantRecordPath == "" {
+					if len(findings) != 0 || hasSkip(result, speccheck.CodeToolingUnauthorized, tt.recordPath) {
+						t.Fatalf("authorization observation = findings %#v, skips %#v, want no resolved record path", findings, result.Skipped)
+					}
+					if len(result.Findings) != 0 {
+						t.Fatalf("StagePRD findings = %#v, want the unread grant to pass", result.Findings)
+					}
+					return
+				}
+
+				if len(findings) != 1 {
+					t.Fatalf("%s findings = %#v, want exactly one resolved record", speccheck.CodeToolingUnauthorized, findings)
+				}
+				if !hasExactLocation(findings[0], tt.wantRecordPath, 1) {
+					t.Fatalf("authorization locations = %#v, want resolved record %q", findings[0].Where, tt.wantRecordPath)
+				}
+			})
+		}
+	})
+
+	t.Run("typed validation is keyed to the record filename date", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name        string
+			recordPath  string
+			wantUntyped bool
+		}{
+			{
+				name:        "dated record is validated",
+				recordPath:  "docs/workflow/authorizations/2026-08-11-characterization.md",
+				wantUntyped: true,
+			},
+			{
+				name:       "undated record skips validation",
+				recordPath: "docs/specs/0114-tooling-row/_authorization.md",
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				row := "Tooling authority: applicable — express maintainer authorization recorded in `" + tt.recordPath + "`; bounded files: `Makefile`."
+				repoRoot, specsRoot, slug := writeToolingRowFixture(t, row, tt.recordPath, "Authorization for Spec 0114-tooling-row permits changes to Makefile.\n")
+				result, err := speccheck.CheckStage(specsRoot, repoRoot, slug, speccheck.StagePRD)
+				if err != nil {
+					t.Fatalf("CheckStage(StagePRD): %v", err)
+				}
+
+				findings := findingsWithCode(result, speccheck.CodeToolingUntyped)
+				if gotUntyped := len(findings) != 0; gotUntyped != tt.wantUntyped {
+					t.Fatalf("%s findings = %#v, want present = %t", speccheck.CodeToolingUntyped, findings, tt.wantUntyped)
+				}
+				if tt.wantUntyped && (len(findings) != 1 || !hasExactLocation(findings[0], tt.recordPath, 1)) {
+					t.Fatalf("%s findings = %#v, want one finding at %q", speccheck.CodeToolingUntyped, findings, tt.recordPath)
+				}
+				if !tt.wantUntyped && len(result.Findings) != 0 {
+					t.Fatalf("StagePRD findings = %#v, want undated record validation skipped", result.Findings)
+				}
+			})
+		}
+	})
+}
+
 func TestCheckReplay0060Task03RefusesWorkIndependentVerification(t *testing.T) {
 	t.Parallel()
 

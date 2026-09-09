@@ -24,6 +24,36 @@ const authorizationRecordsDir = "docs/workflow/authorizations"
 
 const cleanupHistoricalGrantAncestor = "81a6afb48f4a3683d0e5fad52f3919cf1bdfbbf4"
 
+func TestGovernedSetCharacterizesOwnedShippedTemplates(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{
+			name: "shipped PRD template is not governed",
+			path: "skills/write-prd/references/prd-template.md",
+		},
+		{
+			name: "shipped TechSpec template is not governed",
+			path: "skills/write-techspec/references/techspec-template.md",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := GovernedPath(tt.path); got != tt.want {
+				t.Fatalf("GovernedPath(%q) = %t, want %t", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCleanupHistoricalGrantEvidence(t *testing.T) {
 	repository, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {

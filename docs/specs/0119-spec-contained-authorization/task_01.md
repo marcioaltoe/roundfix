@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -82,3 +82,51 @@ before any other mutation. The bounded set comes from the approved grant in
 - `_techspec.md` → Testing Approach observation 5; Build Order 1.
 - `_authorization.md` → approved bounded paths.
 - ADR-0130.
+
+## Result
+
+Implemented the characterization corpus against the unchanged public
+constraint reader and Governed Path predicate. No production reader changed,
+and no existing assertion was removed or weakened.
+
+### Acceptance evidence
+
+1. `TestConstraintReaderCharacterizesGrantCitation/citation_forms` records that
+   a backticked legacy repository path resolves to
+   `docs/workflow/authorizations/2026-08-11-characterization.md`, a backticked
+   Spec-contained repository path resolves to
+   `docs/specs/0114-tooling-row/_authorization.md`, and the Spec-relative
+   `[_authorization.md](_authorization.md)` link resolves to no record path.
+   The last case places a wrong-Spec record at the possible target and asserts
+   that the Tooling authority row still passes with that record unread.
+2. `TestConstraintReaderCharacterizesGrantCitation/typed_validation_is_keyed_to_the_record_filename_date`
+   gives the dated and undated records the same prose-only grant. The dated
+   record produces one `SC-TOOLING-UNTYPED` finding at its exact path; the
+   undated `_authorization.md` produces no finding, recording today's skipped
+   typed-grant validation.
+3. `TestGovernedSetCharacterizesOwnedShippedTemplates` records the current
+   `false` answer for both owned shipped authoring templates:
+   `skills/write-prd/references/prd-template.md` and
+   `skills/write-techspec/references/techspec-template.md`.
+4. Every characterization row compares the reader's observed path, diagnostic,
+   or boolean answer with an explicit `want` value. Changing any recorded
+   expectation without the reader changing makes its named subtest fail.
+5. The changes in both existing test files are additive. The tagged focused
+   package run executed the pre-existing tests together with the new cases and
+   reported 321 passing tests.
+
+### Focused checks
+
+- Pre-change signal: `rtk rg -n "func TestConstraintReaderCharacterizesGrantCitation" internal/speccheck/constraints_characterization_test.go`
+  and the corresponding search for
+  `TestGovernedSetCharacterizesOwnedShippedTemplates` both exited 1 with no
+  match.
+- `rtk go test -count=1 -tags repocontract ./internal/speccheck -run '^(TestConstraintReaderCharacterizesGrantCitation|TestGovernedSetCharacterizesOwnedShippedTemplates)$'`
+  passed with 11 tests after the unchanged command was rerun with access to the
+  standard Go build cache; the first sandboxed attempt stopped before
+  compilation because that cache was outside the writable worktree.
+- `rtk go test -count=1 -tags repocontract ./internal/speccheck` passed with 321
+  tests.
+- `rtk git diff --check` exited 0.
+
+The Daemon-owned commands under `## Verification` were not run.
