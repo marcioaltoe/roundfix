@@ -1,7 +1,7 @@
 ---
-status: proposed
-granted: null
-action: establish Spec-contained authorization and command execution authority
+status: approved
+granted: 2026-09-09
+action: establish Spec-contained authorization and committed-provenance command execution authority
 consuming: 0119-spec-contained-authorization
 paths:
   - internal/baseline/assets/modules/core.json
@@ -27,56 +27,84 @@ paths:
   - internal/speccheck/governed_repocontract_test.go
 ---
 
-# Proposed authority for Spec 0119
+# Approved authority for Spec 0119
 
-This is a reviewable proposal, **not a grant**. The maintainer requested the
-outcome and authorized authoring, commit, and push of the planning documents.
-Approval of the exact protected mutations above is still pending.
+On 2026-09-09 the maintainer answered the explicit scope request with
+"Aprovar os 21 caminhos", approving the complete proposal recorded here. The
+earlier proposal state is superseded; the paths above are the exact bounded
+set, and nothing outside them is authorized by this record.
 
 ## Confirmed session authority
 
 On 2026-09-08 the maintainer requested Specs containing their authorizations
 and the same requirement in canonical guidance. The confirmed unattended
-delivery scope is implementation, the configured review policy, PR, and automatic
-merge only after Specs and their limits are approved and required checks pass.
-The later confirmed policy permits codex, claude, coderabbit or explicit none;
-none records intentional omission and enabled-review failures still block. It
-does not approve this proposed implementation schema or waive existing gates.
+delivery scope is implementation, the configured review policy, PR, and squash
+merge after required checks pass. The configured policy permits codex, claude,
+coderabbit or explicit none; none records intentional omission, and an enabled
+provider's failure still blocks. Spec 0130 delivered the first grant in this
+shape on 2026-09-09, so the record schema below is the maintainer's practice
+made canonical rather than a new convention introduced here.
 
-## Proposed bounded mutation
+## Approved bounded mutation
 
-Update canonical authoring and placement guidance, the Roundfix-owned PRD,
-TechSpec and Task-authoring instructions/templates, and the existing
-constraint-reader behavior that already lies in the governed set. Preserve
-clause identities where the existing obligation can be extended. Ordinary
-product-source implementation paths belong to the later TechSpec and do not
-become historical tooling grants merely by being discussed here.
+1. Make the Spec-contained `_authorization.md` the canonical home for tooling
+   authorization records in the Baseline modules and their rendered guides,
+   and in the Roundfix-owned PRD, TechSpec and Task authoring instructions and
+   templates in both the canonical `.agents/skills/` tree and the shipped
+   `skills/` bundle.
+2. Extend the constraint reader so grant validation follows the artifact's
+   role rather than a date in its filename, and so a record cited from inside
+   its own Spec resolves. Preserve every existing explicit legacy format.
+3. Keep the historical Governed Path set monotonic while adding the owned
+   shipped templates the current path predicate misses.
 
-Run `make skills-sync` only for the approved source edits, verifying every
-other shipped skill remains byte-identical. Run `make baseline-digests` for
-the sanctioned derived pins, then the public Baseline update for the named
-managed guides and manifest. These regeneration instructions remain proposed
-until the source mutations are approved.
+Preserve clause identities wherever an existing obligation can be extended
+instead of replaced. Ordinary product-source implementation paths, including
+the new `internal/spec` authorization reader, are not governed and belong to
+the TechSpec's build order; discussing them here does not make them tooling
+grants.
+
+## Approved execution trust contract
+
+On 2026-09-09 the maintainer selected committed provenance as the trust
+contract for executing authored Verification, answering "Confiança por
+procedência commitada".
+
+- Authored commands may execute when the Spec artifacts that carry them are
+  tracked in this repository and byte-identical to their committed bytes at
+  the resolved revision.
+- A Spec Root outside the repository's Git tree, an untracked or modified Spec
+  artifact, or command text that differs from the committed bytes requires an
+  execution approval recorded in that Spec's `_authorization.md`, naming the
+  approved source revision, before any shell execution.
+- Read-only `roundfix spec check` without `--run-verification` stays available
+  for every source, trusted or not.
+- This contract governs `spec check --run-verification`, Implement dispatch and
+  Settle alike. It grants no network access, no credential access, no new
+  sandbox, and no different execution privilege.
 
 ## Limits and commit order
 
-- Commit this approval record separately before any consuming tooling commit.
+- This record lands in `main` ancestry before the consuming squash delivery.
+  A separate commit inside the consuming pull request would be flattened with
+  the change and cannot preserve prior approval.
 - Do not edit an upstream-managed skill or an archived grant.
 - Do not infer approval from silence, preselection, a pending question, or a
-  checker that currently fails to validate the new proposed filename.
-- No paid API use, release, deployment, destructive cleanup, or branch-policy
-  exception is granted by this record.
-- Verification remains Daemon-owned. Running commands from third-party Specs
-  requires the source-trust decision recorded in the PRD's Open Questions.
+  checker that does not yet validate the new record location.
+- No paid API use, release, tag, deployment, destructive cleanup, or
+  branch-policy exception is granted by this record.
+- Corrective work stays inside the standing cap of two corrective Tasks per
+  Spec; a third means the decomposition is wrong and the Run stops.
+- Verification remains Daemon-owned. ADR-0014, ADR-0057, ADR-0096, ADR-0117,
+  ADR-0130 and ADR-0149 remain operative and are not revised by this grant.
 
-## Approval evidence
+## Sanctioned regeneration
 
-Pending. Record the maintainer's concrete decision and approved bounded scope
-here before changing `status` or `granted`; do not fill either from inference.
+The repository-owned command resolves its generated outputs. This declaration
+records the digest regeneration that follows the approved source edits above;
+it adds no source paths. The `skills/` bundle regenerated by `make skills-sync`
+is already enumerated path by path in the grant above.
 
-## Scope refinement from complete triage
-
-The technical candidate now names the additional governed paths above for the
-newly exposed residuals. Their presence remains a proposal, not an amendment to
-an approved grant. No current tooling, test, template or generator file was
-changed by this planning operation. Sanctioned outputs follow source approval.
+```yaml
+command: make baseline-digests
+```
