@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0119-spec-contained-authorization
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -89,3 +89,53 @@ before any other mutation. The bounded set comes from the approved grant in
 - `_prd.md` → User Stories 3; Goals 2; Decisions: Declared intentional breaks 2.
 - `_techspec.md` → Implementation Design: Audit and compatibility; Build Order 3.
 - ADR-0130.
+
+## Result
+
+The governed set now includes the seven paths that the approved Spec 0119 and
+archived Spec 0130 grants bounded but the predicate missed. Each path uses the
+existing `historically bounded path` entry and ADR-0130 clause. The repository
+contract now discovers legacy records plus approved `_authorization.md`
+records in active and archived Specs, filters out non-operative proposals, and
+audits every bounded path from every discovered record.
+
+Focused-check evidence:
+
+- Before the predicate edit,
+  `rtk go test -tags repocontract ./internal/speccheck -run '^(TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows|TestEveryBoundedPathIsGoverned/repository_records_are_governed)$'`
+  reported both shipped templates and the other five grant-bounded additions
+  as ungoverned.
+- Before the predicate edit,
+  `rtk go test -tags repocontract ./internal/speccheck -run '^TestEveryBoundedPathIsGoverned$/^repository_records_are_governed$'`
+  failed after discovering bounded paths in the active Spec 0119 and archived
+  Spec 0130 records.
+- After the predicate edit,
+  `rtk go test -tags repocontract ./internal/speccheck -run '^(TestGovernedSetCoversOwnedShippedTemplates|TestGovernedSetOnlyGrows)$'`
+  passed 24 tests.
+- `rtk go test -tags repocontract ./internal/speccheck -run '^TestEveryBoundedPathIsGoverned$/(repository_records_are_governed|unmatched_path_names_path_and_record|no_authorization_records_skips)$'`
+  passed the focused contract cases; the proposal-only fixture remained the
+  sole intentional skip because it contained no operative record.
+- `rtk proxy go test -tags repocontract ./internal/speccheck -run '^TestEveryBoundedPathIsGoverned$/^repository_records_are_governed$' -v`
+  explicitly reported the repository-records subtest as `PASS`, not `SKIP`.
+- `rtk proxy go test -tags repocontract ./internal/speccheck -run '^TestEveryBoundedPathIsGoverned$/^no_authorization_records_skips$' -v`
+  explicitly reported the proposal-only case as skipped after its assertions
+  proved that no operative record was audited.
+- `rtk go test ./internal/speccheck -run '^TestGovernedPath$'` passed all 15
+  existing public-predicate characterization tests.
+
+Acceptance evidence:
+
+- `TestGovernedSetCoversOwnedShippedTemplates` proves both shipped templates
+  are governed and carry the ADR-0130 historical clause.
+- `TestGovernedSetOnlyGrows` preserves all eleven previously recorded governed
+  kind representatives, checks all seven additions against the historical
+  clause, and keeps `internal/app/metadata.go` plus
+  `docs/specs/example/_prd.md` ungoverned.
+- The repository-records case asserts that discovery includes this Spec's
+  approved grant and archived Spec 0130's approved grant, then audits the full
+  bounded-path collection from every discovered record. Its focused run passed.
+- The proposal-only case proves the skip remains limited to a repository with
+  no operative record; the real repository case ran and passed without a skip.
+
+The Daemon-owned commands under `## Verification`, including the historical
+grant replay, were not run in this Agent turn.

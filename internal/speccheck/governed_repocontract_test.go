@@ -16,28 +16,33 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
+	"gopkg.in/yaml.v3"
 	"roundfix/internal/suiteguardcontract"
 )
 
-const authorizationRecordsDir = "docs/workflow/authorizations"
+const (
+	legacyAuthorizationRecordsDir = "docs/workflow/authorizations"
+	activeSpecAuthorizationRoot   = "docs/specs"
+	archivedSpecAuthorizationRoot = "docs/history/specs"
+)
 
 const cleanupHistoricalGrantAncestor = "81a6afb48f4a3683d0e5fad52f3919cf1bdfbbf4"
 
-func TestGovernedSetCharacterizesOwnedShippedTemplates(t *testing.T) {
+func TestGovernedSetCoversOwnedShippedTemplates(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
 		path string
-		want bool
 	}{
 		{
-			name: "shipped PRD template is not governed",
+			name: "shipped PRD template is governed",
 			path: "skills/write-prd/references/prd-template.md",
 		},
 		{
-			name: "shipped TechSpec template is not governed",
+			name: "shipped TechSpec template is governed",
 			path: "skills/write-techspec/references/techspec-template.md",
 		},
 	}
@@ -47,11 +52,90 @@ func TestGovernedSetCharacterizesOwnedShippedTemplates(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := GovernedPath(tt.path); got != tt.want {
-				t.Fatalf("GovernedPath(%q) = %t, want %t", tt.path, got, tt.want)
+			if !GovernedPath(tt.path) {
+				t.Fatalf("GovernedPath(%q) = false, want true", tt.path)
+			}
+			if !governedPathHasClause(tt.path, historicalToolingAuthorityClause) {
+				t.Fatalf("GovernedPath(%q) does not carry clause %q", tt.path, historicalToolingAuthorityClause)
 			}
 		})
 	}
+}
+
+func TestGovernedSetOnlyGrows(t *testing.T) {
+	t.Parallel()
+
+	previouslyGoverned := []string{
+		".golangci.yml",
+		".prettierrc",
+		"tsconfig.json",
+		"vitest.config.ts",
+		".dependency-cruiser.js",
+		"Makefile",
+		"go.mod",
+		"scripts/generate.sh",
+		".gitignore",
+		".codex-plugin/plugin.json",
+		".tool-versions",
+	}
+	for _, governed := range previouslyGoverned {
+		governed := governed
+		t.Run("keeps "+governed+" governed", func(t *testing.T) {
+			t.Parallel()
+
+			if !GovernedPath(governed) {
+				t.Fatalf("GovernedPath(%q) = false, want true", governed)
+			}
+		})
+	}
+
+	newlyGoverned := []string{
+		"internal/speccheck/governed.go",
+		"internal/speccheck/governed_repocontract_test.go",
+		"internal/speccheck/mechanical_test.go",
+		"internal/suiteguardcontract/regeneration.go",
+		"internal/suiteguardcontract/regeneration_test.go",
+		"skills/write-prd/references/prd-template.md",
+		"skills/write-techspec/references/techspec-template.md",
+	}
+	for _, governed := range newlyGoverned {
+		governed := governed
+		t.Run("adds "+governed+" under the historical clause", func(t *testing.T) {
+			t.Parallel()
+
+			if !GovernedPath(governed) {
+				t.Fatalf("GovernedPath(%q) = false, want true", governed)
+			}
+			if !governedPathHasClause(governed, historicalToolingAuthorityClause) {
+				t.Fatalf("GovernedPath(%q) does not carry clause %q", governed, historicalToolingAuthorityClause)
+			}
+		})
+	}
+
+	ordinaryPaths := []string{
+		"internal/app/metadata.go",
+		"docs/specs/example/_prd.md",
+	}
+	for _, ordinary := range ordinaryPaths {
+		ordinary := ordinary
+		t.Run("keeps "+ordinary+" ungoverned", func(t *testing.T) {
+			t.Parallel()
+
+			if GovernedPath(ordinary) {
+				t.Fatalf("GovernedPath(%q) = true, want false", ordinary)
+			}
+		})
+	}
+}
+
+func governedPathHasClause(path, clause string) bool {
+	clean := cleanMechanicalPath(path)
+	for _, entry := range governedPathSet {
+		if entry.clause == clause && entry.matches(clean) {
+			return true
+		}
+	}
+	return false
 }
 
 func TestCleanupHistoricalGrantEvidence(t *testing.T) {
@@ -70,7 +154,7 @@ func TestCleanupHistoricalGrantEvidence(t *testing.T) {
 		"-r",
 		"--name-only",
 		cleanupHistoricalGrantAncestor,
-		authorizationRecordsDir,
+		legacyAuthorizationRecordsDir,
 	))
 	records := strings.Split(listing, "\n")
 	if len(records) != 42 {
@@ -101,11 +185,11 @@ func TestCleanupHistoricalGrantEvidence(t *testing.T) {
 		t.Fatal("historical authorization records expose no bounded paths")
 	}
 
-	findings, recordsExist, err := auditBoundedPathsAreGoverned(historicalRoot)
+	findings, auditedRecords, err := auditBoundedPathsAreGoverned(historicalRoot)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !recordsExist {
+	if len(auditedRecords) == 0 {
 		t.Fatal("recovered historical authorization records were not read")
 	}
 	if len(findings) != 0 {
@@ -175,12 +259,21 @@ func TestEveryBoundedPathIsGoverned(t *testing.T) {
 			t.Fatalf("resolve repository root: %v", err)
 		}
 
-		findings, recordsExist, err := auditBoundedPathsAreGoverned(repoRoot)
+		findings, auditedRecords, err := auditBoundedPathsAreGoverned(repoRoot)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !recordsExist {
-			t.Skipf("no authorization records under %s", authorizationRecordsDir)
+		if len(auditedRecords) == 0 {
+			t.Skipf("no operative authorization records under %s, %s, or %s", legacyAuthorizationRecordsDir, activeSpecAuthorizationRoot, archivedSpecAuthorizationRoot)
+		}
+		for _, required := range []string{
+			"docs/specs/0119-spec-contained-authorization/_authorization.md",
+			"docs/history/specs/0130-documentation-cleanup-compatibility/_authorization.md",
+		} {
+			index := sort.SearchStrings(auditedRecords, required)
+			if index == len(auditedRecords) || auditedRecords[index] != required {
+				t.Fatalf("audited authorization records = %q, want %q included", auditedRecords, required)
+			}
 		}
 		if len(findings) != 0 {
 			t.Fatalf("bounded-path contract failed:\n%s", strings.Join(findings, "\n"))
@@ -199,11 +292,11 @@ consuming: synthetic-spec
 ---
 `)
 
-		findings, recordsExist, err := auditBoundedPathsAreGoverned(repoRoot)
+		findings, auditedRecords, err := auditBoundedPathsAreGoverned(repoRoot)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !recordsExist {
+		if len(auditedRecords) != 1 || auditedRecords[0] != record {
 			t.Fatal("authorization record was not read")
 		}
 		if len(findings) != 1 || !strings.Contains(findings[0], "README.md") || !strings.Contains(findings[0], record) {
@@ -212,41 +305,49 @@ consuming: synthetic-spec
 	})
 
 	t.Run("no authorization records skips", func(t *testing.T) {
-		findings, recordsExist, err := auditBoundedPathsAreGoverned(t.TempDir())
+		repoRoot := t.TempDir()
+		writeGovernedAuthorizationRecord(t, repoRoot, "docs/specs/proposed/_authorization.md", `---
+status: proposed
+granted: null
+action: synthetic proposed contract probe
+consuming: proposed
+paths:
+  - README.md
+---
+`)
+
+		findings, auditedRecords, err := auditBoundedPathsAreGoverned(repoRoot)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if recordsExist || len(findings) != 0 {
-			t.Fatalf("recordsExist = %t, findings = %q, want no records and no findings", recordsExist, findings)
+		if len(auditedRecords) != 0 || len(findings) != 0 {
+			t.Fatalf("auditedRecords = %q, findings = %q, want no operative records and no findings", auditedRecords, findings)
 		}
-		t.Skipf("no authorization records under %s", authorizationRecordsDir)
+		t.Skip("no operative authorization records")
 	})
 }
 
-func auditBoundedPathsAreGoverned(repoRoot string) ([]string, bool, error) {
-	directory := filepath.Join(repoRoot, filepath.FromSlash(authorizationRecordsDir))
-	entries, err := os.ReadDir(directory)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, false, nil
-	}
+type governedAuthorizationRecord struct {
+	path    string
+	content []byte
+}
+
+type governedAuthorizationRoot struct {
+	path          string
+	specContained bool
+}
+
+func auditBoundedPathsAreGoverned(repoRoot string) ([]string, []string, error) {
+	records, err := discoverGovernedAuthorizationRecords(repoRoot)
 	if err != nil {
-		return nil, false, fmt.Errorf("read authorization records %q: %w", directory, err)
+		return nil, nil, err
 	}
 
 	var findings []string
-	recordsExist := false
-	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".md" {
-			continue
-		}
-		recordsExist = true
-		record := filepath.ToSlash(filepath.Join(authorizationRecordsDir, entry.Name()))
-		content, err := os.ReadFile(filepath.Join(directory, entry.Name()))
-		if err != nil {
-			return nil, true, fmt.Errorf("read authorization record %q: %w", record, err)
-		}
-
-		bounded := parseMechanicalAuthorizationPaths(content)
+	auditedRecords := make([]string, 0, len(records))
+	for _, record := range records {
+		auditedRecords = append(auditedRecords, record.path)
+		bounded := parseMechanicalAuthorizationPaths(record.content)
 		paths := make([]string, 0, len(bounded))
 		for path := range bounded {
 			// Legacy prose can cite a regeneration command in the same bullet as
@@ -259,11 +360,139 @@ func auditBoundedPathsAreGoverned(repoRoot string) ([]string, bool, error) {
 		sort.Strings(paths)
 		for _, path := range paths {
 			if !GovernedPath(path) {
-				findings = append(findings, fmt.Sprintf("%s bounds %s, which is not governed", record, path))
+				findings = append(findings, fmt.Sprintf("%s bounds %s, which is not governed", record.path, path))
 			}
 		}
 	}
-	return findings, recordsExist, nil
+	return findings, auditedRecords, nil
+}
+
+func discoverGovernedAuthorizationRecords(repoRoot string) ([]governedAuthorizationRecord, error) {
+	roots := []governedAuthorizationRoot{
+		{path: legacyAuthorizationRecordsDir},
+		{path: activeSpecAuthorizationRoot, specContained: true},
+		{path: archivedSpecAuthorizationRoot, specContained: true},
+	}
+
+	var records []governedAuthorizationRecord
+	for _, root := range roots {
+		directory := filepath.Join(repoRoot, filepath.FromSlash(root.path))
+		info, err := os.Lstat(directory)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("inspect authorization root %q: %w", directory, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		if !info.IsDir() {
+			return nil, fmt.Errorf("authorization root %q is not a directory", directory)
+		}
+
+		err = filepath.WalkDir(directory, func(filePath string, entry os.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return fmt.Errorf("inspect authorization record %q: %w", filePath, walkErr)
+			}
+			if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 {
+				return nil
+			}
+			if root.specContained {
+				if entry.Name() != "_authorization.md" {
+					return nil
+				}
+			} else if filepath.Ext(entry.Name()) != ".md" {
+				return nil
+			}
+			entryInfo, err := entry.Info()
+			if err != nil {
+				return fmt.Errorf("stat authorization record %q: %w", filePath, err)
+			}
+			if !entryInfo.Mode().IsRegular() {
+				return nil
+			}
+
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				return fmt.Errorf("read authorization record %q: %w", filePath, err)
+			}
+			if root.specContained {
+				relative, err := filepath.Rel(directory, filePath)
+				if err != nil {
+					return fmt.Errorf("make authorization record %q relative to %q: %w", filePath, directory, err)
+				}
+				parts := strings.Split(filepath.ToSlash(relative), "/")
+				if len(parts) != 2 || !operativeGovernedSpecAuthorization(content, parts[0]) {
+					return nil
+				}
+			}
+
+			relative, err := filepath.Rel(repoRoot, filePath)
+			if err != nil {
+				return fmt.Errorf("make authorization record %q relative to %q: %w", filePath, repoRoot, err)
+			}
+			records = append(records, governedAuthorizationRecord{
+				path:    filepath.ToSlash(relative),
+				content: content,
+			})
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("walk authorization records %q: %w", directory, err)
+		}
+	}
+
+	sort.Slice(records, func(i, j int) bool {
+		return records[i].path < records[j].path
+	})
+	return records, nil
+}
+
+func operativeGovernedSpecAuthorization(content []byte, specSlug string) bool {
+	text := strings.ReplaceAll(string(content), "\r\n", "\n")
+	if !strings.HasPrefix(text, "---\n") {
+		return false
+	}
+	frontmatter, _, found := strings.Cut(text[len("---\n"):], "\n---")
+	if !found {
+		return false
+	}
+
+	var grant struct {
+		Status    string   `yaml:"status"`
+		Granted   string   `yaml:"granted"`
+		Action    string   `yaml:"action"`
+		Consuming string   `yaml:"consuming"`
+		Paths     []string `yaml:"paths"`
+	}
+	if err := yaml.Unmarshal([]byte(frontmatter), &grant); err != nil {
+		return false
+	}
+	if strings.TrimSpace(grant.Status) != "approved" ||
+		strings.TrimSpace(grant.Action) == "" ||
+		strings.TrimSpace(grant.Consuming) != specSlug {
+		return false
+	}
+	if _, err := time.Parse("2006-01-02", strings.TrimSpace(grant.Granted)); err != nil {
+		return false
+	}
+	if len(grant.Paths) == 0 {
+		return false
+	}
+
+	seen := make(map[string]struct{}, len(grant.Paths))
+	for _, declared := range grant.Paths {
+		clean := cleanMechanicalPath(declared)
+		if clean == "" || clean != declared || strings.ContainsAny(clean, "*?") {
+			return false
+		}
+		if _, duplicate := seen[clean]; duplicate {
+			return false
+		}
+		seen[clean] = struct{}{}
+	}
+	return true
 }
 
 func writeGovernedAuthorizationRecord(t *testing.T, repoRoot, relativePath, content string) {
