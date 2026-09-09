@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0119-spec-contained-authorization
-status: pending
+status: failed
 type: qa
 complexity: high
 ---
